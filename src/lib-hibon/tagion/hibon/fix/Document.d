@@ -463,9 +463,6 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(in string key) const pure {
         auto result = key in this;
-
-        
-
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -554,7 +551,7 @@ static assert(uint.sizeof == 4);
      key = is the member key
      index = is offset index in side the buffer and index with be progressed
      +/
-    @trusted static void buildKey(Key)(ref ubyte[] buffer, Type type, Key key, ref size_t index) pure
+    @trusted static void buildKey(Key)(ref scope ubyte[] buffer, Type type, Key key, ref size_t index) pure
     if (is(Key : const(char[])) || is(Key == uint)) {
         static if (is(Key : const(char[]))) {
             uint key_index;
@@ -653,10 +650,11 @@ static assert(uint.sizeof == 4);
 
     version (unittest) {
         import std.typecons : Tuple, isTuple;
-
-        static private size_t make(R)(ref ubyte[] buffer, R range, size_t count = size_t.max) if (isTuple!R) {
+        import tagion.hibon.HiBONBase;
+import std.stdio;
+        static private void make(R)(ref scope AppendBuffer buffer, R range, size_t count = size_t.max) if (isTuple!R) {
             size_t temp_index;
-            auto temp_buffer = buffer.dup;
+            AppendBuffer temp_buffer;
             foreach (i, t; range) {
                 if (i is count) {
                     break;
@@ -665,22 +663,25 @@ static assert(uint.sizeof == 4);
                 alias U = range.Types[i];
                 enum E = Value.asType!U;
                 static if (name.length is 0) {
-                    build(temp_buffer, E, cast(uint) i, t, temp_index);
+                    _build(temp_buffer, E, cast(uint) i, t);
                 }
                 else {
-                    build(temp_buffer, E, name, t, temp_index);
+                    _build(temp_buffer, E, name, t);
                 }
+                writefln(">%d] %s %s", temp_buffer.data.length, E, temp_buffer.data);
             }
-            auto leb128_size_buffer = LEB128.encode(temp_index);
-            size_t index;
-            buffer.array_write(leb128_size_buffer, index);
-            buffer.array_write(temp_buffer[0 .. temp_index], index);
-            return index;
+            auto leb128_size_buffer = LEB128.encode(temp_buffer.data.length);
+            //size_t index;
+            buffer ~= leb128_size_buffer;
+            buffer ~= temp_buffer.data; ///[0 .. temp_index], index);
+            //return index;
         }
     }
 
     unittest {
-        auto buffer = new ubyte[0x200];
+        //auto buffer = new ubyte[0x200];
+        AppendBuffer buffer;
+        buffer.reserve(0x200);
 
         size_t index;
         @trusted size_t* index_ptr() {
@@ -695,9 +696,9 @@ static assert(uint.sizeof == 4);
         }
 
         { // Test of empty Document
-
-            buffer.binwrite(ubyte.init, index_ptr);
-            immutable data = buffer[0 .. index].idup;
+            buffer.clear;
+            buffer._binwrite(ubyte.init);
+            immutable data = buffer.data.idup;
             const doc = Document(data);
             assert(doc.length is 0);
             assert(doc[].empty);
@@ -743,16 +744,20 @@ static assert(uint.sizeof == 4);
             index = 0;
 
             { // Document with a single value
-                index = make(buffer, test_table, 1);
-                immutable data = buffer[0 .. index].idup;
+            buffer.clear;
+                make(buffer, test_table, 1);
+                immutable data = buffer.data.idup;
+                writefln("buffer.data=%s len=%d", buffer.data, buffer.data.length);
+                writefln("data=%s", data);
                 const doc = Document(data);
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
 
             { // Document including basic types
-                index = make(buffer, test_table);
-                immutable data = buffer[0 .. index].idup;
+            buffer.clear;
+                make(buffer, test_table);
+                immutable data = buffer.data.idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
 
@@ -780,11 +785,14 @@ static assert(uint.sizeof == 4);
             }
 
             { // Document which includes basic arrays and string
-                index = make(buffer, test_table_array);
-                immutable data = buffer[0 .. index].idup;
+                buffer.clear;
+                make(buffer, test_table_array);
+                writefln("test_table_array=%s", test_table_array);
+                immutable data = buffer.data.idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
-
+                writefln(">data    =%s", buffer.data);
+                writefln(">doc.keys=%s", doc[].map!(e => e.key));
                 foreach (i, t; test_table_array) {
                     enum name = test_table_array.fieldNames[i];
                     alias U = test_table_array.Types[i];
@@ -797,33 +805,36 @@ static assert(uint.sizeof == 4);
             }
 
             { // Document which includes sub-documents
-                auto buffer_subdoc = new ubyte[0x200];
-                index = make(buffer_subdoc, test_table);
-                immutable data_sub_doc = buffer_subdoc[0 .. index].idup;
+                buffer.clear;
+                AppendBuffer buffer_subdoc;
+                buffer_subdoc.reserve(0x200);
+                 make(buffer_subdoc, test_table);
+                immutable data_sub_doc = buffer_subdoc.data.idup;
                 const sub_doc = Document(data_sub_doc);
 
                 index = 0;
 
                 enum size_guess = 151;
                 uint size;
-                buffer.array_write(LEB128.encode(size_guess), index);
-                const start_index = index;
+                buffer~=LEB128.encode(size_guess);
+                const start_index = buffer.data.length;
                 enum doc_name = "KDOC";
 
-                immutable index_before = index;
-                build(buffer, Type.INT32, Type.INT32.stringof, int(42), index);
-                immutable data_int32 = buffer[index_before .. index].idup;
+                immutable index_before = buffer.data.length;
+                _build(buffer, Type.INT32, Type.INT32.stringof, int(42));
+                immutable data_int32 = buffer.data[index_before..$].idup;
 
-                build(buffer, Type.DOCUMENT, doc_name, sub_doc, index);
-                build(buffer, Type.STRING, Type.STRING.stringof, "Text", index);
+                _build(buffer, Type.DOCUMENT, doc_name, sub_doc);
+                _build(buffer, Type.STRING, Type.STRING.stringof, "Text");
 
-                size = cast(uint)(index - start_index);
+                size = cast(uint)(buffer.data.length - start_index);
+                writefln("start_index=%d size=%d size_guess=%d buffer.data.length=%d", start_index,size, size_guess, buffer.data.length);
                 assert(size == size_guess);
 
                 size_t dummy_index = 0;
-                buffer.array_write(LEB128.encode(size), dummy_index);
+                buffer~=LEB128.encode(size);
 
-                immutable data = buffer[0 .. index].idup;
+                immutable data = buffer.data.idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
 
@@ -872,33 +883,39 @@ static assert(uint.sizeof == 4);
 
                 { // Check opEqual
                     const data_int32_e = Element(data_int32);
+                    writefln("data_int32              =%s %d", data_int32, data_int32.length);
+                    writefln("data_int32_e            =%s %d", data_int32_e.data, data_int32_e.size);
+                    writefln("doc[Type.INT32.stringof]=%s %d", doc[Type.INT32.stringof].data, doc[Type.INT32.stringof].size);
+                    writefln("doc.data    = %s", doc[Type.INT32.stringof].data[0..doc[Type.INT32.stringof].size]);
+                    writefln("data_int32_e =%s", data_int32_e.data[0..data_int32_e.size]);
+                    //assert(doc[Type.INT32.stringof].opEquals(data_int32_e));
                     assert(doc[Type.INT32.stringof] == data_int32_e);
                 }
             }
 
             { // Test opCall!(string[])
                 enum size_guess = 27;
-
+                buffer.clear;
                 index = 0;
                 uint size;
-                buffer.array_write(LEB128.encode(size_guess), index);
-                const start_index = index;
+                buffer~=LEB128.encode(size_guess);
+                const start_index = buffer.data.length;
 
                 //buffer.binwrite(uint.init, &index);
                 auto texts = ["Text1", "Text2", "Text3"];
                 foreach (i, text; texts) {
-                    build(buffer, Type.STRING, i.to!string, text, index);
+                    _build(buffer, Type.STRING, i.to!string, text);
                 }
                 //buffer.binwrite(Type.NONE, &index);
-                size = cast(uint)(index - start_index);
+                size = cast(uint)(buffer.data.length - start_index);
                 assert(size == size_guess);
 
                 //size = cast(uint)(index - uint.sizeof);
                 //buffer.binwrite(size, 0);
                 size_t dummy_index = 0;
-                buffer.array_write(LEB128.encode(size), dummy_index);
+                buffer~=LEB128.encode(size);
 
-                immutable data = buffer[0 .. index].idup;
+                immutable data = buffer.data.idup;
                 const doc = Document(data);
 
                 auto typed_range = doc.range!(string[])();

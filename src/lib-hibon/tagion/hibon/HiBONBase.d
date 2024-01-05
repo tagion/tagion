@@ -1,11 +1,11 @@
 module tagion.hibon.HiBONBase;
 import std.array;
 import std.format;
+import std.string : representation;
 import std.meta : AliasSeq, allSatisfy;
 import tagion.basic.basic : isOneOf;
 import tagion.utils.StdTime;
-import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers,
-    Unqual, getUDAs, hasUDA, FieldNameTuple;
+import std.traits;
 import bin = std.bitmanip;
 import std.range.primitives : isInputRange;
 import std.system : Endian;
@@ -13,11 +13,11 @@ import std.typecons : TypedefType, tuple;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
-
+import tagion.basic.Debug;
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION = 0;
 
-alias AppendBuffer=Appender!(ubyte[]);
+alias AppendBuffer = Appender!(ubyte[]);
 /++
  Helper function to serialize a HiBON
 +/
@@ -26,6 +26,20 @@ void binwrite(T, R, I)(R range, const T value, I index) pure {
 
     alias BaseT = TypedefType!(T);
     bin.write!(BaseT, Endian.littleEndian, R)(range, cast(BaseT) value, index);
+}
+
+void _binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
+    import std.typecons : TypedefType;
+
+    alias BaseT =  TypedefType!(T);
+    static if (T.sizeof == ubyte.sizeof) {
+        buffer~=value;
+    }
+    else {
+    import std.bitmanip : append;
+    append!(BaseT, Endian.littleEndian)(buffer, cast(BaseT) value);
+    }
+//    __write("_binwrite %s value=%s %s %s", buffer.data, value, is(T==enum), BaseT.stringof);
 }
 /++
  Helper function to serialize an array of the type T of a HiBON
@@ -38,6 +52,61 @@ if (is(T : U[], U) && isBasicType!U) {
         index = new_index;
     }
     buffer[index .. new_index] = ubytes;
+}
+
+void _buildKey(Key)(ref scope AppendBuffer buffer, Type type, Key key) pure
+if (is(Key : const(char[])) || is(Key == uint)) {
+    static if (is(Key : const(char[]))) {
+        uint key_index;
+        if (is_index(key, key_index)) {
+            _buildKey(buffer, type, key_index);
+            return;
+        }
+    }
+    buffer._binwrite(type);
+
+    static if (is(Key : const(char[]))) {
+        buffer ~= LEB128.encode(key.length);
+        buffer ~= key.representation;
+    }
+    else {
+        buffer._binwrite(ubyte.init);
+        const key_leb128 = LEB128.encode(key);
+        buffer ~= key_leb128;
+    }
+}
+
+void _build(T, Key)(ref scope AppendBuffer buffer, Type type, Key key,
+        const(T) x) pure
+if (is(Key : const(char[])) || is(Key == uint)) {
+    import tagion.hibon.fix.Document : Document;
+
+    _buildKey(buffer, type, key);
+    alias BaseT = TypedefType!T;
+    static if (is(T : U[], U) && (U.sizeof == ubyte.sizeof)) {
+        const leb128_size = LEB128.encode(x.length);
+        buffer ~= leb128_size;
+        static if (isSomeString!T) {
+            buffer ~= x.representation;
+        }
+        else {
+            buffer ~= x;
+        }
+    }
+    else static if (is(T : const Document)) {
+        buffer ~= x.data; //._binwrite(x.data, index);
+    }
+    else static if (is(T : const BigNumber)) {
+        __write(">before %s %d", buffer.data, buffer.data.length); 
+        buffer ~= x.serialize; //.array_write(x.serialize, index);
+    }
+    else static if (isIntegral!BaseT) {
+        //buffer.array_write(LEB128.encode(cast(BaseT) x), index);
+        buffer ~= LEB128.encode(cast(BaseT) x);
+    }
+    else {
+        buffer._binwrite(x);
+    }
 }
 
 /++
