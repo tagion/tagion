@@ -582,6 +582,7 @@ static assert(uint.sizeof == 4);
      x = is the value of the element
      index = is offset index in side the buffer and index with be progressed
      +/
+    version(none)
     @trusted static void build(T, Key)(ref ubyte[] buffer, Type type, Key key,
     const(T) x, ref size_t index) pure
     if (is(Key : const(char[])) || is(Key == uint)) {

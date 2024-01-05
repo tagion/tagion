@@ -116,23 +116,24 @@ static size_t size(U)(const(U[]) array) pure {
      The byte stream
      +/
     @trusted immutable(ubyte[]) serialize() const pure {
-        auto buffer = new ubyte[serialize_size];
-        size_t index;
-        append(buffer, index);
-        return assumeUnique(buffer);
+        AppendBuffer buffer;
+        buffer.reserve(serialize_size);
+        append(buffer);
+        return assumeUnique(buffer.data);
     }
 
     // /++
     //  Helper function to append
     //  +/
-    @trusted private void append(ref ubyte[] buffer, ref size_t index) const pure {
+    @trusted private void append(ref scope AppendBuffer buffer) const pure {
         if (_members[].empty) {
-            buffer.binwrite(ubyte(0), &index);
+            buffer~=ubyte(0);
             return;
         }
-        uint size = cast(uint) _members[].map!(a => a.size).sum;
-        buffer.array_write(LEB128.encode(size), index);
-        _members[].each!(a => a.append(buffer, index));
+        const size = cast(uint) _members[].map!(a => a.size).sum;
+            
+        buffer~=LEB128.encode(size);
+        _members[].each!(a => a.append(buffer));
     }
 
     /++
@@ -330,23 +331,23 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
 
-        @trusted protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index) const pure
+        @trusted protected void appendList(Type E)(ref scope AppendBuffer buffer) const pure
         if (isNativeArray(E)) {
             with (Type) {
                 immutable list_size = value.by!(E).size;
-                buffer.array_write(LEB128.encode(list_size), index);
+                buffer~=LEB128.encode(list_size);
                 foreach (i, h; value.by!E) {
                     immutable key = i.to!string;
                     static if (E is NATIVE_STRING_ARRAY) {
-                        Document.build(buffer, STRING, key, h, index);
+                        _build(buffer, STRING, key, h);
                     }
                     else {
-                        Document.buildKey(buffer, DOCUMENT, key, index);
+                        _buildKey(buffer, DOCUMENT, key);
                         static if (E is NATIVE_HIBON_ARRAY) {
-                            h.append(buffer, index);
+                            h.append(buffer);
                         }
                         else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                            buffer.array_write(h.data, index);
+                            buffer~=(h.data);
                         }
                         else {
                             assert(0, format("%s is not implemented yet", E));
@@ -356,7 +357,7 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
 
-        void append(ref ubyte[] buffer, ref size_t index) const pure {
+        void append(ref scope AppendBuffer buffer) const pure {
             with (Type) {
             TypeCase:
                 switch (type) {
@@ -365,25 +366,24 @@ static size_t size(U)(const(U[]) array) pure {
                 case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
-                                Document.buildKey(buffer, E, key, index);
-                                value.by!(E).append(buffer, index);
+                                _buildKey(buffer, E, key);
+                                value.by!(E).append(buffer);
                             }
                             else static if (isNative(E)) {
                                 static if (E is NATIVE_DOCUMENT) {
-                                    Document.buildKey(buffer, DOCUMENT, key, index);
-                                    const doc = value.by!(E);
-                                    buffer.array_write(value.by!(E).data, index);
+                                    _buildKey(buffer, DOCUMENT, key);
+                                    buffer~=value.by!(E).data;
                                 }
                                 else static if (isNativeArray(E)) {
-                                    Document.buildKey(buffer, DOCUMENT, key, index);
-                                    appendList!E(buffer, index);
+                                    _buildKey(buffer, DOCUMENT, key);
+                                    appendList!E(buffer);
                                 }
                                 else {
                                     goto default;
                                 }
                             }
                             else {
-                                Document.build(buffer, E, key, value.by!E, index);
+                                _build(buffer, E, key, value.by!E);
                             }
                             break TypeCase;
                         }
