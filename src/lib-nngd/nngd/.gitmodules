@@ -1,0 +1,4 @@
+[submodule "extern/libnng"]
+	path = extern/libnng
+	url = git@github.com:tagion/libnng.git
+    ignore = dirty
