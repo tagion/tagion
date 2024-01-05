@@ -23,45 +23,47 @@ private import libnng;
 import std.stdio;
 
 @safe
-T* ptr(T)(T[] arr, size_t off = 0) pure nothrow { return arr.length == 0 ? null : &arr[off]; }
+T* ptr(T)(T[] arr, size_t off = 0) pure nothrow { 
+    return arr.length == 0 ? null : &arr[off]; 
+}
 
 alias nng_errno = libnng.nng_errno;
 alias nng_errstr = libnng.nng_errstr;
-alias toString=nng_errstr;
+alias toString = nng_errstr;
 
 @safe
 void nng_sleep(Duration val) nothrow {
-    nng_msleep(cast(nng_duration)val.total!"msecs");
+    nng_msleep(cast(nng_duration) val.total!"msecs");
 }
 
 
 
-string toString(nng_sockaddr a){
+string toString(nng_sockaddr a) {
     string s = "<ADDR:UNKNOWN>";
-    switch(a.s_family){
-        case nng_sockaddr_family.NNG_AF_NONE    : 
+    switch(a.s_family) {
+        case nng_sockaddr_family.NNG_AF_NONE: 
             s = format("<ADDR:NONE>");
             break;
-        case nng_sockaddr_family.NNG_AF_UNSPEC  : 
+        case nng_sockaddr_family.NNG_AF_UNSPEC: 
             s = format("<ADDR:UNSPEC>");
             break;
-        case nng_sockaddr_family.NNG_AF_INPROC  : 
+        case nng_sockaddr_family.NNG_AF_INPROC: 
             s = format("<ADDR:INPROC name: %s >", a.s_inproc.sa_name);
             break;
-        case nng_sockaddr_family.NNG_AF_IPC     : 
-            s = format("<ADDR:IPC path: %s >",a.s_ipc.sa_path);
+        case nng_sockaddr_family.NNG_AF_IPC: 
+            s = format("<ADDR:IPC path: %s >", a.s_ipc.sa_path);
             break;
-        case nng_sockaddr_family.NNG_AF_INET    : 
-            s = format("<ADDR:INET addr: %u port: %u >",a.s_in.sa_addr,a.s_in.sa_port);
+        case nng_sockaddr_family.NNG_AF_INET: 
+            s = format("<ADDR:INET addr: %u port: %u >", a.s_in.sa_addr, a.s_in.sa_port);
             break;
-        case nng_sockaddr_family.NNG_AF_INET6   : 
-            s = format("<ADDR:INET6 scope: %u addr: %s port: %u >",a.s_in6.sa_scope,a.s_in6.sa_addr,a.s_in6.sa_port);
+        case nng_sockaddr_family.NNG_AF_INET6: 
+            s = format("<ADDR:INET6 scope: %u addr: %s port: %u >", a.s_in6.sa_scope, a.s_in6.sa_addr, a.s_in6.sa_port);
             break;
-        case nng_sockaddr_family.NNG_AF_ZT      :  
-            s = format("<ADDR:ZT nwid: %u nodeid: %u port: %u >",a.s_zt.sa_nwid,a.s_zt.sa_nodeid,a.s_zt.sa_port);
+        case nng_sockaddr_family.NNG_AF_ZT:  
+            s = format("<ADDR:ZT nwid: %u nodeid: %u port: %u >", a.s_zt.sa_nwid, a.s_zt.sa_nodeid, a.s_zt.sa_port);
             break;
         case nng_sockaddr_family.NNG_AF_ABSTRACT: 
-            s = format("<ADDR:ABSTRACT name: %s >",cast(string)a.s_abstract.sa_name[0..a.s_abstract.sa_len]);
+            s = format("<ADDR:ABSTRACT name: %s >", cast(string)a.s_abstract.sa_name[0..a.s_abstract.sa_len]);
             break;
         default:
             break;
@@ -104,13 +106,13 @@ struct NNGMessage {
 
     @disable this();
 
-    this(ref return scope NNGMessage src){
+    this(ref return scope NNGMessage src) {
         auto rc = nng_msg_dup(&msg, src.pointer);
         enforce(rc == 0);
     }   
     
-    this(nng_msg * msgref){
-        if(msgref is null){
+    this(nng_msg * msgref) {
+        if(msgref is null) {
             auto rc = nng_msg_alloc(&msg, 0);
             enforce(rc == 0);
         } else {            
@@ -118,7 +120,7 @@ struct NNGMessage {
         }            
     }   
 
-    this( size_t size ){
+    this( size_t size ) {
         auto rc = nng_msg_alloc(&msg, size);
         enforce(rc == 0);
     } 
@@ -134,7 +136,7 @@ struct NNGMessage {
 
     @nogc  
     @property void pointer(nng_msg* p) nothrow {
-        if(p !is null){ 
+        if(p !is null) { 
             msg = p;
         } else {
             nng_msg_clear(msg);
@@ -158,26 +160,26 @@ struct NNGMessage {
     void clear() { nng_msg_clear(msg); }
 
     int body_append (T) ( const(T) data ) if(isArray!T || isUnsigned!T) {
-        static if (isArray!T){
+        static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             auto rc = nng_msg_append(msg, ptr(data), data.length );
             enforce(rc == 0);
             return 0;
         }else{            
-            static if (T.sizeof == 1){
+            static if (T.sizeof == 1) {
                 T tmp = data;
                 auto rc = nng_msg_append(msg, cast(void*)&tmp, 1);
                 enforce(rc == 0);
             }                    
-            static if (T.sizeof == 2){
+            static if (T.sizeof == 2) {
                 auto rc = nng_msg_append_u16(msg, data);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 4){
+            static if (T.sizeof == 4) {
                 auto rc = nng_msg_append_u32(msg, data);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 8){
+            static if (T.sizeof == 8) {
                 auto rc = nng_msg_append_u64(msg, data);
                 enforce(rc == 0);
             }
@@ -185,27 +187,27 @@ struct NNGMessage {
         }
     }
 
-    int body_prepend (T) ( const(T) data ) if(isArray!T || isUnsigned!T){
-        static if (isArray!T){
+    int body_prepend (T) ( const(T) data ) if(isArray!T || isUnsigned!T) {
+        static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             auto rc = nng_msg_insert(msg, ptr(data), data.length );
             enforce(rc == 0);
             return 0;
         } else {
-            static if (T.sizeof == 1){
+            static if (T.sizeof == 1) {
                 T tmp = data;
                 auto rc = nng_msg_insert(msg, cast(void*)&tmp, 1);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 2){
+            static if (T.sizeof == 2) {
                 auto rc = nng_msg_insert_u16(msg, data);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 4){
+            static if (T.sizeof == 4) {
                 auto rc = nng_msg_insert_u32(msg, data);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 8){
+            static if (T.sizeof == 8) {
                 auto rc = nng_msg_insert_u64(msg, data);
                 enforce(rc == 0);
             }
@@ -214,8 +216,8 @@ struct NNGMessage {
     }
     
     
-    T body_chop (T) (size_t size = 0) if(isArray!T || isUnsigned!T){
-        static if (isArray!T){
+    T body_chop (T) (size_t size = 0) if(isArray!T || isUnsigned!T) {
+        static if (isArray!T) {
             if(size == 0) size = length;
             if(size == 0) return [];
             T data = cast(T) (bodyptr + (length - size)) [0..size];
@@ -224,20 +226,20 @@ struct NNGMessage {
             return data;
         } else {
             T tmp;
-            static if (T.sizeof == 1){ 
+            static if (T.sizeof == 1) { 
                 tmp = cast(T)*(bodyptr + (length - 1));
                 auto rc = nng_msg_chop(msg, 1);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 2){
+            static if (T.sizeof == 2) {
                 auto rc = nng_msg_chop_u16(msg, &tmp);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 4){
+            static if (T.sizeof == 4) {
                 auto rc = nng_msg_chop_u32(msg, &tmp);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 8){
+            static if (T.sizeof == 8) {
                 auto rc = nng_msg_chop_u64(msg, &tmp);
                 enforce(rc == 0);
             }
@@ -247,7 +249,7 @@ struct NNGMessage {
 
     
     T body_trim (T) (size_t size = 0) if(isArray!T || isUnsigned!T) {
-        static if (isArray!T){
+        static if (isArray!T) {
             if(size == 0) size = length;
             if(size == 0) return [];
             T data = cast(T) (bodyptr) [0..size];
@@ -256,20 +258,20 @@ struct NNGMessage {
             return data;
         } else {
             T tmp;
-            static if (T.sizeof == 1){
+            static if (T.sizeof == 1) {
                 tmp = cast(T)*(bodyptr);
                 auto rc = nng_msg_trim(msg, 1);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 2){
+            static if (T.sizeof == 2) {
                 auto rc = nng_msg_trim_u16(msg, &tmp);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 4){
+            static if (T.sizeof == 4) {
                 auto rc = nng_msg_trim_u32(msg, &tmp);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 8){
+            static if (T.sizeof == 8) {
                 auto rc = nng_msg_trim_u64(msg, &tmp);
                 enforce(rc == 0);
             }
@@ -281,25 +283,25 @@ struct NNGMessage {
 
 
     int header_append (T) ( const(T) data ) if(isArray!T || isUnsigned!T) {
-        static if (isArray!T){
+        static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             auto rc = nng_msg_header_append(msg, ptr(data), data.length );
             return 0;
         }else{            
-            static if (T.sizeof == 1){
+            static if (T.sizeof == 1) {
                 T tmp = data;
                 auto rc = nng_msg_header_append(msg, cast(void*)&tmp, 1);
                 enforce(rc == 0);
             }                    
-            static if (T.sizeof == 2){
+            static if (T.sizeof == 2) {
                 auto rc = nng_msg_header_append_u16(msg, data);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 4){
+            static if (T.sizeof == 4) {
                 auto rc = nng_msg_header_append_u32(msg, data);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 8){
+            static if (T.sizeof == 8) {
                 auto rc = nng_msg_header_append_u64(msg, data);
                 enforce(rc == 0);
             }
@@ -307,27 +309,27 @@ struct NNGMessage {
         }
     }
 
-    int header_prepend (T) ( const(T) data ) if(isArray!T || isUnsigned!T){
-        static if (isArray!T){
+    int header_prepend (T) ( const(T) data ) if(isArray!T || isUnsigned!T) {
+        static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             auto rc = nng_msg_header_insert(msg, ptr(data), data.length );
             enforce(rc == 0);
             return 0;
         } else {
-            static if (T.sizeof == 1){
+            static if (T.sizeof == 1) {
                 T tmp = data;
                 auto rc = nng_msg_header_insert(msg, cast(void*)&tmp, 1);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 2){
+            static if (T.sizeof == 2) {
                 auto rc = nng_msg_header_insert_u16(msg, data);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 4){
+            static if (T.sizeof == 4) {
                 auto rc = nng_msg_header_insert_u32(msg, data);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 8){
+            static if (T.sizeof == 8) {
                 auto rc = nng_msg_header_insert_u64(msg, data);
                 enforce(rc == 0);
             }
@@ -336,8 +338,8 @@ struct NNGMessage {
     }
     
     
-    T header_chop (T) (size_t size = 0) if(isArray!T || isUnsigned!T){
-        static if (isArray!T){
+    T header_chop (T) (size_t size = 0) if(isArray!T || isUnsigned!T) {
+        static if (isArray!T) {
             if(size == 0) size = header_length;
             if(size == 0) return [];
             T data = cast(T) (headerptr + (header_length - size)) [0..size];
@@ -346,20 +348,20 @@ struct NNGMessage {
             return data;
         } else {
             T tmp;
-            static if (T.sizeof == 1){ 
+            static if (T.sizeof == 1) { 
                 tmp = cast(T)*(bodyptr + (length - 1));
                 auto rc = nng_msg_header_chop(msg, 1);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 2){
+            static if (T.sizeof == 2) {
                 auto rc = nng_msg_header_chop_u16(msg, &tmp);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 4){
+            static if (T.sizeof == 4) {
                 auto rc = nng_msg_header_chop_u32(msg, &tmp);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 8){
+            static if (T.sizeof == 8) {
                 auto rc = nng_msg_header_chop_u64(msg, &tmp);
                 enforce(rc == 0);
             }
@@ -369,7 +371,7 @@ struct NNGMessage {
 
     
     T header_trim (T) (size_t size = 0) if(isArray!T || isUnsigned!T) {
-        static if (isArray!T){
+        static if (isArray!T) {
             if(size == 0) size = header_length;
             if(size == 0) return [];
             T data = cast(T) (headerptr) [0..size];
@@ -378,20 +380,20 @@ struct NNGMessage {
             return data;
         } else {
             T tmp;
-            static if (T.sizeof == 1){
+            static if (T.sizeof == 1) {
                 tmp = cast(T)*(bodyptr);
                 auto rc = nng_msg_header_trim(msg, 1);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 2){
+            static if (T.sizeof == 2) {
                 auto rc = nng_msg_header_trim_u16(msg, &tmp);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 4){
+            static if (T.sizeof == 4) {
                 auto rc = nng_msg_header_trim_u32(msg, &tmp);
                 enforce(rc == 0);
             }
-            static if (T.sizeof == 8){
+            static if (T.sizeof == 8) {
                 auto rc = nng_msg_header_trim_u64(msg, &tmp);
                 enforce(rc == 0);
             }
@@ -407,12 +409,12 @@ struct NNGAio {
 
     @disable this();
 
-    this( nng_aio_cb cb, void* arg ){
+    this( nng_aio_cb cb, void* arg ) {
         auto rc = nng_aio_alloc( &aio,  cb, arg );
         enforce(rc == 0);
     }
     
-    this( nng_aio* src ){
+    this( nng_aio* src ) {
         enforce(src !is null);
         pointer(src);
     }
@@ -421,7 +423,7 @@ struct NNGAio {
         nng_aio_free(aio);
     }
 
-    void realloc( nng_aio_cb cb, void* arg ){
+    void realloc( nng_aio_cb cb, void* arg ) {
         nng_aio_free(aio);
         auto rc = nng_aio_alloc( &aio,  cb, arg );            
         enforce(rc == 0);
@@ -434,7 +436,7 @@ struct NNGAio {
 
     @nogc 
     @property void pointer( nng_aio* p ) {
-        if(p !is null){
+        if(p !is null) {
             nng_aio_free(aio);
             aio = p;
         }else{
@@ -490,7 +492,7 @@ struct NNGAio {
     }
 
     alias nng_aio_ccb = void function (nng_aio *, void*, int);
-    void defer ( nng_aio_ccb cancelcb, void *arg ){
+    void defer ( nng_aio_ccb cancelcb, void *arg ) {
         nng_aio_defer ( aio, cancelcb, arg );
     }
 
@@ -519,7 +521,7 @@ struct NNGAio {
         if( err != nng_errno.NNG_OK )
             return err;
         nng_msg *m = nng_aio_get_msg(aio);
-        if(m is null){
+        if(m is null) {
             return nng_errno.NNG_EINTERNAL;
         }else{    
             msg.pointer(m);
@@ -562,7 +564,7 @@ struct NNGSocket {
         m_raw = iraw;
         m_state = nng_socket_state.NNG_STATE_NONE;
         with(nng_socket_type) {
-        final switch(itype){
+        final switch(itype) {
             case NNG_SOCKET_BUS:
                 rc = (!raw) ? nng_bus_open(&m_socket) : nng_bus_open_raw(&m_socket);
                 m_may_send = true;
@@ -615,7 +617,7 @@ struct NNGSocket {
                 break;
            }
         }
-        if(rc != 0){
+        if(rc != 0) {
             m_state = nng_socket_state.NNG_STATE_ERROR;
             m_errno = cast(nng_errno)rc;
         }else{
@@ -628,15 +630,15 @@ struct NNGSocket {
     int close() nothrow {
         int rc;
         m_errno = cast(nng_errno)0;
-        foreach(ctx; m_ctx){
+        foreach(ctx; m_ctx) {
             rc = nng_ctx_close(ctx);
-            if(rc != 0){
+            if(rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }                
         }
         rc = nng_close(m_socket);
-        if(rc == 0){
+        if(rc == 0) {
             m_state = nng_socket_state.NNG_STATE_NONE;
         } else {
             m_errno = cast(nng_errno)rc;
@@ -646,11 +648,11 @@ struct NNGSocket {
 
     // setup listener
 
-    int listener_create(const(string) url){
+    int listener_create(const(string) url) {
         m_errno = cast(nng_errno)0;
-        if(m_state == nng_socket_state.NNG_STATE_CREATED){
+        if(m_state == nng_socket_state.NNG_STATE_CREATED) {
             auto rc = nng_listener_create( &m_listener, m_socket, toStringz(url) );
-            if( rc != 0){
+            if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }
@@ -661,11 +663,11 @@ struct NNGSocket {
         }
     }        
 
-    int listener_start( const bool nonblock = false ){
+    int listener_start( const bool nonblock = false ) {
         m_errno = cast(nng_errno)0;
-        if(m_state == nng_socket_state.NNG_STATE_PREPARED){
+        if(m_state == nng_socket_state.NNG_STATE_PREPARED) {
             auto rc =  nng_listener_start(m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
-            if( rc != 0){
+            if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }
@@ -678,9 +680,9 @@ struct NNGSocket {
 
     int listen ( const(string) url, const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
-        if(m_state == nng_socket_state.NNG_STATE_CREATED){
+        if(m_state == nng_socket_state.NNG_STATE_CREATED) {
             auto rc = nng_listen(m_socket, toStringz(url), &m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
-            if( rc != 0){
+            if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }
@@ -696,7 +698,7 @@ struct NNGSocket {
     int subscribe ( string tag ) nothrow {
         if(m_subscriptions.canFind(tag))
             return 0;
-        setopt_buf(NNG_OPT_SUB_SUBSCRIBE,cast(ubyte[])(tag.dup));
+        setopt_buf(NNG_OPT_SUB_SUBSCRIBE, cast(ubyte[])(tag.dup));
         if(m_errno == 0)
             m_subscriptions ~= tag;
         return m_errno;    
@@ -706,7 +708,7 @@ struct NNGSocket {
         long i = m_subscriptions.countUntil(tag);
         if(i < 0)
             return 0;
-        setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));                
+        setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE, cast(ubyte[])(tag.dup));                
         if(m_errno == 0)
             m_subscriptions = m_subscriptions[0..i]~m_subscriptions[i+1..$];
         return m_errno;    
@@ -714,10 +716,10 @@ struct NNGSocket {
 
     int clearsubscribe () nothrow {
         long i;
-        foreach(tag; m_subscriptions){
+        foreach(tag; m_subscriptions) {
             i = m_subscriptions.countUntil(tag);
             if(i < 0) continue;
-            setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));
+            setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE, cast(ubyte[])(tag.dup));
             if(m_errno != 0)
                 return m_errno;
             m_subscriptions = m_subscriptions[0..i]~m_subscriptions[i+1..$];
@@ -733,9 +735,9 @@ struct NNGSocket {
     
     int dialer_create(const(string) url) nothrow {
         m_errno = cast(nng_errno)0;
-        if(m_state == nng_socket_state.NNG_STATE_CREATED){
+        if(m_state == nng_socket_state.NNG_STATE_CREATED) {
             auto rc = nng_dialer_create( &m_dialer, m_socket, toStringz(url) );
-            if( rc != 0){
+            if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }
@@ -748,9 +750,9 @@ struct NNGSocket {
 
     int dialer_start( const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
-        if(m_state == nng_socket_state.NNG_STATE_PREPARED){
+        if(m_state == nng_socket_state.NNG_STATE_PREPARED) {
             auto rc =  nng_dialer_start(m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
-            if( rc != 0){
+            if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }
@@ -763,9 +765,9 @@ struct NNGSocket {
 
     int dial ( const(string) url, const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
-        if(m_state == nng_socket_state.NNG_STATE_CREATED){
+        if(m_state == nng_socket_state.NNG_STATE_CREATED) {
             auto rc = nng_dial(m_socket, toStringz(url), &m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
-            if( rc != 0){
+            if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }
@@ -781,7 +783,7 @@ struct NNGSocket {
 
     int sendmsg ( ref NNGMessage msg, bool nonblock = false ) {
         m_errno = nng_errno.init;
-        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             m_errno = (() @trusted => cast(nng_errno) nng_sendmsg( m_socket, msg.pointer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0))();
             if (m_errno !is nng_errno.init) {
                 return -1;
@@ -791,13 +793,13 @@ struct NNGSocket {
         return -1;
     }
 
-    int send (T)( const(T) data , bool nonblock = false ) if(isArray!T){
+    int send (T)( const(T) data , bool nonblock = false ) if(isArray!T) {
         alias U=ForeachType!T;
         static assert(U.sizeof == 1, "None byte size array element are not supported");
         m_errno = nng_errno.init;
-        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             auto rc = nng_send(m_socket, ptr(cast(ubyte[])data), data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
-            if( rc != 0){
+            if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }
@@ -808,8 +810,8 @@ struct NNGSocket {
     
     int sendaio ( ref NNGAio aio ) {
         m_errno = nng_errno.init;
-        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
-            if(aio.pointer){
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
+            if(aio.pointer) {
                 nng_send_aio(m_socket, aio.pointer);
                 return 0;
             }
@@ -834,7 +836,7 @@ struct NNGSocket {
         in(data.length)
     do {
         m_errno = nng_errno.init;
-        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             sz =(sz==0)?data.length:sz;
             m_errno = (() @trusted => cast(nng_errno)nng_recv(m_socket, ptr(data), &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 ))();
             if (m_errno !is nng_errno.init) {    
@@ -854,7 +856,7 @@ struct NNGSocket {
     int receivemsg ( NNGMessage* msg, bool nonblock = false ) nothrow
     {
         m_errno = nng_errno.init;
-        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             m_errno = (() @trusted => cast(nng_errno) nng_recvmsg( m_socket, &(msg.msg), nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0))();
             if (m_errno !is nng_errno.init) {
                 return -1;
@@ -873,7 +875,7 @@ struct NNGSocket {
         m_errno = nng_errno.init;
         alias U=ForeachType!T;
         static assert(U.sizeof == 1, "None byte size array element are not supported");
-        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             void* buf;
             size_t sz;
             auto rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC );
@@ -881,7 +883,7 @@ struct NNGSocket {
                 m_errno = cast(nng_errno)rc;
                 return T.init;
             }
-            GC.addRange(buf,sz);
+            GC.addRange(buf, sz);
             return (cast(U*)buf)[0..sz];
         }
         return T.init;
@@ -889,8 +891,8 @@ struct NNGSocket {
     
     int receiveaio ( ref NNGAio aio ) {
         m_errno = nng_errno.init;
-        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
-            if(aio.pointer){
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
+            if(aio.pointer) {
                 nng_recv_aio(m_socket, aio.pointer);
                 return 0;
             }
@@ -932,31 +934,31 @@ struct NNGSocket {
         @property string peername() { return getopt_string(NNG_OPT_PEERNAME); } 
         
         @property int recvbuf() { return getopt_int(NNG_OPT_RECVBUF); }
-        @property void recvbuf(int val){ setopt_int(NNG_OPT_RECVBUF,val); }
+        @property void recvbuf(int val) { setopt_int(NNG_OPT_RECVBUF, val); }
 
         @property int sendbuf() { return getopt_int(NNG_OPT_SENDBUF); } 
-        @property void sendbuf(int val){ setopt_int(NNG_OPT_SENDBUF,val); }
+        @property void sendbuf(int val) { setopt_int(NNG_OPT_SENDBUF, val); }
 
         @property int recvfd() { return (m_may_recv) ? getopt_int(NNG_OPT_RECVFD) : -1; } 
         @property int sendfd() { return (m_may_send) ? getopt_int(NNG_OPT_SENDFD) : -1; } 
 
         @property Duration recvtimeout() { return getopt_duration(NNG_OPT_RECVTIMEO); } 
-        @property void recvtimeout(Duration val){ setopt_duration(NNG_OPT_RECVTIMEO,val); }
+        @property void recvtimeout(Duration val) { setopt_duration(NNG_OPT_RECVTIMEO, val); }
 
         @property Duration sendtimeout() { return getopt_duration(NNG_OPT_SENDTIMEO); } 
-        @property void sendtimeout(Duration val){ setopt_duration(NNG_OPT_SENDTIMEO,val); }
+        @property void sendtimeout(Duration val) { setopt_duration(NNG_OPT_SENDTIMEO, val); }
 
-        @property nng_sockaddr locaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_LOCADDR,nng_property_base.NNG_BASE_DIALER) : getopt_addr(NNG_OPT_LOCADDR,nng_property_base.NNG_BASE_LISTENER); } 
-        @property nng_sockaddr remaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_REMADDR,nng_property_base.NNG_BASE_DIALER) : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE); } 
+        @property nng_sockaddr locaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_DIALER) : getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_LISTENER); } 
+        @property nng_sockaddr remaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_REMADDR, nng_property_base.NNG_BASE_DIALER) : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE); } 
     } // nothrow
     
     @property string url() { 
         if(m_may_send)
-            return getopt_string(NNG_OPT_URL,nng_property_base.NNG_BASE_DIALER); 
+            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_DIALER); 
         else if(m_may_recv)    
-            return getopt_string(NNG_OPT_URL,nng_property_base.NNG_BASE_LISTENER); 
+            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_LISTENER); 
         else            
-            return getopt_string(NNG_OPT_URL,nng_property_base.NNG_BASE_SOCKET); 
+            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_SOCKET); 
     }
 
     @property int maxttl() { return getopt_int(NNG_OPT_MAXTTL); } 
@@ -964,95 +966,95 @@ struct NNGSocket {
     @property void maxttl(uint val)
     in (val <= 255, "MAXTTL, hops cannot be greater than 255")
     do { 
-        setopt_int(NNG_OPT_MAXTTL,val);
+        setopt_int(NNG_OPT_MAXTTL, val);
     }
     
     @property int recvmaxsz() { return getopt_int(NNG_OPT_RECVMAXSZ); } 
-    @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ,val); } 
+    @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ, val); } 
 
     @property Duration reconnmint() { return getopt_duration(NNG_OPT_RECONNMINT); } 
-    @property void reconnmint(Duration val){ setopt_duration(NNG_OPT_RECONNMINT,val); }
+    @property void reconnmint(Duration val) { setopt_duration(NNG_OPT_RECONNMINT, val); }
 
     @property Duration reconnmaxt() { return getopt_duration(NNG_OPT_RECONNMAXT); } 
-    @property void reconnmaxt(Duration val){ setopt_duration(NNG_OPT_RECONNMAXT,val); }
+    @property void reconnmaxt(Duration val) { setopt_duration(NNG_OPT_RECONNMAXT, val); }
 
     // TODO: NNG_OPT_IPC_*, NNG_OPT_TLS_*, NNG_OPT_WS_*  
 private:
     nothrow {
         void setopt_int(string opt, int val) {
             m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_int(m_socket,toStringz(opt),val);
-            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+            auto rc = nng_socket_set_int(m_socket, toStringz(opt), val);
+            if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; } 
         }
 
         int getopt_int(string opt) {
             m_errno = cast(nng_errno)0;
             int p;
-            auto rc = nng_socket_get_int(m_socket,toStringz(opt),&p);
-            if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+            auto rc = nng_socket_get_int(m_socket, toStringz(opt), &p);
+            if(rc == 0) { return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
         }
         
-        void setopt_ulong(string opt, ulong val){
+        void setopt_ulong(string opt, ulong val) {
             m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_uint64(m_socket,toStringz(opt),val);
-            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+            auto rc = nng_socket_set_uint64(m_socket, toStringz(opt), val);
+            if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; } 
         }
 
         ulong getopt_ulong(string opt) {
             m_errno = cast(nng_errno)0;
             ulong p;
-            auto rc = nng_socket_get_uint64(m_socket,toStringz(opt),&p);
-            if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+            auto rc = nng_socket_get_uint64(m_socket, toStringz(opt), &p);
+            if(rc == 0) { return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
         }
         
-        void setopt_size(string opt, size_t val){
+        void setopt_size(string opt, size_t val) {
             m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_size(m_socket,toStringz(opt),val);
-            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+            auto rc = nng_socket_set_size(m_socket, toStringz(opt), val);
+            if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; } 
         }
         
         size_t getopt_size(string opt) {
             m_errno = cast(nng_errno)0;
             size_t p;
-            auto rc = nng_socket_get_size(m_socket,toStringz(opt),&p);
-            if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+            auto rc = nng_socket_get_size(m_socket, toStringz(opt), &p);
+            if(rc == 0) { return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
         }
         
         string getopt_string(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET ) { 
             m_errno = cast(nng_errno)0;
             char *ptr;
             int rc;
-            switch(base){
+            switch(base) {
                 case nng_property_base.NNG_BASE_DIALER:
-                    rc = nng_dialer_get_string(m_dialer,cast(const char*)toStringz(opt),&ptr); 
+                    rc = nng_dialer_get_string(m_dialer, cast(const char*)toStringz(opt), &ptr); 
                 break;
                 case nng_property_base.NNG_BASE_LISTENER:
-                    rc = nng_listener_get_string(m_listener,cast(const char*)toStringz(opt),&ptr); 
+                    rc = nng_listener_get_string(m_listener, cast(const char*)toStringz(opt), &ptr); 
                 break;
                 default:
-                    rc = nng_socket_get_string(m_socket,cast(const char*)toStringz(opt),&ptr); 
+                    rc = nng_socket_get_string(m_socket, cast(const char*)toStringz(opt), &ptr); 
                 break;
             }    
-            if(rc == 0){ return to!string(ptr); }else{ m_errno = cast(nng_errno)rc; return "<none>"; }            
+            if(rc == 0) { return to!string(ptr); }else{ m_errno = cast(nng_errno)rc; return "<none>"; }            
         }
 
-        void setopt_string(string opt, string val){
+        void setopt_string(string opt, string val) {
             m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_string(m_socket,toStringz(opt),toStringz(val));
-            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
+            auto rc = nng_socket_set_string(m_socket, toStringz(opt), toStringz(val));
+            if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }                
         }
         
-        void setopt_buf(string opt, ubyte[] val){
+        void setopt_buf(string opt, ubyte[] val) {
             m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set(m_socket,toStringz(opt),ptr(val),val.length);
-            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
+            auto rc = nng_socket_set(m_socket, toStringz(opt), ptr(val), val.length);
+            if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }                
         }
 
-        Duration getopt_duration(string opt){
+        Duration getopt_duration(string opt) {
             m_errno = cast(nng_errno)0;
             nng_duration p;
-            auto rc = nng_socket_get_ms(m_socket,toStringz(opt),&p);
-            if(rc == 0){
+            auto rc = nng_socket_get_ms(m_socket, toStringz(opt), &p);
+            if(rc == 0) {
                 return msecs(p);
             }else{
                 m_errno = cast(nng_errno)rc;
@@ -1062,32 +1064,32 @@ private:
         
         void setopt_duration(string opt, Duration val) {
             m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_ms(m_socket,cast(const char*)toStringz(opt),cast(int)val.total!"msecs"); 
-            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+            auto rc = nng_socket_set_ms(m_socket, cast(const char*)toStringz(opt), cast(int)val.total!"msecs"); 
+            if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; } 
         }
 
-        nng_sockaddr getopt_addr(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET ){
+        nng_sockaddr getopt_addr(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET ) {
             m_errno = cast(nng_errno)0;
             nng_sockaddr addr;
             int rc;
-            switch(base){
+            switch(base) {
                 case nng_property_base.NNG_BASE_DIALER:
-                    rc = nng_dialer_get_addr(m_dialer,toStringz(opt),&addr);
+                    rc = nng_dialer_get_addr(m_dialer, toStringz(opt), &addr);
                     break;
                 case nng_property_base.NNG_BASE_LISTENER:
-                    rc = nng_listener_get_addr(m_listener,toStringz(opt),&addr);
+                    rc = nng_listener_get_addr(m_listener, toStringz(opt), &addr);
                     break;
                 default:
-                    rc = nng_socket_get_addr(m_socket,toStringz(opt),&addr);
+                    rc = nng_socket_get_addr(m_socket, toStringz(opt), &addr);
                     break;
             }                
-            if(rc == 0){ return addr; } else { m_errno = cast(nng_errno)rc; addr.s_family = nng_sockaddr_family.NNG_AF_NONE; return addr; }
+            if(rc == 0) { return addr; } else { m_errno = cast(nng_errno)rc; addr.s_family = nng_sockaddr_family.NNG_AF_NONE; return addr; }
         }
         
-        void setopt_addr(string opt, nng_sockaddr val){
+        void setopt_addr(string opt, nng_sockaddr val) {
             m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_addr(m_socket,cast(const char*)toStringz(opt),&val);
-            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }
+            auto rc = nng_socket_set_addr(m_socket, cast(const char*)toStringz(opt), &val);
+            if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }
         }
     } // nothrow
 }   // struct Socket
@@ -1114,7 +1116,7 @@ struct NNGPoolWorker {
     void *context;
     File *logfile;
     nng_pool_callback cb;
-    this(int iid, void *icontext, File *ilog){
+    this(int iid, void *icontext, File *ilog) {
         this.id = iid;
         this.context = icontext;
         this.logfile = ilog;
@@ -1126,28 +1128,28 @@ struct NNGPoolWorker {
         auto rc = nng_mtx_alloc(&this.mtx);
         enforce(rc==0, "PW: init");
     }
-    void lock(){
+    void lock() {
         nng_mtx_lock(mtx);
     }
-    void unlock(){
+    void unlock() {
         nng_mtx_unlock(mtx);
     }
-    void wait(){
+    void wait() {
         this.aio.wait();            
     }
-    void shutdown(){
+    void shutdown() {
         this.state = nng_worker_state.EXIT;
         this.aio.stop();
     }
 } // struct NNGPoolWorker
 
 
-extern (C) void nng_pool_stateful ( void* p ){
+extern (C) void nng_pool_stateful ( void* p ) {
     if(p is null) return;
     NNGPoolWorker *w = cast(NNGPoolWorker*)p;
     w.lock();
     nng_errno rc;
-    switch(w.state){
+    switch(w.state) {
         case nng_worker_state.EXIT:
             w.unlock();
             return;
@@ -1156,12 +1158,12 @@ extern (C) void nng_pool_stateful ( void* p ){
             nng_ctx_recv(w.ctx, w.aio.aio);
             break;
         case nng_worker_state.RECV:
-            if(w.aio.result != nng_errno.NNG_OK){
+            if(w.aio.result != nng_errno.NNG_OK) {
                 nng_ctx_recv(w.ctx, w.aio.aio);
                 break;
             }
             rc = w.aio.get_msg( w.msg );
-            if(rc != nng_errno.NNG_OK){
+            if(rc != nng_errno.NNG_OK) {
                 nng_ctx_recv(w.ctx, w.aio.aio);
                 break;
             }
@@ -1172,9 +1174,9 @@ extern (C) void nng_pool_stateful ( void* p ){
             try{
                 w.cb(&w.msg, w.context);
             } catch ( Exception e ) {
-                if(w.logfile !is null){
+                if(w.logfile !is null) {
                     auto f = *(w.logfile);
-                    f.write(format("Error in pool callback: [%d:%s] %s\n",e.line,e.file,e.msg));
+                    f.write(format("Error in pool callback: [%d:%s] %s\n", e.line, e.file, e.msg));
                     f.flush();
                 }
                 w.msg.clear();
@@ -1186,7 +1188,7 @@ extern (C) void nng_pool_stateful ( void* p ){
             break;
         case nng_worker_state.SEND:
             rc = w.aio.result;
-            if(rc != nng_errno.NNG_OK){
+            if(rc != nng_errno.NNG_OK) {
                 return;
             }
             w.state = nng_worker_state.RECV;
@@ -1211,21 +1213,21 @@ struct NNGPool {
 
     @disable this();
 
-    this(NNGSocket *isock, nng_pool_callback cb, size_t n, void* icontext, int logfd = -1  ){
+    this(NNGSocket *isock, nng_pool_callback cb, size_t n, void* icontext, int logfd = -1  ) {
         enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
         enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
         enforce(cb != null);
         sock = isock;
         context = icontext;
-        if(logfd == -1){
+        if(logfd == -1) {
             logfile = null;
         }else{
-            _logfile = File("/dev/null","wt");
+            _logfile = File("/dev/null", "wt");
             _logfile.fdopen(logfd, "wt");
             logfile = &_logfile;
         }            
         nworkers = n;
-        for(auto i=0; i<n; i++){
+        for(auto i=0; i<n; i++) {
             NNGPoolWorker* w = new NNGPoolWorker(i, context, logfile);
             w.aio.realloc(cast(nng_aio_cb)(&nng_pool_stateful), cast(void*)w);
             w.cb = cb;
@@ -1237,17 +1239,17 @@ struct NNGPool {
 
     void init () {
         enforce(nworkers > 0);
-        for(auto i=0; i<nworkers; i++){
+        for(auto i=0; i<nworkers; i++) {
             nng_pool_stateful(workers[i]);
         }
     }
 
     void shutdown() {
         enforce(nworkers > 0);
-        for(auto i=0; i<nworkers; i++){
+        for(auto i=0; i<nworkers; i++) {
             workers[i].shutdown();
         }    
-        for(auto i=0; i<nworkers; i++){
+        for(auto i=0; i<nworkers; i++) {
             workers[i].wait();
         }    
     }
@@ -1262,7 +1264,7 @@ alias http_status = nng_http_status;
 alias nng_http_req = libnng.nng_http_req;
 alias nng_http_res = libnng.nng_http_res;
 
-version(withtls){
+version(withtls) {
     
     alias nng_tls_mode = libnng.nng_tls_mode;
     alias nng_tls_auth_mode = libnng.nng_tls_auth_mode;
@@ -1275,7 +1277,7 @@ version(withtls){
         
         this(ref return scope WebTLS rhs) {}
         
-        this( nng_tls_mode imode  ){
+        this( nng_tls_mode imode  ) {
             int rc;
             rc = nng_tls_config_alloc(&tls, imode);
             enforce(rc == 0, "TLS config init");
@@ -1283,7 +1285,7 @@ version(withtls){
         }
         
 
-        ~this(){
+        ~this() {
             nng_tls_config_free(tls);
         }
 
@@ -1327,7 +1329,7 @@ version(withtls){
 
         void set_cert_key_file ( string ipem , string ikey ) {
             auto rc = nng_tls_config_cert_key_file(tls, ipem.toStringz(), ikey.toStringz());
-            writeln("TDEBUG: ",nng_errstr(rc));
+            writeln("TDEBUG: ", nng_errstr(rc));
             enforce(rc == 0);
         }
 
@@ -1336,17 +1338,17 @@ version(withtls){
             enforce(rc == 0);
         }
 
-        string engine_name(){
+        string engine_name() {
             char* buf = nng_tls_engine_name();
             return to!string(buf);
         }
 
-        string engine_description(){
+        string engine_description() {
             char* buf = nng_tls_engine_description();
             return to!string(buf);
         }
 
-        bool fips_mode(){
+        bool fips_mode() {
             return nng_tls_engine_fips_mode();
         }
     }
@@ -1379,7 +1381,7 @@ struct WebData {
     http_status status = http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;
     string msg = null;
 
-    void clear(){
+    void clear() {
         route = "";   
         rawuri = "";   
         uri = "";     
@@ -1417,33 +1419,33 @@ struct WebData {
         </WebData>
         `,
         route    
-        ,rawuri   
-        ,uri      
-        ,status   
-        ,msg      
-        ,path     
-        ,param    
-        ,headers  
-        ,type     
-        ,length   
-        ,method   
-        ,rawdata.length
-        ,to!string(text)     
-        ,json.toString()     
+        , rawuri   
+        , uri      
+        , status   
+        , msg      
+        , path     
+        , param    
+        , headers  
+        , type     
+        , length   
+        , method   
+        , rawdata.length
+        , to!string(text)     
+        , json.toString()     
         );
-        }catch(Exception e){
+        }catch(Exception e) {
             perror("WD: toString error");
             return null;
         }
     }
 
-    void parse_req ( nng_http_req *req ){
+    void parse_req ( nng_http_req *req ) {
         enforce(req != null);
     }
 
     // TODO: find the way to list all headers
 
-    void parse_res ( nng_http_res *res ){
+    void parse_res ( nng_http_res *res ) {
         enforce(res != null);
         clear();
         status = cast(http_status)nng_http_res_get_status(res);
@@ -1452,12 +1454,12 @@ struct WebData {
         ubyte *buf;
         size_t len;
         nng_http_res_get_data(res, cast(void**)(&buf), &len);
-        if(len > 0){
+        if(len > 0) {
             rawdata ~= buf[0..len];
         }
-        if(type.startsWith("application/json")){
+        if(type.startsWith("application/json")) {
             json = parseJSON(cast(string)(rawdata[0..len]));
-        }else if(type.startsWith("text")){
+        }else if(type.startsWith("text")) {
             text = cast(string)(rawdata[0..len]);
         }
         length = len;
@@ -1465,7 +1467,7 @@ struct WebData {
         enforce(hlength == length);
     }
 
-    nng_http_req* export_req(){
+    nng_http_req* export_req() {
         nng_http_req* req;
         nng_url *url;
         int rc;
@@ -1475,16 +1477,16 @@ struct WebData {
         rc = nng_http_req_set_method(req, method.toStringz());
         enforce(rc == 0);
         rc = nng_http_req_set_header(req, "Content-type", type.toStringz());
-        foreach(k; headers.keys){            
+        foreach(k; headers.keys) {            
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
         }
-        if(type.startsWith("application/json")){
+        if(type.startsWith("application/json")) {
             string buf = json.toString();
             rc = nng_http_req_copy_data(req, buf.toStringz(), buf.length);
             length = buf.length;
             enforce(rc==0, "webdata: copy json rep");
         }
-        else if(type.startsWith("text")){
+        else if(type.startsWith("text")) {
             rc = nng_http_req_copy_data(req, text.toStringz(), text.length);
             length = text.length;
             enforce(rc==0, "webdata: copy text rep");
@@ -1497,7 +1499,7 @@ struct WebData {
         return req;    
     }
 
-    nng_http_res* export_res(){
+    nng_http_res* export_res() {
         char *buf = cast(char*)alloca(512);
         nng_http_res *res;
         int rc;
@@ -1505,36 +1507,36 @@ struct WebData {
         enforce(rc==0);
         rc = nng_http_res_set_status( res, cast(ushort)status );
         enforce(rc==0);
-        if (status != nng_http_status.NNG_HTTP_STATUS_OK){
+        if (status != nng_http_status.NNG_HTTP_STATUS_OK) {
             nng_http_res_reset(res);
             rc = nng_http_res_alloc_error( &res, cast(ushort)status );
             enforce(rc==0);
             rc = nng_http_res_set_reason(res, msg.toStringz);
             enforce(rc==0);
-            if(text.length > 0){
+            if(text.length > 0) {
                 rc = nng_http_res_copy_data(res, text.ptr, text.length);
                 enforce(rc==0, "webdata: copy text rep");
             }    
             return res;
         }           
         {
-            memcpy(buf,type.ptr,type.length); buf[type.length] = 0;
+            memcpy(buf, type.ptr, type.length); buf[type.length] = 0;
             rc = nng_http_res_set_header(res, "Content-type", buf);
             enforce(rc==0);
         }
-        if(type.startsWith("application/json")){
+        if(type.startsWith("application/json")) {
             scope string sbuf = json.toString();
-            memcpy(buf,sbuf.ptr,sbuf.length);
+            memcpy(buf, sbuf.ptr, sbuf.length);
             rc = nng_http_res_copy_data(res, buf, sbuf.length);
             length = sbuf.length;
             enforce(rc==0, "webdata: copy json rep");
         }
-        else if(type.startsWith("text")){
+        else if(type.startsWith("text")) {
             rc = nng_http_res_copy_data(res, text.ptr, text.length);
             length = text.length;
             enforce(rc==0, "webdata: copy text rep");
         }else{
-            if(rawdata.length > 0){
+            if(rawdata.length > 0) {
                 rc = nng_http_res_copy_data(res, rawdata.ptr, rawdata.length);
                 length = rawdata.length;
                 enforce(rc==0, "webdata: copy data rep");
@@ -1577,19 +1579,19 @@ void webrouter (nng_aio* aio) {
     
     
     req = cast(nng_http_req*)nng_aio_get_input(aio, 0);
-    if(req is null){
+    if(req is null) {
         errstr = "WR: get request";
         goto failure;
     }
     
     h = cast(nng_http_handler*)nng_aio_get_input(aio, 1);
-    if(req is null){
+    if(req is null) {
         errstr = "WR: get handler";
         goto failure;
     }
     
     app = cast(WebApp*)nng_http_handler_get_data(h);
-    if(app is null){
+    if(app is null) {
         errstr = "WR: get handler data";
         goto failure;
     }
@@ -1598,7 +1600,7 @@ void webrouter (nng_aio* aio) {
 
     sreq.method = cast(immutable)(fromStringz(nng_http_req_get_method(req)));
     
-    sprintf(sbuf,"Content-type");
+    sprintf(sbuf, "Content-type");
     sreq.type = cast(immutable)(fromStringz(nng_http_req_get_header(req, sbuf)));
     if(sreq.type.empty) 
         sreq.type = "text/plain";
@@ -1612,7 +1614,7 @@ void webrouter (nng_aio* aio) {
     res = srep.export_res;
 
     
-    nng_free(sbuf,4096);
+    nng_free(sbuf, 4096);
     nng_aio_set_output(aio, 0, res);
     nng_aio_finish(aio, 0);
 
@@ -1620,7 +1622,7 @@ void webrouter (nng_aio* aio) {
 
 failure:
     writeln("ERROR: "~errstr);
-    nng_free(sbuf,4096);
+    nng_free(sbuf, 4096);
     nng_http_res_free(res);
     nng_aio_finish(aio, rc);
 } // router handler
@@ -1661,47 +1663,47 @@ struct WebApp {
         init();
     }
     
-    version(withtls){
-        void set_tls ( WebTLS tls ){
+    version(withtls) {
+        void set_tls ( WebTLS tls ) {
             auto rc = nng_http_server_set_tls(server, tls.tls);
             enforce(rc==0, "server set tls");
         }
     }
 
-    void route (string path, webhandler handler, string[] methods = ["GET"]){
+    void route (string path, webhandler handler, string[] methods = ["GET"]) {
         int rc;
         bool wildcard = false;
-        if(path.endsWith("/*")){
+        if(path.endsWith("/*")) {
             path = path[0..$-2];
             wildcard = true;
         }
-        foreach(m; methods){
-            foreach(r; sort(routes.keys)){
+        foreach(m; methods) {
+            foreach(r; sort(routes.keys)) {
                 enforce(m~":"~path != r, "router path already registered: " ~ m~":"~path);
             }
             routes[m~":"~path] = handler;
             nng_http_handler *hr;
             rc = nng_http_handler_alloc(&hr, toStringz(config.prefix_url~path), &webrouter);
-            enforce(rc==0,"route handler alloc");
+            enforce(rc==0, "route handler alloc");
             rc = nng_http_handler_set_method(hr, m.toStringz());
-            enforce(rc==0,"route handler set method");
+            enforce(rc==0, "route handler set method");
             rc = nng_http_handler_set_data(hr, &this, null);
-            enforce(rc==0,"route handler set context");
-            if(wildcard){
+            enforce(rc==0, "route handler set context");
+            if(wildcard) {
                 rc = nng_http_handler_set_tree(hr);
-                enforce(rc==0,"route handler tree");
+                enforce(rc==0, "route handler tree");
             }            
             rc = nng_http_server_add_handler(server, hr);
-            enforce(rc==0,"route handler add");
+            enforce(rc==0, "route handler add");
         }            
     }
 
-    void start(){
+    void start() {
         auto rc = nng_http_server_start(server);
         enforce(rc==0, "server start");
     }
 
-    void stop(){
+    void stop() {
         nng_http_server_stop(server);
     }
 
@@ -1715,39 +1717,39 @@ struct WebApp {
         nng_url *u;
         string ss = ("http://localhost"~req.uri~"\0");
         char[] buf = ss.dup;
-        rc = nng_url_parse(&u,buf.ptr);
+        rc = nng_url_parse(&u, buf.ptr);
         enforce(rc == 0);
         req.route = cast(immutable)(fromStringz(u.u_path)).dup;
         req.path = req.route.split("/");
         if(req.path.length > 1 && req.path[0] == "")
             req.path = req.path[1..$];
         string query = cast(immutable)(fromStringz(u.u_query)).dup;
-        foreach(p; query.split("&")){
+        foreach(p; query.split("&")) {
             auto a = p.split("=");
             if(a[0] != "")
                 req.param[a[0]] = a[1];
         }
         nng_url_free(u);
         
-        if(req.type.startsWith("application/json")){
+        if(req.type.startsWith("application/json")) {
             try{
                 req.json = parseJSON(cast(immutable)(fromStringz(cast(char*)req.rawdata)));
-            }catch(JSONException e){
+            }catch(JSONException e) {
                 rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
                 rep.msg = "Invalid json";
                 return;
             }    
         }
 
-        if(req.type.startsWith("text/")){
+        if(req.type.startsWith("text/")) {
             req.text = cast(immutable)(fromStringz(cast(char*)req.rawdata));
         }
         
         // TODO: implement full CEF parser for routes
         webhandler handler = null;   
         string rkey = req.method~":"~req.route;
-        foreach(r; sort!("a > b")(routes.keys)){
-            if(rkey.startsWith(r)){
+        foreach(r; sort!("a > b")(routes.keys)) {
+            if(rkey.startsWith(r)) {
                 handler = routes[r];
                 break;
             }                
@@ -1761,7 +1763,7 @@ struct WebApp {
 
     private:
     
-    void init(){
+    void init() {
         int rc;
         if(config.root_path == "")
             config.root_path = __FILE__.absolutePath.dirName;
@@ -1770,20 +1772,20 @@ struct WebApp {
         if(config.static_url == "")
             config.static_url = config.static_path;
         rc = nng_http_server_hold(&server, url);
-        enforce(rc==0,"server hold");
+        enforce(rc==0, "server hold");
         
         nng_http_handler *hs;
-        rc = nng_http_handler_alloc_directory(&hs, toStringz(config.prefix_url~"/"~config.static_path), buildPath(config.root_path,config.static_url).toStringz());
-        enforce(rc==0,"static handler alloc");
+        rc = nng_http_handler_alloc_directory(&hs, toStringz(config.prefix_url~"/"~config.static_path), buildPath(config.root_path, config.static_url).toStringz());
+        enforce(rc==0, "static handler alloc");
         rc = nng_http_server_add_handler(server, hs);
-        enforce(rc==0,"static handler add");
+        enforce(rc==0, "static handler add");
         
         rc = nng_aio_alloc(&aio, null, null);                    
-        enforce(rc==0,"aio alloc");
+        enforce(rc==0, "aio alloc");
 
     }
 
-    static void default_handler ( WebData* req, WebData* rep, void* ctx ){
+    static void default_handler ( WebData* req, WebData* rep, void* ctx ) {
         rep.type = "text/plain";
         rep.text = "Default reponse";
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
@@ -1805,16 +1807,16 @@ extern (C) struct WebClientAsync {
 }
 
 // common async client router
-static void webclientrouter ( void* p ){
+static void webclientrouter ( void* p ) {
     if(p == null) return;
     WebClientAsync *a = cast(WebClientAsync*)(p);
     WebData rep = WebData();
     rep.parse_res(a.res);
     rep.rawuri = to!string(a.uri);
     if(rep.status != nng_http_status.NNG_HTTP_STATUS_OK && a.errorhandler  != null)
-        a.errorhandler(&rep,a.context);
+        a.errorhandler(&rep, a.context);
     else    
-        a.commonhandler(&rep,a.context);
+        a.commonhandler(&rep, a.context);
     nng_http_req_free(a.req);
     nng_http_res_free(a.res);
     nng_aio_free(a.aio);
@@ -1837,21 +1839,21 @@ struct WebClient {
         connected = false;
         rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
-        rc = nng_http_req_alloc(&req,null);
+        rc = nng_http_req_alloc(&req, null);
         enforce(rc == 0);
-        if(uri != null && uri != ""){
+        if(uri != null && uri != "") {
             rc = connect(uri);
             enforce(rc == 0);
         }    
 
     }
 
-    int connect( string uri ){
+    int connect( string uri ) {
         int rc;
         nng_aio *aio;
         if(cli != null)
             nng_http_client_free(cli);
-        rc = nng_aio_alloc(&aio,null,null);
+        rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
         rc = nng_url_parse(&url, uri.toStringz());    
         enforce(rc == 0);
@@ -1867,7 +1869,7 @@ struct WebClient {
         return 0;
     }
 
-    ~this(){
+    ~this() {
         nng_http_client_free(cli);
         nng_url_free(url);
         nng_http_req_free(req);
@@ -1875,7 +1877,7 @@ struct WebClient {
     }
 
     // static sync get
-    static WebData get ( string uri, string[string] headers, Duration timeout = 30000.msecs ){
+    static WebData get ( string uri, string[string] headers, Duration timeout = 30000.msecs ) {
         int rc;
         nng_http_client *cli;
         nng_url *url;
@@ -1891,11 +1893,11 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
-        rc = nng_aio_alloc(&aio,null,null);
+        rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         
-        scope(exit){
+        scope(exit) {
             nng_http_client_free(cli);
             nng_url_free(url);
             nng_aio_free(aio);
@@ -1905,14 +1907,14 @@ struct WebClient {
         
         rc = nng_http_req_set_method(req, toStringz("GET"));
         enforce(rc == 0);
-        foreach(k; headers.keys){            
+        foreach(k; headers.keys) {            
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
             enforce(rc == 0);
         }
         nng_http_client_transact(cli, req, res, aio);
         nng_aio_wait(aio);
         rc = nng_aio_result(aio);
-        if(rc == 0){
+        if(rc == 0) {
             wd.parse_res(res);
         }else{
             wd.status = nng_http_status.NNG_HTTP_STATUS_REQUEST_TIMEOUT;
@@ -1922,7 +1924,7 @@ struct WebClient {
     }
 
     // static sync post
-    static WebData post ( string uri, ubyte[] data, string[string] headers, Duration timeout = 30000.msecs ){
+    static WebData post ( string uri, ubyte[] data, string[string] headers, Duration timeout = 30000.msecs ) {
         int rc;
         nng_http_client *cli;
         nng_url *url;
@@ -1938,10 +1940,10 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
-        rc = nng_aio_alloc(&aio,null,null);
+        rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
-        scope(exit){
+        scope(exit) {
             nng_http_client_free(cli);
             nng_url_free(url);
             nng_aio_free(aio);
@@ -1950,7 +1952,7 @@ struct WebClient {
         }
         rc = nng_http_req_set_method(req, toStringz("POST"));
         enforce(rc == 0);
-        foreach(k; headers.keys){            
+        foreach(k; headers.keys) {            
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
             enforce(rc == 0);
         }
@@ -1959,7 +1961,7 @@ struct WebClient {
         nng_http_client_transact(cli, req, res, aio);
         nng_aio_wait(aio);
         rc = nng_aio_result(aio);
-        if(rc == 0){
+        if(rc == 0) {
             wd.parse_res(res);
         }else{
             wd.status = nng_http_status.NNG_HTTP_STATUS_REQUEST_TIMEOUT;
@@ -1970,7 +1972,7 @@ struct WebClient {
     }
 
     // static async get
-    static NNGAio get_async ( string uri, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ){
+    static NNGAio get_async ( string uri, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
         int rc;
         nng_aio *aio;
         nng_http_client *cli;
@@ -1985,7 +1987,7 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
-        rc = nng_aio_alloc(&aio,null,null);
+        rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
@@ -1995,11 +1997,11 @@ struct WebClient {
         a.req = req;
         a.res = res;
         a.aio = aio;
-        rc = nng_aio_alloc(&aio,&webclientrouter,a);
+        rc = nng_aio_alloc(&aio, &webclientrouter, a);
         enforce(rc == 0);
         rc = nng_http_req_set_method(req, toStringz("GET"));
         enforce(rc == 0);
-        foreach(k; headers.keys){            
+        foreach(k; headers.keys) {            
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
             enforce(rc == 0);
         }
@@ -2008,7 +2010,7 @@ struct WebClient {
     }
 
     // static async post
-    static NNGAio post_async ( string uri, ubyte[] data, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ){
+    static NNGAio post_async ( string uri, ubyte[] data, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
         int rc;
         nng_aio *aio;
         nng_http_client *cli;
@@ -2023,7 +2025,7 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
-        rc = nng_aio_alloc(&aio,null,null);
+        rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
@@ -2033,11 +2035,11 @@ struct WebClient {
         a.req = req;
         a.res = res;
         a.aio = aio;
-        rc = nng_aio_alloc(&aio,&webclientrouter,a);
+        rc = nng_aio_alloc(&aio, &webclientrouter, a);
         enforce(rc == 0);
         rc = nng_http_req_set_method(req, toStringz("POST"));
         enforce(rc == 0);
-        foreach(k; headers.keys){            
+        foreach(k; headers.keys) {            
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
             enforce(rc == 0);
         }
@@ -2049,7 +2051,7 @@ struct WebClient {
 
     // common static method for any request methods and error handler ( inspired by ajax )
     // if text is not null data is ignored
-    // for methods except POST,PUT,PATCH both text and data are ignored
+    // for methods except POST, PUT, PATCH both text and data are ignored
     static NNGAio request ( 
         string method,
         string uri, 
@@ -2075,7 +2077,7 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
-        rc = nng_aio_alloc(&aio,null,null);
+        rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
@@ -2086,16 +2088,16 @@ struct WebClient {
         a.req = req;
         a.res = res;
         a.aio = aio;
-        rc = nng_aio_alloc(&aio,&webclientrouter,a);
+        rc = nng_aio_alloc(&aio, &webclientrouter, a);
         enforce(rc == 0);
         rc = nng_http_req_set_method(req, toStringz(method));
         enforce(rc == 0);
-        foreach(k; headers.keys){            
+        foreach(k; headers.keys) {            
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
             enforce(rc == 0);
         }
-        if( method == "POST" || method == "PUT" || method == "PATCH" ){
-            if(text == null){
+        if( method == "POST" || method == "PUT" || method == "PATCH" ) {
+            if(text == null) {
                 rc = nng_http_req_copy_data(req, data.ptr, data.length);
             }else{
                 rc = nng_http_req_copy_data(req, text.toStringz(), text.length);
