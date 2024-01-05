@@ -22,6 +22,7 @@
 		- [Monitor](/documents/architecture/Monitor.md)
 		- [Epoch Dump](/documents/architecture/EpochDump.md)
 		- [Shell cache](/documents/architecture/DARTCache.md)
+		- [TRT](/documents/architecture/TRT.md)
 
 - Protocols
 	- [HiBON](documents/protocols/hibon.md)
