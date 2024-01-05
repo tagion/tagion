@@ -27,6 +27,7 @@ import tagion.services.options : TaskNames;
 import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.exception;
 
 @safe
 struct DARTOptions {
@@ -58,6 +59,7 @@ struct DARTService {
         DART db;
         Exception dart_exception;
         const net = new StdSecureNet(shared_net);
+        check(opts.dart_path.exists, format("TRT database %s file not found", opts.dart_path));
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
