@@ -33,17 +33,13 @@ import tagion.services.exception;
 struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
-    string dart_path;
 
-    this(string folder_path, string dart_filename) {
-        this.folder_path = folder_path;
-        this.dart_filename = dart_filename;
-        dart_path = buildPath(folder_path, dart_filename);
+    string dart_path() inout nothrow {
+        return buildPath(folder_path, dart_filename);
     }
 
     void setPrefix(string prefix) nothrow {
         dart_filename = prefix ~ dart_filename;
-        dart_path = buildPath(folder_path, dart_filename);
     }
 
     mixin JSONCommon;
