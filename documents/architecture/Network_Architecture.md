@@ -15,7 +15,7 @@ A node consist of the following services.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
 	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
 	- DART Interface handles outsite read requests to the dart
-    - TRT "Transaction reverse table" stores a copy of the owner to bill relationship.
+    - [TRT](/documents/architecture/TRT.md) "Transaction reverse table" stores a copy of the owner to bill relationship.
 	- [Replicator](/documents/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 	- [Node Interface](/documents/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
 

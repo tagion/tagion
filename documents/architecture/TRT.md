@@ -23,10 +23,6 @@ TRTArchive {
 ```
 So effective search by bill's owner could be performed
 
-### Genesis TRT records
-
-TBD
-
 ### Modify request
 
 When DART service receives recorder to write into DART file, it also sends this recorder to TRT service (if TRT is enabled).
@@ -49,4 +45,26 @@ sequenceDiagram
 
 ### Read request
 
-TBD
+When DARTInterface receives read request, it check whether TRT is enabled and uses its stored indices for direct access to requested bills in DART
+
+```mermaid
+sequenceDiagram
+    participant tagionshell
+    participant DARTInterface
+    participant TRT_Service
+    participant TRT_File
+    participant DART_Service
+    participant DART_File
+    tagionshell ->> DARTInterface: search request
+    DARTInterface ->> TRT_Service: [if TRT enabled] send(trtHiRPCRR, document)
+    TRT_Service ->> TRT_Service: convert document into trt_indices
+    TRT_Service ->> TRT_File: loads(trt_indices)
+    TRT_File -->> TRT_Service: trt_read_recorder
+    TRT_Service ->> TRT_Service: convert trt_read_recorder into dart_indices
+    TRT_Service ->> DART_Service: send(dartReadRR, dart_indices)
+    DART_Service ->> DART_File: loads(dart_indices)
+    DART_File -->> DART_Service: read_recorder
+    DART_Service -->> TRT_Service: response
+    TRT_Service -->> DARTInterface: response
+    DARTInterface -->> tagionshell: response
+```
