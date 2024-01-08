@@ -479,24 +479,31 @@ mixin template HiBONRecord(string CTOR = "") {
                 }
             }
             static R toList(R)(const Document doc) {
+                import core.lifetime : copyEmplace;
+
                 alias MemberU = ForeachType!(R);
                 alias BaseU = TypedefBase!MemberU;
                 static if (isArray!R) {
                     alias UnqualU = Unqual!MemberU;
                     MemberU[] result;
                     if (doc.isArray) {
-                        result.length = doc.length;
+                        //result.length = doc.length;
                         result = doc[].map!(e => e.get!MemberU).array;
                     }
                     else {
                         uint index;
                         const is_indices = doc.keys.all!((key) => is_index(key, index));
                         check(is_indices, format("Document is expected to be an array"));
+                        //result=iota(index+1).map!((i) => 
+                        //MemberU[] result;
                         result.length = index + 1;
                         foreach (e; doc[]) {
                             is_index(e.key, index);
-                            result[index] = e.get!MemberU;
+                            pragma(msg, "e.get!MemberU BaseU ", BaseU, " MemberU ", MemberU, " UnqualU ", UnqualU);
+                            MemberU elm = e.get!MemberU;
+                            (() @trusted => copyEmplace(elm, result[index]))();
                         }
+                        //result = (() @trusted => cast(MemberU[]) _result)();
                     }
                     enum do_foreach = false;
                 }
@@ -1547,4 +1554,13 @@ unittest { /// Reseved keys and types
         assert(doc.valid is Document.Element.ErrorCode.RESERVED_KEY);
     }
 
+}
+
+    version(none)
+unittest {
+    import tagion.hibon.fix.HiBONSerialize;
+    //pragma(msg, "-- - -- SupportingFullSizeFunction ",SupportingFullSizeFunction!(RecordFactory.Recorder), " Type ", RecordFactory.Recorder);
+
+   // pragma(msg, "-- - -- SupportingFullSizeFunction ",SupportingFullSizeFunction!(DART.Journal, 0, true), " Type ", DART.Journal);
+    static assert(SupportingFullSizeFunction!(RecordFactory.Recorder, 0, true));
 }

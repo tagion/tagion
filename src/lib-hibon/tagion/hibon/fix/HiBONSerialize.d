@@ -52,7 +52,7 @@ template isHiBONArray(T) {
     }
 }
 
-enum estimate_size = "estimate_size"; /// method to estimae the size of document serialized 
+//enum estimate_size = "estimate_size"; /// method to estimae the size of document serialized 
 template isHiBONAssociativeArray(T) {
     import tagion.hibon.HiBONBase;
     import traits = std.traits;
@@ -77,47 +77,54 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
     template InnerSupportFullSize(U) {
         import tagion.hibon.fix.HiBONRecord : exclude, optional, isHiBONRecord;
         import tagion.hibon.HiBONBase : isHiBONBaseType;
-
-        enum type = Document.Value.asType!U;
+        alias BaseU=TypedefBase!U;
+        enum type = Document.Value.asType!BaseU;
         static if (isHiBONBaseType(type)) {
             static if (_print)
-                pragma(msg, "isHiBONBaseType ", type, " U ", U);
+                pragma(msg, "### isHiBONBaseType ", type, " U ", U, " Ok ", true);
             enum InnerSupportFullSize = true;
         }
         else static if (isHiBONRecord!U) {
+            enum Ok=SupportingFullSizeFunction!U;
             static if (_print)
-                pragma(msg, "isHiBONRecord ", type, " U ", U);
-            enum InnerSupportFullSize = SupportingFullSizeFunction!(U);
-            //enum InnerSupportFullSize = false;
+                pragma(msg, "### isHiBONRecord ", type, " U ", U, " Ok ", Ok);
+                
+            //enum InnerSupportFullSize = SupportingFullSizeFunction!(U);
+            enum InnerSupportFullSize = Ok;
         }
-        else static if (isAssociativeArray!U) { // && isSpecialKeyType!U) {
+        else static if (isAssociativeArray!U) { 
+            // && isSpecialKeyType!U) {
             //            enum InnerSupportFullSize=false;
-            static if (_print)
-                pragma(msg, "isHiBONAssociativeArray ", type, " U ", U);
-
             alias KeyT = KeyType!U;
-            enum InnerSupportFullSize = isIntegral!KeyT || is(KeyT : const(char[]));
+            enum Ok = isIntegral!KeyT || is(KeyT : const(char[]));
+             
+            static if (_print)
+                pragma(msg, "### isHiBONAssociativeArray ", type, " U ", U, " Ok ", Ok);
+
+            //enum InnerSupportFullSize = isIntegral!KeyT || is(KeyT : const(char[]));
+            enum InnerSupportFullSize = Ok;
 
         }
         else {
             static if (_print)
-                pragma(msg, "InnerSupportFullSize ", type, " U ", U, " ---- isHiBONArray (", isHiBONArray!U, ")");
-            enum InnerSupportFullSize = isHiBONArray!U ||
-                isIntegral!U;
+                pragma(msg, "### InnerSupportFullSize ", type, " U ", U, " BaseU ", BaseU, " ---- isHiBONArray (", isHiBONArray!U, ") isIntegral (", isIntegral!BaseU, ")");
+            enum InnerSupportFullSize = isHiBONArray!BaseU ||
+                isIntegral!BaseU;
         }
     }
 
+    alias BaseT = Unqual!T;
     static if (i == T.tupleof.length) {
         enum SupportingFullSizeFunction = true;
     }
     else {
-        enum optional_flag = hasUDA!(T.tupleof[i], optional);
+        //enum optional_flag = hasUDA!(T.tupleof[i], optional);
         enum exclude_flag = hasUDA!(T.tupleof[i], exclude);
-        static if (exclude_flag || !InnerSupportFullSize!(Fields!T[i])) {
-            enum SupportingFullSizeFunction = false;
+        static if (exclude_flag) {
+            enum SupportingFullSizeFunction = SupportingFullSizeFunction!(T, i + 1, _print);
         }
-    else {
-            enum SupportingFullSizeFunction = SupportingFullSizeFunction!(T, i + 1);
+        else {
+            enum SupportingFullSizeFunction = InnerSupportFullSize!(Fields!T[i]) && SupportingFullSizeFunction!(T, i + 1, _print);
 
         }
     }
@@ -134,8 +141,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     static size_t calcSize(U)(U x, const size_t key_size) {
         __write("key_size=%d U=%s", key_size, x);
         enum error_text = format("%s not supported", T.stringof);
-        alias BaseT = TypedefBase!U;
-        enum type = Document.Value.asType!BaseT;
+        alias BaseU = TypedefBase!U;
+        enum type = Document.Value.asType!BaseU;
         const type_key_size = key_size;
         with (Type) {
         TypeCase:
@@ -144,7 +151,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
             case E:
                     static if (isHiBONBaseType(E)) {
                         static if (only(INT32, INT64, UINT32, UINT64).canFind(type)) {
-                            return type_key_size + LEB128.calc_size(cast(BaseT) x);
+                            return type_key_size + LEB128.calc_size(cast(BaseU) x);
                         }
                         else static if (type == TIME) {
                             return type_key_size + LEB128.calc_size(cast(ulong) x);
@@ -171,7 +178,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                 }
             default:
                 static if (!isHiBONBaseType(type)) {
-                    static if (isHiBONArray!BaseT) {
+                    static if (isHiBONArray!BaseU) {
                         import std.algorithm : filter;
 
                         foreach (i, v; x) {
@@ -184,7 +191,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                         __write("array_size =%d leb128=%d type_key_size=%d", array_size, LEB128.calc_size(array_size), type_key_size);
                         return type_key_size + array_size + LEB128.calc_size(array_size);
                     }
-                    else static if (isHiBONAssociativeArray!BaseT && !isSpecialKeyType!BaseT) {
+                    else static if (isHiBONAssociativeArray!BaseU && !isSpecialKeyType!BaseU) {
                         import std.algorithm : filter;
 
                         const array_size = x.byKeyValue
@@ -193,14 +200,14 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                             .sum;
                         return array_size + LEB128.calc_size(array_size);
 
-                        pragma(msg, "isHiBONAssociativeArray ", BaseT, " ", typeof(x.byKeyValue.front));
+                        pragma(msg, "isHiBONAssociativeArray ", BaseU, " ", typeof(x.byKeyValue.front));
                     }
-                    else static if (isHiBONRecord!BaseT) {
+                    else static if (isHiBONRecord!BaseU) {
+                        pragma(msg, "HiBONRecord ", BaseU.stringof, " SupportingFullSizeFunction ", SupportingFullSizeFunction!BaseU);
                         return type_key_size + x.full_size;
-                        pragma(msg, "HiBONRecord ", BaseT.stringof);
                     }
-                    else static if (isIntegral!BaseT) {
-                        static if (isSigned!BaseT) {
+                    else static if (isIntegral!BaseU) {
+                        static if (isSigned!BaseU) {
                             return calcSize(cast(int) x, key_size);
                         }
                         else {
@@ -208,17 +215,17 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                         }
 
                     }
-                    else static if (isInputRange!(Unqual!BaseT)) {
-                        pragma(msg, "inputRange ", BaseT);
+                    else static if (isInputRange!(Unqual!BaseU)) {
+                        pragma(msg, "inputRange ", BaseU);
                     }
                     else {
                         pragma(msg, "!! ", SupportingFullSizeFunction!T, " isSpecialKeyType ", isSpecialKeyType!T);
-                        static assert(0, format("%s not supported -- %s %s -> %s %s  is range %s", type, T
-                                .stringof, BaseT
-                                .stringof, [
+                        static assert(0, format("%s not supported -- %s %s -> %s %s  is range %s", type,
+                                T.stringof,
+                                BaseU.stringof, [
                                     EnumMembers!HiBONType
                                 ], only(STRING, BINARY)
-                                .canFind(type), isInputRange!(Unqual!BaseT)));
+                                .canFind(type), isInputRange!(Unqual!BaseU)));
                     }
                 }
                 else {
@@ -275,12 +282,12 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     return result;
 }
 
-        void buf_append(U)(ref scope Appender!(ubyte[]) buf, in U x, string key) pure nothrow {
-        alias BaseT = TypedefBase!U;
-        enum type = Document.Value.asType!BaseT;
-             
+void buf_append(U)(ref scope Appender!(ubyte[]) buf, in U x, string key) pure nothrow {
+    alias BaseT = TypedefBase!U;
+    enum type = Document.Value.asType!BaseT;
 
-        }
+}
+
 mixin template Serialize() {
     import std.algorithm;
     import std.range;
@@ -303,16 +310,36 @@ mixin template Serialize() {
         import std.algorithm;
         import tagion.hibon.HiBONRecord : filter;
 
-
-        static if (hasMember!(ThisType, estimate_size)) {
-            const need_size = buf.length + estimate_size;
+        static if (hasMember!(ThisType, "estimate_size")) {
+            const need_size = buf.data.length + this.estimate_size;
             if (need_size > buf.capacity) {
                 buf.reserve(need_size);
             }
         }
-    MemberLoop:
+        void append_member(string key)() pure nothrow {
+            enum index = GetKeyIndex!key;
+            enum exclude_flag = hasUDA!(ThisType.tupleof[index], exclude);
+            enum filter_flag = hasUDA!(ThisType.tupleof[index], filter);
+            static if (filter_flag) {
+                alias filters = getUDAs!(this.tupleof[index], filter);
+                static foreach (F; filters) {
+                    {
+                        alias filterFun = unaryFun!(F.code);
+                        if (!filterFun(this.tupleof[index])) {
+                            return;
+                        }
+                    }
+                }
+            }
+            static if (!exclude_flag) {
+
+                buf_append(buf, this.tupleof[index], key);
+            }
+        }
+
         static foreach (key; ThisType.keys) {
-            {
+            append_member!key();
+            version (none) {
                 enum index = GetKeyIndex!key;
                 enum exclude_flag = hasUDA!(ThisType.tupleof[index], exclude);
                 enum filter_flag = hasUDA!(ThisType.tupleof[index], filter);

@@ -33,6 +33,15 @@ import tagion.utils.StdTime;
             });
 }
 
+unittest {
+    import tagion.hibon.fix.HiBONSerialize;
+
+    pragma(msg, SupportingFullSizeFunction!(TagionCurrency, 0, true));
+    pragma(msg, "--- --- ---");
+    pragma(msg, SupportingFullSizeFunction!(TagionBill, 0, true));
+    static assert(SupportingFullSizeFunction!(TagionBill, 0, true));
+}
+
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
@@ -90,6 +99,7 @@ struct PayScript {
 
 Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
     import std.algorithm : map;
+
     const message = nets[0].calcHash(contract);
     return nets
         .map!(net => net.sign(message))
@@ -98,6 +108,7 @@ Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
 
 const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, const(Document[]) reads, const(Document) script) {
     import std.algorithm : map, sort;
+
     check(nets.length > 0, "At least one input contract");
     check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
     const net = nets[0];
@@ -120,6 +131,7 @@ const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, co
 
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Pubkey[]) owners) nothrow {
     import std.algorithm : all;
+
     try {
         if (signed_contract.contract.inputs.length == owners.length) {
             const message = net.calcHash(signed_contract.contract);
@@ -135,6 +147,7 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Document[]) inputs) nothrow {
     import std.algorithm : map;
+
     try {
         return verify(net, signed_contract, inputs.map!(doc => doc[StdNames.owner].get!Pubkey).array);
     }

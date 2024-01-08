@@ -28,7 +28,7 @@ import tagion.dart.DARTBasic;
 import tagion.dart.DARTException : DARTRecorderException;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : GetLabel, STUB, isHiBONRecord, isStub, label, optional, recordType;
+import tagion.hibon.HiBONRecord : GetLabel, STUB, isHiBONRecord, isStub, label, optional, recordType, exclude;
 import tagion.script.standardnames;
 
 private alias check = Check!DARTRecorderException;
@@ -116,7 +116,7 @@ class RecordFactory {
                 a.dart_index == b.dart_index) && (a.type < b.type);
 
         alias Archives = RedBlackTree!(Archive, archive_sorted);
-        package Archives archives;
+        @exclude package Archives archives;
 
         import tagion.hibon.HiBONJSON : JSONString;
 
@@ -417,7 +417,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     }
     do {
 
-        if(doc.empty) {
+        if (doc.empty) {
             throw new DARTRecorderException("Document cannot be empty");
         }
         if (doc.isStub) {
