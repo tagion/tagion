@@ -189,8 +189,9 @@ class NativeSecp256k1 {
         return secp256k1_context_randomize(__ctx, &ctx_randomize[0]) == 1;
     }
 
+    version(none)
     @trusted
-    final void createKeyPair(
+    protected final void createKeyPair(
             scope const(ubyte[]) seckey,
             ref secp256k1_keypair keypair) const
     in (seckey.length == SECKEY_SIZE)
@@ -206,7 +207,7 @@ class NativeSecp256k1 {
 
     @trusted
     final void createKeyPair(
-            const(ubyte[]) seckey,
+            scope const(ubyte[]) seckey,
             out ubyte[] keypair) const
     in (seckey.length == SECKEY_SIZE || seckey.length == secp256k1_keypair.data.length)
     do {
@@ -216,7 +217,13 @@ class NativeSecp256k1 {
         }
         keypair.length = secp256k1_keypair.data.length;
         auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
-        createKeyPair(seckey, *_keypair);
+        scope (exit) {
+            randomizeContext;
+        }
+        const rt = secp256k1_keypair_create(_ctx, _keypair, &seckey[0]);
+        check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_CREATE_KEYPAIR);
+
+ //      createKeyPair(seckey, *_keypair);
     }
 
     @trusted
@@ -254,8 +261,11 @@ class NativeSecp256k1 {
             scope (exit) {
                 tmp_keypair.data[] = 0;
             }
-            createKeyPair(keypair_seckey, tmp_keypair);
-            return getPubkey(tmp_keypair);
+            ubyte[] _tmp_keypair;
+            createKeyPair(keypair_seckey, _tmp_keypair);
+            const __keypair = cast(secp256k1_keypair*)(&_tmp_keypair[0]);
+            
+            return getPubkey(*__keypair);
 
         }
         const _keypair = cast(secp256k1_keypair*)(&keypair_seckey[0]);
