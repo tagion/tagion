@@ -72,7 +72,6 @@ struct HiRPCVerifierService {
                 return;
             }
 
-            import tagion.dart.DART;
 
             switch (receiver.method.name) {
             case ContractMethods.submit:
