@@ -9,16 +9,14 @@ import tagion.basic.dir;
 
 /// This function should be renamed
 /// Initially there it was only intended to be used for the contract address for the inputvalidator
-static immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
-    import std.exception : assumeWontThrow;
-
+immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
     version (linux) {
-        return assumeWontThrow(format("abstract://%sNEUEWELLE", prefix));
+        return "abstract://" ~ prefix ~ "NEUEWELLE";
     }
     else version (Posix) {
         import std.path;
 
-        return "ipc://" ~ buildPath(base_dir.run, assumeWontThrow(format("%stagionwave_contract.sock", prefix)));
+        return "ipc://" ~ buildPath(base_dir.run, prefix ~ "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");
@@ -58,6 +56,7 @@ struct TaskNames {
     string replicator = "replicator";
     string dart_interface = "dartinterface";
     string trt = "trt";
+    string node_interface = "node_interface";
 
     mixin JSONCommon;
 
@@ -71,36 +70,35 @@ struct TaskNames {
         This function is used in mode 0.
     */
     void setPrefix(const string prefix) pure nothrow {
-        import std.exception;
-
         alias This = typeof(this);
         alias FieldsNames = FieldNameTuple!This;
         static foreach (i, T; Fields!This) {
             static if (is(T == string)) {
-                this.tupleof[i] = assumeWontThrow(format("%s%s", prefix, this.tupleof[i]));
+                this.tupleof[i] = prefix ~ this.tupleof[i];
             }
         }
     }
 }
+
+public import tagion.logger.LoggerOptions : LoggerOptions;
+public import tagion.services.DART : DARTOptions;
+public import tagion.services.DARTInterface : DARTInterfaceOptions;
+public import tagion.services.collector : CollectorOptions;
+public import tagion.services.epoch_creator : EpochCreatorOptions;
+public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
+public import tagion.services.inputvalidator : InputValidatorOptions;
+public import tagion.services.monitor : MonitorOptions;
+public import tagion.services.replicator : ReplicatorOptions;
+public import tagion.services.subscription : SubscriptionServiceOptions;
+public import tagion.services.transcript : TranscriptOptions;
+public import tagion.services.TRTService : TRTOptions;
+public import tagion.services.nodeInterface : NodeInterfaceOptions;
 
 /// All options for neuewelle
 @safe
 struct Options {
     import std.json;
     import tagion.utils.JSONCommon;
-
-    import tagion.logger.LoggerOptions : LoggerOptions;
-    import tagion.services.DART : DARTOptions;
-    import tagion.services.DARTInterface : DARTInterfaceOptions;
-    import tagion.services.collector : CollectorOptions;
-    import tagion.services.epoch_creator : EpochCreatorOptions;
-    import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
-    import tagion.services.inputvalidator : InputValidatorOptions;
-    import tagion.services.monitor : MonitorOptions;
-    import tagion.services.replicator : ReplicatorOptions;
-    import tagion.services.subscription : SubscriptionServiceOptions;
-    import tagion.services.transcript : TranscriptOptions;
-    import tagion.services.TRTService : TRTOptions;
 
     WaveOptions wave;
     InputValidatorOptions inputvalidator;
@@ -113,6 +111,7 @@ struct Options {
     SubscriptionServiceOptions subscription;
     LoggerOptions logger;
     TRTOptions trt;
+    NodeInterfaceOptions node_interface;
 
     TaskNames task_names;
     mixin JSONCommon;

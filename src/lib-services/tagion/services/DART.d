@@ -27,22 +27,19 @@ import tagion.services.options : TaskNames;
 import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.exception;
 
 @safe
 struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
-    string dart_path;
 
-    this(string folder_path, string dart_filename) {
-        this.folder_path = folder_path;
-        this.dart_filename = dart_filename;
-        dart_path = buildPath(folder_path, dart_filename);
+    string dart_path() inout nothrow {
+        return buildPath(folder_path, dart_filename);
     }
 
     void setPrefix(string prefix) nothrow {
         dart_filename = prefix ~ dart_filename;
-        dart_path = buildPath(folder_path, dart_filename);
     }
 
     mixin JSONCommon;
@@ -58,6 +55,7 @@ struct DARTService {
         DART db;
         Exception dart_exception;
         const net = new StdSecureNet(shared_net);
+        check(opts.dart_path.exists, format("DART database %s file not found", opts.dart_path));
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
@@ -101,6 +99,10 @@ struct DARTService {
             }
 
             immutable receiver = hirpc.receive(doc);
+            if (!receiver.isMethod) {
+                log("dart hirpc request was not a method");
+                return;
+            }
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");

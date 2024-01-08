@@ -315,21 +315,9 @@ shared static this() {
 @safe
 @recordType("NNR")
 struct NodeAddress {
-    enum tcp_token = "/tcp/";
-    enum p2p_token = "/p2p/";
-    enum intrn_token = "/node/";
+
     /** node address */
     string address;
-    /** If true, then struct with node addresses is used as an address
-     * If false, then the local address used 
-     */
-    bool is_marshal;
-    /** node id */
-    string id;
-    /** node port */
-    uint port;
-    /** DART sector */
-    SectorRange sector;
 
     mixin HiBONRecord!(
             q{
@@ -337,61 +325,13 @@ struct NodeAddress {
                 pragma(msg, "fixme(pr): addressbook for mode0 should be created instead");
                 this.address = address;
             }
-            this(string address, const ulong port_base, bool marshal = false) {
-        import std.string;
-
-        try {
-            this.address = address;
-            this.is_marshal = marshal;
-            if (!marshal) {
-                pragma(msg, "fixme(cbr): This code should be done with a regex");
-                this.id = address[address.lastIndexOf(p2p_token) + 5 .. $];
-                auto tcpIndex = address.indexOf(tcp_token) + tcp_token.length;
-                this.port = to!uint(address[tcpIndex .. tcpIndex + 4]);
-
-                const node_number = this.port - port_base;
-                
-                sector = SectorRange(0, 0);
-                
-            }
-            else if (address[0..intrn_token.length] != intrn_token) {
-                import std.json;
-                auto json = parseJSON(address);
-                this.id = json["ID"].str;
-                auto addr = (() @trusted => json["Addrs"].array()[0].str())();
-                auto tcpIndex = addr.indexOf(tcp_token) + tcp_token.length;
-                this.port = to!uint(addr[tcpIndex .. tcpIndex + 4]);
-            }
-        }
-        catch (Exception e) {
-            log.fatal(e.msg);
-        }
-    }
         });
-
-    /**
-     * Parse node address
-     * @param addr - address to parse
-     * @return parsed address
-     */
-    static string parseAddr(string addr) {
-        import std.string;
-
-        pragma(msg, "fixme(cbr): change this to a more bust parse (use regex)");
-        string result;
-        const firstpartAddr = addr.indexOf('[') + 1;
-        const secondpartAddr = addr[firstpartAddr .. $].indexOf(' ') + firstpartAddr;
-        const firstpartId = addr.indexOf('{') + 1;
-        const secondpartId = addr.indexOf(':');
-        result = addr[firstpartAddr .. secondpartAddr] ~ p2p_token ~ addr[firstpartId .. secondpartId];
-        return result;
-    }
 
     /**
      * Parse node address to string
      * @return string address
      */
-    public string toString() {
+    string toString() const {
         return address;
     }
 }

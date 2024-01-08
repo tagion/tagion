@@ -6,8 +6,7 @@ A node consist of the following services.
 
 * [tagionwave](/src/bin-wave/README.md) is the main task responsible all the service
 - Main services
-	- [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
-	- [Tagion Factory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
+	- Supervisor manages all the other services
     - [Input Validator](/documents/architecture/InputValidator.md) This service handle the data-stream input to the network.
     - [HiRPC Verifier](/documents/architecture/HiRPCVerifier.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
@@ -15,6 +14,8 @@ A node consist of the following services.
 	- [Transcript](/documents/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
 	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
+	- DART Interface handles outsite read requests to the dart
+    - [TRT](/documents/architecture/TRT.md) "Transaction reverse table" stores a copy of the owner to bill relationship.
 	- [Replicator](/documents/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 	- [Node Interface](/documents/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
 
@@ -22,7 +23,6 @@ A node consist of the following services.
 	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
 	- [Logger Subscription](/documents/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	- [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
-	- [Epoch Dump](/documents/architecture/EpochDump.md) Service is responsible for writing the Epoch to a file as a backup.
 
 
 ## Data Message flow
@@ -35,7 +35,6 @@ digraph Message_flow {
   node [style=filled]
   node [ shape = "rect"];
   Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" style=filled fillcolor=green ]
-  Output 
   DART [href="#/documents/architecture/DART.md" shape = cylinder];
   P2P [ style=filled fillcolor=red]
   HiRPCVerifier [href="#/documents/architecture/HiRPCVerifier.md"  label="HiRPC\nVerifier"]
@@ -49,7 +48,7 @@ digraph Message_flow {
   Replicator [href="#/documents/architecture/Replicator.md"]
 
   HiRPCVerifier -> Collector [label="contract" color=green];
-  HiRPCVerifier -> DART [label="DART(ro)" color=green];
+  HiRPCVerifier -> DART [color=white];
   Collector -> DART [label=dartRead color=blue]
   Collector -> TVM [label="contract-S\ninputs" color=green];
   Collector -> TVM [label="contract-C\ninputs" color=green];
@@ -61,6 +60,8 @@ digraph Message_flow {
   DART -> Replicator [label=recorder color=red dir=both];
   DART -> NodeInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
   DART -> Collector [label="recorder" color=red];
+  DART -> TRT [label="recorder" color=red];
+  DartInterface -> DART [color=green];
   NodeInterface -> P2P [label=Document dir=both];
   EpochCreator -> NodeInterface [label=wavefront dir=both color=cyan4];
   Transcript -> DART [label=dartModify color=blue];
@@ -83,9 +84,7 @@ digraph tagion_hierarchy {
     size="8,5"
    node [style=filled shape=rect]
    Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" color=green ]
-   Tagion [href="#/documents/architecture/Tagion.md"]
    Tagionwave [color=blue]
-   TagionFactory [href="#/documents/architecture/Collector.md" label="Tagion\nFactory"]
    TVM [href="#/documents/architecture/TVM.md"] 
    DART [href="#/documents/architecture/DART.md" shape = cylinder]
    Replicator [href="#/documents/architecture/Replicator.md"] 
@@ -101,11 +100,10 @@ digraph tagion_hierarchy {
    Monitor [href="#/documents/architecture/Monitor.md"] 
    node [shape = rect];
 	Tagionwave -> Logger -> LoggerSubscription [label="(1)"];
-	Tagionwave -> TagionFactory [label="(2)"];
-	TagionFactory -> Tagion [label="(2)"];
-	Tagion -> NodeInterface -> P2P [label="(3)"];
-	Tagion -> DART -> Replicator [label="(4)"];
-    Tagion -> Collector -> TVM [label="(5)"];
+	Tagionwave -> Supervisor [label="(2)"];
+	Supervisor -> NodeInterface -> P2P [label="(3)"];
+	Supervisor -> DART -> Replicator [label="(4)"];
+    Supervisor -> Collector -> TVM [label="(5)"];
     Collector -> EpochCreator [label="(6)"];
 	EpochCreator -> Transcript -> EpochDump [label="(7)"];
 	EpochCreator -> Monitor [label="(6)"];

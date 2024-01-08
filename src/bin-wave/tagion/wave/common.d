@@ -15,10 +15,11 @@ import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.crypto.SecureNet;
 
-Document getHead(const(Options[]) node_options, SecureNet __net) {
+Document getHead(const Options node_options, SecureNet __net) {
     import std.typecons;
+
     Exception dart_exception;
-    DART db = new DART(__net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
+    DART db = new DART(__net, node_options.dart.dart_path, dart_exception, Yes.read_only);
     if (dart_exception !is null) {
         throw dart_exception;
     }

@@ -77,6 +77,14 @@ class LRUT(K,V) {
         return tmp_lru.add(key,value);
     }
     
+    bool update(const(K) key, ref V value, bool upsert = false){
+        auto tmp_lru=(() @trusted => cast(LRU_t)_lru)();
+        bool res = tmp_lru.update(key,value,upsert);
+        if(res)
+            ctime[key] = timestamp;
+        return res;            
+    }
+
     // Get looks up a key's value from the cache.
     static if (does_not_have_immutable_members) {
         bool get( K key, ref V value) {

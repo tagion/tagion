@@ -120,14 +120,7 @@ else {
         termios ostate; /* saved tty state */
         termios nstate; /* values for editor mode */
 
-        int get()
-        out (ret) {
-            import std.stdio;
-
-            writef("%d ", ret);
-
-        }
-        do {
+        int get() {
             // Open stdin in raw mode
             // Adjust output channel
             tcgetattr(1, &ostate); // save old state

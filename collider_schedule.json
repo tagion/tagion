@@ -255,7 +255,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "trt"
+                "acceptance", "trt"
             ],
             "timeout": 0.0
         },

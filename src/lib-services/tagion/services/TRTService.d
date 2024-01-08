@@ -34,10 +34,11 @@ import tagion.trt.TRT;
 import tagion.hibon.HiBON;
 import tagion.script.standardnames;
 import tagion.script.common : TagionBill;
+import tagion.services.exception;
 
 @safe
 struct TRTOptions {
-    bool enable = false;
+    bool enable = true;
     string folder_path = buildPath(".");
     string trt_filename = "trt".setExtension(FileExtension.dart);
     string trt_path;
@@ -67,8 +68,9 @@ struct TRTService {
         auto hirpc = HiRPC(net);
         ActorHandle dart_handle = ActorHandle(task_names.dart);
 
+        check(opts.trt_path.exists, format("TRT database %s file not found", opts.trt_path));
         log("TRT PATH FOR DATABASE=%s", opts.trt_path);
-        trt_db = new DART(net, opts.trt_path);
+        trt_db = new DART(net, opts.trt_path, dart_exception);
         if (dart_exception !is null) {
             throw dart_exception;
         }
@@ -87,7 +89,7 @@ struct TRTService {
         log("%s, starting trt with %(%02x%)", opts.trt_path, trt_db.bullseye);
 
         void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
-            log("received recorder from dartread");
+            log("receive_recorder from dartread");
             if (!(res.id in requests)) {
                 return;
             }
@@ -108,7 +110,7 @@ struct TRTService {
         }
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
-            log("received trt request");
+            log("trt_read request");
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
             }
@@ -137,7 +139,13 @@ struct TRTService {
             owner_indices.each!(o => writefln("%(%02x%)", o));
 
             auto trt_read_recorder = trt_db.loads(owner_indices);
-            immutable indices = trt_read_recorder[].map!(a => cast(immutable)(a.dart_index)).array;
+            immutable(DARTIndex)[] indices;
+            foreach (a; trt_read_recorder[]) {
+                indices ~= TRTArchive(a.filed).indices.map!(d => cast(immutable) DARTIndex(d))
+                    .array;
+
+            }
+
             if (indices.empty) {
                 // return hirpc error instead;
                 return;
@@ -151,7 +159,7 @@ struct TRTService {
         }
 
         void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
-            log("received modify request from dart");
+            log("modify request from dart");
             auto trt_recorder = rec_factory.recorder;
 
             // get a recorder from all the dartkeys already in the db for the function

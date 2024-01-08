@@ -33,6 +33,7 @@ mixin Main!(_main);
 void wrap_neuewelle(immutable(string)[] args) {
     neuewelle._main(cast(string[]) args);
 }
+
 int _main(string[] args) {
     auto module_path = env.bdd_log.buildPath(__MODULE__);
     if (module_path.exists) {
@@ -61,13 +62,16 @@ int _main(string[] args) {
     import tagion.dart.DART;
     import tagion.dart.DARTFile;
     import tagion.dart.Recorder;
+
     StdSecureWallet[] wallets;
     // create the wallets
     foreach (i; 0 .. 5) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-                iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
-                iota(0, 5).map!(n => format("%danswer%d", i, n)).array,
+            iota(0, 5)
+                .map!(n => format("%dquestion%d", i, n)).array,
+                iota(0, 5)
+                .map!(n => format("%danswer%d", i, n)).array,
                 4,
                 format("%04d", i),
         );
@@ -94,14 +98,16 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
     import tagion.trt.TRT;
+
     auto trt_recorder = factory.recorder;
     genesisTRT(bills, trt_recorder, net);
-    
 
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
-        const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
-        const trt_path = buildPath(local_options.trt.folder_path, prefix ~ local_options.trt.trt_filename);
+        const path = buildPath(local_options.dart.folder_path, prefix ~ local_options
+                .dart.dart_filename);
+        const trt_path = buildPath(local_options.trt.folder_path, prefix ~ local_options
+                .trt.trt_filename);
         // writeln(path);
         // writeln(trt_path);
         DARTFile.create(path, net);
@@ -118,8 +124,9 @@ int _main(string[] args) {
         trt_db.close;
     }
 
-
-    immutable neuewelle_args = ["trt_test", config_file, "--nodeopts", module_path]; // ~ args;
+    immutable neuewelle_args = [
+        "trt_test", config_file, "--nodeopts", module_path
+    ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     import tagion.utils.JSONCommon : load;
 
@@ -127,7 +134,8 @@ int _main(string[] args) {
 
     Thread.sleep(15.seconds);
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(FileExtension
+        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(
+                FileExtension
                 .json));
         writeln(filename);
         Options node_opt = load!(Options)(filename);
@@ -139,7 +147,6 @@ int _main(string[] args) {
 
     Thread.sleep(10.seconds);
 
-    
     auto feature = automation!(trt_service);
     feature.SendAInoiceUsingTheTRT(node_opts[0], wallets[0], wallets[1]);
 
@@ -152,20 +159,17 @@ int _main(string[] args) {
 
 }
 
-
-
-
 enum feature = Feature(
-            "TRT Service test",
-            []);
+        "TRT Service test",
+        []);
 
 alias FeatureContext = Tuple!(
-        SendAInoiceUsingTheTRT, "SendAInoiceUsingTheTRT",
-        FeatureGroup*, "result"
+    SendAInoiceUsingTheTRT, "SendAInoiceUsingTheTRT",
+    FeatureGroup*, "result"
 );
 
 @safe @Scenario("send a inoice using the TRT",
-        [])
+    [])
 class SendAInoiceUsingTheTRT {
     Options opts1;
     StdSecureWallet wallet1;
@@ -190,7 +194,7 @@ class SendAInoiceUsingTheTRT {
         wallet2_hirpc = HiRPC(wallet2.net);
         start_amount1 = wallet1.calcTotal(wallet1.account.bills);
         start_amount2 = wallet2.calcTotal(wallet2.account.bills);
-        
+
     }
 
     @Given("i have a running network with a trt")
@@ -213,8 +217,10 @@ class SendAInoiceUsingTheTRT {
         (() @trusted => Thread.sleep(1.seconds))();
         wallet1.payment([invoice_to_pay], signed_contract2, fee2);
 
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1.net);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1.net);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1
+                .net);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1
+                .net);
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
@@ -222,12 +228,13 @@ class SendAInoiceUsingTheTRT {
     @When("i update my wallet using the pubkey lookup")
     Document lookup() {
         import std.format;
+
         auto wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
         auto wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
 
-        auto wallet1_expected = start_amount1 - fee1 - fee2 - 2*amount;
+        auto wallet1_expected = start_amount1 - fee1 - fee2 - 2 * amount;
         check(wallet1_amount == wallet1_expected, format("should have %s had %s", wallet1_expected, wallet1_amount));
-        auto wallet2_expected = start_amount2 + 2*amount;
+        auto wallet2_expected = start_amount2 + 2 * amount;
         check(wallet2_amount == wallet2_expected, format("should have %s had %s", wallet2_expected, wallet2_amount));
 
         return result_ok;
@@ -235,7 +242,7 @@ class SendAInoiceUsingTheTRT {
 
     @Then("the transaction should go through")
     Document through() {
-        return Document();
+        return result_ok;
     }
 
 }

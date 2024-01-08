@@ -24,6 +24,7 @@ import tagion.services.options;
 import tagion.services.replicator;
 import tagion.services.transcript;
 import tagion.services.TRTService;
+import tagion.services.nodeInterface;
 import core.memory;
 
 @safe
@@ -45,6 +46,17 @@ struct Supervisor {
         handles ~= spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
         handles ~= spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
+
+        with (NetworkMode) final switch (opts.wave.network_mode) {
+        case INTERNAL:
+            break;
+        case LOCAL:
+            handles ~= _spawn!NodeInterfaceService(tn.node_interface, opts.node_interface, tn.epoch_creator);
+            break;
+        case PUB:
+            assert(0, "NetworkMode not supported");
+            break;
+        }
 
         // signs data
         handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
