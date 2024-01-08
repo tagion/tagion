@@ -6,6 +6,7 @@ import std.format;
 import std.getopt;
 import std.path;
 import std.stdio;
+import std.algorithm;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.basic : isinit;
 import tagion.basic.tagionexceptions;
@@ -49,12 +50,11 @@ int _main(string[] args) {
                 "p|nodekey", "Node channel key(Pubkey) ", &nodekeys,
                 "t|trt", "Generate a recorder from a list of bill files for the trt", &trt,
                 "a|account", "Accumulates all bills in the input", &account, //         "bills|b", "Generate bills", &number_of_bills,
-                "g|genesis", "Genesis document", &genesis,
-
-                // "value|V", format("Bill value : default: %d", value), &value,
+                "g|genesis", "Genesis document", &genesis,// "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
                 //"initbills|b", "Testing mode", &initbills,
                 //"nnc", "Initialize NetworkNameCard with given name", &nnc_name,
+                
         );
 
         if (version_switch) {
@@ -93,10 +93,9 @@ int _main(string[] args) {
         if (!nodekeys.empty && standard_input) {
             auto fin = stdin;
 
-
             BigNumber total;
             long start_bills;
-            foreach(doc; HiBONRange(fin)) {
+            foreach (doc; HiBONRange(fin)) {
                 if (doc.isRecord!TagionBill) {
                     const bill = TagionBill(doc);
                     total += bill.value.units;
@@ -123,16 +122,22 @@ int _main(string[] args) {
             tagion_head.current_epoch = 0;
             recorder.add(tagion_head);
         }
-        else if( standard_input && trt) {
+        else if (standard_input) {
             auto fin = stdin;
-            TagionBill[] bills;
-            foreach(doc; HiBONRange(fin)) {
-                if (doc.isRecord!TagionBill) {
-                    bills ~= TagionBill(doc);
+            if (trt) {
+                TagionBill[] bills;
+                foreach (doc; HiBONRange(fin)) {
+                    if (doc.isRecord!TagionBill) {
+                        bills ~= TagionBill(doc);
+                    }
                 }
+                import tagion.trt.TRT;
+
+                genesisTRT(bills, recorder, net);
             }
-            import tagion.trt.TRT;
-            genesisTRT(bills, recorder, net);
+            else {
+                HiBONRange(fin).each!(doc => recorder.add(doc));
+            }
         }
         else {
             foreach (file; args[1 .. $]) {
@@ -147,6 +152,7 @@ int _main(string[] args) {
             return 0;
         }
 
+        verbose("write to %s", output_filename);
         output_filename.fwrite(recorder);
     }
     catch (Exception e) {
