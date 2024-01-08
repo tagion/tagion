@@ -17,8 +17,9 @@ import nngd;
 
 ///
 struct NodeInterfaceOptions {
-    uint send_timeout = 200;
-    string node_address = "tcp://*:69420";
+    uint send_timeout = 200; // Milliseconds
+    uint recv_timeout = 200; // Milliseconds
+    string node_address = "tcp://*:69420"; // Address
 
     import tagion.utils.JSONCommon;
 
@@ -33,8 +34,9 @@ struct NodeInterfaceService {
 
     NNGSocket sock;
     this(immutable(NodeInterfaceOptions) opts, string message_handler_task) @trusted {
-        this.sock = NNGSocket(nng_socket_type.NNG_SOCKET_BUS);
-        this.opts = opts;
+        this.sock = NNGSocket(nng_socket_type.NNG_SOCKET_PAIR);
+        this.sock.recvtimeout = opts.recv_timeout.msecs;
+        this.sock.sendtimeout = opts.send_timeout.msecs;
         this.receive_handle = ActorHandle(message_handler_task);
     }
 
