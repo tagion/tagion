@@ -65,8 +65,8 @@ class NativeSecp256k1 {
     protected secp256k1_context* _ctx;
 
     @trusted
-    this(const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow {
-        _ctx = secp256k1_context_create(flag);
+    this() nothrow {
+        _ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
         scope (exit) {
             randomizeContext;
         }
