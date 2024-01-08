@@ -28,8 +28,8 @@ import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
+@safe:
 
-@safe
 struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
@@ -45,7 +45,18 @@ struct DARTOptions {
     mixin JSONCommon;
 }
 
-@safe
+/** 
+ * DART Service actor
+ * Responsible for interfacing with the DART. Handling reads and writes.
+ * Main function is the modify, which receives the updates to add from the TaskNames.Transcript actor.
+ * Sends: 
+ * (SendRecorder(), immutable(RecordFactory.Recorder, immutable(DARTIndex), immutable(long)) to TaskNames.Replicator 
+ * HiRPC Request-Respond requests:
+ * (dartHiRPCRR,doc) -> HiRPC.Result ( dartRim, dartBullseye, dartCheckRead, dartRim ))
+ * (dartCheckReadRR, immutable(DARTIndex)[]) -> (immutable(DARTIndex)[])
+ * (dartBullseyeRR) -> (Fingerprint)
+ * (dartReadRR, immutable(DARTIndex)[]) -> (immutable(RecordFactory.Recorder))
+ */
 struct DARTService {
     void task(immutable(DARTOptions) opts,
             immutable(TaskNames) task_names,
@@ -77,6 +88,7 @@ struct DARTService {
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 
+        // Checks if archives are present in database and returns all archives that were not found
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
             log("after checkread response");
@@ -88,6 +100,7 @@ struct DARTService {
 
         auto hirpc = HiRPC(net);
 
+        // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead, search(if TRT is not enabled)
         void dartHiRPC(dartHiRPCRR req, Document doc) {
             import tagion.hibon.HiBONJSON;
 
@@ -131,6 +144,7 @@ struct DARTService {
             req.respond(result);
         }
 
+        // receives modify from transcript and sends the recorder onwards to the Replicator
         void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @trusted {
 
             log("Received modify request with length=%s", recorder.length);
