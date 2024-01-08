@@ -248,13 +248,25 @@ int _neuewelle(string[] args) {
         break;
     case NetworkMode.LOCAL:
         import tagion.services.supervisor;
+        import tagion.script.common;
+        import tagion.gossip.AddressBook;
 
         auto __net = new StdSecureNet();
         scope (exit) {
             destroy(__net);
         }
-        Document doc = getHead(local_options, __net);
+
+        Document epoch_head = getHead(local_options, __net);
+
         auto net = cast(shared(StdSecureNet))(__net.clone);
+        auto genesis = GenesisEpoch(epoch_head);
+
+        const keys = genesis.nodes;
+
+        foreach (key; keys) {
+            // addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
+        }
+
         immutable opts = Options(local_options);
         spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
