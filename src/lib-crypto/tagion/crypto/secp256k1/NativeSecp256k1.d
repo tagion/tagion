@@ -256,19 +256,21 @@ class NativeSecp256k1 {
 
     do {
         static assert(secp256k1_keypair.data.offsetof == 0);
+        //const(secp256k1_keypair)* _keypair;
         if (keypair_seckey.length == SECKEY_SIZE) {
-            secp256k1_keypair tmp_keypair;
+            ubyte[] tmp_keypair;
             scope (exit) {
-                tmp_keypair.data[] = 0;
+                tmp_keypair[] = 0;
             }
-            ubyte[] _tmp_keypair;
-            createKeyPair(keypair_seckey, _tmp_keypair);
-            const __keypair = cast(secp256k1_keypair*)(&_tmp_keypair[0]);
+            createKeyPair(keypair_seckey, tmp_keypair);
+            auto _keypair = cast(secp256k1_keypair*)(&tmp_keypair[0]);
             
-            return getPubkey(*__keypair);
+            return getPubkey(*_keypair);
 
         }
-        const _keypair = cast(secp256k1_keypair*)(&keypair_seckey[0]);
+    //else {
+         auto _keypair = cast(secp256k1_keypair*)(&keypair_seckey[0]);
+    //}
         return getPubkey(*_keypair);
     }
 
