@@ -19,7 +19,6 @@ ln -s ../../src/lib-monitor/tagion/monitor
 ln -s ../../src/lib-network/tagion/network
 ln -s ../../src/lib-nngd/libnng/libnng
 ln -s ../../src/lib-nngd/nngd/nngd
-ln -s ../../src/lib-options/tagion/options
 ln -s ../../src/lib-phobos/tagion/std
 ln -s ../../src/lib-services/tagion/GlobalSignals.d
 ln -s ../../src/lib-services/tagion/services

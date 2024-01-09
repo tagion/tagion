@@ -20,8 +20,6 @@ import tagion.basic.ConsensusExceptions;
 import tagion.communication.HiRPC;
 import tagion.hashgraph.Event;
 import tagion.logger.Logger;
-import tagion.options.CommonOptions;
-import tagion.options.ServiceNames : get_node_name;
 import tagion.utils.StdTime;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import core.atomic;
