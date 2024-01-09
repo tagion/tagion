@@ -2552,21 +2552,21 @@ unittest {
         _net.generateKeyPair("wowo");
         auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (() @trusted => cast(immutable) _net)());
     }
+    static struct HashDoc {
+        @label("#name") string name;
+        int number;
+        mixin HiBONRecord!(q{
+            this(string name, int n) {
+                this.name=name;
+                number=n;
+            }
+    });
+    }
 
     { // Check the #name archives 
         filename_A.forceRemove;
         DARTFile.create(filename_A, net);
         auto dart_A = new DARTFile(net, filename_A);
-        static struct HashDoc {
-            @label("#name") string name;
-            int number;
-            mixin HiBONRecord!(q{
-                this(string name, int n) {
-                    this.name=name;
-                    number=n;
-                }
-        });
-        }
 
         auto recorder_add = dart_A.recorder;
         const hashdoc = HashDoc("hugo", 42);
@@ -2617,4 +2617,25 @@ unittest {
 
     }
 
+    { // try to do multiple operations on same hashkey
+        filename_A.forceRemove;
+        DARTFile.create(filename_A, net);
+        auto dart_A = new DARTFile(net, filename_A);
+        auto recorder_add = dart_A.recorder;
+
+        auto hashdoc = HashDoc("hugo", 42);
+        recorder_add.add(hashdoc);
+
+        auto bullseye = dart_A.modify(recorder_add);
+
+        auto remove_add_recorder = dart_A.recorder;
+        HashDoc new_doc = hashdoc;
+        new_doc.number = 423;
+        remove_add_recorder.add(new_doc);
+        remove_add_recorder.remove(hashdoc);
+
+        auto new_bullseye = dart_A.modify(recorder_add);
+
+        assert(bullseye == new_bullseye, "bullseyes should be the same");
+    }
 }
