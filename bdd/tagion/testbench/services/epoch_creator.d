@@ -63,7 +63,6 @@ class SendPayloadAndCreateEpoch {
 
         this.number_of_nodes = number_of_nodes;
 
-        addressbook.number_of_active_nodes = number_of_nodes;
         foreach (i; 0 .. number_of_nodes) {
             immutable prefix = format("Node_%s", i);
             immutable task_names = TaskNames(prefix);

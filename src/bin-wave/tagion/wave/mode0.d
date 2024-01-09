@@ -94,6 +94,8 @@ void spawnMode0(
             keys = Epoch(epoch_head).active;
         }
         else {
+            import tagion.services.exception;
+
             auto genesis = GenesisEpoch(epoch_head);
 
             keys = genesis.nodes;
