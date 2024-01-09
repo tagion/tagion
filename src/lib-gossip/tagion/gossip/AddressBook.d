@@ -58,9 +58,6 @@ synchronized class AddressBook {
     /** Addresses for node */
     protected shared(NodeAddresses) addresses;
 
-    this() shared {
-    }
-
     this(AddressDirectory addr_dir) @trusted shared {
         addresses = cast(shared) addr_dir.addresses.dup;
     }
@@ -284,7 +281,7 @@ synchronized class AddressBook {
 static shared(AddressBook) addressbook;
 
 shared static this() {
-    addressbook = new shared(AddressBook);
+    addressbook = new shared(AddressBook)(AddressDirectory.init);
 }
 
 /// https://github.com/multiformats/multiaddr/blob/master/protocols.csv

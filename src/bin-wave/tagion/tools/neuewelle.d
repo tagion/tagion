@@ -250,6 +250,7 @@ int _neuewelle(string[] args) {
         import tagion.services.supervisor;
         import tagion.script.common;
         import tagion.gossip.AddressBook;
+        import tagion.hibon.HiBONFile;
 
         auto __net = new StdSecureNet();
         scope (exit) {
@@ -263,8 +264,12 @@ int _neuewelle(string[] args) {
 
         const keys = genesis.nodes;
 
+        AddressDirectory addr_dir = fread!AddressDirectory(local_options.wave.mode1.address_book_file);
+
+        addressbook = new shared(AddressBook)(addr_dir);
+
         foreach (key; keys) {
-            // addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
+            check(addressbook.exists(key), format("No address for node with pubkey %-(%x%)", key));
         }
 
         immutable opts = Options(local_options);

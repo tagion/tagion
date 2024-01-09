@@ -31,12 +31,21 @@ enum NetworkMode {
 
 @safe
 struct WaveOptions {
+    struct Mode1 {
+        string address_book_file;
+
+        mixin JSONCommon;
+    }
+
     import tagion.utils.JSONCommon;
 
     NetworkMode network_mode = NetworkMode.INTERNAL;
     uint number_of_nodes = 5;
     string prefix_format = "Node_%s_";
     bool fail_fast = false;
+
+    Mode1 mode1;
+
     mixin JSONCommon;
 }
 
