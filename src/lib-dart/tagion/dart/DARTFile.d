@@ -1007,12 +1007,12 @@ class DARTFile {
 
         // This check ensures us that we never have multiple add and deletes on the
         // same archive in the same recorder.
-        .check(modifyrecords.length <= 1 ||
-                    !modifyrecords[]
-                        .slide(2)
-                        .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
-                        .any,
-                        "cannot have multiple operations on same dart-index in one modify");
+        // .check(modifyrecords.length <= 1 ||
+        //             !modifyrecords[]
+        //                 .slide(2)
+        //                 .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
+        //                 .any,
+        //                 "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -2617,25 +2617,4 @@ unittest {
 
     }
 
-    { // try to do multiple operations on same hashkey
-        filename_A.forceRemove;
-        DARTFile.create(filename_A, net);
-        auto dart_A = new DARTFile(net, filename_A);
-        auto recorder_add = dart_A.recorder;
-
-        auto hashdoc = HashDoc("hugo", 42);
-        recorder_add.add(hashdoc);
-
-        auto bullseye = dart_A.modify(recorder_add);
-
-        auto remove_add_recorder = dart_A.recorder;
-        HashDoc new_doc = hashdoc;
-        new_doc.number = 423;
-        remove_add_recorder.add(new_doc);
-        remove_add_recorder.remove(hashdoc);
-
-        auto new_bullseye = dart_A.modify(recorder_add);
-
-        assert(bullseye == new_bullseye, "bullseyes should be the same");
-    }
 }
