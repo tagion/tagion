@@ -3,11 +3,10 @@ module tagion.gossip.AddressBook;
 @safe:
 
 import core.thread : Thread;
-import std.file : exists;
+import core.sys.posix.arpa.inet;
+import std.internal.cstring;
 import std.format;
 import std.path : isValidFilename;
-import std.random;
-import std.regex;
 
 import tagion.basic.tagionexceptions;
 import tagion.crypto.Types : Pubkey;
@@ -40,23 +39,30 @@ import tagion.utils.Miscellaneous : cutHex;
 //     file_lock.fwrite(null);
 // }
 
+private alias NodeAddresses = NodeAddress[Pubkey];
+
+/** \struct AddressDirectory
+ * Storage for node addresses
+ */
+struct AddressDirectory {
+    /* associative array with node addresses 
+     * node address - value, public key - key
+     */
+    NodeAddresses addresses;
+    mixin HiBONRecord;
+}
+
 /** Address book for node p2p communication */
 @safe
 synchronized class AddressBook {
-    // import core.time;
+    /** Addresses for node */
+    protected shared(NodeAddresses) addresses;
 
-    alias NodeAddresses = NodeAddress[Pubkey];
-    // alias NodePair = typeof((() @trusted => (cast(NodeAddresses) addresses).byKeyValue.front)());
+    this() shared {
+    }
 
-    /** \struct AddressDirectory
-     * Storage for node addresses
-     */
-    struct AddressDirectory {
-        /* associative array with node addresses 
-         * node address - value, public key - key
-         */
-        NodeAddresses addresses;
-        mixin HiBONRecord;
+    this(AddressDirectory addr_dir) @trusted shared {
+        addresses = cast(shared) addr_dir.addresses.dup;
     }
 
     // /** used for lock, unlock file */
@@ -86,9 +92,6 @@ synchronized class AddressBook {
     // this() {
     //     rnd = shared(Random)(unpredictableSeed);
     // }
-
-    /** Addresses for node */
-    protected shared(NodeAddresses) addresses;
 
     /// /**
     ///  * Create associative array with public keys and addresses of nodes
@@ -184,9 +187,6 @@ synchronized class AddressBook {
     void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
     in ((pkey in addresses) is null, format("Address %s has already been set", pkey.cutHex))
     do {
-        import std.stdio;
-        import tagion.utils.Miscellaneous : cutHex;
-
         addresses[pkey] = addr;
     }
 
@@ -303,12 +303,12 @@ enum MultiAddrProto {
 @recordType("NNR")
 struct NodeAddress {
 
-    /** node address */
-    @label("t") MultiAddrProto type;
-    @label("h") string host;
+    @label("t") MultiAddrProto addr_type;
+    @label("h") string host; // ubyte[]
     @label("T") MultiAddrProto transport;
     @label("p") uint port;
 
+    // node address
     string address;
 
     mixin HiBONRecord!(
@@ -323,33 +323,27 @@ struct NodeAddress {
      * @return string address
      */
     string toString() const {
-        return "/" ~ type.stringof ~ "/" ~ address.stringof ~ "/" ~ transport.stringof ~ "/" ~ port.stringof;
+        return "/" ~ addr_type.stringof ~ "/" ~ host ~ "/" ~ transport.stringof ~ "/" ~ port.stringof;
     }
 
-    bool isValid() const {
-        enum isValidip4 = ctRegex!`'\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b'`;
+    version (none) bool isValid() const @trusted {
         bool isPortValid() {
             return port >= 1 && port <= 65_535;
         }
 
-        with (MultiAddrProto) switch (type) {
+        with (MultiAddrProto) switch (addr_type) {
         case ip4:
-            if (!matchFirst(host, isValidip4)) {
-                return false;
-            }
-            if (!isPortValid) {
-                return false;
-            }
+            return inet_pton(AF_INET, host.tempCString, null) > 0
+                && transport is MultiAddrProto.tcp
+                && isPortValid;
         case ip6:
-            if (!isPortValid) {
-                return false;
-            }
+            return inet_pton(AF_INET6, host.tempCString, null) > 0
+                && transport is MultiAddrProto.tcp
+                && isPortValid;
         case unix:
-            return address.isValidFileName;
+            return isValidFilename(address);
         default:
             return false;
         }
-
-        return true;
     }
 }
