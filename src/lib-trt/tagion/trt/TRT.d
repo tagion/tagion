@@ -12,6 +12,7 @@ import tagion.crypto.Types;
 import std.range;
 import tagion.logger.Logger : log;
 import std.digest : toHexString;
+import tagion.hibon.Document : Document;
 
 @safe:
 
@@ -32,9 +33,9 @@ void createTRTUpdateRecorder(
     const(RecordFactory.Recorder) read_recorder,
     ref RecordFactory.Recorder trt_recorder,
     const HashNet net) {
-    // get a range of all the bills
-    auto archive_bills = dart_recorder[]
-        .filter!(a => a.filed.isRecord!TagionBill);
+    // get a range of all the archives with $Y field
+    auto archives = dart_recorder[]
+        .filter!(a => a.filed.hasMember(StdNames.owner));
 
     // Add to dictionary archives, that already present in TRT DART
     TRTArchive[Pubkey] to_insert;
@@ -43,27 +44,29 @@ void createTRTUpdateRecorder(
         to_insert[trt_archive.owner] = trt_archive;
     }
 
-    foreach (a_bill; archive_bills) {
-        const bill = TagionBill(a_bill.filed);
-        auto bill_index = net.dartIndex(bill);
+    foreach (arch; archives) {
+        const doc = Document(arch.filed);
+        const owner = doc[StdNames.owner].get!Pubkey;
+        auto dart_index = net.dartIndex(doc);
 
-        auto archive = to_insert.require(bill.owner, TRTArchive(bill.owner, DARTIndex[].init));
+        auto trt_archive = to_insert.require(owner, TRTArchive(owner, DARTIndex[]
+                .init));
 
-        if (a_bill.type == Archive.Type.ADD) {
-            if (!archive.indices.canFind(bill_index))
-                archive.indices ~= DARTIndex(bill_index);
+        if (arch.type == Archive.Type.ADD) {
+            if (!trt_archive.indices.canFind(dart_index))
+                trt_archive.indices ~= DARTIndex(dart_index);
         }
-        else if (a_bill.type == Archive.Type.REMOVE) {
-            auto to_remove_index = archive.indices.countUntil!(idx => idx == bill_index);
+        else if (arch.type == Archive.Type.REMOVE) {
+            auto to_remove_index = trt_archive.indices.countUntil!(idx => idx == dart_index);
             if (to_remove_index >= 0) {
-                archive.indices = archive.indices.remove(to_remove_index);
+                trt_archive.indices = trt_archive.indices.remove(to_remove_index);
             }
             else {
-                log.error("Index to remove not exists in DART: %s", bill_index[].toHexString);
+                log.error("Index to remove not exists in DART: %s", dart_index[].toHexString);
             }
         }
 
-        to_insert[bill.owner] = archive;
+        to_insert[owner] = trt_archive;
     }
 
     foreach (new_archive; to_insert.byValue) {
@@ -88,7 +91,6 @@ unittest {
     import std.format;
     import tagion.hibon.HiBONJSON;
     import tagion.dart.DARTFakeNet;
-    import std.stdio : writeln, writefln;
     import tagion.wallet.SecureWallet;
     import tagion.script.TagionCurrency;
     import std.algorithm : map;
@@ -364,4 +366,6 @@ unittest {
             assert(trt_archives.canFind(TRTArchive(b.owner, [net.dartIndex(b)])), "Some bills are missing");
         }
     }
+
+    // TBD: add unittests for different types of archives with owner, except TagionBill
 }
