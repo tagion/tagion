@@ -7,6 +7,7 @@ import std.format;
 import std.range;
 import std.path : isValidFilename;
 import std.conv;
+import std.algorithm;
 
 import tagion.basic.tagionexceptions;
 import tagion.basic.Types;
@@ -301,7 +302,7 @@ struct NodeAddress {
         case MultiAddrProto.ip4:
             return format("tcp://%(%d.%):%s", host, port);
         case MultiAddrProto.ip6:
-            return format("tcp://%(%(%x%):%):%s", host.chunks(2), port);
+            return format("tcp://%(%x:%):%s", host.chunks(2).map!(a => a.sum), port);
         default:
             assert(0, "The address type is invalid and cannot be converted to an nng address string");
         }
@@ -347,6 +348,6 @@ unittest {
     nnr.host = [200, 185, 5, 5, 200, 185, 5, 5, 200, 185, 0, 0, 200, 185, 5, 5];
     nnr.addr_type = MultiAddrProto.ip6;
 
-    assert(nnr.toNNGString == "tcp://c8b9:55:c8b9:55:c8b9:00:c8b9:55:80");
+    assert(nnr.toNNGString == "tcp://181:a:181:a:181:0:181:a:80");
 
 }
