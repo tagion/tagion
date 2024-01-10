@@ -3,9 +3,8 @@ module tagion.gossip.AddressBook;
 @safe:
 
 import core.thread : Thread;
-import core.sys.posix.arpa.inet;
-import std.internal.cstring;
 import std.format;
+import std.range;
 import std.path : isValidFilename;
 import std.conv;
 
@@ -274,7 +273,6 @@ enum MultiAddrProto {
     ip4 = 4,
     tcp = 6,
     ip6 = 41,
-    unix = 400,
 }
 
 /** 
@@ -290,16 +288,6 @@ struct NodeAddress {
     @label("T") MultiAddrProto transport;
     @label("p") uint port;
 
-    // node address
-    string address;
-
-    mixin HiBONRecord!(
-            q{
-            this(string address) {
-                this.address = address;
-            }
-        });
-
     /**
      * Parse node address to string
      * @return string address
@@ -308,24 +296,57 @@ struct NodeAddress {
         return "/" ~ addr_type.stringof ~ "/" ~ host.to!string ~ "/" ~ transport.stringof ~ "/" ~ port.stringof;
     }
 
-    version (none) bool isValid() const @trusted {
+    string toNNGString() const {
+        switch (addr_type) {
+        case MultiAddrProto.ip4:
+            return format("tcp://%(%d.%):%s", host, port);
+        case MultiAddrProto.ip6:
+            return format("tcp://%(%(%x%):%):%s", host.chunks(2), port);
+        default:
+            assert(0, "The address type is invalid and cannot be converted to an nng address string");
+        }
+    }
+
+    bool isValid() const @trusted {
         bool isPortValid() {
             return port >= 1 && port <= 65_535;
         }
 
+        if (!isPortValid) {
+            return false;
+        }
+
+        if (transport !is MultiAddrProto.tcp) {
+            return false;
+        }
+
+        // TODO: check that host is not loobpack 'n stuff
         with (MultiAddrProto) switch (addr_type) {
         case ip4:
-            return inet_pton(AF_INET, host.tempCString, null) > 0
-                && transport is MultiAddrProto.tcp
-                && isPortValid;
+            return host.length == 4;
         case ip6:
-            return inet_pton(AF_INET6, host.tempCString, null) > 0
-                && transport is MultiAddrProto.tcp
-                && isPortValid;
-        case unix:
-            return isValidFilename(address);
+            return host.length == 16;
         default:
             return false;
         }
     }
+}
+
+unittest {
+    NodeAddress nnr;
+    nnr.addr_type = MultiAddrProto.ip4;
+    nnr.host = [200, 185, 5, 5];
+    nnr.host = [200, 185, 5, 5];
+    nnr.host = [200, 185, 5, 5];
+    nnr.host = [200, 185, 5, 5];
+    nnr.port = 80;
+    nnr.transport = MultiAddrProto.tcp;
+
+    assert(nnr.toNNGString == "tcp://200.185.5.5:80");
+
+    nnr.host = [200, 185, 5, 5, 200, 185, 5, 5, 200, 185, 0, 0, 200, 185, 5, 5];
+    nnr.addr_type = MultiAddrProto.ip6;
+
+    assert(nnr.toNNGString == "tcp://c8b9:55:c8b9:55:c8b9:00:c8b9:55:80");
+
 }
