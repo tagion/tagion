@@ -75,7 +75,7 @@ class SendPayloadAndCreateEpoch {
             writefln("node task name %s", task_names.epoch_creator);
             auto monitor_local_options = monitor_opts;
             nodes ~= Node(shared_net, task_names.epoch_creator, epoch_creator_options, monitor_local_options);
-            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
+            addressbook[net.pubkey] = task_names.epoch_creator;
         }
 
     }

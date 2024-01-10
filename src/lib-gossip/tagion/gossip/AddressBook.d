@@ -7,8 +7,10 @@ import core.sys.posix.arpa.inet;
 import std.internal.cstring;
 import std.format;
 import std.path : isValidFilename;
+import std.conv;
 
 import tagion.basic.tagionexceptions;
+import tagion.basic.Types;
 import tagion.crypto.Types : Pubkey;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTRim;
@@ -39,28 +41,11 @@ import tagion.utils.Miscellaneous : cutHex;
 //     file_lock.fwrite(null);
 // }
 
-private alias NodeAddresses = NodeAddress[Pubkey];
-
-/** \struct AddressDirectory
- * Storage for node addresses
- */
-struct AddressDirectory {
-    /* associative array with node addresses 
-     * node address - value, public key - key
-     */
-    NodeAddresses addresses;
-    mixin HiBONRecord;
-}
-
 /** Address book for node p2p communication */
 @safe
 synchronized class AddressBook {
     /** Addresses for node */
-    protected shared(NodeAddresses) addresses;
-
-    this(AddressDirectory addr_dir) @trusted shared {
-        addresses = cast(shared) addr_dir.addresses.dup;
-    }
+    protected shared(string[Pubkey]) addresses;
 
     // /** used for lock, unlock file */
     // enum max_count = 3;
@@ -168,12 +153,12 @@ synchronized class AddressBook {
      * @param pkey - public key for check
      * @return initialized node address
      */
-    immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
+    immutable(string) opIndex(const Pubkey pkey) const pure nothrow {
         auto addr = pkey in addresses;
         if (addr) {
             return cast(immutable)(*addr);
         }
-        return NodeAddress.init;
+        return string.init;
     }
 
     /**
@@ -181,8 +166,8 @@ synchronized class AddressBook {
      * @param addr - value
      * @param pkey - key
      */
-    void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
-    in ((pkey in addresses) is null, format("Address %s has already been set", pkey.cutHex))
+    void opIndexAssign(const string addr, const Pubkey pkey)
+    in ((pkey in addresses) is null, format("Address %s has already been set", pkey.encodeBase64))
     do {
         addresses[pkey] = addr;
     }
@@ -218,12 +203,12 @@ synchronized class AddressBook {
      * @return active node channels
      */
     Pubkey[] activeNodeChannels() @trusted const pure nothrow {
-        auto channels = (cast(NodeAddresses) addresses).keys;
+        auto channels = (cast(string[Pubkey]) addresses).keys;
         return channels;
     }
 
     const(string) getAddress(const Pubkey pkey) const pure nothrow {
-        return addresses[pkey].address;
+        return addresses[pkey];
     }
 
     // /**
@@ -281,7 +266,7 @@ synchronized class AddressBook {
 static shared(AddressBook) addressbook;
 
 shared static this() {
-    addressbook = new shared(AddressBook)(AddressDirectory.init);
+    addressbook = new shared(AddressBook)();
 }
 
 /// https://github.com/multiformats/multiaddr/blob/master/protocols.csv
@@ -301,7 +286,7 @@ enum MultiAddrProto {
 struct NodeAddress {
 
     @label("t") MultiAddrProto addr_type;
-    @label("h") string host; // ubyte[]
+    @label("h") immutable(ubyte)[] host;
     @label("T") MultiAddrProto transport;
     @label("p") uint port;
 
@@ -320,7 +305,7 @@ struct NodeAddress {
      * @return string address
      */
     string toString() const {
-        return "/" ~ addr_type.stringof ~ "/" ~ host ~ "/" ~ transport.stringof ~ "/" ~ port.stringof;
+        return "/" ~ addr_type.stringof ~ "/" ~ host.to!string ~ "/" ~ transport.stringof ~ "/" ~ port.stringof;
     }
 
     version (none) bool isValid() const @trusted {
