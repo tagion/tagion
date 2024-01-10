@@ -31,7 +31,7 @@ import tagion.hibon.HiBONRecord;
 @safe
 struct WordList {
     import tagion.crypto.pbkdf2;
-    import std.digest.sha : SHA512;
+    import std.digest.sha : SHA512, SHA256;
 
     alias pbkdf2_sha512 = pbkdf2!SHA512;
     const(ushort[string]) table;
@@ -139,8 +139,152 @@ struct WordList {
         return result;
     }
 
-}
+    ushort[] dentropy(const(ubyte[]) entropy) const {
+        return null;
+    }
 
+    version (none) void entropyToMnemonic(scope const(ubyte[]) entropy) {
+
+        check((entropy.length >= 16) && (entropy.length <= 32) && (entropy.length % 4 == 0),
+                format("entropy length of %d is invalid", entropy.length));
+        /*
+    if (!Buffer.isBuffer(entropy)) {
+        entropy = Buffer.from(entropy, 'hex');
+    }
+    wordlist = wordlist || DEFAULT_WORDLIST;
+    if (!wordlist) {
+        throw new Error(WORDLIST_REQUIRED);
+    }
+    // 128 <= ENT <= 256
+    if (entropy.length < 16) {
+        throw new TypeError(INVALID_ENTROPY);
+    }
+    if (entropy.length > 32) {
+        throw new TypeError(INVALID_ENTROPY);
+    }
+    if (entropy.length % 4 !== 0) {
+        throw new TypeError(INVALID_ENTROPY);
+    }
+
+    const entropyBits = bytesToBinary(Array.from(entropy));
+*/
+        const checksumBits = deriveChecksumBits(entropy);
+        const bits = entropyBits ~ checksumBits;
+        //   const chunks = bits.match(/(.{1,11})/g);
+        return null;
+        /*
+    const words = chunks.map((binary) => {
+        const index = binaryToByte(binary);
+        return wordlist[index];
+    });
+    return wordlist[0] === '\u3042\u3044\u3053\u304f\u3057\u3093' // Japanese wordlist
+        ? words.join('\u3000')
+        : words.join(' ');
+*/
+    }
+
+    version (none) const(ubyte[]) deriveChecksumBits(scope const(ubyte[]) entropy) const pure {
+        const ENT = entropy.length * 8;
+        const CS = ENT / 32;
+        const hash = digest!SHA256(entropy); //sha256_1.sha256(Uint8Array.from(entropyBuffer));
+        return hash[0 .. CS]; //bytesToBinary(Array.from(hash)).slice(0, CS);
+    }
+
+    version (none) ubyte[] mnemonicToEntropy(mnemonic) const pure {
+        import std.uni;
+        import std.array : split;
+
+        wordlist = wordlist || DEFAULT_WORDLIST;
+        if (!wordlist) {
+            throw new Error(WORDLIST_REQUIRED);
+        }
+        auto words = mnemonic.normalize!(NFDK)
+            .split!(isWhite)
+            .array;
+        scope (exit) {
+            words.each!((ref word) => word[] = 0);
+        }
+        //    .(mnemonic).split(' ');
+        check(words.length % 3 == 0, format("The number of words in the mnemonic should be a multiple of 3 but is %d", words
+                .length));
+        const mnemonic_numbers = mnemonicNumbers(words);
+        const position_of_bad_word = mnemonic_numbers.countUntil!(num => num >= count);
+        check(position_of_bad_word < 0, format("Word %s number %d was invalid", words[position_of_bad_word], position_of_bad_word));
+        // convert word indices to 11 bit binary strings
+        /*
+    const bits = words
+        .map((word) => {
+        const index = wordlist.indexOf(word);
+        if (index === -1) {
+            throw new Error(INVALID_MNEMONIC);
+        }
+        return lpad(index.toString(2), '0', 11);
+    })
+        .join('');
+*/
+        // split the binary string into ENT/CS
+        const dividerIndex = (bits.length / 33) * 32;
+        const entropyBits = bits[0 .. dividerIndex];
+        const checksumBits = bits[dividerIndex];
+        // calculate the checksum and compare
+        check((entropy.length >= 16) && (entropy.length <= 32) && (entropy.length % 4 == 0),
+                format("entropy length of %d is invalid", entropy.length));
+        /*
+    const entropyBytes = entropyBits.match(/(.{1,8})/g).map(binaryToByte);
+    if (entropyBytes.length < 16) {
+        throw new Error(INVALID_ENTROPY);
+    }
+    if (entropyBytes.length > 32) {
+        throw new Error(INVALID_ENTROPY);
+    }
+    if (entropyBytes.length % 4 !== 0) {
+        throw new Error(INVALID_ENTROPY);
+    }
+    const entropy = Buffer.from(entropyBytes);
+    */
+        const newChecksum = deriveChecksumBits(entropy);
+        check(newChecksum == checksumBits, format("Wrong checksum of entropy"));
+        return entropy;
+    }
+
+    version (none) char[] entropyToMnemonic(scope const(ubyte[]) entropy) const pure {
+        check((entropy.length >= 16) && (entropy.length <= 32) && (entropy.length % 4 == 0),
+                format("entropy length of %d is invalid", entropy.length));
+        /*
+    if (!Buffer.isBuffer(entropy)) {
+        entropy = Buffer.from(entropy, 'hex');
+    }
+    wordlist = wordlist || DEFAULT_WORDLIST;
+    if (!wordlist) {
+        throw new Error(WORDLIST_REQUIRED);
+    }
+    // 128 <= ENT <= 256
+    if (entropy.length < 16) {
+        throw new TypeError(INVALID_ENTROPY);
+    }
+    if (entropy.length > 32) {
+        throw new TypeError(INVALID_ENTROPY);
+    }
+    if (entropy.length % 4 !== 0) {
+        throw new TypeError(INVALID_ENTROPY);
+    }
+*/
+        //   const entropyBits = bytesToBinary(Array.from(entropy));
+        const checksumBits = deriveChecksumBits(entropy);
+        const bits = entropyBits ~ checksumBits;
+        const chunks = dentropy(bits);
+        return null;
+        /*
+    const words = chunks.map((binary) => {
+        const index = binaryToByte(binary);
+        return wordlist[index];
+    });
+    return wordlist[0] === '\u3042\u3044\u3053\u304f\u3057\u3093' // Japanese wordlist
+        ? words.join('\u3000')
+        : words.join(' ');
+    */
+    }
+}
 /*
 https://learnmeabitcoin.com/technical/mnemonic
 later echo alcohol essence charge eight feel sweet nephew apple aerobic device
