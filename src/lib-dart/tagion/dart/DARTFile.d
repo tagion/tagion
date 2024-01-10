@@ -1007,12 +1007,12 @@ class DARTFile {
 
         // This check ensures us that we never have multiple add and deletes on the
         // same archive in the same recorder.
-        // .check(modifyrecords.length <= 1 ||
-        //             !modifyrecords[]
-        //                 .slide(2)
-        //                 .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
-        //                 .any,
-        //                 "cannot have multiple operations on same dart-index in one modify");
+        .check(modifyrecords.length <= 1 ||
+                    !modifyrecords[]
+                        .slide(2)
+                        .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
+                        .any,
+                        "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
