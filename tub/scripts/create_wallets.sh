@@ -50,11 +50,11 @@ if [ $wallets -lt 3 -o $wallets -gt 7 ]; then
 fi
 
 # Create network and wallets directories, handle existing folders
-mkdir -p $ndir | echo "folder already exists"
-mkdir -p $wdir | echo "folder already exists"
+mkdir -p $ndir || echo "folder already exists"
+mkdir -p $wdir || echo "folder already exists"
 
 # Remove existing key file, if any, and create a new one
-rm "$keyfile" | echo "No key file to delete"
+rm "$keyfile" || echo "No key file to delete"
 touch $keyfile
 
 # Variable to accumulate wallet information
