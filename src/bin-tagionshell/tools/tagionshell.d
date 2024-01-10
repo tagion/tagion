@@ -10,6 +10,7 @@ import std.file : exists;
 import std.format;
 import std.getopt;
 import std.json;
+import std.string : representation;
 import std.stdio : File, stderr, stdout, writefln, writeln;
 import std.datetime.systime: Clock;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
@@ -520,6 +521,118 @@ static void sysinfo_handler(WebData* req, WebData* rep, void* ctx) {
     }
 }
 
+static void selftest_handler(WebData* req, WebData* rep, void* ctx) {
+    thread_attachThis();
+    rt_moduleTlsCtor();
+    try {
+        int rc;
+        ShellOptions* opt = cast(ShellOptions*) ctx;
+        WalletOptions options;
+        auto wallet_config_file = opt.default_i2p_wallet;
+        if (wallet_config_file.exists) {
+            options.load(wallet_config_file);
+        }
+        else {
+            writeit("selftest: invalid I2P wallet config: " ~ opt.default_i2p_wallet);
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "invalid wallet config";
+            return;
+        }
+        auto wallet_interface = WalletInterface(options);
+        if (!wallet_interface.load) {
+            writeit("selftest: Wallet does not exist");
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "wallet does not exist";
+            return;
+        }
+        const flag = wallet_interface.secure_wallet.login(opt.default_i2p_wallet_pin);
+        if (!flag) {
+            writeit("selftest: Wallet wrong pincode");
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "Faucet invalid pin code";
+            return;
+        }
+        if (!wallet_interface.secure_wallet.isLoggedin) {
+            writeit("selftest: invalid wallet login");
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "invalid wallet login";
+            return;
+        }
+        
+        string uri = opt.shell_uri ~ opt.shell_api_prefix;
+        auto localpath = (opt.shell_api_prefix~opt.selftest_endpoint).split("/")[1..$];
+        auto dpath = req.path.split(localpath);
+        string[] reqpath;
+        if(dpath.length == 2){
+            reqpath = dpath[1].dup;
+        }
+        
+        rep.status = nng_http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;
+
+        if(reqpath.length > 0){    
+            switch(reqpath[0]){
+                case "bullseye":
+                    WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint, null);
+                    if(hrep.status != nng_http_status.NNG_HTTP_STATUS_OK){
+                        rep.status = hrep.status;
+                        rep.msg = hrep.msg;
+                        rep.text = hrep.text;
+                        break;
+                    }
+                    JSONValue jdata = hrep.json;
+                    enforce(jdata["$@"].str == "HiRPC","Test: bullseye: parse result");
+                    enforce("bullseye" in jdata["$msg"]["result"],"Test: bullseye: parse result");
+                    auto res = jdata["$msg"]["result"]["bullseye"][1].str;
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+                    rep.type = "application/json";
+                    rep.json = parseJSON(`{"test": "bullseye", "passed": "ok", "result":{"bullseye":"`~res~`"}}`);
+                    break;
+                case "dart":
+                case "dartcache":
+                    enum update_tag = "update";
+                    const update_net = wallet_interface.secure_wallet.net.derive(
+                        wallet_interface.secure_wallet.net.calcHash(
+                            update_tag.representation));
+                    const hirpc = HiRPC(update_net);
+                    const hreq = wallet_interface.secure_wallet.getRequestUpdateWallet(hirpc);
+                    WebData hrep = WebClient.post(uri ~ ((reqpath[0] == "dart") ? opt.dart_endpoint : opt.dartcache_endpoint), 
+                        cast(ubyte[])(hreq.serialize), 
+                        ["Content-type": "application/octet-stream"]);
+                    if(hrep.status != nng_http_status.NNG_HTTP_STATUS_OK){
+                        rep.status = hrep.status;
+                        rep.msg = hrep.msg;
+                        rep.text = hrep.text;
+                        break;
+                    }
+                    Document doc = Document(cast(immutable(ubyte[])) hrep.rawdata);
+                    JSONValue jdata = doc.toJSON();
+                    enforce(jdata["$@"].str == "HiRPC","Test: dart(cache): parse result");
+                    enforce("result" in jdata["$msg"], "Test: dart(cache): parse result");
+                    auto cnt = jdata["$msg"]["result"].array.length;
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+                    rep.type = "application/json";
+                    rep.json = parseJSON(format(`{"test": "%s", "passed": "ok", "result":{"count": %d}}`,reqpath[0],cnt));
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        if(rep.status != nng_http_status.NNG_HTTP_STATUS_OK){
+           rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+           rep.type = "text/html";
+           rep.text = "<h2>The requested test couldn`t be processed</h2>\n\r<pre>\n\r" ~ to!string(reqpath) ~ "\n\r</pre>\n\r";
+        }
+
+    }catch(Throwable e){
+        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        rep.type = "text/html";
+        rep.msg = e.msg;
+        rep.text = dump_exception_recursive(e, "handler: selftest");
+        return;
+    }
+}
+
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -587,21 +700,27 @@ int _main(string[] args) {
     writeit("\nTagionShell web service\nListening at "
             ~ options.shell_uri ~ "\n\t"
             ~ options.shell_api_prefix
-            ~ options.contract_endpoint
-            ~ "\t= POST contract hibon\n\t"
+                ~ options.contract_endpoint
+                ~ "\t= POST contract hibon\n\t"
             ~ options.shell_api_prefix
-            ~ options.dart_endpoint
-            ~ "\t\t= POST dart request hibon\n\t"
+                ~ options.dart_endpoint
+                ~ "\t\t= POST dart request hibon\n\t"
             ~ options.shell_api_prefix
-            ~ options.i2p_endpoint
-            ~ "\t= POST invoice-to-pay hibon\n\t"
-            ~ options
-                .shell_api_prefix
+                ~ options.i2p_endpoint
+                ~ "\t= POST invoice-to-pay hibon\n\t"
+            ~ options.shell_api_prefix
                 ~ options.bullseye_endpoint
                 ~ "\t= GET dart bullseye hibon\n\t"
-                ~ options.shell_api_prefix
+            ~ options.shell_api_prefix
                 ~ options.sysinfo_endpoint
                 ~ "\t\t= GET system info\n\t"
+            ~ options.shell_api_prefix
+                ~ options.selftest_endpoint ~ "/<enpoint>"
+                ~ "\t= GET self test results\n\t"
+                ~ "\t== /bullseye \t- test bullseye endpoint\n\t"
+                ~ "\t== /dart \t- test dart request endpoint\n\t"
+                ~ "\t== /dartcache \t- test dart cache endpoint\n\t"
+
 
     );
 
@@ -617,6 +736,7 @@ appoint:
     app.route(options.shell_api_prefix ~ options.dart_endpoint, &dart_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dartcache_endpoint, &dartcache_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.i2p_endpoint, &i2p_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.selftest_endpoint ~ "/*", &selftest_handler, ["GET"]);
 
     app.start();
 
