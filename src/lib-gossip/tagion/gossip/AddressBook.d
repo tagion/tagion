@@ -3,12 +3,13 @@ module tagion.gossip.AddressBook;
 @safe:
 
 import core.thread : Thread;
-import core.sys.posix.arpa.inet;
-import std.internal.cstring;
 import std.format;
+import std.range;
 import std.path : isValidFilename;
+import std.conv;
 
 import tagion.basic.tagionexceptions;
+import tagion.basic.Types;
 import tagion.crypto.Types : Pubkey;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTRim;
@@ -39,28 +40,11 @@ import tagion.utils.Miscellaneous : cutHex;
 //     file_lock.fwrite(null);
 // }
 
-private alias NodeAddresses = NodeAddress[Pubkey];
-
-/** \struct AddressDirectory
- * Storage for node addresses
- */
-struct AddressDirectory {
-    /* associative array with node addresses 
-     * node address - value, public key - key
-     */
-    NodeAddresses addresses;
-    mixin HiBONRecord;
-}
-
 /** Address book for node p2p communication */
 @safe
 synchronized class AddressBook {
     /** Addresses for node */
-    protected shared(NodeAddresses) addresses;
-
-    this(AddressDirectory addr_dir) @trusted shared {
-        addresses = cast(shared) addr_dir.addresses.dup;
-    }
+    protected shared(string[Pubkey]) addresses;
 
     // /** used for lock, unlock file */
     // enum max_count = 3;
@@ -168,12 +152,12 @@ synchronized class AddressBook {
      * @param pkey - public key for check
      * @return initialized node address
      */
-    immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
+    immutable(string) opIndex(const Pubkey pkey) const pure nothrow {
         auto addr = pkey in addresses;
         if (addr) {
             return cast(immutable)(*addr);
         }
-        return NodeAddress.init;
+        return string.init;
     }
 
     /**
@@ -181,8 +165,8 @@ synchronized class AddressBook {
      * @param addr - value
      * @param pkey - key
      */
-    void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
-    in ((pkey in addresses) is null, format("Address %s has already been set", pkey.cutHex))
+    void opIndexAssign(const string addr, const Pubkey pkey)
+    in ((pkey in addresses) is null, format("Address %s has already been set", pkey.encodeBase64))
     do {
         addresses[pkey] = addr;
     }
@@ -218,12 +202,12 @@ synchronized class AddressBook {
      * @return active node channels
      */
     Pubkey[] activeNodeChannels() @trusted const pure nothrow {
-        auto channels = (cast(NodeAddresses) addresses).keys;
+        auto channels = (cast(string[Pubkey]) addresses).keys;
         return channels;
     }
 
     const(string) getAddress(const Pubkey pkey) const pure nothrow {
-        return addresses[pkey].address;
+        return addresses[pkey];
     }
 
     // /**
@@ -281,7 +265,7 @@ synchronized class AddressBook {
 static shared(AddressBook) addressbook;
 
 shared static this() {
-    addressbook = new shared(AddressBook)(AddressDirectory.init);
+    addressbook = new shared(AddressBook)();
 }
 
 /// https://github.com/multiformats/multiaddr/blob/master/protocols.csv
@@ -289,7 +273,6 @@ enum MultiAddrProto {
     ip4 = 4,
     tcp = 6,
     ip6 = 41,
-    unix = 400,
 }
 
 /** 
@@ -301,46 +284,69 @@ enum MultiAddrProto {
 struct NodeAddress {
 
     @label("t") MultiAddrProto addr_type;
-    @label("h") string host; // ubyte[]
+    @label("h") immutable(ubyte)[] host;
     @label("T") MultiAddrProto transport;
     @label("p") uint port;
-
-    // node address
-    string address;
-
-    mixin HiBONRecord!(
-            q{
-            this(string address) {
-                this.address = address;
-            }
-        });
 
     /**
      * Parse node address to string
      * @return string address
      */
     string toString() const {
-        return "/" ~ addr_type.stringof ~ "/" ~ host ~ "/" ~ transport.stringof ~ "/" ~ port.stringof;
+        return "/" ~ addr_type.stringof ~ "/" ~ host.to!string ~ "/" ~ transport.stringof ~ "/" ~ port.stringof;
     }
 
-    version (none) bool isValid() const @trusted {
+    string toNNGString() const {
+        switch (addr_type) {
+        case MultiAddrProto.ip4:
+            return format("tcp://%(%d.%):%s", host, port);
+        case MultiAddrProto.ip6:
+            return format("tcp://%(%(%x%):%):%s", host.chunks(2), port);
+        default:
+            assert(0, "The address type is invalid and cannot be converted to an nng address string");
+        }
+    }
+
+    bool isValid() const @trusted {
         bool isPortValid() {
             return port >= 1 && port <= 65_535;
         }
 
+        if (!isPortValid) {
+            return false;
+        }
+
+        if (transport !is MultiAddrProto.tcp) {
+            return false;
+        }
+
+        // TODO: check that host is not loobpack 'n stuff
         with (MultiAddrProto) switch (addr_type) {
         case ip4:
-            return inet_pton(AF_INET, host.tempCString, null) > 0
-                && transport is MultiAddrProto.tcp
-                && isPortValid;
+            return host.length == 4;
         case ip6:
-            return inet_pton(AF_INET6, host.tempCString, null) > 0
-                && transport is MultiAddrProto.tcp
-                && isPortValid;
-        case unix:
-            return isValidFilename(address);
+            return host.length == 16;
         default:
             return false;
         }
     }
+}
+
+unittest {
+    NodeAddress nnr;
+    nnr.addr_type = MultiAddrProto.ip4;
+    nnr.host = [200, 185, 5, 5];
+    nnr.host = [200, 185, 5, 5];
+    nnr.host = [200, 185, 5, 5];
+    nnr.host = [200, 185, 5, 5];
+    nnr.port = 80;
+    nnr.transport = MultiAddrProto.tcp;
+
+    assert(nnr.toNNGString == "tcp://200.185.5.5:80");
+
+    nnr.host = [200, 185, 5, 5, 200, 185, 5, 5, 200, 185, 0, 0, 200, 185, 5, 5];
+    nnr.addr_type = MultiAddrProto.ip6;
+
+    assert(nnr.toNNGString == "tcp://c8b9:55:c8b9:55:c8b9:00:c8b9:55:80");
+
 }

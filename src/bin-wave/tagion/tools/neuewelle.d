@@ -250,11 +250,25 @@ int _neuewelle(string[] args) {
         import tagion.services.supervisor;
         import tagion.script.common;
         import tagion.gossip.AddressBook;
-        import tagion.hibon.HiBONFile;
+        import tagion.hibon.HiBONtoText;
+        import tagion.crypto.Types;
+        import std.exception : assumeUnique;
+        import std.string;
 
         auto __net = new StdSecureNet();
         scope (exit) {
             destroy(__net);
+        }
+
+        auto address_file = File(local_options.wave.mode1.address_book_file, "r");
+        foreach (line; address_file.byLine) {
+            auto pair = line.split();
+            check(pair.length == 2, format("Expected only 2 fields in addresbook line\n%s", line));
+            const pkey = Pubkey(pair[0].strip.decode);
+            check(pkey.length == 33, "Pubkey with invalid length");
+            const addr = pair[1].strip;
+
+            addressbook[pkey] = assumeUnique(addr);
         }
 
         Document epoch_head = getHead(local_options, __net);
@@ -264,12 +278,8 @@ int _neuewelle(string[] args) {
 
         const keys = genesis.nodes;
 
-        AddressDirectory addr_dir = fread!AddressDirectory(local_options.wave.mode1.address_book_file);
-
-        addressbook = new shared(AddressBook)(addr_dir);
-
         foreach (key; keys) {
-            check(addressbook.exists(key), format("No address for node with pubkey %-(%x%)", key));
+            check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
         }
 
         immutable opts = Options(local_options);
