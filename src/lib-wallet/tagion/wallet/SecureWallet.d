@@ -704,30 +704,53 @@ struct SecureWallet(Net : SecureNet) {
         auto bill = TagionBill(amount, assumeWontThrow(currentTime), dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
-    Result!bool createNFT(Document nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
-        import tagion.script.execute;
-        try {
-            auto none_locked = account.bills.filter!(b=> !(net.dartIndex(b) in account.activated)).array;
-
-            check(none_locked.length > 0, "did not have any bills to insert into the contract");
-            TagionBill[] collected_bills = [none_locked.front];
-
-            const nets = collectNets(collected_bills) ~ net.repeat(nft_inputs.length).array;
-            check(nets.all!(net => net !is net.init), format("Missing deriver of some of the bills length=%s", collected_bills
-                    .length));
-            lock_bills(collected_bills);
-
-            signed_contract = sign(
-                nets,
-                collected_bills.map!(bill => bill.toDoc) 
-                .array ~ nft_inputs,
-                null,
-                nft_doc);
+    version(WITHOUT_PAYMENT) {
+        import tagion.script.common : snavs_record;
+        Result!bool createNFT(const(Document) nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
+            import tagion.script.execute;
+            try {
+                if (nft_inputs.length == 0) {
+                    signed_contract = sign([net], [cast(DARTIndex) net.dartIndex(snavs_record)], null, nft_doc); 
+                } else {
+                    const nets = net.repeat(nft_inputs.length).array;
+                    signed_contract = sign(
+                        nets,
+                        nft_inputs,
+                        null,
+                        nft_doc);
+                }
             
-        } catch(Exception e) {
-            return Result!bool(e);
+            } catch(Exception e) {
+                return Result!bool(e);
+            }
+            return result(true);
         }
-        return result(true);
+        
+    } else {
+        Result!bool createNFT(Document nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
+            try {
+                auto none_locked = account.bills.filter!(b=> !(net.dartIndex(b) in account.activated)).array;
+
+                check(none_locked.length > 0, "did not have any bills to insert into the contract");
+                TagionBill[] collected_bills = [none_locked.front];
+
+                const nets = collectNets(collected_bills) ~ net.repeat(nft_inputs.length).array;
+                check(nets.all!(net => net !is net.init), format("Missing deriver of some of the bills length=%s", collected_bills
+                        .length));
+                lock_bills(collected_bills);
+
+                signed_contract = sign(
+                    nets,
+                    collected_bills.map!(bill => bill.toDoc) 
+                    .array ~ nft_inputs,
+                    null,
+                    nft_doc);
+    
+            } catch(Exception e) {
+                return Result!bool(e);
+            }
+            return result(true);
+        }
     }
 
     enum long snavs_byte_fee = 100;
