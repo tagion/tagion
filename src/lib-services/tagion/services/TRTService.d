@@ -41,17 +41,13 @@ struct TRTOptions {
     bool enable = true;
     string folder_path = buildPath(".");
     string trt_filename = "trt".setExtension(FileExtension.dart);
-    string trt_path;
 
-    this(string folder_path, string trt_filename) {
-        this.folder_path = folder_path;
-        this.trt_filename = trt_filename;
-        trt_path = buildPath(folder_path, trt_filename);
+    string trt_path() inout nothrow {
+        return buildPath(folder_path, trt_filename);
     }
 
     void setPrefix(string prefix) nothrow {
         trt_filename = prefix ~ trt_filename;
-        trt_path = buildPath(folder_path, trt_filename);
     }
 
     mixin JSONCommon;
