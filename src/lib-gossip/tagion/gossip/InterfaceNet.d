@@ -28,7 +28,7 @@ interface P2pNet {
 interface GossipNet : P2pNet {
     alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
     alias SenderCallBack = const(HiRPC.Sender) delegate() @safe;
-    const(sdt_t) time() pure const nothrow;
+    const(sdt_t) time() const nothrow;
 
     bool isValidChannel(const(Pubkey) channel) const nothrow;
     void add_channel(const(Pubkey) channel);
