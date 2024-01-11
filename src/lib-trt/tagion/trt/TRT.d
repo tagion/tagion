@@ -95,6 +95,7 @@ unittest {
     import tagion.script.TagionCurrency;
     import std.algorithm : map;
     import std.algorithm.iteration : reduce, map;
+    import std.conv : to;
 
     ulong countTRTRecorderindices(const ref RecordFactory.Recorder recorder) {
         return recorder[].map!(a => new TRTArchive(a.filed)
@@ -367,5 +368,44 @@ unittest {
         }
     }
 
-    // TBD: add unittests for different types of archives with owner, except TagionBill
+    // Test recorder with other than TagionBill records with owner field
+    {
+        import tagion.script.namerecords : NetworkNameCard;
+        import tagion.utils.StdTime : sdt_t;
+
+        auto trt_recorder = factory.recorder;
+        const empty_recorder = factory.recorder;
+
+        NetworkNameCard[] nnc_array;
+        foreach (i; 0 .. 5) {
+            NetworkNameCard nnc;
+            nnc.name = i.to!string;
+            nnc.owner = bills[i].owner;
+            nnc_array ~= nnc;
+        }
+
+        auto dart_recorder = factory.recorder;
+        dart_recorder.insert(bills, Archive.Type.ADD);
+        dart_recorder.insert(nnc_array, Archive.Type.ADD);
+        immutable im_dart_recorder_mixed = factory.uniqueRecorder(dart_recorder);
+
+        createTRTUpdateRecorder(im_dart_recorder_mixed, empty_recorder, trt_recorder, net);
+
+        assert(countTRTRecorderindices(trt_recorder) == im_dart_recorder_mixed.length,
+            "Number of entries in recorders differs");
+
+        auto dart_archives = im_dart_recorder[]
+            .map!(a => Document(a.filed))
+            .map!(doc => TRTArchive(doc[StdNames.owner].get!Pubkey, [
+                        net.dartIndex(doc)
+                    ]));
+
+        auto trt_archives = trt_recorder[]
+            .map!(b => TRTArchive(b.filed));
+
+        foreach (a; dart_archives) {
+            assert(trt_archives.canFind!(trt_arch => trt_arch.indices.canFind(a.indices.front)),
+                "Some bills are missing");
+        }
+    }
 }
