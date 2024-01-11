@@ -268,3 +268,12 @@ struct LockedArchives {
 
     });
 }
+
+version(WITHOUT_PAYMENT) {
+struct HashString {
+    string name;
+    mixin HiBONRecord!(q{this(string name) { this.name = name; }});
+}
+enum HashString snavs_record = HashString("snavs");
+}
+
