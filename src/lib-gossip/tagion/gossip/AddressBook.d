@@ -17,6 +17,7 @@ import tagion.dart.DARTRim;
 import tagion.hibon.HiBONFile;
 import tagion.hibon.HiBONRecord;
 import tagion.logger.Logger : log;
+import tagion.script.standardnames;
 import tagion.utils.Miscellaneous : cutHex;
 
 /** Address book for node p2p communication */
@@ -118,6 +119,7 @@ enum MultiAddrProto {
 @recordType("NNR")
 struct NodeAddress {
 
+    @label(StdNames.owner) Pubkey owner;
     @label("t") MultiAddrProto addr_type;
     @label("h") immutable(ubyte)[] host;
     @label("T") MultiAddrProto transport;
