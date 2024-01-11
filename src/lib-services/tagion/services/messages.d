@@ -43,3 +43,4 @@ alias trtModify = Msg!"trtModify";
 alias trtHiRPCRR = Request!"trtRead";
 
 alias NodeSend = Msg!"nodeSend";
+alias NodeRecv = Msg!"nodeRecv";
