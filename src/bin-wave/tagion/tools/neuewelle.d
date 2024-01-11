@@ -178,8 +178,8 @@ int _neuewelle(string[] args) {
 
         foreach (option; override_options) {
             string[] key_value = option.split(":");
-            assert(key_value.length == 2, format("Option '%s' invalid, missing key=value", option));
-            auto value = key_value[1];
+            assert(key_value.length >= 2, format("Option '%s' invalid, missing key:value", option));
+            auto value = key_value[1 .. $].join;
             string[] key = key_value[0].split(".");
             set_val(json, key, value);
         }
