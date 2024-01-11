@@ -142,7 +142,7 @@ do
         cd "$node_dir"
 
         # Configure the network with the neuewelle binary
-        "$bdir/neuewelle" -O --option=wave.network_mode:LOCAL --option=subscription.tags:taskfailure
+        "$bdir/neuewelle" -O --option=wave.network_mode:LOCAL --option=subscription.tags:taskfailure --option=node_interface.node_address:"tcp://\*:$((10700+i))"
     )
 
     echo "$bdir/neuewelle $node_dir/tagionwave.json"
