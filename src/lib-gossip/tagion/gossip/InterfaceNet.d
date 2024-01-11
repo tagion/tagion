@@ -17,18 +17,6 @@ import tagion.utils.StdTime;
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
-//import tagion.hashgraph.HashGraphBasic : Tides;
-version (none) @safe
-interface NetCallbacks : EventMonitorCallbacks {
-
-    //    void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides);
-
-    void receive(const(Document) doc);
-    void send(const Pubkey channel, const(HiRPC.Sender) sender);
-
-    void consensus_failure(const(ConsensusException) e);
-}
-
 @safe
 interface P2pNet {
     void start_listening();
