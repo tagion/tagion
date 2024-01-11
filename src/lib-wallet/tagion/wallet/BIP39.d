@@ -27,7 +27,7 @@ import std.algorithm;
 import std.range;
 import std.typecons;
 import tagion.hibon.HiBONRecord;
-
+import tagion.basic.Debug;
 @safe
 struct WordList {
     import tagion.crypto.pbkdf2;
@@ -115,9 +115,9 @@ struct WordList {
     enum TOTAL_WORDS = 1 << MNEMONIC_BITS;
     enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
 
-    @trusted
-    ubyte[] entropy(const(ushort[]) mnemonic_codes) const {
-        import std.bitmanip : nativeToBigEndian, nativeToLittleEndian;
+    //@trusted
+    ubyte[] entropy(const(ushort[]) mnemonic_codes) const pure nothrow {
+        import std.bitmanip : nativeToBigEndian;
         import std.stdio;
 
         const total_bits = mnemonic_codes.length * MNEMONIC_BITS;
@@ -139,8 +139,28 @@ struct WordList {
         return result;
     }
 
-    ushort[] dentropy(const(ubyte[]) entropy) const {
-        return null;
+    ushort[] dentropy(const(ubyte)[] entropy) const {
+        import std.bitmanip : bigEndianToNative, peek, Endian;
+        const total_bits = entropy.length * 8;
+        const number_of_mnemonics=total_bits/MNEMONIC_BITS;
+        __write("number_of_mnemonics=%d", number_of_mnemonics);
+        ushort[] result;
+        if (entropy.length % uint.sizeof != 0) {
+            entropy.length = uint.sizeof*((entropy.length / uint.sizeof)+1);
+        }
+        result.length=number_of_mnemonics;
+        foreach(i, ref mnemonic_number; result) {
+            const bit_pos=i*MNEMONIC_BITS;
+            const byte_pos=bit_pos/8;
+            const shift_pos=(5-bit_pos) % 8;
+            const _shift_pos=bit_pos % 8;
+        //const x=entropy.peek!uint(byte_pos);
+            const bit_slice=(entropy.peek!(uint, Endian.bigEndian)(byte_pos)); 
+            mnemonic_number=((entropy.peek!(ushort, Endian.bigEndian)(byte_pos)) >> shift_pos) & (count-1); 
+            const _mnemonic_number=(bit_slice << _shift_pos) >> (32-11)   ;
+            __write("%011b byte_pos=%2d bit_pos=%2d shift_pos=%2d _shift_pos=%2d %032b %011b", mnemonic_number, byte_pos, bit_pos, shift_pos, _shift_pos, bit_slice, _mnemonic_number);
+        }
+        return result;
     }
 
     version (none) void entropyToMnemonic(scope const(ubyte[]) entropy) {
@@ -294,12 +314,24 @@ later echo alcohol essence charge eight feel sweet nephew apple aerobic device
 
 @safe
 unittest {
-    //    import std.stdio;
+    import std.stdio;
     import tagion.wallet.bip39_english;
     import std.format;
     import std.string : representation;
 
     const wordlist = WordList(words);
+    {
+        const(ushort[]) expected_mnemonic_codes = [1390, 1586, 604, 1202, 689, 900];
+        immutable expected_entropy = "101011011101100011001001001011100100101100100101011000101110000100";
+        writefln("expected_mnemonic_codes=%(%011b %)", expected_mnemonic_codes);
+        const entropy_bytes=wordlist.entropy(expected_mnemonic_codes);
+        writefln("         mnemonic_codes=%(%08b%)", entropy_bytes);
+        const dentropy_codes=wordlist.dentropy(entropy_bytes);
+        writefln("         dentropy_codes=%(%011b %)", dentropy_codes);
+        writefln("         dentropy_codes=%(%016b %)", dentropy_codes);
+        writefln("         dentropy_codes=%s", dentropy_codes);
+
+    }
     {
         const mnemonic = [
             "punch",
