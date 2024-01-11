@@ -256,6 +256,7 @@ int _neuewelle(string[] args) {
         import std.string;
 
         auto __net = new StdSecureNet();
+        __net.generateKeyPair("OwO");
         scope (exit) {
             destroy(__net);
         }
@@ -273,7 +274,6 @@ int _neuewelle(string[] args) {
 
         Document epoch_head = getHead(local_options, __net);
 
-        auto net = cast(shared(StdSecureNet))(__net.clone);
         auto genesis = GenesisEpoch(epoch_head);
 
         const keys = genesis.nodes;
@@ -283,6 +283,7 @@ int _neuewelle(string[] args) {
         }
 
         immutable opts = Options(local_options);
+        auto net = cast(shared(StdSecureNet))(__net.clone);
         spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
         break;

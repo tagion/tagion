@@ -32,7 +32,7 @@ enum NetworkMode {
 @safe
 struct WaveOptions {
     struct Mode1 {
-        string address_book_file = "mode1_addressbook.txt";
+        string address_book_file = "../address_book.txt";
 
         mixin JSONCommon;
     }

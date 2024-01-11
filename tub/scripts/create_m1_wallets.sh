@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+
+set -xe
+
 # Display usage instructions
 usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-q <bills=50>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>] [-u <key filename=./keys>]" 1>&2; exit 1; }
 
@@ -8,9 +11,8 @@ bdir=""
 nodes=5
 wallets=5
 bills=50
-ndir=$(readlink -m "./network")
+ndir="$(readlink -m "./network")/mode1"
 wdir=$(readlink -m "./wallets")
-keyfile=$(readlink -m "keys")
 
 # Process command-line options
 while getopts "n:w:b:k:t:h:u:q:" opt
@@ -20,9 +22,8 @@ do
         n)  nodes=$OPTARG ;;
         w)  wallets=$OPTARG ;;
         b)  bdir=$(readlink -m "$OPTARG") ;;
-        k)  ndir=$(readlink -m "$OPTARG") ;;
+        k)  ndir="$(readlink -m "$OPTARG")/mode1" ;;
         t)  wdir=$(readlink -m "$OPTARG") ;;
-        u)  keyfile=$(readlink -m "$OPTARG") ;;
         q)  bills=$OPTARG ;;
         *)  usage ;;
     esac
@@ -50,12 +51,7 @@ if [ $wallets -lt 3 -o $wallets -gt 7 ]; then
 fi
 
 # Create network and wallets directories, handle existing folders
-mkdir -p $ndir || echo "folder already exists"
-mkdir -p $wdir || echo "folder already exists"
-
-# Remove existing key file, if any, and create a new one
-rm "$keyfile" || echo "No key file to delete"
-touch $keyfile
+mkdir -p "$ndir" "$wdir"
 
 # Variable to accumulate wallet information
 all_infos=""
@@ -81,8 +77,10 @@ do
   name="node_$i"
   $bdir/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
   address=$($bdir/geldbeutel "$wallet_config" --info) 
+  pkey="${address/[^,]*,/}"
+  ipaddr=$((10700+i))
+  echo "$pkey tcp://0.0.0.0:$ipaddr" >> "$ndir/address_book.txt"
   all_infos+=" -p $address,$name"
-  echo "wallet$i:$pincode" >> "$keyfile"
 
   # Create bills for the wallet
   for (( b=1; b <= bills; b++)); 
@@ -101,51 +99,52 @@ done
 echo "$all_infos"
 
 # Concatenate and process all bill files
-bill_files=$(ls $wdir/bill*.hibon)
 echo "Create genesis dart_recorder"
-cat $wdir/bill*.hibon |"${bdir}/stiefel" -a $all_infos -o $wdir/dart_recorder.hibon
+cat $wdir/bill*.hibon |"${bdir}/stiefel" -a $all_infos -o "$wdir/dart_recorder.hibon"
 
 echo "Create genesis trt_recorder"
-cat $wdir/bill*.hibon |"${bdir}/stiefel" --trt -o $wdir/trt_recorder.hibon
+cat $wdir/bill*.hibon |"${bdir}/stiefel" --trt -o "$wdir/trt_recorder.hibon"
 
-# Create network directory if not already present
-mkdir -p $ndir | echo "folder already exists"
+# Create a dart filename
+dartfilename="${ndir}/genesis_dart.drt"
+echo "DART file $dartfilename"
 
-# Loop to initialize and modify nodes
-for ((i = 0; i <= nodes-1; i++)); 
-do
-  # Create dart filename for each node
-  dartfilename="${ndir}/Node_${i}_dart.drt"
-  echo "DART file $dartfilename"
+# Create initial dart file
+"$bdir/dartutil" --initialize "$dartfilename"
 
-  # Create initial dart file
-  $bdir/dartutil --initialize "$dartfilename"
+# Modify the node with the dart_recorder file
+"$bdir/dartutil" "$dartfilename" "$wdir/dart_recorder.hibon" -m
 
-  # Modify the node with the dart_recorder file
-  $bdir/dartutil "$dartfilename" $wdir/dart_recorder.hibon -m
+# Create TRT filename for each node
+trtfilename="${ndir}/genesis_trt.drt"
+echo "TRT file $trtfilename"
 
-  # Create TRT filename for each node
-  trtfilename="${ndir}/Node_${i}_trt.drt"
-  echo "TRT file $trtfilename"
+# Create initial TRT file
+"$bdir/dartutil" --initialize "$trtfilename"
 
-  # Create initial TRT file
-  $bdir/dartutil --initialize "$trtfilename"
-
-  # Modify the node with the trt_recorder file
-  $bdir/dartutil "$trtfilename" $wdir/trt_recorder.hibon -m
-done
-
-# rm -rf $wdir/bill*.hibon
-
-# Change directory to the network directory
-cd $ndir
-
-# Configure the network with the neuewelle binary
-$bdir/neuewelle -O --option=wave.number_of_nodes:$nodes --option=subscription.tags:taskfailure
-
-# Return to the previous directory
-cd -
+# Modify the node with the trt_recorder file
+"$bdir/dartutil" "$trtfilename" "$wdir/trt_recorder.hibon" -m
 
 # Print instructions on how to run the network
 echo "Run the network this way:"
-echo "$bdir/neuewelle $ndir/tagionwave.json --keys $wdir < $keyfile"
+
+# Loop to initialize and modify nodes
+echo "Run the network this way:"
+for ((i = 0; i <= nodes-1; i++)); 
+do
+    node_dir="$ndir/node$i"
+    mkdir -p "$node_dir"
+    cp "$dartfilename" "$node_dir"/dart.drt
+    cp "$trtfilename" "$node_dir"/trt.drt
+
+    (
+        # Change directory to the network directory
+        cd "$node_dir"
+
+        # Configure the network with the neuewelle binary
+        "$bdir/neuewelle" -O --option=wave.network_mode:LOCAL --option=subscription.tags:taskfailure
+    )
+
+    echo "$bdir/neuewelle $node_dir/tagionwave.json"
+
+done
