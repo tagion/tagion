@@ -279,22 +279,23 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
-            // log.register(name);
             thisActor.task_name = name;
             thisActor.stop = false;
             A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             try {
                 actor.task(args);
+
                 // If the actor forgets to kill it's children we'll do it anyway
-                if (!statusChildren(Ctrl.END)) {
-                    foreach (child_task_name, ctrl; thisActor.childrenState) {
-                        if (ctrl is Ctrl.ALIVE) {
-                            locate(child_task_name).send(Sig.STOP);
-                        }
-                    }
-                    waitforChildren(Ctrl.END);
-                }
+                // if (!statusChildren(Ctrl.END)) {
+                //     foreach (child_task_name, ctrl; thisActor.childrenState) {
+                //         if (ctrl is Ctrl.ALIVE) {
+                //             ActorHandle(child_task_name).send(Sig.STOP);
+                //         }
+                //     }
+                //     waitforChildren(Ctrl.END);
+                // }
+
             }
             catch (Exception t) {
                 fail(t);
