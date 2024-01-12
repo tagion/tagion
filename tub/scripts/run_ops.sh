@@ -121,7 +121,7 @@ done
     "$bdir"/neuewelle -O \
         --option=wave.number_of_nodes:$nodes \
         --option=wave.fail_fast:true \
-        --option=subscription.tags:taskfailure
+        --option=subscription.tags:taskfailure,recorder
 )
 
 mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/tagion/wave 
