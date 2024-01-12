@@ -173,48 +173,52 @@ HiRPC.Receiver get_bullseye(string dart_addr) {
     return receiver;
 }
 
-static void bullseye_handler_hibon(WebData* req, WebData* rep, void* ctx) {
+static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
     try {
         ShellOptions* opt = cast(ShellOptions*) ctx;
 
-        const receiver = get_bullseye(opt.node_dart_addr);
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+
+        int rc;
+        while (true) {
+            rc = s.dial(opt.node_dart_addr);
+            if (rc == 0)
+                break;
+        }
+        scope (exit) {
+            s.close();
+        }
+
+        rc = s.send(crud.dartBullseye.toDoc.serialize);
+        ubyte[192] buf;
+        size_t len = s.receivebuf(buf, buf.length);
+        if (len == size_t.max && s.errno != 0) {
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "socket error";
+            return;
+        }
+
+        const receiver = HiRPC(null).receive(Document(buf.idup));
+
         if (!receiver.isResponse) {
             rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
             rep.msg = "response error";
             return;
         }
 
-        rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-        rep.type = "application/octet-stream";
-        rep.rawdata = cast(ubyte[]) receiver.serialize;
-    }
-    catch (Throwable e) {
-        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-        rep.type = "text/html";
-        rep.msg = e.msg;
-        rep.text = dump_exception_recursive(e, "handler: bullseye.hibon");
-        return;
-    }
-}
-
-static void bullseye_handler_json(WebData* req, WebData* rep, void* ctx) {
-    thread_attachThis();
-    try {
-        ShellOptions* opt = cast(ShellOptions*) ctx;
-
-        const receiver = get_bullseye(opt.node_dart_addr);
-        if (!receiver.isResponse) {
-            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "response error";
-            return;
+        if (req.path[$ - 1].hasExtension("json")) {
+            const dartindex = parseJSON(receiver.toPretty);
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = "application/json";
+            rep.json = dartindex;
+        }
+        else {
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = "application/octet-stream";
+            rep.rawdata = cast(ubyte[]) receiver.serialize;
         }
 
-        const dartindex = parseJSON(receiver.toPretty);
-
-        rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-        rep.type = "application/json";
-        rep.json = dartindex;
     }
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
@@ -770,9 +774,9 @@ appoint:
     WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"/tmp/webapp","static_path":"static"}`), &options);
 
     app.route(options.shell_api_prefix ~ options.sysinfo_endpoint, &sysinfo_handler, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.bullseye_endpoint, &bullseye_handler_json, ["GET"]); // Deprecated
-    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".json", &bullseye_handler_json, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".hibon", &bullseye_handler_hibon, ["GET"]);
+    app.route(options.shell_api_prefix ~ options.bullseye_endpoint, &bullseye_handler, ["GET"]);
+    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".json", &bullseye_handler, ["GET"]);
+    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".hibon", &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint, &dart_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dartcache_endpoint, &dartcache_handler, ["POST"]);
