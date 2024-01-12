@@ -75,7 +75,7 @@ class NNGGossipNet : GossipNet {
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
         version (EPOCH_LOG) {
-            log.trace("Selected channel: %s", send_channel.cutHex);
+            log.trace("Selected channel: %(%x%)", send_channel);
         }
         if (send_channel.length) {
             send(send_channel, sender());
