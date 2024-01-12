@@ -28,6 +28,7 @@ import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
+
 @safe:
 
 struct DARTOptions {
@@ -58,6 +59,8 @@ struct DARTOptions {
  * (dartReadRR, immutable(DARTIndex)[]) -> (immutable(RecordFactory.Recorder))
  */
 struct DARTService {
+    static Topic recorder_created = Topic("recorder");
+
     void task(immutable(DARTOptions) opts,
             immutable(TaskNames) task_names,
             shared(StdSecureNet) shared_net,
@@ -159,6 +162,7 @@ struct DARTService {
 
                 req.respond(eye);
                 replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
+                log(recorder_created, "recorder", recorder.toDoc);
                 if (trt_enable) {
                     trt_handle.send(trtModify(), recorder);
                 }

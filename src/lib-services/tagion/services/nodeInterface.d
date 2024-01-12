@@ -46,7 +46,10 @@ struct NodeInterfaceService {
 
     void node_send(NodeSend, Pubkey channel, Document payload) @trusted {
         const address = addressbook.getAddress(channel);
-        sock.dial(address);
+        int rc = sock.dial(address);
+        if (rc < 0) {
+            return;
+        }
         sock.send(payload.serialize);
     }
 
@@ -57,7 +60,9 @@ struct NodeInterfaceService {
             throw new ServiceException(nng_errstr(sock.m_errno));
         }
 
-        receive_handle.send(Document(buf));
+        if (buf.length > 0) {
+            receive_handle.send(NodeRecv(), Document(buf));
+        }
     }
 
     void task() {

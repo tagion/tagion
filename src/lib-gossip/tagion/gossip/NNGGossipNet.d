@@ -7,6 +7,8 @@ import tagion.gossip.InterfaceNet;
 import tagion.crypto.Types;
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
+import tagion.actor;
+import tagion.services.messages;
 
 @safe
 class NNGGossipNet : GossipNet {
@@ -14,12 +16,12 @@ class NNGGossipNet : GossipNet {
     private Pubkey[] _pkeys;
     immutable(Pubkey) mypk;
     Random random;
-    NNGSocket sock;
+    ActorHandle nodeinterface;
 
-    this(const Pubkey mypk) @trusted {
+    this(const Pubkey mypk, ActorHandle nodeinterface) {
+        this.nodeinterface = nodeinterface;
         this.random = Random(unpredictableSeed);
         this.mypk = mypk;
-        this.sock = NNGSocket(nng_socket_type.NNG_SOCKET_BUS);
     }
 
     void add_channel(const Pubkey channel) {
@@ -39,13 +41,14 @@ class NNGGossipNet : GossipNet {
         addresses.remove(channel);
     }
 
-    void close() @trusted {
-        sock.close;
+    void close() {
     }
 
     @property
-    const(sdt_t) time() pure const nothrow {
-        return sdt_t(0);
+    const(sdt_t) time() const nothrow {
+        import std.exception : assumeWontThrow;
+
+        return assumeWontThrow(currentTime());
     }
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
@@ -53,8 +56,8 @@ class NNGGossipNet : GossipNet {
     }
 
     const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+        assert(_pkeys.length > 1);
         Pubkey send_channel;
-
         do {
             send_channel = choice(_pkeys, random);
         }
@@ -73,12 +76,8 @@ class NNGGossipNet : GossipNet {
         return send_channel;
     }
 
-    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        // TODO encrypt
-        // TODO: retry dial?
-        sock.dial(addresses[channel]);
-        sock.send(sender.toDoc.serialize, true);
+        nodeinterface.send(NodeSend(), channel, sender.toDoc);
     }
 
     void start_listening() {
