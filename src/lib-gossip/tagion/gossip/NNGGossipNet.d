@@ -8,6 +8,7 @@ import tagion.crypto.Types;
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
 import tagion.actor;
+import tagion.logger;
 import tagion.services.messages;
 
 @safe
@@ -27,8 +28,11 @@ class NNGGossipNet : GossipNet {
     void add_channel(const Pubkey channel) {
         import tagion.gossip.AddressBook : addressbook;
 
-        const address = addressbook.getAddress(channel);
+        if (channel == mypk) {
+            return;
+        }
 
+        const address = addressbook.getAddress(channel);
         _pkeys ~= channel;
         addresses[channel] = address;
     }
@@ -61,7 +65,7 @@ class NNGGossipNet : GossipNet {
         do {
             send_channel = choice(_pkeys, random);
         }
-        while (send_channel !is mypk && channel_filter);
+        while (!channel_filter(send_channel));
 
         return send_channel;
     }
@@ -70,6 +74,9 @@ class NNGGossipNet : GossipNet {
             const(ChannelFilter) channel_filter,
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
+        version (EPOCH_LOG) {
+            log.trace("Selected channel: %s", send_channel.cutHex);
+        }
         if (send_channel.length) {
             send(send_channel, sender());
         }
