@@ -82,16 +82,16 @@ int _main(string[] args) {
             "sendkernel", "Send requests directory to the kernel", &sendkernel,
             "duration", format("The duration the test should run for (current = %s)", duration), &duration,
             "unit", format("The duration unit on of %s (current = %s)", [EnumMembers!DurationUnit], duration_unit), &duration_unit,
-            "max_failed_runs", format("The maximum amount of failed runs, before the process exits (current = %s)", max_failed_runs), &duration_unit,
+    "max_failed_runs", format("The maximum amount of failed runs, before the process exits (current = %s)", max_failed_runs), &duration_unit,
     );
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-            "Usage:",
-            format("%s [<option>...] <config.json> <files>", program),
-            "<option>:",
-        ].join("\n"),
+                "Usage:",
+                format("%s [<option>...] <config.json> <files>", program),
+                "<option>:",
+                ].join("\n"),
                 main_args.options);
         return 0;
     }

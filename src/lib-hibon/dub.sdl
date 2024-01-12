@@ -1,0 +1,13 @@
+name "hibon" 
+targetType "library"
+license "DECARD Services GmbH free and grant back license"
+version "1.0.0"
+authors "decard"
+copyright "Copyright © 2023, decard"
+
+// Disable Useless "Warning: statement is not reachable" in template functions
+buildRequirements "allowWarnings" "silenceWarnings" 
+sourcePaths "./"
+importPaths "./"
+sourcePaths "../lib-basic"
+sourcePaths "../lib-utils"

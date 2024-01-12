@@ -13,6 +13,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.crypto.random.random;
 import tagion.gossip.AddressBook;
 import tagion.gossip.EmulatorGossipNet;
+import tagion.gossip.NNGGossipNet;
 import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.hashgraph.HashGraph;
@@ -25,8 +26,6 @@ import tagion.services.messages;
 import tagion.services.monitor;
 import tagion.services.options : NetworkMode, TaskNames;
 import tagion.utils.JSONCommon;
-import tagion.utils.Miscellaneous : cutHex;
-import tagion.utils.Miscellaneous : cutHex;
 import tagion.utils.Queue;
 import tagion.utils.Random;
 import tagion.utils.StdTime;
@@ -50,7 +49,6 @@ struct EpochCreatorOptions {
     mixin JSONCommon;
 }
 
-
 @safe
 struct EpochCreatorService {
 
@@ -63,7 +61,7 @@ struct EpochCreatorService {
 
         const net = new StdSecureNet(shared_net);
 
-        assert(network_mode == NetworkMode.INTERNAL, "Unsupported network mode");
+        assert(network_mode != NetworkMode.PUB, "Unsupported network mode");
 
         if (monitor_opts.enable) {
             import tagion.hashgraph.Event : Event;
@@ -79,7 +77,18 @@ struct EpochCreatorService {
         }
 
         GossipNet gossip_net;
-        gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+
+        final switch (network_mode) {
+        case NetworkMode.INTERNAL:
+            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+            break;
+        case NetworkMode.LOCAL:
+            gossip_net = new NNGGossipNet(net.pubkey);
+            break;
+        case NetworkMode.PUB:
+            assert(0);
+        }
+
         Pubkey[] channels = addressbook.activeNodeChannels;
         Random!size_t random;
         const _seed = getRandom!size_t;
@@ -153,10 +162,10 @@ struct EpochCreatorService {
                 log.fatal("WAVEFRONT\n%s\n", receiver.toPretty);
             }
             hashgraph.wavefront(
-                receiver,
-                currentTime,
-                (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
-                &payload);
+                    receiver,
+                    currentTime,
+                    (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
+                    &payload);
         }
 
         void timeout() {

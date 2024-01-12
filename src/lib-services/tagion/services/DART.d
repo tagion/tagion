@@ -10,7 +10,7 @@ import std.path : isValidPath;
 import std.path;
 import std.stdio;
 import tagion.actor;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
@@ -27,22 +27,19 @@ import tagion.services.options : TaskNames;
 import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.exception;
 
 @safe
 struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
-    string dart_path;
 
-    this(string folder_path, string dart_filename) {
-        this.folder_path = folder_path;
-        this.dart_filename = dart_filename;
-        dart_path = buildPath(folder_path, dart_filename);
+    string dart_path() inout nothrow {
+        return buildPath(folder_path, dart_filename);
     }
 
     void setPrefix(string prefix) nothrow {
         dart_filename = prefix ~ dart_filename;
-        dart_path = buildPath(folder_path, dart_filename);
     }
 
     mixin JSONCommon;
@@ -58,6 +55,7 @@ struct DARTService {
         DART db;
         Exception dart_exception;
         const net = new StdSecureNet(shared_net);
+        check(opts.dart_path.exists, format("DART database %s file not found", opts.dart_path));
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
@@ -96,19 +94,18 @@ struct DARTService {
             log("Received HiRPC request");
 
             if (!doc.isRecord!(HiRPC.Sender)) {
-                import tagion.hibon.HiBONJSON;
-
                 log("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty);
                 return;
             }
 
             immutable receiver = hirpc.receive(doc);
+            if (!receiver.isMethod) {
+                log("dart hirpc request was not a method");
+                return;
+            }
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
-                // log("%s", receiver.method.params.toPretty);
-
-                import tagion.basic.Types;
 
                 auto owner_doc = receiver.method.params;
                 Buffer[] owner_pkeys;
@@ -121,8 +118,10 @@ struct DARTService {
                 req.respond(response);
                 return;
             }
-            if (!(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartRim || receiver.method.name == DART.Queries.dartBullseye || receiver
-                    .method.name == DART.Queries.dartCheckRead)) {
+            if (!(receiver.method.name == DART.Queries.dartRead
+                    || receiver.method.name == DART.Queries.dartRim
+                    || receiver.method.name == DART.Queries.dartBullseye
+                    || receiver.method.name == DART.Queries.dartCheckRead)) {
                 log("unsupported request");
                 return;
             }

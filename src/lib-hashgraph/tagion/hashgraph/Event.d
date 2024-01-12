@@ -9,7 +9,6 @@ import std.algorithm.searching : all, any, canFind, count, until;
 import std.algorithm.sorting : sort;
 import std.array : array;
 import std.conv;
-import std.exception : assumeWontThrow;
 import std.format;
 import std.range;
 import std.range : enumerate, tee;

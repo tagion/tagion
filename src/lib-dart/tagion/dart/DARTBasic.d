@@ -4,8 +4,12 @@ module tagion.dart.DARTBasic;
 @safe:
 import std.format;
 import std.traits;
-import std.typecons : Typedef;
+import std.typecons;
+import std.array;
+import std.algorithm;
+import std.range;
 import tagion.basic.Types : Buffer;
+import tagion.basic.basic : isinit;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : BufferType, Fingerprint;
 import tagion.dart.DARTFile : KEY_SPAN;
@@ -198,7 +202,7 @@ Fingerprint binaryHash(const(HashNet) net, scope const(Fingerprint) h1, scope co
  *  The Merkle root
  */
 Buffer sparsed_merkletree(const HashNet net, const(Buffer[]) table)
-    in(table.length == KEY_SPAN)
+in (table.length == KEY_SPAN)
 do {
     immutable(Buffer) merkletree(
             const(Buffer[]) left,
@@ -230,7 +234,17 @@ do {
     return merkletree(table[0 .. mid], table[mid .. $]);
 }
 
-Fingerprint sparsed_merkletree(const HashNet net, const(Fingerprint[]) table) @trusted {
+Fingerprint sparsed_merkletree(const HashNet net, const(Fingerprint[]) table, const Flag!"flat" flat = No.flat) @trusted {
+    if (flat) {
+        auto valid_prints = table.filter!(print => !print.isinit);
+        if (valid_prints.empty) {
+            return Fingerprint.init;
+        }
+        if (valid_prints.take(2).walkLength == 1) {
+            return valid_prints.front;
+        }
+        return net.calcHash(valid_prints.map!(p => cast(Buffer) p).join);
+    }
     return Fingerprint(sparsed_merkletree(net, cast(const(Buffer[])) table));
 }
 

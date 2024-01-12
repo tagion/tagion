@@ -45,7 +45,6 @@ HiBON bitarray2bool(const(BitMask) bits) @trusted {
 //import core.thread : dur, msecs, seconds;
 import core.thread;
 import std.concurrency;
-import std.exception : assumeWontThrow;
 import std.socket;
 import std.stdio : writefln, writeln;
 
@@ -106,7 +105,12 @@ class MonitorCallBacks : EventMonitorCallbacks {
             }
         }
 
-        assumeWontThrow(inner_send());
+        try {
+            inner_send();
+        }
+        catch (Exception e) {
+            log.error("Monitor callback failed\n%s", e);
+        }
     }
 
     static HiBON createHiBON(const(Event) e) nothrow {

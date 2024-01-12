@@ -1,8 +1,96 @@
-# Changelog for week 49/50
+# Changelog for epoch 131000 .. 392368
+
+Happy new year! :tada:
+Here is the first changelog of the year.
+
+**DART**
+Now that we have actual real life data to test and measure performance with.
+it makes it much easier to see where bottlenecks occur.
+One improvement has already been made when calculating the merkle root of very large dart database.
+Which should make it significantly faster.
+The improvement is made when a rim is filled out, we then take the raw hash of the entire instead of summing up the hashes of all the branches.
+We've already noticed a few other bottlenecks and improvements are on their way!
+
+**TRT**
+The TRT has been enabled in all acceptance stage tests and is currently running in the operational tests.
+
+**Shell**
+If an error occurs in the shell it is now reported in the response.
+
+**Wallet fix**
+Fixed a bug in the wallet where it would not be able to handle multiple locked/requested bills with the same public key.
+
+**HiBON dub Package**
+HiBON is now available as a library in the D package registry.
+You can use it in your dub project with
+
+```bash
+dub add tagion:hibon@~master
+```
+
+Note that hibon subpackage is currently only available in the master branch.
+Later you should prefer the to use the latest release. (eg. @v1.1.0)
+
+
+**Docs**
+Improved and added documentaton for several services and api's. 
+Including the TRT, Subscription, Auszahlung, cli & options for neuewelle, architecture overview.
+The documentaton is as always available on docs.tagion.org. Previously some pages were missing from the online deployment, this should be fixed now.
+
+The hibon specifications has now been completely removed from the core repo and is now only available on https://www.hibon.org
+
+
+# Changelog for epoch 50000 to 131000
+**Wallet update on existing response**
+The wallet can now take an existing HiRPC.Result and modify itself based on that. This allows you to send your requests with curl and later modify your wallet with the responses.
+
+**TRT Improvements**
+We now have a working prototype on our TRT, which will allow much faster and efficient lookups based on public keys. We are now beginning the testing phase for this feature.
+
+**NNG Tagionshell memory leak**
+We have had a small memory leak in the shell due NNG spawning pthreads from c, which were not properly attached. This was resolved by calling: `thread_attachThis` in the threads.
+
+**BlockFile and DART readonly mode**
+When opening the DART in RO-mode we do not load the recycler which allows for faster loadtime.
+
+**Synchronized LRUT**
+We have created the initial synchronized LRUT class (Least-recently-used-threaded) which will be used in the shell for caching.
+
+**Neuewelle refactor**
+The main binary for spawning a node / network has been refactored so that it is much easier to understand now.
+
+# Changelog for epoch 0 to 50000
 
 **getFee(amount, fee) patch**
 There was a bug in the getFee function from amount because the bill used for getting the size was using null values for the pubkey, nonce etc. This has been fixed by setting the sizes statically ensuring the fee is calculated to be the same as the `createPayment` function.
 
+**LRU support for none atomic key-value**
+Our least recently used class has been upgraded so that it is possible to use none-atomic key-values.
+
+**Versioning**
+We have updated our revision to include the latest tag. The revision for example looks like the following now.
+
+version: v1.0.1+dev+dirty
+git: git@github.com:tagion/tagion.git
+branch: current
+hash: 6258adbd9a805a16edb0f748553de00f69bcb76f
+revno: 12834
+build_date: imrying
+builder_name: philiprying@gmail.com
+builder_email: gcc (GCC) 12.3.0
+CC: DMD64 D Compiler v2.105.2
+
+As it can be seen it shows that the binary is on top of v1.0.1 with develop and the working tree is dirty when it was compiled.
+
+**.isMethod patch**
+We had a problem if you send a hirpc response as a input the service would throw an error. This has been mitigated so that it does not fail now.
+
+**HashGraph startup problem**
+We have had a problem with the hashgraph, where it sometimes would not produce any epochs and create an assert on a wavefront. This was because some empty events where not filtered out. This has been fixed so that the startup is completely stable now allowing our pipeline to be more trustworthy.
+
+**Open sourcing**
+Regarding open-sourcing the licenses have been updated as well as the CONTRIBUTING.md file.
+The github action for creating the ddoc documentaton has also been fixed so that it now runs.
 
 # Changelog for week 48/49
 

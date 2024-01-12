@@ -1,7 +1,8 @@
-import nngd;
-import std.datetime.systime;
-import std.format;
 import std.stdio;
+import std.format;
+import std.datetime.systime;
+
+import nngd;
 
 
 string nngtest_socket_properties(ref NNGSocket s, string tag){
@@ -61,3 +62,4 @@ static void log(A...)(string fmt, A a){
     writefln("%.6f "~fmt,timestamp,a);
     stdout.flush();
 }
+

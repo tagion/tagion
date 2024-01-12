@@ -7,10 +7,7 @@
 - [Home](README.md)
 - Network
 	- [Modes](documents/architecture/Network_Modes.md)
-	- [bootstrap](documents/architecture/Network_bootstrap.md)
 	- [Architecture](documents/architecture/Network_Architecture.md)
-		- [Tagion](/documents/architecture/Tagion.md)
-		- [Tagion Factory](/documents/architecture/TagionFactory.md)
 		- [Input Validator](/documents/architecture/InputValidator.md)
 		- [HiRPC Verifier](/documents/architecture/HiRPCVerifier.md)
 		- [Collector](/documents/architecture/Collector.md)
@@ -25,14 +22,10 @@
 		- [Monitor](/documents/architecture/Monitor.md)
 		- [Epoch Dump](/documents/architecture/EpochDump.md)
 		- [Shell cache](/documents/architecture/DARTCache.md)
+		- [TRT](/documents/architecture/TRT.md)
 
 - Protocols
-	- [HiBON](documents/protocols/hibon/README.md)
-		- [Hash_invariant_Binary_Object_Notation](documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md)
-		- [Hash_invariant_Remote_Procedure_Call](documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md)
-		- [HiBON_JSON_format](/documents/protocols/hibon/HiBON_JSON_format.md)
-		- [HiBON_LEB128](/documents/protocols/hibon/HiBON_LEB128.md)
-		- [HiBON_Record](/documents/protocols/hibon/HiBON_Record.md)
+	- [HiBON](documents/protocols/hibon.md)
     - [Contract](/documents/protocols/contract/Contract.md)
         - [Methods](/documents/protocols/contract/hirpcmethods.md)
 	    - [Bill](/documents/protocols/contract/Bill.md)
@@ -64,6 +57,7 @@
 	- [dartutil](/src/bin-dartutil/README.md)
     - [collider](/src/bin-collider/README.md)
     - [geldbeutel](/src/bin-geldbeutel/README.md)
+    - [auszahlung](/src/bin-auszahlung/README.md)
 
 - Network Setup 
     - [Initialize DART](documents/network_setup/initialize_dart.md)

@@ -1,7 +1,7 @@
 name: Main Flow
 on:
   workflow_dispatch:
-  push: 
+  push:
 
 env:
   TARGET: x86_64-linux
@@ -11,13 +11,13 @@ env:
   RETENTION_DAYS_BINS: 3
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
-  GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+  GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
   ARTIFACT_DIR: /mnt/nfs/artifacts/${{ github.sha }}-${{ github.run_attempt }}
 
 permissions:
   contents: read
   pages: write
-  id-token: write 
+  id-token: write
 
 jobs:
   build:
@@ -31,7 +31,7 @@ jobs:
       - run: |
           git fetch
           git checkout ${{ github.sha }}
-          git clean -f && git restore . 
+          git clean -f && git restore .
 
       - name: Build tagion
         run: |
@@ -47,7 +47,6 @@ jobs:
 
           make clean
 
-
   unittest:
     runs-on: CI
     timeout-minutes: 3
@@ -59,7 +58,7 @@ jobs:
       - run: |
           git fetch
           git checkout ${{ github.sha }}
-          git clean -f && git restore . 
+          git clean -f && git restore .
 
       - name: Run unittest
         run: |
@@ -100,7 +99,7 @@ jobs:
         run: |
           git fetch
           git checkout ${{ github.sha }}
-          git clean -f && git restore . 
+          git clean -f && git restore .
 
       - name: Run commit stage tests
         run: |
@@ -111,7 +110,7 @@ jobs:
 
       - name: Report commit stage tests
         if: always()
-        run: | 
+        run: |
           sleep 5
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results
           ./build/${{ env.TARGET }}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/results >> $GITHUB_STEP_SUMMARY
@@ -132,9 +131,9 @@ jobs:
 
   acceptance_stage:
     runs-on: CD
-    timeout-minutes: 7
+    timeout-minutes: 10
     needs: [commit_stage, unittest, build]
-    
+
     steps:
       - name: Copy Artifact to local machine
         run: |
@@ -151,7 +150,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json
 
       - name: Generate reports
         if: always()
@@ -194,6 +193,32 @@ jobs:
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
 
+  ddoc:
+    if: ${{ github.ref == 'refs/heads/current' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+
+      - uses: actions/checkout@v4
+
+      - name: Build docmentation
+        run: |
+          make ddoc
+          rm -rf .git
+
+      - name: Push ddoc to repository
+        run: |
+          git clone https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git
+          cp -R build/ddoc/ ddoc/
+          cd ddoc
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
+          git add .
+          git commit -m "ddocs updated" || echo "nothing to commit"
+          git push https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git || echo "repo already up to date"
+
   create_artifact:
     runs-on: CI
     needs: [acceptance_stage, add_logs]
@@ -204,7 +229,7 @@ jobs:
           cd /mnt/nfs/artifacts
           artifact=${{ github.sha }}-${{ github.run_attempt }}
           tar czf $artifact.tar.gz --directory=$artifact/ .
-        
+
       - uses: actions/upload-artifact@v3
         with:
           name: successful_artifact
@@ -235,7 +260,7 @@ jobs:
         run: |
           git fetch
           git checkout ${{ github.sha }}
-          git clean -f && git restore . 
+          git clean -f && git restore .
 
       - name: Install android tools
         run: |
@@ -255,8 +280,7 @@ jobs:
           if-no-files-found: error
 
       - name: Cleanup
-        run: 
-          make PLATFORM=${{ matrix.arch }}-linux-android clean
+        run: make PLATFORM=${{ matrix.arch }}-linux-android clean
 
   ios_libmobile:
     needs: commit_stage
@@ -272,30 +296,19 @@ jobs:
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
 
-  ddoc:
-    if: ${{ github.ref == 'refs/heads/current' }}
-    needs: acceptance_stage
-    uses: ./.github/workflows/ddoc.yml
- 
   docs_build:
     if: ${{ github.ref == 'refs/heads/current' }}
     environment:
       name: github-pages
       url: https://docs.tagion.org
     runs-on: ubuntu-latest
-    needs: acceptance_stage
     steps:
       - uses: actions/checkout@v3
       - uses: actions/configure-pages@v3
-      - name: Copy md files
-        run: |
-          rm -r build/docs/ || echo 'no files to remove'
-          mkdir -p build/docs/
-          cp -r index.html _sidebar.md README.md documents/ build/docs/
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: 'build/docs/'
+          path: "."
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1

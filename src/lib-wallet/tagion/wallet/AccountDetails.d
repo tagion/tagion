@@ -43,18 +43,20 @@ struct AccountDetails {
     }
 
     void remove_bill_by_hash(const(DARTIndex) billHash) {
-        import std.algorithm : remove;
+        import std.algorithm : remove, countUntil;
 
-        bills = bills.remove(billHash);
+        const billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+        if (index >= 0) {
+            bills = bills.remove(index);
+        }
     }
 
     void unlock_bill_by_hash(const(DARTIndex) billHash) {
-        import std.algorithm : remove;
-
         activated.remove(billHash);
     }
 
-    pragma(msg, "Don't think this function fits in AccountDetails");
+    pragma(msg, "I don't think this function belongs in AccountDetails");
     int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) {
         import std.algorithm : countUntil;
 

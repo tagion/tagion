@@ -22,7 +22,6 @@ enum revision_text = zip(
         "branch: %s",
         "hash: %s",
         "revno: %s",
-        "build_date: %s",
         "builder_name: %s",
         "builder_email: %s",
         "CC: %s",

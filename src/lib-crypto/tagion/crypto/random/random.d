@@ -7,11 +7,11 @@ import tagion.basic.Version;
 
 static if (ver.iOS || ver.OSX || ver.BSD || ver.Android) {
     enum is_getrandom = false;
-    extern (C) void arc4random_buf(void* buf, size_t buflen) nothrow;
+    extern (C) void arc4random_buf(void* buf, size_t buflen) pure nothrow;
 }
 else static if (ver.linux) {
     enum is_getrandom = true;
-    extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
+    extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) pure nothrow;
 }
 else {
     static assert(0, format("Random function not support for %s", os));
@@ -46,14 +46,12 @@ unittest {
 }
 
 /++
-     + getRandom - runs platform specific random function.
-     +/
++ getRandom - runs platform specific random function.
++/
 @trusted
-void getRandom(ref scope ubyte[] buf) nothrow
+void getRandom(ref scope ubyte[] buf) pure nothrow
 in (buf.length <= 256)
 do {
-    import std.exception : assumeWontThrow;
-
     if (buf.length == 0) {
         return;
     }
@@ -67,11 +65,11 @@ do {
     }
     else {
         arc4random_buf(&buf[0], buf.length);
-    } // TODO: add other platforms
+    }
 }
 
 @trusted
-T getRandom(T)() nothrow if (isBasicType!T) {
+T getRandom(T)() pure nothrow if (isBasicType!T) {
     T result;
     auto buf = (cast(ubyte*)&result)[0 .. T.sizeof];
     getRandom(buf);

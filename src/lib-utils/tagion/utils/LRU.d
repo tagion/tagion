@@ -16,11 +16,6 @@ class LRU(K, V) {
     enum does_not_have_immutable_members = __traits(compiles, { V v; void f(ref V _v) {
             _v = v;} });
 
-            static if (!does_not_have_immutable_members) {
-                static assert(hasMember!(V, "undefined"), format(
-                    "%s must have a static member named 'undefined'", V.stringof));
-            }
-
             @safe @nogc struct Entry {
                 K key;
                 V value;
@@ -82,10 +77,21 @@ class LRU(K, V) {
                 return evict;
             }
 
+            // updates the value if exists or inserts if flag pecified
+            bool update(const(K) key, ref V value, bool upsert = false){
+                auto ent = key in items;
+                if (ent !is null) {
+                    auto element = *ent;
+                    element.entry.value = value;
+                    evictList.moveToFront(element);
+                    return true;
+                }
+                return upsert ? add(key,value) : false;
+            }
+
             // Get looks up a key's value from the cache.
             static if (does_not_have_immutable_members) {
                 bool get(scope const(K) key, ref V value) nothrow {
-
                     auto ent = key in items;
                     if (ent !is null) {
                         auto element = *ent;
@@ -105,6 +111,10 @@ class LRU(K, V) {
                         if (!found) {
                             return V.undefined;
                         }
+                    } else {
+                        if(!found) {
+                            return V.init;
+                        }    
                     }
                     return value;
                 }
@@ -115,7 +125,12 @@ class LRU(K, V) {
                         evictList.moveToFront(element);
                         return element.entry.value;
                     }
-                    return V.undefined;
+                    static if (hasMember!(V, "undefined")) {
+                        return V.undefined;
+                    } else {
+                        return V.init;
+                    }                        
+
                 }
             }
 
@@ -155,14 +170,18 @@ class LRU(K, V) {
                     if (ent !is null) {
                         return (*ent).entry.value;
                     }
-                    return V.undefined;
+                    static if (hasMember!(V, "undefined")) {
+                        return V.undefined;
+                    } else {
+                        return V.init;
+                    }                        
                 }
             }
 
             // Remove removes the provided key from the cache, returning if the
             // key was contained.
-
-            bool remove(scope const(K) key) {
+            
+            bool remove(scope const(K) key) nothrow {
                 auto ent = key in items;
                 if (ent !is null) {
                     auto element = *ent;
@@ -225,7 +244,7 @@ class LRU(K, V) {
             invariant {
                 assert(items.length == evictList.length);
             }
-        }
+}
 
     unittest {
         alias LRU!(int, int) TestLRU;
@@ -482,9 +501,46 @@ class LRU(K, V) {
         assert(count == 1);
         assert(l.length == N - 1);
         assert(l[make_key(2)] == E.undefined);
-        alias TestSyncLRU = SyncLRU!(Key, E);
+//        alias TestSyncLRU = SyncLRU!(Key, E);
     }
 
+    /// update/upsert test
+    unittest{
+        alias LRU!(int, int) TestLRU;
+        uint evictCounter;
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+            assert(e.entry.key == e.entry.value || e.entry.value == e.entry.key * 7);
+            evictCounter++;
+        }
+        bool ok;
+        auto l = new TestLRU(&onEvicted, 2);
+        int x = 1;
+        ok = l.add(1, x);
+        assert(!ok);
+        assert(evictCounter == 0, "should not have an eviction");
+        x++;
+        ok = l.add(2, x);
+        assert(!ok);
+        assert(evictCounter == 0, "should still not have an eviction");
+        ok = l.get(2,x);
+        assert(ok);
+        assert(x == 2, "check inserted");
+        x = 14;
+        ok = l.update(2,x);
+        assert(ok);
+        ok = l.get(2, x);
+        assert(ok);
+        assert(x == 14, "check updates");
+        x = 3;
+        ok = l.update(3,x,true);
+        assert(ok);
+        assert(evictCounter == 1, "should have an eviction");
+        ok = l.get(3, x);
+        assert(ok);
+        assert(x == 3, "check upsert");
+    }
+
+/*
     synchronized
     class SyncLRU(K, V) {
         alias LRU_t = LRU!(K, V);
@@ -497,3 +553,6 @@ class LRU(K, V) {
             tmp_lru.add(key, value);
         }
     }
+*/
+
+

@@ -1,11 +1,13 @@
 
 import std.stdio;
 import std.string;
-
+import std.json;
+import core.thread.osthread;
 import dfunctions;
 
 static extern (C) void handler (cdata *d)
 {
+     thread_attachThis();
     nng_url *u;
     string uri;
     string route;
@@ -16,6 +18,11 @@ static extern (C) void handler (cdata *d)
     auto rc = nng_url_parse(&u, uri.toStringz );
     
     route = cast(immutable)(fromStringz(u.u_path));
+
+    JSONValue data = parseJSON("{}");
+    data["a"] = "b";
+    data["c"] = 1;
+    string s = data.toString;
     
     path = route.split("/");
 

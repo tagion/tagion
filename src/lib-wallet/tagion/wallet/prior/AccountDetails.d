@@ -10,6 +10,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
+import tagion.wallet.AccountDetails : Invoice;
 
 @safe
 struct AccountDetails {
@@ -59,7 +60,7 @@ struct AccountDetails {
         activated.remove(bills[index].owner);
     }
 
-    pragma(msg, "Don't think this function fits in AccountDetails");
+    pragma(msg, "I don't think this function belongs in AccountDetails");
     int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) {
         import std.algorithm : countUntil;
         import tagion.crypto.SecureNet : StdHashNet;
@@ -113,10 +114,10 @@ struct AccountDetails {
 
     TagionBill add_bill(const Document doc) {
         auto bill = TagionBill(doc);
-        const added=add_bill(bill);
+        const added = add_bill(bill);
         if (added) {
-        return bill;
-    }
+            return bill;
+        }
         return TagionBill.init;
     }
 
@@ -177,21 +178,5 @@ struct AccountDetails {
                 .sum;
         }
     }
-    mixin HiBONRecord;
-}
-
-@safe
-@recordType("Invoice")
-struct Invoice {
-    string name; /// Name of the invoice
-    TagionCurrency amount; /// Amount to be payed
-    @label(StdNames.owner) Pubkey pkey; /// Key to the payee
-    @optional Document info; /// Information about the invoice
-    mixin HiBONRecord;
-}
-
-@safe
-struct Invoices {
-    Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
 }

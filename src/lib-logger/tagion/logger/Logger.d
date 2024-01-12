@@ -346,7 +346,7 @@ struct Topic {
 alias Subscribed = shared(Flag!"subscribed");
 
 @safe
-shared struct SubscriptionMask {
+final synchronized class SubscriptionMask {
     //      yes|no     topic
     private Subscribed[string] _registered_topics;
 
@@ -388,6 +388,9 @@ shared struct SubscriptionMask {
 }
 
 static shared SubscriptionMask submask;
+shared static this() {
+    submask = new SubscriptionMask();
+}
 
 unittest {
     import core.time;

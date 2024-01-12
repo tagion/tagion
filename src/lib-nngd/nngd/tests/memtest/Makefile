@@ -13,10 +13,10 @@ cfunctions.o: cfunctions.c cfunctions.h
 	gcc -c -o $@ $<
 
 cserver.o: cserver.c cserver.h
-	gcc -c -o $@ $<
+	gcc -c -o $@ $< -lpthread
 
 ctest:
-	gcc $(CFLAGS) -o ctest *.c
+	gcc $(CFLAGS) -o ctest *.c -lpthread
 
 dfiles:
 	$(DC) $(DCFLAGS) -of=dtest -I. -L-L. -L-lcf dtest.d

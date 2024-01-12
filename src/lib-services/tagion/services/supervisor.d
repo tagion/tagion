@@ -4,13 +4,11 @@ module tagion.services.supervisor;
 import core.time;
 import std.file;
 import std.path;
-import std.socket;
 import std.stdio;
 import std.typecons;
 import tagion.GlobalSignals : stopsignal;
 import tagion.actor;
 import tagion.actor.exceptions;
-import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTFile;
@@ -26,8 +24,7 @@ import tagion.services.options;
 import tagion.services.replicator;
 import tagion.services.transcript;
 import tagion.services.TRTService;
-import tagion.utils.JSONCommon;
-import tagion.utils.pretend_safe_concurrency : locate, send;
+import tagion.services.nodeInterface;
 import core.memory;
 
 @safe
@@ -37,45 +34,46 @@ struct Supervisor {
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         immutable tn = opts.task_names;
 
-        auto replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
+        ActorHandle[] handles;
 
-        // signs data for hirpc response
-        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net, opts.trt.enable);
+        handles ~= spawn!ReplicatorService(tn.replicator, opts.replicator);
+        handles ~= spawn!DARTService(tn.dart, opts.dart, tn, shared_net, opts.trt.enable);
 
-        ActorHandle trt_handle;
         if (opts.trt.enable) {
-            trt_handle = spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
+            handles ~= spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
         }
 
-        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
+        handles ~= spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
-        auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
+        handles ~= spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
+
+        with (NetworkMode) final switch (opts.wave.network_mode) {
+        case INTERNAL:
+            break;
+        case LOCAL:
+            handles ~= _spawn!NodeInterfaceService(tn.node_interface, opts.node_interface, tn.epoch_creator);
+            break;
+        case PUB:
+            assert(0, "NetworkMode not supported");
+            break;
+        }
 
         // signs data
-        auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
+        handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
                 .network_mode, opts.wave.number_of_nodes, shared_net, opts.monitor, tn);
 
         // verifies signature
-        auto collector_handle = _spawn!CollectorService(tn.collector, tn);
+        handles ~= _spawn!CollectorService(tn.collector, tn);
 
-        auto tvm_handle = _spawn!TVMService(tn.tvm, tn);
+        handles ~= _spawn!TVMService(tn.tvm, tn);
 
         // signs data
-        auto transcript_handle = spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
+        handles ~= spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
 
-        auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn.dart_interface);
+        handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn
+                .dart_interface);
 
-        auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
-
-
-        
-        // void timeout() @trusted {
-        //     import core.memory;
-        //     GC.collect;
-        // }
-        
-        if (waitforChildren(Ctrl.ALIVE, 40.seconds)) {
-            // runTimeout(10.seconds, &timeout);
+        if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
             run();
         }
         else {
@@ -83,15 +81,12 @@ struct Supervisor {
         }
 
         log("Supervisor stopping services");
-        if (opts.trt.enable) {
-            trt_handle.send(Sig.STOP);
-        }
-        foreach (service; services) {
-            if (service.state is Ctrl.ALIVE) {
-                service.send(Sig.STOP);
+        foreach (handle; handles) {
+            if (handle.state is Ctrl.ALIVE) {
+                handle.send(Sig.STOP);
             }
-
         }
+
         (() @trusted { // NNG shoould be safe
             import core.time;
             import nngd;

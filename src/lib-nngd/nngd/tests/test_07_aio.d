@@ -1,16 +1,17 @@
+import std.stdio;
+import std.conv;
+import std.string;
+import std.concurrency;
 import core.thread;
+import std.datetime.systime;
+import std.uuid;
+import std.regex;
+import std.exception;
+
 import nngd;
 import nngtestutil;
-import std.concurrency;
-import std.conv;
-import std.datetime.systime;
-import std.exception;
-import std.regex;
-import std.stdio;
-import std.string;
-import std.uuid;
 
-extern (C) void scb ( void* p ){
+void scb ( void* p ){
     NNGAio* aio = cast(NNGAio*)p;
     log("Send callback");
     writeln("Send callback fired pointer: ", p);
@@ -19,7 +20,7 @@ extern (C) void scb ( void* p ){
     writeln("Send callback fired with result: ", res, " : ", cnt );
 }
 
-extern (C) void rcb ( void* p ){
+void rcb ( void* p ){
     NNGAio* aio = cast(NNGAio*)p;
     log("Receive callback");
     writeln("Receive callback fired pointer: ", p);
@@ -125,5 +126,6 @@ main()
     writeln("Bye!");
     return 0;
 }
+
 
 

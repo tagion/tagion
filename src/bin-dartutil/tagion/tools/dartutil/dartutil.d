@@ -1,5 +1,3 @@
-/// \file dartutil.d
-
 module tagion.tools.dartutil.dartutil;
 
 import std.algorithm;
@@ -45,6 +43,9 @@ import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile : Index;
+import tagion.utils.Term;
+import std.range;
+import tagion.basic.range;
 
 /**
  * @brief tool for working with local DART database
@@ -66,20 +67,23 @@ int _main(string[] args) {
     bool print;
 
     bool standard_output;
+    string test_dart;
     string[] dartread_args;
     string angle_range;
+    string exec;
     uint depth;
     bool strip;
     bool dartmodify;
-    bool dartrim;
+    string dartrim;
     bool dartrpc;
     bool sync;
     bool eye;
     bool fake;
     bool force;
     bool dump;
-
+    bool dump_branches;
     bool initialize;
+    bool flat_disable;
     string passphrase = "verysecret";
 
     GetoptResult main_args;
@@ -89,25 +93,29 @@ int _main(string[] args) {
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-                //                "i|inputfile", "Sets the HiBON input file name", &inputfilename,
+                "verbose|v", "Prints verbose information to console", &__verbose_switch,
+                "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
-                "strip", "Strips the dart-recoder dumps archives", &strip,
                 "rim", "Performs DART rim read", &dartrim,
                 "m|modify", "Excutes a DART modify sequency", &dartmodify,
-                "f|force", "Force erase and create journal and destination DART", &force,
                 "rpc", "Excutes a HiPRC on the DART", &dartrpc,
+                "strip", "Strips the dart-recoder dumps archives", &strip,
+                "f|force", "Force erase and create journal and destination DART", &force,
                 "print", "prints all the archives with in the given angle", &print,
                 "dump", "Dumps all the archives with in the given angle", &dump,
+                "dump-branches", "Dumps all the archives and branches with in the given angle", &dump_branches,
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
+                "e|exec", "Execute string to be used for remote access", &exec,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-                "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
+                "A|angle", "Sets angle range from:to (Default is full range)", &angle_range,
                 "depth", "Set limit on dart rim depth", &depth,
-                "verbose|v", "Prints verbose information to console", &__verbose_switch,
                 "fake", format(
                     "Use fakenet instead of real hashes : default :%s", fake), &fake,
+                "test", "Generate a test dart with specified number of archives total:bundle", &test_dart,
+                "flat-disable", "Disable flat branch hash", &flat_disable,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -139,7 +147,13 @@ int _main(string[] args) {
             return 0;
         }
 
+        if (!exec.empty) {
+            writeln("%s", exec);
+            writefln(exec, "hirpc.hibon", "response.hibon");
+        }
         if (!angle_range.empty) {
+            import std.bitmanip;
+
             ushort _from, _to;
             const fields =
                 angle_range.formattedRead("%x:%x", _from, _to)
@@ -172,7 +186,7 @@ int _main(string[] args) {
         tools.check(!dartfilename.empty, "Missing dart file");
 
         if (dartfilename.exists) {
-            auto blockfile = BlockFile(dartfilename);
+            auto blockfile = BlockFile(dartfilename, Yes.read_only);
             scope (exit) {
                 blockfile.close;
             }
@@ -189,14 +203,85 @@ int _main(string[] args) {
         const hirpc = HiRPC(net);
 
         if (initialize) {
-            DART.create(dartfilename, net);
+            const flat = (flat_disable) ? No.flat : Yes.flat;
+            DART.create(filename : dartfilename, net:
+                    net, flat:
+                    flat);
+            return 0;
+        }
+        if (!test_dart.empty) {
+            import std.random;
+            import std.datetime.stopwatch;
+
+            auto test_params = test_dart.split(':').map!(param => param.to!ulong);
+            pragma(msg, "test_params ", typeof(test_params.front));
+            const number_of_archives = test_params.eatOne;
+            const bundle_size = test_params.eatOne(ulong(1000));
+            auto test_db = new DART(net, dartfilename);
+            scope (exit) {
+                test_db.close;
+            }
+            static struct TestDoc {
+                string text;
+                mixin HiBONRecord;
+            }
+
+            static const(Document) test_doc(const ulong x) {
+                TestDoc _test_doc;
+                _test_doc.text = format("Test document %d", x);
+                return _test_doc.toDoc;
+            }
+
+            const(Document) function(const ulong) doc_gen = &test_doc;
+            if (fake) {
+                doc_gen = &DARTFakeNet.fake_doc;
+            }
+            //enum bundle_size = 1000;
+            size_t count;
+            auto rnd = Random(unpredictableSeed);
+
+            enum line_length = 40;
+            void progress(const size_t s, const(char[]) color) {
+                nobose("\r%s%-(%s%)%s%s%s", GREEN, '#'.repeat(s % line_length), color, "#", RESET);
+            }
+
+            auto rec_time = StopWatch(AutoStart.no);
+            auto dart_time = StopWatch(AutoStart.no);
+            long prev_dart_time;
+            foreach (no; 0 .. (number_of_archives / bundle_size) + 1) {
+                count += bundle_size;
+                const N = (number_of_archives < count) ? number_of_archives % bundle_size : bundle_size;
+                auto rec = test_db.recorder;
+                progress(no, RED);
+                rec_time.start;
+                foreach (i; 0 .. N) {
+                    const random_doc_no = uniform(ulong.min, ulong.max, rnd);
+                    rec.add(doc_gen(random_doc_no));
+                }
+                rec_time.stop;
+                progress(no, YELLOW);
+                dart_time.start;
+                test_db.modify(rec);
+                dart_time.stop;
+                progress(no, GREEN);
+                if ((no + 1) % line_length == 0) {
+                    const current_dart_time = dart_time.peek.total!"usecs";
+                    const delta_dart_time = current_dart_time - prev_dart_time;
+                    prev_dart_time = current_dart_time;
+                    nobose(" dart %.3fmsec per archive %.3fmsec blocks %d",
+                            double(delta_dart_time) / 1000.0,
+                            double(delta_dart_time) / (1000.0 * line_length * bundle_size),
+                            count);
+                    vout.writeln;
+                }
+            }
             return 0;
         }
 
         Exception dart_exception;
-        auto db = new DART(net, dartfilename, dart_exception);
+        auto db = new DART(net, dartfilename, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
-            stderr.writefln("Fail to open DART: %s. Abort.", dartfilename);
+            error("Fail to open DART: %s. Abort.", dartfilename);
             error(dart_exception);
             return 1;
         }
@@ -227,16 +312,28 @@ int _main(string[] args) {
             return 0;
         }
 
+        File fout;
+        fout = stdout;
+        if (!outputfilename.empty) {
+            fout = File(outputfilename, "w");
+            verbose("Output file %s", outputfilename);
+        }
+        scope (exit) {
+            if (fout !is stdout) {
+                fout.close;
+            }
+        }
         if (print) {
             db.dump(sectors, Yes.full, depth);
         }
         else if (eye) {
             writefln("EYE: %(%02x%)", db.fingerprint);
         }
-        else if (dump) {
-            File fout;
-            fout = stdout;
+        else if (dump || dump_branches) {
             bool dartTraverse(const(Document) doc, const Index index, const uint rim, Buffer rim_path) {
+                if (dump && DARTFile.Branches.isRecord(doc)) {
+                    return false;
+                }
                 fout.rawWrite(doc.serialize);
                 return false;
             }
@@ -246,7 +343,7 @@ int _main(string[] args) {
         }
 
         const dartread = dartread_args.length > 0;
-        const onehot = dartrpc + dartread + dartrim + dartmodify;
+        const onehot = dartrpc + dartread + !dartrim.empty + dartmodify;
 
         tools.check(onehot <= 1,
                 "Only one of the dartrpc, dartread, dartrim, dartmodify switched alowed");
@@ -261,31 +358,22 @@ int _main(string[] args) {
             return 0;
         }
         if (dartread) {
-            File fout;
-            fout = stdout;
             DARTIndex[] dart_indices;
-            //("%s", dartread_args);
             foreach (read_arg; dartread_args) {
                 import tagion.tools.dartutil.dartindex : dartIndexDecode;
 
-                //   writefln("read %s", read_arg);
                 auto dart_index = net.dartIndexDecode(read_arg);
                 verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase64, dart_index);
                 dart_indices ~= dart_index;
             }
 
             const sender = CRUD.dartRead(dart_indices, hirpc);
+            if (dry_switch) {
+                fout.rawWrite(sender.serialize);
+            }
             auto receiver = hirpc.receive(sender);
             auto response = db(receiver, false);
 
-            if (!outputfilename.empty) {
-                fout = File(outputfilename, "w");
-            }
-            scope (exit) {
-                if (fout !is stdout) {
-                    fout.close;
-                }
-            }
             if (strip) {
 
                 auto recorder = db.recorder(response.result);
@@ -297,39 +385,53 @@ int _main(string[] args) {
             fout.rawWrite(response.toDoc.serialize);
             return 0;
         }
-        if (dartrim) {
-            version (none) {
-                if (!inputfile_switch) {
-                    writeln("No input file provided. Use -i to specify input file");
+        if (!dartrim.empty) {
+            Rims rims;
+            if (dartrim != "root") {
+                auto rim_and_keys = dartrim.split(":");
+                auto rim_path = rim_and_keys.front;
+                rim_and_keys.popFront;
+                auto rim_decimals = rim_path.split(",");
+                if (!rim_decimals.empty && rim_decimals.length > 1) {
+                    rim_path = format("%(%02x%)", rim_decimals
+                            .until!(key => key.empty)
+                            .map!(key => key.to!ubyte));
                 }
-                else {
-                    // Buffer root_rims;
-                    // auto params=new HiBON;
-                    // if(!inputfilename.exists) {
-                    //     writefln("Input file: %s not exists", inputfilename);
-                    //     root_rims = [];
-                    // }else{
-                    //     auto inputBuffer = cast(immutable(char)[])fread(inputfilename);
-                    //     if(inputBuffer.length){
-                    //         root_rims = decode(inputBuffer);
-                    //         writeln(root_rims);
-                    //     }else{
-                    //         root_rims = [];
-                    //     }
-                    // }
-                    // params[DARTFile.Params.rims]=root_rims;
-                    // auto sended = hirpc.dartRim(params).toHiBON(net).serialize;
-                    // auto doc = Document(sended);
-                    // auto received = hirpc.receive(doc);
-                    // auto result = db(received);
-                    // auto tosend = hirpc.toHiBON(result);
-                    // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
-                    // writeResponse(tosendResult.serialize);
+                string keys_hex;
+                if (!rim_and_keys.empty) {
+                    keys_hex = rim_and_keys.front;
+                    auto keys_decimals = keys_hex.split(",");
+                    if (keys_decimals.length > 1) {
+
+                        keys_hex = format("%(%02x%)", keys_decimals
+                                .until!(key => key.empty)
+                                .map!(key => key.to!ubyte));
+
+                    }
+                    //         rim_keys = keys_hex.decode;
                 }
+                rims = Rims(rim_path.decode, keys_hex.decode);
             }
-            return 1;
+            verbose("Rim : %(%02x %):%(%02x %)", rims.path, rims.key_leaves);
+            const sender = CRUD.dartRim(rims, hirpc);
+            verbose("sender %s", sender.toPretty);
+            if (dry_switch) {
+                fout.rawWrite(sender.serialize);
+                return 0;
+            }
+            auto receiver = hirpc.receive(sender);
+            auto response = db(receiver, false);
+
+            if (strip) {
+                fout.rawWrite(response.result.serialize);
+                return 0;
+            }
+            fout.rawWrite(response.toDoc.serialize);
+            return 0;
         }
         if (dartmodify) {
+            db.close;
+            db = new DART(net, dartfilename);
             tools.check(!inputfilename.empty, "Missing input file DART-modify");
             const doc = inputfilename.fread;
             auto factory = RecordFactory(net);
@@ -339,8 +441,8 @@ int _main(string[] args) {
             auto result = db(received, false);
             auto tosend = hirpc.toHiBON(result);
             auto tosendResult = tosend.method.params;
-            if (!outputfilename.empty) {
-                outputfilename.fwrite(tosendResult);
+            if (fout != stdout) {
+                fout.rawWrite(tosendResult.serialize);
             }
             return 0;
         }

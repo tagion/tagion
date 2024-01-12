@@ -215,7 +215,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit", "contract", "services"
+                "acceptance", "contract", "services"
             ],
             "timeout": 0.0
         },
@@ -255,7 +255,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "trt"
+                "acceptance", "trt"
             ],
             "timeout": 0.0
         },
