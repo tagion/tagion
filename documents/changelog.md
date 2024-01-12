@@ -1,3 +1,45 @@
+# Changelog for epoch 131000 .. 392368
+
+Happy new year! :tada:
+Here is the first changelog of the year.
+
+**DART**
+Now that we have actual real life data to test and measure performance with.
+it makes it much easier to see where bottlenecks occur.
+One improvement has already been made when calculating the merkle root of very large dart database.
+Which should make it significantly faster.
+The improvement is made when a rim is filled out, we then take the raw hash of the entire instead of summing up the hashes of all the branches.
+We've already noticed a few other bottlenecks and improvements are on their way!
+
+**TRT**
+The TRT has been enabled in all acceptance stage tests and is currently running in the operational tests.
+
+**Shell**
+If an error occurs in the shell it is now reported in the response.
+
+**Wallet fix**
+Fixed a bug in the wallet where it would not be able to handle multiple locked/requested bills with the same public key.
+
+**HiBON dub Package**
+HiBON is now available as a library in the D package registry.
+You can use it in your dub project with
+
+```bash
+dub add tagion:hibon@~master
+```
+
+Note that hibon subpackage is currently only available in the master branch.
+Later you should prefer the to use the latest release. (eg. @v1.1.0)
+
+
+**Docs**
+Improved and added documentaton for several services and api's. 
+Including the TRT, Subscription, Auszahlung, cli & options for neuewelle, architecture overview.
+The documentaton is as always available on docs.tagion.org. Previously some pages were missing from the online deployment, this should be fixed now.
+
+The hibon specifications has now been completely removed from the core repo and is now only available on https://www.hibon.org
+
+
 # Changelog for epoch 50000 to 131000
 **Wallet update on existing response**
 The wallet can now take an existing HiRPC.Result and modify itself based on that. This allows you to send your requests with curl and later modify your wallet with the responses.
