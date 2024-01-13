@@ -174,6 +174,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
             }
             receiveTimeout(
                     timeout / thisActor.childrenState.length,
+                    defaultFailhandler,
                     &control,
                     &signal,
                     &ownerTerminated
@@ -187,6 +188,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
         return statusChildren(state);
     }
     catch (Exception e) {
+        log.fatal("Error when waiting for children status\n%s", e);
         return false;
     }
 }
@@ -451,11 +453,7 @@ if (allSatisfy!(isSafe, Args)) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) @safe {
-            if (!tidOwner.isNull) {
-                ownerTid.prioritySend(tf);
-            }
-        };
+        enum failhandler = defaultFailhandler;
     }
 
     scope (failure) {
@@ -498,11 +496,7 @@ if (allSatisfy!(isSafe, Args)) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) @safe {
-            if (!tidOwner.isNull) {
-                ownerTid.prioritySend(tf);
-            }
-        };
+        enum failhandler = defaultFailhandler;
     }
 
     scope (failure) {
@@ -534,6 +528,12 @@ if (allSatisfy!(isSafe, Args)) {
         }
     }
 }
+
+enum defaultFailhandler = (TaskFailure tf) @safe {
+    if (!tidOwner.isNull) {
+        ownerTid.prioritySend(tf);
+    }
+};
 
 void signal(Sig signal) @safe {
     with (Sig) final switch (signal) {
