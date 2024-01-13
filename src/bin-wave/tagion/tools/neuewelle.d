@@ -15,7 +15,6 @@ import std.file : chdir, exists;
 import std.format;
 import std.getopt;
 import std.path;
-import std.path : baseName, dirName;
 import std.range : iota;
 import std.stdio;
 import std.typecons;
@@ -255,21 +254,46 @@ int _neuewelle(string[] args) {
         import std.exception : assumeUnique;
         import std.string;
 
-        auto __net = new StdSecureNet();
-        __net.generateKeyPair("OwO");
-        scope (exit) {
-            destroy(__net);
-        }
-
         auto address_file = File(local_options.wave.mode1.address_book_file, "r");
         foreach (line; address_file.byLine) {
             auto pair = line.split();
-            check(pair.length == 2, format("Expected only 2 fields in addresbook line\n%s", line));
+            check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
             const pkey = Pubkey(pair[0].strip.decode);
-            check(pkey.length == 33, "Pubkey with invalid length");
+            check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
             const addr = pair[1].strip;
 
             addressbook[pkey] = assumeUnique(addr);
+        }
+
+        auto by_line = fin.byLine;
+        // Hardcordes config path for now
+        const wallet_config_file = "wallet.json";
+        if (!wallet_config_file.exists) {
+            error(format("Could not find wallet config file at <%s>", absolutePath(wallet_config_file)));
+            break;
+        }
+        WalletOptions wallet_options;
+        wallet_options.load(wallet_config_file);
+
+        auto wallet_interface = WalletInterface(wallet_options);
+        wallet_interface.load;
+
+        info("Enter pin for <%s>", absolutePath(wallet_config_file));
+        {
+            const pin = (by_line.front.empty) ? string.init : by_line.front;
+            wallet_interface.secure_wallet.login(pin);
+        }
+
+        if (!wallet_interface.secure_wallet.isLoggedin) {
+            error("Could not log in");
+            break;
+        }
+
+        good("Logged in");
+        StdSecureNet __net;
+        __net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
+        scope (exit) {
+            destroy(__net);
         }
 
         Document epoch_head = getHead(local_options, __net);
