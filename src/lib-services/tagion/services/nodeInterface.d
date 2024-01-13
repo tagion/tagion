@@ -44,7 +44,7 @@ struct NodeInterfaceService {
         sock.close();
     }
 
-    void node_send(NodeSend, Pubkey channel, Document payload) @trusted {
+    void node_send(NodeSend, const(Pubkey) channel, const(Document) payload) @trusted {
         const address = addressbook.getAddress(channel);
         int rc = sock.dial(address);
         if (rc < 0) {
