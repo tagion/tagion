@@ -289,14 +289,14 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
                 actor.task(args);
 
                 // If the actor forgets to kill it's children we'll do it anyway
-                // if (!statusChildren(Ctrl.END)) {
-                //     foreach (child_task_name, ctrl; thisActor.childrenState) {
-                //         if (ctrl is Ctrl.ALIVE) {
-                //             ActorHandle(child_task_name).send(Sig.STOP);
-                //         }
-                //     }
-                //     waitforChildren(Ctrl.END);
-                // }
+                if (!statusChildren(Ctrl.END)) {
+                    foreach (child_task_name, ctrl; thisActor.childrenState) {
+                        if (ctrl is Ctrl.ALIVE) {
+                            ActorHandle(child_task_name).send(Sig.STOP);
+                        }
+                    }
+                    waitforChildren(Ctrl.END);
+                }
 
             }
             catch (Exception t) {
@@ -335,7 +335,7 @@ if (isActor!A) {
                 if (!statusChildren(Ctrl.END)) {
                     foreach (child_task_name, ctrl; thisActor.childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
-                            locate(child_task_name).send(Sig.STOP);
+                            ActorHandle(child_task_name).send(Sig.STOP);
                         }
                     }
                     waitforChildren(Ctrl.END);
