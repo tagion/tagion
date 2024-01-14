@@ -176,10 +176,10 @@ int _neuewelle(string[] args) {
         }
 
         foreach (option; override_options) {
-            string[] key_value = option.split(":");
-            assert(key_value.length >= 2, format("Option '%s' invalid, missing key:value", option));
-            auto value = key_value[1 .. $].join;
-            string[] key = key_value[0].split(".");
+            const index = option.countUntil(":");
+            assert(index > 0, format("Option '%s' invalid, missing key:value", option));
+            string[] key = option[0 .. index].split(".");
+            string value = option[index + 1 .. $];
             set_val(json, key, value);
         }
         // If options does not parse as a string then some types will not be interpreted correctly
