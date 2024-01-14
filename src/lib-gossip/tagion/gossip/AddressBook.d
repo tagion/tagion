@@ -130,7 +130,7 @@ struct NodeAddress {
      * @return string address
      */
     string toString() const {
-        return "/" ~ addr_type.stringof ~ "/" ~ host.to!string ~ "/" ~ transport.stringof ~ "/" ~ port.stringof;
+        return toNNGString();
     }
 
     string toNNGString() const {
