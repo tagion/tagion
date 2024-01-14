@@ -3,21 +3,22 @@ module tagion.gossip.NNGGossipNet;
 import std.random;
 import nngd;
 
-import tagion.gossip.InterfaceNet;
-import tagion.crypto.Types;
-import tagion.utils.StdTime;
-import tagion.communication.HiRPC;
 import tagion.actor;
+import tagion.basic.Types;
+import tagion.crypto.Types;
+import tagion.communication.HiRPC;
+import tagion.gossip.InterfaceNet;
 import tagion.logger;
 import tagion.services.messages;
+import tagion.utils.StdTime;
 
 @safe
 class NNGGossipNet : GossipNet {
     private string[Pubkey] addresses;
     private Pubkey[] _pkeys;
     immutable(Pubkey) mypk;
-    Random random;
-    ActorHandle nodeinterface;
+    private Random random;
+    private ActorHandle nodeinterface;
 
     this(const Pubkey mypk, ActorHandle nodeinterface) {
         this.nodeinterface = nodeinterface;
@@ -75,7 +76,7 @@ class NNGGossipNet : GossipNet {
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
         version (EPOCH_LOG) {
-            log.trace("Selected channel: %(%x%)", send_channel);
+            log.trace("Selected channel: %s", send_channel.encodeBase64);
         }
         if (send_channel.length) {
             send(send_channel, sender());
