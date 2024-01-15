@@ -51,7 +51,7 @@ class EmulatorGossipNet : GossipNet {
         import tagion.gossip.AddressBook;
         import tagion.services.locator;
 
-        const task_name = addressbook.getAddress(channel);
+        const task_name = addressbook[channel].address;
 
         // we do this command to make sure that everything has started since it will throw if it has not been started.
         tryLocate(task_name);

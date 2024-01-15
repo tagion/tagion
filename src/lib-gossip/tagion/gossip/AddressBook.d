@@ -24,19 +24,19 @@ import tagion.utils.Miscellaneous : cutHex;
 @safe
 synchronized class AddressBook {
     /** Addresses for node */
-    protected shared(string[Pubkey]) addresses;
+    protected shared(NodeInfo[Pubkey]) addresses;
 
     /**
      * Init NodeAddress if public key exist
      * @param pkey - public key for check
      * @return initialized node address
      */
-    immutable(string) opIndex(const Pubkey pkey) const pure nothrow {
+    const(NodeInfo) opIndex(const Pubkey pkey) const pure nothrow @trusted {
         auto addr = pkey in addresses;
         if (addr) {
-            return cast(immutable)(*addr);
+            return cast(NodeInfo)*addr;
         }
-        return string.init;
+        return NodeInfo.init;
     }
 
     /**
@@ -44,10 +44,10 @@ synchronized class AddressBook {
      * @param addr - value
      * @param pkey - key
      */
-    void opIndexAssign(const string addr, const Pubkey pkey)
+    void opIndexAssign(const NodeInfo info, const Pubkey pkey)
     in ((pkey in addresses) is null, format("Address %s has already been set", pkey.encodeBase64))
     do {
-        addresses[pkey] = addr;
+        addresses[pkey] = info;
     }
 
     /**
@@ -85,9 +85,7 @@ synchronized class AddressBook {
         return channels;
     }
 
-    const(string) getAddress(const Pubkey pkey) const pure nothrow {
-        return addresses[pkey];
-    }
+    alias getAddress = opIndex;
 
     /**
      * Return amount of nodes in networt

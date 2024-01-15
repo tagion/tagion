@@ -33,7 +33,7 @@ class NNGGossipNet : GossipNet {
             return;
         }
 
-        const address = addressbook.getAddress(channel);
+        const address = addressbook[channel].address;
         _pkeys ~= channel;
         addresses[channel] = address;
     }

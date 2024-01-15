@@ -84,7 +84,7 @@ void spawnMode0(
 
     if (epoch_head is Document.init) {
         foreach (n; zip(nodes, node_options)) {
-            addressbook[n[0].pkey] = n[1].task_names.epoch_creator;
+            addressbook[n[0].pkey] = NodeInfo(n[1].task_names.epoch_creator);
         }
     }
     else {
@@ -105,7 +105,7 @@ void spawnMode0(
 
         foreach (node_info; zip(keys, node_options)) {
             verbose("adding addressbook ", node_info[0]);
-            addressbook[node_info[0]] = node_info[1].task_names.epoch_creator;
+            addressbook[node_info[0]] = NodeInfo(node_info[1].task_names.epoch_creator);
         }
     }
 
