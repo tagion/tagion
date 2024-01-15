@@ -1,3 +1,18 @@
+# Changelog for epoch 392368 .. 466725
+
+**TRT enhancement**
+The TRT now stores any document containing the `$Y` record meaning all archives with a public key. This enhancement makes the TRT more robust against future updates.
+
+**Self-Test endpoint**
+We have created another endpoint in the shell, which can be used for calling other endpoints in the shell. This allows for an easy interface to test the shell endpoints against.
+
+**Recorder subscription event**
+It is now possible via NNG, to subscribe to the recorder. This is useful for our cache in the shell, which will allow for faster lookups in the system.
+
+**Mode1 initial work**
+We have begun working on a new NNGGossipnet which will be used for a mode1 version of the network. The difference between mode1 and mode0 is that in mode1 the nodes are running in completely seperate processes and instead of using inter-process-communication they will be using proper socket connections.  
+
+
 # Changelog for epoch 131000 .. 392368
 
 Happy new year! :tada:
@@ -239,20 +254,24 @@ We have commited a WebClient with TLS support. See [github.com/tagion/nng](http:
 We have refactored the way HiBONRecord labels are defined so that it is easier to understand. See the following example:
 
 Now we can do the following:
-```struct Test {
+```D
+struct Test {
   @exclude int x;
   @optional Document d;
 
   mixin HiBONRecord;
-}```
+}
+```
 
 Instead of:
-```struct Test {
+```D
+struct Test {
   @label("") int x;
   @label(VOID, true) Document d;
 
   mixin HiBONRecord;
-}```
+}
+```
 **SecureNet Services bug**
 We ran into a problem where our securenet would sometimes return that the signature was not valid event though it was. This only happened when running multithreaded and doing it a lot concurrently. The problem was that due to secp256k1 not being thread safe, we were using the same context for all the threads, which of course is not good. Therefore we now pass a shared net down to all services, where each creates its own context. Also services that do not perform any signing by themselves, but purely check signatures like the HiRPC-verifier now create their own SecureNet.
 
