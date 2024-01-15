@@ -112,90 +112,45 @@ enum MultiAddrProto {
 }
 
 /** 
- * \struct NodeAddress
- * Struct for node addresses 
+ * Node Name Record
+ * Holds the information for communicating with a node.
  */
 @safe
 @recordType("NNR")
-struct NodeAddress {
+struct NodeInfo {
 
-    @label(StdNames.owner) Pubkey owner;
-    @label("t") MultiAddrProto addr_type;
-    @label("h") immutable(ubyte)[] host;
-    @label("T") MultiAddrProto transport;
-    @label("p") uint port;
+    @label("a") string address;
 
     /**
      * Parse node address to string
      * @return string address
      */
     string toString() const {
-        return toNNGString();
+        return address;
     }
 
     string toNNGString() const {
-        ushort concat(const(ubyte)[] a)
-        in (a.length == 2) {
-            version (BigEndian) {
-                return a[1] << 8 | a[0];
-            }
-            else version (LittleEndian) {
-                return a[0] << 8 | a[1];
-            }
-            else {
-                static assert(0, "no eggs specified");
-            }
+        auto s = address.split("/");
+        const type = s[0];
+        const host = s[1];
+        if (type == "ip4" || type == "ip6") {
+            const proto = s[2];
+            const port = s[3];
+            return proto ~ "://" ~ host ~ ":" ~ port;
         }
-
-        switch (addr_type) {
-        case MultiAddrProto.ip4:
-            return format("tcp://%(%d.%):%s", host, port);
-        case MultiAddrProto.ip6:
-            return format("tcp://%(%x:%):%s", host.chunks(2).map!(a => concat(a)), port);
-        default:
-            assert(0, "The address type is invalid and cannot be converted to an nng address string");
+        else if (type == "abstract" || type == "unix") {
+            const name = s[2];
+            return type ~ name;
         }
-    }
-
-    bool isValid() const @trusted {
-        bool isPortValid() {
-            return port >= 1 && port <= 65_535;
-        }
-
-        if (!isPortValid) {
-            return false;
-        }
-
-        if (transport !is MultiAddrProto.tcp) {
-            return false;
-        }
-
-        enum ip4length = 32;
-        enum ip6length = 128;
-
-        // TODO: check that host is not loobpack 'n stuff
-        with (MultiAddrProto) switch (addr_type) {
-        case ip4:
-            return host.length == ip4length / 8;
-        case ip6:
-            return host.length == ip6length / 8;
-        default:
-            return false;
-        }
+        // Probably should not assert in the future, or atleast validate the address ahead of time in the constructor
+        assert(0, format("don't know how to convert %s to nng address", address));
     }
 }
 
 unittest {
-    NodeAddress nnr;
-    nnr.addr_type = MultiAddrProto.ip4;
-    nnr.host = [200, 185, 5, 5];
-    nnr.port = 80;
-    nnr.transport = MultiAddrProto.tcp;
-
+    immutable nnr = NodeInfo("ip4/200.185.5.5/tcp/80");
     assert(nnr.toNNGString == "tcp://200.185.5.5:80");
 
-    nnr.host = [200, 185, 5, 5, 200, 185, 5, 5, 200, 185, 0, 0, 200, 185, 5, 5];
-    nnr.addr_type = MultiAddrProto.ip6;
-
-    assert(nnr.toNNGString == "tcp://c8b9:505:c8b9:505:c8b9:0:c8b9:505:80");
+    immutable nnr2 = NodeInfo("ip6/c8b9:505:c8b9:505:c8b9:0:c8b9:505/tcp/80");
+    assert(nnr2.toNNGString == "tcp://c8b9:505:c8b9:505:c8b9:0:c8b9:505:80");
 }
