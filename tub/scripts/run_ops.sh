@@ -98,14 +98,22 @@ done
 
 echo "$all_infos"
 # bill_files=$(ls $wdir/bill*.hibon)
-cat "$wdir"/bill*.hibon | "${bdir}/stiefel" -a $all_infos -o "$wdir"/dart_recorder.hibon
+cat "$wdir"/bill*.hibon | "${bdir}/stiefel" -a $all_infos -o "$wdir/dart_recorder.hibon"
+cat "$wdir"/bill*.hibon | "${bdir}/stiefel" --trt -o "$wdir/trt_recorder.hibon"
 
 for ((i = 0; i <= nodes-1; i++)); 
 do
+  # Create initial TRT file
+  trtfilename="${net_dir}/Node_${i}_trt.drt"
+  "$bdir/dartutil" --initialize "$trtfilename"
+  "$bdir/dartutil" "$trtfilename" "$wdir/trt_recorder.hibon" -m
+
+  # Create initial Dart file
   dartfilename="${net_dir}/Node_${i}_dart.drt"
-  echo "$dartfilename"
   "$bdir/dartutil" --initialize "$dartfilename"
   "$bdir/dartutil" "$dartfilename" "$wdir"/dart_recorder.hibon -m
+
+  echo "$dartfilename" "$trtfilename"
 done
 
 (
@@ -113,7 +121,7 @@ done
     "$bdir"/neuewelle -O \
         --option=wave.number_of_nodes:$nodes \
         --option=wave.fail_fast:true \
-        --option=subscription.tags:taskfailure
+        --option=subscription.tags:taskfailure,recorder
 )
 
 mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/tagion/wave 

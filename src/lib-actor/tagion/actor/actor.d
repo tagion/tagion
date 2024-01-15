@@ -174,6 +174,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
             }
             receiveTimeout(
                     timeout / thisActor.childrenState.length,
+                    defaultFailhandler,
                     &control,
                     &signal,
                     &ownerTerminated
@@ -187,6 +188,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
         return statusChildren(state);
     }
     catch (Exception e) {
+        log.fatal("Error when waiting for children status\n%s", e);
         return false;
     }
 }
@@ -279,22 +281,23 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
-            // log.register(name);
             thisActor.task_name = name;
             thisActor.stop = false;
             A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             try {
                 actor.task(args);
+
                 // If the actor forgets to kill it's children we'll do it anyway
                 if (!statusChildren(Ctrl.END)) {
                     foreach (child_task_name, ctrl; thisActor.childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
-                            locate(child_task_name).send(Sig.STOP);
+                            ActorHandle(child_task_name).send(Sig.STOP);
                         }
                     }
                     waitforChildren(Ctrl.END);
                 }
+
             }
             catch (Exception t) {
                 fail(t);
@@ -332,7 +335,7 @@ if (isActor!A) {
                 if (!statusChildren(Ctrl.END)) {
                     foreach (child_task_name, ctrl; thisActor.childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
-                            locate(child_task_name).send(Sig.STOP);
+                            ActorHandle(child_task_name).send(Sig.STOP);
                         }
                     }
                     waitforChildren(Ctrl.END);
@@ -450,11 +453,7 @@ if (allSatisfy!(isSafe, Args)) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) @safe {
-            if (!tidOwner.isNull) {
-                ownerTid.prioritySend(tf);
-            }
-        };
+        enum failhandler = defaultFailhandler;
     }
 
     scope (failure) {
@@ -497,11 +496,7 @@ if (allSatisfy!(isSafe, Args)) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) @safe {
-            if (!tidOwner.isNull) {
-                ownerTid.prioritySend(tf);
-            }
-        };
+        enum failhandler = defaultFailhandler;
     }
 
     scope (failure) {
@@ -533,6 +528,12 @@ if (allSatisfy!(isSafe, Args)) {
         }
     }
 }
+
+enum defaultFailhandler = (TaskFailure tf) @safe {
+    if (!tidOwner.isNull) {
+        ownerTid.prioritySend(tf);
+    }
+};
 
 void signal(Sig signal) @safe {
     with (Sig) final switch (signal) {

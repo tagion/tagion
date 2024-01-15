@@ -255,8 +255,7 @@ extern (C) {
             auto nft = Document(nftBuff);
 
             SignedContract signed_contract;
-
-            const is_created = __wallet_storage.wallet.createNFT(nft, signed_contract);
+            const is_created = __wallet_storage.wallet.createNFT(nft, Document[].init, signed_contract);
             if (is_created) {
                 const nftDocId = recyclerDoc.create(signed_contract.toDoc);
                 // Save wallet state to file.
