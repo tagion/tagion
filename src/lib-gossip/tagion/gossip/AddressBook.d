@@ -134,11 +134,24 @@ struct NodeAddress {
     }
 
     string toNNGString() const {
+        ushort concat(const(ubyte)[] a)
+        in (a.length == 2) {
+            version (BigEndian) {
+                return a[1] << 8 | a[0];
+            }
+            else version (LittleEndian) {
+                return a[0] << 8 | a[1];
+            }
+            else {
+                static assert(0, "no eggs specified");
+            }
+        }
+
         switch (addr_type) {
         case MultiAddrProto.ip4:
             return format("tcp://%(%d.%):%s", host, port);
         case MultiAddrProto.ip6:
-            return format("tcp://%(%x:%):%s", host.chunks(2).map!(a => a.sum), port);
+            return format("tcp://%(%x:%):%s", host.chunks(2).map!(a => concat(a)), port);
         default:
             assert(0, "The address type is invalid and cannot be converted to an nng address string");
         }
@@ -184,6 +197,5 @@ unittest {
     nnr.host = [200, 185, 5, 5, 200, 185, 5, 5, 200, 185, 0, 0, 200, 185, 5, 5];
     nnr.addr_type = MultiAddrProto.ip6;
 
-    assert(nnr.toNNGString == "tcp://181:a:181:a:181:0:181:a:80");
-
+    assert(nnr.toNNGString == "tcp://c8b9:505:c8b9:505:c8b9:0:c8b9:505:80");
 }
