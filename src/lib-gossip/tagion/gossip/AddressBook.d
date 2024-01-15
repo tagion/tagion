@@ -157,12 +157,15 @@ struct NodeAddress {
             return false;
         }
 
+        enum ip4length = 32;
+        enum ip6length = 128;
+
         // TODO: check that host is not loobpack 'n stuff
         with (MultiAddrProto) switch (addr_type) {
         case ip4:
-            return host.length == 4;
+            return host.length == ip4length / 8;
         case ip6:
-            return host.length == 16;
+            return host.length == ip6length / 8;
         default:
             return false;
         }
