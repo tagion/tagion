@@ -299,7 +299,9 @@ extern (C) {
             const contract_net = __wallet_storage.wallet.net;
             const hirpc = HiRPC(contract_net);
             const contract = hirpc.submit(signed_contract);
-            const contractDocId = recyclerDoc.create(contract.toDoc);
+            const contract_doc = contract.toDoc;
+            const contractDocId = recyclerDoc.create(contract_doc);
+            __wallet_storage.wallet.account.hirpcs ~= contract_doc;
             // Save wallet state to file.
             __wallet_storage.write;
             version (NET_HACK) {
