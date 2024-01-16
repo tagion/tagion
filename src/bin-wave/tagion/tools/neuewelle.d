@@ -15,7 +15,6 @@ import std.file : chdir, exists;
 import std.format;
 import std.getopt;
 import std.path;
-import std.path : baseName, dirName;
 import std.range : iota;
 import std.stdio;
 import std.typecons;
@@ -177,10 +176,10 @@ int _neuewelle(string[] args) {
         }
 
         foreach (option; override_options) {
-            string[] key_value = option.split(":");
-            assert(key_value.length == 2, format("Option '%s' invalid, missing key=value", option));
-            auto value = key_value[1];
-            string[] key = key_value[0].split(".");
+            const index = option.countUntil(":");
+            assert(index > 0, format("Option '%s' invalid, missing key:value", option));
+            string[] key = option[0 .. index].split(".");
+            string value = option[index + 1 .. $];
             set_val(json, key, value);
         }
         // If options does not parse as a string then some types will not be interpreted correctly
@@ -248,14 +247,67 @@ int _neuewelle(string[] args) {
         break;
     case NetworkMode.LOCAL:
         import tagion.services.supervisor;
+        import tagion.script.common;
+        import tagion.gossip.AddressBook;
+        import tagion.hibon.HiBONtoText;
+        import tagion.crypto.Types;
+        import std.exception : assumeUnique;
+        import std.string;
 
-        auto __net = new StdSecureNet();
+        auto address_file = File(local_options.wave.mode1.address_book_file, "r");
+        foreach (line; address_file.byLine) {
+            auto pair = line.split();
+            check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
+            const pkey = Pubkey(pair[0].strip.decode);
+            check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
+            const addr = pair[1].strip;
+
+            addressbook[pkey] = NodeInfo(assumeUnique(addr));
+        }
+
+        auto by_line = fin.byLine;
+        // Hardcordes config path for now
+        const wallet_config_file = "wallet.json";
+        if (!wallet_config_file.exists) {
+            error(format("Could not find wallet config file at <%s>", absolutePath(wallet_config_file)));
+            break;
+        }
+        WalletOptions wallet_options;
+        wallet_options.load(wallet_config_file);
+
+        auto wallet_interface = WalletInterface(wallet_options);
+        wallet_interface.load;
+
+        info("Enter pin for <%s>", absolutePath(wallet_config_file));
+        {
+            const pin = (by_line.front.empty) ? string.init : by_line.front;
+            wallet_interface.secure_wallet.login(pin);
+        }
+
+        if (!wallet_interface.secure_wallet.isLoggedin) {
+            error("Could not log in");
+            break;
+        }
+
+        good("Logged in");
+        StdSecureNet __net;
+        __net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
         scope (exit) {
             destroy(__net);
         }
-        Document doc = getHead(local_options, __net);
-        auto net = cast(shared(StdSecureNet))(__net.clone);
+
+        Document epoch_head = getHead(local_options, __net);
+
+        auto genesis = GenesisEpoch(epoch_head);
+
+        const keys = genesis.nodes;
+
+        foreach (key; keys) {
+            check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
+        }
+
         immutable opts = Options(local_options);
+        auto net = cast(shared(StdSecureNet))(__net.clone);
         spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
         break;

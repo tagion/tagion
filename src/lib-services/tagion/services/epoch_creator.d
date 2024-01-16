@@ -83,7 +83,7 @@ struct EpochCreatorService {
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey);
+            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
@@ -127,6 +127,12 @@ struct EpochCreatorService {
         void receivePayload(Payload, const(Document) pload) {
             payload_queue.write(pload);
             counter++;
+        }
+
+        /// Receive external payloads from the nodeinterface
+        void node_receive(NodeRecv, const(Document) doc) {
+            // TODOr: Check that it's valid Receiver
+            receivePayload(Payload(), doc);
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
@@ -181,6 +187,7 @@ struct EpochCreatorService {
                     opts.timeout.msecs,
                     &signal,
                     &ownerTerminated,
+                    &node_receive,
                     &receiveWavefront,
                     &unknown
             );
@@ -190,7 +197,11 @@ struct EpochCreatorService {
             timeout();
         }
 
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
+        if (thisActor.stop) {
+            return;
+        }
+
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &node_receive, &receiveWavefront);
     }
 
 }

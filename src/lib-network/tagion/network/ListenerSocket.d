@@ -16,7 +16,6 @@ import tagion.basic.tagionexceptions : TagionException;
 import tagion.hibon.Document;
 import tagion.logger.Logger;
 import tagion.network.NetworkExceptions;
-import tagion.options.CommonOptions : commonOptions;
 
 struct ListenerSocket {
     immutable ushort port;

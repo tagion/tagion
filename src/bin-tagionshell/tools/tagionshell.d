@@ -10,8 +10,9 @@ import std.file : exists;
 import std.format;
 import std.getopt;
 import std.json;
+import std.string : representation;
 import std.stdio : File, stderr, stdout, writefln, writeln;
-import std.datetime.systime: Clock;
+import std.datetime.systime : Clock;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
 import tagion.basic.range : doFront;
 import tagion.communication.HiRPC;
@@ -60,14 +61,16 @@ void writeit(A...)(A a) {
     stdout.flush();
 }
 
-string dump_exception_recursive(Throwable t, string tag = ""){
+string dump_exception_recursive(Throwable t, string tag = "") {
     string[] res;
-    res ~= format("\r\n<h2>Exception caught in TagionShell %s %s</h2>\r\n",Clock.currTime().toSimpleString(),tag);
+    res ~= format("\r\n<h2>Exception caught in TagionShell %s %s</h2>\r\n", Clock.currTime().toSimpleString(), tag);
     do {
-        res ~= format("<code>\r\n<h3>%s [%d]: %s </h3>\r\n<pre>\r\n%s\r\n</pre>\r\n</code>\r\n",t.file,t.line,t.msg,t.info);
-    } while((t = t.next) !is null);
+        res ~= format("<code>\r\n<h3>%s [%d]: %s </h3>\r\n<pre>\r\n%s\r\n</pre>\r\n</code>\r\n", t.file, t.line, t.msg, t
+                .info);
+    }
+    while ((t = t.next) !is null);
     return join(res, "\r\n");
-}    
+}
 
 void dart_worker(ShellOptions opt) {
     int rc;
@@ -134,7 +137,8 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
         rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
         rep.type = "applicaion/octet-stream";
         rep.rawdata = (len > 0) ? buf[0 .. len] : null;
-    }catch(Throwable e){
+    }
+    catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
         rep.msg = e.msg;
@@ -145,13 +149,38 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
 
 import crud = tagion.dart.DARTcrud;
 
+HiRPC.Receiver get_bullseye(string dart_addr) {
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+
+    int rc;
+    while (true) {
+        rc = s.dial(dart_addr);
+        if (rc == 0)
+            break;
+    }
+    scope (exit) {
+        s.close();
+    }
+
+    rc = s.send(crud.dartBullseye.toDoc.serialize);
+    ubyte[192] buf;
+    size_t len = s.receivebuf(buf, buf.length);
+    if (len == size_t.max && s.errno != 0) {
+        return HiRPC.Receiver.init;
+    }
+
+    const receiver = HiRPC(null).receive(Document(buf.idup));
+    return receiver;
+}
+
 static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
     try {
+        ShellOptions* opt = cast(ShellOptions*) ctx;
+
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
 
         int rc;
-        ShellOptions* opt = cast(ShellOptions*) ctx;
         while (true) {
             rc = s.dial(opt.node_dart_addr);
             if (rc == 0)
@@ -165,29 +194,37 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
         ubyte[192] buf;
         size_t len = s.receivebuf(buf, buf.length);
         if (len == size_t.max && s.errno != 0) {
-            writeit("bullseye_handler: recv: ", nng_errstr(s.errno));
             rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
             rep.msg = "socket error";
             return;
         }
 
         const receiver = HiRPC(null).receive(Document(buf.idup));
+
         if (!receiver.isResponse) {
             rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
             rep.msg = "response error";
             return;
         }
 
-        const dartindex = parseJSON(receiver.toPretty);
+        if (req.path[$ - 1].hasExtension("json")) {
+            const dartindex = parseJSON(receiver.toPretty);
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = "application/json";
+            rep.json = dartindex;
+        }
+        else {
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = "application/octet-stream";
+            rep.rawdata = cast(ubyte[]) receiver.serialize;
+        }
 
-        rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
-        rep.type = "application/json";
-        rep.json = dartindex;
-    }catch(Throwable e){
+    }
+    catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
         rep.msg = e.msg;
-        rep.text = dump_exception_recursive(e, "handler: bullseye");
+        rep.text = dump_exception_recursive(e, "handler: bullseye.json");
         return;
     }
 }
@@ -227,7 +264,7 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
                 found_bills ~= fnd;
             }
         }
-        
+
         nfound = found_bills.length;
 
         // TODO: merge with previous, check array reducing in foreach
@@ -314,7 +351,8 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
         rep.rawdata = (found_bills.length > 0) ? cast(ubyte[])(response.serialize) : null;
 
         //writeit("WH: dart: res ", response.toPretty);
-    }catch(Throwable e){
+    }
+    catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
         rep.msg = e.msg;
@@ -381,7 +419,8 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
         rep.status = (doclen > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
         rep.type = "applicaion/octet-stream";
         rep.rawdata = (doclen > 0) ? docbuf[0 .. doclen] : null;
-    }catch(Throwable e){
+    }
+    catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
         rep.msg = e.msg;
@@ -494,7 +533,8 @@ static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
         rep.type = "applicaion/octet-stream";
         rep.rawdata = cast(ubyte[])(receiver.toDoc.serialize);
-    }catch(Throwable e){
+    }
+    catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
         rep.msg = e.msg;
@@ -511,11 +551,125 @@ static void sysinfo_handler(WebData* req, WebData* rep, void* ctx) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
         rep.type = "application/json";
         rep.json = data;
-    }catch(Throwable e){
+    }
+    catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
         rep.msg = e.msg;
         rep.text = dump_exception_recursive(e, "handler: sysinfo");
+        return;
+    }
+}
+
+static void selftest_handler(WebData* req, WebData* rep, void* ctx) {
+    thread_attachThis();
+    rt_moduleTlsCtor();
+    try {
+        int rc;
+        ShellOptions* opt = cast(ShellOptions*) ctx;
+        WalletOptions options;
+        auto wallet_config_file = opt.default_i2p_wallet;
+        if (wallet_config_file.exists) {
+            options.load(wallet_config_file);
+        }
+        else {
+            writeit("selftest: invalid I2P wallet config: " ~ opt.default_i2p_wallet);
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "invalid wallet config";
+            return;
+        }
+        auto wallet_interface = WalletInterface(options);
+        if (!wallet_interface.load) {
+            writeit("selftest: Wallet does not exist");
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "wallet does not exist";
+            return;
+        }
+        const flag = wallet_interface.secure_wallet.login(opt.default_i2p_wallet_pin);
+        if (!flag) {
+            writeit("selftest: Wallet wrong pincode");
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "Faucet invalid pin code";
+            return;
+        }
+        if (!wallet_interface.secure_wallet.isLoggedin) {
+            writeit("selftest: invalid wallet login");
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "invalid wallet login";
+            return;
+        }
+
+        string uri = opt.shell_uri ~ opt.shell_api_prefix;
+        auto localpath = (opt.shell_api_prefix ~ opt.selftest_endpoint).split("/")[1 .. $];
+        auto dpath = req.path.split(localpath);
+        string[] reqpath;
+        if (dpath.length == 2) {
+            reqpath = dpath[1].dup;
+        }
+
+        rep.status = nng_http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;
+
+        if (reqpath.length > 0) {
+            switch (reqpath[0]) {
+            case "bullseye":
+                WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ ".json", null);
+                if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
+                    rep.status = hrep.status;
+                    rep.msg = hrep.msg;
+                    rep.text = hrep.text;
+                    break;
+                }
+                JSONValue jdata = hrep.json;
+                enforce(jdata["$@"].str == "HiRPC", "Test: bullseye: parse result");
+                enforce("bullseye" in jdata["$msg"]["result"], "Test: bullseye: parse result");
+                auto res = jdata["$msg"]["result"]["bullseye"][1].str;
+                rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+                rep.type = "application/json";
+                rep.json = parseJSON(`{"test": "bullseye", "passed": "ok", "result":{"bullseye":"` ~ res ~ `"}}`);
+                break;
+            case "dart":
+            case "dartcache":
+                enum update_tag = "update";
+                const update_net = wallet_interface.secure_wallet.net.derive(
+                        wallet_interface.secure_wallet.net.calcHash(
+                        update_tag.representation));
+                const hirpc = HiRPC(update_net);
+                const hreq = wallet_interface.secure_wallet.getRequestUpdateWallet(hirpc);
+                WebData hrep = WebClient.post(uri ~ ((reqpath[0] == "dart") ? opt.dart_endpoint : opt.dartcache_endpoint),
+                        cast(ubyte[])(hreq.serialize),
+                        ["Content-type": "application/octet-stream"]);
+                if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
+                    rep.status = hrep.status;
+                    rep.msg = hrep.msg;
+                    rep.text = hrep.text;
+                    break;
+                }
+                Document doc = Document(cast(immutable(ubyte[])) hrep.rawdata);
+                JSONValue jdata = doc.toJSON();
+                enforce(jdata["$@"].str == "HiRPC", "Test: dart(cache): parse result");
+                enforce("result" in jdata["$msg"], "Test: dart(cache): parse result");
+                auto cnt = jdata["$msg"]["result"].array.length;
+                rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+                rep.type = "application/json";
+                rep.json = parseJSON(format(`{"test": "%s", "passed": "ok", "result":{"count": %d}}`, reqpath[0], cnt));
+                break;
+            default:
+                break;
+            }
+        }
+
+        if (rep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = "text/html";
+            rep.text = "<h2>The requested test couldn`t be processed</h2>\n\r<pre>\n\r" ~ to!string(reqpath) ~ "\n\r</pre>\n\r";
+        }
+
+    }
+    catch (Throwable e) {
+        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        rep.type = "text/html";
+        rep.msg = e.msg;
+        rep.text = dump_exception_recursive(e, "handler: selftest");
         return;
     }
 }
@@ -595,13 +749,21 @@ int _main(string[] args) {
             ~ options.shell_api_prefix
             ~ options.i2p_endpoint
             ~ "\t= POST invoice-to-pay hibon\n\t"
-            ~ options
-                .shell_api_prefix
-                ~ options.bullseye_endpoint
-                ~ "\t= GET dart bullseye hibon\n\t"
-                ~ options.shell_api_prefix
-                ~ options.sysinfo_endpoint
-                ~ "\t\t= GET system info\n\t"
+            ~ options.shell_api_prefix
+            ~ options.bullseye_endpoint ~ ".hibon"
+            ~ "\t= GET dart bullseye json\n\t"
+            ~ options.shell_api_prefix
+            ~ options.bullseye_endpoint ~ ".json"
+            ~ "\t= GET dart bullseye hibon\n\t"
+            ~ options.shell_api_prefix
+            ~ options.sysinfo_endpoint
+            ~ "\t\t= GET system info\n\t"
+            ~ options.shell_api_prefix
+            ~ options.selftest_endpoint ~ "/<enpoint>"
+            ~ "\t= GET self test results\n\t"
+            ~ "\t== /bullseye \t- test bullseye endpoint\n\t"
+            ~ "\t== /dart \t- test dart request endpoint\n\t"
+            ~ "\t== /dartcache \t- test dart cache endpoint\n\t"
 
     );
 
@@ -613,10 +775,13 @@ appoint:
 
     app.route(options.shell_api_prefix ~ options.sysinfo_endpoint, &sysinfo_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.bullseye_endpoint, &bullseye_handler, ["GET"]);
+    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".json", &bullseye_handler, ["GET"]);
+    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".hibon", &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint, &dart_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dartcache_endpoint, &dartcache_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.i2p_endpoint, &i2p_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.selftest_endpoint ~ "/*", &selftest_handler, ["GET"]);
 
     app.start();
 

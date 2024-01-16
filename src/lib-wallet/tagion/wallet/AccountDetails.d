@@ -45,14 +45,10 @@ struct AccountDetails {
     void remove_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove, countUntil;
 
-        version (REMOVE_BILL_HASH) {
-            const billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
-            const index = billsHashes.countUntil(billHash);
+        const billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+        if (index >= 0) {
             bills = bills.remove(index);
-        }
-        else {
-            pragma(msg, "This should not work, as algorithm.remove expects an Offset, and other data types are just converted to one");
-            bills = bills.remove(billHash);
         }
     }
 
