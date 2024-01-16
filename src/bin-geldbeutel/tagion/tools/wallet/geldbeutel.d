@@ -183,7 +183,7 @@ int _main(string[] args) {
             scope (exit) {
                 salt_tmp[] = 0;
             }
-            salt ~= WordList.presalt ~ _salt;
+            salt ~= BIP39.presalt ~ _salt;
         }
         if (bip39 > 0 || bip39_recover) {
             wallet_interface.load;
@@ -232,7 +232,7 @@ int _main(string[] args) {
                 good("Pin-codes matches");
             }
             if (!bip39_recover) {
-                const wordlist = WordList(words);
+                const wordlist = BIP39(words);
                 passphrase = wordlist.passphrase(bip39);
 
                 good("This is the recovery words");
