@@ -1,5 +1,7 @@
 module tagion.wallet.AccountDetails;
 import std.format;
+import std.algorithm;
+
 import tagion.basic.Types;
 import tagion.crypto.Types;
 
@@ -29,7 +31,8 @@ struct AccountDetails {
     @label("$requested") TagionBill[DARTIndex] requested; /// Requested bills
     @label("$requested_invoices") Invoice[] requested_invoices;
     @label("$hirpc") Document[] hirpcs; /// HiRPC request    
-    import std.algorithm : any, each, filter, map, sum;
+
+    import std.algorithm : filter;
 
     version (none) bool remove_bill(Pubkey pk) {
         import std.algorithm : countUntil, remove;
@@ -163,7 +166,29 @@ struct AccountDetails {
                 .map!(b => b.value)
                 .sum;
         }
+
+        /// Returns an input range with history
+        auto history() {
+            return (used_bills ~ bills).dup.sort!((a, b) => a.time > b.time);
+        }
+
     }
+    mixin HiBONRecord;
+}
+
+struct HistoryItem {
+    double amount;
+    double balance;
+    double fee;
+    int status;
+    int type;
+    string timestamp;
+    Buffer pubkey;
+    mixin HiBONRecord;
+}
+
+struct History {
+    HistoryItem[] items;
     mixin HiBONRecord;
 }
 
