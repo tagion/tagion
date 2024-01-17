@@ -236,17 +236,29 @@ struct BIP39 {
     ubyte[] mnemonicToSeed(string mnemonic_sentence, string passphrase = null) const pure {
         import tagion.crypto.pbkdf2;
         import std.digest.sha : SHA512;
+
         alias pbkdf2_sha512 = pbkdf2!SHA512;
         return pbkdf2_sha512(mnemonic_sentence.normalize!(NFKD).representation, salt(passphrase).representation, count, dk_length);
     }
 
     string generateMnemonic(const uint number_of_words) pure {
-        check(number_of_words % 3 == 0, "The number of words need to be multiple of 3");  
+        check(number_of_words % 3 == 0, "The number of words need to be multiple of 3");
         ubyte[] entropy_buf;
-        entropy_buf.length=number_of_words*MNEMONIC_BITS/8;
+        entropy_buf.length = number_of_words * MNEMONIC_BITS / 8;
         getRandom(entropy_buf);
         return entropyToMnemonic(entropy_buf);
-    } 
+    }
+
+    bool validateMnemonic(string mnemonic_sentence) const pure nothrow {
+        try {
+            const entropy_buf = mnemonicToEntropy(mnemonic_sentence);
+            return entropy_buf[$ - 1] == deriveChecksumBits(entropy_buf[0 .. $ - 1]);
+        }
+        catch (Exception e) {
+            return false;
+        }
+        assert(0);
+    }
 }
 /*
 https://learnmeabitcoin.com/technical/mnemonic
@@ -363,6 +375,8 @@ unittest {
         const result1 = pbkdf2_sha512(entropy1, salt.representation, 2048, 64);
     }
 
+    {
+    }
     const bip39_english_test_list = [
 
         [
@@ -491,6 +505,7 @@ unittest {
             const entropy_buf = test_data[0].decode;
             const expected_sentence = test_data[1];
             const expected_seed = test_data[2].decode;
+            assert(bip39.validateMnemonic(expected_sentence));
             const generated_sentence = bip39.entropyToMnemonic(entropy_buf);
             assert(expected_sentence == generated_sentence);
             const generated_entropy_buf = bip39.mnemonicToEntropy(expected_sentence);
@@ -501,5 +516,16 @@ unittest {
             const generated_checksum = bip39.deriveChecksumBits(entropy_buf);
             assert(generated_checksum == generated_entropy_buf[$ - 1]);
         }
+    }
+
+    { /// Check valid mnemonic sentences
+        assert(!bip39.validateMnemonic(
+                "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon"),
+                "Should failed on checksum");
+        assert(!bip39.validateMnemonic("abandon abandon ability"), "Word list to short");
+        assert(bip39.validateMnemonic(
+                "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"),
+                "Word list should be correct");
+
     }
 }
