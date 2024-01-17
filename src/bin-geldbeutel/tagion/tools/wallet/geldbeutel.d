@@ -66,6 +66,7 @@ int _main(string[] args) {
     bool pubkey_info;
     bool list;
     bool sum;
+    bool history;
     string _passphrase;
     string _salt;
     char[] passphrase;
@@ -116,9 +117,10 @@ int _main(string[] args) {
                 "req", "List all requested bills", &wallet_switch.request,
                 "update", "Request a wallet updated", &wallet_switch.update,
                 "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
+                "history", "Request print the transaction history", &history,
 
                 "address", format(
-                    "Sets the address default: %s", options.contract_address),
+                "Sets the address default: %s", options.contract_address),
                 &options.addr,
                 "faucet", "request money from the faucet", &wallet_switch.faucet,
                 "bip39", "Generate bip39 set the number of words", &bip39,
@@ -136,16 +138,16 @@ int _main(string[] args) {
             //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] <config.json> <files>", program),
-                    "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <config.json> <files>", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
@@ -325,8 +327,11 @@ int _main(string[] args) {
         foreach (file; args.filter!(file => file.hasExtension(FileExtension.hibon))) {
             check(file.exists, format("File %s not found", file));
 
-            const hirpc_response = file.fread!(HiRPC.Receiver).ifThrown!HiBONException(HiRPC.Receiver.init);
-            if (hirpc_response is HiRPC.Receiver.init) { continue; }
+            const hirpc_response = file.fread!(HiRPC.Receiver)
+                .ifThrown!HiBONException(HiRPC.Receiver.init);
+            if (hirpc_response is HiRPC.Receiver.init) {
+                continue;
+            }
             writefln("File %s %s", file, hirpc_response.toPretty);
             const ok = wallet_interface.secure_wallet.setResponseUpdateWallet(hirpc_response)
                 .ifThrown!HiBONException(
@@ -341,6 +346,10 @@ int _main(string[] args) {
             wallet_interface.secure_wallet.account.owner = wallet_interface.secure_wallet.net.pubkey;
             wallet_switch.save_wallet = true;
 
+        }
+
+        if (history) {
+            wallet_interface.secure_wallet.account.history;
         }
 
         wallet_interface.operate(wallet_switch, args);

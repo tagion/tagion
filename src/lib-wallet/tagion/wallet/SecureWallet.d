@@ -25,12 +25,8 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : HiBONRecord;
 import tagion.utils.StdTime;
 
-// import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
-//import PriorStandardRecords = tagion.script.prior.StandardRecords;
-
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
-// import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
 import tagion.Keywords;
 import tagion.basic.Message;
 import tagion.basic.tagionexceptions : Check;
@@ -704,32 +700,38 @@ struct SecureWallet(Net : SecureNet) {
         auto bill = TagionBill(amount, assumeWontThrow(currentTime), dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
-    version(WITHOUT_PAYMENT) {
+
+    version (WITHOUT_PAYMENT) {
         import tagion.script.common : snavs_record;
+
         Result!bool createNFT(const(Document) nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
             import tagion.script.execute;
+
             try {
                 if (nft_inputs.length == 0) {
-                    signed_contract = sign([net], [cast(DARTIndex) net.dartIndex(snavs_record)], null, nft_doc); 
-                } else {
+                    signed_contract = sign([net], [cast(DARTIndex) net.dartIndex(snavs_record)], null, nft_doc);
+                }
+                else {
                     const nets = net.repeat(nft_inputs.length).array;
                     signed_contract = sign(
-                        nets,
-                        nft_inputs,
-                        null,
-                        nft_doc);
+                            nets,
+                            nft_inputs,
+                            null,
+                            nft_doc);
                 }
-            
-            } catch(Exception e) {
+
+            }
+            catch (Exception e) {
                 return Result!bool(e);
             }
             return result(true);
         }
-        
-    } else {
+
+    }
+    else {
         Result!bool createNFT(Document nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
             try {
-                auto none_locked = account.bills.filter!(b=> !(net.dartIndex(b) in account.activated)).array;
+                auto none_locked = account.bills.filter!(b => !(net.dartIndex(b) in account.activated)).array;
 
                 check(none_locked.length > 0, "did not have any bills to insert into the contract");
                 TagionBill[] collected_bills = [none_locked.front];
@@ -740,13 +742,14 @@ struct SecureWallet(Net : SecureNet) {
                 lock_bills(collected_bills);
 
                 signed_contract = sign(
-                    nets,
-                    collected_bills.map!(bill => bill.toDoc) 
-                    .array ~ nft_inputs,
-                    null,
-                    nft_doc);
-    
-            } catch(Exception e) {
+                        nets,
+                        collected_bills.map!(bill => bill.toDoc)
+                        .array ~ nft_inputs,
+                        null,
+                        nft_doc);
+
+            }
+            catch (Exception e) {
                 return Result!bool(e);
             }
             return result(true);

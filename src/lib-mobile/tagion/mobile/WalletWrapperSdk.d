@@ -299,7 +299,9 @@ extern (C) {
             const contract_net = __wallet_storage.wallet.net;
             const hirpc = HiRPC(contract_net);
             const contract = hirpc.submit(signed_contract);
-            const contractDocId = recyclerDoc.create(contract.toDoc);
+            const contract_doc = contract.toDoc;
+            const contractDocId = recyclerDoc.create(contract_doc);
+            __wallet_storage.wallet.account.hirpcs ~= contract_doc;
             // Save wallet state to file.
             __wallet_storage.write;
             version (NET_HACK) {
@@ -611,6 +613,66 @@ extern (C) {
             }
         }
         return 0;
+    }
+
+    // DUMMY FUNCTION
+    uint get_history(uint from, uint count, uint32_t* historyId) {
+        DummyHistGen hist_gen;
+
+        History hist;
+        hist_gen.popFront();
+        hist.items = hist_gen.drop(from).take(count).array;
+
+        *historyId = recyclerDoc.create(hist.toDoc);
+
+        return 0;
+    }
+
+}
+
+struct DummyHistGen {
+    import tagion.utils.Random;
+
+    enum max_length = 37;
+
+    Random!uint rnd = Random!uint(42);
+
+    HistoryItem genHistItem() {
+        HistoryItem hist_item;
+        with (hist_item) {
+            amount = rnd.value;
+            balance = rnd.value;
+            fee = rnd.value;
+            status = rnd.value % 2;
+            type = rnd.value % 2;
+            timestamp = currentTime();
+            pubkey = Pubkey().init;
+        }
+        return hist_item;
+    }
+
+    int i = 0;
+
+    bool empty() => i > max_length;
+    HistoryItem _front;
+    void popFront() {
+        _front = genHistItem();
+        i++;
+    }
+
+    HistoryItem front() => _front;
+}
+
+version (none) unittest {
+    import std.stdio;
+    import hj = tagion.hibon.HiBONJSON;
+
+    foreach (i; get_history(0, 5).items) {
+        hj.toPretty(i).writeln;
+    }
+    writeln;
+    foreach (i; get_history(36, 5).items) {
+        hj.toPretty(i).writeln;
     }
 }
 
