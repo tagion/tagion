@@ -178,27 +178,38 @@ struct AccountDetails {
 
             writeln("Sent");
 
+            // Money you send to yourself, because you just can't get enough of it
+            const(TagionBill)[] change;
+
             foreach (HiRPC.Receiver rpc; hirpcs) {
                 if (isRecord!SignedContract(rpc.method.params)) {
                     const s_contract = SignedContract(rpc.method.params);
                     const script = PayScript(s_contract.contract.script);
-                    const my_tgn = script.outputs
-                        .filter!(b => b.owner in derivers)
+                    auto _change = script.outputs.filter!(b => b.owner in derivers);
+
+                    foreach (c; _change) {
+                        change ~= c;
+                    }
+
+                    const sum_change = _change
                         .map!(b => b.value)
                         .sum;
+
                     const your_tgn = script.outputs
                         .filter!(b => b.owner !in derivers)
                         .map!(b => b.value)
                         .sum;
-                    writefln("%s%8s%s : %s%8s%s", GREEN, my_tgn, RESET, RED, your_tgn, RESET);
+                    writefln("%s%8s%s : %s%8s%s", GREEN, sum_change, RESET, RED, your_tgn, RESET);
                 }
             }
 
             writeln();
             writeln("Received");
             foreach (b; used_bills ~ bills) {
-                /// Filter out bills sent to yourself?
-                writefln("%s%8s%s : %8s", GREEN, b.value, RESET, "");
+                if (change.canFind(b)) {
+                    continue;
+                }
+                writefln("%s: %s%8s%s", b.time.toText[0 .. 19], GREEN, b.value, RESET);
             }
 
             return 0;
