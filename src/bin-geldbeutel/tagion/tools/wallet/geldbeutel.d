@@ -182,7 +182,7 @@ int _main(string[] args) {
 
             const number_of_words = [12, 24];
             check(number_of_words.canFind(bip39), format("Invalid number of word %d should be (%(%d, %))", bip39, number_of_words));
-            const wordlist = WordList(words);
+            const wordlist = BIP39(words);
             passphrase = wordlist.passphrase(bip39);
 
             printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]); 
@@ -195,7 +195,7 @@ int _main(string[] args) {
             scope (exit) {
                 salt_tmp[]=0;
             }
-            salt ~= WordList.presalt ~ _salt;
+            salt ~= BIP39.presalt ~ _salt;
         }
         if (!passphrase.empty) {
             check(!pincode.empty, "Missing pincode");
