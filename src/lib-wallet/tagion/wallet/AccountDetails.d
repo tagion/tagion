@@ -172,11 +172,13 @@ struct AccountDetails {
         /// Returns an input range with history
         auto history() {
             import std.stdio;
-            import std.math.algebraic;
             import tagion.communication.HiRPC;
             import tagion.utils.Term;
+            import tagion.basic.Types;
 
             writeln("Sent");
+
+            HistoryItemImpl[] items;
 
             // Money you send to yourself, because you just can't get enough of it
             const(TagionBill)[] change;
@@ -186,6 +188,9 @@ struct AccountDetails {
                     const s_contract = SignedContract(rpc.method.params);
                     const script = PayScript(s_contract.contract.script);
                     auto _change = script.outputs.filter!(b => b.owner in derivers);
+                    HistoryItemImpl item;
+                    item.type = HistoryItemType.send;
+                    item.timestamp = sdt_t(script.outputs[0].time);
 
                     foreach (c; _change) {
                         change ~= c;
@@ -195,11 +200,18 @@ struct AccountDetails {
                         .map!(b => b.value)
                         .sum;
 
-                    const your_tgn = script.outputs
-                        .filter!(b => b.owner !in derivers)
+                    auto receiver_bills = script.outputs.filter!(b => b.owner !in derivers);
+                    const sum_receiver = receiver_bills
                         .map!(b => b.value)
                         .sum;
-                    writefln("%s%8s%s : %s%8s%s", GREEN, sum_change, RESET, RED, your_tgn, RESET);
+
+                    // Does not handle single transactions to multiple receivers
+                    // Will look like it's only for one receiver
+                    item.pubkey = Pubkey(receiver_bills.front.owner);
+                    item.amount = sum_receiver;
+
+                    items ~= item;
+                    // writefln("%s%8s%s : %s%8s%s", GREEN, sum_change, RESET, RED, sum_receiver, RESET);
                 }
             }
 
@@ -209,17 +221,51 @@ struct AccountDetails {
                 if (change.canFind(b)) {
                     continue;
                 }
-                writefln("%s: %s%8s%s", b.time.toText[0 .. 19], GREEN, b.value, RESET);
+
+                HistoryItemImpl item;
+                with (item) {
+                    type = HistoryItemType.receive;
+                    pubkey = Pubkey(b.owner);
+                    timestamp = sdt_t(b.time);
+                    item.amount = b.value;
+                }
+
+                items ~= item;
+
+                // writefln("%s: %s%8s%s", b.time.toText[0 .. 19], GREEN, b.value, RESET);
+            }
+
+            auto sorted_items = items.sort!((a, b) => a.timestamp < b.timestamp);
+
+            foreach (item; sorted_items) {
+                final switch (item.type) {
+                case HistoryItemType.receive:
+                    writefln("%s: %s%8s%s", item.timestamp.toText[0 .. 19], GREEN, item.amount, RESET);
+                    break;
+                case HistoryItemType.send:
+                    writefln("%s: %s%8s%s to %s", item.timestamp.toText[0 .. 19], RED, item.amount, RESET, item.pubkey
+                            .encodeBase64);
+                    break;
+                }
             }
 
             return 0;
-            // TagionBill[] b;
-            // b ~= used_bills;
-            // b ~= bills;
-            // return b.sort!((a, b) => a.time > b.time);
         }
 
     }
+    mixin HiBONRecord;
+}
+
+enum HistoryItemType {
+    receive = 0,
+    send = 1,
+}
+
+struct HistoryItemImpl {
+    HistoryItemType type;
+    @label(StdNames.value) TagionCurrency amount;
+    @label(StdNames.time) sdt_t timestamp;
+    @label(StdNames.owner) Pubkey pubkey;
     mixin HiBONRecord;
 }
 
