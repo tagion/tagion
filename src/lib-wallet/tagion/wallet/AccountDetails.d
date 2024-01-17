@@ -52,6 +52,7 @@ struct AccountDetails {
         const billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
         const index = billsHashes.countUntil(billHash);
         if (index >= 0) {
+            used_bills ~= bills[index];
             bills = bills.remove(index);
         }
     }
@@ -171,6 +172,7 @@ struct AccountDetails {
         /// Returns an input range with history
         auto history() {
             import std.stdio;
+            import std.math.algebraic;
             import tagion.communication.HiRPC;
             import tagion.utils.Term;
 
@@ -188,8 +190,15 @@ struct AccountDetails {
                         .filter!(b => b.owner !in derivers)
                         .map!(b => b.value)
                         .sum;
-                    writefln("%s%s%s : %s%s%s", GREEN, my_tgn, RESET, RED, your_tgn, RESET);
+                    writefln("%s%8s%s : %s%8s%s", GREEN, my_tgn, RESET, RED, your_tgn, RESET);
                 }
+            }
+
+            writeln();
+            writeln("Received");
+            foreach (b; used_bills ~ bills) {
+                /// Filter out bills sent to yourself?
+                writefln("%s%8s%s : %8s", GREEN, b.value, RESET, "");
             }
 
             return 0;
