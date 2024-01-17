@@ -99,22 +99,18 @@ struct PayScript {
 
 Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
     import std.algorithm : map;
-
     const message = nets[0].calcHash(contract);
     return nets
         .map!(net => net.sign(message))
         .array;
 }
-
-const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, const(Document[]) reads, const(Document) script) {
+const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Document[]) reads, const(Document) script) {
     import std.algorithm : map, sort;
-
     check(nets.length > 0, "At least one input contract");
     check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
     const net = nets[0];
     SignedContract result;
     auto sorted_inputs = inputs
-        .map!((input) => cast(DARTIndex) net.dartIndex(input))
         .enumerate
         .array
         .sort!((a, b) => a.value < b.value)
@@ -128,10 +124,19 @@ const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, co
     result.signs = sign(sorted_inputs.map!((input) => nets[input.index]).array, result.contract);
     return result;
 }
+const(SignedContract) sign(
+    const(SecureNet[]) nets, 
+    const(Document[]) inputs, 
+    const(Document[]) reads, 
+    const(Document) script) {
+    import std.algorithm : map;
+    check(nets.length > 0, "At least one input contract");
+    const net = nets[0];
+    return sign(nets, inputs.map!((input) => cast(DARTIndex) net.dartIndex(input)).array, reads, script);
+}
 
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Pubkey[]) owners) nothrow {
     import std.algorithm : all;
-
     try {
         if (signed_contract.contract.inputs.length == owners.length) {
             const message = net.calcHash(signed_contract.contract);
@@ -147,7 +152,6 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Document[]) inputs) nothrow {
     import std.algorithm : map;
-
     try {
         return verify(net, signed_contract, inputs.map!(doc => doc[StdNames.owner].get!Pubkey).array);
     }
@@ -273,3 +277,12 @@ struct LockedArchives {
 
     });
 }
+
+version(WITHOUT_PAYMENT) {
+struct HashString {
+    string name;
+    mixin HiBONRecord!(q{this(string name) { this.name = name; }});
+}
+enum HashString snavs_record = HashString("snavs");
+}
+

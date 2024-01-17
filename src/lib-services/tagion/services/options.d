@@ -9,16 +9,14 @@ import tagion.basic.dir;
 
 /// This function should be renamed
 /// Initially there it was only intended to be used for the contract address for the inputvalidator
-static immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
-    import std.exception : assumeWontThrow;
-
+immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
     version (linux) {
-        return assumeWontThrow(format("abstract://%sNEUEWELLE", prefix));
+        return "abstract://" ~ prefix ~ "NEUEWELLE";
     }
     else version (Posix) {
         import std.path;
 
-        return "ipc://" ~ buildPath(base_dir.run, assumeWontThrow(format("%stagionwave_contract.sock", prefix)));
+        return "ipc://" ~ buildPath(base_dir.run, prefix ~ "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");
@@ -33,12 +31,21 @@ enum NetworkMode {
 
 @safe
 struct WaveOptions {
+    struct Mode1 {
+        string address_book_file = "../address_book.txt";
+
+        mixin JSONCommon;
+    }
+
     import tagion.utils.JSONCommon;
 
     NetworkMode network_mode = NetworkMode.INTERNAL;
     uint number_of_nodes = 5;
     string prefix_format = "Node_%s_";
     bool fail_fast = false;
+
+    Mode1 mode1;
+
     mixin JSONCommon;
 }
 
@@ -58,6 +65,7 @@ struct TaskNames {
     string replicator = "replicator";
     string dart_interface = "dartinterface";
     string trt = "trt";
+    string node_interface = "node_interface";
 
     mixin JSONCommon;
 
@@ -71,13 +79,11 @@ struct TaskNames {
         This function is used in mode 0.
     */
     void setPrefix(const string prefix) pure nothrow {
-        import std.exception;
-
         alias This = typeof(this);
         alias FieldsNames = FieldNameTuple!This;
         static foreach (i, T; Fields!This) {
             static if (is(T == string)) {
-                this.tupleof[i] = assumeWontThrow(format("%s%s", prefix, this.tupleof[i]));
+                this.tupleof[i] = prefix ~ this.tupleof[i];
             }
         }
     }
@@ -95,6 +101,7 @@ public import tagion.services.replicator : ReplicatorOptions;
 public import tagion.services.subscription : SubscriptionServiceOptions;
 public import tagion.services.transcript : TranscriptOptions;
 public import tagion.services.TRTService : TRTOptions;
+public import tagion.services.nodeInterface : NodeInterfaceOptions;
 
 /// All options for neuewelle
 @safe
@@ -113,6 +120,7 @@ struct Options {
     SubscriptionServiceOptions subscription;
     LoggerOptions logger;
     TRTOptions trt;
+    NodeInterfaceOptions node_interface;
 
     TaskNames task_names;
     mixin JSONCommon;

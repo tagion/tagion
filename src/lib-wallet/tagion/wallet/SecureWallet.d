@@ -25,12 +25,8 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : HiBONRecord;
 import tagion.utils.StdTime;
 
-// import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
-//import PriorStandardRecords = tagion.script.prior.StandardRecords;
-
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
-// import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
 import tagion.Keywords;
 import tagion.basic.Message;
 import tagion.basic.tagionexceptions : Check;
@@ -132,9 +128,9 @@ struct SecureWallet(Net : SecureNet) {
      */
     this(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    uint confidence,
-    const(char[]) pincode)
+            scope const(char[][]) answers,
+            uint confidence,
+            const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
@@ -182,8 +178,8 @@ struct SecureWallet(Net : SecureNet) {
 
     this(
             scope const(char[]) passphrase,
-    scope const(char[]) pincode,
-    scope const(char[]) salt = null) {
+            scope const(char[]) pincode,
+            scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
@@ -198,7 +194,7 @@ struct SecureWallet(Net : SecureNet) {
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-    scope const(char[]) pincode) scope
+            scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -234,8 +230,8 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool recover(
             const(string[]) questions,
-    const(char[][]) answers,
-    const(char[]) pincode)
+            const(char[][]) answers,
+            const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
@@ -705,33 +701,59 @@ struct SecureWallet(Net : SecureNet) {
         return getFee([bill], fees);
     }
 
-    // stupid function for testing
-    Result!bool createNFT(
-            Document nft_data,
-            ref SignedContract signed_contract) {
-        import tagion.script.execute;
-        import tagion.script.standardnames;
+    version (WITHOUT_PAYMENT) {
+        import tagion.script.common : snavs_record;
 
-        try {
-            HiBON dummy_input = new HiBON;
-            dummy_input[StdNames.owner] = net.pubkey;
-            dummy_input["NFT"] = nft_data;
-            Document[] inputs;
+        Result!bool createNFT(const(Document) nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
+            import tagion.script.execute;
 
-            inputs ~= Document(dummy_input);
-            SecureNet[] nets;
-            nets ~= (() @trusted => cast(SecureNet) net)();
+            try {
+                if (nft_inputs.length == 0) {
+                    signed_contract = sign([net], [cast(DARTIndex) net.dartIndex(snavs_record)], null, nft_doc);
+                }
+                else {
+                    const nets = net.repeat(nft_inputs.length).array;
+                    signed_contract = sign(
+                            nets,
+                            nft_inputs,
+                            null,
+                            nft_doc);
+                }
 
-            signed_contract = sign(
-                    nets,
-                    inputs,
-                    null,
-                    Document.init);
+            }
+            catch (Exception e) {
+                return Result!bool(e);
+            }
+            return result(true);
         }
-        catch (Exception e) {
-            return Result!bool(e);
+
+    }
+    else {
+        Result!bool createNFT(Document nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
+            try {
+                auto none_locked = account.bills.filter!(b => !(net.dartIndex(b) in account.activated)).array;
+
+                check(none_locked.length > 0, "did not have any bills to insert into the contract");
+                TagionBill[] collected_bills = [none_locked.front];
+
+                const nets = collectNets(collected_bills) ~ net.repeat(nft_inputs.length).array;
+                check(nets.all!(net => net !is net.init), format("Missing deriver of some of the bills length=%s", collected_bills
+                        .length));
+                lock_bills(collected_bills);
+
+                signed_contract = sign(
+                        nets,
+                        collected_bills.map!(bill => bill.toDoc)
+                        .array ~ nft_inputs,
+                        null,
+                        nft_doc);
+
+            }
+            catch (Exception e) {
+                return Result!bool(e);
+            }
+            return result(true);
         }
-        return result(true);
     }
 
     enum long snavs_byte_fee = 100;
@@ -1401,7 +1423,7 @@ unittest {
     TagionCurrency actual_fees;
 
     SignedContract signed_contract;
-    const can_pay = wallet1.createPayment(to_pay, signed_contract, actual_fees, true);
+    const can_pay = wallet1.createPayment(to_pay, signed_contract, actual_fees);
     check(can_pay.value == true, "should be able to create payment");
     check(get_fees == actual_fees, "the fee should be the same");
     check(actual_fees < 0, "should be a negatvie fee due to the contract being positive");
@@ -1432,7 +1454,7 @@ unittest {
     check(res2.value == false, format("Wallet should not be able to pay Amount"));
 
     SignedContract signed_contract;
-    const can_pay = wallet1.createPayment(to_pay, signed_contract, fees, true);
+    const can_pay = wallet1.createPayment(to_pay, signed_contract, fees);
     check(can_pay.value == true, format("got error: %s", res.msg));
 }
 
@@ -1486,13 +1508,13 @@ unittest {
     auto invoice = wallet1.createInvoice("wowo", 0.TGN);
     // register the invoice
     wallet1.registerInvoice(invoice);
-    
+
     auto factory = RecordFactory(wallet1.net);
 
-    immutable dart_file= fileId!DARTFile("updatereq").fullpath;
+    immutable dart_file = fileId!DARTFile("updatereq").fullpath;
     DARTFile.create(dart_file, wallet1.net);
     auto dart = new DART(wallet1.net, dart_file, No.read_only);
-    scope(exit) {
+    scope (exit) {
         dart.close;
         dart_file.remove;
     }
@@ -1507,19 +1529,20 @@ unittest {
     auto initial_recorder = factory.recorder;
     initial_recorder.insert([bill1, bill2], Archive.Type.ADD);
     dart.modify(initial_recorder);
-    
+
     HiRPC hirpc = HiRPC(wallet1.net);
-    
+
     const dart_receiver = hirpc.receive(req);
 
     HiBON searchDB(Document owner_doc) {
         Buffer[] owner_pkeys;
-        foreach(owner; owner_doc[]) {
+        foreach (owner; owner_doc[]) {
             owner_pkeys ~= owner.get!Buffer;
         }
         return dart.search(owner_pkeys, wallet1.net);
 
     }
+
     auto search_res = searchDB(dart_receiver.method.params);
     auto res = hirpc.result(dart_receiver, Document(search_res)).toDoc;
 
@@ -1545,7 +1568,7 @@ unittest {
     // add the outputs to the dart
     auto next_recorder = factory.recorder;
     next_recorder.insert(PayScript(signed_contract.contract.script).outputs, Archive.Type.ADD);
-    foreach(idx; signed_contract.contract.inputs) {
+    foreach (idx; signed_contract.contract.inputs) {
         next_recorder.remove(idx);
     }
     dart.modify(next_recorder);

@@ -28,6 +28,7 @@ import tagion.actor;
 // Checks if all nodes bullseyes are the same
 bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
     import std.typecons;
+
     // extra check for mode0
     // Check bullseyes
     Fingerprint[] bullseyes;
@@ -83,7 +84,7 @@ void spawnMode0(
 
     if (epoch_head is Document.init) {
         foreach (n; zip(nodes, node_options)) {
-            addressbook[n[0].pkey] = NodeAddress(n[1].task_names.epoch_creator);
+            addressbook[n[0].pkey] = NodeInfo(n[1].task_names.epoch_creator);
         }
     }
     else {
@@ -93,6 +94,8 @@ void spawnMode0(
             keys = Epoch(epoch_head).active;
         }
         else {
+            import tagion.services.exception;
+
             auto genesis = GenesisEpoch(epoch_head);
 
             keys = genesis.nodes;
@@ -102,7 +105,7 @@ void spawnMode0(
 
         foreach (node_info; zip(keys, node_options)) {
             verbose("adding addressbook ", node_info[0]);
-            addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
+            addressbook[node_info[0]] = NodeInfo(node_info[1].task_names.epoch_creator);
         }
     }
 

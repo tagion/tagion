@@ -1,5 +1,7 @@
 module tagion.wallet.AccountDetails;
 import std.format;
+import std.algorithm;
+
 import tagion.basic.Types;
 import tagion.crypto.Types;
 
@@ -7,6 +9,7 @@ import tagion.crypto.Types;
 import tagion.dart.DARTBasic;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
+import tagion.utils.StdTime;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
@@ -29,7 +32,8 @@ struct AccountDetails {
     @label("$requested") TagionBill[DARTIndex] requested; /// Requested bills
     @label("$requested_invoices") Invoice[] requested_invoices;
     @label("$hirpc") Document[] hirpcs; /// HiRPC request    
-    import std.algorithm : any, each, filter, map, sum;
+
+    import std.algorithm : filter;
 
     version (none) bool remove_bill(Pubkey pk) {
         import std.algorithm : countUntil, remove;
@@ -45,14 +49,10 @@ struct AccountDetails {
     void remove_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove, countUntil;
 
-        version (REMOVE_BILL_HASH) {
-            const billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
-            const index = billsHashes.countUntil(billHash);
+        const billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+        if (index >= 0) {
             bills = bills.remove(index);
-        }
-        else {
-            pragma(msg, "This should not work, as algorithm.remove expects an Offset, and other data types are just converted to one");
-            bills = bills.remove(billHash);
         }
     }
 
@@ -167,7 +167,29 @@ struct AccountDetails {
                 .map!(b => b.value)
                 .sum;
         }
+
+        /// Returns an input range with history
+        auto history() {
+            return (used_bills ~ bills).dup.sort!((a, b) => a.time > b.time);
+        }
+
     }
+    mixin HiBONRecord;
+}
+
+struct HistoryItem {
+    double amount;
+    double balance;
+    double fee;
+    int status;
+    int type;
+    @label(StdNames.time) sdt_t timestamp;
+    Pubkey pubkey;
+    mixin HiBONRecord;
+}
+
+struct History {
+    HistoryItem[] items;
     mixin HiBONRecord;
 }
 

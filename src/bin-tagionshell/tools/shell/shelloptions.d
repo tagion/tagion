@@ -20,6 +20,7 @@ struct ShellOptions {
     string bullseye_endpoint;
     string i2p_endpoint;
     string sysinfo_endpoint;
+    string selftest_endpoint;
     string default_i2p_wallet;
     string default_i2p_wallet_pin;
     uint number_of_nodes;
@@ -38,6 +39,7 @@ struct ShellOptions {
         bullseye_endpoint = "/bullseye";
         i2p_endpoint = "/invoice2pay";
         sysinfo_endpoint = "/sysinfo";
+        selftest_endpoint = "/selftest";
         default_i2p_wallet = "./wallets/wallet1.json";
         default_i2p_wallet_pin = "0001";
         number_of_nodes = 5;

@@ -1,7 +1,7 @@
 # tools directory
 TOOLS:=tools
 
-LDC_VERSION:=1.34.0
+LDC_VERSION:=1.35.0
 TARGET_ARCH:=aarch64
 ifeq ($(TARGET_ARCH),x86_64)
 # There is no distribution for android x86_64, however the libs are included with aarch64

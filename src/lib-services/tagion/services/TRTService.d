@@ -33,24 +33,20 @@ import tagion.basic.Types;
 import tagion.trt.TRT;
 import tagion.hibon.HiBON;
 import tagion.script.standardnames;
-import tagion.script.common : TagionBill;
+import tagion.services.exception;
 
 @safe
 struct TRTOptions {
     bool enable = true;
     string folder_path = buildPath(".");
     string trt_filename = "trt".setExtension(FileExtension.dart);
-    string trt_path;
 
-    this(string folder_path, string trt_filename) {
-        this.folder_path = folder_path;
-        this.trt_filename = trt_filename;
-        trt_path = buildPath(folder_path, trt_filename);
+    string trt_path() inout nothrow {
+        return buildPath(folder_path, trt_filename);
     }
 
     void setPrefix(string prefix) nothrow {
         trt_filename = prefix ~ trt_filename;
-        trt_path = buildPath(folder_path, trt_filename);
     }
 
     mixin JSONCommon;
@@ -67,6 +63,7 @@ struct TRTService {
         auto hirpc = HiRPC(net);
         ActorHandle dart_handle = ActorHandle(task_names.dart);
 
+        check(opts.trt_path.exists, format("TRT database %s file not found", opts.trt_path));
         log("TRT PATH FOR DATABASE=%s", opts.trt_path);
         trt_db = new DART(net, opts.trt_path, dart_exception);
         if (dart_exception !is null) {
@@ -162,9 +159,9 @@ struct TRTService {
 
             // get a recorder from all the dartkeys already in the db for the function
             auto index_lookup = dart_recorder[]
-                .filter!(a => a.filed.isRecord!TagionBill)
-                .map!(a => TagionBill(a.filed))
-                .map!(t => net.dartKey(TRTLabel, Pubkey(t.owner)));
+                .filter!(a => a.filed.hasMember(StdNames.owner))
+                .map!(a => Document(a.filed))
+                .map!(doc => net.dartKey(TRTLabel, doc[StdNames.owner].get!Pubkey));
 
             auto already_in_dart = trt_db.loads(index_lookup);
 
