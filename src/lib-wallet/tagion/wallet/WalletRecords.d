@@ -28,9 +28,9 @@ struct DevicePIN {
     Buffer U; /// Device random
     Buffer S; /// Check sum value
     bool recover(
-const HashNet net, 
-ref scope ubyte[] R, 
-scope const(ubyte[]) P) const {
+            const HashNet net,
+            ref scope ubyte[] R,
+            scope const(ubyte[]) P) const {
         import tagion.utils.Miscellaneous : xor;
 
         const pinhash = net.saltHash(P, U);
@@ -39,10 +39,10 @@ scope const(ubyte[]) P) const {
     }
 
     void setPin(
-scope const HashNet net, 
-scope const(ubyte[]) R, 
-scope const(ubyte[]) P, 
-Buffer salt) scope {
+            scope const HashNet net,
+            scope const(ubyte[]) R,
+    scope const(ubyte[]) P,
+    Buffer salt) scope {
         import tagion.utils.Miscellaneous : xor;
 
         U = salt;

@@ -6,7 +6,7 @@ import std.traits;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Version : ver;
-import tagion.crypto.SecureInterfaceNet;
+public import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.Types : Fingerprint, Signature;
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.random.random;
@@ -54,7 +54,7 @@ class StdHashNet : HashNet {
 
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
-    import tagion.crypto.secp256k1.NativeSecp256k1; 
+    import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.format;
     import std.string : representation;
     import tagion.basic.ConsensusExceptions;
@@ -74,6 +74,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         void tweak(const(ubyte[]) tweek_code, out ubyte[] tweak_privkey) const;
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         void clone(StdSecureNet net) const;
+        void __expose(out scope ubyte[] _privkey) const;
     }
 
     protected SecretMethods _secret;
@@ -108,10 +109,10 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     Signature sign(const Fingerprint message) const
-    in(_secret !is null,
-                format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey))
-        in(_secret !is null, 
-format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair))
+    in (_secret !is null,
+        format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey))
+    in (_secret !is null,
+        format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair))
     do {
         return Signature(_secret.sign(cast(Buffer) message));
     }
@@ -122,7 +123,7 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
     }
 
     final void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
-    in(tweak_privkey.length == NativeSecp256k1.TWEAK_SIZE)
+    in (tweak_privkey.length == NativeSecp256k1.TWEAK_SIZE)
     do {
         _secret.tweak(tweak_code, tweak_privkey);
     }
@@ -160,34 +161,34 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
             getRandom(seckey);
         }
 
-        ubyte[] privkey;
+        ubyte[] keypair;
         scope (exit) {
-            privkey[] = 0;
+            keypair[] = 0;
         }
-        crypt.createKeyPair(seckey, privkey);
+        crypt.createKeyPair(seckey, keypair);
         alias AES = AESCrypto!256;
-        _pubkey = crypt.getPubkey(privkey);
+        _pubkey = crypt.getPubkey(keypair);
         auto aes_key_iv = new ubyte[AES.KEY_SIZE + AES.BLOCK_SIZE];
         getRandom(aes_key_iv);
         auto aes_key = aes_key_iv[0 .. AES.KEY_SIZE];
         auto aes_iv = aes_key_iv[AES.KEY_SIZE .. $];
         // Encrypt private key
-        auto encrypted_privkey = new ubyte[privkey.length];
-        AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
+        auto encrypted_keypair = new ubyte[keypair.length];
+        AES.encrypt(aes_key, aes_iv, keypair, encrypted_keypair);
         @safe
-        void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
+        void do_secret_stuff(scope void delegate(const(ubyte[]) keypair) @safe dg) {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
             // for long period of time
-            auto tmp_privkey = new ubyte[encrypted_privkey.length];
+            auto tmp_keypair = new ubyte[encrypted_keypair.length];
             scope (exit) {
                 getRandom(aes_key_iv);
-                AES.encrypt(aes_key, aes_iv, tmp_privkey, encrypted_privkey);
-                AES.encrypt(rawCalcHash(encrypted_privkey ~ aes_key_iv), aes_iv, encrypted_privkey, tmp_privkey);
+                AES.encrypt(aes_key, aes_iv, tmp_keypair, encrypted_keypair);
+                AES.encrypt(rawCalcHash(encrypted_keypair ~ aes_key_iv), aes_iv, encrypted_keypair, tmp_keypair);
             }
-            AES.decrypt(aes_key, aes_iv, encrypted_privkey, tmp_privkey);
-            dg(tmp_privkey);
+            AES.decrypt(aes_key, aes_iv, encrypted_keypair, tmp_keypair);
+            dg(tmp_keypair);
         }
 
         @safe class LocalSecret : SecretMethods {
@@ -196,36 +197,44 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
                 ubyte[crypt.MESSAGE_SIZE] _aux_random;
                 ubyte[] aux_random = _aux_random;
                 getRandom(aux_random);
-                do_secret_stuff((const(ubyte[]) privkey) { result = crypt.sign(message, privkey, aux_random); });
+                do_secret_stuff((const(ubyte[]) keypair) { result = crypt.sign(message, keypair, aux_random); });
                 return result;
             }
 
-            void tweak(const(ubyte[]) tweak_code, out ubyte[] tweak_privkey) const {
-                do_secret_stuff((const(ubyte[]) privkey) @safe { crypt.privTweak(privkey, tweak_code, tweak_privkey); });
+            void tweak(const(ubyte[]) tweak_code, out ubyte[] tweak_keypair) const {
+                do_secret_stuff((const(ubyte[]) keypair) @safe { crypt.privTweak(keypair, tweak_code, tweak_keypair); });
             }
 
             immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
                 Buffer result;
-                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                do_secret_stuff((const(ubyte[]) keypair) @safe {
                     ubyte[] seckey;
                     scope (exit) {
                         seckey[] = 0;
                     }
-                    crypt.getSecretKey(privkey, seckey);
+                    crypt.getSecretKey(keypair, seckey);
                     result = crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
                 });
                 return result;
             }
 
             void clone(StdSecureNet net) const {
-                do_secret_stuff((const(ubyte[]) privkey) @safe {
-                    auto _privkey = privkey.dup;
-                    net.createKeyPair(_privkey); // Not createKeyPair scrambles the privkey
+                do_secret_stuff((const(ubyte[]) keypair) @safe {
+                    auto _keypair = keypair.dup;
+                    net.createKeyPair(_keypair); // Not createKeyPair scrambles the keypair
                 });
+            }
+
+            void __expose(out scope ubyte[] _keypair) const {
+                do_secret_stuff((const(ubyte[]) keypair) @safe { _keypair = keypair.dup; });
             }
         }
 
         _secret = new LocalSecret;
+    }
+
+    void __expose(out scope ubyte[] privkey) const {
+        _secret.__expose(privkey);
     }
 
     /**
@@ -237,8 +246,7 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
             scope const(char[]) passphrase,
     scope const(char[]) salt = null,
     void delegate(scope const(ubyte[]) data) @safe dg = null)
-    in
-        (_secret is null)
+    in (_secret is null)
     do {
         import tagion.crypto.pbkdf2;
         import std.digest.sha : SHA512;
