@@ -9,7 +9,7 @@ import tagion.basic.tagionexceptions : Check, TagionException;
 import std.uni;
 
 /**
- * Exception type used in the Script package
+ * Exception type used in the BIP39 functions
  */
 @safe
 class BIP39Exception : TagionException {
@@ -18,25 +18,8 @@ class BIP39Exception : TagionException {
     }
 }
 
-/// check function used in the Script package
 alias check = Check!(BIP39Exception);
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
-
-/*
-https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
-10001111110100110100110001011001100010111110011101010000101001000000110000011001101010001100001000011101110011000100000111111100
-0111
-
-more omit biology blind insect faith corn crush search unveil away wedding
-
-1010010001011010010011001111111000111100011110010110110111110111011110101101101010000000010001010111111001100010011010101000110000110100110011100000010001010001010100110111101110001010011010100000101011000001101000110000010110001001100011100001110011010010
-01001011
-
-
-picture sponsor display jump nothing wing twin exotic earth vessel one blur erupt acquire earn hunt media expect race ecology flat shove infant enact
-
-1137e53d16d7ce04339914da41bdeb24b246f0878494f066a145f8a7f43c8264e177873c54830fa9b0cafdf5846258521b208f6d7fcd0de78ac22bf51040efde
-*/
 
 import std.algorithm;
 import std.range;
@@ -44,14 +27,18 @@ import std.typecons;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Debug;
 
+    
+/**
+ * BIP39 function collection 
+ */
 @safe
 struct BIP39 {
     import tagion.crypto.pbkdf2;
     import std.digest.sha : SHA512, SHA256;
 
     alias pbkdf2_sha512 = pbkdf2!SHA512;
-    const(ushort[string]) table;
-    const(string[]) words;
+    const(ushort[string]) table; /// Table of all the mnemonic words
+    const(string[]) words; /// Reverse lookup table of the mnemonic words
     enum presalt = "mnemonic";
     this(const(string[]) list) pure nothrow
     in (list.length == TOTAL_WORDS)
@@ -64,51 +51,28 @@ struct BIP39 {
 
     }
 
-    void gen(ref scope ushort[] words) const nothrow {
-        foreach (ref word; words) {
-            word = getRandom!ushort & (TOTAL_WORDS - 1);
-        }
-    }
-
+    deprecated("Should be removed when the passphrase function has been removed")
     private const(ushort[]) mnemonicNumbers(const(string[]) mnemonics) const pure {
         return mnemonics
             .map!(m => table.get(m, ushort.max))
             .array;
     }
 
-    bool checkMnemoicNumbers(scope const(ushort[]) mnemonic_codes) const pure nothrow @nogc {
-        return mnemonic_codes.all!(m => m < TOTAL_WORDS);
-    }
-
-    ubyte[] opCall(scope const(ushort[]) mnemonic_codes, scope const(char[]) passphrase) const nothrow {
-        scope word_list = mnemonic_codes[]
+    deprecated("Should use mnemonicToSeed instead")
+    ubyte[] opCall(scope const(ushort[]) mnemonic_indices, scope const(char[]) password) const nothrow {
+        scope word_list = mnemonic_indices[]
             .map!(mnemonic_code => words[mnemonic_code]);
-        return opCall(word_list, passphrase);
+        return opCall(word_list, password);
     }
 
-    char[] passphrase(const uint number_of_words) const nothrow {
-        scope ushort[] mnemonic_codes;
-        mnemonic_codes.length = number_of_words;
-        scope (exit) {
-            mnemonic_codes[] = 0;
-        }
-        gen(mnemonic_codes);
-        const password_size = mnemonic_codes
-            .map!(code => words[code])
-            .map!(m => m.length)
-            .sum + mnemonic_codes.length - 1;
-        auto result = new char[password_size];
-        result[] = ' ';
-        uint index;
-        foreach (code; mnemonic_codes) {
-            result[index .. index + words[code].length] = words[code];
-            index += words[code].length + char.sizeof;
-        }
-        return result;
-    }
+    deprecated("Use the generateMnemonic instead")
+    char[] passphrase(const uint number_of_words) const pure {
+        return generateMnemonic(number_of_words).dup;
+}
 
     enum count = 2048;
     enum dk_length = 64;
+    deprecated("This should be update to use generateMnemonic and mnemonicToEntropy instead")
     ubyte[] opCall(R)(scope R mnemonics, scope const(char[]) passphrase) const nothrow if (isInputRange!R) {
         scope char[] salt = presalt ~ passphrase;
         const password_size = mnemonics.map!(m => m.length).sum + mnemonics.length - 1;
@@ -130,16 +94,24 @@ struct BIP39 {
     enum MNEMONIC_BITS = 11; /// Bit size of the word number 2^11=2048
     enum TOTAL_WORDS = 1 << MNEMONIC_BITS;
     enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
-
-    static ubyte[] entropy(scope const(ushort[]) mnemonic_codes) pure nothrow {
+    /**
+     * Calculates the entropy of a list of mnemonic-indices without the checksum
+     * This function should alo be used analize a mnemonic-indices list 
+     * To produces a entropy the function mnemonicToEntropy should be used instead
+     * Params:
+     *   mnemonic_indices = list of mnemonic-indices
+     * Returns: 
+     *   An entropy byte array representation of the mnemonic-indices
+     */
+    static ubyte[] entropy(scope const(ushort[]) mnemonic_indices) pure nothrow {
         import std.bitmanip : nativeToBigEndian;
         import std.stdio;
 
-        const total_bits = mnemonic_codes.length * MNEMONIC_BITS;
+        const total_bits = mnemonic_indices.length * MNEMONIC_BITS;
         const total_bytes = total_bits / 8 + ((total_bits & 7) != 0);
         ubyte[] result = new ubyte[total_bytes];
 
-        foreach (i, mnemonic; mnemonic_codes) {
+        foreach (i, mnemonic; mnemonic_indices) {
             const bit_pos = i * MNEMONIC_BITS;
             const byte_pos = bit_pos / 8;
             const shift_pos = 32 - (11 + (bit_pos & 7));
@@ -153,10 +125,25 @@ struct BIP39 {
         return result;
     }
 
+    /**
+     * Helper function to generated the mnemonic salt 
+     * Params:
+     *   password = text of the password 
+     * Returns: 
+     *   The NFKD normalize string
+     */
     static string salt(scope string password) pure {
         return normalize!NFKD(presalt ~ password);
     }
 
+    /**
+     * Reverse function of entropy
+     * This function should only be used to analize an entropy buffer
+     * Params:
+     *   entropy_buf = byte array of an entropy buffer 
+     * Returns: 
+     *   an array of mnemonic-indices   
+    */
     static ushort[] dentropy(scope const(ubyte)[] entropy_buf) pure nothrow {
         import std.bitmanip : bigEndianToNative, peek, Endian;
 
@@ -176,10 +163,22 @@ struct BIP39 {
         return result;
     }
 
+    /**
+     * Helper function to check if the entropy length is correct 
+     * Params:
+     *   len = length of an entropy buffer 
+     * Returns: 
+     *   true of the length is correct
+    */
     static bool checkEntropyLength(const size_t len) pure nothrow @nogc {
         return (len >= 16) && (len <= 32) && (len % 4 == 0);
     }
 
+    /**
+     * Helper function which appends the checksum the entropy_buf 
+     * Params:
+     *   entropy_buf = entropy buffer
+     */
     static void addCheckSumBits(ref scope ubyte[] entropy_buf) pure nothrow
     in (checkEntropyLength(entropy_buf.length))
     do {
@@ -190,6 +189,13 @@ struct BIP39 {
         entropy_buf ~= checksum;
     }
 
+    /** 
+     * Calculates the checksum of an entropy buffer
+     * Params:
+     *   entropy_buf = entropy buffer 
+     * Returns: 
+     *   checkout as a single byte 
+    */
     static const(ubyte) deriveChecksumBits(scope const(ubyte[]) entropy_buf) pure nothrow scope
     in (checkEntropyLength(entropy_buf.length))
     do {
@@ -201,15 +207,37 @@ struct BIP39 {
         return hash[0] & mask;
     }
 
+    /**
+     * Generated the mnemonic-sentence from an entropy buffer without the salt
+     * This function also generates the correct checkout (Last word of the sentence)
+     * Params:
+     *   entropy_buf = entropy buffer 
+     * Returns:
+     *   Mnemonic-sentence
+     */
     string entropyToMnemonic(scope const(ubyte[]) entropy_buf) const pure {
         check(checkEntropyLength(entropy_buf.length),
                 format("entropy length of %d is invalid", entropy_buf.length));
         const checksum = deriveChecksumBits(entropy_buf);
         const bits = entropy_buf ~ checksum;
-        const mnemonic_codes = dentropy(bits);
-        return mnemonic_codes.map!(mnemonic => words[mnemonic]).join(" ");
+        const mnemonic_indices = dentropy(bits);
+        return mnemonic_indices.map!(mnemonic => words[mnemonic]).join(" ");
     }
 
+    /**
+     * The reverse function of entropyToMnemonic
+     * This function converts a mnemonic sentence to an entropy buffer
+     * The function also check if the words in the sentence are in the word table
+     * and it check if the checksum is correct
+     * if this is not the case the it throws an BIP39Exception
+     * Because this function also appends the checksum to the entropy buffer
+     * to reverse the mnemonic-sentence the entropyToMnemonic should called with entropy_buf[0..$-1] (without the checksum)
+     * Params:
+     *   mnemonic_sentence = mnemonic sentence as a text string 
+     * Returns: 
+     *   entropy buffer in encluding the checksum
+     * 
+     */
     const(ubyte[]) mnemonicToEntropy(string mnemonic_sentence) const pure {
         import std.array : split;
 
@@ -217,31 +245,47 @@ struct BIP39 {
             .split!(isWhite);
         check(words.length % 3 == 0, format("The number of words in the mnemonic should be a multiple of 3 but is %d", words
                 .length));
-        auto mnemonic_codes = mnemonicNumbers(words);
-        const position_of_bad_word = mnemonic_codes.countUntil!(num => num >= count);
+        auto mnemonic_indices = words.map!(m => table.get(m, ushort.max)).array;
+        const position_of_bad_word = mnemonic_indices.countUntil!(num => num >= TOTAL_WORDS);
         check(position_of_bad_word < 0, format("Word %s number %d was invalid", words[position_of_bad_word], position_of_bad_word));
-        const entropy_buf = entropy(mnemonic_codes);
-        // calculate the checksum and compare
+        const entropy_buf = entropy(mnemonic_indices);
 
         // Subtract 1 because the last bute of entropy_buf includes the checksum 
         check(checkEntropyLength(entropy_buf.length - 1),
                 format("entropy length of %d is invalid", entropy_buf.length));
         const checksum = entropy_buf[$ - 1];
         const entropy_len = entropy_buf.length / uint.sizeof * uint.sizeof;
+        // calculate the checksum and compare
         const newChecksum = deriveChecksumBits(entropy_buf[0 .. entropy_len]);
-        check(newChecksum == checksum, format("Wrong checksum of entropy"));
+        check(newChecksum == checksum, format("Wrong checksum of the entropy"));
         return entropy_buf;
     }
 
-    ubyte[] mnemonicToSeed(string mnemonic_sentence, string passphrase = null) const pure {
+    /**
+     * Generated the 512bits seed from a mnemonic-sentence and an optional password
+     * Both the mnemonic_sentence and the password are NFKD normalized.
+     * Params:
+     *   mnemonic_sentence = mnemonic sentence as a text string
+     *   password = optional password 
+     * Returns: 
+     *   the seed as a 64bytes buffer
+     */
+    ubyte[] mnemonicToSeed(string mnemonic_sentence, string password = null) const pure {
         import tagion.crypto.pbkdf2;
         import std.digest.sha : SHA512;
 
         alias pbkdf2_sha512 = pbkdf2!SHA512;
-        return pbkdf2_sha512(mnemonic_sentence.normalize!(NFKD).representation, salt(passphrase).representation, count, dk_length);
+        return pbkdf2_sha512(mnemonic_sentence.normalize!(NFKD).representation, salt(password).representation, count, dk_length);
     }
 
-    string generateMnemonic(const uint number_of_words) pure {
+    /**
+     * Prime function to generate a mnemonic sentence  
+     * Params:
+     *   number_of_words = number of word in the sentence 
+     * Returns: 
+     *   the mnemonic sentence
+     */
+    string generateMnemonic(const uint number_of_words) const pure {
         check(number_of_words % 3 == 0, "The number of words need to be multiple of 3");
         ubyte[] entropy_buf;
         entropy_buf.length = number_of_words * MNEMONIC_BITS / 8;
@@ -249,6 +293,13 @@ struct BIP39 {
         return entropyToMnemonic(entropy_buf);
     }
 
+    /**
+     * Check if the mnemonic sentence has the correct words and the correct checksum
+     * Params:
+     *   mnemonic_sentence = mnemonic-sentence
+     * Returns: 
+     *   true if the mnemonic-sentence is correct
+     */
     bool validateMnemonic(string mnemonic_sentence) const pure nothrow {
         try {
             const entropy_buf = mnemonicToEntropy(mnemonic_sentence);
@@ -260,13 +311,14 @@ struct BIP39 {
         assert(0);
     }
 }
-/*
+/** Test sample of bip39
 https://learnmeabitcoin.com/technical/mnemonic
 later echo alcohol essence charge eight feel sweet nephew apple aerobic device
 01111101010010001011110000011000001001101010001001101000100011011101010100110110110111011001010001000001010101000001000010011110
 0101
 */
 
+///Examples: how to use the BIP39 function collection
 @safe
 unittest {
     import std.stdio;
@@ -377,6 +429,27 @@ unittest {
 
     {
     }
+    /* 
+    // The flowing list has been generated from
+    // from nodejs using 
+    // https://github.com/bitcoinjs/bip39.git 
+    const bip39 = require('bip39')
+    bip39.wordlists.english;
+    --- the bip39_english_test_list here
+    for(let i=0; i<bip39_english_test_list.length; i++) {
+        const words=bip39.entropyToMnemonic(bip39_english_test_list[i][0]);
+        const seed=bip39.mnemonicToSeedSync(words);
+        bip39_english_test_list[i][1]=words;
+        bip39_english_test_list[i][2]=seed.toString('hex');
+    }
+    const content= JSON.stringify(bip39_english_test_list, null, 4);
+    const fs = require('node:fs');
+    fs.writeFile('testvector.json', content, err => {
+        if (err) {
+            console.error(err);
+    }
+    }); 
+    */
     const bip39_english_test_list = [
 
         [
