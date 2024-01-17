@@ -350,6 +350,9 @@ int _main(string[] args) {
 
         if (history) {
             wallet_interface.secure_wallet.account.history;
+            /* foreach(hist; wallet_interface.secure_wallet.account.history) { */
+            /*     hist.value.writeln; */
+            /* } */
         }
 
         wallet_interface.operate(wallet_switch, args);

@@ -170,7 +170,33 @@ struct AccountDetails {
 
         /// Returns an input range with history
         auto history() {
-            return (used_bills ~ bills).dup.sort!((a, b) => a.time > b.time);
+            import std.stdio;
+            import tagion.communication.HiRPC;
+            import tagion.utils.Term;
+
+            writeln("Sent");
+
+            foreach (HiRPC.Receiver rpc; hirpcs) {
+                if (isRecord!SignedContract(rpc.method.params)) {
+                    const s_contract = SignedContract(rpc.method.params);
+                    const script = PayScript(s_contract.contract.script);
+                    const my_tgn = script.outputs
+                        .filter!(b => b.owner in derivers)
+                        .map!(b => b.value)
+                        .sum;
+                    const your_tgn = script.outputs
+                        .filter!(b => b.owner !in derivers)
+                        .map!(b => b.value)
+                        .sum;
+                    writefln("%s%s%s : %s%s%s", GREEN, my_tgn, RESET, RED, your_tgn, RESET);
+                }
+            }
+
+            return 0;
+            // TagionBill[] b;
+            // b ~= used_bills;
+            // b ~= bills;
+            // return b.sort!((a, b) => a.time > b.time);
         }
 
     }
