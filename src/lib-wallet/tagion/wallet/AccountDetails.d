@@ -9,6 +9,7 @@ import tagion.crypto.Types;
 import tagion.dart.DARTBasic;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
+import tagion.utils.StdTime;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
@@ -182,8 +183,8 @@ struct HistoryItem {
     double fee;
     int status;
     int type;
-    string timestamp;
-    Buffer pubkey;
+    @label(StdNames.time) sdt_t timestamp;
+    Pubkey pubkey;
     mixin HiBONRecord;
 }
 

@@ -616,462 +616,502 @@ extern (C) {
     }
 
     // DUMMY FUNCTION
-    export uint get_history(uint from, uint count, uint32_t* historyId) {
-        HistoryItem genHistItem() {
-            return{
-                amount = 1,
-                balance = 1,
-                fee = 1,
-                status = 0,
-                type = 0,
-                timestamp = currentTime(),
-                pubkey = __wallet_storage.wallet.dummy_pubkey,};
-            }
+    uint get_history(uint from, uint count, uint32_t* historyId) {
+        DummyHistGen hist_gen;
 
-            auto rnd = Random(42);
-            enum max_length = 17;
+        History hist;
+        hist_gen.popFront();
+        hist.items = hist_gen.drop(from).take(count).array;
 
-            return 1;
-        }
+        *historyId = recyclerDoc.create(hist.toDoc);
 
+        return 0;
     }
 
-    unittest {
-        const work_path = new_test_path;
-        scope (success) {
-            work_path.rmdirRecurse;
+}
+
+struct DummyHistGen {
+    import tagion.utils.Random;
+
+    enum max_length = 37;
+
+    Random!uint rnd = Random!uint(42);
+
+    HistoryItem genHistItem() {
+        HistoryItem hist_item;
+        with (hist_item) {
+            amount = rnd.value;
+            balance = rnd.value;
+            fee = rnd.value;
+            status = rnd.value % 2;
+            type = rnd.value % 2;
+            timestamp = currentTime();
+            pubkey = Pubkey().init;
         }
-        { // Init storage should fail with empty path.
-            __wallet_storage = null;
-            const char[] path;
-            const pathLen = cast(uint32_t) path.length;
-            const result = wallet_storage_init(path.ptr, pathLen);
-            // Check the result
-            assert(result == 0);
-            assert(__wallet_storage is null);
-        }
+        return hist_item;
+    }
 
-        { // Init storage with correct path.
-            const path = work_path;
-            const uint32_t pathLen = cast(uint32_t) path.length;
-            const uint result = wallet_storage_init(path.ptr, pathLen);
-            // Check the result
-            assert(result != 0, "Expected non-zero result");
-            assert(__wallet_storage !is null);
-        }
+    int i = 0;
 
-        { // Wallet create.
-            // Create input data
-            const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
-            const uint32_t pincodeLen = cast(uint32_t) pincode.length;
-            const uint8_t[] mnemonic = cast(uint8_t[]) "some words".dup;
-            const uint32_t mnemonicLen = cast(uint32_t) mnemonic.length;
-            const uint8_t[] salt = cast(uint8_t[]) "salt".dup;
-            const uint32_t saltLen = cast(uint32_t) salt.length;
+    bool empty() => i > max_length;
+    HistoryItem _front;
+    void popFront() {
+        _front = genHistItem();
+        i++;
+    }
 
-            // Call the wallet_create function
-            const uint result = wallet_create(pincode.ptr, pincodeLen, mnemonic.ptr, mnemonicLen, salt.ptr, saltLen);
+    HistoryItem front() => _front;
+}
 
-            // Check the result
-            assert(result != 0, "Expected non-zero result");
-        }
+version (none) unittest {
+    import std.stdio;
+    import hj = tagion.hibon.HiBONJSON;
 
-        { // Check if wallet was created.
-            const uint result = wallet_check_exist();
-            // Check the result
-            assert(result != 0, "Expected non-zero result");
-        }
+    foreach (i; get_history(0, 5).items) {
+        hj.toPretty(i).writeln;
+    }
+    writeln;
+    foreach (i; get_history(36, 5).items) {
+        hj.toPretty(i).writeln;
+    }
+}
 
-        { // Fail to login to a wallet with an incorrect pincode.
-            const uint8_t[] pincode = cast(uint8_t[]) "5555".dup;
-            const uint32_t pincodeLen = cast(uint32_t) pincode.length;
-            const uint result = wallet_login(pincode.ptr, pincodeLen);
-            // Check the result
-            assert(result == 0);
-        }
+unittest {
+    const work_path = new_test_path;
+    scope (success) {
+        work_path.rmdirRecurse;
+    }
+    { // Init storage should fail with empty path.
+        __wallet_storage = null;
+        const char[] path;
+        const pathLen = cast(uint32_t) path.length;
+        const result = wallet_storage_init(path.ptr, pathLen);
+        // Check the result
+        assert(result == 0);
+        assert(__wallet_storage is null);
+    }
 
-        { // Login to wallet with a correct pincode.
-            const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
-            const uint32_t pincodeLen = cast(uint32_t) pincode.length;
-            const uint result = wallet_login(pincode.ptr, pincodeLen);
-            // Check the result
-            assert(result != 0, "Expected non-zero result");
-        }
+    { // Init storage with correct path.
+        const path = work_path;
+        const uint32_t pathLen = cast(uint32_t) path.length;
+        const uint result = wallet_storage_init(path.ptr, pathLen);
+        // Check the result
+        assert(result != 0, "Expected non-zero result");
+        assert(__wallet_storage !is null);
+    }
 
-        { // Check login
-            const uint result = wallet_check_login();
-            // Check the result
-            assert(result != 0, "Expected non-zero result");
-        }
-
-        { // Logout wallet.
-            const result = wallet_logout();
-            assert(result != 0, "Expected non-zero result");
-            assert(!__wallet_storage.wallet.isLoggedin);
-        }
-
-        { // Delete wallet.
-
-            const result = wallet_delete();
-            assert(result != 0, "Expected non-zero result");
-            assert(!__wallet_storage.wallet.isLoggedin);
-            assert(!__wallet_storage.isWalletExist);
-        }
-
-        { // Validate pin.
-
-            const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
-            const uint32_t pincodeLen = cast(uint32_t) pincode.length;
-            const uint8_t[] mnemonic = cast(uint8_t[]) "some words".dup;
-            const uint32_t mnemonicLen = cast(uint32_t) mnemonic.length;
-            uint8_t[] pin_copy;
-            // Call the wallet_create function
-            pin_copy = pincode.dup;
-            wallet_create(pin_copy.ptr, pincodeLen, mnemonic.ptr, mnemonicLen, const(uint8_t*).init, uint32_t.init);
-            pin_copy = pincode.dup;
-            wallet_login(pin_copy.ptr, pincodeLen);
-
-            const uint result = validate_pin(pincode.ptr, pincodeLen);
-            assert(result != 0, "Expected non-zero result");
-        }
-
-        { // Validate pin should fail on incorrect pincode.
-            const uint8_t[] pincode = cast(uint8_t[]) "5555".dup;
-            const uint32_t pincodeLen = cast(uint32_t) pincode.length;
-            const uint result = validate_pin(pincode.ptr, pincodeLen);
-            assert(result == 0);
-        }
-
-        { // Change pincode.
-            const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
-            const uint32_t pincodeLen = cast(uint32_t) pincode.length;
-            const uint8_t[] newPincode = cast(uint8_t[]) "5555".dup;
-            const uint32_t newPincodeLen = cast(uint32_t) newPincode.length;
-            const uint result = change_pin(pincode.ptr, pincodeLen, newPincode.ptr, newPincodeLen);
-            assert(result != 0, "Expected non-zero result");
-            assert(__wallet_storage.wallet.isLoggedin, "Expected wallet stays logged in");
-        }
-
+    { // Wallet create.
         // Create input data
-        const uint64_t invAmount = 100;
-        const char[] label = "Test Invoice";
-        const uint32_t labelLen = cast(uint32_t) label.length;
-        uint8_t invoiceDocId;
+        const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
+        const uint32_t pincodeLen = cast(uint32_t) pincode.length;
+        const uint8_t[] mnemonic = cast(uint8_t[]) "some words".dup;
+        const uint32_t mnemonicLen = cast(uint32_t) mnemonic.length;
+        const uint8_t[] salt = cast(uint8_t[]) "salt".dup;
+        const uint32_t saltLen = cast(uint32_t) salt.length;
 
-        { // Create invoice.
+        // Call the wallet_create function
+        const uint result = wallet_create(pincode.ptr, pincodeLen, mnemonic.ptr, mnemonicLen, salt.ptr, saltLen);
 
-            // Call the create_invoice function
-            const uint result = create_invoice(&invoiceDocId, invAmount, label.ptr, labelLen);
-
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-
-            // Verify that invoiceDocId is non-zero
-            assert(invoiceDocId != 0, "Expected non-zero invoiceDocId");
-        }
-
-        import std.algorithm : map;
-        import std.range : zip;
-        import std.string : representation;
-
-        auto bill_amounts = [200, 500, 100].map!(a => a.TGN);
-        [200, 500, 100]
-            .map!(value => value.TGN)
-            .map!(value => __wallet_storage.wallet.requestBill(value))
-            .each!(bill => __wallet_storage.wallet.addBill(bill));
-
-        const net = new StdHashNet;
-        // Add the bills to the account with the derive keys
-        with (__wallet_storage.wallet.account) {
-
-            bills = zip(bill_amounts, derivers.byKey)
-                .map!(bill_derive => TagionBill(
-                        bill_derive[0],
-                        currentTime,
-                        bill_derive[1],
-                        Buffer.init)).array;
-        }
-
-        auto invoiceDoc = recyclerDoc(invoiceDocId);
-
-        // Contract input data.
-        const uint8_t[] invoice = cast(uint8_t[])(invoiceDoc.serialize);
-        const uint32_t invoiceLen = cast(uint32_t) invoice.length;
-        const uint64_t contAmount = 100;
-        const uint32_t errorLen = 0;
-        uint8_t errorPtr;
-
-        uint32_t contractDocId;
-
-        { // Create a contract.
-            double fees;
-            const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount, &fees, errorLen, &errorPtr);
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-
-            // Verify that invoiceDocId is non-zero
-            assert(contractDocId != 0, "Expected non-zero contractDocId");
-        }
-
-        auto contractDoc = recyclerDoc(contractDocId);
-
-        const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
-        const uint32_t contractLen = cast(uint32_t) contract.length;
-
-        { // Update request.
-            uint8_t requestDocId;
-            const uint result = request_update(&requestDocId);
-
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-
-            // Verify that invoiceDocId is non-zero
-            assert(requestDocId != 0, "Expected non-zero requestDocId");
-        }
-        { // Get public key.
-            uint8_t pubkeyDocId;
-            uint result = get_public_key(&pubkeyDocId);
-
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-
-            // Verify that invoiceDocId is non-zero
-            assert(pubkeyDocId != 0, "Expected non-zero pubkeyDocId");
-        }
-
-        { // Get and set derivers.
-            uint8_t backupDocId;
-            uint getBackupResult = get_backup(&backupDocId);
-
-            // Check the result
-            assert(getBackupResult == 1, "Expected result to be 1");
-
-            // Verify that invoiceDocId is non-zero
-            assert(backupDocId != 0, "Expected non-zero backupDocId");
-
-            auto backupDoc = recyclerDoc(backupDocId);
-
-            // Derivers input data.
-            const uint8_t[] backup = cast(uint8_t[])(backupDoc.serialize);
-            const uint32_t backupLen = cast(uint32_t) backup.length;
-
-            uint setBackupResult = set_backup(backup.ptr, backupLen);
-
-            // Check the result
-            assert(setBackupResult == 1, "Expected result to be 1");
-        }
-
-        { // Get derivers state.
-            uint8_t deriversDocId;
-            uint getDResult = get_derivers_state(&deriversDocId);
-
-            // Check the result
-            assert(getDResult == 1, "Expected result to be 1");
-
-            // Verify that invoiceDocId is non-zero
-            assert(deriversDocId != 0, "Expected non-zero deriversDocId");
-        }
-
-        { // Get Account
-            uint8_t accountDocId;
-            uint getAResult = get_account(&accountDocId);
-
-            // Check the result
-            assert(getAResult == 1, "Expected result to be 1");
-
-            // Verify that invoiceDocId is non-zero
-            assert(accountDocId != 0, "Expected non-zero accountDocId");
-        }
-
-        { // Ulock bills by contract
-
-            uint result = ulock_bills_by_contract(contract.ptr, contractLen);
-
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-        }
-        { // Check invoice payment
-
-            double amount;
-            auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
-
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-            assert(amount != 0, "Expected amount not to be 0");
-        }
-        { // Check contract payment
-
-            uint8_t status;
-
-            uint result = check_contract_payment(contract.ptr, contractLen, &status);
-
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-            assert(status == 0, "Expected status to be 0");
-        }
-
-        version (none) { // Remove bills by contract.
-
-            uint result = remove_bills_by_contract(contract.ptr, contractLen);
-
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-        }
+        // Check the result
+        assert(result != 0, "Expected non-zero result");
     }
 
-    alias Store = WalletStorage;
-    struct WalletStorage {
-        StdSecureWallet wallet;
-        enum {
-            accountfile = "account".setExtension(FileExtension.hibon), /// account file name
-            walletfile = "wallet".setExtension(
-                    FileExtension.hibon), /// wallet file name
-            devicefile = "device".setExtension(FileExtension.hibon), /// device file name
-        }
-        string wallet_data_path;
-        this(const char[] walletDataPath) {
-            import std.stdio;
-
-            wallet_data_path = walletDataPath.idup;
-            import std.file;
-
-            if (!wallet_data_path.exists) {
-                wallet_data_path.mkdirRecurse;
-            }
-            if (isWalletExist) {
-                read;
-            }
-        }
-
-        string path(string filename) const pure {
-            return buildPath(wallet_data_path, filename);
-        }
-
-        bool isWalletExist() const {
-            return only(accountfile, walletfile, devicefile)
-                .map!(file => path(file).exists)
-                .any;
-        }
-
-        void write() const {
-            // Create a hibon for wallet data.
-
-            path(devicefile).fwrite(wallet.pin);
-            path(accountfile).fwrite(wallet.account);
-            path(walletfile).fwrite(wallet.wallet);
-
-        }
-
-        void read() {
-
-            version (NET_HACK) {
-                auto _pin = path(devicefile).fread!DevicePIN;
-                auto _wallet = path(walletfile).fread!RecoverGenerator;
-                auto _account = path(accountfile).fread!AccountDetails;
-
-                if (wallet.net !is null) {
-                    auto __net = cast(shared(StdSecureNet)) wallet.net;
-                    scope (exit) {
-                        __net = null;
-                    }
-                    auto copied_net = new StdSecureNet(__net);
-                    wallet = StdSecureWallet(_pin, _wallet, _account);
-
-                    wallet.set_net(copied_net);
-                }
-                else {
-                    wallet = StdSecureWallet(_pin, _wallet, _account);
-                }
-            }
-            else {
-                auto _pin = path(devicefile).fread!DevicePIN;
-                auto _wallet = path(walletfile).fread!RecoverGenerator;
-                auto _account = path(accountfile).fread!AccountDetails;
-                wallet = StdSecureWallet(_pin, _wallet, _account);
-            }
-
-        }
-
-        bool remove() const {
-            if (wallet_data_path.exists) {
-
-                try {
-                    only(accountfile, walletfile, devicefile)
-                        .each!(file => path(file).remove);
-                    //wallet_data_path.rmdir;
-                    return 1;
-                }
-                catch (Exception e) {
-                    last_error = e;
-                    return false;
-                }
-            }
-            return false;
-        }
+    { // Check if wallet was created.
+        const uint result = wallet_check_exist();
+        // Check the result
+        assert(result != 0, "Expected non-zero result");
     }
 
-    unittest {
-        import std.exception;
+    { // Fail to login to a wallet with an incorrect pincode.
+        const uint8_t[] pincode = cast(uint8_t[]) "5555".dup;
+        const uint32_t pincodeLen = cast(uint32_t) pincode.length;
+        const uint result = wallet_login(pincode.ptr, pincodeLen);
+        // Check the result
+        assert(result == 0);
+    }
+
+    { // Login to wallet with a correct pincode.
+        const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
+        const uint32_t pincodeLen = cast(uint32_t) pincode.length;
+        const uint result = wallet_login(pincode.ptr, pincodeLen);
+        // Check the result
+        assert(result != 0, "Expected non-zero result");
+    }
+
+    { // Check login
+        const uint result = wallet_check_login();
+        // Check the result
+        assert(result != 0, "Expected non-zero result");
+    }
+
+    { // Logout wallet.
+        const result = wallet_logout();
+        assert(result != 0, "Expected non-zero result");
+        assert(!__wallet_storage.wallet.isLoggedin);
+    }
+
+    { // Delete wallet.
+
+        const result = wallet_delete();
+        assert(result != 0, "Expected non-zero result");
+        assert(!__wallet_storage.wallet.isLoggedin);
+        assert(!__wallet_storage.isWalletExist);
+    }
+
+    { // Validate pin.
+
+        const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
+        const uint32_t pincodeLen = cast(uint32_t) pincode.length;
+        const uint8_t[] mnemonic = cast(uint8_t[]) "some words".dup;
+        const uint32_t mnemonicLen = cast(uint32_t) mnemonic.length;
+        uint8_t[] pin_copy;
+        // Call the wallet_create function
+        pin_copy = pincode.dup;
+        wallet_create(pin_copy.ptr, pincodeLen, mnemonic.ptr, mnemonicLen, const(uint8_t*).init, uint32_t.init);
+        pin_copy = pincode.dup;
+        wallet_login(pin_copy.ptr, pincodeLen);
+
+        const uint result = validate_pin(pincode.ptr, pincodeLen);
+        assert(result != 0, "Expected non-zero result");
+    }
+
+    { // Validate pin should fail on incorrect pincode.
+        const uint8_t[] pincode = cast(uint8_t[]) "5555".dup;
+        const uint32_t pincodeLen = cast(uint32_t) pincode.length;
+        const uint result = validate_pin(pincode.ptr, pincodeLen);
+        assert(result == 0);
+    }
+
+    { // Change pincode.
+        const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
+        const uint32_t pincodeLen = cast(uint32_t) pincode.length;
+        const uint8_t[] newPincode = cast(uint8_t[]) "5555".dup;
+        const uint32_t newPincodeLen = cast(uint32_t) newPincode.length;
+        const uint result = change_pin(pincode.ptr, pincodeLen, newPincode.ptr, newPincodeLen);
+        assert(result != 0, "Expected non-zero result");
+        assert(__wallet_storage.wallet.isLoggedin, "Expected wallet stays logged in");
+    }
+
+    // Create input data
+    const uint64_t invAmount = 100;
+    const char[] label = "Test Invoice";
+    const uint32_t labelLen = cast(uint32_t) label.length;
+    uint8_t invoiceDocId;
+
+    { // Create invoice.
+
+        // Call the create_invoice function
+        const uint result = create_invoice(&invoiceDocId, invAmount, label.ptr, labelLen);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+
+        // Verify that invoiceDocId is non-zero
+        assert(invoiceDocId != 0, "Expected non-zero invoiceDocId");
+    }
+
+    import std.algorithm : map;
+    import std.range : zip;
+    import std.string : representation;
+
+    auto bill_amounts = [200, 500, 100].map!(a => a.TGN);
+    [200, 500, 100]
+        .map!(value => value.TGN)
+        .map!(value => __wallet_storage.wallet.requestBill(value))
+        .each!(bill => __wallet_storage.wallet.addBill(bill));
+
+    const net = new StdHashNet;
+    // Add the bills to the account with the derive keys
+    with (__wallet_storage.wallet.account) {
+
+        bills = zip(bill_amounts, derivers.byKey)
+            .map!(bill_derive => TagionBill(
+                    bill_derive[0],
+                    currentTime,
+                    bill_derive[1],
+                    Buffer.init)).array;
+    }
+
+    auto invoiceDoc = recyclerDoc(invoiceDocId);
+
+    // Contract input data.
+    const uint8_t[] invoice = cast(uint8_t[])(invoiceDoc.serialize);
+    const uint32_t invoiceLen = cast(uint32_t) invoice.length;
+    const uint64_t contAmount = 100;
+    const uint32_t errorLen = 0;
+    uint8_t errorPtr;
+
+    uint32_t contractDocId;
+
+    { // Create a contract.
+        double fees;
+        const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount, &fees, errorLen, &errorPtr);
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+
+        // Verify that invoiceDocId is non-zero
+        assert(contractDocId != 0, "Expected non-zero contractDocId");
+    }
+
+    auto contractDoc = recyclerDoc(contractDocId);
+
+    const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
+    const uint32_t contractLen = cast(uint32_t) contract.length;
+
+    { // Update request.
+        uint8_t requestDocId;
+        const uint result = request_update(&requestDocId);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+
+        // Verify that invoiceDocId is non-zero
+        assert(requestDocId != 0, "Expected non-zero requestDocId");
+    }
+    { // Get public key.
+        uint8_t pubkeyDocId;
+        uint result = get_public_key(&pubkeyDocId);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+
+        // Verify that invoiceDocId is non-zero
+        assert(pubkeyDocId != 0, "Expected non-zero pubkeyDocId");
+    }
+
+    { // Get and set derivers.
+        uint8_t backupDocId;
+        uint getBackupResult = get_backup(&backupDocId);
+
+        // Check the result
+        assert(getBackupResult == 1, "Expected result to be 1");
+
+        // Verify that invoiceDocId is non-zero
+        assert(backupDocId != 0, "Expected non-zero backupDocId");
+
+        auto backupDoc = recyclerDoc(backupDocId);
+
+        // Derivers input data.
+        const uint8_t[] backup = cast(uint8_t[])(backupDoc.serialize);
+        const uint32_t backupLen = cast(uint32_t) backup.length;
+
+        uint setBackupResult = set_backup(backup.ptr, backupLen);
+
+        // Check the result
+        assert(setBackupResult == 1, "Expected result to be 1");
+    }
+
+    { // Get derivers state.
+        uint8_t deriversDocId;
+        uint getDResult = get_derivers_state(&deriversDocId);
+
+        // Check the result
+        assert(getDResult == 1, "Expected result to be 1");
+
+        // Verify that invoiceDocId is non-zero
+        assert(deriversDocId != 0, "Expected non-zero deriversDocId");
+    }
+
+    { // Get Account
+        uint8_t accountDocId;
+        uint getAResult = get_account(&accountDocId);
+
+        // Check the result
+        assert(getAResult == 1, "Expected result to be 1");
+
+        // Verify that invoiceDocId is non-zero
+        assert(accountDocId != 0, "Expected non-zero accountDocId");
+    }
+
+    { // Ulock bills by contract
+
+        uint result = ulock_bills_by_contract(contract.ptr, contractLen);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+    }
+    { // Check invoice payment
+
+        double amount;
+        auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+        assert(amount != 0, "Expected amount not to be 0");
+    }
+    { // Check contract payment
+
+        uint8_t status;
+
+        uint result = check_contract_payment(contract.ptr, contractLen, &status);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+        assert(status == 0, "Expected status to be 0");
+    }
+
+    version (none) { // Remove bills by contract.
+
+        uint result = remove_bills_by_contract(contract.ptr, contractLen);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+    }
+}
+
+alias Store = WalletStorage;
+struct WalletStorage {
+    StdSecureWallet wallet;
+    enum {
+        accountfile = "account".setExtension(FileExtension.hibon), /// account file name
+        walletfile = "wallet".setExtension(
+                FileExtension.hibon), /// wallet file name
+        devicefile = "device".setExtension(FileExtension.hibon), /// device file name
+    }
+    string wallet_data_path;
+    this(const char[] walletDataPath) {
         import std.stdio;
 
-        const work_path = new_test_path;
-        scope (success) {
-            work_path.rmdirRecurse;
-        }
-        scope (failure) {
-            writefln("failed work_path %s", work_path);
-        }
-        { // Write wallet file.
-
-            // Path to stored wallet data.
-            const walletDataPath = work_path;
-
-            auto strg = new WalletStorage(walletDataPath);
-
-            assertNotThrown(strg.write(), "Expect write result is true");
-        }
-
-        { // Read wallet file.
-
-            // Path to stored wallet data.
-            const walletDataPath = work_path;
-
-            auto strg = new WalletStorage(walletDataPath);
-
-            StdSecureWallet secure_wallet;
-
-            assertNotThrown(strg.read(), "Expect read result is true");
-        }
-
-        { // Check if wallet file is exist.
-
-            // Path to stored wallet data.
-            const walletDataPath = work_path;
-
-            auto strg = new WalletStorage(walletDataPath);
-            bool result = strg.isWalletExist();
-            assert(result, "Expect read result is true");
-        }
-
-        { // Delete wallet file.
-
-            // Path to stored wallet data.
-            const walletDataPath = work_path;
-
-            auto strg = new WalletStorage(walletDataPath);
-            bool result = strg.remove();
-            assert(result, "Expect read result is true");
-        }
-
-    }
-
-    version (unittest) {
-        import std.conv : to;
+        wallet_data_path = walletDataPath.idup;
         import std.file;
 
-        string new_test_path(string func = __FUNCTION__, const size_t line = __LINE__) {
-            const result_path = [deleteme, func, line.to!string].join("_");
-            result_path.mkdirRecurse;
-            return result_path;
+        if (!wallet_data_path.exists) {
+            wallet_data_path.mkdirRecurse;
+        }
+        if (isWalletExist) {
+            read;
         }
     }
+
+    string path(string filename) const pure {
+        return buildPath(wallet_data_path, filename);
+    }
+
+    bool isWalletExist() const {
+        return only(accountfile, walletfile, devicefile)
+            .map!(file => path(file).exists)
+            .any;
+    }
+
+    void write() const {
+        // Create a hibon for wallet data.
+
+        path(devicefile).fwrite(wallet.pin);
+        path(accountfile).fwrite(wallet.account);
+        path(walletfile).fwrite(wallet.wallet);
+
+    }
+
+    void read() {
+
+        version (NET_HACK) {
+            auto _pin = path(devicefile).fread!DevicePIN;
+            auto _wallet = path(walletfile).fread!RecoverGenerator;
+            auto _account = path(accountfile).fread!AccountDetails;
+
+            if (wallet.net !is null) {
+                auto __net = cast(shared(StdSecureNet)) wallet.net;
+                scope (exit) {
+                    __net = null;
+                }
+                auto copied_net = new StdSecureNet(__net);
+                wallet = StdSecureWallet(_pin, _wallet, _account);
+
+                wallet.set_net(copied_net);
+            }
+            else {
+                wallet = StdSecureWallet(_pin, _wallet, _account);
+            }
+        }
+        else {
+            auto _pin = path(devicefile).fread!DevicePIN;
+            auto _wallet = path(walletfile).fread!RecoverGenerator;
+            auto _account = path(accountfile).fread!AccountDetails;
+            wallet = StdSecureWallet(_pin, _wallet, _account);
+        }
+
+    }
+
+    bool remove() const {
+        if (wallet_data_path.exists) {
+
+            try {
+                only(accountfile, walletfile, devicefile)
+                    .each!(file => path(file).remove);
+                //wallet_data_path.rmdir;
+                return 1;
+            }
+            catch (Exception e) {
+                last_error = e;
+                return false;
+            }
+        }
+        return false;
+    }
+}
+
+unittest {
+    import std.exception;
+    import std.stdio;
+
+    const work_path = new_test_path;
+    scope (success) {
+        work_path.rmdirRecurse;
+    }
+    scope (failure) {
+        writefln("failed work_path %s", work_path);
+    }
+    { // Write wallet file.
+
+        // Path to stored wallet data.
+        const walletDataPath = work_path;
+
+        auto strg = new WalletStorage(walletDataPath);
+
+        assertNotThrown(strg.write(), "Expect write result is true");
+    }
+
+    { // Read wallet file.
+
+        // Path to stored wallet data.
+        const walletDataPath = work_path;
+
+        auto strg = new WalletStorage(walletDataPath);
+
+        StdSecureWallet secure_wallet;
+
+        assertNotThrown(strg.read(), "Expect read result is true");
+    }
+
+    { // Check if wallet file is exist.
+
+        // Path to stored wallet data.
+        const walletDataPath = work_path;
+
+        auto strg = new WalletStorage(walletDataPath);
+        bool result = strg.isWalletExist();
+        assert(result, "Expect read result is true");
+    }
+
+    { // Delete wallet file.
+
+        // Path to stored wallet data.
+        const walletDataPath = work_path;
+
+        auto strg = new WalletStorage(walletDataPath);
+        bool result = strg.remove();
+        assert(result, "Expect read result is true");
+    }
+
+}
+
+version (unittest) {
+    import std.conv : to;
+    import std.file;
+
+    string new_test_path(string func = __FUNCTION__, const size_t line = __LINE__) {
+        const result_path = [deleteme, func, line.to!string].join("_");
+        result_path.mkdirRecurse;
+        return result_path;
+    }
+}
