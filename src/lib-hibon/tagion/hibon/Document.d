@@ -595,10 +595,10 @@ static assert(uint.sizeof == 4);
                 alias U = range.Types[i];
                 enum E = Value.asType!U;
                 static if (name.length is 0) {
-                    _build(temp_buffer, E, cast(uint) i, t);
+                    build(temp_buffer, E, cast(uint) i, t);
                 }
                 else {
-                    _build(temp_buffer, E, name, t);
+                    build(temp_buffer, E, name, t);
                 }
             }
             auto leb128_size_buffer = LEB128.encode(temp_buffer.data.length);
@@ -619,7 +619,7 @@ static assert(uint.sizeof == 4);
 
         { // Test of empty Document
             buffer.clear;
-            buffer._binwrite(ubyte.init);
+            buffer.binwrite(ubyte.init);
             immutable data = buffer.data.idup;
             const doc = Document(data);
             assert(doc.length is 0);
@@ -731,11 +731,11 @@ static assert(uint.sizeof == 4);
                 enum doc_name = "KDOC";
 
                 immutable index_before = buffer.data.length;
-                _build(buffer, Type.INT32, Type.INT32.stringof, int(42));
+                build(buffer, Type.INT32, Type.INT32.stringof, int(42));
                 immutable data_int32 = buffer.data[index_before .. $].idup;
 
-                _build(buffer, Type.DOCUMENT, doc_name, sub_doc);
-                _build(buffer, Type.STRING, Type.STRING.stringof, "Text");
+                build(buffer, Type.DOCUMENT, doc_name, sub_doc);
+                build(buffer, Type.STRING, Type.STRING.stringof, "Text");
 
                 size = cast(uint)(buffer.data.length - start_index);
 
@@ -803,7 +803,7 @@ static assert(uint.sizeof == 4);
                 //buffer.binwrite(uint.init, &index);
                 auto texts = ["Text1", "Text2", "Text3"];
                 foreach (i, text; texts) {
-                    _build(buffer, Type.STRING, i.to!string, text);
+                    build(buffer, Type.STRING, i.to!string, text);
                 }
                 //buffer.binwrite(Type.NONE, &index);
                 size = cast(uint)(buffer.data.length - start_index);

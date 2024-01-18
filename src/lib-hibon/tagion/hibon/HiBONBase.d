@@ -21,7 +21,7 @@ alias AppendBuffer = Appender!(ubyte[]);
 /++
  Helper function to serialize a HiBON
 +/
-void _binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
+void binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
     import std.typecons : TypedefType;
 
     alias BaseT = TypedefType!(T);
@@ -33,40 +33,40 @@ void _binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
 
         append!(BaseT, Endian.littleEndian)(buffer, cast(BaseT) value);
     }
-    //    __write("_binwrite %s value=%s %s %s", buffer.data, value, is(T==enum), BaseT.stringof);
+    //    __write("binwrite %s value=%s %s %s", buffer.data, value, is(T==enum), BaseT.stringof);
 }
 /++
  Helper function to serialize an array of the type T of a HiBON
 +/
 
-void _buildKey(Key)(ref scope AppendBuffer buffer, Type type, Key key) pure
+void buildKey(Key)(ref scope AppendBuffer buffer, Type type, Key key) pure
 if (is(Key : const(char[])) || is(Key == uint)) {
     static if (is(Key : const(char[]))) {
         uint key_index;
         if (is_index(key, key_index)) {
-            _buildKey(buffer, type, key_index);
+            buildKey(buffer, type, key_index);
             return;
         }
     }
-    buffer._binwrite(type);
+    buffer.binwrite(type);
 
     static if (is(Key : const(char[]))) {
         buffer ~= LEB128.encode(key.length);
         buffer ~= key.representation;
     }
     else {
-        buffer._binwrite(ubyte.init);
+        buffer.binwrite(ubyte.init);
         const key_leb128 = LEB128.encode(key);
         buffer ~= key_leb128;
     }
 }
 
-void _build(T, Key)(ref scope AppendBuffer buffer, Type type, Key key,
+void build(T, Key)(ref scope AppendBuffer buffer, Type type, Key key,
         const(T) x) pure
 if (is(Key : const(char[])) || is(Key == uint)) {
     import tagion.hibon.Document : Document;
 
-    _buildKey(buffer, type, key);
+    buildKey(buffer, type, key);
     alias BaseT = TypedefType!T;
     static if (is(T : U[], U) && (U.sizeof == ubyte.sizeof)) {
         const leb128_size = LEB128.encode(x.length);
@@ -88,7 +88,7 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         buffer ~= LEB128.encode(cast(BaseT) x);
     }
     else {
-        buffer._binwrite(x);
+        buffer.binwrite(x);
     }
 }
 

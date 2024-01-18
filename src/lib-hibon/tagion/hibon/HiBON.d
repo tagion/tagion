@@ -337,10 +337,10 @@ static size_t size(U)(const(U[]) array) pure {
                 foreach (i, h; value.by!E) {
                     immutable key = i.to!string;
                     static if (E is NATIVE_STRING_ARRAY) {
-                        _build(buffer, STRING, key, h);
+                        build(buffer, STRING, key, h);
                     }
                     else {
-                        _buildKey(buffer, DOCUMENT, key);
+                        buildKey(buffer, DOCUMENT, key);
                         static if (E is NATIVE_HIBON_ARRAY) {
                             h.append(buffer);
                         }
@@ -364,16 +364,16 @@ static size_t size(U)(const(U[]) array) pure {
                 case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
-                                _buildKey(buffer, E, key);
+                                buildKey(buffer, E, key);
                                 value.by!(E).append(buffer);
                             }
                             else static if (isNative(E)) {
                                 static if (E is NATIVE_DOCUMENT) {
-                                    _buildKey(buffer, DOCUMENT, key);
+                                    buildKey(buffer, DOCUMENT, key);
                                     buffer ~= value.by!(E).data;
                                 }
                                 else static if (isNativeArray(E)) {
-                                    _buildKey(buffer, DOCUMENT, key);
+                                    buildKey(buffer, DOCUMENT, key);
                                     appendList!E(buffer);
                                 }
                                 else {
@@ -381,7 +381,7 @@ static size_t size(U)(const(U[]) array) pure {
                                 }
                             }
                             else {
-                                _build(buffer, E, key, value.by!E);
+                                build(buffer, E, key, value.by!E);
                             }
                             break TypeCase;
                         }
