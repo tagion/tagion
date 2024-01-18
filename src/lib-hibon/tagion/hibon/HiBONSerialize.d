@@ -160,6 +160,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                 static if (!isHiBONBaseType(type)) {
                     static if (isHiBONArray!BaseU) {
                         import std.algorithm : filter;
+
                         const array_size = x.enumerate
                             .filter!(pair => pair.value !is pair.value.init)
                             .map!(pair => calcSize(pair.value, Document.sizeKey(pair.index)))
@@ -246,10 +247,10 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     return result;
 }
 
-void buf_append(U)(ref scope Appender!(ubyte[]) buf, in U x, string key) pure nothrow {
+void buf_append(U, Key)(ref scope AppendBuffer buf, in U x, Key key) pure {
     alias BaseT = TypedefBase!U;
     enum type = Document.Value.asType!BaseT;
-
+    build(buf, type, key, x);
 }
 
 mixin template Serialize() {
@@ -265,77 +266,78 @@ mixin template Serialize() {
     import tagion.basic.Debug;
     import traits = std.traits;
     import std.array;
+    import LEB128 = tagion.utils.LEB128;
 
-    //    static bool supportingFullSize() @nogc pure nothrow { 
-    //   return SupportingFullSizeFunction!(ThisType);
-    //}
+    ///    static if (SupportingFullSizeFunction!ThisType) {
+    static if (__traits(hasMember, ThisType, "enable_serialize")) {
+        void _serialize(scope Appender!(ubyte[]) buf) const pure {
+            import std.algorithm;
+            import tagion.hibon.HiBONRecord : filter;
 
-    void _serialize(scope Appender!(ubyte[]) buf) const pure nothrow {
-        import std.algorithm;
-        import tagion.hibon.HiBONRecord : filter;
-
-        static if (hasMember!(ThisType, "estimate_size")) {
-            const need_size = buf.data.length + this.estimate_size;
-            if (need_size > buf.capacity) {
-                buf.reserve(need_size);
-            }
-        }
-        void append_member(string key)() pure nothrow {
-            enum index = GetKeyIndex!key;
-            enum exclude_flag = hasUDA!(ThisType.tupleof[index], exclude);
-            enum filter_flag = hasUDA!(ThisType.tupleof[index], filter);
-            static if (filter_flag) {
-                alias filters = getUDAs!(this.tupleof[index], filter);
-                static foreach (F; filters) {
-                    {
-                        alias filterFun = unaryFun!(F.code);
-                        if (!filterFun(this.tupleof[index])) {
-                            return;
-                        }
-                    }
+            static if (hasMember!(ThisType, "estimate_size")) {
+                const need_size = buf.data.length + this.estimate_size;
+                if (need_size > buf.capacity) {
+                    buf.reserve(need_size);
                 }
             }
-            static if (!exclude_flag) {
-
-                buf_append(buf, this.tupleof[index], key);
-            }
-        }
-
-        static foreach (key; ThisType.keys) {
-            append_member!key();
-            version (none) {
-                enum index = GetKeyIndex!key;
+            void append_member(string key)() pure {
+                enum index = GetTupleIndex!key;
                 enum exclude_flag = hasUDA!(ThisType.tupleof[index], exclude);
                 enum filter_flag = hasUDA!(ThisType.tupleof[index], filter);
+                __write("key=%s index=%d exclude_flag=%s filter_flag=%s", key, index, exclude_flag, filter_flag);
                 static if (filter_flag) {
                     alias filters = getUDAs!(this.tupleof[index], filter);
                     static foreach (F; filters) {
                         {
                             alias filterFun = unaryFun!(F.code);
                             if (!filterFun(this.tupleof[index])) {
-                                continue MemberLoop;
+                                return;
                             }
                         }
                     }
                 }
                 static if (!exclude_flag) {
+                    //   buf_append(buf, 1, key);
 
                     buf_append(buf, this.tupleof[index], key);
+                    __write("this.tupleof[index]=%s %s key=%s", this.tupleof[index], Fields!ThisType[index].stringof, key);
+                    __write("buf_append         =%s", buf.data);
                 }
             }
+            //version(none)
+            static if (hasUDA!(ThisType, recordType)) {
+                enum record = getUDAs!(ThisType, recordType)[0];
+                buf_append(buf, record.name, TYPENAME);
+            }
+
+            static foreach (key; ThisType.keys) {
+                append_member!key();
+            }
         }
-    }
 
-    Buffer _serialize() const pure nothrow {
-        import std.exception : assumeUnique;
+        Buffer _serialize() const pure {
+            Appender!(ubyte[]) buf;
+            static if (SupportingFullSizeFunction!(ThisType)) {
+                const reserve_size = full_size(this);
+                buf.reserve(reserve_size);
+                __write("reserve_size=%d", reserve_size);
+            }
+            _serialize(buf);
+            const buffer_size = buf.data.length;
+            const size_leb128 = LEB128.encode(buffer_size);
+            buf ~= size_leb128;
+            auto data = buf.data;
+            __write("buf before clean %x", &data[0]);
+            (() @trusted {
+                import core.stdc.string : memcpy;
 
-        Appender!(ubyte[]) buf;
-        static if (SupportingFullSizeFunction!(ThisType)) {
-            const reserve_size = full_size(this);
-            buf.reserve(reserve_size);
+                memcpy(&data[size_leb128.length], &data[0], buffer_size);
+                memcpy(&data[0], &size_leb128[0], size_leb128.length);
+            })();
+            __write("size_leb128.length=%d data.length=%d", size_leb128.length, data.length);
+            __write("data=%x buf.data=%x %d capacity=%d data.capacity=%d size_leb128=%s", &data[0], &(buf.data[0]), data
+                .length, buf.capacity, data.capacity, size_leb128);
+            return buf.data;
         }
-        _serialize(buf);
-
-        return buf.data;
     }
 }
