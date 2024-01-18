@@ -252,18 +252,37 @@ extern (C) {
         immutable nftBuff = cast(immutable)(nftPtr[0 .. nftLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            auto nft = Document(nftBuff);
+            const doc = Document(nftBuff);
 
             SignedContract signed_contract;
-            const is_created = __wallet_storage.wallet.createNFT(nft, Document[].init, signed_contract);
-            if (is_created) {
-                const nftDocId = recyclerDoc.create(signed_contract.toDoc);
-                // Save wallet state to file.
-                __wallet_storage.write;
 
-                *signedContractPtr = nftDocId;
-                return 1;
+            try {
+                import tagion.hibon.HiBONRecord;
+            
+                if (doc.getType == "createNFT") {
+                    const is_created = __wallet_storage.wallet.createNFT(doc, Document[].init, signed_contract);
+                    if (!is_created) { return 0; }
+
+                }
+                else if (doc.getType == "NFTTransfer") {
+                    auto script = doc["script"].get!Document;
+                    auto inputs = doc["inputs"].get!Document[].map!(e => e.get!Document).array;
+                    const is_created = __wallet_storage.wallet.createNFT(script, inputs, signed_contract);
+                    if (!is_created) { return 0; }
+                }
+                else {
+                    return 0;
+                }
+            } catch(Exception e) {
+                return 0;
             }
+
+            const nftDocId = recyclerDoc.create(signed_contract.toDoc);
+            // Save wallet state to file.
+            __wallet_storage.write;
+
+            *signedContractPtr = nftDocId;
+            return 1;
         }
         return 0;
     }
