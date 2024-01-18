@@ -143,11 +143,12 @@ struct TRTService {
             foreach (a; trt_read_recorder[]) {
                 indices ~= TRTArchive(a.filed).indices.map!(d => cast(immutable) DARTIndex(d))
                     .array;
-
             }
 
             if (indices.empty) {
-                // return hirpc error instead;
+                HiBON params = new HiBON;
+                Document response = hirpc.result(receiver, params).toDoc;
+                client_req.respond(response);
                 return;
             }
 
