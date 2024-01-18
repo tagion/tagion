@@ -239,7 +239,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     static foreach (i; 0 .. T.tupleof.length) {
         {
 
-            enum optional_flag = hasUDA!(T.tupleof[i], optional);
             enum exclude_flag = hasUDA!(T.tupleof[i], exclude);
             enum filter_flag = hasUDA!(T.tupleof[i], filter);
             static if (!exclude_flag) {

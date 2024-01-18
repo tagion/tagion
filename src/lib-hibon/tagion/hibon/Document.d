@@ -1459,10 +1459,30 @@ unittest { // Bugfix (Fails in isInorder);
 @safe
 unittest { // Bugfix (Length of document should fail) document length error
     import std.stdio;
-
+    import tagion.hibon.HiBONJSON;
+{ // Sub document size overflow (len=13 should be 12)
+    immutable(ubyte[]) data = [16, 2, 1, 97, 13, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+    const doc = Document(data);
+        assert(doc.valid == Document.Element.ErrorCode.OVERFLOW);
+    }
+{ // Sub document size too-small (len=10 should be 12)
+    immutable(ubyte[]) data = [16, 2, 1, 97, 10, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+    const doc = Document(data);
+        assert(doc.valid == Document.Element.ErrorCode.TOO_SMALL);
+    }    
+{ // Sub document size correct 
     immutable(ubyte[]) data = [16, 2, 1, 97, 12, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
     const doc = Document(data);
-    writefln("Fail code %s", doc.valid);
+        assert(doc.valid == Document.Element.ErrorCode.NONE);
+    }    
+     /*
+    const sub_doc_full_size=doc["a"].get!Document.full_size;
+    const doc_pretty=doc.toPretty;
+    const doc_a_data = doc["a"].get!Document;
+    writefln("#### #### #### #### %s", doc.data);
+    writefln("#### #### #### #### %s", doc_a_data.data);
+    writefln("Fail code %s  %d doc=%s sub_doc.full_size=%d", doc_valid, data.length, doc_pretty, sub_doc_full_size);
+    */
 }
 
 @safe
