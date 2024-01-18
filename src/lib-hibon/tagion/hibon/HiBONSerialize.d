@@ -141,7 +141,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     import tagion.hibon.HiBONBase : HiBONType = Type;
 
     static size_t calcSize(U)(U x, const size_t key_size) {
-        __write("key_size=%d U=%s", key_size, x);
         enum error_text = format("%s not supported", T.stringof);
         alias BaseU = TypedefBase!U;
         enum type = Document.Value.asType!BaseU;
@@ -159,8 +158,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                             return type_key_size + LEB128.calc_size(cast(ulong) x);
                         }
                         else static if (only(FLOAT32, FLOAT64, BOOLEAN).canFind(type)) {
-                            __write("%s type_key_size=%d U.sizeof=%d %d", E, type_key_size, U.sizeof, type_key_size + U
-                                    .sizeof);
                             return type_key_size + U.sizeof;
                         }
                         else static if (only(STRING, BINARY).canFind(type)) {
@@ -182,15 +179,10 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                 static if (!isHiBONBaseType(type)) {
                     static if (isHiBONArray!BaseU) {
                         import std.algorithm : filter;
-
-                        foreach (i, v; x) {
-                            __write("### %d %s size=%d", i, v, calcSize(v, Document.sizeKey(i)));
-                        }
                         const array_size = x.enumerate
                             .filter!(pair => pair.value !is pair.value.init)
                             .map!(pair => calcSize(pair.value, Document.sizeKey(pair.index)))
                             .sum;
-                        __write("array_size =%d leb128=%d type_key_size=%d", array_size, LEB128.calc_size(array_size), type_key_size);
                         return type_key_size + array_size + LEB128.calc_size(array_size);
                     }
                     else static if (isHiBONAssociativeArray!BaseU && !isSpecialKeyType!BaseU) {
@@ -242,7 +234,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     size_t result;
     static if (hasUDA!(T, recordType)) {
         enum record = getUDAs!(T, recordType)[0];
-        __write("TYPENAME=%s", TYPENAME);
         result += calcSize(record.name, Document.sizeKey(TYPENAME));
     }
     static foreach (i; 0 .. T.tupleof.length) {
@@ -255,10 +246,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                 enum label = GetLabel!(T.tupleof[i]);
                 //__write("lable = %s", label.name);
                 const key_size = Document.sizeKey(label.name);
-                __write("label=%s key_size=%d", label.name, key_size);
-                version (none) static if (T.tupleof[i].sizeof == 2) {
-                    pragma(msg, "With short ", ThisType);
-                }
                 bool include_size = true;
                 static if (filter_flag) {
                     alias filters = getUDAs!(T.tupleof[i], filter);
@@ -273,13 +260,11 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                 }
                 if (include_size) {
                     result += calcSize(x.tupleof[i], key_size);
-                    __write("result=%d", result);
                 }
             }
         }
     }
 
-    __write("before final=%d", result);
     result += LEB128.calc_size(result);
     return result;
 }
