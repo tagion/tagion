@@ -48,7 +48,7 @@ jobs:
         run: |
           rm -rf *
           loginctl enable-linger moonbase
-          gh run download ${{ inputs.artifact_run_id }} -n successful_artifact --repo tagion/tagion
+          gh run download ${{ inputs.run_id }} -n successful_artifact --repo tagion/tagion
           ls
           tar -xzf *.tar.gz
 
