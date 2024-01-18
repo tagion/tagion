@@ -190,7 +190,7 @@ struct AccountDetails {
             auto sent_bills = pay_scripts.map!(s => s.outputs)
                 .joiner
                 .filter!(b => b.owner !in derivers);
-            auto received_bills = (bills ~ used_bills).filter!(b => !canFind(change, b)); // Filter out bills you sent to yourself
+            auto received_bills = chain(bills, used_bills).filter!(b => !canFind(change, b)); // Filter out bills you sent to yourself
 
             // HistoryItemImpl[] map
             auto sent_hist_item = sent_bills.map!(b => HistoryItemImpl(b, HistoryItemType.send));
@@ -219,6 +219,7 @@ enum HistoryItemType {
 struct HistoryItemImpl {
     TagionBill bill;
     HistoryItemType type;
+    TagionCurrency fee;
     mixin HiBONRecord!(q{
         this(const(TagionBill) bill, HistoryItemType type) pure {
             this.type = type;
