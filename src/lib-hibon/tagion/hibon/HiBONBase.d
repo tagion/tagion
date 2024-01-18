@@ -13,6 +13,7 @@ import std.typecons : TypedefType, tuple;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
+
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION = 0;
 
@@ -30,15 +31,16 @@ void binwrite(T, R, I)(R range, const T value, I index) pure {
 void _binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
     import std.typecons : TypedefType;
 
-    alias BaseT =  TypedefType!(T);
+    alias BaseT = TypedefType!(T);
     static if (T.sizeof == ubyte.sizeof) {
-        buffer~=value;
+        buffer ~= value;
     }
     else {
-    import std.bitmanip : append;
-    append!(BaseT, Endian.littleEndian)(buffer, cast(BaseT) value);
+        import std.bitmanip : append;
+
+        append!(BaseT, Endian.littleEndian)(buffer, cast(BaseT) value);
     }
-//    __write("_binwrite %s value=%s %s %s", buffer.data, value, is(T==enum), BaseT.stringof);
+    //    __write("_binwrite %s value=%s %s %s", buffer.data, value, is(T==enum), BaseT.stringof);
 }
 /++
  Helper function to serialize an array of the type T of a HiBON
@@ -78,7 +80,7 @@ if (is(Key : const(char[])) || is(Key == uint)) {
 void _build(T, Key)(ref scope AppendBuffer buffer, Type type, Key key,
         const(T) x) pure
 if (is(Key : const(char[])) || is(Key == uint)) {
-    import tagion.hibon.fix.Document : Document;
+    import tagion.hibon.Document : Document;
 
     _buildKey(buffer, type, key);
     alias BaseT = TypedefType!T;
@@ -93,10 +95,10 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         }
     }
     else static if (is(T : const Document)) {
-        buffer ~= x.data; 
+        buffer ~= x.data;
     }
     else static if (is(T : const BigNumber)) {
-        buffer ~= x.serialize; 
+        buffer ~= x.serialize;
     }
     else static if (isIntegral!BaseT) {
         buffer ~= LEB128.encode(cast(BaseT) x);

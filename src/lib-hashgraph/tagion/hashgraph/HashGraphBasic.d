@@ -63,15 +63,13 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
 unittest {
 
     int[] some_array;
-    assert(!isMajority(some_array.length, ulong(5))); 
-
+    assert(!isMajority(some_array.length, ulong(5)));
 
 }
 
 bool isMajority(T, S)(T voting, S node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
-
 
 @safe @nogc
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
@@ -339,7 +337,8 @@ struct EvaPayload {
         }
     );
 }
-unittest {
+
+version (HIBON_FIX) unittest {
     import tagion.hibon.fix.HiBONSerialize;
 
     //pragma(msg, SupportingFullSizeFunction!(TagionCurrency, 0, true));
@@ -347,7 +346,6 @@ unittest {
     pragma(msg, SupportingFullSizeFunction!(EventPackage, 0, true));
     static assert(SupportingFullSizeFunction!(EventPackage, 0, true));
 }
-
 
 static assert(isHiBONRecord!Wavefront);
 static assert(isHiBONRecord!(EventPackage));

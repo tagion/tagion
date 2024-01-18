@@ -1,4 +1,5 @@
 module tagion.hibon.fix.HiBONtoText;
+version(none) {
 @safe:
 /**
  HiBON Base64 with  ':' added in the front of the string as an indetifyer
@@ -101,3 +102,4 @@ unittest {
     __write("valid = %s", valid);
     assert(valid is Document.Element.ErrorCode.NONE);
 }
+    }

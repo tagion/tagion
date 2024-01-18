@@ -1,7 +1,7 @@
 module tagion.hibon.fix.HiBONSerialize;
 
 import tagion.basic.Types : Buffer;
-import tagion.hibon.fix.Document;
+import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import std.traits;
 import std.format;
@@ -38,7 +38,7 @@ string getType(const Document doc) pure {
 template isHiBONArray(T) {
     import tagion.hibon.HiBONBase;
     import traits = std.traits;
-    import tagion.hibon.fix.HiBONRecord : isHiBONRecord;
+    import tagion.hibon.HiBONRecord : isHiBONRecord;
     import std.traits;
 
     alias BaseT = TypedefBase!T;
@@ -56,7 +56,7 @@ template isHiBONArray(T) {
 template isHiBONAssociativeArray(T) {
     import tagion.hibon.HiBONBase;
     import traits = std.traits;
-    import tagion.hibon.fix.HiBONRecord : isHiBONRecord;
+    import tagion.hibon.HiBONRecord : isHiBONRecord;
     import std.traits;
 
     alias BaseT = TypedefBase!T;
@@ -71,13 +71,14 @@ template isHiBONAssociativeArray(T) {
 }
 
 template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
-    import tagion.hibon.fix.HiBONRecord : exclude, optional, isHiBONRecord;
+    import tagion.hibon.HiBONRecord : exclude, optional, isHiBONRecord;
     import std.traits;
 
     template InnerSupportFullSize(U) {
-        import tagion.hibon.fix.HiBONRecord : exclude, optional, isHiBONRecord;
+        import tagion.hibon.HiBONRecord : exclude, optional, isHiBONRecord;
         import tagion.hibon.HiBONBase : isHiBONBaseType;
-        alias BaseU=TypedefBase!U;
+
+        alias BaseU = TypedefBase!U;
         enum type = Document.Value.asType!BaseU;
         static if (isHiBONBaseType(type)) {
             static if (_print)
@@ -85,19 +86,19 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
             enum InnerSupportFullSize = true;
         }
         else static if (isHiBONRecord!U) {
-            enum Ok=SupportingFullSizeFunction!U;
+            enum Ok = SupportingFullSizeFunction!U;
             static if (_print)
                 pragma(msg, "### isHiBONRecord ", type, " U ", U, " Ok ", Ok);
-                
+
             //enum InnerSupportFullSize = SupportingFullSizeFunction!(U);
             enum InnerSupportFullSize = Ok;
         }
-        else static if (isAssociativeArray!U) { 
+        else static if (isAssociativeArray!U) {
             // && isSpecialKeyType!U) {
             //            enum InnerSupportFullSize=false;
             alias KeyT = KeyType!U;
             enum Ok = isIntegral!KeyT || is(KeyT : const(char[]));
-             
+
             static if (_print)
                 pragma(msg, "### isHiBONAssociativeArray ", type, " U ", U, " Ok ", Ok);
 
@@ -108,6 +109,7 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
         else {
             static if (_print)
                 pragma(msg, "### InnerSupportFullSize ", type, " U ", U, " BaseU ", BaseU, " ---- isHiBONArray (", isHiBONArray!U, ") isIntegral (", isIntegral!BaseU, ")");
+            pragma(msg, "--- is U ", U, " HiBONRecord ", isHiBONRecord!U);
             enum InnerSupportFullSize = isHiBONArray!BaseU ||
                 isIntegral!BaseU;
         }
@@ -135,7 +137,7 @@ import tagion.basic.Debug;
 
 size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     import std.functional : unaryFun;
-    import tagion.hibon.fix.HiBONRecord : exclude, optional, filter, isHiBONRecord, GetLabel, recordType, isSpecialKeyType;
+    import tagion.hibon.HiBONRecord : exclude, optional, filter, isHiBONRecord, GetLabel, recordType, isSpecialKeyType;
     import tagion.hibon.HiBONBase : HiBONType = Type;
 
     static size_t calcSize(U)(U x, const size_t key_size) {
@@ -372,6 +374,6 @@ mixin template Serialize() {
         }
         _serialize(buf);
 
-        return (() @trusted => assumeUnique(buf.data))();
+        return buf.data;
     }
 }

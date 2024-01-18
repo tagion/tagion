@@ -219,3 +219,9 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
         return toValue(_units);
     }
 }
+
+static unittest {
+    import tagion.hibon.HiBONRecord;
+
+    static assert(isHiBONRecord!(Currency!"NAP"));
+}
