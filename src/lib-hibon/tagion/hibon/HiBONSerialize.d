@@ -45,7 +45,6 @@ template isHiBONArray(T) {
     static if (traits.isArray!BaseT) {
         alias ElementBaseT = TypedefBase!(ForeachType!(BaseT));
         enum isHiBONArray = (Document.Value.hasType!(ElementBaseT) || isHiBONRecord!ElementBaseT);
-        pragma(msg, "isHiBONArray! ", T, " ", isHiBONArray, " ElementBaseT ", ElementBaseT);
     }
     else {
         enum isHiBONArray = false;
@@ -63,7 +62,6 @@ template isHiBONAssociativeArray(T) {
     static if (traits.isAssociativeArray!BaseT) {
         alias ElementBaseT = TypedefBase!(ForeachType!(BaseT));
         enum isHiBONAssociativeArray = (Document.Value.hasType!(ElementBaseT) || isHiBONRecord!ElementBaseT);
-        //pragma(msg, "isHiBONArray! ", T, " ", isHiBONArray, " ElementBaseT ", ElementBaseT);
     }
     else {
         enum isHiBONAssociativeArray = false;
@@ -81,35 +79,18 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
         alias BaseU = TypedefBase!U;
         enum type = Document.Value.asType!BaseU;
         static if (isHiBONBaseType(type)) {
-            static if (_print)
-                pragma(msg, "### isHiBONBaseType ", type, " U ", U, " Ok ", true);
             enum InnerSupportFullSize = true;
         }
         else static if (isHiBONRecord!U) {
-            enum Ok = SupportingFullSizeFunction!U;
-            static if (_print)
-                pragma(msg, "### isHiBONRecord ", type, " U ", U, " Ok ", Ok);
-
-            //enum InnerSupportFullSize = SupportingFullSizeFunction!(U);
-            enum InnerSupportFullSize = Ok;
+            enum InnerSupportFullSize = SupportingFullSizeFunction!U;
         }
         else static if (isAssociativeArray!U) {
-            // && isSpecialKeyType!U) {
-            //            enum InnerSupportFullSize=false;
             alias KeyT = KeyType!U;
             enum Ok = isIntegral!KeyT || is(KeyT : const(char[]));
-
-            static if (_print)
-                pragma(msg, "### isHiBONAssociativeArray ", type, " U ", U, " Ok ", Ok);
-
-            //enum InnerSupportFullSize = isIntegral!KeyT || is(KeyT : const(char[]));
             enum InnerSupportFullSize = Ok;
 
         }
         else {
-            static if (_print)
-                pragma(msg, "### InnerSupportFullSize ", type, " U ", U, " BaseU ", BaseU, " ---- isHiBONArray (", isHiBONArray!U, ") isIntegral (", isIntegral!BaseU, ")");
-            pragma(msg, "--- is U ", U, " HiBONRecord ", isHiBONRecord!U);
             enum InnerSupportFullSize = isHiBONArray!BaseU ||
                 isIntegral!BaseU;
         }
@@ -194,10 +175,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                             .sum;
                         return array_size + LEB128.calc_size(array_size);
 
-                        pragma(msg, "isHiBONAssociativeArray ", BaseU, " ", typeof(x.byKeyValue.front));
                     }
                     else static if (isHiBONRecord!BaseU) {
-                        pragma(msg, "HiBONRecord ", BaseU.stringof, " SupportingFullSizeFunction ", SupportingFullSizeFunction!BaseU);
                         return type_key_size + x.full_size;
                     }
                     else static if (isIntegral!BaseU) {
@@ -213,7 +192,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                         pragma(msg, "inputRange ", BaseU);
                     }
                     else {
-                        pragma(msg, "!! ", SupportingFullSizeFunction!T, " isSpecialKeyType ", isSpecialKeyType!T);
                         static assert(0, format("%s not supported -- %s %s -> %s %s  is range %s", type,
                                 T.stringof,
                                 BaseU.stringof, [

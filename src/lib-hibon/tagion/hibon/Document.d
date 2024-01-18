@@ -540,69 +540,6 @@ static assert(uint.sizeof == 4);
     }
 
     /++
-     Append the key to the buffer
-     Params:
-     buffer = is the target buffer
-     type = is the HiBON type
-     key = is the member key
-     index = is offset index in side the buffer and index with be progressed
-     +/
-    @trusted static void buildKey(Key)(ref scope ubyte[] buffer, Type type, Key key, ref size_t index) pure
-    if (is(Key : const(char[])) || is(Key == uint)) {
-        static if (is(Key : const(char[]))) {
-            uint key_index;
-            if (is_index(key, key_index)) {
-                buildKey(buffer, type, key_index, index);
-                return;
-            }
-        }
-        buffer.binwrite(type, &index);
-
-        static if (is(Key : const(char[]))) {
-            buffer.array_write(LEB128.encode(key.length), index);
-            buffer.array_write(key, index);
-        }
-        else {
-            buffer.binwrite(ubyte.init, &index);
-            const key_leb128 = LEB128.encode(key);
-            buffer.array_write(key_leb128, index);
-        }
-    }
-
-    /++
-     Append a full element to a buffer
-     Params:
-     buffer = is the target buffer
-     type = is the HiBON type
-     key = is the member key
-     x = is the value of the element
-     index = is offset index in side the buffer and index with be progressed
-     +/
-    version (none) @trusted static void build(T, Key)(ref ubyte[] buffer, Type type, Key key,
-    const(T) x, ref size_t index) pure
-    if (is(Key : const(char[])) || is(Key == uint)) {
-        buildKey(buffer, type, key, index);
-        alias BaseT = TypedefType!T;
-        static if (is(T : U[], U) && (U.sizeof == ubyte.sizeof)) {
-            immutable size = LEB128.encode(x.length);
-            buffer.array_write(size, index);
-            buffer.array_write(x, index);
-        }
-        else static if (is(T : const Document)) {
-            buffer.array_write(x.data, index);
-        }
-        else static if (is(T : const BigNumber)) {
-            buffer.array_write(x.serialize, index);
-        }
-        else static if (isIntegral!BaseT) {
-            buffer.array_write(LEB128.encode(cast(BaseT) x), index);
-        }
-        else {
-            buffer.binwrite(x, &index);
-        }
-    }
-
-    /++
      This range is used to generate and range of same type U
      If the Document contains and Array of the elements this range can be used
      Returns:

@@ -493,7 +493,6 @@ mixin template HiBONRecord(string CTOR = "") {
                         result.length = index + 1;
                         foreach (e; doc[]) {
                             is_index(e.key, index);
-                            pragma(msg, "e.get!MemberU BaseU ", BaseU, " MemberU ", MemberU, " UnqualU ", UnqualU);
                             MemberU elm = e.get!MemberU;
                             (() @trusted => copyEmplace(elm, result[index]))();
                         }
@@ -1146,10 +1145,6 @@ unittest {
 
             assert(s_doc == s);
             assert(doc.toJSON.toString == format("%j", s));
-            pragma(msg, "isArray ", isArray!ResultT, " isHiBONArray ", isHiBONArray!ResultT);
-            pragma(msg, "1 SupportingFullSize ", SupportingFullSizeFunction!(ResultT, 0, true));
-            pragma(msg, "2 SupportingFullSize ", SupportingFullSizeFunction!(typeof(s), 0, true));
-            //static assert(!s.supportingFullSize); 
         }
 
         { // Range of structs
@@ -1335,7 +1330,6 @@ unittest {
         }
         //        alias binwrite=assumeTrusted!(bitmanip.write!Buffer);
         { // Typedef on HiBON.type is used as key in an associative-array
-            pragma(msg, "fixme(cbr): make sure that the assoicated array is hash invariant");
             alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
             alias Tabel = int[Bytes];
             static struct StructBytes {
@@ -1355,7 +1349,6 @@ unittest {
                 tabel[Bytes(buffer.idup)] = i;
             }
 
-            pragma(msg, "!!!!!!!!!!!!!!! StructBytes.supportingFullSize ", SupportingFullSizeFunction!(StructBytes, 0, true));
             StructBytes s;
             s.tabel = tabel;
             const s_doc = s.toDoc;
@@ -1552,8 +1545,6 @@ unittest { /// Reseved keys and types
 
 version (none) unittest {
     import tagion.hibon.HiBONSerialize;
-
-    //pragma(msg, "-- - -- SupportingFullSizeFunction ",SupportingFullSizeFunction!(RecordFactory.Recorder), " Type ", RecordFactory.Recorder);
 
     // pragma(msg, "-- - -- SupportingFullSizeFunction ",SupportingFullSizeFunction!(DART.Journal, 0, true), " Type ", DART.Journal);
     static assert(SupportingFullSizeFunction!(RecordFactory.Recorder, 0, true));
