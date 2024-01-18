@@ -174,11 +174,43 @@ struct AccountDetails {
             import tagion.communication.HiRPC;
             import std.range;
 
-            // PayScript[]
-            auto pay_scripts = hirpcs.map!(d => HiRPC.Receiver(d))
+            auto contracts = hirpcs.map!(d => HiRPC.Receiver(d))
                 .filter!(rpc => rpc.method.params.isRecord!SignedContract)
-                .map!(rpc => SignedContract(rpc.method.params))
-                .map!(s => PayScript(s.contract.script));
+                .map!(rpc => SignedContract(rpc.method.params).contract);
+
+            // PayScript[]
+            auto pay_scripts = contracts
+                .map!(c => PayScript(c.script));
+
+            import tagion.dart.DARTBasic;
+            import tagion.crypto.SecureNet;
+
+            const net = new StdHashNet();
+            const used_bills_index = used_bills.map!(b => dartIndex(net, b)).array;
+
+            // Table to look up the fee based on the output bill
+            TagionCurrency[] fees;
+
+            /// FIXME: this messes up when contracts has multiple outputs
+            foreach (contract, pay_script; zip(contracts, pay_scripts)) {
+                TagionBill[] input_bills;
+
+                foreach (input; contract.inputs) {
+                    const index = used_bills_index.countUntil(input);
+                    if (index >= 0) {
+                        input_bills ~= used_bills[index];
+                    }
+                }
+
+                const in_sum = input_bills.map!(b => b.value).sum;
+                const out_sum = pay_script.outputs.map!(b => b.value).sum;
+
+                if (input_bills.length == 0 || pay_script.outputs.length == 0) {
+                    fees ~= TGN(0);
+                    continue;
+                }
+                fees ~= (in_sum - out_sum);
+            }
 
             // Money you send to yourself, because you just can't get enough of it
             const(TagionBill)[] change = pay_scripts.map!(s => s.outputs)
@@ -190,10 +222,12 @@ struct AccountDetails {
             auto sent_bills = pay_scripts.map!(s => s.outputs)
                 .joiner
                 .filter!(b => b.owner !in derivers);
-            auto received_bills = chain(bills, used_bills).filter!(b => !canFind(change, b)); // Filter out bills you sent to yourself
+
+            // Filter out bills you sent to yourself
+            auto received_bills = chain(bills, used_bills).filter!(b => !canFind(change, b));
 
             // HistoryItemImpl[] map
-            auto sent_hist_item = sent_bills.map!(b => HistoryItemImpl(b, HistoryItemType.send));
+            auto sent_hist_item = zip(sent_bills, fees).map!(a => HistoryItemImpl( /*bill*/ a[0], HistoryItemType.send, /*fee*/ a[1]));
             auto received_hist_item = received_bills.map!(b => HistoryItemImpl(b, HistoryItemType.receive));
 
             return chain(sent_hist_item, received_hist_item);
@@ -221,9 +255,10 @@ struct HistoryItemImpl {
     HistoryItemType type;
     TagionCurrency fee;
     mixin HiBONRecord!(q{
-        this(const(TagionBill) bill, HistoryItemType type) pure {
+        this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0) pure {
             this.type = type;
             this.bill = bill;
+            this.fee = fee;
         }
     });
 }

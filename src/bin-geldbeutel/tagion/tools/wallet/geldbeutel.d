@@ -360,7 +360,8 @@ int _main(string[] args) {
                     writefln("%s: %s%8s%s", item.bill.time.toText[0 .. 19], GREEN, item.bill.value, RESET);
                     break;
                 case HistoryItemType.send:
-                    writefln("%s: %s%8s%s to %s", item.bill.time.toText[0 .. 19], RED, item.bill.value, RESET, item.bill
+                    writefln("%s: %s%8s%s (fee: %s) to %s", item.bill.time.toText[0 .. 19], RED, item.bill.value, RESET, item
+                            .fee, item.bill
                             .owner.encodeBase64);
                     break;
                 }
