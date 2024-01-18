@@ -1,7 +1,7 @@
 module tagion.hibon.HiBONRecord;
 
 @safe:
-public import tagion.hibon.fix.HiBONSerialize;
+public import tagion.hibon.HiBONSerialize;
 
 import std.exception : assumeWontThrow;
 import std.stdio;
@@ -220,7 +220,7 @@ mixin template HiBONRecord(string CTOR = "") {
         label, exclude, optional, GetLabel, filter, fixed, inspect;
     import tagion.hibon.HiBONBase : TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.HiBONRecord;
-    import tagion.hibon.fix.HiBONSerialize;
+    import tagion.hibon.HiBONSerialize;
     import tagion.basic.Debug;
 
     protected alias check = Check!(HiBONRecordException);
@@ -1551,7 +1551,7 @@ unittest { /// Reseved keys and types
 }
 
 version (none) unittest {
-    import tagion.hibon.fix.HiBONSerialize;
+    import tagion.hibon.HiBONSerialize;
 
     //pragma(msg, "-- - -- SupportingFullSizeFunction ",SupportingFullSizeFunction!(RecordFactory.Recorder), " Type ", RecordFactory.Recorder);
 

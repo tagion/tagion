@@ -1,4 +1,4 @@
-module tagion.hibon.fix.HiBONSerialize;
+module tagion.hibon.HiBONSerialize;
 
 import tagion.basic.Types : Buffer;
 import tagion.hibon.Document;
@@ -299,7 +299,7 @@ mixin template Serialize() {
 
     //import tagion.hibon.HiBONBase;
     import tagion.hibon.HiBONBase : HiBONType = Type, isHiBONBaseType, is_index;
-    import tagion.hibon.fix.HiBONSerialize : isHiBONAssociativeArray;
+    import tagion.hibon.HiBONSerialize : isHiBONAssociativeArray;
     import tagion.basic.Debug;
     import traits = std.traits;
     import std.array;
