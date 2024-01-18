@@ -21,13 +21,6 @@ alias AppendBuffer = Appender!(ubyte[]);
 /++
  Helper function to serialize a HiBON
 +/
-void binwrite(T, R, I)(R range, const T value, I index) pure {
-    import std.typecons : TypedefType;
-
-    alias BaseT = TypedefType!(T);
-    bin.write!(BaseT, Endian.littleEndian, R)(range, cast(BaseT) value, index);
-}
-
 void _binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
     import std.typecons : TypedefType;
 
@@ -45,15 +38,6 @@ void _binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
 /++
  Helper function to serialize an array of the type T of a HiBON
 +/
-@safe void array_write(T)(ref ubyte[] buffer, T array, ref size_t index) pure
-if (is(T : U[], U) && isBasicType!U) {
-    const ubytes = cast(const(ubyte[])) array;
-    immutable new_index = index + ubytes.length;
-    scope (success) {
-        index = new_index;
-    }
-    buffer[index .. new_index] = ubytes;
-}
 
 void _buildKey(Key)(ref scope AppendBuffer buffer, Type type, Key key) pure
 if (is(Key : const(char[])) || is(Key == uint)) {
