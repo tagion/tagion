@@ -63,41 +63,59 @@ void writeit(A...)(A a) {
     stdout.flush();
 }
 
-string dump_exception_recursive(Throwable t, string tag = "") {
+string dump_exception_recursive(Throwable t, string tag = "", string kind = "html") {
     string[] res;
-    res ~= format("\r\n<h2>Exception caught in TagionShell %s %s</h2>\r\n", Clock.currTime().toSimpleString(), tag);
-    do {
-        res ~= format("<code>\r\n<h3>%s [%d]: %s </h3>\r\n<pre>\r\n%s\r\n</pre>\r\n</code>\r\n", t.file, t.line, t.msg, t
-                .info);
+    switch(kind){
+    case "html":
+        res ~= format("\r\n<h2>Exception caught in TagionShell %s %s</h2>\r\n", Clock.currTime().toSimpleString(), tag);
+        do {
+            res ~= format("<code>\r\n<h3>%s [%d]: %s </h3>\r\n<pre>\r\n%s\r\n</pre>\r\n</code>\r\n", 
+                t.file, t.line, t.msg, t.info);
+        }
+        while ((t = t.next) !is null);
+        break;
+    case "plain":
+    default:
+        res ~= format("\r\nException caught in TagionShell %s %s\r\n", Clock.currTime().toSimpleString(), tag);
+        do {
+            res ~= format("%s [%d]: %s \r\n%s\r\n", t.file, t.line, t.msg, t.info);
+        }
+        while ((t = t.next) !is null);
+        break;
     }
-    while ((t = t.next) !is null);
     return join(res, "\r\n");
 }
 
 void dart_worker(ShellOptions opt) {
-    try{
-        int rc;
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-        s.recvtimeout = msecs(10000);
-        s.subscribe(opt.recorder_subscription_tag);
-        writeit("DS: subscribed");
-        while (true) {
-            rc = s.dial(opt.tagion_subscription_addr);
-            if (rc == 0)
-                break;
-        }
-        scope (exit) {
-            s.close;
-        }
-        SecureNet net = new StdSecureNet();
-        net.generateKeyPair("very_secret");
-        auto record_factory = RecordFactory(net);
-        auto hirpc = HiRPC(net);
-        writeit("DS: connected");
-        while (true) {
+    int rc;
+    int attempts = 0;
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+    SecureNet net = new StdSecureNet();
+    s.recvtimeout = msecs(10000);
+    s.subscribe(opt.recorder_subscription_tag);
+    writeit("DS: subscribed");
+    while (true) {
+        rc = s.dial(opt.tagion_subscription_addr);
+        if (rc == 0)
+            break;
+        enforce(++attempts < 32, "Couldn`t connect the subscription socket");    
+    }
+    scope (exit) {
+        s.close;
+    }
+    net.generateKeyPair("very_secret");
+    auto record_factory = RecordFactory(net);
+    auto hirpc = HiRPC(net);
+    writeit("DS: connected");
+    while (true) {
+        try {
             auto received = s.receive!(immutable(ubyte[]))();
             const doc = Document(received[received.countUntil(0)+1..$]);
             auto receiver = HiRPC.Receiver(net, doc);
+            if( !receiver.isMethod ){
+                writeit("DS: Invalid method in document received");
+                continue;
+            }    
             const payload = SubscriptionPayload(receiver.method.params);
             if(opt.recorder_subscription_task_prefix.length > 0){
                 if(!payload.task_name.startsWith(opt.recorder_subscription_task_prefix)){
@@ -119,10 +137,10 @@ void dart_worker(ShellOptions opt) {
                 writeit(format("DS: Cache updated in %d bills", bills.length));
             }            
         }
-    }
-    catch (Throwable e) {
-        writeit(dump_exception_recursive(e, "worker: dartcache"));
-        return;
+        catch (Throwable e) {
+            writeit(dump_exception_recursive(e, "worker: dartcache", "plain"));
+            continue;
+        }
     }
 }
 
