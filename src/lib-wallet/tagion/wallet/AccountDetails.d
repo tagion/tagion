@@ -170,86 +170,41 @@ struct AccountDetails {
         }
 
         /// Returns an input range with history
-        auto history() {
-            import std.stdio;
+        private auto history_impl() {
             import tagion.communication.HiRPC;
-            import tagion.utils.Term;
-            import tagion.basic.Types;
+            import std.range;
 
-            writeln("Sent");
-
-            HistoryItemImpl[] items;
+            // PayScript[]
+            auto pay_scripts = hirpcs.map!(d => HiRPC.Receiver(d))
+                .filter!(rpc => rpc.method.params.isRecord!SignedContract)
+                .map!(rpc => SignedContract(rpc.method.params))
+                .map!(s => PayScript(s.contract.script));
 
             // Money you send to yourself, because you just can't get enough of it
-            const(TagionBill)[] change;
+            const(TagionBill)[] change = pay_scripts.map!(s => s.outputs)
+                .joiner
+                .filter!(b => b.owner in derivers)
+                .array;
 
-            foreach (HiRPC.Receiver rpc; hirpcs) {
-                if (isRecord!SignedContract(rpc.method.params)) {
-                    const s_contract = SignedContract(rpc.method.params);
-                    const script = PayScript(s_contract.contract.script);
-                    auto _change = script.outputs.filter!(b => b.owner in derivers);
-                    HistoryItemImpl item;
-                    item.type = HistoryItemType.send;
-                    item.timestamp = sdt_t(script.outputs[0].time);
+            // Filter result TagionBill[]
+            auto sent_bills = pay_scripts.map!(s => s.outputs)
+                .joiner
+                .filter!(b => b.owner !in derivers);
+            auto received_bills = (bills ~ used_bills).filter!(b => !canFind(change, b)); // Filter out bills you sent to yourself
 
-                    foreach (c; _change) {
-                        change ~= c;
-                    }
+            // HistoryItemImpl[] map
+            auto sent_hist_item = sent_bills.map!(b => HistoryItemImpl(b, HistoryItemType.send));
+            auto received_hist_item = received_bills.map!(b => HistoryItemImpl(b, HistoryItemType.receive));
 
-                    const sum_change = _change
-                        .map!(b => b.value)
-                        .sum;
+            return chain(sent_hist_item, received_hist_item);
+        }
 
-                    auto receiver_bills = script.outputs.filter!(b => b.owner !in derivers);
-                    const sum_receiver = receiver_bills
-                        .map!(b => b.value)
-                        .sum;
+        auto reverse_history() {
+            return history_impl.array.sort!((a, b) => a.bill.time > b.bill.time);
+        }
 
-                    // Does not handle single transactions to multiple receivers
-                    // Will look like it's only for one receiver
-                    item.pubkey = Pubkey(receiver_bills.front.owner);
-                    item.amount = sum_receiver;
-
-                    items ~= item;
-                    // writefln("%s%8s%s : %s%8s%s", GREEN, sum_change, RESET, RED, sum_receiver, RESET);
-                }
-            }
-
-            writeln();
-            writeln("Received");
-            foreach (b; used_bills ~ bills) {
-                if (change.canFind(b)) {
-                    continue;
-                }
-
-                HistoryItemImpl item;
-                with (item) {
-                    type = HistoryItemType.receive;
-                    pubkey = Pubkey(b.owner);
-                    timestamp = sdt_t(b.time);
-                    item.amount = b.value;
-                }
-
-                items ~= item;
-
-                // writefln("%s: %s%8s%s", b.time.toText[0 .. 19], GREEN, b.value, RESET);
-            }
-
-            auto sorted_items = items.sort!((a, b) => a.timestamp < b.timestamp);
-
-            foreach (item; sorted_items) {
-                final switch (item.type) {
-                case HistoryItemType.receive:
-                    writefln("%s: %s%8s%s", item.timestamp.toText[0 .. 19], GREEN, item.amount, RESET);
-                    break;
-                case HistoryItemType.send:
-                    writefln("%s: %s%8s%s to %s", item.timestamp.toText[0 .. 19], RED, item.amount, RESET, item.pubkey
-                            .encodeBase64);
-                    break;
-                }
-            }
-
-            return 0;
+        auto history() {
+            return history_impl.array.sort!((a, b) => a.bill.time < b.bill.time);
         }
 
     }
@@ -262,11 +217,14 @@ enum HistoryItemType {
 }
 
 struct HistoryItemImpl {
+    TagionBill bill;
     HistoryItemType type;
-    @label(StdNames.value) TagionCurrency amount;
-    @label(StdNames.time) sdt_t timestamp;
-    @label(StdNames.owner) Pubkey pubkey;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(q{
+        this(const(TagionBill) bill, HistoryItemType type) pure {
+            this.type = type;
+            this.bill = bill;
+        }
+    });
 }
 
 struct HistoryItem {
