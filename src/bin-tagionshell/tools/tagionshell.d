@@ -11,7 +11,7 @@ import std.format;
 import std.getopt;
 import std.json;
 import std.string : representation;
-import std.stdio : File, stderr, stdout, writefln, writeln;
+import std.stdio : File, toFile, stderr, stdout, writefln, writeln;
 import std.datetime.systime : Clock;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
 import tagion.basic.range : doFront;
@@ -22,6 +22,9 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONRecord : isRecord;
+import tagion.dart.Recorder;
+import tagion.services.subscription;
+import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.tools.Basic;
@@ -33,7 +36,6 @@ import tagion.utils.StdTime : currentTime;
 import tagion.wallet.AccountDetails;
 import tagion.wallet.SecureWallet;
 import tagion.utils.LRUT;
-
 import core.thread;
 import nngd.nngd;
 
@@ -73,23 +75,54 @@ string dump_exception_recursive(Throwable t, string tag = "") {
 }
 
 void dart_worker(ShellOptions opt) {
-    int rc;
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-    s.recvtimeout = msecs(1000);
-    s.subscribe("");
-    writeit("DS: subscribed");
-    while (true) {
-        rc = s.dial(opt.tagion_subscription_addr);
-        if (rc == 0)
-            break;
+    try{
+        int rc;
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+        s.recvtimeout = msecs(10000);
+        s.subscribe(opt.recorder_subscription_tag);
+        writeit("DS: subscribed");
+        while (true) {
+            rc = s.dial(opt.tagion_subscription_addr);
+            if (rc == 0)
+                break;
+        }
+        scope (exit) {
+            s.close;
+        }
+        SecureNet net = new StdSecureNet();
+        net.generateKeyPair("very_secret");
+        auto record_factory = RecordFactory(net);
+        auto hirpc = HiRPC(net);
+        writeit("DS: connected");
+        while (true) {
+            auto received = s.receive!(immutable(ubyte[]))();
+            const doc = Document(received[received.countUntil(0)+1..$]);
+            auto receiver = HiRPC.Receiver(net, doc);
+            const payload = SubscriptionPayload(receiver.method.params);
+            if(opt.recorder_subscription_task_prefix.length > 0){
+                if(!payload.task_name.startsWith(opt.recorder_subscription_task_prefix)){
+                    continue;
+                }
+            }
+            auto recorder = record_factory.recorder(payload.data);
+            TagionBill[] bills;
+            foreach(a; recorder[]) {
+                if (a.filed.isRecord!TagionBill) {
+                    auto b = TagionBill(a.filed);
+                    bills ~= b;
+                }
+            }
+            if(!bills.empty){
+                foreach (bill; bills) {
+                    dcache.update(cast(Buffer) bill.owner, bill, true);
+                }
+                writeit(format("DS: Cache updated in %d bills", bills.length));
+            }            
+        }
     }
-    scope (exit) {
-        s.close;
-    }
-    writeit("DS: connected");
-    while (true) {
-        Document received_doc = s.receive!(immutable(ubyte[]))();
-        writeit(format("DS: received %d bytes", received_doc.length));
+    catch (Throwable e) {
+        writeit(dump_exception_recursive(e, "worker: dartcache"));
+        return;
     }
 }
 
@@ -736,7 +769,7 @@ int _main(string[] args) {
 
     dcache = new shared(DartCache)(null, dcache_size, dcache_ttl);
 
-    //auto ds_tid = spawn(&dart_worker, options);
+    auto ds_tid = spawn(&dart_worker, options);
 
     writeit("\nTagionShell web service\nListening at "
             ~ options.shell_uri ~ "\n\t"

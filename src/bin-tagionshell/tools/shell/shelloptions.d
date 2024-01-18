@@ -17,6 +17,8 @@ struct ShellOptions {
     string dart_endpoint;
     string dartcache_endpoint;
     string tagion_subscription_addr;
+    string recorder_subscription_tag;
+    string recorder_subscription_task_prefix;
     string bullseye_endpoint;
     string i2p_endpoint;
     string sysinfo_endpoint;
@@ -32,6 +34,8 @@ struct ShellOptions {
         dart_addr_prefix = "DART_";
         shell_uri = "http://0.0.0.0:8080";
         tagion_subscription_addr = contract_sock_addr("SUBSCRIPTION_");
+        recorder_subscription_tag = "recorder";
+        recorder_subscription_task_prefix = "Node_0_";
         shell_api_prefix = "/api/v1";
         contract_endpoint = "/contract";
         dart_endpoint = "/dart";
