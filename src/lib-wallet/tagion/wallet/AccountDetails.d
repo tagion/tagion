@@ -173,34 +173,43 @@ struct AccountDetails {
         private auto history_impl() {
             import tagion.communication.HiRPC;
             import std.range;
+            import tagion.dart.DARTBasic;
+            import tagion.crypto.SecureNet;
 
+            // Contract[] map
             auto contracts = hirpcs.map!(d => HiRPC.Receiver(d))
                 .filter!(rpc => rpc.method.params.isRecord!SignedContract)
                 .map!(rpc => SignedContract(rpc.method.params).contract);
 
-            // PayScript[]
+            // PayScript[] map
             auto pay_scripts = contracts
                 .map!(c => PayScript(c.script));
 
-            import tagion.dart.DARTBasic;
-            import tagion.crypto.SecureNet;
-
             const net = new StdHashNet();
-            const used_bills_index = used_bills.map!(b => dartIndex(net, b)).array;
+            const used_bills_hash = used_bills.map!(b => dartIndex(net, b)).array;
+            const bills_hash = bills.map!(b => dartIndex(net, b)).array;
 
-            // Table to look up the fee based on the output bill
             TagionCurrency[] fees;
+            ContractStatus[] statuses;
 
             /// FIXME: this messes up when contracts has multiple outputs
             foreach (contract, pay_script; zip(contracts, pay_scripts)) {
                 TagionBill[] input_bills;
 
+                ContractStatus status = ContractStatus.succeded;
                 foreach (input; contract.inputs) {
-                    const index = used_bills_index.countUntil(input);
+                    const used_index = used_bills_hash.countUntil(input);
+                    if (used_index >= 0) {
+                        input_bills ~= used_bills[used_index];
+                        continue;
+                    }
+                    const index = bills_hash.countUntil(input);
                     if (index >= 0) {
-                        input_bills ~= used_bills[index];
+                        input_bills ~= bills[index];
+                        status = ContractStatus.pending;
                     }
                 }
+                statuses ~= status;
 
                 const in_sum = input_bills.map!(b => b.value).sum;
                 const out_sum = pay_script.outputs.map!(b => b.value).sum;
@@ -266,11 +275,17 @@ enum HistoryItemType {
     send = 1,
 }
 
+enum ContractStatus {
+    pending = 0,
+    succeded = 1,
+}
+
 struct HistoryItem {
     TagionBill bill;
     HistoryItemType type;
     TagionCurrency fee;
     TagionCurrency balance;
+    ContractStatus status = ContractStatus.succeded;
     mixin HiBONRecord!(q{
         this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0) pure {
             this.type = type;
