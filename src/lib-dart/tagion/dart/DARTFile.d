@@ -251,7 +251,7 @@ class DARTFile {
 
             
 
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+                .check(isRecord(doc), format("Document is not a %s", This.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new Index[KEY_SPAN];
                 foreach (e; doc[indicesName].get!Document[]) {
@@ -889,7 +889,9 @@ class DARTFile {
             if (range.rim < RIMS_IN_SECTOR) {
                 if (branch_index !is Index.init) {
                     branches = blockfile.load!Branches(branch_index);
+
                     
+
                     .check(branches.hasIndices,
                             "DART failure within the sector rims the DART should contain a branch");
                 }

@@ -171,11 +171,12 @@ import std.stdio;
         read_recorder.insert(bills[0 .. count_read_bills].map!(b => TRTArchive(b.owner, [
                     net.dartIndex(b), DARTIndex.init
                 ])), Archive.Type.ADD);
-        writefln("im_dart_recorder=%s", im_dart_recorder.toPretty);
         createTRTUpdateRecorder(im_dart_recorder, read_recorder, trt_recorder, net);
+        writefln("im_dart_recorder=%s", im_dart_recorder.toPretty);
         writefln("read_recorder=%s", read_recorder.toPretty);
         writefln("trt_recorder=%s", trt_recorder.toPretty);
-        
+        const count_TRT_recorder_indices=countTRTRecorderindices(trt_recorder);
+        writefln("count_TRT_recorder_indices=%d number_of_dummy_indices=%d im_dart_recorder.length=%d", count_TRT_recorder_indices, number_of_dummy_indices, im_dart_recorder.length);
         assert(countTRTRecorderindices(trt_recorder) - number_of_dummy_indices == im_dart_recorder.length,
             "Number of entries in recorders differs");
 

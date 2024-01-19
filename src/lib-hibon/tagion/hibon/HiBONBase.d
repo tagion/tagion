@@ -13,6 +13,7 @@ import std.typecons : TypedefType, tuple;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
+import tagion.utils.StdTime;
 
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION = 0;
@@ -87,7 +88,19 @@ if (is(Key : const(char[])) || is(Key == uint)) {
     else static if (isIntegral!BaseT) {
         buffer ~= LEB128.encode(cast(BaseT) x);
     }
+    else static if (isBasicValueType!T) {
+        buffer.binwrite(x);
+
+    }
+        /*
+    else static if (isHiBONRecord!T) {
+        x.   
+   // else static if (is(T == class) || is(T == struct)) {
+   // }
+    }
+*/
     else {
+       // static assert(0, format("%s not supported by %s", T.stringof, __FUNCTION__));
         buffer.binwrite(x);
     }
 }
@@ -218,7 +231,7 @@ static unittest {
     }
 }
 
-enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
+enum isBasicValueType(T) = isBasicType!T || is(T : sdt_t);
 
 /**
     Converts to the HiBON TypedefType except for sdt_t

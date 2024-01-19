@@ -28,9 +28,10 @@ enum isHiBONTypeArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 
 /**
 	Used for HiBONRecords which have a recorder type
-	Param: T is the type of the recorder to be checked
-Param: doc 
-	Returns: true if the doc has the correct Recorder type 
+	Params: 
+        T = is the type of the recorder to be checked doc 
+	Returns: 
+        true if the doc has the correct Recorder type 
 */
 bool isRecord(T)(const Document doc) nothrow pure {
     static if (hasUDA!(T, recordType)) {
@@ -144,16 +145,16 @@ mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : TYPENAME, recordType;
 
-    alias ThisType = typeof(this);
+    alias This = typeof(this);
 
-    static if (hasUDA!(ThisType, recordType)) {
-        alias record_types = getUDAs!(ThisType, recordType);
+    static if (hasUDA!(This, recordType)) {
+        alias record_types = getUDAs!(This, recordType);
         static assert(record_types.length is 1, "Only one recordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
             import tagion.hibon.HiBONRecord : isRecordT = isRecord;
 
-            alias isRecord = isRecordT!ThisType;
+            alias isRecord = isRecordT!This;
             version (none) static bool isRecord(const Document doc) nothrow {
                 if (doc.hasMember(TYPENAME)) {
                     return doc[TYPENAME].get!string == type_name;
@@ -234,9 +235,9 @@ mixin template HiBONRecord(string CTOR = "") {
 
     mixin Serialize;
 
-    alias isRecord = HiBONRecord.isRecord!ThisType;
+    alias isRecord = HiBONRecord.isRecord!This;
 
-    enum HAS_TYPE = hasMember!(ThisType, "type_name");
+    enum HAS_TYPE = hasMember!(This, "type_name");
     static bool less_than(Key)(Key a, Key b) if (!is(Key : string)) {
         alias BaseKey = TypedefBase!Key;
         static if (HiBON.Value.hasType!BaseKey || is(BaseKey == enum)) {
@@ -325,7 +326,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
         MemberLoop: foreach (i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
-                enum default_name = FieldNameTuple!ThisType[i];
+                enum default_name = FieldNameTuple!This[i];
                 enum optional_flag = hasUDA!(this.tupleof[i], optional);
                 enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                 alias label = GetLabel!(this.tupleof[i]);
@@ -418,12 +419,12 @@ mixin template HiBONRecord(string CTOR = "") {
             enum GetKeyName = label.name;
         }
         else {
-            enum GetKeyName = FieldNameTuple!ThisType[i];
+            enum GetKeyName = FieldNameTuple!This[i];
         }
     }
 
     template GetTupleIndex(string name, size_t index = 0) {
-        static if (index == ThisType.tupleof.length) {
+        static if (index == This.tupleof.length) {
             enum GetTupleIndex = -1;
         }
         else static if (name == GetKeyName!index) {
@@ -442,16 +443,17 @@ mixin template HiBONRecord(string CTOR = "") {
         import tagion.hibon.HiBONBase : less_than;
 
         string[] result;
-        //alias ThisTuple = typeof(ThisType.tupleof);
-        static foreach (i; 0 .. Fields!(ThisType).length) {
-            result ~= GetKeyName!i;
+
+        //alias ThisTuple = typeof(This.tupleof);
+        static foreach (i; 0 .. This.tupleof.length) {
+            result~=GetKeyName!(i);
         }
         result.sort!((a, b) => less_than(a, b));
 
         return result;
     }
 
-    enum keys = _keys;
+    enum keys = _keys; //FieldNameTuple!This;
 
     static if (!NO_DEFAULT_CTOR) {
         @safe this(const HiBON hibon) {
@@ -464,8 +466,8 @@ mixin template HiBONRecord(string CTOR = "") {
                 check(_type == type_name, format("Wrong %s type %s should be %s",
                         TYPENAME, _type, type_name));
             }
-            static if (hasUDA!(ThisType, recordType)) {
-                enum record = getUDAs!(ThisType, recordType)[0];
+            static if (hasUDA!(This, recordType)) {
+                enum record = getUDAs!(This, recordType)[0];
                 static if (record.code) {
                     scope (exit) {
                         mixin(record.code);
@@ -574,29 +576,29 @@ mixin template HiBONRecord(string CTOR = "") {
                 return result;
             }
 
-            enum do_valid = hasMember!(ThisType, "valid")
+            enum do_valid = hasMember!(This, "valid")
                 && isCallable!(valid) && __traits(compiles, valid(doc));
             static if (do_valid) {
                 check(valid(doc),
                         format("Document verification faild for HiBONRecord %s",
-                        ThisType.stringof));
+                        This.stringof));
             }
 
-            enum do_verify = hasMember!(ThisType, "verify")
+            enum do_verify = hasMember!(This, "verify")
                 && isCallable!(verify) && __traits(compiles, this.verify());
 
             static if (do_verify) {
                 scope (exit) {
                     check(this.verify(),
                             format("Document verification faild for HiBONRecord %s",
-                            ThisType.stringof));
+                            This.stringof));
                 }
             }
 
-            //alias ThisTuple = typeof(ThisType.tupleof);
+            //alias ThisTuple = typeof(This.tupleof);
             ForeachTuple: foreach (i, ref m; this.tupleof) {
                 static if (__traits(compiles, typeof(m))) {
-                    enum default_name = FieldNameTuple!ThisType[i];
+                    enum default_name = FieldNameTuple!This[i];
                     enum optional_flag = hasUDA!(this.tupleof[i], optional);
                     enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                     static if (hasUDA!(this.tupleof[i], label)) {
@@ -611,7 +613,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
                                     format("Fixed %s is already definded to %s but is redefined for %s.%s",
-                                    TYPENAME, TYPE, ThisType.stringof,
+                                    TYPENAME, TYPE, This.stringof,
                                     basename!(this.tupleof[i])));
                         }
                     }
@@ -1033,7 +1035,7 @@ unittest {
         @safe static struct SuperStruct {
             Simple sub;
             string some_text;
-            //emum enable_serialize=true;
+            alias enable_serialize=bool;   
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) {
                         this.some_text=some_text;
@@ -1049,6 +1051,13 @@ unittest {
         assert(doc.toJSON.toString == format("%j", s_converted));
         assert(doc.toJSON.toPrettyString == format("%J", s_converted));
         assert(s.full_size == doc.full_size);
+        const s_converted_hibon = s_converted.toHiBON;
+        const s_converted_hibon_serialize = s_converted_hibon.serialize;
+        const s_converted_serialize = s_converted._serialize;
+        writefln("s_converted_hibon_serialize=%s", s_converted_hibon_serialize);
+        writefln("s_converted_serialize      =%s", s_converted_serialize);
+        assert(s_converted_serialize == s_converted_hibon_serialize);
+
     }
 
     {

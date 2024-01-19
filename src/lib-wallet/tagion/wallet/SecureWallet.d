@@ -626,10 +626,7 @@ struct SecureWallet(Net : SecureNet) {
         foreach (idx; locked_indexes) {
             if (!(found_indices.canFind(idx))) {
                 account.activated.remove(idx);
-                auto bill_index = account.bills.countUntil!(b => net.dartIndex(b) == idx);
-                if (bill_index >= 0) {
-                    account.bills = account.bills.remove(bill_index);
-                }
+                account.remove_bill_by_hash(idx);
             }
         }
 

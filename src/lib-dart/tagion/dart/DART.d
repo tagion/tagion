@@ -293,15 +293,15 @@ received = the HiRPC received package
 
         const rim_branches = branches(params.path);
         HiBON hibon_params;
-        
+
         if (!params.key_leaves.empty) {
             if (!rim_branches.empty) {
                 auto super_recorder = recorder;
                 foreach (key; params.key_leaves) {
-                    const index=rim_branches.indices[key];  
+                    const index = rim_branches.indices[key];
                     if (index.isinit) {
                         HiRPC.Error not_found;
-                        not_found.message=format("No archive found on %(%02x %):%02x", params.path, key); 
+                        not_found.message = format("No archive found on %(%02x %):%02x", params.path, key);
                         super_recorder.add(not_found);
                         continue;
                     }
@@ -440,7 +440,7 @@ received = the HiRPC received package
 
             
 
-            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+            .check(isRecord(doc), format("Document is not a %s", This.stringof));
             index = doc[indexName].get!Index;
             const recorder_doc = doc[recorderName].get!Document;
             recorder = manufactor.recorder(recorder_doc);
@@ -1214,4 +1214,3 @@ received = the HiRPC received package
     }
 
 }
-

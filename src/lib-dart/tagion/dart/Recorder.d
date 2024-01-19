@@ -152,7 +152,7 @@ class RecordFactory {
 
             
 
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+                .check(isRecord(doc), format("Document is not a %s", This.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {
                 if (e.key != TYPENAME) {

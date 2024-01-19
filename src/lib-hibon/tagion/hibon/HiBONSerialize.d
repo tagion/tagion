@@ -248,9 +248,41 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
 }
 
 void buf_append(U, Key)(ref scope AppendBuffer buf, in U x, Key key) pure {
+    import tagion.hibon.HiBONRecord : isHiBONRecord;
     alias BaseT = TypedefBase!U;
     enum type = Document.Value.asType!BaseT;
-    build(buf, type, key, x);
+
+    __write("%s key=%s type=%s", __FUNCTION__, key, type);
+    static if (type is Type.NONE) {
+        static if (isHiBONRecord!U) {
+            static if (__traits(hasMember, U, "_serialize")) {
+               buildKey(buf, Type.DOCUMENT, key);
+               const buffer_index=buf.data.length;
+                x._serialize(buf);
+                const sub_doc_size=buf.data.length-buffer_index;
+                const size_leb128=LEB128.encode(sub_doc_size);
+                buf~=size_leb128;
+                
+                auto data=buf.data;
+                (() @trusted {
+                    import core.stdc.string : memcpy;
+
+                    memcpy(&data[buffer_index+size_leb128.length], &data[buffer_index], sub_doc_size);
+                    memcpy(&data[buffer_index], &size_leb128[0], size_leb128.length);
+                })();
+                __write("Key=%s %s", key, data[buffer_index..$]);
+
+                __write("buf_append size_leb128.length=%d data.length=%d", size_leb128.length, data.length);
+
+
+            }
+            else {
+            }
+        }
+    }
+    else {
+        build(buf, type, key, x);
+    }
 }
 
 mixin template Serialize() {
@@ -268,13 +300,13 @@ mixin template Serialize() {
     import std.array;
     import LEB128 = tagion.utils.LEB128;
 
-    ///    static if (SupportingFullSizeFunction!ThisType) {
-    static if (__traits(hasMember, ThisType, "enable_serialize")) {
+    ///    static if (SupportingFullSizeFunction!This) {
+    static if (__traits(hasMember, This, "enable_serialize")) {
         void _serialize(scope Appender!(ubyte[]) buf) const pure {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;
 
-            static if (hasMember!(ThisType, "estimate_size")) {
+            static if (hasMember!(This, "estimate_size")) {
                 const need_size = buf.data.length + this.estimate_size;
                 if (need_size > buf.capacity) {
                     buf.reserve(need_size);
@@ -282,8 +314,8 @@ mixin template Serialize() {
             }
             void append_member(string key)() pure {
                 enum index = GetTupleIndex!key;
-                enum exclude_flag = hasUDA!(ThisType.tupleof[index], exclude);
-                enum filter_flag = hasUDA!(ThisType.tupleof[index], filter);
+                enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
+                enum filter_flag = hasUDA!(This.tupleof[index], filter);
                 __write("key=%s index=%d exclude_flag=%s filter_flag=%s", key, index, exclude_flag, filter_flag);
                 static if (filter_flag) {
                     alias filters = getUDAs!(this.tupleof[index], filter);
@@ -300,24 +332,24 @@ mixin template Serialize() {
                     //   buf_append(buf, 1, key);
 
                     buf_append(buf, this.tupleof[index], key);
-                    __write("this.tupleof[index]=%s %s key=%s", this.tupleof[index], Fields!ThisType[index].stringof, key);
+                    __write("this.tupleof[index]=%s %s key=%s", this.tupleof[index], Fields!This[index].stringof, key);
                     __write("buf_append         =%s", buf.data);
                 }
             }
             //version(none)
-            static if (hasUDA!(ThisType, recordType)) {
-                enum record = getUDAs!(ThisType, recordType)[0];
+            static if (hasUDA!(This, recordType)) {
+                enum record = getUDAs!(This, recordType)[0];
                 buf_append(buf, record.name, TYPENAME);
             }
 
-            static foreach (key; ThisType.keys) {
+            static foreach (key; This.keys) {
                 append_member!key();
             }
         }
 
         Buffer _serialize() const pure {
             Appender!(ubyte[]) buf;
-            static if (SupportingFullSizeFunction!(ThisType)) {
+            static if (SupportingFullSizeFunction!(This)) {
                 const reserve_size = full_size(this);
                 buf.reserve(reserve_size);
                 __write("reserve_size=%d", reserve_size);

@@ -349,7 +349,23 @@ int _main(string[] args) {
         }
 
         if (history) {
-            wallet_interface.secure_wallet.account.history;
+            import tagion.utils.StdTime;
+            import std.range;
+
+            auto hist = wallet_interface.secure_wallet.account.reverse_history();
+
+            foreach (item; hist) {
+                final switch (item.type) {
+                case HistoryItemType.receive:
+                    writefln("%s: %s%8s%s", item.bill.time.toText[0 .. 19], GREEN, item.bill.value, RESET);
+                    break;
+                case HistoryItemType.send:
+                    writefln("%s: %s%8s%s (fee: %s) to %s", item.bill.time.toText[0 .. 19], RED, item.bill.value, RESET, item
+                            .fee, item.bill
+                            .owner.encodeBase64);
+                    break;
+                }
+            }
         }
 
         wallet_interface.operate(wallet_switch, args);
