@@ -289,7 +289,9 @@ extern (C) {
             const nftDocId = recyclerDoc.create(contract_doc);
             // Save wallet state to file.
             __wallet_storage.write;
-
+            version (NET_HACK) {
+                __wallet_storage.read;
+            }
             *signedContractPtr = nftDocId;
             return 1;
         }
