@@ -90,6 +90,7 @@ unittest {
     import tagion.crypto.SecureNet;
     import std.format;
     import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBON : HiBON;
     import tagion.dart.DARTFakeNet;
     import tagion.wallet.SecureWallet;
     import tagion.script.TagionCurrency;
@@ -122,6 +123,10 @@ unittest {
     }
 
     auto factory = RecordFactory(net);
+
+    auto fake_hibon = new HiBON();
+    fake_hibon["key"] = "some string";
+    auto fake_index = net.dartIndex(Document(fake_hibon.serialize));
 
     auto initial_recorder = factory.recorder;
     initial_recorder.insert(bills, Archive.Type.ADD);
@@ -159,7 +164,7 @@ unittest {
             assert(trt_archives.canFind(a), "Some bills are missing");
         }
     }
-import std.stdio;
+
     // Test recorder with some previous read
     {
         auto trt_recorder = factory.recorder;
@@ -169,14 +174,10 @@ import std.stdio;
 
         auto read_recorder = factory.recorder;
         read_recorder.insert(bills[0 .. count_read_bills].map!(b => TRTArchive(b.owner, [
-                    net.dartIndex(b), DARTIndex.init
+                    net.dartIndex(b), fake_index
                 ])), Archive.Type.ADD);
         createTRTUpdateRecorder(im_dart_recorder, read_recorder, trt_recorder, net);
-        writefln("im_dart_recorder=%s", im_dart_recorder.toPretty);
-        writefln("read_recorder=%s", read_recorder.toPretty);
-        writefln("trt_recorder=%s", trt_recorder.toPretty);
-        const count_TRT_recorder_indices=countTRTRecorderindices(trt_recorder);
-        writefln("count_TRT_recorder_indices=%d number_of_dummy_indices=%d im_dart_recorder.length=%d", count_TRT_recorder_indices, number_of_dummy_indices, im_dart_recorder.length);
+
         assert(countTRTRecorderindices(trt_recorder) - number_of_dummy_indices == im_dart_recorder.length,
             "Number of entries in recorders differs");
 
@@ -192,7 +193,7 @@ import std.stdio;
                 "Some bills are missing");
         }
 
-        assert(trt_archives.map!(a => a.indices.canFind(DARTIndex.init))
+        assert(trt_archives.map!(a => a.indices.canFind(fake_index))
                 .sum == number_of_dummy_indices, "Read indices are missing");
     }
 
@@ -203,7 +204,7 @@ import std.stdio;
         auto read_recorder = factory.recorder;
         read_recorder.insert(im_dart_recorder[].map!(a => TagionBill(a.filed))
                 .map!(b => TRTArchive(b.owner, [
-                        net.dartIndex(b), DARTIndex.init
+                        net.dartIndex(b), fake_index
                     ])), Archive.Type.ADD);
 
         auto number_of_dummy_indices = im_dart_recorder.length;
@@ -225,7 +226,7 @@ import std.stdio;
                 "Some bills are missing");
         }
 
-        assert(trt_archives.map!(a => a.indices.canFind(DARTIndex.init))
+        assert(trt_archives.map!(a => a.indices.canFind(fake_index))
                 .sum == number_of_dummy_indices, "Read indices are missing");
     }
 
