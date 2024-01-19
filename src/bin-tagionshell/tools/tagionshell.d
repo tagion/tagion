@@ -10,6 +10,7 @@ import std.file : exists;
 import std.format;
 import std.getopt;
 import std.json;
+import std.typecons;
 import std.string : representation;
 import std.stdio : File, toFile, stderr, stdout, writefln, writeln;
 import std.datetime.systime : Clock;
@@ -90,7 +91,7 @@ void dart_worker(ShellOptions opt) {
     int rc;
     int attempts = 0;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-    SecureNet net = new StdSecureNet();
+    const net = new StdHashNet();
     s.recvtimeout = msecs(10000);
     s.subscribe(opt.recorder_subscription_tag);
     writeit("DS: subscribed");
@@ -103,15 +104,20 @@ void dart_worker(ShellOptions opt) {
     scope (exit) {
         s.close;
     }
-    net.generateKeyPair("very_secret");
     auto record_factory = RecordFactory(net);
-    auto hirpc = HiRPC(net);
+    const hirpc = HiRPC(null);
     writeit("DS: connected");
     while (true) {
         try {
             auto received = s.receive!(immutable(ubyte[]))();
+            if(received.empty){
+                continue;
+            }    
             const doc = Document(received[received.countUntil(0)+1..$]);
-            auto receiver = HiRPC.Receiver(net, doc);
+            if(!doc.isInorder(No.Reserved)){
+                continue;
+            }    
+            auto receiver = hirpc.receive(doc);
             if( !receiver.isMethod ){
                 writeit("DS: Invalid method in document received");
                 continue;

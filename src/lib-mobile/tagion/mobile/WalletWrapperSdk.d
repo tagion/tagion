@@ -258,24 +258,27 @@ extern (C) {
 
             try {
                 import tagion.hibon.HiBONRecord;
-            
+
                 if (doc.getType == "createNFT") {
                     const is_created = __wallet_storage.wallet.createNFT(doc, Document[].init, signed_contract);
-                    if (!is_created) { return 0; }
+                    if (!is_created) {
+                        return 0;
+                    }
 
                 }
                 else if (doc.getType == "NFTTransfer") {
                     auto script = doc["script"].get!Document;
                     auto inputs = doc["inputs"].get!Document[].map!(e => e.get!Document).array;
                     const is_created = __wallet_storage.wallet.createNFT(script, inputs, signed_contract);
-                    if (!is_created) { return 0; }
+                    if (!is_created) {
+                        return 0;
+                    }
                 }
                 else {
                     return 0;
                 }
-
-
-            } catch(Exception e) {
+            }
+            catch (Exception e) {
                 return 0;
             }
 
@@ -642,17 +645,52 @@ extern (C) {
 
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
-        DummyHistGen hist_gen;
+        version (WALLET_HISTORY_DUMMY) {
+            DummyHistGen hist_gen;
 
-        History hist;
-        hist_gen.popFront();
-        hist.items = hist_gen.drop(from).take(count).array;
+            WHistory hist;
+            hist_gen.popFront();
+            hist.items = hist_gen.drop(from).take(count).array;
 
-        *historyId = recyclerDoc.create(hist.toDoc);
+            *historyId = recyclerDoc.create(hist.toDoc);
+        }
+        else {
+            WHistory hist;
+            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count).map!(i => WHistoryItem(i))
+                .array;
+            *historyId = recyclerDoc.create(hist.toDoc);
+        }
 
         return 0;
     }
 
+}
+
+import tagion.hibon.HiBONRecord;
+
+struct WHistoryItem {
+    double amount;
+    double balance;
+    double fee;
+    int status;
+    int type;
+    sdt_t timestamp;
+    Pubkey pubkey;
+
+    mixin HiBONRecord!(q{
+        this(HistoryItem item) {
+            this.amount = item.bill.value.to!double;
+            this.pubkey = item.bill.owner;
+            this.balance = item.balance.to!double;
+            this.fee = item.fee.to!double;
+            this.type = item.type;
+        }
+    });
+}
+
+struct WHistory {
+    WHistoryItem[] items;
+    mixin HiBONRecord;
 }
 
 struct DummyHistGen {
@@ -662,8 +700,8 @@ struct DummyHistGen {
 
     Random!uint rnd = Random!uint(42);
 
-    HistoryItem genHistItem() {
-        HistoryItem hist_item;
+    WHistoryItem genHistItem() {
+        WHistoryItem hist_item;
         with (hist_item) {
             amount = rnd.value;
             balance = rnd.value;
@@ -679,13 +717,13 @@ struct DummyHistGen {
     int i = 0;
 
     bool empty() => i > max_length;
-    HistoryItem _front;
+    WHistoryItem _front;
     void popFront() {
         _front = genHistItem();
         i++;
     }
 
-    HistoryItem front() => _front;
+    WHistoryItem front() => _front;
 }
 
 version (none) unittest {

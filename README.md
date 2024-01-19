@@ -20,13 +20,7 @@ Whitepaper https://www.tagion.org/resources/tagion-whitepaper.pdf
 
 ### Setup steps & preflight checks
 
-1. Make sure that you have add your ssh keys to your github profile
-
-The project uses git submodules over ssh, so you need to be able to connect to github over ssh.
-You can follow this guide here:  
-https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
-
-2. First of all please be sure that you have everything, command
+1. First of all please be sure that you have everything, command
 You can run the following commands, if you are using arch, nix or ubuntu
     
 - **Ubuntu**
@@ -62,14 +56,14 @@ pacman -Syu git make autoconf gcc libtool dlang cmake
 nix develop
 ```
 
-3. Verify that the binaries are available and check their version (comments showing versions used as of writing)
+2. Verify that the binaries are available and check their version (comments showing versions used as of writing)
     
 ```bash
 ldc2 --version # LDC - the LLVM D compiler (1.35.0): ...
 dmd --version # v2.105.2
 ```
 
-4. Cloning tagion repo
+3. Cloning tagion repo
 
 ```bash
 git clone git@github.com:tagion/tagion.git
