@@ -349,18 +349,57 @@ int _main(string[] args) {
         }
 
         if (history) {
-            import tagion.utils.StdTime;
             import std.range;
+            import std.datetime;
+            import tagion.utils.StdTime;
+            import std.conv;
 
             auto hist = wallet_interface.secure_wallet.account.reverse_history();
+            const now = Clock.currTime();
+            const today = now.to!Date;
+            const yesterday = today - 1.days;
+
+            // The date of the previous bill
+            Date prev_day;
 
             foreach (item; hist) {
+                const bill_time = SysTime(cast(long) item.bill.time);
+                const bill_day = bill_time.to!Date;
+                void print_date() {
+
+                    if (bill_day == prev_day) {
+                        return;
+                    }
+
+                    if (bill_day == today) {
+                        writeln("Today:");
+                    }
+                    else if (bill_day == yesterday) {
+                        writeln("Yesterday:");
+                    }
+                    else if (bill_day.month == today.month && bill_day.year == today.year) {
+                        writeln("This Month:");
+                    }
+                    else if (bill_day.month == today.month - 1 && bill_day.year == today.year) {
+                        writeln("Last Month:");
+                    }
+                    else if (bill_day.year == today.year) {
+                        writeln("This Year:");
+                    }
+                    else if (bill_day.year == today.year - 1) {
+                        writeln("Last Year:");
+                    }
+                }
+
+                print_date();
+                prev_day = bill_day;
+
                 final switch (item.type) {
                 case HistoryItemType.receive:
-                    writefln("%s: %s%8s%s", item.bill.time.toText[0 .. 19], GREEN, item.bill.value, RESET);
+                    writefln("(%s) %s%8s%s\n", item.balance, GREEN, item.bill.value, RESET);
                     break;
                 case HistoryItemType.send:
-                    writefln("%s: %s%8s%s (fee: %s) to %s", item.bill.time.toText[0 .. 19], RED, item.bill.value, RESET, item
+                    writefln("(%s) %s%8s%s (fee: %s) to %s\n", item.balance, RED, item.bill.value, RESET, item
                             .fee, item.bill
                             .owner.encodeBase64);
                     break;

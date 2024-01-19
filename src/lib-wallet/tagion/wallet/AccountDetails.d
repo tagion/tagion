@@ -226,15 +226,31 @@ struct AccountDetails {
             // Filter out bills you sent to yourself
             auto received_bills = chain(bills, used_bills).filter!(b => !canFind(change, b));
 
-            // HistoryItemImpl[] map
-            auto sent_hist_item = zip(sent_bills, fees).map!(a => HistoryItemImpl( /*bill*/ a[0], HistoryItemType.send, /*fee*/ a[1]));
-            auto received_hist_item = received_bills.map!(b => HistoryItemImpl(b, HistoryItemType.receive));
+            // HistoryItem[] map
+            auto sent_hist_item = zip(sent_bills, fees).map!(a => HistoryItem( /*bill*/ a[0], HistoryItemType.send, /*fee*/ a[1]));
+            auto received_hist_item = received_bills.map!(b => HistoryItem(b, HistoryItemType.receive));
 
             return chain(sent_hist_item, received_hist_item);
         }
 
         auto reverse_history() {
-            return history_impl.array.sort!((a, b) => a.bill.time > b.bill.time);
+            TagionCurrency balance = total();
+            HistoryItem evaluate_balance(HistoryItem item) {
+                item.balance = balance;
+                with (HistoryItemType) final switch (item.type) {
+                case send:
+                    balance += (item.bill.value + item.fee);
+                    break;
+                case receive:
+                    balance -= (item.bill.value);
+                    break;
+                }
+                return item;
+            }
+
+            return history_impl.array
+                .sort!((a, b) => a.bill.time > b.bill.time)
+                .map!(i => evaluate_balance(i));
         }
 
         auto history() {
@@ -250,10 +266,11 @@ enum HistoryItemType {
     send = 1,
 }
 
-struct HistoryItemImpl {
+struct HistoryItem {
     TagionBill bill;
     HistoryItemType type;
     TagionCurrency fee;
+    TagionCurrency balance;
     mixin HiBONRecord!(q{
         this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0) pure {
             this.type = type;
@@ -261,22 +278,6 @@ struct HistoryItemImpl {
             this.fee = fee;
         }
     });
-}
-
-struct HistoryItem {
-    double amount;
-    double balance;
-    double fee;
-    int status;
-    int type;
-    @label(StdNames.time) sdt_t timestamp;
-    Pubkey pubkey;
-    mixin HiBONRecord;
-}
-
-struct History {
-    HistoryItem[] items;
-    mixin HiBONRecord;
 }
 
 @safe
