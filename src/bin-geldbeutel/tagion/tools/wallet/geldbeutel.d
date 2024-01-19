@@ -396,10 +396,10 @@ int _main(string[] args) {
 
                 final switch (item.type) {
                 case HistoryItemType.receive:
-                    writefln("%s%8s%s\n", GREEN, item.bill.value, RESET);
+                    writefln("(%s) %s%8s%s\n", item.balance, GREEN, item.bill.value, RESET);
                     break;
                 case HistoryItemType.send:
-                    writefln("%s%8s%s (fee: %s) to %s\n", RED, item.bill.value, RESET, item
+                    writefln("(%s) %s%8s%s (fee: %s) to %s\n", item.balance, RED, item.bill.value, RESET, item
                             .fee, item.bill
                             .owner.encodeBase64);
                     break;

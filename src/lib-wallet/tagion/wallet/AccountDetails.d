@@ -234,7 +234,23 @@ struct AccountDetails {
         }
 
         auto reverse_history() {
-            return history_impl.array.sort!((a, b) => a.bill.time > b.bill.time);
+            TagionCurrency balance = total();
+            HistoryItemImpl evaluate_balance(HistoryItemImpl item) {
+                item.balance = balance;
+                with (HistoryItemType) final switch (item.type) {
+                case send:
+                    balance += (item.bill.value + item.fee);
+                    break;
+                case receive:
+                    balance -= (item.bill.value);
+                    break;
+                }
+                return item;
+            }
+
+            return history_impl.array
+                .sort!((a, b) => a.bill.time > b.bill.time)
+                .map!(i => evaluate_balance(i));
         }
 
         auto history() {
@@ -254,6 +270,7 @@ struct HistoryItemImpl {
     TagionBill bill;
     HistoryItemType type;
     TagionCurrency fee;
+    TagionCurrency balance;
     mixin HiBONRecord!(q{
         this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0) pure {
             this.type = type;
