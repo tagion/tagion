@@ -196,7 +196,7 @@ struct AccountDetails {
             foreach (contract, pay_script; zip(contracts, pay_scripts)) {
                 TagionBill[] input_bills;
 
-                ContractStatus status = ContractStatus.succeded;
+                ContractStatus status = ContractStatus.succeeded;
                 foreach (input; contract.inputs) {
                     const used_index = used_bills_hash.countUntil(input);
                     if (used_index >= 0) {
@@ -236,7 +236,8 @@ struct AccountDetails {
             auto received_bills = chain(bills, used_bills).filter!(b => !canFind(change, b));
 
             // HistoryItem[] map
-            auto sent_hist_item = zip(sent_bills, fees).map!(a => HistoryItem( /*bill*/ a[0], HistoryItemType.send, /*fee*/ a[1]));
+            auto sent_hist_item = zip(sent_bills, fees, statuses).map!(a => HistoryItem( /*bill*/ a[0], HistoryItemType
+                    .send, /*fee*/ a[1], /*status*/ a[2]));
             auto received_hist_item = received_bills.map!(b => HistoryItem(b, HistoryItemType.receive));
 
             return chain(sent_hist_item, received_hist_item);
@@ -277,7 +278,7 @@ enum HistoryItemType {
 
 enum ContractStatus {
     pending = 0,
-    succeded = 1,
+    succeeded = 1,
 }
 
 struct HistoryItem {
@@ -285,12 +286,13 @@ struct HistoryItem {
     HistoryItemType type;
     TagionCurrency fee;
     TagionCurrency balance;
-    ContractStatus status = ContractStatus.succeded;
+    ContractStatus status;
     mixin HiBONRecord!(q{
-        this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0) pure {
+        this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0, ContractStatus status = ContractStatus.succeeded) pure {
             this.type = type;
             this.bill = bill;
             this.fee = fee;
+            this.status = status;
         }
     });
 }
