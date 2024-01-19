@@ -399,7 +399,8 @@ int _main(string[] args) {
                     writefln("(%s) %s%8s%s\n", item.balance, GREEN, item.bill.value, RESET);
                     break;
                 case HistoryItemType.send:
-                    writefln("(%s) %s%8s%s (fee: %s) to %s\n", item.balance, RED, item.bill.value, RESET, item
+                    const BALANCE_COLOR = (item.status is ContractStatus.succeeded) ? RED : YELLOW;
+                    writefln("(%s) %s%8s%s (fee: %s) to %s\n", item.balance, BALANCE_COLOR, item.bill.value, RESET, item
                             .fee, item.bill
                             .owner.encodeBase64);
                     break;
