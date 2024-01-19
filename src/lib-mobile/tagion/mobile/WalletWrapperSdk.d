@@ -273,11 +273,17 @@ extern (C) {
                 else {
                     return 0;
                 }
+
+
             } catch(Exception e) {
                 return 0;
             }
 
-            const nftDocId = recyclerDoc.create(signed_contract.toDoc);
+            const contract_net = __wallet_storage.wallet.net;
+            const hirpc = HiRPC(contract_net);
+            const contract = hirpc.submit(signed_contract);
+            const contract_doc = contract.toDoc;
+            const nftDocId = recyclerDoc.create(contract_doc);
             // Save wallet state to file.
             __wallet_storage.write;
 
