@@ -253,10 +253,12 @@ void buf_append(U, Key)(ref scope AppendBuffer buf, in U x, Key key) pure {
     enum type = Document.Value.asType!BaseT;
 
     __write("%s key=%s type=%s", __FUNCTION__, key, type);
+   // build(buf, type, key, x);
+    //version(none)
     static if (type is Type.NONE) {
+               buildKey(buf, Type.DOCUMENT, key);
         static if (isHiBONRecord!U) {
             static if (__traits(hasMember, U, "_serialize")) {
-               buildKey(buf, Type.DOCUMENT, key);
                const buffer_index=buf.data.length;
                 x._serialize(buf);
                 const sub_doc_size=buf.data.length-buffer_index;
@@ -277,7 +279,11 @@ void buf_append(U, Key)(ref scope AppendBuffer buf, in U x, Key key) pure {
 
             }
             else {
+                static assert(0, format("%s not supported", U.stringof));
             }
+        }
+        else static if (isInputRange!U) {
+             
         }
     }
     else {
@@ -329,8 +335,6 @@ mixin template Serialize() {
                     }
                 }
                 static if (!exclude_flag) {
-                    //   buf_append(buf, 1, key);
-
                     buf_append(buf, this.tupleof[index], key);
                     __write("this.tupleof[index]=%s %s key=%s", this.tupleof[index], Fields!This[index].stringof, key);
                     __write("buf_append         =%s", buf.data);

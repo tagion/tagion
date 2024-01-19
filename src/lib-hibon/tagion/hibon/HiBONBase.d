@@ -14,7 +14,7 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
 import tagion.utils.StdTime;
-
+import tagion.basic.Debug;
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION = 0;
 
@@ -66,9 +66,11 @@ void build(T, Key)(ref scope AppendBuffer buffer, Type type, Key key,
         const(T) x) pure
 if (is(Key : const(char[])) || is(Key == uint)) {
     import tagion.hibon.Document : Document;
+    import tagion.hibon.HiBONRecord : isHiBONRecord;
+    alias BaseT = TypedefBase!T;
+    enum _type = Document.Value.asType!BaseT;
 
     buildKey(buffer, type, key);
-    alias BaseT = TypedefType!T;
     static if (is(T : U[], U) && (U.sizeof == ubyte.sizeof)) {
         const leb128_size = LEB128.encode(x.length);
         buffer ~= leb128_size;
@@ -88,19 +90,54 @@ if (is(Key : const(char[])) || is(Key == uint)) {
     else static if (isIntegral!BaseT) {
         buffer ~= LEB128.encode(cast(BaseT) x);
     }
-    else static if (isBasicValueType!T) {
+    else static if (isBasicType!T) {
         buffer.binwrite(x);
 
     }
         /*
     else static if (isHiBONRecord!T) {
-        x.   
-   // else static if (is(T == class) || is(T == struct)) {
-   // }
+        static if (__traits(hasMember, T, "_serialize")) {
+            const buffer_index = buffer.data.length;
+            x._serialize(buffer);
+            const sub_doc_size = buffer.data.length - buffer_index;
+            const size_leb128 = LEB128.encode(sub_doc_size);
+            buffer ~= size_leb128;
+
+            auto data = buffer.data;
+            (() @trusted {
+                import core.stdc.string : memcpy;
+
+                memcpy(&data[buffer_index + size_leb128.length], &data[buffer_index], sub_doc_size);
+                memcpy(&data[buffer_index], &size_leb128[0], size_leb128.length);
+            })();
+            __write("Key=%s %s", key, data[buffer_index .. $]);
+
+            __write("buf_append size_leb128.length=%d data.length=%d", size_leb128.length, data.length);
+
+        }
+        else {
+            static assert(0, format("%s not supported", U.stringof));
+        }
     }
 */
+
+//    else static if (isInputRange!T) {
+        /*
+        alias U=ElementType!T;
+        static if (SupportFullSizeFunction!T && __traits(hasMember, T, "length")) {
+            const range_size=x.front.full_size*x.length;
+            buffer.reserve(range_size);
+        }
+*/
+        /*
+        foreach(i,v; x) {
+            build(buffer, type,  
+        }
+*/  
+
+//    }
     else {
-       // static assert(0, format("%s not supported by %s", T.stringof, __FUNCTION__));
+        // static assert(0, format("%s not supported by %s", T.stringof, __FUNCTION__));
         buffer.binwrite(x);
     }
 }
@@ -231,7 +268,7 @@ static unittest {
     }
 }
 
-enum isBasicValueType(T) = isBasicType!T || is(T : sdt_t);
+enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 
 /**
     Converts to the HiBON TypedefType except for sdt_t
