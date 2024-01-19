@@ -443,17 +443,16 @@ mixin template HiBONRecord(string CTOR = "") {
         import tagion.hibon.HiBONBase : less_than;
 
         string[] result;
-
         //alias ThisTuple = typeof(This.tupleof);
-        static foreach (i; 0 .. This.tupleof.length) {
-            result ~= GetKeyName!(i);
+        static foreach (i; 0 .. Fields!(This).length) {
+            result ~= GetKeyName!i;
         }
         result.sort!((a, b) => less_than(a, b));
 
         return result;
     }
 
-    enum keys = _keys; //FieldNameTuple!This;
+    enum keys = _keys;
 
     static if (!NO_DEFAULT_CTOR) {
         @safe this(const HiBON hibon) {
@@ -595,7 +594,7 @@ mixin template HiBONRecord(string CTOR = "") {
                 }
             }
 
-            //alias ThisTuple = typeof(This.tupleof);
+            //alias ThisTuple = typeof(ThisType.tupleof);
             ForeachTuple: foreach (i, ref m; this.tupleof) {
                 static if (__traits(compiles, typeof(m))) {
                     enum default_name = FieldNameTuple!This[i];
@@ -1035,7 +1034,7 @@ unittest {
         @safe static struct SuperStruct {
             Simple sub;
             string some_text;
-            alias enable_serialize = bool;
+            //emum enable_serialize=true;
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) {
                         this.some_text=some_text;
@@ -1065,7 +1064,7 @@ unittest {
         @safe static class SuperClass {
             Simple sub;
             string class_some_text;
-            alias enable_serialize = bool;
+            //emum enable_serialize=true;
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) @safe {
                         this.class_some_text=some_text;
