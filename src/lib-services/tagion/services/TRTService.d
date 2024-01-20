@@ -124,8 +124,15 @@ struct TRTService {
             log("before owner doc");
             auto owner_doc = receiver.method.params;
             if (owner_doc[].empty) {
+                import tagion.services.DARTInterface;
+                import std.conv : to;
+
                 log("the owner doc was empty");
-                // return hirpc error instead;
+                hirpc.Error message;
+                message.code = InterfaceError.InvalidDoc;
+                message.message = InterfaceError.InvalidDoc.to!string;
+                const sender = hirpc.Sender(null, message);
+                client_req.respond(sender.toDoc);
                 return;
             }
 
@@ -143,11 +150,12 @@ struct TRTService {
             foreach (a; trt_read_recorder[]) {
                 indices ~= TRTArchive(a.filed).indices.map!(d => cast(immutable) DARTIndex(d))
                     .array;
-
             }
 
             if (indices.empty) {
-                // return hirpc error instead;
+                HiBON params = new HiBON;
+                Document response = hirpc.result(receiver, params).toDoc;
+                client_req.respond(response);
                 return;
             }
 
