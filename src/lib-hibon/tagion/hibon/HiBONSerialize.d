@@ -114,6 +114,37 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
 
 }
 
+size_t element_size(T)(const T x, const size_t type_key_size) pure nothrow if (isHiBONBaseType(Document.Value.asType!T)) {
+    alias BaseT = TypedefBase!T;
+    enum type = Document.Value.asType!BaseT;
+    static assert(type != Type.NONE, format("%s not supported by %s", T.stringof, __FUNCTION__));
+    with (Type) {
+        static if (only(INT32, INT64, UINT32, UINT64).canFind(type)) {
+            return type_key_size + LEB128.calc_size(cast(BaseT) x);
+        }
+        else static if (type == TIME) {
+            return type_key_size + LEB128.calc_size(cast(ulong) x);
+        }
+        else static if (only(FLOAT32, FLOAT64, BOOLEAN).canFind(type)) {
+            return type_key_size + T.sizeof;
+        }
+        else static if (only(STRING, BINARY).canFind(type)) {
+            return type_key_size + LEB128.calc_size(x.length) + x.length;
+        }
+        else static if (type == BIGINT) {
+            return type_key_size + x.calc_size;
+        }
+        else static if (type == DOCUMENT) {
+            return type_key_size + x.full_size;
+        }
+        else static if (type == VER) {
+            return Type.sizeof + LEB128.calc_size(x);
+        }
+    }
+    assert(0, format("%s not suppoted by %s", T.stringof, __FUNCTION__));
+
+}
+
 import tagion.basic.Debug;
 
 size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
@@ -132,6 +163,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                 static foreach (E; EnumMembers!Type) {
             case E:
                     static if (isHiBONBaseType(E)) {
+                        //   pragma(msg, "E ", E, " U ", BaseU, " isHiBONBaseType!E ", isHiBONBaseType(E));
+                        //  return element_size(x, key_size);
                         static if (only(INT32, INT64, UINT32, UINT64).canFind(type)) {
                             return type_key_size + LEB128.calc_size(cast(BaseU) x);
                         }
@@ -201,7 +234,10 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                                 .canFind(type), isInputRange!(Unqual!BaseU)));
                     }
                 }
+                //else static if (__traits(compiles, BaseT, "_serialize"
                 else {
+                    assert(0, format("%s HiBONType=%s not supported by %s Type=%s", T.stringof, type, __FUNCTION__, isHiBONBaseType(
+                            type)));
                 }
             }
         }
@@ -249,46 +285,12 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
 
 void buf_append(U, Key)(ref scope AppendBuffer buf, in U x, Key key) pure {
     import tagion.hibon.HiBONRecord : isHiBONRecord;
+
     alias BaseT = TypedefBase!U;
     enum type = Document.Value.asType!BaseT;
 
     __write("%s key=%s type=%s", __FUNCTION__, key, type);
-   // build(buf, type, key, x);
-    //version(none)
-    static if (type is Type.NONE) {
-               buildKey(buf, Type.DOCUMENT, key);
-        static if (isHiBONRecord!U) {
-            static if (__traits(hasMember, U, "_serialize")) {
-               const buffer_index=buf.data.length;
-                x._serialize(buf);
-                const sub_doc_size=buf.data.length-buffer_index;
-                const size_leb128=LEB128.encode(sub_doc_size);
-                buf~=size_leb128;
-                
-                auto data=buf.data;
-                (() @trusted {
-                    import core.stdc.string : memcpy;
-
-                    memcpy(&data[buffer_index+size_leb128.length], &data[buffer_index], sub_doc_size);
-                    memcpy(&data[buffer_index], &size_leb128[0], size_leb128.length);
-                })();
-                __write("Key=%s %s", key, data[buffer_index..$]);
-
-                __write("buf_append size_leb128.length=%d data.length=%d", size_leb128.length, data.length);
-
-
-            }
-            else {
-                static assert(0, format("%s not supported", U.stringof));
-            }
-        }
-        else static if (isInputRange!U) {
-             
-        }
-    }
-    else {
-        build(buf, type, key, x);
-    }
+    build(buf, type, key, x);
 }
 
 mixin template Serialize() {

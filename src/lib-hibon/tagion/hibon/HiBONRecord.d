@@ -443,7 +443,6 @@ mixin template HiBONRecord(string CTOR = "") {
         import tagion.hibon.HiBONBase : less_than;
 
         string[] result;
-        //alias ThisTuple = typeof(This.tupleof);
         static foreach (i; 0 .. Fields!(This).length) {
             result ~= GetKeyName!i;
         }
@@ -1034,7 +1033,7 @@ unittest {
         @safe static struct SuperStruct {
             Simple sub;
             string some_text;
-            //emum enable_serialize=true;
+            alias enable_serialize=bool;
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) {
                         this.some_text=some_text;
@@ -1050,14 +1049,14 @@ unittest {
         assert(doc.toJSON.toString == format("%j", s_converted));
         assert(doc.toJSON.toPrettyString == format("%J", s_converted));
         assert(s.full_size == doc.full_size);
-        /*
+        
         const s_converted_hibon = s_converted.toHiBON;
         const s_converted_hibon_serialize = s_converted_hibon.serialize;
         const s_converted_serialize = s_converted._serialize;
         writefln("s_converted_hibon_serialize=%s", s_converted_hibon_serialize);
         writefln("s_converted_serialize      =%s", s_converted_serialize);
         assert(s_converted_serialize == s_converted_hibon_serialize);
-*/
+
     }
 
     {
