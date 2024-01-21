@@ -114,37 +114,6 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
 
 }
 
-size_t element_size(T)(const T x, const size_t type_key_size) pure nothrow if (isHiBONBaseType(Document.Value.asType!T)) {
-    alias BaseT = TypedefBase!T;
-    enum type = Document.Value.asType!BaseT;
-    static assert(type != Type.NONE, format("%s not supported by %s", T.stringof, __FUNCTION__));
-    with (Type) {
-        static if (only(INT32, INT64, UINT32, UINT64).canFind(type)) {
-            return type_key_size + LEB128.calc_size(cast(BaseT) x);
-        }
-        else static if (type == TIME) {
-            return type_key_size + LEB128.calc_size(cast(ulong) x);
-        }
-        else static if (only(FLOAT32, FLOAT64, BOOLEAN).canFind(type)) {
-            return type_key_size + T.sizeof;
-        }
-        else static if (only(STRING, BINARY).canFind(type)) {
-            return type_key_size + LEB128.calc_size(x.length) + x.length;
-        }
-        else static if (type == BIGINT) {
-            return type_key_size + x.calc_size;
-        }
-        else static if (type == DOCUMENT) {
-            return type_key_size + x.full_size;
-        }
-        else static if (type == VER) {
-            return Type.sizeof + LEB128.calc_size(x);
-        }
-    }
-    assert(0, format("%s not suppoted by %s", T.stringof, __FUNCTION__));
-
-}
-
 import tagion.basic.Debug;
 
 size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {

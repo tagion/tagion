@@ -13,7 +13,8 @@ import std.typecons : TypedefType, tuple;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
-
+import std.algorithm;
+import tagion.basic.basic : isinit;
 
 @safe:
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
@@ -123,8 +124,19 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         }
     }
     else static if (isInputRange!BaseT) {
-        alias U = ElementType!BaseT;
-        pragma(msg, "U ", U, " supportes ", SopportingFullSizeFunction!U);
+        alias ElementT = ElementType!BaseT;
+        const number_of_elements_serialize=x[].filter!(e => !e.isinit).count; 
+        //import tagion.hibon.HiBONSerialize : SupportingFullSizeFunction, element_size;
+        pragma(msg, "ElementT ", ElementT, " supportes ", __traits(hasMember, ElementT, "element_size"));
+        const start_index=buffer.data.length;
+        size_t serialized_elements;
+        foreach(pair; x[].enumerate.filter!(pair => !pair.value.isinit)) {
+            
+            serialized_elements++;
+        }
+        //static if (__traits(compiles, ElementT, element_size(x.front))) {
+          //  pragma(msg, "ElementT support element_size(x.front) ", __traits(compiles, element_size(x.font, size_t.init)));
+        //}
         /*
     else static if (isHiBONRecord!T) {
         

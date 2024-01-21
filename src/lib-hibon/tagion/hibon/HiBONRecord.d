@@ -1063,7 +1063,7 @@ unittest {
         @safe static class SuperClass {
             Simple sub;
             string class_some_text;
-            //emum enable_serialize=true;
+            alias enable_serialize=bool;
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) @safe {
                         this.class_some_text=some_text;
@@ -1083,14 +1083,12 @@ unittest {
             assert(doc.toJSON.toString == format("%j", s_converted));
             assert(doc.toJSON.toPrettyString == format("%J", s_converted));
         })();
-        /*
         const s_converted_hibon = s_converted.toHiBON;
         const s_converted_hibon_serialize = s_converted_hibon.serialize;
         const s_converted_serialize = s_converted._serialize;
         writefln("s_converted_hibon_serialize=%s", s_converted_hibon_serialize);
         writefln("s_converted_serialize      =%s", s_converted_serialize);
         assert(s_converted_serialize == s_converted_hibon_serialize);
-        */   
 }
 
     {
@@ -1112,7 +1110,7 @@ unittest {
     { // Base type array
         static struct Array {
             @label("i32_a") int[] a;
-//            alias enable_serialize = bool;
+            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
