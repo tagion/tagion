@@ -287,6 +287,7 @@ extern (C) {
             const contract = hirpc.submit(signed_contract);
             const contract_doc = contract.toDoc;
             const nftDocId = recyclerDoc.create(contract_doc);
+
             // Save wallet state to file.
             __wallet_storage.write;
             version (NET_HACK) {
