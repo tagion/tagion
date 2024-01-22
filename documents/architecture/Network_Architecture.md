@@ -24,6 +24,46 @@ A node consist of the following services.
 	- [Logger Subscription](/documents/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	- [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
+## Connection types
+By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
+The socket address, and thereby the visibillity can be changed in the tagionwave config file.
+
+```mermaid
+---
+title: Sockets
+---
+classDiagram
+    class InputValidator{
+        Write socket:
+        HiRPC methods:
+        "submit"
+        \n
+        NNG socket type = REPLY
+    }
+    class DartInterface{
+        Read-only interace:
+        HiRPC methods
+        "search"
+        "dartCheckRead"
+        "dartRead"
+        "dartRim"
+        "dartBullseye"
+        \n
+        NNG socket type = REPLY
+    }
+    class Subscription{
+        Publish only socket
+        Sends a "log" HiRPC method to connected peers
+        \n
+        NNG socket type = PUBLISH
+    }
+    class NodeInterface{
+        Half-duplex p2p wavefront communication
+        \n
+        NNG socket type = ???
+    }
+```
+
 
 ## Data Message flow
 This graph show the primary data message flow in the network.
@@ -34,7 +74,8 @@ digraph Message_flow {
   labelangle=35;
   node [style=filled]
   node [ shape = "rect"];
-  Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" style=filled fillcolor=green ]
+  Input [href="#/documents/architecture/InputValidator.md" label="Input Validator" style=filled fillcolor=green ]
+  DartInterface [href="#/documents/architecture/DartInterface.md" label="Dart Interface"]
   DART [href="#/documents/architecture/DART.md" shape = cylinder];
   P2P [ style=filled fillcolor=red]
   HiRPCVerifier [href="#/documents/architecture/HiRPCVerifier.md"  label="HiRPC\nVerifier"]
