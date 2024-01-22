@@ -1427,6 +1427,7 @@ unittest {
             { // Single enum
                 static struct CountStruct {
                     Count count;
+                alias enable_serialize=bool;
                     mixin HiBONRecord;
                 }
 
@@ -1438,11 +1439,22 @@ unittest {
 
                 assert(s == result);
                 assert(s_doc.toJSON.toString == format("%j", result));
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
             }
 
             { // Array of enum
                 static struct CountArray {
                     Count[] count;
+                alias enable_serialize=bool;
                     mixin HiBONRecord;
                 }
 
@@ -1454,6 +1466,16 @@ unittest {
 
                 assert(s == result);
                 assert(s_doc.toJSON.toString == format("%j", result));
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
             }
         }
 

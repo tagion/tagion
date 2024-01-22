@@ -93,6 +93,9 @@ if (is(Key : const(char[])) || is(Key == uint)) {
     static if (Document.Value.hasType!T) {
         enum type = Document.Value.asType!T;
     }
+    else static if(is(BaseT==enum) && isIntegral!(OriginalType!BaseT)) {
+        enum type = Document.Value.asType!(OriginalType!BaseT);
+    }
     else {
         enum type = Type.DOCUMENT;
     }
@@ -112,6 +115,10 @@ if (is(Key : const(char[])) || is(Key == uint)) {
     }
     else static if (is(BaseT : const BigNumber)) {
         buffer ~= x.serialize;
+    }
+    else static if (is(BaseT==enum) && isIntegral!(OriginalType!BaseT)) {
+        alias OriginalT = OriginalType!BaseT;
+        buffer ~= LEB128.encode(cast(OriginalT) x);
     }
     else static if (isIntegral!BaseT) {
         buffer ~= LEB128.encode(cast(BaseT) x);
