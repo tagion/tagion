@@ -1286,6 +1286,17 @@ unittest {
 
                     const s_get = h["s"].get!StructWithRange;
                     assert(s == s_get);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc      =%s", s_doc.toPretty);
+            assert(s_serialize == s_hibon_serialize);
+ 
                 }
             }
 
