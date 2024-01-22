@@ -598,7 +598,7 @@ static assert(uint.sizeof == 4);
                     build(temp_buffer, E, cast(uint) i, t);
                 }
                 else {
-                    build(temp_buffer, E, name, t);
+                    build(temp_buffer, name, t);
                 }
             }
             auto leb128_size_buffer = LEB128.encode(temp_buffer.data.length);
@@ -731,11 +731,11 @@ static assert(uint.sizeof == 4);
                 enum doc_name = "KDOC";
 
                 immutable index_before = buffer.data.length;
-                build(buffer, Type.INT32, Type.INT32.stringof, int(42));
+                build(buffer, Type.INT32.stringof, int(42));
                 immutable data_int32 = buffer.data[index_before .. $].idup;
 
-                build(buffer, Type.DOCUMENT, doc_name, sub_doc);
-                build(buffer, Type.STRING, Type.STRING.stringof, "Text");
+                build(buffer, doc_name, sub_doc);
+                build(buffer, Type.STRING.stringof, "Text");
 
                 size = cast(uint)(buffer.data.length - start_index);
 
@@ -803,7 +803,7 @@ static assert(uint.sizeof == 4);
                 //buffer.binwrite(uint.init, &index);
                 auto texts = ["Text1", "Text2", "Text3"];
                 foreach (i, text; texts) {
-                    build(buffer, Type.STRING, i.to!string, text);
+                    build(buffer, i.to!string, text);
                 }
                 //buffer.binwrite(Type.NONE, &index);
                 size = cast(uint)(buffer.data.length - start_index);
@@ -1397,22 +1397,23 @@ unittest { // Bugfix (Fails in isInorder);
 unittest { // Bugfix (Length of document should fail) document length error
     import std.stdio;
     import tagion.hibon.HiBONJSON;
-{ // Sub document size overflow (len=13 should be 12)
-    immutable(ubyte[]) data = [16, 2, 1, 97, 13, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
-    const doc = Document(data);
+
+    { // Sub document size overflow (len=13 should be 12)
+        immutable(ubyte[]) data = [16, 2, 1, 97, 13, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+        const doc = Document(data);
         assert(doc.valid == Document.Element.ErrorCode.OVERFLOW);
     }
-{ // Sub document size too-small (len=10 should be 12)
-    immutable(ubyte[]) data = [16, 2, 1, 97, 10, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
-    const doc = Document(data);
+    { // Sub document size too-small (len=10 should be 12)
+        immutable(ubyte[]) data = [16, 2, 1, 97, 10, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+        const doc = Document(data);
         assert(doc.valid == Document.Element.ErrorCode.TOO_SMALL);
-    }    
-{ // Sub document size correct 
-    immutable(ubyte[]) data = [16, 2, 1, 97, 12, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
-    const doc = Document(data);
+    }
+    { // Sub document size correct 
+        immutable(ubyte[]) data = [16, 2, 1, 97, 12, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+        const doc = Document(data);
         assert(doc.valid == Document.Element.ErrorCode.NONE);
-    }    
-     /*
+    }
+    /*
     const sub_doc_full_size=doc["a"].get!Document.full_size;
     const doc_pretty=doc.toPretty;
     const doc_a_data = doc["a"].get!Document;

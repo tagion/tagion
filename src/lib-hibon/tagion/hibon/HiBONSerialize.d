@@ -259,7 +259,7 @@ void buf_append(U, Key)(ref scope AppendBuffer buf, in U x, Key key) pure {
     enum type = Document.Value.asType!BaseT;
 
     __write("%s key=%s type=%s", __FUNCTION__, key, type);
-    build(buf, type, key, x);
+    build(buf, key, x);
 }
 
 mixin template Serialize() {
@@ -270,7 +270,7 @@ mixin template Serialize() {
     import tagion.basic.basic : isinit;
 
     //import tagion.hibon.HiBONBase;
-    import tagion.hibon.HiBONBase : HiBONType = Type, isHiBONBaseType, is_index;
+    import tagion.hibon.HiBONBase : HiBONType = Type, isHiBONBaseType, is_index, emplace_buffer;
     import tagion.hibon.HiBONSerialize : isHiBONAssociativeArray;
     import tagion.basic.Debug;
     import traits = std.traits;
@@ -279,7 +279,7 @@ mixin template Serialize() {
 
     ///    static if (SupportingFullSizeFunction!This) {
     static if (__traits(hasMember, This, "enable_serialize")) {
-        void _serialize(scope Appender!(ubyte[]) buf) const pure {
+        void _serialize(ref scope Appender!(ubyte[]) buf) const pure {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;
 
@@ -329,21 +329,25 @@ mixin template Serialize() {
                 buf.reserve(reserve_size);
                 __write("reserve_size=%d", reserve_size);
             }
+            const start_index = buf.data.length;
             _serialize(buf);
-            const buffer_size = buf.data.length;
-            const size_leb128 = LEB128.encode(buffer_size);
-            buf ~= size_leb128;
+            const size_leb128 = LEB128.encode(start_index);
+           // buf ~= size_leb128;
             auto data = buf.data;
-            __write("buf before clean %x", &data[0]);
-            (() @trusted {
+            __write("_serialize buf before clean buffer_size=%d ",  start_index);
+           emplace_buffer(buf, start_index); 
+    /*            
+(() @trusted {
                 import core.stdc.string : memcpy;
 
                 memcpy(&data[size_leb128.length], &data[0], buffer_size);
                 memcpy(&data[0], &size_leb128[0], size_leb128.length);
             })();
-            __write("size_leb128.length=%d data.length=%d", size_leb128.length, data.length);
-            __write("data=%x buf.data=%x %d capacity=%d data.capacity=%d size_leb128=%s", &data[0], &(buf.data[0]), data
-                .length, buf.capacity, data.capacity, size_leb128);
+    */
+            //__write("size_leb128.length=%d data.length=%d", size_leb128.length, data.length);
+            //__write("data=%x buf.data=%x %d capacity=%d data.capacity=%d size_leb128=%s", &data[0], &(buf.data[0]), data
+             //   .length, buf.capacity, data.capacity, size_leb128);
+            __write("_serialize %s", buf.data);
             return buf.data;
         }
     }

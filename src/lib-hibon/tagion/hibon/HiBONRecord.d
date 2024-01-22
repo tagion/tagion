@@ -1033,7 +1033,7 @@ unittest {
         @safe static struct SuperStruct {
             Simple sub;
             string some_text;
-            alias enable_serialize=bool;
+            alias enable_serialize = bool;
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) {
                         this.some_text=some_text;
@@ -1049,7 +1049,7 @@ unittest {
         assert(doc.toJSON.toString == format("%j", s_converted));
         assert(doc.toJSON.toPrettyString == format("%J", s_converted));
         assert(s.full_size == doc.full_size);
-        
+
         const s_converted_hibon = s_converted.toHiBON;
         const s_converted_hibon_serialize = s_converted_hibon.serialize;
         const s_converted_serialize = s_converted._serialize;
@@ -1063,7 +1063,7 @@ unittest {
         @safe static class SuperClass {
             Simple sub;
             string class_some_text;
-            alias enable_serialize=bool;
+            alias enable_serialize = bool;
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) @safe {
                         this.class_some_text=some_text;
@@ -1089,7 +1089,7 @@ unittest {
         writefln("s_converted_hibon_serialize=%s", s_converted_hibon_serialize);
         writefln("s_converted_serialize      =%s", s_converted_serialize);
         assert(s_converted_serialize == s_converted_hibon_serialize);
-}
+    }
 
     {
         static struct Test {
@@ -1133,13 +1133,15 @@ unittest {
             assert(s_full_size == doc.full_size);
             const s_hibon = s.toHiBON;
             const s_hibon_serialize = s_hibon.serialize;
- /*
             const s_serialize = s._serialize;
             writefln("s_hibon_serialize=%s", s_hibon_serialize);
             writefln("s_serialize      =%s", s_serialize);
-  
+
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc=%s", s_doc.toPretty);
             assert(s_serialize == s_hibon_serialize);
-        */
         }
         {
             s.a = [17, int.init, 42];
@@ -1151,6 +1153,16 @@ unittest {
 
             const s_full_size = s.full_size;
             assert(s_full_size == doc.full_size);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc=%s", s_doc.toPretty);
+            assert(s_serialize == s_hibon_serialize);
 
         }
     }
@@ -1158,6 +1170,7 @@ unittest {
     { // String array
         static struct StringArray {
             string[] texts;
+            alias enable_serialize=bool;
             mixin HiBONRecord;
         }
 
@@ -1174,12 +1187,23 @@ unittest {
         const s_full_size = s.full_size;
         writefln("--- s.full_size=%d doc.full_size=%d", s_full_size, doc.full_size);
         assert(s_full_size == doc.full_size);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc=%s", s_doc.toPretty);
+            assert(s_serialize == s_hibon_serialize);
     }
 
     { // Element as range
         @safe static struct Range(T) {
             alias UnqualT = Unqual!T;
             protected T[] array;
+            alias enable_serialize=bool;
             @nogc this(T[] array) {
                 this.array = array;
             }
@@ -1213,6 +1237,7 @@ unittest {
             alias R = Range!T;
             @safe static struct StructWithRange {
                 R range;
+                alias enable_serialize=bool;
                 static assert(isInputRange!R);
                 mixin HiBONRecord!(q{
                         this(T[] array) {
@@ -1235,6 +1260,16 @@ unittest {
 
             assert(s_doc == s);
             assert(doc.toJSON.toString == format("%j", s));
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
         }
 
         { // Range of structs

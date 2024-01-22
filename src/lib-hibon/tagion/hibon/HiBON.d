@@ -337,7 +337,7 @@ static size_t size(U)(const(U[]) array) pure {
                 foreach (i, h; value.by!E) {
                     immutable key = i.to!string;
                     static if (E is NATIVE_STRING_ARRAY) {
-                        build(buffer, STRING, key, h);
+                        build(buffer, key, h);
                     }
                     else {
                         buildKey(buffer, DOCUMENT, key);
@@ -381,7 +381,7 @@ static size_t size(U)(const(U[]) array) pure {
                                 }
                             }
                             else {
-                                build(buffer, E, key, value.by!E);
+                                build(buffer, key, value.by!E);
                             }
                             break TypeCase;
                         }
