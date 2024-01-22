@@ -123,10 +123,8 @@ struct TRTService {
                 import std.conv : to;
 
                 log("the owner doc was empty");
-                hirpc.Error message;
-                message.code = InterfaceError.InvalidDoc;
-                message.message = InterfaceError.InvalidDoc.to!string;
-                const err = hirpc.error(receiver, message.message, message.code);
+                const err = hirpc.error(receiver, InterfaceError
+                        .InvalidDoc.to!string, InterfaceError.InvalidDoc);
                 client_req.respond(err.toDoc);
                 return;
             }
@@ -148,8 +146,7 @@ struct TRTService {
             }
 
             if (indices.empty) {
-                HiBON params = new HiBON;
-                Document response = hirpc.result(receiver, params).toDoc;
+                Document response = hirpc.result(receiver, Document()).toDoc;
                 client_req.respond(response);
                 return;
             }
