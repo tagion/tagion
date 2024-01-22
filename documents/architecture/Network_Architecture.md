@@ -14,7 +14,7 @@ A node consist of the following services.
 	- [Transcript](/documents/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
 	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
-	- DART Interface handles outsite read requests to the dart
+	- [DART Interface](/documents/architecture/DartInterface.md) handles outside read requests to the dart
     - [TRT](/documents/architecture/TRT.md) "Transaction reverse table" stores a copy of the owner to bill relationship.
 	- [Replicator](/documents/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 	- [Node Interface](/documents/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
@@ -41,7 +41,7 @@ classDiagram
         NNG socket type = REPLY
     }
     class DartInterface{
-        Read-only interace:
+        Read-only interface:
         HiRPC methods
         "search"
         "dartCheckRead"
