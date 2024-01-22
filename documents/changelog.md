@@ -85,15 +85,17 @@ Our least recently used class has been upgraded so that it is possible to use no
 **Versioning**
 We have updated our revision to include the latest tag. The revision for example looks like the following now.
 
+```
 version: v1.0.1+dev+dirty
 git: git@github.com:tagion/tagion.git
 branch: current
 hash: 6258adbd9a805a16edb0f748553de00f69bcb76f
 revno: 12834
-build_date: imrying
-builder_name: philiprying@gmail.com
-builder_email: gcc (GCC) 12.3.0
-CC: DMD64 D Compiler v2.105.2
+builder_name: Børge
+builder_email: boerge@example.com
+CC: gcc (GCC) 12.3.0
+DC: DMD64 D Compiler v2.105.2
+```
 
 As it can be seen it shows that the binary is on top of v1.0.1 with develop and the working tree is dirty when it was compiled.
 
