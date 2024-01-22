@@ -152,6 +152,51 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         emplace_buffer(buffer, start_index);
         __write("buffer=%s number_of_elements=%d", buffer.data, number_of_elements);
     }
+    else static if (isAssociativeArray!BaseT) {
+        const start_index=buffer.data.length;
+        const number_of_elements_serialize=x.length;
+        alias KeyT=KeyType!T;
+        alias ValueT=ValueType!T;
+        size_t number_of_elements;
+        if (is(KeyT : const(char[])) || is(KeyT == uint)) {
+            pragma(msg, typeof(x.byPair.front));
+            //auto x_range=(() @trusted => cast(Unqual!ValueT[Unqual!KeyT])x);
+            pragma(msg, "x.keys ", typeof(x.keys));
+            const x_keys=x.keys.sort!((a,b) => less_than(a,b)).array;
+            pragma(msg, "keys ", typeof(keys));
+            foreach(assoc_key; x_keys) {
+                build(buffer, assoc_key, x[assoc_key]);
+            number_of_elements++;
+            const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
+                number_of_elements_serialize;
+            if (estimated_require_size + start_index > buffer.capacity) {
+                __write("assoc_key reserve %d", estimated_require_size+start_index);
+                buffer.reserve(estimated_require_size + start_index);
+            }
+
+            }
+            //pragma(msg, typeof(x_range.byPair.front));
+            //const sorted_pairs=x_range.byPair.array.sort!((a,b) => less_than(a.key, b.key));
+           
+            // foreach(pair; sorted_pairs) {
+             //  build(buffer, pair.key, pair.value);  
+                
+            //}
+        emplace_buffer(buffer, start_index);
+        }
+        else {
+            /*
+        const start_index=buffer.data.length;
+        static if (is(Key
+        __write("T=%s", T.stringof);
+        const number_of_elements_serialize=x.length;
+        size_t number_of_elements;
+        foreach(key, value; x) {
+            
+        }
+*/
+        }
+    }
     else {
        // __write("bin write key=%s type=%s T=%s", key, type, T.stringof);
         buffer.binwrite(x);
@@ -707,6 +752,9 @@ do {
     return a < b;
 }
 
+@nogc bool less_than(const uint a, const uint b) pure nothrow {
+    return a < b;
+}
 /++
  Checks if the keys in the range is ordred
  Returns:

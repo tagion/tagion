@@ -1303,6 +1303,7 @@ unittest {
             {
                 static struct SimpleArray {
                     Simple[] array;
+                alias enable_serialize=bool;
                     mixin HiBONRecord;
                 }
 
@@ -1329,6 +1330,16 @@ unittest {
 
                     const s_result = SimpleArray(s_doc);
                     assert(s_result == s);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
                 }
             }
         }
@@ -1336,6 +1347,7 @@ unittest {
         { // Jagged Array
             @safe static struct Jagged {
                 Simple[][] y;
+                alias enable_serialize=bool;
                 mixin HiBONRecord;
             }
 
@@ -1356,11 +1368,23 @@ unittest {
 
             assert(jagged_doc.toJSON.toString == format("%j", jagged));
 
+            const jagged_hibon = jagged.toHiBON;
+            const jagged_hibon_serialize= jagged_hibon.serialize;
+            const jagged_serialize = jagged._serialize;
+            writefln("jagged_hibon_serialize=%s", jagged_hibon_serialize);
+            writefln("jagged_serialize      =%s", jagged_serialize);
+            const jagged_hibon_doc = Document(jagged_hibon_serialize);
+            const jagged_doc_1 = Document(jagged_serialize);
+            writefln("jagged_hibon_doc=%s", jagged_hibon_doc.toPretty);
+            writefln("jagged_doc      =%s", jagged_doc_1.toPretty);
+            assert(jagged_serialize == jagged_hibon_serialize);
+
         }
 
         {
             @safe static struct Associative {
                 Simple[string] a;
+                alias enable_serialize=bool;
                 mixin HiBONRecord;
             }
 
@@ -1381,6 +1405,16 @@ unittest {
 
             assert(associative_doc.toJSON.toString == format("%j", associative));
 
+            const associative_hibon=associative.toHiBON;
+            const associative_hibon_serialize=associative_hibon.serialize;
+            const associative_serialize=associative._serialize;
+            __write("associative_hibon_serialize=%s", associative_hibon_serialize);
+            __write("associative_serialize      =%s", associative_serialize);
+            const associative_hibon_doc = Document(associative_hibon_serialize);
+            const associative_serialize_doc = Document(associative_serialize);
+            __write("associative_hibon_doc    =%s", associative_serialize_doc.toPretty);
+            __write("associative_serialize_doc=%s", associative_serialize_doc.toPretty);
+            assert(associative_hibon_serialize == associative_serialize);
         }
 
         { // Test of enum
