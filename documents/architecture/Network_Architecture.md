@@ -28,41 +28,18 @@ A node consist of the following services.
 By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
 The socket address, and thereby the visibillity can be changed in the tagionwave config file.
 
-```mermaid
----
-title: Sockets
----
-classDiagram
-    class InputValidator{
-        Write socket:
-        HiRPC methods:
-        "submit"
-        \n
-        NNG socket type = REPLY
-    }
-    class DartInterface{
-        Read-only interface:
-        HiRPC methods
-        "search"
-        "dartCheckRead"
-        "dartRead"
-        "dartRim"
-        "dartBullseye"
-        \n
-        NNG socket type = REPLY
-    }
-    class Subscription{
-        Publish only socket
-        Sends a "log" HiRPC method to connected peers
-        \n
-        NNG socket type = PUBLISH
-    }
-    class NodeInterface{
-        Half-duplex p2p wavefront communication
-        \n
-        NNG socket type = ???
-    }
-```
+
+| [Input Validator](/documents/architecture/InputValidator.md) | [Dart Interface](/documents/architecture/DartInterface.md) | [Subscription](/documents/architecture/LoggerSubscription.md) | [Node Interface](/documents/architecture/NodeInterface.md) |
+| -                                                            | -                                                          | -                                                             | -                                                          |
+| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
+| **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
+| "submit"                                                     | "search"                                                   | "log"                                                         |
+|                                                              | "dartCheckRead"                                            |
+|                                                              | "dartRead"                                                 |
+|                                                              | "dartRim"                                                  |
+|                                                              | "dartBullseye"                                             |
+| **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
+| REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
 
 
 ## Data Message flow
