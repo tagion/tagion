@@ -66,7 +66,7 @@ classDiagram
 
 
 ## Data Message flow
-This graph show the primary data message flow in the network.
+This graph show the primary data message flow in the node.
 
 ```graphviz
 digraph Message_flow {
@@ -83,6 +83,7 @@ digraph Message_flow {
   Transcript [href="#/documents/architecture/Transcript.md" shape = note]
   EpochCreator [href="#/documents/architecture/EpochCreator.md" label="Epoch\nCreator"]
   TVM [href="#/documents/architecture/TVM.md"]
+  TRT [href="#/documents/architecture/TRT.md"];
 
   Input -> HiRPCVerifier [label="HiRPC" color=green];
   Collector [href="#/documents/architecture/Collector.md"]
