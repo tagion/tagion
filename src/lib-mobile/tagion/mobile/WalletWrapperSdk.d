@@ -671,6 +671,7 @@ extern (C) {
 
 import tagion.hibon.HiBONRecord;
 
+pragma(msg, "remove wrapper dummy history");
 struct WHistoryItem {
     double amount;
     double balance;
