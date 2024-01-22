@@ -126,8 +126,8 @@ struct TRTService {
                 hirpc.Error message;
                 message.code = InterfaceError.InvalidDoc;
                 message.message = InterfaceError.InvalidDoc.to!string;
-                const sender = hirpc.Sender(null, message);
-                client_req.respond(sender.toDoc);
+                const err = hirpc.error(receiver, message.message, message.code);
+                client_req.respond(err.toDoc);
                 return;
             }
 
