@@ -192,7 +192,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
         @property
         double value() {
-            return (double(_units / 1024) / BASE_UNIT) * 1024;
+            return double(_units) / BASE_UNIT;
         }
 
         T opCast(T)() {
