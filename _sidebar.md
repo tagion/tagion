@@ -5,6 +5,7 @@
 ---
 
 - [Home](README.md)
+- [TIPs](documents/TIPs/main.md)
 - Network
 	- [Modes](documents/architecture/Network_Modes.md)
 	- [Architecture](documents/architecture/Network_Architecture.md)
