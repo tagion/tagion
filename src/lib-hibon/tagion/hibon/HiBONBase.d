@@ -169,10 +169,9 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
     else static if (isAssociativeArray!BaseT) {
         const start_index = buffer.data.length;
         const number_of_elements_serialize = x.length;
-        alias KeyT = KeyType!T;
-        alias ValueT = ValueType!T;
+        alias KeyT = TypedefType!(KeyType!T);
+        alias ValueT = TypedefBase!(ValueType!T);
         size_t number_of_elements;
-        pragma(msg, "is Key ", is(Unqual!KeyT == char[]), " KeyT ", KeyT);
         static if (isKey!KeyT) {
             const x_keys = x.keys.sort!((a, b) => less_than(a, b)).array;
             pragma(msg, "keys ", typeof(keys));
@@ -195,7 +194,7 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
 
             //}
         }
-        else {
+        else static if (__traits(compiles, {KeyT x,y; const r=x<y;})) {
             const x_keys = x.keys.sort.array;
             foreach ( i, assoc_key; x_keys) {
                 buildKey(buffer, Type.DOCUMENT, cast(uint)i);
@@ -212,18 +211,33 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
                 }
 
             }
-            
-           // assert(0);
-            /*
-        const start_index=buffer.data.length;
-        static if (is(Key
-        __write("T=%s", T.stringof);
-        const number_of_elements_serialize=x.length;
-        size_t number_of_elements;
-        foreach(key, value; x) {
-            
         }
-*/
+        else {
+            Document[] elements;
+            AppendBuffer inner_buffer;
+            foreach(inner_key, inner_value; x) {
+                const inner_start_index=inner_buffer.data.length;
+                build(inner_buffer, uint(0), inner_key);
+                build(inner_buffer, uint(1), inner_value);
+                emplace_buffer(inner_buffer, inner_start_index);
+                immutable inner_data=(() @trusted => cast(immutable)inner_buffer.data[inner_start_index..$])();
+                elements~=Document(inner_data);
+                number_of_elements++;
+                const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
+                    number_of_elements_serialize;
+                if (estimated_require_size + start_index > buffer.capacity) {
+                    __write("assoc_key reserve %d", estimated_require_size + start_index);
+                    buffer.reserve(estimated_require_size + start_index);
+                }
+
+                
+            }
+            const ordred_elements=elements.sort!((a,b) => a[0].data < b[0].data).array;
+            buffer.reserve(ordred_elements.map!(doc => doc.full_size+uint.sizeof).sum);
+            foreach(i, elm; ordred_elements) {
+                build(buffer, cast(uint)i, elm);
+            }
+            //assert(0, "Not implemented yet");
         }
             emplace_buffer(buffer, start_index);
     }

@@ -661,7 +661,6 @@ mixin template HiBONRecord(string CTOR = "") {
                             m = doc[name].get!BaseT;
                         }
                         else static if (Document.Value.hasType!BaseT) {
-                            //__write("name=%s BaseT=%s get=%s data=%s key=%s type=%s", name, BaseT.stringof, doc[name].get!BaseT, doc[name].data, doc[name].key, doc[name].type);
                             m = doc[name].get!BaseT;
                         }
                         else static if (is(BaseT == struct)) {
@@ -740,9 +739,7 @@ unittest {
     static assert(Simple.GetTupleIndex!"s" == 0);
     static assert(Simple.GetTupleIndex!"text" == 1);
     static assert(Simple.GetTupleIndex!"not defined" == -1);
-    __write("SIMPLE=%s", Simple.keys);
     pragma(msg, "StaticMap ", AliasSeq!(Simple.keys));
-    //__write("SIMPLE=%s", Simple.keys);
     @recordType("SIMPLELABEL") static struct SimpleLabel {
         @label("TEXT") string text;
         @label("$S") int s;
@@ -755,9 +752,6 @@ unittest {
     }
 
     static assert(equal(SimpleLabel.keys, only("$S", "TEXT")));
-    __write("SIMPLE Label=%s", SimpleLabel.keys);
-    __write("Key TEXT =%s", SimpleLabel.GetTupleIndex!"TEXT");
-    __write("Key $S =%s", SimpleLabel.GetTupleIndex!"$S");
 
     static assert(SimpleLabel.GetTupleIndex!"$S" == 1);
     static assert(SimpleLabel.GetTupleIndex!"TEXT" == 0);
@@ -823,8 +817,6 @@ unittest {
             const s_serialize = s._serialize;
             const h = s.toHiBON;
             const hibon_serialize = h.serialize;
-            __write("s_serialize        =%s", s_serialize);
-            __write("hibon_serialize    =%s", hibon_serialize);
             assert(docS.full_size == s_serialize.length);
             assert(hibon_serialize.length == s_serialize.length);
 
@@ -973,11 +965,6 @@ unittest {
 
         const s_filter_x_serialize = s_filter_x._serialize;
         const s_filter_x_hibon_serialize = s_filter_x.toHiBON.serialize;
-        __write("s_filter_x                =%s", s_filter_x.toPretty);
-        __write("s_filter_x_serialize      =%s", s_filter_x_serialize);
-        __write("s_filter_x_hibon          =%s", s_filter_x.toHiBON.toPretty);
-        __write("s_filter_x_hibon_serialize=%s", s_filter_x_hibon_serialize);
-        __write("s_filter_x_hibon_serialize=%s", Document(s_filter_x_hibon_serialize).toPretty);
         assert(s_filter_x_serialize == s_filter_x_hibon_serialize);
 
         const s_filter_y_serialize = s_filter_y._serialize;
@@ -1052,8 +1039,6 @@ unittest {
         const s_converted_hibon = s_converted.toHiBON;
         const s_converted_hibon_serialize = s_converted_hibon.serialize;
         const s_converted_serialize = s_converted._serialize;
-        writefln("s_converted_hibon_serialize=%s", s_converted_hibon_serialize);
-        writefln("s_converted_serialize      =%s", s_converted_serialize);
         assert(s_converted_serialize == s_converted_hibon_serialize);
 
     }
@@ -1085,8 +1070,6 @@ unittest {
         const s_converted_hibon = s_converted.toHiBON;
         const s_converted_hibon_serialize = s_converted_hibon.serialize;
         const s_converted_serialize = s_converted._serialize;
-        writefln("s_converted_hibon_serialize=%s", s_converted_hibon_serialize);
-        writefln("s_converted_serialize      =%s", s_converted_serialize);
         assert(s_converted_serialize == s_converted_hibon_serialize);
     }
 
@@ -1122,24 +1105,16 @@ unittest {
             assert(s == result);
             assert(doc.toJSON.toString == format("%j", result));
             writeln("--- --- --- --- --- --- ---");
-            writefln("%s", doc.serialize);
-            writefln("%s", s.toPretty);
 
             auto h = s.toHiBON;
             const s_full_size = s.full_size;
-            writefln("--- s.full_size=%d doc.full_size=%d doc.isInorder=%s hibon.size=%d h.serialize_size=%d", s_full_size, doc
-                    .full_size, doc.valid, h.size, h.serialize_size);
             assert(s_full_size == doc.full_size);
             const s_hibon = s.toHiBON;
             const s_hibon_serialize = s_hibon.serialize;
             const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
 
             const s_hibon_doc = Document(s_hibon_serialize);
             const s_doc = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc=%s", s_doc.toPretty);
             assert(s_serialize == s_hibon_serialize);
         }
         {
@@ -1155,12 +1130,8 @@ unittest {
             const s_hibon = s.toHiBON;
             const s_hibon_serialize = s_hibon.serialize;
             const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
             const s_hibon_doc = Document(s_hibon_serialize);
             const s_doc = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc=%s", s_doc.toPretty);
             assert(s_serialize == s_hibon_serialize);
 
         }
@@ -1180,21 +1151,13 @@ unittest {
         const result = StringArray(doc);
         assert(s == result);
         assert(doc.toJSON.toString == format("%j", result));
-        writeln("--- --- --- --- --- --- ---");
-        writefln("%s", doc.serialize);
-        writefln("%s", s.toPretty);
         const s_full_size = s.full_size;
-        writefln("--- s.full_size=%d doc.full_size=%d", s_full_size, doc.full_size);
         assert(s_full_size == doc.full_size);
         const s_hibon = s.toHiBON;
         const s_hibon_serialize = s_hibon.serialize;
         const s_serialize = s._serialize;
-        writefln("s_hibon_serialize=%s", s_hibon_serialize);
-        writefln("s_serialize      =%s", s_serialize);
         const s_hibon_doc = Document(s_hibon_serialize);
         const s_doc = Document(s_serialize);
-        writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-        writefln("s_doc=%s", s_doc.toPretty);
         assert(s_serialize == s_hibon_serialize);
     }
 
@@ -1407,12 +1370,8 @@ unittest {
             const associative_hibon = associative.toHiBON;
             const associative_hibon_serialize = associative_hibon.serialize;
             const associative_serialize = associative._serialize;
-            __write("associative_hibon_serialize=%s", associative_hibon_serialize);
-            __write("associative_serialize      =%s", associative_serialize);
             const associative_hibon_doc = Document(associative_hibon_serialize);
             const associative_serialize_doc = Document(associative_serialize);
-            __write("associative_hibon_doc    =%s", associative_serialize_doc.toPretty);
-            __write("associative_serialize_doc=%s", associative_serialize_doc.toPretty);
             assert(associative_hibon_serialize == associative_serialize);
         }
 
@@ -1585,6 +1544,7 @@ unittest {
             static struct KeyStruct {
                 int x;
                 string text;
+                alias enable_serialize = bool;
                 mixin HiBONRecord!(q{
                         this(int x, string text) {
                             this.x=x; this.text=text;
@@ -1598,6 +1558,7 @@ unittest {
 
             static struct StructKeys {
                 Tabel tabel;
+                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1618,6 +1579,16 @@ unittest {
             const result = StructKeys(s_doc);
             //assert(result == s);
             assert(result.toDoc == s.toDoc);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            //writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
 
         }
     }
@@ -1715,12 +1686,6 @@ unittest {
         const result = Time(doc);
         auto h = expected_time.toHiBON;
 
-        __write("doc=%s", doc);
-        __write("doc.data=%s len=%d full_size=%d", doc.data, doc.data.length, doc.full_size);
-        __write("result  =%s time=%s", result, result.time);
-        __write("expected=%s time=%s", expected_time, expected_time.time);
-        __write("keys=%s", h.keys);
-        __write("types=%s", h[].map!(m => m.type));
         assert(expected_time == result);
     }
 
