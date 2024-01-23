@@ -73,5 +73,40 @@
           ];
         };
 
+    # Experimental work on nix unittest build. execute using nix build .#unittest
+    # Idea is to use this along with nix run in order to run unittests with nix
+    packages.x86_64-linux.unittest = 
+      with import nixpkgs { system = "x86_64-linux"; };
+      stdenv.mkDerivation {
+        name = "unittest";
+
+          buildInputs = [
+            nng
+            secp256k1-zkp.defaultPackage.x86_64-linux
+            mbedtls
+          ];
+
+          nativeBuildInputs = [
+            dmd
+            dtools
+            gnumake
+            pkg-config
+          ];
+
+          src = self;
+          configurePhase = ''
+            echo DC=dmd >> local.mk
+            echo INSTALL=$out/bin >> local.mk
+            echo NNG_ENABLE_TLS=1 >> local.mk
+          '';
+
+          buildPhase = ''
+            make GIT_HASH=${gitRev} proto-unittest-build
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin; make install
+          '';
+      };
     };
 }
