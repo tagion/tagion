@@ -538,6 +538,7 @@ struct HiRPC {
     }
 }
 
+/// An good HiRPC result wih no additinal data.
 @safe
 @recordType("OK")
 struct ResultOk {
