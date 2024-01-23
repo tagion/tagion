@@ -1536,6 +1536,7 @@ unittest {
             alias Tabel = int[Bytes];
             static struct StructBytes {
                 Tabel tabel;
+                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1566,7 +1567,18 @@ unittest {
                     .get!Document[]
                     .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
             ));
+            writefln("--- ---- ----");
             assert(s_doc == result.toDoc);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            //writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
         }
 
         { // Typedef of a HiBONRecord is used as key in an associative-array

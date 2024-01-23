@@ -44,8 +44,8 @@ void binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
 +/
 
 void buildKey(Key)(ref scope AppendBuffer buffer, Type type, Key key) pure
-if (is(Key : const(char[])) || is(Key == uint)) {
-    static if (is(Key : const(char[]))) {
+if (isKey!Key) {
+    static if (isKeyString!Key) {
         uint key_index;
         if (is_index(key, key_index)) {
             buildKey(buffer, type, key_index);
@@ -54,7 +54,7 @@ if (is(Key : const(char[])) || is(Key == uint)) {
     }
     buffer.binwrite(type);
 
-    static if (is(Key : const(char[]))) {
+    static if (isKeyString!Key) {
         buffer ~= LEB128.encode(key.length);
         buffer ~= key.representation;
     }
@@ -83,8 +83,7 @@ void emplace_buffer(ref scope AppendBuffer buffer, const size_t start_index) pur
 }
 
 void build(T, Key)(ref scope AppendBuffer buffer, Key key,
-        const(T) x) pure
-if (is(Key : const(char[])) || is(Key == uint)) {
+        const(T) x) pure if (isKey!Key) {
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : isHiBONRecord;
     import std.range;
@@ -112,7 +111,7 @@ if (is(Key : const(char[])) || is(Key == uint)) {
             buffer ~= (cast(BaseT) x).representation;
         }
         else {
-            buffer ~= x;
+            buffer ~= cast(BaseT) x;
         }
     }
     else static if (is(BaseT : const Document)) {
@@ -129,7 +128,7 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         buffer ~= LEB128.encode(cast(BaseT) x);
     }
     else static if (is(BaseT : const(sdt_t))) {
-        buffer ~= LEB128.encode(cast(TypedefType!sdt_t)x);
+        buffer ~= LEB128.encode(cast(TypedefType!sdt_t) x);
     }
     else static if (isHiBONRecord!BaseT) {
         static if (__traits(compiles, x._serialize(buffer))) {
@@ -173,10 +172,8 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         alias KeyT = KeyType!T;
         alias ValueT = ValueType!T;
         size_t number_of_elements;
-        if (is(KeyT : const(char[])) || is(KeyT == uint)) {
-            pragma(msg, typeof(x.byPair.front));
-            //auto x_range=(() @trusted => cast(Unqual!ValueT[Unqual!KeyT])x);
-            pragma(msg, "x.keys ", typeof(x.keys));
+        pragma(msg, "is Key ", is(Unqual!KeyT == char[]), " KeyT ", KeyT);
+        static if (isKey!KeyT) {
             const x_keys = x.keys.sort!((a, b) => less_than(a, b)).array;
             pragma(msg, "keys ", typeof(keys));
             foreach (assoc_key; x_keys) {
@@ -197,9 +194,26 @@ if (is(Key : const(char[])) || is(Key == uint)) {
             //  build(buffer, pair.key, pair.value);  
 
             //}
-            emplace_buffer(buffer, start_index);
         }
-    else {
+        else {
+            const x_keys = x.keys.sort.array;
+            foreach ( i, assoc_key; x_keys) {
+                buildKey(buffer, Type.DOCUMENT, cast(uint)i);
+                const inner_start_index=buffer.data.length;
+                build(buffer, uint(0), assoc_key);
+                build(buffer, uint(1), x[assoc_key]);
+                emplace_buffer(buffer, inner_start_index);
+                number_of_elements++;
+                const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
+                    number_of_elements_serialize;
+                if (estimated_require_size + start_index > buffer.capacity) {
+                    __write("assoc_key reserve %d", estimated_require_size + start_index);
+                    buffer.reserve(estimated_require_size + start_index);
+                }
+
+            }
+            
+           // assert(0);
             /*
         const start_index=buffer.data.length;
         static if (is(Key
@@ -211,6 +225,7 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         }
 */
         }
+            emplace_buffer(buffer, start_index);
     }
     else {
         buffer.binwrite(x);
@@ -228,7 +243,6 @@ enum Type : ubyte {
 
     BOOLEAN = 0x08, /// Boolean - true or false
     TIME = 0x09, /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
-    // HASHDOC = 0x0F, /// Hash point to documement, public key or signature
 
     INT32 = 0x11, /// 32-bit integer
     INT64 = 0x12, /// 64-bit integer,
@@ -788,9 +802,9 @@ bool is_key_ordered(R)(R range) if (isInputRange!R) {
     return true;
 }
 
-enum isKeyString(T) = is(T : const(char[]));
+enum isKeyString(T) = isSomeString!T && (ForeachType!T.sizeof == char.sizeof);
 
-enum isKey(T) = (isIntegral!(T) || isKeyString!(T));
+enum isKey(T) = (isUnsigned!(T) || isKeyString!(T));
 
 ///
 unittest { // Check less_than
