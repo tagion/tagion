@@ -262,7 +262,7 @@ int _neuewelle(string[] args) {
             check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
             const addr = pair[1].strip;
 
-            addressbook[pkey] = NodeInfo(assumeUnique(addr));
+            addressbook[pkey] = NodeInfo(addr.idup);
         }
 
         auto by_line = fin.byLine;
