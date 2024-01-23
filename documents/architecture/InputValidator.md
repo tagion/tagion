@@ -10,7 +10,7 @@ Input:
 > - Package Byte stream
 
 Output:
-> - A [HiRPC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver is converted from the byte stream 
+> - A [HiRPC](https://www.hibon.org/posts/hirpc).Receiver is converted from the byte stream 
 
 The services does the following:
 - Check that the size of the package does not exceed max-package length.
