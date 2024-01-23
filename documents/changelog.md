@@ -1,3 +1,34 @@
+# Changelog for epoch 466725 .. 548959
+
+**Secure Library Audit**
+A list of changes have been made to comply with the recent secure library audit.  
+The BIP39 API has been changed as recommended, so it should be less likely for future API users to make mistakes using it.  
+This means you should change the following function uses.  
+`BIP39.passphrase() -> BIP39.generateMnemonic()`  
+`BIP39.opCall() -> BIP39.mnemonicToSeed()`  
+
+`BIP39.validateMnemonic()` should now be used in favour of `BIP39.checkMnemonicNumbers()` and `BIP39.mnemonicNumbers()`.  
+The new function also does the proper checksum validation.
+We misunderstood how the checksum is calculated and that the last word in the mnemonic phrase is used as a checksum and generated based on the remaining bits in the byte sequence of the 11-bit word sequence and the first nibble of the hash sum of the first words.  
+Note, this also means that the 12 to 24 words should be a multiple of 3. Which is checked in the `generateMnemonic()`.
+
+We misunderstood `secp256k1_context_randomize()` as a way to obfuscate memory but its intended usage is as a measure against side-channel attacks.
+This means that the function is now only called when creating or copying a context.
+
+The full list of notes can be seen here https://docs.tagion.org/#/documents/audit/audit.md  
+
+**DART Cache**
+The dart cache is now updated based on new published recorders from the kernel and has been made default handler in the shell.
+This should result in faster updates and less load on the core system when requesting updates for recent transactions.
+Some changes need to made to the api of TRT request in order to prevent state mismatch between the shell and kernel. 
+
+**TRT hotfix**
+Fixed an issure where if the trt would not find any Archives it would not make reponse and thereby lock up the dartinterface, blocking new incoming requests.
+
+**Account history**
+The account history can now be statically calculated based on the info already stored in AccountDetails. This means that the history can now be retrieved when restoring your wallet.
+Fixed an issue where used_bills and sent hirpcs were not stored in AccountDetails.
+
 # Changelog for epoch 392368 .. 466725
 
 **TRT enhancement**
