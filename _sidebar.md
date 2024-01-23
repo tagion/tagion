@@ -27,8 +27,8 @@
 
 - Protocols
 	- [HiBON](documents/protocols/hibon.md)
-    - [Contract](/documents/protocols/contract/Contract.md)
-        - [Methods](/documents/protocols/contract/hirpcmethods.md)
+    - [HiRPC methods (public api)](/documents/protocols/contract/hirpcmethods.md)
+        - [Contract](/documents/protocols/contract/Contract.md)
 	    - [Bill](/documents/protocols/contract/Bill.md)
     - DART
 		- [Recorder](/documents/modules/dart/recorder.md)
