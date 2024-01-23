@@ -39,7 +39,6 @@ import tagion.dart.DARTFakeNet;
 import tagion.dart.DARTRim;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBONtoText : decode, encodeBase64;
-import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile : Index;
