@@ -100,6 +100,15 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
     else static if (is(BaseT == enum) && isIntegral!(OriginalType!BaseT)) {
         enum type = Document.Value.asType!(OriginalType!BaseT);
     }
+    else static if (isIntegral!BaseT) {
+        static if (isSigned!BaseT) {
+            alias CommonT=Select!(isImplicitlyConvertible!(BaseT, int), int, long);
+        }
+        else {
+            alias CommonT=Select!(isImplicitlyConvertible!(BaseT, uint), uint, ulong);
+        }
+        enum type=Document.Value.asType!CommonT;
+    }
     else {
         enum type = Type.DOCUMENT;
     }
@@ -174,7 +183,6 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
         size_t number_of_elements;
         static if (isKey!KeyT) {
             const x_keys = x.keys.sort!((a, b) => less_than(a, b)).array;
-            pragma(msg, "keys ", typeof(keys));
             foreach (assoc_key; x_keys) {
                 build(buffer, assoc_key, x[assoc_key]);
                 number_of_elements++;
@@ -186,13 +194,6 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
                 }
 
             }
-            //pragma(msg, typeof(x_range.byPair.front));
-            //const sorted_pairs=x_range.byPair.array.sort!((a,b) => less_than(a.key, b.key));
-
-            // foreach(pair; sorted_pairs) {
-            //  build(buffer, pair.key, pair.value);  
-
-            //}
         }
         else static if (__traits(compiles, {KeyT x,y; const r=x<y;})) {
             const x_keys = x.keys.sort.array;
@@ -223,11 +224,11 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
                 immutable inner_data=(() @trusted => cast(immutable)inner_buffer.data[inner_start_index..$])();
                 elements~=Document(inner_data);
                 number_of_elements++;
-                const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
-                    number_of_elements_serialize;
-                if (estimated_require_size + start_index > buffer.capacity) {
-                    __write("assoc_key reserve %d", estimated_require_size + start_index);
-                    buffer.reserve(estimated_require_size + start_index);
+                const estimated_require_size = ((inner_buffer.data.length - inner_start_index) / 
+                number_of_elements + 1) *                    number_of_elements_serialize;
+                if (estimated_require_size + inner_start_index > inner_buffer.capacity) {
+                    __write("assoc_key reserve %d", estimated_require_size + inner_start_index);
+                    inner_buffer.reserve(estimated_require_size + inner_start_index);
                 }
 
                 
@@ -237,7 +238,6 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
             foreach(i, elm; ordred_elements) {
                 build(buffer, cast(uint)i, elm);
             }
-            //assert(0, "Not implemented yet");
         }
             emplace_buffer(buffer, start_index);
     }

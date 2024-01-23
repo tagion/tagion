@@ -1542,8 +1542,8 @@ unittest {
 
         { // Typedef of a HiBONRecord is used as key in an associative-array
             static struct KeyStruct {
-                int x;
                 string text;
+                int x;
                 alias enable_serialize = bool;
                 mixin HiBONRecord!(q{
                         this(int x, string text) {
@@ -1597,6 +1597,7 @@ unittest {
         // The fixed atttibute is used set a default i value in case the member was not defined in the Document
         static struct FixedStruct {
             @label("$x") @filter(q{a != 17}) @fixed(q{-1}) int x;
+                alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1606,6 +1607,16 @@ unittest {
             const s_doc = s.toDoc;
             const result = FixedStruct(s_doc);
             assert(result.x is 42);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            //writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
         }
 
         { // Because x=17 is filtered out the fixed -1 value will be set
@@ -1614,31 +1625,52 @@ unittest {
             const s_doc = s.toDoc;
             const result = FixedStruct(s_doc);
             assert(result.x is -1);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            //writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
         }
     }
 
     {
-        static struct ImpliciteTypes {
+        static struct ImplicitTypes {
             ushort u_s;
             short i_s;
             ubyte u_b;
             byte i_b;
+                alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
         { //
-            ImpliciteTypes s;
+            ImplicitTypes s;
             s.u_s = 42_000;
             s.i_s = -22_000;
             s.u_b = 142;
             s.i_b = -42;
 
             const s_doc = s.toDoc;
-            const result = ImpliciteTypes(s_doc);
+            const result = ImplicitTypes(s_doc);
             assert(result.u_s == 42_000);
             assert(result.i_s == -22_000);
             assert(result.u_b == 142);
             assert(result.i_b == -42);
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            //writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
         }
 
     }
