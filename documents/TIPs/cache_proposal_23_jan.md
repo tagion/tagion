@@ -20,4 +20,34 @@ A cache is also created which contains `DARTIndex[Document]` making the lookup o
 The current cache is changed so that instead of holding `Pubkey[TagionBill]` it contains `Pubkey[DARTIndex[]]` and acts as a cache layer on the `TRT`. Like the other cache it needs to update itself based on the recorder changes and create new trt requests.
 
 
-Diagram to follow
+
+# Performing a `hirpc.trt`
+
+```plantuml 
+@startuml
+
+actor User
+
+box "Shell" #LightBlue
+  participant "/api/dart" as API
+  box "Cache" #Red
+    participant "TRT Cache" as TrtCache
+    participant "DART archive cache" as DARTCache
+  end box
+end box
+
+box "Kernel" #LightGreen
+  participant "TRT" as TRT
+  participant "DART" as DART
+end box
+
+
+User -> API: Send HiRPC.trt request
+API -> TrtCache: Lookup pubkeys in cache
+TrtCache -> TRT: Pubkeys not found in cache are requested
+TRT -> TrtCache: DARTIndices returned
+TRTCache -> API
+API -> User: User retrieved list of DARTIndices
+
+@enduml
+```
