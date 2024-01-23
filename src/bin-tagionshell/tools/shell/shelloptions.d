@@ -15,8 +15,9 @@ struct ShellOptions {
     string shell_api_prefix;
     string contract_endpoint;
     string dart_endpoint;
-    string dartcache_endpoint;
     string tagion_subscription_addr;
+    string recorder_subscription_tag;
+    string recorder_subscription_task_prefix;
     string bullseye_endpoint;
     string i2p_endpoint;
     string sysinfo_endpoint;
@@ -26,16 +27,21 @@ struct ShellOptions {
     uint number_of_nodes;
     string contract_addr_prefix;
     string dart_addr_prefix;
+    uint sock_recvtimeout;
+    uint sock_connectretry;
+    uint dartcache_size;
+    double dartcache_ttl_msec;
 
     void setDefault() nothrow {
         contract_addr_prefix = "CONTRACT_";
         dart_addr_prefix = "DART_";
         shell_uri = "http://0.0.0.0:8080";
         tagion_subscription_addr = contract_sock_addr("SUBSCRIPTION_");
+        recorder_subscription_tag = "recorder";
+        recorder_subscription_task_prefix = "Node_0_";
         shell_api_prefix = "/api/v1";
         contract_endpoint = "/contract";
         dart_endpoint = "/dart";
-        dartcache_endpoint = "/dartcache";
         bullseye_endpoint = "/bullseye";
         i2p_endpoint = "/invoice2pay";
         sysinfo_endpoint = "/sysinfo";
@@ -43,6 +49,10 @@ struct ShellOptions {
         default_i2p_wallet = "./wallets/wallet1.json";
         default_i2p_wallet_pin = "0001";
         number_of_nodes = 5;
+        sock_recvtimeout = 10000;
+        sock_connectretry = 32;
+        dartcache_size = 4096;
+        dartcache_ttl_msec = 30.0;
     }
 
     /// Gives a new node address each time it is called

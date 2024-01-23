@@ -30,7 +30,8 @@ struct AccountDetails {
         import std.algorithm : countUntil, remove;
 
         const index = countUntil!"a.owner == b"(bills, pk);
-        if (index > 0) {
+        if (index >= 0) {
+            used_bills ~= bills[index];
             bills = bills.remove(index);
             return true;
         }
@@ -45,7 +46,10 @@ struct AccountDetails {
 
         auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
         const index = billsHashes.countUntil(billHash);
-        bills = bills.remove(index);
+        if (index >= 0) {
+            used_bills ~= bills[index];
+            bills = bills.remove(index);
+        }
     }
 
     void unlock_bill_by_hash(const(DARTIndex) billHash) {

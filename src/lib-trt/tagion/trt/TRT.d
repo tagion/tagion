@@ -90,6 +90,7 @@ unittest {
     import tagion.crypto.SecureNet;
     import std.format;
     import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBON : HiBON;
     import tagion.dart.DARTFakeNet;
     import tagion.wallet.SecureWallet;
     import tagion.script.TagionCurrency;
@@ -122,6 +123,10 @@ unittest {
     }
 
     auto factory = RecordFactory(net);
+
+    auto fake_hibon = new HiBON();
+    fake_hibon["key"] = "some string";
+    auto fake_index = net.dartIndex(Document(fake_hibon.serialize));
 
     auto initial_recorder = factory.recorder;
     initial_recorder.insert(bills, Archive.Type.ADD);
@@ -169,9 +174,8 @@ unittest {
 
         auto read_recorder = factory.recorder;
         read_recorder.insert(bills[0 .. count_read_bills].map!(b => TRTArchive(b.owner, [
-                    net.dartIndex(b), DARTIndex.init
+                    net.dartIndex(b), fake_index
                 ])), Archive.Type.ADD);
-
         createTRTUpdateRecorder(im_dart_recorder, read_recorder, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) - number_of_dummy_indices == im_dart_recorder.length,
@@ -189,7 +193,7 @@ unittest {
                 "Some bills are missing");
         }
 
-        assert(trt_archives.map!(a => a.indices.canFind(DARTIndex.init))
+        assert(trt_archives.map!(a => a.indices.canFind(fake_index))
                 .sum == number_of_dummy_indices, "Read indices are missing");
     }
 
@@ -200,7 +204,7 @@ unittest {
         auto read_recorder = factory.recorder;
         read_recorder.insert(im_dart_recorder[].map!(a => TagionBill(a.filed))
                 .map!(b => TRTArchive(b.owner, [
-                        net.dartIndex(b), DARTIndex.init
+                        net.dartIndex(b), fake_index
                     ])), Archive.Type.ADD);
 
         auto number_of_dummy_indices = im_dart_recorder.length;
@@ -222,7 +226,7 @@ unittest {
                 "Some bills are missing");
         }
 
-        assert(trt_archives.map!(a => a.indices.canFind(DARTIndex.init))
+        assert(trt_archives.map!(a => a.indices.canFind(fake_index))
                 .sum == number_of_dummy_indices, "Read indices are missing");
     }
 

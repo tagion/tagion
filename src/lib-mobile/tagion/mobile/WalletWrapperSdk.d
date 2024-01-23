@@ -252,18 +252,49 @@ extern (C) {
         immutable nftBuff = cast(immutable)(nftPtr[0 .. nftLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            auto nft = Document(nftBuff);
+            const doc = Document(nftBuff);
 
             SignedContract signed_contract;
-            const is_created = __wallet_storage.wallet.createNFT(nft, Document[].init, signed_contract);
-            if (is_created) {
-                const nftDocId = recyclerDoc.create(signed_contract.toDoc);
-                // Save wallet state to file.
-                __wallet_storage.write;
 
-                *signedContractPtr = nftDocId;
-                return 1;
+            try {
+                import tagion.hibon.HiBONRecord;
+
+                if (doc.getType == "createNFT") {
+                    const is_created = __wallet_storage.wallet.createNFT(doc, Document[].init, signed_contract);
+                    if (!is_created) {
+                        return 0;
+                    }
+
+                }
+                else if (doc.getType == "NFTTransfer") {
+                    auto script = doc["script"].get!Document;
+                    auto inputs = doc["inputs"].get!Document[].map!(e => e.get!Document).array;
+                    const is_created = __wallet_storage.wallet.createNFT(script, inputs, signed_contract);
+                    if (!is_created) {
+                        return 0;
+                    }
+                }
+                else {
+                    return 0;
+                }
             }
+            catch (Exception e) {
+                return 0;
+            }
+
+            const contract_net = __wallet_storage.wallet.net;
+            const hirpc = HiRPC(contract_net);
+            const contract = hirpc.submit(signed_contract);
+            const contract_doc = contract.toDoc;
+            const nftDocId = recyclerDoc.create(contract_doc);
+
+            // Save wallet state to file.
+            __wallet_storage.write;
+            version (NET_HACK) {
+                __wallet_storage.read;
+            }
+            *signedContractPtr = nftDocId;
+            return 1;
         }
         return 0;
     }
@@ -299,7 +330,9 @@ extern (C) {
             const contract_net = __wallet_storage.wallet.net;
             const hirpc = HiRPC(contract_net);
             const contract = hirpc.submit(signed_contract);
-            const contractDocId = recyclerDoc.create(contract.toDoc);
+            const contract_doc = contract.toDoc;
+            const contractDocId = recyclerDoc.create(contract_doc);
+            __wallet_storage.wallet.account.hirpcs ~= contract_doc;
             // Save wallet state to file.
             __wallet_storage.write;
             version (NET_HACK) {
@@ -611,6 +644,102 @@ extern (C) {
             }
         }
         return 0;
+    }
+
+    // DUMMY FUNCTION
+    uint get_history(uint from, uint count, uint32_t* historyId) {
+        version (WALLET_HISTORY_DUMMY) {
+            DummyHistGen hist_gen;
+
+            WHistory hist;
+            hist_gen.popFront();
+            hist.items = hist_gen.drop(from).take(count).array;
+
+            *historyId = recyclerDoc.create(hist.toDoc);
+        }
+        else {
+            WHistory hist;
+            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count).map!(i => WHistoryItem(i))
+                .array;
+            *historyId = recyclerDoc.create(hist.toDoc);
+        }
+
+        return 0;
+    }
+
+}
+
+import tagion.hibon.HiBONRecord;
+
+pragma(msg, "remove wrapper dummy history");
+struct WHistoryItem {
+    double amount;
+    double balance;
+    double fee;
+    int status;
+    int type;
+    sdt_t timestamp;
+    Pubkey pubkey;
+
+    mixin HiBONRecord!(q{
+        this(HistoryItem item) {
+            this.amount = item.bill.value.to!double;
+            this.pubkey = item.bill.owner;
+            this.balance = item.balance.to!double;
+            this.fee = item.fee.to!double;
+            this.type = item.type;
+        }
+    });
+}
+
+struct WHistory {
+    WHistoryItem[] items;
+    mixin HiBONRecord;
+}
+
+struct DummyHistGen {
+    import tagion.utils.Random;
+
+    enum max_length = 37;
+
+    Random!uint rnd = Random!uint(42);
+
+    WHistoryItem genHistItem() {
+        WHistoryItem hist_item;
+        with (hist_item) {
+            amount = rnd.value;
+            balance = rnd.value;
+            fee = rnd.value;
+            status = rnd.value % 2;
+            type = rnd.value % 2;
+            timestamp = currentTime();
+            pubkey = Pubkey().init;
+        }
+        return hist_item;
+    }
+
+    int i = 0;
+
+    bool empty() => i > max_length;
+    WHistoryItem _front;
+    void popFront() {
+        _front = genHistItem();
+        i++;
+    }
+
+    WHistoryItem front() => _front;
+}
+
+version (none) unittest {
+    import std.stdio;
+    import hj = tagion.hibon.HiBONJSON;
+
+    foreach (i; get_history(0, 5).items) {
+        hj.toPretty(i).writeln;
+    }
+    writeln;
+    foreach (i; get_history(36, 5).items) {
+        hj.toPretty(i).writeln;
     }
 }
 
