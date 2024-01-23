@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Display usage instructions
-usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-q <bills=50>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>] [-u <key filename=./keys>]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-q <bills=50>] [-k <network dir = ./network>]" 1>&2; exit 1; }
 
 # Initialize default values
 bdir=""
