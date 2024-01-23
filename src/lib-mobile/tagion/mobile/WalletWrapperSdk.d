@@ -673,9 +673,9 @@ extern (C) {
 import tagion.hibon.HiBONRecord;
 
 struct WHistoryItem {
-    TagionCurrency amount;
-    TagionCurrency balance;
-    TagionCurrency fee;
+    long amount;
+    long balance;
+    long fee;
     int status;
     int type;
     sdt_t timestamp;
@@ -683,10 +683,10 @@ struct WHistoryItem {
 
     mixin HiBONRecord!(q{
         this(HistoryItem item) {
-            this.amount = item.bill.value;
-            this.pubkey = item.bill.owner;
+            this.amount = cast(long)item.bill.value;
+            this.pubkey = cast(long)item.bill.owner;
             this.balance = item.balance;
-            this.fee = item.fee;
+            this.fee = cast(long)item.fee;
             this.type = item.type;
         }
     });
@@ -708,9 +708,9 @@ struct DummyHistGen {
     WHistoryItem genHistItem() {
         WHistoryItem hist_item;
         with (hist_item) {
-            amount = TagionCurrency(rnd.value);
-            balance = TagionCurrency(rnd.value);
-            fee = TagionCurrency(rnd.value);
+            amount = rnd.value;
+            balance = rnd.value;
+            fee = rnd.value;
             status = rnd.value % 2;
             type = rnd.value % 2;
             timestamp = currentTime();
