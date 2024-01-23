@@ -671,7 +671,6 @@ extern (C) {
 
 import tagion.hibon.HiBONRecord;
 
-pragma(msg, "remove wrapper dummy history");
 struct WHistoryItem {
     double amount;
     double balance;
@@ -697,6 +696,7 @@ struct WHistory {
     mixin HiBONRecord;
 }
 
+pragma(msg, "remove wrapper dummy history");
 struct DummyHistGen {
     import tagion.utils.Random;
 
@@ -728,19 +728,6 @@ struct DummyHistGen {
     }
 
     WHistoryItem front() => _front;
-}
-
-version (none) unittest {
-    import std.stdio;
-    import hj = tagion.hibon.HiBONJSON;
-
-    foreach (i; get_history(0, 5).items) {
-        hj.toPretty(i).writeln;
-    }
-    writeln;
-    foreach (i; get_history(36, 5).items) {
-        hj.toPretty(i).writeln;
-    }
 }
 
 unittest {
@@ -1015,6 +1002,20 @@ unittest {
         // Check the result
         assert(result == 1, "Expected result to be 1");
         assert(status == 0, "Expected status to be 0");
+    }
+
+    { // Check Wallet history
+        import std.stdio;
+        import tagion.mobile.DocumentWrapperApi;
+
+        uint32_t index;
+        get_history(0, 5, &index);
+
+        assert(&index !is null);
+        const(char*) jstr = doc_as_json(index);
+        assert(jstr !is null);
+
+        // writeln(fromStringz(jstr));
     }
 
     version (none) { // Remove bills by contract.
