@@ -658,15 +658,16 @@ extern (C) {
             *historyId = recyclerDoc.create(hist.toDoc);
         }
         else {
+            assert(__wallet_storage !is null, "The Wallet storage was not initialised");
+
             WHistory hist;
             hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count).map!(i => WHistoryItem(i))
                 .array;
             *historyId = recyclerDoc.create(hist.toDoc);
         }
 
-        return 0;
+        return 1;
     }
-
 }
 
 import tagion.hibon.HiBONRecord;
@@ -1009,7 +1010,7 @@ unittest {
         import tagion.mobile.DocumentWrapperApi;
 
         uint32_t index;
-        get_history(0, 5, &index);
+        assert(get_history(0, 5, &index) == 1);
 
         assert(&index !is null);
         const(char*) jstr = doc_as_json(index);
