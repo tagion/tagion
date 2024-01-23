@@ -13,6 +13,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONBase : ValueT;
 import tagion.hibon.HiBONException : HiBONRecordException;
 import tagion.hibon.HiBONJSON;
+import std.algorithm;
 
 alias DocResult = Tuple!(Document.Element.ErrorCode, "error", string, "key");
 
@@ -113,7 +114,7 @@ struct inspect {
  Used to set a member default value of the member is not defined in the Document
  +/
 struct fixed {
-    string code;
+    string code; /// This function is used to fix value
 }
 
 /++
@@ -121,7 +122,7 @@ struct fixed {
  +/
 struct recordType {
     string name;
-    string code; // This is is mixed after the Document constructor
+    string code; // This is mixed after the Document constructor
 }
 /++
  Gets the label for HiBON member
@@ -488,8 +489,6 @@ mixin template HiBONRecord(string CTOR = "") {
                         uint index;
                         const is_indices = doc.keys.all!((key) => is_index(key, index));
                         check(is_indices, format("Document is expected to be an array"));
-                        //result=iota(index+1).map!((i) => 
-                        //MemberU[] result;
                         result.length = index + 1;
                         foreach (e; doc[]) {
                             is_index(e.key, index);
@@ -602,7 +601,6 @@ mixin template HiBONRecord(string CTOR = "") {
                     static if (hasUDA!(this.tupleof[i], label)) {
                         alias label = GetLabel!(this.tupleof[i]);
                         enum name = label.name;
-                        //enum optional_flag = label.optional || hasUDA!(this.tupleof[i], optional);
                         static if (optional_flag) {
                             if (!doc.hasMember(name)) {
                                 continue ForeachTuple;
@@ -625,16 +623,16 @@ mixin template HiBONRecord(string CTOR = "") {
                             alias assigns = getUDAs!(this.tupleof[i], fixed);
                             static assert(assigns.length is 1,
                                     "Only one fixed UDA allowed per member");
-                            static assert(!optional_flag, "The optional parameter in label can not be used in connection with the fixed attribute");
+                            static assert(!optional_flag,
+                                    "The optional parameter in label can not be used in connection with the fixed attribute");
+
                             enum code = format(q{this.tupleof[i]=%s;}, assigns[0].code);
                             if (!doc.hasMember(name)) {
                                 mixin(code);
                                 continue ForeachTuple;
                             }
                         }
-                        enum member_name = this.tupleof[i].stringof;
                         alias MemberT = typeof(m);
-                        //alias BaseT = TypedefBase!MemberT;
                         alias BaseT = MemberT;
                         alias UnqualT = Unqual!BaseT;
                         static if (optional_flag) {
@@ -663,6 +661,7 @@ mixin template HiBONRecord(string CTOR = "") {
                             m = doc[name].get!BaseT;
                         }
                         else static if (Document.Value.hasType!BaseT) {
+                            //__write("name=%s BaseT=%s get=%s data=%s key=%s type=%s", name, BaseT.stringof, doc[name].get!BaseT, doc[name].data, doc[name].key, doc[name].type);
                             m = doc[name].get!BaseT;
                         }
                         else static if (is(BaseT == struct)) {
@@ -1170,7 +1169,7 @@ unittest {
     { // String array
         static struct StringArray {
             string[] texts;
-            alias enable_serialize=bool;
+            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1187,23 +1186,23 @@ unittest {
         const s_full_size = s.full_size;
         writefln("--- s.full_size=%d doc.full_size=%d", s_full_size, doc.full_size);
         assert(s_full_size == doc.full_size);
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc=%s", s_doc.toPretty);
-            assert(s_serialize == s_hibon_serialize);
+        const s_hibon = s.toHiBON;
+        const s_hibon_serialize = s_hibon.serialize;
+        const s_serialize = s._serialize;
+        writefln("s_hibon_serialize=%s", s_hibon_serialize);
+        writefln("s_serialize      =%s", s_serialize);
+        const s_hibon_doc = Document(s_hibon_serialize);
+        const s_doc = Document(s_serialize);
+        writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+        writefln("s_doc=%s", s_doc.toPretty);
+        assert(s_serialize == s_hibon_serialize);
     }
 
     { // Element as range
         @safe static struct Range(T) {
             alias UnqualT = Unqual!T;
             protected T[] array;
-            alias enable_serialize=bool;
+            alias enable_serialize = bool;
             @nogc this(T[] array) {
                 this.array = array;
             }
@@ -1237,7 +1236,7 @@ unittest {
             alias R = Range!T;
             @safe static struct StructWithRange {
                 R range;
-                alias enable_serialize=bool;
+                alias enable_serialize = bool;
                 static assert(isInputRange!R);
                 mixin HiBONRecord!(q{
                         this(T[] array) {
@@ -1286,24 +1285,24 @@ unittest {
 
                     const s_get = h["s"].get!StructWithRange;
                     assert(s == s_get);
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc      =%s", s_doc.toPretty);
-            assert(s_serialize == s_hibon_serialize);
- 
+                    const s_hibon = s.toHiBON;
+                    const s_hibon_serialize = s_hibon.serialize;
+                    const s_serialize = s._serialize;
+                    writefln("s_hibon_serialize=%s", s_hibon_serialize);
+                    writefln("s_serialize      =%s", s_serialize);
+                    const s_hibon_doc = Document(s_hibon_serialize);
+                    const s_doc = Document(s_serialize);
+                    writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+                    writefln("s_doc      =%s", s_doc.toPretty);
+                    assert(s_serialize == s_hibon_serialize);
+
                 }
             }
 
             {
                 static struct SimpleArray {
                     Simple[] array;
-                alias enable_serialize=bool;
+                    alias enable_serialize = bool;
                     mixin HiBONRecord;
                 }
 
@@ -1330,16 +1329,16 @@ unittest {
 
                     const s_result = SimpleArray(s_doc);
                     assert(s_result == s);
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
+                    const s_hibon = s.toHiBON;
+                    const s_hibon_serialize = s_hibon.serialize;
+                    const s_serialize = s._serialize;
+                    writefln("s_hibon_serialize=%s", s_hibon_serialize);
+                    writefln("s_serialize      =%s", s_serialize);
+                    const s_hibon_doc = Document(s_hibon_serialize);
+                    const s_doc_1 = Document(s_serialize);
+                    writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+                    writefln("s_doc      =%s", s_doc_1.toPretty);
+                    assert(s_serialize == s_hibon_serialize);
                 }
             }
         }
@@ -1347,7 +1346,7 @@ unittest {
         { // Jagged Array
             @safe static struct Jagged {
                 Simple[][] y;
-                alias enable_serialize=bool;
+                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1369,7 +1368,7 @@ unittest {
             assert(jagged_doc.toJSON.toString == format("%j", jagged));
 
             const jagged_hibon = jagged.toHiBON;
-            const jagged_hibon_serialize= jagged_hibon.serialize;
+            const jagged_hibon_serialize = jagged_hibon.serialize;
             const jagged_serialize = jagged._serialize;
             writefln("jagged_hibon_serialize=%s", jagged_hibon_serialize);
             writefln("jagged_serialize      =%s", jagged_serialize);
@@ -1384,7 +1383,7 @@ unittest {
         {
             @safe static struct Associative {
                 Simple[string] a;
-                alias enable_serialize=bool;
+                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1405,9 +1404,9 @@ unittest {
 
             assert(associative_doc.toJSON.toString == format("%j", associative));
 
-            const associative_hibon=associative.toHiBON;
-            const associative_hibon_serialize=associative_hibon.serialize;
-            const associative_serialize=associative._serialize;
+            const associative_hibon = associative.toHiBON;
+            const associative_hibon_serialize = associative_hibon.serialize;
+            const associative_serialize = associative._serialize;
             __write("associative_hibon_serialize=%s", associative_hibon_serialize);
             __write("associative_serialize      =%s", associative_serialize);
             const associative_hibon_doc = Document(associative_hibon_serialize);
@@ -1427,7 +1426,7 @@ unittest {
             { // Single enum
                 static struct CountStruct {
                     Count count;
-                alias enable_serialize=bool;
+                    alias enable_serialize = bool;
                     mixin HiBONRecord;
                 }
 
@@ -1439,22 +1438,22 @@ unittest {
 
                 assert(s == result);
                 assert(s_doc.toJSON.toString == format("%j", result));
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
+                const s_hibon = s.toHiBON;
+                const s_hibon_serialize = s_hibon.serialize;
+                const s_serialize = s._serialize;
+                writefln("s_hibon_serialize=%s", s_hibon_serialize);
+                writefln("s_serialize      =%s", s_serialize);
+                const s_hibon_doc = Document(s_hibon_serialize);
+                const s_doc_1 = Document(s_serialize);
+                writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+                writefln("s_doc      =%s", s_doc_1.toPretty);
+                assert(s_serialize == s_hibon_serialize);
             }
 
             { // Array of enum
                 static struct CountArray {
                     Count[] count;
-                alias enable_serialize=bool;
+                    alias enable_serialize = bool;
                     mixin HiBONRecord;
                 }
 
@@ -1466,16 +1465,16 @@ unittest {
 
                 assert(s == result);
                 assert(s_doc.toJSON.toString == format("%j", result));
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
+                const s_hibon = s.toHiBON;
+                const s_hibon_serialize = s_hibon.serialize;
+                const s_serialize = s._serialize;
+                writefln("s_hibon_serialize=%s", s_hibon_serialize);
+                writefln("s_serialize      =%s", s_serialize);
+                const s_hibon_doc = Document(s_hibon_serialize);
+                const s_doc_1 = Document(s_serialize);
+                writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+                writefln("s_doc      =%s", s_doc_1.toPretty);
+                assert(s_serialize == s_hibon_serialize);
             }
         }
 
@@ -1489,6 +1488,7 @@ unittest {
 
             static struct TextArray {
                 Text[] texts;
+                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1500,6 +1500,16 @@ unittest {
 
             assert(s == result);
             assert(s_doc.toJSON.toString == format("%j", result));
+            const s_hibon = s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            const s_serialize = s._serialize;
+            writefln("s_hibon_serialize=%s", s_hibon_serialize);
+            writefln("s_serialize      =%s", s_serialize);
+            const s_hibon_doc = Document(s_hibon_serialize);
+            const s_doc_1 = Document(s_serialize);
+            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
+            writefln("s_doc      =%s", s_doc_1.toPretty);
+            assert(s_serialize == s_hibon_serialize);
         }
 
     }
@@ -1688,9 +1698,17 @@ unittest {
         }
 
         Time expected_time;
-        expected_time.time = 12345678;
+        expected_time.time = 12_345_678;
         const doc = expected_time.toDoc;
         const result = Time(doc);
+        auto h = expected_time.toHiBON;
+
+        __write("doc=%s", doc);
+        __write("doc.data=%s len=%d full_size=%d", doc.data, doc.data.length, doc.full_size);
+        __write("result  =%s time=%s", result, result.time);
+        __write("expected=%s time=%s", expected_time, expected_time.time);
+        __write("keys=%s", h.keys);
+        __write("types=%s", h[].map!(m => m.type));
         assert(expected_time == result);
     }
 
@@ -1701,7 +1719,7 @@ unittest {
         }
 
         Times expected_times;
-        expected_times.times = [sdt_t(12345), sdt_t(23456), sdt_t(1345)];
+        expected_times.times = [sdt_t(12_345), sdt_t(23_456), sdt_t(1345)];
         const doc = expected_times.toDoc;
         const result = Times(doc);
         assert(expected_times == result);

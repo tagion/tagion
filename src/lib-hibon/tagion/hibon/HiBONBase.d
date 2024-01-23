@@ -70,7 +70,7 @@ void emplace_buffer(ref scope AppendBuffer buffer, const size_t start_index) pur
     const size_leb128 = LEB128.encode(buffer_size);
     buffer ~= size_leb128;
     if (buffer_size == 0) {
-    return;
+        return;
     }
     auto data = buffer.data;
     __write("start_index=%d buffer_size=%d buffer.data=%d", start_index, buffer_size, buffer.data.length);
@@ -88,23 +88,28 @@ if (is(Key : const(char[])) || is(Key == uint)) {
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : isHiBONRecord;
     import std.range;
+    import traits = std.traits;
 
-    alias BaseT = TypedefType!T;
-    static if (Document.Value.hasType!T) {
-        enum type = Document.Value.asType!T;
+    alias BaseT = TypedefBase!T;
+    pragma(msg, "Key ", Key, " T ", T, " BaseT ", BaseT, " isArray ", traits.isArray!BaseT);
+    static if (traits.isArray!BaseT) {
+        pragma(msg, "isArray ElementType ", ElementType!BaseT, " ForeachType ", ForeachType!BaseT);
     }
-    else static if(is(BaseT==enum) && isIntegral!(OriginalType!BaseT)) {
+    static if (Document.Value.hasType!BaseT) {
+        enum type = Document.Value.asType!BaseT;
+    }
+    else static if (is(BaseT == enum) && isIntegral!(OriginalType!BaseT)) {
         enum type = Document.Value.asType!(OriginalType!BaseT);
     }
     else {
         enum type = Type.DOCUMENT;
     }
     buildKey(buffer, type, key);
-    static if (is(T : U[], U) && (U.sizeof == ubyte.sizeof)) {
+    static if (traits.isArray!BaseT && (ForeachType!BaseT.sizeof == ubyte.sizeof)) {
         const leb128_size = LEB128.encode(x.length);
         buffer ~= leb128_size;
-        static if (isSomeString!T) {
-            buffer ~= x.representation;
+        static if (isSomeString!BaseT) {
+            buffer ~= (cast(BaseT) x).representation;
         }
         else {
             buffer ~= x;
@@ -116,12 +121,15 @@ if (is(Key : const(char[])) || is(Key == uint)) {
     else static if (is(BaseT : const BigNumber)) {
         buffer ~= x.serialize;
     }
-    else static if (is(BaseT==enum) && isIntegral!(OriginalType!BaseT)) {
+    else static if (is(BaseT == enum) && isIntegral!(OriginalType!BaseT)) {
         alias OriginalT = OriginalType!BaseT;
         buffer ~= LEB128.encode(cast(OriginalT) x);
     }
     else static if (isIntegral!BaseT) {
         buffer ~= LEB128.encode(cast(BaseT) x);
+    }
+    else static if (is(BaseT : const(sdt_t))) {
+        buffer ~= LEB128.encode(cast(TypedefType!sdt_t)x);
     }
     else static if (isHiBONRecord!BaseT) {
         static if (__traits(compiles, x._serialize(buffer))) {
@@ -138,7 +146,7 @@ if (is(Key : const(char[])) || is(Key == uint)) {
     else static if (isInputRange!BaseT) {
         alias ElementT = ElementType!BaseT;
         __write("isInputRange key=%s type=%s U[]=%s[]", key, type, ElementT.stringof);
-        auto x_range=(() @trusted => cast(Unqual!BaseT)x)();
+        auto x_range = (() @trusted => cast(Unqual!BaseT) x)();
         const number_of_elements_serialize = x_range.filter!(e => !e.isinit).count;
         //import tagion.hibon.HiBONSerialize : SupportingFullSizeFunction, element_size;
         pragma(msg, "ElementT ", ElementT, " supportes ", __traits(hasMember, ElementT, "element_size"));
@@ -151,7 +159,7 @@ if (is(Key : const(char[])) || is(Key == uint)) {
             const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
                 number_of_elements_serialize;
             if (estimated_require_size + start_index > buffer.capacity) {
-                __write("reserve %d", estimated_require_size+start_index);
+                __write("reserve %d", estimated_require_size + start_index);
                 buffer.reserve(estimated_require_size + start_index);
             }
 
@@ -160,38 +168,38 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         __write("buffer=%s number_of_elements=%d", buffer.data, number_of_elements);
     }
     else static if (isAssociativeArray!BaseT) {
-        const start_index=buffer.data.length;
-        const number_of_elements_serialize=x.length;
-        alias KeyT=KeyType!T;
-        alias ValueT=ValueType!T;
+        const start_index = buffer.data.length;
+        const number_of_elements_serialize = x.length;
+        alias KeyT = KeyType!T;
+        alias ValueT = ValueType!T;
         size_t number_of_elements;
         if (is(KeyT : const(char[])) || is(KeyT == uint)) {
             pragma(msg, typeof(x.byPair.front));
             //auto x_range=(() @trusted => cast(Unqual!ValueT[Unqual!KeyT])x);
             pragma(msg, "x.keys ", typeof(x.keys));
-            const x_keys=x.keys.sort!((a,b) => less_than(a,b)).array;
+            const x_keys = x.keys.sort!((a, b) => less_than(a, b)).array;
             pragma(msg, "keys ", typeof(keys));
-            foreach(assoc_key; x_keys) {
+            foreach (assoc_key; x_keys) {
                 build(buffer, assoc_key, x[assoc_key]);
-            number_of_elements++;
-            const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
-                number_of_elements_serialize;
-            if (estimated_require_size + start_index > buffer.capacity) {
-                __write("assoc_key reserve %d", estimated_require_size+start_index);
-                buffer.reserve(estimated_require_size + start_index);
-            }
+                number_of_elements++;
+                const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
+                    number_of_elements_serialize;
+                if (estimated_require_size + start_index > buffer.capacity) {
+                    __write("assoc_key reserve %d", estimated_require_size + start_index);
+                    buffer.reserve(estimated_require_size + start_index);
+                }
 
             }
             //pragma(msg, typeof(x_range.byPair.front));
             //const sorted_pairs=x_range.byPair.array.sort!((a,b) => less_than(a.key, b.key));
-           
+
             // foreach(pair; sorted_pairs) {
-             //  build(buffer, pair.key, pair.value);  
-                
+            //  build(buffer, pair.key, pair.value);  
+
             //}
-        emplace_buffer(buffer, start_index);
+            emplace_buffer(buffer, start_index);
         }
-        else {
+    else {
             /*
         const start_index=buffer.data.length;
         static if (is(Key
@@ -205,7 +213,6 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         }
     }
     else {
-       // __write("bin write key=%s type=%s T=%s", key, type, T.stringof);
         buffer.binwrite(x);
     }
 }
