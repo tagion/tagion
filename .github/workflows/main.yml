@@ -169,6 +169,31 @@ jobs:
           cp -r --parents logs/ $stacks ${{ env.ARTIFACT_DIR }}
           find . -mindepth 1 -delete
 
+  docker_build:
+    runs-on: ubuntu-latest
+    needs: [commit_stage]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t user/app:latest .
+        env:
+          DOCKER_BUILDKIT: 1
+
+      - name: Save Docker image as tarball
+        run: docker save user/app:latest -o tagion_image.tar
+
+      - name: Upload Docker image as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: tagion_docker_image
+          path: tagion_image.tar
+
+  
+
   add_logs:
     runs-on: CI
     if: failure()
