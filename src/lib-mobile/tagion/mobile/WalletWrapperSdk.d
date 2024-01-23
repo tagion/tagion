@@ -287,6 +287,7 @@ extern (C) {
             const contract = hirpc.submit(signed_contract);
             const contract_doc = contract.toDoc;
             const nftDocId = recyclerDoc.create(contract_doc);
+
             // Save wallet state to file.
             __wallet_storage.write;
             version (NET_HACK) {
@@ -670,6 +671,7 @@ extern (C) {
 
 import tagion.hibon.HiBONRecord;
 
+pragma(msg, "remove wrapper dummy history");
 struct WHistoryItem {
     double amount;
     double balance;
