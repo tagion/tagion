@@ -44,7 +44,7 @@ sequenceDiagram
   deactivate API
 ```
 
-# Performing a dartRead
+# Performing a `hirpc.dartRead`
 ```mermaid
 sequenceDiagram
   participant User as User
