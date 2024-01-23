@@ -11,13 +11,13 @@ The problem with the above idea, is in case that a user has many bills on a sing
 We introduce a new method called `hirpc.trt` (And also deprecate `hirpc.search` which goal is to return all `DARTIndices` for a specifc public key. This will greatly reduce the overall response since a `DARTIndices` is only `32` bytes.
 
 1. The user sends a `hirpc.trt` request on all their public keys and gets all dartindices back where archives were found from the TRT ("or cache"). 
-2. The user checks for bills in their bill[] on the responded dartindexs. If some bills are found in their bill[] but were not in the response, the bill is no longer in the system and has been deleted. Likewise if some bills are not found in their bill[] but were found in their response he might have received further payment.
+2. The user checks for bills in their bill[] on the responded dartindexs. If some bills are found in their bill[] but were not in the response, the bill is no longer in the system and has been deleted. Likewise if some bills are not found in their bill[] but were found in their response the user might have received further payment.
 3. The user takes the public keys which were not found in the bill[] but in the response, and performs a `hirpc.dartRead` only on the indices that are neccesary to read (new archives).
-4. The user is returned the new found archives which he was the owner of. 
+4. The user is returned the new found archives which the user was the owner of. 
 
 
-A cache is also created which contains `DARTIndex[Document]` making the lookup on a index very fast and acts as a cache layer on the `DART`.
-The current cache is changed so that instead of holding `Pubkey[TagionBill]` it contains `Pubkey[DARTIndex[]]` and acts as a cache layer on the `TRT`. Like the other cache it needs to update itself based on the recorder changes and create new trt requests.
+A cache is also created which contains `Document[DARTIndex]` making the lookup on a index very fast and acts as a cache layer on the `DART`.
+The current cache is changed so that instead of holding `TagionBill[Pubkey]` it contains `DARTIndex[][Pubkey]` and acts as a cache layer on the `TRT`. Like the other cache it needs to update itself based on the recorder changes and create new trt requests.
 
 
 
