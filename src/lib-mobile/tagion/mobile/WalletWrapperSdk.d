@@ -683,10 +683,10 @@ struct WHistoryItem {
 
     mixin HiBONRecord!(q{
         this(HistoryItem item) {
-            this.amount = cast(long)item.bill.value;
-            this.pubkey = cast(long)item.bill.owner;
-            this.balance = item.balance;
-            this.fee = cast(long)item.fee;
+            this.amount = item.bill.value.units;
+            this.pubkey = item.bill.owner;
+            this.balance = item.balance.units;
+            this.fee = item.fee.units;
             this.type = item.type;
         }
     });
