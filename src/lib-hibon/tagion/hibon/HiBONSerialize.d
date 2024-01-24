@@ -52,6 +52,7 @@ template isHiBONArray(T) {
 }
 
 //enum estimate_size = "estimate_size"; /// method to estimae the size of document serialized 
+version(none)
 template isHiBONAssociativeArray(T) {
     import tagion.hibon.HiBONBase;
     import traits = std.traits;
@@ -86,7 +87,7 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
         }
         else static if (isAssociativeArray!U) {
             alias KeyT = KeyType!U;
-            enum Ok = isIntegral!KeyT || is(KeyT : const(char[]));
+            enum Ok = isKey!KeyT;
             enum InnerSupportFullSize = Ok;
 
         }
@@ -167,14 +168,20 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                             .sum;
                         return type_key_size + array_size + LEB128.calc_size(array_size);
                     }
-                    else static if (isHiBONAssociativeArray!BaseU && !isSpecialKeyType!BaseU) {
+                    else static if (isAssociativeArray!BaseU) {
+                        alias ValueT=ValueType!BaseU;
+                        alias KeyT=KeyType!BaseU;
                         import std.algorithm : filter;
-
-                        const array_size = x.byKeyValue
-                            .filter!(pair => pair.value !is pair.value.init)
-                            .map!(pair => calcSize(pair.value, Document.sizeKey(pair.key)))
-                            .sum;
-                        return array_size + LEB128.calc_size(array_size);
+                        static if (isKey!KeyT) {
+                            const array_size = x.byKeyValue
+                                .filter!(pair => pair.value !is pair.value.init)
+                                .map!(pair => calcSize(pair.value, Document.sizeKey(pair.key)))
+                                .sum;
+                        }
+                        else {
+                            const array_size=0; // not know
+                        }
+                        return type_key_size+array_size + LEB128.calc_size(array_size);
 
                     }
                     else static if (isHiBONRecord!BaseU) {
@@ -201,7 +208,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                                 .canFind(type), isInputRange!(Unqual!BaseU)));
                     }
                 }
-                //else static if (__traits(compiles, BaseT, "_serialize"
                 else {
                     assert(0, format("%s HiBONType=%s not supported by %s Type=%s", T.stringof, type, __FUNCTION__, isHiBONBaseType(
                             type)));
@@ -264,15 +270,12 @@ mixin template Serialize() {
     import tagion.basic.Types;
     import tagion.basic.basic : isinit;
 
-    //import tagion.hibon.HiBONBase;
     import tagion.hibon.HiBONBase : HiBONType = Type, isHiBONBaseType, is_index, emplace_buffer;
-    import tagion.hibon.HiBONSerialize : isHiBONAssociativeArray;
     import tagion.basic.Debug;
     import traits = std.traits;
     import std.array;
     import LEB128 = tagion.utils.LEB128;
 
-    ///    static if (SupportingFullSizeFunction!This) {
     static if (__traits(hasMember, This, "enable_serialize")) {
         void _serialize(ref scope Appender!(ubyte[]) buf) const pure {
             import std.algorithm;
@@ -303,7 +306,7 @@ mixin template Serialize() {
                     buf_append(buf, this.tupleof[index], key);
                 }
             }
-            //version(none)
+
             static if (hasUDA!(This, recordType)) {
                 enum record = getUDAs!(This, recordType)[0];
                 buf_append(buf, record.name, TYPENAME);
@@ -324,7 +327,7 @@ mixin template Serialize() {
             _serialize(buf);
             const size_leb128 = LEB128.encode(start_index);
             auto data = buf.data;
-           emplace_buffer(buf, start_index); 
+            emplace_buffer(buf, start_index);
             return buf.data;
         }
     }
