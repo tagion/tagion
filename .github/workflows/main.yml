@@ -182,6 +182,7 @@ jobs:
       - run: nix build .#dockerImage
 
       - uses: actions/upload-artifact@v3
+        needs: [acceptance_stage]
         with:
           name: tagion_docker
           path: result
