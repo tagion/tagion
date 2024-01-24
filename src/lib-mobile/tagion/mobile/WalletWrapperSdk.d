@@ -658,24 +658,24 @@ extern (C) {
             *historyId = recyclerDoc.create(hist.toDoc);
         }
         else {
+            assert(__wallet_storage !is null, "The Wallet storage was not initialised");
+
             WHistory hist;
             hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count).map!(i => WHistoryItem(i))
                 .array;
             *historyId = recyclerDoc.create(hist.toDoc);
         }
 
-        return 0;
+        return 1;
     }
-
 }
 
 import tagion.hibon.HiBONRecord;
 
-pragma(msg, "remove wrapper dummy history");
 struct WHistoryItem {
-    double amount;
-    double balance;
-    double fee;
+    long amount;
+    long balance;
+    long fee;
     int status;
     int type;
     sdt_t timestamp;
@@ -683,10 +683,10 @@ struct WHistoryItem {
 
     mixin HiBONRecord!(q{
         this(HistoryItem item) {
-            this.amount = item.bill.value.to!double;
+            this.amount = item.bill.value.units;
             this.pubkey = item.bill.owner;
-            this.balance = item.balance.to!double;
-            this.fee = item.fee.to!double;
+            this.balance = item.balance.units;
+            this.fee = item.fee.units;
             this.type = item.type;
         }
     });
@@ -697,6 +697,7 @@ struct WHistory {
     mixin HiBONRecord;
 }
 
+pragma(msg, "remove wrapper dummy history");
 struct DummyHistGen {
     import tagion.utils.Random;
 
@@ -728,19 +729,6 @@ struct DummyHistGen {
     }
 
     WHistoryItem front() => _front;
-}
-
-version (none) unittest {
-    import std.stdio;
-    import hj = tagion.hibon.HiBONJSON;
-
-    foreach (i; get_history(0, 5).items) {
-        hj.toPretty(i).writeln;
-    }
-    writeln;
-    foreach (i; get_history(36, 5).items) {
-        hj.toPretty(i).writeln;
-    }
 }
 
 unittest {
@@ -1015,6 +1003,20 @@ unittest {
         // Check the result
         assert(result == 1, "Expected result to be 1");
         assert(status == 0, "Expected status to be 0");
+    }
+
+    { // Check Wallet history
+        import std.stdio;
+        import tagion.mobile.DocumentWrapperApi;
+
+        uint32_t index;
+        assert(get_history(0, 5, &index) == 1);
+
+        assert(&index !is null);
+        const(char*) jstr = doc_as_json(index);
+        assert(jstr !is null);
+
+        // writeln(fromStringz(jstr));
     }
 
     version (none) { // Remove bills by contract.

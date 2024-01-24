@@ -22,7 +22,7 @@ public static Recycle!Document recyclerDoc;
 
 enum {
     BAD_RESULT = 0,
-    OK_RESULT =1,
+    OK_RESULT = 1,
 }
 
 string[] parse_string(const char* str, const uint len) {
@@ -83,12 +83,11 @@ extern (C) {
 
     export int32_t doc_get_int_by_id_(const uint32_t doc_id, const uint32_t index, int* result) {
         if (recyclerDoc(doc_id).hasMember(index)) {
-            *result=recyclerDoc(doc_id)[index].get!int;
-            return OK_RESULT;    
+            *result = recyclerDoc(doc_id)[index].get!int;
+            return OK_RESULT;
         }
         return BAD_RESULT;
     }
-
 
     /// Getting the int value from Document by string key
     export int32_t doc_get_int_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
@@ -99,10 +98,18 @@ extern (C) {
         return BAD_RESULT;
     }
     /// Getting the ulong value from Document by string key
-    export int64_t doc_get_ulong_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
+    export uint64_t doc_get_ulong_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
             return recyclerDoc(doc_id)[key].get!ulong;
+        }
+        return BAD_RESULT;
+    }
+    /// Getting the long value from Document by string key
+    export int64_t doc_get_long_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
+        immutable key = cast(immutable)(key_str[0 .. len]);
+        if (recyclerDoc(doc_id).hasMember(key)) {
+            return recyclerDoc(doc_id)[key].get!long;
         }
         return BAD_RESULT;
     }
@@ -119,14 +126,13 @@ extern (C) {
     export uint32_t doc_get_str_by_id_(const uint32_t doc_id, const uint32_t index, const(char)** result_str, uint32_t* result_len) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             string str = recyclerDoc(doc_id)[index].get!string;
-        pragma(msg, "str.ptr ", typeof(str.ptr), " result_str ", typeof(result_str));
-            *result_str=cast(const(char)*)str.ptr;
-            *result_len=cast(uint32_t)str.length;
+            pragma(msg, "str.ptr ", typeof(str.ptr), " result_str ", typeof(result_str));
+            *result_str = cast(const(char)*) str.ptr;
+            *result_len = cast(uint32_t) str.length;
             return OK_RESULT;
         }
         return BAD_RESULT;
     }
-
 
     /// getting the string value from Document by string key
     /// It uses UF-16 codding

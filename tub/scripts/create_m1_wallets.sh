@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Display usage instructions
-usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-q <bills=50>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>] [-u <key filename=./keys>]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-q <bills=50>] [-k <network dir = ./network>]" 1>&2; exit 1; }
 
 # Initialize default values
 bdir=""
@@ -45,7 +45,7 @@ mkdir -p "$ndir"
 all_infos=""
 
 # Create wallets in a loop
-for ((i = 0; i <= nodes; i++)); 
+for ((i = 0; i <= nodes-1; i++)); 
 do
   # Set up wallet directory and configuration
   node_dir="$ndir/node$i"
@@ -118,7 +118,6 @@ echo "TRT file $trtfilename"
 echo "Run the network this way:"
 
 # Loop to initialize and modify nodes
-echo "Run the network this way:"
 for ((i = 0; i <= nodes-1; i++)); 
 do
     node_dir="$ndir/node$i"
@@ -137,9 +136,9 @@ do
            --option=inputvalidator.sock_addr:abstract://CONTRACT_NEUEWELLE_$i \
            --option=dart_interface.sock_addr:abstract://DART_NEUEWELLE_$i \
            --option=subscription.address:abstract://SUBSCRIPTION_NEUEWELLE_$i \
-           --option=node_interface.node_address:"tcp://\*:$((10700+i))"
+           --option=node_interface.node_address:"tcp://0.0.0.0:$((10700+i))" 2&> /dev/null
     )
 
-    echo "$bdir/neuewelle $node_dir/tagionwave.json"
+    echo 'echo' "$(printf "%04d" $i)" '|' "$bdir/neuewelle" "$node_dir/tagionwave.json" '&'
 
 done

@@ -64,24 +64,27 @@ void writeit(A...)(A a) {
     stdout.flush();
 }
 
-string dump_exception_recursive(Throwable t, string tag = "", string kind = "html") {
+enum ExceptionFormat {
+    PLAIN,
+    HTML
+};
+
+string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat kind = ExceptionFormat.HTML) {
     string[] res;
     switch(kind){
-    case "html":
+    case ExceptionFormat.HTML:
         res ~= format("\r\n<h2>Exception caught in TagionShell %s %s</h2>\r\n", Clock.currTime().toSimpleString(), tag);
-        do {
+        foreach(t; ex) {
             res ~= format("<code>\r\n<h3>%s [%d]: %s </h3>\r\n<pre>\r\n%s\r\n</pre>\r\n</code>\r\n", 
-                t.file, t.line, t.msg, t.info);
+                t.file, t.line, t.message(), t.info);
         }
-        while ((t = t.next) !is null);
         break;
-    case "plain":
+    case ExceptionFormat.PLAIN:
     default:
         res ~= format("\r\nException caught in TagionShell %s %s\r\n", Clock.currTime().toSimpleString(), tag);
-        do {
-            res ~= format("%s [%d]: %s \r\n%s\r\n", t.file, t.line, t.msg, t.info);
+        foreach(t; ex) {
+            res ~= format("%s [%d]: %s \r\n%s\r\n", t.file, t.line, t.message(), t.info);
         }
-        while ((t = t.next) !is null);
         break;
     }
     return join(res, "\r\n");
@@ -92,14 +95,14 @@ void dart_worker(ShellOptions opt) {
     int attempts = 0;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
     const net = new StdHashNet();
-    s.recvtimeout = msecs(10000);
+    s.recvtimeout = msecs(opt.sock_recvtimeout);
     s.subscribe(opt.recorder_subscription_tag);
     writeit("DS: subscribed");
     while (true) {
         rc = s.dial(opt.tagion_subscription_addr);
         if (rc == 0)
             break;
-        enforce(++attempts < 32, "Couldn`t connect the subscription socket");    
+        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");    
     }
     scope (exit) {
         s.close;
@@ -144,7 +147,7 @@ void dart_worker(ShellOptions opt) {
             }            
         }
         catch (Throwable e) {
-            writeit(dump_exception_recursive(e, "worker: dartcache", "plain"));
+            writeit(dump_exception_recursive(e, "worker: dartcache", ExceptionFormat.PLAIN));
             continue;
         }
     }
@@ -154,6 +157,7 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
     try {
         int rc;
+        int attempts = 0;
         ShellOptions* opt = cast(ShellOptions*) ctx;
         if (req.type != "application/octet-stream") {
             rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
@@ -165,12 +169,13 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
 
         writeit(format("WH: contract: with %d bytes for %s", req.rawdata.length, contract_addr));
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = msecs(10000);
+        s.recvtimeout = msecs(opt.sock_recvtimeout * 6);
         writeit(format("WH: contract: trying to dial %s", contract_addr));
         while (true) {
             rc = s.dial(contract_addr);
             if (rc == 0)
                 break;
+            enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");    
         }
         scope (exit) {
             s.close();
@@ -198,7 +203,7 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
-        rep.msg = e.msg;
+        rep.msg = e.message().idup;
         rep.text = dump_exception_recursive(e, "handler: contract");
         return;
     }
@@ -210,10 +215,13 @@ HiRPC.Receiver get_bullseye(string dart_addr) {
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
 
     int rc;
+    int attempts = 0;
+
     while (true) {
         rc = s.dial(dart_addr);
         if (rc == 0)
             break;
+        enforce(++attempts < 32, "Couldn`t connect the subscription socket"); // TODO: consider sharing opt
     }
     scope (exit) {
         s.close();
@@ -233,6 +241,8 @@ HiRPC.Receiver get_bullseye(string dart_addr) {
 static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
     try {
+        int attempts = 0;
+
         ShellOptions* opt = cast(ShellOptions*) ctx;
 
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -242,6 +252,7 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
             rc = s.dial(opt.node_dart_addr);
             if (rc == 0)
                 break;
+            enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");                    
         }
         scope (exit) {
             s.close();
@@ -280,7 +291,7 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
-        rep.msg = e.msg;
+        rep.msg = e.message().idup;
         rep.text = dump_exception_recursive(e, "handler: bullseye.json");
         return;
     }
@@ -290,7 +301,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
     try {
         int rc;
-        size_t nfound = 0, nreceived = 0, nattempt = 0;
+        size_t nfound = 0, nreceived = 0, attempts = 0;
         bool usecache = true;
         const size_t buflen = 1048576;
         ubyte[1048576] buf;
@@ -307,17 +318,6 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
         if(req.path[$-1] == "nocache")
             usecache = false;
         
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = 60_000.msecs;
-        while (true) {
-            rc = s.dial(opt.node_dart_addr);
-            if (rc == 0)
-                break;
-            enforce(++nattempt < 32, "Couldn`t connect the kernel socket");
-        }
-        scope (exit) {
-            s.close();
-        }
 
         SecureNet net = new StdSecureNet();
         net.generateKeyPair("very_secret");
@@ -357,6 +357,18 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
             if (!owner_pkeys.empty) {
                 auto dreq = new HiBON;
                 dreq = owner_pkeys;
+                
+                NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+                s.recvtimeout = msecs(opt.sock_recvtimeout);
+                while (true) {
+                    rc = s.dial(opt.node_dart_addr);
+                    if (rc == 0)
+                        break;
+                    enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
+                }
+                scope (exit) {
+                    s.close();
+                }
 
                 rc = s.send(cast(ubyte[])(hirpc.search(dreq).toDoc.serialize));
 
@@ -417,6 +429,18 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
 
         }else{
             
+            NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+            s.recvtimeout = msecs(opt.sock_recvtimeout);
+            while (true) {
+                rc = s.dial(opt.node_dart_addr);
+                if (rc == 0)
+                    break;
+                enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
+            }
+            scope (exit) {
+                s.close();
+            }
+            
             rc = s.send(req.rawdata);
             if (rc != 0) {
                 writeit("dart_handler: error on send: ", nng_errstr(rc));
@@ -455,7 +479,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
-        rep.msg = e.msg;
+        rep.msg = e.message().idup;
         rep.text = dump_exception_recursive(e, "handler: dart");
         return;
     }
@@ -570,7 +594,7 @@ static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
-        rep.msg = e.msg;
+        rep.msg = e.message().idup;
         rep.text = dump_exception_recursive(e, "handler: i2p");
         return;
     }
@@ -588,7 +612,7 @@ static void sysinfo_handler(WebData* req, WebData* rep, void* ctx) {
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
-        rep.msg = e.msg;
+        rep.msg = e.message().idup;
         rep.text = dump_exception_recursive(e, "handler: sysinfo");
         return;
     }
@@ -700,7 +724,7 @@ static void selftest_handler(WebData* req, WebData* rep, void* ctx) {
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
         rep.type = "text/html";
-        rep.msg = e.msg;
+        rep.msg = e.message().idup;
         rep.text = dump_exception_recursive(e, "handler: selftest");
         return;
     }
@@ -731,7 +755,7 @@ int _main(string[] args) {
         );
     }
     catch (GetOptException e) {
-        stderr.writeit(e.msg);
+        stderr.writeit(e.message().idup);
         return 1;
     }
 
@@ -762,11 +786,7 @@ int _main(string[] args) {
         return 0;
     }
 
-    // hardcode just for test - TODO: move to options
-    immutable uint dcache_size = 4096;
-    immutable double dcache_ttl = 30.0;
-
-    dcache = new shared(DartCache)(null, dcache_size, dcache_ttl);
+    dcache = new shared(DartCache)(null, cast(immutable)options.dartcache_size, cast(immutable)options.dartcache_ttl_msec);
 
     auto ds_tid = spawn(&dart_worker, options);
 

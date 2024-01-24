@@ -27,6 +27,10 @@ struct ShellOptions {
     uint number_of_nodes;
     string contract_addr_prefix;
     string dart_addr_prefix;
+    uint sock_recvtimeout;
+    uint sock_connectretry;
+    uint dartcache_size;
+    double dartcache_ttl_msec;
 
     void setDefault() nothrow {
         contract_addr_prefix = "CONTRACT_";
@@ -45,6 +49,10 @@ struct ShellOptions {
         default_i2p_wallet = "./wallets/wallet1.json";
         default_i2p_wallet_pin = "0001";
         number_of_nodes = 5;
+        sock_recvtimeout = 10000;
+        sock_connectretry = 32;
+        dartcache_size = 4096;
+        dartcache_ttl_msec = 30.0;
     }
 
     /// Gives a new node address each time it is called
