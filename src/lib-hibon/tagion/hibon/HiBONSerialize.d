@@ -116,7 +116,13 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
 }
 
 import tagion.basic.Debug;
-
+/**
+ * Calculates the full_size of the if T support the size calculation 
+ * Params:
+ *   x = HiBON data type 
+ * Returns: 
+ *   size in bytes 
+*/
 size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     import std.functional : unaryFun;
     import tagion.hibon.HiBONRecord : exclude, optional, filter, isHiBONRecord, GetLabel, recordType, isSpecialKeyType;
@@ -177,12 +183,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                                 .filter!(pair => pair.value !is pair.value.init)
                                 .map!(pair => calcSize(pair.value, Document.sizeKey(pair.key)))
                                 .sum;
-                        }
-                        else {
-                            const array_size=0; // not know
-                        }
                         return type_key_size+array_size + LEB128.calc_size(array_size);
-
+                        }
                     }
                     else static if (isHiBONRecord!BaseU) {
                         return type_key_size + x.full_size;
@@ -197,7 +199,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
 
                     }
                     else static if (isInputRange!(Unqual!BaseU)) {
-                        pragma(msg, "inputRange ", BaseU);
+                        static assert(0, format("%s isInputRange not supported", BaseU.stringof, isInputRange.stringof));
                     }
                     else {
                         static assert(0, format("%s not supported -- %s %s -> %s %s  is range %s", type,
@@ -255,13 +257,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     return result;
 }
 
-void buf_append(U, Key)(ref scope AppendBuffer buf, in U x, Key key) pure {
-    import tagion.hibon.HiBONRecord : isHiBONRecord;
-
-    alias BaseT = TypedefBase!U;
-    enum type = Document.Value.asType!BaseT;
-    build(buf, key, x);
-}
 
 mixin template Serialize() {
     import std.algorithm;
@@ -270,7 +265,7 @@ mixin template Serialize() {
     import tagion.basic.Types;
     import tagion.basic.basic : isinit;
 
-    import tagion.hibon.HiBONBase : HiBONType = Type, isHiBONBaseType, is_index, emplace_buffer;
+    import tagion.hibon.HiBONBase : HiBONType = Type, isHiBONBaseType, is_index, emplace_buffer, build;
     import tagion.basic.Debug;
     import traits = std.traits;
     import std.array;
@@ -303,13 +298,13 @@ mixin template Serialize() {
                     }
                 }
                 static if (!exclude_flag) {
-                    buf_append(buf, this.tupleof[index], key);
+                    build(buf, key, this.tupleof[index]);
                 }
             }
 
             static if (hasUDA!(This, recordType)) {
                 enum record = getUDAs!(This, recordType)[0];
-                buf_append(buf, record.name, TYPENAME);
+                build(buf, TYPENAME, record.name);
             }
 
             static foreach (key; This.keys) {

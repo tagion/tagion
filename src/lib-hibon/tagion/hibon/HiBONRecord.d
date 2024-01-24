@@ -1443,18 +1443,6 @@ check_serialize(s, doc);
                 assert(s == result);
                 assert(s_doc.toJSON.toString == format("%j", result));
                 check_serialize(s, s_doc);
-                /*
-                const s_hibon = s.toHiBON;
-                const s_hibon_serialize = s_hibon.serialize;
-                const s_serialize = s._serialize;
-                writefln("s_hibon_serialize=%s", s_hibon_serialize);
-                writefln("s_serialize      =%s", s_serialize);
-                const s_hibon_doc = Document(s_hibon_serialize);
-                const s_doc_1 = Document(s_serialize);
-                writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-                writefln("s_doc      =%s", s_doc_1.toPretty);
-                assert(s_serialize == s_hibon_serialize);
-                */
             }
 
             { // Array of enum
@@ -1473,18 +1461,6 @@ check_serialize(s, doc);
                 assert(s == result);
                 assert(s_doc.toJSON.toString == format("%j", result));
                 check_serialize(s, s_doc);
-                /*
-                const s_hibon = s.toHiBON;
-                const s_hibon_serialize = s_hibon.serialize;
-                const s_serialize = s._serialize;
-                writefln("s_hibon_serialize=%s", s_hibon_serialize);
-                writefln("s_serialize      =%s", s_serialize);
-                const s_hibon_doc = Document(s_hibon_serialize);
-                const s_doc_1 = Document(s_serialize);
-                writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-                writefln("s_doc      =%s", s_doc_1.toPretty);
-                assert(s_serialize == s_hibon_serialize);
-                */    
             }
         }
 
@@ -1511,18 +1487,6 @@ check_serialize(s, doc);
             assert(s == result);
             assert(s_doc.toJSON.toString == format("%j", result));
             check_serialize(s, s_doc);
-            /*
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
-            */
         }
 
     }
@@ -1543,7 +1507,6 @@ check_serialize(s, doc);
 
             write(buf, args);
         }
-        //        alias binwrite=assumeTrusted!(bitmanip.write!Buffer);
         { // Typedef on HiBON.type is used as key in an associative-array
             alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
             alias Tabel = int[Bytes];
@@ -1569,33 +1532,8 @@ check_serialize(s, doc);
             s.tabel = tabel;
             const s_doc = s.toDoc;
             const result = StructBytes(s_doc);
-            /*
-            assert(
-                    equal(
-                    list
-                    .map!((i) { binwrite(buffer, i, 0); return tuple(buffer.idup, i); })
-                    .array
-                    .sort,
-                    s_doc["tabel"]
-                    .get!Document[]
-                    .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-            ));
-            */
-            //writefln("--- ---- ----");
             assert(s_doc == result.toDoc);
             check_serialize(s, s_doc);
-            /*
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
-            */
         }
 
         { // Typedef of a HiBONRecord is used as key in an associative-array
@@ -1635,21 +1573,8 @@ check_serialize(s, doc);
                     a => a.get!Document[0].get!Document.serialize).array.isStrictlyMonotonic);
 
             const result = StructKeys(s_doc);
-            //assert(result == s);
             assert(result.toDoc == s.toDoc);
             check_serialize(s, s_doc);
-            /*
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            //writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
-            */
         }
     }
 
@@ -1668,18 +1593,6 @@ check_serialize(s, doc);
             const result = FixedStruct(s_doc);
             assert(result.x is 42);
             check_serialize(s, s_doc);
-            /*
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            //writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
-            */
         }
 
         { // Because x=17 is filtered out the fixed -1 value will be set
@@ -1689,18 +1602,6 @@ check_serialize(s, doc);
             const result = FixedStruct(s_doc);
             assert(result.x is -1);
             check_serialize(s, s_doc);
-            /*
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            //writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
-            */
         }
     }
 
@@ -1728,18 +1629,6 @@ check_serialize(s, doc);
             assert(result.u_b == 142);
             assert(result.i_b == -42);
             check_serialize(s, s_doc);
-            /*
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            //writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
-            */
         }
 
     }
@@ -1771,18 +1660,6 @@ check_serialize(s, doc);
                     a_uint.a.byPair.array.sort!key_sort)
             );
             check_serialize(a_uint, a_toDoc);
-            /*
-            const a_uint_hibon = a_uint.toHiBON;
-            const a_uint_hibon_serialize = a_uint_hibon.serialize;
-            const a_uint_serialize = a_uint._serialize;
-            writefln("a_uint_hibon_serialize=%s", a_uint_hibon_serialize);
-            writefln("a_uint_serialize      =%s", a_uint_serialize);
-            const a_uint_hibon_doc = Document(a_uint_hibon_serialize);
-            const a_uint_doc_1 = Document(a_uint_serialize);
-            writefln("a_uint_hibon_doc=%s", a_uint_hibon_doc.toPretty);
-            writefln("a_uint_doc      =%s", a_uint_doc_1.toPretty);
-            assert(a_uint_serialize == a_uint_hibon_serialize);
-            */
         }
 
         { // This store as a list of Document arrays [[ int, string]...] because 
@@ -1801,18 +1678,6 @@ check_serialize(s, doc);
                     a_int.a.byPair.array.sort!key_sort)
             );
             check_serialize(a_int, a_toDoc);
-            /*
-            const a_int_hibon = a_int.toHiBON;
-            const a_int_hibon_serialize = a_int_hibon.serialize;
-            const a_int_serialize = a_int._serialize;
-            writefln("a_int_hibon_serialize=%s", a_int_hibon_serialize);
-            writefln("a_int_serialize      =%s", a_int_serialize);
-            const a_int_hibon_doc = Document(a_int_hibon_serialize);
-            const a_int_doc_1 = Document(a_int_serialize);
-            writefln("a_int_hibon_doc=%s", a_int_hibon_doc.toPretty);
-            writefln("a_int_doc      =%s", a_int_doc_1.toPretty);
-            assert(a_int_serialize == a_int_hibon_serialize);
-            */
         }
     }
 }
