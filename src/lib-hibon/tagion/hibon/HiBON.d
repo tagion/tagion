@@ -454,19 +454,20 @@ static size_t size(U)(const(U[]) array) pure {
      x = parameter value
      key = member key
      +/
-    void opIndexAssign(T)(T x, const string key) if (isHiBON!T) {
+    void opIndexAssign(T, BaseT = TypedefType!T)(T x, const string key) if (isHiBON!(BaseT)) {
         opIndexAssign(x.toHiBON, key);
     }
 
-    void opIndexAssign(T)(T x, const string key) if (isHiBONTypeArray!T) {
+    void opIndexAssign(T, BaseT = TypedefType!T)(T x, const string key) if (isHiBONTypeArray!(BaseT)) {
         auto h = new HiBON;
-        foreach (v_key, v; x) {
+        foreach (v_key, v; cast(BaseT) x) {
             h[v_key] = x;
         }
         h[key] = h;
     }
 
-    void opIndexAssign(T)(T x, const string key) @trusted if (!isHiBON!T && !isHiBONRecord!T && !isHiBONTypeArray!T) {
+    void opIndexAssign(T, BaseT = TypedefType!T)(T x, const string key) @trusted
+            if (!isHiBON!BaseT && !isHiBONRecord!BaseT && !isHiBONTypeArray!BaseT) {
 
         
 

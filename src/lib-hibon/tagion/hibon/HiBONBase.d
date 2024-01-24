@@ -102,12 +102,12 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
     }
     else static if (isIntegral!BaseT) {
         static if (isSigned!BaseT) {
-            alias CommonT=Select!(isImplicitlyConvertible!(BaseT, int), int, long);
+            alias CommonT = Select!(isImplicitlyConvertible!(BaseT, int), int, long);
         }
         else {
-            alias CommonT=Select!(isImplicitlyConvertible!(BaseT, uint), uint, ulong);
+            alias CommonT = Select!(isImplicitlyConvertible!(BaseT, uint), uint, ulong);
         }
-        enum type=Document.Value.asType!CommonT;
+        enum type = Document.Value.asType!CommonT;
     }
     else {
         enum type = Type.DOCUMENT;
@@ -195,11 +195,12 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
 
             }
         }
-        else static if (__traits(compiles, {KeyT x,y; const r=x<y;})) {
+        /*
+        else static if (__traits(compiles, { KeyT x, y; const r = x < y; })) {
             const x_keys = x.keys.sort.array;
-            foreach ( i, assoc_key; x_keys) {
-                buildKey(buffer, Type.DOCUMENT, cast(uint)i);
-                const inner_start_index=buffer.data.length;
+            foreach (i, assoc_key; x_keys) {
+                buildKey(buffer, Type.DOCUMENT, cast(uint) i);
+                const inner_start_index = buffer.data.length;
                 build(buffer, uint(0), assoc_key);
                 build(buffer, uint(1), x[assoc_key]);
                 emplace_buffer(buffer, inner_start_index);
@@ -213,33 +214,36 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
 
             }
         }
-        else {
+    */
+    else {
             Document[] elements;
             AppendBuffer inner_buffer;
-            foreach(inner_key, inner_value; x) {
-                const inner_start_index=inner_buffer.data.length;
+            foreach (inner_key, inner_value; x) {
+                const inner_start_index = inner_buffer.data.length;
                 build(inner_buffer, uint(0), inner_key);
                 build(inner_buffer, uint(1), inner_value);
                 emplace_buffer(inner_buffer, inner_start_index);
-                immutable inner_data=(() @trusted => cast(immutable)inner_buffer.data[inner_start_index..$])();
-                elements~=Document(inner_data);
+                immutable inner_data = (() @trusted => cast(immutable) inner_buffer.data[inner_start_index .. $])();
+                elements ~= Document(inner_data);
                 number_of_elements++;
-                const estimated_require_size = ((inner_buffer.data.length - inner_start_index) / 
-                number_of_elements + 1) *                    number_of_elements_serialize;
+                const estimated_require_size = ((inner_buffer.data.length - inner_start_index) /
+                        number_of_elements + 1) * number_of_elements_serialize;
                 if (estimated_require_size + inner_start_index > inner_buffer.capacity) {
                     __write("assoc_key reserve %d", estimated_require_size + inner_start_index);
                     inner_buffer.reserve(estimated_require_size + inner_start_index);
                 }
 
-                
             }
-            const ordred_elements=elements.sort!((a,b) => a[0].data < b[0].data).array;
-            buffer.reserve(ordred_elements.map!(doc => doc.full_size+uint.sizeof).sum);
-            foreach(i, elm; ordred_elements) {
-                build(buffer, cast(uint)i, elm);
+            elements.sort!((a, b) => a.data < b.data);
+            buffer.reserve(elements.map!(doc => doc.full_size + uint.sizeof).sum);
+            __write("dump %s", key);
+            elements.map!(doc => doc.data)
+                .each!(data => __write("%(%02x%)", data));
+            foreach (i, elm; elements) {
+                build(buffer, cast(uint) i, elm);
             }
         }
-            emplace_buffer(buffer, start_index);
+        emplace_buffer(buffer, start_index);
     }
     else {
         buffer.binwrite(x);
