@@ -121,7 +121,13 @@
           os = "linux";
           arch = "x86_64";
         };
-        contents = [ self.packages.x86_64-linux.default];
+        copyToRoot = pkgs.buildEnv {
+          name = "image-root";
+          paths = [ self.packages.x86_64-linux.default ];
+          pathsToLink = [ "/bin" ];
+        };
+
+        # contents = [ self.packages.x86_64-linux.default];
         config = {
           Cmd = [ "/bin/sh" ];
           Env = [];
