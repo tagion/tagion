@@ -1413,14 +1413,6 @@ unittest { // Bugfix (Length of document should fail) document length error
         const doc = Document(data);
         assert(doc.valid == Document.Element.ErrorCode.NONE);
     }
-    /*
-    const sub_doc_full_size=doc["a"].get!Document.full_size;
-    const doc_pretty=doc.toPretty;
-    const doc_a_data = doc["a"].get!Document;
-    writefln("#### #### #### #### %s", doc.data);
-    writefln("#### #### #### #### %s", doc_a_data.data);
-    writefln("Fail code %s  %d doc=%s sub_doc.full_size=%d", doc_valid, data.length, doc_pretty, sub_doc_full_size);
-    */
 }
 
 @safe

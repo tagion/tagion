@@ -826,16 +826,6 @@ unittest {
             assert(!isRecord!SimpleLabel(docS));
             assert(docS.full_size == s.full_size);
             check_serialize(s, docS);
-            /*
-            const s_serialize = s._serialize;
-            
-            const h = s.toHiBON;
-            const hibon_serialize = h.serialize;
-            assert(docS.full_size == s_serialize.length);
-            assert(hibon_serialize.length == s_serialize.length);
-
-            assert(hibon_serialize == s_serialize);
-            */
         }
 
         {
@@ -852,15 +842,6 @@ unittest {
             immutable s_imut = SimpleLabel(docS);
             assert(s_imut == s_check);
             check_serialize(s, docS);
-            /*
-            const s_serialize = s._serialize;
-            assert(docS.full_size == s.full_size);
-            assert(docS.full_size == s_serialize.length);
-            const h = s.toHiBON;
-            const hibon_serialize = h.serialize;
-            assert(hibon_serialize.length == s_serialize.length);
-            assert(hibon_serialize == s_serialize);
-            */
         }
 
         {
@@ -874,18 +855,6 @@ unittest {
             immutable s_imut = BasicData(docS);
             assert(s_imut == s_check);
             check_serialize(s, docS);
-            /*
-            assert(docS.full_size == s.full_size);
-            const s_serialize = s._serialize;
-            assert(docS.full_size == s_serialize.length);
-            const h = s.toHiBON;
-            const hibon_serialize = h.serialize;
-            assert(hibon_serialize.length == s_serialize.length);
-            writefln("hibon_serialize=%s", hibon_serialize);
-            writefln("s._serialize   =%s", s_serialize);
-            writefln("key index=%s", Simple.GetTupleIndex!"s");
-            assert(hibon_serialize == s_serialize);
-*/
         }
     }
 
@@ -999,8 +968,6 @@ unittest {
         const s_dont_filter_xy_serialize = s_dont_filter_xy._serialize;
         const s_dont_filter_xy_hibon_serialize = s_dont_filter_xy.toHiBON.serialize;
         assert(s_dont_filter_xy_serialize == s_dont_filter_xy_hibon_serialize);
-        // writefln("docS=\n%s", s_dont_filter_xy.toDoc.toJSON(true).toPrettyString);
-        // writefln("docS=\n%s", s_filter_y.toDoc.toJSON(true).toPrettyString);
         {
             const check_s_filter_x = NotBothFilter(s_filter_x_doc);
             assert(check_s_filter_x == s_filter_x);
@@ -1014,8 +981,6 @@ unittest {
             assertThrown!HiBONRecordException(NotBothNoFilter(s_dont_filter_xy_doc));
             assertThrown!HiBONRecordException(NotBothFilter(s_dont_filter_doc));
             assertThrown!HiBONRecordException(NotBothFilter(s_dont_filter_xy_doc));
-            //            const x=NotBothFilter(s_dont_filter_xy_doc);
-            //            const x=NotBothNoFilter(s_dont_filter_xy_doc)
         }
 
         {
@@ -1024,16 +989,6 @@ unittest {
             const s_filter_not_42 = NotBothFilter(s_filter_42_doc);
             assert(s_filter_not_42 == NotBothFilter(12, int.init));
         }
-        // const s_no_filter_x=NotBothNoFilter(11, int.init);
-        // const s_no_filter_y=NotBothNoFilter(int.init, 13);
-        // const s_dont_no_filter=NotBothNoFilter();
-        // const s_dont_no_filter_xy=NotBothNoFilter(11, 13);
-
-        // writefln("docS=\n%s", s_no_filter_x.toDoc.toJSON(true).toPrettyString);
-        // writefln("docS=\n%s", s_no_filter_y.toDoc.toJSON(true).toPrettyString);
-        // writefln("docS=\n%s", s_dont_no_filter.toDoc.toJSON(true).toPrettyString);
-        // writefln("docS=\n%s", s_dont_no_filter_xy.toDoc.toJSON(true).toPrettyString);
-
     }
 
     {
@@ -1056,14 +1011,6 @@ unittest {
         assert(doc.toJSON.toString == format("%j", s_converted));
         assert(doc.toJSON.toPrettyString == format("%J", s_converted));
         check_serialize(s, doc);
-        /*
-        assert(s.full_size == doc.full_size);
-
-        const s_converted_hibon = s_converted.toHiBON;
-        const s_converted_hibon_serialize = s_converted_hibon.serialize;
-        const s_converted_serialize = s_converted._serialize;
-        assert(s_converted_serialize == s_converted_hibon_serialize);
-*/
     }
 
     {
@@ -1091,12 +1038,6 @@ unittest {
             assert(doc.toJSON.toPrettyString == format("%J", s_converted));
         })();
         check_serialize(s, doc);
-        /*
-        const s_converted_hibon = s_converted.toHiBON;
-        const s_converted_hibon_serialize = s_converted_hibon.serialize;
-        const s_converted_serialize = s_converted._serialize;
-        assert(s_converted_serialize == s_converted_hibon_serialize);
-        */
     }
 
     {
@@ -1132,19 +1073,6 @@ unittest {
             assert(doc.toJSON.toString == format("%j", result));
 
             check_serialize(s, doc);
-            /*
-            auto h = s.toHiBON;
-            const s_full_size = s.full_size;
-         
-            assert(s_full_size == doc.full_size);
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc = Document(s_serialize);
-            assert(s_serialize == s_hibon_serialize);
-        */
         }
         {
             s.a = [17, int.init, 42];
@@ -1154,16 +1082,6 @@ unittest {
             assert(s == result);
             assert(doc.toJSON.toString == format("%j", result));
 check_serialize(s, doc);
-            /*
-            const s_full_size = s.full_size;
-            assert(s_full_size == doc.full_size);
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc = Document(s_serialize);
-            assert(s_serialize == s_hibon_serialize);
-*/
         }
     }
 
@@ -1182,16 +1100,6 @@ check_serialize(s, doc);
         assert(s == result);
         assert(doc.toJSON.toString == format("%j", result));
         check_serialize(s, doc);
-        /*
-        const s_full_size = s.full_size;
-        assert(s_full_size == doc.full_size);
-        const s_hibon = s.toHiBON;
-        const s_hibon_serialize = s_hibon.serialize;
-        const s_serialize = s._serialize;
-        const s_hibon_doc = Document(s_hibon_serialize);
-        const s_doc = Document(s_serialize);
-        assert(s_serialize == s_hibon_serialize);
-    */
     }
 
     { // Element as range
@@ -1256,18 +1164,6 @@ check_serialize(s, doc);
             assert(s_doc == s);
             assert(doc.toJSON.toString == format("%j", s));
             check_serialize(s, doc);
-            /*
-            const s_hibon = s.toHiBON;
-            const s_hibon_serialize = s_hibon.serialize;
-            const s_serialize = s._serialize;
-            writefln("s_hibon_serialize=%s", s_hibon_serialize);
-            writefln("s_serialize      =%s", s_serialize);
-            const s_hibon_doc = Document(s_hibon_serialize);
-            const s_doc_1 = Document(s_serialize);
-            writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-            writefln("s_doc      =%s", s_doc_1.toPretty);
-            assert(s_serialize == s_hibon_serialize);
-            */
         }
 
         { // Range of structs
@@ -1286,18 +1182,6 @@ check_serialize(s, doc);
                     const doc_s_get=s_get.toDoc;
                     assert(s == s_get);
                     check_serialize(s, doc_s_get);
-                    /*
-                    const s_hibon = s.toHiBON;
-                    const s_hibon_serialize = s_hibon.serialize;
-                    const s_serialize = s._serialize;
-                    writefln("s_hibon_serialize=%s", s_hibon_serialize);
-                    writefln("s_serialize      =%s", s_serialize);
-                    const s_hibon_doc = Document(s_hibon_serialize);
-                    const s_doc = Document(s_serialize);
-                    writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-                    writefln("s_doc      =%s", s_doc.toPretty);
-                    assert(s_serialize == s_hibon_serialize);
-                    */
                 }
             }
 
@@ -1332,18 +1216,6 @@ check_serialize(s, doc);
                     const s_result = SimpleArray(s_doc);
                     assert(s_result == s);
                     check_serialize(s, s_doc);
-                    /*
-                    const s_hibon = s.toHiBON;
-                    const s_hibon_serialize = s_hibon.serialize;
-                    const s_serialize = s._serialize;
-                    writefln("s_hibon_serialize=%s", s_hibon_serialize);
-                    writefln("s_serialize      =%s", s_serialize);
-                    const s_hibon_doc = Document(s_hibon_serialize);
-                    const s_doc_1 = Document(s_serialize);
-                    writefln("s_hibon_doc=%s", s_hibon_doc.toPretty);
-                    writefln("s_doc      =%s", s_doc_1.toPretty);
-                    assert(s_serialize == s_hibon_serialize);
-                */
                 }
             }
         }
@@ -1372,18 +1244,6 @@ check_serialize(s, doc);
 
             assert(jagged_doc.toJSON.toString == format("%j", jagged)); 
             check_serialize(jagged, jagged_doc);
-            /*
-            const jagged_hibon = jagged.toHiBON;
-            const jagged_hibon_serialize = jagged_hibon.serialize;
-            const jagged_serialize = jagged._serialize;
-            writefln("jagged_hibon_serialize=%s", jagged_hibon_serialize);
-            writefln("jagged_serialize      =%s", jagged_serialize);
-            const jagged_hibon_doc = Document(jagged_hibon_serialize);
-            const jagged_doc_1 = Document(jagged_serialize);
-            writefln("jagged_hibon_doc=%s", jagged_hibon_doc.toPretty);
-            writefln("jagged_doc      =%s", jagged_doc_1.toPretty);
-            assert(jagged_serialize == jagged_hibon_serialize);
-*/
         }
 
         {
@@ -1410,14 +1270,6 @@ check_serialize(s, doc);
 
             assert(associative_doc.toJSON.toString == format("%j", associative));
             check_serialize(associative, associative_doc);
-            /*
-            const associative_hibon = associative.toHiBON;
-            const associative_hibon_serialize = associative_hibon.serialize;
-            const associative_serialize = associative._serialize;
-            const associative_hibon_doc = Document(associative_hibon_serialize);
-            const associative_serialize_doc = Document(associative_serialize);
-            assert(associative_hibon_serialize == associative_serialize);
-        */
         }
 
         { // Test of enum
