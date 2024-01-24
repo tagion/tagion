@@ -171,7 +171,7 @@ jobs:
 
   docker_build:
     runs-on: ubuntu-latest
-    # needs: [commit_stage]
+    needs: [commit_stage]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -182,7 +182,6 @@ jobs:
       - run: nix build .#dockerImage
 
       - uses: actions/upload-artifact@v3
-        needs: [acceptance_stage]
         with:
           name: tagion_docker
           path: result
