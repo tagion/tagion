@@ -288,7 +288,7 @@ struct HistoryItem {
     TagionCurrency balance;
     ContractStatus status;
     mixin HiBONRecord!(q{
-        this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0, ContractStatus status = ContractStatus.succeeded) pure {
+        this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0, ContractStatus status = ContractStatus.succeeded) pure nothrow {
             this.type = type;
             this.bill = bill;
             this.fee = fee;
@@ -311,4 +311,34 @@ struct Invoice {
 struct Invoices {
     Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
+}
+
+import tagion.dart.Recorder;
+import tagion.communication.HiRPC;
+
+struct AccountManager {
+    private AccountDetails _details;
+
+    const details() => _details;
+
+    alias total = _details.total;
+    alias available = _details.available;
+    alias locked = _details.locked;
+    alias history = _details.history;
+
+    void send_hirpc(HiRPC.Sender hirpc) {
+        // ~= hirpcs
+        // lock bills
+    }
+
+    void reject_hirpc() {
+        // -= hirpcs
+        // unlock bills
+    }
+
+    // Update
+    void update(RecordFactory.Recorder recorder) {
+        // Add new bills
+        // move locked bills to used bills if' its output of pending hirpc.
+    }
 }

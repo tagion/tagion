@@ -449,6 +449,19 @@ struct SecureWallet(Net : SecureNet) {
         account.activated.clear;
     }
 
+    const(HiRPC.Sender) createSubmit(SignedContract signed_contract, bool sent = true) {
+        const message = _net.calcHash(signed_contract);
+        const contract_net = _net.derive(message);
+        const hirpc = HiRPC(contract_net);
+        const hirpc_submit = hirpc.submit(signed_contract);
+
+        if (sent) {
+            account.hirpcs ~= hirpc_submit.toDoc;
+        }
+
+        return hirpc_submit;
+    }
+
     /**
      * Creates HiRPC to request an wallet update
      * Returns: The command to the the update
