@@ -312,18 +312,6 @@ mixin template HiBONRecord(string CTOR = "") {
                 }
                 order_list.sort!((a, b) => a.doc.data < b.doc.data);
                 result = order_list.map!(order => order.hibon);
-                debug {
-                    import tagion.hibon.HiBONJSON;
-                    import std.algorithm;
-                    import std.stdio;
-
-                    writefln("------ %s -------", L.stringof);
-                    order_list.map!(order => order.doc.data)
-                        .each!(data => writefln("%(%02x%)\n", data));
-                }
-
-                //alias 
-                //auto pair_list=range.byKeyValue.map!(
             }
             return result;
         }
@@ -479,12 +467,6 @@ mixin template HiBONRecord(string CTOR = "") {
             }
             static R toList(R)(const Document doc) {
                 import core.lifetime : copyEmplace;
-
-                static if (isAssociativeArray!R) {
-                    alias _KeyT = KeyType!R;
-                    __write("toList R=%s isKey=%s isSpecialKeyType=%s", R.stringof, isKey!_KeyT.stringof, isSpecialKeyType!_KeyT
-                            .stringof);
-                }
                 alias MemberU = ForeachType!(R);
                 alias BaseU = TypedefBase!MemberU;
                 static if (isArray!R) {
@@ -504,17 +486,14 @@ mixin template HiBONRecord(string CTOR = "") {
                             MemberU elm = e.get!MemberU;
                             (() @trusted => copyEmplace(elm, result[index]))();
                         }
-                        //result = (() @trusted => cast(MemberU[]) _result)();
                     }
                     enum do_foreach = false;
                 }
                 else static if (isSpecialKeyType!R) {
-                    __write("R=%s", R.stringof);
                     R result;
                     enum do_foreach = true;
                 }
                 else static if (isAssociativeArray!R) {
-                    __write("isAssociativeArray R=%s", R.stringof);
                     alias ValueT = ForeachType!R;
                     alias KeyT = KeyType!R;
                     static if (isKey!KeyT) {
@@ -611,7 +590,6 @@ mixin template HiBONRecord(string CTOR = "") {
                 }
             }
 
-            //alias ThisTuple = typeof(ThisType.tupleof);
             ForeachTuple: foreach (i, ref m; this.tupleof) {
                 static if (__traits(compiles, typeof(m))) {
                     enum default_name = FieldNameTuple!This[i];
@@ -758,7 +736,6 @@ unittest {
     static assert(Simple.GetTupleIndex!"s" == 0);
     static assert(Simple.GetTupleIndex!"text" == 1);
     static assert(Simple.GetTupleIndex!"not defined" == -1);
-    pragma(msg, "StaticMap ", AliasSeq!(Simple.keys));
     @recordType("SIMPLELABEL") static struct SimpleLabel {
         @label("TEXT") string text;
         @label("$S") int s;

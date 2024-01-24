@@ -956,10 +956,6 @@ static size_t size(U)(const(U[]) array) pure {
             const doc = Document(data);
 
             {
-                // //                writefln(`doc["int"].type=%d`, doc["int"].type);
-                //                 writeln("-------------- --------------");
-                //                 auto test=doc["int"];
-                //                 writeln("-------------- get  --------------");
                 assert(doc["int"].get!int  is 42);
             }
 

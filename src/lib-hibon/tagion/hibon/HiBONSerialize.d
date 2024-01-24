@@ -132,8 +132,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                 static foreach (E; EnumMembers!Type) {
             case E:
                     static if (isHiBONBaseType(E)) {
-                        //   pragma(msg, "E ", E, " U ", BaseU, " isHiBONBaseType!E ", isHiBONBaseType(E));
-                        //  return element_size(x, key_size);
                         static if (only(INT32, INT64, UINT32, UINT64).canFind(type)) {
                             return type_key_size + LEB128.calc_size(cast(BaseU) x);
                         }
@@ -227,7 +225,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
             enum filter_flag = hasUDA!(T.tupleof[i], filter);
             static if (!exclude_flag) {
                 enum label = GetLabel!(T.tupleof[i]);
-                //__write("lable = %s", label.name);
                 const key_size = Document.sizeKey(label.name);
                 bool include_size = true;
                 static if (filter_flag) {
@@ -257,8 +254,6 @@ void buf_append(U, Key)(ref scope AppendBuffer buf, in U x, Key key) pure {
 
     alias BaseT = TypedefBase!U;
     enum type = Document.Value.asType!BaseT;
-
-    __write("%s key=%s type=%s", __FUNCTION__, key, type);
     build(buf, key, x);
 }
 
@@ -293,7 +288,6 @@ mixin template Serialize() {
                 enum index = GetTupleIndex!key;
                 enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
                 enum filter_flag = hasUDA!(This.tupleof[index], filter);
-                __write("key=%s index=%d exclude_flag=%s filter_flag=%s", key, index, exclude_flag, filter_flag);
                 static if (filter_flag) {
                     alias filters = getUDAs!(this.tupleof[index], filter);
                     static foreach (F; filters) {
@@ -307,8 +301,6 @@ mixin template Serialize() {
                 }
                 static if (!exclude_flag) {
                     buf_append(buf, this.tupleof[index], key);
-                    __write("this.tupleof[index]=%s %s key=%s", this.tupleof[index], Fields!This[index].stringof, key);
-                    __write("buf_append         =%s", buf.data);
                 }
             }
             //version(none)
@@ -327,27 +319,12 @@ mixin template Serialize() {
             static if (SupportingFullSizeFunction!(This)) {
                 const reserve_size = full_size(this);
                 buf.reserve(reserve_size);
-                __write("reserve_size=%d", reserve_size);
             }
             const start_index = buf.data.length;
             _serialize(buf);
             const size_leb128 = LEB128.encode(start_index);
-           // buf ~= size_leb128;
             auto data = buf.data;
-            __write("_serialize buf before clean buffer_size=%d ",  start_index);
            emplace_buffer(buf, start_index); 
-    /*            
-(() @trusted {
-                import core.stdc.string : memcpy;
-
-                memcpy(&data[size_leb128.length], &data[0], buffer_size);
-                memcpy(&data[0], &size_leb128[0], size_leb128.length);
-            })();
-    */
-            //__write("size_leb128.length=%d data.length=%d", size_leb128.length, data.length);
-            //__write("data=%x buf.data=%x %d capacity=%d data.capacity=%d size_leb128=%s", &data[0], &(buf.data[0]), data
-             //   .length, buf.capacity, data.capacity, size_leb128);
-            __write("_serialize %s", buf.data);
             return buf.data;
         }
     }

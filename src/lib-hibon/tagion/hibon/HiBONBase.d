@@ -15,7 +15,7 @@ import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
 import std.algorithm;
 import tagion.basic.basic : isinit;
-import tagion.basic.Debug;
+//import tagion.basic.Debug;
 
 @safe:
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
@@ -37,7 +37,6 @@ void binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
 
         append!(BaseT, Endian.littleEndian)(buffer, cast(BaseT) value);
     }
-    //    __write("binwrite %s value=%s %s %s", buffer.data, value, is(T==enum), BaseT.stringof);
 }
 /++
  Helper function to serialize an array of the type T of a HiBON
@@ -73,7 +72,6 @@ void emplace_buffer(ref scope AppendBuffer buffer, const size_t start_index) pur
         return;
     }
     auto data = buffer.data;
-    __write("start_index=%d buffer_size=%d buffer.data=%d", start_index, buffer_size, buffer.data.length);
     (() @trusted {
         import core.stdc.string : memcpy;
 
@@ -90,10 +88,6 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
     import traits = std.traits;
 
     alias BaseT = TypedefBase!T;
-    pragma(msg, "Key ", Key, " T ", T, " BaseT ", BaseT, " isArray ", traits.isArray!BaseT);
-    static if (traits.isArray!BaseT) {
-        pragma(msg, "isArray ElementType ", ElementType!BaseT, " ForeachType ", ForeachType!BaseT);
-    }
     static if (Document.Value.hasType!BaseT) {
         enum type = Document.Value.asType!BaseT;
     }
@@ -153,27 +147,21 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
     }
     else static if (isInputRange!BaseT) {
         alias ElementT = ElementType!BaseT;
-        __write("isInputRange key=%s type=%s U[]=%s[]", key, type, ElementT.stringof);
         auto x_range = (() @trusted => cast(Unqual!BaseT) x)();
         const number_of_elements_serialize = x_range.filter!(e => !e.isinit).count;
-        //import tagion.hibon.HiBONSerialize : SupportingFullSizeFunction, element_size;
-        pragma(msg, "ElementT ", ElementT, " supportes ", __traits(hasMember, ElementT, "element_size"));
         const start_index = buffer.data.length;
         size_t number_of_elements;
         foreach (pair; x_range.enumerate.filter!(pair => !pair.value.isinit)) {
             build(buffer, cast(uint) pair.index, pair.value);
-            __write("pair=%s %d capacity=%d", pair, buffer.data.length, buffer.capacity);
             number_of_elements++;
             const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
                 number_of_elements_serialize;
             if (estimated_require_size + start_index > buffer.capacity) {
-                __write("reserve %d", estimated_require_size + start_index);
                 buffer.reserve(estimated_require_size + start_index);
             }
 
         }
         emplace_buffer(buffer, start_index);
-        __write("buffer=%s number_of_elements=%d", buffer.data, number_of_elements);
     }
     else static if (isAssociativeArray!BaseT) {
         const start_index = buffer.data.length;
@@ -189,32 +177,11 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
                 const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
                     number_of_elements_serialize;
                 if (estimated_require_size + start_index > buffer.capacity) {
-                    __write("assoc_key reserve %d", estimated_require_size + start_index);
                     buffer.reserve(estimated_require_size + start_index);
                 }
 
             }
         }
-        /*
-        else static if (__traits(compiles, { KeyT x, y; const r = x < y; })) {
-            const x_keys = x.keys.sort.array;
-            foreach (i, assoc_key; x_keys) {
-                buildKey(buffer, Type.DOCUMENT, cast(uint) i);
-                const inner_start_index = buffer.data.length;
-                build(buffer, uint(0), assoc_key);
-                build(buffer, uint(1), x[assoc_key]);
-                emplace_buffer(buffer, inner_start_index);
-                number_of_elements++;
-                const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
-                    number_of_elements_serialize;
-                if (estimated_require_size + start_index > buffer.capacity) {
-                    __write("assoc_key reserve %d", estimated_require_size + start_index);
-                    buffer.reserve(estimated_require_size + start_index);
-                }
-
-            }
-        }
-    */
     else {
             Document[] elements;
             AppendBuffer inner_buffer;
@@ -229,16 +196,12 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
                 const estimated_require_size = ((inner_buffer.data.length - inner_start_index) /
                         number_of_elements + 1) * number_of_elements_serialize;
                 if (estimated_require_size + inner_start_index > inner_buffer.capacity) {
-                    __write("assoc_key reserve %d", estimated_require_size + inner_start_index);
                     inner_buffer.reserve(estimated_require_size + inner_start_index);
                 }
 
             }
             elements.sort!((a, b) => a.data < b.data);
             buffer.reserve(elements.map!(doc => doc.full_size + uint.sizeof).sum);
-            __write("dump %s", key);
-            elements.map!(doc => doc.data)
-                .each!(data => __write("%(%02x%)", data));
             foreach (i, elm; elements) {
                 build(buffer, cast(uint) i, elm);
             }
