@@ -661,7 +661,8 @@ extern (C) {
             assert(__wallet_storage !is null, "The Wallet storage was not initialised");
 
             WHistory hist;
-            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count).map!(i => WHistoryItem(i))
+            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
+                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
                 .array;
             *historyId = recyclerDoc.create(hist.toDoc);
         }
@@ -684,13 +685,13 @@ struct WHistoryItem {
     DARTIndex index; // The index of the output bill.
 
     mixin HiBONRecord!(q{
-        this(HistoryItem item) {
+        this(HistoryItem item, const(SecureNet) net) {
             this.amount = item.bill.value.units;
             this.pubkey = item.bill.owner;
             this.balance = item.balance.units;
             this.fee = item.fee.units;
             this.type = item.type;
-            this.index = dartIndex(__wallet_storage.wallet.net, item.bill);
+            this.index = dartIndex(net, item.bill);
         }
     });
 }
@@ -703,6 +704,7 @@ struct WHistory {
 pragma(msg, "remove wrapper dummy history");
 struct DummyHistGen {
     import tagion.utils.Random;
+    import stdrnd = std.random;
 
     enum max_length = 37;
 
@@ -717,7 +719,8 @@ struct DummyHistGen {
             status = rnd.value % 2;
             type = rnd.value % 2;
             timestamp = currentTime();
-            pubkey = Pubkey().init;
+            pubkey = Pubkey(rnd.take(33).map!(i => cast(ubyte)(i >> 24)).array.idup);
+            index = DARTIndex(rnd.take(32).map!(i => cast(ubyte)(i >> 24)).array.idup);
         }
         return hist_item;
     }
