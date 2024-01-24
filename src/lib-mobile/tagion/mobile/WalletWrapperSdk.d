@@ -719,8 +719,8 @@ struct DummyHistGen {
             status = rnd.value % 2;
             type = rnd.value % 2;
             timestamp = currentTime();
-            pubkey = Pubkey(rnd.take(33).map!(i => cast(ubyte)(i >> 24)).array.idup);
-            index = DARTIndex(rnd.take(32).map!(i => cast(ubyte)(i >> 24)).array.idup);
+            pubkey = Pubkey(rnd.take(33).map!(i => cast(ubyte)(i)).array.idup);
+            index = DARTIndex(rnd.take(32).map!(i => cast(ubyte)(i)).array.idup);
         }
         return hist_item;
     }
