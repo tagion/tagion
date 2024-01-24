@@ -671,6 +671,7 @@ extern (C) {
 }
 
 import tagion.hibon.HiBONRecord;
+import tagion.dart.DARTBasic;
 
 struct WHistoryItem {
     long amount;
@@ -680,6 +681,7 @@ struct WHistoryItem {
     int type;
     sdt_t timestamp;
     Pubkey pubkey;
+    DARTIndex index; // The index of the output bill.
 
     mixin HiBONRecord!(q{
         this(HistoryItem item) {
@@ -688,6 +690,7 @@ struct WHistoryItem {
             this.balance = item.balance.units;
             this.fee = item.fee.units;
             this.type = item.type;
+            this.index = dartIndex(__wallet_storage.wallet.net, item.bill);
         }
     });
 }
