@@ -114,8 +114,8 @@
         name = "tagion-docker";
         tag = "latest";
         fromImage = dockerTools.pullImage {
-          imageName = "busybox";
-          imageDigest = "sha256:1b0a26bd07a3d17473d8d8468bea84015e27f87124b283b91d781bce13f61370";
+          imageName = "alpine";
+          imageDigest = "sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd";
           sha256 = "sha256-uSmgXdnRe4xITBv8u5cx0bFpUzzxvN95YfbzUqZXtLI=";
           finalImageTag = "1.36.1";
           finalImageName = "busybox";
