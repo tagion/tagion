@@ -42,7 +42,7 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
-alias LRUT!(Buffer, TagionBill) DartCache;
+alias LRUT!(Buffer, TagionBill[]) DartCache;
 
 shared DartCache dcache;
 
@@ -94,9 +94,11 @@ void dart_worker(ShellOptions opt) {
     int rc;
     int attempts = 0;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+    NNGSocket r = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     const net = new StdHashNet();
     s.recvtimeout = msecs(opt.sock_recvtimeout);
     s.subscribe(opt.recorder_subscription_tag);
+    r.recvtimeout = msecs(opt.sock_recvtimeout);
     writeit("DS: subscribed");
     while (true) {
         rc = s.dial(opt.tagion_subscription_addr);
@@ -104,8 +106,15 @@ void dart_worker(ShellOptions opt) {
             break;
         enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");    
     }
+    while (true) {
+        rc = r.dial(opt.node_dart_addr);
+        if (rc == 0)
+            break;
+        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
+    }
     scope (exit) {
-        s.close;
+        s.close();
+        r.close();
     }
     auto record_factory = RecordFactory(net);
     const hirpc = HiRPC(null);
@@ -132,19 +141,87 @@ void dart_worker(ShellOptions opt) {
                 }
             }
             auto recorder = record_factory.recorder(payload.data);
-            TagionBill[] bills;
+            Buffer[] affected_owners, tofetch;
+            TagionBill[][Buffer] toadd, toremove;
             foreach(a; recorder[]) {
                 if (a.filed.isRecord!TagionBill) {
+                    auto t = a.type;
                     auto b = TagionBill(a.filed);
-                    bills ~= b;
+                    auto o = cast(Buffer) b.owner;
+                    affected_owners ~= o;
+                    if(t == Archive.Type.ADD){
+                        toadd[o] ~= b;
+                    } else 
+                    if(t == Archive.Type.REMOVE){
+                        toremove[o] ~= b;
+                    }
                 }
             }
-            if(!bills.empty){
-                foreach (bill; bills) {
-                    dcache.update(cast(Buffer) bill.owner, bill, true);
+            int k = 0;
+            if(!affected_owners.empty){
+                foreach (o; affected_owners) {
+                    TagionBill[] bucket;    
+                    if(dcache.get(o,bucket)){
+                        if(o in toremove){
+                            foreach(b; toremove[o]){
+                                remove!(x => x == b)(bucket);
+                                k++;
+                            }
+                        }
+                        if(o in toadd){
+                            foreach(b; toadd[o]){
+                                bucket ~= b;
+                                k++;
+                            }
+                        }
+                        dcache.update(o, bucket, true);
+                    } else { 
+                        tofetch ~= o;
+                    }                    
                 }
-                writeit(format("DS: Cache updated in %d bills", bills.length));
+                if(!tofetch.empty){
+                    const size_t buflen = 1048576;
+                    ubyte[1048576] buf;
+                    immutable(ubyte)[] docbuf;
+                    size_t len = 0, doclen = 0;
+                    auto dreq = new HiBON;
+                    dreq = tofetch;
+                    rc = r.send(cast(ubyte[])(hirpc.search(dreq).toDoc.serialize));
+                    if (rc != 0) {
+                        writeit("ERROR: dart_worker: req send: ", nng_errstr(rc));
+                        continue;
+                    }
+                    do {
+                        len = r.receivebuf(buf, buflen);
+                        if (len == size_t.max && s.errno != 0) {
+                            writeit("ERROR: dart_worker: recv: ", nng_errstr(s.errno));
+                            continue;
+                        }
+                        if (len > buflen) {
+                            writeit("ERROR: dart_worker: recv wrong size: ", len);
+                            continue;
+                        }
+                        docbuf ~= buf[0 .. len];
+                        doclen += len;
+                    }
+                    while (len > buflen - 1);
+                    const repdoc = Document(docbuf);
+                    immutable repreceiver = hirpc.receive(repdoc);
+                    TagionBill[] received_bills = repreceiver.response.result[]
+                        .map!(e => TagionBill(e.get!Document))
+                        .array;
+                    TagionBill[][Buffer] tocache;
+                    foreach (bill; received_bills) {
+                        tocache[cast(Buffer)bill.owner] ~= bill;
+                        k++;
+                    }
+                    foreach(owner; tocache.keys){
+                        dcache.update(owner, tocache[owner], true);
+                    }    
+                }
             }            
+            if(k > 0)
+                writeit(format("DS: Cache updated in %d bills", k));
         }
         catch (Throwable e) {
             writeit(dump_exception_recursive(e, "worker: dartcache", ExceptionFormat.PLAIN));
@@ -339,19 +416,21 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 owner_pkeys ~= owner.get!Buffer;
             }
             TagionBill[] found_bills;
+            Buffer[] found_owners;
             if(usecache){
-                TagionBill fnd;
+                TagionBill[] fnd;
                 foreach (owner; owner_pkeys) {
                     if (dcache.get(owner, fnd)) {
                         found_bills ~= fnd;
+                        found_owners ~= owner;
                     }
                 }
             }
             nfound = found_bills.length;
             // TODO: merge with previous, check array reducing in foreach
-            if (!found_bills.empty) {
-                foreach (bill; found_bills) {
-                    remove!(x => x == bill.owner)(owner_pkeys);
+            if (!found_owners.empty) {
+                foreach (owner; found_owners) {
+                    remove!(x => x == owner)(owner_pkeys);
                 }
             }
             if (!owner_pkeys.empty) {
@@ -406,9 +485,13 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                     .array;
                 
                 if(usecache){    
+                    TagionBill[][Buffer] tocache;
                     foreach (bill; received_bills) {
-                        dcache.update(cast(Buffer) bill.owner, bill, true);
+                        tocache[cast(Buffer)bill.owner] ~= bill;
                     }
+                    foreach(owner; tocache.keys){
+                        dcache.update(owner, tocache[owner], true);
+                    }    
                 }
 
                 nreceived = received_bills.length;
@@ -473,8 +556,6 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
             rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
         
         }
-
-
     }
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
@@ -484,7 +565,6 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
         return;
     }
 }
-
 
 static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
