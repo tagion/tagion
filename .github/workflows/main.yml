@@ -89,7 +89,7 @@ jobs:
           rm -r *.callstack logs/ || echo "no logs"
 
   commit_stage_cov:
-    if: ${{ env.FEAT_COMMIT_COV }}
+    if: ${{ secrets.FEAT_COMMIT_COV || false }}
     runs-on: CI
     timeout-minutes: 5
 
