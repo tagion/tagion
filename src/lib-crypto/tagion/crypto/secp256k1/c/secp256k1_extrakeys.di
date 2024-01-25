@@ -4,6 +4,7 @@ import tagion.crypto.secp256k1.c.secp256k1;
 
 extern (C):
 nothrow:
+pure:
 @nogc:
 
 /** Opaque data structure that holds a parsed and valid "x-only" public key.

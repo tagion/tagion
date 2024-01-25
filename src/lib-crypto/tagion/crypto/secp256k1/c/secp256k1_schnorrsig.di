@@ -5,6 +5,7 @@ import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 
 extern (C):
 nothrow:
+pure:
 @nogc:
 
 /** This module implements a variant of Schnorr signatures compliant with
