@@ -105,15 +105,18 @@ struct TRTService {
         }
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
+            import tagion.services.DARTInterface : InterfaceError;
+            import std.conv : to;
             log("trt_read request");
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
             }
             log("before hirpc");
             immutable receiver = hirpc.receive(doc);
-            if (receiver.method.name != "search") {
-                log("not a HIRPC");
-                // return hirpc error instead;
+            if (!receiver.isMethod || !(receiver.method.name == "search" || receiver.method.name == DART.Queries.dartRead)) {
+                log("received non valid HIRPC method");
+                const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
+                client_req.respond(err.toDoc);
                 return;
             }
             log("before owner doc");

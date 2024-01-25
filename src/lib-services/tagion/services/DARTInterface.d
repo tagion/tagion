@@ -41,6 +41,7 @@ import tagion.services.messages;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
+import tagion.dart.DART;
 
 struct DartWorkerContext {
     string dart_task_name;
@@ -54,6 +55,7 @@ enum InterfaceError {
     InvalidDoc,
     DARTLocate,
     TRTLocate,
+    InvalidMethod,
 }
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
@@ -125,7 +127,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         return;
     }
 
-    if (receiver.method.name == "search" && cnt.trt_enable) {
+    if ((receiver.method.name == "search" || receiver.method.full_name == "trt." ~ DART.Queries.dartRead) && cnt.trt_enable) {
         writeln("TRT SEARCH REQUEST");
         auto trt_tid = locate(cnt.trt_task_name);
         if (trt_tid is Tid.init) {
