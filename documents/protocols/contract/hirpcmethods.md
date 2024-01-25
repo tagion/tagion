@@ -114,8 +114,7 @@ hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.
 hirpc.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Recorder.RecordFactory.Recorder)
 If a specified archive was not found in the dart, it is simply not included in the output recorder.
 
-<details>
-<summary>**Example response**</summary>
+**Example response**
 ```json
 {
     "$@": "HiRPC",
@@ -152,7 +151,6 @@ If a specified archive was not found in the dart, it is simply not included in t
     ]
 }
 ```
-</details>
 
 
 ### dartRim
