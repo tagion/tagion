@@ -73,7 +73,7 @@ static assert(uint.sizeof == 4);
 
     import tagion.hibon.HiBON : HiBON;
 
-    this(const HiBON hibon) {
+    this(const HiBON hibon) pure {
         if (hibon) {
             this._data = hibon.serialize;
         }
@@ -976,14 +976,8 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 else {
-
-                    
-
-                        .check(doc.isArray, "Document must be an array");
-                    result.length = doc.length;
-                    foreach (ref a, e; lockstep(result, doc[])) {
-                        a = e.get!ElementT;
-                    }
+                    .check(doc.isArray, "Document must be an array");
+                    result=doc[].map!(e => e.get!ElementT).array;
                 }
                 return cast(T) result;
             }
