@@ -84,7 +84,7 @@ struct InputValidatorService {
                     log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(
                             rc));
                 }
-                log(rejected, err_type.to!string, data);
+                log.event(rejected, err_type.to!string, data);
             }
             catch (Exception e) {
                 log.error("Failed to deliver rejection %s", err_type.to!string);
@@ -139,7 +139,7 @@ struct InputValidatorService {
                 }
                 auto result_buf = sock.receive!Buffer;
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    log.error(nng_errstr(sock.m_errno));
                     continue;
                 }
                 if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
@@ -151,7 +151,7 @@ struct InputValidatorService {
                     }
                 }
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    log.error(nng_errstr(sock.m_errno));
                     continue;
                 }
                 if (result_buf.length <= 0) {
@@ -175,7 +175,7 @@ struct InputValidatorService {
                     }
                 }
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    log.error(nng_errstr(sock.m_errno));
                     continue;
                 }
 

@@ -62,7 +62,7 @@ struct CollectorService {
     // Makes the read calls to the dart service;
     void read_indices(dartReadRR req, immutable(SignedContract)* s_contract) {
         if (s_contract.signs.length != s_contract.contract.inputs.length) {
-            log(reject, "contract_mismatch_signature_length", Document.init);
+            log.event(reject, "contract_mismatch_signature_length", Document.init);
             return;
         }
 
@@ -104,7 +104,7 @@ struct CollectorService {
             signed_contract(inputContract(), s_contract);
         }
         catch (HiBONRecordException e) {
-            log(reject, "hirpc_invalid_signed_contract", doc);
+            log.event(reject, "hirpc_invalid_signed_contract", doc);
         }
     }
 
@@ -143,7 +143,7 @@ struct CollectorService {
             immutable inputs = recorder[].map!(a => a.filed).array;
 
             if (!verify(net, s_contract, inputs)) {
-                log(reject, "contract_no_verify", recorder);
+                log.event(reject, "contract_no_verify", recorder);
                 return;
             }
 
@@ -164,7 +164,7 @@ struct CollectorService {
         }
         else {
             clean(res.id);
-            log(reject, "missing_archives", recorder);
+            log.event(reject, "missing_archives", recorder);
             return;
         }
     }

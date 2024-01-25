@@ -163,7 +163,7 @@ struct DARTService {
 
                 req.respond(eye);
                 replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
-                log(recorder_created, "recorder", recorder.toDoc);
+                log.event(recorder_created, "recorder", recorder.toDoc);
                 if (trt_enable) {
                     trt_handle.send(trtModify(), recorder);
                 }
