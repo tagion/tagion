@@ -13,16 +13,16 @@ alias check = Check!SecurityConsensusException;
 interface HashNet {
     uint hashSize() const pure nothrow scope;
 
-    Fingerprint calcHash(B)(scope const(B) data) const
+    Fingerprint calcHash(B)(scope const(B) data) const pure
     if (isBufferType!B) {
         return Fingerprint(rawCalcHash(cast(TypedefType!B) data));
     }
 
-    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope;
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const pure scope;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
-    Fingerprint calcHash(const(Document) doc) const;
+    Fingerprint calcHash(const(Document) doc) const pure;
 
-    Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
+    final Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
         return calcHash(value.toDoc);
     }
 

@@ -23,14 +23,14 @@ class StdHashNet : HashNet {
         return HASH_SIZE;
     }
 
-    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope {
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const pure scope {
         import std.digest;
         import std.digest.sha : SHA256;
 
         return digest!SHA256(data).idup;
     }
 
-    Fingerprint calcHash(scope const(ubyte[]) data) const {
+    Fingerprint calcHash(scope const(ubyte[]) data) const pure {
         return Fingerprint(rawCalcHash(data));
     }
 
@@ -42,7 +42,7 @@ class StdHashNet : HashNet {
         return hmac.finish.idup;
     }
 
-    Fingerprint calcHash(const(Document) doc) const {
+    Fingerprint calcHash(const(Document) doc) const pure {
         return Fingerprint(rawCalcHash(doc.serialize));
     }
 
