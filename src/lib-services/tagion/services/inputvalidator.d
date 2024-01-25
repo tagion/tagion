@@ -140,7 +140,9 @@ struct InputValidatorService {
                 }
                 auto result_buf = sock.receive!Buffer;
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log.error(nng_errstr(sock.m_errno));
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
                 if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
@@ -152,7 +154,9 @@ struct InputValidatorService {
                     }
                 }
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log.error(nng_errstr(sock.m_errno));
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
                 if (result_buf.length <= 0) {
@@ -176,7 +180,9 @@ struct InputValidatorService {
                     }
                 }
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log.error(nng_errstr(sock.m_errno));
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
 
