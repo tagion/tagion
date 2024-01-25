@@ -57,7 +57,7 @@ hirpc.method.params = [Pubkey](https://ddoc.tagion.org/tagion.crypto.Types.Pubke
 
 **Returns**
 
-hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+hirpc.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 ### dartCheckRead
 
