@@ -55,9 +55,81 @@ hirpc.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTInd
 hirpc.method.name = "dartRead"  
 hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
-**Returns**
 
+**Example dartRead request**
+```json
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@AhJKNLaNgHVRgF1dEz8rWHhROYAVIntpyDasIpHVeAqE"
+    ],
+    "$msg": {
+        "method": "dartRead",
+        "params": {
+            "dart_indices": [
+                [
+                    "*",
+                    "@4c2LxGMUI7o7AnNQfKxgAEdjwizVRvdtV3j2ItiBwQM="
+                ],
+                [
+                    "*",
+                    "@oKqMX30Lf0KnzFJ46Ws5SRH48oPouDDS3IIXIaYPjkM="
+                ]
+            ]
+        }
+    },
+    "$sign": [
+        "*",
+        "@VVKuIfWv93MZCeCwpEcrHGRNsf8RaLtJguiytuegANxyMTSiWtNGdXQsuxaCTr7hKKQbY8UXHczlNLafm1-VwQ=="
+    ]
+}
+
+```
+*Note* - The `"$Y"`, `"$sign"` are optional, but are highly recommended in order to check that the package was not tampered with.
+
+#### Returns
 hirpc.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Recorder.RecordFactory.Recorder)
+If a specified archive was not found in the dart, it is simply not included in the output recorder.
+
+**Example response**
+```json
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@A7l5pb4FfnnJYXW0_MDlXP-a1urQ_XC1ZCZmRAwNLGj-"
+    ],
+    "$msg": {
+        "result": {
+            "$@": "Recorder",
+            "0": {
+                "$T": [
+                    "i32",
+                    1
+                ],
+                "$a": {
+                 // archive
+                }
+            },
+            "1": {
+                "$T": [
+                    "i32",
+                    1
+                ],
+                "$a": {
+                  // archive
+                }
+            }
+        }
+    },
+    "$sign": [
+        "*",
+        "@LoOxof1kQgjuFB188DjP-coHPqy5t26nK9Is9R2PVvhOa2Uri6VitOZkfQeKMQuH7tjn_yjLpYEsEcivKPbXDA=="
+    ]
+}
+```
+
 
 ### dartRim
 
