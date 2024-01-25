@@ -1,46 +1,49 @@
 // common Message types sent between services
 module tagion.services.messages;
 import tagion.actor.actor;
-import tagion.hibon.Document;
 
 /// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";
 /// Msg type sent to receiver task along with a hirpc
 alias inputHiRPC = Msg!"inputHiRPC";
 
-/// Contracts sent to the collector
+/// [FROM: HiRPC Verifier, TO: Collector] Contracts sent to the collector from HiRPC Verifier
 alias inputContract = Msg!"contract";
-alias signedContract = Msg!"contract-S";
+
+/// [FROM: Epoch Creator, TO: Collector] Contract received from other nodes.
 alias consensusContract = Msg!"contract-C";
 
-alias inputRecorder = Msg!"recorder";
+/// [FROM: Collector, TO: TVM] Verified signed contract with inputs sent to TVM.
+alias signedContract = Msg!"contract-S";
 
-alias consensusEpoch = Msg!"consensus_epoch";
+/// [FROM: TVM, TO: Transcript] Executed smart contract sent to Transcript.
 alias producedContract = Msg!"produced_contract";
 
-/// dartCRUD
-alias dartReadRR = Request!"dartRead";
-alias dartCheckReadRR = Request!("dartCheckRead", long);
-alias dartRimRR = Request!"dartRim";
-alias dartBullseyeRR = Request!"dartBullseye";
-// alias dartModifyRR = Request!"dartModifyRequest";
-alias dartModifyRR = Request!("dartModify", long);
-alias dartHiRPCRR = Request!"dartHiRPCRequest";
-
+/// [FROM: TVM, TO: Epoch Creator] Send new contract into the Epoch Creator
 alias Payload = Msg!"Payload";
-alias ReceivedWavefront = Msg!"ReceivedWavefront";
-alias AddedChannels = Msg!"AddedChannels";
-alias BeginGossip = Msg!"BeginGossip";
 
-// Replicator Recorder 
+/// [FROM: Epoch Creator, TO: Transcript] Epoch containing outputs. 
+alias consensusEpoch = Msg!"consensus_epoch";
+
+/// [FROM: NodeInterface, TO: Epoch Creator] Receive wavefront from NodeInterface
+alias ReceivedWavefront = Msg!"ReceivedWavefront";
+
+/// [TO: Node Interface] send HiRPC to another node 
+alias NodeSend = Msg!"nodeSend";
+/// [FROM: Node Interface] HiRPC from other node
+alias NodeRecv = Msg!"nodeRecv";
+
+
+/// [FROM: DART, TO: Replicator] Send the produces recorder for replication
 alias SendRecorder = Msg!"SendRecorder";
 
-// NNG socket hirpc output push
-alias HiRPCOutput = Msg!"OutputPush";
-
-// TRT
+/// [FROM: DART, TO: TRT] send the recorder to the trt for update
 alias trtModify = Msg!"trtModify";
-alias trtHiRPCRR = Request!"trtRead";
 
-alias NodeSend = Msg!"nodeSend";
-alias NodeRecv = Msg!"nodeRecv";
+alias trtHiRPCRR = Request!"trtRead"; // trt.dartCRUD: [dartRead, dartCheckRead, dartRim]
+alias dartReadRR = Request!"dartRead"; // dartRead Request
+alias dartCheckReadRR = Request!("dartCheckRead", long); // dartCheckRead Request
+alias dartRimRR = Request!"dartRim"; // dartRim Request
+alias dartBullseyeRR = Request!"dartBullseye"; // dartBullseye Request
+alias dartModifyRR = Request!("dartModify", long); // dartModify Request
+alias dartHiRPCRR = Request!"dartHiRPCRequest"; // dartCRUD HiRPC commands: [dartRead, dartCheckRead, dartRim]
