@@ -491,6 +491,20 @@ struct SecureWallet(Net : SecureNet) {
 
     }
 
+    const(HiRPC.Sender) readIndicesByKey(HiRPC hirpc = HiRPC(null)) const {
+        import tagion.dart.DART;
+        import tagion.script.standardnames;
+
+        auto owner_indices = account.derivers.byKey
+            .map!(owner => net.dartKey(TRTLabel, owner));
+
+        auto params = new HiBON;
+        auto params_dart_indices = new HiBON;
+        params_dart_indices = owner_indices;
+        params[DART.Params.dart_indices] = params_dart_indices;
+        return hirpc.action("trt."~DART.Queries.dartRead, params);
+    }
+
     const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
         return bills
             .map!(bill => bill.owner in account.derivers)
