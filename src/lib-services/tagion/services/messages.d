@@ -1,6 +1,6 @@
-// common Message types sent between services
+/// Message definitions sent between services
 module tagion.services.messages;
-import tagion.actor.actor;
+import tagion.actor.actor : Msg, Request;
 
 /// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";
@@ -33,8 +33,7 @@ alias NodeSend = Msg!"nodeSend";
 /// [FROM: Node Interface] HiRPC from other node
 alias NodeRecv = Msg!"nodeRecv";
 
-
-/// [FROM: DART, TO: Replicator] Send the produces recorder for replication
+/// [FROM: DART, TO: Replicator] Send the produced recorder for replication
 alias SendRecorder = Msg!"SendRecorder";
 
 /// [FROM: DART, TO: TRT] send the recorder to the trt for update
