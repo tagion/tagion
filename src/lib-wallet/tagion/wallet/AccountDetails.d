@@ -247,6 +247,9 @@ struct AccountDetails {
             TagionCurrency balance = total();
             HistoryItem evaluate_balance(HistoryItem item) {
                 item.balance = balance;
+                if (item.status is ContractStatus.pending) {
+                    return item;
+                }
                 with (HistoryItemType) final switch (item.type) {
                 case send:
                     balance += (item.bill.value + item.fee);
@@ -326,18 +329,20 @@ struct AccountManager {
     alias locked = _details.locked;
     alias history = _details.history;
 
+    // Call this if you send a hirpc submit contract
     void send_hirpc(HiRPC.Sender hirpc) {
         // ~= hirpcs
         // lock bills
     }
 
-    void reject_hirpc() {
+    // Call this if your contract has been rejected
+    void reject_hirpc(HiRPC.Sender hirpc) {
         // -= hirpcs
         // unlock bills
     }
 
     // Update
-    void update(RecordFactory.Recorder recorder) {
+    void update(HiRPC.Receiver receiver) {
         // Add new bills
         // move locked bills to used bills if' its output of pending hirpc.
     }
