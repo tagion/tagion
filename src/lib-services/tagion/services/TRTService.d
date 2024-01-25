@@ -160,6 +160,7 @@ struct TRTService {
                 requests[dart_req.id] = TRTRequest(client_req, doc);
 
                 dart_handle.send(dart_req, indices);
+                return;
             }
             Document result = trt_db(receiver, false).toDoc;
             client_req.respond(result);

@@ -491,7 +491,7 @@ struct SecureWallet(Net : SecureNet) {
 
     }
 
-    const(HiRPC.Sender) readIndicesByKey(HiRPC hirpc = HiRPC(null)) const {
+    const(HiRPC.Sender) readIndicesByPubkey(HiRPC hirpc = HiRPC(null)) const {
         import tagion.dart.DART;
         import tagion.script.standardnames;
 

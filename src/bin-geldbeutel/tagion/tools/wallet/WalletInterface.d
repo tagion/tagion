@@ -631,6 +631,7 @@ struct WalletInterface {
         bool request;
         bool update;
         bool trt_update;
+        bool trt_read;
         double amount;
         bool faucet;
         bool save_wallet;
@@ -710,7 +711,7 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
-                if (update || trt_update) {
+                if (update || trt_update || trt_read ) {
                     const update_net = secure_wallet.net.derive(
                             secure_wallet.net.calcHash(
                             update_tag.representation));
@@ -719,6 +720,9 @@ struct WalletInterface {
                     const(HiRPC.Sender) getRequest() {
                         if (trt_update) {
                             return secure_wallet.getRequestUpdateWallet(hirpc);
+                        }
+                        else if (trt_read) {
+                            return secure_wallet.readIndicesByPubkey(hirpc);
                         }
                         return secure_wallet.getRequestCheckWallet(hirpc);
                     }
