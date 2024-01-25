@@ -22,6 +22,7 @@ import tagion.utils.StdTime;
     @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.owner) Pubkey owner; // owner key
     @label(StdNames.nonce) @optional Buffer nonce; // extra nonce 
+    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
                 this(const(TagionCurrency) value, const sdt_t time, Pubkey owner, Buffer nonce) pure nothrow {
@@ -33,8 +34,8 @@ import tagion.utils.StdTime;
             });
 }
 
-version (HIBON_FIX) unittest {
-    import tagion.hibon.fix.HiBONSerialize;
+unittest {
+    import tagion.hibon.HiBONSerialize;
 
     pragma(msg, SupportingFullSizeFunction!(TagionCurrency, 0, true));
     pragma(msg, "--- --- ---");
@@ -52,6 +53,7 @@ version (HIBON_FIX) unittest {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label("$run") Document script; // Smart contract 
+    alias enable_serialize = bool;
     bool verify() {
         return (inputs.length > 0);
     }
@@ -63,7 +65,7 @@ version (HIBON_FIX) unittest {
                     this.reads = reads;
                     this.script = script; 
                 }
-                this(immutable(DARTIndex)[] inputs, immutable(DARTIndex)[] reads, immutable(Document) script) immutable nothrow {
+                this(immutable(DARTIndex)[] inputs, immutable(DARTIndex)[] reads, immutable(Document) script) immutable pure nothrow {
                     this.inputs = inputs;
                     this.reads = reads;
                     this.script = script; 
@@ -74,13 +76,14 @@ version (HIBON_FIX) unittest {
 @recordType("SSC") struct SignedContract {
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @label("$contract") Contract contract; /// The contract must signed by all inputs
+    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
                 this(const(Signature)[] signs, Contract contract) pure nothrow {
                     this.signs = signs;
                     this.contract = contract;
                 }
-                this(immutable(Signature)[] signs, immutable(Contract) contract) nothrow immutable {
+                this(immutable(Signature)[] signs, immutable(Contract) contract) immutable pure nothrow {
                     this.signs = signs;
                     this.contract = contract;
                 }
@@ -95,6 +98,7 @@ version (HIBON_FIX) unittest {
 @recordType("pay")
 struct PayScript {
     @label(StdNames.values) const(TagionBill)[] outputs;
+    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
                 this(const(TagionBill)[] outputs) pure nothrow {

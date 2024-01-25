@@ -52,8 +52,7 @@ template isHiBONArray(T) {
 }
 
 //enum estimate_size = "estimate_size"; /// method to estimae the size of document serialized 
-version(none)
-template isHiBONAssociativeArray(T) {
+version (none) template isHiBONAssociativeArray(T) {
     import tagion.hibon.HiBONBase;
     import traits = std.traits;
     import tagion.hibon.HiBONRecord : isHiBONRecord;
@@ -116,6 +115,7 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
 }
 
 import tagion.basic.Debug;
+
 /**
  * Calculates the full_size of the if T support the size calculation 
  * Params:
@@ -175,15 +175,16 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                         return type_key_size + array_size + LEB128.calc_size(array_size);
                     }
                     else static if (isAssociativeArray!BaseU) {
-                        alias ValueT=ValueType!BaseU;
-                        alias KeyT=KeyType!BaseU;
+                        alias ValueT = ValueType!BaseU;
+                        alias KeyT = KeyType!BaseU;
                         import std.algorithm : filter;
+
                         static if (isKey!KeyT) {
                             const array_size = x.byKeyValue
                                 .filter!(pair => pair.value !is pair.value.init)
                                 .map!(pair => calcSize(pair.value, Document.sizeKey(pair.key)))
                                 .sum;
-                        return type_key_size+array_size + LEB128.calc_size(array_size);
+                            return type_key_size + array_size + LEB128.calc_size(array_size);
                         }
                     }
                     else static if (isHiBONRecord!BaseU) {
@@ -257,7 +258,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     return result;
 }
 
-
 mixin template Serialize() {
     import std.algorithm;
     import std.range;
@@ -272,7 +272,7 @@ mixin template Serialize() {
     import LEB128 = tagion.utils.LEB128;
 
     static if (__traits(hasMember, This, "enable_serialize")) {
-        void _serialize(ref scope Appender!(ubyte[]) buf) const pure {
+         void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;
 
@@ -304,7 +304,9 @@ mixin template Serialize() {
 
             static if (hasUDA!(This, recordType)) {
                 enum record = getUDAs!(This, recordType)[0];
-                build(buf, TYPENAME, record.name);
+                static if (record.name.length) {
+                    build(buf, TYPENAME, record.name);
+                }
             }
 
             static foreach (key; This.keys) {
@@ -312,7 +314,11 @@ mixin template Serialize() {
             }
         }
 
-        Buffer _serialize() const pure {
+        Buffer _serialize() const pure @safe 
+        out(ret) {
+            assert(ret == this.toHiBON.serialize, This.stringof~" toHiBON.serialize failed");
+        }
+        do {
             Appender!(ubyte[]) buf;
             static if (SupportingFullSizeFunction!(This)) {
                 const reserve_size = full_size(this);

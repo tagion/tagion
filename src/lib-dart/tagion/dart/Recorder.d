@@ -357,7 +357,7 @@ class RecordFactory {
             }
         }
 
-        final const(Document) toDoc() const {
+        final const(Document) toDoc() const pure {
             auto result = new HiBON;
             uint i;
             foreach (a; archives) {
@@ -411,7 +411,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     *   doc = document of an archive or filed doc
     *   t = archive type
     */
-    this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
+    this(const HashNet net, const(Document) doc, const Type t = Type.NONE) pure
     in {
         assert(net !is null);
     }
@@ -447,7 +447,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
         fout.writeln(toString);
     }
 
-    override string toString() const {
+    override string toString() const pure {
         const _ptr_addr = (() @trusted => cast(void*) this)();
         if (filed.hasHashKey) {
             return format("Archive # %(%02x%) - %s [%s] %(%02x%)", dart_index, type, _ptr_addr, fingerprint);
@@ -466,7 +466,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
      * Convert archive to a Document 
      * Returns: documnet of the archive
      */
-    const(Document) toDoc() const {
+    const(Document) toDoc() const pure {
         auto hibon = new HiBON;
         if (isStub) {
             hibon[fingerprintLabel] = fingerprint;

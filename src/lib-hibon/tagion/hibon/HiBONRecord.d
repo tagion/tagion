@@ -252,7 +252,7 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
-    @trusted final inout(HiBON) toHiBON() inout {
+    @trusted final inout(HiBON) toHiBON() inout pure {
         auto hibon = new HiBON;
         static HiBON toList(L)(L list) {
             import std.algorithm : sort;
@@ -389,6 +389,7 @@ mixin template HiBONRecord(string CTOR = "") {
             }
         }
         static if (HAS_TYPE) {
+            pragma(msg, "TYPENAME ", TYPENAME, " T ", This.stringof, " type_name ", type_name, " ", type_name.length);
             hibon[TYPENAME] = type_name;
         }
         @nogc @trusted inout(HiBON) result() inout pure nothrow {
@@ -451,7 +452,7 @@ mixin template HiBONRecord(string CTOR = "") {
             this(Document(hibon.serialize));
         }
 
-        @safe this(const Document doc) {
+        @safe this(const Document doc) pure {
             static if (HAS_TYPE) {
                 string _type = doc[TYPENAME].get!string;
                 check(_type == type_name, format("Wrong %s type %s should be %s",
@@ -700,11 +701,16 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
-    @safe final immutable(ubyte[]) serialize() const {
-        return toHiBON.serialize;
+    static if (hasMember!(This, "enable_serialize")) {
+        alias serialize = _serialize;
+    }
+    else {
+        @safe final immutable(ubyte[]) serialize() const pure {
+            return toHiBON.serialize;
+        }
     }
 
-    @safe final const(Document) toDoc() const {
+    @safe final const(Document) toDoc() const pure {
         return Document(serialize);
     }
 }
@@ -716,7 +722,8 @@ version (unittest) {
         const s_serialize = s._serialize;
         const h = s.toHiBON;
         const hibon_serialize = h.serialize;
-        static if (SupportingFullSizeFunction!T) {
+        static if (
+            SupportingFullSizeFunction!T) {
             assert(docS.full_size == s.full_size);
         }
         assert(docS.full_size == s_serialize.length);
@@ -740,11 +747,10 @@ unittest {
         string text;
         enum enable_serialize = true;
         mixin HiBONRecord!(q{
-                this(int s, string text) {
+                this(int s, string text) pure {
                     this.s=s; this.text=text;
                 }
             });
-
     }
 
     static assert(equal(Simple.keys, only("s", "text")));
@@ -756,15 +762,15 @@ unittest {
         @label("$S") int s;
         enum enable_serialize = true;
         mixin HiBONRecord!(q{
-                this(int s, string text) {
+                this(int s, string text) pure {
                     this.s=s; this.text=text;
                 }
             });
     }
 
     static assert(equal(SimpleLabel.keys, only("$S", "TEXT")));
-
-    static assert(SimpleLabel.GetTupleIndex!"$S" == 1);
+    static assert(
+            SimpleLabel.GetTupleIndex!"$S" == 1);
     static assert(SimpleLabel.GetTupleIndex!"TEXT" == 0);
     static assert(SimpleLabel.GetTupleIndex!"not defined" == -1);
     @recordType("BASIC") static struct BasicData {
@@ -811,14 +817,13 @@ unittest {
     { // Simple basic type check
     {
             const s = Simple(-42, "some text");
-            const docS = s.toDoc;
-            // writefln("keys=%s", docS.keys);
+            const docS = s.toDoc; // writefln("keys=%s", docS.keys);
             assert(docS["s"].get!int == -42);
             assert(docS["text"].get!string == "some text");
             assert(docS[TYPENAME].get!string == Simple.type_name);
-            assert(isRecord!Simple(docS));
-            const s_check = Simple(docS);
-            // const s_check=Simple(s);
+            assert(
+                    isRecord!Simple(docS));
+            const s_check = Simple(docS); // const s_check=Simple(s);
             assert(s == s_check);
             assert(s_check.toJSON.toString == format("%j", s_check));
 
@@ -838,7 +843,6 @@ unittest {
             const s_check = SimpleLabel(docS);
 
             assert(s == s_check);
-
             immutable s_imut = SimpleLabel(docS);
             assert(s_imut == s_check);
             check_serialize(s, docS);
@@ -850,7 +854,6 @@ unittest {
             const docS = s.toDoc;
 
             const s_check = BasicData(docS);
-
             assert(s == s_check);
             immutable s_imut = BasicData(docS);
             assert(s_imut == s_check);
@@ -894,6 +897,10 @@ unittest {
             s.not_an_option = 42;
             s.s = 17;
             s.text = "text!";
+            __write("doc._serialize =%s", s._serialize);
+            __write("hibon.serialize=%s", s.toHiBON.serialize);
+            __write("doc  =%s", s.toDoc.toPretty);
+            __write("hibon=%s", s.toHiBON.toPretty);
             const doc = s.toDoc;
             // writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assertNotThrown!Exception(NoLabel(doc));
@@ -908,7 +915,6 @@ unittest {
             // writefln("docS=\n%s", s_label.toDoc.toJSON(true).toPrettyString);
 
             const s_new = NoLabel(s_label.toDoc);
-
         }
     }
 
@@ -1081,7 +1087,7 @@ unittest {
             const result = Array(doc);
             assert(s == result);
             assert(doc.toJSON.toString == format("%j", result));
-check_serialize(s, doc);
+            check_serialize(s, doc);
         }
     }
 
@@ -1104,6 +1110,7 @@ check_serialize(s, doc);
 
     { // Element as range
         @safe static struct Range(T) {
+            import std.array : to_array=array;
             alias UnqualT = Unqual!T;
             protected T[] array;
             alias enable_serialize = bool;
@@ -1127,12 +1134,16 @@ check_serialize(s, doc);
                 }
             }
 
-            @trusted this(const Document doc) {
+            @trusted this(const Document doc) pure  {
+                array=doc[].map!(e => e.get!T).to_array;
+            /*
                 auto result = new UnqualT[doc.length];
-                foreach (ref a, e; lockstep(result, doc[])) {
+                
+                    foreach (ref a, e; lockstep(result, doc[])) {
                     a = e.get!T;
                 }
                 array = result;
+            */
             }
         }
 
@@ -1179,7 +1190,7 @@ check_serialize(s, doc);
                     h["s"] = s;
 
                     const s_get = h["s"].get!StructWithRange;
-                    const doc_s_get=s_get.toDoc;
+                    const doc_s_get = s_get.toDoc;
                     assert(s == s_get);
                     check_serialize(s, doc_s_get);
                 }
@@ -1232,7 +1243,6 @@ check_serialize(s, doc);
                 [Simple(1, "two"), Simple(2, "two"), Simple(3, "two")],
                 [Simple(1, "three")]
             ];
-
             Jagged jagged;
             jagged.y = ragged;
 
@@ -1242,7 +1252,7 @@ check_serialize(s, doc);
 
             assert(jagged == result);
 
-            assert(jagged_doc.toJSON.toString == format("%j", jagged)); 
+            assert(jagged_doc.toJSON.toString == format("%j", jagged));
             check_serialize(jagged, jagged_doc);
         }
 
@@ -1359,6 +1369,7 @@ check_serialize(s, doc);
 
             write(buf, args);
         }
+
         { // Typedef on HiBON.type is used as key in an associative-array
             alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
             alias Tabel = int[Bytes];

@@ -46,7 +46,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
     protected {
         @label("$") long _units;
     }
-
+    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
             this(T)(T whole) pure if (isFloatingPoint!T) {

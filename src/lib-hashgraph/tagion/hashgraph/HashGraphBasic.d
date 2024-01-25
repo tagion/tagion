@@ -136,7 +136,7 @@ struct EventBody {
                 Document payload,
                 const Event mother,
                 const Event father,
-                lazy const sdt_t time) inout {
+                lazy const sdt_t time)  inout pure {
                 this.time      =    time;
                 this.mother    =    (mother is null)?null:mother.fingerprint;
                 this.father    =    (father is null)?null:father.fingerprint;
@@ -150,7 +150,7 @@ struct EventBody {
                 const Buffer mother_fingerprint,
                 const Buffer father_fingerprint,
                 const int altitude,
-                lazy const sdt_t time) inout {
+                lazy const sdt_t time) inout pure {
                 this.time      =    time;
                 this.mother    =    mother_fingerprint;
                 this.father    =    father_fingerprint;
@@ -175,7 +175,7 @@ struct EventBody {
 
     immutable(EventBody) eva();
 
-    void consensus() inout {
+    void consensus() inout pure {
         if (mother.length == 0) {
             // Seed event first event in the chain
             check(father.length == 0, ConsensusFailCode.NO_MOTHER);
@@ -197,15 +197,18 @@ struct EventPackage {
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
 
+    import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
+
+    alias enable_serialize = bool;
+
+    protected alias consensus_check = ConsensusCheck!EventConsensusException;
+
     mixin HiBONRecord!(
             q{
-            import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
-            protected alias consensus_check=ConsensusCheck!EventConsensusException;
-            import std.stdio;
             /++
              Used when a Event is receved from another node
              +/
-            this(const SecureNet net, const(Document) doc_epack) immutable  {
+            this(const SecureNet net, const(Document) doc_epack) immutable pure {
                 immutable _this=EventPackage(doc_epack);
                 //this(doc_epack);
                 this.signature=_this.signature;
@@ -220,7 +223,7 @@ struct EventPackage {
             /++
              Create a EventPackage from a body
              +/
-            this(const SecureNet net, immutable(EventBody) ebody) immutable {
+            this(const SecureNet net, immutable(EventBody) ebody) immutable pure {
                 pubkey=net.pubkey;
                 event_body=ebody;
                 auto sig = net.sign(event_body);
@@ -228,7 +231,7 @@ struct EventPackage {
                 fingerprint = cast(Buffer) sig.message;
             }
 
-            this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
+            this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) immutable pure {
                 pubkey=pkey;
                 event_body=ebody;
                 auto _fingerprint=net.calcHash(event_body);
@@ -247,6 +250,7 @@ struct Wavefront {
     @label("$tides") @optional @filter(q{a.length is 0}) private Tides _tides;
     @label("$events") @optional @filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @label("$state") ExchangeState state;
+    alias enable_serialize = bool;
     enum tidesName = GetLabel!(_tides).name;
     enum epacksName = GetLabel!(epacks).name;
     enum stateName = GetLabel!(state).name;
@@ -328,6 +332,7 @@ struct Wavefront {
 struct EvaPayload {
     @label("$channel") Pubkey channel;
     @label("$nonce") Buffer nonce;
+    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
             this(const Pubkey channel, const Buffer nonce) pure {
@@ -338,8 +343,8 @@ struct EvaPayload {
     );
 }
 
-version (HIBON_FIX) unittest {
-    import tagion.hibon.fix.HiBONSerialize;
+unittest {
+    import tagion.hibon.HiBONSerialize;
 
     //pragma(msg, SupportingFullSizeFunction!(TagionCurrency, 0, true));
     pragma(msg, "--- --- --- EventPackage");

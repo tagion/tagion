@@ -28,7 +28,6 @@ struct CollectedSignedContract {
     immutable(SignedContract)* sign_contract;
     const(Document)[] inputs;
     const(Document)[] reads;
-    //mixin HiBONRecord;
 }
 
 @safe
@@ -54,7 +53,6 @@ alias ContractProductResult = Result!(immutable(ContractProduct)*, Exception);
 class StdCheckContract : CheckContract {
     TagionCurrency storage_fees; /// Fees per bytes
     TagionCurrency gas_price; /// Fees per TVM instruction
-
     TagionCurrency calcFees(in GasUse use) pure {
         return use.gas * gas_price + use.storage * storage_fees;
     }

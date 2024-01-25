@@ -70,11 +70,13 @@ class StdSecureNet : StdHashNet, SecureNet {
     */
     @safe
     interface SecretMethods {
-        immutable(ubyte[]) sign(const(ubyte[]) message) const;
-        void tweak(const(ubyte[]) tweek_code, out ubyte[] tweak_privkey) const;
-        immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
-        void clone(StdSecureNet net) const;
-        void __expose(out scope ubyte[] _privkey) const;
+        const pure {
+            immutable(ubyte[]) sign(const(ubyte[]) message);
+            void tweak(const(ubyte[]) tweek_code, out ubyte[] tweak_privkey);
+            immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey);
+            void clone(StdSecureNet net);
+            void __expose(out scope ubyte[] _privkey);
+        }
     }
 
     protected SecretMethods _secret;
@@ -101,14 +103,14 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     const NativeSecp256k1 crypt;
 
-    bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
+    bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const pure {
         consensusCheck!(SecurityConsensusException)(
                 signature.length == NativeSecp256k1.SIGNATURE_SIZE,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         return crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
-    Signature sign(const Fingerprint message) const
+    Signature sign(const Fingerprint message) const pure
     in (_secret !is null,
         format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey))
     in (_secret !is null,
@@ -154,7 +156,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         return result;
     }
 
-    final void createKeyPair(ref ubyte[] seckey)
+    final void createKeyPair(ref ubyte[] seckey) pure
     in (seckey.length == SECKEY_SIZE)
     do {
         scope (exit) {
@@ -176,7 +178,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         auto encrypted_keypair = new ubyte[keypair.length];
         AES.encrypt(aes_key, aes_iv, keypair, encrypted_keypair);
         @safe
-        void do_secret_stuff(scope void delegate(const(ubyte[]) keypair) @safe dg) {
+        void do_secret_stuff(scope void delegate(const(ubyte[]) keypair) pure @safe dg) pure {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
@@ -192,7 +194,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
 
         @safe class LocalSecret : SecretMethods {
-            immutable(ubyte[]) sign(const(ubyte[]) message) const {
+            immutable(ubyte[]) sign(const(ubyte[]) message) const pure {
                 immutable(ubyte)[] result;
                 ubyte[crypt.MESSAGE_SIZE] _aux_random;
                 ubyte[] aux_random = _aux_random;
@@ -205,7 +207,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                 do_secret_stuff((const(ubyte[]) keypair) @safe { crypt.privTweak(keypair, tweak_code, tweak_keypair); });
             }
 
-            immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
+            immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const pure {
                 Buffer result;
                 do_secret_stuff((const(ubyte[]) keypair) @safe {
                     ubyte[] seckey;
@@ -218,14 +220,11 @@ class StdSecureNet : StdHashNet, SecureNet {
                 return result;
             }
 
-            void clone(StdSecureNet net) const {
-                do_secret_stuff((const(ubyte[]) keypair) @safe {
-                    auto _keypair = keypair.dup;
-                    net.createKeyPair(_keypair); // Not createKeyPair scrambles the keypair
-                });
+            void clone(StdSecureNet net) const pure {
+                do_secret_stuff((const(ubyte[]) keypair) @safe { auto _keypair = keypair.dup; net.createKeyPair(_keypair); });
             }
 
-            void __expose(out scope ubyte[] _keypair) const {
+            void __expose(out scope ubyte[] _keypair) const pure {
                 do_secret_stuff((const(ubyte[]) keypair) @safe { _keypair = keypair.dup; });
             }
         }
@@ -245,7 +244,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     void generateKeyPair(
             scope const(char[]) passphrase,
     scope const(char[]) salt = null,
-    void delegate(scope const(ubyte[]) data) @safe dg = null)
+    void delegate(scope const(ubyte[]) data) pure @safe dg = null)
     in (_secret is null)
     do {
         import tagion.crypto.pbkdf2;
@@ -277,7 +276,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         return _secret.ECDHSecret(pubkey);
     }
 
-    Pubkey getPubkey(scope const(ubyte[]) seckey) const {
+    Pubkey getPubkey(scope const(ubyte[]) seckey) const pure {
         return Pubkey(crypt.getPubkey(seckey));
     }
 
