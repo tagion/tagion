@@ -75,9 +75,6 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
     @label("previous") Fingerprint previous;
     /** Recorder with database changes of this block */
     @label("recorder") Document recorder_doc;
-
-    mixin JSONString;
-
     /** Ctor creates block from recorder, previous hash and bullseye.
      *      @param recorder_doc - Document with recorder for block
      *      @param previous - fingerprint of the previous block
