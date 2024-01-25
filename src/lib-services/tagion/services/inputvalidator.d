@@ -66,8 +66,9 @@ struct InputValidatorService {
     static Topic rejected = Topic("reject/inputvalidator");
 
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
-    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
+    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) __task_names) @trusted {
         HiRPC hirpc = HiRPC(net);
+        ActorHandle hirpc_verifier_handle = ActorHandle(__task_names.hirpc_verifier);
 
         void reject(T)(ResponseError err_type, T data = Document()) const nothrow {
             try {
@@ -199,7 +200,7 @@ struct InputValidatorService {
             }
             try {
                 log("Sending contract to hirpc_verifier");
-                locate(task_names.hirpc_verifier).send(inputDoc(), doc);
+                hirpc_verifier_handle.send(inputDoc(), doc);
 
                 auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());
