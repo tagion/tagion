@@ -293,8 +293,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: libmobile
-          path: ./build/*/lib/libmobile.so
+          name: ${{ matrix.arch }}-linux-android
+          path: build/*/lib/libmobile.so
           if-no-files-found: error
 
       - name: Cleanup
