@@ -54,7 +54,7 @@
           '';
         };
 
-      devShell.x86_64-linux =
+      devShells.x86_64-linux.default =
         # Notice the reference to nixpkgs here.
         with import nixpkgs { system = "x86_64-linux"; };
         mkShell {

@@ -28,6 +28,7 @@ struct ShellOptions {
     string contract_addr_prefix;
     string dart_addr_prefix;
     uint sock_recvtimeout;
+    uint sock_recvdelay;
     uint sock_connectretry;
     uint dartcache_size;
     double dartcache_ttl_msec;
@@ -50,6 +51,7 @@ struct ShellOptions {
         default_i2p_wallet_pin = "0001";
         number_of_nodes = 5;
         sock_recvtimeout = 10000;
+        sock_recvdelay = 10;
         sock_connectretry = 32;
         dartcache_size = 4096;
         dartcache_ttl_msec = 30.0;

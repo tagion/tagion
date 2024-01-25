@@ -289,65 +289,6 @@ int _main(string[] args) {
             wallet_interface.listInvoices(vout);
             sum = true;
         }
-        if (sum) {
-            wallet_interface.sumAccount(vout);
-            info_only = true;
-        }
-        if (info_only) {
-            return 0;
-        }
-
-        if (create_account) {
-            wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
-            return 0;
-        }
-        else if (change_pin) {
-            wallet_interface.loginPincode(changepin : true);
-            check(wallet_interface.secure_wallet.isLoggedin, "Failed to login");
-            good("Pincode correct");
-            return 0;
-        }
-
-        if (wallet_interface.secure_wallet !is WalletInterface.StdSecureWallet.init) {
-            if (!pincode.empty) {
-                const flag = wallet_interface.secure_wallet.login(pincode);
-
-                if (!flag) {
-                    error("Wrong pincode");
-                    return 3;
-                }
-                good("Loggedin");
-            }
-            else if (!wallet_interface.loginPincode(changepin : false)) {
-                wallet_ui = true;
-                warn("Wallet not loggedin");
-                return 4;
-            }
-        }
-        foreach (file; args.filter!(file => file.hasExtension(FileExtension.hibon))) {
-            check(file.exists, format("File %s not found", file));
-
-            const hirpc_response = file.fread!(HiRPC.Receiver)
-                .ifThrown!HiBONException(HiRPC.Receiver.init);
-            if (hirpc_response is HiRPC.Receiver.init) {
-                continue;
-            }
-            writefln("File %s %s", file, hirpc_response.toPretty);
-            const ok = wallet_interface.secure_wallet.setResponseUpdateWallet(hirpc_response)
-                .ifThrown!HiBONException(
-                        wallet_interface.secure_wallet.setResponseCheckRead(hirpc_response)
-            );
-
-            check(ok, format("HiPRC %s is not a valid response", file));
-            wallet_switch.save_wallet = true;
-        }
-        if (!account_name.empty) {
-            wallet_interface.secure_wallet.account.name = account_name;
-            wallet_interface.secure_wallet.account.owner = wallet_interface.secure_wallet.net.pubkey;
-            wallet_switch.save_wallet = true;
-
-        }
-
         if (history) {
             import std.range;
             import std.datetime;
@@ -406,6 +347,66 @@ int _main(string[] args) {
                     break;
                 }
             }
+            info_only = true;
+        }
+
+        if (sum) {
+            wallet_interface.sumAccount(vout);
+            info_only = true;
+        }
+        if (info_only) {
+            return 0;
+        }
+
+        if (create_account) {
+            wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
+            return 0;
+        }
+        else if (change_pin) {
+            wallet_interface.loginPincode(changepin : true);
+            check(wallet_interface.secure_wallet.isLoggedin, "Failed to login");
+            good("Pincode correct");
+            return 0;
+        }
+
+        if (wallet_interface.secure_wallet !is WalletInterface.StdSecureWallet.init) {
+            if (!pincode.empty) {
+                const flag = wallet_interface.secure_wallet.login(pincode);
+
+                if (!flag) {
+                    error("Wrong pincode");
+                    return 3;
+                }
+                good("Loggedin");
+            }
+            else if (!wallet_interface.loginPincode(changepin : false)) {
+                wallet_ui = true;
+                warn("Wallet not loggedin");
+                return 4;
+            }
+        }
+        foreach (file; args.filter!(file => file.hasExtension(FileExtension.hibon))) {
+            check(file.exists, format("File %s not found", file));
+
+            const hirpc_response = file.fread!(HiRPC.Receiver)
+                .ifThrown!HiBONException(HiRPC.Receiver.init);
+            if (hirpc_response is HiRPC.Receiver.init) {
+                continue;
+            }
+            writefln("File %s %s", file, hirpc_response.toPretty);
+            const ok = wallet_interface.secure_wallet.setResponseUpdateWallet(hirpc_response)
+                .ifThrown!HiBONException(
+                        wallet_interface.secure_wallet.setResponseCheckRead(hirpc_response)
+            );
+
+            check(ok, format("HiPRC %s is not a valid response", file));
+            wallet_switch.save_wallet = true;
+        }
+        if (!account_name.empty) {
+            wallet_interface.secure_wallet.account.name = account_name;
+            wallet_interface.secure_wallet.account.owner = wallet_interface.secure_wallet.net.pubkey;
+            wallet_switch.save_wallet = true;
+
         }
 
         wallet_interface.operate(wallet_switch, args);
