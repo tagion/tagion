@@ -81,13 +81,19 @@ void emplace_buffer(ref scope AppendBuffer buffer, const size_t start_index) pur
 }
 
 void build(T, Key)(ref scope AppendBuffer buffer, Key key,
-        const(T) x) pure if (isKey!Key) {
+        const(T) val) pure if (isKey!Key) {
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : isHiBONRecord;
     import std.range;
     import traits = std.traits;
 
     alias BaseT = TypedefBase!T;
+    static if (!is(BaseT == T) && __traits(compiles, {auto x=cast(BaseT)val;})) {
+    auto x=cast(BaseT)val;
+    }
+    else {
+        alias x=val;
+    }
     static if (Document.Value.hasType!BaseT) {
         enum type = Document.Value.asType!BaseT;
     }
@@ -111,10 +117,10 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
         const leb128_size = LEB128.encode(x.length);
         buffer ~= leb128_size;
         static if (isSomeString!BaseT) {
-            buffer ~= (cast(BaseT) x).representation;
+            buffer ~=  x.representation;
         }
         else {
-            buffer ~= cast(BaseT) x;
+            buffer ~=  x;
         }
     }
     else static if (is(BaseT : const Document)) {
