@@ -1,5 +1,27 @@
 # Public hirpc methods
 
+## Connection types
+By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
+The socket address, and thereby the visibillity can be changed in the tagionwave config file.
+
+
+| [Input Validator](/documents/architecture/InputValidator.md) | [Dart Interface](/documents/architecture/DartInterface.md) | [Subscription](/documents/architecture/LoggerSubscription.md) | [Node Interface](/documents/architecture/NodeInterface.md) |
+| -                                                            | -                                                          | -                                                             | -                                                          |
+| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
+| **Default shell endpoint**                                   | ..                                                         |                                                               |                                                            |
+| /api/v1/contract                                             | /api/v1/dart                                               |                                                               |                                                            |
+| **Default socket address (node_prefix is added in mode0)**   | ..                                                         | ..                                                            | ..                                                         |
+| "\0*node_prefix*CONTRACT_NEUEWELLE"                          | "\0*node_prefix*DART_NEUEWELLE"                            | "\0SUBSCRIPTION_NEUEWELLE"                                    | tcp://localhost:10700                                      |
+| **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
+| "submit"                                                     | "search"                                                   | "log"                                                         |
+|                                                              | "dartCheckRead"                                            |
+|                                                              | "dartRead"                                                 |
+|                                                              | "dartRim"                                                  |
+|                                                              | "dartBullseye"                                             |
+| **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
+| REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
+
+
 These are the hirpc methods exposed by the tagion kernel.
 
 ## Write methods
@@ -35,7 +57,7 @@ hirpc.method.params = [Pubkey](https://ddoc.tagion.org/tagion.crypto.Types.Pubke
 
 **Returns**
 
-hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+hirpc.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 ### dartCheckRead
 

@@ -1,6 +1,7 @@
 module tagion.tools.tagionshell;
 
 import core.time;
+import core.memory;
 import std.algorithm;
 import std.array;
 import std.concurrency;
@@ -57,6 +58,12 @@ long getmemstatus() {
     }
     f.close();
     return sz;
+}
+
+static double timestamp()
+{
+    auto ts = Clock.currTime().toTimeSpec();
+    return ts.tv_sec + ts.tv_nsec/1e9;
 }
 
 void writeit(A...)(A a) {
@@ -376,14 +383,16 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
 
 static void dart_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
+    rt_moduleTlsCtor();
     try {
         int rc;
         size_t nfound = 0, nreceived = 0, attempts = 0;
         bool usecache = true;
-        const size_t buflen = 1048576;
-        ubyte[1048576] buf;
         immutable(ubyte)[] docbuf;
-        size_t len = 0, doclen = 0;
+        size_t doclen;
+        
+        const stime = timestamp();
+        NNGMessage msg = NNGMessage(0);
 
         ShellOptions* opt = cast(ShellOptions*) ctx;
         if (req.type != "application/octet-stream") {
@@ -409,7 +418,6 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
         }
 
         if (receiver.method.name == "search") {
-            
             auto pkey_doc = receiver.method.params;
             Buffer[] owner_pkeys;
             foreach (owner; pkey_doc[]) {
@@ -436,7 +444,6 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
             if (!owner_pkeys.empty) {
                 auto dreq = new HiBON;
                 dreq = owner_pkeys;
-                
                 NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
                 s.recvtimeout = msecs(opt.sock_recvtimeout);
                 while (true) {
@@ -448,42 +455,53 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 scope (exit) {
                     s.close();
                 }
-
                 rc = s.send(cast(ubyte[])(hirpc.search(dreq).toDoc.serialize));
-
                 if (rc != 0) {
                     writeit("dart_handler: send: ", nng_errstr(rc));
                     rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
                     rep.msg = "socket error";
                     return;
                 }
-
-                do {
-                    len = s.receivebuf(buf, buflen);
-                    if (len == size_t.max && s.errno != 0) {
-                        writeit("dart_handler: recv: ", nng_errstr(s.errno));
-                        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                        rep.msg = "socket error";
-                        return;
+                while(true){
+                    rc = s.receivemsg(&msg, true);
+                    if(rc < 0){
+                        if(s.errno == nng_errno.NNG_EAGAIN){
+                            nng_sleep(msecs(opt.sock_recvdelay));
+                            auto itime = timestamp();
+                            if((itime - stime) * 1000 > opt.sock_recvtimeout){
+                                writeit("dart_handler: recv: timeout");
+                                rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
+                                rep.msg = "socket timeout";
+                                return;
+                            }
+                            msg.clear();
+                            continue;
+                        }
+                        if(s.errno != 0){
+                            writeit("dart_handler: recv: ", nng_errstr(s.errno));
+                            rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                            rep.msg = "socket error";
+                            return;
+                        }
+                        writeit("dart_handler: recv: empty response");
+                        break;
                     }
-                    if (len > buflen) {
-                        writeit("dart_handler: recv wrong size: ", len);
-                        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                        rep.msg = "socket error";
-                        return;
-                    }
-                    writeit(format("WH: dart: received %d bytes", len));
-                    docbuf ~= buf[0 .. len];
-                    doclen += len;
+                    auto buf = msg.body_trim!(ubyte[])(msg.length);
+                    writeit(format("WH: dart: received %d bytes", buf.length));
+                    docbuf ~= buf[0..buf.length];
+                    doclen += docbuf.length;
+                    break;
                 }
-                while (len > buflen - 1);
-
+                if(docbuf.empty){
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "No response";
+                    return;
+                }
                 const repdoc = Document(docbuf);
                 immutable repreceiver = hirpc.receive(repdoc);
                 TagionBill[] received_bills = repreceiver.response.result[]
                     .map!(e => TagionBill(e.get!Document))
                     .array;
-                
                 if(usecache){    
                     TagionBill[][Buffer] tocache;
                     foreach (bill; received_bills) {
@@ -493,9 +511,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                         dcache.update(owner, tocache[owner], true);
                     }    
                 }
-
                 nreceived = received_bills.length;
-
                 found_bills ~= received_bills;
             }
             writeit("DART STAT: ", nfound, " found, ", nreceived, " received");
@@ -509,9 +525,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 .NNG_HTTP_STATUS_NO_CONTENT;
             rep.type = "applicaion/octet-stream";
             rep.rawdata = (found_bills.length > 0) ? cast(ubyte[])(response.serialize) : null;
-
         }else{
-            
             NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
             s.recvtimeout = msecs(opt.sock_recvtimeout);
             while (true) {
@@ -523,7 +537,6 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
             scope (exit) {
                 s.close();
             }
-            
             rc = s.send(req.rawdata);
             if (rc != 0) {
                 writeit("dart_handler: error on send: ", nng_errstr(rc));
@@ -532,29 +545,39 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 return;
             }
             writeit(format("WH: dart: sent %d bytes", req.rawdata.length));
-            do {
-                len = s.receivebuf(buf, buflen);
-                if (len == size_t.max && s.errno != 0) {
-                    writeit("dart_handler: error on recv: ", nng_errstr(s.errno));
-                    rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                    rep.msg = "socket error";
-                    return;
+            while(true) {
+                rc = s.receivemsg(&msg, true);
+                if(rc < 0){
+                    if(s.errno == nng_errno.NNG_EAGAIN){
+                        nng_sleep(msecs(opt.sock_recvdelay));
+                        auto itime = timestamp();
+                        if((itime - stime) * 1000 > opt.sock_recvtimeout){
+                            writeit("dart_handler: recv: timeout");
+                            rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
+                            rep.msg = "socket timeout";
+                            return;
+                        }
+                        msg.clear();
+                        continue;
+                    }
+                    if(s.errno != 0){
+                        writeit("dart_handler: recv: ", nng_errstr(s.errno));
+                        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                        rep.msg = "socket error";
+                        return;
+                    }
+                    writeit("dart_handler: recv: empty response");
+                    break;
                 }
-                if (len > buflen) {
-                    writeit("dart_handler: recv wrong size: ", len);
-                    rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                    rep.msg = "socket error";
-                    return;
-                }
-                writeit(format("WH: dart: received %d bytes", len));
-                docbuf ~= buf[0 .. len];
-                doclen += len;
+                auto buf = msg.body_trim!(ubyte[])(msg.length);
+                writeit(format("WH: dart: received %d bytes", buf.length));
+                docbuf ~= buf[];
+                doclen = docbuf.length;
+                break;
             }
-            while (len > buflen - 1);
             rep.status = (doclen > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
             rep.type = "applicaion/octet-stream";
             rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
-        
         }
     }
     catch (Throwable e) {
@@ -797,7 +820,7 @@ static void selftest_handler(WebData* req, WebData* rep, void* ctx) {
         if (rep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = "text/html";
-            rep.text = "<h2>The requested test couldn`t be processed</h2>\n\r<pre>\n\r" ~ to!string(reqpath) ~ "\n\r</pre>\n\r";
+            rep.text = "<h2>The requested test couldn`t be processed</h2>\n\r<pre>\n\r" ~ to!string(reqpath) ~ "\r\n" ~ rep.msg ~ "\r\n" ~ rep.text ~ "\n\r</pre>\n\r";
         }
 
     }
