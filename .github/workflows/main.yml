@@ -71,10 +71,13 @@ jobs:
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload code coverage results
-        run: |
-          cp logs/${{env.TARGET}}/cov/* .      
-          bash <(curl -s https://codecov.io/bash) -F unittest -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
-          rm -- *.lst
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./logs/${{ env.TARGET }}/cov/
+          fail_ci_if_error: true
+          flags: unittest
+          verbose: true
 
       - name: Post run
         if: always()
