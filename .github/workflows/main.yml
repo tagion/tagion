@@ -181,7 +181,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
       - run: nix build .#dockerImage
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: tagion_docker
           path: result
@@ -248,7 +248,7 @@ jobs:
           artifact=${{ github.sha }}-${{ github.run_attempt }}
           tar czf $artifact.tar.gz --directory=$artifact/ .
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: successful_artifact
           path: ${{ env.ARTIFACT_DIR }}.tar.gz
@@ -290,7 +290,7 @@ jobs:
           make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
           file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: libmobile
@@ -309,7 +309,7 @@ jobs:
         target: [apple-ios, apple-ios-simulator]
     runs-on: macOS
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/ios
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
@@ -321,8 +321,8 @@ jobs:
       url: https://docs.tagion.org
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/configure-pages@v3
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v4
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v1
         with:
