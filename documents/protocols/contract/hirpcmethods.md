@@ -79,6 +79,10 @@ hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.
 
 
 **Example dartRead request**
+
+<details>
+<summary>**Example response**</summary>
+
 ```json
 {
     "$@": "HiRPC",
@@ -106,8 +110,11 @@ hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.
         "@VVKuIfWv93MZCeCwpEcrHGRNsf8RaLtJguiytuegANxyMTSiWtNGdXQsuxaCTr7hKKQbY8UXHczlNLafm1-VwQ=="
     ]
 }
-
 ```
+
+</details>
+
+
 *Note* - The `"$Y"`, `"$sign"` are optional, but are highly recommended in order to check that the package was not tampered with.
 
 #### Returns
