@@ -1,4 +1,4 @@
-///
+/// Interface for the Node against other Nodes
 module tagion.services.nodeInterface;
 
 @safe:

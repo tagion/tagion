@@ -1,5 +1,27 @@
 # Public hirpc methods
 
+## Connection types
+By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
+The socket address, and thereby the visibillity can be changed in the tagionwave config file.
+
+
+| [Input Validator](/documents/architecture/InputValidator.md) | [Dart Interface](/documents/architecture/DartInterface.md) | [Subscription](/documents/architecture/LoggerSubscription.md) | [Node Interface](/documents/architecture/NodeInterface.md) |
+| -                                                            | -                                                          | -                                                             | -                                                          |
+| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
+| **Default shell endpoint**                                   | ..                                                         |                                                               |                                                            |
+| /api/v1/contract                                             | /api/v1/dart                                               |                                                               |                                                            |
+| **Default socket address (node_prefix is added in mode0)**   | ..                                                         | ..                                                            | ..                                                         |
+| "\0*node_prefix*CONTRACT_NEUEWELLE"                          | "\0*node_prefix*DART_NEUEWELLE"                            | "\0SUBSCRIPTION_NEUEWELLE"                                    | tcp://localhost:10700                                      |
+| **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
+| "submit"                                                     | "search"                                                   | "log"                                                         |
+|                                                              | "dartCheckRead"                                            |
+|                                                              | "dartRead"                                                 |
+|                                                              | "dartRim"                                                  |
+|                                                              | "dartBullseye"                                             |
+| **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
+| REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
+
+
 These are the hirpc methods exposed by the tagion kernel.
 
 ## Write methods
@@ -35,7 +57,7 @@ hirpc.method.params = [Pubkey](https://ddoc.tagion.org/tagion.crypto.Types.Pubke
 
 **Returns**
 
-hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+hirpc.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 ### dartCheckRead
 
@@ -55,9 +77,91 @@ hirpc.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTInd
 hirpc.method.name = "dartRead"  
 hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
-**Returns**
 
+**Example dartRead request**
+
+<details>
+<summary>**Example request**</summary>
+
+```json
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@AhJKNLaNgHVRgF1dEz8rWHhROYAVIntpyDasIpHVeAqE"
+    ],
+    "$msg": {
+        "method": "dartRead",
+        "params": {
+            "dart_indices": [
+                [
+                    "*",
+                    "@4c2LxGMUI7o7AnNQfKxgAEdjwizVRvdtV3j2ItiBwQM="
+                ],
+                [
+                    "*",
+                    "@oKqMX30Lf0KnzFJ46Ws5SRH48oPouDDS3IIXIaYPjkM="
+                ]
+            ]
+        }
+    },
+    "$sign": [
+        "*",
+        "@VVKuIfWv93MZCeCwpEcrHGRNsf8RaLtJguiytuegANxyMTSiWtNGdXQsuxaCTr7hKKQbY8UXHczlNLafm1-VwQ=="
+    ]
+}
+```
+
+</details>
+
+
+*Note* - The `"$Y"`, `"$sign"` are optional, but are highly recommended in order to check that the package was not tampered with.
+
+#### Returns
 hirpc.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Recorder.RecordFactory.Recorder)
+If a specified archive was not found in the dart, it is simply not included in the output recorder.
+
+<details>
+<summary>**Example response**</summary>
+
+```json
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@A7l5pb4FfnnJYXW0_MDlXP-a1urQ_XC1ZCZmRAwNLGj-"
+    ],
+    "$msg": {
+        "result": {
+            "$@": "Recorder",
+            "0": {
+                "$T": [
+                    "i32",
+                    1
+                ],
+                "$a": {
+                 // archive
+                }
+            },
+            "1": {
+                "$T": [
+                    "i32",
+                    1
+                ],
+                "$a": {
+                  // archive
+                }
+            }
+        }
+    },
+    "$sign": [
+        "*",
+        "@LoOxof1kQgjuFB188DjP-coHPqy5t26nK9Is9R2PVvhOa2Uri6VitOZkfQeKMQuH7tjn_yjLpYEsEcivKPbXDA=="
+    ]
+}
+```
+
+</details>
 
 ### dartRim
 
