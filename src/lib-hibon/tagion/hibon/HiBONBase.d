@@ -140,16 +140,26 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
         buffer ~= LEB128.encode(cast(TypedefType!sdt_t) x);
     }
     else static if (isHiBONRecord!BaseT) {
-        static if (__traits(compiles, x._serialize(buffer))) {
             const start_index = buffer.data.length;
+        static if (__traits(compiles, x._serialize(buffer))) {
             x._serialize(buffer);
-            emplace_buffer(buffer, start_index);
+        }
+        else static if (hasMember!(BaseT, "serialize")) {
+           buffer~= x.serialize;
+        }
+        else static if (hasMember!(BaseT, "toDoc")) {
+            buffer~=x.toDoc.serialize;
+        }
+        else static if (hasMember!(BaseT, "toHiBON")) {
+            
+
+            buffer~= x.toHiBON.serialize;
         }
         else {
-            const data = x.toHiBON.serialize;
-            //buffer.reserve(data.length);
-            buffer ~= data;
+            static assert(0, format("%s has no metode to serialize", T.stringof));
+            
         }
+            emplace_buffer(buffer, start_index);
     }
     else static if (isInputRange!BaseT) {
         alias ElementT = ElementType!BaseT;
