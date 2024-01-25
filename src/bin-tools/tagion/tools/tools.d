@@ -13,7 +13,6 @@ int main(string[] args) {
     import hibonutil = tagion.tools.hibonutil;
     import hirep = tagion.tools.hirep.hirep;
     import neuewelle = tagion.tools.neuewelle;
-    import recorderchain = tagion.tools.recorderchain;
     import signs = tagion.tools.signs;
     import subscribe = tagion.tools.subscribe;
     import tagionshell = tagion.tools.tagionshell;
@@ -39,7 +38,6 @@ int main(string[] args) {
             stiefel,
             auszahlung,
             hirep,
-            recorderchain,
             callstack,
             ifiler,
             kette,
