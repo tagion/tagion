@@ -653,7 +653,12 @@ extern (C) {
 
             WHistory hist;
             hist_gen.popFront();
-            hist.items = hist_gen.drop(from).take(count).array;
+            if (count == 0) {
+                hist.items = hist_gen.drop(from).array;
+            }
+            else {
+                hist.items = hist_gen.drop(from).take(count).array;
+            }
 
             *historyId = recyclerDoc.create(hist.toDoc);
         }
@@ -661,9 +666,18 @@ extern (C) {
             assert(__wallet_storage !is null, "The Wallet storage was not initialised");
 
             WHistory hist;
-            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
-                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
-                .array;
+
+            if (count == 0) {
+                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from)
+                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                    .array;
+            }
+            else {
+                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
+                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                    .array;
+            }
+
             *historyId = recyclerDoc.create(hist.toDoc);
         }
 
