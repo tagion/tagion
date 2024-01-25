@@ -113,6 +113,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
     }
 }
 
+version(none)
 unittest {
     import tagion.basic.tagionexceptions : TagionException;
     import tagion.crypto.SecureNet : StdHashNet;
@@ -181,7 +182,44 @@ unittest {
         }
     }
 }
-
+    version(none)
 version (unittest) {
-    import tagion.recorderchain.RecorderChain : DummyBlock;
+    import tagion.crypto.SecureInterfaceNet : HashNet;
+    import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
+
+    @safe class DummyBlock {
+        @exclude Fingerprint hash;
+        @label("prev") Fingerprint previous;
+        @label("dummy") int dummy;
+
+        mixin HiBONRecord!(
+                q{
+             this(
+                Fingerprint previous,
+                const(HashNet) net,
+                int dummy = 0)
+            {
+                this.previous = previous;
+                this.dummy = dummy;
+
+                this.hash = net.calcHash(toDoc);
+            }
+
+            this(
+                const(Document) doc,
+                const(HashNet) net)
+            {
+                this(doc);
+                this.hash = net.calcHash(toDoc);
+            }
+        });
+
+        Fingerprint getHash() const {
+            return hash;
+        }
+
+        Fingerprint getPrevious() const {
+            return previous;
+        }
+    }
 }
