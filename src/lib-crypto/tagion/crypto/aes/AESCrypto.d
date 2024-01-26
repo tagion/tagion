@@ -21,17 +21,27 @@ struct AESCrypto(int KEY_LENGTH) {
     alias AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
     enum BLOCK_SIZE = AES.BLOCK_SIZE;
     enum KEY_SIZE = AES.KEY_SIZE;
+    /**
+    * Encrypt and Decrypt the data emplace
+    * Params:
+    *     key = the AES key
+    *     iv  = initial value
+    *   data  = Data to be de/encypted
+    */
     static void crypt_parse(bool ENCRYPT = true)(
-            const(ubyte[]) key,
+            scope const(ubyte[]) key,
     ubyte[BLOCK_SIZE] iv,
     ref ubyte[] data) nothrow
-        in(data)
-        in(data.length % BLOCK_SIZE == 0, 
-            __format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data.length))
-        in(key.length is KEY_SIZE, 
-__format("The key size must be %d bytes not %d", KEY_SIZE, key.length))
+    in (data)
+    in (data.length % BLOCK_SIZE == 0,
+        __format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data.length))
+    in (key.length is KEY_SIZE,
+        __format("The key size must be %d bytes not %d", KEY_SIZE, key.length))
     do {
         scope aes = AES(key[0 .. KEY_SIZE], iv);
+        scope (exit) {
+            aes = aes.init;
+        }
         static if (ENCRYPT) {
             aes.encrypt(data);
         }
@@ -40,10 +50,18 @@ __format("The key size must be %d bytes not %d", KEY_SIZE, key.length))
         }
     }
 
+    /**
+    * Same as crypt_parse except that the indata is copied to outdata
+    * Params:
+    *     key = the AES key
+    *     iv = initial value
+    *  indata = input data
+    * outdata = output data
+    */
     static void crypt(bool ENCRYPT = true)(
-scope const(ubyte[]) key, 
-scope const(ubyte[]) iv, 
-return scope const(ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
+            scope const(ubyte[]) key,
+    scope const(ubyte[]) iv,
+    return scope const(ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
     in {
         if (outdata.length) {
             assert(enclength(indata.length) == outdata.length,
