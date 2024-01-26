@@ -505,6 +505,53 @@ struct SecureWallet(Net : SecureNet) {
         return hirpc.action("trt."~DART.Queries.dartRead, params);
     }
 
+    bool differenceInIndices(const(HiRPC.Receiver) receiver) {
+        import tagion.dart.Recorder;
+        import tagion.hibon.HiBONRecord : isRecord;
+        import tagion.trt.TRT : TRTArchive;
+        import std.stdio;
+
+        if (!receiver.isResponse) {
+            return false;
+        }
+
+        DARTIndex[] to_be_looked_up;
+
+        const recorder_doc = receiver.message[Keywords.result].get!Document;
+        writefln("recorder \n %s", recorder_doc.toPretty);
+        RecordFactory record_factory = RecordFactory(net);
+        // TODO: catch hibon exception;
+        const recorder = record_factory.recorder(recorder_doc);
+        /// list of dart_indices in response
+        auto dart_indices = recorder[]
+            .map!(a => a.filed)
+            .filter!(doc => doc.isRecord!TRTArchive) 
+            .map!(doc => TRTArchive(doc))
+            .map!(trt_archive => trt_archive.indices)
+            .join
+            .array;
+
+        DARTIndex[] bill_indices = account.bills
+            .map!(b => DARTIndex(net.dartIndex(b))).array;
+
+        DARTIndex[] locked_indices = account.activated
+            .byKey.array;
+
+        DARTIndex[] to_compare = bill_indices ~ locked_indices;
+        auto sorted_to_compare = to_compare.sort!((a,b) => a < b).array;
+        writeln("sorted_compare");
+        sorted_to_compare.each!(d => writefln("%(%02x%)",d)); 
+        auto sorted_res = dart_indices.sort!((a,b) => a < b).array;
+        writeln("sorted response");
+        sorted_res.each!(d => writefln("%(%02x%)", d));
+        if (equal(sorted_to_compare, sorted_res)) {
+            return false;
+        }
+        return true;
+    }
+
+    
+
     const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
         return bills
             .map!(bill => bill.owner in account.derivers)

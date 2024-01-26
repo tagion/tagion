@@ -739,8 +739,25 @@ struct WalletInterface {
 
                         verbose("Received response", received.toPretty);
 
+                        version(NEW_REQ) {
+                        bool setRequest(const(HiRPC.Receiver) receiver) {
+                            if (trt_update) {
+                                return secure_wallet.setResponseUpdateWallet(receiver);
+                            } else if (update) {
+                                return secure_wallet.setResponseUpdateWallet(receiver);
+                            }
+                            else {
+                                auto differences = secure_wallet.differenceInIndices(receiver);
+                                writefln("Found difference: %s", differences);
+                                return differences;
+                            }
+                        }
+                        bool res = setRequest(received);
+                        } else {
+
                         auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
                                 received) : secure_wallet.setResponseCheckRead(received);
+                        }
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         save_wallet = true;
                     }
