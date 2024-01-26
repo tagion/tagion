@@ -541,6 +541,7 @@ struct SecureWallet(Net : SecureNet) {
         auto to_compare = chain(bill_indices, locked_indices)
             .array
             .sort!((a,b) => a < b)
+            .uniq // remove duplicates
             .array;
 
         DARTIndex[] to_be_looked_up_indices; /// indices that were in network but not in wallet
@@ -574,13 +575,10 @@ struct SecureWallet(Net : SecureNet) {
         from the database and should be removed from our wallet.
         */
 
-        if (!to_be_removed_from_wallet.empty) {
-            // we need to modify the wallet
-            foreach(idx; to_be_removed_from_wallet) {
-                writefln("removing: %(%02x%)", idx);
-                account.activated.remove(idx);
-                account.remove_bill_by_hash(idx);
-            }
+        foreach(idx; to_be_removed_from_wallet) {
+            writefln("removing: %(%02x%)", idx);
+            account.activated.remove(idx);
+            account.remove_bill_by_hash(idx);
         }
 
         const new_req = to_be_looked_up_indices.empty ? HiRPC.Sender.init : dartRead(to_be_looked_up_indices); 
