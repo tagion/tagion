@@ -176,10 +176,10 @@ const(Document) script) {
 }
 
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Pubkey[]) owners) nothrow {
-    import std.algorithm : all;
+    import std.algorithm;
 
     try {
-        if (signed_contract.contract.inputs.length == owners.length) {
+        if (!owners.empty && signed_contract.contract.inputs.length == owners.length) {
             const message = net.calcHash(signed_contract.contract);
             return zip(signed_contract.signs, owners)
                 .all!((a) => net.verify(message, a[0], a[1]));
@@ -208,7 +208,7 @@ unittest {
     import tagion.crypto.SecureNet : StdSecureNet;
     const net = new StdSecureNet;
     const  contract = new SignedContract;
-    assert(verify(net, contract, Document[].init));
+    assert(!verify(net, contract, Document[].init), "Contract with no inputs should fail");
 }
 
 @recordType("$@G")

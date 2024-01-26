@@ -4,6 +4,8 @@ module tagion.services.collector;
 
 import std.exception;
 import std.typecons;
+import std.algorithm;
+import std.range;
 import tagion.actor.actor;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
@@ -23,6 +25,7 @@ import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Debug;
 import tagion.hibon.HiBONJSON;
+
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
 
@@ -91,7 +94,8 @@ struct CollectorService {
     }
 
     void signed_contract(inputContract, immutable(SignedContract)* s_contract) {
-        if(s_contract.contract.inputs.length > 0) {
+       
+        version(none) if(s_contract.contract.inputs.empty) {
             return;
         }
 
@@ -155,6 +159,8 @@ struct CollectorService {
                 return;
             }
 
+            //assert(inputs[0] !is Document.init, "Recorder should've contained inputs at this point");
+            __write("inputs.length=%d", inputs.length);
             assert(inputs !is Document[].init, "Recorder should've contained inputs at this point");
             immutable collection =
                 ((res.id in reads) !is null)

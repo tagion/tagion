@@ -149,6 +149,7 @@ class ItWork {
         const script = PayScript(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
         const s_contract = sign(input_nets, input_bills.map!(a => a.toDoc).array, null, script);
 
+        __write("%s s_contract =%s", __FUNCTION__, s_contract.toPretty);
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 
@@ -169,7 +170,7 @@ class ItWork {
     @When("i send an contract with no inputs")
     Document noInputs() {
         __write("test %s", __FUNCTION__);
-        const outputs = PayScript(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
+        const outputs = PayScript.init.toDoc; //(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
         const contract = Contract(DARTIndex[].init, DARTIndex[].init, outputs);
         const s_contract = SignedContract(Signature[].init, contract);
 
@@ -180,6 +181,7 @@ class ItWork {
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        __write("%s result=%s", __FUNCTION__, result[0].symbol_name); 
         check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s"
                 .format(result[0].symbol_name));
 
