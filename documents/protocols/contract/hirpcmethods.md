@@ -32,16 +32,16 @@ These are the hirpc methods exposed by the tagion kernel.
 The method will return ok if the contract was receveived, but cannot predict if the contract can be executed properly.  
 The method will return an error if the document is invalid or contract has the wrong format.  
 
-$msg.method.name = "submit"  
-$msg.method.params = [SignedContract(SSC)](https://ddoc.tagion.org/tagion.script.common.SignedContract)  
+\$msg.method.name = "submit"  
+\$msg.method.params = [SignedContract(SSC)](https://ddoc.tagion.org/tagion.script.common.SignedContract)
 
 **Returns**
 
-hirpc.result = [ResultOK](https://ddoc.tagion.org/tagion.communication.HiRPC.ResultOk)  
+\$msg.result = [ResultOK](https://ddoc.tagion.org/tagion.communication.HiRPC.ResultOk)  
 
 or
 
-hirpc.error
+\$msg.error
 
 ## Read methods (DART(ro) + friends)
 
@@ -52,30 +52,30 @@ This will be removed in the future in favour of a similar method which returns t
 and it will be the clients reponsibillity to ask for the needed archives.
 See [TIP1](/documents/TIPs/cache_proposal_23_jan)
 
-$msg.method.name = "search"  
-$msg.method.params = [Pubkey](https://ddoc.tagion.org/tagion.crypto.Types.Pubkey)[]  
+\$msg.method.name = "search"  
+\$msg.method.params = [Pubkey](https://ddoc.tagion.org/tagion.crypto.Types.Pubkey)[]  
 
 **Returns**
 
-hirpc.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+\$msg.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 ### dartCheckRead
 
 *This method takes a list of DART Indices and responds with all of the indices which were not in the DART*
 
-$msg.method.name = "dartCheckRead"  
-$msg.method.params.dart_indices = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+\$msg.method.name = "dartCheckRead"  
+\$msg.method.params.dart_indices = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 **Return**
 
-hirpc.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+\$msg.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 ### dartRead
 
 *This method takes a list of DART Indices and responds with a Recorder of all the archives which were in the DART*
 
-$msg.method.name = "dartRead"  
-$msg.method.params.dart_indices = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+\$msg.method.name = "dartRead"  
+\$msg.method.params.dart_indices = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 
 **Example dartRead request**
@@ -167,20 +167,20 @@ If a specified archive was not found in the dart, it is simply not included in t
 
 *This method takes a rimpath a return a Recorder with all of the branches in that rim*
 
-$msg.method.name = "dartRim"  
-$msg.method.params = [Rims](https://ddoc.tagion.org/tagion.dart.DARTRim.Rims)
+\$msg.method.name = "dartRim"  
+\$msg.method.params = [Rims](https://ddoc.tagion.org/tagion.dart.DARTRim.Rims)
 
 **Returns**
 
-hirpc.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Recorder.RecordFactory.Recorder)
+\$msg.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Recorder.RecordFactory.Recorder)
 
 ### dartBullseye
 
 *This method return the bullseye of the database*
 
-hirpc.method.name = "dartBullseye"  
+\$msg.method.name = "dartBullseye"  
 
 
 **Returns**
 
-hirpc.result = [Fingerprint](https://ddoc.tagion.org/tagion.crypto.Types.Fingerprint)  
+\$msg.result = [Fingerprint](https://ddoc.tagion.org/tagion.crypto.Types.Fingerprint)  
