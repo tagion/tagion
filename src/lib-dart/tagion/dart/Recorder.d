@@ -1,6 +1,7 @@
 /// Recorder for the archives sread/removed and added to the DART 
 module tagion.dart.Recorder;
 
+@safe:
 import tagion.hibon.HiBONJSON;
 
 version (REDBLACKTREE_SAFE_PROBLEM) {
@@ -37,7 +38,6 @@ private alias check = Check!DARTRecorderException;
  * Record factory
  * Used to construct and handle DART recorder
  */
-@safe
 class RecordFactory {
     enum order_remove_add = true;
     const HashNet net;
@@ -107,13 +107,12 @@ class RecordFactory {
      *  Recorder to recorder (REMOVE, ADD) actions while can be executed by the
      *  modify method
      */
-    @safe
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-
-        alias archive_sorted = (a, b) @safe => (a.dart_index < b.dart_index) || (
-                a.dart_index == b.dart_index) && (a.type < b.type);
+        alias enable_serialize=bool;
+        alias archive_sorted = (a, b) @safe => (a.dart_index < b.dart_index) || 
+        (a.dart_index == b.dart_index) && (a.type < b.type);
 
         alias Archives = RedBlackTree!(Archive, archive_sorted);
         @exclude package Archives archives;
@@ -149,9 +148,6 @@ class RecordFactory {
         }
 
         private this(Document doc) {
-
-            
-
                 .check(isRecord(doc), format("Document is not a %s", This.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {
@@ -179,20 +175,6 @@ class RecordFactory {
             return archives[];
         }
 
-        version (none) void removeOutOfRange(ushort from, ushort to) { //TODO: write unit tests
-            if (from == to)
-                return;
-            immutable ushort to_origin = (to - from) & ushort.max;
-            foreach (archive; archives) {
-                if (archive.type != Archive.Type.REMOVE) {
-                    short archiveSector = archive.fingerprint[0] | archive.fingerprint[1];
-                    ushort sector_origin = (archiveSector - from) & ushort.max;
-                    if (sector_origin >= to_origin) {
-                        archives.removeKey(archive);
-                    }
-                }
-            }
-        }
 
         Recorder changeTypes(const GetType get_type) {
             import std.algorithm;
@@ -311,7 +293,7 @@ class RecordFactory {
             return insert(pack, Archive.Type.REMOVE);
         }
 
-        void insert(R)(R range, const Archive.Type type = Archive.Type.NONE) @trusted
+        void insert(R)(R range, const Archive.Type type = Archive.Type.NONE) 
                 if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
                     ElementType!R))) {
             alias FiledType = ElementType!R;
@@ -388,7 +370,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
 /**
  * Archive element used in the DART Recorder
  */
-@safe class Archive {
+class Archive {
     enum Type : int {
         NONE = 0, /// NOP DART instruction
         REMOVE = -1, /// Archive marked as remove instruction
@@ -477,6 +459,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
         if (type !is Type.NONE) {
             hibon[typeLabel] = type;
         }
+        
         return Document(hibon);
     }
 
@@ -565,7 +548,6 @@ const Neutral = delegate(const(Archive) a) => a.type;
 }
 
 ///
-@safe
 unittest { // Archive
     //    import std.stdio;
     import std.format;
@@ -623,7 +605,6 @@ unittest { // Archive
 
 }
 
-@safe
 unittest { /// RecordFactory.Recorder.insert range
     import std.algorithm.comparison : equal;
     import std.algorithm.sorting : sort;
@@ -680,6 +661,8 @@ unittest { /// RecordFactory.Recorder.insert range
 
 @safe
 unittest {
+    import tagion.basic.Debug;
+    import tagion.hibon.HiBONJSON;
     immutable(ulong[]) table = [
         //  RIM 2 test (rim=2)
         0x20_21_10_30_40_50_80_90,
@@ -718,6 +701,13 @@ unittest {
 
         //rec.//dump;
         assert(rec.checkSorted);
+        const recorder_doc=rec.toDoc;
+        __write("recorder_doc=%s", recorder_doc.toPretty  );
+       
+        const reconstructed_rec=manufactor.recorder(recorder_doc);
+        __write("reconstructed_rec=%s", reconstructed_rec.toPretty);
 
     }
+
 }
+

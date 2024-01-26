@@ -21,7 +21,8 @@ import tagion.script.execute;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
-
+import tagion.basic.Debug;
+import tagion.hibon.HiBONJSON;
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
 
@@ -90,6 +91,10 @@ struct CollectorService {
     }
 
     void signed_contract(inputContract, immutable(SignedContract)* s_contract) {
+        if(s_contract.contract.inputs.length > 0) {
+            return;
+        }
+
         auto req = dartReadRR();
         is_consensus_contract[req.id] = false;
         read_indices(req, s_contract);
@@ -99,6 +104,7 @@ struct CollectorService {
     void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @safe {
         immutable doc = Document(receiver.method.params);
         log("collector received receiver");
+        __write("%s %s", __FUNCTION__, receiver.toPretty);
         try {
             immutable s_contract = new immutable(SignedContract)(doc);
             signed_contract(inputContract(), s_contract);
@@ -141,7 +147,9 @@ struct CollectorService {
             }
 
             immutable inputs = recorder[].map!(a => a.filed).array;
-
+            import tagion.hibon.HiBONJSON;
+            import tagion.basic.Debug;
+            __write("%s recorder %s", __FUNCTION__, recorder.toPretty);
             if (!verify(net, s_contract, inputs)) {
                 log(reject, "contract_no_verify", recorder);
                 return;

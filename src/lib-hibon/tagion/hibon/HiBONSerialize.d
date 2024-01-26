@@ -51,23 +51,6 @@ template isHiBONArray(T) {
     }
 }
 
-//enum estimate_size = "estimate_size"; /// method to estimae the size of document serialized 
-version (none) template isHiBONAssociativeArray(T) {
-    import tagion.hibon.HiBONBase;
-    import traits = std.traits;
-    import tagion.hibon.HiBONRecord : isHiBONRecord;
-    import std.traits;
-
-    alias BaseT = TypedefBase!T;
-    static if (traits.isAssociativeArray!BaseT) {
-        alias ElementBaseT = TypedefBase!(ForeachType!(BaseT));
-        enum isHiBONAssociativeArray = (Document.Value.hasType!(ElementBaseT) || isHiBONRecord!ElementBaseT);
-    }
-    else {
-        enum isHiBONAssociativeArray = false;
-    }
-}
-
 template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
     import tagion.hibon.HiBONRecord : exclude, optional, isHiBONRecord;
     import std.traits;
@@ -272,7 +255,7 @@ mixin template Serialize() {
     import LEB128 = tagion.utils.LEB128;
 
     static if (__traits(hasMember, This, "enable_serialize")) {
-         void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
+        void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;
 
@@ -286,6 +269,7 @@ mixin template Serialize() {
                 enum index = GetTupleIndex!key;
                 enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
                 enum filter_flag = hasUDA!(This.tupleof[index], filter);
+                enum preserve_flag = hasUDA!(This.tupleof[index], preserve);
                 static if (filter_flag) {
                     alias filters = getUDAs!(this.tupleof[index], filter);
                     static foreach (F; filters) {
@@ -296,6 +280,12 @@ mixin template Serialize() {
                             }
                         }
                     }
+                }
+                static if (preserve_flag) {
+                    alias MemberT=Fields!This[index];
+                    alias BaseT=TypedefType!MemberT;
+                    static assert(isArray!BaseT, 
+            format("@%s UDA can only be apply to an array not a %s", preserve.stringof, MemberT.stringof));
                 }
                 static if (!exclude_flag) {
                     build(buf, key, this.tupleof[index]);
@@ -316,7 +306,10 @@ mixin template Serialize() {
 
         Buffer _serialize() const pure @safe 
         out(ret) {
-            assert(ret == this.toHiBON.serialize, This.stringof~" toHiBON.serialize failed");
+            version(TOHIBON_SERIALIZE_CHECK) {
+                const hibon_serialize=this.toHiBON.serialize;
+                assert(ret == hibon_serialize, This.stringof~" toHiBON.serialize failed");
+            }
         }
         do {
             Appender!(ubyte[]) buf;
@@ -326,8 +319,6 @@ mixin template Serialize() {
             }
             const start_index = buf.data.length;
             _serialize(buf);
-            const size_leb128 = LEB128.encode(start_index);
-            auto data = buf.data;
             emplace_buffer(buf, start_index);
             return buf.data;
         }

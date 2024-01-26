@@ -106,9 +106,6 @@ enum ExchangeState : uint {
     COHERENT, /** Coherent state is when an the least epoch wavefront has been received or
                         if all the nodes isEva notes (This only occurs at genesis).
                      */
-
-
-
 }
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
@@ -117,6 +114,7 @@ alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 struct EventBody {
     enum int eva_altitude = -77;
     import tagion.basic.ConsensusExceptions;
+    alias enable_serialize = bool;
 
     protected alias check = Check!HashGraphConsensusException;
     import std.traits : OriginalType, Unqual, getSymbolsByUDA, hasMember;

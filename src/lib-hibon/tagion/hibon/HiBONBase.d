@@ -86,7 +86,7 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
     import tagion.hibon.HiBONRecord : isHiBONRecord;
     import std.range;
     import traits = std.traits;
-
+    import tagion.basic.Debug;
     alias BaseT = TypedefBase!T;
     static if (!is(BaseT == T) && __traits(compiles, {auto x=cast(BaseT)val;})) {
     auto x=cast(BaseT)val;

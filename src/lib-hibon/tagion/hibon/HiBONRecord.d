@@ -117,6 +117,7 @@ struct fixed {
     string code; /// This function is used to fix value
 }
 
+struct preserve; /// This preserve the size of array
 /++
  Sets the HiBONRecord type
  +/
@@ -219,7 +220,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, isSpecialKeyType,
-        label, exclude, optional, GetLabel, filter, fixed, inspect;
+        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve;
     import tagion.hibon.HiBONBase : isKey, TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONSerialize;
@@ -448,7 +449,7 @@ mixin template HiBONRecord(string CTOR = "") {
     enum keys = _keys;
 
     static if (!NO_DEFAULT_CTOR) {
-        @safe this(const HiBON hibon) {
+        @safe this(const HiBON hibon) pure {
             this(Document(hibon.serialize));
         }
 
@@ -722,8 +723,7 @@ version (unittest) {
         const s_serialize = s._serialize;
         const h = s.toHiBON;
         const hibon_serialize = h.serialize;
-        static if (
-            SupportingFullSizeFunction!T) {
+        static if (SupportingFullSizeFunction!T) {
             assert(docS.full_size == s.full_size);
         }
         assert(docS.full_size == s_serialize.length);
@@ -769,8 +769,8 @@ unittest {
     }
 
     static assert(equal(SimpleLabel.keys, only("$S", "TEXT")));
-    static assert(
-            SimpleLabel.GetTupleIndex!"$S" == 1);
+
+    static assert(SimpleLabel.GetTupleIndex!"$S" == 1);
     static assert(SimpleLabel.GetTupleIndex!"TEXT" == 0);
     static assert(SimpleLabel.GetTupleIndex!"not defined" == -1);
     @recordType("BASIC") static struct BasicData {
@@ -817,13 +817,14 @@ unittest {
     { // Simple basic type check
     {
             const s = Simple(-42, "some text");
-            const docS = s.toDoc; // writefln("keys=%s", docS.keys);
+            const docS = s.toDoc;
+            // writefln("keys=%s", docS.keys);
             assert(docS["s"].get!int == -42);
             assert(docS["text"].get!string == "some text");
             assert(docS[TYPENAME].get!string == Simple.type_name);
-            assert(
-                    isRecord!Simple(docS));
-            const s_check = Simple(docS); // const s_check=Simple(s);
+            assert(isRecord!Simple(docS));
+            const s_check = Simple(docS);
+            // const s_check=Simple(s);
             assert(s == s_check);
             assert(s_check.toJSON.toString == format("%j", s_check));
 
@@ -897,10 +898,6 @@ unittest {
             s.not_an_option = 42;
             s.s = 17;
             s.text = "text!";
-            __write("doc._serialize =%s", s._serialize);
-            __write("hibon.serialize=%s", s.toHiBON.serialize);
-            __write("doc  =%s", s.toDoc.toPretty);
-            __write("hibon=%s", s.toHiBON.toPretty);
             const doc = s.toDoc;
             // writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assertNotThrown!Exception(NoLabel(doc));
@@ -1003,7 +1000,7 @@ unittest {
             string some_text;
             alias enable_serialize = bool;
             mixin HiBONRecord!(q{
-                    this(string some_text, int s, string text) {
+                    this(string some_text, int s, string text) pure nothrow {
                         this.some_text=some_text;
                         sub=Simple(s, text);
                     }
@@ -1025,7 +1022,7 @@ unittest {
             string class_some_text;
             alias enable_serialize = bool;
             mixin HiBONRecord!(q{
-                    this(string some_text, int s, string text) @safe {
+                    this(string some_text, int s, string text) pure nothrow {
                         this.class_some_text=some_text;
                         sub=Simple(s, text);
                     }
@@ -1600,4 +1597,20 @@ unittest { /// Reseved keys and types
         const doc = s.toDoc;
         assert(doc.valid is Document.Element.ErrorCode.RESERVED_KEY);
     }
+}
+
+///
+unittest { // Test UDA preserve
+    static struct S {
+        alias enable_serialize=bool;
+        @preserve int[] array;
+        mixin HiBONRecord;
+    }
+
+    S s;
+    s.array.length=7;
+    __write("s._serialize=%s", s._serialize);
+    const hibon_serialize=s.toHiBON.serialize;
+    __write("hibon._serialize=%s", s._serialize);
+
 }
