@@ -32,7 +32,7 @@ jobs:
       - run: |
           for i in `find src/* -maxdepth 0 -type d | grep -v "lib-nngd"`; do
             echo "Checking $i"
-            dub run dscanner -- $i --styleCheck -f "github" || echo "false" | grep -v undocumented
+            dub run dscanner -- $i --styleCheck -f "github" | grep -v undocumented || echo false
           done
 
   build:
