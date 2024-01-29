@@ -27,6 +27,7 @@ class HiRPCException : HiBONException {
 /// UDA to make a RPC member
 enum HiRPCMethod;
 
+@safe
 private static string[] _Callers(T)() {
     import std.meta : ApplyRight, Filter;
     import std.traits : hasUDA, isCallable;
