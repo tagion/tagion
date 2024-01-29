@@ -4,15 +4,16 @@
 We have started initial work on improving our documentation. This includes a new page listing all interfaces for a node along with what methods are supported for each interface. You can check out more here on [docs.tagion.org](https://docs.tagion.org/#/documents/protocols/contract/hirpcmethods).
 
 **nix build .#dockerImage**
-We have created an output in our `flake.nix` file that allows for a minimal docker image to be built on alpine linux. It does not start any services but allows for easy usage on non-86_64-linux systems to use ex. `hibonutil`. We suggest taking a look since it is a nice showcase of the cool possibilities with nix :-).
+We have created an output in our `flake.nix` file that allows for a minimal docker image to be built on alpine linux. It does not start any services but allows for easy usage on non-x86_64-linux systems to use eg. `hibonutil`. We suggest taking a look since it is a nice showcase of the cool possibilities with nix :-).
 
 **DocumentWrapper bugfixes**
-We have fixed some erros in the `DocumentWrapperAPI` regarding return types. For an example the function `doc_get_ulong_by_key` previously returned a `int64_t` but was supposed to return `uint64_t`.
+We have fixed some errors in the `DocumentWrapperAPI` regarding return types. For an example the function `doc_get_ulong_by_key` previously returned a `int64_t` but was supposed to return `uint64_t`.
+
 **HiRPC subdomains**
-We have implemented what we call *HiRPC subdomains* which allows for forwarding requests to different parts of the system. If you want to do a `dartRead`, but instead of performing it on the main DART, you want to perform it on the `TRT`, you can perform a request with method name `trt.dartRead`. Internally in the different actors they do not care, and only use the last name for figuring out which requests to do, but in the `DARTInterface`, the request can be either send to the TRT or DART.
+We have implemented what we call *HiRPC subdomains* which allows for forwarding requests to different parts of the system. If you want to do a `dartRead`, but instead of performing it on the main DART, you want to perform it on the `TRT`, you can perform a request with method name `trt.dartRead`. Internally in the different actors they don't care, and only use the last name for figuring out which requests to do, but in the `DARTInterface`, the request can be either send to the TRT or DART.
 
 **TRT lookup request**
-We have implemented a new way for wallet update, which is much more load on the system than the previous "search". It works in two steps.
+We have implemented a new way for wallet update, which is a lot more efficient and should put less load on the system than the previous "search". It works in two steps.
 First the wallet collects a list of all its deriven public keys. It then performs a `trt.dartRead` to read all dart indices located on these public keys. 
 By getting this information we can see if 1. we have received new indices (bills) and 2. if some of our bills are no longer located in the DART.
 The wallet can then take the new indices and perform a `dartRead` on the main dart, which will return all new archives that were created.
