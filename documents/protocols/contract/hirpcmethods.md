@@ -24,8 +24,7 @@ The socket address, and thereby the visibillity can be changed in the tagionwave
 
 These are the hirpc methods exposed by the tagion kernel.
 
-> [!NOTE] 
-> Missing documentation for error values
+!> Missing documentation for error values
 
 ## Write methods
 
