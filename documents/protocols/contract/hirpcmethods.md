@@ -7,17 +7,19 @@ The socket address, and thereby the visibillity can be changed in the tagionwave
 
 | [Input Validator](/documents/architecture/InputValidator.md) | [Dart Interface](/documents/architecture/DartInterface.md) | [Subscription](/documents/architecture/LoggerSubscription.md) | [Node Interface](/documents/architecture/NodeInterface.md) |
 | -                                                            | -                                                          | -                                                             | -                                                          |
-| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
+| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                   |
 | **Default shell endpoint**                                   | ..                                                         |                                                               |                                                            |
 | /api/v1/contract                                             | /api/v1/dart                                               |                                                               |                                                            |
 | **Default socket address (node_prefix is added in mode0)**   | ..                                                         | ..                                                            | ..                                                         |
-| "\0*node_prefix*CONTRACT_NEUEWELLE"                          | "\0*node_prefix*DART_NEUEWELLE"                            | "\0SUBSCRIPTION_NEUEWELLE"                                    | tcp://localhost:10700                                      |
+| "\0*node_prefix*CONTRACT_NEUEWELLE"                          | "\0*node_prefix*DART_NEUEWELLE"                            | "\0SUBSCRIPTION_NEUEWELLE"                                    | tcp://localhost:10700                               |
 | **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
 | "submit"                                                     | "search"                                                   | "log"                                                         |
 |                                                              | "dartCheckRead"                                            |
 |                                                              | "dartRead"                                                 |
 |                                                              | "dartRim"                                                  |
 |                                                              | "dartBullseye"                                             |
+| **HiRPC methods subdomains**                                            | ..                                                         | ..                                                            | ..                                                         |
+| ..                                            | trt                                                         | ..                                                            | ..                                                         |
 | **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
 | REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
 

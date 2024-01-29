@@ -118,7 +118,7 @@ struct DARTService {
 
             pragma(msg, "fixme(phr): make this more pretty");
             immutable receiver = hirpc.receive(doc);
-            if (!receiver.isMethod || !(receiver.method.name == DART.Queries.dartRead
+            if (!receiver.isMethod && !(receiver.method.name == DART.Queries.dartRead
                     || receiver.method.name == DART.Queries.dartRim
                     || receiver.method.name == DART.Queries.dartBullseye
                     || receiver.method.name == DART.Queries.dartCheckRead

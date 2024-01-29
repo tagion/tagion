@@ -113,7 +113,11 @@ struct TRTService {
             }
             log("before hirpc");
             immutable receiver = hirpc.receive(doc);
-            if (!receiver.isMethod && !(receiver.method.name == "search" || receiver.method.name == DART.Queries.dartRead)) {
+            if (!receiver.isMethod && !(receiver.method.name == DART.Queries.dartRead
+                    || receiver.method.name == DART.Queries.dartRim
+                    || receiver.method.name == DART.Queries.dartBullseye
+                    || receiver.method.name == DART.Queries.dartCheckRead
+                    || receiver.method.name == "search")) {
                 log("received non valid HIRPC method");
                 const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
                 client_req.respond(err.toDoc);
