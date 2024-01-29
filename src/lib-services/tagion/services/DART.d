@@ -1,7 +1,7 @@
 /// Tagion DART actor service
 module tagion.services.DART;
 
-import std.algorithm : map, filter;
+import std.algorithm : map, filter, canFind;
 import std.array;
 import std.exception;
 import std.file;
@@ -30,7 +30,7 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
 
 @safe:
-
+///
 struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
@@ -45,6 +45,15 @@ struct DARTOptions {
 
     mixin JSONCommon;
 }
+
+/// Accepted methods for the DART.
+static immutable accepted_methods = [
+    DART.Queries.dartRead, 
+    DART.Queries.dartRim, 
+    DART.Queries.dartBullseye, 
+    DART.Queries.dartCheckRead, 
+    "search"
+];
 
 /** 
  * DART Service actor
@@ -118,16 +127,12 @@ struct DARTService {
 
             pragma(msg, "fixme(phr): make this more pretty");
             immutable receiver = hirpc.receive(doc);
-            if (!receiver.isMethod && !(receiver.method.name == DART.Queries.dartRead
-                    || receiver.method.name == DART.Queries.dartRim
-                    || receiver.method.name == DART.Queries.dartBullseye
-                    || receiver.method.name == DART.Queries.dartCheckRead
-                    || receiver.method.name == "search")) {
+            if (!(receiver.isMethod && accepted_methods.canFind(receiver.method.name))) {
                 log("unsupported request or method");
                 const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
                 req.respond(err.toDoc);
                 return;
-            }
+            } 
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");

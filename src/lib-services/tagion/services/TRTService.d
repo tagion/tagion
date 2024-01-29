@@ -2,7 +2,7 @@
 module tagion.services.TRTService;
 import tagion.services.options : TaskNames;
 
-import std.algorithm : map, filter;
+import std.algorithm : map, filter, canFind;
 import std.array;
 import std.exception;
 import std.file;
@@ -34,6 +34,7 @@ import tagion.trt.TRT;
 import tagion.hibon.HiBON;
 import tagion.script.standardnames;
 import tagion.services.exception;
+import tagion.services.DART : accepted_methods;
 
 @safe
 struct TRTOptions {
@@ -113,11 +114,8 @@ struct TRTService {
             }
             log("before hirpc");
             immutable receiver = hirpc.receive(doc);
-            if (!receiver.isMethod && !(receiver.method.name == DART.Queries.dartRead
-                    || receiver.method.name == DART.Queries.dartRim
-                    || receiver.method.name == DART.Queries.dartBullseye
-                    || receiver.method.name == DART.Queries.dartCheckRead
-                    || receiver.method.name == "search")) {
+
+            if (!(receiver.isMethod && accepted_methods.canFind(receiver.method.name))) {
                 log("received non valid HIRPC method");
                 const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
                 client_req.respond(err.toDoc);
