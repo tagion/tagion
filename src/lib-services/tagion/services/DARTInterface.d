@@ -82,7 +82,6 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
     void send_error(InterfaceError err_type, string extra_msg = "") @trusted {
         import std.conv;
-
         hirpc.Error message;
         message.code = err_type;
         message.message = err_type.to!string ~ extra_msg;
@@ -96,7 +95,6 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     void hirpc_response(HiRPCResponse res, Document doc) @trusted {
         writeln("Interface successful response");
         send_doc(doc);
-        // msg.body_append(doc.serialize);
     }
 
     if (msg is null) {
@@ -134,7 +132,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         return;
     }
 
-    const is_trt_req = cnt.trt_enable && (receiver.method.name.startsWith("trt.") || receiver.method.name =="search");
+    const is_trt_req = cnt.trt_enable && (receiver.method.full_name.startsWith("trt.") || receiver.method.name =="search");
     auto tid = is_trt_req ? locate(cnt.trt_task_name) : locate(cnt.dart_task_name);
 
     if (tid is Tid.init) {
