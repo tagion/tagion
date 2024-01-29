@@ -89,10 +89,12 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         writefln("INTERFACE ERROR: %s", err_type.to!string ~ extra_msg);
         send_doc(sender.toDoc);
     }
-    import std.sumtype;
-    alias HiRPCResponse = SumType!(dartHiRPCRR.Response, trtHiRPCRR.Response);
 
-    void hirpc_response(HiRPCResponse res, Document doc) @trusted {
+    void dart_hirpc_response(dartHiRPCRR.Response res, Document doc) @trusted {
+        writeln("Interface successful response");
+        send_doc(doc);
+    }
+    void trt_hirpc_response(trtHiRPCRR.Response res, Document doc) @trusted {
         writeln("Interface successful response");
         send_doc(doc);
     }
@@ -139,12 +141,14 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
         return;
     }
+    bool response;
     if (is_trt_req) {
         tid.send(trtHiRPCRR(), doc); 
+        response = receiveTimeout(cnt.worker_timeout.msecs, &trt_hirpc_response);
     } else {
         tid.send(dartHiRPCRR(), doc); 
+        response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
     }
-    const response = receiveTimeout(cnt.worker_timeout.msecs, &hirpc_response);
     if (!response) {
         send_error(InterfaceError.Timeout);
         writeln("Timeout on interface request");
