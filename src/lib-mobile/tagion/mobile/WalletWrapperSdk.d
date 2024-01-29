@@ -706,10 +706,12 @@ struct WHistoryItem {
     mixin HiBONRecord!(q{
         this(HistoryItem item, const(SecureNet) net) {
             this.amount = item.bill.value.units;
-            this.pubkey = item.bill.owner;
             this.balance = item.balance.units;
             this.fee = item.fee.units;
+            this.status = item.status;
             this.type = item.type;
+            this.timestamp = item.bill.time;
+            this.pubkey = item.bill.owner;
             this.index = dartIndex(net, item.bill);
         }
     });
@@ -1038,7 +1040,7 @@ unittest {
 
         assert(&index !is null);
         const(char*) jstr = doc_as_json(index);
-        // writeln(fromStringz(jstr));
+        /* writeln(fromStringz(jstr)); */
         assert(jstr !is null);
 
         // writeln(fromStringz(jstr));
