@@ -566,6 +566,14 @@ struct SecureWallet(Net : SecureNet) {
         DARTIndex[] to_be_looked_up_indices; /// indices that were in network but not in wallet
         DARTIndex[] to_be_removed_from_wallet; /// indices that were removed from network but not in our wallet
 
+        /*
+        * If to_be_lookup_up_indices is empty that means no new archives were added 
+        to the database otherwise there are new archives we must lookup. 
+        * If to_be_removed_from_wallet is empty none of our own bills were removed 
+        from the database. 
+        * Though if it is not empty we know that the archive must have been deleted 
+        from the database and should be removed from our wallet.
+        */
         foreach(d; dart_indices) {
             if (!to_compare.canFind(d)) {
                 to_be_looked_up_indices ~= d;
@@ -577,15 +585,20 @@ struct SecureWallet(Net : SecureNet) {
             }
         }
 
-        /*
-        * If to_be_lookup_up_indices is empty that means no new archives were added 
-        to the database otherwise there are new archives we must lookup.
+        DARTIndex[] network_indices; /// indices for network lookup
 
-        * If to_be_removed_from_wallet is empty none of our own bills were removed 
-        from the database. 
-        * Though if it is not empty we know that the archive must have been deleted 
-        from the database and should be removed from our wallet.
-        */
+        /// check to_be_looked_up_indices for matches in requested.
+        foreach(i, d; to_be_looked_up_indices) {
+            if (d in account.requested) {
+                auto new_bill = account.requested[d];
+                if (!account.bills.canFind(new_bill)) {
+                    account.bills ~= new_bill;
+                    account.requested.remove(d);
+                    continue;
+                }
+                network_indices ~= d;
+            }
+        }
 
         foreach(idx; to_be_removed_from_wallet) {
             writefln("removing: %(%02x%)", idx);
@@ -593,7 +606,7 @@ struct SecureWallet(Net : SecureNet) {
             account.remove_bill_by_hash(idx);
         }
 
-        const new_req = to_be_looked_up_indices.empty ? HiRPC.Sender.init : dartRead(to_be_looked_up_indices); 
+        const new_req = to_be_looked_up_indices.empty ? HiRPC.Sender.init : dartRead(network_indices); 
         return new_req;
     }
 
