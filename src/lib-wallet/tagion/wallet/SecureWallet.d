@@ -491,6 +491,15 @@ struct SecureWallet(Net : SecureNet) {
 
     }
 
+    /** 
+     * Used for first step in updating wallet from TRT.
+     * Creates a trt.dartRead command for the TRT.
+     * Takes all derivers in the wallet and convert the pubkeys to #pubkey for lookup in TRT
+     * These indices are put into the trt.dartRead specifying the command.
+     * Params:
+     *   hirpc = hirpc to use
+     * Returns: trt.dartRead hirpc.sender 
+     */
     const(HiRPC.Sender) readIndicesByPubkey(HiRPC hirpc = HiRPC(null)) const {
         import tagion.dart.DART;
         import tagion.script.standardnames;
@@ -505,6 +514,19 @@ struct SecureWallet(Net : SecureNet) {
         return hirpc.action("trt."~DART.Queries.dartRead, params);
     }
 
+    /** 
+     * Second stage in updating wallet.
+     * Takes a read trt.dartRead recorder.
+     * Creates an array of DARTIndexes from readIndicesByPubkey recorder
+     * If some indexes were found in the wallet but not in the trt, the indexes are removed
+        from the wallet.
+     * If some indeces were found in the trt but not in the wallet, the indexes are put
+        into a new dartRead request.
+     * Params:
+     *   receiver = Received response from trt.dartRead
+     * Returns: HiRPC.Sender.init if it is not needed to perform 
+        additional requests on the DART.
+     */
     const(HiRPC.Sender) differenceInIndices(const(HiRPC.Receiver) receiver) {
         import tagion.dart.Recorder;
         import tagion.hibon.HiBONRecord : isRecord;
@@ -528,9 +550,7 @@ struct SecureWallet(Net : SecureNet) {
             .map!(doc => TRTArchive(doc))
             .map!(trt_archive => trt_archive.indices)
             .join
-            .array
-            .sort!((a,b) => a < b)
-            .array;
+            .sort!((a,b) => a < b);
 
         auto bill_indices = account.bills
             .map!(b => DARTIndex(net.dartIndex(b)));
@@ -541,8 +561,7 @@ struct SecureWallet(Net : SecureNet) {
         auto to_compare = chain(bill_indices, locked_indices)
             .array
             .sort!((a,b) => a < b)
-            .uniq // remove duplicates
-            .array;
+            .uniq; // remove duplicates
 
         DARTIndex[] to_be_looked_up_indices; /// indices that were in network but not in wallet
         DARTIndex[] to_be_removed_from_wallet; /// indices that were removed from network but not in our wallet
@@ -557,13 +576,6 @@ struct SecureWallet(Net : SecureNet) {
                 to_be_removed_from_wallet ~= d;
             }
         }
-
-        
-        // auto m = mismatch(dart_indices, to_compare);
-        // auto to_be_looked_up_indices = m[0]; /// indices that were in network but not in our wallet
-
-        // auto to_be_removed_from_wallet = m[1]; /// indices that were removed from the network but were in our wallet
-        
 
         /*
         * If to_be_lookup_up_indices is empty that means no new archives were added 
@@ -584,6 +596,13 @@ struct SecureWallet(Net : SecureNet) {
         const new_req = to_be_looked_up_indices.empty ? HiRPC.Sender.init : dartRead(to_be_looked_up_indices); 
         return new_req;
     }
+
+    /** 
+     * Updates the wallet based on the received dartRead
+     * Params:
+     *   receiver = received dartRead from DART
+     * Returns: true if the update was succesful and false if not.
+     */
     bool updateFromRead(const(HiRPC.Receiver) receiver) {
         import tagion.dart.Recorder;
         import tagion.hibon.HiBONRecord : isRecord;
