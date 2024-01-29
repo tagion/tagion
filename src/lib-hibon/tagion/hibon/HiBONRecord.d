@@ -11,7 +11,7 @@ import tagion.basic.basic : EnumContinuousSequency, basename;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONBase : ValueT;
-import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONJSON;
 import std.algorithm;
 
@@ -817,15 +817,26 @@ unittest {
 
     { // Simple basic type check
     { /// Should fail on empty document
-            const empty_doc = Document();
-            //const s=Simple(empty_doc);
-            Simple create_empty() {
-                return Simple(Document());
-            }
-
             {
                 //    create_empty;
-                assertNotThrown!(HiBONException)(create_empty, "Should throw because empty_doc is missing a hibon-record-type");
+                assertThrown!(HiBONRecordTypeException)(
+                { const simple_type = Simple(Document()); }(),
+                        "Should throw because empty_doc is missing a hibon-record-type");
+            }
+            {
+                auto h = new HiBON;
+                h[TYPENAME] = "NotASimpleType";
+                const doc = Document(h);
+                assertThrown!(HiBONRecordTypeException)(
+                { const simple_type = Simple(doc); }(),
+                        "Should throw because the HiBON record type is not correct");
+                //const simple_type=Simple(doc);
+            }
+            {
+                Simple s;
+                const s=s.toDoc;
+                const simple=Simple(
+
             }
         }
 
