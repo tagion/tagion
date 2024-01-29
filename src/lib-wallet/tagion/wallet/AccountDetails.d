@@ -247,6 +247,9 @@ struct AccountDetails {
             TagionCurrency balance = total();
             HistoryItem evaluate_balance(HistoryItem item) {
                 item.balance = balance;
+                if (item.status is ContractStatus.pending) {
+                    return item;
+                }
                 with (HistoryItemType) final switch (item.type) {
                 case send:
                     balance += (item.bill.value + item.fee);
@@ -277,8 +280,8 @@ enum HistoryItemType {
 }
 
 enum ContractStatus {
-    pending = 0,
     succeeded = 1,
+    pending = 0,
 }
 
 struct HistoryItem {
@@ -288,7 +291,7 @@ struct HistoryItem {
     TagionCurrency balance;
     ContractStatus status;
     mixin HiBONRecord!(q{
-        this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0, ContractStatus status = ContractStatus.succeeded) pure {
+        this(const(TagionBill) bill, HistoryItemType type, TagionCurrency fee = 0, ContractStatus status = ContractStatus.succeeded) pure nothrow {
             this.type = type;
             this.bill = bill;
             this.fee = fee;
@@ -311,4 +314,36 @@ struct Invoice {
 struct Invoices {
     Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
+}
+
+import tagion.dart.Recorder;
+import tagion.communication.HiRPC;
+
+struct AccountManager {
+    private AccountDetails _details;
+
+    const details() => _details;
+
+    alias total = _details.total;
+    alias available = _details.available;
+    alias locked = _details.locked;
+    alias history = _details.history;
+
+    // Call this if you send a hirpc submit contract
+    void send_hirpc(HiRPC.Sender hirpc) {
+        // ~= hirpcs
+        // lock bills
+    }
+
+    // Call this if your contract has been rejected
+    void reject_hirpc(HiRPC.Sender hirpc) {
+        // -= hirpcs
+        // unlock bills
+    }
+
+    // Update
+    void update(HiRPC.Receiver receiver) {
+        // Add new bills
+        // move locked bills to used bills if' its output of pending hirpc.
+    }
 }

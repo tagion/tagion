@@ -1,5 +1,21 @@
 /// Service which exposes dart reads over a socket
 module tagion.services.DARTInterface;
+import core.time;
+import core.thread;
+import nngd;
+import std.algorithm : canFind, startsWith;
+import std.stdio;
+import std.format;
+import tagion.actor;
+import tagion.communication.HiRPC;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord : isRecord;
+import tagion.logger.Logger;
+import tagion.services.messages;
+import tagion.services.options;
+import tagion.utils.pretend_safe_concurrency;
+import tagion.services.TRTService : TRTOptions;
+import tagion.dart.DART;
 
 @safe:
 
@@ -27,21 +43,6 @@ struct DARTInterfaceOptions {
 
 }
 
-import core.time;
-import core.thread;
-import nngd;
-import std.stdio;
-import std.format;
-import tagion.actor;
-import tagion.communication.HiRPC;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : isRecord;
-import tagion.logger.Logger;
-import tagion.services.messages;
-import tagion.services.options;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.services.TRTService : TRTOptions;
-
 struct DartWorkerContext {
     string dart_task_name;
     int worker_timeout;
@@ -54,7 +55,19 @@ enum InterfaceError {
     InvalidDoc,
     DARTLocate,
     TRTLocate,
+    InvalidMethod,
 }
+
+/// Accepted methods for the DART.
+static immutable accepted_dart_methods = [
+    DART.Queries.dartRead, 
+    DART.Queries.dartRim, 
+    DART.Queries.dartBullseye, 
+    DART.Queries.dartCheckRead, 
+    "search"
+];
+
+
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
@@ -67,26 +80,22 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         msg.body_prepend(doc.serialize);
     }
 
-    void send_error(InterfaceError err_type, string extra_msg = "") @trusted {
+    void send_error(InterfaceError err_type, string extra_msg = "") @safe {
         import std.conv;
-
         hirpc.Error message;
         message.code = err_type;
         message.message = err_type.to!string ~ extra_msg;
         const sender = hirpc.Sender(null, message);
         writefln("INTERFACE ERROR: %s", err_type.to!string ~ extra_msg);
         send_doc(sender.toDoc);
-        // msg.body_append(sender.toDoc.serialize);
     }
 
-    void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) @trusted {
+    void dart_hirpc_response(dartHiRPCRR.Response res, Document doc) @safe {
         writeln("Interface successful response");
         send_doc(doc);
-        // msg.body_append(doc.serialize);
     }
-
-    void trtHiRPCResponse(trtHiRPCRR.Response res, Document doc) @trusted {
-        writeln("TRT Inteface succesful response");
+    void trt_hirpc_response(trtHiRPCRR.Response res, Document doc) @safe {
+        writeln("Interface successful response");
         send_doc(doc);
     }
 
@@ -120,41 +129,30 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     const empty_hirpc = HiRPC(null);
 
     immutable receiver = empty_hirpc.receive(doc);
-    if (!receiver.isMethod) {
+    if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
         send_error(InterfaceError.InvalidDoc);
         return;
     }
 
-    if (receiver.method.name == "search" && cnt.trt_enable) {
-        writeln("TRT SEARCH REQUEST");
-        auto trt_tid = locate(cnt.trt_task_name);
-        if (trt_tid is Tid.init) {
-            send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
-            return;
-        }
-        trt_tid.send(trtHiRPCRR(), doc);
-        auto trt_resp = receiveTimeout(cnt.worker_timeout.msecs, &trtHiRPCResponse);
-        if (!trt_resp) {
-            send_error(InterfaceError.Timeout);
-            writeln("Timeout on trt request");
-            return;
-        }
+    const is_trt_req = cnt.trt_enable && (receiver.method.full_name.startsWith("trt.") || receiver.method.name =="search");
+    auto tid = is_trt_req ? locate(cnt.trt_task_name) : locate(cnt.dart_task_name);
 
+    if (tid is Tid.init) {
+        send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
+        return;
     }
-    else {
-        auto dart_tid = locate(cnt.dart_task_name);
-        if (dart_tid is Tid.init) {
-            send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
-            return;
-        }
-        dart_tid.send(dartHiRPCRR(), doc);
-        auto dart_resp = receiveTimeout(cnt.worker_timeout.msecs, &dartHiRPCResponse);
-        if (!dart_resp) {
-            send_error(InterfaceError.Timeout);
-            writeln("Timeout on dart request");
-            return;
-        }
-
+    bool response;
+    if (is_trt_req) {
+        tid.send(trtHiRPCRR(), doc); 
+        response = receiveTimeout(cnt.worker_timeout.msecs, &trt_hirpc_response);
+    } else {
+        tid.send(dartHiRPCRR(), doc); 
+        response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
+    }
+    if (!response) {
+        send_error(InterfaceError.Timeout);
+        writeln("Timeout on interface request");
+        return;
     }
 }
 

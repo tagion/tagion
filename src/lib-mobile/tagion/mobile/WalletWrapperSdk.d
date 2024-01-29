@@ -646,48 +646,73 @@ extern (C) {
         return 0;
     }
 
+    static sdt_t dummy_time;
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
         version (WALLET_HISTORY_DUMMY) {
+            if (dummy_time == sdt_t.init) {
+                dummy_time = currentTime();
+            }
+
             DummyHistGen hist_gen;
 
             WHistory hist;
             hist_gen.popFront();
-            hist.items = hist_gen.drop(from).take(count).array;
+            if (count == 0) {
+                hist.items = hist_gen.drop(from).array;
+            }
+            else {
+                hist.items = hist_gen.drop(from).take(count).array;
+            }
 
             *historyId = recyclerDoc.create(hist.toDoc);
         }
         else {
+            assert(__wallet_storage !is null, "The Wallet storage was not initialised");
+
             WHistory hist;
-            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count).map!(i => WHistoryItem(i))
-                .array;
+
+            if (count == 0) {
+                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from)
+                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                    .array;
+            }
+            else {
+                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
+                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                    .array;
+            }
+
             *historyId = recyclerDoc.create(hist.toDoc);
         }
 
-        return 0;
+        return 1;
     }
-
 }
 
 import tagion.hibon.HiBONRecord;
+import tagion.dart.DARTBasic;
 
-pragma(msg, "remove wrapper dummy history");
 struct WHistoryItem {
-    double amount;
-    double balance;
-    double fee;
+    long amount;
+    long balance;
+    long fee;
     int status;
     int type;
     sdt_t timestamp;
     Pubkey pubkey;
+    DARTIndex index; // The index of the output bill.
 
     mixin HiBONRecord!(q{
-        this(HistoryItem item) {
-            this.amount = item.bill.value.to!double;
-            this.pubkey = item.bill.owner;
-            this.balance = item.balance.to!double;
-            this.fee = item.fee.to!double;
+        this(HistoryItem item, const(SecureNet) net) {
+            this.amount = item.bill.value.units;
+            this.balance = item.balance.units;
+            this.fee = item.fee.units;
+            this.status = item.status;
             this.type = item.type;
+            this.timestamp = item.bill.time;
+            this.pubkey = item.bill.owner;
+            this.index = dartIndex(net, item.bill);
         }
     });
 }
@@ -697,6 +722,7 @@ struct WHistory {
     mixin HiBONRecord;
 }
 
+pragma(msg, "remove wrapper dummy history");
 struct DummyHistGen {
     import tagion.utils.Random;
 
@@ -712,8 +738,9 @@ struct DummyHistGen {
             fee = rnd.value;
             status = rnd.value % 2;
             type = rnd.value % 2;
-            timestamp = currentTime();
-            pubkey = Pubkey().init;
+            timestamp = dummy_time;
+            pubkey = Pubkey(rnd.take(33).map!(i => cast(ubyte)(i)).array.idup);
+            index = DARTIndex(rnd.take(32).map!(i => cast(ubyte)(i)).array.idup);
         }
         return hist_item;
     }
@@ -728,19 +755,6 @@ struct DummyHistGen {
     }
 
     WHistoryItem front() => _front;
-}
-
-version (none) unittest {
-    import std.stdio;
-    import hj = tagion.hibon.HiBONJSON;
-
-    foreach (i; get_history(0, 5).items) {
-        hj.toPretty(i).writeln;
-    }
-    writeln;
-    foreach (i; get_history(36, 5).items) {
-        hj.toPretty(i).writeln;
-    }
 }
 
 unittest {
@@ -1015,6 +1029,21 @@ unittest {
         // Check the result
         assert(result == 1, "Expected result to be 1");
         assert(status == 0, "Expected status to be 0");
+    }
+
+    { // Check Wallet history
+        import std.stdio;
+        import tagion.mobile.DocumentWrapperApi;
+
+        uint32_t index;
+        assert(get_history(0, 5, &index) == 1);
+
+        assert(&index !is null);
+        const(char*) jstr = doc_as_json(index);
+        /* writeln(fromStringz(jstr)); */
+        assert(jstr !is null);
+
+        // writeln(fromStringz(jstr));
     }
 
     version (none) { // Remove bills by contract.

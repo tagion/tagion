@@ -1,7 +1,7 @@
 /// Tagion DART actor service
 module tagion.services.DART;
 
-import std.algorithm : map, filter;
+import std.algorithm : map, filter, canFind;
 import std.array;
 import std.exception;
 import std.file;
@@ -28,9 +28,10 @@ import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
+import tagion.services.DARTInterface : accepted_dart_methods;
 
 @safe:
-
+///
 struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
@@ -105,6 +106,8 @@ struct DARTService {
 
         // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead, search(if TRT is not enabled)
         void dartHiRPC(dartHiRPCRR req, Document doc) {
+            import tagion.services.DARTInterface : InterfaceError;
+            import std.conv: to;
             import tagion.hibon.HiBONJSON;
 
             log("Received HiRPC request");
@@ -115,10 +118,12 @@ struct DARTService {
             }
 
             immutable receiver = hirpc.receive(doc);
-            if (!receiver.isMethod) {
-                log("dart hirpc request was not a method");
+            if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
+                log("unsupported request or method");
+                const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
+                req.respond(err.toDoc);
                 return;
-            }
+            } 
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
@@ -134,14 +139,6 @@ struct DARTService {
                 req.respond(response);
                 return;
             }
-            if (!(receiver.method.name == DART.Queries.dartRead
-                    || receiver.method.name == DART.Queries.dartRim
-                    || receiver.method.name == DART.Queries.dartBullseye
-                    || receiver.method.name == DART.Queries.dartCheckRead)) {
-                log("unsupported request");
-                return;
-            }
-
             Document result = db(receiver, false).toDoc;
             log("darthirpc response: %s", result.toPretty);
             req.respond(result);
@@ -162,7 +159,7 @@ struct DARTService {
 
                 req.respond(eye);
                 replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
-                log(recorder_created, "recorder", recorder.toDoc);
+                log.event(recorder_created, "recorder", recorder.toDoc);
                 if (trt_enable) {
                     trt_handle.send(trtModify(), recorder);
                 }

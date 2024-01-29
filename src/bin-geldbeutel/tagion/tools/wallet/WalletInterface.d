@@ -631,6 +631,7 @@ struct WalletInterface {
         bool request;
         bool update;
         bool trt_update;
+        bool trt_read;
         double amount;
         bool faucet;
         bool save_wallet;
@@ -710,7 +711,7 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
-                if (update || trt_update) {
+                if (update || trt_update || trt_read ) {
                     const update_net = secure_wallet.net.derive(
                             secure_wallet.net.calcHash(
                             update_tag.representation));
@@ -719,6 +720,9 @@ struct WalletInterface {
                     const(HiRPC.Sender) getRequest() {
                         if (trt_update) {
                             return secure_wallet.getRequestUpdateWallet(hirpc);
+                        }
+                        else if (trt_read) {
+                            return secure_wallet.readIndicesByPubkey(hirpc);
                         }
                         return secure_wallet.getRequestCheckWallet(hirpc);
                     }
@@ -735,8 +739,32 @@ struct WalletInterface {
 
                         verbose("Received response", received.toPretty);
 
-                        auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
+                        version(NEW_REQ) {
+                            bool setRequest(const(HiRPC.Receiver) receiver) {
+                                if (trt_update) {
+                                    return secure_wallet.setResponseUpdateWallet(receiver);
+                                } else if (update) {
+                                    return secure_wallet.setResponseUpdateWallet(receiver);
+                                }
+                                else {
+                                    const difference_req = secure_wallet.differenceInIndices(receiver);
+                                    if (difference_req is HiRPC.Sender.init) {
+                                        return true;
+                                    }
+                                    HiRPC.Receiver dart_received = sendkernel ?
+                                        sendDARTHiRPC(options.dart_address, difference_req, hirpc) 
+                                        : 
+                                        sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, difference_req, hirpc);
+
+                                    return secure_wallet.updateFromRead(dart_received);
+                                }
+                            }
+                            bool res = setRequest(received);
+                        } 
+                        else {
+                            bool res = trt_update ? secure_wallet.setResponseUpdateWallet(
                                 received) : secure_wallet.setResponseCheckRead(received);
+                        }
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         save_wallet = true;
                     }

@@ -1,3 +1,4 @@
+/// HashGraph Monitor Service for visualizing hashgraph events
 module tagion.services.monitor;
 
 import core.thread;

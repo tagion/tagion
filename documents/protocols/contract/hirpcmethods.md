@@ -1,6 +1,32 @@
 # Public hirpc methods
 
+## Connection types
+By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
+The socket address, and thereby the visibillity can be changed in the tagionwave config file.
+
+
+| [Input Validator](/documents/architecture/InputValidator.md) | [Dart Interface](/documents/architecture/DartInterface.md) | [Subscription](/documents/architecture/LoggerSubscription.md) | [Node Interface](/documents/architecture/NodeInterface.md) |
+| -                                                            | -                                                          | -                                                             | -                                                          |
+| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                   |
+| **Default shell endpoint**                                   | ..                                                         |                                                               |                                                            |
+| /api/v1/contract                                             | /api/v1/dart                                               |                                                               |                                                            |
+| **Default socket address (node_prefix is added in mode0)**   | ..                                                         | ..                                                            | ..                                                         |
+| "\0*node_prefix*CONTRACT_NEUEWELLE"                          | "\0*node_prefix*DART_NEUEWELLE"                            | "\0SUBSCRIPTION_NEUEWELLE"                                    | tcp://localhost:10700                               |
+| **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
+| "submit"                                                     | "search"                                                   | "log"                                                         |
+|                                                              | "dartCheckRead"                                            |
+|                                                              | "dartRead"                                                 |
+|                                                              | "dartRim"                                                  |
+|                                                              | "dartBullseye"                                             |
+| **HiRPC methods subdomains**                                            | ..                                                         | ..                                                            | ..                                                         |
+| ..                                            | trt                                                         | ..                                                            | ..                                                         |
+| **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
+| REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
+
+
 These are the hirpc methods exposed by the tagion kernel.
+
+!> Missing documentation for error values
 
 ## Write methods
 
@@ -10,16 +36,16 @@ These are the hirpc methods exposed by the tagion kernel.
 The method will return ok if the contract was receveived, but cannot predict if the contract can be executed properly.  
 The method will return an error if the document is invalid or contract has the wrong format.  
 
-hirpc.method.name = "submit"  
-hirpc.method.params = [SignedContract(SSC)](https://ddoc.tagion.org/tagion.script.common.SignedContract)  
+\$msg.method.name = "submit"  
+\$msg.method.params = [SignedContract(SSC)](https://ddoc.tagion.org/tagion.script.common.SignedContract)
 
 **Returns**
 
-hirpc.result = [ResultOK](https://ddoc.tagion.org/tagion.communication.HiRPC.ResultOk)  
+\$msg.result = [ResultOK](https://ddoc.tagion.org/tagion.communication.HiRPC.ResultOk)  
 
 or
 
-hirpc.error
+\$msg.error
 
 ## Read methods (DART(ro) + friends)
 
@@ -30,53 +56,135 @@ This will be removed in the future in favour of a similar method which returns t
 and it will be the clients reponsibillity to ask for the needed archives.
 See [TIP1](/documents/TIPs/cache_proposal_23_jan)
 
-hirpc.method.name = "search"  
-hirpc.method.params = [Pubkey](https://ddoc.tagion.org/tagion.crypto.Types.Pubkey)[]  
+\$msg.method.name = "search"  
+\$msg.method.params = [Pubkey](https://ddoc.tagion.org/tagion.crypto.Types.Pubkey)[]  
 
 **Returns**
 
-hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+\$msg.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 ### dartCheckRead
 
 *This method takes a list of DART Indices and responds with all of the indices which were not in the DART*
 
-hirpc.method.name = "dartCheckRead"  
-hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+\$msg.method.name = "dartCheckRead"  
+\$msg.method.params.dart_indices = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 **Return**
 
-hirpc.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+\$msg.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 ### dartRead
 
 *This method takes a list of DART Indices and responds with a Recorder of all the archives which were in the DART*
 
-hirpc.method.name = "dartRead"  
-hirpc.method.params = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
+\$msg.method.name = "dartRead"  
+\$msg.method.params.dart_indices = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
-**Returns**
 
+**Example dartRead request**
+
+<details>
+<summary>**Example request**</summary>
+
+```json
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@AhJKNLaNgHVRgF1dEz8rWHhROYAVIntpyDasIpHVeAqE"
+    ],
+    "$msg": {
+        "method": "dartRead",
+        "params": {
+            "dart_indices": [
+                [
+                    "*",
+                    "@4c2LxGMUI7o7AnNQfKxgAEdjwizVRvdtV3j2ItiBwQM="
+                ],
+                [
+                    "*",
+                    "@oKqMX30Lf0KnzFJ46Ws5SRH48oPouDDS3IIXIaYPjkM="
+                ]
+            ]
+        }
+    },
+    "$sign": [
+        "*",
+        "@VVKuIfWv93MZCeCwpEcrHGRNsf8RaLtJguiytuegANxyMTSiWtNGdXQsuxaCTr7hKKQbY8UXHczlNLafm1-VwQ=="
+    ]
+}
+```
+
+</details>
+
+
+*Note* - The `"$Y"`, `"$sign"` are optional, but are highly recommended in order to check that the package was not tampered with.
+
+#### Returns
 hirpc.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Recorder.RecordFactory.Recorder)
+If a specified archive was not found in the dart, it is simply not included in the output recorder.
+
+<details>
+<summary>**Example response**</summary>
+
+```json
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@A7l5pb4FfnnJYXW0_MDlXP-a1urQ_XC1ZCZmRAwNLGj-"
+    ],
+    "$msg": {
+        "result": {
+            "$@": "Recorder",
+            "0": {
+                "$T": [
+                    "i32",
+                    1
+                ],
+                "$a": {
+                 // archive
+                }
+            },
+            "1": {
+                "$T": [
+                    "i32",
+                    1
+                ],
+                "$a": {
+                  // archive
+                }
+            }
+        }
+    },
+    "$sign": [
+        "*",
+        "@LoOxof1kQgjuFB188DjP-coHPqy5t26nK9Is9R2PVvhOa2Uri6VitOZkfQeKMQuH7tjn_yjLpYEsEcivKPbXDA=="
+    ]
+}
+```
+
+</details>
 
 ### dartRim
 
 *This method takes a rimpath a return a Recorder with all of the branches in that rim*
 
-hirpc.method.name = "dartRim"  
-hirpc.method.params = [Rims](https://ddoc.tagion.org/tagion.dart.DARTRim.Rims)
+\$msg.method.name = "dartRim"  
+\$msg.method.params = [Rims](https://ddoc.tagion.org/tagion.dart.DARTRim.Rims)
 
 **Returns**
 
-hirpc.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Recorder.RecordFactory.Recorder)
+\$msg.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Recorder.RecordFactory.Recorder)
 
 ### dartBullseye
 
 *This method return the bullseye of the database*
 
-hirpc.method.name = "dartBullseye"  
+\$msg.method.name = "dartBullseye"  
 
 
 **Returns**
 
-hirpc.result = [Fingerprint](https://ddoc.tagion.org/tagion.crypto.Types.Fingerprint)  
+\$msg.result = [Fingerprint](https://ddoc.tagion.org/tagion.crypto.Types.Fingerprint)  

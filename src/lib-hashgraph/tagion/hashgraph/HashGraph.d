@@ -322,9 +322,9 @@ class HashGraph {
         refinement.epoch(event_collection, decided_round);
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
-            log(topic, live_events_statistic.stringof, live_events_statistic);
+            log.event(topic, live_events_statistic.stringof, live_events_statistic);
             live_witness_statistic(Event.Witness.count);
-            log(topic, live_witness_statistic.stringof, live_events_statistic);
+            log.event(topic, live_witness_statistic.stringof, live_events_statistic);
             _rounds.dustman;
         }
     }
@@ -421,8 +421,8 @@ class HashGraph {
         _register = new Register(received_wave);
 
         scope (exit) {
-            log(topic, wavefront_event_package_statistic.stringof, wavefront_event_package_statistic);
-            log(topic, wavefront_event_package_used_statistic.stringof, wavefront_event_package_statistic);
+            log.event(topic, wavefront_event_package_statistic.stringof, wavefront_event_package_statistic);
+            log.event(topic, wavefront_event_package_used_statistic.stringof, wavefront_event_package_statistic);
             _register = null;
         }
 

@@ -141,7 +141,7 @@ done
 cd $ndir
 
 # Configure the network with the neuewelle binary
-$bdir/neuewelle -O --option=wave.number_of_nodes:$nodes --option=subscription.tags:taskfailure
+$bdir/neuewelle -O --option=wave.number_of_nodes:$nodes --option=subscription.tags:taskfailure,recorder
 
 # Return to the previous directory
 cd -

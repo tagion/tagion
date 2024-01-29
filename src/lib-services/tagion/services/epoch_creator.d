@@ -200,7 +200,6 @@ struct EpochCreatorService {
         if (thisActor.stop) {
             return;
         }
-
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &node_receive, &receiveWavefront);
     }
 

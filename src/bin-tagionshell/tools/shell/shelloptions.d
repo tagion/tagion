@@ -22,12 +22,14 @@ struct ShellOptions {
     string i2p_endpoint;
     string sysinfo_endpoint;
     string selftest_endpoint;
+    string version_endpoint;
     string default_i2p_wallet;
     string default_i2p_wallet_pin;
     uint number_of_nodes;
     string contract_addr_prefix;
     string dart_addr_prefix;
     uint sock_recvtimeout;
+    uint sock_recvdelay;
     uint sock_connectretry;
     uint dartcache_size;
     double dartcache_ttl_msec;
@@ -46,10 +48,12 @@ struct ShellOptions {
         i2p_endpoint = "/invoice2pay";
         sysinfo_endpoint = "/sysinfo";
         selftest_endpoint = "/selftest";
+        version_endpoint = "/version";
         default_i2p_wallet = "./wallets/wallet1.json";
         default_i2p_wallet_pin = "0001";
         number_of_nodes = 5;
         sock_recvtimeout = 10000;
+        sock_recvdelay = 10;
         sock_connectretry = 32;
         dartcache_size = 4096;
         dartcache_ttl_msec = 30.0;

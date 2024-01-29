@@ -405,7 +405,7 @@ void fail(Throwable t) @trusted nothrow {
             log(t);
         }
         immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
-        log(taskfailure, "taskfailure", tf); // taskfailrue event
+        log.event(taskfailure, "taskfailure", tf);
         ownerTid.prioritySend(tf);
     }
     catch (Exception e) {

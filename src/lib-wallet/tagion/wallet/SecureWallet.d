@@ -449,6 +449,19 @@ struct SecureWallet(Net : SecureNet) {
         account.activated.clear;
     }
 
+    const(HiRPC.Sender) createSubmit(SignedContract signed_contract, bool sent = true) {
+        const message = _net.calcHash(signed_contract);
+        const contract_net = _net.derive(message);
+        const hirpc = HiRPC(contract_net);
+        const hirpc_submit = hirpc.submit(signed_contract);
+
+        if (sent) {
+            account.hirpcs ~= hirpc_submit.toDoc;
+        }
+
+        return hirpc_submit;
+    }
+
     /**
      * Creates HiRPC to request an wallet update
      * Returns: The command to the the update
@@ -477,6 +490,168 @@ struct SecureWallet(Net : SecureNet) {
         return dartCheckRead(billIndexes(to_check), hirpc);
 
     }
+
+    /** 
+     * Used for first step in updating wallet from TRT.
+     * Creates a trt.dartRead command for the TRT.
+     * Takes all derivers in the wallet and convert the pubkeys to #pubkey for lookup in TRT
+     * These indices are put into the trt.dartRead specifying the command.
+     * Params:
+     *   hirpc = hirpc to use
+     * Returns: trt.dartRead hirpc.sender 
+     */
+    const(HiRPC.Sender) readIndicesByPubkey(HiRPC hirpc = HiRPC(null)) const {
+        import tagion.dart.DART;
+        import tagion.script.standardnames;
+
+        auto owner_indices = account.derivers.byKey
+            .map!(owner => net.dartKey(TRTLabel, owner));
+
+        auto params = new HiBON;
+        auto params_dart_indices = new HiBON;
+        params_dart_indices = owner_indices;
+        params[DART.Params.dart_indices] = params_dart_indices;
+        return hirpc.action("trt."~DART.Queries.dartRead, params);
+    }
+
+    /** 
+     * Second stage in updating wallet.
+     * Takes a read trt.dartRead recorder.
+     * Creates an array of DARTIndexes from readIndicesByPubkey recorder
+     * If some indexes were found in the wallet but not in the trt, the indexes are removed
+        from the wallet.
+     * If some indeces were found in the trt but not in the wallet, the indexes are put
+        into a new dartRead request.
+     * Params:
+     *   receiver = Received response from trt.dartRead
+     * Returns: HiRPC.Sender.init if it is not needed to perform 
+        additional requests on the DART.
+     */
+    const(HiRPC.Sender) differenceInIndices(const(HiRPC.Receiver) receiver) {
+        import tagion.dart.Recorder;
+        import tagion.hibon.HiBONRecord : isRecord;
+        import tagion.trt.TRT : TRTArchive;
+        import tagion.dart.DARTcrud;
+        import std.stdio;
+
+        if (!receiver.isResponse) {
+            return HiRPC.Sender.init;
+        }
+
+        const recorder_doc = receiver.message[Keywords.result].get!Document;
+        // writefln("recorder \n %s", recorder_doc.toPretty);
+        RecordFactory record_factory = RecordFactory(net);
+        // TODO: catch hibon exception;
+        const recorder = record_factory.recorder(recorder_doc);
+        /// list of dart_indices in response
+        auto dart_indices = recorder[]
+            .map!(a => a.filed)
+            .filter!(doc => doc.isRecord!TRTArchive) 
+            .map!(doc => TRTArchive(doc))
+            .map!(trt_archive => trt_archive.indices)
+            .join
+            .sort!((a,b) => a < b);
+
+        auto bill_indices = account.bills
+            .map!(b => DARTIndex(net.dartIndex(b)));
+
+        auto locked_indices = account.activated
+            .byKey;
+
+        auto to_compare = chain(bill_indices, locked_indices)
+            .array
+            .sort!((a,b) => a < b)
+            .uniq; // remove duplicates
+
+        DARTIndex[] to_be_looked_up_indices; /// indices that were in network but not in wallet
+        DARTIndex[] to_be_removed_from_wallet; /// indices that were removed from network but not in our wallet
+
+        /*
+        * If to_be_lookup_up_indices is empty that means no new archives were added 
+        to the database otherwise there are new archives we must lookup. 
+        * If to_be_removed_from_wallet is empty none of our own bills were removed 
+        from the database. 
+        * Though if it is not empty we know that the archive must have been deleted 
+        from the database and should be removed from our wallet.
+        */
+        foreach(d; dart_indices) {
+            if (!to_compare.canFind(d)) {
+                to_be_looked_up_indices ~= d;
+            }
+        }
+        foreach(d; to_compare) {
+            if (!dart_indices.canFind(d)) {
+                to_be_removed_from_wallet ~= d;
+            }
+        }
+
+        DARTIndex[] network_indices; /// indices for network lookup
+
+        /// check to_be_looked_up_indices for matches in requested.
+        foreach(i, d; to_be_looked_up_indices) {
+            if (d in account.requested) {
+                auto new_bill = account.requested[d];
+                if (!account.bills.canFind(new_bill)) {
+                    writefln("adding bill from trt req %(%02x%)", d);
+                    account.bills ~= new_bill;
+                    account.requested.remove(d);
+                }
+            }
+            else {
+                writefln("adding network indices %(%02x%)", d);
+                network_indices ~= d;
+            }
+        }
+
+        foreach(idx; to_be_removed_from_wallet) {
+            writefln("removing: %(%02x%)", idx);
+            account.activated.remove(idx);
+            account.remove_bill_by_hash(idx);
+        }
+
+        const new_req = network_indices.empty ? HiRPC.Sender.init : dartRead(network_indices); 
+        return new_req;
+    }
+
+    /** 
+     * Updates the wallet based on the received dartRead
+     * Params:
+     *   receiver = received dartRead from DART
+     * Returns: true if the update was succesful and false if not.
+     */
+    bool updateFromRead(const(HiRPC.Receiver) receiver) {
+        import tagion.dart.Recorder;
+        import tagion.hibon.HiBONRecord : isRecord;
+        import std.stdio : writefln;
+        if (!receiver.isResponse) {
+            writefln("received not a response %s", receiver.toPretty);
+            return false;
+        }
+        const recorder_doc = receiver.message[Keywords.result].get!Document;
+        RecordFactory record_factory = RecordFactory(net);
+        const recorder = record_factory.recorder(recorder_doc);
+        auto new_bills = recorder[]
+            .map!(a => a.filed)
+            .filter!(doc => doc.isRecord!TagionBill) 
+            .map!(doc => TagionBill(doc));
+
+        foreach(new_bill; new_bills) {
+            if (!account.bills.canFind(new_bill)) {
+                writefln("adding bill");
+                account.bills ~= new_bill;
+            }
+            account.requested.remove(net.dartIndex(new_bill));
+            const invoice_index = account.requested_invoices
+                .countUntil!(invoice => invoice.pkey == new_bill.owner);
+
+            if (invoice_index >= 0) {
+                account.requested_invoices = account.requested_invoices.remove(invoice_index);
+            }
+        }
+        return true;
+    }
+
+    
 
     const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
         return bills
