@@ -60,10 +60,9 @@ long getmemstatus() {
     return sz;
 }
 
-static double timestamp()
-{
+static double timestamp() {
     auto ts = Clock.currTime().toTimeSpec();
-    return ts.tv_sec + ts.tv_nsec/1e9;
+    return ts.tv_sec + ts.tv_nsec / 1e9;
 }
 
 void writeit(A...)(A a) {
@@ -78,18 +77,20 @@ enum ExceptionFormat {
 
 string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat kind = ExceptionFormat.HTML) {
     string[] res;
-    switch(kind){
+    switch (kind) {
     case ExceptionFormat.HTML:
-        res ~= format("\r\n<h2>Exception caught in TagionShell %s %s</h2>\r\n", Clock.currTime().toSimpleString(), tag);
-        foreach(t; ex) {
-            res ~= format("<code>\r\n<h3>%s [%d]: %s </h3>\r\n<pre>\r\n%s\r\n</pre>\r\n</code>\r\n", 
-                t.file, t.line, t.message(), t.info);
+        res ~= format("\r\n<h2>Exception caught in TagionShell %s %s</h2>\r\n", Clock.currTime()
+                .toSimpleString(), tag);
+        foreach (t; ex) {
+            res ~= format("<code>\r\n<h3>%s [%d]: %s </h3>\r\n<pre>\r\n%s\r\n</pre>\r\n</code>\r\n",
+                    t.file, t.line, t.message(), t.info);
         }
         break;
     case ExceptionFormat.PLAIN:
     default:
-        res ~= format("\r\nException caught in TagionShell %s %s\r\n", Clock.currTime().toSimpleString(), tag);
-        foreach(t; ex) {
+        res ~= format("\r\nException caught in TagionShell %s %s\r\n", Clock.currTime()
+                .toSimpleString(), tag);
+        foreach (t; ex) {
             res ~= format("%s [%d]: %s \r\n%s\r\n", t.file, t.line, t.message(), t.info);
         }
         break;
@@ -111,7 +112,7 @@ void dart_worker(ShellOptions opt) {
         rc = s.dial(opt.tagion_subscription_addr);
         if (rc == 0)
             break;
-        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");    
+        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");
     }
     while (true) {
         rc = r.dial(opt.node_dart_addr);
@@ -129,64 +130,65 @@ void dart_worker(ShellOptions opt) {
     while (true) {
         try {
             auto received = s.receive!(immutable(ubyte[]))();
-            if(received.empty){
+            if (received.empty) {
                 continue;
-            }    
-            const doc = Document(received[received.countUntil(0)+1..$]);
-            if(!doc.isInorder(No.Reserved)){
+            }
+            const doc = Document(received[received.countUntil(0) + 1 .. $]);
+            if (!doc.isInorder(No.Reserved)) {
                 continue;
-            }    
+            }
             auto receiver = hirpc.receive(doc);
-            if( !receiver.isMethod ){
+            if (!receiver.isMethod) {
                 writeit("DS: Invalid method in document received");
                 continue;
-            }    
+            }
             const payload = SubscriptionPayload(receiver.method.params);
-            if(opt.recorder_subscription_task_prefix.length > 0){
-                if(!payload.task_name.startsWith(opt.recorder_subscription_task_prefix)){
+            if (opt.recorder_subscription_task_prefix.length > 0) {
+                if (!payload.task_name.startsWith(opt.recorder_subscription_task_prefix)) {
                     continue;
                 }
             }
             auto recorder = record_factory.recorder(payload.data);
             Buffer[] affected_owners, tofetch;
             TagionBill[][Buffer] toadd, toremove;
-            foreach(a; recorder[]) {
+            foreach (a; recorder[]) {
                 if (a.filed.isRecord!TagionBill) {
                     auto t = a.type;
                     auto b = TagionBill(a.filed);
                     auto o = cast(Buffer) b.owner;
                     affected_owners ~= o;
-                    if(t == Archive.Type.ADD){
+                    if (t == Archive.Type.ADD) {
                         toadd[o] ~= b;
-                    } else 
-                    if(t == Archive.Type.REMOVE){
+                    }
+                    else if (t == Archive.Type.REMOVE) {
                         toremove[o] ~= b;
                     }
                 }
             }
             int k = 0;
-            if(!affected_owners.empty){
+            if (!affected_owners.empty) {
                 foreach (o; affected_owners) {
-                    TagionBill[] bucket;    
-                    if(dcache.get(o,bucket)){
-                        if(o in toremove){
-                            foreach(b; toremove[o]){
+                    TagionBill[] bucket;
+                    if (dcache.get(o, bucket)) {
+                        if (o in toremove) {
+                            foreach (b; toremove[o]) {
                                 remove!(x => x == b)(bucket);
                                 k++;
                             }
                         }
-                        if(o in toadd){
-                            foreach(b; toadd[o]){
+                        if (o in toadd) {
+                            foreach (b; toadd[o]) {
                                 bucket ~= b;
                                 k++;
                             }
                         }
                         dcache.update(o, bucket, true);
-                    } else { 
+                    }
+                    else {
                         tofetch ~= o;
-                    }                    
+                    }
                 }
-                if(!tofetch.empty){
+                if (!tofetch.empty) {
                     const size_t buflen = 1048576;
                     ubyte[1048576] buf;
                     immutable(ubyte)[] docbuf;
@@ -219,15 +221,15 @@ void dart_worker(ShellOptions opt) {
                         .array;
                     TagionBill[][Buffer] tocache;
                     foreach (bill; received_bills) {
-                        tocache[cast(Buffer)bill.owner] ~= bill;
+                        tocache[cast(Buffer) bill.owner] ~= bill;
                         k++;
                     }
-                    foreach(owner; tocache.keys){
+                    foreach (owner; tocache.keys) {
                         dcache.update(owner, tocache[owner], true);
-                    }    
+                    }
                 }
-            }            
-            if(k > 0)
+            }
+            if (k > 0)
                 writeit(format("DS: Cache updated in %d bills", k));
         }
         catch (Throwable e) {
@@ -259,7 +261,7 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
             rc = s.dial(contract_addr);
             if (rc == 0)
                 break;
-            enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");    
+            enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
         }
         scope (exit) {
             s.close();
@@ -336,7 +338,7 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
             rc = s.dial(opt.node_dart_addr);
             if (rc == 0)
                 break;
-            enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");                    
+            enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
         }
         scope (exit) {
             s.close();
@@ -390,7 +392,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
         bool usecache = true;
         immutable(ubyte)[] docbuf;
         size_t doclen;
-        
+
         const stime = timestamp();
         NNGMessage msg = NNGMessage(0);
 
@@ -400,16 +402,15 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
             rep.msg = "invalid data type";
             return;
         }
-        
-        if(req.path[$-1] == "nocache")
+
+        if (req.path[$ - 1] == "nocache")
             usecache = false;
-        
 
         SecureNet net = new StdSecureNet();
         net.generateKeyPair("very_secret");
         HiRPC hirpc = HiRPC(net);
         Document doc = Document(cast(immutable(ubyte[])) req.rawdata);
-        
+
         immutable receiver = hirpc.receive(doc);
         if (!receiver.isMethod) {
             rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
@@ -425,7 +426,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
             }
             TagionBill[] found_bills;
             Buffer[] found_owners;
-            if(usecache){
+            if (usecache) {
                 TagionBill[] fnd;
                 foreach (owner; owner_pkeys) {
                     if (dcache.get(owner, fnd)) {
@@ -462,13 +463,13 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                     rep.msg = "socket error";
                     return;
                 }
-                while(true){
+                while (true) {
                     rc = s.receivemsg(&msg, true);
-                    if(rc < 0){
-                        if(s.errno == nng_errno.NNG_EAGAIN){
+                    if (rc < 0) {
+                        if (s.errno == nng_errno.NNG_EAGAIN) {
                             nng_sleep(msecs(opt.sock_recvdelay));
                             auto itime = timestamp();
-                            if((itime - stime) * 1000 > opt.sock_recvtimeout){
+                            if ((itime - stime) * 1000 > opt.sock_recvtimeout) {
                                 writeit("dart_handler: recv: timeout");
                                 rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
                                 rep.msg = "socket timeout";
@@ -477,7 +478,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                             msg.clear();
                             continue;
                         }
-                        if(s.errno != 0){
+                        if (s.errno != 0) {
                             writeit("dart_handler: recv: ", nng_errstr(s.errno));
                             rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
                             rep.msg = "socket error";
@@ -488,11 +489,11 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                     }
                     auto buf = msg.body_trim!(ubyte[])(msg.length);
                     writeit(format("WH: dart: received %d bytes", buf.length));
-                    docbuf ~= buf[0..buf.length];
+                    docbuf ~= buf[0 .. buf.length];
                     doclen += docbuf.length;
                     break;
                 }
-                if(docbuf.empty){
+                if (docbuf.empty) {
                     rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
                     rep.msg = "No response";
                     return;
@@ -502,14 +503,14 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 TagionBill[] received_bills = repreceiver.response.result[]
                     .map!(e => TagionBill(e.get!Document))
                     .array;
-                if(usecache){    
+                if (usecache) {
                     TagionBill[][Buffer] tocache;
                     foreach (bill; received_bills) {
-                        tocache[cast(Buffer)bill.owner] ~= bill;
+                        tocache[cast(Buffer) bill.owner] ~= bill;
                     }
-                    foreach(owner; tocache.keys){
+                    foreach (owner; tocache.keys) {
                         dcache.update(owner, tocache[owner], true);
-                    }    
+                    }
                 }
                 nreceived = received_bills.length;
                 found_bills ~= received_bills;
@@ -525,7 +526,8 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 .NNG_HTTP_STATUS_NO_CONTENT;
             rep.type = "applicaion/octet-stream";
             rep.rawdata = (found_bills.length > 0) ? cast(ubyte[])(response.serialize) : null;
-        }else{
+        }
+        else {
             NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
             s.recvtimeout = msecs(opt.sock_recvtimeout);
             while (true) {
@@ -545,13 +547,13 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 return;
             }
             writeit(format("WH: dart: sent %d bytes", req.rawdata.length));
-            while(true) {
+            while (true) {
                 rc = s.receivemsg(&msg, true);
-                if(rc < 0){
-                    if(s.errno == nng_errno.NNG_EAGAIN){
+                if (rc < 0) {
+                    if (s.errno == nng_errno.NNG_EAGAIN) {
                         nng_sleep(msecs(opt.sock_recvdelay));
                         auto itime = timestamp();
-                        if((itime - stime) * 1000 > opt.sock_recvtimeout){
+                        if ((itime - stime) * 1000 > opt.sock_recvtimeout) {
                             writeit("dart_handler: recv: timeout");
                             rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
                             rep.msg = "socket timeout";
@@ -560,7 +562,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                         msg.clear();
                         continue;
                     }
-                    if(s.errno != 0){
+                    if (s.errno != 0) {
                         writeit("dart_handler: recv: ", nng_errstr(s.errno));
                         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
                         rep.msg = "socket error";
@@ -820,7 +822,8 @@ static void selftest_handler(WebData* req, WebData* rep, void* ctx) {
         if (rep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = "text/html";
-            rep.text = "<h2>The requested test couldn`t be processed</h2>\n\r<pre>\n\r" ~ to!string(reqpath) ~ "\r\n" ~ rep.msg ~ "\r\n" ~ rep.text ~ "\n\r</pre>\n\r";
+            rep.text = "<h2>The requested test couldn`t be processed</h2>\n\r<pre>\n\r" ~ to!string(
+                    reqpath) ~ "\r\n" ~ rep.msg ~ "\r\n" ~ rep.text ~ "\n\r</pre>\n\r";
         }
 
     }
@@ -831,6 +834,12 @@ static void selftest_handler(WebData* req, WebData* rep, void* ctx) {
         rep.text = dump_exception_recursive(e, "handler: selftest");
         return;
     }
+}
+
+void versioninfo_handler(WebData* req, WebData* rep, void* ctx) {
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    rep.type = "text/html";
+    rep.text = imported!"tagion.tools.revision".revision_text;
 }
 
 int _main(string[] args) {
@@ -889,7 +898,8 @@ int _main(string[] args) {
         return 0;
     }
 
-    dcache = new shared(DartCache)(null, cast(immutable)options.dartcache_size, cast(immutable)options.dartcache_ttl_msec);
+    dcache = new shared(DartCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
+            .dartcache_ttl_msec);
 
     auto ds_tid = spawn(&dart_worker, options);
 
@@ -914,6 +924,9 @@ int _main(string[] args) {
             ~ options.sysinfo_endpoint
             ~ "\t\t= GET system info\n\t"
             ~ options.shell_api_prefix
+            ~ options.version_endpoint
+            ~ "\t\t= GET network version info\n\t"
+            ~ options.shell_api_prefix
             ~ options.selftest_endpoint ~ "/<enpoint>"
             ~ "\t= GET self test results\n\t"
             ~ "\t== /bullseye \t- test bullseye endpoint\n\t"
@@ -936,6 +949,7 @@ appoint:
     app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &dart_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.i2p_endpoint, &i2p_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.selftest_endpoint ~ "/*", &selftest_handler, ["GET"]);
+    app.route(options.shell_api_prefix ~ options.version_endpoint, &versioninfo_handler, ["GET"]);
 
     app.start();
 
