@@ -19,11 +19,12 @@ import tagion.basic.Types : isTypedef;
 import tagion.basic.basic : EnumContinuousSequency, isOneOf;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
-import tagion.hibon.HiBONException : HiBONException, check;
+import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.utils.StdTime;
 import tagion.basic.basic : isinit;
 import LEB128 = tagion.utils.LEB128;
+import tagion.basic.tagionexceptions : Check;
 public import tagion.hibon.HiBONJSON;
 
 import std.exception;
@@ -227,11 +228,13 @@ static assert(uint.sizeof == 4);
 
             //const doc_full_size = doc.full_size; //LEB128.decode!uint(_data);
             bool checkElementBoundary(const ref Element elm) {
-                return ignore_boundary_check || &elm.data[0] - &doc._data[0] + elm.size <= doc.full_size;
+                return ignore_boundary_check || &elm.data[0] - &doc._data[0] + elm.size <= doc
+                    .full_size;
             }
 
             bool checkDocumentBoundary(const Document sub_doc) {
-                return ignore_boundary_check || &sub_doc._data[0] - &doc._data[0] + sub_doc.full_size <= doc.full_size;
+                return ignore_boundary_check || &sub_doc._data[0] - &doc._data[0] + sub_doc.full_size <= doc
+                    .full_size;
             }
 
             auto previous = doc[];
@@ -585,7 +588,8 @@ static assert(uint.sizeof == 4);
         import std.typecons : Tuple, isTuple;
         import tagion.hibon.HiBONBase;
 
-        static private void make(R)(ref scope AppendBuffer buffer, R range, size_t count = size_t.max) if (isTuple!R) {
+        static private void make(R)(ref scope AppendBuffer buffer, R range, size_t count = size_t
+                .max) if (isTuple!R) {
             AppendBuffer temp_buffer;
             foreach (i, t; range) {
                 if (i is count) {
@@ -976,8 +980,11 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 else {
-                    .check(doc.isArray, "Document must be an array");
-                    result=doc[].map!(e => e.get!ElementT).array;
+
+                    
+
+                        .check(doc.isArray, "Document must be an array");
+                    result = doc[].map!(e => e.get!ElementT).array;
                 }
                 return cast(T) result;
             }
@@ -1006,6 +1013,7 @@ static assert(uint.sizeof == 4);
             }
 
             T get(T)() const
+
             if (!isHiBONRecord!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T) {
                 enum E = Value.asType!T;
                 import std.format;
@@ -1107,7 +1115,8 @@ static assert(uint.sizeof == 4);
          Returns:
          true if the type and the value of the element is equal to rhs
          +/
-        bool opEquals(T)(auto ref const T rhs) const pure nothrow if (!is(T : const(Element))) {
+        bool opEquals(T)(auto ref const T rhs) const pure nothrow
+        if (!is(T : const(Element))) {
             enum rhs_type = Value.asType!T;
             return (rhs_type is type) && (assumeWontThrow(by!rhs_type) == rhs);
         }
@@ -1343,7 +1352,8 @@ static assert(uint.sizeof == 4);
                         }
 
                         const len = LEB128.decode!uint(data[valuePos .. $]);
-                        const type_name = data[valuePos + len.size .. valuePos + len.size + len.value];
+                        const type_name = data[valuePos + len.size .. valuePos + len.size + len
+                                .value];
                         if (reserved && type_name.length >= TYPENAME.length &&
                                 type_name[0 .. TYPENAME.length] == TYPENAME) {
                             return RESERVED_HIBON_TYPE;
@@ -1393,17 +1403,23 @@ unittest { // Bugfix (Length of document should fail) document length error
     import tagion.hibon.HiBONJSON;
 
     { // Sub document size overflow (len=13 should be 12)
-        immutable(ubyte[]) data = [16, 2, 1, 97, 13, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+        immutable(ubyte[]) data = [
+            16, 2, 1, 97, 13, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17
+        ];
         const doc = Document(data);
         assert(doc.valid == Document.Element.ErrorCode.OVERFLOW);
     }
     { // Sub document size too-small (len=10 should be 12)
-        immutable(ubyte[]) data = [16, 2, 1, 97, 10, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+        immutable(ubyte[]) data = [
+            16, 2, 1, 97, 10, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17
+        ];
         const doc = Document(data);
         assert(doc.valid == Document.Element.ErrorCode.TOO_SMALL);
     }
     { // Sub document size correct 
-        immutable(ubyte[]) data = [16, 2, 1, 97, 12, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+        immutable(ubyte[]) data = [
+            16, 2, 1, 97, 12, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17
+        ];
         const doc = Document(data);
         assert(doc.valid == Document.Element.ErrorCode.NONE);
     }

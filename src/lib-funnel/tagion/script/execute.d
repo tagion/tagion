@@ -108,6 +108,7 @@ struct ContractExecution {
 
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
         import std.exception;
+        import tagion.script.ScriptException;
 
         const input_amount = exec_contract.inputs
             .map!(doc => TagionBill(doc).value)

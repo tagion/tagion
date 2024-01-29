@@ -108,14 +108,15 @@ struct PayScript {
 }
 
 unittest {
-   import std.stdio;
+    import std.stdio;
     import tagion.hibon.HiBONJSON;
+
     PayScript pay;
-    pay.outputs=[
-        TagionBill(TagionCurrency(1000), sdt_t(1234), Pubkey([1,2,3]), [14,16,17]),
-        TagionBill(TagionCurrency(2000), sdt_t(5678), Pubkey([2,3,4]), [42,17,3])
+    pay.outputs = [
+        TagionBill(TagionCurrency(1000), sdt_t(1234), Pubkey([1, 2, 3]), [14, 16, 17]),
+        TagionBill(TagionCurrency(2000), sdt_t(5678), Pubkey([2, 3, 4]), [42, 17, 3])
     ];
-    const hibon_serialize=pay.toHiBON.serialize;
+    const hibon_serialize = pay.toHiBON.serialize;
     const serialize = pay._serialize;
     writefln("hibon_serialize=%s", hibon_serialize);
     writefln("serialize      =%s", serialize);
@@ -123,8 +124,8 @@ unittest {
     writefln("doc  =%s", pay.toPretty);
 
     assert(hibon_serialize == serialize);
-    const doc=pay.toDoc;
-    const new_pay=PayScript(doc);
+    const doc = pay.toDoc;
+    const new_pay = PayScript(doc);
     writefln("doc.serialize  =%s", doc.serialize);
     assert(hibon_serialize == doc.serialize);
     assert(serialize == doc.serialize);
@@ -142,6 +143,7 @@ Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
 const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Document[]) reads, const(
         Document) script) {
     import std.algorithm : map, sort;
+    import tagion.hibon.HiBONException;
 
     check(nets.length > 0, "At least one input contract");
     check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
@@ -168,6 +170,7 @@ const(Document[]) inputs,
 const(Document[]) reads,
 const(Document) script) {
     import std.algorithm : map;
+    import tagion.hibon.HiBONException;
 
     check(nets.length > 0, "At least one input contract");
     const net = nets[0];
@@ -206,8 +209,9 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
 unittest {
     import tagion.crypto.SecureNet : StdSecureNet;
+
     const net = new StdSecureNet;
-    const  contract = new SignedContract;
+    const contract = new SignedContract;
     assert(!verify(net, contract, Document[].init), "Contract with no inputs should fail");
 }
 

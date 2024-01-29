@@ -15,7 +15,7 @@ import std.base64;
 
 //import std.stdio;
 
-import tagion.hibon.HiBONException : check;
+import tagion.hibon.HiBONException;
 
 /++
  BigNumber used in the HiBON format

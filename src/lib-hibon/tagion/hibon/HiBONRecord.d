@@ -122,8 +122,8 @@ struct preserve; /// This preserve the size of array
  Sets the HiBONRecord type
  +/
 struct recordType {
-    string name;
-    string code; // This is mixed after the Document constructor
+    string name; /// Name of the HiBON record-type 
+    string code; /// This is mixed after the Document constructor
 }
 /++
  Gets the label for HiBON member
@@ -218,7 +218,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.Message : message;
     import tagion.basic.basic : CastTo, basename;
     import tagion.basic.tagionexceptions : Check;
-    import tagion.hibon.HiBONException : HiBONRecordException;
+    import tagion.hibon.HiBONException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, isSpecialKeyType,
         label, exclude, optional, GetLabel, filter, fixed, inspect, preserve;
     import tagion.hibon.HiBONBase : isKey, TypedefBase, is_index;
@@ -455,8 +455,9 @@ mixin template HiBONRecord(string CTOR = "") {
 
         @safe this(const Document doc) pure {
             static if (HAS_TYPE) {
+                Check!HiBONRecordTypeException(doc.hasMember(TYPENAME), "Missing HiBON type");
                 string _type = doc[TYPENAME].get!string;
-                check(_type == type_name, format("Wrong %s type %s should be %s",
+                Check!HiBONRecordTypeException(_type == type_name, format("Wrong %s type %s should be %s",
                         TYPENAME, _type, type_name));
             }
             static if (hasUDA!(This, recordType)) {
@@ -815,7 +816,20 @@ unittest {
     }
 
     { // Simple basic type check
-    {
+    { /// Should fail on empty document
+            const empty_doc = Document();
+            //const s=Simple(empty_doc);
+            Simple create_empty() {
+                return Simple(Document());
+            }
+
+            {
+                //    create_empty;
+                assertNotThrown!(HiBONException)(create_empty, "Should throw because empty_doc is missing a hibon-record-type");
+            }
+        }
+
+        {
             const s = Simple(-42, "some text");
             const docS = s.toDoc;
             // writefln("keys=%s", docS.keys);
@@ -1078,6 +1092,7 @@ unittest {
 
             check_serialize(s, doc);
         }
+
         {
             s.a = [17, int.init, 42];
 
@@ -1092,8 +1107,11 @@ unittest {
             Array empty_array;
 
             __write("empty_array=%s", empty_array.toPretty);
+            const empty_doc = Document();
+            __write("empty_doc=%s", empty_doc.toPretty);
         }
     }
+
     { // Array of HiBON
         static struct SimpleElement {
             int x;
