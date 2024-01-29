@@ -592,10 +592,13 @@ struct SecureWallet(Net : SecureNet) {
             if (d in account.requested) {
                 auto new_bill = account.requested[d];
                 if (!account.bills.canFind(new_bill)) {
+                    writefln("adding bill from trt req %(%02x%)", d);
                     account.bills ~= new_bill;
                     account.requested.remove(d);
-                    continue;
                 }
+            }
+            else {
+                writefln("adding network indices %(%02x%)", d);
                 network_indices ~= d;
             }
         }
@@ -606,7 +609,7 @@ struct SecureWallet(Net : SecureNet) {
             account.remove_bill_by_hash(idx);
         }
 
-        const new_req = to_be_looked_up_indices.empty ? HiRPC.Sender.init : dartRead(network_indices); 
+        const new_req = network_indices.empty ? HiRPC.Sender.init : dartRead(network_indices); 
         return new_req;
     }
 
