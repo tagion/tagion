@@ -280,8 +280,8 @@ enum HistoryItemType {
 }
 
 enum ContractStatus {
-    pending = 0,
     succeeded = 1,
+    pending = 0,
 }
 
 struct HistoryItem {
