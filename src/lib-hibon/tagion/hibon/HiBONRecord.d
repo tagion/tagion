@@ -745,7 +745,7 @@ unittest {
     @recordType("SIMPLE") static struct Simple {
         int s;
         string text;
-        enum enable_serialize = true;
+        alias enable_serialize = bool;
         mixin HiBONRecord!(q{
                 this(int s, string text) pure {
                     this.s=s; this.text=text;
@@ -760,7 +760,7 @@ unittest {
     @recordType("SIMPLELABEL") static struct SimpleLabel {
         @label("TEXT") string text;
         @label("$S") int s;
-        enum enable_serialize = true;
+        alias enable_serialize = bool;
         mixin HiBONRecord!(q{
                 this(int s, string text) pure {
                     this.s=s; this.text=text;
@@ -782,7 +782,7 @@ unittest {
         double f64;
         string text;
         bool flag;
-        enum enable_serialize = true;
+        alias enable_serialize = bool;
         mixin HiBONRecord!(q{this(int i32,
                     uint u32,
                     long i64,
@@ -809,7 +809,7 @@ unittest {
             int not_an_option;
             @label("s") @optional int s;
             @optional string text;
-            enum enable_serialize = true;
+            alias enable_serialize = bool;
             mixin HiBONRecord!();
         }
     }
@@ -926,7 +926,7 @@ unittest {
                     @optional int x;
                     @optional int y;
                 }
-                enum enable_serialize = true;
+                alias enable_serialize = bool;
                 bool valid(const Document doc) const pure nothrow {
                     return doc.hasMember("x") ^ doc.hasMember("y");
                 }
@@ -1046,6 +1046,7 @@ unittest {
     {
         static struct Test {
             @inspect(q{a < 42}) @inspect(q{a > 3}) int x;
+            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1093,6 +1094,26 @@ unittest {
             __write("empty_array=%s", empty_array.toPretty);
         }
     }
+    { // Array of HiBON
+        static struct SimpleElement {
+            int x;
+            alias enable_serialize = bool;
+            mixin HiBONRecord;
+        }
+
+        static struct TestArray {
+            SimpleElement[] tests;
+            alias enable_serialize = bool;
+            mixin HiBONRecord;
+        }
+
+        { // Array should fail if tests is empty
+            const empty_doc = Document();
+            const test_array = TestArray(empty_doc);
+            __write("test_array=%s", test_array.toPretty);
+
+        }
+    }
 
     { // String array
         static struct StringArray {
@@ -1113,7 +1134,8 @@ unittest {
 
     { // Element as range
         @safe static struct Range(T) {
-            import std.array : to_array=array;
+            import std.array : to_array = array;
+
             alias UnqualT = Unqual!T;
             protected T[] array;
             alias enable_serialize = bool;
@@ -1137,9 +1159,9 @@ unittest {
                 }
             }
 
-            @trusted this(const Document doc) pure  {
-                array=doc[].map!(e => e.get!T).to_array;
-            /*
+            @trusted this(const Document doc) pure {
+                array = doc[].map!(e => e.get!T).to_array;
+                /*
                 auto result = new UnqualT[doc.length];
                 
                     foreach (ref a, e; lockstep(result, doc[])) {
@@ -1608,15 +1630,15 @@ unittest { /// Reseved keys and types
 ///
 unittest { // Test UDA preserve
     static struct S {
-        alias enable_serialize=bool;
+        alias enable_serialize = bool;
         @preserve int[] array;
         mixin HiBONRecord;
     }
 
     S s;
-    s.array.length=7;
+    s.array.length = 7;
     __write("s._serialize=%s", s._serialize);
-    const hibon_serialize=s.toHiBON.serialize;
+    const hibon_serialize = s.toHiBON.serialize;
     __write("hibon._serialize=%s", s._serialize);
 
 }
