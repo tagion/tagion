@@ -1,5 +1,21 @@
 /// Service which exposes dart reads over a socket
 module tagion.services.DARTInterface;
+import core.time;
+import core.thread;
+import nngd;
+import std.algorithm : canFind, startsWith;
+import std.stdio;
+import std.format;
+import tagion.actor;
+import tagion.communication.HiRPC;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord : isRecord;
+import tagion.logger.Logger;
+import tagion.services.messages;
+import tagion.services.options;
+import tagion.utils.pretend_safe_concurrency;
+import tagion.services.TRTService : TRTOptions;
+import tagion.dart.DART;
 
 @safe:
 
@@ -27,22 +43,6 @@ struct DARTInterfaceOptions {
 
 }
 
-import core.time;
-import core.thread;
-import nngd;
-import std.stdio;
-import std.format;
-import tagion.actor;
-import tagion.communication.HiRPC;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : isRecord;
-import tagion.logger.Logger;
-import tagion.services.messages;
-import tagion.services.options;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.services.TRTService : TRTOptions;
-import tagion.dart.DART;
-
 struct DartWorkerContext {
     string dart_task_name;
     int worker_timeout;
@@ -57,6 +57,17 @@ enum InterfaceError {
     TRTLocate,
     InvalidMethod,
 }
+
+/// Accepted methods for the DART.
+static immutable accepted_dart_methods = [
+    DART.Queries.dartRead, 
+    DART.Queries.dartRim, 
+    DART.Queries.dartBullseye, 
+    DART.Queries.dartCheckRead, 
+    "search"
+];
+
+
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
@@ -78,7 +89,6 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         const sender = hirpc.Sender(null, message);
         writefln("INTERFACE ERROR: %s", err_type.to!string ~ extra_msg);
         send_doc(sender.toDoc);
-        // msg.body_append(sender.toDoc.serialize);
     }
 
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) @trusted {
@@ -122,12 +132,13 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     const empty_hirpc = HiRPC(null);
 
     immutable receiver = empty_hirpc.receive(doc);
-    if (!receiver.isMethod) {
+    if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
         send_error(InterfaceError.InvalidDoc);
         return;
     }
 
-    if ((receiver.method.name == "search" || receiver.method.full_name == "trt." ~ DART.Queries.dartRead) && cnt.trt_enable) {
+    if (cnt.trt_enable && (receiver.method.name.startsWith("trt.") || receiver.method.name =="search"))
+    {
         writeln("TRT SEARCH REQUEST");
         auto trt_tid = locate(cnt.trt_task_name);
         if (trt_tid is Tid.init) {

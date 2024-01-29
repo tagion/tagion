@@ -28,6 +28,7 @@ import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
+import tagion.services.DARTInterface : accepted_dart_methods;
 
 @safe:
 ///
@@ -45,15 +46,6 @@ struct DARTOptions {
 
     mixin JSONCommon;
 }
-
-/// Accepted methods for the DART.
-static immutable accepted_methods = [
-    DART.Queries.dartRead, 
-    DART.Queries.dartRim, 
-    DART.Queries.dartBullseye, 
-    DART.Queries.dartCheckRead, 
-    "search"
-];
 
 /** 
  * DART Service actor
@@ -127,7 +119,7 @@ struct DARTService {
 
             pragma(msg, "fixme(phr): make this more pretty");
             immutable receiver = hirpc.receive(doc);
-            if (!(receiver.isMethod && accepted_methods.canFind(receiver.method.name))) {
+            if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
                 log("unsupported request or method");
                 const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
                 req.respond(err.toDoc);
