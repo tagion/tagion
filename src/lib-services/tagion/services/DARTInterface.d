@@ -90,16 +90,13 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         writefln("INTERFACE ERROR: %s", err_type.to!string ~ extra_msg);
         send_doc(sender.toDoc);
     }
+    import std.sumtype;
+    alias HiRPCResponse = SumType!(dartHiRPCRR.Response, trtHiRPCRR.Response);
 
-    void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) @trusted {
+    void hirpc_response(HiRPCResponse res, Document doc) @trusted {
         writeln("Interface successful response");
         send_doc(doc);
         // msg.body_append(doc.serialize);
-    }
-
-    void trtHiRPCResponse(trtHiRPCRR.Response res, Document doc) @trusted {
-        writeln("TRT Inteface succesful response");
-        send_doc(doc);
     }
 
     if (msg is null) {
@@ -137,37 +134,23 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         return;
     }
 
-    if (cnt.trt_enable && (receiver.method.name.startsWith("trt.") || receiver.method.name =="search"))
-    {
-        writeln("TRT SEARCH REQUEST");
-        auto trt_tid = locate(cnt.trt_task_name);
-        if (trt_tid is Tid.init) {
-            send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
-            return;
-        }
-        trt_tid.send(trtHiRPCRR(), doc);
-        auto trt_resp = receiveTimeout(cnt.worker_timeout.msecs, &trtHiRPCResponse);
-        if (!trt_resp) {
-            send_error(InterfaceError.Timeout);
-            writeln("Timeout on trt request");
-            return;
-        }
+    const is_trt_req = cnt.trt_enable && (receiver.method.name.startsWith("trt.") || receiver.method.name =="search");
+    auto tid = is_trt_req ? locate(cnt.trt_task_name) : locate(cnt.dart_task_name);
 
+    if (tid is Tid.init) {
+        send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
+        return;
     }
-    else {
-        auto dart_tid = locate(cnt.dart_task_name);
-        if (dart_tid is Tid.init) {
-            send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
-            return;
-        }
-        dart_tid.send(dartHiRPCRR(), doc);
-        auto dart_resp = receiveTimeout(cnt.worker_timeout.msecs, &dartHiRPCResponse);
-        if (!dart_resp) {
-            send_error(InterfaceError.Timeout);
-            writeln("Timeout on dart request");
-            return;
-        }
-
+    if (is_trt_req) {
+        tid.send(trtHiRPCRR(), doc); 
+    } else {
+        tid.send(dartHiRPCRR(), doc); 
+    }
+    const response = receiveTimeout(cnt.worker_timeout.msecs, &hirpc_response);
+    if (!response) {
+        send_error(InterfaceError.Timeout);
+        writeln("Timeout on interface request");
+        return;
     }
 }
 

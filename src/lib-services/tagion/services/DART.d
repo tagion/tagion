@@ -117,7 +117,6 @@ struct DARTService {
                 return;
             }
 
-            pragma(msg, "fixme(phr): make this more pretty");
             immutable receiver = hirpc.receive(doc);
             if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
                 log("unsupported request or method");
