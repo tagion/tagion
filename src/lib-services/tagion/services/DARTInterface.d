@@ -80,7 +80,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         msg.body_prepend(doc.serialize);
     }
 
-    void send_error(InterfaceError err_type, string extra_msg = "") @trusted {
+    void send_error(InterfaceError err_type, string extra_msg = "") @safe {
         import std.conv;
         hirpc.Error message;
         message.code = err_type;
@@ -90,11 +90,11 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         send_doc(sender.toDoc);
     }
 
-    void dart_hirpc_response(dartHiRPCRR.Response res, Document doc) @trusted {
+    void dart_hirpc_response(dartHiRPCRR.Response res, Document doc) @safe {
         writeln("Interface successful response");
         send_doc(doc);
     }
-    void trt_hirpc_response(trtHiRPCRR.Response res, Document doc) @trusted {
+    void trt_hirpc_response(trtHiRPCRR.Response res, Document doc) @safe {
         writeln("Interface successful response");
         send_doc(doc);
     }
