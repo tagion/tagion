@@ -491,6 +491,133 @@ struct SecureWallet(Net : SecureNet) {
 
     }
 
+    const(HiRPC.Sender) readIndicesByPubkey(HiRPC hirpc = HiRPC(null)) const {
+        import tagion.dart.DART;
+        import tagion.script.standardnames;
+
+        auto owner_indices = account.derivers.byKey
+            .map!(owner => net.dartKey(TRTLabel, owner));
+
+        auto params = new HiBON;
+        auto params_dart_indices = new HiBON;
+        params_dart_indices = owner_indices;
+        params[DART.Params.dart_indices] = params_dart_indices;
+        return hirpc.action("trt."~DART.Queries.dartRead, params);
+    }
+
+    const(HiRPC.Sender) differenceInIndices(const(HiRPC.Receiver) receiver) {
+        import tagion.dart.Recorder;
+        import tagion.hibon.HiBONRecord : isRecord;
+        import tagion.trt.TRT : TRTArchive;
+        import tagion.dart.DARTcrud;
+        import std.stdio;
+
+        if (!receiver.isResponse) {
+            return HiRPC.Sender.init;
+        }
+
+        const recorder_doc = receiver.message[Keywords.result].get!Document;
+        // writefln("recorder \n %s", recorder_doc.toPretty);
+        RecordFactory record_factory = RecordFactory(net);
+        // TODO: catch hibon exception;
+        const recorder = record_factory.recorder(recorder_doc);
+        /// list of dart_indices in response
+        auto dart_indices = recorder[]
+            .map!(a => a.filed)
+            .filter!(doc => doc.isRecord!TRTArchive) 
+            .map!(doc => TRTArchive(doc))
+            .map!(trt_archive => trt_archive.indices)
+            .join
+            .array
+            .sort!((a,b) => a < b)
+            .array;
+
+        auto bill_indices = account.bills
+            .map!(b => DARTIndex(net.dartIndex(b)));
+
+        auto locked_indices = account.activated
+            .byKey;
+
+        auto to_compare = chain(bill_indices, locked_indices)
+            .array
+            .sort!((a,b) => a < b)
+            .uniq // remove duplicates
+            .array;
+
+        DARTIndex[] to_be_looked_up_indices; /// indices that were in network but not in wallet
+        DARTIndex[] to_be_removed_from_wallet; /// indices that were removed from network but not in our wallet
+
+        foreach(d; dart_indices) {
+            if (!to_compare.canFind(d)) {
+                to_be_looked_up_indices ~= d;
+            }
+        }
+        foreach(d; to_compare) {
+            if (!dart_indices.canFind(d)) {
+                to_be_removed_from_wallet ~= d;
+            }
+        }
+
+        
+        // auto m = mismatch(dart_indices, to_compare);
+        // auto to_be_looked_up_indices = m[0]; /// indices that were in network but not in our wallet
+
+        // auto to_be_removed_from_wallet = m[1]; /// indices that were removed from the network but were in our wallet
+        
+
+        /*
+        * If to_be_lookup_up_indices is empty that means no new archives were added 
+        to the database otherwise there are new archives we must lookup.
+
+        * If to_be_removed_from_wallet is empty none of our own bills were removed 
+        from the database. 
+        * Though if it is not empty we know that the archive must have been deleted 
+        from the database and should be removed from our wallet.
+        */
+
+        foreach(idx; to_be_removed_from_wallet) {
+            writefln("removing: %(%02x%)", idx);
+            account.activated.remove(idx);
+            account.remove_bill_by_hash(idx);
+        }
+
+        const new_req = to_be_looked_up_indices.empty ? HiRPC.Sender.init : dartRead(to_be_looked_up_indices); 
+        return new_req;
+    }
+    bool updateFromRead(const(HiRPC.Receiver) receiver) {
+        import tagion.dart.Recorder;
+        import tagion.hibon.HiBONRecord : isRecord;
+        import std.stdio : writefln;
+        if (!receiver.isResponse) {
+            writefln("received not a response %s", receiver.toPretty);
+            return false;
+        }
+        const recorder_doc = receiver.message[Keywords.result].get!Document;
+        RecordFactory record_factory = RecordFactory(net);
+        const recorder = record_factory.recorder(recorder_doc);
+        auto new_bills = recorder[]
+            .map!(a => a.filed)
+            .filter!(doc => doc.isRecord!TagionBill) 
+            .map!(doc => TagionBill(doc));
+
+        foreach(new_bill; new_bills) {
+            if (!account.bills.canFind(new_bill)) {
+                writefln("adding bill");
+                account.bills ~= new_bill;
+            }
+            account.requested.remove(net.dartIndex(new_bill));
+            const invoice_index = account.requested_invoices
+                .countUntil!(invoice => invoice.pkey == new_bill.owner);
+
+            if (invoice_index >= 0) {
+                account.requested_invoices = account.requested_invoices.remove(invoice_index);
+            }
+        }
+        return true;
+    }
+
+    
+
     const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
         return bills
             .map!(bill => bill.owner in account.derivers)

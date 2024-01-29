@@ -87,7 +87,7 @@ struct ReplicatorService {
                 net); 
 
             log.trace("Added recorder chain block with hash '%(%02x%)'", block.fingerprint);
-            log(modify_recorder, "modify", recorder);
+            log.event(modify_recorder, "modify", recorder);
         }
         run(&receiveRecorder);
     }

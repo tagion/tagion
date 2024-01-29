@@ -20,6 +20,21 @@ permissions:
   id-token: write
 
 jobs:
+  dscanner-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    continue-on-error: true
+    steps:
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+      - uses: actions/checkout@v4
+      - run: |
+          for i in `find src/* -maxdepth 0 -type d | grep -v "lib-nngd"`; do
+            echo "Checking $i"
+            dub run dscanner -- $i --styleCheck -f "github" | grep -v undocumented || echo false
+          done
+
   build:
     runs-on: CI
     timeout-minutes: 5
@@ -71,10 +86,13 @@ jobs:
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload code coverage results
-        run: |
-          cp logs/${{env.TARGET}}/cov/* .      
-          bash <(curl -s https://codecov.io/bash) -F unittest -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
-          rm -- *.lst
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./logs/${{ env.TARGET }}/cov/
+          fail_ci_if_error: true
+          flags: unittest
+          verbose: true
 
       - name: Post run
         if: always()
@@ -84,6 +102,48 @@ jobs:
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
+
+  commit_stage_cov:
+    if: true
+    runs-on: CI
+    timeout-minutes: 5
+
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+
+      - name: pull
+        run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore . 
+
+      - name: Run commit stage tests
+        run: |
+          export DC=${{ env.DC }}
+          export TEST_STAGE=commit
+          export TESTBENCH_FLAGS=--silent 
+          export COV=1
+          make bddtest -j || make proper bddtest
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./logs/${{ env.TARGET }}/bdd/commit/cov/
+          fail_ci_if_error: true
+          flags: commit
+          verbose: true
+
+      - name: Post run
+        if: always()
+        run: |
+          make clean
+          rm -r *.callstack build logs/ || echo "no logs"
+          rm -- *.lst
+
 
   commit_stage:
     runs-on: CI

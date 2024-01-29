@@ -105,57 +105,65 @@ struct TRTService {
         }
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
+            import tagion.services.DARTInterface : InterfaceError;
+            import std.conv : to;
             log("trt_read request");
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
             }
             log("before hirpc");
             immutable receiver = hirpc.receive(doc);
-            if (receiver.method.name != "search") {
-                log("not a HIRPC");
-                // return hirpc error instead;
-                return;
-            }
-            log("before owner doc");
-            auto owner_doc = receiver.method.params;
-            if (owner_doc[].empty) {
-                import tagion.services.DARTInterface;
-                import std.conv : to;
-
-                log("the owner doc was empty");
-                const err = hirpc.error(receiver, InterfaceError
-                        .InvalidDoc.to!string, InterfaceError.InvalidDoc);
+            if (!receiver.isMethod || !(receiver.method.name == "search" || receiver.method.name == DART.Queries.dartRead)) {
+                log("received non valid HIRPC method");
+                const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
                 client_req.respond(err.toDoc);
                 return;
             }
+            log("before owner doc");
+            if (receiver.method.name == "search") {
+                auto owner_doc = receiver.method.params;
+                if (owner_doc[].empty) {
+                    import tagion.services.DARTInterface;
+                    import std.conv : to;
 
-            log("before creating indices");
-            auto owner_indices = owner_doc[]
-                .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)))
-                .array;
+                    log("the owner doc was empty");
+                    const err = hirpc.error(receiver, InterfaceError
+                            .InvalidDoc.to!string, InterfaceError.InvalidDoc);
+                    client_req.respond(err.toDoc);
+                    return;
+                }
 
-            import std.algorithm;
-
-            owner_indices.each!(o => writefln("%(%02x%)", o));
-
-            auto trt_read_recorder = trt_db.loads(owner_indices);
-            immutable(DARTIndex)[] indices;
-            foreach (a; trt_read_recorder[]) {
-                indices ~= TRTArchive(a.filed).indices.map!(d => cast(immutable) DARTIndex(d))
+                log("before creating indices");
+                auto owner_indices = owner_doc[]
+                    .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)))
                     .array;
-            }
 
-            if (indices.empty) {
-                Document response = hirpc.result(receiver, Document()).toDoc;
-                client_req.respond(response);
+                import std.algorithm;
+
+                owner_indices.each!(o => writefln("%(%02x%)", o));
+
+                auto trt_read_recorder = trt_db.loads(owner_indices);
+                immutable(DARTIndex)[] indices;
+                foreach (a; trt_read_recorder[]) {
+                    indices ~= TRTArchive(a.filed).indices.map!(d => cast(immutable) DARTIndex(d))
+                        .array;
+                }
+
+                if (indices.empty) {
+                    Document response = hirpc.result(receiver, Document()).toDoc;
+                    client_req.respond(response);
+                    return;
+                }
+
+                log("sending dartread request");
+                auto dart_req = dartReadRR();
+                requests[dart_req.id] = TRTRequest(client_req, doc);
+
+                dart_handle.send(dart_req, indices);
                 return;
             }
-
-            log("sending dartread request");
-            auto dart_req = dartReadRR();
-            requests[dart_req.id] = TRTRequest(client_req, doc);
-
-            dart_handle.send(dart_req, indices);
+            Document result = trt_db(receiver, false).toDoc;
+            client_req.respond(result);
         }
 
         void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {

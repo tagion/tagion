@@ -117,6 +117,7 @@ int _main(string[] args) {
                 "req", "List all requested bills", &wallet_switch.request,
                 "update", "Request a wallet updated", &wallet_switch.update,
                 "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
+                "trt-read", "TEMPOARY: send trt pubkey read request", &wallet_switch.trt_read,
                 "history", "Request print the transaction history", &history,
 
                 "address", format(

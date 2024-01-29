@@ -1086,6 +1086,12 @@ unittest {
             assert(doc.toJSON.toString == format("%j", result));
             check_serialize(s, doc);
         }
+
+        { // Array where i32_a is not defined should fail 
+            Array empty_array;
+
+            __write("empty_array=%s", empty_array.toPretty);
+        }
     }
 
     { // String array

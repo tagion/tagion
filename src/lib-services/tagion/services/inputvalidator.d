@@ -66,8 +66,9 @@ struct InputValidatorService {
     static Topic rejected = Topic("reject/inputvalidator");
 
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
-    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
+    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) __task_names) @trusted {
         HiRPC hirpc = HiRPC(net);
+        ActorHandle hirpc_verifier_handle = ActorHandle(__task_names.hirpc_verifier);
 
         void reject(T)(ResponseError err_type, T data = Document()) const nothrow {
             try {
@@ -84,7 +85,7 @@ struct InputValidatorService {
                     log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(
                             rc));
                 }
-                log(rejected, err_type.to!string, data);
+                log.event(rejected, err_type.to!string, data);
             }
             catch (Exception e) {
                 log.error("Failed to deliver rejection %s", err_type.to!string);
@@ -139,7 +140,9 @@ struct InputValidatorService {
                 }
                 auto result_buf = sock.receive!Buffer;
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
                 if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
@@ -151,7 +154,9 @@ struct InputValidatorService {
                     }
                 }
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
                 if (result_buf.length <= 0) {
@@ -175,7 +180,9 @@ struct InputValidatorService {
                     }
                 }
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
 
@@ -199,7 +206,7 @@ struct InputValidatorService {
             }
             try {
                 log("Sending contract to hirpc_verifier");
-                locate(task_names.hirpc_verifier).send(inputDoc(), doc);
+                hirpc_verifier_handle.send(inputDoc(), doc);
 
                 auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());

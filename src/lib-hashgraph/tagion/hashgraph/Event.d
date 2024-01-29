@@ -257,7 +257,7 @@ class Event {
         // if (_father) { pseudo_time_counter += 1; }
         pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
         with (hashgraph) {
-            log(topic, received_order_statistic.stringof, received_order_statistic);
+            log.event(topic, received_order_statistic.stringof, received_order_statistic);
         }
 
         calc_youngest_son_ancestors(hashgraph);
@@ -284,7 +284,7 @@ class Event {
             _round.add(this);
         }
         with (hashgraph) {
-            log(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
+            log.event(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
         }
         if (callbacks) {
             callbacks.witness(this);

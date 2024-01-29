@@ -70,13 +70,14 @@ struct NodeInterfaceService {
     }
 
     void node_receive() @trusted {
-        auto buf = sock_recv.receive!Buffer;
+        Buffer buf = sock_recv.receive!Buffer;
 
         if (sock_recv.m_errno != nng_errno.NNG_OK && sock_recv.m_errno != nng_errno.NNG_ETIMEDOUT) {
             throw new ServiceException(nng_errstr(sock_recv.m_errno));
         }
 
         if (buf.length > 0) {
+            log.trace("received %s bytes", buf.length);
             receive_handle.send(NodeRecv(), Document(buf));
         }
     }

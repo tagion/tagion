@@ -646,14 +646,24 @@ extern (C) {
         return 0;
     }
 
+    static sdt_t dummy_time;
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
         version (WALLET_HISTORY_DUMMY) {
+            if (dummy_time == sdt_t.init) {
+                dummy_time = currentTime();
+            }
+
             DummyHistGen hist_gen;
 
             WHistory hist;
             hist_gen.popFront();
-            hist.items = hist_gen.drop(from).take(count).array;
+            if (count == 0) {
+                hist.items = hist_gen.drop(from).array;
+            }
+            else {
+                hist.items = hist_gen.drop(from).take(count).array;
+            }
 
             *historyId = recyclerDoc.create(hist.toDoc);
         }
@@ -661,9 +671,18 @@ extern (C) {
             assert(__wallet_storage !is null, "The Wallet storage was not initialised");
 
             WHistory hist;
-            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
-                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
-                .array;
+
+            if (count == 0) {
+                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from)
+                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                    .array;
+            }
+            else {
+                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
+                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                    .array;
+            }
+
             *historyId = recyclerDoc.create(hist.toDoc);
         }
 
@@ -704,7 +723,6 @@ struct WHistory {
 pragma(msg, "remove wrapper dummy history");
 struct DummyHistGen {
     import tagion.utils.Random;
-    import stdrnd = std.random;
 
     enum max_length = 37;
 
@@ -718,7 +736,7 @@ struct DummyHistGen {
             fee = rnd.value;
             status = rnd.value % 2;
             type = rnd.value % 2;
-            timestamp = currentTime();
+            timestamp = dummy_time;
             pubkey = Pubkey(rnd.take(33).map!(i => cast(ubyte)(i)).array.idup);
             index = DARTIndex(rnd.take(32).map!(i => cast(ubyte)(i)).array.idup);
         }
@@ -1020,6 +1038,7 @@ unittest {
 
         assert(&index !is null);
         const(char*) jstr = doc_as_json(index);
+        // writeln(fromStringz(jstr));
         assert(jstr !is null);
 
         // writeln(fromStringz(jstr));

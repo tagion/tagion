@@ -5,7 +5,7 @@ import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
 import tagion.script.common : TagionBill;
 import std.algorithm;
-import tagion.hibon.HiBONRecord : HiBONRecord, isRecord, label;
+import tagion.hibon.HiBONRecord : HiBONRecord, isRecord, label, recordType, TYPENAME;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.script.standardnames;
 import tagion.crypto.Types;
@@ -15,7 +15,7 @@ import std.digest : toHexString;
 import tagion.hibon.Document : Document;
 
 @safe:
-
+@recordType(TYPENAME ~ "trt")
 struct TRTArchive {
     @label(TRTLabel) Pubkey owner;
     DARTIndex[] indices;

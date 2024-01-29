@@ -126,7 +126,7 @@ extern (C) {
     export uint32_t doc_get_str_by_id_(const uint32_t doc_id, const uint32_t index, const(char)** result_str, uint32_t* result_len) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             string str = recyclerDoc(doc_id)[index].get!string;
-            pragma(msg, "str.ptr ", typeof(str.ptr), " result_str ", typeof(result_str));
+            /* pragma(msg, "str.ptr ", typeof(str.ptr), " result_str ", typeof(result_str)); */
             *result_str = cast(const(char)*) str.ptr;
             *result_len = cast(uint32_t) str.length;
             return OK_RESULT;

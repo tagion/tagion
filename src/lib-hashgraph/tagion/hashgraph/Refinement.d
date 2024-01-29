@@ -75,12 +75,11 @@ class StdRefinement : Refinement {
 
     void finishedEpoch(
             const(Event[]) events,
-    const sdt_t epoch_time,
-    const Round decided_round) {
+            const sdt_t epoch_time,
+            const Round decided_round) {
         auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
 
-
-        log(epoch_created, "epoch_succesful", event_payload);
+        log.event(epoch_created, "epoch_succesful", event_payload);
 
         if (task_names is TaskNames.init) {
             return;
@@ -149,15 +148,15 @@ class StdRefinement : Refinement {
         PseudoTime calc_pseudo_time(Event event) {
             auto receivers = famous_witnesses
                 .map!(e => e[].until!(e => !e.sees(event))
-                .array.back);
+                        .array.back);
 
             return receivers.map!(e => PseudoTime(e.pseudo_time_counter,
                     (e[].retro.filter!(e => e._witness)
-                .front._mother.pseudo_time_counter + 1),
-            e.order,
-            e.event_body.time,
-            e.round.number,
-            decided_round.famous_mask.count))
+                    .front._mother.pseudo_time_counter + 1),
+                    e.order,
+                    e.event_body.time,
+                    e.round.number,
+                    decided_round.famous_mask.count))
                 .array
                 .reduce!((a, b) => a + b);
         }
@@ -189,10 +188,10 @@ class StdRefinement : Refinement {
         times.sort;
         const epoch_time = times[times.length / 2];
 
-        version(EPOCH_LOG) {
-        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
-                hashgraph.name, decided_round.number,
-                Event.count, Event.Witness.count, events.length, epoch_time);
+        version (EPOCH_LOG) {
+            log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
+                    hashgraph.name, decided_round.number,
+                    Event.count, Event.Witness.count, events.length, epoch_time);
         }
         log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, events.length);
 

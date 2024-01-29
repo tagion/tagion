@@ -105,6 +105,8 @@ struct DARTService {
 
         // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead, search(if TRT is not enabled)
         void dartHiRPC(dartHiRPCRR req, Document doc) {
+            import tagion.services.DARTInterface : InterfaceError;
+            import std.conv: to;
             import tagion.hibon.HiBONJSON;
 
             log("Received HiRPC request");
@@ -114,9 +116,16 @@ struct DARTService {
                 return;
             }
 
+            pragma(msg, "fixme(phr): make this more pretty");
             immutable receiver = hirpc.receive(doc);
-            if (!receiver.isMethod) {
-                log("dart hirpc request was not a method");
+            if (!receiver.isMethod || !(receiver.method.name == DART.Queries.dartRead
+                    || receiver.method.name == DART.Queries.dartRim
+                    || receiver.method.name == DART.Queries.dartBullseye
+                    || receiver.method.name == DART.Queries.dartCheckRead
+                    || receiver.method.name == "search")) {
+                log("unsupported request or method");
+                const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
+                req.respond(err.toDoc);
                 return;
             }
 
@@ -134,14 +143,6 @@ struct DARTService {
                 req.respond(response);
                 return;
             }
-            if (!(receiver.method.name == DART.Queries.dartRead
-                    || receiver.method.name == DART.Queries.dartRim
-                    || receiver.method.name == DART.Queries.dartBullseye
-                    || receiver.method.name == DART.Queries.dartCheckRead)) {
-                log("unsupported request");
-                return;
-            }
-
             Document result = db(receiver, false).toDoc;
             log("darthirpc response: %s", result.toPretty);
             req.respond(result);
@@ -162,7 +163,7 @@ struct DARTService {
 
                 req.respond(eye);
                 replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
-                log(recorder_created, "recorder", recorder.toDoc);
+                log.event(recorder_created, "recorder", recorder.toDoc);
                 if (trt_enable) {
                     trt_handle.send(trtModify(), recorder);
                 }

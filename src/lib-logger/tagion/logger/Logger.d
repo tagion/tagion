@@ -194,7 +194,7 @@ is ready and has been started correctly
 
     /// Conditional subscription logging
     @trusted
-    void report(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
+    void event(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
         // report(LogLevel.INFO, "%s|%s| %s", topic.name, identifier, data.toPretty);
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
@@ -213,32 +213,8 @@ is ready and has been started correctly
         }
     }
 
-    void opCall(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
-        report(topic, identifier, data);
-    }
-
-    void opCall(T)(Topic topic, lazy string identifier, lazy T data) const nothrow if (isHiBONRecord!T) {
-        report(topic, identifier, data.toDoc);
-    }
-
-    void opCall(Topic topic, lazy string identifier) const nothrow {
-        report(topic, identifier, Document.init);
-    }
-
-    import std.traits : isBasicType;
-
-    void opCall(T)(Topic topic, lazy string identifier, lazy T data) const nothrow if (isBasicType!T && !is(T : void)) {
-        import tagion.hibon.HiBON;
-
-        if (topic.subscribed && log.isLoggerSubRegistered) {
-            try {
-                auto hibon = new HiBON;
-                hibon["data"] = data;
-                report(topic, identifier, Document(hibon));
-            }
-            catch (Exception e) {
-            }
-        }
+    void event(T)(Topic topic, lazy string identifier, lazy T data) const nothrow if (isHiBONRecord!T) {
+        event(topic, identifier, data.toDoc);
     }
 
     /**
@@ -251,7 +227,7 @@ is ready and has been started correctly
 
     /**
     logs the text to in INFO level
-*/
+    */
     void opCall(lazy string text) const nothrow {
         report(LogLevel.INFO, text);
     }
@@ -400,11 +376,11 @@ unittest {
     register("log_sub_task", thisTid);
     log.registerSubscriptionTask("log_sub_task");
     auto some_symbol = Document.init;
-    log(topic, "", some_symbol);
+    log.event(topic, "", some_symbol);
     assert(false == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Received an unsubscribed topic");
     submask.subscribe(topic.name);
     assert(topic.subscribed, "Topic wasn't subscribed, it should");
-    log(topic, "", some_symbol);
+    log.event(topic, "", some_symbol);
     assert(true == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Didn't receive subscribed topic");
 }
 
