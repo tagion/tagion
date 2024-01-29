@@ -238,12 +238,21 @@ class SendNContractsFromwallet1Towallet2 {
     @Given("i have a network")
     Document network() @trusted {
         writefln("sendkernel: %s, sendshell: %s", sendkernel, send);
-        // dfmt off
-        const wallet_switch = WalletInterface.Switch(
-                update: true, 
-                sendkernel: sendkernel,
-                send: send);
-        // dfmt on
+        version(TRT_READ_REQ) {
+            // dfmt off
+            const wallet_switch = WalletInterface.Switch(
+                    trt_read: true, 
+                    sendkernel: sendkernel,
+                    send: send);
+            // dfmt on
+        } else {
+            // dfmt off
+            const wallet_switch = WalletInterface.Switch(
+                    update: true, 
+                    sendkernel: sendkernel,
+                    send: send);
+            // dfmt on
+        }
 
         with (receiver) {
             check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
