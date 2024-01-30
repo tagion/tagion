@@ -1,14 +1,25 @@
+# Install script for gnu linux
+
+# REDEFINE VARS FOR STANDALONE USE
+ifdef PLATFORM
+TOOL_TARGET=tagion
+else 
+TOOL_TARGET=${TOOL}
+endif
+INSTALL?=${HOME}/.local/bin
+GETHOSTOS?=${shell uname | tr A-Z a-z}
+GETARCH?=${shell uname -m}
+PLATFORM?=$(GETARCH)-$(GETHOSTOS)
+DBIN?=build/${PLATFORM}/bin
 
 TOOL=$(DBIN)/tagion
 INSTALLEDTOOL=$(INSTALL)/tagion
 INSTALLEDCOLLIDER=$(INSTALL)/collider
 
-
 # Install tagion
-install: ONETOOL=1
 install: $(INSTALLEDTOOL)
 
-$(INSTALLEDTOOL): tagion
+$(INSTALLEDTOOL): $(TOOL_TARGET)
 	$(PRECMD)
 	$(CP) $(TOOL) $(INSTALLEDTOOL)
 	$(INSTALLEDTOOL) -f
@@ -45,6 +56,3 @@ help-install:
 	${call log.help, "make uninstall", "Uninstall the tagion tools"}
 	${call log.help, "make env-install", "List the install environment"}
 	${call log.close}
-
-
-
