@@ -57,8 +57,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          trunk=$(find build/${{ env.TARGET }}//bin -type f -not -name "*.o" -not -path "*/cov/*")
-          cp -r --parents $trunk ${{ env.ARTIFACT_DIR }}
+          make trunk
+          cp -r build/trunk/* ${{ env.ARTIFACT_DIR }}
 
           make clean
 
@@ -181,10 +181,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          make ci-files
-          trunk=$(find build/${{ env.TARGET }}/bin -type f -not -name "*.o" -not -path "*/cov/*")
-          stacks=$(find -name "*.callstack")
-          cp -r --parents logs/ $trunk $stacks ${{ env.ARTIFACT_DIR }}
+          make trunk
+          cp -r build/trunk/* ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
