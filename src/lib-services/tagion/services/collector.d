@@ -94,10 +94,11 @@ struct CollectorService {
     }
 
     void signed_contract(inputContract, immutable(SignedContract)* s_contract) {
-       
-        version(none) if(s_contract.contract.inputs.empty) {
-            return;
-        }
+
+        version (none)
+            if (s_contract.contract.inputs.empty) {
+                return;
+            }
 
         auto req = dartReadRR();
         is_consensus_contract[req.id] = false;
@@ -112,9 +113,14 @@ struct CollectorService {
         try {
             immutable s_contract = new immutable(SignedContract)(doc);
             signed_contract(inputContract(), s_contract);
+            __write("Not rejected %s %s", __FUNCTION__, (*s_contract).toPretty);
         }
         catch (HiBONRecordException e) {
             log.event(reject, "hirpc_invalid_signed_contract", doc);
+        }
+        catch (Exception e) {
+            log.event(reject, "hirpc_invalid_signed_contract", doc);
+
         }
     }
 
@@ -153,6 +159,7 @@ struct CollectorService {
             immutable inputs = recorder[].map!(a => a.filed).array;
             import tagion.hibon.HiBONJSON;
             import tagion.basic.Debug;
+
             __write("%s recorder %s", __FUNCTION__, recorder.toPretty);
             if (!verify(net, s_contract, inputs)) {
                 log.event(reject, "contract_no_verify", recorder);
@@ -165,7 +172,7 @@ struct CollectorService {
             immutable collection =
                 ((res.id in reads) !is null)
                 ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                        CollectedSignedContract)(s_contract, inputs);
+                    CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {

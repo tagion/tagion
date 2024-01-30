@@ -613,6 +613,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
             static if (do_verify) {
                 scope (exit) {
+                    __write("--- --- --- verify %s", This.stringof);
                     check(this.verify(),
                             format("Document verification faild for HiBONRecord %s",
                             This.stringof));

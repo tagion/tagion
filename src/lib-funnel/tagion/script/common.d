@@ -54,7 +54,7 @@ unittest {
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label("$run") Document script; // Smart contract 
     alias enable_serialize = bool;
-    bool verify() {
+    bool verify() const pure nothrow @nogc {
         return (inputs.length > 0);
     }
 

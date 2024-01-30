@@ -91,7 +91,7 @@ struct ContractExecution {
         }
     }
 
-    static TagionCurrency _billFees(const size_t number_of_input_bytes, const size_t number_of_output_bytes) {
+    static TagionCurrency billFees(const size_t number_of_input_bytes, const size_t number_of_output_bytes) {
         const output_fee = check_contract.calcFees(GasUse(pay_gas, number_of_output_bytes));
         const input_fee = check_contract.calcFees(GasUse(0, number_of_input_bytes));
         return output_fee - input_fee;
@@ -100,7 +100,7 @@ struct ContractExecution {
     static TagionCurrency billFees(R1, R2)(R1 inputs, R2 outputs, const size_t extra)
             if (isInputRange!R1 && isInputRange!R2 &&
                 is(ElementType!R1 : const(Document)) && is(ElementType!R2 : const(Document))) {
-        return _billFees(
+        return billFees(
                 inputs.map!(doc => doc.full_size).sum,
                 outputs.map!(doc => doc.full_size).sum + extra);
 
