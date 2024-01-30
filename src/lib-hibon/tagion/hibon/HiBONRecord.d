@@ -255,7 +255,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
     @trusted final inout(HiBON) toHiBON() inout pure {
         auto hibon = new HiBON;
-        static HiBON toList(L)(L list) {
+        static HiBON toList(bool preserve_flag = false, L)(L list) {
             import std.algorithm : sort;
             import std.algorithm.iteration : map;
             import std.array : array, byPair;
@@ -281,9 +281,17 @@ mixin template HiBONRecord(string CTOR = "") {
             }
 
             static if (hibon_key) {
+                static if (preserve_flag) {
+                    size_t max_index;
+                }
                 foreach (index, e; range) {
                     void set(Index, Value)(Index key, Value value) {
-                        if (!value.isinit) {
+                        if (value.isinit) {
+                            static if (preserve_flag) {
+                                max_index = max(key, max_index);
+                            }
+                        }
+                        else {
                             result[key] = value;
                         }
                     }
@@ -299,6 +307,12 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                     else {
                         static assert(0, format("Can not convert %s to HiBON", L.stringof));
+                    }
+                }
+                static if (preserve_flag) {
+                    __write("preserve array size %s", max_index);
+                    if (max_index + 1 == range.length) {
+                        result[max_index] = ForeachType!L.init;
                     }
                 }
             }
@@ -319,10 +333,14 @@ mixin template HiBONRecord(string CTOR = "") {
 
         MemberLoop: foreach (i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
+                alias MemberT = typeof(m);
+                alias BaseT = TypedefBase!MemberT;
+                alias UnqualT = Unqual!BaseT;
                 enum default_name = FieldNameTuple!This[i];
                 enum optional_flag = hasUDA!(this.tupleof[i], optional);
                 enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                 enum filter_flag = hasUDA!(this.tupleof[i], filter);
+                enum preserve_flag = hasUDA!(this.tupleof[i], preserve) && isArray!UnqualT;
                 alias label = GetLabel!(this.tupleof[i]);
                 enum name = label.name;
                 static if (filter_flag) {
@@ -339,9 +357,6 @@ mixin template HiBONRecord(string CTOR = "") {
                 static assert(name.length > 0,
                         format("Label for %s can not be empty", default_name));
                 static if (!exclude_flag) {
-                    alias MemberT = typeof(m);
-                    alias BaseT = TypedefBase!MemberT;
-                    alias UnqualT = Unqual!BaseT;
                     static if (HiBON.Value.hasType!UnqualT) {
                         hibon[name] = cast(BaseT) m;
                     }
@@ -365,14 +380,15 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         else {
                             static assert(is(BaseT == HiBON) || is(BaseT : const(Document)),
-                                    format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @exclude UDA tag`,
+                                    format(`A sub class/struct '%s' of type %s must have"~
+                            " a toHiBON or must be ingnored with @exclude UDA tag`,
                                     name, BaseT.stringof));
                             hibon[name] = cast(BaseT) m;
                         }
                     }
                     else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
                         alias BaseU = TypedefBase!(ForeachType!(UnqualT));
-                        hibon[name] = toList(m);
+                        hibon[name] = toList!preserve_flag(m);
                     }
                     else static if (isIntegral!UnqualT || UnqualT.sizeof <= short.sizeof) {
                         static if (isUnsigned!UnqualT) {
@@ -383,7 +399,9 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                     }
                     else {
-                        static assert(0, format("Convering for member '%s' of type %s is not supported by default",
+                        static assert(0, format(
+                                "Convering for member '%s' of type" ~
+                                " %s is not supported by default",
                                 name, MemberT.stringof));
                     }
                 }
@@ -457,8 +475,12 @@ mixin template HiBONRecord(string CTOR = "") {
             static if (HAS_TYPE) {
                 Check!HiBONRecordTypeException(doc.hasMember(TYPENAME), "Missing HiBON type");
                 string _type = doc[TYPENAME].get!string;
-                Check!HiBONRecordTypeException(_type == type_name, format("Wrong %s type %s should be %s",
+                Check!HiBONRecordTypeException(_type == type_name,
+                        format("Wrong %s type %s should be %s",
                         TYPENAME, _type, type_name));
+            }
+            else {
+                enum type_name = "";
             }
             static if (hasUDA!(This, recordType)) {
                 enum record = getUDAs!(This, recordType)[0];
@@ -473,6 +495,9 @@ mixin template HiBONRecord(string CTOR = "") {
 
                 alias MemberU = ForeachType!(R);
                 alias BaseU = TypedefBase!MemberU;
+                static if (isBasicType!MemberU) {
+                    __write("R=%s", R.stringof);
+                }
                 static if (isArray!R) {
                     alias UnqualU = Unqual!MemberU;
                     MemberU[] result;
@@ -599,6 +624,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     enum default_name = FieldNameTuple!This[i];
                     enum optional_flag = hasUDA!(this.tupleof[i], optional);
                     enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
+                    enum preserve_flag = hasUDA!(this.tupleof[i], preserve);
                     static if (hasUDA!(this.tupleof[i], label)) {
                         alias label = GetLabel!(this.tupleof[i]);
                         enum name = label.name;
@@ -609,7 +635,8 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
-                                    format("Fixed %s is already definded to %s but is redefined for %s.%s",
+                                    format("Fixed %s is already definded to %s" ~
+                                    " but is redefined for %s.%s",
                                     TYPENAME, TYPE, This.stringof,
                                     basename!(this.tupleof[i])));
                         }
@@ -625,7 +652,8 @@ mixin template HiBONRecord(string CTOR = "") {
                             static assert(assigns.length is 1,
                                     "Only one fixed UDA allowed per member");
                             static assert(!optional_flag,
-                                    "The optional parameter in label can not be used in connection with the fixed attribute");
+                                    "The optional parameter in label can not" ~
+                                    " be used in connection with the fixed attribute");
 
                             enum code = format(q{this.tupleof[i]=%s;}, assigns[0].code);
                             if (!doc.hasMember(name)) {
@@ -636,10 +664,15 @@ mixin template HiBONRecord(string CTOR = "") {
                         alias MemberT = typeof(m);
                         alias BaseT = MemberT;
                         alias UnqualT = Unqual!BaseT;
+                        const has_member = doc.hasMember(name);
                         static if (optional_flag) {
-                            if (!doc.hasMember(name)) {
+                            if (!has_member) {
                                 continue ForeachTuple;
                             }
+                        }
+                        else {
+                            Check!(HiBONRecordException)(has_member,
+                                    format("Member '%s' not found in Document %s", name, type_name));
                         }
                         static if (hasUDA!(this.tupleof[i], inspect)) {
                             alias Inspects = getUDAs!(this.tupleof[i], inspect);
@@ -648,7 +681,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     {
                                         alias inspectFun = unaryFun!(F.code);
                                         check(inspectFun(m),
-                                                message("Member %s failed on inspection %s with %s",
+                                                format("Member %s failed on inspection %s with %s",
                                                 name, F.code, m));
                                     }
                                 }
@@ -689,7 +722,8 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         else {
                             static assert(0,
-                                    format("Convering for member '%s' of type %s is not supported by default",
+                                    format("Convering for member '%s' of type %s" ~
+                                    " is not supported by default",
                                     name, MemberT.stringof));
 
                         }
@@ -754,6 +788,44 @@ unittest {
             });
     }
 
+    { /// Should fail on empty document
+        /// Simple HiBON test
+        {
+            //    create_empty;
+            assertThrown!(HiBONRecordTypeException)(
+            { const simple_type = Simple(Document()); }(),
+                    "Should throw because empty_doc is missing a hibon-record-type");
+        }
+        {
+            auto h = new HiBON;
+            h[TYPENAME] = "NotASimpleType";
+            const doc = Document(h);
+            assertThrown!(HiBONRecordTypeException)(
+            { const simple_type = Simple(doc); }(),
+                    "Should throw because the HiBON record type is not correct");
+            //const simple_type=Simple(doc);
+        }
+        {
+            auto h = new HiBON;
+            h[TYPENAME] = Simple.type_name;
+            const doc = Document(h);
+            assertThrown!(HiBONException)(
+            { const simple_type = Simple(doc); }(),
+                    "Should throw because the HiBON the document does not contain any members");
+        }
+
+        {
+
+            Simple s;
+            const s_doc = s.toDoc;
+            __write("s_doc=%s", s_doc.toPretty);
+            const s_result = assertNotThrown!(Exception)(Simple(s_doc),
+                    "Should not throw any exceptions");
+            assert(s == s_result);
+        }
+
+    }
+
     static assert(equal(Simple.keys, only("s", "text")));
     static assert(Simple.GetTupleIndex!"s" == 0);
     static assert(Simple.GetTupleIndex!"text" == 1);
@@ -816,31 +888,7 @@ unittest {
     }
 
     { // Simple basic type check
-    { /// Should fail on empty document
-            {
-                //    create_empty;
-                assertThrown!(HiBONRecordTypeException)(
-                { const simple_type = Simple(Document()); }(),
-                        "Should throw because empty_doc is missing a hibon-record-type");
-            }
-            {
-                auto h = new HiBON;
-                h[TYPENAME] = "NotASimpleType";
-                const doc = Document(h);
-                assertThrown!(HiBONRecordTypeException)(
-                { const simple_type = Simple(doc); }(),
-                        "Should throw because the HiBON record type is not correct");
-                //const simple_type=Simple(doc);
-            }
-            {
-                Simple s;
-                const s=s.toDoc;
-                const simple=Simple(
-
-            }
-        }
-
-        {
+    {
             const s = Simple(-42, "some text");
             const docS = s.toDoc;
             // writefln("keys=%s", docS.keys);
@@ -1119,6 +1167,7 @@ unittest {
 
             __write("empty_array=%s", empty_array.toPretty);
             const empty_doc = Document();
+
             __write("empty_doc=%s", empty_doc.toPretty);
         }
     }
@@ -1138,8 +1187,45 @@ unittest {
 
         { // Array should fail if tests is empty
             const empty_doc = Document();
-            const test_array = TestArray(empty_doc);
-            __write("test_array=%s", test_array.toPretty);
+            //const test_array = 
+            assertThrown!(HiBONRecordException)(TestArray(empty_doc));
+            {
+                TestArray test_array;
+                test_array.tests.length = 3;
+                __write("test_array._serialize=%s", test_array._serialize);
+                __write("test_array_hibon=%s", test_array.toHiBON.serialize);
+
+                __write("test_array=%s", test_array.toPretty);
+                const doc = test_array.toDoc;
+                const test_array_result = TestArray(doc);
+                __write("test_array_result=%s", test_array_result._serialize);
+                __write("doc              =%s", doc.serialize);
+                __write("test_array_result.tests=%s", test_array_result.tests);
+                __write("test_array.tests       =%s", test_array.tests);
+                assert(test_array_result.tests != test_array.tests);
+                assert(test_array_result != test_array);
+                __write("doc=%s", doc.toPretty);
+            }
+        }
+        static struct TestArrayPreserve {
+            @preserve SimpleElement[] tests;
+            alias enable_serialize = bool;
+            mixin HiBONRecord;
+        }
+
+        {
+            TestArrayPreserve test_array;
+            test_array.tests.length = 3;
+            const doc = test_array.toDoc;
+            const test_array_result = TestArrayPreserve(doc);
+            const test_array_hibon=test_array.toHiBON;
+            __write("test_array_result=%s", test_array_result._serialize);
+            __write("doc              =%s", doc.serialize);
+            __write("test_array_hibon =%s", test_array_hibon.serialize);
+            __write("test_array_result.tests=%s", test_array_result.tests);
+            __write("test_array.tests       =%s", test_array.tests);
+            assert(test_array_result.tests == test_array.tests);
+            assert(test_array_result == test_array);
 
         }
     }

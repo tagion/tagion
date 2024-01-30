@@ -80,7 +80,7 @@ void emplace_buffer(ref scope AppendBuffer buffer, const size_t start_index) pur
     })();
 }
 
-void build(T, Key)(ref scope AppendBuffer buffer, Key key,
+void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key key,
         const(T) val) pure if (isKey!Key) {
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : isHiBONRecord;
@@ -162,12 +162,19 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
             emplace_buffer(buffer, start_index);
     }
     else static if (isInputRange!BaseT) {
+        enum preserve_array_size=preserve_flag && traits.isArray!BaseT;
         alias ElementT = ElementType!BaseT;
         auto x_range = (() @trusted => cast(Unqual!BaseT) x)();
         const number_of_elements_serialize = x_range.filter!(e => !e.isinit).count;
         const start_index = buffer.data.length;
         size_t number_of_elements;
+        static if (preserve_array_size) {
+            size_t max_index;
+        }
         foreach (pair; x_range.enumerate.filter!(pair => !pair.value.isinit)) {
+            static if (preserve_array_size) {
+                    max_index=max(pair.index, max_index);
+            }
             build(buffer, cast(uint) pair.index, pair.value);
             number_of_elements++;
             const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
@@ -176,6 +183,12 @@ void build(T, Key)(ref scope AppendBuffer buffer, Key key,
                 buffer.reserve(estimated_require_size + start_index);
             }
 
+        }
+        static if (preserve_array_size) {
+            __write("preserve max_index=%d length=%d", max_index, x_range.length); 
+            if (max_index+1 != x_range.length && x_range.length > 0) {
+                build(buffer, x_range.length-1, ElementT.init);
+            }
         }
         emplace_buffer(buffer, start_index);
     }

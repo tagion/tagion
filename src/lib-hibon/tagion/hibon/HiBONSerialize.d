@@ -282,13 +282,14 @@ mixin template Serialize() {
                     }
                 }
                 static if (preserve_flag) {
-                    alias MemberT=Fields!This[index];
-                    alias BaseT=TypedefType!MemberT;
-                    static assert(isArray!BaseT, 
-            format("@%s UDA can only be apply to an array not a %s", preserve.stringof, MemberT.stringof));
+                    alias MemberT = Fields!This[index];
+                    alias BaseT = TypedefType!MemberT;
+                    static assert(isArray!BaseT,
+                            format("@%s UDA can only be apply to an array not a %s",
+                            preserve.stringof, MemberT.stringof));
                 }
                 static if (!exclude_flag) {
-                    build(buf, key, this.tupleof[index]);
+                    build!preserve_flag(buf, key, this.tupleof[index]);
                 }
             }
 
@@ -304,11 +305,11 @@ mixin template Serialize() {
             }
         }
 
-        Buffer _serialize() const pure @safe 
-        out(ret) {
-            version(TOHIBON_SERIALIZE_CHECK) {
-                const hibon_serialize=this.toHiBON.serialize;
-                assert(ret == hibon_serialize, This.stringof~" toHiBON.serialize failed");
+        Buffer _serialize() const pure @safe
+        out (ret) {
+            version (TOHIBON_SERIALIZE_CHECK) {
+                const hibon_serialize = this.toHiBON.serialize;
+                assert(ret == hibon_serialize, This.stringof ~ " toHiBON.serialize failed");
             }
         }
         do {
