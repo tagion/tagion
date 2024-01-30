@@ -6,7 +6,7 @@ public import tagion.hibon.HiBONSerialize;
 import std.exception : assumeWontThrow;
 import std.stdio;
 import std.traits;
-import std.typecons : No, Tuple, Yes;
+import std.typecons : No, Tuple, Yes, Flag;
 import tagion.basic.basic : EnumContinuousSequency, basename;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
@@ -124,7 +124,10 @@ struct preserve; /// This preserve the size of array
 struct recordType {
     string name; /// Name of the HiBON record-type 
     string code; /// This is mixed after the Document constructor
+    Flag!"disable_serialize" flag; /// use toHiBON to serialize
 }
+
+enum isSerializeDisabled(T) = hasUDA!(T, recordType) && (getUDAs!(T, recordType)[0].flag);
 /++
  Gets the label for HiBON member
  Params:
@@ -220,7 +223,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, isSpecialKeyType,
-        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve;
+        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled;
     import tagion.hibon.HiBONBase : isKey, TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONSerialize;
@@ -743,7 +746,7 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
-    static if (hasMember!(This, "enable_serialize")) {
+    static if (!isSerializeDisabled!This && hasMember!(This, "enable_serialize")) {
         alias serialize = _serialize;
     }
     else {

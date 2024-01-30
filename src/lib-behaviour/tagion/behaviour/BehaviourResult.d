@@ -6,6 +6,7 @@ module tagion.behaviour.BehaviourResult;
 public import tagion.communication.HiRPC : ResultOk;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
+import std.typecons : Yes;
 
 static Document result_ok = result(ResultOk()).toDoc; /// This
 
@@ -19,6 +20,7 @@ struct BehaviourError {
     string[] trace; ///. Exception line trace of in the exception
     ulong line; 
     string file;
+    alias enable_serialize = bool;
     mixin HiBONRecord!(q{
             this(Throwable e) nothrow @trusted {
                 import std.exception : assumeWontThrow;
@@ -36,9 +38,10 @@ struct BehaviourError {
  * Stores the result from a BDD Action, Senario or Feature
  */
 @safe
-@recordType("BDDResult")
+@recordType("BDDResult", null, Yes.disable_serialize)
 struct Result {
     Document outcome; /// BDD test return document
+    alias enable_serialize = bool;
     mixin HiBONRecord!();
 }
 

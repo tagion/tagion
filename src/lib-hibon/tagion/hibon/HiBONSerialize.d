@@ -241,6 +241,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     return result;
 }
 
+
 mixin template Serialize() {
     import std.algorithm;
     import std.range;
@@ -255,7 +256,7 @@ mixin template Serialize() {
     import LEB128 = tagion.utils.LEB128;
 
 //    static assert(hasMember!(This, "enable_serialize"), format("%s %s", __FILE__, This.stringof));
-    static if (__traits(hasMember, This, "enable_serialize")) {
+    static if (!isSerializeDisabled!This &&__traits(hasMember, This, "enable_serialize")) {
         void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;
