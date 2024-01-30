@@ -1,0 +1,5 @@
+[Unit]
+Description=Service for managing tagion operational tests
+
+[Service]
+ExecStart=/path/to/myscript.sh
