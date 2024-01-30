@@ -282,16 +282,15 @@ mixin template HiBONRecord(string CTOR = "") {
 
             static if (hibon_key) {
                 static if (preserve_flag) {
+                    __write("array L=%s", L.stringof);
                     size_t max_index;
                 }
                 foreach (index, e; range) {
                     void set(Index, Value)(Index key, Value value) {
-                        if (value.isinit) {
+                        if (!value.isinit) {
                             static if (preserve_flag) {
                                 max_index = max(key, max_index);
                             }
-                        }
-                        else {
                             result[key] = value;
                         }
                     }
@@ -300,7 +299,12 @@ mixin template HiBONRecord(string CTOR = "") {
                         set(index, e);
                     }
                     else static if (isHiBON!ElementT) {
+                        if (e is e.init) {
+                            __write("e is init %d", index);
+                        }
+                        if (e !is e.init) {
                         set(index, e.toHiBON);
+                        }
                     }
                     else static if (isInputRange!ElementT) {
                         set(index, toList(e));
@@ -310,9 +314,10 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                 }
                 static if (preserve_flag) {
-                    __write("preserve array size %s", max_index);
-                    if (max_index + 1 == range.length) {
-                        result[max_index] = ForeachType!L.init;
+                    __write("toHiBON preserve array size %s length=%d", max_index, range.length);
+                    if (max_index + 1 != range.length && range.length > 0) {
+                        __write("Set length to %d", range.length);
+                        result[range.length-1] = ForeachType!L.init;
                     }
                 }
             }
@@ -1193,8 +1198,11 @@ unittest {
             {
                 TestArray test_array;
                 test_array.tests.length = 3;
-                __write("test_array._serialize=%s", test_array._serialize);
-                __write("test_array_hibon=%s", test_array.toHiBON.serialize);
+                const test_array_serialize=test_array._serialize;
+                __write("test_array._serialize=%s", test_array_serialize);
+                const test_array_hibon_serialize=test_array.toHiBON.serialize;
+                __write("test_array_hibon     =%s", test_array_hibon_serialize);
+                assert(test_array_serialize == test_array_hibon_serialize);
 
                 __write("test_array=%s", test_array.toPretty);
                 const doc = test_array.toDoc;
@@ -1205,6 +1213,7 @@ unittest {
                 __write("test_array.tests       =%s", test_array.tests);
                 assert(test_array_result.tests != test_array.tests);
                 assert(test_array_result != test_array);
+
                 __write("doc=%s", doc.toPretty);
             }
         }
@@ -1218,11 +1227,17 @@ unittest {
             TestArrayPreserve test_array;
             test_array.tests.length = 3;
             const doc = test_array.toDoc;
-            const test_array_result = TestArrayPreserve(doc);
+            const test_array_serialize=test_array._serialize;
             const test_array_hibon=test_array.toHiBON;
-            __write("test_array_result=%s", test_array_result._serialize);
-            __write("doc              =%s", doc.serialize);
-            __write("test_array_hibon =%s", test_array_hibon.serialize);
+            const test_array_hibon_serialize= test_array_hibon.serialize;
+            __write("doc                       =%s", doc.serialize);
+            __write("test_array_serialize      =%s", test_array_serialize);
+            __write("test_array_hibon_serialize=%s", test_array_hibon_serialize);
+            assert(test_array_serialize == test_array_hibon_serialize);
+            __write("test_array      =%s", test_array.toPretty);
+            __write("test_array_hibon=%s", test_array_hibon.toPretty); 
+            const test_array_result = TestArrayPreserve(doc);
+            //const test_array_hibon=test_array.toHiBON;
             __write("test_array_result.tests=%s", test_array_result.tests);
             __write("test_array.tests       =%s", test_array.tests);
             assert(test_array_result.tests == test_array.tests);
@@ -1753,8 +1768,10 @@ unittest { // Test UDA preserve
 
     S s;
     s.array.length = 7;
-    __write("s._serialize=%s", s._serialize);
+    const s_serialize=s._serialize;
+    __write("s._serialize    =%s", s_serialize);
     const hibon_serialize = s.toHiBON.serialize;
-    __write("hibon._serialize=%s", s._serialize);
+    __write("hibon_serialize =%s", hibon_serialize);
+    assert(s_serialize == hibon_serialize);
 
 }

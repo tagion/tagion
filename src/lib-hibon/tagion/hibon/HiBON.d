@@ -514,9 +514,6 @@ static size_t size(U)(const(U[]) array) pure {
     const(Member) opIndex(const string key) const {
         auto search = new Member(key);
         auto range = _members.equalRange(search);
-
-        
-
         .check(!range.empty, message("Member '%s' does not exist", key));
         return range.front;
     }

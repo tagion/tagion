@@ -33,6 +33,7 @@ static struct SectorRange {
         return _to_sector;
     }
 
+    alias enable_serialize = bool;
     @exclude protected bool flag;
     mixin HiBONRecord!(q{
                 this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
@@ -188,6 +189,7 @@ struct Rims {
         }
         return .sector(path);
     }
+    alias enable_serialize = bool;
 
     mixin HiBONRecord!(
             q{
