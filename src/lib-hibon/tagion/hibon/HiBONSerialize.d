@@ -254,6 +254,7 @@ mixin template Serialize() {
     import std.array;
     import LEB128 = tagion.utils.LEB128;
 
+//    static assert(hasMember!(This, "enable_serialize"), format("%s %s", __FILE__, This.stringof));
     static if (__traits(hasMember, This, "enable_serialize")) {
         void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;

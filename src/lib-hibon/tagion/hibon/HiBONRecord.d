@@ -773,6 +773,7 @@ version (unittest) {
         assert(hibon_serialize == s_serialize);
     }
 }
+
 unittest {
     import std.algorithm;
     import std.exception : assertNotThrown, assertThrown;
