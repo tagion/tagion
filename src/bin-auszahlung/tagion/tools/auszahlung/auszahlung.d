@@ -80,7 +80,7 @@ int _main(string[] args) {
     GetoptResult main_args;
     WalletOptions options;
     WalletInterface[] wallet_interfaces;
-    
+
     auto config_files = args
         .filter!(file => file.hasExtension(FileExtension.json));
     auto config_file = default_wallet_config_filename;
@@ -118,16 +118,16 @@ int _main(string[] args) {
             //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] <wallet.json> [<bill.hibon>] ", program),
-                    "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <wallet.json> [<bill.hibon>] ", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
@@ -136,36 +136,39 @@ int _main(string[] args) {
         if (migrate) {
             //auto config_files=args[1..$].filter!(file => file.hasExtension(FileExtension.json));
             const account_doc = options.accountfile.fread;
-            import tagion.wallet.prior.AccountDetails : PriorAccountDetails=AccountDetails;
+            import tagion.wallet.prior.AccountDetails : PriorAccountDetails = AccountDetails;
             import tagion.wallet.AccountDetails : AccountDetails;
+
             if (AccountDetails.isRecord(account_doc)) {
                 warn("Account for %s has already been migrated", config_file);
                 return 0;
             }
-            auto prior_account= PriorAccountDetails(account_doc);
+            auto prior_account = PriorAccountDetails(account_doc);
             AccountDetails new_account;
-            new_account.owner=prior_account.owner;
-            new_account.derivers=prior_account.derivers;
+            new_account.owner = prior_account.owner;
+            new_account.derivers = prior_account.derivers;
             new_account.bills = prior_account.bills;
-            new_account.used_bills= prior_account.used_bills;
-            new_account.derive_state= prior_account.derive_state;
-            new_account.requested_invoices=prior_account.requested_invoices.dup;
-            new_account.hirpcs=prior_account.hirpcs;
+            new_account.used_bills = prior_account.used_bills;
+            new_account.derive_state = prior_account.derive_state;
+            new_account.requested_invoices = prior_account.requested_invoices.dup;
+            new_account.hirpcs = prior_account.hirpcs;
             new_account.name = prior_account.name;
-            prior_account.requested.byValue.each!(bill => new_account.requested[net.dartIndex(bill)] = bill);  
-            prior_account.activated.byKeyValue.each!(pair => new_account.activated[net.dartIndex(prior_account.requested[pair.key])] = pair.value); 
+            prior_account.requested.byValue.each!(bill => new_account.requested[net.dartIndex(bill)] = bill);
+            prior_account.activated.byKeyValue.each!(
+                    pair => new_account.activated[net.dartIndex(prior_account.requested[pair.key])] = pair.value
+            );
+
             verbose("new account\n%s", new_account.toPretty);
             if (dry_switch) {
                 return 0;
             }
-            const prior_account_filename=[options.accountfile.stripExtension, "prior"].join("_")
-            .setExtension(FileExtension.hibon);
+            const prior_account_filename = [options.accountfile.stripExtension, "prior"].join("_")
+                .setExtension(FileExtension.hibon);
             rename(options.accountfile, prior_account_filename);
             options.accountfile.fwrite(new_account);
             return 0;
 
         }
-
 
         WalletOptions[] all_options;
         auto common_wallet_interface = WalletInterface(options);
@@ -271,7 +274,9 @@ int _main(string[] args) {
             const number_of_loggins = wallet_interfaces
                 .count!((wallet_iface) => wallet_iface.secure_wallet.isLoggedin);
             verbose("Loggedin %d", number_of_loggins);
-            check(confidence <= number_of_loggins, format("At least %d wallet need to open the transaction", confidence));
+            check(confidence <= number_of_loggins,
+                    format("At least %d wallet need to open the transaction", confidence)
+            );
 
             Buffer[] answers;
             foreach (wallet; wallet_interfaces) {

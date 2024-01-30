@@ -45,7 +45,7 @@ mkdir -p "$ndir"
 all_infos=""
 
 # Create wallets in a loop
-for ((i = 0; i <= nodes-1; i++)); 
+for ((i = 0; i < nodes; i++)); 
 do
   # Set up wallet directory and configuration
   node_dir="$ndir/node$i"
@@ -118,7 +118,7 @@ echo "TRT file $trtfilename"
 echo "Run the network this way:"
 
 # Loop to initialize and modify nodes
-for ((i = 0; i <= nodes-1; i++)); 
+for ((i = 0; i < nodes; i++)); 
 do
     node_dir="$ndir/node$i"
     mkdir -p "$node_dir"

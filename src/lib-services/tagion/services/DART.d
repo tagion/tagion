@@ -1,7 +1,7 @@
 /// Tagion DART actor service
 module tagion.services.DART;
 
-import std.algorithm : map, filter;
+import std.algorithm : map, filter, canFind;
 import std.array;
 import std.exception;
 import std.file;
@@ -28,9 +28,10 @@ import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
+import tagion.services.DARTInterface : accepted_dart_methods;
 
 @safe:
-
+///
 struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
@@ -116,18 +117,13 @@ struct DARTService {
                 return;
             }
 
-            pragma(msg, "fixme(phr): make this more pretty");
             immutable receiver = hirpc.receive(doc);
-            if (!receiver.isMethod || !(receiver.method.name == DART.Queries.dartRead
-                    || receiver.method.name == DART.Queries.dartRim
-                    || receiver.method.name == DART.Queries.dartBullseye
-                    || receiver.method.name == DART.Queries.dartCheckRead
-                    || receiver.method.name == "search")) {
+            if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
                 log("unsupported request or method");
                 const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
                 req.respond(err.toDoc);
                 return;
-            }
+            } 
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
