@@ -3,15 +3,42 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    secp256k1-zkp.url = "github:tagion/secp256k1-zkp";
   };
 
-  outputs = { self, nixpkgs, secp256k1-zkp }:
+  outputs = { self, nixpkgs }:
     let
       gitRev =
         if (builtins.hasAttr "rev" self)
         then self.rev
         else "dirty";
+
+      # BlockstreamResearch secp256k1-zkp fork
+      secp256k1-zkp = with import nixpkgs { system = "x86_64-linux"; };
+        stdenv.mkDerivation rec {
+          pname = "secp256k1-zkp";
+
+          version = "0.3.2";
+
+          src = fetchFromGitHub {
+            owner = "BlockstreamResearch";
+            repo = "secp256k1-zkp";
+            rev = "d575ef9aca7cd1ed79735c95ec9f296554ea1df7";
+            sha256 = "sha256-Z8TrMxlNduPc4lEzA34jjo75sUJYh5fLNBnXg7KJy8I=";
+          };
+
+          nativeBuildInputs = [ autoreconfHook ];
+
+          configureFlags = [
+            "--enable-experimental"
+            "--enable-benchmark=no"
+            "--enable-module-recovery"
+            "--enable-module-schnorrsig"
+            "--enable-module-musig"
+          ];
+
+          doCheck = true;
+
+        };
     in
     {
 
@@ -25,7 +52,7 @@
 
           buildInputs = [
             nng
-            secp256k1-zkp.defaultPackage.x86_64-linux
+            secp256k1-zkp
             mbedtls
           ];
 
@@ -73,16 +100,16 @@
           ];
         };
 
-    # Experimental work on nix unittest build. execute using nix build .#unittest
-    # Idea is to use this along with nix run in order to run unittests with nix
-    packages.x86_64-linux.unittest = 
-      with import nixpkgs { system = "x86_64-linux"; };
-      stdenv.mkDerivation {
-        name = "unittest";
+      # Experimental work on nix unittest build. execute using nix build .#unittest
+      # Idea is to use this along with nix run in order to run unittests with nix
+      packages.x86_64-linux.unittest =
+        with import nixpkgs { system = "x86_64-linux"; };
+        stdenv.mkDerivation {
+          name = "unittest";
 
           buildInputs = [
             nng
-            secp256k1-zkp.defaultPackage.x86_64-linux
+            secp256k1-zkp
             mbedtls
           ];
 
@@ -107,32 +134,32 @@
           installPhase = ''
             mkdir -p $out/bin; make install
           '';
-      };
-    packages.x86_64-linux.dockerImage = 
-      with import nixpkgs { system = "x86_64-linux"; };
-      dockerTools.buildImage {
-        name = "tagion-docker";
-        tag = "latest";
-        fromImage = dockerTools.pullImage {
-          imageName = "alpine";
-          imageDigest = "sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd";
-          sha256 = "sha256-6tIIMFzCUPRJahTPoM4VG3XlD7ofFPfShf3lKdmKSn0=";
-          finalImageName = "alpine";
-          os = "linux";
-          arch = "x86_64";
         };
-        copyToRoot = pkgs.buildEnv {
-          name = "image-root";
-          paths = [ self.packages.x86_64-linux.default ];
-          pathsToLink = [ "/bin" ];
-        };
+      packages.x86_64-linux.dockerImage =
+        with import nixpkgs { system = "x86_64-linux"; };
+        dockerTools.buildImage {
+          name = "tagion-docker";
+          tag = "latest";
+          fromImage = dockerTools.pullImage {
+            imageName = "alpine";
+            imageDigest = "sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd";
+            sha256 = "sha256-6tIIMFzCUPRJahTPoM4VG3XlD7ofFPfShf3lKdmKSn0=";
+            finalImageName = "alpine";
+            os = "linux";
+            arch = "x86_64";
+          };
+          copyToRoot = pkgs.buildEnv {
+            name = "image-root";
+            paths = [ self.packages.x86_64-linux.default ];
+            pathsToLink = [ "/bin" ];
+          };
 
-        # contents = [ self.packages.x86_64-linux.default];
-        config = {
-          Cmd = [ "/bin/sh" ];
-          Env = [];
-          Volumes = {};
+          # contents = [ self.packages.x86_64-linux.default];
+          config = {
+            Cmd = [ "/bin/sh" ];
+            Env = [ ];
+            Volumes = { };
+          };
         };
-      };
     };
 }
