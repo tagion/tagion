@@ -29,7 +29,6 @@ enum LogFiltersAction {
     /** Name of symbol to listen. Optional field */
     @label("symbol") string symbol_name;
 
-    alias enable_serialize = bool;
     mixin HiBONRecord!(q{
         /** Ctor for text logs
           *     @param task_name - task name
@@ -128,7 +127,6 @@ enum LogFiltersAction {
 @safe struct TextLog {
     /** Text log message */
     @label("msg") string message;
-    alias enable_serialize = bool;
 
     mixin HiBONRecord!(q{
         /** Main ctor
