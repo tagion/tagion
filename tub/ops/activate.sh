@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 get_newest_success_run_id() {
-    gh run list -b current -w 'Main Flow' -s success -L1 --json databaseId --jq '.[0].databaseId'
+    gh run list --repo tagion/tagion -b current -w 'Main Flow' -s success -L1 --json databaseId --jq '.[0].databaseId'
 }
 
 get_workflow_artifact() {
@@ -22,7 +22,7 @@ get_workflow_artifact() {
 
 ## Main()
 set -xe
-# gh auth status
+gh auth status
 workflowid=$(get_newest_success_run_id)
 artifact_path=$(get_workflow_artifact $workflowid)
 cd $artifact_path
