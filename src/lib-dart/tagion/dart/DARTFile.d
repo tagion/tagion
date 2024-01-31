@@ -17,7 +17,6 @@ private {
     import std.traits;
     import std.typecons : Flag, No, Yes;
     import std.typecons;
-    import tagion.basic.Debug : __write;
     import tagion.basic.Types : Buffer, isBufferType, isTypedef, mut;
     import tagion.basic.basic : EnumText, assumeTrusted, isinit;
     import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
@@ -46,9 +45,6 @@ private {
  +     fingerprint[rim]
  +/
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
-    if (rim >= rim_keys.length) {
-        debug __write("%(%02X%) rim=%d", rim_keys, rim);
-    }
     return rim_keys[rim];
 }
 
@@ -2373,11 +2369,6 @@ unittest {
                 auto recorder = dart_A.recorder();
 
                 auto name_record = NameRecord("jens", "10");
-                const name_record_serialize=name_record._serialize;
-                const name_record_hibon=name_record.toHiBON;
-                __write("name_record_serialize=%s", name_record_serialize);
-                __write("name_record_hibon    =%s", name_record_hibon.serialize);
-
 
                 recorder.add(name_record);
 

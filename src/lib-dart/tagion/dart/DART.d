@@ -12,7 +12,6 @@ import std.algorithm.iteration : filter, map;
 import std.format : format;
 import std.range;
 import std.traits : EnumMembers;
-import tagion.basic.Debug : __format, debugwrite = __write;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.basic : EnumText, isinit;

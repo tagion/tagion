@@ -14,7 +14,6 @@ import tagion.hibon.HiBONRecord;
 @safe class BehaviourException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
-        __write("BDDERROR: %s %s %s", msg, file, line);
     }
 }
 

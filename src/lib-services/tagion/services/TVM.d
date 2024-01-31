@@ -8,7 +8,6 @@ import core.time;
 import std.conv : to;
 import std.stdio;
 import tagion.actor.actor;
-import tagion.basic.Debug : __write;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;

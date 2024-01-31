@@ -12,7 +12,6 @@ import std.format;
 import std.socket;
 import std.stdio;
 import tagion.actor;
-import tagion.basic.Debug : __write;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;

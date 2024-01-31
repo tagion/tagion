@@ -352,11 +352,7 @@ class RecordFactory {
                 i++;
             }
             result[TYPENAME] = type_name;
-            const doc=Document(result);
-            import tagion.basic.Debug;
-            __write("Recorder.toDoc=%s", doc.serialize);
-            return doc;
-            //return Document(result);
+            return Document(result);
         }
 
         import std.algorithm.sorting;
@@ -710,12 +706,6 @@ unittest {
 
         //rec.//dump;
         assert(rec.checkSorted);
-        const recorder_doc=rec.toDoc;
-        __write("recorder_doc=%s", recorder_doc.toPretty  );
-       
-        const reconstructed_rec=manufactor.recorder(recorder_doc);
-        __write("reconstructed_rec=%s", reconstructed_rec.toPretty);
-
     }
 
 }
