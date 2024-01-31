@@ -104,7 +104,6 @@ struct PayScript {
 }
 
 unittest {
-    import std.stdio;
     import tagion.hibon.HiBONJSON;
 
     PayScript pay;
@@ -114,15 +113,10 @@ unittest {
     ];
     const hibon_serialize = pay.toHiBON.serialize;
     const serialize = pay._serialize;
-    writefln("hibon_serialize=%s", hibon_serialize);
-    writefln("serialize      =%s", serialize);
-    writefln("hibon=%s", pay.toHiBON.toPretty);
-    writefln("doc  =%s", pay.toPretty);
 
     assert(hibon_serialize == serialize);
     const doc = pay.toDoc;
     const new_pay = PayScript(doc);
-    writefln("doc.serialize  =%s", doc.serialize);
     assert(hibon_serialize == doc.serialize);
     assert(serialize == doc.serialize);
 }
