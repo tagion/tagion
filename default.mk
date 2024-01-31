@@ -10,6 +10,13 @@ export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
 
+ifeq (COMPILER, ldc)
+RELEASE_DFLAGS+=--allinst
+RELEASE_DFLAGS+=--mcpu=native
+RELEASE_DFLAGS+=--flto=thin
+RELEASE_DFLAGS+=--defaultlib=phobos2-ldc-lto,druntime-ldc-lto
+endif
+
 # USE_SYSTEM_LIBS=1 # Compile with system libraries (nng & secp256k1-zkp)
 
 # If youre using system libraries they'll most likely be compiled with mbedtls support
