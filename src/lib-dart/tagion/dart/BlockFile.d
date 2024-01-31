@@ -369,7 +369,6 @@ class BlockFile {
         @label("root") Index root_index; /// Point the root of the database
         @label("block_s") Index statistic_index; /// Points to the statistic data
         @label("recycle_s") Index recycler_statistic_index; /// Points to the recycler statistic data
-        alias enable_serialize = bool;
 
         mixin HiBONRecord;
 
