@@ -23,7 +23,6 @@ import tagion.script.execute;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
-import tagion.basic.Debug;
 import tagion.hibon.HiBONJSON;
 
 struct CollectorOptions {
@@ -109,11 +108,9 @@ struct CollectorService {
     void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @safe {
         immutable doc = Document(receiver.method.params);
         log("collector received receiver");
-        __write("%s %s", __FUNCTION__, receiver.toPretty);
         try {
             immutable s_contract = new immutable(SignedContract)(doc);
             signed_contract(inputContract(), s_contract);
-            __write("Not rejected %s %s", __FUNCTION__, (*s_contract).toPretty);
         }
         catch (HiBONRecordException e) {
             log.event(reject, "hirpc_invalid_signed_contract", doc);
@@ -158,16 +155,12 @@ struct CollectorService {
 
             immutable inputs = recorder[].map!(a => a.filed).array;
             import tagion.hibon.HiBONJSON;
-            import tagion.basic.Debug;
 
-            __write("%s recorder %s", __FUNCTION__, recorder.toPretty);
             if (!verify(net, s_contract, inputs)) {
                 log.event(reject, "contract_no_verify", recorder);
                 return;
             }
 
-            //assert(inputs[0] !is Document.init, "Recorder should've contained inputs at this point");
-            __write("inputs.length=%d", inputs.length);
             assert(inputs !is Document[].init, "Recorder should've contained inputs at this point");
             immutable collection =
                 ((res.id in reads) !is null)
