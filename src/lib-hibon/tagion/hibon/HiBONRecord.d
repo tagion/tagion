@@ -793,7 +793,6 @@ unittest {
     @recordType("SIMPLE") static struct Simple {
         int s;
         string text;
-        alias enable_serialize = bool;
         mixin HiBONRecord!(q{
                 this(int s, string text) pure {
                     this.s=s; this.text=text;
@@ -846,7 +845,6 @@ unittest {
     @recordType("SIMPLELABEL") static struct SimpleLabel {
         @label("TEXT") string text;
         @label("$S") int s;
-        alias enable_serialize = bool;
         mixin HiBONRecord!(q{
                 this(int s, string text) pure {
                     this.s=s; this.text=text;
@@ -868,7 +866,6 @@ unittest {
         double f64;
         string text;
         bool flag;
-        alias enable_serialize = bool;
         mixin HiBONRecord!(q{this(int i32,
                     uint u32,
                     long i64,
@@ -895,7 +892,6 @@ unittest {
             int not_an_option;
             @label("s") @optional int s;
             @optional string text;
-            alias enable_serialize = bool;
             mixin HiBONRecord!();
         }
     }
@@ -1021,7 +1017,6 @@ unittest {
                     @optional int x;
                     @optional int y;
                 }
-                alias enable_serialize = bool;
                 bool valid(const Document doc) const pure nothrow {
                     return doc.hasMember("x") ^ doc.hasMember("y");
                 }
@@ -1093,7 +1088,6 @@ unittest {
         @safe static struct SuperStruct {
             Simple sub;
             string some_text;
-            alias enable_serialize = bool;
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) pure nothrow {
                         this.some_text=some_text;
@@ -1115,7 +1109,6 @@ unittest {
         @safe static class SuperClass {
             Simple sub;
             string class_some_text;
-            alias enable_serialize = bool;
             mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) pure nothrow {
                         this.class_some_text=some_text;
@@ -1141,7 +1134,6 @@ unittest {
     {
         static struct Test {
             @inspect(q{a < 42}) @inspect(q{a > 3}) int x;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1158,7 +1150,6 @@ unittest {
     { // Base type array
         static struct Array {
             @label("i32_a") int[] a;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1197,13 +1188,11 @@ unittest {
     { // Array of HiBON
         static struct SimpleElement {
             int x;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
         static struct TestArray {
             SimpleElement[] tests;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1235,7 +1224,6 @@ unittest {
         }
         static struct TestArrayPreserve {
             @preserve SimpleElement[] tests;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1265,7 +1253,6 @@ unittest {
     { // String array
         static struct StringArray {
             string[] texts;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1285,7 +1272,6 @@ unittest {
 
             alias UnqualT = Unqual!T;
             protected T[] array;
-            alias enable_serialize = bool;
             @nogc this(T[] array) {
                 this.array = array;
             }
@@ -1323,7 +1309,6 @@ unittest {
             alias R = Range!T;
             @safe static struct StructWithRange {
                 R range;
-                alias enable_serialize = bool;
                 static assert(isInputRange!R);
                 mixin HiBONRecord!(q{
                         this(T[] array) {
@@ -1371,7 +1356,6 @@ unittest {
             {
                 static struct SimpleArray {
                     Simple[] array;
-                    alias enable_serialize = bool;
                     mixin HiBONRecord;
                 }
 
@@ -1406,7 +1390,6 @@ unittest {
         { // Jagged Array
             @safe static struct Jagged {
                 Simple[][] y;
-                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1431,7 +1414,6 @@ unittest {
         {
             @safe static struct Associative {
                 Simple[string] a;
-                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1464,7 +1446,6 @@ unittest {
             { // Single enum
                 static struct CountStruct {
                     Count count;
-                    alias enable_serialize = bool;
                     mixin HiBONRecord;
                 }
 
@@ -1482,7 +1463,6 @@ unittest {
             { // Array of enum
                 static struct CountArray {
                     Count[] count;
-                    alias enable_serialize = bool;
                     mixin HiBONRecord;
                 }
 
@@ -1508,7 +1488,6 @@ unittest {
 
             static struct TextArray {
                 Text[] texts;
-                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1547,7 +1526,6 @@ unittest {
             alias Tabel = int[Bytes];
             static struct StructBytes {
                 Tabel tabel;
-                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1575,7 +1553,6 @@ unittest {
             static struct KeyStruct {
                 string text;
                 int x;
-                alias enable_serialize = bool;
                 mixin HiBONRecord!(q{
                         this(int x, string text) {
                             this.x=x; this.text=text;
@@ -1589,7 +1566,6 @@ unittest {
 
             static struct StructKeys {
                 Tabel tabel;
-                alias enable_serialize = bool;
                 mixin HiBONRecord;
             }
 
@@ -1617,7 +1593,6 @@ unittest {
         // The fixed atttibute is used set a default i value in case the member was not defined in the Document
         static struct FixedStruct {
             @label("$x") @filter(q{a != 17}) @fixed(q{-1}) int x;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1646,7 +1621,6 @@ unittest {
             short i_s;
             ubyte u_b;
             byte i_b;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1672,7 +1646,6 @@ unittest {
     {
         static struct ArrayKey(Key) {
             string[Key] a;
-            alias enable_serialize = bool;
             mixin HiBONRecord;
         }
 
@@ -1777,7 +1750,6 @@ unittest { /// Reseved keys and types
 ///
 unittest { // Test UDA preserve
     static struct S {
-        alias enable_serialize = bool;
         @preserve int[] array;
         mixin HiBONRecord;
     }
@@ -1797,7 +1769,6 @@ unittest {
     @recordType("TypeS")
     static struct S{
         @label("#key") string key;
-        alias enable_serialize = bool;
         mixin HiBONRecord;
     }
     S s;
