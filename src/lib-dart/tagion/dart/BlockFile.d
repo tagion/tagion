@@ -369,6 +369,7 @@ class BlockFile {
         @label("root") Index root_index; /// Point the root of the database
         @label("block_s") Index statistic_index; /// Points to the statistic data
         @label("recycle_s") Index recycler_statistic_index; /// Points to the recycler statistic data
+        alias enable_serialize = bool;
 
         mixin HiBONRecord;
 
@@ -805,12 +806,12 @@ class BlockFile {
         }
     }
 
-    void statisticDump(File fout = stdout, const bool logscale=false) const {
+    void statisticDump(File fout = stdout, const bool logscale = false) const {
         fout.writeln(_statistic.toString);
         fout.writeln(_statistic.histogramString(logscale));
     }
 
-    void recycleStatisticDump(File fout = stdout, const bool logscale=false) const {
+    void recycleStatisticDump(File fout = stdout, const bool logscale = false) const {
         fout.writeln(_recycler_statistic.toString);
         fout.writeln(_recycler_statistic.histogramString(logscale));
     }

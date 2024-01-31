@@ -464,6 +464,9 @@ mixin template HiBONRecord(string CTOR = "") {
         import tagion.hibon.HiBONBase : less_than;
 
         string[] result;
+        static if (hasUDA!(This, recordType) && (getUDAs!(This, recordType)[0].name.length > 0)) {
+            result~=TYPENAME;
+        }
         static foreach (i; 0 .. Fields!(This).length) {
             result ~= GetKeyName!i;
         }
@@ -836,7 +839,7 @@ unittest {
 
     }
 
-    static assert(equal(Simple.keys, only("s", "text")));
+    static assert(equal(Simple.keys, only(TYPENAME, "s", "text")));
     static assert(Simple.GetTupleIndex!"s" == 0);
     static assert(Simple.GetTupleIndex!"text" == 1);
     static assert(Simple.GetTupleIndex!"not defined" == -1);
@@ -851,7 +854,7 @@ unittest {
             });
     }
 
-    static assert(equal(SimpleLabel.keys, only("$S", "TEXT")));
+    static assert(equal(SimpleLabel.keys, only(TYPENAME, "$S", "TEXT")));
 
     static assert(SimpleLabel.GetTupleIndex!"$S" == 1);
     static assert(SimpleLabel.GetTupleIndex!"TEXT" == 0);
@@ -981,8 +984,17 @@ unittest {
             s.not_an_option = 42;
             s.s = 17;
             s.text = "text!";
-            const doc = s.toDoc;
+            const s_serialize=s._serialize;
+            const s_hibon=s.toHiBON;
+            const s_hibon_serialize = s_hibon.serialize;
+            __write("NoLabel           =%s", Document(s_serialize).toPretty);
+            __write("NoLabel hibon     =%s", Document(s_hibon_serialize).toPretty);
+
+            __write("NoLabel._serialize=%s", s._serialize);
+            __write("NoLabel.toHiBON   =%s", s_hibon.serialize);
             // writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
+            assert(s_serialize == s_hibon_serialize);
+            const doc = s.toDoc;
             assertNotThrown!Exception(NoLabel(doc));
             assertThrown!HiBONException(WithLabel(doc));
 
@@ -1773,6 +1785,26 @@ unittest { // Test UDA preserve
     S s;
     s.array.length = 7;
     const s_serialize=s._serialize;
+    __write("s._serialize    =%s", s_serialize);
+    const hibon_serialize = s.toHiBON.serialize;
+    __write("hibon_serialize =%s", hibon_serialize);
+    assert(s_serialize == hibon_serialize);
+
+}
+
+/// #key should should be place before recordType $@
+unittest {
+    @recordType("TypeS")
+    static struct S{
+        @label("#key") string key;
+        alias enable_serialize = bool;
+        mixin HiBONRecord;
+    }
+    S s;
+    s.key="some text";
+    __write("keys=%s", S.keys);
+    const s_serialize=s._serialize;
+    
     __write("s._serialize    =%s", s_serialize);
     const hibon_serialize = s.toHiBON.serialize;
     __write("hibon_serialize =%s", hibon_serialize);

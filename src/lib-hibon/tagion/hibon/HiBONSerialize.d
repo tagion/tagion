@@ -241,7 +241,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     return result;
 }
 
-
 mixin template Serialize() {
     import std.algorithm;
     import std.range;
@@ -255,8 +254,8 @@ mixin template Serialize() {
     import std.array;
     import LEB128 = tagion.utils.LEB128;
 
-//    static assert(hasMember!(This, "enable_serialize"), format("%s %s", __FILE__, This.stringof));
-    static if (!isSerializeDisabled!This) {// &&__traits(hasMember, This, "enable_serialize")) {
+    //    static assert(hasMember!(This, "enable_serialize"), format("%s %s module %s", __FILE__, This.stringof, moduleName!This));
+    static if (!isSerializeDisabled!This) { // &&__traits(hasMember, This, "enable_serialize")) {
         void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;
@@ -269,6 +268,13 @@ mixin template Serialize() {
             }
             void append_member(string key)() pure {
                 enum index = GetTupleIndex!key;
+                static if (index < 0) {
+                    static assert(key == TYPENAME, format("RecordType %s expected", TYPENAME));
+                    enum record=getUDAs!(This, recordType)[0]; 
+                    build(buf, TYPENAME, record.name);
+                    //return;
+                }
+                else {
                 enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
                 enum filter_flag = hasUDA!(This.tupleof[index], filter);
                 enum preserve_flag = hasUDA!(This.tupleof[index], preserve);
@@ -293,8 +299,10 @@ mixin template Serialize() {
                 static if (!exclude_flag) {
                     build!preserve_flag(buf, key, this.tupleof[index]);
                 }
+                 }
             }
 
+            version(none)
             static if (hasUDA!(This, recordType)) {
                 enum record = getUDAs!(This, recordType)[0];
                 static if (record.name.length) {
@@ -311,7 +319,17 @@ mixin template Serialize() {
         out (ret) {
             version (TOHIBON_SERIALIZE_CHECK) {
                 const hibon_serialize = this.toHiBON.serialize;
-                assert(ret == hibon_serialize, This.stringof ~ " toHiBON.serialize failed");
+                debug if (hibon_serialize != ret) {
+                
+                    static if (This.stringof == "NameRecord") {
+                    __write("keys =%s", keys);
+                    __write("hibon=%s", Document(hibon_serialize).toPretty);
+                    __write("ret  =%s", Document(ret).toPretty);
+                    }
+                    __write("hibon_serialize=%s", hibon_serialize);
+                    __write("ret            =%s", ret);
+                }
+                assert(ret == hibon_serialize, moduleName!This~"."~This.stringof ~ " toHiBON.serialize failed");
             }
         }
         do {

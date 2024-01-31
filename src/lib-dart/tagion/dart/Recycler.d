@@ -715,6 +715,7 @@ version (unittest) {
 
         string text;
 
+        alias enable_serialize = bool;
         mixin HiBONRecord!(q{
             this(string text) {
                 this.text = text;

@@ -65,13 +65,15 @@ struct HiRPC {
         string name() pure const nothrow {
             import std.algorithm;
             import std.range;
+
             return assumeWontThrow(full_name.splitter('.').retro.front);
         }
+
         void name(string name) pure nothrow @nogc {
             full_name = name;
         }
 
-    alias enable_serialize = bool;
+        alias enable_serialize = bool;
 
         mixin HiBONRecord;
     }
@@ -79,7 +81,7 @@ struct HiRPC {
     struct Response {
         @optional @(filter.Initialized) uint id; /// RPC response id, if given by the method
         Document result; /// Return data from the method request
-    alias enable_serialize = bool;
+        alias enable_serialize = bool;
         mixin HiBONRecord;
     }
 
@@ -97,7 +99,7 @@ struct HiRPC {
             return doc.hasMember(codeName) || doc.hasMember(messageName) || doc.hasMember(dataName);
         }
 
-    alias enable_serialize = bool;
+        alias enable_serialize = bool;
         mixin HiBONRecord;
     }
 
@@ -417,7 +419,7 @@ struct HiRPC {
             return response.result;
         }
 
-    alias enable_serialize = bool;
+        alias enable_serialize = bool;
         mixin HiBONRecord!("{}");
     }
 
@@ -555,9 +557,9 @@ struct HiRPC {
 
 /// A good HiRPC result wih no additional data.
 @safe
-@recordType("OK")
+@recordType("OK") @disableSerialize
 struct ResultOk {
-    //alias enable_serialize = bool;
+    alias enable_serialize = bool;
     mixin HiBONRecord!();
 }
 
