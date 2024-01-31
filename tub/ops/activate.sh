@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
+BRANCH="${BRANCH:=current}"
+
 get_newest_success_run_id() {
-    gh run list --repo tagion/tagion -b current -w 'Main Flow' -s success -L1 --json databaseId --jq '.[0].databaseId'
+    gh run list --repo tagion/tagion -b "$BRANCH" -w 'Main Flow' -s success -L1 --json databaseId --jq '.[0].databaseId'
 }
 
 get_workflow_artifact() {
