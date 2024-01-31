@@ -22,7 +22,6 @@ import tagion.utils.StdTime;
     @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.owner) Pubkey owner; // owner key
     @label(StdNames.nonce) @optional Buffer nonce; // extra nonce 
-    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
                 this(const(TagionCurrency) value, const sdt_t time, Pubkey owner, Buffer nonce) pure nothrow {
@@ -53,7 +52,6 @@ unittest {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label("$run") Document script; // Smart contract 
-    alias enable_serialize = bool;
     bool verify() const pure nothrow @nogc {
         return (inputs.length > 0);
     }
@@ -76,7 +74,6 @@ unittest {
 @recordType("SSC") struct SignedContract {
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @label("$contract") Contract contract; /// The contract must signed by all inputs
-    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
                 this(const(Signature)[] signs, Contract contract) pure nothrow {
@@ -98,7 +95,6 @@ unittest {
 @recordType("pay")
 struct PayScript {
     @label(StdNames.values) const(TagionBill)[] outputs;
-    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
                 this(const(TagionBill)[] outputs) pure nothrow {
@@ -221,7 +217,6 @@ struct GenesisEpoch {
     Pubkey[] nodes;
     Document testamony;
     @label(StdNames.time) sdt_t time;
-    alias enable_serialize = bool;
     TagionGlobals globals;
     mixin HiBONRecord!(q{
         this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time, const(TagionGlobals) globals) {
@@ -244,7 +239,6 @@ struct Epoch {
     @optional @(filter.Initialized) Pubkey[] active; /// Sorted keys
     @optional @(filter.Initialized) Pubkey[] deactive;
     @optional @(filter.Initialized) TagionGlobals globals;
-    alias enable_serialize = bool;
 
     mixin HiBONRecord!(q{
         this(long epoch_number,
@@ -272,7 +266,6 @@ struct Epoch {
 struct TagionHead {
     @label(StdNames.name) string name; // Default name should always be "tagion"
     long current_epoch;
-    alias enable_serialize = bool;
     mixin HiBONRecord!(q{
         this(const(string) name, const(long) current_epoch) {
             this.name = name;
@@ -287,7 +280,6 @@ struct TagionGlobals {
     @label("total_burned") BigNumber total_burned;
     @label("number_of_bills") long number_of_bills;
     @label("burnt_bills") long burnt_bills;
-    alias enable_serialize = bool;
 
     mixin HiBONRecord!(q{
         this(const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
@@ -304,7 +296,6 @@ struct ConsensusVoting {
     long epoch;
     @label(StdNames.owner) Pubkey owner;
     @label(StdNames.signed) Signature signed_bullseye;
-    alias enable_serialize = bool;
 
     mixin HiBONRecord!(q{
         this(long epoch, Pubkey owner, Signature signed_bullseye) pure {
@@ -327,7 +318,6 @@ struct ConsensusVoting {
 struct LockedArchives {
     @label(StdNames.locked_epoch) long epoch_number;
     @label("outputs") const(DARTIndex)[] locked_outputs;
-    alias enable_serialize = bool;
     mixin HiBONRecord!(q{
         this(long epoch_number, const(DARTIndex)[] locked_outputs) {
             this.epoch_number = epoch_number;

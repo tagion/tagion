@@ -254,7 +254,7 @@ mixin template Serialize() {
     import std.array;
     import LEB128 = tagion.utils.LEB128;
 
-    //    static assert(hasMember!(This, "enable_serialize"), format("%s %s module %s", __FILE__, This.stringof, moduleName!This));
+    //   static assert(!hasMember!(This, "enable_serialize"), format("%s %s module %s", __FILE__, This.stringof, moduleName!This));
     static if (!isSerializeDisabled!This) { // &&__traits(hasMember, This, "enable_serialize")) {
         void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;
@@ -270,45 +270,45 @@ mixin template Serialize() {
                 enum index = GetTupleIndex!key;
                 static if (index < 0) {
                     static assert(key == TYPENAME, format("RecordType %s expected", TYPENAME));
-                    enum record=getUDAs!(This, recordType)[0]; 
+                    enum record = getUDAs!(This, recordType)[0];
                     build(buf, TYPENAME, record.name);
                     //return;
                 }
                 else {
-                enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
-                enum filter_flag = hasUDA!(This.tupleof[index], filter);
-                enum preserve_flag = hasUDA!(This.tupleof[index], preserve);
-                static if (filter_flag) {
-                    alias filters = getUDAs!(this.tupleof[index], filter);
-                    static foreach (F; filters) {
-                        {
-                            alias filterFun = unaryFun!(F.code);
-                            if (!filterFun(this.tupleof[index])) {
-                                return;
+                    enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
+                    enum filter_flag = hasUDA!(This.tupleof[index], filter);
+                    enum preserve_flag = hasUDA!(This.tupleof[index], preserve);
+                    static if (filter_flag) {
+                        alias filters = getUDAs!(this.tupleof[index], filter);
+                        static foreach (F; filters) {
+                            {
+                                alias filterFun = unaryFun!(F.code);
+                                if (!filterFun(this.tupleof[index])) {
+                                    return;
+                                }
                             }
                         }
                     }
+                    static if (preserve_flag) {
+                        alias MemberT = Fields!This[index];
+                        alias BaseT = TypedefType!MemberT;
+                        static assert(isArray!BaseT,
+                                format("@%s UDA can only be apply to an array not a %s",
+                                preserve.stringof, MemberT.stringof));
+                    }
+                    static if (!exclude_flag) {
+                        build!preserve_flag(buf, key, this.tupleof[index]);
+                    }
                 }
-                static if (preserve_flag) {
-                    alias MemberT = Fields!This[index];
-                    alias BaseT = TypedefType!MemberT;
-                    static assert(isArray!BaseT,
-                            format("@%s UDA can only be apply to an array not a %s",
-                            preserve.stringof, MemberT.stringof));
-                }
-                static if (!exclude_flag) {
-                    build!preserve_flag(buf, key, this.tupleof[index]);
-                }
-                 }
             }
 
-            version(none)
-            static if (hasUDA!(This, recordType)) {
-                enum record = getUDAs!(This, recordType)[0];
-                static if (record.name.length) {
-                    build(buf, TYPENAME, record.name);
+            version (none)
+                static if (hasUDA!(This, recordType)) {
+                    enum record = getUDAs!(This, recordType)[0];
+                    static if (record.name.length) {
+                        build(buf, TYPENAME, record.name);
+                    }
                 }
-            }
 
             static foreach (key; This.keys) {
                 append_member!key();
@@ -320,16 +320,16 @@ mixin template Serialize() {
             version (TOHIBON_SERIALIZE_CHECK) {
                 const hibon_serialize = this.toHiBON.serialize;
                 debug if (hibon_serialize != ret) {
-                
+
                     static if (This.stringof == "NameRecord") {
-                    __write("keys =%s", keys);
-                    __write("hibon=%s", Document(hibon_serialize).toPretty);
-                    __write("ret  =%s", Document(ret).toPretty);
+                        __write("keys =%s", keys);
+                        __write("hibon=%s", Document(hibon_serialize).toPretty);
+                        __write("ret  =%s", Document(ret).toPretty);
                     }
                     __write("hibon_serialize=%s", hibon_serialize);
                     __write("ret            =%s", ret);
                 }
-                assert(ret == hibon_serialize, moduleName!This~"."~This.stringof ~ " toHiBON.serialize failed");
+                assert(ret == hibon_serialize, moduleName!This ~ "." ~ This.stringof ~ " toHiBON.serialize failed");
             }
         }
         do {
