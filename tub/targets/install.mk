@@ -1,4 +1,6 @@
 # Install script for gnu linux
+MKDIR?=mkdir -p
+CP?=cp -a
 
 # REDEFINE VARS FOR STANDALONE USE
 ifdef PLATFORM
@@ -11,33 +13,58 @@ GETHOSTOS?=${shell uname | tr A-Z a-z}
 GETARCH?=${shell uname -m}
 PLATFORM?=$(GETARCH)-$(GETHOSTOS)
 DBIN?=build/${PLATFORM}/bin
+XDG_DATA_HOME?=$(HOME)/.local/share
+XDG_CONFIG_HOME?=$(HOME)/.config
+TAGION_DATA:=$(XDG_DATA_HOME)/tagion/wave
+
 
 TOOL=$(DBIN)/tagion
 INSTALLEDTOOL=$(INSTALL)/tagion
-INSTALLEDCOLLIDER=$(INSTALL)/collider
+INSTALLED_FILES+=$(INSTALLEDTOOL)
 
 # Install tagion
-install: $(INSTALLEDTOOL)
-
+install: $(INSTALLEDTOOL) install-scripts install-services
 $(INSTALLEDTOOL): $(TOOL_TARGET)
 	$(PRECMD)
 	$(CP) $(TOOL) $(INSTALLEDTOOL)
 	$(INSTALLEDTOOL) -f
 
-# Install extra development tools
-install-dev: install $(INSTALLEDCOLLIDER)
 
+INSTALLED_RUN_NETWORK_SH:=$(TAGION_DATA)/run_network.sh
+INSTALLED_FILES+=$(INSTALLED_RUN_NETWORK_SH)
+
+install-scripts: $(INSTALLED_RUN_NETWORK_SH)
+$(INSTALLED_RUN_NETWORK_SH): scripts/run_network.sh
+	$(MKDIR) $(TAGION_DATA)
+	$(CP) $< $@
+
+
+NEUEWELLE_SERVICE:=$(XDG_CONFIG_HOME)/systemd/user/neuewelle.service
+INSTALLED_FILES+=$(NEUEWELLE_SERVICE)
+TAGIONSHELL_SERVICE:=$(XDG_CONFIG_HOME)/systemd/user/tagionshell.service
+INSTALLED_FILES+=$(TAGIONSHELL_SERVICE)
+
+install-services: $(NEUEWELLE_SERVICE) $(TAGIONSHELL_SERVICE)
+$(XDG_CONFIG_HOME)/systemd/user/%.service: etc/%.service
+	$(MKDIR) $(XDG_CONFIG_HOME)/systemd/user
+	$(CP) $< $@
+
+
+# Install extra development tools
+INSTALLEDCOLLIDER=$(INSTALL)/collider
+INSTALLED_FILES+=$(INSTALLEDCOLLIDER)
+install-dev: install $(INSTALLEDCOLLIDER)
 $(INSTALLEDCOLLIDER): collider
 	$(PRECMD)
 	$(CP) $(COLLIDER) $(INSTALLEDCOLLIDER)
 	$(INSTALLEDCOLLIDER) -f
 
+
 env-install:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, INSTALL, $(INSTALL)}
-	${call log.kvp, INSTALLEDTOOL, $(INSTALLEDTOOL)}
-	${call log.kvp, INSTALLEDCOLLIDER, $(INSTALLEDCOLLIDER)}
+	${call log.env, INSTALLED_FILES, $(INSTALLED_FILES)}
 	${call log.close}
 
 .PHONY: env-install
@@ -47,7 +74,7 @@ env: env-install
 uninstall: 
 	$(PRECMD)
 	$(RM) $(INSTALLEDCOLLIDER)
-	$(RM) $(INSTALLEDTOOL)
+	$(RM) $(INSTALLED_FILES)
 
 help-install:
 	$(PRECMD)
