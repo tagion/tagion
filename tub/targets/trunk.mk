@@ -28,14 +28,9 @@ copy_trunk_files:
 	find -name "*.callstack" -exec cp {} ${TRUNK} \;
 
 	# Extra files
-	mkdir -p ${TRUNK}/scripts ${TRUNK}/.config/systemd/user
 	$(CP) tub/targets/install.mk ${TRUNK}/GNUmakefile
 	$(CP) $(REPOROOT)/collider_schedule.json ${TRUNK}
-	$(CP) $(DSRC)/bin-tagionshell/tagionshell.service $(DSRC)/bin-wave/neuewelle.service ${TRUNK}/.config/systemd/user
-	$(CP) $(DTUB)/scripts/create_wallets.sh ${TRUNK}/scripts
-	$(CP) $(DTUB)/scripts/run_ops.sh $(TRUNK)/scripts
-	$(CP) $(DTUB)/scripts/run_network.sh $(TRUNK)/scripts
-	$(CP) $(DTUB)/scripts/failed.sh $(TRUNK)/scripts
+	$(CP) -r scripts/ etc/ $(TRUNK)/
 
 .PHONY: help-trunk
 help-trunk:
