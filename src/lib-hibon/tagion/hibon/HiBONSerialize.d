@@ -253,7 +253,7 @@ mixin template Serialize() {
     import LEB128 = tagion.utils.LEB128;
 
     static if (!isSerializeDisabled!This) { 
-        void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
+        void serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;
 
@@ -298,20 +298,12 @@ mixin template Serialize() {
                 }
             }
 
-            version (none)
-                static if (hasUDA!(This, recordType)) {
-                    enum record = getUDAs!(This, recordType)[0];
-                    static if (record.name.length) {
-                        build(buf, TYPENAME, record.name);
-                    }
-                }
-
             static foreach (key; This.keys) {
                 append_member!key();
             }
         }
 
-        Buffer _serialize() const pure @safe
+        Buffer serialize() const pure @safe
         out (ret) {
             version (TOHIBON_SERIALIZE_CHECK) {
                 const hibon_serialize = this.toHiBON.serialize;
@@ -325,7 +317,7 @@ mixin template Serialize() {
                 buf.reserve(reserve_size);
             }
             const start_index = buf.data.length;
-            _serialize(buf);
+            serialize(buf);
             emplace_buffer(buf, start_index);
             return buf.data;
         }

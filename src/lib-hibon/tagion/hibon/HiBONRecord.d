@@ -738,10 +738,7 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
-    static if (!isSerializeDisabled!This) {
-        alias serialize = _serialize;
-    }
-    else {
+    static if (isSerializeDisabled!This) {
         @safe final immutable(ubyte[]) serialize() const pure {
             return toHiBON.serialize;
         }
@@ -754,7 +751,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
 version (unittest) {
     void check_serialize(T)(T s, const Document docS) {
-        const s_serialize = s._serialize;
+        const s_serialize = s.serialize;
         const h = s.toHiBON;
         const hibon_serialize = h.serialize;
         static if (SupportingFullSizeFunction!T) {
@@ -966,7 +963,7 @@ unittest {
             s.not_an_option = 42;
             s.s = 17;
             s.text = "text!";
-            const s_serialize=s._serialize;
+            const s_serialize=s.serialize;
             const s_hibon=s.toHiBON;
             const s_hibon_serialize = s_hibon.serialize;
             // writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
@@ -1027,19 +1024,19 @@ unittest {
         assert(s_dont_filter_doc.full_size == s_dont_filter.full_size);
         assert(s_dont_filter_xy_doc.full_size == s_dont_filter_xy.full_size);
 
-        const s_filter_x_serialize = s_filter_x._serialize;
+        const s_filter_x_serialize = s_filter_x.serialize;
         const s_filter_x_hibon_serialize = s_filter_x.toHiBON.serialize;
         assert(s_filter_x_serialize == s_filter_x_hibon_serialize);
 
-        const s_filter_y_serialize = s_filter_y._serialize;
+        const s_filter_y_serialize = s_filter_y.serialize;
         const s_filter_y_hibon_serialize = s_filter_y.toHiBON.serialize;
         assert(s_filter_y_serialize == s_filter_y_hibon_serialize);
 
-        const s_dont_filter_serialize = s_dont_filter._serialize;
+        const s_dont_filter_serialize = s_dont_filter.serialize;
         const s_dont_filter_hibon_serialize = s_dont_filter.toHiBON.serialize;
         assert(s_dont_filter_serialize == s_dont_filter_hibon_serialize);
 
-        const s_dont_filter_xy_serialize = s_dont_filter_xy._serialize;
+        const s_dont_filter_xy_serialize = s_dont_filter_xy.serialize;
         const s_dont_filter_xy_hibon_serialize = s_dont_filter_xy.toHiBON.serialize;
         assert(s_dont_filter_xy_serialize == s_dont_filter_xy_hibon_serialize);
         {
@@ -1176,7 +1173,7 @@ unittest {
             {
                 TestArray test_array;
                 test_array.tests.length = 3;
-                const test_array_serialize=test_array._serialize;
+                const test_array_serialize=test_array.serialize;
                 const test_array_hibon_serialize=test_array.toHiBON.serialize;
                 assert(test_array_serialize == test_array_hibon_serialize);
 
@@ -1196,7 +1193,7 @@ unittest {
             TestArrayPreserve test_array;
             test_array.tests.length = 3;
             const doc = test_array.toDoc;
-            const test_array_serialize=test_array._serialize;
+            const test_array_serialize=test_array.serialize;
             const test_array_hibon=test_array.toHiBON;
             const test_array_hibon_serialize= test_array_hibon.serialize;
             assert(test_array_serialize == test_array_hibon_serialize);
@@ -1706,7 +1703,7 @@ unittest { // Test UDA preserve
 
     S s;
     s.array.length = 7;
-    const s_serialize=s._serialize;
+    const s_serialize=s.serialize;
     const hibon_serialize = s.toHiBON.serialize;
     assert(s_serialize == hibon_serialize);
 
@@ -1721,7 +1718,7 @@ unittest {
     }
     S s;
     s.key="some text";
-    const s_serialize=s._serialize;
+    const s_serialize=s.serialize;
     
     const hibon_serialize = s.toHiBON.serialize;
     assert(s_serialize == hibon_serialize);

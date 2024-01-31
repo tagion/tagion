@@ -140,10 +140,10 @@ void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key 
     }
     else static if (isHiBONRecord!BaseT) {
             const start_index = buffer.data.length;
-        static if (__traits(compiles, x._serialize(buffer))) {
-            x._serialize(buffer);
+        static if (__traits(compiles, x.serialize(buffer))) {
+            x.serialize(buffer);
         }
-        else static if (hasMember!(BaseT, "serialize")) {
+        else static if (__traits(compiles, {const r=x.serialize();})) {
            buffer~= x.serialize;
         }
         else static if (hasMember!(BaseT, "toDoc")) {

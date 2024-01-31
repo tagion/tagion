@@ -112,7 +112,7 @@ unittest {
         TagionBill(TagionCurrency(2000), sdt_t(5678), Pubkey([2, 3, 4]), [42, 17, 3])
     ];
     const hibon_serialize = pay.toHiBON.serialize;
-    const serialize = pay._serialize;
+    const serialize = pay.serialize;
 
     assert(hibon_serialize == serialize);
     const doc = pay.toDoc;
