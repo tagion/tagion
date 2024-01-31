@@ -26,7 +26,6 @@ struct RecycleSegment {
     Index end() const pure nothrow @nogc {
         return Index(index + size);
     }
-    alias enable_serialize = bool;
 
     mixin HiBONRecord!(q{
         @disable this();
@@ -715,7 +714,6 @@ version (unittest) {
 
         string text;
 
-        alias enable_serialize = bool;
         mixin HiBONRecord!(q{
             this(string text) {
                 this.text = text;
