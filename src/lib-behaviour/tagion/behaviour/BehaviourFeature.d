@@ -21,7 +21,6 @@ import tagion.hibon.HiBONRecord;
 mixin template Property() {
     string description;
     @optional @(filter.Initialized) string[] comments;
-    alias enable_serialize = bool;
     mixin HiBONRecord!(q{
             this(string description, string[] comments=null ) pure nothrow {
                 this.description = description;
@@ -74,7 +73,6 @@ struct Info(alias Property) {
     string name; /// Name of the function member, scenario call or feature module
     Document result; /// The result after execution of the property (See BehaviourResult)
         
-    alias enable_serialize = bool;
     mixin HiBONRecord!();
 }
 
@@ -87,7 +85,6 @@ enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
  */
 struct ActionGroup(Property) if (isOneOf!(Property, ActionProperties)) {
     Info!Property[] infos;
-    alias enable_serialize = bool;
     mixin HiBONRecord!();
 }
 
@@ -106,7 +103,6 @@ struct ScenarioGroup {
     @optional ActionGroup!(When) when; /// When actions
     ActionGroup!(Then) then; /// Then actions
     @optional ActionGroup!(But) but; /// But actions
-    alias enable_serialize = bool;
     mixin HiBONRecord!();
 }
 

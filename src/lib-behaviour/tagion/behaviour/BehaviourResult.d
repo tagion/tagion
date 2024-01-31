@@ -20,7 +20,6 @@ struct BehaviourError {
     string[] trace; ///. Exception line trace of in the exception
     ulong line; 
     string file;
-    alias enable_serialize = bool;
     mixin HiBONRecord!(q{
             this(Throwable e) nothrow @trusted {
                 import std.exception : assumeWontThrow;
@@ -41,7 +40,6 @@ struct BehaviourError {
 @recordType("BDDResult") @disableSerialize
 struct Result {
     Document outcome; /// BDD test return document
-    alias enable_serialize = bool;
     mixin HiBONRecord!();
 }
 
