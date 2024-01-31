@@ -196,7 +196,7 @@ jobs:
       - name: Copy Artifact to local machine
         run: |
           find . -mindepth 1 -delete
-          cp -r ${{ env.ARTIFACT_DIR }}/build .
+          cp -r ${{ env.ARTIFACT_DIR }}/. .
 
       - name: Run collider tests
         run: |
