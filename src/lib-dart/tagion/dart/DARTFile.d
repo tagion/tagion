@@ -222,8 +222,6 @@ class DARTFile {
             return (index is Index.init) && (fingerprint is null);
         }
 
-        alias enable_serialize = bool;
-
         mixin HiBONRecord!(q{
             this(const Index index, const(Fingerprint) fingerprint, const(DARTIndex) dart_index) {
                 this.index = index;
@@ -452,8 +450,6 @@ class DARTFile {
         mixin JSONString;
 
         import tagion.hibon.HiBONRecord : HiBONRecordType;
-
-        alias enable_serialize = bool;
 
         mixin HiBONRecordType;
 
@@ -2359,7 +2355,6 @@ unittest {
             static struct NameRecord {
                 @label("#name") string name;
                 string data;
-                alias enable_serialize = bool;
 
                 mixin HiBONRecord!(q{
                     this(const string name, const string data) {
@@ -2567,7 +2562,6 @@ unittest {
     static struct HashDoc {
         @label("#name") string name;
         int number;
-        alias enable_serialize = bool;
         mixin HiBONRecord!(q{
             this(string name, int n) {
                 this.name=name;

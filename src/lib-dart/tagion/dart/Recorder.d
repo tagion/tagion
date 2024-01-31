@@ -110,7 +110,6 @@ class RecordFactory {
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        alias enable_serialize=bool;
         alias archive_sorted = (a, b) @safe => (a.dart_index < b.dart_index) || 
         (a.dart_index == b.dart_index) && (a.type < b.type);
 

@@ -58,7 +58,6 @@ unittest { // Check the #key hash with types
     static struct HashU32 {
         @label("#key") uint x;
         string extra_name;
-    alias enable_serialize = bool;
         mixin HiBONRecord;
     }
 

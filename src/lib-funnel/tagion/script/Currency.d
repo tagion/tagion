@@ -42,7 +42,6 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
     enum long BASE_UNIT = _BASE_UNIT;
     enum long UNIT_MAX = MAX_VALUE_IN_BASE_UNITS * BASE_UNIT;
     enum UNIT = _UNIT;
-    alias enable_serialize = bool;
     protected {
         @label("$") long _units;
     }
