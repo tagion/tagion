@@ -191,6 +191,5 @@ int _main(string[] args) {
     feature.run;
 
     stopsignal.set;
-    Thread.sleep(6.seconds);
     return 0;
 }
