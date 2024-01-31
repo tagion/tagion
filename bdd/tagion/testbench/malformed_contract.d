@@ -167,9 +167,7 @@ int _main(string[] args) {
     feature.ContractWhereInputIsSmallerThanOutput(node_opts[3], wallets[3]);
 
     feature.run;
-    Thread.sleep(15.seconds);
-
+    writefln("finished test execution");
     stopsignal.set;
-    Thread.sleep(6.seconds);
     return 0;
 }
