@@ -132,7 +132,7 @@
           '';
 
           installPhase = ''
-            mkdir -p $out/bin; make install
+            mkdir -p $out/bin; make install-bin
           '';
         };
       packages.x86_64-linux.dockerImage =

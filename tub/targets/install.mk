@@ -18,12 +18,15 @@ XDG_CONFIG_HOME?=$(HOME)/.config
 TAGION_DATA:=$(XDG_DATA_HOME)/tagion/wave
 
 
+install: install-bin install-scripts install-services
+
+
 TOOL=$(DBIN)/tagion
 INSTALLEDTOOL=$(INSTALL)/tagion
 INSTALLED_FILES+=$(INSTALLEDTOOL)
 
 # Install tagion
-install: $(INSTALLEDTOOL) install-scripts install-services
+install-bin: $(INSTALLEDTOOL)
 $(INSTALLEDTOOL): $(TOOL_TARGET)
 	$(PRECMD)
 	$(CP) $(TOOL) $(INSTALLEDTOOL)
