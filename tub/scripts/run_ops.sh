@@ -43,7 +43,7 @@ systemctl stop --user tagionshell.service || echo "No shell service was running"
 
 
 "$bdir"/tagion -s || echo "Soft links already exists";
-make ci-files || echo "Not in source dir"
+make trunk || echo "Not in source dir"
 
 mkdir -p "$wdir" "$net_dir"
 
@@ -125,9 +125,9 @@ done
 )
 
 mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/tagion/wave 
-cp "$bdir/run_network.sh" ~/.local/share/tagion/wave/
-cp "$bdir/tagion" ~/.local/bin/
-cp "$bdir/tagionshell.service" "$bdir/neuewelle.service" ~/.config/systemd/user
+cp "scripts/run_network.sh" ~/.local/share/tagion/wave/
+cp "scripts/tagion" ~/.local/bin/
+cp "scripts/tagionshell.service" "$bdir/neuewelle.service" ~/.config/systemd/user
 
 systemctl --user daemon-reload
 systemctl restart --user neuewelle.service
