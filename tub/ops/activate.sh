@@ -27,4 +27,5 @@ workflowid=$(get_newest_success_run_id)
 artifact_path=$(get_workflow_artifact $workflowid)
 cd $artifact_path
 make install
-./scripts/run_ops.sh
+rm -r ~/.local/share/tagion || echo "Nothing to delete"
+./scripts/run_ops.sh -i=true
