@@ -149,6 +149,11 @@ class RecordFactory {
         private this(Document doc) {
                 .check(isRecord(doc), format("Document is not a %s", This.stringof));
             this.archives = new Archives;
+            /*
+    archives.insert(doc[]
+            .filter!(e => e.key != TYPENAME)
+            .map!(e => new Archive(net, e.get!Document)));
+    */
             foreach (e; doc[]) {
                 if (e.key != TYPENAME) {
                     const doc_archive = e.get!Document;
@@ -156,6 +161,7 @@ class RecordFactory {
                     archives.insert(archive);
                 }
             }
+
         }
 
         Recorder dup() pure nothrow {
@@ -346,7 +352,11 @@ class RecordFactory {
                 i++;
             }
             result[TYPENAME] = type_name;
-            return Document(result);
+            const doc=Document(result);
+            import tagion.basic.Debug;
+            __write("Recorder.toDoc=%s", doc.serialize);
+            return doc;
+            //return Document(result);
         }
 
         import std.algorithm.sorting;

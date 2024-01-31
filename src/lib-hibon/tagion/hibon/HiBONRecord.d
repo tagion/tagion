@@ -749,7 +749,7 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
-    static if (!isSerializeDisabled!This && hasMember!(This, "enable_serialize")) {
+    static if (!isSerializeDisabled!This) {
         alias serialize = _serialize;
     }
     else {

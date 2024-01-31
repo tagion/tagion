@@ -437,7 +437,6 @@ received = the HiRPC received package
          */
         this(RecordFactory manufactor, const Document doc) {
             import tagion.logger.Logger;
-
             
 
             .check(isRecord(doc), format("Document is not a %s", This.stringof));

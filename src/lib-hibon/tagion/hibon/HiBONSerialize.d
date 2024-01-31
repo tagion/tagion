@@ -271,8 +271,14 @@ mixin template Serialize() {
                 static if (index < 0) {
                     static assert(key == TYPENAME, format("RecordType %s expected", TYPENAME));
                     enum record = getUDAs!(This, recordType)[0];
+                    static if ( only("Journal","Recorder").canFind(This.stringof)) {
+                        __write("HiBON %s", This.stringof);
+                        __write("Before buf=%s", buf.data);
+                    }
                     build(buf, TYPENAME, record.name);
-                    //return;
+                    static if ( only("Journal","Recorder").canFind(This.stringof)) {
+                        __write("After  buf=%s", buf.data);
+                    }
                 }
                 else {
                     enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
@@ -320,14 +326,15 @@ mixin template Serialize() {
             version (TOHIBON_SERIALIZE_CHECK) {
                 const hibon_serialize = this.toHiBON.serialize;
                 debug if (hibon_serialize != ret) {
+                    __write("This %s", This.stringof);
+                    __write("hibon_serialize=%s", hibon_serialize);
+                    __write("ret            =%s", ret);
 
-                    static if (This.stringof == "NameRecord") {
+                    static if (This.stringof == "Journal") {
                         __write("keys =%s", keys);
                         __write("hibon=%s", Document(hibon_serialize).toPretty);
                         __write("ret  =%s", Document(ret).toPretty);
                     }
-                    __write("hibon_serialize=%s", hibon_serialize);
-                    __write("ret            =%s", ret);
                 }
                 assert(ret == hibon_serialize, moduleName!This ~ "." ~ This.stringof ~ " toHiBON.serialize failed");
             }

@@ -149,11 +149,13 @@ void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key 
         }
         else static if (hasMember!(BaseT, "toDoc")) {
             buffer~=x.toDoc.serialize;
+            return;
         }
         else static if (hasMember!(BaseT, "toHiBON")) {
             
 
             buffer~= x.toHiBON.serialize;
+            return;
         }
         else {
             static assert(0, format("%s has no metode to serialize", T.stringof));
