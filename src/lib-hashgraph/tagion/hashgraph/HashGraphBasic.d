@@ -106,6 +106,7 @@ enum ExchangeState : uint {
     COHERENT, /** Coherent state is when an the least epoch wavefront has been received or
                         if all the nodes isEva notes (This only occurs at genesis).
                      */
+
 }
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
@@ -114,7 +115,6 @@ alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 struct EventBody {
     enum int eva_altitude = -77;
     import tagion.basic.ConsensusExceptions;
-    alias enable_serialize = bool;
 
     protected alias check = Check!HashGraphConsensusException;
     import std.traits : OriginalType, Unqual, getSymbolsByUDA, hasMember;
@@ -197,8 +197,6 @@ struct EventPackage {
 
     import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
 
-    alias enable_serialize = bool;
-
     protected alias consensus_check = ConsensusCheck!EventConsensusException;
 
     mixin HiBONRecord!(
@@ -248,7 +246,6 @@ struct Wavefront {
     @label("$tides") @optional @filter(q{a.length is 0}) private Tides _tides;
     @label("$events") @optional @filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @label("$state") ExchangeState state;
-    alias enable_serialize = bool;
     enum tidesName = GetLabel!(_tides).name;
     enum epacksName = GetLabel!(epacks).name;
     enum stateName = GetLabel!(state).name;
@@ -330,7 +327,6 @@ struct Wavefront {
 struct EvaPayload {
     @label("$channel") Pubkey channel;
     @label("$nonce") Buffer nonce;
-    alias enable_serialize = bool;
     mixin HiBONRecord!(
             q{
             this(const Pubkey channel, const Buffer nonce) pure {
