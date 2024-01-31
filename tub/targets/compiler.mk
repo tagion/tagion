@@ -38,7 +38,7 @@ DF		= -fdoc-file=
 NO_OBJ	= -fsyntax-only
 DDOC_MACRO= -fdoc-inc=
 else
-DOPT	= -O3
+DOPT	= -O
 LINKERFLAG= -L
 OUTPUT	= -of
 HF		= -Hf
