@@ -134,7 +134,7 @@ enum LogFiltersAction {
         /** Main ctor
          *     @param msg - text message
          */
-        this(string msg) nothrow {
+        this(string msg) pure nothrow {
             this.message = msg;
         }
     });
