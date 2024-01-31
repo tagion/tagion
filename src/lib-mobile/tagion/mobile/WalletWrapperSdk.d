@@ -61,6 +61,7 @@ static Exception last_error;
 extern (C) {
     enum : uint {
         NOT_LOGGED_IN = 9,
+        DART_UPDATE_REQUIRED = 3,
         PAYMENT_ERROR = 2,
     }
 
@@ -380,6 +381,84 @@ extern (C) {
         }
         return 0;
     }
+
+    export uint request_trt_update(uint8_t* requestPtr) {
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
+
+        }
+        const request = __wallet_storage.wallet.readIndicesByPubkey();
+        const requestDocId = recyclerDoc.create(request.toDoc);
+        *requestPtr = cast(uint8_t) requestDocId;
+        return 1;
+    }
+
+    export uint update_trt_response(uint8_t* responsePtr, uint32_t responseLen, uint8_t* requestPtr) {
+        import tagion.hibon.HiBONException;
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
+        }
+        immutable response = cast(immutable)(responsePtr[0..responseLen]);
+        HiRPC hirpc = HiRPC(__wallet_storage.wallet.net);
+        try {
+            auto receiver = hirpc.receive(Document(response));
+            if (!receiver.isResponse) {
+                return 0;
+            }
+            const new_update = __wallet_storage.wallet.differenceInIndices(receiver);
+            if (new_update !is HiRPC.Sender.init) {
+                // return the new update save it 
+                const dart_request_id = recyclerDoc.create(new_update.toDoc);
+                *requestPtr = cast(uint8_t) dart_request_id;
+                __wallet_storage.write;
+                version (NET_HACK) {
+                    __wallet_storage.read;
+                }
+                return DART_UPDATE_REQUIRED;
+            } else {
+                //no other modifies for the wallet needed save it
+                __wallet_storage.write;
+                version (NET_HACK) {
+                    __wallet_storage.read;
+                }
+                return 1;
+            }
+        } catch (HiBONException e) {
+            return 0;
+        }
+        return 0;
+    }
+
+    export uint update_dart_response(uint8_t* responsePtr, uint32_t responseLen) {
+        import tagion.hibon.HiBONException;
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
+        }
+
+        immutable response = cast(immutable)(responsePtr[0 .. responseLen]);
+
+        HiRPC hirpc = HiRPC(__wallet_storage.wallet.net);
+        try {
+            auto receiver = hirpc.receive(Document(response));
+            if (!receiver.isResponse) {
+                return 0;
+            }
+            const result = __wallet_storage.wallet.updateFromRead(receiver);
+            if (result) {
+                // Save wallet state to file.
+                __wallet_storage.write;
+                version (NET_HACK) {
+                    __wallet_storage.read;
+                }
+                return 1;
+            }
+        }
+        catch (HiBONException e) {
+            return 0;
+        }
+        return 0;
+    }
+
 
     export uint request_update(uint8_t* requestPtr) {
 

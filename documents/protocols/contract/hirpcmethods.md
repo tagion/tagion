@@ -70,7 +70,7 @@ See [TIP1](/documents/TIPs/cache_proposal_23_jan)
 \$msg.method.name = "dartCheckRead"  
 \$msg.method.params.dart_indices = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
-**Return**
+**Returns**
 
 \$msg.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
@@ -85,7 +85,7 @@ See [TIP1](/documents/TIPs/cache_proposal_23_jan)
 **Example dartRead request**
 
 <details>
-<summary>**Example request**</summary>
+<summary><b>Example request</b></summary>
 
 ```json
 {
@@ -126,7 +126,7 @@ hirpc.result = [RecordFactory.Recorder](https://ddoc.tagion.org/tagion.dart.Reco
 If a specified archive was not found in the dart, it is simply not included in the output recorder.
 
 <details>
-<summary>**Example response**</summary>
+<summary><b>Example response</b></summary>
 
 ```json
 {
@@ -184,7 +184,52 @@ If a specified archive was not found in the dart, it is simply not included in t
 
 \$msg.method.name = "dartBullseye"  
 
+<details>
+<summary><b>Request</b></summary>
+
+The request takes no parameters, so this is the only thing you need
+
+```json
+{
+    "$@": "HiRPC",
+    "$msg": {
+        "method": "dartBullseye"
+    }
+}
+```
+
+</details>
+
 
 **Returns**
 
 \$msg.result = [Fingerprint](https://ddoc.tagion.org/tagion.crypto.Types.Fingerprint)  
+
+<details>
+<summary><b>Example Response</b></summary>
+
+```json
+{
+  "$@": "HiRPC",
+  "$Y": [
+    "*",
+    "@AumexnPXMa0mKVsYQeEKvY4Y640DXNCuBU6XdzFOicWC"
+  ],
+  "$msg": {
+    "result": {
+      "bullseye": [
+        "*",
+        "@lTeI-fg_6r6v0AUSA_tDL1mJlZNlikRpBTHfd6k4qt4="
+      ]
+    }
+  },
+  "$sign": [
+    "*",
+    "@0cEtP0XNfxbjTKo0xx_jB5FzfYac_rHa3z-fDqCN0XdCHb3fQFR42NisU6yXiqFTSSjqHCawfmWEe9-9Bo-Wpw=="
+  ]
+}
+```
+
+</details>
+
+---
