@@ -15,7 +15,6 @@ import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
 import std.algorithm;
 import tagion.basic.basic : isinit;
-//import tagion.basic.Debug;
 
 @safe:
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
@@ -187,7 +186,6 @@ void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key 
 
         }
         static if (preserve_array_size) {
-            __write("preserve max_index=%d length=%d", max_index, x_range.length); 
             if (max_index+1 != x_range.length && x_range.length > 0) {
                 build(buffer, x_range.length-1, ElementT.init);
             }

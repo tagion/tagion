@@ -97,8 +97,6 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
 
 }
 
-import tagion.basic.Debug;
-
 /**
  * Calculates the full_size of the if T support the size calculation 
  * Params:
@@ -254,8 +252,7 @@ mixin template Serialize() {
     import std.array;
     import LEB128 = tagion.utils.LEB128;
 
-    //   static assert(!hasMember!(This, "enable_serialize"), format("%s %s module %s", __FILE__, This.stringof, moduleName!This));
-    static if (!isSerializeDisabled!This) { // &&__traits(hasMember, This, "enable_serialize")) {
+    static if (!isSerializeDisabled!This) { 
         void _serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;
@@ -271,14 +268,7 @@ mixin template Serialize() {
                 static if (index < 0) {
                     static assert(key == TYPENAME, format("RecordType %s expected", TYPENAME));
                     enum record = getUDAs!(This, recordType)[0];
-                    static if ( only("Journal","Recorder").canFind(This.stringof)) {
-                        __write("HiBON %s", This.stringof);
-                        __write("Before buf=%s", buf.data);
-                    }
                     build(buf, TYPENAME, record.name);
-                    static if ( only("Journal","Recorder").canFind(This.stringof)) {
-                        __write("After  buf=%s", buf.data);
-                    }
                 }
                 else {
                     enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
@@ -325,17 +315,6 @@ mixin template Serialize() {
         out (ret) {
             version (TOHIBON_SERIALIZE_CHECK) {
                 const hibon_serialize = this.toHiBON.serialize;
-                debug if (hibon_serialize != ret) {
-                    __write("This %s", This.stringof);
-                    __write("hibon_serialize=%s", hibon_serialize);
-                    __write("ret            =%s", ret);
-
-                    static if (This.stringof == "Journal") {
-                        __write("keys =%s", keys);
-                        __write("hibon=%s", Document(hibon_serialize).toPretty);
-                        __write("ret  =%s", Document(ret).toPretty);
-                    }
-                }
                 assert(ret == hibon_serialize, moduleName!This ~ "." ~ This.stringof ~ " toHiBON.serialize failed");
             }
         }

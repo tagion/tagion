@@ -88,7 +88,6 @@ static size_t size(U)(const(U[]) array) pure {
             return _members[]
                 .map!(a => a.size)
                 .sum;
-            //            __write("HiBON.size = %d", result);
         }
         return ubyte.sizeof;
     }

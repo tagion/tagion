@@ -285,7 +285,6 @@ mixin template HiBONRecord(string CTOR = "") {
 
             static if (hibon_key) {
                 static if (preserve_flag) {
-                    __write("array L=%s", L.stringof);
                     size_t max_index;
                 }
                 foreach (index, e; range) {
@@ -302,9 +301,6 @@ mixin template HiBONRecord(string CTOR = "") {
                         set(index, e);
                     }
                     else static if (isHiBON!ElementT) {
-                        if (e is e.init) {
-                            __write("e is init %d", index);
-                        }
                         if (e !is e.init) {
                         set(index, e.toHiBON);
                         }
@@ -317,9 +313,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                 }
                 static if (preserve_flag) {
-                    __write("toHiBON preserve array size %s length=%d", max_index, range.length);
                     if (max_index + 1 != range.length && range.length > 0) {
-                        __write("Set length to %d", range.length);
                         result[range.length-1] = ForeachType!L.init;
                     }
                 }
@@ -416,7 +410,6 @@ mixin template HiBONRecord(string CTOR = "") {
             }
         }
         static if (HAS_TYPE) {
-            pragma(msg, "TYPENAME ", TYPENAME, " T ", This.stringof, " type_name ", type_name, " ", type_name.length);
             hibon[TYPENAME] = type_name;
         }
         @nogc @trusted inout(HiBON) result() inout pure nothrow {
@@ -506,9 +499,6 @@ mixin template HiBONRecord(string CTOR = "") {
 
                 alias MemberU = ForeachType!(R);
                 alias BaseU = TypedefBase!MemberU;
-                static if (isBasicType!MemberU) {
-                    __write("R=%s", R.stringof);
-                }
                 static if (isArray!R) {
                     alias UnqualU = Unqual!MemberU;
                     MemberU[] result;
@@ -624,7 +614,6 @@ mixin template HiBONRecord(string CTOR = "") {
 
             static if (do_verify) {
                 scope (exit) {
-                    __write("--- --- --- verify %s", This.stringof);
                     check(this.verify(),
                             format("Document verification faild for HiBONRecord %s",
                             This.stringof));
@@ -763,8 +752,6 @@ mixin template HiBONRecord(string CTOR = "") {
     }
 }
 
-import tagion.basic.Debug;
-
 version (unittest) {
     void check_serialize(T)(T s, const Document docS) {
         const s_serialize = s._serialize;
@@ -830,7 +817,6 @@ unittest {
 
             Simple s;
             const s_doc = s.toDoc;
-            __write("s_doc=%s", s_doc.toPretty);
             const s_result = assertNotThrown!(Exception)(Simple(s_doc),
                     "Should not throw any exceptions");
             assert(s == s_result);
@@ -983,11 +969,6 @@ unittest {
             const s_serialize=s._serialize;
             const s_hibon=s.toHiBON;
             const s_hibon_serialize = s_hibon.serialize;
-            __write("NoLabel           =%s", Document(s_serialize).toPretty);
-            __write("NoLabel hibon     =%s", Document(s_hibon_serialize).toPretty);
-
-            __write("NoLabel._serialize=%s", s._serialize);
-            __write("NoLabel.toHiBON   =%s", s_hibon.serialize);
             // writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assert(s_serialize == s_hibon_serialize);
             const doc = s.toDoc;
@@ -1175,14 +1156,6 @@ unittest {
             check_serialize(s, doc);
         }
 
-        { // Array where i32_a is not defined should fail 
-            Array empty_array;
-
-            __write("empty_array=%s", empty_array.toPretty);
-            const empty_doc = Document();
-
-            __write("empty_doc=%s", empty_doc.toPretty);
-        }
     }
 
     { // Array of HiBON
@@ -1204,22 +1177,14 @@ unittest {
                 TestArray test_array;
                 test_array.tests.length = 3;
                 const test_array_serialize=test_array._serialize;
-                __write("test_array._serialize=%s", test_array_serialize);
                 const test_array_hibon_serialize=test_array.toHiBON.serialize;
-                __write("test_array_hibon     =%s", test_array_hibon_serialize);
                 assert(test_array_serialize == test_array_hibon_serialize);
 
-                __write("test_array=%s", test_array.toPretty);
                 const doc = test_array.toDoc;
                 const test_array_result = TestArray(doc);
-                __write("test_array_result=%s", test_array_result._serialize);
-                __write("doc              =%s", doc.serialize);
-                __write("test_array_result.tests=%s", test_array_result.tests);
-                __write("test_array.tests       =%s", test_array.tests);
                 assert(test_array_result.tests != test_array.tests);
                 assert(test_array_result != test_array);
 
-                __write("doc=%s", doc.toPretty);
             }
         }
         static struct TestArrayPreserve {
@@ -1234,16 +1199,9 @@ unittest {
             const test_array_serialize=test_array._serialize;
             const test_array_hibon=test_array.toHiBON;
             const test_array_hibon_serialize= test_array_hibon.serialize;
-            __write("doc                       =%s", doc.serialize);
-            __write("test_array_serialize      =%s", test_array_serialize);
-            __write("test_array_hibon_serialize=%s", test_array_hibon_serialize);
             assert(test_array_serialize == test_array_hibon_serialize);
-            __write("test_array      =%s", test_array.toPretty);
-            __write("test_array_hibon=%s", test_array_hibon.toPretty); 
             const test_array_result = TestArrayPreserve(doc);
             //const test_array_hibon=test_array.toHiBON;
-            __write("test_array_result.tests=%s", test_array_result.tests);
-            __write("test_array.tests       =%s", test_array.tests);
             assert(test_array_result.tests == test_array.tests);
             assert(test_array_result == test_array);
 
@@ -1757,9 +1715,7 @@ unittest { // Test UDA preserve
     S s;
     s.array.length = 7;
     const s_serialize=s._serialize;
-    __write("s._serialize    =%s", s_serialize);
     const hibon_serialize = s.toHiBON.serialize;
-    __write("hibon_serialize =%s", hibon_serialize);
     assert(s_serialize == hibon_serialize);
 
 }
@@ -1773,12 +1729,9 @@ unittest {
     }
     S s;
     s.key="some text";
-    __write("keys=%s", S.keys);
     const s_serialize=s._serialize;
     
-    __write("s._serialize    =%s", s_serialize);
     const hibon_serialize = s.toHiBON.serialize;
-    __write("hibon_serialize =%s", hibon_serialize);
     assert(s_serialize == hibon_serialize);
 
 }
