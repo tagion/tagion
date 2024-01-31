@@ -69,6 +69,8 @@
             echo DC=dmd >> local.mk
             echo USE_SYSTEM_LIBS=1 >> local.mk
             echo INSTALL=$out/bin >> local.mk
+            echo XDG_DATA_HOME=$out/.local/share >> local.mk
+            echo XDG_CONFIG_HOME=$out/.config >> local.mk
             echo NNG_ENABLE_TLS=1 >> local.mk
           '';
 
@@ -124,6 +126,8 @@
           configurePhase = ''
             echo DC=dmd >> local.mk
             echo INSTALL=$out/bin >> local.mk
+            echo XDG_DATA_HOME=$out/.local/share >> local.mk
+            echo XDG_CONFIG_HOME=$out/.config >> local.mk
             echo NNG_ENABLE_TLS=1 >> local.mk
           '';
 
@@ -132,7 +136,7 @@
           '';
 
           installPhase = ''
-            mkdir -p $out/bin; make install-bin
+            mkdir -p $out/bin; make install
           '';
         };
       packages.x86_64-linux.dockerImage =
