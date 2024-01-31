@@ -496,7 +496,7 @@ static assert(uint.sizeof == 4);
         return Type.sizeof + LEB128.calc_size(key.length) + key.length;
     }
 
-    @nogc static size_t sizeKey(size_t key) pure nothrow {
+    @nogc static size_t sizeKey(ulong key) pure nothrow {
         return Type.sizeof + ubyte.sizeof + LEB128.calc_size(key);
     }
 
