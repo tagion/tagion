@@ -71,6 +71,7 @@ struct HiRPC {
             full_name = name;
         }
 
+    alias enable_serialize = bool;
 
         mixin HiBONRecord;
     }
@@ -78,6 +79,7 @@ struct HiRPC {
     struct Response {
         @optional @(filter.Initialized) uint id; /// RPC response id, if given by the method
         Document result; /// Return data from the method request
+    alias enable_serialize = bool;
         mixin HiBONRecord;
     }
 
@@ -95,6 +97,7 @@ struct HiRPC {
             return doc.hasMember(codeName) || doc.hasMember(messageName) || doc.hasMember(dataName);
         }
 
+    alias enable_serialize = bool;
         mixin HiBONRecord;
     }
 
@@ -414,6 +417,7 @@ struct HiRPC {
             return response.result;
         }
 
+    alias enable_serialize = bool;
         mixin HiBONRecord!("{}");
     }
 
@@ -553,6 +557,7 @@ struct HiRPC {
 @safe
 @recordType("OK")
 struct ResultOk {
+    //alias enable_serialize = bool;
     mixin HiBONRecord!();
 }
 

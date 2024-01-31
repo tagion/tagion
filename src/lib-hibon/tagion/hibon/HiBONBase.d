@@ -790,7 +790,7 @@ do {
     return a < b;
 }
 
-@nogc bool less_than(const uint a, const uint b) pure nothrow {
+@nogc bool less_than(const ulong a, const ulong b) pure nothrow {
     return a < b;
 }
 /++

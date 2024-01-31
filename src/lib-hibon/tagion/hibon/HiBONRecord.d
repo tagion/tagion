@@ -124,10 +124,10 @@ struct preserve; /// This preserve the size of array
 struct recordType {
     string name; /// Name of the HiBON record-type 
     string code; /// This is mixed after the Document constructor
-    Flag!"disable_serialize" flag; /// use toHiBON to serialize
 }
 
-enum isSerializeDisabled(T) = hasUDA!(T, recordType) && (getUDAs!(T, recordType)[0].flag);
+struct disableSerialize;
+enum isSerializeDisabled(T) = hasUDA!(T, disableSerialize);
 /++
  Gets the label for HiBON member
  Params:

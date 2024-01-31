@@ -38,7 +38,7 @@ struct BehaviourError {
  * Stores the result from a BDD Action, Senario or Feature
  */
 @safe
-@recordType("BDDResult", null, Yes.disable_serialize)
+@recordType("BDDResult") @disableSerialize
 struct Result {
     Document outcome; /// BDD test return document
     alias enable_serialize = bool;
