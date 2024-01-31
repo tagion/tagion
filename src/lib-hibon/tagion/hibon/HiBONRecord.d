@@ -211,7 +211,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import std.array : array, assocArray, join;
     import std.format;
     import std.functional : unaryFun;
-    import std.meta : AliasSeq, staticMap;
+    import std.meta : AliasSeq;
     import std.range : enumerate, iota, lockstep;
     import std.range.primitives : isInputRange;
     import std.typecons;
@@ -771,10 +771,10 @@ unittest {
     import std.algorithm;
     import std.exception : assertNotThrown, assertThrown;
     import std.format;
-    import std.meta : AliasSeq, staticMap;
+    import std.meta : AliasSeq;
     import std.range;
     import std.stdio;
-    import std.traits : OriginalType, Unqual, staticMap;
+    import std.traits : OriginalType, Unqual;
     import tagion.hibon.HiBONException : HiBONException, HiBONRecordException;
 
     @recordType("SIMPLE") static struct Simple {
@@ -1252,14 +1252,6 @@ unittest {
 
             @trusted this(const Document doc) pure {
                 array = doc[].map!(e => e.get!T).to_array;
-                /*
-                auto result = new UnqualT[doc.length];
-                
-                    foreach (ref a, e; lockstep(result, doc[])) {
-                    a = e.get!T;
-                }
-                array = result;
-            */
             }
         }
 

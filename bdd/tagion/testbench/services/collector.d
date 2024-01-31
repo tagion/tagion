@@ -33,7 +33,6 @@ import tagion.testbench.actor.util;
 import tagion.testbench.tools.Environment;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency : receive, receiveOnly, receiveTimeout;
-import tagion.basic.Debug;
 import tagion.hibon.HiBONJSON;
 
 enum feature = Feature(
@@ -129,7 +128,6 @@ class ItWork {
         input_nets = createNets(10, "input");
         input_bills = input_nets.createBills(100_000);
         input_bills.insertBills(insert_recorder);
-        __write("insert_recorder=%s", insert_recorder.toPretty);
         dart_handle.send(dartModifyRR(), RecordFactory.uniqueRecorder(insert_recorder), immutable long(0));
         receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 
@@ -145,11 +143,9 @@ class ItWork {
 
     @When("i send a contract")
     Document contract() {
-        __write("test %s", __FUNCTION__);
         const script = PayScript(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
         const s_contract = sign(input_nets, input_bills.map!(a => a.toDoc).array, null, script);
 
-        __write("%s s_contract =%s", __FUNCTION__, s_contract.toPretty);
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 
@@ -169,19 +165,15 @@ class ItWork {
 
     @When("i send an contract with no inputs")
     Document noInputs() {
-        __write("test %s", __FUNCTION__);
         const outputs = PayScript.init.toDoc; //(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
         const contract = Contract(DARTIndex[].init, DARTIndex[].init, outputs);
         const s_contract = SignedContract(Signature[].init, contract);
 
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
-        __write("send %s %s", __FUNCTION__, sender.toPretty);    
-    //immutable sender = hirpc.sendDaMonies(contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        __write("%s result=%s", __FUNCTION__, result[0].symbol_name); 
         check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s"
                 .format(result[0].symbol_name));
 
@@ -190,7 +182,6 @@ class ItWork {
 
     @When("i send an contract with invalid signatures inputs")
     Document invalidSignatures() {
-        __write("test %s", __FUNCTION__);
         import std.random;
 
         const script = PayScript(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
@@ -209,7 +200,6 @@ class ItWork {
 
     @When("i send a contract with input which are not in the dart")
     Document inTheDart() {
-        __write("test %s", __FUNCTION__);
         const script = PayScript(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
 
         const invalid_inputs = createNets(10, "not_int_dart")
@@ -231,7 +221,6 @@ class ItWork {
 
     @Then("i stop the services")
     Document collectedSignedContract() {
-        __write("test %s", __FUNCTION__);
         dart_handle.send(Sig.STOP);
         collector_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);

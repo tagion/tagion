@@ -93,12 +93,6 @@ struct CollectorService {
     }
 
     void signed_contract(inputContract, immutable(SignedContract)* s_contract) {
-
-        version (none)
-            if (s_contract.contract.inputs.empty) {
-                return;
-            }
-
         auto req = dartReadRR();
         is_consensus_contract[req.id] = false;
         read_indices(req, s_contract);
