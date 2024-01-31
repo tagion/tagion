@@ -100,7 +100,8 @@ int _main(string[] args) {
     // put a random archive in that is not a bill.
 
     auto random_data = new HiBON;
-    random_data["wowo"] = "test";
+    import tagion.script.standardnames;
+    random_data[StdNames.owner] = wallets[1].net.pubkey;
 
     const random_doc = Document(random_data);
     recorder.insert(random_doc, Archive.Type.ADD);
