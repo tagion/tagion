@@ -58,7 +58,7 @@ jobs:
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
           make trunk
-          cp -r build/trunk/* ${{ env.ARTIFACT_DIR }}
+          cp -r build/trunk/. ${{ env.ARTIFACT_DIR }}
 
           make clean
 
@@ -98,7 +98,7 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/* build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
@@ -224,7 +224,7 @@ jobs:
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
           stacks=$(find -name "*.callstack")
-          cp -r --parents logs/ $stacks ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/* $stacks ${{ env.ARTIFACT_DIR }}
           find . -mindepth 1 -delete
 
   docker_build:
