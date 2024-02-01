@@ -1,14 +1,4 @@
-
-ci-files:
-	cp $(REPOROOT)/collider_schedule.json $(DBIN) 
-	cp $(DSRC)/bin-wave/neuewelle.service $(DBIN)
-	cp $(DSRC)/bin-tagionshell/tagionshell.service $(DBIN)
-	cp $(DTUB)/scripts/create_wallets.sh $(DBIN)
-	cp $(DTUB)/scripts/run_ops.sh $(DBIN)
-	cp $(DTUB)/scripts/run_network.sh $(DBIN)
-	cp $(DTUB)/scripts/failed.sh $(DBIN)
-
-ci: ci-files
+ci:
 	$(MAKE) -S clean-trunk -f$(DTUB)/main.mk
 	$(MAKE) -S bins -f$(DTUB)/main.mk
 	$(MAKE) -S bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
