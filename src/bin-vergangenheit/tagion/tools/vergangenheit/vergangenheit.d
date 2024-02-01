@@ -17,9 +17,11 @@ import tagion.wallet.SecureWallet;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions;
 import tagion.utils.Term;
+import tagion.tools.vergangenheit.Rebuild;
 
 mixin Main!(_main);
 
+RebuildOptions option;
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -138,6 +140,8 @@ int _main(string[] args) {
 
         auto recorder_list = args.filter!(file => file.hasExtension(FileExtension.hibon)).array;
         writefln("recorder_list=%s", recorder_list);
+        auto rebuild = Rebuild(option, db_src, db_dst);
+        rebuild.prepareReplicator(net, recorder_list);
     }
     catch (Exception e) {
         error(e);
