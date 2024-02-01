@@ -838,7 +838,7 @@ static void selftest_handler(WebData* req, WebData* rep, void* ctx) {
 
 void versioninfo_handler(WebData* req, WebData* rep, void* ctx) {
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-    rep.type = "text/html";
+    rep.type = "text/plain";
     rep.text = imported!"tagion.tools.revision".revision_text;
 }
 
