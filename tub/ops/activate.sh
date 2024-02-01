@@ -23,20 +23,21 @@ get_workflow_artifact() {
 }
 
 ## Main()
+gh auth status
 set -xe
 systemctl stop --user neuewelle tagionshell || echo ok
 DIR_EPOCH=$(stat -c%W ~/.local/share/tagion)
-cd ~/.local/share/
-OLD_TAR_NAME=tagion_$(date -d "@$DIR_EPOCH" +%F_%H-%M).tar.gz && \
-  tar czf "$OLD_TAR_NAME" tagion/ && \
-  rm -r tagion || \
-  echo "No old data to backup"
+(cd ~/.local/share/
+    OLD_TAR_NAME=tagion_$(date -d "@$DIR_EPOCH" +%F_%H-%M).tar.gz && \
+      tar czf "$OLD_TAR_NAME" tagion/ && \
+      rm -r tagion || \
+      echo "No old data to backup"
+)
 
-
-gh auth status
 workflowid=$(get_newest_success_run_id)
 artifact_path=$(get_workflow_artifact "$workflowid")
 cd "$artifact_path"
+make install-ops || echo "Busy"
 make install
 rm -r ~/.local/share/tagion || echo "Nothing to delete"
 OPS_FLAGS="--duration=20 --unit=hours" ./scripts/run_ops.sh -i=true
