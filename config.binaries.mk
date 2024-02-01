@@ -110,6 +110,11 @@ ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 target-kette: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,kette,$(LIB_DFILES) ${call BIN_DEPS,kette},tagion}
 
+#
+# Convering a old data-base to 
+#
+target-vergangenheit: $LIBS += $(LIBSECP256K1)
+${call DO_BIN,vergangenheit,$(LIB_DFILES) ${call BIN_DEPS,vergangenheit},tagion}
 
 #
 # Profile view
@@ -158,6 +163,7 @@ TAGION_TOOLS+=hirep
 TAGION_TOOLS+=callstack
 TAGION_TOOLS+=ifiler
 TAGION_TOOLS+=devutils
+TAGION_TOOLS+=vergangenheit
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 

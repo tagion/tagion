@@ -119,7 +119,7 @@ class DART : DARTFile {
             out Exception exception,
             Flag!"read_only" read_only = No.read_only,
             const ushort from_sector = 0,
-            const ushort to_sector = 0) @safe {
+            const ushort to_sector = 0) @safe nothrow {
         try {
             this(net, filename, read_only, from_sector, to_sector);
         }

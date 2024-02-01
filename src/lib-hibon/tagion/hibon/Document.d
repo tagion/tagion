@@ -46,7 +46,6 @@ static assert(uint.sizeof == 4);
      Returns:
      The buffer of the HiBON document
      +/
-    //    @nogc
     immutable(ubyte[]) data() const pure nothrow {
         if (_data.length) {
             return _data[0 .. full_size];
