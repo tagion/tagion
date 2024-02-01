@@ -26,6 +26,8 @@ get_workflow_artifact() {
 gh auth status
 set -xe
 systemctl stop --user neuewelle tagionshell || echo ok
+
+# Archive old net data
 DIR_EPOCH=$(stat -c%W ~/.local/share/tagion)
 (cd ~/.local/share/
     OLD_TAR_NAME=tagion_$(date -d "@$DIR_EPOCH" +%F_%H-%M).tar.gz && \
@@ -36,8 +38,11 @@ DIR_EPOCH=$(stat -c%W ~/.local/share/tagion)
 
 workflowid=$(get_newest_success_run_id)
 artifact_path=$(get_workflow_artifact "$workflowid")
-cd "$artifact_path"
-make install-ops || echo "Busy"
-make install
-rm -r ~/.local/share/tagion || echo "Nothing to delete"
-OPS_FLAGS="--duration=20 --unit=hours" ./scripts/run_ops.sh -i=true
+
+
+# Run the operational test script
+(cd "$artifact_path"
+    make install-ops || echo "Busy"
+
+    OPS_FLAGS="--duration=20 --unit=hours" ./scripts/run_ops.sh -i=true
+)
