@@ -85,7 +85,7 @@
           '';
         };
 
-      devShells.${system}.default =
+      devShells.x86_64-linux.default =
         # Notice the reference to nixpkgs here.
         pkgs.mkShell {
           buildInputs = with pkgs; [
