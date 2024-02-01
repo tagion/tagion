@@ -504,7 +504,7 @@ static assert(uint.sizeof == 4);
         // Key is an index
         assert(sizeKey("0") is 3);
         assert(sizeKey("1000") is 4);
-        // Key is a labelw
+        // Key is a label
         assert(sizeKey("01000") is 7);
     }
 
