@@ -48,8 +48,8 @@ TAGIONSHELL_SERVICE:=$(XDG_CONFIG_HOME)/systemd/user/tagionshell.service
 INSTALLED_FILES+=$(TAGIONSHELL_SERVICE)
 
 install-services: $(NEUEWELLE_SERVICE) $(TAGIONSHELL_SERVICE)
-$(XDG_CONFIG_HOME)/systemd/user/%.service: etc/%.service
-	$(MKDIR) $(XDG_CONFIG_HOME)/systemd/user
+$(XDG_CONFIG_HOME)/systemd/user/%: etc/%
+	$(MKDIR) $(XDG_CONFIG_HOME)/systemd/user/
 	$(CP) $< $@
 
 
@@ -62,6 +62,12 @@ $(INSTALLEDCOLLIDER): collider
 	$(CP) $(COLLIDER) $(INSTALLEDCOLLIDER)
 	$(INSTALLEDCOLLIDER) -f
 
+# Auxillary scripts for operations testing
+OPS_SERVICE:=$(XDG_CONFIG_HOME)/systemd/user/tagion-ops-mngr.service
+INSTALLED_FILES+=$(OPS_SERVICE)
+OPS_TIMER:=$(XDG_CONFIG_HOME)/systemd/user/tagion-ops-mngr.timer
+INSTALLED_FILES+=$(OPS_TIMER)
+install-ops: install $(OPS_SERVICE) $(OPS_TIMER)
 
 env-install:
 	$(PRECMD)
