@@ -3,3 +3,4 @@ Description=Service for managing tagion operational tests
 
 [Service]
 ExecStart=%h/tagion/ops/activate.sh
+WorkingDirectory=%h/tagion/ops/
