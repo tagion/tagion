@@ -33,6 +33,7 @@ import tagion.testbench.actor.util;
 import tagion.testbench.tools.Environment;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency : receive, receiveOnly, receiveTimeout;
+import tagion.hibon.HiBONJSON;
 
 enum feature = Feature(
             "collector services",
@@ -60,6 +61,10 @@ TagionBill[] createBills(const(SecureNet)[] bill_nets, uint amount) @safe {
 const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder rec) @safe {
     rec.insert(bills, Archive.Type.ADD);
     return rec[].map!((a) => a.dart_index).array;
+}
+
+TagionBill createBill(const TagionCurrency tgn) pure nothrow @safe{
+    return TagionBill(tgn, sdt_t.init, Pubkey.init, Buffer.init);
 }
 
 @safe @Scenario("it work", [])
@@ -138,7 +143,7 @@ class ItWork {
 
     @When("i send a contract")
     Document contract() {
-        const script = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        const script = PayScript(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
         const s_contract = sign(input_nets, input_bills.map!(a => a.toDoc).array, null, script);
 
         import std.stdio;
@@ -160,13 +165,12 @@ class ItWork {
 
     @When("i send an contract with no inputs")
     Document noInputs() {
-        const outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        const outputs = PayScript.init.toDoc; //(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
         const contract = Contract(DARTIndex[].init, DARTIndex[].init, outputs);
         const s_contract = SignedContract(Signature[].init, contract);
 
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
-        //immutable sender = hirpc.sendDaMonies(contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
@@ -180,7 +184,7 @@ class ItWork {
     Document invalidSignatures() {
         import std.random;
 
-        const script = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        const script = PayScript(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
         const s_contract = sign(input_nets.randomShuffle, input_bills.map!(a => a.toDoc).array, null, script);
 
         const hirpc = HiRPC(node_net);
@@ -196,7 +200,7 @@ class ItWork {
 
     @When("i send a contract with input which are not in the dart")
     Document inTheDart() {
-        const script = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        const script = PayScript(iota(1, 11).map!(i => createBill(i.TGN)).array).toDoc;
 
         const invalid_inputs = createNets(10, "not_int_dart")
             .createBills(100_000)

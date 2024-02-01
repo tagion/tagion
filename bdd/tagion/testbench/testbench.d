@@ -22,7 +22,6 @@ int main(string[] args) {
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
     import malformed_contract = tagion.testbench.malformed_contract;
-    import replicator_service = tagion.testbench.replicator_service;
     import send_contract = tagion.testbench.send_contract;
     import spam_double_spend = tagion.testbench.spam_double_spend;
     import transcript_service = tagion.testbench.transcript_service;
@@ -51,7 +50,6 @@ int main(string[] args) {
             tvm_betterc,
             epoch_creator,
             transcript_service,
-            replicator_service,
             send_contract,
             double_spend,
             spam_double_spend,

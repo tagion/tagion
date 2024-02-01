@@ -24,7 +24,7 @@ import std.format;
 
 
 
-import tagion.recorderchain.RecorderChainBlock : RecorderBlock;
+import tagion.replicator.RecorderBlock;
 
 
 mixin Main!(_main, "tagionkette");

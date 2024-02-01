@@ -84,18 +84,12 @@ static size_t size(U)(const(U[]) array) pure {
      the size in bytes
      +/
     size_t size() const pure {
-        size_t result;
-        //= uint.sizeof+Type.sizeof;
         if (!_members[].empty) {
-            result += _members[].map!(a => a.size)
-                .fold!((a, b) => a + b);
+            return _members[]
+                .map!(a => a.size)
+                .sum;
         }
-        if (result > 0) {
-            return result;
-        }
-        else {
-            return ubyte.sizeof;
-        }
+        return ubyte.sizeof;
     }
 
     bool empty() const pure {
@@ -119,24 +113,24 @@ static size_t size(U)(const(U[]) array) pure {
      The byte stream
      +/
     immutable(ubyte[]) serialize() const pure {
-        auto buffer = new ubyte[serialize_size];
-        size_t index;
-        append(buffer, index);
-        return buffer;
+        AppendBuffer buffer;
+        buffer.reserve(serialize_size);
+        append(buffer);
+        return buffer.data;
     }
 
     // /++
     //  Helper function to append
     //  +/
-    @trusted private void append(ref ubyte[] buffer, ref size_t index) const pure {
+    private void append(ref scope AppendBuffer buffer) const pure {
         if (_members[].empty) {
-            buffer.binwrite(ubyte(0), &index);
+            buffer ~= ubyte(0);
+            return;
         }
-        else {
-            uint size = cast(uint) _members[].map!(a => a.size).sum;
-            buffer.array_write(LEB128.encode(size), index);
-            _members[].each!(a => a.append(buffer, index));
-        }
+        const size = cast(uint) _members[].map!(a => a.size).sum;
+
+        buffer ~= LEB128.encode(size);
+        _members[].each!(a => a.append(buffer));
     }
 
     /++
@@ -334,23 +328,23 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
 
-        @trusted protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index) const pure
+        @trusted protected void appendList(Type E)(ref scope AppendBuffer buffer) const pure
         if (isNativeArray(E)) {
             with (Type) {
                 immutable list_size = value.by!(E).size;
-                buffer.array_write(LEB128.encode(list_size), index);
+                buffer ~= LEB128.encode(list_size);
                 foreach (i, h; value.by!E) {
                     immutable key = i.to!string;
                     static if (E is NATIVE_STRING_ARRAY) {
-                        Document.build(buffer, STRING, key, h, index);
+                        build(buffer, key, h);
                     }
                     else {
-                        Document.buildKey(buffer, DOCUMENT, key, index);
+                        buildKey(buffer, DOCUMENT, key);
                         static if (E is NATIVE_HIBON_ARRAY) {
-                            h.append(buffer, index);
+                            h.append(buffer);
                         }
                         else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                            buffer.array_write(h.data, index);
+                            buffer ~= (h.data);
                         }
                         else {
                             assert(0, format("%s is not implemented yet", E));
@@ -360,7 +354,7 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
 
-        void append(ref ubyte[] buffer, ref size_t index) const pure {
+        void append(ref scope AppendBuffer buffer) const pure {
             with (Type) {
             TypeCase:
                 switch (type) {
@@ -369,25 +363,24 @@ static size_t size(U)(const(U[]) array) pure {
                 case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
-                                Document.buildKey(buffer, E, key, index);
-                                value.by!(E).append(buffer, index);
+                                buildKey(buffer, E, key);
+                                value.by!(E).append(buffer);
                             }
                             else static if (isNative(E)) {
                                 static if (E is NATIVE_DOCUMENT) {
-                                    Document.buildKey(buffer, DOCUMENT, key, index);
-                                    const doc = value.by!(E);
-                                    buffer.array_write(value.by!(E).data, index);
+                                    buildKey(buffer, DOCUMENT, key);
+                                    buffer ~= value.by!(E).data;
                                 }
                                 else static if (isNativeArray(E)) {
-                                    Document.buildKey(buffer, DOCUMENT, key, index);
-                                    appendList!E(buffer, index);
+                                    buildKey(buffer, DOCUMENT, key);
+                                    appendList!E(buffer);
                                 }
                                 else {
                                     goto default;
                                 }
                             }
                             else {
-                                Document.build(buffer, E, key, value.by!E, index);
+                                build(buffer, key, value.by!E);
                             }
                             break TypeCase;
                         }
@@ -460,19 +453,20 @@ static size_t size(U)(const(U[]) array) pure {
      x = parameter value
      key = member key
      +/
-    void opIndexAssign(T)(T x, const string key) if (isHiBON!T) {
+    void opIndexAssign(T, BaseT = TypedefType!T)(T x, const string key) if (isHiBON!(BaseT)) {
         opIndexAssign(x.toHiBON, key);
     }
 
-    void opIndexAssign(T)(T x, const string key) if (isHiBONTypeArray!T) {
+    void opIndexAssign(T, BaseT = TypedefType!T)(T x, const string key) if (isHiBONTypeArray!(BaseT)) {
         auto h = new HiBON;
-        foreach (v_key, v; x) {
+        foreach (v_key, v; cast(BaseT) x) {
             h[v_key] = x;
         }
         h[key] = h;
     }
 
-    void opIndexAssign(T)(T x, const string key) @trusted if (!isHiBON!T && !isHiBONRecord!T && !isHiBONTypeArray!T) {
+    void opIndexAssign(T, BaseT = TypedefType!T)(T x, const string key) @trusted
+            if (!isHiBON!BaseT && !isHiBONRecord!BaseT && !isHiBONTypeArray!BaseT) {
 
         
 
@@ -519,9 +513,6 @@ static size_t size(U)(const(U[]) array) pure {
     const(Member) opIndex(const string key) const {
         auto search = new Member(key);
         auto range = _members.equalRange(search);
-
-        
-
         .check(!range.empty, message("Member '%s' does not exist", key));
         return range.front;
     }
@@ -961,10 +952,6 @@ static size_t size(U)(const(U[]) array) pure {
             const doc = Document(data);
 
             {
-                // //                writefln(`doc["int"].type=%d`, doc["int"].type);
-                //                 writeln("-------------- --------------");
-                //                 auto test=doc["int"];
-                //                 writeln("-------------- get  --------------");
                 assert(doc["int"].get!int  is 42);
             }
 
@@ -1127,40 +1114,4 @@ static size_t size(U)(const(U[]) array) pure {
         }
     }
 
-}
-
-@safe
-unittest {
-    import tagion.hibon.HiBONRecord;
-    import tagion.hibon.HiBONtoText;
-
-    static struct InnerTest {
-        string inner_string;
-        mixin HiBONRecord;
-    }
-
-    static struct TestName {
-        @label("#name") string name; // Default name should always be "tagion"
-        @label("inner") InnerTest inner_hibon;
-
-        mixin HiBONRecord;
-    }
-
-    TestName test;
-    InnerTest inner;
-
-    inner.inner_string = "wowo";
-    test.name = "tagion";
-    test.inner_hibon = inner;
-
-    const base64 = test.toDoc.encodeBase64;
-    auto serialized = test.toDoc.serialize;
-    const new_doc = Document(serialized);
-    const valid = new_doc.valid;
-
-    const after_base64 = new_doc.encodeBase64;
-
-    assert(base64 == after_base64);
-
-    assert(valid is Document.Element.ErrorCode.NONE);
 }

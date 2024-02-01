@@ -32,7 +32,7 @@ alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
  *   The DART fingerprint
  */
 
-immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
+immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) pure {
     if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
         if (doc.keys.front == STUB) {
             return doc[STUB].get!DARTIndex;
@@ -45,7 +45,7 @@ immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
 }
 
 /// Ditto
-immutable(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONRecord!T) {
+immutable(DARTIndex) dartIndex(T)(const(HashNet) net, T value) pure if (isHiBONRecord!T) {
     return net.dartIndex(value.toDoc);
 }
 

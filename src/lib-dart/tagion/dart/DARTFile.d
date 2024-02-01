@@ -17,7 +17,6 @@ private {
     import std.traits;
     import std.typecons : Flag, No, Yes;
     import std.typecons;
-    import tagion.basic.Debug : __write;
     import tagion.basic.Types : Buffer, isBufferType, isTypedef, mut;
     import tagion.basic.basic : EnumText, assumeTrusted, isinit;
     import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
@@ -46,9 +45,6 @@ private {
  +     fingerprint[rim]
  +/
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
-    if (rim >= rim_keys.length) {
-        debug __write("%(%02X%) rim=%d", rim_keys, rim);
-    }
     return rim_keys[rim];
 }
 
@@ -251,7 +247,7 @@ class DARTFile {
 
             
 
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+                .check(isRecord(doc), format("Document is not a %s", This.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new Index[KEY_SPAN];
                 foreach (e; doc[indicesName].get!Document[]) {
@@ -889,7 +885,9 @@ class DARTFile {
             if (range.rim < RIMS_IN_SECTOR) {
                 if (branch_index !is Index.init) {
                     branches = blockfile.load!Branches(branch_index);
+
                     
+
                     .check(branches.hasIndices,
                             "DART failure within the sector rims the DART should contain a branch");
                 }

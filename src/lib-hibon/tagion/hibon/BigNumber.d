@@ -15,7 +15,7 @@ import std.base64;
 
 //import std.stdio;
 
-import tagion.hibon.HiBONException : check;
+import tagion.hibon.HiBONException;
 
 /++
  BigNumber used in the HiBON format
@@ -286,7 +286,7 @@ import tagion.hibon.HiBONException : check;
             
 
                 .check(sign && (_data.length is 1) && (_data[0] is 0),
-                        "The number minus zero is not allowed");
+        "The number minus zero is not allowed");
     }
 
     struct TwoComplementRange {
@@ -479,7 +479,7 @@ import tagion.hibon.HiBONException : check;
         assert(0);
     }
 
-    @nogc size_t calc_size() const pure {
+    @nogc size_t calc_size() const pure nothrow {
         immutable DATA_SIZE = (BigDigit.sizeof * data.length * 8) / 7 + 1;
         enum DIGITS_BIT_SIZE = BigDigit.sizeof * 8;
         size_t index;

@@ -4,6 +4,8 @@ module tagion.services.collector;
 
 import std.exception;
 import std.typecons;
+import std.algorithm;
+import std.range;
 import tagion.actor.actor;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
@@ -21,6 +23,7 @@ import tagion.script.execute;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.hibon.HiBONJSON;
 
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
@@ -106,6 +109,10 @@ struct CollectorService {
         catch (HiBONRecordException e) {
             log.event(reject, "hirpc_invalid_signed_contract", doc);
         }
+        catch (Exception e) {
+            log.event(reject, "hirpc_invalid_signed_contract", doc);
+
+        }
     }
 
     private void clean(uint id) {
@@ -141,6 +148,7 @@ struct CollectorService {
             }
 
             immutable inputs = recorder[].map!(a => a.filed).array;
+            import tagion.hibon.HiBONJSON;
 
             if (!verify(net, s_contract, inputs)) {
                 log.event(reject, "contract_no_verify", recorder);
@@ -151,7 +159,7 @@ struct CollectorService {
             immutable collection =
                 ((res.id in reads) !is null)
                 ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                        CollectedSignedContract)(s_contract, inputs);
+                    CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {

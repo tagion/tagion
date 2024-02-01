@@ -1,5 +1,4 @@
 module tagion.hibon.HiBONJSON;
-
 @safe:
 import std.conv : to;
 import std.format;
@@ -108,9 +107,10 @@ mixin template JSONString() {
     import std.conv : to;
     import std.format;
 
+    alias ThisT = typeof(this);
+
     void toString(scope void delegate(scope const(char)[]) @safe sink,
     const FormatSpec!char fmt) const {
-        alias ThisT = typeof(this);
         import tagion.basic.Types;
         import tagion.hibon.Document;
         import tagion.hibon.HiBON;
@@ -127,7 +127,7 @@ mixin template JSONString() {
             const doc = Document(this);
         }
         else {
-            static assert(0, format("type %s is not supported for JSONString", ThisT.stringof));
+            static assert(0, format("type %s in %s is not supported for JSONString", ThisT.stringof, moduleName!ThisT));
         }
         switch (fmt.spec) {
         case 'j':

@@ -6,6 +6,7 @@ module tagion.behaviour.BehaviourResult;
 public import tagion.communication.HiRPC : ResultOk;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
+import std.typecons : Yes;
 
 static Document result_ok = result(ResultOk()).toDoc; /// This
 
@@ -36,7 +37,7 @@ struct BehaviourError {
  * Stores the result from a BDD Action, Senario or Feature
  */
 @safe
-@recordType("BDDResult")
+@recordType("BDDResult") @disableSerialize
 struct Result {
     Document outcome; /// BDD test return document
     mixin HiBONRecord!();

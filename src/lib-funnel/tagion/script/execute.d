@@ -28,7 +28,6 @@ struct CollectedSignedContract {
     immutable(SignedContract)* sign_contract;
     const(Document)[] inputs;
     const(Document)[] reads;
-    //mixin HiBONRecord;
 }
 
 @safe
@@ -54,7 +53,6 @@ alias ContractProductResult = Result!(immutable(ContractProduct)*, Exception);
 class StdCheckContract : CheckContract {
     TagionCurrency storage_fees; /// Fees per bytes
     TagionCurrency gas_price; /// Fees per TVM instruction
-
     TagionCurrency calcFees(in GasUse use) pure {
         return use.gas * gas_price + use.storage * storage_fees;
     }
@@ -93,7 +91,7 @@ struct ContractExecution {
         }
     }
 
-    static TagionCurrency _billFees(const size_t number_of_input_bytes, const size_t number_of_output_bytes) {
+    static TagionCurrency billFees(const size_t number_of_input_bytes, const size_t number_of_output_bytes) {
         const output_fee = check_contract.calcFees(GasUse(pay_gas, number_of_output_bytes));
         const input_fee = check_contract.calcFees(GasUse(0, number_of_input_bytes));
         return output_fee - input_fee;
@@ -102,7 +100,7 @@ struct ContractExecution {
     static TagionCurrency billFees(R1, R2)(R1 inputs, R2 outputs, const size_t extra)
             if (isInputRange!R1 && isInputRange!R2 &&
                 is(ElementType!R1 : const(Document)) && is(ElementType!R2 : const(Document))) {
-        return _billFees(
+        return billFees(
                 inputs.map!(doc => doc.full_size).sum,
                 outputs.map!(doc => doc.full_size).sum + extra);
 
@@ -110,6 +108,7 @@ struct ContractExecution {
 
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
         import std.exception;
+        import tagion.script.ScriptException;
 
         const input_amount = exec_contract.inputs
             .map!(doc => TagionBill(doc).value)

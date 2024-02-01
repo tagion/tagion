@@ -35,6 +35,7 @@ import tagion.wallet.AccountDetails;
 import tagion.wallet.KeyRecover;
 import Wallet = tagion.wallet.SecureWallet;
 import tagion.wallet.WalletException;
+import tagion.basic.tagionexceptions : Check;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 
 extern (C) export immutable string TAGION_HASH = import("revision.mixin").splitLines[2];
@@ -134,7 +135,7 @@ extern (C) {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
 
-            check(saltPtr is null && saltLen is 0 || saltPtr !is null, "Casting went wrong");
+            Check!(WalletException)(saltPtr is null && saltLen is 0 || saltPtr !is null, "Casting went wrong");
 
             auto salt = cast(char[]) saltPtr[0 .. saltLen];
             scope (exit) {

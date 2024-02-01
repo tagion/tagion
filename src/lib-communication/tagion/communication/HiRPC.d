@@ -65,12 +65,13 @@ struct HiRPC {
         string name() pure const nothrow {
             import std.algorithm;
             import std.range;
+
             return assumeWontThrow(full_name.splitter('.').retro.front);
         }
+
         void name(string name) pure nothrow @nogc {
             full_name = name;
         }
-
 
         mixin HiBONRecord;
     }
@@ -551,7 +552,7 @@ struct HiRPC {
 
 /// A good HiRPC result wih no additional data.
 @safe
-@recordType("OK")
+@recordType("OK") @disableSerialize
 struct ResultOk {
     mixin HiBONRecord!();
 }

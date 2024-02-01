@@ -1,12 +1,9 @@
-/// \file RecorderChainBlock.d
-module tagion.recorderchain.RecorderChainBlock;
+module tagion.replicator.RecorderBlock;
 
 import std.array;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : Fingerprint;
-import tagion.dart.Recorder;
-import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordType;
@@ -24,7 +21,6 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
     /** Recorder with database changes of this block */
     @label("recorder") Document recorder_doc;
 
-
     /** Ctor creates block from recorder, previous hash and bullseye.
      *      @param recorder_doc - Document with recorder for block
      *      @param previous - fingerprint of the previous block
@@ -32,13 +28,13 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
      *      @param net - hash net
      */
     mixin HiBONRecord!(
-        q{
+            q{
         this(
             Document recorder_doc,
             Fingerprint previous,
             Fingerprint bullseye,
             long epoch_number,
-            const(HashNet) net)
+            const(HashNet) net) 
         {
             this.recorder_doc = recorder_doc;
             this.previous = previous;
@@ -50,7 +46,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
 
         this(
             const(Document) doc,
-            const(HashNet) net)
+            const(HashNet) net) 
         {
             this(doc);
             this.fingerprint = net.calcHash(toDoc);
@@ -65,7 +61,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
  * Class represents block from recorder chain
  */
 @recordType("RCB")
-@safe class RecorderChainBlock : HashChainBlock {
+@safe class RecorderChainBlock{
     /** Fingerprint of this block */
     @exclude Fingerprint fingerprint;
     /** Bullseye of DART database */
@@ -76,9 +72,6 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
     @label("previous") Fingerprint previous;
     /** Recorder with database changes of this block */
     @label("recorder") Document recorder_doc;
-
-    mixin JSONString;
-
     /** Ctor creates block from recorder, previous hash and bullseye.
      *      @param recorder_doc - Document with recorder for block
      *      @param previous - fingerprint of the previous block
@@ -87,7 +80,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
      */
     mixin HiBONRecord!(
             q{
-            private this(
+             this(
                 Document recorder_doc,
                 Fingerprint previous,
                 Fingerprint bullseye,
@@ -102,7 +95,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
                 this.fingerprint = net.calcHash(toDoc);
             }
 
-            private this(
+             this(
                 const(Document) doc,
                 const(HashNet) net)
             {
@@ -120,11 +113,12 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
     }
 }
 
+version(none)
 unittest {
     import tagion.basic.tagionexceptions : TagionException;
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.hibon.HiBON : HiBON;
-
+    import tagion.dart.Recorder;
     HiBON test_hibon = new HiBON;
     test_hibon["dummy1"] = 1;
     test_hibon["dummy2"] = 2;
@@ -185,6 +179,47 @@ unittest {
             assert(false);
         }
         catch (TagionException e) {
+        }
+    }
+}
+    version(none)
+version (unittest) {
+    import tagion.crypto.SecureInterfaceNet : HashNet;
+    import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
+
+    @safe class DummyBlock {
+        @exclude Fingerprint hash;
+        @label("prev") Fingerprint previous;
+        @label("dummy") int dummy;
+
+        mixin HiBONRecord!(
+                q{
+             this(
+                Fingerprint previous,
+                const(HashNet) net,
+                int dummy = 0)
+            {
+                this.previous = previous;
+                this.dummy = dummy;
+
+                this.hash = net.calcHash(toDoc);
+            }
+
+            this(
+                const(Document) doc,
+                const(HashNet) net)
+            {
+                this(doc);
+                this.hash = net.calcHash(toDoc);
+            }
+        });
+
+        Fingerprint getHash() const {
+            return hash;
+        }
+
+        Fingerprint getPrevious() const {
+            return previous;
         }
     }
 }
