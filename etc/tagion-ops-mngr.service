@@ -2,4 +2,4 @@
 Description=Service for managing tagion operational tests
 
 [Service]
-ExecStart=/path/to/myscript.sh
+ExecStart=%h/tagion/ops/activate.sh
