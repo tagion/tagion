@@ -60,6 +60,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
  * \class RecorderChainBlock
  * Class represents block from recorder chain
  */
+version(none)
 @recordType("RCB")
 @safe class RecorderChainBlock{
     /** Fingerprint of this block */
