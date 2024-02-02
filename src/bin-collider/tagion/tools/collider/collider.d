@@ -408,7 +408,7 @@ int main(string[] args) {
 
         if (schedule_write_proto) {
             Schedule schedule;
-            const run_unit = RunUnit(["example"], ["WORKDIR": "$(HOME)/work"], ["-f$WORKDIR"], 0.0);
+            auto run_unit = RunUnit(["example"], ["WORKDIR": "$(HOME)/work"], ["-f$WORKDIR"], 0.0);
 
             schedule.units["collider_test"] = run_unit;
             schedule.save(options.schedule_file);
