@@ -213,7 +213,6 @@ int _main(string[] args) {
             import std.datetime.stopwatch;
 
             auto test_params = test_dart.split(':').map!(param => param.to!ulong);
-            pragma(msg, "test_params ", typeof(test_params.front));
             const number_of_archives = test_params.eatOne;
             const bundle_size = test_params.eatOne(ulong(1000));
             auto test_db = new DART(net, dartfilename);

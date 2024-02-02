@@ -826,7 +826,6 @@ class DARTFile {
     import core.demangle;
     import std.traits;
 
-    pragma(msg, "modify ", mangle!(FunctionTypeOf!(DARTFile.modify!(No.undo)))("modify"));
     /**
      * $(SMALL_TABLE
      * Sample of the DART Map

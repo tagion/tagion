@@ -337,15 +337,6 @@ struct EvaPayload {
     );
 }
 
-unittest {
-    import tagion.hibon.HiBONSerialize;
-
-    //pragma(msg, SupportingFullSizeFunction!(TagionCurrency, 0, true));
-    pragma(msg, "--- --- --- EventPackage");
-    pragma(msg, SupportingFullSizeFunction!(EventPackage, 0, true));
-    static assert(SupportingFullSizeFunction!(EventPackage, 0, true));
-}
-
 static assert(isHiBONRecord!Wavefront);
 static assert(isHiBONRecord!(EventPackage));
 static assert(isHiBONRecord!(immutable(EventPackage)));

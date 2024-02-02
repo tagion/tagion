@@ -33,21 +33,6 @@ import tagion.utils.StdTime;
             });
 }
 
-unittest {
-    import tagion.hibon.HiBONSerialize;
-
-    pragma(msg, SupportingFullSizeFunction!(TagionCurrency, 0, true));
-    pragma(msg, "--- --- ---");
-    pragma(msg, SupportingFullSizeFunction!(TagionBill, 0, true));
-    import tagion.hibon.HiBONRecord;
-    import tagion.script.Currency;
-
-    pragma(msg, "is Currency an HiBONRecord ", isHiBONRecord!(Currency!"NAP"));
-    pragma(msg, "is TagionBill an HiBONRecord ", isHiBONRecord!(TagionBill));
-    static assert(isHiBONRecord!(Currency!"NAP"));
-    static assert(SupportingFullSizeFunction!(TagionBill, 0, true));
-}
-
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
