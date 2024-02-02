@@ -80,15 +80,25 @@ unittest { // Check the #key hash with types
     assert(net.calcHash(hash_u32) != net.calcHash(other_hash_u32),
             "Two archives with same #key and different data should have different fingerprints");
 }
-
-DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) {
+/** 
+ * Calculates the dartIndex of a #key
+ * Params:
+ *   net = hash method
+ *   name = string of hash name ('#' is inserted in front of name if it's missing) 
+ *   val = Value of the key to be found
+ * Returns: 
+ */
+DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) pure {
     import std.stdio;
     import tagion.hibon.HiBON;
+    import tagion.hibon.HiBONSerialize;
 
     const key = (name[0] == HiBONPrefix.HASH) ? name.idup : (HiBONPrefix.HASH ~ name).idup;
+
     auto h = new HiBON;
     h[key] = val;
-    return net.dartIndex(Document(h));
+    const doc = Document(h);
+    return net.dartIndex(doc);
 }
 
 unittest {
@@ -102,11 +112,9 @@ unittest {
     import tagion.utils.StdTime;
 
     const net = new StdHashNet;
-
     static struct DARTKey(T) {
         @label("#key") T key;
         int x;
-
         mixin HiBONRecord!(q{
             this(T key, int x) {
                 this.key=key;
@@ -132,14 +140,14 @@ unittest {
             immutable(ubyte)[], Type.BINARY.stringof,
             string, Type.STRING.stringof,
 
-    );
-    // dfmt on
+    ); // dfmt on
 
     Table test_table;
     test_table.FLOAT32 = 1.23;
     test_table.FLOAT64 = 1.23e200;
     test_table.INT32 = -42;
-    test_table.INT64 = -0x0123_3456_789A_BCDF;
+    test_table
+        .INT64 = -0x0123_3456_789A_BCDF;
     test_table.UINT32 = 42;
     test_table.UINT64 = 0x0123_3456_789A_BCDF;
     test_table.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
@@ -147,14 +155,17 @@ unittest {
     test_table.TIME = 1001;
     test_table.BINARY = [1, 2, 3];
     test_table.STRING = "Text";
-    import std.stdio;
+    import std
+        .stdio;
 
     foreach (i, t; test_table) {
         const dart_index = net.dartKey("#key", t);
         const dart_key = dartKeyT(t, 42);
-        assert(dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
-        assert(dart_index != net.calcHash(dart_key.toDoc), format("%s dart_index should not be equal to the fingerpint", Fields!Table[i]
-            .stringof));
+        assert(
+                dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
+        assert(dart_index != net.calcHash(dart_key.toDoc), format(
+                "%s dart_index should not be equal to the fingerpint", Fields!Table[i]
+                .stringof));
     }
 }
 
@@ -162,7 +173,8 @@ immutable(Buffer) binaryHash(const(HashNet) net, scope const(ubyte[]) h1, scope 
 in {
     assert(h1.length is 0 || h1.length is net.hashSize,
             format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, net.hashSize));
-    assert(h2.length is 0 || h2.length is net.hashSize,
+    assert(
+            h2.length is 0 || h2.length is net.hashSize,
             format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, net.hashSize));
 }
 out (result) {
@@ -175,9 +187,11 @@ out (result) {
 }
 do {
     assert(h1.length is 0 || h1.length is net.hashSize,
-            format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, net.hashSize));
+            format(
+            "h1 is not a valid hash (length=%d should be 0 or %d", h1.length, net.hashSize));
     assert(h2.length is 0 || h2.length is net.hashSize,
-            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, net.hashSize));
+            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, net
+            .hashSize));
     if (h1.length is 0) {
         return h2.idup;
     }
@@ -187,7 +201,8 @@ do {
     return net.rawCalcHash(h1 ~ h2);
 }
 
-Fingerprint binaryHash(const(HashNet) net, scope const(Fingerprint) h1, scope const(Fingerprint) h2) {
+Fingerprint binaryHash(const(HashNet) net, scope const(Fingerprint) h1, scope const(
+        Fingerprint) h2) {
     return Fingerprint(binaryHash(net, cast(Buffer) h1, cast(Buffer) h2));
 }
 /**
@@ -209,15 +224,19 @@ do {
     const(Buffer[]) right) {
         Buffer _left_fingerprint;
         Buffer _right_fingerprint;
-        if ((left.length == 1) && (right.length == 1)) {
+        if (
+            (left.length == 1) && (right.length == 1)) {
             _left_fingerprint = left[0];
             _right_fingerprint = right[0];
         }
         else {
             immutable left_mid = left.length >> 1;
-            immutable right_mid = right.length >> 1;
-            _left_fingerprint = merkletree(left[0 .. left_mid], left[left_mid .. $]);
-            _right_fingerprint = merkletree(right[0 .. right_mid], right[right_mid .. $]);
+            immutable right_mid = right
+                .length >> 1;
+            _left_fingerprint = merkletree(
+                    left[0 .. left_mid], left[left_mid .. $]);
+            _right_fingerprint = merkletree(
+                    right[0 .. right_mid], right[right_mid .. $]);
         }
         if (_left_fingerprint is null) {
             return _right_fingerprint;
@@ -231,21 +250,28 @@ do {
     }
 
     immutable mid = table.length >> 1;
-    return merkletree(table[0 .. mid], table[mid .. $]);
+    return merkletree(
+            table[0 .. mid], table[mid .. $]);
 }
 
-Fingerprint sparsed_merkletree(const HashNet net, const(Fingerprint[]) table, const Flag!"flat" flat = No.flat) @trusted {
+Fingerprint sparsed_merkletree(const HashNet net, const(Fingerprint[]) table, const Flag!"flat" flat = No
+    .flat) @trusted {
     if (flat) {
-        auto valid_prints = table.filter!(print => !print.isinit);
+        auto valid_prints = table.filter!(print => !print
+                .isinit);
         if (valid_prints.empty) {
             return Fingerprint.init;
         }
         if (valid_prints.take(2).walkLength == 1) {
             return valid_prints.front;
         }
-        return net.calcHash(valid_prints.map!(p => cast(Buffer) p).join);
+        return net.calcHash(
+                valid_prints.map!(
+                p => cast(Buffer) p).join);
     }
-    return Fingerprint(sparsed_merkletree(net, cast(const(Buffer[])) table));
+    return Fingerprint(
+            sparsed_merkletree(net, cast(const(
+            Buffer[])) table));
 }
 
 unittest { // StdHashNet
@@ -268,12 +294,18 @@ unittest { // StdHashNet
         doc = Document(hibon);
     }
 
-    immutable doc_fingerprint = net.rawCalcHash(doc.serialize);
-
+    immutable doc_fingerprint = net
+        .rawCalcHash(doc
+                .serialize);
     {
-        assert(net.binaryHash(null, null).length is 0);
-        assert(net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
-        assert(net.binaryHash(null, doc_fingerprint) == doc_fingerprint);
+        assert(
+                net.binaryHash(
+                null, null)
+                .length is 0);
+        assert(
+                net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
+        assert(net
+                .binaryHash(null, doc_fingerprint) == doc_fingerprint);
     }
 
 }

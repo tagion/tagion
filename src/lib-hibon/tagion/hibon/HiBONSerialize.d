@@ -94,7 +94,6 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
 
         }
     }
-
 }
 
 /**
@@ -115,7 +114,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
         enum type = Document.Value.asType!BaseU;
         const type_key_size = key_size;
         with (Type) {
-        TypeCase:
             switch (type) {
                 static foreach (E; EnumMembers!Type) {
             case E:
@@ -252,7 +250,7 @@ mixin template Serialize() {
     import std.array;
     import LEB128 = tagion.utils.LEB128;
 
-    static if (!isSerializeDisabled!This) { 
+    static if (!isSerializeDisabled!This) {
         void serialize(ref scope Appender!(ubyte[]) buf) const pure @safe {
             import std.algorithm;
             import tagion.hibon.HiBONRecord : filter;

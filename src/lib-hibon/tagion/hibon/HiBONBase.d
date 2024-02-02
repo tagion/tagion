@@ -79,19 +79,20 @@ void emplace_buffer(ref scope AppendBuffer buffer, const size_t start_index) pur
     })();
 }
 
-void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key key,
+void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Key key,
         const(T) val) pure if (isKey!Key) {
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : isHiBONRecord;
     import std.range;
     import traits = std.traits;
     import tagion.basic.Debug;
+
     alias BaseT = TypedefBase!T;
-    static if (!is(BaseT == T) && __traits(compiles, {auto x=cast(BaseT)val;})) {
-    auto x=cast(BaseT)val;
+    static if (!is(BaseT == T) && __traits(compiles, { auto x = cast(BaseT) val; })) {
+        auto x = cast(BaseT) val;
     }
     else {
-        alias x=val;
+        alias x = val;
     }
     static if (Document.Value.hasType!BaseT) {
         enum type = Document.Value.asType!BaseT;
@@ -116,10 +117,10 @@ void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key 
         const leb128_size = LEB128.encode(x.length);
         buffer ~= leb128_size;
         static if (isSomeString!BaseT) {
-            buffer ~=  x.representation;
+            buffer ~= x.representation;
         }
         else {
-            buffer ~=  x;
+            buffer ~= x;
         }
     }
     else static if (is(BaseT : const Document)) {
@@ -139,31 +140,30 @@ void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key 
         buffer ~= LEB128.encode(cast(TypedefType!sdt_t) x);
     }
     else static if (isHiBONRecord!BaseT) {
-            const start_index = buffer.data.length;
+        const start_index = buffer.data.length;
         static if (__traits(compiles, x.serialize(buffer))) {
             x.serialize(buffer);
         }
-        else static if (__traits(compiles, {const r=x.serialize();})) {
-           buffer~= x.serialize;
+        else static if (__traits(compiles, { const r = x.serialize(); })) {
+            buffer ~= x.serialize;
         }
         else static if (hasMember!(BaseT, "toDoc")) {
-            buffer~=x.toDoc.serialize;
+            buffer ~= x.toDoc.serialize;
             return;
         }
         else static if (hasMember!(BaseT, "toHiBON")) {
-            
 
-            buffer~= x.toHiBON.serialize;
+            buffer ~= x.toHiBON.serialize;
             return;
         }
         else {
             static assert(0, format("%s has no metode to serialize", T.stringof));
-            
+
         }
-            emplace_buffer(buffer, start_index);
+        emplace_buffer(buffer, start_index);
     }
     else static if (isInputRange!BaseT) {
-        enum preserve_array_size=preserve_flag && traits.isArray!BaseT;
+        enum preserve_array_size = preserve_flag && traits.isArray!BaseT;
         alias ElementT = ElementType!BaseT;
         auto x_range = (() @trusted => cast(Unqual!BaseT) x)();
         const number_of_elements_serialize = x_range.filter!(e => !e.isinit).count;
@@ -174,7 +174,7 @@ void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key 
         }
         foreach (pair; x_range.enumerate.filter!(pair => !pair.value.isinit)) {
             static if (preserve_array_size) {
-                    max_index=max(pair.index, max_index);
+                max_index = max(pair.index, max_index);
             }
             build(buffer, cast(uint) pair.index, pair.value);
             number_of_elements++;
@@ -186,8 +186,8 @@ void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key 
 
         }
         static if (preserve_array_size) {
-            if (max_index+1 != x_range.length && x_range.length > 0) {
-                build(buffer, x_range.length-1, ElementT.init);
+            if (max_index + 1 != x_range.length && x_range.length > 0) {
+                build(buffer, x_range.length - 1, ElementT.init);
             }
         }
         emplace_buffer(buffer, start_index);
@@ -211,7 +211,7 @@ void build(bool preserve_flag=false, T, Key)(ref scope AppendBuffer buffer, Key 
 
             }
         }
-    else {
+        else {
             Document[] elements;
             AppendBuffer inner_buffer;
             foreach (inner_key, inner_value; x) {
