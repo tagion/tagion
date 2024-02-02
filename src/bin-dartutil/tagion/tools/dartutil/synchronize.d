@@ -64,7 +64,6 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
     //    foreach (sector; destination.sectors) {
     foreach (ushort _rim; 0 .. ubyte.max + 1) {
         ushort sector = cast(ushort)(_rim << 8);
-        const(ubyte)[] rims;
         verbose("Sector %04x", sector);
         immutable journal_filename = format("%s.%04x.dart_journal", journal_basename, sector);
         BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);

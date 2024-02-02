@@ -271,7 +271,6 @@ int check_reports(string[] paths) {
 
     TraceCount feature_count;
     TraceCount scenario_count;
-    int result;
     foreach (path; paths) {
         foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth)
                 .filter!(f => f.isFile)) {
@@ -409,7 +408,7 @@ int main(string[] args) {
 
         if (schedule_write_proto) {
             Schedule schedule;
-            auto run_unit = RunUnit(["example"], ["WORKDIR": "$(HOME)/work"], ["-f$WORKDIR"], 0.0);
+            const run_unit = RunUnit(["example"], ["WORKDIR": "$(HOME)/work"], ["-f$WORKDIR"], 0.0);
 
             schedule.units["collider_test"] = run_unit;
             schedule.save(options.schedule_file);
