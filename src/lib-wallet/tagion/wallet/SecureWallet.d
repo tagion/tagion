@@ -383,13 +383,13 @@ struct SecureWallet(Net : SecureNet) {
         return _net.derivePubkey(account.derive_state);
     }
 
-    const(TagionBill)[] invoices_to_bills(const(Invoice[]) orders) const {
-        Buffer getNonce() {
-            scope nonce = new ubyte[4];
-            getRandom(nonce);
-            return nonce.idup;
-        }
+    private Buffer getNonce() const pure {
+        auto nonce = new ubyte[4];
+        getRandom(nonce);
+        return nonce;
+    }
 
+    const(TagionBill)[] invoices_to_bills(const(Invoice[]) orders) const {
         return orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, getNonce)).array;
     }
 
@@ -854,17 +854,17 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     Result!bool getFee(const(Invoice[]) orders, out TagionCurrency fees) nothrow {
-
-        auto bills = orders.map!(
-                (order) => TagionBill(order.amount, assumeWontThrow(currentTime), order.pkey, Buffer.init))
+        auto bills = orders
+            .map!((order) => TagionBill(order.amount, assumeWontThrow(currentTime), order.pkey, getNonce))
             .array;
+
         return getFee(bills, fees);
     }
 
-    static immutable dummy_pubkey = Pubkey(new ubyte[33]);
-    static immutable dummy_nonce = new ubyte[4];
-
     Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
+        static immutable dummy_pubkey = Pubkey(new ubyte[33]);
+        static immutable dummy_nonce = new ubyte[4];
+
         auto bill = TagionBill(amount, assumeWontThrow(currentTime), dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
