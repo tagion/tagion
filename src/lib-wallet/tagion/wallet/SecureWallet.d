@@ -1332,10 +1332,10 @@ unittest {
 
     // pay invoice to yourself.
     auto wallet = StdSecureWallet("secret", "1234");
-    const bill1 = wallet.requestBill(1000.TGN);
+    const bill1 = wallet.requestBill(10_000.TGN);
     wallet.addBill(bill1);
 
-    auto invoice_to_pay = wallet.createInvoice("wowo", 10.TGN);
+    auto invoice_to_pay = wallet.createInvoice("wowo", 6969.TGN);
     wallet.registerInvoice(invoice_to_pay);
 
     SignedContract signed_contract;
@@ -1346,7 +1346,7 @@ unittest {
     HiRPC hirpc = HiRPC(null);
 
     assert(wallet.account.activated.byValue.filter!(b => b == true).walkLength == 1, "should have one locked bill");
-    assert(wallet.locked_balance == 1000.TGN);
+    assert(wallet.locked_balance == 10_000.TGN, "The entire balance should be locked");
     const req = wallet.getRequestUpdateWallet;
     const receiver = hirpc.receive(req.toDoc);
 
@@ -1366,11 +1366,12 @@ unittest {
     auto dart_response = hirpc.result(receiver, Document(params)).toDoc;
     const received = hirpc.receive(dart_response);
 
-    wallet.setResponseUpdateWallet(received);
+    assert(wallet.setResponseUpdateWallet(received), "Should not throw an error on update");
 
     auto should_have = wallet.calcTotal(bills_in_dart);
     assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
 
+    assert(wallet.total_balance == wallet.available_balance, format("There should be no locked amount. Locked %s, available %s", wallet.total_balance, wallet.available_balance));
 }
 
 unittest {
