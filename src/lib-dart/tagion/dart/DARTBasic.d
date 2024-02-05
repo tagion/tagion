@@ -140,14 +140,13 @@ unittest {
             immutable(ubyte)[], Type.BINARY.stringof,
             string, Type.STRING.stringof,
 
-    ); // dfmt on
+    );
 
     Table test_table;
     test_table.FLOAT32 = 1.23;
     test_table.FLOAT64 = 1.23e200;
     test_table.INT32 = -42;
-    test_table
-        .INT64 = -0x0123_3456_789A_BCDF;
+    test_table.INT64 = -0x0123_3456_789A_BCDF;
     test_table.UINT32 = 42;
     test_table.UINT64 = 0x0123_3456_789A_BCDF;
     test_table.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
@@ -155,14 +154,11 @@ unittest {
     test_table.TIME = 1001;
     test_table.BINARY = [1, 2, 3];
     test_table.STRING = "Text";
-    import std
-        .stdio;
 
     foreach (i, t; test_table) {
         const dart_index = net.dartKey("#key", t);
         const dart_key = dartKeyT(t, 42);
-        assert(
-                dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
+        assert(dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
         assert(dart_index != net.calcHash(dart_key.toDoc), format(
                 "%s dart_index should not be equal to the fingerpint", Fields!Table[i]
                 .stringof));
@@ -173,8 +169,7 @@ immutable(Buffer) binaryHash(const(HashNet) net, scope const(ubyte[]) h1, scope 
 in {
     assert(h1.length is 0 || h1.length is net.hashSize,
             format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, net.hashSize));
-    assert(
-            h2.length is 0 || h2.length is net.hashSize,
+    assert(h2.length is 0 || h2.length is net.hashSize,
             format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, net.hashSize));
 }
 out (result) {
@@ -187,11 +182,9 @@ out (result) {
 }
 do {
     assert(h1.length is 0 || h1.length is net.hashSize,
-            format(
-            "h1 is not a valid hash (length=%d should be 0 or %d", h1.length, net.hashSize));
+            format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, net.hashSize));
     assert(h2.length is 0 || h2.length is net.hashSize,
-            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, net
-            .hashSize));
+            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, net.hashSize));
     if (h1.length is 0) {
         return h2.idup;
     }
@@ -221,7 +214,7 @@ in (table.length == KEY_SPAN)
 do {
     immutable(Buffer) merkletree(
             const(Buffer[]) left,
-    const(Buffer[]) right) {
+            const(Buffer[]) right) {
         Buffer _left_fingerprint;
         Buffer _right_fingerprint;
         if (
@@ -254,8 +247,9 @@ do {
             table[0 .. mid], table[mid .. $]);
 }
 
-Fingerprint sparsed_merkletree(const HashNet net, const(Fingerprint[]) table, const Flag!"flat" flat = No
-    .flat) @trusted {
+Fingerprint sparsed_merkletree(
+        const HashNet net, const(Fingerprint[]) table,
+        const Flag!"flat" flat = No.flat) @trusted {
     if (flat) {
         auto valid_prints = table.filter!(print => !print
                 .isinit);
@@ -294,18 +288,11 @@ unittest { // StdHashNet
         doc = Document(hibon);
     }
 
-    immutable doc_fingerprint = net
-        .rawCalcHash(doc
-                .serialize);
+    immutable doc_fingerprint = net.rawCalcHash(doc.serialize);
     {
-        assert(
-                net.binaryHash(
-                null, null)
-                .length is 0);
-        assert(
-                net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
-        assert(net
-                .binaryHash(null, doc_fingerprint) == doc_fingerprint);
+        assert(net.binaryHash(null, null).length is 0);
+        assert(net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
+        assert(net.binaryHash(null, doc_fingerprint) == doc_fingerprint);
     }
 
 }
