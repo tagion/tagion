@@ -610,7 +610,14 @@ extern (C) {
         immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(Document(account)));
+            const account_doc = Document(account);
+            if (account_doc.isRecord!(Cipher.CipherDocument)) {
+                // encrypted backup
+                __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(account_doc));
+            } else {
+                // not encrypted account backup
+                __wallet_storage.wallet.setAccount(account_doc);
+            }
             __wallet_storage.write;
             version (NET_HACK) {
                 __wallet_storage.read;
