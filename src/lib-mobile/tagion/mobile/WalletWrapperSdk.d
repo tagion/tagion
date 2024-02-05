@@ -61,9 +61,11 @@ static Exception last_error;
 /// Functions called from d-lang through dart:ffi
 extern (C) {
     enum : uint {
-        NOT_LOGGED_IN = 9,
-        DART_UPDATE_REQUIRED = 3,
+        ERROR = 0,
+        SUCCESS = 1,
         PAYMENT_ERROR = 2,
+        NOT_LOGGED_IN = 9,
+        DART_UPDATE_REQUIRED = 16,
     }
 
     // Staritng d-runtime
@@ -92,36 +94,15 @@ extern (C) {
             // Full path to stored wallet data.
             const walletDataPath = directoryPath;
             __wallet_storage = new WalletStorage(walletDataPath);
-            return 1;
+            return SUCCESS;
         }
 
-        return 0;
+        return ERROR;
     }
 
     // Check if wallet was already created.
     export uint wallet_check_exist() {
         return __wallet_storage.isWalletExist();
-    }
-
-    version (none) export uint wallet_create(
-            const uint8_t* pincodePtr,
-            const uint32_t pincodeLen,
-            const uint16_t* mnemonicPtr,
-            const uint32_t mnemonicLen) {
-        // Restore data from pointers.  
-        auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
-        auto mnemonic = mnemonicPtr[0 .. mnemonicLen];
-        scope (exit) {
-            scramble(pincode);
-        }
-        // Create a wallet from inputs.
-        __wallet_storage.wallet = StdSecureWallet(
-                mnemonic,
-                pincode
-        );
-
-        return __wallet_storage.write;
-
     }
 
     export uint wallet_create(
@@ -153,9 +134,9 @@ extern (C) {
         }
         catch (Exception e) {
             last_error = e;
-            return 0;
+            return ERROR;
         }
-        return 1;
+        return SUCCESS;
     }
 
     export uint wallet_login(const uint8_t* pincodePtr, const uint32_t pincodeLen) nothrow {
@@ -173,7 +154,7 @@ extern (C) {
         catch (Exception e) {
             last_error = e;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint wallet_logout() nothrow {
@@ -181,9 +162,9 @@ extern (C) {
             __wallet_storage.wallet.logout();
             // Set wallet to default.
             __wallet_storage.wallet = __wallet_storage.wallet.init;
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint wallet_check_login() {
@@ -197,9 +178,9 @@ extern (C) {
             // Set wallet to default.
             //defaultWallet();
             __wallet_storage.wallet = __wallet_storage.wallet.init;
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint validate_pin(const uint8_t* pincodePtr, const uint32_t pincodeLen) {
@@ -209,7 +190,7 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             return __wallet_storage.wallet.checkPincode(pincode);
         }
-        return 0;
+        return ERROR;
     }
 
     // TODO: Get info if it's possible to change a pincode without providing a current one.
@@ -230,10 +211,10 @@ extern (C) {
                 // Since secure_wallet do logout after pincode change
                 // we need to perform a login manualy.
                 __wallet_storage.wallet.login(newPincode);
-                return 1;
+                return SUCCESS;
             }
         }
-        return 0;
+        return ERROR;
     }
 
     export uint get_fee(const double amount, double* fees) {
@@ -264,7 +245,7 @@ extern (C) {
                 if (doc.getType == "createNFT") {
                     const is_created = __wallet_storage.wallet.createNFT(doc, Document[].init, signed_contract);
                     if (!is_created) {
-                        return 0;
+                        return ERROR;
                     }
 
                 }
@@ -273,15 +254,15 @@ extern (C) {
                     auto inputs = doc["inputs"].get!Document[].map!(e => e.get!Document).array;
                     const is_created = __wallet_storage.wallet.createNFT(script, inputs, signed_contract);
                     if (!is_created) {
-                        return 0;
+                        return ERROR;
                     }
                 }
                 else {
-                    return 0;
+                    return ERROR;
                 }
             }
             catch (Exception e) {
-                return 0;
+                return ERROR;
             }
 
             const contract_net = __wallet_storage.wallet.net;
@@ -296,9 +277,9 @@ extern (C) {
                 __wallet_storage.read;
             }
             *signedContractPtr = nftDocId;
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint create_contract(
@@ -342,7 +323,7 @@ extern (C) {
             }
 
             *contractPtr = contractDocId;
-            return 1;
+            return SUCCESS;
         }
         auto error_result = new HiBON();
         if (can_pay.msg is null) {
@@ -378,9 +359,9 @@ extern (C) {
             }
 
             *invoicePtr = cast(uint8_t) invoiceDocId;
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint request_trt_update(uint8_t* requestPtr) {
@@ -391,7 +372,7 @@ extern (C) {
         const request = __wallet_storage.wallet.readIndicesByPubkey();
         const requestDocId = recyclerDoc.create(request.toDoc);
         *requestPtr = cast(uint8_t) requestDocId;
-        return 1;
+        return SUCCESS;
     }
 
     export uint update_trt_response(uint8_t* responsePtr, uint32_t responseLen, uint8_t* requestPtr) {
@@ -404,7 +385,7 @@ extern (C) {
         try {
             auto receiver = hirpc.receive(Document(response));
             if (!receiver.isResponse) {
-                return 0;
+                return ERROR;
             }
             const new_update = __wallet_storage.wallet.differenceInIndices(receiver);
             if (new_update !is HiRPC.Sender.init) {
@@ -422,12 +403,12 @@ extern (C) {
                 version (NET_HACK) {
                     __wallet_storage.read;
                 }
-                return 1;
+                return SUCCESS;
             }
         } catch (HiBONException e) {
-            return 0;
+            return ERROR;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint update_dart_response(uint8_t* responsePtr, uint32_t responseLen) {
@@ -442,7 +423,7 @@ extern (C) {
         try {
             auto receiver = hirpc.receive(Document(response));
             if (!receiver.isResponse) {
-                return 0;
+                return ERROR;
             }
             const result = __wallet_storage.wallet.updateFromRead(receiver);
             if (result) {
@@ -451,13 +432,13 @@ extern (C) {
                 version (NET_HACK) {
                     __wallet_storage.read;
                 }
-                return 1;
+                return SUCCESS;
             }
         }
         catch (HiBONException e) {
-            return 0;
+            return ERROR;
         }
-        return 0;
+        return ERROR;
     }
 
 
@@ -470,7 +451,7 @@ extern (C) {
         const request = __wallet_storage.wallet.getRequestUpdateWallet();
         const requestDocId = recyclerDoc.create(request.toDoc);
         *requestPtr = cast(uint8_t) requestDocId;
-        return 1;
+        return SUCCESS;
     }
 
     export uint update_response(uint8_t* responsePtr, uint32_t responseLen) {
@@ -493,13 +474,13 @@ extern (C) {
                 version (NET_HACK) {
                     __wallet_storage.read;
                 }
-                return 1;
+                return SUCCESS;
             }
         }
         catch (HiBONException e) {
-            return 0;
+            return ERROR;
         }
-        return 0;
+        return ERROR;
     }
 
     // export void toPretty(uint8_t* docPtr, uint32_t responseLen, char* resultPtr, uint32_t* resultLen) {
@@ -549,9 +530,9 @@ extern (C) {
 
             *pubkeyPtr = cast(uint8_t) pubkeyDocId;
 
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint get_derivers_state(uint8_t* deriversStatePtr) {
@@ -565,9 +546,9 @@ extern (C) {
 
             *deriversStatePtr = cast(uint8_t) deviversStateDocId;
 
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint get_account(uint8_t* accountPtr) {
@@ -577,20 +558,9 @@ extern (C) {
 
             *accountPtr = cast(uint8_t) accountDocId;
 
-            return 1;
+            return SUCCESS;
         }
-        return 0;
-    }
-
-    version (none) export uint set_derivers(const uint8_t* deriversPtr, const uint32_t deriversLen) {
-
-        immutable encDerivers = cast(immutable)(deriversPtr[0 .. deriversLen]);
-
-        if (__wallet_storage.wallet.isLoggedin()) {
-            __wallet_storage.wallet.setEncrDerivers(Cipher.CipherDocument(Document(encDerivers)));
-            return 1;
-        }
-        return 0;
+        return ERROR;
     }
 
     export uint get_backup(uint8_t* backupPtr) {
@@ -600,9 +570,9 @@ extern (C) {
 
             *backupPtr = cast(uint8_t) backupDocId;
 
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint set_backup(const uint8_t* backupPtr, const uint32_t backupLen) {
@@ -622,9 +592,9 @@ extern (C) {
             version (NET_HACK) {
                 __wallet_storage.read;
             }
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint add_bill(const uint8_t* billPtr, const uint32_t billLen) {
@@ -634,36 +604,9 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             auto bill = TagionBill(Document(billBuffer));
             __wallet_storage.wallet.account.add_bill(bill);
-            return 1;
+            return SUCCESS;
         }
-        return 0;
-    }
-
-    version (none) export uint remove_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
-        // Collect input and output keys from the contract.
-        // Iterate them and call remove on each.
-
-        immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
-
-        if (__wallet_storage.wallet.isLoggedin()) {
-
-            auto contractDoc = Document(contractBuffer);
-
-            // Contract inputs.
-            const messageTag = "$msg";
-            const paramsTag = "params";
-
-            auto messageDoc = contractDoc[messageTag].get!Document;
-            auto paramsDoc = messageDoc[paramsTag].get!Document;
-            auto sContract = SignedContract(paramsDoc);
-
-            import std.algorithm;
-
-            sContract.contract.inputs.each!(hash => __wallet_storage.wallet.account.remove_bill_by_hash(hash));
-
-            return 1;
-        }
-        return 0;
+        return ERROR;
     }
 
     export uint ulock_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
@@ -686,9 +629,9 @@ extern (C) {
 
             sContract.contract.inputs.each!(hash => __wallet_storage.wallet.account.unlock_bill_by_hash(hash));
 
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
@@ -711,9 +654,9 @@ extern (C) {
                     sContract.contract.inputs, outputs);
 
             *statusPtr = cast(uint8_t) status;
-            return 1;
+            return SUCCESS;
         }
-        return 0;
+        return ERROR;
     }
 
     export uint check_invoice_payment(const uint8_t* invoicePtr, const uint32_t invoiceLen, double* amountPtr) {
@@ -727,10 +670,10 @@ extern (C) {
 
             if (isExist) {
                 *amountPtr = amount.value;
-                return 1;
+                return SUCCESS;
             }
         }
-        return 0;
+        return ERROR;
     }
 
     static sdt_t dummy_time;
@@ -773,7 +716,7 @@ extern (C) {
             *historyId = recyclerDoc.create(hist.toDoc);
         }
 
-        return 1;
+        return SUCCESS;
     }
 }
 
@@ -935,9 +878,9 @@ unittest {
         uint8_t[] pin_copy;
         // Call the wallet_create function
         pin_copy = pincode.dup;
-        wallet_create(pin_copy.ptr, pincodeLen, mnemonic.ptr, mnemonicLen, const(uint8_t*).init, uint32_t.init);
+        assert(wallet_create(pin_copy.ptr, pincodeLen, mnemonic.ptr, mnemonicLen, const(uint8_t*).init, uint32_t.init));
         pin_copy = pincode.dup;
-        wallet_login(pin_copy.ptr, pincodeLen);
+        assert(wallet_login(pin_copy.ptr, pincodeLen));
 
         const uint result = validate_pin(pincode.ptr, pincodeLen);
         assert(result != 0, "Expected non-zero result");
@@ -1133,13 +1076,6 @@ unittest {
         // writeln(fromStringz(jstr));
     }
 
-    version (none) { // Remove bills by contract.
-
-        uint result = remove_bills_by_contract(contract.ptr, contractLen);
-
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
-    }
 }
 
 alias Store = WalletStorage;
