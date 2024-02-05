@@ -356,11 +356,8 @@ struct SecureWallet(Net : SecureNet) {
      * Params:
      *   invoice = invoice to be registered
      */
-    pragma(msg, "Is double deriving the public key");
     void registerInvoice(ref Invoice invoice) {
-        account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
-        const _ = _net.derivePubkey(account.derive_state);
-        invoice.pkey = derivePubkey;
+        invoice.pkey = derivePubkey();
         account.derivers[invoice.pkey] = account.derive_state;
         account.requested_invoices ~= invoice;
     }
