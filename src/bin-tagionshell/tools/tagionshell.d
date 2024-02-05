@@ -273,13 +273,37 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
             rep.msg = "socket error";
             return;
         }
-        ubyte[4096] buf;
-        size_t len = s.receivebuf(buf, 4096);
-        if (len == size_t.max && s.errno != 0) {
-            writeit("contract_handler: recv: ", nng_errstr(s.errno));
-            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "socket error";
-            return;
+        const stime = timestamp();
+        NNGMessage msg = NNGMessage(0);
+        ubyte[] buf;
+        size_t len = 0;
+        while(true){
+            rc = s.receivemsg(&msg, true);
+            if(rc < 0){
+                if(s.errno == nng_errno.NNG_EAGAIN){
+                    nng_sleep(msecs(opt.sock_recvdelay));
+                    auto itime = timestamp();
+                    if((itime - stime) * 1000 > opt.sock_recvtimeout){
+                        writeit("contract_handler: recv: timeout");
+                        rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
+                        rep.msg = "socket timeout";
+                        return;
+                    }
+                    msg.clear();
+                    continue;
+                }
+                if(s.errno != 0){
+                    writeit("contract_handler: recv: ", nng_errstr(s.errno));
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "socket error";
+                    return;
+                }
+                writeit("contract_handler: recv: empty response");
+                break;
+            }
+            len = msg.length; 
+            buf = msg.body_trim!(ubyte[])(msg.length);
+            break;
         }
         writeit(format("WH: dart: received %d bytes", len));
         rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
@@ -405,7 +429,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
 
         if (req.path[$ - 1] == "nocache")
             usecache = false;
-
+        
         SecureNet net = new StdSecureNet();
         net.generateKeyPair("very_secret");
         HiRPC hirpc = HiRPC(net);
@@ -680,7 +704,7 @@ static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
             return;
         }
 
-        writeit(signed_contract.toPretty);
+        //writeit(signed_contract.toPretty);
 
         const message = wallet_interface.secure_wallet.net.calcHash(signed_contract);
         const contract_net = wallet_interface.secure_wallet.net.derive(message);
@@ -838,7 +862,7 @@ static void selftest_handler(WebData* req, WebData* rep, void* ctx) {
 
 void versioninfo_handler(WebData* req, WebData* rep, void* ctx) {
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-    rep.type = "text/plain";
+    rep.type = "text/html";
     rep.text = imported!"tagion.tools.revision".revision_text;
 }
 
@@ -935,6 +959,8 @@ int _main(string[] args) {
     );
 
     isz = getmemstatus();
+
+
 
 appoint:
 
