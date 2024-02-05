@@ -356,11 +356,8 @@ struct SecureWallet(Net : SecureNet) {
      * Params:
      *   invoice = invoice to be registered
      */
-    pragma(msg, "Is double deriving the public key");
     void registerInvoice(ref Invoice invoice) {
-        account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
-        const _ = _net.derivePubkey(account.derive_state);
-        invoice.pkey = derivePubkey;
+        invoice.pkey = derivePubkey();
         account.derivers[invoice.pkey] = account.derive_state;
         account.requested_invoices ~= invoice;
     }
@@ -739,7 +736,7 @@ struct SecureWallet(Net : SecureNet) {
                 }
             }
         }
-        foreach (request_bill; account.requested.byValue) {
+        foreach (const request_bill; account.requested.byValue.array) {
             auto request_bill_index = net.dartIndex(request_bill);
             if (!not_in_dart.canFind(request_bill_index)) {
                 account.bills ~= request_bill;
@@ -1072,9 +1069,22 @@ struct SecureWallet(Net : SecureNet) {
         return Cipher.encrypt(this._net, this.account.toDoc);
     }
 
+    /** 
+     * Set encrypted account.hibon file
+     * Params:
+     *   cipher_doc = Encrypted account file to load
+     */
     void setEncrAccount(const(CiphDoc) cipher_doc) {
         Cipher cipher;
         const account_doc = cipher.decrypt(this._net, cipher_doc);
+        this.account = AccountDetails(account_doc);
+    }
+    /** 
+     * Set the account.hibon file
+     * Params:
+     *   account_doc = Account file to load
+     */
+    void setAccount(const(Document) account_doc) {
         this.account = AccountDetails(account_doc);
     }
 
