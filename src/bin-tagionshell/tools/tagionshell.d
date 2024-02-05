@@ -7,6 +7,7 @@ import std.array;
 import std.concurrency;
 import std.conv;
 import std.exception;
+import std.path : setExtension;
 import std.file : exists;
 import std.format;
 import std.getopt;
@@ -875,14 +876,22 @@ int _main(string[] args) {
 
     long sz, isz;
 
-    auto config_file = "shell.json";
+    auto default_shell_config_filename = "shell".setExtension(FileExtension.json);
+    const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
+    auto config_file = (user_config_file < 0) ? default_shell_config_filename : args[user_config_file];
+
     if (config_file.exists) {
-        options.load(config_file);
+        try {
+            options.load(config_file);
+        }
+        catch(Exception e) {
+            stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
+            return 1;
+        }
     }
     else {
-        options.setDefault;
+        options = ShellOptions.defaultOptions;
     }
-    string address;
 
     try {
         main_args = getopt(args, std.getopt.config.caseSensitive,
