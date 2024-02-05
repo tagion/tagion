@@ -1,21 +1,5 @@
 {
     "units": {
-        "transaction": {
-            "args": [],
-            "envs": {},
-            "stages": [
-                "none"
-            ],
-            "timeout": 0.0
-        },
-        "transaction_mode_zero": {
-            "args": [],
-            "envs": {},
-            "stages": [
-                "none"
-            ],
-            "timeout": 0.0
-        },
         "receive_epoch": {
             "args": [],
             "envs": {},
@@ -266,7 +250,14 @@
                 "acceptance", "big_contract"
             ],
             "timeout": 0.0
+        },
+        "transaction": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "shell"
+            ],
+            "timeout": 0.0
         }
-
     }
 }
