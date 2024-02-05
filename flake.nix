@@ -15,7 +15,7 @@
 
       # BlockstreamResearch secp256k1-zkp fork
       secp256k1-zkp = with import nixpkgs { system = "x86_64-linux"; };
-        stdenv.mkDerivation rec {
+        stdenv.mkDerivation {
           pname = "secp256k1-zkp";
 
           version = "0.3.2";
@@ -41,7 +41,7 @@
 
         };
 
-      system = "x86_64-linux"; 
+      system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
     in
     {
@@ -103,12 +103,10 @@
           ];
         };
 
-      # Experimental work on nix unittest build. execute using nix build .#unittest
-      # Idea is to use this along with nix run in order to run unittests with nix
-      packages.x86_64-linux.unittest =
-        with pkgs;
+    checks.x86_64-linux.unittest = with pkgs;
         stdenv.mkDerivation {
           name = "unittest";
+          doCheck = true;
 
           buildInputs = [
             nng
@@ -124,22 +122,27 @@
           ];
 
           src = self;
+
           configurePhase = ''
             echo DC=dmd >> local.mk
-            echo INSTALL=$out/bin >> local.mk
-            echo XDG_DATA_HOME=$out/.local/share >> local.mk
-            echo XDG_CONFIG_HOME=$out/.config >> local.mk
+            echo USE_SYSTEM_LIBS=1 >> local.mk
             echo NNG_ENABLE_TLS=1 >> local.mk
           '';
 
           buildPhase = ''
-            make GIT_HASH=${gitRev} proto-unittest-build
+            make proto-unittest-build
+          '';
+
+          checkPhase = ''
+            ./build/x86_64-linux/bin/unittest
           '';
 
           installPhase = ''
-            mkdir -p $out/bin; make install
+            # No install target available for unittest
+            mkdir -p $out/bin; cp ./build/x86_64-linux/bin/unittest $out/bin/
           '';
         };
+
       packages.x86_64-linux.dockerImage =
         pkgs.dockerTools.buildImage {
           name = "tagion-docker";
