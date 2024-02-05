@@ -105,20 +105,19 @@ jobs:
 
   commit_stage_cov:
     if: true
-    runs-on: CI
+    runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-      - name: get repository
+      - name: install_tools
         run: |
-          cd ..
-          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+          sudo apt-get install git autoconf build-essential libtool cmake
 
-      - name: pull
-        run: |
-          git fetch
-          git checkout ${{ github.sha }}
-          git clean -f && git restore . 
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+
+      - uses: actions/checkout@v4
 
       - name: Run commit stage tests
         run: |
