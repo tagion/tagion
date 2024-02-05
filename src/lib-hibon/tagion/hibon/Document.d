@@ -900,7 +900,7 @@ static assert(uint.sizeof == 4);
                                 }
                                 static if (isIntegral!T) {
                                     auto result = new Value(LEB128.decode!T(data[value_pos .. $])
-                                        .value);
+                                            .value);
                                     return result;
                                 }
                                 else {
@@ -1057,7 +1057,7 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                    "Key '", key.to!string, "' is not an index", key
+                        "Key '", key.to!string, "' is not an index", key
                 ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
@@ -1246,6 +1246,7 @@ static assert(uint.sizeof == 4);
                 return data[0 .. s] == other.data[0 .. s];
             }
 
+            /// Element error codes
             enum ErrorCode {
                 NONE, /// No errors
                 INVALID_NULL, /// Invalid null object
@@ -1299,7 +1300,7 @@ static assert(uint.sizeof == 4);
                     else if (data[0]!is 0) {
                         return INVALID_NULL;
                     }
-                else if (!LEB128.isInvariant!(uint)(data)) {
+                    else if (!LEB128.isInvariant!(uint)(data)) {
                         return ELEMENT_SIZE_INVALID_LEB128;
                     }
                 }
