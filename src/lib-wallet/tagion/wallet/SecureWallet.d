@@ -383,13 +383,13 @@ struct SecureWallet(Net : SecureNet) {
         return _net.derivePubkey(account.derive_state);
     }
 
-    const(TagionBill)[] invoices_to_bills(const(Invoice[]) orders) const {
-        Buffer getNonce() {
-            scope nonce = new ubyte[4];
-            getRandom(nonce);
-            return nonce.idup;
-        }
+    private Buffer getNonce() const pure {
+        auto nonce = new ubyte[4];
+        getRandom(nonce);
+        return nonce;
+    }
 
+    const(TagionBill)[] invoices_to_bills(const(Invoice[]) orders) const {
         return orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, getNonce)).array;
     }
 
@@ -854,17 +854,17 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     Result!bool getFee(const(Invoice[]) orders, out TagionCurrency fees) nothrow {
-
-        auto bills = orders.map!(
-                (order) => TagionBill(order.amount, assumeWontThrow(currentTime), order.pkey, Buffer.init))
+        auto bills = orders
+            .map!((order) => TagionBill(order.amount, assumeWontThrow(currentTime), order.pkey, getNonce))
             .array;
+
         return getFee(bills, fees);
     }
 
-    static immutable dummy_pubkey = Pubkey(new ubyte[33]);
-    static immutable dummy_nonce = new ubyte[4];
-
     Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
+        static immutable dummy_pubkey = Pubkey(new ubyte[33]);
+        static immutable dummy_nonce = new ubyte[4];
+
         auto bill = TagionBill(amount, assumeWontThrow(currentTime), dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
@@ -1332,10 +1332,10 @@ unittest {
 
     // pay invoice to yourself.
     auto wallet = StdSecureWallet("secret", "1234");
-    const bill1 = wallet.requestBill(1000.TGN);
+    const bill1 = wallet.requestBill(10_000.TGN);
     wallet.addBill(bill1);
 
-    auto invoice_to_pay = wallet.createInvoice("wowo", 10.TGN);
+    auto invoice_to_pay = wallet.createInvoice("wowo", 6969.TGN);
     wallet.registerInvoice(invoice_to_pay);
 
     SignedContract signed_contract;
@@ -1346,7 +1346,7 @@ unittest {
     HiRPC hirpc = HiRPC(null);
 
     assert(wallet.account.activated.byValue.filter!(b => b == true).walkLength == 1, "should have one locked bill");
-    assert(wallet.locked_balance == 1000.TGN);
+    assert(wallet.locked_balance == 10_000.TGN, "The entire balance should be locked");
     const req = wallet.getRequestUpdateWallet;
     const receiver = hirpc.receive(req.toDoc);
 
@@ -1359,18 +1359,21 @@ unittest {
     import std.stdio;
     import tagion.hibon.HiBONJSON;
 
-    const bills_in_dart = bills ~ wallet.account.requested.byValue.array;
+    const bills_in_dart = PayScript(signed_contract.contract.script).outputs;
+    assert(bills_in_dart.length == 2, "should have two outputs");
+    // const bills_in_dart = bills ~ wallet.account.requested.byValue.array;
     foreach (i, bill; bills_in_dart) {
         params[i] = bill.toHiBON;
     }
     auto dart_response = hirpc.result(receiver, Document(params)).toDoc;
     const received = hirpc.receive(dart_response);
 
-    wallet.setResponseUpdateWallet(received);
+    assert(wallet.setResponseUpdateWallet(received), "Should not throw an error on update");
 
     auto should_have = wallet.calcTotal(bills_in_dart);
     assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
 
+    assert(wallet.total_balance == wallet.available_balance, format("There should be no locked amount. Locked %s, available %s", wallet.total_balance, wallet.available_balance));
 }
 
 unittest {
