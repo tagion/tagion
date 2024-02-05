@@ -253,7 +253,9 @@
         },
         "transaction": {
             "args": [],
-            "envs": {},
+            "envs": {
+                "SHELL_URI": "http://0.0.0.0:4000"
+            },
             "stages": [
                 "shell"
             ],

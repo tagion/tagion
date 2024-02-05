@@ -29,6 +29,7 @@ import tagion.tools.wallet.WalletInterface;
 
 import tagion.tools.shell.shelloptions;
 import tagion.services.options;
+import std.process;
 
 import tagion.testbench.e2e;
 
@@ -56,10 +57,9 @@ int _main(string[] args) {
 
 
     scope ShellOptions shell_opts = ShellOptions.defaultOptions;
-    shell_opts.shell_uri = "http://0.0.0.0:8081";
+    shell_opts.shell_uri = environment["SHELL_URI"];
     shell_opts.save(shell_config_file);
     
-    /// TODO
     immutable(string[]) shell_args = ["tagionshell_transaction", shell_config_file];
     auto tid = spawn(&wrap_shell, shell_args);
 
