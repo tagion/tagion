@@ -27,6 +27,8 @@ import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
 
+import tagion.tools.shell.shelloptions;
+import tagion.services.options;
 
 import tagion.testbench.e2e;
 
@@ -46,10 +48,21 @@ void wrap_shell(immutable(string[]) args) {
 
 mixin Main!(_main);
 int _main(string[] args) {
-    /// TODO
-    immutable(string[]) shell_args = ["tagionshell_transaction"];
 
+    auto module_path = env.bdd_log.buildPath(__MODULE__);
+    if (module_path.exists) { rmdirRecurse(module_path); }
+    mkdirRecurse(module_path);
+    const shell_config_file = buildPath(module_path, "shell.json");
+
+
+    scope ShellOptions shell_opts = ShellOptions.defaultOptions;
+    shell_opts.shell_uri = "http://0.0.0.0:8081";
+    shell_opts.save(shell_config_file);
+    
+    /// TODO
+    immutable(string[]) shell_args = ["tagionshell_transaction", shell_config_file];
     auto tid = spawn(&wrap_shell, shell_args);
+
 
 
     Thread.sleep(20.seconds);
