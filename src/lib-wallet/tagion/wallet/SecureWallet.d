@@ -1359,7 +1359,9 @@ unittest {
     import std.stdio;
     import tagion.hibon.HiBONJSON;
 
-    const bills_in_dart = bills ~ wallet.account.requested.byValue.array;
+    const bills_in_dart = PayScript(signed_contract.contract.script).outputs;
+    assert(bills_in_dart.length == 2, "should have two outputs");
+    // const bills_in_dart = bills ~ wallet.account.requested.byValue.array;
     foreach (i, bill; bills_in_dart) {
         params[i] = bill.toHiBON;
     }
