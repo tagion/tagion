@@ -126,14 +126,14 @@ unittest {
     Envelope e1 = Envelope(1U,0U,rawdata);
     ubyte[] b1 = e1.toBuffer();
     Envelope e2 = Envelope(b1);
-    assert(e2.isValid())
+    assert(e2.header.isValid());
     ubyte[] b2 = e2.toData();
     assert(b2 == rawdata);
     
     Envelope e3 = Envelope(1U,9U,rawdata);
     ubyte[] b3 = e3.toBuffer();
     Envelope e4 = Envelope(b3);
-    assert(e4.header.isValid())
+    assert(e4.header.isValid());
     ubyte[] b4 = e4.toData();
     assert(b4 == rawdata);
     
