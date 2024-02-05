@@ -1,9 +1,9 @@
 coverage:
   status:
-    project: false
-      # default:
-      # target: auto    # The required coverage value
-      # threshold: 1%   # The leniency in hitting the target
+    project: 
+      default:
+      target: auto    # The required coverage value
+      threshold: 1%   # The leniency in hitting the target
 
 ignore:
   - "src/lib-betterc"
