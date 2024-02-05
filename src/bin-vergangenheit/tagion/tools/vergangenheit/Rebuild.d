@@ -80,7 +80,7 @@ struct Rebuild {
             }
             auto epoch_dartindices = epochs.map!(epoch => net.dartIndex(epoch)).array;
             auto locked_epoch_dartindex = [net.dartIndex(locked_epoch)];
-            const not_in_dart = src.checkload(epoch_dartindices ~ locked_epoch_dartindex); 
+            const not_in_dart = src.checkload(epoch_dartindices ~ locked_epoch_dartindex);
 
             if (!not_in_dart.canFind(locked_epoch_dartindex)) {
                 locked_epochs ~= locked_epoch;
@@ -104,11 +104,11 @@ struct Rebuild {
             error("Counted %d errors", result);
         }
         auto locked_epoch_numbers = locked_epochs.map!(l => cast(long) l.epoch_number).array.sort;
-        writefln("locked_epoch_numbers=%s", locked_epoch_numbers.splitWhen!((a,b) => a+1!=b));
-        const locked_groups=locked_epoch_numbers.splitWhen!((a,b) => a+1!=b);
-        writefln("%(Locked epochs %(%s %)\n%)", locked_groups);    
-    //locked_groups.each!(list => writefln("Locked epochs %(%d %)", list));
-        
+        writefln("locked_epoch_numbers=%s", locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b));
+        const locked_groups = locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b);
+        writefln("%s", locked_groups);
+        //locked_groups.each!(list => writefln("Locked epochs %(%d %)", list));
+
     }
 
     //void rebuild(const RebuildOptions opt, DART src, DART dst, string[]

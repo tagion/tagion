@@ -302,7 +302,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                     else static if (isHiBON!ElementT) {
                         if (e !is e.init) {
-                        set(index, e.toHiBON);
+                            set(index, e.toHiBON);
                         }
                     }
                     else static if (isInputRange!ElementT) {
@@ -314,7 +314,7 @@ mixin template HiBONRecord(string CTOR = "") {
                 }
                 static if (preserve_flag) {
                     if (max_index + 1 != range.length && range.length > 0) {
-                        result[range.length-1] = ForeachType!L.init;
+                        result[range.length - 1] = ForeachType!L.init;
                     }
                 }
             }
@@ -458,7 +458,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
         string[] result;
         static if (hasUDA!(This, recordType) && (getUDAs!(This, recordType)[0].name.length > 0)) {
-            result~=TYPENAME;
+            result ~= TYPENAME;
         }
         static foreach (i; 0 .. Fields!(This).length) {
             result ~= GetKeyName!i;
@@ -609,12 +609,12 @@ mixin template HiBONRecord(string CTOR = "") {
                         This.stringof));
             }
 
-            enum do_verify = hasMember!(This, "verify")
-                && isCallable!(verify) && __traits(compiles, this.verify());
+            enum do_verify = hasMember!(This, "verify") && isCallable!(verify); // && __traits(compiles, this.verify());
 
             static if (do_verify) {
-                static assert(functionAttributes!(this.verify) & FunctionAttribute.pure_,
-                    format("%s.verify() should be pure", This,stringof));
+                //pragma(msg, "do_verify ", (functionAttributes!(this.verify) & FunctionAttribute.const_) == FunctionAttribute.const_, " Attribute ", functionAttributes!(this.verify), " pure_ ",FunctionAttribute.pure_);
+                static assert(__traits(compiles, this.verify()),
+                        format("%s.verify() should be const pure nothrow", This.stringof));
                 scope (exit) {
                     check(this.verify(),
                             format("Document verification faild for HiBONRecord %s",
@@ -965,8 +965,8 @@ unittest {
             s.not_an_option = 42;
             s.s = 17;
             s.text = "text!";
-            const s_serialize=s.serialize;
-            const s_hibon=s.toHiBON;
+            const s_serialize = s.serialize;
+            const s_hibon = s.toHiBON;
             const s_hibon_serialize = s_hibon.serialize;
             // writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assert(s_serialize == s_hibon_serialize);
@@ -1175,8 +1175,8 @@ unittest {
             {
                 TestArray test_array;
                 test_array.tests.length = 3;
-                const test_array_serialize=test_array.serialize;
-                const test_array_hibon_serialize=test_array.toHiBON.serialize;
+                const test_array_serialize = test_array.serialize;
+                const test_array_hibon_serialize = test_array.toHiBON.serialize;
                 assert(test_array_serialize == test_array_hibon_serialize);
 
                 const doc = test_array.toDoc;
@@ -1195,9 +1195,9 @@ unittest {
             TestArrayPreserve test_array;
             test_array.tests.length = 3;
             const doc = test_array.toDoc;
-            const test_array_serialize=test_array.serialize;
-            const test_array_hibon=test_array.toHiBON;
-            const test_array_hibon_serialize= test_array_hibon.serialize;
+            const test_array_serialize = test_array.serialize;
+            const test_array_hibon = test_array.toHiBON;
+            const test_array_hibon_serialize = test_array_hibon.serialize;
             assert(test_array_serialize == test_array_hibon_serialize);
             const test_array_result = TestArrayPreserve(doc);
             //const test_array_hibon=test_array.toHiBON;
@@ -1705,7 +1705,7 @@ unittest { // Test UDA preserve
 
     S s;
     s.array.length = 7;
-    const s_serialize=s.serialize;
+    const s_serialize = s.serialize;
     const hibon_serialize = s.toHiBON.serialize;
     assert(s_serialize == hibon_serialize);
 
@@ -1714,14 +1714,15 @@ unittest { // Test UDA preserve
 /// #key should should be place before recordType $@
 unittest {
     @recordType("TypeS")
-    static struct S{
+    static struct S {
         @label("#key") string key;
         mixin HiBONRecord;
     }
+
     S s;
-    s.key="some text";
-    const s_serialize=s.serialize;
-    
+    s.key = "some text";
+    const s_serialize = s.serialize;
+
     const hibon_serialize = s.toHiBON.serialize;
     assert(s_serialize == hibon_serialize);
 

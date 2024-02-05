@@ -107,6 +107,8 @@ enum ExchangeState : uint {
                         if all the nodes isEva notes (This only occurs at genesis).
                      */
 
+
+
 }
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
@@ -124,7 +126,7 @@ struct EventBody {
     @label("$f") @optional @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
     @label("$t") sdt_t time;
-    bool verify() {
+    bool verify() const pure nothrow @nogc {
         return (father is null) ? true : (mother !is null);
     }
 

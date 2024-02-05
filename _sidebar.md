@@ -59,6 +59,7 @@
     - [collider](/src/bin-collider/README.md)
     - [geldbeutel](/src/bin-geldbeutel/README.md)
     - [auszahlung](/src/bin-auszahlung/README.md)
+    - [hirep](/src/bin-hirep/README.md)
 
 - Network Setup 
     - [Initialize DART](documents/network_setup/initialize_dart.md)
