@@ -85,7 +85,7 @@ jobs:
 
       - name: start service
         run: |
-          export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
+          export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
           export XDG_RUNTIME_DIR=/run/user/1001
 
           systemctl stop --user neuewelle.service || echo "No wave service was running"
