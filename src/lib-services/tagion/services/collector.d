@@ -109,10 +109,6 @@ struct CollectorService {
         catch (HiBONRecordException e) {
             log.event(reject, "hirpc_invalid_signed_contract", doc);
         }
-        catch (Exception e) {
-            log.event(reject, "hirpc_invalid_signed_contract", doc);
-
-        }
     }
 
     private void clean(uint id) {
@@ -159,7 +155,7 @@ struct CollectorService {
             immutable collection =
                 ((res.id in reads) !is null)
                 ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                    CollectedSignedContract)(s_contract, inputs);
+                        CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {
