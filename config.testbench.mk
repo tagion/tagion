@@ -11,9 +11,11 @@ export BDD_RESULTS=$(BDD_LOG)/results/
 
 BDD_DFILES+=${shell find $(BDD) -name "*.d" -a -not -name "*.gen.d" -a -path "*/testbench/*" -a -not -path "*/unitdata/*" -a -not -path "*/backlog/*" }
 testbench: DFILES+=${shell find $(DSRC)/bin-wave/ -name "*.d"}
+testbench: DFILES+=${shell find $(DSRC)/bin-tagionshell/ -name "*.d"}
 testbench: DFILES+=${shell find $(DSRC)/bin-geldbeutel/ -name "*.d"}
 
 testbench: DINC+=$(DSRC)/bin-wave/
+testbench: DINC+=$(DSRC)/bin-tagionshell/
 
 #
 # Binary testbench 

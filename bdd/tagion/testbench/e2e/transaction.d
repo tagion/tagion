@@ -39,12 +39,26 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+void wrap_shell(immutable(string[]) args) {
+    import tagionshell = tagion.tools.tagionshell;
+    tagionshell._main(cast(string[]) args);
+}
 
 mixin Main!(_main);
 int _main(string[] args) {
+    /// TODO
+    immutable(string[]) shell_args = ["tagionshell_transaction"];
+
+    auto tid = spawn(&wrap_shell, shell_args);
+
+
+    Thread.sleep(20.seconds);
+
+
+
+    
     auto feature = automation!(transaction);
     feature.run;
-
     return 0;
 }
 
