@@ -739,7 +739,7 @@ struct SecureWallet(Net : SecureNet) {
                 }
             }
         }
-        foreach (request_bill; account.requested.byValue) {
+        foreach (const request_bill; account.requested.byValue.array) {
             auto request_bill_index = net.dartIndex(request_bill);
             if (!not_in_dart.canFind(request_bill_index)) {
                 account.bills ~= request_bill;
