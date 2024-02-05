@@ -613,6 +613,8 @@ mixin template HiBONRecord(string CTOR = "") {
                 && isCallable!(verify) && __traits(compiles, this.verify());
 
             static if (do_verify) {
+                static assert(functionAttributes!(this.verify) & FunctionAttribute.pure_,
+                    format("%s.verify() should be pure", This,stringof));
                 scope (exit) {
                     check(this.verify(),
                             format("Document verification faild for HiBONRecord %s",

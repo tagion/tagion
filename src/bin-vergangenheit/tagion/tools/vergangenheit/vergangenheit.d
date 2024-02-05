@@ -149,6 +149,4 @@ int _main(string[] args) {
         return 1;
     }
     return 0;
-
-    return 0;
 }
