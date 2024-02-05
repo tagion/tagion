@@ -36,11 +36,12 @@ $(UNITTEST_BIN): nng secp256k1
 $(UNITTEST_BIN): DFLAGS+=$(DIP1000)
 $(UNITTEST_BIN): $(COVWAY) 
 $(UNITTEST_BIN): revision $(REPOROOT)/default.mk
+$(UNITTEST_BIN): LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
 	echo deps $?
 	${call log.env, UNITTEST_DFILES,${filter %.d,$^}}
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} $(LIBS) ${addprefix -L,$(LDFLAGS)} $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} ${addprefix -L,$(LDFLAGS)} $(OUTPUT)$@
 
 
 .PHONY: unittest
