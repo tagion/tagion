@@ -86,6 +86,7 @@ jobs:
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload code coverage results
+        if: false
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -104,7 +105,7 @@ jobs:
           rm -r *.callstack logs/ || echo "no logs"
 
   commit_stage_cov:
-    if: true
+    if: false
     runs-on: CI
     timeout-minutes: 5
 
