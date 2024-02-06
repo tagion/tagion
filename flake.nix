@@ -9,12 +9,29 @@
     let
       gitRev = self.rev or "dirty";
 
-      # nng_no_tls = self.inputs.nng.packages.${nixpkgs.system}.default.override {
-      #     mbedtlsSupport = false;
-      # };
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+
+      # Disable mbedtls override is broken upstream see if merged
+      # https://github.com/NixOS/nixpkgs/pull/285518
+      nng_no_tls = with pkgs;
+        stdenv.mkDerivation {
+          pname = "nng";
+          version = "git";
+
+          src = fetchFromGitHub {
+            owner = "nanomsg";
+            repo = "nng";
+            rev = "c5e9d8acfc226418dedcf2e34a617bffae043ff6";
+            hash = "sha256-bFsL3IMmJzjSaVfNBSfj5dStRD/6e7QOkTo01RSUN6g=";
+          };
+
+          nativeBuildInputs = [ cmake ninja ];
+          cmakeFlags = [ "-G Ninja" ];
+        };
 
       # BlockstreamResearch secp256k1-zkp fork
-      secp256k1-zkp = with import nixpkgs { system = "x86_64-linux"; };
+      secp256k1-zkp = with pkgs;
         stdenv.mkDerivation {
           pname = "secp256k1-zkp";
 
@@ -40,9 +57,6 @@
           doCheck = true;
 
         };
-
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
     in
     {
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
@@ -52,10 +66,9 @@
         pkgs.stdenv.mkDerivation {
           name = "tagion";
 
-          buildInputs = with pkgs; [
-            nng
+          buildInputs = [
+            nng_no_tls
             secp256k1-zkp
-            mbedtls
           ];
 
           nativeBuildInputs = with pkgs; [
@@ -73,7 +86,6 @@
             echo INSTALL=$out/bin >> local.mk
             echo XDG_DATA_HOME=$out/.local/share >> local.mk
             echo XDG_CONFIG_HOME=$out/.config >> local.mk
-            echo NNG_ENABLE_TLS=1 >> local.mk
           '';
 
           buildPhase = ''
@@ -89,8 +101,8 @@
         # Notice the reference to nixpkgs here.
         pkgs.mkShell {
           buildInputs = with pkgs; [
-            self.packages.x86_64-linux.default.nativeBuildInputs
             self.packages.x86_64-linux.default.buildInputs
+            self.packages.x86_64-linux.default.nativeBuildInputs
             dub
             ldc
             gcc
@@ -103,30 +115,20 @@
           ];
         };
 
-    checks.x86_64-linux.unittest = with pkgs;
+      checks.x86_64-linux.unittest = with pkgs;
         stdenv.mkDerivation {
           name = "unittest";
           doCheck = true;
 
-          buildInputs = [
-            nng
-            secp256k1-zkp
-            mbedtls
-          ];
+          buildInputs = self.packages.x86_64-linux.default.buildInputs;
 
-          nativeBuildInputs = [
-            dmd
-            dtools
-            gnumake
-            pkg-config
-          ];
+          nativeBuildInputs = self.packages.x86_64-linux.default.nativeBuildInputs;
 
           src = self;
 
           configurePhase = ''
             echo DC=dmd >> local.mk
             echo USE_SYSTEM_LIBS=1 >> local.mk
-            echo NNG_ENABLE_TLS=1 >> local.mk
           '';
 
           buildPhase = ''
