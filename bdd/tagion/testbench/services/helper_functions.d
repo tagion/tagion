@@ -17,9 +17,11 @@ import tagion.wallet.SecureWallet;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 
-TagionCurrency getWalletUpdateAmount(ref StdSecureWallet wallet, string sock_addr, HiRPC hirpc) {
+TagionCurrency getWalletUpdateAmount(ref StdSecureWallet wallet, string sock_addr, HiRPC hirpc, bool sendshell = false) {
     auto checkread = wallet.getRequestCheckWallet(hirpc);
-    auto wallet_received = sendDARTHiRPC(sock_addr, checkread, hirpc);
+    auto wallet_received = sendshell ? 
+          (() @trusted => sendShellHiRPC(sock_addr, checkread, hirpc))() 
+        : sendDARTHiRPC(sock_addr, checkread, hirpc);
     writefln("Received res", wallet_received.toPretty);
     check(!wallet_received.isError, format("Received HiRPC error: %s", wallet_received.toPretty));
     check(wallet.setResponseCheckRead(wallet_received), "wallet not updated succesfully");
@@ -27,9 +29,11 @@ TagionCurrency getWalletUpdateAmount(ref StdSecureWallet wallet, string sock_add
     return wallet.calcTotal(wallet.account.bills);
 }
 
-TagionCurrency getWalletInvoiceUpdateAmount(ref StdSecureWallet wallet, string sock_addr, HiRPC hirpc) {
+TagionCurrency getWalletInvoiceUpdateAmount(ref StdSecureWallet wallet, string sock_addr, HiRPC hirpc, bool sendshell = false) {
     auto owner_keys = wallet.getRequestUpdateWallet(hirpc);
-    auto wallet_received = sendDARTHiRPC(sock_addr, owner_keys, hirpc);
+    auto wallet_received = sendshell ? 
+          (() @trusted => sendShellHiRPC(sock_addr, owner_keys, hirpc))() 
+        : sendDARTHiRPC(sock_addr, owner_keys, hirpc);
     writefln("Received res", wallet_received.toPretty);
     check(!wallet_received.isError, format("Received HiRPC error: %s", wallet_received.toPretty));
     check(wallet.setResponseUpdateWallet(wallet_received), "wallet not updated succesfully");
