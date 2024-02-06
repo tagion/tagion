@@ -6,6 +6,7 @@ import tagion.services.options : contract_sock_addr;
 import tagion.utils.JSONCommon;
 import std.format;
 
+pragma(msg, "fixme(phr): this should not be an enum as it makes different tests very difficult");
 enum mode0_prefix = "Node_%d_";
 
 import std.exception;
