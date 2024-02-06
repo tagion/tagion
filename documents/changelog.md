@@ -1,3 +1,18 @@
+# Changelog for Epoch 548959 .. 720414
+
+**HiBON bug fixes and enhancements**
+We have resolved an issue in HiBON where sub-document length fields were incorrectly calculated. The fix not only addresses this bug but also optimizes HiBON for increased speed. The update enables more compile-time introspection, facilitating the creation of custom compile-time serialization functions and sorting when using HiBONRecords. Specifically, when a mixin HiBONRecord struct contains only simple types, the calculation of `full_size` and the `serialize` function occurs during compile-time. If the HiBONRecord includes non-simple types, the generated serialization function estimates the size of the final struct, minimizing new allocations during serialization/deserialization. Additionally, HiBON now utilizes Appender[] for appending elements, recommended over `array ~= data` when dealing with multiple appends.
+
+**`verify` function bug**
+Addressed a bug in the `verify` function where supplying 0 inputs would incorrectly return true. This bug has been fixed to ensure accurate behavior. Although other checks in the contract would still catch issues, correcting this bug improves the efficiency of the Node by reducing unnecessary computations.
+
+**CI-Flow Improvements**
+We have streamlined the CI-flow by reorganizing and grouping related elements. Previously, service files for tagionwave and tagionshell were located in separate "bin-x" directories, but now they are consolidated into a common "etc/" folder. Additionally, frequently used scripts for starting the network have been grouped into a dedicated "scripts/" folder. This reorganization simplifies CI-flows, eliminating the need to modify the make-flow for the correct inclusion of files in the artifacts.
+
+**HiBON Envelope Protocol**
+Introduced the first iteration of the HiBON envelope protocol, enhancing HiBON's capabilities. This protocol allows HiBONs to be sent with compression and a CRC checksum, resulting in significantly reduced package sizes for communication between nodes and from client to shell. Currently, only zlib compression is supported, but future updates will introduce additional compression types. Future iterations may also include headers for implementing encryption.
+
+
 # Changelog for epoch 548959 .. 624229
 
 **Improved Documentation**
