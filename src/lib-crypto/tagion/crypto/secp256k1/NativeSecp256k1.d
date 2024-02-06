@@ -102,7 +102,7 @@ class NativeSecp256k1 {
     final void privTweak(
             scope const(ubyte[]) keypair,
     scope const(ubyte[]) tweak,
-    out ubyte[] tweakked_keypair) const
+    out ubyte[] tweakked_keypair) const pure
     in (keypair.length == secp256k1_keypair.data.length)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -159,7 +159,7 @@ class NativeSecp256k1 {
     @trusted
     final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
-    const(ubyte[]) pubkey) const
+    const(ubyte[]) pubkey) const pure
     in (seckey.length == SECKEY_SIZE)
     in (pubkey.length == PUBKEY_SIZE)
     do {
@@ -193,7 +193,7 @@ class NativeSecp256k1 {
     @trusted
     final void createKeyPair(
             scope const(ubyte[]) seckey,
-    out ubyte[] keypair) const
+    out ubyte[] keypair) const pure
     in (seckey.length == SECKEY_SIZE || seckey.length == secp256k1_keypair.data.length)
     do {
         if (seckey.length == secp256k1_keypair.data.length) {
@@ -209,7 +209,7 @@ class NativeSecp256k1 {
     @trusted
     final void getSecretKey(
             ref scope const(ubyte[]) keypair,
-    out ubyte[] seckey) nothrow const
+    out ubyte[] seckey)  const pure nothrow
     in (keypair.length == secp256k1_keypair.data.length)
 
     do {
@@ -222,7 +222,7 @@ class NativeSecp256k1 {
     @trusted
     final void getPubkey(
             ref scope const(secp256k1_keypair) keypair,
-            ref scope secp256k1_pubkey pubkey) const nothrow {
+            ref scope secp256k1_pubkey pubkey) const pure nothrow {
         secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
     }
 
@@ -230,7 +230,7 @@ class NativeSecp256k1 {
        Takes both a seckey and keypair 
 */
     @trusted
-    final immutable(ubyte[]) getPubkey(scope const(ubyte[]) keypair_seckey) const
+    final immutable(ubyte[]) getPubkey(scope const(ubyte[]) keypair_seckey) const pure
     in (keypair_seckey.length == secp256k1_keypair.data.length ||
             keypair_seckey.length == SECKEY_SIZE)
 
@@ -252,7 +252,7 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    protected final immutable(ubyte[]) getPubkey(ref scope const(secp256k1_keypair) keypair) const {
+    protected final immutable(ubyte[]) getPubkey(ref scope const(secp256k1_keypair) keypair) const pure {
         secp256k1_pubkey xy_pubkey;
         {
             const rt = secp256k1_keypair_pub(_ctx, &xy_pubkey, &keypair);
@@ -282,7 +282,7 @@ class NativeSecp256k1 {
     final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
     scope const(ubyte[]) keypair,
-    scope const(ubyte[]) aux_random) const
+    scope const(ubyte[]) aux_random) const pure
     in (msg.length == MESSAGE_SIZE)
     in (keypair.length == secp256k1_keypair.data.length)
     in (aux_random.length == MESSAGE_SIZE)
@@ -297,7 +297,7 @@ class NativeSecp256k1 {
     /// Ditto
     final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
-    scope const(ubyte[]) keypair) const {
+    scope const(ubyte[]) keypair) const pure {
         ubyte[MESSAGE_SIZE] _aux_random;
         ubyte[] aux_random = _aux_random;
         getRandom(aux_random);
@@ -316,7 +316,7 @@ class NativeSecp256k1 {
     final bool verify(
             const(ubyte[]) msg,
     const(ubyte[]) signature,
-    const(ubyte[]) pubkey) const nothrow
+    const(ubyte[]) pubkey) const nothrow pure
     in (msg.length == MESSAGE_SIZE)
     in (pubkey.length == PUBKEY_SIZE)
     in (signature.length == SIGNATURE_SIZE)
@@ -330,7 +330,7 @@ class NativeSecp256k1 {
     protected final bool verify(
             const(ubyte[]) signature,
     const(ubyte[]) msg,
-    ref scope const(secp256k1_pubkey) pubkey) const nothrow
+    ref scope const(secp256k1_pubkey) pubkey) const nothrow pure
     in (signature.length == SIGNATURE_SIZE)
     in (msg.length == MESSAGE_SIZE)
 

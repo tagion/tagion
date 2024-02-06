@@ -4,7 +4,6 @@ module tagion.services.hirpc_verifier;
 
 import std.stdio;
 import tagion.actor.actor;
-import tagion.basic.Debug : __write;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;

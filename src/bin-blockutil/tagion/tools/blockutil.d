@@ -69,7 +69,6 @@ struct BlockFileAnalyzer {
         while (index != Index.init) {
             auto add_segment = RecycleSegment(blockfile, index);
             stat(add_segment.size);
-            pragma(msg, "add_segment ", typeof(add_segment.next));
             index = add_segment.next;
         }
         fout.writeln(stat.histogramString(logscale));

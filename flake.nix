@@ -3,33 +3,75 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    secp256k1-zkp.url = "github:tagion/secp256k1-zkp";
   };
 
-  outputs = { self, nixpkgs, secp256k1-zkp }:
+  outputs = { self, nixpkgs }:
     let
-      gitRev =
-        if (builtins.hasAttr "rev" self)
-        then self.rev
-        else "dirty";
+      gitRev = self.rev or "dirty";
+
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+
+      # Disable mbedtls override is broken upstream see if merged
+      # https://github.com/NixOS/nixpkgs/pull/285518
+      nng_no_tls = with pkgs;
+        stdenv.mkDerivation {
+          pname = "nng";
+          version = "git";
+
+          src = fetchFromGitHub {
+            owner = "nanomsg";
+            repo = "nng";
+            rev = "c5e9d8acfc226418dedcf2e34a617bffae043ff6";
+            hash = "sha256-bFsL3IMmJzjSaVfNBSfj5dStRD/6e7QOkTo01RSUN6g=";
+          };
+
+          nativeBuildInputs = [ cmake ninja ];
+          cmakeFlags = [ "-G Ninja" ];
+        };
+
+      # BlockstreamResearch secp256k1-zkp fork
+      secp256k1-zkp = with pkgs;
+        stdenv.mkDerivation {
+          pname = "secp256k1-zkp";
+
+          version = "0.3.2";
+
+          src = fetchFromGitHub {
+            owner = "BlockstreamResearch";
+            repo = "secp256k1-zkp";
+            rev = "d575ef9aca7cd1ed79735c95ec9f296554ea1df7";
+            sha256 = "sha256-Z8TrMxlNduPc4lEzA34jjo75sUJYh5fLNBnXg7KJy8I=";
+          };
+
+          nativeBuildInputs = [ autoreconfHook ];
+
+          configureFlags = [
+            "--enable-experimental"
+            "--enable-benchmark=no"
+            "--enable-module-recovery"
+            "--enable-module-schnorrsig"
+            "--enable-module-musig"
+          ];
+
+          doCheck = true;
+
+        };
     in
     {
-
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
 
       packages.x86_64-linux.default =
         # Notice the reference to nixpkgs here.
-        with import nixpkgs { system = "x86_64-linux"; };
-        stdenv.mkDerivation {
+        pkgs.stdenv.mkDerivation {
           name = "tagion";
 
           buildInputs = [
-            nng
-            secp256k1-zkp.defaultPackage.x86_64-linux
-            mbedtls
+            nng_no_tls
+            secp256k1-zkp
           ];
 
-          nativeBuildInputs = [
+          nativeBuildInputs = with pkgs; [
             dmd
             dtools
             gnumake
@@ -42,7 +84,8 @@
             echo DC=dmd >> local.mk
             echo USE_SYSTEM_LIBS=1 >> local.mk
             echo INSTALL=$out/bin >> local.mk
-            echo NNG_ENABLE_TLS=1 >> local.mk
+            echo XDG_DATA_HOME=$out/.local/share >> local.mk
+            echo XDG_CONFIG_HOME=$out/.config >> local.mk
           '';
 
           buildPhase = ''
@@ -56,11 +99,10 @@
 
       devShells.x86_64-linux.default =
         # Notice the reference to nixpkgs here.
-        with import nixpkgs { system = "x86_64-linux"; };
-        mkShell {
-          buildInputs = [
-            self.packages.x86_64-linux.default.nativeBuildInputs
+        pkgs.mkShell {
+          buildInputs = with pkgs; [
             self.packages.x86_64-linux.default.buildInputs
+            self.packages.x86_64-linux.default.nativeBuildInputs
             dub
             ldc
             gcc
@@ -73,66 +115,60 @@
           ];
         };
 
-    # Experimental work on nix unittest build. execute using nix build .#unittest
-    # Idea is to use this along with nix run in order to run unittests with nix
-    packages.x86_64-linux.unittest = 
-      with import nixpkgs { system = "x86_64-linux"; };
-      stdenv.mkDerivation {
-        name = "unittest";
+      checks.x86_64-linux.unittest = with pkgs;
+        stdenv.mkDerivation {
+          name = "unittest";
+          doCheck = true;
 
-          buildInputs = [
-            nng
-            secp256k1-zkp.defaultPackage.x86_64-linux
-            mbedtls
-          ];
+          buildInputs = self.packages.x86_64-linux.default.buildInputs;
 
-          nativeBuildInputs = [
-            dmd
-            dtools
-            gnumake
-            pkg-config
-          ];
+          nativeBuildInputs = self.packages.x86_64-linux.default.nativeBuildInputs;
 
           src = self;
+
           configurePhase = ''
             echo DC=dmd >> local.mk
-            echo INSTALL=$out/bin >> local.mk
-            echo NNG_ENABLE_TLS=1 >> local.mk
+            echo USE_SYSTEM_LIBS=1 >> local.mk
           '';
 
           buildPhase = ''
-            make GIT_HASH=${gitRev} proto-unittest-build
+            make proto-unittest-build
+          '';
+
+          checkPhase = ''
+            ./build/x86_64-linux/bin/unittest
           '';
 
           installPhase = ''
-            mkdir -p $out/bin; make install
+            # No install target available for unittest
+            mkdir -p $out/bin; cp ./build/x86_64-linux/bin/unittest $out/bin/
           '';
-      };
-    packages.x86_64-linux.dockerImage = 
-      with import nixpkgs { system = "x86_64-linux"; };
-      dockerTools.buildImage {
-        name = "tagion-docker";
-        tag = "latest";
-        fromImage = dockerTools.pullImage {
-          imageName = "alpine";
-          imageDigest = "sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd";
-          sha256 = "sha256-6tIIMFzCUPRJahTPoM4VG3XlD7ofFPfShf3lKdmKSn0=";
-          finalImageName = "alpine";
-          os = "linux";
-          arch = "x86_64";
-        };
-        copyToRoot = pkgs.buildEnv {
-          name = "image-root";
-          paths = [ self.packages.x86_64-linux.default ];
-          pathsToLink = [ "/bin" ];
         };
 
-        # contents = [ self.packages.x86_64-linux.default];
-        config = {
-          Cmd = [ "/bin/sh" ];
-          Env = [];
-          Volumes = {};
+      packages.x86_64-linux.dockerImage =
+        pkgs.dockerTools.buildImage {
+          name = "tagion-docker";
+          tag = "latest";
+          fromImage = pkgs.dockerTools.pullImage {
+            imageName = "alpine";
+            imageDigest = "sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd";
+            sha256 = "sha256-6tIIMFzCUPRJahTPoM4VG3XlD7ofFPfShf3lKdmKSn0=";
+            finalImageName = "alpine";
+            os = "linux";
+            arch = "x86_64";
+          };
+          copyToRoot = pkgs.buildEnv {
+            name = "image-root";
+            paths = [ self.packages.x86_64-linux.default ];
+            pathsToLink = [ "/bin" ];
+          };
+
+          # contents = [ self.packages.x86_64-linux.default];
+          config = {
+            Cmd = [ "/bin/sh" ];
+            Env = [ ];
+            Volumes = { };
+          };
         };
-      };
     };
 }

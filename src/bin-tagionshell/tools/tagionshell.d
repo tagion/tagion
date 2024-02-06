@@ -7,6 +7,7 @@ import std.array;
 import std.concurrency;
 import std.conv;
 import std.exception;
+import std.path : setExtension;
 import std.file : exists;
 import std.format;
 import std.getopt;
@@ -273,13 +274,37 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
             rep.msg = "socket error";
             return;
         }
-        ubyte[4096] buf;
-        size_t len = s.receivebuf(buf, 4096);
-        if (len == size_t.max && s.errno != 0) {
-            writeit("contract_handler: recv: ", nng_errstr(s.errno));
-            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "socket error";
-            return;
+        const stime = timestamp();
+        NNGMessage msg = NNGMessage(0);
+        ubyte[] buf;
+        size_t len = 0;
+        while(true){
+            rc = s.receivemsg(&msg, true);
+            if(rc < 0){
+                if(s.errno == nng_errno.NNG_EAGAIN){
+                    nng_sleep(msecs(opt.sock_recvdelay));
+                    auto itime = timestamp();
+                    if((itime - stime) * 1000 > opt.sock_recvtimeout){
+                        writeit("contract_handler: recv: timeout");
+                        rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
+                        rep.msg = "socket timeout";
+                        return;
+                    }
+                    msg.clear();
+                    continue;
+                }
+                if(s.errno != 0){
+                    writeit("contract_handler: recv: ", nng_errstr(s.errno));
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "socket error";
+                    return;
+                }
+                writeit("contract_handler: recv: empty response");
+                break;
+            }
+            len = msg.length; 
+            buf = msg.body_trim!(ubyte[])(msg.length);
+            break;
         }
         writeit(format("WH: dart: received %d bytes", len));
         rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
@@ -405,7 +430,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
 
         if (req.path[$ - 1] == "nocache")
             usecache = false;
-
+        
         SecureNet net = new StdSecureNet();
         net.generateKeyPair("very_secret");
         HiRPC hirpc = HiRPC(net);
@@ -680,7 +705,7 @@ static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
             return;
         }
 
-        writeit(signed_contract.toPretty);
+        //writeit(signed_contract.toPretty);
 
         const message = wallet_interface.secure_wallet.net.calcHash(signed_contract);
         const contract_net = wallet_interface.secure_wallet.net.derive(message);
@@ -851,14 +876,22 @@ int _main(string[] args) {
 
     long sz, isz;
 
-    auto config_file = "shell.json";
+    auto default_shell_config_filename = "shell".setExtension(FileExtension.json);
+    const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
+    auto config_file = (user_config_file < 0) ? default_shell_config_filename : args[user_config_file];
+
     if (config_file.exists) {
-        options.load(config_file);
+        try {
+            options.load(config_file);
+        }
+        catch(Exception e) {
+            stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
+            return 1;
+        }
     }
     else {
-        options.setDefault;
+        options = ShellOptions.defaultOptions;
     }
-    string address;
 
     try {
         main_args = getopt(args, std.getopt.config.caseSensitive,
@@ -935,6 +968,8 @@ int _main(string[] args) {
     );
 
     isz = getmemstatus();
+
+
 
 appoint:
 

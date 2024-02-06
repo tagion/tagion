@@ -10,10 +10,11 @@ import std.range : only;
 import std.traits;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.basic : isOneOf;
-import tagion.behaviour.BehaviourException;
+import behaviour_exception = tagion.behaviour.BehaviourException;
 public import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourReporter;
 import tagion.behaviour.BehaviourResult;
+import tagion.behaviour.BehaviourException;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
@@ -54,9 +55,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
         }, string, string, size_t, string, string);
         import std.uni : toLower;
 
-        
-
-        .check(scenario !is null,
+        behaviour_exception.check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; ActionProperties) {
             {
@@ -303,7 +302,7 @@ auto automation(alias M)() if (isFeature!M) {
                     }
                     else {
                         check(context[i]!is null,
-                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                        format("Scenario '%s' must be constructed before can be executed in '%s' feature",
                                 FeatureContext.fieldNames[i],
                                 moduleName!M));
                     }
@@ -616,6 +615,7 @@ unittest {
     import WithCtor = tagion
         .behaviour
         .BehaviourUnittestWithCtor;
+    import tagion.behaviour.BehaviourException;
 
     auto feature_with_ctor = automation!(WithCtor)();
     assert(feature_with_ctor.create("bankster", 17));

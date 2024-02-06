@@ -739,7 +739,7 @@ struct WalletInterface {
 
                         verbose("Received response", received.toPretty);
 
-                        version(NEW_REQ) {
+                        version(TRT_READ_REQ) {
                             bool setRequest(const(HiRPC.Receiver) receiver) {
                                 if (trt_update) {
                                     return secure_wallet.setResponseUpdateWallet(receiver);

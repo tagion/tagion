@@ -139,9 +139,9 @@ int _main(string[] args) {
                 "r|reserved", "Check reserved keys and types enabled", &reserved,
                 "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
                 "J", "Input stream format json", &input_json,
-                "t|base64", "Convert to base64 output", &output_base64,
+                "t|base64url", "Convert to base64url output", &output_base64,
                 "x|hex", "Convert to hex output", &output_hex,
-                "T|text", "Input stream base64 or hex-string", &input_text,
+                "T|text", "Input stream base64url or hex-string", &input_text,
                 "sample", "Produce a sample HiBON", &sample,
                 "check", "Check the hibon format", &hibon_check,
                 "H|hash", "Prints the hash value", &output_hash,
@@ -164,18 +164,18 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .json or .hibon format",
-                "",
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] [<in-file>...]", program),
+                    "",
+                    "Where:",
+                    "<in-file>           Is an input file in .json or .hibon format",
+                    "",
 
-                "<option>:",
+                    "<option>:",
 
-            ].join("\n"),
+                    ].join("\n"),
                     main_args.options);
             return 0;
         }

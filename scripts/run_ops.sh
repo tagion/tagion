@@ -43,7 +43,7 @@ systemctl stop --user tagionshell.service || echo "No shell service was running"
 
 
 "$bdir"/tagion -s || echo "Soft links already exists";
-make ci-files || echo "Not in source dir"
+make trunk || echo "Not in source dir"
 
 mkdir -p "$wdir" "$net_dir"
 
@@ -116,18 +116,14 @@ do
   echo "$dartfilename" "$trtfilename"
 done
 
-(
-    cd "$net_dir" || return 1
+(cd "$net_dir" || return 1
     "$bdir"/neuewelle -O \
         --option=wave.number_of_nodes:$nodes \
         --option=wave.fail_fast:true \
         --option=subscription.tags:taskfailure,recorder
 )
 
-mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/tagion/wave 
-cp "$bdir/run_network.sh" ~/.local/share/tagion/wave/
-cp "$bdir/tagion" ~/.local/bin/
-cp "$bdir/tagionshell.service" "$bdir/neuewelle.service" ~/.config/systemd/user
+make INSTALL=~/.local/bin install
 
 systemctl --user daemon-reload
 systemctl restart --user neuewelle.service
@@ -144,6 +140,7 @@ set -ex
 
 op_pids="";
 log_dir="$PWD/logs/ops"
+rm -r "$log_dir.old" || echo "No old old logs"
 mv "$log_dir" "$log_dir.old" || echo "no old logs"
 mkdir -p "$log_dir"
 for ((i = 1; i <= wallets; i+=2)); 
@@ -152,7 +149,7 @@ do
     j=$((i+1))
     export DLOG="$log_dir/$i"
     mkdir -p "$DLOG"
-    "$bdir"/testbench operational \
+    "$bdir/testbench" operational $OPS_FLAGS \
         -w "$wdir"/wallet$i.json -x "$pincode" \
         -w "$wdir"/wallet"$j".json -x "$pincode_two" > "$DLOG/test.log" 2>&1 &
     op_pids+=${!}

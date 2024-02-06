@@ -805,12 +805,12 @@ class BlockFile {
         }
     }
 
-    void statisticDump(File fout = stdout, const bool logscale=false) const {
+    void statisticDump(File fout = stdout, const bool logscale = false) const {
         fout.writeln(_statistic.toString);
         fout.writeln(_statistic.histogramString(logscale));
     }
 
-    void recycleStatisticDump(File fout = stdout, const bool logscale=false) const {
+    void recycleStatisticDump(File fout = stdout, const bool logscale = false) const {
         fout.writeln(_recycler_statistic.toString);
         fout.writeln(_recycler_statistic.histogramString(logscale));
     }

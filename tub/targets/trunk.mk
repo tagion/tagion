@@ -1,43 +1,36 @@
 
-TRUNK_FILE=$(TRUNK)/trunk.tgz
-
-TRUNK_FLAGS+=-zcvf
+TRUNK_TAR_FILE:=$(BUILD)/trunk.tgz
 
 TRUNK_DIRS+=$(DLOG)
 TRUNK_DIRS+=$(DBIN)
 
-TRUNK_MAKE:=$(DBIN)/Makefile
+.PHONY: $(TRUNK_TAR_FILE)
+.PHONY: trunk trunk-tar
 
-TRUNK_LIST:=$(TMP_FILE:.sh=.lst)
+trunk: copy_trunk_files
 
-.PHONY: $(TRUNK_FILE)
-.PHONY: trunk
-
-trunk: $(TRUNK_FILE)
-
-$(TRUNK_FILE): $(TRUNK_LIST) $(TRUNK)/.way #$(TRUNK_MAKE)
-	tar --files-from $(TRUNK_LIST) $(TRUNK_FLAGS) $(TRUNK_FILE) 
+trunk-tar: trunk
+	tar czf ${TRUNK_TAR_FILE} --directory=${TRUNK}/ .
 
 .PHONY: clean-trunk
 clean-trunk:
 	${PRECMD}
 	${call log.header, $@ :: clean}
-	$(RM) $(TRUNK_FILE)
+	$(RM) $(TRUNK_TAR_FILE)
+	$(RM) -r $(TRUNK)
 	${call log.close}
 
 clean: clean-trunk
 
-$(TRUNK_LIST):  
-	find ${shell realpath --relative-to $(REPOROOT) $(TRUNK_DIRS)} -type f -not -name "*.o" -not -name "*-cov" > $@
-	echo $@
+copy_trunk_files:
+	mkdir -p ${TRUNK}
+	find ${shell realpath --relative-to $(REPOROOT) $(TRUNK_DIRS)} -type f -not -name "*.way" -not -name "*.o" -not -name "*-cov" -exec cp --parents {} ${TRUNK} \;
+	find -name "*.callstack" -exec cp {} ${TRUNK} \;
 
-
-# $(TRUNK_MAKE): $(FUND)/ci/Makefile
-# 	$(PRECMD)
-# 	$(CP) $< $@
-
-
-# trunk_make: $(TRUNK_MAKE)
+	# Extra files
+	$(CP) tub/targets/install.mk ${TRUNK}/GNUmakefile
+	$(CP) $(REPOROOT)/collider_schedule.json ${TRUNK}
+	$(CP) -r scripts/ etc/ $(TRUNK)/
 
 .PHONY: help-trunk
 help-trunk:
@@ -57,5 +50,3 @@ env-trunk:
 	$(call log.close)
 
 env: env-trunk
-
-

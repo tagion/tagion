@@ -258,6 +258,9 @@ Example of using:
 ./dartutil -r 1ef4e838_a9aa1a80_dcc2a3af_4fd57190_f8a91c3b_373c8514_2f294168_7ebf127f
 
 ./dartutil -r 1ef4e838 -r 5d07e4bf -r 7d6c4450
+
+# Read a owner hash key from the trt dart
+./dartutil -r\#\$Y:\*:@AhsxFPQykU33A7TjcBWMZZkql1IqGq0mUoPXjbxrEO6I trt.drt 
 ```
 
 ## Parameters

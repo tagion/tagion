@@ -63,15 +63,13 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
 unittest {
 
     int[] some_array;
-    assert(!isMajority(some_array.length, ulong(5))); 
-
+    assert(!isMajority(some_array.length, ulong(5)));
 
 }
 
 bool isMajority(T, S)(T voting, S node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
-
 
 @safe @nogc
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
@@ -128,7 +126,7 @@ struct EventBody {
     @label("$f") @optional @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
     @label("$t") sdt_t time;
-    bool verify() {
+    bool verify() const pure nothrow @nogc {
         return (father is null) ? true : (mother !is null);
     }
 
@@ -138,7 +136,7 @@ struct EventBody {
                 Document payload,
                 const Event mother,
                 const Event father,
-                lazy const sdt_t time) inout {
+                lazy const sdt_t time)  inout pure {
                 this.time      =    time;
                 this.mother    =    (mother is null)?null:mother.fingerprint;
                 this.father    =    (father is null)?null:father.fingerprint;
@@ -152,7 +150,7 @@ struct EventBody {
                 const Buffer mother_fingerprint,
                 const Buffer father_fingerprint,
                 const int altitude,
-                lazy const sdt_t time) inout {
+                lazy const sdt_t time) inout pure {
                 this.time      =    time;
                 this.mother    =    mother_fingerprint;
                 this.father    =    father_fingerprint;
@@ -177,7 +175,7 @@ struct EventBody {
 
     immutable(EventBody) eva();
 
-    void consensus() inout {
+    void consensus() inout pure {
         if (mother.length == 0) {
             // Seed event first event in the chain
             check(father.length == 0, ConsensusFailCode.NO_MOTHER);
@@ -199,15 +197,16 @@ struct EventPackage {
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
 
+    import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
+
+    protected alias consensus_check = ConsensusCheck!EventConsensusException;
+
     mixin HiBONRecord!(
             q{
-            import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
-            protected alias consensus_check=ConsensusCheck!EventConsensusException;
-            import std.stdio;
             /++
              Used when a Event is receved from another node
              +/
-            this(const SecureNet net, const(Document) doc_epack) immutable  {
+            this(const SecureNet net, const(Document) doc_epack) immutable pure {
                 immutable _this=EventPackage(doc_epack);
                 //this(doc_epack);
                 this.signature=_this.signature;
@@ -222,7 +221,7 @@ struct EventPackage {
             /++
              Create a EventPackage from a body
              +/
-            this(const SecureNet net, immutable(EventBody) ebody) immutable {
+            this(const SecureNet net, immutable(EventBody) ebody) immutable pure {
                 pubkey=net.pubkey;
                 event_body=ebody;
                 auto sig = net.sign(event_body);
@@ -230,7 +229,7 @@ struct EventPackage {
                 fingerprint = cast(Buffer) sig.message;
             }
 
-            this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
+            this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) immutable pure {
                 pubkey=pkey;
                 event_body=ebody;
                 auto _fingerprint=net.calcHash(event_body);

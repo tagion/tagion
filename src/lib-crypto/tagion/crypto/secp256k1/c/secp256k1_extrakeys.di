@@ -5,6 +5,7 @@ import tagion.crypto.secp256k1.c.secp256k1;
 extern (C):
 nothrow:
 @nogc:
+pure:
 
 /** Opaque data structure that holds a parsed and valid "x-only" public key.
  *  An x-only pubkey encodes a point whose Y coordinate is even. It is

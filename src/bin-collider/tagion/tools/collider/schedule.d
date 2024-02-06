@@ -196,7 +196,8 @@ struct ScheduleRunner {
                 else {
                     import std.conv;
 
-                    const cov_path = buildPath(environment.get(BDD_LOG, "logs"), "cov", job_index.to!string).relativePath;
+                    const cov_path
+                        = buildPath(environment.get(BDD_LOG, "logs"), "cov", job_index.to!string).relativePath;
                     const cov_flags = format(" --DRT-covopt=\"dstpath:%s merge:1\"", cov_path);
                     mkdirRecurse(cov_path);
                     // For some reason the drt cov flags don't work when spawned as a process 

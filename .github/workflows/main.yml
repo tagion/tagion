@@ -57,8 +57,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          trunk=$(find build/${{ env.TARGET }}//bin -type f -not -name "*.o" -not -path "*/cov/*")
-          cp -r --parents $trunk ${{ env.ARTIFACT_DIR }}
+          make trunk
+          cp -r build/trunk/. ${{ env.ARTIFACT_DIR }}
 
           make clean
 
@@ -86,7 +86,8 @@ jobs:
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload code coverage results
-        uses: codecov/codecov-action@v3
+        if: false
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./logs/${{ env.TARGET }}/cov/
@@ -98,13 +99,13 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/* build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
 
   commit_stage_cov:
-    if: true
+    if: false
     runs-on: CI
     timeout-minutes: 5
 
@@ -129,7 +130,7 @@ jobs:
           make bddtest -j || make proper bddtest
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./logs/${{ env.TARGET }}/bdd/commit/cov/
@@ -181,10 +182,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          make ci-files
-          trunk=$(find build/${{ env.TARGET }}/bin -type f -not -name "*.o" -not -path "*/cov/*")
-          stacks=$(find -name "*.callstack")
-          cp -r --parents logs/ $trunk $stacks ${{ env.ARTIFACT_DIR }}
+          make trunk
+          cp -r build/trunk/* ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
@@ -198,7 +197,7 @@ jobs:
       - name: Copy Artifact to local machine
         run: |
           find . -mindepth 1 -delete
-          cp -r ${{ env.ARTIFACT_DIR }}/build .
+          cp -r ${{ env.ARTIFACT_DIR }}/. .
 
       - name: Run collider tests
         run: |
@@ -210,7 +209,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json
+          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench
 
       - name: Generate reports
         if: always()
@@ -226,7 +225,7 @@ jobs:
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
           stacks=$(find -name "*.callstack")
-          cp -r --parents logs/ $stacks ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/* $stacks ${{ env.ARTIFACT_DIR }}
           find . -mindepth 1 -delete
 
   docker_build:

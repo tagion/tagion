@@ -4,6 +4,8 @@ module tagion.services.collector;
 
 import std.exception;
 import std.typecons;
+import std.algorithm;
+import std.range;
 import tagion.actor.actor;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
@@ -21,6 +23,7 @@ import tagion.script.execute;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.hibon.HiBONJSON;
 
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
@@ -141,6 +144,7 @@ struct CollectorService {
             }
 
             immutable inputs = recorder[].map!(a => a.filed).array;
+            import tagion.hibon.HiBONJSON;
 
             if (!verify(net, s_contract, inputs)) {
                 log.event(reject, "contract_no_verify", recorder);

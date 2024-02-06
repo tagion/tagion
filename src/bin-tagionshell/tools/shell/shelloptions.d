@@ -71,6 +71,12 @@ struct ShellOptions {
         return contract_sock_addr(assumeWontThrow(format(mode0_prefix, node_number)) ~ dart_addr_prefix);
     }
 
+    static ShellOptions defaultOptions() nothrow {
+        ShellOptions opts;
+        opts.setDefault;
+        return opts;
+    }
+
     mixin JSONCommon;
     mixin JSONConfig;
 }
