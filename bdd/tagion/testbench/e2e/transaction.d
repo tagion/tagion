@@ -66,6 +66,7 @@ int _main(string[] args) {
     shell_opts.shell_uri = environment["SHELL_URI"];
     shell_opts.tagion_subscription_addr = contract_sock_addr(environment["SUBSCRIPTION"]);
     shell_opts.recorder_subscription_task_prefix = "TRANSACTION_Node_0_";
+    shell_opts.mode0_prefix = environment["PREFIX"];
     shell_opts.save(shell_config_file);
     
     scope Options local_options = Options.defaultOptions;
@@ -74,8 +75,7 @@ int _main(string[] args) {
     local_options.trt.enable = true;
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.epoch_creator.timeout = 250;
-    // local_options.wave.prefix_format = "TRANSACTION_Node_%s_";
-    local_options.wave.prefix_format = "Node_%s_";
+    local_options.wave.prefix_format = environment["PREFIX"];
     local_options.subscription.address = contract_sock_addr(environment["SUBSCRIPTION"]);
     local_options.save(config_file);
 
