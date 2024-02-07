@@ -575,6 +575,13 @@ extern (C) {
         return ERROR;
     }
 
+    /** 
+     * Set the backup account.hibon for the wallet
+     * Params:
+     *   backupPtr = 
+     *   backupLen = 
+     * Returns: 
+     */
     export uint set_backup(const uint8_t* backupPtr, const uint32_t backupLen) {
 
         immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
