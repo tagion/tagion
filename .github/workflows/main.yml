@@ -7,7 +7,6 @@ env:
   TARGET: x86_64-linux
   STAGE: commit
   DC: dmd
-  CD_PARALLEL: 2
   RETENTION_DAYS_BINS: 3
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
@@ -209,7 +208,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench
+          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -b build/${{ env.TARGET }}/bin/testbench
 
       - name: Generate reports
         if: always()
