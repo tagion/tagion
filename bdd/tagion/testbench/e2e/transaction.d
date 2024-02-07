@@ -254,13 +254,13 @@ class SendAContractWithOneOutputsThroughTheShell {
             bool both_updated;
             if (wallet1_amount != 0.TGN) {
                 writefln("wallet1 sending update to dartaddress %s", dart_address);
-                wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
+                wallet1_amount = getWalletTRTUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
             } else {
                 both_updated = true;
             }
             if (wallet2_amount != wallet2_expected) {
                 writefln("wallet2 sending update to dartaddress %s", dart_address);
-                wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, dart_address, wallet2_hirpc, true);
+                wallet2_amount = getWalletTRTUpdateAmount(wallet2, dart_address, wallet2_hirpc, true);
             } else {
                 if (both_updated) {break Update;}
             }
