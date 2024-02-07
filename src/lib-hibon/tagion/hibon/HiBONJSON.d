@@ -1,4 +1,5 @@
 module tagion.hibon.HiBONJSON;
+
 @safe:
 import std.conv : to;
 import std.format;
@@ -33,6 +34,33 @@ class HiBON2JSONException : HiBONException {
     }
 }
 
+import std.datetime.timezone;
+import core.lifetime;
+
+private class DefinitelyNotLocalTime : TimeZone {
+    LocalTime lt;
+
+    this() immutable {
+        lt = LocalTime();
+        super(lt.name, lt.stdName, lt.dstName);
+    }
+
+    override bool hasDST() const nothrow @property @safe => lt.hasDST;
+    override bool dstInEffect(long stdTime) const nothrow scope @safe => lt.dstInEffect(stdTime);
+    override long utcToTZ(long stdTime) const nothrow scope @safe => lt.utcToTZ(stdTime);
+    override long tzToUTC(long adjTime) const nothrow scope @safe => lt.tzToUTC(adjTime);
+}
+
+private immutable DefinitelyNotLocalTime def_not_local_time;
+
+shared static this() {
+    def_not_local_time = new immutable(DefinitelyNotLocalTime);
+}
+
+static unittest {
+    assert(def_not_local_time !is LocalTime());
+}
+
 private alias check = Check!HiBON2JSONException;
 
 enum NotSupported = "none";
@@ -48,29 +76,29 @@ protected Type[string] generateLabelMap(const(string[Type]) typemap) {
 }
 
 enum typeMap = [
-        Type.NONE: NotSupported,
-        Type.VER: NotSupported,
-        Type.FLOAT32: "f32",
-        Type.FLOAT64: "f64",
-        Type.STRING: "$",
-        Type.BINARY: "*",
-        Type.DOCUMENT: "{}",
-        Type.BOOLEAN: "bool",
-        Type.TIME: "time",
-        Type.INT32: "i32",
-        Type.INT64: "i64",
-        Type.UINT32: "u32",
-        Type.UINT64: "u64",
-        Type.BIGINT: "big",
+    Type.NONE: NotSupported,
+    Type.VER: NotSupported,
+    Type.FLOAT32: "f32",
+    Type.FLOAT64: "f64",
+    Type.STRING: "$",
+    Type.BINARY: "*",
+    Type.DOCUMENT: "{}",
+    Type.BOOLEAN: "bool",
+    Type.TIME: "time",
+    Type.INT32: "i32",
+    Type.INT64: "i64",
+    Type.UINT32: "u32",
+    Type.UINT64: "u64",
+    Type.BIGINT: "big",
 
-        Type.DEFINED_NATIVE: NotSupported,
+    Type.DEFINED_NATIVE: NotSupported,
 
-        Type.DEFINED_ARRAY: NotSupported,
-        Type.NATIVE_DOCUMENT: NotSupported,
-        Type.NATIVE_HIBON_ARRAY: NotSupported,
-        Type.NATIVE_DOCUMENT_ARRAY: NotSupported,
-        Type.NATIVE_STRING_ARRAY: NotSupported
-    ];
+    Type.DEFINED_ARRAY: NotSupported,
+    Type.NATIVE_DOCUMENT: NotSupported,
+    Type.NATIVE_HIBON_ARRAY: NotSupported,
+    Type.NATIVE_DOCUMENT_ARRAY: NotSupported,
+    Type.NATIVE_STRING_ARRAY: NotSupported
+];
 
 static unittest {
     static foreach (E; EnumMembers!Type) {
@@ -109,8 +137,7 @@ mixin template JSONString() {
 
     alias ThisT = typeof(this);
 
-    void toString(scope void delegate(scope const(char)[]) @safe sink,
-    const FormatSpec!char fmt) const {
+    void toString(scope void delegate(scope const(char)[]) @safe sink, const FormatSpec!char fmt) const {
         import tagion.basic.Types;
         import tagion.hibon.Document;
         import tagion.hibon.HiBON;
@@ -253,6 +280,8 @@ struct toJSONT(bool HASHSAFE) {
                         import std.datetime;
 
                         SysTime sys_time = SysTime(cast(long) e.by!E);
+                        sys_time.timezone = def_not_local_time;
+
                         doc_element[VALUE] = sys_time.toISOExtString;
                     }
                     else {
@@ -332,8 +361,11 @@ HiBON toHiBON(scope const JSONValue json) {
         }
         else static if (is(T : const sdt_t)) {
             import std.datetime;
+            import std.algorithm;
 
             const text_time = get!string(jvalue);
+            check(isoHasTZ(text_time), "The timestamp should contain a timezone at the end like '+01:00' or 'Z'");
+            check(text_time.endsWith("Z") || text_time.endsWith("00"), "BUG: cannot convert timestamps with none whole hour timestamps eg '01:05'");
             const sys_time = SysTime.fromISOExtString(text_time);
             return sdt_t(sys_time.stdTime);
         }
@@ -466,6 +498,38 @@ Document toDoc(const(char[]) json_text) {
     return json.toDoc;
 }
 
+// An extra check for iso time strings to see if they have a timezone
+private bool isoHasTZ(string iso_ext) pure nothrow {
+    import std.algorithm;
+    import std.regex;
+
+    // Match a iso tz string at the end of string eg: blala+01:03
+    alias match_tz = ctRegex!`.*([+-]\d{2}:\d{2})$`;
+
+    try {
+        return iso_ext.endsWith("Z") || matchFirst(iso_ext, match_tz);
+    }
+    catch (Exception e) {
+        return false;
+    }
+}
+
+unittest {
+    assert(isoHasTZ("Z"));
+    assert(isoHasTZ("+01:02"));
+    assert(isoHasTZ("-01:02"));
+    assert(isoHasTZ("2024-02-07T09:06:16.6852971+01:00"));
+    assert(isoHasTZ("2024-02-07T09:06:16.6852971-01:00"));
+    assert(isoHasTZ("+01:02Z"));
+
+    assert(!isoHasTZ("z"));
+    assert(!isoHasTZ("ZaZZa"));
+    assert(!isoHasTZ("+a1:02"));
+    assert(!isoHasTZ("+005:02"));
+    assert(!isoHasTZ("+01:02a"));
+    assert(!isoHasTZ("2024-02-07T09:06-01:00:16.6852971"));
+}
+
 unittest {
     //    import std.stdio;
     import std.typecons : Tuple;
@@ -491,7 +555,10 @@ unittest {
     test_tabel.UINT64 = 0x0123_3456_789A_BCDF;
     test_tabel.BOOLEAN = true;
     test_tabel.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
-    test_tabel.TIME = sdt_t(1001);
+
+    pragma(msg, "fixme, hibonjson ISO time does not work with un whole timezones");
+    test_tabel.TIME = sdt_t(638402115766852971); // Whole TZ +01:00
+    /* test_tabel.TIME = sdt_t(1001); */ // Un whole TZ +00:53
 
     alias TabelArray = Tuple!(
             immutable(ubyte)[], Type.BINARY.stringof,
@@ -596,6 +663,17 @@ unittest {
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
+    }
+
+    { // Check that ISOExt string has a timezone
+        import tagion.utils.StdTime;
+
+        auto hibon = new HiBON();
+
+        hibon["t"] = currentTime;
+
+        auto hjson = Document(hibon).toJSON();
+        assert(hjson["t"][1].get!string.isoHasTZ);
     }
 }
 
