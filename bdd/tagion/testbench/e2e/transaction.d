@@ -245,15 +245,28 @@ class SendAContractWithOneOutputsThroughTheShell {
 
     @Then("the transaction should go through")
     Document through() @trusted {
-        Thread.sleep(20.seconds);
 
-        writefln("sending update to dartaddress %s", dart_address);
-        auto wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
-        auto wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, dart_address, wallet2_hirpc, true);
-
-
+        int max_tries;
+        TagionCurrency wallet1_amount;
+        TagionCurrency wallet2_amount;
+        const wallet2_expected = start_amount2 + amount;
+        Update: while (max_tries < 10) {
+            bool both_updated;
+            if (wallet1_amount != 0.TGN) {
+                writefln("wallet1 sending update to dartaddress %s", dart_address);
+                wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
+            } else {
+                both_updated = true;
+            }
+            if (wallet2_amount != wallet2_expected) {
+                writefln("wallet2 sending update to dartaddress %s", dart_address);
+                wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, dart_address, wallet2_hirpc, true);
+            } else {
+                if (both_updated) {break Update;}
+            }
+            Thread.sleep(5.seconds);
+        }
         check(wallet1_amount == 0.TGN, format("Should have zero tagions after sending all... had %s", wallet1_amount));
-        auto wallet2_expected = start_amount2 + amount;
         check(wallet2_amount == wallet2_expected, format("should have %s had %s", wallet2_expected, wallet2_amount));
         return result_ok;
     }
