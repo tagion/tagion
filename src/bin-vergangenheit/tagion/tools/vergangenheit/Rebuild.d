@@ -3,6 +3,8 @@ import std.stdio;
 import std.algorithm;
 import std.range;
 import std.format;
+import std.typecons;
+
 import tagion.basic.Types;
 import tagion.basic.basic;
 import tagion.crypto.SecureInterfaceNet;
@@ -22,16 +24,32 @@ struct RebuildOptions {
 
 struct Rebuild {
     const RebuildOptions opt;
-    private {
+   // private {
         DART src;
         DART dst;
         string[] replicator_files;
-    }
+    //}
     const(LockedArchives)[] locked_epochs;
-    this(const RebuildOptions opt, DART src, DART dst) pure nothrow {
+    this(const RebuildOptions opt, DART src, DART dst, string[] replicator_files) pure nothrow {
         this.opt = opt;
         this.src = src;
         this.dst = dst;
+        this.replicator_files=replicator_files;
+    }
+
+    void sortReplicator(const HashNet net)  {
+        alias ReplicatorFile=Tuple!(size_t, "epoch", string, "file");
+        ReplicatorFile[] replicator_list;
+        foreach(file; replicator_files) {
+            auto fin=File(file, "r");
+            scope(exit) {
+                fin.close;    
+            }
+            const block=RecorderBlock(HiBONRange(fin).front, net);
+            replicator_list~=ReplicatorFile(block.epoch_number, file);
+        }
+        replicator_list.sort!((a,b) => a.epoch < b.epoch);
+        replicator_files=replicator_list.map!(a => a.file).array;
     }
 
     int checkReplicator(const HashNet net, const string file, ref Fingerprint previous) {
@@ -47,10 +65,11 @@ struct Rebuild {
             if (!previous.empty) {
                 if (block.previous != previous) {
                     result++;
-                    error("Replicator block %d in %s does previous fingerprint", item.index, file);
+                    error("Replicator epoch-number %d block %d in %s does previous fingerprint",
+                    block.epoch_number,item.index, file);
                     verbose("Previous fingerprint");
                     verbose("expected    %s", previous.encodeBase64);
-                    verbose("read        %s", net.calcHash(item.value).encodeBase64);
+                    //verbose("read        %s", net.calcHash(item.value).encodeBase64);
                     verbose("hibonrecord %s", block.previous.encodeBase64);
 
                 }
@@ -91,7 +110,7 @@ struct Rebuild {
         return result;
     }
 
-    void prepareReplicator(const HashNet hash_net, string[] replicator_files) {
+    void prepareReplicator(const HashNet hash_net) {
         locked_epochs = null;
         Fingerprint fingerprint;
         int result;
@@ -104,9 +123,9 @@ struct Rebuild {
             error("Counted %d errors", result);
         }
         auto locked_epoch_numbers = locked_epochs.map!(l => cast(long) l.epoch_number).array.sort;
-        writefln("locked_epoch_numbers=%s", locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b));
-        const locked_groups = locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b);
-        writefln("%s", locked_groups);
+       // writefln("locked_epoch_numbers=%s", locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b));
+        auto locked_groups = locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b);
+        writefln("%(Locked epochs %(%s, %)\n%)", locked_groups);
         //locked_groups.each!(list => writefln("Locked epochs %(%d %)", list));
 
     }
