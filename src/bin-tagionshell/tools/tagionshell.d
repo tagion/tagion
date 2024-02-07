@@ -547,10 +547,9 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 params[i] = bill.toHiBON;
             }
             Document response = hirpc.result(receiver, params).toDoc;
-            rep.status = (found_bills.length > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status
-                .NNG_HTTP_STATUS_NO_CONTENT;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = "applicaion/octet-stream";
-            rep.rawdata = (found_bills.length > 0) ? cast(ubyte[])(response.serialize) : null;
+            rep.rawdata = cast(ubyte[])(response.serialize);
         }
         else {
             NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);

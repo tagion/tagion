@@ -95,7 +95,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         send_doc(doc);
     }
     void trt_hirpc_response(trtHiRPCRR.Response res, Document doc) @safe {
-        writeln("Interface successful response");
+        writeln("TRT Interface successful response");
         send_doc(doc);
     }
 

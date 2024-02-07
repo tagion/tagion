@@ -200,7 +200,7 @@ class SendAContractWithOneOutputsThroughTheShell {
         wallet2_hirpc = HiRPC(wallet2.net);
         shell_addr = shell_opts.shell_uri ~ shell_opts.shell_api_prefix;
         bullseye_address = shell_addr ~ shell_opts.bullseye_endpoint ~ ".hibon";
-        dart_address = shell_addr ~ shell_opts.dart_endpoint;
+        dart_address = shell_addr ~ shell_opts.dart_endpoint ~ "/nocache";
         contract_address = shell_addr ~ shell_opts.contract_endpoint;
     }
 
@@ -240,7 +240,6 @@ class SendAContractWithOneOutputsThroughTheShell {
     Document contract() @trusted {
         auto response = sendShellSubmitHiRPC(contract_address, wallet1_hirpc.submit(signed_contract), wallet1.net);
         check(!response.isError, format("Error when sending shell submit %s", response.toPretty));
-        writefln("DONE WITH THIS STUFF");
         return result_ok;
     }
 
@@ -249,11 +248,11 @@ class SendAContractWithOneOutputsThroughTheShell {
         Thread.sleep(20.seconds);
 
         writefln("sending update to dartaddress %s", dart_address);
-        // auto wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
+        auto wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
         auto wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, dart_address, wallet2_hirpc, true);
 
 
-        // check(wallet1_amount == 0.TGN, format("Should have zero tagions after sending all... had %s", wallet1_amount));
+        check(wallet1_amount == 0.TGN, format("Should have zero tagions after sending all... had %s", wallet1_amount));
         auto wallet2_expected = start_amount2 + amount;
         check(wallet2_amount == wallet2_expected, format("should have %s had %s", wallet2_expected, wallet2_amount));
         return result_ok;
