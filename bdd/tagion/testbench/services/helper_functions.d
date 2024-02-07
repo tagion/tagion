@@ -42,4 +42,23 @@ TagionCurrency getWalletInvoiceUpdateAmount(ref StdSecureWallet wallet, string s
     return wallet.calcTotal(wallet.account.bills);
 }
 
+TagionCurrency getWalletTRTUpdateAmount(ref StdSecureWallet wallet, string sock_addr, HiRPC hirpc, bool sendshell = false) @trusted {
+    const sender = wallet.readIndicesByPubkey(hirpc);
+    auto indices_received = sendshell ?
+        sendShellHiRPC(sock_addr, sender, hirpc)
+      : sendDARTHiRPC(sock_addr, sender, hirpc);
+    writefln("received res", indices_received.toPretty);
+    check(!indices_received.isError, format("Received HiRPC error: %s", indices_received.toPretty));
 
+    const difference_req = wallet.differenceInIndices(indices_received);
+    if (difference_req is HiRPC.Sender.init) {
+        return wallet.calcTotal(wallet.account.bills);
+    }
+    auto dart_received = sendshell ?
+        sendShellHiRPC(sock_addr, difference_req, hirpc)
+      : sendDARTHiRPC(sock_addr, difference_req, hirpc);
+    writefln("received res", dart_received.toPretty);
+    check(!dart_received.isError, format("Received HiRPC error: %s", dart_received.toPretty));
+    check(wallet.updateFromRead(dart_received), "dart req, wallet not updated succesfully");
+    return wallet.calcTotal(wallet.account.bills);
+}
