@@ -88,7 +88,7 @@ enum MAX_PINCODE_SIZE = 128;
 enum LINE = "------------------------------------------------------";
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, HiRPC hirpc) @trusted {
+HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, HiRPC hirpc = HiRPC(null)) @trusted {
     import nngd;
     import std.exception;
     import tagion.hibon.Document;
@@ -117,12 +117,15 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, HiRPC hirp
     return hirpc.receive(response_doc);
 }
 
-HiRPC.Receiver sendShellHiRPC(string address, Document req, HiRPC hirpc) {
+HiRPC.Receiver sendShellHiRPC(string address, Document doc, HiRPC hirpc) {
     import nngd;
 
-    WebData rep = WebClient.post(address, cast(ubyte[]) req.serialize, ["Content-type": "application/octet-stream"]);
-    if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
-        throw new WalletException(format("send shell submit error(%d): %s", rep.status, rep.msg));
+    WebData rep = WebClient.post(address, cast(ubyte[]) doc.serialize, [
+        "Content-type": "application/octet-stream"
+    ]);
+
+    if (rep.status != http_status.NNG_HTTP_STATUS_OK || rep.type != "application/octet-stream") {
+        throw new WalletException(format("send shell submit, received: %s code(%d): %s", rep.type, rep.status, rep.msg));
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
@@ -132,7 +135,6 @@ HiRPC.Receiver sendShellHiRPC(string address, Document req, HiRPC hirpc) {
 HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender req, HiRPC hirpc) {
     return sendShellHiRPC(address, req.toDoc, hirpc);
 }
-
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
 HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc, Duration recv_duration = 15_000.msecs) @trusted {
@@ -685,7 +687,7 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
-                if (update || trt_update || trt_read ) {
+                if (update || trt_update || trt_read) {
                     const update_net = secure_wallet.net.derive(
                             secure_wallet.net.calcHash(
                             update_tag.representation));
@@ -713,11 +715,12 @@ struct WalletInterface {
 
                         verbose("Received response", received.toPretty);
 
-                        version(TRT_READ_REQ) {
+                        version (TRT_READ_REQ) {
                             bool setRequest(const(HiRPC.Receiver) receiver) {
                                 if (trt_update) {
                                     return secure_wallet.setResponseUpdateWallet(receiver);
-                                } else if (update) {
+                                }
+                                else if (update) {
                                     return secure_wallet.setResponseCheckRead(receiver);
                                 }
                                 else {
@@ -726,18 +729,17 @@ struct WalletInterface {
                                         return true;
                                     }
                                     HiRPC.Receiver dart_received = sendkernel ?
-                                        sendDARTHiRPC(options.dart_address, difference_req, hirpc) 
-                                        : 
-                                        sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, difference_req, hirpc);
+                                        sendDARTHiRPC(options.dart_address, difference_req, hirpc) : sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, difference_req, hirpc);
 
                                     return secure_wallet.updateFromRead(dart_received);
                                 }
                             }
+
                             bool res = setRequest(received);
-                        } 
+                        }
                         else {
                             bool res = trt_update ? secure_wallet.setResponseUpdateWallet(
-                                received) : secure_wallet.setResponseCheckRead(received);
+                                    received) : secure_wallet.setResponseCheckRead(received);
                         }
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         save_wallet = true;
