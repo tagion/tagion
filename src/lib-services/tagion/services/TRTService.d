@@ -182,9 +182,11 @@ struct TRTService {
             auto already_in_dart = trt_db.loads(index_lookup);
 
             createTRTUpdateRecorder(dart_recorder, already_in_dart, trt_recorder, net);
-            log("trt recorder modify %s", trt_recorder.toPretty);
-            trt_db.modify(trt_recorder);
-            log.event(trt_created, "trt_created", trt_recorder.toDoc);
+            if (!trt_recorder.empty) {
+                log("trt recorder modify %s", trt_recorder.toPretty);
+                trt_db.modify(trt_recorder);
+                log.event(trt_created, "trt_created", trt_recorder.toDoc);
+            }
         }
 
         run(&modify, &trt_read, &receive_recorder);
