@@ -23,6 +23,7 @@ import tagion.logger.Logger;
 import tagion.network.ReceiveBuffer;
 import tagion.script.namerecords;
 import tagion.services.messages;
+import tagion.services.error_codes;
 import tagion.services.options : TaskNames;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
@@ -47,14 +48,6 @@ struct InputValidatorOptions {
     mixin JSONCommon;
 }
 
-enum ResponseError {
-    Internal,
-    InvalidBuf,
-    InvalidDoc,
-    NotHiRPCSender,
-    Timeout,
-}
-
 /** 
  *  InputValidator actor
  *  Examples: [tagion.testbench.services.inputvalidator]
@@ -69,22 +62,23 @@ struct InputValidatorService {
         HiRPC hirpc = HiRPC(net);
         ActorHandle hirpc_verifier_handle = ActorHandle(__task_names.hirpc_verifier);
 
-        void reject(T)(ResponseError err_type, T data = Document()) const nothrow {
+        void reject(T)(ServiceCode err_type, T data = Document()) const nothrow {
+            import tagion.services.error_codes;
+
             try {
                 hirpc.Error message;
                 message.code = err_type;
                 debug {
                     // Altough it's a bit excessive, we send back the invalid data we received in debug mode.
-                    message.message = err_type.to!string;
+                    message.message = err_type.toString;
                     message.data = data;
                 }
                 const sender = hirpc.Sender(net, message);
                 int rc = sock.send(sender.toDoc.serialize);
                 if (rc != 0) {
-                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(
-                            rc));
+                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(rc));
                 }
-                log.event(rejected, err_type.to!string, data);
+                log.event(rejected, err_type.toString, data);
             }
             catch (Exception e) {
                 log.error("Failed to deliver rejection %s", err_type.to!string);
@@ -135,7 +129,7 @@ struct InputValidatorService {
 
             version (BLOCKING) {
                 scope (failure) {
-                    reject(ResponseError.Internal);
+                    reject(ServiceCode.internal);
                 }
                 auto result_buf = sock.receive!Buffer;
                 if (sock.m_errno != nng_errno.NNG_OK) {
@@ -146,7 +140,7 @@ struct InputValidatorService {
                 }
                 if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
                     if (result_buf.length > 0) {
-                        reject(ResponseError.Timeout);
+                        reject(ServiceCode.timeout);
                     }
                     else {
                         continue;
@@ -159,7 +153,7 @@ struct InputValidatorService {
                     continue;
                 }
                 if (result_buf.length <= 0) {
-                    reject(ResponseError.InvalidBuf);
+                    reject(ServiceCode.internal);
                     continue;
                 }
 
@@ -167,12 +161,12 @@ struct InputValidatorService {
             }
             else {
                 scope (failure) {
-                    reject(ResponseError.Internal);
+                    reject(ServiceCode.internal);
                 }
                 auto result_buf = buf(recv);
                 if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
                     if (result_buf.data.length > 0) {
-                        reject(ResponseError.Timeout);
+                        reject(ServiceCode.internal);
                     }
                     else {
                         continue;
@@ -187,7 +181,7 @@ struct InputValidatorService {
 
                 // Fixme ReceiveBuffer .size doesn't always return correct lenght
                 if (result_buf.data.size <= 0) {
-                    reject(ResponseError.InvalidBuf);
+                    reject(ServiceCode.buf);
                     continue;
                 }
 
@@ -195,12 +189,12 @@ struct InputValidatorService {
             }
 
             if (!doc.isInorder) {
-                reject(ResponseError.InvalidBuf);
+                reject(ServiceCode.buf);
                 continue;
             }
 
             if (!doc.isRecord!(HiRPC.Sender)) {
-                reject(ResponseError.NotHiRPCSender, doc);
+                reject(ServiceCode.hirpc, doc);
                 continue;
             }
             try {
@@ -212,7 +206,7 @@ struct InputValidatorService {
                 sock.send(response_ok.toDoc.serialize);
             }
             catch (HiBONException _) {
-                reject(ResponseError.InvalidDoc, doc);
+                reject(ServiceCode.hibon, doc);
                 continue;
             }
         }

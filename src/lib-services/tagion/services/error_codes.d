@@ -3,7 +3,7 @@ module tagion.services.error_codes;
 import tagion.hibon.Document;
 import std.traits;
 
-enum ServiceCodes {
+enum ServiceCode {
     @("No Errors") none = 0,
     @("An internal error occured") internal = 1,
 
@@ -19,9 +19,10 @@ enum ServiceCodes {
     @("Generic invalid hibon") hibon = 700,
 }
 
-string toString(ServiceCodes errno) {
+@safe
+string toString(ServiceCode errno) pure nothrow {
     switch (errno) {
-        static foreach (E; EnumMembers!ServiceCodes) {
+        static foreach (E; EnumMembers!ServiceCode) {
     case E:
             enum error_text = getUDAs!(E, string)[0];
             return (error_text.length) ? error_text : E.stringof;
@@ -33,5 +34,5 @@ string toString(ServiceCodes errno) {
 }
 
 int hibon_2_service_code(Document.Element.ErrorCode code) {
-    return code + ServiceCodes.hibon;
+    return code + ServiceCode.hibon;
 }
