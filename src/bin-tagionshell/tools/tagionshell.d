@@ -326,36 +326,9 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
     }
 }
 
-import crud = tagion.dart.DARTcrud;
-
-HiRPC.Receiver get_bullseye(string dart_addr) {
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-
-    int rc;
-    int attempts = 0;
-
-    while (true) {
-        rc = s.dial(dart_addr);
-        if (rc == 0)
-            break;
-        enforce(++attempts < 32, "Couldn`t connect the subscription socket"); // TODO: consider sharing opt
-    }
-    scope (exit) {
-        s.close();
-    }
-
-    rc = s.send(crud.dartBullseye.toDoc.serialize);
-    ubyte[192] buf;
-    size_t len = s.receivebuf(buf, buf.length);
-    if (len == size_t.max && s.errno != 0) {
-        return HiRPC.Receiver.init;
-    }
-
-    const receiver = HiRPC(null).receive(Document(buf.idup));
-    return receiver;
-}
-
 static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
+    import crud = tagion.dart.DARTcrud;
+
     thread_attachThis();
     try {
         int attempts = 0;
@@ -400,7 +373,7 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
         }
         else {
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.json;
+            rep.type = ContentType.octet;
             rep.rawdata = cast(ubyte[]) receiver.serialize;
         }
 
