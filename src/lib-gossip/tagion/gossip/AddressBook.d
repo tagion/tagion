@@ -24,7 +24,7 @@ import tagion.utils.Miscellaneous : cutHex;
 @safe
 synchronized class AddressBook {
     /** Addresses for node */
-    protected shared(NodeInfo[Pubkey]) addresses;
+    protected NodeInfo[Pubkey] addresses;
 
     /**
      * Init NodeAddress if public key exist
@@ -117,7 +117,15 @@ enum MultiAddrProto {
 @recordType("NNR")
 struct NodeInfo {
 
+    private @label(StdNames.nodekey) Buffer _owner;
     @label("a") string address;
+
+    this(Pubkey __owner, string _addr) nothrow pure {
+        _owner = cast(Buffer) __owner;
+        address = _addr;
+    }
+
+    Pubkey owner() => Pubkey(_owner);
 
     /**
      * Parse node address to string

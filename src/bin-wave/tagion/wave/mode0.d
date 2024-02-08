@@ -83,8 +83,8 @@ void spawnMode0(
         Document epoch_head = Document.init) {
 
     if (epoch_head is Document.init) {
-        foreach (n; zip(nodes, node_options)) {
-            addressbook[n[0].pkey] = NodeInfo(n[1].task_names.epoch_creator);
+        foreach (node, opt; zip(nodes, node_options)) {
+            addressbook[node.pkey] = NodeInfo(node.pkey, opt.task_names.epoch_creator);
         }
     }
     else {
@@ -103,9 +103,9 @@ void spawnMode0(
             check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
         }
 
-        foreach (node_info; zip(keys, node_options)) {
-            verbose("adding addressbook ", node_info[0]);
-            addressbook[node_info[0]] = NodeInfo(node_info[1].task_names.epoch_creator);
+        foreach (key, opt; zip(keys, node_options)) {
+            verbose("adding addressbook ", key);
+            addressbook[key] = NodeInfo(key, opt.task_names.epoch_creator);
         }
     }
 
