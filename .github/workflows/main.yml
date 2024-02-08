@@ -12,6 +12,7 @@ env:
   UNITTEST_COV: unittest-cov
   GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
   ARTIFACT_DIR: /mnt/nfs/artifacts/${{ github.sha }}-${{ github.run_attempt }}
+  ACCEPTANCE_STAGE_CORES: 7
 
 permissions:
   contents: read
@@ -208,7 +209,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j4 -b build/${{ env.TARGET }}/bin/testbench
+          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j${{ env.ACCEPTANCE_STAGE_CORES }} -b build/${{ env.TARGET }}/bin/testbench
 
       - name: Generate reports
         if: always()
