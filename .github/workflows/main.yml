@@ -189,7 +189,7 @@ jobs:
 
   acceptance_stage:
     runs-on: CD
-    timeout-minutes: 10
+    timeout-minutes: 12
     needs: [commit_stage, unittest, build]
 
     steps:
