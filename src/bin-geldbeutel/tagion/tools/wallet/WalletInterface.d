@@ -118,27 +118,11 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     return hirpc.receive(response_doc);
 }
 
-HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
+
+HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender req, HiRPC hirpc) {
     import nngd;
 
-    pragma(msg, "Change Web Post and reply so it takes immutable stream");
-    WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, [
-        "Content-type": "application/octet-stream"
-    ]);
-
-    if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
-        throw new WalletException(format("Send shell submit error(%d): %s", rep.status, rep.msg));
-    }
-
-    Document response_doc = Document(cast(immutable) rep.rawdata);
-    HiRPC hirpc = HiRPC(net);
-    return hirpc.receive(response_doc);
-}
-
-HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc) {
-    import nngd;
-
-    WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.toDoc.serialize, [
+    WebData rep = WebClient.post(address, cast(ubyte[]) req.toDoc.serialize, [
         "Content-type": "application/octet-stream"
     ]);
 
@@ -812,7 +796,7 @@ struct WalletInterface {
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
                     if (send) {
-                        sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                        sendShellHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, hirpc);
                     }
                     else if (sendkernel) {
                         sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);

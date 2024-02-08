@@ -238,7 +238,7 @@ class SendAContractWithOneOutputsThroughTheShell {
 
     @When("i send the contract")
     Document contract() @trusted {
-        auto response = sendShellSubmitHiRPC(contract_address, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        auto response = sendShellHiRPC(contract_address, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         check(!response.isError, format("Error when sending shell submit %s", response.toPretty));
         return result_ok;
     }

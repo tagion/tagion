@@ -287,7 +287,7 @@ class SendNContractsFromwallet1Towallet2 {
                 check(!response.isError, format("Error when sending kernel submit\n%s", response.toPretty));
             }
             else {
-                auto response = sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                auto response = sendShellHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, hirpc);
                 check(!response.isError, format("Error when sending shell submit\n%s", response.toPretty));
             }
 
