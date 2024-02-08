@@ -744,7 +744,7 @@ struct WalletInterface {
                                 if (trt_update) {
                                     return secure_wallet.setResponseUpdateWallet(receiver);
                                 } else if (update) {
-                                    return secure_wallet.setResponseUpdateWallet(receiver);
+                                    return secure_wallet.setResponseCheckRead(receiver);
                                 }
                                 else {
                                     const difference_req = secure_wallet.differenceInIndices(receiver);
