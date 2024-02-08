@@ -530,7 +530,6 @@ struct SecureWallet(Net : SecureNet) {
         import tagion.hibon.HiBONRecord : isRecord;
         import tagion.trt.TRT : TRTArchive;
         import tagion.dart.DARTcrud;
-        import std.stdio;
 
         if (!receiver.isResponse) {
             return HiRPC.Sender.init;
@@ -617,7 +616,6 @@ struct SecureWallet(Net : SecureNet) {
     bool updateFromRead(const(HiRPC.Receiver) receiver) {
         import tagion.dart.Recorder;
         import tagion.hibon.HiBONRecord : isRecord;
-        import std.stdio : writefln;
 
         if (!receiver.isResponse) {
             return false;
