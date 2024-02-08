@@ -208,7 +208,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -b build/${{ env.TARGET }}/bin/testbench
+          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j4 -b build/${{ env.TARGET }}/bin/testbench
 
       - name: Generate reports
         if: always()
