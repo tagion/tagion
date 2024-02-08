@@ -35,6 +35,7 @@ struct ShellOptions {
     double dartcache_ttl_msec;
     string mode0_prefix;
 
+
     void setDefault() nothrow {
         contract_addr_prefix = "CONTRACT_";
         dart_addr_prefix = "DART_";
