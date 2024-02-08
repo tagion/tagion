@@ -86,6 +86,9 @@ enum {
 }
 
 JSONValue toJSON(Document doc) {
+    const error_code=doc.valid;
+    check(error_code is Document.Element.ErrorCode.NONE,
+        format("HiBON error %s", error_code));
     return toJSONT!true(doc);
 }
 
@@ -93,7 +96,7 @@ JSONValue toJSON(T)(T value) if (isHiBONRecord!T) {
     return toJSONT!true(value.toDoc);
 }
 
-string toPretty(T)(T value) {
+string toPretty(T)(T value)  {
     static if (is(T : const(HiBON))) {
         const doc = Document(value);
         return doc.toJSON.toPrettyString;
