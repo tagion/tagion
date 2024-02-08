@@ -590,19 +590,16 @@ struct SecureWallet(Net : SecureNet) {
             if (d in account.requested) {
                 auto new_bill = account.requested[d];
                 if (!account.bills.canFind(new_bill)) {
-                    writefln("adding bill from trt req %(%02x%)", d);
                     account.bills ~= new_bill;
                     account.requested.remove(d);
                 }
             }
             else {
-                writefln("adding network indices %(%02x%)", d);
                 network_indices ~= d;
             }
         }
 
         foreach (idx; to_be_removed_from_wallet) {
-            writefln("removing: %(%02x%)", idx);
             account.activated.remove(idx);
             account.remove_bill_by_hash(idx);
         }
@@ -623,7 +620,6 @@ struct SecureWallet(Net : SecureNet) {
         import std.stdio : writefln;
 
         if (!receiver.isResponse) {
-            writefln("received not a response %s", receiver.toPretty);
             return false;
         }
         const recorder_doc = receiver.message[Keywords.result].get!Document;
@@ -636,7 +632,6 @@ struct SecureWallet(Net : SecureNet) {
 
         foreach (new_bill; new_bills) {
             if (!account.bills.canFind(new_bill)) {
-                writefln("adding bill");
                 account.bills ~= new_bill;
             }
             account.requested.remove(net.dartIndex(new_bill));
