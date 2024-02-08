@@ -154,9 +154,9 @@ struct NodeInfo {
 }
 
 unittest {
-    immutable nnr = NodeInfo("ip4/200.185.5.5/tcp/80");
+    immutable nnr = NodeInfo(Pubkey(), "ip4/200.185.5.5/tcp/80");
     assert(nnr.toNNGString == "tcp://200.185.5.5:80");
 
-    immutable nnr2 = NodeInfo("ip6/c8b9:505:c8b9:505:c8b9:0:c8b9:505/tcp/80");
+    immutable nnr2 = NodeInfo(Pubkey(), "ip6/c8b9:505:c8b9:505:c8b9:0:c8b9:505/tcp/80");
     assert(nnr2.toNNGString == "tcp://c8b9:505:c8b9:505:c8b9:0:c8b9:505:80");
 }
