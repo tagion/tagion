@@ -712,7 +712,7 @@ static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
         const hirpc_submit = hirpc.submit(signed_contract);
         wallet_interface.secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
 
-        auto receiver = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+        auto receiver = sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
         wallet_interface.save(false);
 
         writeit("i2p: payment sent");

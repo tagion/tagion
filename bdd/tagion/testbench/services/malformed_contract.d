@@ -139,7 +139,7 @@ class ContractTypeWithoutCorrectInformation {
         check(epoch_on_startup, "No epoch on startup");
         submask.subscribe("error/tvm");
 
-        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 
@@ -198,7 +198,7 @@ class InputsAreNotBillsInDart {
 
     @When("i send the contract to the network.")
     Document network() {
-        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 
@@ -298,7 +298,7 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     Document network() {
         submask.subscribe("error/tvm");
         foreach(contract; [zero_contract, negative_contract, combined_contract]) {
-            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1.net);
+            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1_hirpc);
 
             // auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
             pragma(msg, "fixme(pr): consider adding log for exception");
@@ -368,7 +368,7 @@ class ContractWhereInputIsSmallerThanOutput {
 
     @When("i send the contract to the network.")
     Document network() {
-        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 

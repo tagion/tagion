@@ -229,7 +229,7 @@ class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
         writefln("contract: %s", contract.toPretty);
         writefln("contract: %(%02x%)", contract.toDoc.serialize);
         writefln("CONTRACT size %d", contract.toDoc.full_size);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, contract, wallet1.net);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, contract, wallet1_hirpc);
         return result_ok;
     }
 

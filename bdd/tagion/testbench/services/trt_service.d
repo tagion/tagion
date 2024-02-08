@@ -217,10 +217,8 @@ class SendAInoiceUsingTheTRT {
         (() @trusted => Thread.sleep(1.seconds))();
         wallet1.payment([invoice_to_pay], signed_contract2, fee2);
 
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1
-                .net);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1
-                .net);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1_hirpc);
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }

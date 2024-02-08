@@ -283,7 +283,7 @@ class SendNContractsFromwallet1Towallet2 {
             secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
 
             if (sendkernel) {
-                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
                 check(!response.isError, format("Error when sending kernel submit\n%s", response.toPretty));
             }
             else {

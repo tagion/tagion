@@ -88,7 +88,7 @@ enum MAX_PINCODE_SIZE = 128;
 enum LINE = "------------------------------------------------------";
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) @trusted {
+HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, HiRPC hirpc) @trusted {
     import nngd;
     import std.exception;
     import tagion.hibon.Document;
@@ -114,35 +114,25 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
     check(response_doc.isRecord!(HiRPC.Receiver), format("Error in response when sending bill %s", response_doc.toPretty));
 
-    HiRPC hirpc = HiRPC(net);
     return hirpc.receive(response_doc);
 }
 
-
-HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender req, HiRPC hirpc) {
+HiRPC.Receiver sendShellHiRPC(string address, Document req, HiRPC hirpc) {
     import nngd;
 
-    WebData rep = WebClient.post(address, cast(ubyte[]) req.toDoc.serialize, [
-        "Content-type": "application/octet-stream"
-    ]);
-
+    WebData rep = WebClient.post(address, cast(ubyte[]) req.serialize, ["Content-type": "application/octet-stream"]);
     if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
         throw new WalletException(format("send shell submit error(%d): %s", rep.status, rep.msg));
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
-
     return hirpc.receive(response_doc);
 }
 
-HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
-    import nngd;
-
-    WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
-
-    Document response_doc = Document(cast(immutable) rep.rawdata);
-    return hirpc.receive(response_doc);
+HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender req, HiRPC hirpc) {
+    return sendShellHiRPC(address, req.toDoc, hirpc);
 }
+
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
 HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc, Duration recv_duration = 15_000.msecs) @trusted {
@@ -799,7 +789,7 @@ struct WalletInterface {
                         sendShellHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, hirpc);
                     }
                     else if (sendkernel) {
-                        sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                        sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
                     }
                 }
             }
