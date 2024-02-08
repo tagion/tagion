@@ -7,7 +7,7 @@ import std.json;
 import std.range.primitives : isInputRange;
 import std.traits : EnumMembers, ForeachType, ReturnType, Unqual;
 import std.base64;
-
+import std.typecons : No;
 //import std.stdio;
 
 import tagion.basic.Message : message;
@@ -18,6 +18,7 @@ import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONtoText;
+
 
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
@@ -114,7 +115,7 @@ enum {
 }
 
 JSONValue toJSON(Document doc) {
-    const error_code=doc.valid;
+    const error_code=doc.valid(null, No.Reserved);
     check(error_code is Document.Element.ErrorCode.NONE,
         format("HiBON error %s", error_code));
     return toJSONT!true(doc);

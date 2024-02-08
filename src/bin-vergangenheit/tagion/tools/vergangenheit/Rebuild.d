@@ -18,6 +18,7 @@ import tagion.replicator.RecorderBlock;
 import tagion.tools.Basic;
 import tagion.script.common;
 import tagion.tools.toolsexception;
+import tagion.script.standardnames;
 
 struct RebuildOptions {
 }
@@ -111,6 +112,11 @@ struct Rebuild {
     }
 
     void prepareReplicator(const HashNet hash_net) {
+        const tagion_dartindex=hash_net.dartKey(StdNames.name, TagionDomain);
+        const tagion_recorder=dst.loads([tagion_dartindex]);
+        foreach(archive; tagion_recorder[]) {
+            writefln("filed=%s", archive.filed.toPretty);    
+    }
         locked_epochs = null;
         Fingerprint fingerprint;
         int result;
@@ -126,6 +132,10 @@ struct Rebuild {
        // writefln("locked_epoch_numbers=%s", locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b));
         auto locked_groups = locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b);
         writefln("%(Locked epochs %(%s, %)\n%)", locked_groups);
+       
+        {
+                
+        }
         //locked_groups.each!(list => writefln("Locked epochs %(%d %)", list));
 
     }
