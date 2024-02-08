@@ -255,10 +255,11 @@
             "args": [],
             "envs": {
                 "SHELL_URI": "http://0.0.0.0:4000",
-                "SUBSCRIPTION": "TRANSACTION_TEST_SUBSCRIPTION_"
+                "SUBSCRIPTION": "TRANSACTION_TEST_SUBSCRIPTION_",
+                "PREFIX": "TRANSACTION_Node_%s_"
             },
             "stages": [
-                "shell"
+                "shell", "acceptance"
             ],
             "timeout": 0.0
         }

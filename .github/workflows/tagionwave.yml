@@ -81,7 +81,7 @@ jobs:
           mkdir -p ~/.local/share/tagion/wallets/ || "folder already exists"
           wget https://raw.githubusercontent.com/tagion/qa_payout_test/master/wallet1/bills/bill_0.hibon
           cp bill_0.hibon ~/.local/share/tagion/wallets/bill-auzahlung.hibon
-          ./scripts/create_wallets.sh -b build/x86_64-linux/bin -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallets -w ${{ inputs.wallets }} -n ${{ inputs.nodes }} -u ~/.local/share/tagion/wallets/keys.txt
+          ./scripts/create_wallets.sh -b build/x86_64-linux/bin -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallets -w ${{ inputs.wallets }} -n ${{ inputs.nodes }} -q 500 -u ~/.local/share/tagion/wallets/keys.txt
 
       - name: start service
         run: |

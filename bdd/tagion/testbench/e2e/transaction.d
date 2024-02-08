@@ -26,8 +26,10 @@ import tagion.wallet.SecureWallet;
 import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
+import std.format;
 
 import tagion.tools.shell.shelloptions;
+import tagion.tools.tagionshell : abort;
 import tagion.services.options;
 import std.process;
 
@@ -64,6 +66,7 @@ int _main(string[] args) {
     shell_opts.shell_uri = environment["SHELL_URI"];
     shell_opts.tagion_subscription_addr = contract_sock_addr(environment["SUBSCRIPTION"]);
     shell_opts.recorder_subscription_task_prefix = "TRANSACTION_Node_0_";
+    shell_opts.mode0_prefix = environment["PREFIX"];
     shell_opts.save(shell_config_file);
     
     scope Options local_options = Options.defaultOptions;
@@ -72,8 +75,7 @@ int _main(string[] args) {
     local_options.trt.enable = true;
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.epoch_creator.timeout = 250;
-    // local_options.wave.prefix_format = "TRANSACTION_Node_%s_";
-    local_options.wave.prefix_format = "Node_%s_";
+    local_options.wave.prefix_format = environment["PREFIX"];
     local_options.subscription.address = contract_sock_addr(environment["SUBSCRIPTION"]);
     local_options.save(config_file);
 
@@ -111,7 +113,7 @@ int _main(string[] args) {
 
     TagionBill[] bills;
     foreach (ref wallet; wallets) {
-        foreach (i; 0 .. 3) {
+        foreach (i; 0 .. 1) {
             bills ~= requestAndForce(wallet, 1000.TGN);
         }
     }
@@ -162,6 +164,8 @@ int _main(string[] args) {
     feature.run;
     Thread.sleep(20.seconds);
     stopsignal.set;
+    abort = true;
+    Thread.sleep(5.seconds);
     return 0;
 }
 
@@ -178,6 +182,14 @@ class SendAContractWithOneOutputsThroughTheShell {
     HiRPC wallet2_hirpc;
     TagionCurrency start_amount1;
     TagionCurrency start_amount2;
+
+
+    string shell_addr;
+    string bullseye_address;
+    string dart_address;
+    string contract_address;
+
+    
     this(ShellOptions shell_opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
         this.shell_opts = shell_opts;
         this.wallet1 = wallet1;
@@ -186,6 +198,10 @@ class SendAContractWithOneOutputsThroughTheShell {
         start_amount2 = wallet2.calcTotal(wallet2.account.bills);
         wallet1_hirpc = HiRPC(wallet1.net);
         wallet2_hirpc = HiRPC(wallet2.net);
+        shell_addr = shell_opts.shell_uri ~ shell_opts.shell_api_prefix;
+        bullseye_address = shell_addr ~ shell_opts.bullseye_endpoint ~ ".hibon";
+        dart_address = shell_addr ~ shell_opts.dart_endpoint ~ "/nocache";
+        contract_address = shell_addr ~ shell_opts.contract_endpoint;
     }
 
     import nngd;
@@ -199,9 +215,9 @@ class SendAContractWithOneOutputsThroughTheShell {
     Document shell() @trusted {
         import std.net.curl;
 
-        auto bullseye_address = shell_opts.shell_uri ~ shell_opts.shell_api_prefix ~ shell_opts.bullseye_endpoint ~ ".hibon";
         writefln("BEFORE POST addr: %s", bullseye_address);
-        const bullseye = get(bullseye_address).toDoc;
+        immutable(ubyte[]) raw_res =cast(immutable) get!(AutoProtocol, ubyte)(bullseye_address);
+        Document bullseye = Document(raw_res);
         writefln("hrep %s", bullseye.toPretty);
         auto receiver = wallet1_hirpc.receive(bullseye);
         check(receiver.isResponse, "should have received a bullseye response");
@@ -210,17 +226,49 @@ class SendAContractWithOneOutputsThroughTheShell {
 
     @When("i create a contract with all my bills")
     Document bills() {
-        return Document();
+        amount = wallet1.calcTotal(wallet1.account.bills) - 200.TGN;
+        auto requested_bill = wallet2.requestBill(amount);
+        auto payment = wallet1.createPayment([requested_bill], signed_contract, fee);
+
+        const number_of_outputs = PayScript(signed_contract.contract.script).outputs.length;
+        check(number_of_outputs == 1, format("should only have one output had %s", number_of_outputs));
+
+        return result_ok;
     }
 
     @When("i send the contract")
-    Document contract() {
-        return Document();
+    Document contract() @trusted {
+        auto response = sendShellSubmitHiRPC(contract_address, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        check(!response.isError, format("Error when sending shell submit %s", response.toPretty));
+        return result_ok;
     }
 
     @Then("the transaction should go through")
-    Document through() {
-        return Document();
+    Document through() @trusted {
+
+        int max_tries;
+        TagionCurrency wallet1_amount;
+        TagionCurrency wallet2_amount;
+        const wallet2_expected = start_amount2 + amount;
+        Update: while (max_tries < 10) {
+            bool both_updated;
+            if (wallet1_amount != 0.TGN) {
+                writefln("wallet1 sending update to dartaddress %s", dart_address);
+                wallet1_amount = getWalletTRTUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
+            } else {
+                both_updated = true;
+            }
+            if (wallet2_amount != wallet2_expected) {
+                writefln("wallet2 sending update to dartaddress %s", dart_address);
+                wallet2_amount = getWalletTRTUpdateAmount(wallet2, dart_address, wallet2_hirpc, true);
+            } else {
+                if (both_updated) {break Update;}
+            }
+            Thread.sleep(5.seconds);
+        }
+        check(wallet1_amount == 0.TGN, format("Should have zero tagions after sending all... had %s", wallet1_amount));
+        check(wallet2_amount == wallet2_expected, format("should have %s had %s", wallet2_expected, wallet2_amount));
+        return result_ok;
     }
 
 }

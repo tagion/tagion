@@ -47,6 +47,7 @@ mixin Main!(_main, "shell");
 alias LRUT!(Buffer, TagionBill[]) DartCache;
 
 shared DartCache dcache;
+shared static bool abort = false;
 
 long getmemstatus() {
     long sz = -1;
@@ -306,7 +307,6 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
             buf = msg.body_trim!(ubyte[])(msg.length);
             break;
         }
-        writeit(format("WH: dart: received %d bytes", len));
         rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
         rep.type = "applicaion/octet-stream";
         rep.rawdata = (len > 0) ? buf[0 .. len] : null;
@@ -547,10 +547,9 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
                 params[i] = bill.toHiBON;
             }
             Document response = hirpc.result(receiver, params).toDoc;
-            rep.status = (found_bills.length > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status
-                .NNG_HTTP_STATUS_NO_CONTENT;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = "applicaion/octet-stream";
-            rep.rawdata = (found_bills.length > 0) ? cast(ubyte[])(response.serialize) : null;
+            rep.rawdata = cast(ubyte[])(response.serialize);
         }
         else {
             NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -999,6 +998,12 @@ appoint:
                 destroy(app);
                 goto appoint;
             }
+        }
+        if (abort) {
+            writeln("Shell aborting");
+            app.stop;
+            destroy(app);
+            return 0;
         }
 
     }
