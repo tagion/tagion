@@ -393,7 +393,12 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
     try {
         int rc;
         size_t nfound = 0, nreceived = 0, attempts = 0;
-        bool usecache = true;
+
+        version(CACHE_ENABLED) {
+            bool usecache = true;
+        } else {
+            bool usecache = false;
+        }
         immutable(ubyte)[] docbuf;
         size_t doclen;
 
