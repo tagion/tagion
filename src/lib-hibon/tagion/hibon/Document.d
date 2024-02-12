@@ -153,6 +153,7 @@ static assert(uint.sizeof == 4);
             assert(doc.empty);
             assert(doc.size is 0);
             assert(doc.length is 0);
+            assert(doc.isInorder);
             auto range = doc[];
             assert(range.empty);
             range.popFront;
@@ -168,6 +169,7 @@ static assert(uint.sizeof == 4);
             assert(doc.size is 0);
             assert(doc.length is 0);
             assert(doc[].empty);
+            assert(doc.isInorder);
         }
     }
 
@@ -183,6 +185,7 @@ static assert(uint.sizeof == 4);
         assert(doc.full_size == h.serialize.length);
         assert(doc.length == 1);
         assert(equal(doc.keys, ["test"]));
+        assert(doc.isInorder);
 
     }
     /++
@@ -618,6 +621,7 @@ static assert(uint.sizeof == 4);
             const doc = Document();
             assert(doc.length is 0);
             assert(doc[].empty);
+            assert(doc.isInorder);
         }
 
         { // Test of empty Document
@@ -627,6 +631,7 @@ static assert(uint.sizeof == 4);
             const doc = Document(data);
             assert(doc.length is 0);
             assert(doc[].empty);
+            assert(doc.isInorder);
 
         }
 
@@ -672,6 +677,8 @@ static assert(uint.sizeof == 4);
                 immutable data = buffer.data.idup;
                 const doc = Document(data);
                 assert(doc.length is 1);
+                assert(doc.isInorder);
+                // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
 
             { // Document including basic types
@@ -680,6 +687,7 @@ static assert(uint.sizeof == 4);
                 immutable data = buffer.data.idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
+                assert(doc.isInorder);
 
                 auto keys = doc.keys;
                 foreach (i, t; test_table) {
@@ -828,6 +836,7 @@ static assert(uint.sizeof == 4);
                     assert(typed_range.front == text);
                     typed_range.popFront;
                 }
+                assert(doc.isInorder);
             }
         }
     }
@@ -900,7 +909,7 @@ static assert(uint.sizeof == 4);
                                 }
                                 static if (isIntegral!T) {
                                     auto result = new Value(LEB128.decode!T(data[value_pos .. $])
-                                            .value);
+                                        .value);
                                     return result;
                                 }
                                 else {
@@ -1057,7 +1066,7 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                        "Key '", key.to!string, "' is not an index", key
+                    "Key '", key.to!string, "' is not an index", key
                 ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
@@ -1129,6 +1138,7 @@ static assert(uint.sizeof == 4);
             assert(doc["number"] != "42");
             assert(doc["text"] != 42);
             assert(doc["text"] == "42");
+            assert(doc.isInorder);
         }
 
         @property @nogc const pure nothrow {
@@ -1300,7 +1310,7 @@ static assert(uint.sizeof == 4);
                     else if (data[0]!is 0) {
                         return INVALID_NULL;
                     }
-                    else if (!LEB128.isInvariant!(uint)(data)) {
+                else if (!LEB128.isInvariant!(uint)(data)) {
                         return ELEMENT_SIZE_INVALID_LEB128;
                     }
                 }
@@ -1384,17 +1394,15 @@ static assert(uint.sizeof == 4);
 }
 
 @safe
-unittest { // Bugfix (Fails in isInorder);
-{
-        immutable(ubyte[]) data = [
-            220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212,
-            161, 82, 232, 239, 91, 103, 93, 26, 163, 205, 99, 121, 104, 172, 161,
-            131, 175
-        ];
-        const doc = Document(data);
-        assert(!doc.isInorder);
-        assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
-    }
+unittest { // Bugfix (Fails in isInorder)
+    immutable(ubyte[]) data = [
+        220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212,
+        161, 82, 232, 239, 91, 103, 93, 26, 163, 205, 99, 121, 104, 172, 161,
+        131, 175
+    ];
+    const doc = Document(data);
+    assert(!doc.isInorder);
+    assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
 }
 
 @safe

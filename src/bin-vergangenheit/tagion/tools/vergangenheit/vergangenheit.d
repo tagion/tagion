@@ -140,8 +140,12 @@ int _main(string[] args) {
 
         auto recorder_list = args.filter!(file => file.hasExtension(FileExtension.hibon)).array;
         writefln("recorder_list=%s", recorder_list);
-        auto rebuild = Rebuild(option, db_src, db_dst);
-        rebuild.prepareReplicator(net, recorder_list);
+        auto rebuild = Rebuild(option, db_src, db_dst, recorder_list);
+        //rebuild.recorder_list = args.filter!(file => file.hasExtension(FileExtension.hibon)).array;
+
+        rebuild.sortReplicator(net);
+        verbose("%-(%s\n%)", rebuild.replicator_files);
+        rebuild.prepareReplicator(net);
     }
     catch (Exception e) {
         error(e);

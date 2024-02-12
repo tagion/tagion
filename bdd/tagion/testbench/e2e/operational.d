@@ -72,6 +72,7 @@ int _main(string[] args) {
     int max_failed_runs = 5;
     DurationUnit duration_unit = DurationUnit.days;
 
+    // Enabled this for wallet_interface to print out debug info
     __verbose_switch = true;
 
     auto tx_stats = new TxStats;
@@ -238,21 +239,12 @@ class SendNContractsFromwallet1Towallet2 {
     @Given("i have a network")
     Document network() @trusted {
         writefln("sendkernel: %s, sendshell: %s", sendkernel, send);
-        version(TRT_READ_REQ) {
-            // dfmt off
-            const wallet_switch = WalletInterface.Switch(
-                    trt_read: true, 
-                    sendkernel: sendkernel,
-                    send: send);
-            // dfmt on
-        } else {
-            // dfmt off
-            const wallet_switch = WalletInterface.Switch(
-                    update: true, 
-                    sendkernel: sendkernel,
-                    send: send);
-            // dfmt on
-        }
+        // dfmt off
+        const wallet_switch = WalletInterface.Switch(
+                update: true, 
+                sendkernel: sendkernel,
+                send: send);
+        // dfmt on
 
         with (receiver) {
             check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
@@ -291,11 +283,11 @@ class SendNContractsFromwallet1Towallet2 {
             secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
 
             if (sendkernel) {
-                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
                 check(!response.isError, format("Error when sending kernel submit\n%s", response.toPretty));
             }
             else {
-                auto response = sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                auto response = sendShellHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, hirpc);
                 check(!response.isError, format("Error when sending shell submit\n%s", response.toPretty));
             }
 
@@ -314,10 +306,18 @@ class SendNContractsFromwallet1Towallet2 {
     @Then("wallet1 and wallet2 balances should be updated")
     Document updated() @trusted {
         //dfmt off
+        version(TRT_READ_REQ) {
+        const wallet_switch = WalletInterface.Switch(
+            trt_read: true, 
+            sendkernel: sendkernel,
+            send: send);
+        }
+        else {
         const wallet_switch = WalletInterface.Switch(
             trt_update : true,
             sendkernel: sendkernel,
             send: send);
+        }
 
         enum update_retries = 20;
         enum retry_delay = 5.seconds;

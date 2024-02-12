@@ -12,6 +12,8 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
 
+      cfg = pkgs.lib.config.services.tagion;
+
       # Disable mbedtls override is broken upstream see if merged
       # https://github.com/NixOS/nixpkgs/pull/285518
       nng_no_tls = with pkgs;
@@ -170,5 +172,19 @@
             Volumes = { };
           };
         };
+
+      nixosModules.default = with pkgs.lib; {
+        options = {
+          services.tagion = {
+            enable = mkEnableOption (lib.mdDoc "tagion");
+          };
+        };
+
+        config = mkIf cfg.enable {
+          environment.systemPackages = [ self.packages.x86_64-linux.default ];
+          systemd.packages = [ self.packages.x86_64-linux.default ];
+        };
+
+      };
     };
 }

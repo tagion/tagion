@@ -24,7 +24,7 @@ import tagion.utils.Miscellaneous : cutHex;
 @safe
 synchronized class AddressBook {
     /** Addresses for node */
-    protected shared(NodeInfo[Pubkey]) addresses;
+    protected NodeInfo[Pubkey] addresses;
 
     /**
      * Init NodeAddress if public key exist
@@ -117,7 +117,17 @@ enum MultiAddrProto {
 @recordType("NNR")
 struct NodeInfo {
 
+    // The Pubkey is kept as a Buffer internally, because Pubkey is a struct we cannot assign NodeInfo info to a shared.
+    // It'll be exactly the same when serialized to hibon.
+    private @label(StdNames.nodekey) Buffer _owner;
     @label("a") string address;
+
+    this(Pubkey __owner, string _addr) nothrow pure {
+        _owner = cast(Buffer) __owner;
+        address = _addr;
+    }
+
+    Pubkey owner() => Pubkey(_owner);
 
     /**
      * Parse node address to string
@@ -146,9 +156,9 @@ struct NodeInfo {
 }
 
 unittest {
-    immutable nnr = NodeInfo("ip4/200.185.5.5/tcp/80");
+    immutable nnr = NodeInfo(Pubkey(), "ip4/200.185.5.5/tcp/80");
     assert(nnr.toNNGString == "tcp://200.185.5.5:80");
 
-    immutable nnr2 = NodeInfo("ip6/c8b9:505:c8b9:505:c8b9:0:c8b9:505/tcp/80");
+    immutable nnr2 = NodeInfo(Pubkey(), "ip6/c8b9:505:c8b9:505:c8b9:0:c8b9:505/tcp/80");
     assert(nnr2.toNNGString == "tcp://c8b9:505:c8b9:505:c8b9:0:c8b9:505:80");
 }

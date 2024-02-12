@@ -80,9 +80,9 @@ class DARTFile {
     }
 
     protected enum _params = [
-            "dart_indices",
-            "bullseye",
-        ];
+        "dart_indices",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -402,7 +402,7 @@ class DARTFile {
                         
 
                         .check(!_fingerprints[key].isinit,
-                        format("Fingerprint key=%02X at index=%d is not defined", key, index));
+                                format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
@@ -704,38 +704,6 @@ class DARTFile {
         return local_indent(rim_level);
     }
 
-    pragma(msg, "fixme(alex); Remove loadAll function");
-    HiBON loadAll(Archive.Type type = Archive.Type.ADD) {
-        auto recorder = manufactor.recorder;
-        void local_load(
-                const Index branch_index,
-                const ubyte rim_key = 0,
-                const uint rim = 0) @safe {
-            if (branch_index !is Index.init) {
-                immutable data = blockfile.load(branch_index);
-                const doc = Document(data);
-                if (Branches.isRecord(doc)) {
-                    const branches = Branches(doc);
-                    if (branches.indices.length) {
-                        foreach (key, index; branches._indices) {
-                            local_load(index, cast(ubyte) key, rim + 1);
-                        }
-                    }
-                }
-                recorder.insert(doc, type);
-            }
-        }
-
-        local_load(blockfile.masterBlock.root_index);
-        auto result = new HiBON;
-        uint i;
-        foreach (a; recorder[]) {
-            result[i] = a.toDoc;
-            i++;
-        }
-        return result;
-    }
-
     /**
  * Loads all the archives in the list of fingerprints
  * 
@@ -1009,7 +977,7 @@ class DARTFile {
                         .slide(2)
                         .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
                         .any,
-                        "cannot have multiple operations on same dart-index in one modify");
+                    "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1245,7 +1213,7 @@ class DARTFile {
             }
 
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory
-                .Recorder recorder) {
+                    .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
                 auto find_recorder = dart.loads(_dart_indices);
@@ -2569,13 +2537,13 @@ unittest {
         const hashdoc = HashDoc("hugo", 42);
         recorder_add.add(hashdoc);
         assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
-        "The dart_index and the fingerprint of a archive should not be the same for a # archive");
+                "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
         // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
         assert(bullseye == recorder_add[].front.fingerprint,
-        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         const hashdoc_change = HashDoc("hugo", 17);
         auto recorder_B = dart_A.recorder;
         recorder_B.remove(hashdoc_change);
@@ -2590,7 +2558,7 @@ unittest {
         // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
         assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
         assert(bullseye == recorder_change[].front.fingerprint,
-        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         { // read the dart_index from the dart and check the dart_index 
             auto load_recorder = dart_A.loads(recorder_change[].map!(a => a.dart_index));
             //writefln("load_recorder=%(%02x%)", load_recorder[].front.dart_index);

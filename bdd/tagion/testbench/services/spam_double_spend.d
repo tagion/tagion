@@ -100,7 +100,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         long current_epoch_number;
 
         while (current_epoch_number < epoch_number + 10) {
-            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
@@ -187,7 +187,7 @@ struct SpamWorker {
 
         long current_epoch_number;
         while (!thisActor.stop && current_epoch_number < epoch_number + 10) {
-            sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), net);
+            sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);

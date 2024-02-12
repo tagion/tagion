@@ -142,7 +142,7 @@ struct EpochCreatorService {
             import tagion.script.common : SignedContract;
 
             version (EPOCH_LOG) {
-                log.trace("Received wavefront %s");
+                log.trace("Received wavefront");
             }
 
             const receiver = HiRPC.Receiver(wave_doc);

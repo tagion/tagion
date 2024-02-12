@@ -8,7 +8,7 @@ The problem with the above idea, is in case that a user has many bills on a sing
 
 
 ## Proposed solution
-We introduce a new method called `hirpc.trt` (And also deprecate `hirpc.search` which goal is to return all `DARTIndices` for a specifc public key. This will greatly reduce the overall response since a `DARTIndices` is only `32` bytes.
+We introduce a new method called `hirpc.trt.dartRead` (And also deprecate `hirpc.search` which goal is to return all `DARTIndices` for a specifc public key. This will greatly reduce the overall response since a `DARTIndices` is only `32` bytes.
 
 1. The user sends a `hirpc.trt` request on all their public keys and gets all dartindices back where archives were found from the TRT ("or cache"). 
 2. The user checks for bills in their bill[] on the responded dartindexs. If some bills are found in their bill[] but were not in the response, the bill is no longer in the system and has been deleted. Likewise if some bills are not found in their bill[] but were found in their response the user might have received further payment.
@@ -21,7 +21,7 @@ The current cache is changed so that instead of holding `TagionBill[Pubkey]` it 
 
 
 
-# Performing a `hirpc.trt`
+# Performing a `hirpc.trt.dartRead`
 ```mermaid
 sequenceDiagram
   participant User as User

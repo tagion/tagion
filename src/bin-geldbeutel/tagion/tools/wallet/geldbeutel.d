@@ -359,6 +359,7 @@ int _main(string[] args) {
             return 0;
         }
 
+        // BUG: wallet asks for pin when no operations are specified
         if (create_account) {
             wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
             return 0;

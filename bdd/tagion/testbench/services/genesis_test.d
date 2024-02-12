@@ -106,7 +106,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
         int start = 0;
         while(start < max) {
             if (start == 20) {
-                sendSubmitHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1.net);
+                sendSubmitHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
             }
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             log("received something");

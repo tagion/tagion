@@ -33,6 +33,8 @@ struct ShellOptions {
     uint sock_connectretry;
     uint dartcache_size;
     double dartcache_ttl_msec;
+    string mode0_prefix;
+
 
     void setDefault() nothrow {
         contract_addr_prefix = "CONTRACT_";
@@ -57,6 +59,7 @@ struct ShellOptions {
         sock_connectretry = 32;
         dartcache_size = 4096;
         dartcache_ttl_msec = 30.0;
+        mode0_prefix = "Node_%d_";
     }
 
     /// Gives a new node address each time it is called

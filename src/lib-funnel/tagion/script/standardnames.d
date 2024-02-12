@@ -1,8 +1,5 @@
 module tagion.script.standardnames;
 
-import tagion.communication.HiRPC;
-
-@safe:
 enum StdNames {
     owner = "$Y",
     value = "$V",
