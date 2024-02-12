@@ -1,3 +1,14 @@
+# Changelog for Epoch 720414 .. 793069
+
+**Tagionshell automatic test**
+We have implemented a automatic test on the shell for the acceptance stage. Until now we have only had automatic tests on the shell when running the longitudinal tests, so this makes it easier for us to catch errors quicker. The test also utilizes our new trt-read update process.
+
+**Contract Tracing proposal**
+We have created a proposal for how the tracing of contracts should be implemented. See [docs.tagion.org](https://docs.tagion.org/#/documents/TIPs/contract_tracing_proposal_18_feb) for further information.
+
+**HiBONJSON timestamp formatting**
+
+
 # Changelog for Epoch 548959 .. 720414
 
 **HiBON bug fixes and enhancements**
