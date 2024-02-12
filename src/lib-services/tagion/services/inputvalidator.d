@@ -23,7 +23,7 @@ import tagion.logger.Logger;
 import tagion.network.ReceiveBuffer;
 import tagion.script.namerecords;
 import tagion.services.messages;
-import tagion.services.error_codes;
+import tagion.services.codes;
 import tagion.services.options : TaskNames;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
@@ -62,8 +62,10 @@ struct InputValidatorService {
         HiRPC hirpc = HiRPC(net);
         ActorHandle hirpc_verifier_handle = ActorHandle(__task_names.hirpc_verifier);
 
-        void reject(T)(ServiceCode err_type, T data = Document()) const nothrow {
-            import tagion.services.error_codes;
+        NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
+
+        void reject(ServiceCode err_type, Document data = Document()) const nothrow {
+            import tagion.services.codes;
 
             try {
                 hirpc.Error message;
@@ -85,7 +87,6 @@ struct InputValidatorService {
             }
         }
 
-        NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sock_send_timeout.msecs;
         sock.recvtimeout = opts.sock_recv_timeout.msecs;
         sock.recvbuf = opts.sock_recv_buf;
