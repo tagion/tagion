@@ -7,6 +7,17 @@ We have implemented a automatic test on the shell for the acceptance stage. Unti
 We have created a proposal for how the tracing of contracts should be implemented. See [docs.tagion.org](https://docs.tagion.org/#/documents/TIPs/contract_tracing_proposal_18_feb) for further information.
 
 **HiBONJSON timestamp formatting**
+We use a function from D's standard library for converting from hibon's time format sdt time which is represented as a 64-bit integer and the ISO8601 text format. Which looks like this `2024-02-12T11:15:37+07:00`.
+The problem is that the timezone can be ommited like this `2024-02-12T11:15:37` and the timezone would then be assumeed to be the local time.
+This is the default behavior for the library function which means that the timezone would never be included in HIBONJSON. 
+Which meant that a hibon including a timestamp. When converted to json and sent to another timezone and coverted back to hibon
+would no longer be the same timestamp and of course no longer the same hash.
+We have made a temporary solution for this, but it seems to cause issues on some platforms see https://github.com/tagion/tagion/issues/406
+
+In the process we also found a bug in the function that converts from the text format to the binary format 'fromISOExtString()`.
+Which would not correctly subtract the time offset in non hourly timezones like Indias IST(UTC +5:30) or Canadas NST(UTC -2:30).
+Which we did not even know existed.
+This means for now that the standard hibonjson implementation does not allow converting from a string timestamp with an un hourly timeoffset.
 
 
 # Changelog for Epoch 548959 .. 720414
