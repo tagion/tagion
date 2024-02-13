@@ -4,14 +4,13 @@ import core.stdc.string : memcpy;
 @safe:
 
 struct SortedArray(T) {
-
     T[] arr;
 
     this(T[] arr) pure nothrow {
         this.arr = arr;
     }
 
-    ptrdiff_t findIndex(T k) pure nothrow @nogc {
+    private ptrdiff_t findIndex(T k) pure nothrow @nogc {
         ptrdiff_t start = 0;
         ptrdiff_t end = cast(ptrdiff_t) arr.length - 1;
         while (start <= end) {
@@ -34,7 +33,7 @@ struct SortedArray(T) {
         const index = findIndex(data);
         arr.length++;
         if (index < cast(ptrdiff_t) arr.length - 1) {
-            const byte_size = (arr.length - index - 1) * arr[0].sizeof;
+            const byte_size = (arr.length - index - 1) * T.sizeof;
             memcpy(&arr[index + 1], &arr[index], byte_size);
         }
         arr[index] = data;
@@ -46,7 +45,7 @@ struct SortedArray(T) {
         if (index < arr.length) {
             arr.length--;
             if (index < arr.length) {
-                const byte_size = (arr.length - index) * arr[0].sizeof;
+                const byte_size = (arr.length - index) * T.sizeof;
                 memcpy(&arr[index], &arr[index + 1], byte_size);
             }
         }
