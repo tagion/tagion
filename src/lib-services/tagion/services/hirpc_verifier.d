@@ -13,6 +13,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.logger.Logger;
 import tagion.script.common : SignedContract;
 import tagion.services.messages;
+import tagion.services.codes;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 
@@ -27,14 +28,6 @@ struct HiRPCVerifierOptions {
 /// HiRPC methods
 enum ContractMethods {
     submit = "submit",
-}
-
-/// used internally in combination with `send_rejected_contracts` optios for testing & tracing that contracts are correctly rejected
-enum RejectReason {
-    notAHiRPC, // The Document received was not a vald HiRPC
-    invalidMethod, // The method was not one of the accepted methods
-    notSigned, // The rpc was not signed when it should have been
-    invalidType, // the rpc was not a method or fit the criteria for any of the available contracts
 }
 
 /**
@@ -53,7 +46,7 @@ struct HiRPCVerifierService {
         const hirpc = HiRPC(net);
         immutable collector_task = task_names.collector;
 
-        void reject(RejectReason reason, lazy Document doc) @safe {
+        void reject(ServiceCode reason, lazy Document doc) @safe {
             if (opts.send_rejected_hirpcs) {
                 locate(opts.rejected_hirpcs).send(reason, doc);
             }
@@ -61,21 +54,20 @@ struct HiRPCVerifierService {
 
         void contract(inputDoc, Document doc) @safe {
             if (!doc.isRecord!(HiRPC.Sender)) {
-                reject(RejectReason.notAHiRPC, doc);
+                reject(ServiceCode.hirpc, doc);
                 return;
             }
 
             const receiver = hirpc.receive(doc);
             if (!receiver.isMethod) {
-                reject(RejectReason.invalidType, doc);
+                reject(ServiceCode.method, doc);
                 return;
             }
-
 
             switch (receiver.method.name) {
             case ContractMethods.submit:
                 if (!(Document(receiver.method.params).isRecord!SignedContract)) {
-                    reject(RejectReason.invalidType, doc);
+                    reject(ServiceCode.params, doc);
                     return;
                 }
                 if (receiver.signed is HiRPC.SignedState.VALID) {
@@ -83,11 +75,11 @@ struct HiRPCVerifierService {
                     locate(collector_task).send(inputHiRPC(), receiver);
                 }
                 else {
-                    reject(RejectReason.notSigned, doc);
+                    reject(ServiceCode.sign, doc);
                 }
                 break;
             default:
-                reject(RejectReason.invalidMethod, doc);
+                reject(ServiceCode.method, doc);
                 break;
             }
         }

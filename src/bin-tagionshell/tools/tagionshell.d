@@ -33,6 +33,7 @@ import tagion.script.common;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.tools.shell.shelloptions;
+import tagion.tools.shell.contracts;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions;
 import tagion.utils.StdTime : currentTime;
@@ -85,7 +86,7 @@ enum ExceptionFormat {
 
 string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat kind = ExceptionFormat.HTML) {
     string[] res;
-    switch (kind) {
+    final switch (kind) {
     case ExceptionFormat.HTML:
         res ~= format("\r\n<h2>Exception caught in TagionShell %s %s</h2>\r\n", Clock.currTime()
                 .toSimpleString(), tag);
@@ -95,7 +96,6 @@ string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat k
         }
         break;
     case ExceptionFormat.PLAIN:
-    default:
         res ~= format("\r\nException caught in TagionShell %s %s\r\n", Clock.currTime()
                 .toSimpleString(), tag);
         foreach (t; ex) {
@@ -259,6 +259,8 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
             return;
         }
 
+        save_rpc(opt, Document(req.rawdata.idup));
+
         const contract_addr = opt.node_contract_addr;
 
         writeit(format("WH: contract: with %d bytes for %s", req.rawdata.length, contract_addr));
@@ -393,7 +395,12 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
     try {
         int rc;
         size_t nfound = 0, nreceived = 0, attempts = 0;
-        bool usecache = true;
+
+        version(CACHE_ENABLED) {
+            bool usecache = true;
+        } else {
+            bool usecache = false;
+        }
         immutable(ubyte)[] docbuf;
         size_t doclen;
 
@@ -406,6 +413,8 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
             rep.msg = "invalid data type";
             return;
         }
+
+        save_rpc(opt, Document(req.rawdata.idup));
 
         if (req.path[$ - 1] == "nocache")
             usecache = false;
@@ -605,6 +614,9 @@ static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
             rep.msg = "invalid data type";
             return;
         }
+
+        save_rpc(opt, Document(req.rawdata.idup));
+
         writeit(format("WH: invoice2pay: with %d bytes", req.rawdata.length));
 
         WalletOptions options;
@@ -930,7 +942,7 @@ int _main(string[] args) {
             ~ "\t= POST contract hibon\n\t"
             ~ options.shell_api_prefix
             ~ options.dart_endpoint ~ "/[nocache]"
-            ~ "\t\t= POST dart request hibon (depending on the method send raw request or use cache for pkeys)\n\t"
+            ~ "\t= POST dart request hibon (depending on the method send raw request or use cache for pkeys)\n\t"
             ~ options.shell_api_prefix
             ~ options.i2p_endpoint
             ~ "\t= POST invoice-to-pay hibon\n\t"
@@ -947,8 +959,8 @@ int _main(string[] args) {
             ~ options.version_endpoint
             ~ "\t\t= GET network version info\n\t"
             ~ options.shell_api_prefix
-            ~ options.selftest_endpoint ~ "/<enpoint>"
-            ~ "\t= GET self test results\n\t"
+            ~ options.selftest_endpoint ~ "/<endpoint>"
+            ~ " = GET self test results\n\t"
             ~ "\t== /bullseye \t- test bullseye endpoint\n\t"
             ~ "\t== /dart \t- test dart request endpoint\n\t"
 
@@ -972,6 +984,13 @@ appoint:
     app.route(options.shell_api_prefix ~ options.version_endpoint, &versioninfo_handler, ["GET"]);
 
     app.start();
+
+    if (options.save_rpcs_enable) {
+        import tagion.actor;
+        import tagion.tools.shell.contracts;
+
+        _spawn!(RPCSaver)(options.save_rpcs_task);
+    }
 
     while (true) {
         nng_sleep(2000.msecs);
