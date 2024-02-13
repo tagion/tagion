@@ -1,4 +1,5 @@
 import std.range;
+import core.stdc.string : memcpy;
 
 @safe:
 
@@ -28,23 +29,34 @@ struct SortedArray(T) {
         return end + 1;
     }
 
-    
-    void insert(T data) {
+    @trusted
+    void insert(T data) nothrow pure {
         const index = findIndex(data);
-        arr = arr[0..index] ~ [data] ~ arr[index..$];
+        arr.length++;
+        if (index < cast(ptrdiff_t) arr.length - 1) {
+            const byte_size = (arr.length - index - 1) * arr[0].sizeof;
+            memcpy(&arr[index + 1], &arr[index], byte_size);
+        }
+        arr[index] = data;
     }
 
-    void remove(T data) {
+    @trusted
+    void remove(T data) nothrow pure {
         const index = findIndex(data);
-        if (index < arr.length && arr[index] == data) {
-            arr = arr[0..index] ~ arr[index+1..$];
+        if (index < arr.length) {
+            arr.length--;
+            if (index < arr.length) {
+                const byte_size = (arr.length - index) * arr[0].sizeof;
+                memcpy(&arr[index], &arr[index + 1], byte_size);
+            }
         }
     }
 }
 
-
-@safe 
+@safe
 unittest {
+    import std.stdio;
+
     assert(SortedArray!int([1, 3, 5, 6]).findIndex(2) == 1);
     int[] empty;
     assert(SortedArray!(int)(empty).findIndex(2) == 0);
