@@ -144,7 +144,6 @@ struct Recycler {
      * Params:
      *   segment = segment to be inserted.
      */
-    @trusted
     protected void insert(RecycleSegment* segment) {
         indices.insert(segment);
 
@@ -152,12 +151,13 @@ struct Recycler {
             import core.stdc.string : memcpy;
             const index = findIndex(segment);
 
-            segments.length++;
-            if (index < cast(ptrdiff_t) segments.length -1) {
-                const byte_size = (segments.length - index - 1) * size_t.sizeof;
-                memcpy(&segments[index+1], &segments[index], byte_size);
-            }
-            segments[index] = segment;
+            segments.insertInPlace(index, segment);
+            // segments.length++;
+            // if (index < cast(ptrdiff_t) segments.length -1) {
+            //     const byte_size = (segments.length - index - 1) * size_t.sizeof;
+            //     memcpy(&segments[index+1], &segments[index], byte_size);
+            // }
+            // segments[index] = segment;
         } else {
             segments ~= segment;
         }
