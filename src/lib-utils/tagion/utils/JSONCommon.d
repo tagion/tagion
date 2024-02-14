@@ -87,16 +87,6 @@ mixin template JSONCommon() {
             }
             else {
                 result[name] = get!(type)(m);
-                version (none)
-                    static if (is(type == enum)) {
-                        result[name] = m.to!string;
-                    }
-                    else static if (is(type : immutable(ubyte[]))) {
-                        result[name] = m.toHexString;
-                    }
-                    else {
-                        result[name] = m;
-                    }
             }
         }
         return result;
