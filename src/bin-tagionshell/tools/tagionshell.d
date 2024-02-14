@@ -13,6 +13,7 @@ import std.format;
 import std.getopt;
 import std.json;
 import std.typecons;
+import std.range;
 import std.string : representation;
 import std.stdio : File, toFile, stderr, stdout, writefln, writeln;
 import std.datetime.systime : Clock;
@@ -25,11 +26,14 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONRecord : isRecord;
+import tagion.dart.DARTBasic : DARTIndex, dartKey;
 import tagion.dart.Recorder;
+import tagion.trt.TRT;
 import tagion.services.subscription;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
+import tagion.script.standardnames;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.tools.shell.shelloptions;
@@ -45,8 +49,12 @@ import nngd.nngd;
 mixin Main!(_main, "shell");
 
 alias LRUT!(Buffer, TagionBill[]) DartCache;
+alias LRUT!(Buffer, DARTIndex[]) TRTCache;
+alias LRUT!(DARTIndex, TagionBill) IndexCache;
 
 shared DartCache dcache;
+shared TRTCache tcache;
+shared IndexCache icache;
 shared static bool abort = false;
 
 enum ContentType {
@@ -112,8 +120,11 @@ void dart_worker(ShellOptions opt) {
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
     NNGSocket r = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     const net = new StdHashNet();
+    auto record_factory = RecordFactory(net);
+    const hirpc = HiRPC(null);
     s.recvtimeout = msecs(opt.sock_recvtimeout);
     s.subscribe(opt.recorder_subscription_tag);
+    s.subscribe(opt.trt_subscription_tag);
     r.recvtimeout = msecs(opt.sock_recvtimeout);
     writeit("DS: subscribed");
     while (true) {
@@ -132,8 +143,6 @@ void dart_worker(ShellOptions opt) {
         s.close();
         r.close();
     }
-    auto record_factory = RecordFactory(net);
-    const hirpc = HiRPC(null);
     writeit("DS: connected");
     while (true) {
         try {
@@ -141,43 +150,127 @@ void dart_worker(ShellOptions opt) {
             if (received.empty) {
                 continue;
             }
-            const doc = Document(received[received.countUntil(0) + 1 .. $]);
+            auto ppos = received.countUntil(0);
+            auto topic = cast(string)received[0..ppos];
+            const doc = Document(received[ppos + 1 .. $]);
             if (!doc.isInorder(No.Reserved)) {
                 continue;
             }
+            //writeit(format("RR: %d  %s  %d\n",received.length,topic,doc.length));
             auto receiver = hirpc.receive(doc);
             if (!receiver.isMethod) {
                 writeit("DS: Invalid method in document received");
                 continue;
             }
             const payload = SubscriptionPayload(receiver.method.params);
-            if (opt.recorder_subscription_task_prefix.length > 0) {
-                if (!payload.task_name.startsWith(opt.recorder_subscription_task_prefix)) {
+            if (opt.dart_subscription_task_prefix.length > 0) {
+                if (!payload.task_name.startsWith(opt.dart_subscription_task_prefix)) {
                     continue;
                 }
             }
+            int k = 0;
             auto recorder = record_factory.recorder(payload.data);
-            Buffer[] affected_owners, tofetch;
-            TagionBill[][Buffer] toadd, toremove;
-            foreach (a; recorder[]) {
-                if (a.filed.isRecord!TagionBill) {
-                    auto t = a.type;
-                    auto b = TagionBill(a.filed);
-                    auto o = cast(Buffer) b.owner;
-                    affected_owners ~= o;
-                    if (t == Archive.Type.ADD) {
-                        toadd[o] ~= b;
-                    }
-                    else if (t == Archive.Type.REMOVE) {
-                        toremove[o] ~= b;
+            if(topic.startsWith("recorder")){
+                Buffer[] affected_owners, tofetch;
+                TagionBill[][Buffer] toadd, toremove;
+                foreach (a; recorder[]) {
+                    if (a.filed.isRecord!TagionBill) {
+                        auto t = a.type;
+                        auto b = TagionBill(a.filed);
+                        auto o = cast(Buffer) b.owner;
+                        affected_owners ~= o;
+                        if (t == Archive.Type.ADD) {
+                            toadd[o] ~= b;
+                        }
+                        else if (t == Archive.Type.REMOVE) {
+                            toremove[o] ~= b;
+                        }
                     }
                 }
-            }
-            int k = 0;
-            if (!affected_owners.empty) {
-                foreach (o; affected_owners) {
-                    TagionBill[] bucket;
-                    if (dcache.get(o, bucket)) {
+                if (!affected_owners.empty) {
+                    foreach (o; affected_owners) {
+                        TagionBill[] bucket;
+                        if (dcache.get(o, bucket)) {
+                            if (o in toremove) {
+                                foreach (b; toremove[o]) {
+                                    remove!(x => x == b)(bucket);
+                                    k++;
+                                }
+                            }
+                            if (o in toadd) {
+                                foreach (b; toadd[o]) {
+                                    bucket ~= b;
+                                    k++;
+                                }
+                            }
+                            dcache.update(o, bucket, true);
+                        }
+                        else {
+                            tofetch ~= o;
+                        }
+                    }
+                    if (!tofetch.empty) {
+                        const size_t buflen = 1048576;
+                        ubyte[1048576] buf;
+                        immutable(ubyte)[] docbuf;
+                        size_t len = 0, doclen = 0;
+                        auto dreq = new HiBON;
+                        dreq = tofetch;
+                        rc = r.send(cast(ubyte[])(hirpc.search(dreq).toDoc.serialize));
+                        if (rc != 0) {
+                            writeit("ERROR: dart_worker: req send: ", nng_errstr(rc));
+                            continue;
+                        }
+                        do {
+                            len = r.receivebuf(buf, buflen);
+                            if (len == size_t.max && s.errno != 0) {
+                                writeit("ERROR: dart_worker: recv: ", nng_errstr(s.errno));
+                                continue;
+                            }
+                            if (len > buflen) {
+                                writeit("ERROR: dart_worker: recv wrong size: ", len);
+                                continue;
+                            }
+                            docbuf ~= buf[0 .. len];
+                            doclen += len;
+                        }
+                        while (len > buflen - 1);
+                        const repdoc = Document(docbuf);
+                        immutable repreceiver = hirpc.receive(repdoc);
+                        TagionBill[] received_bills = repreceiver.response.result[]
+                            .map!(e => TagionBill(e.get!Document))
+                            .array;
+                        TagionBill[][Buffer] tocache;
+                        foreach (bill; received_bills) {
+                            tocache[cast(Buffer) bill.owner] ~= bill;
+                            k++;
+                        }
+                        foreach (owner; tocache.keys) {
+                            dcache.update(owner, tocache[owner], true);
+                        }
+                    }
+                }
+            } else 
+            if(topic.startsWith("trt_created")){
+                Buffer[] affected_owners, tofetch;
+                DARTIndex[][Buffer] toadd, toremove;    
+                DARTIndex[] torefresh;
+                foreach (a; recorder[]) {
+                    if (a.filed.isRecord!TRTArchive) {
+                        auto t = a.type;
+                        auto arch = TRTArchive(a.filed);
+                        auto o = cast(Buffer)arch.owner;
+                        affected_owners ~= o;    
+                        if(a.type == Archive.Type.ADD){
+                            toadd.update(cast(Buffer) arch.owner, () => arch.indices.dup, (ref DARTIndex[] v){ v ~= arch.indices;});
+                        }else if (a.type == Archive.Type.REMOVE) {
+                            toremove.update(cast(Buffer) arch.owner, () => arch.indices.dup, (ref DARTIndex[] v){ v ~= arch.indices;});
+                        }
+                    }
+                }
+                foreach(o; affected_owners){
+                    DARTIndex[] bucket;
+                    if (tcache.get(o, bucket)) {
                         if (o in toremove) {
                             foreach (b; toremove[o]) {
                                 remove!(x => x == b)(bucket);
@@ -190,20 +283,24 @@ void dart_worker(ShellOptions opt) {
                                 k++;
                             }
                         }
-                        dcache.update(o, bucket, true);
+                        tcache.update(o, bucket, true);
+                        torefresh ~= bucket;
                     }
                     else {
                         tofetch ~= o;
                     }
                 }
                 if (!tofetch.empty) {
+                    import tagion.dart.DART;
                     const size_t buflen = 1048576;
                     ubyte[1048576] buf;
                     immutable(ubyte)[] docbuf;
                     size_t len = 0, doclen = 0;
                     auto dreq = new HiBON;
-                    dreq = tofetch;
-                    rc = r.send(cast(ubyte[])(hirpc.search(dreq).toDoc.serialize));
+                    auto dparam = new HiBON;
+                    dreq = tofetch.map!(owner => net.dartKey(TRTLabel, owner));
+                    dparam[DART.Params.dart_indices] = dreq;
+                    rc = r.send(cast(ubyte[])(hirpc.action("trt." ~ DART.Queries.dartRead, dparam).toDoc.serialize));
                     if (rc != 0) {
                         writeit("ERROR: dart_worker: req send: ", nng_errstr(rc));
                         continue;
@@ -224,21 +321,66 @@ void dart_worker(ShellOptions opt) {
                     while (len > buflen - 1);
                     const repdoc = Document(docbuf);
                     immutable repreceiver = hirpc.receive(repdoc);
-                    TagionBill[] received_bills = repreceiver.response.result[]
-                        .map!(e => TagionBill(e.get!Document))
-                        .array;
-                    TagionBill[][Buffer] tocache;
-                    foreach (bill; received_bills) {
-                        tocache[cast(Buffer) bill.owner] ~= bill;
-                        k++;
+                    if (repreceiver.isResponse){
+                        const recorder_doc = repreceiver.message[Keywords.result].get!Document;
+                        const reprecorder = record_factory.recorder(recorder_doc);
+                        foreach(a; reprecorder[]
+                                    .map!(a => a.filed)
+                                    .filter!(doc => doc.isRecord!TRTArchive)
+                                    .map!(doc => TRTArchive(doc))){
+                            tcache.update(cast(Buffer)a.owner, cast(DARTIndex[])a.indices, true);
+                            torefresh ~= cast(DARTIndex[])a.indices;
+                            k++;
+                        }
                     }
-                    foreach (owner; tocache.keys) {
-                        dcache.update(owner, tocache[owner], true);
+                }
+                if(!torefresh.empty){
+                    import tagion.dart.DART;
+                    const size_t buflen = 1048576;
+                    ubyte[1048576] buf;
+                    immutable(ubyte)[] docbuf;
+                    size_t len = 0, doclen = 0;
+                    auto dreq = new HiBON;
+                    auto dparam = new HiBON;
+                    dreq = torefresh;
+                    dparam[DART.Params.dart_indices] = dreq;
+                    rc = r.send(cast(ubyte[])(hirpc.action(DART.Queries.dartRead, dparam).toDoc.serialize));
+                    if (rc != 0) {
+                        writeit("ERROR: dart_worker: req send: ", nng_errstr(rc));
+                        continue;
+                    }
+                    do {
+                        len = r.receivebuf(buf, buflen);
+                        if (len == size_t.max && s.errno != 0) {
+                            writeit("ERROR: dart_worker: recv: ", nng_errstr(s.errno));
+                            continue;
+                        }
+                        if (len > buflen) {
+                            writeit("ERROR: dart_worker: recv wrong size: ", len);
+                            continue;
+                        }
+                        docbuf ~= buf[0 .. len];
+                        doclen += len;
+                    }
+                    while (len > buflen - 1);
+                    const repdoc = Document(docbuf);
+                    immutable repreceiver = hirpc.receive(repdoc);
+                    if (repreceiver.isResponse){
+                        const recorder_doc = repreceiver.message[Keywords.result].get!Document;
+                        const reprecorder = record_factory.recorder(recorder_doc);
+                        foreach(i,a; reprecorder[]
+                                    .map!(a => a.filed)
+                                    .filter!(doc => doc.isRecord!TagionBill)
+                                    .map!(doc => TagionBill(doc)).enumerate){
+                        // TODO: strictly combine TagionBill with DARTIndex !!!
+                                icache.update(torefresh[i], a, true);
+                                k++;
+                        }
                     }
                 }
             }
             if (k > 0)
-                writeit(format("DS: Cache updated in %d bills", k));
+                writeit(format("DS: Cache updated in %d objects", k));
         }
         catch (Throwable e) {
             writeit(dump_exception_recursive(e, "worker: dartcache", ExceptionFormat.PLAIN));
@@ -594,6 +736,230 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
     }
 }
 
+static void trt_handler(WebData* req, WebData* rep, void* ctx) {
+    thread_attachThis();
+    rt_moduleTlsCtor();
+    try {
+        int rc;
+        immutable(ubyte)[] docbuf;
+        size_t len = 0, doclen = 0, attempts = 0;
+        const stime = timestamp();
+        NNGMessage msg = NNGMessage(0);
+        const net = new StdHashNet();
+        auto record_factory = RecordFactory(net);
+        const hirpc = HiRPC(null);
+        
+        import tagion.dart.DART;
+        const size_t buflen = 1048576;
+        ubyte[1048576] buf;
+
+        ShellOptions* opt = cast(ShellOptions*) ctx;
+        if (req.type != ContentType.octet) {
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "invalid data type";
+            return;
+        }
+        Document doc = Document(cast(immutable(ubyte[])) req.rawdata);
+        immutable receiver = hirpc.receive(doc);
+        if (!receiver.isMethod) {
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "Invalid request method";
+            return;
+        }
+        NNGSocket r = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        r.recvtimeout = msecs(opt.sock_recvtimeout);
+        while (true) {
+            rc = r.dial(opt.node_dart_addr);
+            if (rc == 0)
+                break;
+            enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
+        }
+        scope (exit) {
+            r.close();
+        }
+        if( req.path[$ - 1] == "index" ) {
+            auto pkey_doc = receiver.method.params;
+            Buffer[] owner_pkeys = pkey_doc[]
+                .map!(owner => owner.get!Buffer)
+                .array;
+            Buffer[] tofetch;
+            DARTIndex[] found;
+            DARTIndex[] tbuf;
+            foreach(o; owner_pkeys){
+                 if (tcache.get(o, tbuf)) {
+                    found ~= tbuf;
+                 }else{
+                    tofetch ~= o;    
+                 }
+            }
+            if(!tofetch.empty){
+                auto dreq = new HiBON;
+                auto dparam = new HiBON;
+                dreq = tofetch.map!(owner => net.dartKey(TRTLabel, owner));
+                dparam[DART.Params.dart_indices] = dreq;
+                rc = r.send(cast(ubyte[])(hirpc.action("trt." ~ DART.Queries.dartRead, dparam).toDoc.serialize));
+                if (rc != 0) {
+                    writeit("trt_handler: send: ", nng_errstr(rc));
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                    rep.msg = "socket error";
+                    return;
+                }
+                while (true) {
+                    rc = r.receivemsg(&msg, true);
+                    if (rc < 0) {
+                        if (r.errno == nng_errno.NNG_EAGAIN) {
+                            nng_sleep(msecs(opt.sock_recvdelay));
+                            auto itime = timestamp();
+                            if ((itime - stime) * 1000 > opt.sock_recvtimeout) {
+                                writeit("trt_handler: recv: timeout");
+                                rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
+                                rep.msg = "socket timeout";
+                                return;
+                            }
+                            msg.clear();
+                            continue;
+                        }
+                        if (r.errno != 0) {
+                            writeit("trt_handler: recv: ", nng_errstr(r.errno));
+                            rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                            rep.msg = "socket error";
+                            return;
+                        }
+                        writeit("trt_handler: recv: empty response");
+                        break;
+                    }
+                    auto dbuf = msg.body_trim!(ubyte[])(msg.length);
+                    docbuf ~= dbuf[0 .. dbuf.length];
+                    doclen += docbuf.length;
+                    break;
+                }
+                if (docbuf.empty) {
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "No response";
+                    return;
+                }
+                const repdoc = Document(docbuf);
+                immutable repreceiver = hirpc.receive(repdoc);
+                if (repreceiver.isResponse){
+                    const recorder_doc = repreceiver.message[Keywords.result].get!Document;
+                    const reprecorder = record_factory.recorder(recorder_doc);
+                    foreach(a; reprecorder[]
+                                .map!(a => a.filed)
+                                .filter!(doc => doc.isRecord!TRTArchive)
+                                .map!(doc => TRTArchive(doc))){
+                        tcache.update(cast(Buffer)a.owner, cast(DARTIndex[])a.indices, true);
+                        found ~= cast(DARTIndex[])a.indices;
+                    }
+                }
+            }
+            HiBON params = new HiBON;
+            foreach (i, idx; found) {
+                params[i] = idx;
+            }
+            Document response = hirpc.result(receiver, params).toDoc;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = ContentType.octet;
+            rep.rawdata = cast(ubyte[])(response.serialize);
+            
+        }else
+        if( req.path[$ - 1] == "bill" ) {
+            auto idx_doc = receiver.method.params;
+            DARTIndex[] idx = idx_doc[]
+                .map!(idx => idx.get!DARTIndex)
+                .array;
+            DARTIndex[] tofetch;
+            TagionBill[] found;
+            TagionBill tbuf;
+            foreach(id; idx){
+                 if (icache.get(id, tbuf)) {
+                    found ~= tbuf;
+                 }else{
+                    tofetch ~= id;    
+                 }
+            }
+            if(!tofetch.empty){
+                auto dreq = new HiBON;
+                auto dparam = new HiBON;
+                dreq = tofetch;
+                dparam[DART.Params.dart_indices] = dreq;
+                rc = r.send(cast(ubyte[])(hirpc.action(DART.Queries.dartRead, dparam).toDoc.serialize));
+                if (rc != 0) {
+                    writeit("trt_handler: send: ", nng_errstr(rc));
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                    rep.msg = "socket error";
+                    return;
+                }
+                while (true) {
+                    rc = r.receivemsg(&msg, true);
+                    if (rc < 0) {
+                        if (r.errno == nng_errno.NNG_EAGAIN) {
+                            nng_sleep(msecs(opt.sock_recvdelay));
+                            auto itime = timestamp();
+                            if ((itime - stime) * 1000 > opt.sock_recvtimeout) {
+                                writeit("trt_handler: recv: timeout");
+                                rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
+                                rep.msg = "socket timeout";
+                                return;
+                            }
+                            msg.clear();
+                            continue;
+                        }
+                        if (r.errno != 0) {
+                            writeit("trt_handler: recv: ", nng_errstr(r.errno));
+                            rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                            rep.msg = "socket error";
+                            return;
+                        }
+                        writeit("trt_handler: recv: empty response");
+                        break;
+                    }
+                    auto mbuf = msg.body_trim!(ubyte[])(msg.length);
+                    docbuf ~= mbuf[0 .. mbuf.length];
+                    doclen += docbuf.length;
+                    break;
+                }
+                if (docbuf.empty) {
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "No response";
+                    return;
+                }
+                const repdoc = Document(docbuf);
+                immutable repreceiver = hirpc.receive(repdoc);
+                if (repreceiver.isResponse){
+                    const recorder_doc = repreceiver.message[Keywords.result].get!Document;
+                    const reprecorder = record_factory.recorder(recorder_doc);
+                    foreach(i,a; reprecorder[]
+                                .map!(a => a.filed)
+                                .filter!(doc => doc.isRecord!TagionBill)
+                                .map!(doc => TagionBill(doc)).enumerate){
+                            icache.update(tofetch[i], a, true);
+                            found ~= a;
+                    }
+                }
+            }
+            HiBON params = new HiBON;
+            foreach (i, b; found) {
+                params[i] = b.toHiBON;
+            }
+            Document response = hirpc.result(receiver, params).toDoc;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = ContentType.octet;
+            rep.rawdata = cast(ubyte[])(response.serialize);
+        }else{
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "invalid trt subject";
+            return;
+        }
+    }
+    catch (Throwable e) {
+        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        rep.type = ContentType.html;
+        rep.msg = e.message().idup;
+        rep.text = dump_exception_recursive(e, "handler: dart");
+        return;
+    }
+}
+
 static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
     rt_moduleTlsCtor();
@@ -920,6 +1286,10 @@ int _main(string[] args) {
 
     dcache = new shared(DartCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
             .dartcache_ttl_msec);
+    tcache = new shared(TRTCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
+            .dartcache_ttl_msec);
+    icache = new shared(IndexCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
+            .dartcache_ttl_msec);
 
     auto ds_tid = spawn(&dart_worker, options);
 
@@ -940,6 +1310,11 @@ int _main(string[] args) {
             ~ options.shell_api_prefix
             ~ options.bullseye_endpoint ~ ".json"
             ~ "\t= GET dart bullseye hibon\n\t"
+            ~ options.shell_api_prefix
+            ~ "/trt" ~ "/<subject>"
+            ~ "\t\t= POST TRT request hibon list of public keys or dart indices()\n\t"
+            ~ "\t\t== /index \t- collect DART indices for specific owners\n\t"
+            ~ "\t\t== /bill \t- collect TagionBill for specific DART indices\n\t"
             ~ options.shell_api_prefix
             ~ options.sysinfo_endpoint
             ~ "\t\t= GET system info\n\t"
@@ -967,6 +1342,8 @@ appoint:
     app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint, &dart_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &dart_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ "/trt/index", &trt_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ "/trt/bill", &trt_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.i2p_endpoint, &i2p_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.selftest_endpoint ~ "/*", &selftest_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.version_endpoint, &versioninfo_handler, ["GET"]);
