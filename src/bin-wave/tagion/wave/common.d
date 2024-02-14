@@ -53,9 +53,33 @@ GenericEpoch getEpoch(const TagionHead head, DART db, const SecureNet net) {
 }
 
 // Get the public keys of the nodes which would be running the network
-Pubkey[] getNodeKeys(GenericEpoch epoch_head) {
+const(Pubkey)[] getNodeKeys(const GenericEpoch epoch_head) pure nothrow {
     return epoch_head.match!(
-            (Epoch epoch) { return epoch.active; },
-            (GenesisEpoch epoch) { return epoch.nodes; }
+            (const Epoch epoch) { return epoch.active; },
+            (const GenesisEpoch epoch) { return epoch.nodes; }
     );
+}
+
+GenericEpoch getCurrentEpoch(string dart_file_path, SecureNet __net) {
+    import tagion.dart.DART;
+    import tagion.logger;
+
+    Exception dart_exception;
+    DART db = new DART(__net, dart_file_path, dart_exception, Yes.read_only);
+    if (dart_exception !is null) {
+        throw dart_exception;
+    }
+    scope (exit) {
+        db.close;
+    }
+
+    const head = getHead(db, __net);
+    log("Tagion head:\n%s", head.toPretty);
+    GenericEpoch epoch = head.getEpoch(db, __net);
+    epoch.match!(
+            (const Epoch e) { log("Current epoch:\n%s", e.toPretty); },
+            (const GenesisEpoch e) { log("GenesisEpoch epoch:\n%s", e.toPretty); },
+    );
+
+    return epoch;
 }

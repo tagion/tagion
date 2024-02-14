@@ -81,11 +81,11 @@ void spawnMode0(
         const(Options)[] node_options,
         ref ActorHandle[] supervisor_handles,
         Node[] nodes,
-        GenericEpoch epoch_head) {
+        const GenericEpoch epoch_head) {
 
     import tagion.services.exception;
 
-    Pubkey[] keys = epoch_head.getNodeKeys();
+    const keys = epoch_head.getNodeKeys();
 
     check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
     check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");

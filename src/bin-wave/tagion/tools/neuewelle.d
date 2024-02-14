@@ -234,28 +234,7 @@ int _neuewelle(string[] args) {
             return 0;
         }
 
-        // Get the current epoch
-        GenericEpoch epoch;
-        {
-            import tagion.dart.DART;
-
-            Exception dart_exception;
-            DART db = new DART(__net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
-            if (dart_exception !is null) {
-                throw dart_exception;
-            }
-            scope (exit) {
-                db.close;
-            }
-
-            const head = getHead(db, __net);
-            log("Tagion head:\n%s", head.toPretty);
-            epoch = head.getEpoch(db, __net);
-            epoch.match!(
-                    (Epoch e) { log("Current epoch:\n%s", e.toPretty); },
-                    (GenesisEpoch e) { log("GenesisEpoch epoch:\n%s", e.toPretty); }
-            );
-        }
+        const epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
 
         // we only need to read one head since all bullseyes are the same:
         spawnMode0(node_options, supervisor_handles, nodes, epoch);
@@ -320,14 +299,8 @@ int _neuewelle(string[] args) {
             destroy(__net);
         }
 
-        /* TagionHead head = getHead(local_options, __net); */
-
-        const epoch_head = Document.init;
-        assert(0, "fix mode1");
-
-        auto genesis = GenesisEpoch(epoch_head);
-
-        const keys = genesis.nodes;
+        const epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
+        const keys = epoch.getNodeKeys;
 
         foreach (key; keys) {
             check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
