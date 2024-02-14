@@ -257,17 +257,6 @@ int _neuewelle(string[] args) {
         import std.exception : assumeUnique;
         import std.string;
 
-        auto address_file = File(local_options.wave.mode1.address_book_file, "r");
-        foreach (line; address_file.byLine) {
-            auto pair = line.split();
-            check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
-            const pkey = Pubkey(pair[0].strip.decode);
-            check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
-            const addr = pair[1].strip;
-
-            addressbook[pkey] = NodeInfo(pkey, addr.idup);
-        }
-
         auto by_line = fin.byLine;
         // Hardcordes config path for now
         const wallet_config_file = "wallet.json";
@@ -299,8 +288,24 @@ int _neuewelle(string[] args) {
             destroy(__net);
         }
 
-        const epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
-        const keys = epoch.getNodeKeys;
+        auto epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
+        auto keys = epoch.getNodeKeys;
+
+        if (local_options.wave.mode1.address_book_file is string.init) {
+            local_options.dart.dart_path.readNodeInfo(keys, __net);
+        }
+        else { // Read from text file. Will probably be removed
+            auto address_file = File(local_options.wave.mode1.address_book_file, "r");
+            foreach (line; address_file.byLine) {
+                auto pair = line.split();
+                check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
+                const pkey = Pubkey(pair[0].strip.decode);
+                check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
+                const addr = pair[1].strip;
+
+                addressbook[pkey] = NodeInfo(pkey, addr.idup);
+            }
+        }
 
         foreach (key; keys) {
             check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));

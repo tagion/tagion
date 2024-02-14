@@ -7,6 +7,7 @@ module tagion.wave.common;
 
 import std.sumtype;
 import std.range;
+import std.algorithm;
 
 import tagion.basic.tagionexceptions;
 import tagion.hibon.Document;
@@ -17,6 +18,7 @@ import tagion.communication.HiRPC;
 import CRUD = tagion.dart.DARTcrud;
 import tagion.dart.DART;
 import tagion.dart.DARTBasic;
+import tagion.dart.Recorder;
 import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.crypto.SecureNet;
@@ -58,6 +60,40 @@ inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
             (inout Epoch epoch) { return epoch.active; },
             (inout GenesisEpoch epoch) { return epoch.nodes; }
     );
+}
+
+/// Read the Node names records and put them in the addressbook
+/// Sorts the keys
+void readNodeInfo(string dart_path, Pubkey[] keys, const SecureNet __net) {
+    import tagion.gossip.AddressBook;
+    import tagion.services.exception;
+
+    Exception dart_exception;
+    DART db = new DART(__net, dart_path, dart_exception, Yes.read_only);
+    if (dart_exception !is null) {
+        throw dart_exception;
+    }
+    scope (exit) {
+        db.close;
+    }
+
+    const hirpc = HiRPC(__net);
+    const sorted_keys = keys.sort.array;
+    const nodekey_indices = sorted_keys.map!(k => __net.dartKey(StdNames.nodekey, k)).array;
+
+    const receiver = hirpc.receive(CRUD.dartRead(nodekey_indices, hirpc));
+    const response = db(receiver);
+    const recorder = db.recorder(response.result);
+
+    check(recorder.length == nodekey_indices.length, "One or more Node Names records were not in the dart");
+    assert(equal(nodekey_indices, recorder[].map!(a => __net.dartIndex(a.filed))));
+
+    foreach (pkey, archive; zip(sorted_keys, recorder[])) {
+        // In public mode this should probably just be ignored
+        check(archive.filed.isRecord!NodeInfo, "The read archives were not a NNR");
+        const nodeinfo = NodeInfo(archive.filed);
+        addressbook[pkey] = nodeinfo;
+    }
 }
 
 GenericEpoch getCurrentEpoch(string dart_file_path, SecureNet __net) {

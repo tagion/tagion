@@ -122,11 +122,6 @@ struct NodeInfo {
     private @label(StdNames.nodekey) Buffer _owner;
     @label("a") string address;
 
-    this(Pubkey __owner, string _addr) nothrow pure {
-        _owner = cast(Buffer) __owner;
-        address = _addr;
-    }
-
     Pubkey owner() => Pubkey(_owner);
 
     /**
@@ -153,6 +148,13 @@ struct NodeInfo {
         // Probably should not assert in the future, or atleast validate the address ahead of time in the constructor
         assert(0, format("don't know how to convert %s to nng address", address));
     }
+
+    mixin HiBONRecord!(q{
+        this(Pubkey __owner, string _addr) nothrow pure {
+            _owner = cast(Buffer) __owner;
+            address = _addr;
+        }
+    });
 }
 
 unittest {
