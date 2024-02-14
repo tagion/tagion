@@ -4,6 +4,7 @@ module tagion.script.common;
 // import std.algorithm;
 import std.array;
 import std.range;
+import std.sumtype;
 import tagion.basic.Types;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureInterfaceNet;
@@ -141,9 +142,9 @@ const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Do
 
 const(SignedContract) sign(
         const(SecureNet[]) nets,
-const(Document[]) inputs,
-const(Document[]) reads,
-const(Document) script) {
+        const(Document[]) inputs,
+        const(Document[]) reads,
+        const(Document) script) {
     import std.algorithm : map;
     import tagion.hibon.HiBONException;
 
@@ -174,7 +175,7 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
     try {
         return verify(net, signed_contract, inputs.map!(doc => doc[StdNames.owner].get!Pubkey)
-            .array);
+                .array);
     }
     catch (Exception e) {
         //ignore
@@ -240,6 +241,8 @@ struct Epoch {
         }
     });
 }
+
+alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
 
 @recordType("$@Tagion")
 struct TagionHead {

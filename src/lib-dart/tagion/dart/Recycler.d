@@ -112,10 +112,55 @@ struct Recycler {
      */
     protected auto sortedRecycleSegments() {
         // check if the segments are already sorted. If not then sort.
-        if (!segments.isSorted!((a, b) => a.size < b.size)) {
-            segments.sort!((a, b) => a.size < b.size);
+        version(WITHOUT_SORTING) {
+        } else {
+            if (!segments.isSorted!((a, b) => a.size < b.size)) {
+                segments.sort!((a, b) => a.size < b.size);
+            }
         }
         return assumeSorted!((a, b) => a.size < b.size)(segments);
+    }
+    private ptrdiff_t findIndex(RecycleSegment* segment) pure nothrow @nogc {
+        ptrdiff_t start = 0;
+        ptrdiff_t end = cast(ptrdiff_t) segments.length - 1;
+        while (start <= end) {
+            ptrdiff_t mid = (start + end) / 2;
+            if (segments[mid].size == segment.size) {
+                return mid;
+            }
+            else if (segments[mid].size < segment.size) {
+                start = mid + 1;
+            }
+            else {
+                end = mid - 1;
+            }
+        }
+        return end + 1;
+    }
+
+    
+    /** 
+     * Insert a single segment into the recycler.
+     * Params:
+     *   segment = segment to be inserted.
+     */
+    protected void insert(RecycleSegment* segment) {
+        indices.insert(segment);
+
+        version(WITHOUT_SORTING) {
+            import core.stdc.string : memcpy;
+            const index = findIndex(segment);
+
+            segments.insertInPlace(index, segment);
+            // segments.length++;
+            // if (index < cast(ptrdiff_t) segments.length -1) {
+            //     const byte_size = (segments.length - index - 1) * size_t.sizeof;
+            //     memcpy(&segments[index+1], &segments[index], byte_size);
+            // }
+            // segments[index] = segment;
+        } else {
+            segments ~= segment;
+        }
     }
     /** 
      * Inserts a range of segments into the recycler.
@@ -125,16 +170,13 @@ struct Recycler {
     protected void insert(R)(R segment_range)
             if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, RecycleSegment*)) {
         indices.stableInsert(segment_range);
-        segments ~= segment_range;
-    }
-    /** 
-     * Insert a single segment into the recycler.
-     * Params:
-     *   segment = segment to be inserted.
-     */
-    protected void insert(RecycleSegment* segment) {
-        indices.insert(segment);
-        segments ~= segment;
+        version(WITHOUT_SORTING) {
+            foreach(seg; segment_range) {
+                insert(seg);
+            }
+        } else {
+            segments ~= segment_range;
+        }
     }
     /** 
      * Removes a segment from the recycler.
@@ -819,6 +861,7 @@ unittest {
 }
 
 @safe
+// version(none)
 unittest {
     immutable filename = fileId("recycle").fullpath;
     filename.forceRemove;
@@ -839,7 +882,7 @@ unittest {
 
     recycler.insert(dispose_segments[]);
     assert(recycler.indices.length == 4);
-    assert(recycler.segments.length == 4);
+    assert(recycler.segments.length == 4, format("length should be 4 was %s", recycler.segments.length));
 
     auto remove_segment = new RecycleSegment(Index(17UL), 5);
 

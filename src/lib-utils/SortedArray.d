@@ -84,4 +84,16 @@ unittest {
     SortedArray!int remove_last = SortedArray!int([1, 2, 3, 4, 5, 6]);
     remove_last.remove(6);
     assert(remove_last.arr == [1, 2, 3, 4, 5]);
+
+
+
+    int[] empty_test;
+
+    SortedArray!int same_elements = SortedArray!int(empty_test);
+    same_elements.insert(5);
+    same_elements.insert(5);
+    same_elements.insert(5);
+    assert(same_elements.arr.length == 3, "should be 3 long");
+    
+
 }
