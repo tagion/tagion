@@ -70,6 +70,8 @@ DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
 DSTATICLIB=--lib
 DSHAREDLIB=--shared
 OUTPUTDIR = --od
+DWARN:=-w
+DWARNERROR:=--wi
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -108,6 +110,8 @@ DSTATICLIB=-lib
 DSHAREDLIB=-shared
 OUTPUTDIR = -od
 VERRORS=-verrors=context
+DWARN:=-w
+DWARNERROR:=-wi
 endif
 
 DIP1000 := $(DIP)1000
