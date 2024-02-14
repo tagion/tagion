@@ -80,10 +80,10 @@ class DARTFile {
         Fingerprint _fingerprint;
     }
 
-    protected enum _params = [
-            "dart_indices",
-            "bullseye",
-        ];
+    static immutable _params = [
+        "dart_indices",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
