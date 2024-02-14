@@ -6,7 +6,7 @@ import std.format;
 import std.algorithm;
 import std.typecons : Yes;
 import std.range;
-import std.file : exists;
+import std.file : exists, tempDir;
 import tagion.basic.Types;
 import tagion.tools.Basic;
 import tagion.tools.revision;
@@ -21,17 +21,21 @@ import tagion.tools.vergangenheit.Rebuild;
 
 mixin Main!(_main);
 
-RebuildOptions option;
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
+    RebuildOptions rebuild_options;
+    rebuild_options.path=tempDir;
     GetoptResult main_args;
     try {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
-                "v|verbose", "Prints more debug information", &__verbose_switch, /*
+                "v|verbose", "Prints more debug information", &__verbose_switch, 
+                "s|skip-check", "Skip the check of the replicator",        &rebuild_options.skip_check, 
+                "P|path", format("Path to store the replicator files (Default %s)", rebuild_options.path), &rebuild_options.path,
+        /*
         "c|stdout", "Print to standard output", &standard_output,
                 "s|stream", "Parse .hibon file to stdout", &stream_output,
                 "o|output", "Output filename only for stdin data", &outputfilename,
@@ -140,7 +144,7 @@ int _main(string[] args) {
 
         auto recorder_list = args.filter!(file => file.hasExtension(FileExtension.hibon)).array;
         writefln("recorder_list=%s", recorder_list);
-        auto rebuild = Rebuild(option, db_src, db_dst, recorder_list);
+        auto rebuild = Rebuild(rebuild_options, db_src, db_dst, recorder_list);
         //rebuild.recorder_list = args.filter!(file => file.hasExtension(FileExtension.hibon)).array;
 
         rebuild.sortReplicator(net);

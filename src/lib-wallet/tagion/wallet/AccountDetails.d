@@ -90,17 +90,6 @@ struct AccountDetails {
         return 2;
     }
 
-    bool check_invoice_payment(Pubkey invoicePubkey, ref TagionCurrency amount) {
-        import std.algorithm : countUntil;
-
-        const index = countUntil!"a.owner == b"(bills, invoicePubkey);
-        if (index >= 0) {
-            amount = bills[index].value;
-            return true;
-        }
-        return false;
-    }
-
     bool add_bill(TagionBill bill) {
         auto index = net.dartIndex(bill);
         if (index in requested) {

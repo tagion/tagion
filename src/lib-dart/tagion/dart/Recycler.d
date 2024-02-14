@@ -57,12 +57,14 @@ struct RecycleSegment {
     });
 
     /// We never want to create a segment with a size smaller than zero.
-    invariant {
-        assert(size > 0);
-    }
-    /// We never want to create a index at Index.init.
-    invariant {
-        assert(index != Index.init, "RecycleSegment cannot be inserted at index 0");
+    version (DART_RECYCLER_INVARINAT) {
+        invariant {
+            assert(size > 0);
+        }
+        /// We never want to create a index at Index.init.
+        invariant {
+            assert(index != Index.init, "RecycleSegment cannot be inserted at index 0");
+        }
     }
 }
 
@@ -80,16 +82,17 @@ struct Recycler {
     /** 
      * Checks if the recycler has overlapping segments.
      */
-    invariant {
-        assert(noOverlaps, "Recycle segments has overlaps");
-    }
-    /** 
+    version (DART_RECYCLER_INVARINAT) {
+        invariant {
+            assert(noOverlaps, "Recycle segments has overlaps");
+        }
+        /** 
      * Checks if the indicies and segments are the same length;
      */
-    invariant {
-        assert(indices.length == segments.length);
+        invariant {
+            assert(indices.length == segments.length);
+        }
     }
-
     protected {
         BlockFile owner; /// The blockfile owner
         Indices indices; /// Indices that are stored in the blockfile.

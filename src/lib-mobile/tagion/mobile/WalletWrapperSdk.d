@@ -377,10 +377,11 @@ extern (C) {
 
     export uint update_trt_response(uint8_t* responsePtr, uint32_t responseLen, uint8_t* requestPtr) {
         import tagion.hibon.HiBONException;
+
         if (!__wallet_storage.wallet.isLoggedin()) {
             return NOT_LOGGED_IN;
         }
-        immutable response = cast(immutable)(responsePtr[0..responseLen]);
+        immutable response = cast(immutable)(responsePtr[0 .. responseLen]);
         HiRPC hirpc = HiRPC(__wallet_storage.wallet.net);
         try {
             auto receiver = hirpc.receive(Document(response));
@@ -397,7 +398,8 @@ extern (C) {
                     __wallet_storage.read;
                 }
                 return DART_UPDATE_REQUIRED;
-            } else {
+            }
+            else {
                 //no other modifies for the wallet needed save it
                 __wallet_storage.write;
                 version (NET_HACK) {
@@ -405,7 +407,8 @@ extern (C) {
                 }
                 return SUCCESS;
             }
-        } catch (HiBONException e) {
+        }
+        catch (HiBONException e) {
             return ERROR;
         }
         return ERROR;
@@ -413,6 +416,7 @@ extern (C) {
 
     export uint update_dart_response(uint8_t* responsePtr, uint32_t responseLen) {
         import tagion.hibon.HiBONException;
+
         if (!__wallet_storage.wallet.isLoggedin()) {
             return NOT_LOGGED_IN;
         }
@@ -440,7 +444,6 @@ extern (C) {
         }
         return ERROR;
     }
-
 
     export uint request_update(uint8_t* requestPtr) {
 
@@ -591,7 +594,8 @@ extern (C) {
             if (account_doc.isRecord!(Cipher.CipherDocument)) {
                 // encrypted backup
                 __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(account_doc));
-            } else {
+            }
+            else {
                 // not encrypted account backup
                 __wallet_storage.wallet.setAccount(account_doc);
             }
@@ -662,23 +666,6 @@ extern (C) {
 
             *statusPtr = cast(uint8_t) status;
             return SUCCESS;
-        }
-        return ERROR;
-    }
-
-    export uint check_invoice_payment(const uint8_t* invoicePtr, const uint32_t invoiceLen, double* amountPtr) {
-        immutable invoiceBuffer = cast(immutable)(invoicePtr[0 .. invoiceLen]);
-
-        if (__wallet_storage.wallet.isLoggedin()) {
-
-            auto amount = TagionCurrency(0);
-            auto invoice = Invoice(Document(invoiceBuffer));
-            auto isExist = __wallet_storage.wallet.account.check_invoice_payment(invoice.pkey, amount);
-
-            if (isExist) {
-                *amountPtr = amount.value;
-                return SUCCESS;
-            }
         }
         return ERROR;
     }
@@ -1048,15 +1035,7 @@ unittest {
         // Check the result
         assert(result == 1, "Expected result to be 1");
     }
-    { // Check invoice payment
 
-        double amount;
-        auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
-
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
-        assert(amount != 0, "Expected amount not to be 0");
-    }
     { // Check contract payment
 
         uint8_t status;

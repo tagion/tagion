@@ -37,6 +37,8 @@ struct ShellOptions {
     double dartcache_ttl_msec;
     string mode0_prefix;
 
+    bool save_rpcs_enable = true; // Whether or not the shell should save incoming contracts
+    string save_rpcs_task = "rpcs_saver"; // Task name of the worker thread which saves the rpc contracts
 
     void setDefault() nothrow {
         contract_addr_prefix = "CONTRACT_";

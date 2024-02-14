@@ -1,4 +1,4 @@
-module tagion.services.error_codes;
+module tagion.services.codes;
 
 import tagion.hibon.Document;
 import std.traits;
@@ -10,10 +10,13 @@ enum ServiceCode {
     @("Received an invalid buffer") buf = 5,
     @("The request timed out") timeout = 6,
 
+    @("Missing or invalid signature") sign = 10,
+
     // HiRPC stuffz
-    @("The document vas not a HiRPC sender") hirpc = 21,
-    @("The method name was invalid") method = 22,
-    @("The method domain was invalid") domain = 23,
+    @("The document was not a HiRPC sender") hirpc = 20,
+    @("The method name was invalid") method = 21,
+    @("The method domain was invalid") domain = 22,
+    @("Incorrect parameters") params = 23,
 
     // HiBON error codes
     @("Generic invalid hibon") hibon = 700,

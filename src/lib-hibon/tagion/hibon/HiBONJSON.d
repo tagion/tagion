@@ -8,6 +8,7 @@ import std.range.primitives : isInputRange;
 import std.traits : EnumMembers, ForeachType, ReturnType, Unqual;
 import std.base64;
 import std.typecons : No;
+
 //import std.stdio;
 
 import tagion.basic.Message : message;
@@ -18,7 +19,6 @@ import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONtoText;
-
 
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
@@ -38,6 +38,9 @@ class HiBON2JSONException : HiBONException {
 import std.datetime.timezone;
 import core.lifetime;
 
+// We have this class override because we want to make sure that the ISOExt string includes the UTC offset.
+// Because otherwise the HiBON JSON format is not hash invarient when converting a timestamp between two timezones.
+// However toISOExtString has a hardcoded check `_timezone is LocalTime` which removes the timezone extension
 private class DefinitelyNotLocalTime : TimeZone {
     LocalTime lt;
 
@@ -115,9 +118,9 @@ enum {
 }
 
 JSONValue toJSON(Document doc) {
-    const error_code=doc.valid(null, No.Reserved);
+    const error_code = doc.valid(null, No.Reserved);
     check(error_code is Document.Element.ErrorCode.NONE,
-        format("HiBON error %s", error_code));
+            format("HiBON error %s", error_code));
     return toJSONT!true(doc);
 }
 
@@ -125,7 +128,7 @@ JSONValue toJSON(T)(T value) if (isHiBONRecord!T) {
     return toJSONT!true(value.toDoc);
 }
 
-string toPretty(T)(T value)  {
+string toPretty(T)(T value) {
     static if (is(T : const(HiBON))) {
         const doc = Document(value);
         return doc.toJSON.toPrettyString;
@@ -284,7 +287,14 @@ struct toJSONT(bool HASHSAFE) {
                         import std.datetime;
 
                         SysTime sys_time = SysTime(cast(long) e.by!E);
-                        sys_time.timezone = def_not_local_time;
+
+                        pragma(msg, "FIXME: Hacky LocalTime override crashes on iOS");
+                        // Suggested solution, just implement the toISOExtString function without the localtime check
+                        version (iOS) {
+                        }
+                        else {
+                            sys_time.timezone = def_not_local_time;
+                        }
 
                         doc_element[VALUE] = sys_time.toISOExtString;
                     }

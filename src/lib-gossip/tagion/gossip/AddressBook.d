@@ -117,6 +117,8 @@ enum MultiAddrProto {
 @recordType("NNR")
 struct NodeInfo {
 
+    // The Pubkey is kept as a Buffer internally, because Pubkey is a struct we cannot assign NodeInfo info to a shared.
+    // It'll be exactly the same when serialized to hibon.
     private @label(StdNames.nodekey) Buffer _owner;
     @label("a") string address;
 
