@@ -18,6 +18,7 @@ import std.path;
 import std.range : iota;
 import std.stdio;
 import std.typecons;
+import std.sumtype;
 
 import tagion.GlobalSignals : segment_fault, stopsignal;
 import tagion.actor;
@@ -35,6 +36,7 @@ import tagion.tools.revision;
 import tagion.tools.toolsexception;
 import tagion.utils.Term;
 import tagion.wave.common;
+import tagion.script.common;
 
 static abort = false;
 import tagion.services.transcript : graceful_shutdown;
@@ -232,9 +234,31 @@ int _neuewelle(string[] args) {
             return 0;
         }
 
-        Document doc = getHead(node_options[0], __net);
+        // Get the current epoch
+        GenericEpoch epoch;
+        {
+            import tagion.dart.DART;
+
+            Exception dart_exception;
+            DART db = new DART(__net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
+            if (dart_exception !is null) {
+                throw dart_exception;
+            }
+            scope (exit) {
+                db.close;
+            }
+
+            const head = getHead(db, __net);
+            log("Tagion head:\n%s", head.toPretty);
+            epoch = head.getEpoch(db, __net);
+            epoch.match!(
+                    (Epoch e) { log("Current epoch:\n%s", e.toPretty); },
+                    (GenesisEpoch e) { log("GenesisEpoch epoch:\n%s", e.toPretty); }
+            );
+        }
+
         // we only need to read one head since all bullseyes are the same:
-        spawnMode0(node_options, supervisor_handles, nodes, doc);
+        spawnMode0(node_options, supervisor_handles, nodes, epoch);
         log("started mode 0 net");
 
         if (mode0_node_opts_path) {
@@ -296,7 +320,10 @@ int _neuewelle(string[] args) {
             destroy(__net);
         }
 
-        Document epoch_head = getHead(local_options, __net);
+        /* TagionHead head = getHead(local_options, __net); */
+
+        const epoch_head = Document.init;
+        assert(0, "fix mode1");
 
         auto genesis = GenesisEpoch(epoch_head);
 

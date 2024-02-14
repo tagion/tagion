@@ -10,20 +10,21 @@ import std.stdio;
 import std.format;
 import std.path;
 import std.range;
+import std.sumtype;
 
+import tagion.actor;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
 import tagion.services.options;
 import tagion.services.supervisor;
+import tagion.script.common : Epoch, GenesisEpoch, GenericEpoch;
 import tagion.utils.Term;
 import tagion.tools.Basic;
 import tagion.gossip.AddressBook;
-import std.range : zip;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import tagion.script.common : Epoch, GenesisEpoch;
-import tagion.actor;
+import tagion.wave.common;
 
 // Checks if all nodes bullseyes are the same
 bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
@@ -80,33 +81,18 @@ void spawnMode0(
         const(Options)[] node_options,
         ref ActorHandle[] supervisor_handles,
         Node[] nodes,
-        Document epoch_head = Document.init) {
+        GenericEpoch epoch_head) {
 
-    if (epoch_head is Document.init) {
-        foreach (node, opt; zip(nodes, node_options)) {
-            addressbook[node.pkey] = NodeInfo(node.pkey, opt.task_names.epoch_creator);
-        }
-    }
-    else {
-        Pubkey[] keys;
-        if (epoch_head.isRecord!Epoch) {
-            assert(0, "not supported to boot from epoch yet");
-            keys = Epoch(epoch_head).active;
-        }
-        else {
-            import tagion.services.exception;
+    import tagion.services.exception;
 
-            auto genesis = GenesisEpoch(epoch_head);
+    Pubkey[] keys = epoch_head.getNodeKeys();
 
-            keys = genesis.nodes;
-            check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
-            check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
-        }
+    check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
+    check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
 
-        foreach (key, opt; zip(keys, node_options)) {
-            verbose("adding addressbook ", key);
-            addressbook[key] = NodeInfo(key, opt.task_names.epoch_creator);
-        }
+    foreach (key, opt; zip(keys, node_options)) {
+        verbose("adding addressbook ", key);
+        addressbook[key] = NodeInfo(key, opt.task_names.epoch_creator);
     }
 
     /// spawn the nodes
