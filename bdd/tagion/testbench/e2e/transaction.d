@@ -68,7 +68,7 @@ int _main(string[] args) {
     scope ShellOptions shell_opts = ShellOptions.defaultOptions;
     shell_opts.shell_uri = environment["SHELL_URI"];
     shell_opts.tagion_subscription_addr = contract_sock_addr(environment["SUBSCRIPTION"]);
-    shell_opts.recorder_subscription_task_prefix = "TRANSACTION_Node_0_";
+    shell_opts.dart_subscription_task_prefix = "TRANSACTION_Node_0_";
     shell_opts.mode0_prefix = environment["PREFIX"];
     shell_opts.save(shell_config_file);
 
