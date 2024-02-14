@@ -53,10 +53,10 @@ GenericEpoch getEpoch(const TagionHead head, DART db, const SecureNet net) {
 }
 
 // Get the public keys of the nodes which would be running the network
-const(Pubkey)[] getNodeKeys(const GenericEpoch epoch_head) pure nothrow {
+inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
     return epoch_head.match!(
-            (const Epoch epoch) { return epoch.active; },
-            (const GenesisEpoch epoch) { return epoch.nodes; }
+            (inout Epoch epoch) { return epoch.active; },
+            (inout GenesisEpoch epoch) { return epoch.nodes; }
     );
 }
 
