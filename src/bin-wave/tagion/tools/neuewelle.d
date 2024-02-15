@@ -234,7 +234,25 @@ int _neuewelle(string[] args) {
             return 0;
         }
 
-        auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
+        version (USE_GENESIS_EPOCH) {
+            import tagion.dart.DART;
+
+            Exception dart_exception;
+            DART db = new DART(__net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
+            if (dart_exception !is null) {
+                throw dart_exception;
+            }
+            scope (exit) {
+                db.close;
+            }
+
+            const head = TagionHead("tagion", 0);
+            auto epoch = head.getEpoch(db, __net);
+        }
+        else {
+            auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
+        }
+
         version (MODE0_ADDRESS_DART) {
             auto keys = epoch.getNodeKeys();
             node_options[0].dart.dart_path.readNodeInfo(keys, __net);
