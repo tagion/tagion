@@ -99,8 +99,9 @@ synchronized class AddressBook {
      * Return active node channels in network
      * @return active node channels
      */
-    Pubkey[] activeNodeChannels() @trusted const pure nothrow {
-        auto channels = (cast(string[Pubkey]) addresses).keys;
+    Pubkey[] activeNodeChannels() @trusted const pure nothrow 
+    out (channels; !channels.empty, "No channels were set") {
+        auto channels = (cast(NetworkNodeRecord*[Pubkey])addresses).keys;
         return channels;
     }
 

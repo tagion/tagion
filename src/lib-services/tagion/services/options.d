@@ -9,7 +9,7 @@ import tagion.basic.dir;
 
 /// This function should be renamed
 /// Initially there it was only intended to be used for the contract address for the inputvalidator
-immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
+immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow pure {
     version (linux) {
         return "abstract://" ~ prefix ~ "NEUEWELLE";
     }

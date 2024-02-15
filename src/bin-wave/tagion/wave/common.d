@@ -103,9 +103,11 @@ do {
 
     assert(equal(nodekey_indices, recorder[].map!(a => __net.dartIndex(a.filed))));
 
+    import std.stdio;
     foreach (pkey, archive; zip(sorted_keys, recorder[])) {
         // In public mode this should probably just be ignored
         check(archive.filed.isRecord!NetworkNodeRecord, "The read archives were not a NNR");
+        writeln(archive.filed.toPretty);
         addressbook[pkey] = new NetworkNodeRecord(archive.filed);
     }
 }

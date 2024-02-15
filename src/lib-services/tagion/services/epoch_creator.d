@@ -94,6 +94,8 @@ struct EpochCreatorService {
         const _seed = getRandom!size_t;
         random.seed(_seed);
 
+        import tagion.basic.Types;
+        log.trace("Adding channel\n %(%s\n%)", channels.map!(c => c.encodeBase64));
         foreach (channel; channels) {
             gossip_net.add_channel(channel);
         }

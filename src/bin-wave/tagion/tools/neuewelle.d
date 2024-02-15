@@ -1,4 +1,5 @@
 /** 
+d
  * New wave implementation of the tagion node
 **/
 module tagion.tools.neuewelle;
@@ -221,7 +222,17 @@ int _neuewelle(string[] args) {
     case NetworkMode.INTERNAL:
         import tagion.wave.mode0;
 
-        auto node_options = getMode0Options(local_options, monitor);
+        const node_options = getMode0Options(local_options, monitor);
+
+        // Write individual node options to their own file
+        /* if (mode0_node_opts_path) { */
+        /*     foreach (i, opt; node_options) { */
+        /*         opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension( */
+        /*                 FileExtension */
+        /*                 .json))); */
+        /*     } */
+        /* } */
+
         auto __net = new StdSecureNet();
         __net.generateKeyPair("dart_read_pin");
 
@@ -262,13 +273,6 @@ int _neuewelle(string[] args) {
         spawnMode0(node_options, supervisor_handles, nodes, epoch);
         log("started mode 0 net");
 
-        if (mode0_node_opts_path) {
-            foreach (i, opt; node_options) {
-                opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension(
-                        FileExtension
-                        .json)));
-            }
-        }
         break;
     case NetworkMode.LOCAL:
         import tagion.services.supervisor;

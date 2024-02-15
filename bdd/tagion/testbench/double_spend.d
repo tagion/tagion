@@ -17,6 +17,7 @@ import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
 import neuewelle = tagion.tools.neuewelle;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.wave.mode0;
 
 mixin Main!(_main);
 
@@ -95,6 +96,30 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
+    const node_opts = getMode0Options(local_options, monitor: false);
+
+    import tagion.tools.boot.genesis;
+    import tagion.script.common;
+    import tagion.hibon.Document;
+    import tagion.hibon.BigNumber;
+
+    NodeSettings[] node_settings;
+    foreach (i; 0 .. local_options.wave.number_of_nodes) {
+        node_settings ~= NodeSettings(
+            wallets[i].account.name,
+            wallets[i].net.pubkey,
+            node_opts[i].task_names.epoch_creator,
+        );
+    }
+
+    const genesis = createGenesis(
+        node_settings,
+        Document(), 
+        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+    );
+
+    recorder.insert(genesis, Archive.Type.ADD);
+
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options
@@ -124,24 +149,22 @@ int _main(string[] args) {
     }
 
     immutable neuewelle_args = [
-        "double_spend", config_file, "--nodeopts", module_path
+        "double_spend", config_file
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    import tagion.utils.JSONCommon : load;
+    /* import tagion.utils.JSONCommon : load; */
 
-    Options[] node_opts;
-
-    Thread.sleep(5.seconds);
-    foreach (i; 0 .. local_options.wave.number_of_nodes) {
-
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(
-                FileExtension
-                .json));
-        writeln(filename);
-        Options node_opt = load!(Options)(filename);
-        node_opts ~= node_opt;
-    }
+    /* Thread.sleep(5.seconds); */
+    /* foreach (i; 0 .. local_options.wave.number_of_nodes) { */
+    /**/
+    /*     const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension( */
+    /*             FileExtension */
+    /*             .json)); */
+    /*     writeln(filename); */
+    /*     Options node_opt = load!(Options)(filename); */
+    /*     node_opts ~= node_opt; */
+    /* } */
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
