@@ -13,9 +13,10 @@ import std.exception;
 struct ShellOptions {
     string shell_uri;
     string shell_api_prefix;
+    string shell_api_prefix_v2;
     string contract_endpoint;
     string dart_endpoint;
-    string dartrt_endpoint;
+    string trt_endpoint;
     string tagion_subscription_addr;
     string recorder_subscription_tag;
     string dart_subscription_task_prefix;
@@ -49,9 +50,10 @@ struct ShellOptions {
         dart_subscription_task_prefix = "Node_0_";
         trt_subscription_tag = "trt_created";
         shell_api_prefix = "/api/v1";
+        shell_api_prefix_v2 = "/api/v2";
         contract_endpoint = "/contract";
         dart_endpoint = "/dart";
-        dartrt_endpoint = "/dart";
+        trt_endpoint = "/trt";
         bullseye_endpoint = "/bullseye";
         i2p_endpoint = "/invoice2pay";
         sysinfo_endpoint = "/sysinfo";
