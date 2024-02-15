@@ -22,6 +22,7 @@ import tagion.basic.range : doFront;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
+import tagion.crypto.Types : Pubkey;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;
@@ -407,6 +408,215 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
         rep.type = ContentType.html;
         rep.msg = e.message().idup;
         rep.text = dump_exception_recursive(e, "handler: bullseye.json");
+        return;
+    }
+}
+
+/*
+*
+* alternative /api/v1/dart to use /api/v2
+* to be deprecated with /api/v1, successor: /api/v2/dart/[read,raw]
+*
+*/
+static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
+    thread_attachThis();
+    rt_moduleTlsCtor();
+    try {
+        int rc;
+        size_t nfound = 0, nreceived = 0, attempts = 0;
+
+        immutable(ubyte)[] docbuf;
+        size_t doclen;
+
+        const stime = timestamp();
+
+        const net = new StdHashNet();
+        auto record_factory = RecordFactory(net);
+        const hirpc = HiRPC(null);
+
+        ShellOptions* opt = cast(ShellOptions*) ctx;
+        if (req.type != ContentType.octet) {
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "invalid data type";
+            return;
+        }
+
+        save_rpc(opt, Document(req.rawdata.idup));
+
+        Document doc = Document(cast(immutable(ubyte[])) req.rawdata);
+
+        immutable receiver = hirpc.receive(doc);
+        if (!receiver.isMethod) {
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "Invalid request method";
+            return;
+        }
+        ulong[string] stats = ["idx_found": 0, "idx_fetched": 0, "arch_found": 0, "arch_fetched": 0];
+        if (receiver.method.name == "search") {
+            auto owner_doc = receiver.method.params;
+            auto owners = owner_doc[]
+                .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)))
+                .array;
+            DARTIndex[] itofetch;
+            DARTIndex[] ifound;
+            DARTIndex[] ibuf;
+            foreach(o; owners){
+                 if (tcache.get(o, ibuf)) {
+                    ifound ~= ibuf;
+                 }else{
+                    itofetch ~= o;    
+                 }
+            }
+            stats["idx_found"] = ifound.length;
+            if(!itofetch.empty){
+                auto dreq = new HiBON;
+                auto dparam = new HiBON;
+                dreq = itofetch;
+                dparam[DART.Params.dart_indices] = dreq;
+                rc = query_socket_once(
+                    opt.node_dart_addr,
+                    opt.sock_recvtimeout,
+                    opt.sock_recvdelay,
+                    opt.sock_connectretry,
+                    cast(ubyte[])(hirpc.action("trt." ~ DART.Queries.dartRead, dparam).toDoc.serialize),
+                    docbuf
+                );
+                if (rc != 0) {
+                    if(rc > 99 && rc < 600){
+                        rep.status = cast(nng_http_status)rc;
+                        writeit("dart_alt_handler: query: ",rep.status);
+                    }else{
+                        writeit("dart_alt_handler: query: ", nng_errstr(rc));
+                        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                    }    
+                    rep.msg = "socket error";
+                    return;
+                }
+                if (docbuf.empty) {
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "No response";
+                    return;
+                }
+                const repdoc = Document(docbuf);
+                immutable repreceiver = hirpc.receive(repdoc);
+                if (!repreceiver.isResponse){
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "Invalid response";
+                    return;
+                }
+                const recorder_doc = repreceiver.message[Keywords.result].get!Document;
+                const reprecorder = record_factory.recorder(recorder_doc);
+                foreach(a; reprecorder[]
+                            .map!(a => a.filed)
+                            .filter!(doc => doc.isRecord!TRTArchive)
+                            .map!(doc => TRTArchive(doc))){
+                    tcache.update(DARTIndex(net.dartIndex(a)), cast(DARTIndex[]) a.indices, true);                                    
+                    ifound ~= cast(DARTIndex[])a.indices;
+                }
+                stats["idx_fetched"] = ifound.length - stats["idx_found"];
+            }
+            DARTIndex[] tofetch;
+            Document[] found;
+            Document tbuf;
+            foreach(id; ifound){
+                 if (icache.get(id, tbuf)) {
+                    found ~= tbuf;
+                 }else{
+                    tofetch ~= id;    
+                 }
+            }
+            stats["arch_found"] = found.length;
+            if(!tofetch.empty){
+                auto dreq = new HiBON;
+                auto dparam = new HiBON;
+                dreq = ifound;
+                dparam[DART.Params.dart_indices] = dreq;
+                docbuf.length = 0;
+                rc = query_socket_once(
+                    opt.node_dart_addr,
+                    opt.sock_recvtimeout,
+                    opt.sock_recvdelay,
+                    opt.sock_connectretry,
+                    cast(ubyte[])(hirpc.action(DART.Queries.dartRead, dparam).toDoc.serialize),
+                    docbuf
+                );
+                if (rc != 0) {
+                    if(rc > 99 && rc < 600){
+                        rep.status = cast(nng_http_status)rc;
+                        writeit("dart_handler: query: ",rep.status);
+                    }else{
+                        writeit("dart_handler: query: ", nng_errstr(rc));
+                        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                    }    
+                    rep.msg = "socket error";
+                    return;
+                }
+                if (docbuf.empty) {
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "No response";
+                    return;
+                }
+                const repdoc = Document(docbuf);
+                immutable repreceiver = hirpc.receive(repdoc);
+                if (!repreceiver.isResponse){
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                    rep.msg = "Invalid response";
+                    return;
+                }
+                const recorder_doc = repreceiver.message[Keywords.result].get!Document;
+                const reprecorder = record_factory.recorder(recorder_doc);
+                foreach(a; reprecorder[]){
+                    Document filed = a.filed;
+                    icache.update(DARTIndex(a.dart_index), filed, true);
+                    found ~= a.filed;
+                }
+                stats["arch_fetched"] = found.length - stats["arch_found"];
+            } 
+            writeit(stats);
+            HiBON params = new HiBON;
+            foreach (i, b; found) {
+                params[i] = b;
+            }
+            Document response = hirpc.result(receiver, params).toDoc;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = ContentType.octet;
+            rep.rawdata = cast(ubyte[])(response.serialize);
+        } else {
+            rc = query_socket_once(
+                opt.node_dart_addr,
+                opt.sock_recvtimeout,
+                opt.sock_recvdelay,
+                opt.sock_connectretry,
+                req.rawdata,
+                docbuf
+            );
+            if (rc != 0) {
+                if(rc > 99 && rc < 600){
+                    rep.status = cast(nng_http_status)rc;
+                    writeit("dart_raw_handler: query: ",rep.status);
+                }else{
+                    writeit("dart_raw_handler: query: ", nng_errstr(rc));
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                }    
+                rep.msg = "socket error";
+                return;
+            }
+            if (docbuf.empty) {
+                rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                rep.msg = "No response";
+                return;
+            }
+            doclen = docbuf.length;
+            rep.status = (doclen > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
+            rep.type = ContentType.octet;
+            rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
+        }
+    }
+    catch (Throwable e) {
+        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        rep.type = ContentType.html;
+        rep.msg = e.message().idup;
+        rep.text = dump_exception_recursive(e, "handler: dart");
         return;
     }
 }
@@ -1342,8 +1552,8 @@ appoint:
     app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".json", &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".hibon", &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.dart_endpoint, &dart_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &dart_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.dart_endpoint, &dart_handler_alt, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &dart_handler_alt, ["POST"]);
     app.route(options.shell_api_prefix_v2 ~ options.trt_endpoint, &trt_handler, ["POST"]);
     app.route(options.shell_api_prefix_v2 ~ options.trt_endpoint ~ "/read", &trt_handler, ["POST"]);
     app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint, &dart_handler_v2, ["POST"]);
