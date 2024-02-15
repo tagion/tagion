@@ -874,10 +874,9 @@ static void trt_handler(WebData* req, WebData* rep, void* ctx) {
 
         switch( subject ){
             case "read":
-                auto idx_doc = receiver.method.params;
-                DARTIndex[] owner_pkeys = idx_doc[]
-                    .map!(idx => idx.get!DARTIndex)
-                    .array;
+                auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
+                auto owner_pkeys = doc_dart_indices.range!(DARTIndex[]).array;
+
                 DARTIndex[] tofetch;
                 DARTIndex[] found;
                 DARTIndex[] tbuf;
