@@ -19,6 +19,7 @@ import tagion.dart.DART;
 import tagion.services.options;
 import tagion.services.supervisor;
 import tagion.script.common : Epoch, GenesisEpoch, GenericEpoch;
+import tagion.script.namerecords;
 import tagion.utils.Term;
 import tagion.tools.Basic;
 import tagion.gossip.AddressBook;
@@ -92,7 +93,7 @@ void spawnMode0(
 
     foreach (key, opt; zip(keys, node_options)) {
         verbose("adding addressbook ", key);
-        addressbook[key] = NodeInfo(key, opt.task_names.epoch_creator);
+        addressbook[key] = new NetworkNodeRecord(key, opt.task_names.epoch_creator);
     }
 
     /// spawn the nodes

@@ -21,6 +21,7 @@ import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 import tagion.script.common;
 import tagion.script.standardnames;
+import tagion.script.namerecords;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 
@@ -90,9 +91,8 @@ void readNodeInfo(string dart_path, Pubkey[] keys, const SecureNet __net) {
 
     foreach (pkey, archive; zip(sorted_keys, recorder[])) {
         // In public mode this should probably just be ignored
-        check(archive.filed.isRecord!NodeInfo, "The read archives were not a NNR");
-        const nodeinfo = NodeInfo(archive.filed);
-        addressbook[pkey] = nodeinfo;
+        check(archive.filed.isRecord!NetworkNodeRecord, "The read archives were not a NNR");
+        addressbook[pkey] = new NetworkNodeRecord(archive.filed);
     }
 }
 

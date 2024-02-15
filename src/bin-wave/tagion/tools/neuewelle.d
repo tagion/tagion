@@ -37,6 +37,7 @@ import tagion.tools.toolsexception;
 import tagion.utils.Term;
 import tagion.wave.common;
 import tagion.script.common;
+import tagion.script.namerecords;
 
 static abort = false;
 import tagion.services.transcript : graceful_shutdown;
@@ -303,7 +304,7 @@ int _neuewelle(string[] args) {
                 check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
                 const addr = pair[1].strip;
 
-                addressbook[pkey] = NodeInfo(pkey, addr.idup);
+                addressbook[pkey] = new NetworkNodeRecord(pkey, addr.idup);
             }
         }
 

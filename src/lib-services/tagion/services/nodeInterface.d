@@ -46,7 +46,7 @@ struct NodeInterfaceService {
     }
 
     void node_send(NodeSend, const(Pubkey) channel, const(Document) payload) @trusted {
-        const address = addressbook.getAddress(channel).address;
+        const address = addressbook.getAddress(channel).get.address;
         NNGSocket sock_send = NNGSocket(nng_socket_type.NNG_SOCKET_PAIR);
         assert(sock_send.m_errno == 0, format("Create send sock error %s", nng_errstr(sock_send.m_errno)));
         sock_send.recvtimeout = opts.recv_timeout.msecs;
