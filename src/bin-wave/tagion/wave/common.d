@@ -65,7 +65,9 @@ inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
 
 /// Read the Node names records and put them in the addressbook
 /// Sorts the keys
-void readNodeInfo(string dart_path, Pubkey[] keys, const SecureNet __net) {
+void readNodeInfo(string dart_path, Pubkey[] keys, const SecureNet __net)
+in (equal(keys, keys.uniq), "Is trying to read duplicate node keys")
+do {
     import tagion.gossip.AddressBook;
     import tagion.services.exception;
 
@@ -79,14 +81,26 @@ void readNodeInfo(string dart_path, Pubkey[] keys, const SecureNet __net) {
     }
 
     const hirpc = HiRPC(__net);
-    const sorted_keys = keys.sort.array;
-    const nodekey_indices = sorted_keys.map!(k => __net.dartKey(StdNames.nodekey, k)).array;
+    auto nodekey_indices = keys.map!(k => __net.dartKey(StdNames.nodekey, k)).array;
+    // Sort keys according to the dartkey
+    const sorted_keys = zip(nodekey_indices, keys).sort!((a, b) => a[0] < b[0])
+        .map!(a => a[1])
+        .array;
 
     const receiver = hirpc.receive(CRUD.dartRead(nodekey_indices, hirpc));
     const response = db(receiver);
     const recorder = db.recorder(response.result);
 
-    check(recorder.length == nodekey_indices.length, "One or more Node Names records were not in the dart");
+    check(recorder.length == nodekey_indices.length, "One or more Network Node Records were not in the dart");
+
+    foreach (key, s_key, archive; zip(keys, sorted_keys, recorder[])) {
+        import std.stdio;
+        import tagion.basic.Types;
+
+        writefln("%s\n%s\n%s\n", s_key.encodeBase64, key.encodeBase64, NetworkNodeRecord(archive.filed).channel
+                .encodeBase64);
+    }
+
     assert(equal(nodekey_indices, recorder[].map!(a => __net.dartIndex(a.filed))));
 
     foreach (pkey, archive; zip(sorted_keys, recorder[])) {

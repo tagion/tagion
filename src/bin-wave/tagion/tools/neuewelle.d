@@ -204,7 +204,6 @@ int _neuewelle(string[] args) {
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
-
     ActorHandle sub_handle;
     { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
@@ -235,7 +234,11 @@ int _neuewelle(string[] args) {
             return 0;
         }
 
-        const epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
+        auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
+        version (MODE0_ADDRESS_DART) {
+            auto keys = epoch.getNodeKeys();
+            node_options[0].dart.dart_path.readNodeInfo(keys, __net);
+        }
 
         // we only need to read one head since all bullseyes are the same:
         spawnMode0(node_options, supervisor_handles, nodes, epoch);
@@ -292,7 +295,7 @@ int _neuewelle(string[] args) {
         auto epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
         auto keys = epoch.getNodeKeys;
 
-        if (local_options.wave.mode1.address_book_file is string.init) {
+        if (local_options.wave.mode1.address_book_file.empty) {
             local_options.dart.dart_path.readNodeInfo(keys, __net);
         }
         else { // Read from text file. Will probably be removed

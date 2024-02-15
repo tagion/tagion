@@ -86,14 +86,19 @@ void spawnMode0(
 
     import tagion.services.exception;
 
-    const keys = epoch_head.getNodeKeys();
+    version (MODE0_ADDRESS_DART) {
+    }
+    else {
 
-    check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
-    check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
+        const keys = epoch_head.getNodeKeys();
+        check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
+        check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
 
-    foreach (key, opt; zip(keys, node_options)) {
-        verbose("adding addressbook ", key);
-        addressbook[key] = new NetworkNodeRecord(key, opt.task_names.epoch_creator);
+        foreach (key, opt; zip(keys, node_options)) {
+            verbose("adding addressbook ", key);
+            addressbook[key] = new NetworkNodeRecord(key, opt.task_names.epoch_creator);
+        }
+
     }
 
     /// spawn the nodes
