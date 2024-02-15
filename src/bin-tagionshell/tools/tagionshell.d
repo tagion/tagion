@@ -706,10 +706,8 @@ static void dart_handler_v2(WebData* req, WebData* rep, void* ctx) {
                     rep.msg = "Invalid request method";
                     return;
                 }
-                auto idx_doc = receiver.method.params;
-                DARTIndex[] idx = idx_doc[]
-                    .map!(idx => idx.get!DARTIndex)
-                    .array;
+                auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
+                auto idx = doc_dart_indices.range!(DARTIndex[]).array;
                 DARTIndex[] tofetch;
                 Document[] found;
                 Document tbuf;
