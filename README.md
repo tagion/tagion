@@ -3,8 +3,6 @@
 
 # Tagion
 
-> 🚧 This document is still in development. Some things may be out of date or incomplete
-
 👋 Welcome to the Tagion project! 
 
 Tagion is a decentralized ledger for creating high volume transaction.
@@ -14,6 +12,8 @@ Thus it does not need to record the entire transaction history to maintain integ
 General system documentation https://docs.tagion.org  
 Code documentation https://ddoc.tagion.org  
 Whitepaper https://www.tagion.org/resources/tagion-whitepaper.pdf  
+
+HiBON/HiRPC https://www.hibon.org
 
 ## Installation
 *Installation tested on ubuntu 22.04, nixos-unstable*
