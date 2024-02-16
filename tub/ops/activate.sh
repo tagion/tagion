@@ -7,8 +7,9 @@ get_newest_success_run_id() {
 }
 
 get_workflow_artifact() {
-    _worflowid=$1
-    _outdir="artifacts/$_worflowid"
+    _prefix=$1
+    _worflowid=$2
+    _outdir="artifacts/$_prefix:$_worflowid"
 
     mkdir -p "$_outdir"
 
@@ -37,7 +38,8 @@ DIR_EPOCH=$(stat -c%W ~/.local/share/tagion)
 )
 
 workflowid=$(get_newest_success_run_id)
-artifact_path=$(get_workflow_artifact "$workflowid")
+_date=$(date +'%Y-%m-%d')
+artifact_path=$(get_workflow_artifact "$_date" "$workflowid")
 
 
 # Run the operational test script
