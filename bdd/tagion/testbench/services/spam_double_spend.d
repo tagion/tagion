@@ -51,7 +51,7 @@ alias FeatureContext = Tuple!(
 class SpamOneNodeUntil10EpochsHaveOccured {
 
     Options node1_opts;
-    Options[] opts;
+    const(Options)[] opts;
     StdSecureWallet wallet1;
     StdSecureWallet wallet2;
     TagionCurrency amount;
@@ -63,7 +63,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
     TagionCurrency start_amount1;
     TagionCurrency start_amount2;
 
-    this(Options[] opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+    this(const(Options[]) opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
         this.wallet1 = wallet1;
         this.wallet2 = wallet2;
         this.node1_opts = opts[0];
@@ -205,7 +205,7 @@ struct SpamWorker {
 @safe @Scenario("Spam multiple nodes until 10 epochs have occured.",
         [])
 class SpamMultipleNodesUntil10EpochsHaveOccured {
-    Options[] opts;
+    const(Options)[] opts;
     StdSecureWallet wallet1;
     StdSecureWallet wallet2;
     TagionCurrency amount;
@@ -217,7 +217,7 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
     TagionCurrency start_amount1;
     TagionCurrency start_amount2;
 
-    this(Options[] opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+    this(const(Options)[] opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
         this.wallet1 = wallet1;
         this.wallet2 = wallet2;
         this.opts = opts;
