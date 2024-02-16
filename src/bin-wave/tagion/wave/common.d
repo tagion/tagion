@@ -97,8 +97,8 @@ do {
         import std.stdio;
         import tagion.basic.Types;
 
-        writefln("%s\n%s\n%s\n", s_key.encodeBase64, key.encodeBase64, NetworkNodeRecord(archive.filed).channel
-                .encodeBase64);
+        /* writefln("%s\n%s\n%s\n", s_key.encodeBase64, key.encodeBase64, NetworkNodeRecord(archive.filed).channel */
+        /*         .encodeBase64); */
     }
 
     assert(equal(nodekey_indices, recorder[].map!(a => __net.dartIndex(a.filed))));

@@ -4,7 +4,7 @@ module tagion.services.epoch_creator;
 
 // tagion
 import tagion.actor;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types;
 import tagion.basic.basic : isinit;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -60,6 +60,7 @@ struct EpochCreatorService {
             immutable(TaskNames) task_names) {
 
         const net = new StdSecureNet(shared_net);
+        log("MyPK: %s", net.pubkey.encodeBase64);
 
         assert(network_mode != NetworkMode.PUB, "Unsupported network mode");
 
@@ -94,7 +95,6 @@ struct EpochCreatorService {
         const _seed = getRandom!size_t;
         random.seed(_seed);
 
-        import tagion.basic.Types;
         log.trace("Adding channel\n %(%s\n%)", channels.map!(c => c.encodeBase64));
         foreach (channel; channels) {
             gossip_net.add_channel(channel);

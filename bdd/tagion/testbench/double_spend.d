@@ -104,11 +104,12 @@ int _main(string[] args) {
     import tagion.hibon.BigNumber;
 
     NodeSettings[] node_settings;
-    foreach (i; 0 .. local_options.wave.number_of_nodes) {
+    auto nodekeys = neuewelle.dummy_nodekeys_for_testing(node_opts);
+    foreach (opt, key; zip(node_opts, nodekeys)) {
         node_settings ~= NodeSettings(
-            wallets[i].account.name,
-            wallets[i].net.pubkey,
-            node_opts[i].task_names.epoch_creator,
+            opt.task_names.epoch_creator, // Name
+            (cast(StdSecureNet)key.net).pubkey,
+            opt.task_names.epoch_creator, // Address
         );
     }
 
@@ -153,22 +154,9 @@ int _main(string[] args) {
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    /* import tagion.utils.JSONCommon : load; */
-
-    /* Thread.sleep(5.seconds); */
-    /* foreach (i; 0 .. local_options.wave.number_of_nodes) { */
-    /**/
-    /*     const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension( */
-    /*             FileExtension */
-    /*             .json)); */
-    /*     writeln(filename); */
-    /*     Options node_opt = load!(Options)(filename); */
-    /*     node_opts ~= node_opt; */
-    /* } */
-
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
-    Thread.sleep(15.seconds);
+    Thread.sleep(10.seconds);
     auto name = "double_spend_testing";
     register(name, thisTid);
     log.registerSubscriptionTask(name);
