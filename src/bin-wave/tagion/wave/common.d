@@ -65,7 +65,7 @@ inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
 
 /// Read the Node names records and put them in the addressbook
 /// Sorts the keys
-void readNodeInfo(string dart_path, Pubkey[] keys, const SecureNet __net)
+immutable(NetworkNodeRecord)*[] readNNRFromDart(string dart_path, Pubkey[] keys, const SecureNet __net)
 in (equal(keys, keys.uniq), "Is trying to read duplicate node keys")
 do {
     import tagion.gossip.AddressBook;
@@ -83,9 +83,6 @@ do {
     const hirpc = HiRPC(__net);
     auto nodekey_indices = keys.map!(k => __net.dartKey(StdNames.nodekey, k)).array;
     // Sort keys according to the dartkey
-    const sorted_keys = zip(nodekey_indices, keys).sort!((a, b) => a[0] < b[0])
-        .map!(a => a[1])
-        .array;
 
     const receiver = hirpc.receive(CRUD.dartRead(nodekey_indices, hirpc));
     const response = db(receiver);
@@ -95,11 +92,13 @@ do {
 
     assert(equal(nodekey_indices, recorder[].map!(a => __net.dartIndex(a.filed))));
 
-    foreach (pkey, archive; zip(sorted_keys, recorder[])) {
-        // In public mode this should probably just be ignored
-        check(archive.filed.isRecord!NetworkNodeRecord, "The read archives were not a NNR");
-        addressbook[pkey] = new NetworkNodeRecord(archive.filed);
+    check(recorder[].each!(a => a.filed.isRecord!NetworkNodeRecord), "The read archives were not a NNR");
+
+    immutable(NetworkNodeRecord)*[] nnrs;
+    foreach(a; recorder[]) {
+        nnrs ~= new NetworkNodeRecord(a.filed);
     }
+    return nnrs;
 }
 
 GenericEpoch getCurrentEpoch(string dart_file_path, SecureNet __net) {
@@ -126,7 +125,7 @@ GenericEpoch getCurrentEpoch(string dart_file_path, SecureNet __net) {
     return epoch;
 }
 
-immutable(NetworkNodeRecord)*[] readfromAddressFile(string address_file_name) @trusted {
+immutable(NetworkNodeRecord)*[] readAddressFile(string address_file_name) @trusted {
     import std.stdio;
     import std.format;
     import std.string;

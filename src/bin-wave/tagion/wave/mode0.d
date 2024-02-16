@@ -107,27 +107,8 @@ struct Node {
 }
 
 void spawnMode0(
-        const(Options)[] node_options,
         ref ActorHandle[] supervisor_handles,
-        Node[] nodes,
-        const GenericEpoch epoch_head) {
-
-    import tagion.services.exception;
-
-    version (MODE0_ADDRESS_DART) {
-    }
-    else {
-
-        const keys = epoch_head.getNodeKeys();
-        check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
-        check(keys.length == node_options.length, format("There was not the same amount of configured nodes as in the genesis epoch %s != %s)", keys.length, node_options.length));
-
-        foreach (key, opt; zip(keys, node_options)) {
-            verbose("adding addressbook ", key);
-            addressbook[key] = new NetworkNodeRecord(key, opt.task_names.epoch_creator);
-        }
-
-    }
+        Node[] nodes) {
 
     /// spawn the nodes
     foreach (n; nodes) {

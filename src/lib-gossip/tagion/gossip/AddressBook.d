@@ -114,6 +114,23 @@ synchronized class AddressBook {
     size_t numOfNodes() const pure nothrow {
         return addresses.length;
     }
+
+    /**
+     * Sets the Addresses from an array of NNR records
+     * By default it should only be set once, unless the clear flag is specified
+    */
+    void set(immutable(NetworkNodeRecord)*[] nnrs, bool clear = false) {
+        if(clear) {
+            destroy(addresses);
+        }
+        else {
+            assert(addresses.empty, "Address have already been set, set clear to true if this is intentional");
+        }
+
+        foreach(nnr; nnrs) {
+            addresses[nnr.channel] = nnr;
+        }
+    }
 }
 
 static shared(AddressBook) addressbook;

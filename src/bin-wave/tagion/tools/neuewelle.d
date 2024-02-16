@@ -219,6 +219,7 @@ int _neuewelle(string[] args) {
     final switch (local_options.wave.network_mode) {
     case NetworkMode.INTERNAL:
         import tagion.wave.mode0;
+        import tagion.gossip.AddressBook;
 
         const node_options = getMode0Options(local_options, monitor);
 
@@ -255,9 +256,27 @@ int _neuewelle(string[] args) {
             auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
         }
 
-        version (MODE0_ADDRESS_DART) {
-            auto keys = epoch.getNodeKeys();
-            node_options[0].dart.dart_path.readNodeInfo(keys, __net);
+        auto keys = epoch.getNodeKeys();
+        check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
+        check(keys.length == node_options.length, format("There was not the same amount of configured nodes as in the genesis epoch %s != %s)", keys.length, node_options.length));
+
+        if (!local_options.wave.address_file.empty) {
+            // Read from text file. Will probably be removed
+            addressbook.set(readAddressFile(local_options.wave.address_file));
+        }
+        else {
+            // New version reads the addresses properly from dart
+            // However is incompatble with older darts were not set properly
+            version (MODE0_ADDRESS_DART) {
+                addressbook.set(readNNRFromDart(node_options[0].dart.dart_path, keys, __net));
+            }
+            else { // Old methods sets, address via task name from config file
+                import std.range;
+                foreach (key, opt; zip(keys, node_options)) {
+                    verbose("adding Address ", key);
+                    addressbook[key] = new NetworkNodeRecord(key, opt.task_names.epoch_creator);
+                }
+            }
         }
 
         if (dry_switch) {
@@ -265,7 +284,7 @@ int _neuewelle(string[] args) {
         }
 
         // we only need to read one head since all bullseyes are the same:
-        spawnMode0(node_options, supervisor_handles, nodes, epoch);
+        spawnMode0(supervisor_handles, nodes);
         log("started mode 0 net");
 
         break;
@@ -309,14 +328,12 @@ int _neuewelle(string[] args) {
         auto epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
         auto keys = epoch.getNodeKeys;
 
-        if (local_options.wave.mode1.address_book_file.empty) {
-            local_options.dart.dart_path.readNodeInfo(keys, __net);
+        if (!local_options.wave.address_file.empty) {
+            // Read from text file. Will probably be removed
+            addressbook.set(readAddressFile(local_options.wave.address_file));
         }
-        else { // Read from text file. Will probably be removed
-            auto nnrs = readfromAddressFile(local_options.wave.mode1.address_book_file);
-            foreach (nnr; nnrs) {
-                addressbook[nnr.channel] = nnr;
-            }
+        else {
+            addressbook.set(readNNRFromDart(local_options.dart.dart_path, keys, __net));
         }
 
         foreach (key; keys) {
