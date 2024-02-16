@@ -13,9 +13,11 @@ BDD_DFILES+=${shell find $(BDD) -name "*.d" -a -not -name "*.gen.d" -a -path "*/
 testbench: DFILES+=${shell find $(DSRC)/bin-wave/ -name "*.d"}
 testbench: DFILES+=${shell find $(DSRC)/bin-tagionshell/ -name "*.d"}
 testbench: DFILES+=${shell find $(DSRC)/bin-geldbeutel/ -name "*.d"}
+testbench: DFILES+=${shell find $(DSRC)/bin-stiefel/ -name "*.d"}
 
 testbench: DINC+=$(DSRC)/bin-wave/
 testbench: DINC+=$(DSRC)/bin-tagionshell/
+testbench: DINC+=$(DSRC)/bin-stiefel/
 
 #
 # Binary testbench 

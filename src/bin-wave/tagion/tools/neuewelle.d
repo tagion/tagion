@@ -1,4 +1,5 @@
 /** 
+d
  * New wave implementation of the tagion node
 **/
 module tagion.tools.neuewelle;
@@ -114,7 +115,6 @@ int _neuewelle(string[] args) {
     bool override_switch;
     bool monitor;
 
-    string mode0_node_opts_path;
     string[] override_options;
 
     auto main_args = getopt(args,
@@ -124,7 +124,6 @@ int _neuewelle(string[] args) {
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
-            "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
 
@@ -221,7 +220,8 @@ int _neuewelle(string[] args) {
     case NetworkMode.INTERNAL:
         import tagion.wave.mode0;
 
-        auto node_options = getMode0Options(local_options, monitor);
+        const node_options = getMode0Options(local_options, monitor);
+
         auto __net = new StdSecureNet();
         __net.generateKeyPair("dart_read_pin");
 
@@ -229,10 +229,12 @@ int _neuewelle(string[] args) {
             assert(0, "DATABASES must be booted with same bullseye - Abort");
         }
 
-        auto nodes = inputKeys(fin, node_options, bootkeys_path);
-        if (nodes is Node[].init) {
-            return 0;
-        }
+
+        Node[] nodes = (bootkeys_path.empty)
+            ? dummy_nodestruct_for_testing(node_options) 
+            : inputKeys(fin, node_options, bootkeys_path);
+
+        assert(!nodes.empty, "No node keys were available");
 
         version (USE_GENESIS_EPOCH) {
             import tagion.dart.DART;
@@ -258,17 +260,14 @@ int _neuewelle(string[] args) {
             node_options[0].dart.dart_path.readNodeInfo(keys, __net);
         }
 
+        if (dry_switch) {
+            return 0;
+        }
+
         // we only need to read one head since all bullseyes are the same:
         spawnMode0(node_options, supervisor_handles, nodes, epoch);
         log("started mode 0 net");
 
-        if (mode0_node_opts_path) {
-            foreach (i, opt; node_options) {
-                opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension(
-                        FileExtension
-                        .json)));
-            }
-        }
         break;
     case NetworkMode.LOCAL:
         import tagion.services.supervisor;
@@ -392,7 +391,10 @@ import tagion.wave.mode0 : Node;
 import tagion.tools.wallet.WalletOptions;
 import tagion.tools.wallet.WalletInterface;
 
-Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path) {
+// Reads node pins key from stdin and uses wallet public key
+Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path)
+in(!bootkeys_path.empty, "Should specify a bootkeys path")
+{
     auto by_line = fin.byLine;
     enum number_of_retry = 3;
 
@@ -403,47 +405,42 @@ Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path) 
             net = null;
         }
 
-        if (bootkeys_path.empty) {
-            net = new StdSecureNet;
-            net.generateKeyPair(opts.task_names.supervisor);
-        }
-        else {
-            WalletOptions wallet_options;
-            LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
-                verbose("Input boot key %d as nodename:pincode", i);
-                const args = (by_line.front.empty) ? string[].init : by_line.front.split(":");
-                by_line.popFront;
-                if (args.length != 2) {
-                    writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
-                }
-                //string wallet_config_file;
-                const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
-                writeln("Looking for " ~ wallet_config_file);
-                verbose("Wallet path %s", wallet_config_file);
-                if (!wallet_config_file.exists) {
-                    writefln("%1$sBoot key file %3$s not found%2$s", RED, RESET, wallet_config_file);
-                    writefln("Try another node name");
+        WalletOptions wallet_options;
+        LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
+            verbose("Input boot key %d as nodename:pincode", i);
+            const args = (by_line.front.empty) ? string[].init : by_line.front.split(":");
+            by_line.popFront;
+            if (args.length != 2) {
+                writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
+            }
+            //string wallet_config_file;
+            const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
+            writeln("Looking for " ~ wallet_config_file);
+            verbose("Wallet path %s", wallet_config_file);
+            if (!wallet_config_file.exists) {
+                writefln("%1$sBoot key file %3$s not found%2$s", RED, RESET, wallet_config_file);
+                writefln("Try another node name");
+            }
+            else {
+                verbose("Load config");
+                wallet_options.load(wallet_config_file);
+                auto wallet_interface = WalletInterface(wallet_options);
+                verbose("Load wallet");
+                wallet_interface.load;
+
+                const loggedin = wallet_interface.secure_wallet.login(args[1]);
+                if (wallet_interface.secure_wallet.isLoggedin) {
+                    verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
+                    net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
+                    break LoopTry;
                 }
                 else {
-                    verbose("Load config");
-                    wallet_options.load(wallet_config_file);
-                    auto wallet_interface = WalletInterface(wallet_options);
-                    verbose("Load wallet");
-                    wallet_interface.load;
-
-                    const loggedin = wallet_interface.secure_wallet.login(args[1]);
-                    if (wallet_interface.secure_wallet.isLoggedin) {
-                        verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
-                        net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
-                        break LoopTry;
-                    }
-                    else {
-                        writefln("%1$sWrong pincode bootkey %3$s node %4$s%2$s", RED, RESET, i, args[0]);
-                    }
+                    writefln("%1$sWrong pincode bootkey %3$s node %4$s%2$s", RED, RESET, i, args[0]);
                 }
-                check(tries < number_of_retry, format("Max number of retries is %d", number_of_retry));
             }
+            check(tries < number_of_retry, format("Max number of retries is %d", number_of_retry));
         }
+
         if (dry_switch && !bootkeys_path.empty) {
             writefln("%1$sBoot keys correct%2$s", GREEN, RESET);
         }
@@ -452,8 +449,5 @@ Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path) 
         nodes ~= Node(opts, shared_net, net.pubkey);
     }
 
-    if (dry_switch) {
-        return Node[].init;
-    }
     return nodes;
 }

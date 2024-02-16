@@ -55,6 +55,7 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
     return bullseyes.all!(b => b == bullseyes[0]);
 }
 
+// Return: A range of options prefixed with the node number
 const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
     const number_of_nodes = options.wave.number_of_nodes;
     const prefix_f = options.wave.prefix_format;
@@ -70,6 +71,33 @@ const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
     }
 
     return all_opts;
+}
+
+Node[] dummy_nodestruct_for_testing(const(Options[]) node_options) {
+    Node[] nodes;
+    scope nets = dummy_nodenets_for_testing(node_options);
+    foreach (i, opts; node_options) {
+        auto net = nets[i];
+        scope (exit) {
+            net = null;
+        }
+        shared shared_net = (() @trusted => cast(shared) net)();
+        nodes ~= Node(opts, shared_net);
+    }
+    return nodes;
+}
+
+StdSecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
+    StdSecureNet[] nets;
+    foreach (i, opts; node_options) {
+        auto net = new StdSecureNet;
+        scope (exit) {
+            net = null;
+        }
+        net.generateKeyPair(opts.task_names.supervisor);
+        nets ~= net;
+    }
+    return nets;
 }
 
 struct Node {
@@ -92,7 +120,7 @@ void spawnMode0(
 
         const keys = epoch_head.getNodeKeys();
         check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
-        check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
+        check(keys.length == node_options.length, format("There was not the same amount of configured nodes as in the genesis epoch %s != %s)", keys.length, node_options.length));
 
         foreach (key, opt; zip(keys, node_options)) {
             verbose("adding addressbook ", key);

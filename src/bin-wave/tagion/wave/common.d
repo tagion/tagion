@@ -93,14 +93,6 @@ do {
 
     check(recorder.length == nodekey_indices.length, "One or more Network Node Records were not in the dart");
 
-    foreach (key, s_key, archive; zip(keys, sorted_keys, recorder[])) {
-        import std.stdio;
-        import tagion.basic.Types;
-
-        writefln("%s\n%s\n%s\n", s_key.encodeBase64, key.encodeBase64, NetworkNodeRecord(archive.filed).channel
-                .encodeBase64);
-    }
-
     assert(equal(nodekey_indices, recorder[].map!(a => __net.dartIndex(a.filed))));
 
     foreach (pkey, archive; zip(sorted_keys, recorder[])) {

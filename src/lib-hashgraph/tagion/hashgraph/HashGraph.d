@@ -586,6 +586,7 @@ class HashGraph {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
         immutable from_channel = received.pubkey;
         const received_wave = received.params!(Wavefront)(hirpc.net);
+        import tagion.basic.Types;
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node = getNode(from_channel);
 
