@@ -73,6 +73,33 @@ const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
     return all_opts;
 }
 
+Node[] dummy_nodestruct_for_testing(const(Options[]) node_options) {
+    Node[] nodes;
+    scope nets = dummy_nodenets_for_testing(node_options);
+    foreach (i, opts; node_options) {
+        auto net = nets[i];
+        scope (exit) {
+            net = null;
+        }
+        shared shared_net = (() @trusted => cast(shared) net)();
+        nodes ~= Node(opts, shared_net);
+    }
+    return nodes;
+}
+
+StdSecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
+    StdSecureNet[] nets;
+    foreach (i, opts; node_options) {
+        auto net = new StdSecureNet;
+        scope (exit) {
+            net = null;
+        }
+        net.generateKeyPair(opts.task_names.supervisor);
+        nets ~= net;
+    }
+    return nets;
+}
+
 struct Node {
     immutable(Options) opts;
     shared(StdSecureNet) net;

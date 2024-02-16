@@ -96,19 +96,19 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
-    const node_opts = getMode0Options(local_options, monitor: false);
-
     import tagion.tools.boot.genesis;
     import tagion.script.common;
     import tagion.hibon.Document;
     import tagion.hibon.BigNumber;
 
+    const node_opts = getMode0Options(local_options, monitor: false);
+
     NodeSettings[] node_settings;
-    auto nodekeys = neuewelle.dummy_nodekeys_for_testing(node_opts);
-    foreach (opt, key; zip(node_opts, nodekeys)) {
+    auto nodenets = dummy_nodenets_for_testing(node_opts);
+    foreach (opt, node_net; zip(node_opts, nodenets)) {
         node_settings ~= NodeSettings(
             opt.task_names.epoch_creator, // Name
-            (cast(StdSecureNet)key.net).pubkey,
+            node_net.pubkey,
             opt.task_names.epoch_creator, // Address
         );
     }

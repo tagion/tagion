@@ -242,7 +242,7 @@ int _neuewelle(string[] args) {
 
 
         Node[] nodes = (bootkeys_path.empty)
-            ? dummy_nodekeys_for_testing(node_options) 
+            ? dummy_nodestruct_for_testing(node_options) 
             : inputKeys(fin, node_options, bootkeys_path);
 
         assert(!nodes.empty, "No node keys were available");
@@ -401,20 +401,6 @@ int _neuewelle(string[] args) {
 import tagion.wave.mode0 : Node;
 import tagion.tools.wallet.WalletOptions;
 import tagion.tools.wallet.WalletInterface;
-
-Node[] dummy_nodekeys_for_testing(const(Options[]) node_options) {
-    Node[] nodes;
-    foreach (i, opts; node_options) {
-        auto net = new StdSecureNet;
-        scope (exit) {
-            net = null;
-        }
-        net.generateKeyPair(opts.task_names.supervisor);
-        shared shared_net = (() @trusted => cast(shared) net)();
-        nodes ~= Node(opts, shared_net);
-    }
-    return nodes;
-}
 
 // Reads node pins key from stdin and uses wallet public key
 Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path)
