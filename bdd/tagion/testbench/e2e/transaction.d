@@ -126,6 +126,33 @@ int _main(string[] args) {
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
+
+    import tagion.tools.boot.genesis;
+    import tagion.script.common;
+    import tagion.hibon.Document;
+    import tagion.hibon.BigNumber;
+    import tagion.wave.mode0;
+
+    const node_opts = getMode0Options(local_options, monitor: false);
+
+    NodeSettings[] node_settings;
+    auto nodenets = dummy_nodenets_for_testing(node_opts);
+    foreach (opt, node_net; zip(node_opts, nodenets)) {
+        node_settings ~= NodeSettings(
+            opt.task_names.epoch_creator, // Name
+            node_net.pubkey,
+            opt.task_names.epoch_creator, // Address
+        );
+    }
+
+    const genesis = createGenesis(
+        node_settings,
+        Document(), 
+        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+    );
+
+    recorder.insert(genesis, Archive.Type.ADD);
+
     import tagion.trt.TRT;
 
     auto trt_recorder = factory.recorder;
@@ -152,9 +179,11 @@ int _main(string[] args) {
         db.close;
         trt_db.close;
     }
+
     immutable neuewelle_args = [
-        "transaction_test", config_file, "--nodeopts", module_path
+        "transaction_test", config_file
     ];
+
     auto neuewelle_tid = spawn(&wrap_neuewelle, neuewelle_args);
 
     immutable(string[]) shell_args = ["tagionshell_transaction", shell_config_file];
