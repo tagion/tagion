@@ -152,7 +152,7 @@ int _main(string[] args) {
     }
 
     immutable neuewelle_args = [
-        "trt_test", config_file, "--nodeopts", module_path
+        "trt_test", config_file
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 

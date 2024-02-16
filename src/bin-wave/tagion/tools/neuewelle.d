@@ -115,7 +115,6 @@ int _neuewelle(string[] args) {
     bool override_switch;
     bool monitor;
 
-    string mode0_node_opts_path;
     string[] override_options;
 
     auto main_args = getopt(args,
@@ -125,7 +124,6 @@ int _neuewelle(string[] args) {
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
-            "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
 
@@ -223,15 +221,6 @@ int _neuewelle(string[] args) {
         import tagion.wave.mode0;
 
         const node_options = getMode0Options(local_options, monitor);
-
-        // Write individual node options to their own file
-        /* if (mode0_node_opts_path) { */
-        /*     foreach (i, opt; node_options) { */
-        /*         opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension( */
-        /*                 FileExtension */
-        /*                 .json))); */
-        /*     } */
-        /* } */
 
         auto __net = new StdSecureNet();
         __net.generateKeyPair("dart_read_pin");

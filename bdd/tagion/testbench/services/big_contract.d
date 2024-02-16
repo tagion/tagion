@@ -156,7 +156,7 @@ int _main(string[] args) {
     }
 
     immutable neuewelle_args = [
-        "big_contract", config_file, "--nodeopts", module_path
+        "big_contract", config_file
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
