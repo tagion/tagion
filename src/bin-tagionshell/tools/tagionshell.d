@@ -440,6 +440,10 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             rep.msg = "invalid data type";
             return;
         }
+        bool cache_enabled;
+        version(CACHE_ENABLED) {
+            cache_enabled = true;
+        } 
 
         save_rpc(opt, Document(req.rawdata.idup));
 
@@ -452,7 +456,7 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             return;
         }
         ulong[string] stats = ["idx_found": 0, "idx_fetched": 0, "arch_found": 0, "arch_fetched": 0];
-        if (receiver.method.full_name == "trt.dartRead") {
+        if (receiver.method.full_name == "trt.dartRead" && cache_enabled) {
             auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
             auto owners = doc_dart_indices.range!(DARTIndex[]);
 
@@ -523,7 +527,7 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = ContentType.octet;
             rep.rawdata = cast(ubyte[])(response.serialize);
-        } else if (receiver.method.full_name == "dartRead") {
+        } else if (receiver.method.full_name == "dartRead" && cache_enabled) {
             auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
             auto ifound = doc_dart_indices.range!(DARTIndex[]);
 
