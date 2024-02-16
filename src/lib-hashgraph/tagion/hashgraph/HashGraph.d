@@ -587,9 +587,6 @@ class HashGraph {
         immutable from_channel = received.pubkey;
         const received_wave = received.params!(Wavefront)(hirpc.net);
         import tagion.basic.Types;
-        if(!valid_channel(from_channel)) {
-            log.error("invalid channel: %s", from_channel.encodeBase64);
-        }
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node = getNode(from_channel);
 

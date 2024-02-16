@@ -60,7 +60,6 @@ struct EpochCreatorService {
             immutable(TaskNames) task_names) {
 
         const net = new StdSecureNet(shared_net);
-        log("MyPK: %s", net.pubkey.encodeBase64);
 
         assert(network_mode != NetworkMode.PUB, "Unsupported network mode");
 
@@ -95,7 +94,6 @@ struct EpochCreatorService {
         const _seed = getRandom!size_t;
         random.seed(_seed);
 
-        log.trace("Adding channel\n %(%s\n%)", channels.map!(c => c.encodeBase64));
         foreach (channel; channels) {
             gossip_net.add_channel(channel);
         }
