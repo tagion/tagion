@@ -273,10 +273,7 @@ int _neuewelle(string[] args) {
         import tagion.services.supervisor;
         import tagion.script.common;
         import tagion.gossip.AddressBook;
-        import tagion.hibon.HiBONtoText;
-        import tagion.crypto.Types;
-        import std.exception : assumeUnique;
-        import std.string;
+        import tagion.basic.Types;
 
         auto by_line = fin.byLine;
         // Hardcordes config path for now
@@ -316,15 +313,9 @@ int _neuewelle(string[] args) {
             local_options.dart.dart_path.readNodeInfo(keys, __net);
         }
         else { // Read from text file. Will probably be removed
-            auto address_file = File(local_options.wave.mode1.address_book_file, "r");
-            foreach (line; address_file.byLine) {
-                auto pair = line.split();
-                check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
-                const pkey = Pubkey(pair[0].strip.decode);
-                check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
-                const addr = pair[1].strip;
-
-                addressbook[pkey] = new NetworkNodeRecord(pkey, addr.idup);
+            auto nnrs = readfromAddressFile(local_options.wave.mode1.address_book_file);
+            foreach (nnr; nnrs) {
+                addressbook[nnr.channel] = nnr;
             }
         }
 
