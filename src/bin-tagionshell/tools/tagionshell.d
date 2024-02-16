@@ -52,7 +52,7 @@ import nngd.nngd;
 mixin Main!(_main, "shell");
 
 alias LRUT!(Buffer, TagionBill[]) DartCache;
-alias LRUT!(DARTIndex, DARTIndex[]) TRTCache;
+alias LRUT!(DARTIndex, TRTArchive) TRTCache;
 alias LRUT!(DARTIndex, Document) IndexCache;
 
 shared DartCache dcache;
@@ -192,7 +192,7 @@ void dart_worker(ShellOptions opt) {
                     if (a.filed.isRecord!TRTArchive) {
                         auto archive = TRTArchive(a.filed);
                         if(a.type == Archive.Type.ADD){
-                            tcache.update(DARTIndex(a.dart_index), archive.indices, true);
+                            tcache.update(DARTIndex(a.dart_index), archive, true);
                         }
                         else
                         if(a.type == Archive.Type.REMOVE){
@@ -452,14 +452,13 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             return;
         }
         ulong[string] stats = ["idx_found": 0, "idx_fetched": 0, "arch_found": 0, "arch_fetched": 0];
-        if (receiver.method.name == "search") {
-            auto owner_doc = receiver.method.params;
-            auto owners = owner_doc[]
-                .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)))
-                .array;
+        if (receiver.method.full_name == "trt.dartRead") {
+            auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
+            auto owners = doc_dart_indices.range!(DARTIndex[]);
+
             DARTIndex[] itofetch;
-            DARTIndex[] ifound;
-            DARTIndex[] ibuf;
+            TRTArchive[] ifound;
+            TRTArchive ibuf;
             foreach(o; owners){
                  if (tcache.get(o, ibuf)) {
                     ifound ~= ibuf;
@@ -510,11 +509,24 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
                             .map!(a => a.filed)
                             .filter!(doc => doc.isRecord!TRTArchive)
                             .map!(doc => TRTArchive(doc))){
-                    tcache.update(DARTIndex(net.dartIndex(a)), cast(DARTIndex[]) a.indices, true);                                    
-                    ifound ~= cast(DARTIndex[])a.indices;
+                    tcache.update(DARTIndex(net.dartIndex(a)), a, true);                                    
+                    ifound ~= a;
                 }
-                stats["idx_fetched"] = ifound.length - stats["idx_found"];
             }
+            stats["idx_fetched"] = ifound.length - stats["idx_found"];
+            writeit(stats);
+            auto result_recorder = record_factory.recorder;
+            foreach (b; ifound.uniq) {
+                result_recorder.add(b);
+            }
+            Document response = hirpc.result(receiver, result_recorder.toDoc).toDoc;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = ContentType.octet;
+            rep.rawdata = cast(ubyte[])(response.serialize);
+        } else if (receiver.method.full_name == "dartRead") {
+            auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
+            auto ifound = doc_dart_indices.range!(DARTIndex[]);
+
             DARTIndex[] tofetch;
             Document[] found;
             Document tbuf;
@@ -527,9 +539,10 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             }
             stats["arch_found"] = found.length;
             if(!tofetch.empty){
+                writeit("INSIDEI TOFETCH DARTREAD");
                 auto dreq = new HiBON;
                 auto dparam = new HiBON;
-                dreq = ifound;
+                dreq = tofetch;
                 dparam[DART.Params.dart_indices] = dreq;
                 docbuf.length = 0;
                 rc = query_socket_once(
@@ -573,11 +586,11 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
                 stats["arch_fetched"] = found.length - stats["arch_found"];
             } 
             writeit(stats);
-            HiBON params = new HiBON;
-            foreach (i, b; found) {
-                params[i] = b;
+            auto result_recorder = record_factory.recorder;
+            foreach (b; found.uniq) {
+                result_recorder.add(b);
             }
-            Document response = hirpc.result(receiver, params).toDoc;
+            Document response = hirpc.result(receiver, result_recorder.toDoc).toDoc;
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = ContentType.octet;
             rep.rawdata = cast(ubyte[])(response.serialize);
@@ -1086,8 +1099,8 @@ static void trt_handler(WebData* req, WebData* rep, void* ctx) {
                 auto owner_pkeys = doc_dart_indices.range!(DARTIndex[]);
 
                 DARTIndex[] tofetch;
-                DARTIndex[] found;
-                DARTIndex[] tbuf;
+                TRTArchive[] found;
+                TRTArchive tbuf;
                 foreach(o; owner_pkeys){
                      if (tcache.get(o, tbuf)) {
                         found ~= tbuf;
@@ -1135,16 +1148,16 @@ static void trt_handler(WebData* req, WebData* rep, void* ctx) {
                                     .map!(a => a.filed)
                                     .filter!(doc => doc.isRecord!TRTArchive)
                                     .map!(doc => TRTArchive(doc))){
-                            tcache.update(DARTIndex(net.dartIndex(a)), cast(DARTIndex[]) a.indices, true);                                    
-                            found ~= cast(DARTIndex[])a.indices;
+                            tcache.update(DARTIndex(net.dartIndex(a)), a, true);                                    
+                            found ~= a;
                         }
                     }
                 }
-                HiBON params = new HiBON;
-                foreach (i, idx; found) {
-                    params[i] = idx;
+                auto result_recorder = record_factory.recorder;
+                foreach (b; found.uniq) {
+                    result_recorder.add(b);
                 }
-                Document response = hirpc.result(receiver, params).toDoc;
+                Document response = hirpc.result(receiver, result_recorder.toDoc).toDoc;
                 rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
                 rep.type = ContentType.octet;
                 rep.rawdata = cast(ubyte[])(response.serialize);
