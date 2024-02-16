@@ -25,7 +25,7 @@ testbench: DINC+=$(DSRC)/bin-stiefel/
 testbench: bddfiles
 target-testbench: nng secp256k1
 target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
-target-testbench: LIBS+=$(LIBSECP256K1) $(LIBNNG)
+target-testbench: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 target-testbench: DFLAGS+=$(DEBUG_FLAGS)
 
 ${call DO_BIN,testbench,$(LIB_DFILES) $(BDD_DFILES)}
