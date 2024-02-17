@@ -1112,7 +1112,19 @@ struct WalletStorage {
         version (NET_HACK) {
             auto _pin = path(devicefile).fread!DevicePIN;
             auto _wallet = path(walletfile).fread!RecoverGenerator;
-            auto _account = path(accountfile).fread!AccountDetails;
+
+            AccountDetails _account;
+            try {
+                _account = path(accountfile).fread!AccountDetails;
+            }
+            catch(HiBONRecordTypeException) {
+                import prior = tagion.wallet.prior.AccountDetails;
+                import tagion.wallet.prior.migrate;
+
+                prior_account = path(accountfile).fread!(prior.AccountDetails);
+
+                _account = migrate(prior_account);
+            }
 
             if (wallet.net !is null) {
                 auto __net = cast(shared(StdSecureNet)) wallet.net;
