@@ -1108,6 +1108,7 @@ struct WalletStorage {
     }
 
     void read() {
+        import tagion.hibon.HiBONException;
 
         version (NET_HACK) {
             auto _pin = path(devicefile).fread!DevicePIN;
@@ -1121,7 +1122,7 @@ struct WalletStorage {
                 import prior = tagion.wallet.prior.AccountDetails;
                 import tagion.wallet.prior.migrate;
 
-                prior_account = path(accountfile).fread!(prior.AccountDetails);
+                auto prior_account = path(accountfile).fread!(prior.AccountDetails);
 
                 _account = migrate(prior_account);
             }
