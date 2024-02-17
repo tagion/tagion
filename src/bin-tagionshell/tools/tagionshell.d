@@ -51,11 +51,9 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
-alias LRUT!(Buffer, TagionBill[]) DartCache;
 alias LRUT!(DARTIndex, TRTArchive) TRTCache;
 alias LRUT!(DARTIndex, Document) IndexCache;
 
-shared DartCache dcache;
 shared TRTCache tcache;
 shared IndexCache icache;
 shared static bool abort = false;
@@ -456,20 +454,24 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             return;
         }
         ulong[string] stats = ["idx_found": 0, "idx_fetched": 0, "arch_found": 0, "arch_fetched": 0];
-        if (receiver.method.full_name == "trt.dartRead" && cache_enabled) {
+        if (receiver.method.full_name == "trt.dartRead") {
             auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
             auto owners = doc_dart_indices.range!(DARTIndex[]);
-
+            
             DARTIndex[] itofetch;
             TRTArchive[] ifound;
             TRTArchive ibuf;
-            foreach(o; owners){
-                 if (tcache.get(o, ibuf)) {
-                    ifound ~= ibuf;
-                 }else{
-                    itofetch ~= o;    
-                 }
-            }
+            if(cache_enabled){
+                foreach(o; owners){
+                     if (tcache.get(o, ibuf)) {
+                        ifound ~= ibuf;
+                     }else{
+                        itofetch ~= o;    
+                     }
+                }
+            } else {
+                itofetch ~= owners.array;
+            }    
             stats["idx_found"] = ifound.length;
             if(!itofetch.empty){
                 auto dreq = new HiBON;
@@ -527,19 +529,23 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = ContentType.octet;
             rep.rawdata = cast(ubyte[])(response.serialize);
-        } else if (receiver.method.full_name == "dartRead" && cache_enabled) {
+        } else if (receiver.method.full_name == "dartRead") {
             auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
             auto ifound = doc_dart_indices.range!(DARTIndex[]);
 
             DARTIndex[] tofetch;
             Document[] found;
             Document tbuf;
-            foreach(id; ifound){
-                 if (icache.get(id, tbuf)) {
-                    found ~= tbuf;
-                 }else{
-                    tofetch ~= id;    
-                 }
+            if(cache_enabled){
+                foreach(id; ifound){
+                     if (icache.get(id, tbuf)) {
+                        found ~= tbuf;
+                     }else{
+                        tofetch ~= id;    
+                     }
+                }
+            } else {
+                tofetch ~= ifound.array;
             }
             stats["arch_found"] = found.length;
             if(!tofetch.empty){
@@ -624,228 +630,6 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
                 return;
             }
             doclen = docbuf.length;
-            rep.status = (doclen > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
-            rep.type = ContentType.octet;
-            rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
-        }
-    }
-    catch (Throwable e) {
-        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-        rep.type = ContentType.html;
-        rep.msg = e.message().idup;
-        rep.text = dump_exception_recursive(e, "handler: dart");
-        return;
-    }
-}
-
-
-
-/*
-*
-* to be deprecated with /api/v1, successor: /api/v2/dart/[read,raw]
-*
-*/
-static void dart_handler(WebData* req, WebData* rep, void* ctx) {
-    thread_attachThis();
-    rt_moduleTlsCtor();
-    try {
-        int rc;
-        size_t nfound = 0, nreceived = 0, attempts = 0;
-
-        version(CACHE_ENABLED) {
-            bool usecache = true;
-        } else {
-            bool usecache = false;
-        }
-
-        immutable(ubyte)[] docbuf;
-        size_t doclen;
-
-        const stime = timestamp();
-        NNGMessage msg = NNGMessage(0);
-
-
-        ShellOptions* opt = cast(ShellOptions*) ctx;
-        if (req.type != ContentType.octet) {
-            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "invalid data type";
-            return;
-        }
-
-        save_rpc(opt, Document(req.rawdata.idup));
-
-        if (req.path[$ - 1] == "nocache")
-            usecache = false;
-
-        SecureNet net = new StdSecureNet();
-        net.generateKeyPair("very_secret");
-        HiRPC hirpc = HiRPC(net);
-        Document doc = Document(cast(immutable(ubyte[])) req.rawdata);
-
-        immutable receiver = hirpc.receive(doc);
-        if (!receiver.isMethod) {
-            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "Invalid request method";
-            return;
-        }
-        if (receiver.method.name == "search") {
-            auto pkey_doc = receiver.method.params;
-            Buffer[] owner_pkeys;
-            foreach (owner; pkey_doc[]) {
-                owner_pkeys ~= owner.get!Buffer;
-            }
-            TagionBill[] found_bills;
-            Buffer[] found_owners;
-            if (usecache) {
-                TagionBill[] fnd;
-                foreach (owner; owner_pkeys) {
-                    if (dcache.get(owner, fnd)) {
-                        found_bills ~= fnd;
-                        found_owners ~= owner;
-                    }
-                }
-            }
-            nfound = found_bills.length;
-            // TODO: merge with previous, check array reducing in foreach
-            if (!found_owners.empty) {
-                foreach (owner; found_owners) {
-                    remove!(x => x == owner)(owner_pkeys);
-                }
-            }
-            if (!owner_pkeys.empty) {
-                auto dreq = new HiBON;
-                dreq = owner_pkeys;
-                NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-                s.recvtimeout = msecs(opt.sock_recvtimeout);
-                while (true) {
-                    rc = s.dial(opt.node_dart_addr);
-                    if (rc == 0)
-                        break;
-                    enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
-                }
-                scope (exit) {
-                    s.close();
-                }
-                rc = s.send(cast(ubyte[])(hirpc.search(dreq).toDoc.serialize));
-                if (rc != 0) {
-                    writeit("dart_handler: send: ", nng_errstr(rc));
-                    rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                    rep.msg = "socket error";
-                    return;
-                }
-                while (true) {
-                    rc = s.receivemsg(&msg, true);
-                    if (rc < 0) {
-                        if (s.errno == nng_errno.NNG_EAGAIN) {
-                            nng_sleep(msecs(opt.sock_recvdelay));
-                            auto itime = timestamp();
-                            if ((itime - stime) * 1000 > opt.sock_recvtimeout) {
-                                writeit("dart_handler: recv: timeout");
-                                rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
-                                rep.msg = "socket timeout";
-                                return;
-                            }
-                            msg.clear();
-                            continue;
-                        }
-                        if (s.errno != 0) {
-                            writeit("dart_handler: recv: ", nng_errstr(s.errno));
-                            rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                            rep.msg = "socket error";
-                            return;
-                        }
-                        writeit("dart_handler: recv: empty response");
-                        break;
-                    }
-                    auto buf = msg.body_trim!(ubyte[])(msg.length);
-                    writeit(format("WH: dart: received %d bytes", buf.length));
-                    docbuf ~= buf[0 .. buf.length];
-                    doclen += docbuf.length;
-                    break;
-                }
-                if (docbuf.empty) {
-                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                    rep.msg = "No response";
-                    return;
-                }
-                const repdoc = Document(docbuf);
-                immutable repreceiver = hirpc.receive(repdoc);
-                TagionBill[] received_bills = repreceiver.response.result[]
-                    .map!(e => TagionBill(e.get!Document))
-                    .array;
-                if (usecache) {
-                    TagionBill[][Buffer] tocache;
-                    foreach (bill; received_bills) {
-                        tocache[cast(Buffer) bill.owner] ~= bill;
-                    }
-                    foreach (owner; tocache.keys) {
-                        dcache.update(owner, tocache[owner], true);
-                    }
-                }
-                nreceived = received_bills.length;
-                found_bills ~= received_bills;
-            }
-            writeit("DART STAT: ", nfound, " found, ", nreceived, " received");
-            // TODO: remove stat and counters or add it to response
-            HiBON params = new HiBON;
-            foreach (i, bill; found_bills) {
-                params[i] = bill.toHiBON;
-            }
-            Document response = hirpc.result(receiver, params).toDoc;
-            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.octet;
-            rep.rawdata = cast(ubyte[])(response.serialize);
-        }
-        else {
-            NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-            s.recvtimeout = msecs(opt.sock_recvtimeout);
-            while (true) {
-                rc = s.dial(opt.node_dart_addr);
-                if (rc == 0)
-                    break;
-                enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
-            }
-            scope (exit) {
-                s.close();
-            }
-            rc = s.send(req.rawdata);
-            if (rc != 0) {
-                writeit("dart_handler: error on send: ", nng_errstr(rc));
-                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                rep.msg = "socket error";
-                return;
-            }
-            writeit(format("WH: dart: sent %d bytes", req.rawdata.length));
-            while (true) {
-                rc = s.receivemsg(&msg, true);
-                if (rc < 0) {
-                    if (s.errno == nng_errno.NNG_EAGAIN) {
-                        nng_sleep(msecs(opt.sock_recvdelay));
-                        auto itime = timestamp();
-                        if ((itime - stime) * 1000 > opt.sock_recvtimeout) {
-                            writeit("dart_handler: recv: timeout");
-                            rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
-                            rep.msg = "socket timeout";
-                            return;
-                        }
-                        msg.clear();
-                        continue;
-                    }
-                    if (s.errno != 0) {
-                        writeit("dart_handler: recv: ", nng_errstr(s.errno));
-                        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                        rep.msg = "socket error";
-                        return;
-                    }
-                    writeit("dart_handler: recv: empty response");
-                    break;
-                }
-                auto buf = msg.body_trim!(ubyte[])(msg.length);
-                writeit(format("WH: dart: received %d bytes", buf.length));
-                docbuf ~= buf[];
-                doclen = docbuf.length;
-                break;
-            }
             rep.status = (doclen > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
             rep.type = ContentType.octet;
             rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
@@ -1507,8 +1291,6 @@ int _main(string[] args) {
         return 0;
     }
 
-    dcache = new shared(DartCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
-            .dartcache_ttl_msec);
     tcache = new shared(TRTCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
             .dartcache_ttl_msec);
     icache = new shared(IndexCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
