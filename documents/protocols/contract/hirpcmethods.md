@@ -7,19 +7,18 @@ The socket address, and thereby the visibillity can be changed in the tagionwave
 
 | [Input Validator](/documents/architecture/InputValidator.md) | [Dart Interface](/documents/architecture/DartInterface.md) | [Subscription](/documents/architecture/LoggerSubscription.md) | [Node Interface](/documents/architecture/NodeInterface.md) |
 | -                                                            | -                                                          | -                                                             | -                                                          |
-| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                   |
+| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
 | **Default shell endpoint**                                   | ..                                                         |                                                               |                                                            |
 | /api/v1/contract                                             | /api/v1/dart                                               |                                                               |                                                            |
 | **Default socket address (node_prefix is added in mode0)**   | ..                                                         | ..                                                            | ..                                                         |
-| "\0*node_prefix*CONTRACT_NEUEWELLE"                          | "\0*node_prefix*DART_NEUEWELLE"                            | "\0SUBSCRIPTION_NEUEWELLE"                                    | tcp://localhost:10700                               |
+| "\0*node_prefix*CONTRACT_NEUEWELLE"                          | "\0*node_prefix*DART_NEUEWELLE"                            | "\0SUBSCRIPTION_NEUEWELLE"                                    | tcp://localhost:10700                                      |
 | **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
-| "submit"                                                     | "search"                                                   | "log"                                                         |
-|                                                              | "dartCheckRead"                                            |
+| "submit"                                                     | "dartCheckRead"                                            | "log"                                                         |
 |                                                              | "dartRead"                                                 |
 |                                                              | "dartRim"                                                  |
 |                                                              | "dartBullseye"                                             |
-| **HiRPC methods subdomains**                                            | ..                                                         | ..                                                            | ..                                                         |
-| ..                                            | trt                                                         | ..                                                            | ..                                                         |
+| **HiRPC methods subdomains**                                 | ..                                                         | ..                                                            | ..                                                         |
+| ..                                                           | trt                                                        | ..                                                            | ..                                                         |
 | **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
 | REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
 
@@ -48,20 +47,6 @@ or
 \$msg.error
 
 ## Read methods (DART(ro) + friends)
-
-### search (will be deprecated)
-
-*This method takes a list of Public keys and returns the associated archives*  
-This will be removed in the future in favour of a similar method which returns the list of associated DARTIndices instead
-and it will be the clients reponsibillity to ask for the needed archives.
-See [TIP1](/documents/TIPs/cache_proposal_23_jan)
-
-\$msg.method.name = "search"  
-\$msg.method.params = [Pubkey](https://ddoc.tagion.org/tagion.crypto.Types.Pubkey)[]  
-
-**Returns**
-
-\$msg.result = [DARTIndex](https://ddoc.tagion.org/tagion.dart.DARTBasic.DARTIndex)[]  
 
 ### dartCheckRead
 
