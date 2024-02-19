@@ -37,8 +37,9 @@ import Wallet = tagion.wallet.SecureWallet;
 import tagion.wallet.WalletException;
 import tagion.basic.tagionexceptions : Check;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
+import tagion.tools.revision;
 
-extern (C) export immutable string TAGION_HASH = import("revision.mixin").splitLines[2];
+extern (C) export immutable string TAGION_HASH = revision_info[3];
 
 /// Used for describing the d-runtime status
 enum DrtStatus {
@@ -68,8 +69,7 @@ extern (C) {
         DART_UPDATE_REQUIRED = 16,
     }
 
-    export const(char)* tagion_version() {
-        import tagion.tools.revision;
+    export const(char)* tagion_revision() {
         return revision_text.toStringz;
     }
 
