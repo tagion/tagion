@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload code coverage results
         if: ${{ vars.ENABLE_COV || false }}
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./logs/${{ env.TARGET }}/cov/
@@ -130,7 +130,7 @@ jobs:
           make bddtest -j || make proper bddtest
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./logs/${{ env.TARGET }}/bdd/commit/cov/
