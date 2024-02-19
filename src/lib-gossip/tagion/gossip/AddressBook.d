@@ -117,19 +117,18 @@ synchronized class AddressBook {
 
     /**
      * Sets the Addresses from an array of NNR records
-     * By default it should only be set once, unless the clear flag is specified
+     * The addresses should be empty when set
     */
-    void set(immutable(NetworkNodeRecord)*[] nnrs, bool clear = false) {
-        if(clear) {
-            destroy(addresses);
-        }
-        else {
-            assert(addresses.empty, "Address have already been set, set clear to true if this is intentional");
-        }
-
+    void set(immutable(NetworkNodeRecord)*[] nnrs) 
+    in (addresses.empty, "Address have already been set, call clear() first if this is intended")
+    do {
         foreach(nnr; nnrs) {
             addresses[nnr.channel] = nnr;
         }
+    }
+
+    void clear() {
+        addresses = null;
     }
 }
 
