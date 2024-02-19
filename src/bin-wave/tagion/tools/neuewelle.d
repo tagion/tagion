@@ -1,5 +1,5 @@
 /** 
-d
+ *
  * New wave implementation of the tagion node
 **/
 module tagion.tools.neuewelle;
@@ -116,6 +116,7 @@ int _neuewelle(string[] args) {
     bool monitor;
 
     string[] override_options;
+    string network_mode_switch;
 
     auto main_args = getopt(args,
             "version", "Print revision information", &version_switch,
@@ -124,7 +125,8 @@ int _neuewelle(string[] args) {
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
-            "m|monitor", "Enable the monitor", &monitor,
+            "m|mode", "Set the node network mode, 0,1,2", &network_mode_switch,
+            "monitor", "Enable the monitor", &monitor,
     );
 
     if (main_args.helpWanted) {
@@ -188,6 +190,39 @@ int _neuewelle(string[] args) {
         local_options.parseJSON(json.toString);
     }
 
+     // Set the network mode
+    if(!network_mode_switch.empty) {
+        import std.conv;
+        import std.traits;
+        import std.uni;
+        import std.exception;
+
+        NetworkMode n_mode;
+        bool good_conversion;
+
+        collectException({ // Convert from string value [INTERNA, LOCAL, PUB]
+            n_mode = network_mode_switch.toUpper.to!NetworkMode;
+            good_conversion = true;
+        }());
+
+        collectException({ // Convert from number [0, 1, 2]
+            int mode_number = network_mode_switch.to!int;
+            if(mode_number >= NetworkMode.min && mode_number <= NetworkMode.max) {
+                n_mode = cast(NetworkMode)mode_number;
+                good_conversion = true;
+            }
+        }());
+
+        if(!good_conversion) {
+            throw new ToolsException(format("Mode split should be %(%s,%) or %(%s,%)",
+                   [EnumMembers!NetworkMode],
+                   cast(int[])[EnumMembers!NetworkMode]
+               ));
+        }
+
+        local_options.wave.network_mode = n_mode;
+    }
+
     if (override_switch) {
         local_options.save(config_file);
         writefln("Config file written to %s", config_file);
@@ -230,7 +265,6 @@ int _neuewelle(string[] args) {
             assert(0, "DATABASES must be booted with same bullseye - Abort");
         }
 
-
         Node[] nodes = (bootkeys_path.empty)
             ? dummy_nodestruct_for_testing(node_options) 
             : inputKeys(fin, node_options, bootkeys_path);
@@ -258,7 +292,13 @@ int _neuewelle(string[] args) {
 
         auto keys = epoch.getNodeKeys();
         check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
-        check(keys.length == node_options.length, format("There was not the same amount of configured nodes as in the genesis epoch %s != %s)", keys.length, node_options.length));
+        check(keys.length == node_options.length,
+                format(
+                    "There was not the same amount of configured nodes as in the genesis epoch %s != %s)",
+                    keys.length,
+                    node_options.length
+                )
+            );
 
         if (!local_options.wave.address_file.empty) {
             // Read from text file. Will probably be removed
