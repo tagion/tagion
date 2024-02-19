@@ -68,6 +68,11 @@ extern (C) {
         DART_UPDATE_REQUIRED = 16,
     }
 
+    export const(char)* tagion_version() {
+        import tagion.tools.revision;
+        return revision_text.toStringz;
+    }
+
     // Staritng d-runtime
     export static int64_t start_rt() {
         if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
