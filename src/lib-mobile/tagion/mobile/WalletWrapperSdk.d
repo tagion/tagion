@@ -590,18 +590,35 @@ extern (C) {
         immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            const account_doc = Document(account);
-            if (account_doc.isRecord!(Cipher.CipherDocument)) {
-                // encrypted backup
-                __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(account_doc));
-            }
-            else {
-                // not encrypted account backup
-                __wallet_storage.wallet.setAccount(account_doc);
-            }
-            __wallet_storage.write;
-            version (NET_HACK) {
-                __wallet_storage.read;
+
+            try {
+                Document import_doc = Document(account);
+
+                Document unencrypted_doc = import_doc;
+                //decrypt
+                if (import_doc.isRecord!(Cipher.CipherDocument)) {
+                    Cipher cipher;
+                    unencrypted_doc = cipher.decrypt(__wallet_storage.wallet.net, Cipher.CipherDocument(import_doc));
+                } 
+
+                if (unencrypted_doc.isRecord!AccountDetails) {
+                    // not encrypted account backup
+                    __wallet_storage.wallet.setAccount(unencrypted_doc);
+                }
+                else {
+                    import tagion.wallet.prior.AccountDetails : PriorAccountDetails = AccountDetails;
+                    import tagion.wallet.prior.migrate;
+                    auto prior_account = PriorAccountDetails(unencrypted_doc);
+
+                    auto new_account_doc = prior_account.migrate.toDoc;
+                    __wallet_storage.wallet.setAccount(new_account_doc);
+                }
+                __wallet_storage.write;
+                version (NET_HACK) {
+                    __wallet_storage.read;
+                }
+            } catch (Exception e) {
+                return ERROR;
             }
             return SUCCESS;
         }
