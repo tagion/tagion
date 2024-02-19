@@ -1,4 +1,4 @@
-module tagion.tools.subscribe;
+module tagion.tools.subscriber;
 
 import core.time;
 import nngd;
@@ -103,7 +103,7 @@ struct Subscription {
     }
 }
 
-mixin Main!(_main);
+mixin Main!_main;
 
 int _main(string[] args) {
     immutable program = args[0];
@@ -116,16 +116,16 @@ int _main(string[] args) {
     bool watch;
 
     auto main_args = getopt(args,
-            "v|version", "Print revision information", &version_switch,
-            "address", "specify the address to subscribe to", &address,
-            "w|watch", "Watch logs", &watch,
-            "tag", "Which tags to subscribe to", &tags,
+        "v|version", "Print revision information", &version_switch,
+        "address", "specify the address to subscribe to", &address,
+        "w|watch", "Watch logs", &watch,
+        "tag", "Which tags to subscribe to", &tags,
     );
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
-                format("Help information for %s\n", program),
-                main_args.options
+            format("Help information for %s\n", program),
+            main_args.options
         );
         return 0;
     }
