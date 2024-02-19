@@ -106,7 +106,7 @@ struct DARTService {
 
         // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead, search(if TRT is not enabled)
         void dartHiRPC(dartHiRPCRR req, Document doc) {
-            import tagion.services.DARTInterface : InterfaceError;
+            import tagion.services.codes;
             import std.conv: to;
             import tagion.hibon.HiBONJSON;
 
@@ -120,7 +120,7 @@ struct DARTService {
             immutable receiver = hirpc.receive(doc);
             if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
                 log("unsupported request or method");
-                const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
+                const err = hirpc.error(receiver, ServiceCode.method.toString, ServiceCode.method);
                 req.respond(err.toDoc);
                 return;
             } 
