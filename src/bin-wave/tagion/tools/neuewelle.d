@@ -415,37 +415,19 @@ in(!bootkeys_path.empty, "Should specify a bootkeys path")
 
         WalletOptions wallet_options;
         LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
-            verbose("Input boot key %d as nodename:pincode", i);
-            const args = (by_line.front.empty) ? string[].init : by_line.front.split(":");
-            by_line.popFront;
-            if (args.length != 2) {
-                writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
+            scope(exit) {
+                by_line.popFront;
             }
-            //string wallet_config_file;
-            const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
-            writeln("Looking for " ~ wallet_config_file);
-            verbose("Wallet path %s", wallet_config_file);
-            if (!wallet_config_file.exists) {
-                writefln("%1$sBoot key file %3$s not found%2$s", RED, RESET, wallet_config_file);
-                writefln("Try another node name");
-            }
-            else {
-                verbose("Load config");
-                wallet_options.load(wallet_config_file);
-                auto wallet_interface = WalletInterface(wallet_options);
-                verbose("Load wallet");
-                wallet_interface.load;
 
-                const loggedin = wallet_interface.secure_wallet.login(args[1]);
-                if (wallet_interface.secure_wallet.isLoggedin) {
-                    verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
-                    net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
-                    break LoopTry;
-                }
-                else {
-                    writefln("%1$sWrong pincode bootkey %3$s node %4$s%2$s", RED, RESET, i, args[0]);
-                }
+            verbose("Input boot key %d as nodename:pincode", i);
+
+            try {
+                net = inputKey(by_line.front, bootkeys_path);
+                break LoopTry;
+            } catch(Exception e) {
+                error(e);
             }
+
             check(tries < number_of_retry, format("Max number of retries is %d", number_of_retry));
         }
 
@@ -458,4 +440,37 @@ in(!bootkeys_path.empty, "Should specify a bootkeys path")
     }
 
     return nodes;
+}
+
+StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
+    const args = (node_pin.empty) ? string[].init : node_pin.split(":");
+
+    if (args.length != 2) {
+        throw new ToolsException(format("Bad format %s expected nodename:pincode", node_pin));
+    }
+
+    const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
+    writeln("Looking for " ~ wallet_config_file);
+    verbose("Wallet path %s", wallet_config_file);
+    if (!wallet_config_file.exists) {
+        throw new ToolsException(format("Boot key file not found: %s", wallet_config_file));
+    }
+
+    WalletOptions wallet_options;
+    verbose("Load config");
+    wallet_options.load(wallet_config_file);
+
+    auto wallet_interface = WalletInterface(wallet_options);
+    verbose("Load wallet");
+    if(!wallet_interface.load) {
+        throw new ToolsException(format("Could not find wallet file %s", wallet_options.walletfile));
+    }
+
+    const _ = wallet_interface.secure_wallet.login(args[1]);
+    if (!wallet_interface.secure_wallet.isLoggedin) {
+        throw new ToolsException(format("%1$sWrong pincode bootkey node %3$s%2$s", RED, RESET, args[0]));
+    }
+
+    verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
+    return cast(StdSecureNet)wallet_interface.secure_wallet.net.clone;
 }

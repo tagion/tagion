@@ -35,10 +35,6 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
     // Check bullseyes
     Fingerprint[] bullseyes;
     foreach (node_opt; node_options) {
-        if (!node_opt.dart.dart_path.exists) {
-            stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
-            return false;
-        }
         Exception dart_exception;
         DART db = new DART(__net, node_opt.dart.dart_path, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
@@ -48,6 +44,9 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
             db.close();
         }
         auto b = Fingerprint(db.bullseye);
+        if (dart_exception !is null) {
+            throw dart_exception;
+        }
         bullseyes ~= b;
 
     }
