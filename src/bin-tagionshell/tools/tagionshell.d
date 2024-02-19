@@ -189,13 +189,7 @@ void dart_worker(ShellOptions opt) {
                 foreach (a; recorder[]) {
                     if (a.filed.isRecord!TRTArchive) {
                         auto archive = TRTArchive(a.filed);
-                        if(a.type == Archive.Type.ADD){
-                            tcache.update(DARTIndex(a.dart_index), archive, true);
-                        }
-                        else
-                        if(a.type == Archive.Type.REMOVE){
-                            tcache.remove(a.dart_index);
-                        }   
+                        tcache.update(DARTIndex(a.dart_index), archive, true);
                         k++;
                     }
                 }
