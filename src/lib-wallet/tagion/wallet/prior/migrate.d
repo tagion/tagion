@@ -23,13 +23,17 @@ current.AccountDetails migrate(prior.AccountDetails prior_account) pure {
     new_account.name = prior_account.name;
 
     // Locked and Requested bills changeed to be stored by dartIndex instead of by public key
-    foreach(bill; prior_account.requested.byValue) {
-        new_account.requested[net.dartIndex(bill)] = bill;
-    }
 
-    foreach(pair; prior_account.activated.byKeyValue) {
-        new_account.activated[net.dartIndex(prior_account.requested[pair.key])] = pair.value;
-    }
+    // foreach(bill; prior_account.requested.byValue) {
+    //     new_account.requested[net.dartIndex(bill)] = bill;
+    // }
+    // foreach(pair; prior_account.activated.byKeyValue) {
+    //     new_account.activated[net.dartIndex(prior_account.requested[pair.key])] = pair.value;
+    // }
+
+    // we override the old requested and activated
+    new_account.requested = null;
+    new_account.activated = null;
 
     return new_account;
 }
