@@ -105,8 +105,6 @@ synchronized class AddressBook {
         return channels;
     }
 
-    alias getAddress = opIndex;
-
     /**
      * Return amount of nodes in networt
      * @return amount of nodes
