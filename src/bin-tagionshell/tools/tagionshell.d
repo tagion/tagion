@@ -432,11 +432,6 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             rep.msg = "invalid data type";
             return;
         }
-        bool cache_enabled;
-        version(CACHE_ENABLED) {
-            cache_enabled = true;
-        } 
-
         save_rpc(opt, Document(req.rawdata.idup));
 
         Document doc = Document(cast(immutable(ubyte[])) req.rawdata);
@@ -448,14 +443,14 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             return;
         }
         ulong[string] stats = ["idx_found": 0, "idx_fetched": 0, "arch_found": 0, "arch_fetched": 0];
-        if (receiver.method.full_name == "trt.dartRead") {
+        if (receiver.method.full_name == "trt.dartRead" && opt.cache_enabled) {
             auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
             auto owners = doc_dart_indices.range!(DARTIndex[]);
             
             DARTIndex[] itofetch;
             TRTArchive[] ifound;
             TRTArchive ibuf;
-            if(cache_enabled){
+            if(opt.cache_enabled){
                 foreach(o; owners){
                      if (tcache.get(o, ibuf)) {
                         ifound ~= ibuf;
@@ -523,14 +518,14 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = ContentType.octet;
             rep.rawdata = cast(ubyte[])(response.serialize);
-        } else if (receiver.method.full_name == "dartRead") {
+        } else if (receiver.method.full_name == "dartRead" && opt.cache_enabled) {
             auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
             auto ifound = doc_dart_indices.range!(DARTIndex[]);
 
             DARTIndex[] tofetch;
             Document[] found;
             Document tbuf;
-            if(cache_enabled){
+            if(opt.cache_enabled){
                 foreach(id; ifound){
                      if (icache.get(id, tbuf)) {
                         found ~= tbuf;
@@ -1285,12 +1280,14 @@ int _main(string[] args) {
         return 0;
     }
 
-    tcache = new shared(TRTCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
-            .dartcache_ttl_msec);
-    icache = new shared(IndexCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
-            .dartcache_ttl_msec);
+    if(options.cache_enabled) {
+        tcache = new shared(TRTCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
+                .dartcache_ttl_msec);
+        icache = new shared(IndexCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
+                .dartcache_ttl_msec);
+        auto ds_tid = spawn(&dart_worker, options);
+    }
 
-    auto ds_tid = spawn(&dart_worker, options);
 
     writeit("\nTagionShell web service\nListening at "
             ~ options.shell_uri ~ "\n\t"

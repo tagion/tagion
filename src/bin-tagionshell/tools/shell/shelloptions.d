@@ -37,6 +37,7 @@ struct ShellOptions {
     uint dartcache_size;
     double dartcache_ttl_msec;
     string mode0_prefix;
+    bool cache_enabled;
 
     bool save_rpcs_enable = true; // Whether or not the shell should save incoming contracts
     string save_rpcs_task = "rpcs_saver"; // Task name of the worker thread which saves the rpc contracts
@@ -68,6 +69,7 @@ struct ShellOptions {
         dartcache_size = 4096;
         dartcache_ttl_msec = 30.0;
         mode0_prefix = "Node_%d_";
+        cache_enabled = false;
     }
 
     /// Gives a new node address each time it is called
