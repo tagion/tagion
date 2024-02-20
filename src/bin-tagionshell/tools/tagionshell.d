@@ -1222,6 +1222,7 @@ int _main(string[] args) {
     GetoptResult main_args;
 
     ShellOptions options;
+    bool override_switch;
 
     long sz, isz;
 
@@ -1246,17 +1247,13 @@ int _main(string[] args) {
         main_args = getopt(args, std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
+                "O|override", "Override the config file", &override_switch,
         );
     }
     catch (GetOptException e) {
         stderr.writeit(e.message().idup);
         return 1;
     }
-
-    // if (address !is address.init) {
-    //     options.shell_uri = address;
-
-    // }
 
     if (version_switch) {
         revision_text.writeit;
@@ -1277,6 +1274,12 @@ int _main(string[] args) {
 
         ].join("\n"),
                 main_args.options);
+        return 0;
+    }
+
+    if (override_switch) {
+        options.save(config_file);
+        writefln("Config file written to %s", config_file);
         return 0;
     }
 
