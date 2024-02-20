@@ -125,7 +125,7 @@ int _neuewelle(string[] args) {
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
-            "m|mode", "Set the node network mode, 0,1,2", &network_mode_switch,
+            "m|mode", "Set the node network mode [0,1,2]", &network_mode_switch,
             "monitor", "Enable the monitor", &monitor,
     );
 
@@ -200,7 +200,7 @@ int _neuewelle(string[] args) {
         NetworkMode n_mode;
         bool good_conversion;
 
-        collectException({ // Convert from string value [INTERNA, LOCAL, PUB]
+        collectException({ // Convert from string value [INTERNAL, LOCAL, PUB]
             n_mode = network_mode_switch.toUpper.to!NetworkMode;
             good_conversion = true;
         }());
