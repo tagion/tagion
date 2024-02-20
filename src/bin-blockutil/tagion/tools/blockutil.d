@@ -56,10 +56,9 @@ struct BlockFileAnalyzer {
         fout.writeln("Recycler map");
         blockfile.recycleDump(fout);
     }
-    
+
     void recyclerCurrentPrint(File fout) {
         import tagion.logger.Statistic;
-
 
         Index index = blockfile.masterBlock.recycle_header_index;
 
@@ -70,7 +69,6 @@ struct BlockFileAnalyzer {
         while (index != Index.init) {
             auto add_segment = RecycleSegment(blockfile, index);
             stat(add_segment.size);
-        pragma(msg, "add_segment ", typeof(add_segment.next));
             index = add_segment.next;
         }
         fout.writeln(stat.histogramString(logscale));
@@ -150,44 +148,41 @@ struct BlockFileAnalyzer {
         fout.writefln("%s", blockfile.masterBlock);
     }
 
-
     void printUtilisation(File fout) {
         auto seg_range = blockfile[index_from .. index_to];
-        uint pos = 0;
         size_t recycler_size;
         size_t total;
         size_t doc_size;
         size_t data_size;
         foreach (seg; seg_range) {
-            total+=seg.size;
+            total += seg.size;
             if (RecycleSegment.isRecord(seg.doc)) {
-                recycler_size+=seg.size;
+                recycler_size += seg.size;
                 continue;
             }
-            doc_size+=seg.doc.full_size;
-            data_size+=seg.size;
+            doc_size += seg.doc.full_size;
+            data_size += seg.size;
         }
         // Converts from number of blocks to number of bytes
-        total+=1; /// 1 for header-block 
-        total*=blockfile.BLOCK_SIZE;
-        recycler_size*=blockfile.BLOCK_SIZE;
-        data_size*=blockfile.BLOCK_SIZE;
-        string unit_name="KiB";
-        uint unit=1 << 10; // KiB
-        if (total > 1<< 24) {
-           unit_name="MiB";
-            unit=1 << 20;
+        total += 1; /// 1 for header-block 
+        total *= blockfile.BLOCK_SIZE;
+        recycler_size *= blockfile.BLOCK_SIZE;
+        data_size *= blockfile.BLOCK_SIZE;
+        string unit_name = "KiB";
+        uint unit = 1 << 10; // KiB
+        if (total > 1 << 24) {
+            unit_name = "MiB";
+            unit = 1 << 20;
         }
-        fout.writefln("Total     %9.3f%s", double(total)/unit, unit_name);
-        fout.writefln("Data      %9.3f%s %5.2f%%", double(data_size)/unit, unit_name, 
-            100.0*data_size/total);
-        fout.writefln("Documents %9.3f%s %5.2f%%", double(doc_size)/unit, unit_name,
-            100.0*doc_size/total);
-        fout.writefln("Recycler  %9.3f%s %5.2f%%", double(recycler_size)/unit, unit_name,
-            100.0*recycler_size/total);
-        fout.writefln("Data utilisation       %5.2f%%",  100.0*doc_size/data_size);
+        fout.writefln("Total     %9.3f%s", double(total) / unit, unit_name);
+        fout.writefln("Data      %9.3f%s %5.2f%%", double(data_size) / unit, unit_name,
+                100.0 * data_size / total);
+        fout.writefln("Documents %9.3f%s %5.2f%%", double(doc_size) / unit, unit_name,
+                100.0 * doc_size / total);
+        fout.writefln("Recycler  %9.3f%s %5.2f%%", double(recycler_size) / unit, unit_name,
+                100.0 * recycler_size / total);
+        fout.writefln("Data utilisation       %5.2f%%", 100.0 * doc_size / data_size);
 
-        
     }
 }
 
@@ -195,12 +190,7 @@ BlockFileAnalyzer analyzer;
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
-    bool display_meta;
     bool print; /// prints the block map
-    bool inspect;
-    bool ignore; /// Ignore blockfile format errors
-    ulong block_number; /// Block number to read (block_number > 0)
-    bool sequency; /// Prints the sequency on the next header
     bool print_recycler;
     bool print_recycler_statistic;
     bool print_recycler_current;
@@ -249,19 +239,19 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                    revision_text,
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s <file> [<option>...]", program),
-                    "",
-                    "Where:",
-                    //            "<command>           one of [--read, --rim, --modify, --rpc]",
-                    "",
+                revision_text,
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s <file> [<option>...]", program),
+                "",
+                "Where:",
+                //            "<command>           one of [--read, --rim, --modify, --rpc]",
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return ExitCode.NOERROR;
         }

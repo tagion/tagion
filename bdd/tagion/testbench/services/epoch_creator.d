@@ -14,7 +14,7 @@ import tagion.behaviour;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types : Pubkey;
-import tagion.gossip.AddressBook : NodeAddress, addressbook;
+import tagion.gossip.AddressBook : addressbook;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
@@ -26,6 +26,7 @@ import tagion.services.messages;
 import tagion.services.monitor;
 import tagion.services.options;
 import tagion.services.options : NetworkMode;
+import tagion.script.namerecords : NetworkNodeRecord;
 import tagion.testbench.actor.util;
 import tagion.testbench.tools.Environment;
 import tagion.utils.Miscellaneous : cutHex;
@@ -63,7 +64,6 @@ class SendPayloadAndCreateEpoch {
 
         this.number_of_nodes = number_of_nodes;
 
-        addressbook.number_of_active_nodes = number_of_nodes;
         foreach (i; 0 .. number_of_nodes) {
             immutable prefix = format("Node_%s", i);
             immutable task_names = TaskNames(prefix);
@@ -76,7 +76,7 @@ class SendPayloadAndCreateEpoch {
             writefln("node task name %s", task_names.epoch_creator);
             auto monitor_local_options = monitor_opts;
             nodes ~= Node(shared_net, task_names.epoch_creator, epoch_creator_options, monitor_local_options);
-            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
+            addressbook[net.pubkey] = new NetworkNodeRecord(net.pubkey, task_names.epoch_creator);
         }
 
     }

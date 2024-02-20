@@ -1,11 +1,11 @@
 # Contract definitions in Tagion Network
 
-A contract is defined as a [HiRPC](documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md)
+A contract is defined as a [HiRPC](https://www.hibon.org/posts/hirpc);
 
  method
 
 ## Signed contract(SSC)
-[SignedContract](ddoc://tagion.funnel.StandardContract.SignedContract)
+[SignedContract](https://ddoc.tagion.org/tagion.funnel.StandardContract.SignedContract)
 
 | Name        | D-Type       | Description            |  Required |
 | ----------- | ------------ | ---------------------- | --------- |
@@ -24,7 +24,7 @@ A contract is defined as a [HiRPC](documents/protocols/hibon/Hash_invariant_Remo
 
 ## The HiRPC method send to Network
 
-The network receives a contract via as parameter to a [HiRPC](documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md)
+The network receives a contract via as parameter to a [HiRPC](https://www.hibon.org/posts/hirpc)
 
 
 ### Smart contract Method
@@ -33,12 +33,3 @@ The network receives a contract via as parameter to a [HiRPC](documents/protocol
 | -------- | ------------------ | ------------------- | -------- |
 | `method` | string="submit"    | RPC method name     |   Yes    |
 | `params` | [SignedContract]() | The actual contract |   Yes    |
-
-
-
-
-
-
-
-
-

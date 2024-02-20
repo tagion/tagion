@@ -17,7 +17,6 @@ private {
     import std.traits;
     import std.typecons : Flag, No, Yes;
     import std.typecons;
-    import tagion.basic.Debug : __write;
     import tagion.basic.Types : Buffer, isBufferType, isTypedef, mut;
     import tagion.basic.basic : EnumText, assumeTrusted, isinit;
     import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
@@ -36,6 +35,7 @@ private {
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONSerialize;
     import std.bitmanip;
 }
 
@@ -46,9 +46,6 @@ private {
  +     fingerprint[rim]
  +/
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
-    if (rim >= rim_keys.length) {
-        debug __write("%(%02X%) rim=%d", rim_keys, rim);
-    }
     return rim_keys[rim];
 }
 
@@ -83,10 +80,10 @@ class DARTFile {
         Fingerprint _fingerprint;
     }
 
-    protected enum _params = [
-            "dart_indices",
-            "bullseye",
-        ];
+    static immutable _params = [
+        "dart_indices",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -251,7 +248,7 @@ class DARTFile {
 
             
 
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+                .check(isRecord(doc), format("Document is not a %s", This.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new Index[KEY_SPAN];
                 foreach (e; doc[indicesName].get!Document[]) {
@@ -272,7 +269,7 @@ class DARTFile {
             }
         }
 
-        auto keys() {
+        auto rim_keys() const pure nothrow {
             return _fingerprints.enumerate
                 .filter!(f => !f.value.empty)
                 .map!(f => f.index);
@@ -286,7 +283,7 @@ class DARTFile {
         }
 
         auto opSlice() {
-            return keys.map!(key => Leave(indices[key], fingerprints[key], get_dart_index(key)));
+            return rim_keys.map!(key => Leave(indices[key], fingerprints[key], get_dart_index(key)));
         }
 
         DARTIndexRange dart_indices() const pure nothrow @nogc {
@@ -389,6 +386,7 @@ class DARTFile {
          *     exclude_indices = If this flag is `true` then indices is not generated
          * Returns: HiBON of the branches
          */
+        // version(none)
         HiBON toHiBON(const bool exclude_indices = false) const
         in {
             assert(merkleroot.isinit, "Fingerprint must be calcuted before toHiBON is called");
@@ -437,14 +435,6 @@ class DARTFile {
             return hibon;
         }
 
-        /* 
-     * Convert the Branches to a Document
-     * Returns: document
-     */
-        const(Document) toDoc() const {
-            return Document(toHiBON);
-        }
-
         import tagion.hibon.HiBONJSON : JSONString;
 
         mixin JSONString;
@@ -452,6 +442,28 @@ class DARTFile {
         import tagion.hibon.HiBONRecord : HiBONRecordType;
 
         mixin HiBONRecordType;
+
+        mixin HiBONKeys;
+        /* 
+     * Convert the Branches to a Document
+     * Returns: document
+     */
+        version (DARTFile_BRANCHES_SERIALIZER) {
+            mixin Serialize;
+            const(Document) toDoc() const pure
+            in {
+                assert(merkleroot.isinit, "Fingerprint must be calcuted before toHiBON is called");
+            }
+            do {
+                return Document(serialize);
+            }
+        }
+        else {
+            const(Document) toDoc() const {
+                return Document(toHiBON);
+            }
+
+        }
 
         /**
          * Get the index number of Leave at the leave number key
@@ -562,6 +574,7 @@ class DARTFile {
         }
     }
 
+    static assert(SupportingFullSizeFunction!Branches);
     /** 
     * Reads the data at branch key  
     * Params: 
@@ -708,38 +721,6 @@ class DARTFile {
         return local_indent(rim_level);
     }
 
-    pragma(msg, "fixme(alex); Remove loadAll function");
-    HiBON loadAll(Archive.Type type = Archive.Type.ADD) {
-        auto recorder = manufactor.recorder;
-        void local_load(
-                const Index branch_index,
-                const ubyte rim_key = 0,
-                const uint rim = 0) @safe {
-            if (branch_index !is Index.init) {
-                immutable data = blockfile.load(branch_index);
-                const doc = Document(data);
-                if (Branches.isRecord(doc)) {
-                    const branches = Branches(doc);
-                    if (branches.indices.length) {
-                        foreach (key, index; branches._indices) {
-                            local_load(index, cast(ubyte) key, rim + 1);
-                        }
-                    }
-                }
-                recorder.insert(doc, type);
-            }
-        }
-
-        local_load(blockfile.masterBlock.root_index);
-        auto result = new HiBON;
-        uint i;
-        foreach (a; recorder[]) {
-            result[i] = a.toDoc;
-            i++;
-        }
-        return result;
-    }
-
     /**
  * Loads all the archives in the list of fingerprints
  * 
@@ -830,7 +811,6 @@ class DARTFile {
     import core.demangle;
     import std.traits;
 
-    pragma(msg, "modify ", mangle!(FunctionTypeOf!(DARTFile.modify!(No.undo)))("modify"));
     /**
      * $(SMALL_TABLE
      * Sample of the DART Map
@@ -889,7 +869,9 @@ class DARTFile {
             if (range.rim < RIMS_IN_SECTOR) {
                 if (branch_index !is Index.init) {
                     branches = blockfile.load!Branches(branch_index);
+
                     
+
                     .check(branches.hasIndices,
                             "DART failure within the sector rims the DART should contain a branch");
                 }
@@ -2552,21 +2534,21 @@ unittest {
         _net.generateKeyPair("wowo");
         auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (() @trusted => cast(immutable) _net)());
     }
+    static struct HashDoc {
+        @label("#name") string name;
+        int number;
+        mixin HiBONRecord!(q{
+            this(string name, int n) {
+                this.name=name;
+                number=n;
+            }
+    });
+    }
 
     { // Check the #name archives 
         filename_A.forceRemove;
         DARTFile.create(filename_A, net);
         auto dart_A = new DARTFile(net, filename_A);
-        static struct HashDoc {
-            @label("#name") string name;
-            int number;
-            mixin HiBONRecord!(q{
-                this(string name, int n) {
-                    this.name=name;
-                    number=n;
-                }
-        });
-        }
 
         auto recorder_add = dart_A.recorder;
         const hashdoc = HashDoc("hugo", 42);

@@ -1,6 +1,7 @@
 /// Recorder for the archives sread/removed and added to the DART 
 module tagion.dart.Recorder;
 
+@safe:
 import tagion.hibon.HiBONJSON;
 
 version (REDBLACKTREE_SAFE_PROBLEM) {
@@ -28,7 +29,7 @@ import tagion.dart.DARTBasic;
 import tagion.dart.DARTException : DARTRecorderException;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : GetLabel, STUB, isHiBONRecord, isStub, label, optional, recordType;
+import tagion.hibon.HiBONRecord : GetLabel, STUB, isHiBONRecord, isStub, label, optional, recordType, exclude;
 import tagion.script.standardnames;
 
 private alias check = Check!DARTRecorderException;
@@ -37,7 +38,6 @@ private alias check = Check!DARTRecorderException;
  * Record factory
  * Used to construct and handle DART recorder
  */
-@safe
 class RecordFactory {
     enum order_remove_add = true;
     const HashNet net;
@@ -107,16 +107,14 @@ class RecordFactory {
      *  Recorder to recorder (REMOVE, ADD) actions while can be executed by the
      *  modify method
      */
-    @safe
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-
-        alias archive_sorted = (a, b) @safe => (a.dart_index < b.dart_index) || (
-                a.dart_index == b.dart_index) && (a.type < b.type);
+        alias archive_sorted = (a, b) @safe => (a.dart_index < b.dart_index) || 
+        (a.dart_index == b.dart_index) && (a.type < b.type);
 
         alias Archives = RedBlackTree!(Archive, archive_sorted);
-        package Archives archives;
+        @exclude package Archives archives;
 
         import tagion.hibon.HiBONJSON : JSONString;
 
@@ -149,11 +147,13 @@ class RecordFactory {
         }
 
         private this(Document doc) {
-
-            
-
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+                .check(isRecord(doc), format("Document is not a %s", This.stringof));
             this.archives = new Archives;
+            /*
+    archives.insert(doc[]
+            .filter!(e => e.key != TYPENAME)
+            .map!(e => new Archive(net, e.get!Document)));
+    */
             foreach (e; doc[]) {
                 if (e.key != TYPENAME) {
                     const doc_archive = e.get!Document;
@@ -161,6 +161,7 @@ class RecordFactory {
                     archives.insert(archive);
                 }
             }
+
         }
 
         Recorder dup() pure nothrow {
@@ -179,20 +180,6 @@ class RecordFactory {
             return archives[];
         }
 
-        version (none) void removeOutOfRange(ushort from, ushort to) { //TODO: write unit tests
-            if (from == to)
-                return;
-            immutable ushort to_origin = (to - from) & ushort.max;
-            foreach (archive; archives) {
-                if (archive.type != Archive.Type.REMOVE) {
-                    short archiveSector = archive.fingerprint[0] | archive.fingerprint[1];
-                    ushort sector_origin = (archiveSector - from) & ushort.max;
-                    if (sector_origin >= to_origin) {
-                        archives.removeKey(archive);
-                    }
-                }
-            }
-        }
 
         Recorder changeTypes(const GetType get_type) {
             import std.algorithm;
@@ -311,7 +298,7 @@ class RecordFactory {
             return insert(pack, Archive.Type.REMOVE);
         }
 
-        void insert(R)(R range, const Archive.Type type = Archive.Type.NONE) @trusted
+        void insert(R)(R range, const Archive.Type type = Archive.Type.NONE) 
                 if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
                     ElementType!R))) {
             alias FiledType = ElementType!R;
@@ -357,7 +344,7 @@ class RecordFactory {
             }
         }
 
-        final const(Document) toDoc() const {
+        final const(Document) toDoc() const pure {
             auto result = new HiBON;
             uint i;
             foreach (a; archives) {
@@ -388,7 +375,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
 /**
  * Archive element used in the DART Recorder
  */
-@safe class Archive {
+class Archive {
     enum Type : int {
         NONE = 0, /// NOP DART instruction
         REMOVE = -1, /// Archive marked as remove instruction
@@ -411,13 +398,13 @@ const Neutral = delegate(const(Archive) a) => a.type;
     *   doc = document of an archive or filed doc
     *   t = archive type
     */
-    this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
+    this(const HashNet net, const(Document) doc, const Type t = Type.NONE) pure
     in {
         assert(net !is null);
     }
     do {
 
-        if(doc.empty) {
+        if (doc.empty) {
             throw new DARTRecorderException("Document cannot be empty");
         }
         if (doc.isStub) {
@@ -447,7 +434,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
         fout.writeln(toString);
     }
 
-    override string toString() const {
+    override string toString() const pure {
         const _ptr_addr = (() @trusted => cast(void*) this)();
         if (filed.hasHashKey) {
             return format("Archive # %(%02x%) - %s [%s] %(%02x%)", dart_index, type, _ptr_addr, fingerprint);
@@ -466,7 +453,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
      * Convert archive to a Document 
      * Returns: documnet of the archive
      */
-    const(Document) toDoc() const {
+    const(Document) toDoc() const pure {
         auto hibon = new HiBON;
         if (isStub) {
             hibon[fingerprintLabel] = fingerprint;
@@ -477,6 +464,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
         if (type !is Type.NONE) {
             hibon[typeLabel] = type;
         }
+        
         return Document(hibon);
     }
 
@@ -565,7 +553,6 @@ const Neutral = delegate(const(Archive) a) => a.type;
 }
 
 ///
-@safe
 unittest { // Archive
     //    import std.stdio;
     import std.format;
@@ -623,7 +610,6 @@ unittest { // Archive
 
 }
 
-@safe
 unittest { /// RecordFactory.Recorder.insert range
     import std.algorithm.comparison : equal;
     import std.algorithm.sorting : sort;
@@ -680,6 +666,8 @@ unittest { /// RecordFactory.Recorder.insert range
 
 @safe
 unittest {
+    import tagion.basic.Debug;
+    import tagion.hibon.HiBONJSON;
     immutable(ulong[]) table = [
         //  RIM 2 test (rim=2)
         0x20_21_10_30_40_50_80_90,
@@ -718,6 +706,7 @@ unittest {
 
         //rec.//dump;
         assert(rec.checkSorted);
-
     }
+
 }
+

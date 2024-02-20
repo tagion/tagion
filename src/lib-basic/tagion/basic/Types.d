@@ -116,12 +116,12 @@ static unittest {
 enum BASE64Indetifyer = '@';
 import std.base64;
 
-string encodeBase64(const(ubyte[]) data) pure {
+string encodeBase64(const(ubyte[]) data) pure nothrow {
     const result = BASE64Indetifyer ~ Base64URL.encode(data);
     return result.idup;
 }
 
-string encodeBase64(T)(const(T) buf) pure if (isBufferTypedef!T) {
+string encodeBase64(T)(const(T) buf) pure nothrow if (isBufferTypedef!T) {
     return encodeBase64(cast(TypedefType!T) buf);
 }
 

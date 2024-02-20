@@ -4,17 +4,18 @@ module tagion.actor.actor;
 
 @safe:
 
-import std.typecons;
 import core.exception : AssertError;
 import core.thread;
 import core.time;
+
+import std.typecons;
 import std.exception;
 import std.format : format;
 import std.meta;
 import std.traits;
-import std.traits;
 import std.typecons;
 import std.variant : Variant;
+
 import tagion.actor.exceptions;
 import tagion.hibon.HiBONRecord;
 import tagion.logger;
@@ -22,7 +23,6 @@ import tagion.utils.Result;
 import concurrency = tagion.utils.pretend_safe_concurrency;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
-
 import tagion.hibon.HiBONRecord;
 
 /**
@@ -82,7 +82,6 @@ struct Request(string name, ID = uint) {
     string task_name;
 
     static Request opCall() @safe nothrow {
-        import std.traits : isNumeric;
         import tagion.utils.Random;
 
         Request!(name, ID) r;
@@ -174,6 +173,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
             }
             receiveTimeout(
                     timeout / thisActor.childrenState.length,
+                    defaultFailhandler,
                     &control,
                     &signal,
                     &ownerTerminated
@@ -187,6 +187,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
         return statusChildren(state);
     }
     catch (Exception e) {
+        log.fatal("Error when waiting for children status\n%s", e);
         return false;
     }
 }
@@ -279,22 +280,23 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
-            // log.register(name);
             thisActor.task_name = name;
             thisActor.stop = false;
             A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             try {
                 actor.task(args);
+
                 // If the actor forgets to kill it's children we'll do it anyway
                 if (!statusChildren(Ctrl.END)) {
                     foreach (child_task_name, ctrl; thisActor.childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
-                            locate(child_task_name).send(Sig.STOP);
+                            ActorHandle(child_task_name).send(Sig.STOP);
                         }
                     }
                     waitforChildren(Ctrl.END);
                 }
+
             }
             catch (Exception t) {
                 fail(t);
@@ -332,7 +334,7 @@ if (isActor!A) {
                 if (!statusChildren(Ctrl.END)) {
                     foreach (child_task_name, ctrl; thisActor.childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
-                            locate(child_task_name).send(Sig.STOP);
+                            ActorHandle(child_task_name).send(Sig.STOP);
                         }
                     }
                     waitforChildren(Ctrl.END);
@@ -402,7 +404,7 @@ void fail(Throwable t) @trusted nothrow {
             log(t);
         }
         immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
-        log(taskfailure, "taskfailure", tf); // taskfailrue event
+        log.event(taskfailure, "taskfailure", tf);
         ownerTid.prioritySend(tf);
     }
     catch (Exception e) {
@@ -450,11 +452,7 @@ if (allSatisfy!(isSafe, Args)) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) @safe {
-            if (!tidOwner.isNull) {
-                ownerTid.prioritySend(tf);
-            }
-        };
+        enum failhandler = defaultFailhandler;
     }
 
     scope (failure) {
@@ -497,11 +495,7 @@ if (allSatisfy!(isSafe, Args)) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) @safe {
-            if (!tidOwner.isNull) {
-                ownerTid.prioritySend(tf);
-            }
-        };
+        enum failhandler = defaultFailhandler;
     }
 
     scope (failure) {
@@ -533,6 +527,12 @@ if (allSatisfy!(isSafe, Args)) {
         }
     }
 }
+
+enum defaultFailhandler = (TaskFailure tf) @safe {
+    if (!tidOwner.isNull) {
+        ownerTid.prioritySend(tf);
+    }
+};
 
 void signal(Sig signal) @safe {
     with (Sig) final switch (signal) {

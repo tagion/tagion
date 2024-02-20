@@ -72,6 +72,7 @@ int _main(string[] args) {
     int max_failed_runs = 5;
     DurationUnit duration_unit = DurationUnit.days;
 
+    // Enabled this for wallet_interface to print out debug info
     __verbose_switch = true;
 
     auto tx_stats = new TxStats;
@@ -82,16 +83,16 @@ int _main(string[] args) {
             "sendkernel", "Send requests directory to the kernel", &sendkernel,
             "duration", format("The duration the test should run for (current = %s)", duration), &duration,
             "unit", format("The duration unit on of %s (current = %s)", [EnumMembers!DurationUnit], duration_unit), &duration_unit,
-    "max_failed_runs", format("The maximum amount of failed runs, before the process exits (current = %s)", max_failed_runs), &duration_unit,
+            "max_failed_runs", format("The maximum amount of failed runs, before the process exits (current = %s)", max_failed_runs), &duration_unit,
     );
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-                "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
-                "<option>:",
-                ].join("\n"),
+            "Usage:",
+            format("%s [<option>...] <config.json> <files>", program),
+            "<option>:",
+        ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -279,13 +280,14 @@ class SendNContractsFromwallet1Towallet2 {
             const contract_net = secure_wallet.net.derive(message);
             const hirpc = HiRPC(contract_net);
             const hirpc_submit = hirpc.submit(signed_contract);
+            secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
 
             if (sendkernel) {
-                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
                 check(!response.isError, format("Error when sending kernel submit\n%s", response.toPretty));
             }
             else {
-                auto response = sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                auto response = sendShellHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, hirpc);
                 check(!response.isError, format("Error when sending shell submit\n%s", response.toPretty));
             }
 
@@ -304,10 +306,18 @@ class SendNContractsFromwallet1Towallet2 {
     @Then("wallet1 and wallet2 balances should be updated")
     Document updated() @trusted {
         //dfmt off
+        version(TRT_READ_REQ) {
+        const wallet_switch = WalletInterface.Switch(
+            trt_read: true, 
+            sendkernel: sendkernel,
+            send: send);
+        }
+        else {
         const wallet_switch = WalletInterface.Switch(
             trt_update : true,
             sendkernel: sendkernel,
             send: send);
+        }
 
         enum update_retries = 20;
         enum retry_delay = 5.seconds;

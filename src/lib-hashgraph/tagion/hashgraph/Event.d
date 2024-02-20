@@ -17,7 +17,6 @@ import std.stdio;
 import std.traits : ReturnType, Unqual;
 import std.traits;
 import std.typecons;
-import tagion.basic.Debug;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
 import tagion.crypto.Types : Pubkey;
@@ -257,7 +256,7 @@ class Event {
         // if (_father) { pseudo_time_counter += 1; }
         pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
         with (hashgraph) {
-            log(topic, received_order_statistic.stringof, received_order_statistic);
+            log.event(topic, received_order_statistic.stringof, received_order_statistic);
         }
 
         calc_youngest_son_ancestors(hashgraph);
@@ -266,9 +265,6 @@ class Event {
             hashgraph._rounds.next_round(this);
         }
 
-        // if (hashgraph.__debug_print) {
-        //     __write("EVENT: %s, %s", id, _youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
-        // }
         if (!higher(round.number, mother.round.number)) {
             return;
         }
@@ -284,7 +280,7 @@ class Event {
             _round.add(this);
         }
         with (hashgraph) {
-            log(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
+            log.event(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
         }
         if (callbacks) {
             callbacks.witness(this);
@@ -292,9 +288,6 @@ class Event {
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
         }
-        // if (hashgraph.__debug_print) {
-        //     __write("EVENT: %s, Youngest_ancestors: %s", id, _youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
-        // }
     }
 
     private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {

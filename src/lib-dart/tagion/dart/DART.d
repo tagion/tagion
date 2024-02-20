@@ -12,7 +12,6 @@ import std.algorithm.iteration : filter, map;
 import std.format : format;
 import std.range;
 import std.traits : EnumMembers;
-import tagion.basic.Debug : __format, debugwrite = __write;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.basic : EnumText, isinit;
@@ -120,7 +119,7 @@ class DART : DARTFile {
             out Exception exception,
             Flag!"read_only" read_only = No.read_only,
             const ushort from_sector = 0,
-            const ushort to_sector = 0) @safe {
+            const ushort to_sector = 0) @safe nothrow {
         try {
             this(net, filename, read_only, from_sector, to_sector);
         }
@@ -293,15 +292,15 @@ received = the HiRPC received package
 
         const rim_branches = branches(params.path);
         HiBON hibon_params;
-        
+
         if (!params.key_leaves.empty) {
             if (!rim_branches.empty) {
                 auto super_recorder = recorder;
                 foreach (key; params.key_leaves) {
-                    const index=rim_branches.indices[key];  
+                    const index = rim_branches.indices[key];
                     if (index.isinit) {
                         HiRPC.Error not_found;
-                        not_found.message=format("No archive found on %(%02x %):%02x", params.path, key); 
+                        not_found.message = format("No archive found on %(%02x %):%02x", params.path, key);
                         super_recorder.add(not_found);
                         continue;
                     }
@@ -437,10 +436,9 @@ received = the HiRPC received package
          */
         this(RecordFactory manufactor, const Document doc) {
             import tagion.logger.Logger;
-
             
 
-            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+            .check(isRecord(doc), format("Document is not a %s", This.stringof));
             index = doc[indexName].get!Index;
             const recorder_doc = doc[recorderName].get!Document;
             recorder = manufactor.recorder(recorder_doc);

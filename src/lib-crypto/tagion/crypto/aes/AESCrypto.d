@@ -21,8 +21,15 @@ struct AESCrypto(int KEY_LENGTH) {
     alias AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
     enum BLOCK_SIZE = AES.BLOCK_SIZE;
     enum KEY_SIZE = AES.KEY_SIZE;
+    /**
+    * Encrypt and Decrypt the data emplace
+    * Params:
+    *     key = the AES key
+    *     iv  = initial value
+    *   data  = Data to be de/encypted
+    */
     static void crypt_parse(bool ENCRYPT = true)(
-            const(ubyte[]) key,
+            scope const(ubyte[]) key,
     ubyte[BLOCK_SIZE] iv,
     ref ubyte[] data) nothrow
     in (data)
@@ -43,6 +50,14 @@ struct AESCrypto(int KEY_LENGTH) {
         }
     }
 
+    /**
+    * Same as crypt_parse except that the indata is copied to outdata
+    * Params:
+    *     key = the AES key
+    *     iv = initial value
+    *  indata = input data
+    * outdata = output data
+    */
     static void crypt(bool ENCRYPT = true)(
             scope const(ubyte[]) key,
     scope const(ubyte[]) iv,

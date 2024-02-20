@@ -5,6 +5,7 @@ import tagion.crypto.secp256k1.c.secp256k1;
 extern (C):
 nothrow:
 @nogc:
+pure:
 
 /** A pointer to a function that hashes an EC point to obtain an ECDH secret
  *

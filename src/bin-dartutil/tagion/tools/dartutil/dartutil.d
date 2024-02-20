@@ -39,7 +39,6 @@ import tagion.dart.DARTFakeNet;
 import tagion.dart.DARTRim;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBONtoText : decode, encodeBase64;
-import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile : Index;
@@ -214,7 +213,6 @@ int _main(string[] args) {
             import std.datetime.stopwatch;
 
             auto test_params = test_dart.split(':').map!(param => param.to!ulong);
-            pragma(msg, "test_params ", typeof(test_params.front));
             const number_of_archives = test_params.eatOne;
             const bundle_size = test_params.eatOne(ulong(1000));
             auto test_db = new DART(net, dartfilename);

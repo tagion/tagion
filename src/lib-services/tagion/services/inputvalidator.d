@@ -12,7 +12,6 @@ import std.format;
 import std.socket;
 import std.stdio;
 import tagion.actor;
-import tagion.basic.Debug : __write;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
@@ -24,6 +23,7 @@ import tagion.logger.Logger;
 import tagion.network.ReceiveBuffer;
 import tagion.script.namerecords;
 import tagion.services.messages;
+import tagion.services.codes;
 import tagion.services.options : TaskNames;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
@@ -48,14 +48,6 @@ struct InputValidatorOptions {
     mixin JSONCommon;
 }
 
-enum ResponseError {
-    Internal,
-    InvalidBuf,
-    InvalidDoc,
-    NotHiRPCSender,
-    Timeout,
-}
-
 /** 
  *  InputValidator actor
  *  Examples: [tagion.testbench.services.inputvalidator]
@@ -66,32 +58,35 @@ struct InputValidatorService {
     static Topic rejected = Topic("reject/inputvalidator");
 
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
-    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
+    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) __task_names) @trusted {
         HiRPC hirpc = HiRPC(net);
+        ActorHandle hirpc_verifier_handle = ActorHandle(__task_names.hirpc_verifier);
 
-        void reject(T)(ResponseError err_type, T data = Document()) const nothrow {
+        NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
+
+        void reject(ServiceCode err_type, Document data = Document()) const nothrow {
+            import tagion.services.codes;
+
             try {
                 hirpc.Error message;
                 message.code = err_type;
                 debug {
                     // Altough it's a bit excessive, we send back the invalid data we received in debug mode.
-                    message.message = err_type.to!string;
+                    message.message = err_type.toString;
                     message.data = data;
                 }
                 const sender = hirpc.Sender(net, message);
                 int rc = sock.send(sender.toDoc.serialize);
                 if (rc != 0) {
-                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(
-                            rc));
+                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(rc));
                 }
-                log(rejected, err_type.to!string, data);
+                log.event(rejected, err_type.toString, data);
             }
             catch (Exception e) {
                 log.error("Failed to deliver rejection %s", err_type.to!string);
             }
         }
 
-        NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sock_send_timeout.msecs;
         sock.recvtimeout = opts.sock_recv_timeout.msecs;
         sock.recvbuf = opts.sock_recv_buf;
@@ -135,27 +130,31 @@ struct InputValidatorService {
 
             version (BLOCKING) {
                 scope (failure) {
-                    reject(ResponseError.Internal);
+                    reject(ServiceCode.internal);
                 }
                 auto result_buf = sock.receive!Buffer;
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
                 if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
                     if (result_buf.length > 0) {
-                        reject(ResponseError.Timeout);
+                        reject(ServiceCode.timeout);
                     }
                     else {
                         continue;
                     }
                 }
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
                 if (result_buf.length <= 0) {
-                    reject(ResponseError.InvalidBuf);
+                    reject(ServiceCode.internal);
                     continue;
                 }
 
@@ -163,25 +162,27 @@ struct InputValidatorService {
             }
             else {
                 scope (failure) {
-                    reject(ResponseError.Internal);
+                    reject(ServiceCode.internal);
                 }
                 auto result_buf = buf(recv);
                 if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
                     if (result_buf.data.length > 0) {
-                        reject(ResponseError.Timeout);
+                        reject(ServiceCode.internal);
                     }
                     else {
                         continue;
                     }
                 }
                 if (sock.m_errno != nng_errno.NNG_OK) {
-                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
+                        log.error(nng_errstr(sock.m_errno));
+                    }
                     continue;
                 }
 
                 // Fixme ReceiveBuffer .size doesn't always return correct lenght
                 if (result_buf.data.size <= 0) {
-                    reject(ResponseError.InvalidBuf);
+                    reject(ServiceCode.buf);
                     continue;
                 }
 
@@ -189,24 +190,24 @@ struct InputValidatorService {
             }
 
             if (!doc.isInorder) {
-                reject(ResponseError.InvalidBuf);
+                reject(ServiceCode.buf);
                 continue;
             }
 
             if (!doc.isRecord!(HiRPC.Sender)) {
-                reject(ResponseError.NotHiRPCSender, doc);
+                reject(ServiceCode.hirpc, doc);
                 continue;
             }
             try {
                 log("Sending contract to hirpc_verifier");
-                locate(task_names.hirpc_verifier).send(inputDoc(), doc);
+                hirpc_verifier_handle.send(inputDoc(), doc);
 
                 auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());
                 sock.send(response_ok.toDoc.serialize);
             }
             catch (HiBONException _) {
-                reject(ResponseError.InvalidDoc, doc);
+                reject(ServiceCode.hibon, doc);
                 continue;
             }
         }

@@ -4,7 +4,7 @@ module tagion.services.epoch_creator;
 
 // tagion
 import tagion.actor;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types;
 import tagion.basic.basic : isinit;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -83,7 +83,7 @@ struct EpochCreatorService {
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey);
+            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
@@ -129,6 +129,12 @@ struct EpochCreatorService {
             counter++;
         }
 
+        /// Receive external payloads from the nodeinterface
+        void node_receive(NodeRecv, const(Document) doc) {
+            // TODOr: Check that it's valid Receiver
+            receivePayload(Payload(), doc);
+        }
+
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
             import std.array;
             import tagion.hashgraph.HashGraphBasic;
@@ -136,7 +142,7 @@ struct EpochCreatorService {
             import tagion.script.common : SignedContract;
 
             version (EPOCH_LOG) {
-                log.trace("Received wavefront %s");
+                log.trace("Received wavefront");
             }
 
             const receiver = HiRPC.Receiver(wave_doc);
@@ -181,6 +187,7 @@ struct EpochCreatorService {
                     opts.timeout.msecs,
                     &signal,
                     &ownerTerminated,
+                    &node_receive,
                     &receiveWavefront,
                     &unknown
             );
@@ -190,7 +197,10 @@ struct EpochCreatorService {
             timeout();
         }
 
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
+        if (thisActor.stop) {
+            return;
+        }
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &node_receive, &receiveWavefront);
     }
 
 }

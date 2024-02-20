@@ -105,16 +105,16 @@ target-signs: LIBS+=  $(LIBSECP256K1)
 ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 
 #
-# Recorderchain utility
-#
-target-recorderchain: LIBS+=  $(LIBSECP256K1) 
-${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
-#
 # kette recorderchain utility
 #
 target-kette: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,kette,$(LIB_DFILES) ${call BIN_DEPS,kette},tagion}
 
+#
+# Convering a old data-base to 
+#
+target-vergangenheit: $LIBS += $(LIBSECP256K1)
+${call DO_BIN,vergangenheit,$(LIB_DFILES) ${call BIN_DEPS,vergangenheit},tagion}
 
 #
 # Profile view
@@ -163,6 +163,7 @@ TAGION_TOOLS+=hirep
 TAGION_TOOLS+=callstack
 TAGION_TOOLS+=ifiler
 TAGION_TOOLS+=devutils
+TAGION_TOOLS+=vergangenheit
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
@@ -181,7 +182,8 @@ env-tools:
 #
 # Binary of BBD generator tool
 #
+target-collider: nng secp256k1
 target-collider: DFLAGS+=$(DVERSION)=ONETOOL
-target-collider: LIBS+= $(LIBSECP256K1)  $(LIBNNG)
+target-collider: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 ${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
 

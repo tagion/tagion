@@ -4,6 +4,7 @@ module tagion.script.common;
 // import std.algorithm;
 import std.array;
 import std.range;
+import std.sumtype;
 import tagion.basic.Types;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureInterfaceNet;
@@ -37,7 +38,7 @@ import tagion.utils.StdTime;
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label("$run") Document script; // Smart contract 
-    bool verify() {
+    bool verify() const pure nothrow @nogc {
         return (inputs.length > 0);
     }
 
@@ -48,7 +49,7 @@ import tagion.utils.StdTime;
                     this.reads = reads;
                     this.script = script; 
                 }
-                this(immutable(DARTIndex)[] inputs, immutable(DARTIndex)[] reads, immutable(Document) script) immutable nothrow {
+                this(immutable(DARTIndex)[] inputs, immutable(DARTIndex)[] reads, immutable(Document) script) immutable pure nothrow {
                     this.inputs = inputs;
                     this.reads = reads;
                     this.script = script; 
@@ -65,7 +66,7 @@ import tagion.utils.StdTime;
                     this.signs = signs;
                     this.contract = contract;
                 }
-                this(immutable(Signature)[] signs, immutable(Contract) contract) nothrow immutable {
+                this(immutable(Signature)[] signs, immutable(Contract) contract) immutable pure nothrow {
                     this.signs = signs;
                     this.contract = contract;
                 }
@@ -88,22 +89,43 @@ struct PayScript {
             });
 }
 
+unittest {
+    import tagion.hibon.HiBONJSON;
+
+    PayScript pay;
+    pay.outputs = [
+        TagionBill(TagionCurrency(1000), sdt_t(1234), Pubkey([1, 2, 3]), [14, 16, 17]),
+        TagionBill(TagionCurrency(2000), sdt_t(5678), Pubkey([2, 3, 4]), [42, 17, 3])
+    ];
+    const hibon_serialize = pay.toHiBON.serialize;
+    const serialize = pay.serialize;
+
+    assert(hibon_serialize == serialize);
+    const doc = pay.toDoc;
+    const new_pay = PayScript(doc);
+    assert(hibon_serialize == doc.serialize);
+    assert(serialize == doc.serialize);
+}
+
 Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
     import std.algorithm : map;
+
     const message = nets[0].calcHash(contract);
     return nets
         .map!(net => net.sign(message))
         .array;
 }
 
-const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, const(Document[]) reads, const(Document) script) {
+const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Document[]) reads, const(
+        Document) script) {
     import std.algorithm : map, sort;
+    import tagion.hibon.HiBONException;
+
     check(nets.length > 0, "At least one input contract");
     check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
     const net = nets[0];
     SignedContract result;
     auto sorted_inputs = inputs
-        .map!((input) => cast(DARTIndex) net.dartIndex(input))
         .enumerate
         .array
         .sort!((a, b) => a.value < b.value)
@@ -118,10 +140,25 @@ const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, co
     return result;
 }
 
+const(SignedContract) sign(
+        const(SecureNet[]) nets,
+        const(Document[]) inputs,
+        const(Document[]) reads,
+        const(Document) script) {
+    import std.algorithm : map;
+    import tagion.hibon.HiBONException;
+
+    check(nets.length > 0, "At least one input contract");
+    const net = nets[0];
+    return sign(nets, inputs.map!((input) => cast(DARTIndex) net.dartIndex(input))
+            .array, reads, script);
+}
+
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Pubkey[]) owners) nothrow {
-    import std.algorithm : all;
+    import std.algorithm;
+
     try {
-        if (signed_contract.contract.inputs.length == owners.length) {
+        if (!owners.empty && signed_contract.contract.inputs.length == owners.length) {
             const message = net.calcHash(signed_contract.contract);
             return zip(signed_contract.signs, owners)
                 .all!((a) => net.verify(message, a[0], a[1]));
@@ -135,13 +172,23 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Document[]) inputs) nothrow {
     import std.algorithm : map;
+
     try {
-        return verify(net, signed_contract, inputs.map!(doc => doc[StdNames.owner].get!Pubkey).array);
+        return verify(net, signed_contract, inputs.map!(doc => doc[StdNames.owner].get!Pubkey)
+                .array);
     }
     catch (Exception e) {
         //ignore
     }
     return false;
+}
+
+unittest {
+    import tagion.crypto.SecureNet : StdSecureNet;
+
+    const net = new StdSecureNet;
+    const contract = new SignedContract;
+    assert(!verify(net, contract, Document[].init), "Contract with no inputs should fail");
 }
 
 @recordType("$@G")
@@ -194,6 +241,8 @@ struct Epoch {
         }
     });
 }
+
+alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
 
 @recordType("$@Tagion")
 struct TagionHead {
@@ -259,4 +308,13 @@ struct LockedArchives {
 
 
     });
+}
+
+version (WITHOUT_PAYMENT) {
+    struct HashString {
+        string name;
+        mixin HiBONRecord!(q{this(string name) { this.name = name; }});
+    }
+
+    enum HashString snavs_record = HashString("snavs");
 }

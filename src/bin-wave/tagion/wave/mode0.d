@@ -10,20 +10,22 @@ import std.stdio;
 import std.format;
 import std.path;
 import std.range;
+import std.sumtype;
 
+import tagion.actor;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
 import tagion.services.options;
 import tagion.services.supervisor;
+import tagion.script.common : Epoch, GenesisEpoch, GenericEpoch;
+import tagion.script.namerecords;
 import tagion.utils.Term;
 import tagion.tools.Basic;
 import tagion.gossip.AddressBook;
-import std.range : zip;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import tagion.script.common : Epoch, GenesisEpoch;
-import tagion.actor;
+import tagion.wave.common;
 
 // Checks if all nodes bullseyes are the same
 bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
@@ -33,10 +35,6 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
     // Check bullseyes
     Fingerprint[] bullseyes;
     foreach (node_opt; node_options) {
-        if (!node_opt.dart.dart_path.exists) {
-            stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
-            return false;
-        }
         Exception dart_exception;
         DART db = new DART(__net, node_opt.dart.dart_path, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
@@ -46,6 +44,9 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
             db.close();
         }
         auto b = Fingerprint(db.bullseye);
+        if (dart_exception !is null) {
+            throw dart_exception;
+        }
         bullseyes ~= b;
 
     }
@@ -53,6 +54,7 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
     return bullseyes.all!(b => b == bullseyes[0]);
 }
 
+// Return: A range of options prefixed with the node number
 const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
     const number_of_nodes = options.wave.number_of_nodes;
     const prefix_f = options.wave.prefix_format;
@@ -70,6 +72,33 @@ const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
     return all_opts;
 }
 
+Node[] dummy_nodestruct_for_testing(const(Options[]) node_options) {
+    Node[] nodes;
+    scope nets = dummy_nodenets_for_testing(node_options);
+    foreach (i, opts; node_options) {
+        auto net = nets[i];
+        scope (exit) {
+            net = null;
+        }
+        shared shared_net = (() @trusted => cast(shared) net)();
+        nodes ~= Node(opts, shared_net);
+    }
+    return nodes;
+}
+
+StdSecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
+    StdSecureNet[] nets;
+    foreach (i, opts; node_options) {
+        auto net = new StdSecureNet;
+        scope (exit) {
+            net = null;
+        }
+        net.generateKeyPair(opts.task_names.supervisor);
+        nets ~= net;
+    }
+    return nets;
+}
+
 struct Node {
     immutable(Options) opts;
     shared(StdSecureNet) net;
@@ -77,35 +106,8 @@ struct Node {
 }
 
 void spawnMode0(
-        const(Options)[] node_options,
         ref ActorHandle[] supervisor_handles,
-        Node[] nodes,
-        Document epoch_head = Document.init) {
-
-    if (epoch_head is Document.init) {
-        foreach (n; zip(nodes, node_options)) {
-            addressbook[n[0].pkey] = NodeAddress(n[1].task_names.epoch_creator);
-        }
-    }
-    else {
-        Pubkey[] keys;
-        if (epoch_head.isRecord!Epoch) {
-            assert(0, "not supported to boot from epoch yet");
-            keys = Epoch(epoch_head).active;
-        }
-        else {
-            auto genesis = GenesisEpoch(epoch_head);
-
-            keys = genesis.nodes;
-            check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
-            check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
-        }
-
-        foreach (node_info; zip(keys, node_options)) {
-            verbose("adding addressbook ", node_info[0]);
-            addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
-        }
-    }
+        Node[] nodes) {
 
     /// spawn the nodes
     foreach (n; nodes) {

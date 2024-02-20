@@ -22,7 +22,6 @@ int main(string[] args) {
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
     import malformed_contract = tagion.testbench.malformed_contract;
-    import replicator_service = tagion.testbench.replicator_service;
     import send_contract = tagion.testbench.send_contract;
     import spam_double_spend = tagion.testbench.spam_double_spend;
     import transcript_service = tagion.testbench.transcript_service;
@@ -31,6 +30,7 @@ int main(string[] args) {
     import genesis_test = tagion.testbench.genesis_test;
     import trt_service = tagion.testbench.services.trt_service;
     import big_contract = tagion.testbench.services.big_contract;
+    import transaction = tagion.testbench.e2e.transaction;
 
     alias alltools = AliasSeq!(
             collector,
@@ -51,7 +51,6 @@ int main(string[] args) {
             tvm_betterc,
             epoch_creator,
             transcript_service,
-            replicator_service,
             send_contract,
             double_spend,
             spam_double_spend,
@@ -60,6 +59,7 @@ int main(string[] args) {
             genesis_test,
             trt_service,
             big_contract,
+            transaction,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

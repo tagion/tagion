@@ -25,12 +25,8 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : HiBONRecord;
 import tagion.utils.StdTime;
 
-// import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
-//import PriorStandardRecords = tagion.script.prior.StandardRecords;
-
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
-// import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
 import tagion.Keywords;
 import tagion.basic.Message;
 import tagion.basic.tagionexceptions : Check;
@@ -361,9 +357,7 @@ struct SecureWallet(Net : SecureNet) {
      *   invoice = invoice to be registered
      */
     void registerInvoice(ref Invoice invoice) {
-        account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
-        auto pkey = _net.derivePubkey(account.derive_state);
-        invoice.pkey = derivePubkey;
+        invoice.pkey = derivePubkey();
         account.derivers[invoice.pkey] = account.derive_state;
         account.requested_invoices ~= invoice;
     }
@@ -375,7 +369,7 @@ struct SecureWallet(Net : SecureNet) {
      *   info = Invoce information
      * Returns: The created invoice
      */
-    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) {
+    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) pure {
         Invoice new_invoice;
         new_invoice.name = label;
         new_invoice.amount = amount;
@@ -389,13 +383,13 @@ struct SecureWallet(Net : SecureNet) {
         return _net.derivePubkey(account.derive_state);
     }
 
-    TagionBill[] invoices_to_bills(const(Invoice[]) orders) {
-        Buffer getNonce() {
-            scope nonce = new ubyte[4];
-            getRandom(nonce);
-            return nonce.idup;
-        }
+    private Buffer getNonce() const pure {
+        auto nonce = new ubyte[4];
+        getRandom(nonce);
+        return nonce;
+    }
 
+    const(TagionBill)[] invoices_to_bills(const(Invoice[]) orders) const {
         return orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, getNonce)).array;
     }
 
@@ -453,6 +447,19 @@ struct SecureWallet(Net : SecureNet) {
         account.activated.clear;
     }
 
+    const(HiRPC.Sender) createSubmit(SignedContract signed_contract, bool sent = true) {
+        const message = _net.calcHash(signed_contract);
+        const contract_net = _net.derive(message);
+        const hirpc = HiRPC(contract_net);
+        const hirpc_submit = hirpc.submit(signed_contract);
+
+        if (sent) {
+            account.hirpcs ~= hirpc_submit.toDoc;
+        }
+
+        return hirpc_submit;
+    }
+
     /**
      * Creates HiRPC to request an wallet update
      * Returns: The command to the the update
@@ -480,6 +487,160 @@ struct SecureWallet(Net : SecureNet) {
         }
         return dartCheckRead(billIndexes(to_check), hirpc);
 
+    }
+
+    /** 
+     * Used for first step in updating wallet from TRT.
+     * Creates a trt.dartRead command for the TRT.
+     * Takes all derivers in the wallet and convert the pubkeys to #pubkey for lookup in TRT
+     * These indices are put into the trt.dartRead specifying the command.
+     * Params:
+     *   hirpc = hirpc to use
+     * Returns: trt.dartRead hirpc.sender 
+     */
+    const(HiRPC.Sender) readIndicesByPubkey(HiRPC hirpc = HiRPC(null)) const {
+        import tagion.dart.DART;
+        import tagion.script.standardnames;
+
+        auto owner_indices = account.derivers.byKey
+            .map!(owner => net.dartKey(TRTLabel, owner));
+
+        auto params = new HiBON;
+        auto params_dart_indices = new HiBON;
+        params_dart_indices = owner_indices;
+        params[DART.Params.dart_indices] = params_dart_indices;
+        return hirpc.action("trt." ~ DART.Queries.dartRead, params);
+    }
+
+    /** 
+     * Second stage in updating wallet.
+     * Takes a read trt.dartRead recorder.
+     * Creates an array of DARTIndexes from readIndicesByPubkey recorder
+     * If some indexes were found in the wallet but not in the trt, the indexes are removed
+        from the wallet.
+     * If some indeces were found in the trt but not in the wallet, the indexes are put
+        into a new dartRead request.
+     * Params:
+     *   receiver = Received response from trt.dartRead
+     * Returns: HiRPC.Sender.init if it is not needed to perform 
+        additional requests on the DART.
+     */
+    const(HiRPC.Sender) differenceInIndices(const(HiRPC.Receiver) receiver) {
+        import tagion.dart.Recorder;
+        import tagion.hibon.HiBONRecord : isRecord;
+        import tagion.trt.TRT : TRTArchive;
+        import tagion.dart.DARTcrud;
+
+        if (!receiver.isResponse) {
+            return HiRPC.Sender.init;
+        }
+
+        const recorder_doc = receiver.message[Keywords.result].get!Document;
+        // writefln("recorder \n %s", recorder_doc.toPretty);
+        RecordFactory record_factory = RecordFactory(net);
+        // TODO: catch hibon exception;
+        const recorder = record_factory.recorder(recorder_doc);
+        /// list of dart_indices in response
+        auto dart_indices = recorder[]
+            .map!(a => a.filed)
+            .filter!(doc => doc.isRecord!TRTArchive)
+            .map!(doc => TRTArchive(doc))
+            .map!(trt_archive => trt_archive.indices)
+            .join
+            .sort!((a, b) => a < b);
+
+        auto bill_indices = account.bills
+            .map!(b => DARTIndex(net.dartIndex(b)));
+
+        auto locked_indices = account.activated
+            .byKey;
+
+        auto to_compare = chain(bill_indices, locked_indices)
+            .array
+            .sort!((a, b) => a < b)
+            .uniq; // remove duplicates
+
+        DARTIndex[] to_be_looked_up_indices; /// indices that were in network but not in wallet
+        DARTIndex[] to_be_removed_from_wallet; /// indices that were removed from network but not in our wallet
+
+        /*
+        * If to_be_lookup_up_indices is empty that means no new archives were added 
+        to the database otherwise there are new archives we must lookup. 
+        * If to_be_removed_from_wallet is empty none of our own bills were removed 
+        from the database. 
+        * Though if it is not empty we know that the archive must have been deleted 
+        from the database and should be removed from our wallet.
+        */
+        foreach (d; dart_indices) {
+            if (!to_compare.canFind(d)) {
+                to_be_looked_up_indices ~= d;
+            }
+        }
+        foreach (d; to_compare) {
+            if (!dart_indices.canFind(d)) {
+                to_be_removed_from_wallet ~= d;
+            }
+        }
+
+        DARTIndex[] network_indices; /// indices for network lookup
+
+        /// check to_be_looked_up_indices for matches in requested.
+        foreach (i, d; to_be_looked_up_indices) {
+            if (d in account.requested) {
+                auto new_bill = account.requested[d];
+                if (!account.bills.canFind(new_bill)) {
+                    account.bills ~= new_bill;
+                    account.requested.remove(d);
+                }
+            }
+            else {
+                network_indices ~= d;
+            }
+        }
+
+        foreach (idx; to_be_removed_from_wallet) {
+            account.activated.remove(idx);
+            account.remove_bill_by_hash(idx);
+        }
+
+        const new_req = network_indices.empty ? HiRPC.Sender.init : dartRead(network_indices);
+        return new_req;
+    }
+
+    /** 
+     * Updates the wallet based on the received dartRead
+     * Params:
+     *   receiver = received dartRead from DART
+     * Returns: true if the update was succesful and false if not.
+     */
+    bool updateFromRead(const(HiRPC.Receiver) receiver) {
+        import tagion.dart.Recorder;
+        import tagion.hibon.HiBONRecord : isRecord;
+
+        if (!receiver.isResponse) {
+            return false;
+        }
+        const recorder_doc = receiver.message[Keywords.result].get!Document;
+        RecordFactory record_factory = RecordFactory(net);
+        const recorder = record_factory.recorder(recorder_doc);
+        auto new_bills = recorder[]
+            .map!(a => a.filed)
+            .filter!(doc => doc.isRecord!TagionBill)
+            .map!(doc => const(TagionBill)(doc));
+
+        foreach (new_bill; new_bills) {
+            if (!account.bills.canFind(new_bill)) {
+                account.bills ~= new_bill;
+            }
+            account.requested.remove(net.dartIndex(new_bill));
+            const invoice_index = account.requested_invoices
+                .countUntil!(invoice => invoice.pkey == new_bill.owner);
+
+            if (invoice_index >= 0) {
+                account.requested_invoices = account.requested_invoices.remove(invoice_index);
+            }
+        }
+        return true;
     }
 
     const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
@@ -568,7 +729,7 @@ struct SecureWallet(Net : SecureNet) {
                 }
             }
         }
-        foreach (request_bill; account.requested.byValue.array.dup) {
+        foreach (const request_bill; account.requested.byValue.array) {
             auto request_bill_index = net.dartIndex(request_bill);
             if (!not_in_dart.canFind(request_bill_index)) {
                 account.bills ~= request_bill;
@@ -577,11 +738,12 @@ struct SecureWallet(Net : SecureNet) {
         }
         return true;
     }
+
     /**
      * Update the the wallet for a request update
      * Params:
      *   receiver = response to the wallet
-     * Returns: ture if the wallet was updated
+     * Returns: true if the wallet was updated
      */
     @trusted
     bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) {
@@ -593,8 +755,7 @@ struct SecureWallet(Net : SecureNet) {
 
         auto found_bills = receiver.response
             .result[]
-            .map!(e => TagionBill(e.get!Document))
-            .array;
+            .map!(e => TagionBill(e.get!Document));
 
         foreach (b; found_bills) {
             if (b.owner !in account.derivers) {
@@ -623,17 +784,13 @@ struct SecureWallet(Net : SecureNet) {
         auto locked_indexes = account.activated
             .byKeyValue
             .filter!(a => a.value == true)
-            .map!(a => a.key)
-            .array;
+            .map!(a => a.key);
 
-        auto found_indices = found_bills.map!(found => net.dartIndex(found)).array;
+        auto found_indices = found_bills.map!(found => net.dartIndex(found));
         foreach (idx; locked_indexes) {
             if (!(found_indices.canFind(idx))) {
                 account.activated.remove(idx);
-                auto bill_index = account.bills.countUntil!(b => net.dartIndex(b) == idx);
-                if (bill_index >= 0) {
-                    account.bills = account.bills.remove(bill_index);
-                }
+                account.remove_bill_by_hash(idx);
             }
         }
 
@@ -690,48 +847,74 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     Result!bool getFee(const(Invoice[]) orders, out TagionCurrency fees) nothrow {
-
-        auto bills = orders.map!((order) => TagionBill(order.amount, assumeWontThrow(currentTime), order.pkey, Buffer
-                .init))
+        auto bills = orders
+            .map!((order) => TagionBill(order.amount, assumeWontThrow(currentTime), order.pkey, getNonce))
             .array;
+
         return getFee(bills, fees);
     }
 
-    static immutable dummy_pubkey = Pubkey(new ubyte[33]);
-    static immutable dummy_nonce = new ubyte[4];
-
     Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
+        static immutable dummy_pubkey = Pubkey(new ubyte[33]);
+        static immutable dummy_nonce = new ubyte[4];
+
         auto bill = TagionBill(amount, assumeWontThrow(currentTime), dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
 
-    // stupid function for testing
-    Result!bool createNFT(
-            Document nft_data,
-            ref SignedContract signed_contract) {
-        import tagion.script.execute;
-        import tagion.script.standardnames;
+    version (WITHOUT_PAYMENT) {
+        import tagion.script.common : snavs_record;
 
-        try {
-            HiBON dummy_input = new HiBON;
-            dummy_input[StdNames.owner] = net.pubkey;
-            dummy_input["NFT"] = nft_data;
-            Document[] inputs;
+        Result!bool createNFT(const(Document) nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
+            import tagion.script.execute;
 
-            inputs ~= Document(dummy_input);
-            SecureNet[] nets;
-            nets ~= (() @trusted => cast(SecureNet) net)();
+            try {
+                if (nft_inputs.length == 0) {
+                    signed_contract = sign([net], [cast(DARTIndex) net.dartIndex(snavs_record)], null, nft_doc);
+                }
+                else {
+                    const nets = net.repeat(nft_inputs.length).array;
+                    signed_contract = sign(
+                            nets,
+                            nft_inputs,
+                            null,
+                            nft_doc);
+                }
 
-            signed_contract = sign(
-                    nets,
-                    inputs,
-                    null,
-                    Document.init);
+            }
+            catch (Exception e) {
+                return Result!bool(e);
+            }
+            return result(true);
         }
-        catch (Exception e) {
-            return Result!bool(e);
+
+    }
+    else {
+        Result!bool createNFT(Document nft_doc, Document[] nft_inputs, ref SignedContract signed_contract) {
+            try {
+                auto none_locked = account.bills.filter!(b => !(net.dartIndex(b) in account.activated)).array;
+
+                check(none_locked.length > 0, "did not have any bills to insert into the contract");
+                TagionBill[] collected_bills = [none_locked.front];
+
+                const nets = collectNets(collected_bills) ~ net.repeat(nft_inputs.length).array;
+                check(nets.all!(net => net !is net.init), format("Missing deriver of some of the bills length=%s", collected_bills
+                        .length));
+                lock_bills(collected_bills);
+
+                signed_contract = sign(
+                        nets,
+                        collected_bills.map!(bill => bill.toDoc)
+                        .array ~ nft_inputs,
+                        null,
+                        nft_doc);
+
+            }
+            catch (Exception e) {
+                return Result!bool(e);
+            }
+            return result(true);
         }
-        return result(true);
     }
 
     enum long snavs_byte_fee = 100;
@@ -879,9 +1062,22 @@ struct SecureWallet(Net : SecureNet) {
         return Cipher.encrypt(this._net, this.account.toDoc);
     }
 
+    /** 
+     * Set encrypted account.hibon file
+     * Params:
+     *   cipher_doc = Encrypted account file to load
+     */
     void setEncrAccount(const(CiphDoc) cipher_doc) {
         Cipher cipher;
         const account_doc = cipher.decrypt(this._net, cipher_doc);
+        this.account = AccountDetails(account_doc);
+    }
+    /** 
+     * Set the account.hibon file
+     * Params:
+     *   account_doc = Account file to load
+     */
+    void setAccount(const(Document) account_doc) {
         this.account = AccountDetails(account_doc);
     }
 
@@ -1091,7 +1287,7 @@ unittest {
     SignedContract signed_contract;
     TagionCurrency fees;
 
-    TagionBill[] bills = wallet.invoices_to_bills([invoice_to_pay, invoice_to_pay2]);
+    const bills = wallet.invoices_to_bills([invoice_to_pay, invoice_to_pay2]);
     wallet.createPayment(bills, signed_contract, fees);
     HiRPC hirpc = HiRPC(null);
 
@@ -1109,7 +1305,7 @@ unittest {
     import std.stdio;
     import tagion.hibon.HiBONJSON;
 
-    TagionBill[] bills_in_dart = bills ~ wallet.account.requested.byValue.array;
+    const bills_in_dart = bills ~ wallet.account.requested.byValue.array;
     foreach (i, bill; bills_in_dart) {
         params[i] = bill.toHiBON;
     }
@@ -1129,25 +1325,25 @@ unittest {
 
     // pay invoice to yourself.
     auto wallet = StdSecureWallet("secret", "1234");
-    const bill1 = wallet.requestBill(1000.TGN);
+    const bill1 = wallet.requestBill(10_000.TGN);
     wallet.addBill(bill1);
 
-    auto invoice_to_pay = wallet.createInvoice("wowo", 10.TGN);
+    auto invoice_to_pay = wallet.createInvoice("wowo", 6969.TGN);
     wallet.registerInvoice(invoice_to_pay);
 
     SignedContract signed_contract;
     TagionCurrency fees;
 
-    TagionBill[] bills = wallet.invoices_to_bills([invoice_to_pay]);
+    const bills = wallet.invoices_to_bills([invoice_to_pay]);
     wallet.createPayment(bills, signed_contract, fees);
     HiRPC hirpc = HiRPC(null);
 
     assert(wallet.account.activated.byValue.filter!(b => b == true).walkLength == 1, "should have one locked bill");
-    assert(wallet.locked_balance == 1000.TGN);
+    assert(wallet.locked_balance == 10_000.TGN, "The entire balance should be locked");
     const req = wallet.getRequestUpdateWallet;
     const receiver = hirpc.receive(req.toDoc);
 
-    const number_of_bills = receiver.method.params[].array.length;
+    const number_of_bills = receiver.method.params[].walkLength;
     assert(number_of_bills == 3, format("should contain three public keys had %s", number_of_bills));
 
     // create the response containing the two output bills without the original locked bill.
@@ -1156,18 +1352,21 @@ unittest {
     import std.stdio;
     import tagion.hibon.HiBONJSON;
 
-    TagionBill[] bills_in_dart = bills ~ wallet.account.requested.byValue.array;
+    const bills_in_dart = PayScript(signed_contract.contract.script).outputs;
+    assert(bills_in_dart.length == 2, "should have two outputs");
+    // const bills_in_dart = bills ~ wallet.account.requested.byValue.array;
     foreach (i, bill; bills_in_dart) {
         params[i] = bill.toHiBON;
     }
     auto dart_response = hirpc.result(receiver, Document(params)).toDoc;
     const received = hirpc.receive(dart_response);
 
-    wallet.setResponseUpdateWallet(received);
+    assert(wallet.setResponseUpdateWallet(received), "Should not throw an error on update");
 
     auto should_have = wallet.calcTotal(bills_in_dart);
     assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
 
+    assert(wallet.total_balance == wallet.available_balance, format("There should be no locked amount. Locked %s, available %s", wallet.total_balance, wallet.available_balance));
 }
 
 unittest {
@@ -1180,8 +1379,21 @@ unittest {
     TagionCurrency fees;
     const res = wallet1.getFee(10_000.TGN, fees);
 
-    // should fail
-    assert(res.value == false);
+    assert(!res.value, "should not be able to pay");
+}
+
+unittest {
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    const bill1 = wallet1.requestBill(10_000.TGN);
+    wallet1.addBill(bill1);
+
+    {
+        // Fee = Gas + Snavs + (1xoutput.size - 1xinput.size) = 100 + 100 + (0)
+        TagionCurrency fees;
+        const res = wallet1.getFee(9_800.TGN, fees);
+        assert(res.value, "should be able to pay");
+        assert(fees == 200.TGN, format("Got: %s", fees));
+    }
 }
 
 unittest {
@@ -1217,7 +1429,7 @@ unittest {
 
     assert(fee == expected_fee, format("fees not the same %s, %s", fee, expected_fee));
 
-    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+    assert(signed_contract.contract.inputs.uniq.walkLength == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
 
 unittest {
@@ -1244,7 +1456,7 @@ unittest {
     auto p = wallet1.createPayment([payment_request], signed_contract, fee);
     assert(p.value, format("ERROR: %s %s", p.value, p.msg));
 
-    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length,
+    assert(signed_contract.contract.inputs.uniq.walkLength == signed_contract.contract.inputs.length,
             "signed contract inputs invalid");
 }
 

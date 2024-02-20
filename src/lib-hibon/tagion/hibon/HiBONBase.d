@@ -1,11 +1,11 @@
 module tagion.hibon.HiBONBase;
-
+import std.array;
 import std.format;
+import std.string : representation;
 import std.meta : AliasSeq, allSatisfy;
 import tagion.basic.basic : isOneOf;
 import tagion.utils.StdTime;
-import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers,
-    Unqual, getUDAs, hasUDA, FieldNameTuple;
+import std.traits;
 import bin = std.bitmanip;
 import std.range.primitives : isInputRange;
 import std.system : Endian;
@@ -13,31 +13,233 @@ import std.typecons : TypedefType, tuple;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
+import std.algorithm;
+import tagion.basic.basic : isinit;
 
+@safe:
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION = 0;
 
+alias AppendBuffer = Appender!(ubyte[]);
 /++
  Helper function to serialize a HiBON
 +/
-void binwrite(T, R, I)(R range, const T value, I index) pure {
+void binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
     import std.typecons : TypedefType;
 
     alias BaseT = TypedefType!(T);
-    bin.write!(BaseT, Endian.littleEndian, R)(range, cast(BaseT) value, index);
-}
+    static if (T.sizeof == ubyte.sizeof) {
+        buffer ~= value;
+    }
+    else {
+        import std.bitmanip : append;
 
+        append!(BaseT, Endian.littleEndian)(buffer, cast(BaseT) value);
+    }
+}
 /++
  Helper function to serialize an array of the type T of a HiBON
 +/
-@safe void array_write(T)(ref ubyte[] buffer, T array, ref size_t index) pure
-if (is(T : U[], U) && isBasicType!U) {
-    const ubytes = cast(const(ubyte[])) array;
-    immutable new_index = index + ubytes.length;
-    scope (success) {
-        index = new_index;
+
+void buildKey(Key)(ref scope AppendBuffer buffer, Type type, Key key) pure
+if (isKey!Key) {
+    static if (isKeyString!Key) {
+        uint key_index;
+        if (is_index(key, key_index)) {
+            buildKey(buffer, type, key_index);
+            return;
+        }
     }
-    buffer[index .. new_index] = ubytes;
+    buffer.binwrite(type);
+
+    static if (isKeyString!Key) {
+        buffer ~= LEB128.encode(key.length);
+        buffer ~= key.representation;
+    }
+    else {
+        buffer.binwrite(ubyte.init);
+        const key_leb128 = LEB128.encode(key);
+        buffer ~= key_leb128;
+    }
+}
+
+void emplace_buffer(ref scope AppendBuffer buffer, const size_t start_index) pure {
+    const buffer_size = buffer.data.length - start_index;
+    const size_leb128 = LEB128.encode(buffer_size);
+    buffer ~= size_leb128;
+    if (buffer_size == 0) {
+        return;
+    }
+    auto data = buffer.data;
+    (() @trusted {
+        import core.stdc.string : memcpy;
+
+        memcpy(&data[start_index + size_leb128.length], &data[start_index], buffer_size);
+        memcpy(&data[start_index], &size_leb128[0], size_leb128.length);
+    })();
+}
+
+void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Key key,
+        const(T) val) pure if (isKey!Key) {
+    import tagion.hibon.Document : Document;
+    import tagion.hibon.HiBONRecord : isHiBONRecord;
+    import std.range;
+    import traits = std.traits;
+    import tagion.basic.Debug;
+
+    alias BaseT = TypedefBase!T;
+    static if (!is(BaseT == T) && __traits(compiles, { auto x = cast(BaseT) val; })) {
+        auto x = cast(BaseT) val;
+    }
+    else {
+        alias x = val;
+    }
+    static if (Document.Value.hasType!BaseT) {
+        enum type = Document.Value.asType!BaseT;
+    }
+    else static if (is(BaseT == enum) && isIntegral!(OriginalType!BaseT)) {
+        enum type = Document.Value.asType!(OriginalType!BaseT);
+    }
+    else static if (isIntegral!BaseT) {
+        static if (isSigned!BaseT) {
+            alias CommonT = Select!(isImplicitlyConvertible!(BaseT, int), int, long);
+        }
+        else {
+            alias CommonT = Select!(isImplicitlyConvertible!(BaseT, uint), uint, ulong);
+        }
+        enum type = Document.Value.asType!CommonT;
+    }
+    else {
+        enum type = Type.DOCUMENT;
+    }
+    buildKey(buffer, type, key);
+    static if (traits.isArray!BaseT && (ForeachType!BaseT.sizeof == ubyte.sizeof)) {
+        const leb128_size = LEB128.encode(x.length);
+        buffer ~= leb128_size;
+        static if (isSomeString!BaseT) {
+            buffer ~= x.representation;
+        }
+        else {
+            buffer ~= x;
+        }
+    }
+    else static if (is(BaseT : const Document)) {
+        buffer ~= x.data;
+    }
+    else static if (is(BaseT : const BigNumber)) {
+        buffer ~= x.serialize;
+    }
+    else static if (is(BaseT == enum) && isIntegral!(OriginalType!BaseT)) {
+        alias OriginalT = OriginalType!BaseT;
+        buffer ~= LEB128.encode(cast(OriginalT) x);
+    }
+    else static if (isIntegral!BaseT) {
+        buffer ~= LEB128.encode(cast(BaseT) x);
+    }
+    else static if (is(BaseT : const(sdt_t))) {
+        buffer ~= LEB128.encode(cast(TypedefType!sdt_t) x);
+    }
+    else static if (isHiBONRecord!BaseT) {
+        const start_index = buffer.data.length;
+        static if (__traits(compiles, x.serialize(buffer))) {
+            x.serialize(buffer);
+        }
+        else static if (__traits(compiles, { const r = x.serialize(); })) {
+            buffer ~= x.serialize;
+        }
+        else static if (hasMember!(BaseT, "toDoc")) {
+            buffer ~= x.toDoc.serialize;
+            return;
+        }
+        else static if (hasMember!(BaseT, "toHiBON")) {
+
+            buffer ~= x.toHiBON.serialize;
+            return;
+        }
+        else {
+            static assert(0, format("%s has no metode to serialize", T.stringof));
+
+        }
+        emplace_buffer(buffer, start_index);
+    }
+    else static if (isInputRange!BaseT) {
+        enum preserve_array_size = preserve_flag && traits.isArray!BaseT;
+        alias ElementT = ElementType!BaseT;
+        auto x_range = (() @trusted => cast(Unqual!BaseT) x)();
+        const number_of_elements_serialize = x_range.filter!(e => !e.isinit).count;
+        const start_index = buffer.data.length;
+        size_t number_of_elements;
+        static if (preserve_array_size) {
+            size_t max_index;
+        }
+        foreach (pair; x_range.enumerate.filter!(pair => !pair.value.isinit)) {
+            static if (preserve_array_size) {
+                max_index = max(pair.index, max_index);
+            }
+            build(buffer, cast(uint) pair.index, pair.value);
+            number_of_elements++;
+            const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
+                number_of_elements_serialize;
+            if (estimated_require_size + start_index > buffer.capacity) {
+                buffer.reserve(estimated_require_size + start_index);
+            }
+
+        }
+        static if (preserve_array_size) {
+            if (max_index + 1 != x_range.length && x_range.length > 0) {
+                build(buffer, x_range.length - 1, ElementT.init);
+            }
+        }
+        emplace_buffer(buffer, start_index);
+    }
+    else static if (isAssociativeArray!BaseT) {
+        const start_index = buffer.data.length;
+        const number_of_elements_serialize = x.length;
+        alias KeyT = TypedefType!(KeyType!T);
+        alias ValueT = TypedefBase!(ValueType!T);
+        size_t number_of_elements;
+        static if (isKey!KeyT) {
+            const x_keys = x.keys.sort!((a, b) => less_than(a, b)).array;
+            foreach (assoc_key; x_keys) {
+                build(buffer, assoc_key, x[assoc_key]);
+                number_of_elements++;
+                const estimated_require_size = ((buffer.data.length - start_index) / number_of_elements + 1) *
+                    number_of_elements_serialize;
+                if (estimated_require_size + start_index > buffer.capacity) {
+                    buffer.reserve(estimated_require_size + start_index);
+                }
+
+            }
+        }
+        else {
+            Document[] elements;
+            AppendBuffer inner_buffer;
+            foreach (inner_key, inner_value; x) {
+                const inner_start_index = inner_buffer.data.length;
+                build(inner_buffer, uint(0), inner_key);
+                build(inner_buffer, uint(1), inner_value);
+                emplace_buffer(inner_buffer, inner_start_index);
+                immutable inner_data = (() @trusted => cast(immutable) inner_buffer.data[inner_start_index .. $])();
+                elements ~= Document(inner_data);
+                number_of_elements++;
+                const estimated_require_size = ((inner_buffer.data.length - inner_start_index) /
+                        number_of_elements + 1) * number_of_elements_serialize;
+                if (estimated_require_size + inner_start_index > inner_buffer.capacity) {
+                    inner_buffer.reserve(estimated_require_size + inner_start_index);
+                }
+
+            }
+            elements.sort!((a, b) => a.data < b.data);
+            buffer.reserve(elements.map!(doc => doc.full_size + uint.sizeof).sum);
+            foreach (i, elm; elements) {
+                build(buffer, cast(uint) i, elm);
+            }
+        }
+        emplace_buffer(buffer, start_index);
+    }
+    else {
+        buffer.binwrite(x);
+    }
 }
 
 /++
@@ -51,7 +253,6 @@ enum Type : ubyte {
 
     BOOLEAN = 0x08, /// Boolean - true or false
     TIME = 0x09, /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
-    // HASHDOC = 0x0F, /// Hash point to documement, public key or signature
 
     INT32 = 0x11, /// 32-bit integer
     INT64 = 0x12, /// 64-bit integer,
@@ -93,7 +294,7 @@ static unittest {
  Returns:
  true if the type is a internal native HiBON type
 +/
-@safe @nogc bool isNative(Type type) pure nothrow {
+@nogc bool isNative(Type type) pure nothrow {
     with (Type) {
         return ((type & DEFINED_NATIVE) !is 0) && (type !is DEFINED_NATIVE);
     }
@@ -103,7 +304,7 @@ static unittest {
  Returns:
  true if the type is a internal native array HiBON type
 +/
-@safe @nogc bool isNativeArray(Type type) pure nothrow {
+@nogc bool isNativeArray(Type type) pure nothrow {
     with (Type) {
         return ((type & DEFINED_ARRAY) !is 0) && (isNative(type));
     }
@@ -113,7 +314,7 @@ static unittest {
  Returns:
  true if the type is a valid HiBONRecord excluding narive types
 +/
-@safe bool isHiBONBaseType(Type type) pure nothrow {
+bool isHiBONBaseType(Type type) pure nothrow {
     bool[] make_flags() {
         bool[] str;
         str.length = ubyte.max + 1;
@@ -134,7 +335,7 @@ static unittest {
  Returns:
  true if the type is a valid HiBONRecord excluding narive types
 +/
-@safe bool isValidType(Type type) pure nothrow {
+bool isValidType(Type type) pure nothrow {
     bool[] make_flags() {
         bool[] str;
         str.length = ubyte.max + 1;
@@ -150,7 +351,7 @@ static unittest {
     return flags[type];
 }
 
-@safe @nogc bool isLEB128Basic(Type type) pure nothrow {
+@nogc bool isLEB128Basic(Type type) pure nothrow {
     with (Type) {
         return (type is INT32) || (type is INT64) || (type is UINT32) || (type is INT64);
     }
@@ -194,7 +395,7 @@ static unittest {
 /++
  HiBON Generic value used by the HiBON class and the Document struct
 +/
-@safe union ValueT(bool NATIVE = false, HiBON, Document) {
+union ValueT(bool NATIVE = false, HiBON, Document) {
     @Type(Type.FLOAT32) float float32;
     @Type(Type.FLOAT64) double float64;
     // @Type(Type.FLOAT128)  decimal_t float128;
@@ -464,7 +665,7 @@ unittest {
  Returns:
  true if a is an index
 +/
-@safe @nogc bool is_index(const(char[]) a, out uint result) pure nothrow {
+@nogc bool is_index(const(char[]) a, out uint result) pure nothrow {
     import std.conv : to;
 
     enum MAX_UINT_SIZE = to!string(uint.max).length;
@@ -500,7 +701,7 @@ unittest {
  Returns:
  true if keys is the indices of an HiBON array
 +/
-@safe bool isArray(R)(R keys) {
+bool isArray(R)(R keys) {
     bool check_array_index(const uint previous_index) {
         if (!keys.empty) {
             uint current_index;
@@ -575,7 +776,7 @@ unittest { // check is_index
  Returns:
  true if the value of key a is less than the value of key b
 +/
-@safe @nogc bool less_than(string a, string b) pure nothrow
+@nogc bool less_than(string a, string b) pure nothrow
 in {
     assert(a.length > 0);
     assert(b.length > 0);
@@ -589,12 +790,15 @@ do {
     return a < b;
 }
 
+@nogc bool less_than(const ulong a, const ulong b) pure nothrow {
+    return a < b;
+}
 /++
  Checks if the keys in the range is ordred
  Returns:
  ture if all keys in the range is ordered
 +/
-@safe bool is_key_ordered(R)(R range) if (isInputRange!R) {
+bool is_key_ordered(R)(R range) if (isInputRange!R) {
     string prev_key;
     while (!range.empty) {
         if ((prev_key.length == 0) || (less_than(prev_key, range.front))) {
@@ -608,9 +812,9 @@ do {
     return true;
 }
 
-enum isKeyString(T) = is(T : const(char[]));
+enum isKeyString(T) = isSomeString!T && (ForeachType!T.sizeof == char.sizeof);
 
-enum isKey(T) = (isIntegral!(T) || isKeyString!(T));
+enum isKey(T) = (isUnsigned!(T) || isKeyString!(T));
 
 ///
 unittest { // Check less_than
@@ -630,7 +834,7 @@ unittest { // Check less_than
  Returns:
  true if the key is a valid HiBON key
 +/
-@safe bool is_key_valid(const(char[]) a) pure nothrow {
+bool is_key_valid(const(char[]) a) pure nothrow {
     enum : char {
         SPACE = 0x20,
         DEL = 0x7F,

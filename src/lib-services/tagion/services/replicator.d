@@ -6,8 +6,7 @@ import tagion.crypto.SecureNet : StdHashNet;
 import tagion.crypto.Types : Fingerprint;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.logger.Logger;
-import tagion.recorderchain.RecorderChain;
-import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock, RecorderBlock;
+import tagion.replicator.RecorderBlock;
 import tagion.services.messages;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.basic.Types : FileExtension;
@@ -38,9 +37,6 @@ struct ReplicatorOptions {
     mixin JSONCommon;
 }
 enum modify_log = "modify/replicator";
-
-
-version(NEW_REPLICATOR) {
 
 @safe
 struct ReplicatorService {
@@ -91,55 +87,9 @@ struct ReplicatorService {
                 net); 
 
             log.trace("Added recorder chain block with hash '%(%02x%)'", block.fingerprint);
-            log(modify_recorder, "modify", recorder);
+            log.event(modify_recorder, "modify", recorder);
         }
-
-        run(&receiveRecorder);
-
-
-
-    }
-
-
-
-}
-
-
-
-
-
-
-} else {
-
-
-@safe
-struct ReplicatorService {
-    static Topic modify_recorder = Topic(modify_log);
-
-    void task(immutable(ReplicatorOptions) opts) {
-        HashNet net = new StdHashNet;
-
-        RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
-        RecorderChain recorder_chain = new RecorderChain(storage);
-
-        void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(long) epoch_number) {
-            auto last_block = recorder_chain.getLastBlock;
-            auto block = new RecorderChainBlock(
-                    recorder.toDoc,
-                    last_block ? last_block.fingerprint : Fingerprint.init,
-                    bullseye,
-                    epoch_number,
-                    net);
-            recorder_chain.append(block);
-            log.trace("Added recorder chain block with hash '%s'", block.getHash.cutHex);
-            log(modify_recorder, "modify", recorder);
-        }
-
         run(&receiveRecorder);
     }
-
-}
-
-
 }
 

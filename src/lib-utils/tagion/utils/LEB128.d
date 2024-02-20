@@ -94,6 +94,7 @@ immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
         }
         d |= 0x80;
     }
+    check(0, "Bad LEB128 format");
     assert(0);
 }
 

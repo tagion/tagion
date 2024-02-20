@@ -88,7 +88,7 @@ enum MAX_PINCODE_SIZE = 128;
 enum LINE = "------------------------------------------------------";
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) @trusted {
+HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, HiRPC hirpc = HiRPC(null)) @trusted {
     import nngd;
     import std.exception;
     import tagion.hibon.Document;
@@ -114,50 +114,26 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
     check(response_doc.isRecord!(HiRPC.Receiver), format("Error in response when sending bill %s", response_doc.toPretty));
 
-    HiRPC hirpc = HiRPC(net);
     return hirpc.receive(response_doc);
 }
 
-HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
+HiRPC.Receiver sendShellHiRPC(string address, Document doc, HiRPC hirpc) {
     import nngd;
 
-    pragma(msg, "Change Web Post and reply so it takes immutable stream");
-    WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, [
+    WebData rep = WebClient.post(address, cast(ubyte[]) doc.serialize, [
         "Content-type": "application/octet-stream"
     ]);
 
-    if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
-        throw new WalletException(format("Send shell submit error(%d): %s", rep.status, rep.msg));
+    if (rep.status != http_status.NNG_HTTP_STATUS_OK || rep.type != "application/octet-stream") {
+        throw new WalletException(format("send shell submit, received: %s code(%d): %s", rep.type, rep.status, rep.msg));
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
-    HiRPC hirpc = HiRPC(net);
     return hirpc.receive(response_doc);
 }
 
-HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc) {
-    import nngd;
-
-    WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.toDoc.serialize, [
-        "Content-type": "application/octet-stream"
-    ]);
-
-    if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
-        throw new WalletException(format("send shell submit error(%d): %s", rep.status, rep.msg));
-    }
-
-    Document response_doc = Document(cast(immutable) rep.rawdata);
-
-    return hirpc.receive(response_doc);
-}
-
-HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
-    import nngd;
-
-    WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
-
-    Document response_doc = Document(cast(immutable) rep.rawdata);
-    return hirpc.receive(response_doc);
+HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender req, HiRPC hirpc) {
+    return sendShellHiRPC(address, req.toDoc, hirpc);
 }
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
@@ -631,6 +607,7 @@ struct WalletInterface {
         bool request;
         bool update;
         bool trt_update;
+        bool trt_read;
         double amount;
         bool faucet;
         bool save_wallet;
@@ -710,7 +687,7 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
-                if (update || trt_update) {
+                if (update || trt_update || trt_read) {
                     const update_net = secure_wallet.net.derive(
                             secure_wallet.net.calcHash(
                             update_tag.representation));
@@ -719,6 +696,9 @@ struct WalletInterface {
                     const(HiRPC.Sender) getRequest() {
                         if (trt_update) {
                             return secure_wallet.getRequestUpdateWallet(hirpc);
+                        }
+                        else if (trt_read) {
+                            return secure_wallet.readIndicesByPubkey(hirpc);
                         }
                         return secure_wallet.getRequestCheckWallet(hirpc);
                     }
@@ -735,8 +715,32 @@ struct WalletInterface {
 
                         verbose("Received response", received.toPretty);
 
-                        auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
-                                received) : secure_wallet.setResponseCheckRead(received);
+                        version (TRT_READ_REQ) {
+                            bool setRequest(const(HiRPC.Receiver) receiver) {
+                                if (trt_update) {
+                                    return secure_wallet.setResponseUpdateWallet(receiver);
+                                }
+                                else if (update) {
+                                    return secure_wallet.setResponseCheckRead(receiver);
+                                }
+                                else {
+                                    const difference_req = secure_wallet.differenceInIndices(receiver);
+                                    if (difference_req is HiRPC.Sender.init) {
+                                        return true;
+                                    }
+                                    HiRPC.Receiver dart_received = sendkernel ?
+                                        sendDARTHiRPC(options.dart_address, difference_req, hirpc) : sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, difference_req, hirpc);
+
+                                    return secure_wallet.updateFromRead(dart_received);
+                                }
+                            }
+
+                            bool res = setRequest(received);
+                        }
+                        else {
+                            bool res = trt_update ? secure_wallet.setResponseUpdateWallet(
+                                    received) : secure_wallet.setResponseCheckRead(received);
+                        }
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         save_wallet = true;
                     }
@@ -784,10 +788,10 @@ struct WalletInterface {
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
                     if (send) {
-                        sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                        sendShellHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, hirpc);
                     }
                     else if (sendkernel) {
-                        sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                        sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
                     }
                 }
             }

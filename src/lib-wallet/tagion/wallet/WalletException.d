@@ -3,7 +3,7 @@
 */
 module tagion.wallet.WalletException;
 
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.basic.tagionexceptions;
 
 /**
  * Exception type used in the Script package

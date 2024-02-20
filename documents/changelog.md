@@ -1,3 +1,109 @@
+# Changelog for Epoch 720414 .. 793069
+
+**Tagionshell automatic test**
+We have implemented a automatic test on the shell for the acceptance stage. Until now we have only had automatic tests on the shell when running the longitudinal tests, so this makes it easier for us to catch errors quicker. The test also utilizes our new trt-read update process.
+
+**Contract Tracing proposal**
+We have created a proposal for how the tracing of contracts should be implemented. See [docs.tagion.org](https://docs.tagion.org/#/documents/TIPs/contract_tracing_proposal_18_feb) for further information.
+
+**HiBONJSON timestamp formatting**
+We use a function from D's standard library for converting from hibon's time format sdt time which is represented as a 64-bit integer and the ISO8601 text format. Which looks like this `2024-02-12T11:15:37+07:00`.
+The problem is that the timezone can be ommited like this `2024-02-12T11:15:37` and the timezone would then be assumeed to be the local time.
+This is the default behavior for the library function which means that the timezone would never be included in HIBONJSON. 
+Which meant that a hibon including a timestamp. When converted to json and sent to another timezone and coverted back to hibon
+would no longer be the same timestamp and of course no longer the same hash.
+We have made a temporary solution for this, but it seems to cause issues on some platforms see https://github.com/tagion/tagion/issues/406
+
+In the process we also found a bug in the function that converts from the text format to the binary format 'fromISOExtString()`.
+Which would not correctly subtract the time offset in non hourly timezones like Indias IST(UTC +5:30) or Canadas NST(UTC -2:30).
+Which we did not even know existed.
+This means for now that the standard hibonjson implementation does not allow converting from a string timestamp with an un hourly timeoffset.
+
+
+# Changelog for Epoch 548959 .. 720414
+
+**HiBON bug fixes and enhancements**
+We have resolved an issue in HiBON where sub-document length fields were incorrectly calculated. The fix not only addresses this bug but also optimizes HiBON for increased speed. The update enables more compile-time introspection, facilitating the creation of custom compile-time serialization functions and sorting when using HiBONRecords. Specifically, when a mixin HiBONRecord struct contains only simple types, the calculation of `full_size` and the `serialize` function occurs during compile-time. If the HiBONRecord includes non-simple types, the generated serialization function estimates the size of the final struct, minimizing new allocations during serialization/deserialization. Additionally, HiBON now utilizes Appender[] for appending elements, recommended over `array ~= data` when dealing with multiple appends.
+
+**`verify` function bug**
+Addressed a bug in the `verify` function where supplying 0 inputs would incorrectly return true. This bug has been fixed to ensure accurate behavior. Although other checks in the contract would still catch issues, correcting this bug improves the efficiency of the Node by reducing unnecessary computations.
+
+**CI-Flow Improvements**
+We have streamlined the CI-flow by reorganizing and grouping related elements. Previously, service files for tagionwave and tagionshell were located in separate "bin-x" directories, but now they are consolidated into a common "etc/" folder. Additionally, frequently used scripts for starting the network have been grouped into a dedicated "scripts/" folder. This reorganization simplifies CI-flows, eliminating the need to modify the make-flow for the correct inclusion of files in the artifacts.
+
+**HiBON Envelope Protocol**
+Introduced the first iteration of the HiBON envelope protocol, enhancing HiBON's capabilities. This protocol allows HiBONs to be sent with compression and a CRC checksum, resulting in significantly reduced package sizes for communication between nodes and from client to shell. Currently, only zlib compression is supported, but future updates will introduce additional compression types. Future iterations may also include headers for implementing encryption.
+
+
+# Changelog for epoch 548959 .. 624229
+
+**Improved Documentation**
+We have started initial work on improving our documentation. This includes a new page listing all interfaces for a node along with what methods are supported for each interface. You can check out more here on [docs.tagion.org](https://docs.tagion.org/#/documents/protocols/contract/hirpcmethods).
+
+**nix build .#dockerImage**
+We have created an output in our `flake.nix` file that allows for a minimal docker image to be built on alpine linux. It does not start any services but allows for easy usage on non-x86_64-linux systems to use eg. `hibonutil`. We suggest taking a look since it is a nice showcase of the cool possibilities with nix :-).
+
+**DocumentWrapper bugfixes**
+We have fixed some errors in the `DocumentWrapperAPI` regarding return types. For an example the function `doc_get_ulong_by_key` previously returned a `int64_t` but was supposed to return `uint64_t`.
+
+**HiRPC subdomains**
+We have implemented what we call *HiRPC subdomains* which allows for forwarding requests to different parts of the system. If you want to do a `dartRead`, but instead of performing it on the main DART, you want to perform it on the `TRT`, you can perform a request with method name `trt.dartRead`. Internally in the different actors they don't care, and only use the last name for figuring out which requests to do, but in the `DARTInterface`, the request can be either send to the TRT or DART.
+
+**TRT lookup request**
+We have implemented a new way for wallet update, which is a lot more efficient and should put less load on the system than the previous "search". It works in two steps.
+First the wallet collects a list of all its deriven public keys. It then performs a `trt.dartRead` to read all dart indices located on these public keys. 
+By getting this information we can see if 1. we have received new indices (bills) and 2. if some of our bills are no longer located in the DART.
+The wallet can then take the new indices and perform a `dartRead` on the main dart, which will return all new archives that were created.
+
+**Code Coverage**
+We have updated our CI-flow to include commit-stage code-coverage tests, which allows us to see which part of the services are not tested.
+
+# Changelog for epoch 466725 .. 548959
+
+**Secure Library Audit**
+A list of changes have been made to comply with the recent secure library audit.  
+The BIP39 API has been changed as recommended, so it should be less likely for future API users to make mistakes using it.  
+This means you should change the following function uses.  
+`BIP39.passphrase() -> BIP39.generateMnemonic()`  
+`BIP39.opCall() -> BIP39.mnemonicToSeed()`  
+
+`BIP39.validateMnemonic()` should now be used in favour of `BIP39.checkMnemonicNumbers()` and `BIP39.mnemonicNumbers()`.  
+The new function also does the proper checksum validation.
+We misunderstood how the checksum is calculated and that the last word in the mnemonic phrase is used as a checksum and generated based on the remaining bits in the byte sequence of the 11-bit word sequence and the first nibble of the hash sum of the first words.  
+Note, this also means that the 12 to 24 words should be a multiple of 3. Which is checked in the `generateMnemonic()`.
+
+We misunderstood `secp256k1_context_randomize()` as a way to obfuscate memory but its intended usage is as a measure against side-channel attacks.
+This means that the function is now only called when creating or copying a context.
+
+The full list of notes can be seen here https://docs.tagion.org/#/documents/audit/audit.md  
+
+**DART Cache**
+The dart cache is now updated based on new published recorders from the kernel and has been made default handler in the shell.
+This should result in faster updates and less load on the core system when requesting updates for recent transactions.
+Some changes need to made to the api of TRT request in order to prevent state mismatch between the shell and kernel. 
+
+**TRT hotfix**
+Fixed an issure where if the trt would not find any Archives it would not make reponse and thereby lock up the dartinterface, blocking new incoming requests.
+
+**Account history**
+The account history can now be statically calculated based on the info already stored in AccountDetails. This means that the history can now be retrieved when restoring your wallet.
+Fixed an issue where used_bills and sent hirpcs were not stored in AccountDetails.
+
+# Changelog for epoch 392368 .. 466725
+
+**TRT enhancement**
+The TRT now stores any document containing the `$Y` record meaning all archives with a public key. This enhancement makes the TRT more robust against future updates.
+
+**Self-Test endpoint**
+We have created another endpoint in the shell, which can be used for calling other endpoints in the shell. This allows for an easy interface to test the shell endpoints against.
+
+**Recorder subscription event**
+It is now possible via NNG, to subscribe to the recorder. This is useful for our cache in the shell, which will allow for faster lookups in the system.
+
+**Mode1 initial work**
+We have begun working on a new NNGGossipnet which will be used for a mode1 version of the network. The difference between mode1 and mode0 is that in mode1 the nodes are running in completely seperate processes and instead of using inter-process-communication they will be using proper socket connections.  
+
+
 # Changelog for epoch 131000 .. 392368
 
 Happy new year! :tada:
@@ -70,15 +176,17 @@ Our least recently used class has been upgraded so that it is possible to use no
 **Versioning**
 We have updated our revision to include the latest tag. The revision for example looks like the following now.
 
+```
 version: v1.0.1+dev+dirty
 git: git@github.com:tagion/tagion.git
 branch: current
 hash: 6258adbd9a805a16edb0f748553de00f69bcb76f
 revno: 12834
-build_date: imrying
-builder_name: philiprying@gmail.com
-builder_email: gcc (GCC) 12.3.0
-CC: DMD64 D Compiler v2.105.2
+builder_name: Børge
+builder_email: boerge@example.com
+CC: gcc (GCC) 12.3.0
+DC: DMD64 D Compiler v2.105.2
+```
 
 As it can be seen it shows that the binary is on top of v1.0.1 with develop and the working tree is dirty when it was compiled.
 
@@ -92,7 +200,7 @@ We have had a problem with the hashgraph, where it sometimes would not produce a
 Regarding open-sourcing the licenses have been updated as well as the CONTRIBUTING.md file.
 The github action for creating the ddoc documentaton has also been fixed so that it now runs.
 
-# Changelog for week 48/49
+# Changelog for week 48/49 2023
 
 **Graceful shutdown**
 We have implemented a mechanism for nodes to execute a graceful shutdown, ensuring that their states are saved before the shutdown process. This feature is particularly valuable during software upgrades.
@@ -110,7 +218,7 @@ Our DARTInterface that sends forwards requests from the shell had a while(true) 
 We are getting extremely close to going live now and we are looking so much forward to you who have been following these changelogs to be able to use and see what we have created and talked so much about.
 
 
-# Changelog for week 47/48
+# Changelog for week 47/48 2023
 
 **Transcript bug**
 Our operational tests found a bug where because the order of operations when iterating a hash-map is not guranteed we could end up in a scenario where the nodes would have the same state, but write different archives in different epochs regarding the consensus voting. This has now been fixed.
@@ -125,7 +233,7 @@ We have fixed a bug in the wallet where the fee would be calculated incorrectly.
 We encountered a problem with the NNG-http server where it would leak memory when passing a `char*` to a c-function. This only happens when the string is concatenated with another string, which is a lazy operation. When then taking the pointer of this new variable it only points to the "first" part of the string meaning the other part leaks in memory. This problem has now been mitigated by manually allocating the memory using a static buffer which makes sure it is properly cleaned afterwards and creates a fully monolithic pointer.
 
 
-# Changelog for week 46/47
+# Changelog for week 46/47 2023
 
 **Boot from passkeys**
 The wave program can now boot from passkeys meaning from stdin, meaning that you can use ex. a GPG key to manage the passwords for the network or a usb.
@@ -149,7 +257,7 @@ A operational test has been created which is essentially a wrapper around a bdd-
 We are very happy to announce that all ground components for the network are finished. This means we are going into Tape-Out mode now and will be doing final reviews on everything and have full focus on operational testing of the system.
 
 
-# Changelog for week 45/46
+# Changelog for week 45/46 2023
 
 **Blockfile**
 Fixed an error in the blockfile where the cache would be allocated preruntime,
@@ -182,7 +290,7 @@ The HiRPC error type has been changes so it's always considered an error, if it'
 The CI workflow can now run on any branch.
 Testnet worflow cleans old backups & main worflows cleans old artifacts
 
-# Changelog for week 44/45
+# Changelog for week 44/45 2023
 
 **Tagion HEAD record**
 The tagion HEAD name record stores all the global statistics about the current network in the DART.
@@ -220,7 +328,7 @@ The CI flow now runs in several steps, so we have better error reporting when an
 The worflows times out when a job hangs. And it always produces an artifact so we can inspect the errors.
 
 
-# Changelog for week 43/44
+# Changelog for week 43/44 2023
 **Malformed Contract scenarios**
 We have implemented various scenarios where the user tries to send an invalid contract. This could be where some fields of the contract are missing. Or when it comes to transactions, the user could send an input that is not a bill, among many others.
 
@@ -231,7 +339,7 @@ We have integrated a faucet functionality into the test version of the shell, al
 We have updated our library from the secp256k1 library located in bitcoin core to https://github.com/BlockstreamResearch/secp256k1-zkp. The reason why we have made this change, is because we want to support multisig for various parts, and this is a functionality that is good to get into the system before it is running in its final state because it is very difficult to update. We have therefore started to implement schnorr signatures for signing.
 
 
-# Changelog for week 42/43
+# Changelog for week 42/43 2023
 **Shell Client**
 We have commited a WebClient with TLS support. See [github.com/tagion/nng](http://github.com/tagion/nng) test example test_11_webclient.d. This makes for a very small and easy to use webclient for our CLI wallet among other places. Currently only synchronous GET and POST methods are available.
 
@@ -239,20 +347,24 @@ We have commited a WebClient with TLS support. See [github.com/tagion/nng](http:
 We have refactored the way HiBONRecord labels are defined so that it is easier to understand. See the following example:
 
 Now we can do the following:
-```struct Test {
+```D
+struct Test {
   @exclude int x;
   @optional Document d;
 
   mixin HiBONRecord;
-}```
+}
+```
 
 Instead of:
-```struct Test {
+```D
+struct Test {
   @label("") int x;
   @label(VOID, true) Document d;
 
   mixin HiBONRecord;
-}```
+}
+```
 **SecureNet Services bug**
 We ran into a problem where our securenet would sometimes return that the signature was not valid event though it was. This only happened when running multithreaded and doing it a lot concurrently. The problem was that due to secp256k1 not being thread safe, we were using the same context for all the threads, which of course is not good. Therefore we now pass a shared net down to all services, where each creates its own context. Also services that do not perform any signing by themselves, but purely check signatures like the HiRPC-verifier now create their own SecureNet.
 
@@ -260,7 +372,7 @@ We ran into a problem where our securenet would sometimes return that the signat
 We have implemented the functionality for sending the signed bullseye around after a DARTModify. The reason for doing this is in order to check that all nodes have the same excact state. If more than 1/3 of the nodes do not agree then they will perform a roll-back of the epoch.
 
 
-# Changelog for week 41/42
+# Changelog for week 41/42 2023
 **Shell with HTTP proxy**
 The shell has been updated to use our NNG http proxy now so that it is possible to send a transaction through with http. 
 
@@ -280,7 +392,7 @@ The epoch creator has been updated to use true randomness making the communicati
 We only support the shortest form to write numbers with LEB128 in order to make HiBON truly hash invariant. In order to achieve this we have to make sure that the LEB128 number is always represented in the shortest way possible. The number 0x80 and 0x00 are ex. both equal to 0x00.
 
 
-# Changelog for week 40/41
+# Changelog for week 40/41 2023
 **NNG http proxy**
 We have created a wrapper on NNG allowing us to create http-endpoint wrappers which can use underlying nng sockets. This is very smart, and you can now start a webserver by doing the following.
 ```
@@ -308,7 +420,7 @@ This allows you to interact with HiBON in node-js. An example of a use case is p
 ```
 We are very excited about this because it will make it easier to use HiBON for all other developers.  
 
-# Changelog for week 39/40
+# Changelog for week 39/40 2023
 **Merging new services**
 The following week was spent gluing the last parts of our new service infrastructure together and further testing of the different components. We can now say that all our different services are communicating with each other and running. This means that refactoring of the service layer is mostly finished now and we are even able to send tagions through the new system.
 
@@ -324,7 +436,7 @@ We have updated our implementation of BIP39 mnemonic seed phrases to use pkbdf2 
 We did though find the standard implementation of BIP39 to be a bit weird in the sense that it does not use the index of the words in the words list for creating the hash but rather all the words?!. Using the words provides no benefits other than making the implementation more language indenpendent.
 Though instead of diverging from the standard we have now implemented it according to the standard as well.
 
-# Changelog for week 38/39
+# Changelog for week 38/39 2023
 **Replicator Service**
 The replicator service is finished. This service is responsible for saving a chain of the added and removed archives in the DART. This is both used for replaying the DART in case the nodes cannot reach consensus, and for a backup of the database allowing the node to recover from fatal catastrophes.
 **Recorder Chain**
@@ -342,7 +454,7 @@ You can take a look at the public repo here: https://github.com/tagion/npm-hibon
 **dartCrud check archives**
 We have implemented a new dartCRUD command that can be sent with HiRPC. This command works just like dartRead but instead of returning all the archives it returns a list of all the DARTIndexes that were not found in the database. This is very useful for ex. checking if the bills in the DART are still present seen from a wallet perspective. 
 
-# Changelog for week 37/38
+# Changelog for week 37/38 2023
 
 **Transcript Service**
 The transcript service that is responsible for producing a Recorder for the DART ensuring correct inputs and outputs archives is finished but needs further testing when some of the other components come into play as well.
@@ -360,7 +472,7 @@ The monitor has been integrated into the new epoch creator which allows us to se
 The hashgraph's ordering has been updated to use a new ordering mechanism that uses something we have decided to call pseudotime. We will be posting more about this in the upcoming future.
 
 
-# Changelog for week 36/37
+# Changelog for week 36/37 2023
 
 **Hashgraph**
 Event round uses higher function in order to avoid underflow when comparing mother & father rounds.
@@ -398,7 +510,7 @@ The code for the old transaction mechanism has been seperated and moved in to th
 
 
 
-# Changelog for week 34/35
+# Changelog for week 34/35 2023
 
 **NNG**
 We have implemented the worker pool capability for REQ-REP socket in NNG. A worker pool allows us to handle incoming requests concurrently and efficiently.
@@ -417,7 +529,7 @@ The HashGraph implementation is done. This means the Hashgraph testing, re-defin
 
 
 
-# Changelog for week 33/34
+# Changelog for week 33/34 2023
 
 **NNG**
 We've completed the implementation of asynchronous calls in NNG -Aio, which enhances our system's responsiveness with non-blocking IO capabilities. The integration of NNG into our services has begun, starting with the inputvalidator.
@@ -433,7 +545,7 @@ We've improved epoch flexibility in the Hashgraph, aligning with last week's adj
 
 
 
-# Changelog for week 34/35
+# Changelog for week 34/35 2023
 
 **NNG**
 We have implemented the worker pool capability for REQ-REP socket in NNG. A worker pool allows us to handle incoming requests concurrently and efficiently.

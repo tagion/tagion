@@ -3,6 +3,7 @@ module tagion.crypto.secp256k1.c.secp256k1;
 extern (C):
 nothrow:
 @nogc:
+pure:
 
 /** Unless explicitly stated all pointer arguments must not be NULL.
  *

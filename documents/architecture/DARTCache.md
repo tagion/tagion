@@ -1,3 +1,4 @@
+
 # Methods
 The DART accepts the following hirpc methods from the shell to be send to it. 
 
@@ -48,7 +49,7 @@ The cache logic is as follows.
 
 Check the cache if the any bills pubkeys match the bills in cache pubkeys that are of `Archive.Type.ADD`. For the pubkeys who could not be found in the cache ask the dart with the same request removing the pubkeys that were found in the cache.
 
-## HiRPC.checRead
+## HiRPC.checkRead
 ```json
 {
     "$@": "HiRPC",

@@ -14,6 +14,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
 import tagion.logger.LogRecords;
 import tagion.logger.Logger;
+import tagion.logger.writer;
 import tagion.utils.Term;
 
 private {
@@ -29,7 +30,7 @@ enum LogType {
 
 struct LoggerServiceOptions {
     LogType log_type = LogType.Console;
-    string file; // Default is stdout
+    string file = "/dev/stdout";
 }
 
 /**
@@ -45,9 +46,9 @@ struct LoggerService {
             const _RESET = (color is string.init) ? "" : RESET;
             final switch (options.log_type) {
             case LogType.Console:
-                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, color, level, _RESET, task_name, text);
+                return format!LOG_FORMAT(Clock.currTime().toTimeSpec.tv_sec, color, level, _RESET, task_name, text);
             case LogType.File:
-                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
+                return format!LOG_FORMAT(Clock.currTime().toTimeSpec.tv_sec, "", level, "", task_name, text);
             }
         }
 
@@ -66,7 +67,11 @@ struct LoggerService {
     }
 
     void task() {
-        File file;
+        version (LogWriter)
+            LogWriter writer = LogWriter(options.file);
+        else {
+            File file;
+        }
 
         /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
          *      @param info - log info about passed log
@@ -75,18 +80,27 @@ struct LoggerService {
         void receiveLogs(immutable(LogInfo) info, immutable(Document) doc) {
             enum _msg = GetLabel!(TextLog.message).name;
             if (info.isTextLog && doc.hasMember(_msg)) {
-                const output = formatLog(info.level, info.task_name, doc[_msg].get!string);
-                if (!file.error) {
-                    file.writeln(output);
+                version (LogWriter) {
+                    writer.write(info, doc[_msg].get!string);
+                }
+                else {
+                    const output = formatLog(info.level, info.task_name, doc[_msg].get!string);
+                    if (!file.error) {
+                        file.writeln(output);
+                    }
                 }
             }
         }
 
-        if (options.file !is string.init) {
-            file = File(options.file, "w");
+        version (LogWriter) {
         }
         else {
-            file = (() @trusted => stdout())();
+            if (options.file !is string.init && options.file != "/dev/stdout") {
+                file = File(options.file, "w");
+            }
+            else {
+                file = (() @trusted => stdout())();
+            }
         }
 
         run(&receiveLogs);

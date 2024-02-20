@@ -7,12 +7,12 @@ env:
   TARGET: x86_64-linux
   STAGE: commit
   DC: dmd
-  CD_PARALLEL: 2
   RETENTION_DAYS_BINS: 3
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
   GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
   ARTIFACT_DIR: /mnt/nfs/artifacts/${{ github.sha }}-${{ github.run_attempt }}
+  ACCEPTANCE_STAGE_CORES: 7
 
 permissions:
   contents: read
@@ -20,6 +20,21 @@ permissions:
   id-token: write
 
 jobs:
+  dscanner-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    continue-on-error: true
+    steps:
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+      - uses: actions/checkout@v4
+      - run: |
+          for i in `find src/* -maxdepth 0 -type d | grep -v "lib-nngd"`; do
+            echo "Checking $i"
+            dub run dscanner -- $i --styleCheck -f "github" | grep --extended-regexp -v "undocumented|style_check|long_line_check" || echo false
+          done
+
   build:
     runs-on: CI
     timeout-minutes: 5
@@ -42,8 +57,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          trunk=$(find build/${{ env.TARGET }}//bin -type f -not -name "*.o" -not -path "*/cov/*")
-          cp -r --parents $trunk ${{ env.ARTIFACT_DIR }}
+          make trunk
+          cp -r build/trunk/. ${{ env.ARTIFACT_DIR }}
 
           make clean
 
@@ -71,19 +86,65 @@ jobs:
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload code coverage results
-        run: |
-          cp logs/${{env.TARGET}}/cov/* .      
-          bash <(curl -s https://codecov.io/bash) -F unittest -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
-          rm -- *.lst
+        if: ${{ vars.ENABLE_COV || false }}
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./logs/${{ env.TARGET }}/cov/
+          fail_ci_if_error: true
+          flags: unittest
+          verbose: true
 
       - name: Post run
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/* build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
+
+  commit_stage_cov:
+    if: ${{ vars.ENABLE_COV || false }}
+    runs-on: CI
+    timeout-minutes: 5
+
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+
+      - name: pull
+        run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore . 
+
+      - name: Run commit stage tests
+        run: |
+          export DC=${{ env.DC }}
+          export TEST_STAGE=commit
+          export TESTBENCH_FLAGS=--silent 
+          export COV=1
+          make bddtest -j || make proper bddtest
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./logs/${{ env.TARGET }}/bdd/commit/cov/
+          fail_ci_if_error: true
+          flags: commit
+          verbose: true
+
+      - name: Post run
+        if: always()
+        run: |
+          make clean
+          rm -r *.callstack build logs/ || echo "no logs"
+          rm -- *.lst
+
 
   commit_stage:
     runs-on: CI
@@ -121,24 +182,22 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          make ci-files
-          trunk=$(find build/${{ env.TARGET }}/bin -type f -not -name "*.o" -not -path "*/cov/*")
-          stacks=$(find -name "*.callstack")
-          cp -r --parents logs/ $trunk $stacks ${{ env.ARTIFACT_DIR }}
+          make trunk
+          cp -r build/trunk/* ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
 
   acceptance_stage:
     runs-on: CD
-    timeout-minutes: 10
+    timeout-minutes: 12
     needs: [commit_stage, unittest, build]
 
     steps:
       - name: Copy Artifact to local machine
         run: |
           find . -mindepth 1 -delete
-          cp -r ${{ env.ARTIFACT_DIR }}/build .
+          cp -r ${{ env.ARTIFACT_DIR }}/. .
 
       - name: Run collider tests
         run: |
@@ -150,7 +209,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json
+          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j${{ env.ACCEPTANCE_STAGE_CORES }} -b build/${{ env.TARGET }}/bin/testbench
 
       - name: Generate reports
         if: always()
@@ -166,8 +225,27 @@ jobs:
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
           stacks=$(find -name "*.callstack")
-          cp -r --parents logs/ $stacks ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/* $stacks ${{ env.ARTIFACT_DIR }}
           find . -mindepth 1 -delete
+
+  docker_build:
+    runs-on: ubuntu-latest
+    if: success()
+    needs: [commit_stage]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v22
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - run: nix build .#dockerImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tagion_docker
+          path: result
+          if-no-files-found: error
 
   add_logs:
     runs-on: CI
@@ -230,7 +308,7 @@ jobs:
           artifact=${{ github.sha }}-${{ github.run_attempt }}
           tar czf $artifact.tar.gz --directory=$artifact/ .
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: successful_artifact
           path: ${{ env.ARTIFACT_DIR }}.tar.gz
@@ -268,15 +346,15 @@ jobs:
 
       - name: Build
         run: |
-          export PATH="tools/ldc2-1.34.0-linux-x86_64/bin:$PATH"
+          export PATH="tools/ldc2-1.35.0-linux-x86_64/bin:$PATH"
           make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
           file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: libmobile
-          path: ./build/*/lib/libmobile.so
+          name: ${{ matrix.arch }}-linux-android
+          path: build/*/lib/libmobile.so
           if-no-files-found: error
 
       - name: Cleanup
@@ -291,7 +369,7 @@ jobs:
         target: [apple-ios, apple-ios-simulator]
     runs-on: macOS
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/ios
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
@@ -303,12 +381,12 @@ jobs:
       url: https://docs.tagion.org
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/configure-pages@v3
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v4
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: "."
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4

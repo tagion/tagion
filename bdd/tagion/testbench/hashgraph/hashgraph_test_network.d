@@ -105,11 +105,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         MAX = 150
     }
 
-    static const(SecureNet) verify_net;
-    static this() {
-        verify_net = new StdSecureNet();
-    }
-
     Pubkey current;
 
     alias ChannelQueue = Queue!Document;

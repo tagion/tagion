@@ -47,18 +47,13 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-
-
-
-
-
 @safe @Scenario("network running with genesis block and epoch chain.",
         [])
 class NetworkRunningWithGenesisBlockAndEpochChain {
     bool epoch_on_startup;
     long start_epoch;
     RecordFactory record_factory;
-    Options[] opts;
+    const(Options)[] opts;
     ActorHandle[] handles;
     HashNet net = new StdHashNet;
     StdSecureWallet wallet1;
@@ -75,7 +70,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
     }
     History[string] histories;
 
-    this(Options[] opts, ref StdSecureWallet wallet1, const(GenesisEpoch) genesis_epoch) {
+    this(const(Options)[] opts, ref StdSecureWallet wallet1, const(GenesisEpoch) genesis_epoch) {
         this.opts = opts;
         record_factory = RecordFactory(net);
         this.wallet1 = wallet1;
@@ -106,7 +101,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
         int start = 0;
         while(start < max) {
             if (start == 20) {
-                sendSubmitHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1.net);
+                sendSubmitHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
             }
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             log("received something");

@@ -3,30 +3,37 @@ module tagion.gossip.NNGGossipNet;
 import std.random;
 import nngd;
 
-import tagion.gossip.InterfaceNet;
+import tagion.actor;
+import tagion.basic.Types;
 import tagion.crypto.Types;
-import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
+import tagion.gossip.InterfaceNet;
+import tagion.logger;
+import tagion.services.messages;
+import tagion.utils.StdTime;
 
 @safe
 class NNGGossipNet : GossipNet {
     private string[Pubkey] addresses;
     private Pubkey[] _pkeys;
     immutable(Pubkey) mypk;
-    Random random;
-    NNGSocket sock;
+    private Random random;
+    private ActorHandle nodeinterface;
 
-    this(const Pubkey mypk) @trusted {
+    this(const Pubkey mypk, ActorHandle nodeinterface) {
+        this.nodeinterface = nodeinterface;
         this.random = Random(unpredictableSeed);
         this.mypk = mypk;
-        this.sock = NNGSocket(nng_socket_type.NNG_SOCKET_BUS);
     }
 
     void add_channel(const Pubkey channel) {
         import tagion.gossip.AddressBook : addressbook;
 
-        const address = addressbook.getAddress(channel);
+        if (channel == mypk) {
+            return;
+        }
 
+        const address = addressbook[channel].get.address;
         _pkeys ~= channel;
         addresses[channel] = address;
     }
@@ -39,13 +46,14 @@ class NNGGossipNet : GossipNet {
         addresses.remove(channel);
     }
 
-    void close() @trusted {
-        sock.close;
+    void close() {
     }
 
     @property
-    const(sdt_t) time() pure const nothrow {
-        return sdt_t(0);
+    const(sdt_t) time() const nothrow {
+        import std.exception : assumeWontThrow;
+
+        return assumeWontThrow(currentTime());
     }
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
@@ -53,12 +61,12 @@ class NNGGossipNet : GossipNet {
     }
 
     const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+        assert(_pkeys.length > 1);
         Pubkey send_channel;
-
         do {
             send_channel = choice(_pkeys, random);
         }
-        while (send_channel !is mypk && channel_filter);
+        while (!channel_filter(send_channel));
 
         return send_channel;
     }
@@ -67,18 +75,17 @@ class NNGGossipNet : GossipNet {
             const(ChannelFilter) channel_filter,
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
+        version (EPOCH_LOG) {
+            log.trace("Selected channel: %s", send_channel.encodeBase64);
+        }
         if (send_channel.length) {
             send(send_channel, sender());
         }
         return send_channel;
     }
 
-    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        // TODO encrypt
-        // TODO: retry dial?
-        sock.dial(addresses[channel]);
-        sock.send(sender.toDoc.serialize, true);
+        nodeinterface.send(NodeSend(), channel, sender.toDoc);
     }
 
     void start_listening() {

@@ -14,7 +14,7 @@ A node consist of the following services.
 	- [Transcript](/documents/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
 	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
-	- DART Interface handles outsite read requests to the dart
+	- [DART Interface](/documents/architecture/DartInterface.md) handles outside read requests to the dart
     - [TRT](/documents/architecture/TRT.md) "Transaction reverse table" stores a copy of the owner to bill relationship.
 	- [Replicator](/documents/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 	- [Node Interface](/documents/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
@@ -24,9 +24,26 @@ A node consist of the following services.
 	- [Logger Subscription](/documents/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	- [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
+## Connection types
+By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
+The socket address, and thereby the visibillity can be changed in the tagionwave config file.
+
+
+| [Input Validator](/documents/architecture/InputValidator.md) | [Dart Interface](/documents/architecture/DartInterface.md) | [Subscription](/documents/architecture/LoggerSubscription.md) | [Node Interface](/documents/architecture/NodeInterface.md) |
+| -                                                            | -                                                          | -                                                             | -                                                          |
+| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
+| **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
+| "submit"                                                     | "search"                                                   | "log"                                                         |
+|                                                              | "dartCheckRead"                                            |
+|                                                              | "dartRead"                                                 |
+|                                                              | "dartRim"                                                  |
+|                                                              | "dartBullseye"                                             |
+| **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
+| REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
+
 
 ## Data Message flow
-This graph show the primary data message flow in the network.
+This graph show the primary data message flow in the node.
 
 ```graphviz
 digraph Message_flow {
@@ -34,7 +51,8 @@ digraph Message_flow {
   labelangle=35;
   node [style=filled]
   node [ shape = "rect"];
-  Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" style=filled fillcolor=green ]
+  Input [href="#/documents/architecture/InputValidator.md" label="Input Validator" style=filled fillcolor=green ]
+  DartInterface [href="#/documents/architecture/DartInterface.md" label="Dart Interface"]
   DART [href="#/documents/architecture/DART.md" shape = cylinder];
   P2P [ style=filled fillcolor=red]
   HiRPCVerifier [href="#/documents/architecture/HiRPCVerifier.md"  label="HiRPC\nVerifier"]
@@ -42,6 +60,7 @@ digraph Message_flow {
   Transcript [href="#/documents/architecture/Transcript.md" shape = note]
   EpochCreator [href="#/documents/architecture/EpochCreator.md" label="Epoch\nCreator"]
   TVM [href="#/documents/architecture/TVM.md"]
+  TRT [href="#/documents/architecture/TRT.md"];
 
   Input -> HiRPCVerifier [label="HiRPC" color=green];
   Collector [href="#/documents/architecture/Collector.md"]

@@ -2,15 +2,17 @@
 module tagion.logger.Logger;
 
 import core.sys.posix.pthread;
-import syslog = core.sys.posix.syslog;
 import std.format;
 import std.string;
+import std.stdio;
+
 import tagion.basic.Types : Control;
 import tagion.basic.Version : ver;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.logger.LogRecords;
+import tagion.logger.writer;
 import tagion.utils.pretend_safe_concurrency;
 
 /// Is a but mask for the logger
@@ -38,7 +40,6 @@ static struct Logger {
         uint[] masks; /// Logger mask stack
         __gshared string logger_task_name; /// Logger task name
         __gshared Tid logger_subscription_tid;
-
     }
 
     /// Get task_name
@@ -90,9 +91,7 @@ is ready and has been started correctly
 */
     @trusted @nogc
     void set_logger_task(string logger_task_name) nothrow
-    in {
-        assert(this.logger_task_name.length == 0);
-    }
+    in (this.logger_task_name.length == 0, "Logger task name is already set")
     do {
         this.logger_task_name = logger_task_name;
     }
@@ -144,49 +143,80 @@ is ready and has been started correctly
     /**
     Reports the text to the logger with the level LogLevel
     */
-    @trusted
-    void report(const LogLevel level, lazy scope string text) const nothrow {
-        version (unittest)
-            return;
-        if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
-            import std.conv : to;
+    version (LogWriter) {
+        void report(const LogLevel level, lazy scope string text) const nothrow {
             import std.exception : assumeWontThrow;
 
-            if (level & LogLevel.STDERR) {
-                import core.stdc.stdio;
+            version (unittest)
+                return;
+            if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
+                immutable info = LogInfo(task_name, level);
 
-                scope const _level = assumeWontThrow(level.to!string);
-                scope const _text = toStringz(assumeWontThrow(text));
-                stderr.fprintf("%.*s:%.*s: %s\n",
-                        cast(int) _task_name.length, _task_name.ptr,
-                        cast(int) _level.length, _level.ptr,
-                        _text);
-            }
-
-            if (!isLoggerServiceRegistered) {
-                import core.stdc.stdio;
-
-                scope const _level = assumeWontThrow(level.to!string);
-                scope const _text = toStringz(assumeWontThrow(text));
-                if (_task_name.length > 0) {
-                    // printf("ERROR: Logger not register for '%.*s'\n", cast(int) _task_name.length, _task_name
-                    //         .ptr);
+                if (isLoggerServiceRegistered) {
+                    try {
+                        immutable textlog = TextLog(text);
+                        logger_tid.send(info, textlog.toDoc);
+                    }
+                    catch (Exception e) {
+                        LogWriter.stdoutwrite(info, assumeWontThrow(text));
+                        LogWriter.stdoutwrite(info, e.message);
+                    }
                 }
-                printf("%.*s:%.*s: %s\n",
-                        cast(int) _task_name.length, _task_name.ptr,
-                        cast(int) _level.length, _level.ptr,
-                        _text);
-            }
-            else {
-                try {
-                    immutable info = LogInfo(task_name, level);
-                    immutable doc = TextLog(text).toDoc;
-                    logger_tid.send(info, doc);
+                else {
+                    LogWriter.stdoutwrite(info, assumeWontThrow(text));
                 }
-                catch (Exception e) {
-                    import std.stdio;
+            }
+            return;
+        }
+    }
+    else {
+        void report(const LogLevel level, lazy scope string text) const nothrow @trusted {
+            import std.exception : assumeWontThrow;
 
-                    assumeWontThrow({ stderr.writefln("\t%s:%s: %s", task_name, level, text); stderr.writefln("%s", e); }());
+            version (unittest)
+                return;
+            if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
+                import std.conv : to;
+
+                if (level & LogLevel.STDERR) {
+                    import core.stdc.stdio;
+
+                    scope const _level = assumeWontThrow(level.to!string);
+                    scope const _text = toStringz(assumeWontThrow(text));
+                    stderr.fprintf("%.*s:%.*s: %s\n",
+                            cast(int) _task_name.length, _task_name.ptr,
+                            cast(int) _level.length, _level.ptr,
+                            _text);
+                }
+
+                if (!isLoggerServiceRegistered) {
+                    import core.stdc.stdio;
+
+                    scope const _level = assumeWontThrow(level.to!string);
+                    scope const _text = toStringz(assumeWontThrow(text));
+                    if (_task_name.length > 0) {
+                        // printf("ERROR: Logger not register for '%.*s'\n", cast(int) _task_name.length, _task_name
+                        //         .ptr);
+                    }
+                    printf("%.*s:%.*s: %s\n",
+                            cast(int) _task_name.length, _task_name.ptr,
+                            cast(int) _level.length, _level.ptr,
+                            _text);
+                }
+                else {
+                    try {
+                        immutable info = LogInfo(task_name, level);
+                        immutable doc = TextLog(text).toDoc;
+                        logger_tid.send(info, doc);
+                    }
+                    catch (Exception e) {
+                        import std.stdio;
+
+                        assumeWontThrow({
+                            stderr.writefln("\t%s:%s: %s", task_name, level, text);
+                            stderr.writefln("%s", e);
+                        }());
+                    }
                 }
             }
         }
@@ -194,7 +224,7 @@ is ready and has been started correctly
 
     /// Conditional subscription logging
     @trusted
-    void report(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
+    void event(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
         // report(LogLevel.INFO, "%s|%s| %s", topic.name, identifier, data.toPretty);
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
@@ -213,32 +243,8 @@ is ready and has been started correctly
         }
     }
 
-    void opCall(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
-        report(topic, identifier, data);
-    }
-
-    void opCall(T)(Topic topic, lazy string identifier, lazy T data) const nothrow if (isHiBONRecord!T) {
-        report(topic, identifier, data.toDoc);
-    }
-
-    void opCall(Topic topic, lazy string identifier) const nothrow {
-        report(topic, identifier, Document.init);
-    }
-
-    import std.traits : isBasicType;
-
-    void opCall(T)(Topic topic, lazy string identifier, lazy T data) const nothrow if (isBasicType!T && !is(T : void)) {
-        import tagion.hibon.HiBON;
-
-        if (topic.subscribed && log.isLoggerSubRegistered) {
-            try {
-                auto hibon = new HiBON;
-                hibon["data"] = data;
-                report(topic, identifier, Document(hibon));
-            }
-            catch (Exception e) {
-            }
-        }
+    void event(T)(Topic topic, lazy string identifier, lazy T data) const nothrow if (isHiBONRecord!T) {
+        event(topic, identifier, data.toDoc);
     }
 
     /**
@@ -251,7 +257,7 @@ is ready and has been started correctly
 
     /**
     logs the text to in INFO level
-*/
+    */
     void opCall(lazy string text) const nothrow {
         report(LogLevel.INFO, text);
     }
@@ -400,11 +406,11 @@ unittest {
     register("log_sub_task", thisTid);
     log.registerSubscriptionTask("log_sub_task");
     auto some_symbol = Document.init;
-    log(topic, "", some_symbol);
+    log.event(topic, "", some_symbol);
     assert(false == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Received an unsubscribed topic");
     submask.subscribe(topic.name);
     assert(topic.subscribed, "Topic wasn't subscribed, it should");
-    log(topic, "", some_symbol);
+    log.event(topic, "", some_symbol);
     assert(true == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Didn't receive subscribed topic");
 }
 

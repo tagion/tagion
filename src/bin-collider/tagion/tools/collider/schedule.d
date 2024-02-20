@@ -74,10 +74,10 @@ struct ScheduleRunner {
     this(
             ref Schedule schedule,
             const(string[]) stages,
-    const uint jobs,
-    const BehaviourOptions opts,
-    const bool cov_enable,
-    ScheduleTrace report = null) pure nothrow
+            const uint jobs,
+            const BehaviourOptions opts,
+            const bool cov_enable,
+            ScheduleTrace report = null) pure nothrow
     in (jobs > 0)
     in (stages.length > 0)
     do {
@@ -172,8 +172,8 @@ struct ScheduleRunner {
                 const ptrdiff_t job_index,
                 const SysTime time,
                 const(char[][]) cmd,
-        const(string) log_filename,
-        const(string[string]) env) {
+                const(string) log_filename,
+                const(string[string]) env) {
             static uint job_count;
             scope (exit) {
                 job_count++;
@@ -194,7 +194,10 @@ struct ScheduleRunner {
                     pid = spawnProcess(cmd, _stdin, fout, fout, env);
                 }
                 else {
-                    const cov_path = buildPath(environment.get(BDD_LOG, "logs"), "cov").relativePath;
+                    import std.conv;
+
+                    const cov_path
+                        = buildPath(environment.get(BDD_LOG, "logs"), "cov", job_index.to!string).relativePath;
                     const cov_flags = format(" --DRT-covopt=\"dstpath:%s merge:1\"", cov_path);
                     mkdirRecurse(cov_path);
                     // For some reason the drt cov flags don't work when spawned as a process 
@@ -248,7 +251,7 @@ struct ScheduleRunner {
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                        schedule_list.front.name).setExtension("log");
+                                schedule_list.front.name).setExtension("log");
                         batch(job_index, time, cmd, log_filename, env);
                         schedule_list.popFront;
                     }

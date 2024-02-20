@@ -6,7 +6,6 @@ import std.container.array;
 import std.range;
 import std.traits;
 import std.typecons : Flag, No, Yes;
-import tagion.basic.Debug;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.dart.Recorder : Archive, Flip, GetType, Neutral, RecordFactory;
 
@@ -186,9 +185,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
          */
         private this(RimKeyRange rhs, const uint rim) {
             ctx = rhs.ctx;
-            if (rim + 1 > rhs.front.dart_index.length) {
-                __write("rim=%d  size=%d %(%02X %)", rim, rhs.front.dart_index.length, rhs.front.dart_index);
-            }
             rim_keys = (rhs.empty) ? Buffer.init : rhs.front.dart_index[0 .. rim + 1];
             this.rim = rim & int.max;
             undo = rhs.undo;

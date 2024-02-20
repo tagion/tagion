@@ -4,6 +4,9 @@ module tagion.testbench.services.hirpc_verifier;
 import core.time;
 import std.stdio;
 import std.typecons : Tuple;
+import std.algorithm;
+import std.range;
+
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.behaviour;
@@ -13,9 +16,12 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.services.hirpc_verifier;
 import tagion.services.messages;
+import tagion.services.codes;
 import tagion.testbench.actor.util;
 import tagion.testbench.tools.Environment;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
 
 enum feature = Feature(
             "HiRPCInterfaceService.",
@@ -67,8 +73,8 @@ class TheDocumentIsNotAHiRPC {
 
     @Then("the doc should be checked that it is a correct HiRPC and if it is not it should be rejected.")
     Document rejected() {
-        const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
-        check(receiveTuple[0] == RejectReason.notAHiRPC, "Did not reject for the correct reason");
+        const receiveTuple = receiveOnlyTimeout!(ServiceCode, Document);
+        check(receiveTuple[0] == ServiceCode.hirpc, "Did not reject for the correct reason");
         check(receiveTuple[1] == doc, "The rejected doc was not the same as was sent");
         return result_ok;
     }
@@ -78,6 +84,22 @@ class TheDocumentIsNotAHiRPC {
         return result_ok;
     }
 
+}
+
+SignedContract create_dummy_signed_contract() @safe {
+    import std.array;
+    import tagion.basic.Types : Buffer;
+    import tagion.crypto.Types;
+    import tagion.utils.StdTime;
+
+    Document[] in_bills;
+    in_bills ~= iota(0, 10).map!(_ => TagionBill(10.TGN, sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
+    immutable(TagionBill)[] out_bills;
+    out_bills ~= iota(0, 10).map!(_ => TagionBill(5.TGN, sdt_t.init, Pubkey.init, Buffer.init)).array;
+    auto contract = immutable(Contract)(null, null, PayScript(out_bills).toDoc);
+    SignedContract signed_contract = SignedContract(null, contract);
+
+    return signed_contract;
 }
 
 @safe @Scenario("Correct HiRPC format and permission.",
@@ -107,25 +129,12 @@ class CorrectHiRPCFormatAndPermission {
 
     @Given("a correctly formatted transaction.")
     Document transaction() {
-        import std.algorithm : map;
-        import std.array;
-        import std.range : iota;
-        import tagion.basic.Types : Buffer;
-        import tagion.crypto.Types;
-        import tagion.script.TagionCurrency;
-        import tagion.script.common;
-        import tagion.utils.StdTime;
 
         writeln(thisTid);
         check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
         check(hirpc_verifier_handle.tid !is Tid.init, "Contract thread is not running");
 
-        Document[] in_bills;
-        in_bills ~= iota(0, 10).map!(_ => TagionBill(10.TGN, sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
-        immutable(TagionBill)[] out_bills;
-        out_bills ~= iota(0, 10).map!(_ => TagionBill(5.TGN, sdt_t.init, Pubkey.init, Buffer.init)).array;
-        auto contract = immutable(Contract)(null, null, PayScript(out_bills).toDoc);
-        SignedContract signed_contract = SignedContract(null, contract);
+        auto signed_contract = create_dummy_signed_contract();
 
         const sender = hirpc.submit(signed_contract);
         doc = sender.toDoc;
@@ -178,7 +187,7 @@ class CorrectHiRPCWithPermissionDenied {
         hirpc_verifier_handle = _hirpc_verifier_handle;
         hirpc_verifier_success = _success; // The name of the service which successfull documents are sent to
         hirpc_verifier_reject = _reject; // The name of the service which rejected documents are sent to
-        bad_hirpc = HiRPC(new BadSecureNet("someLessObscurePassphrase"));
+        bad_hirpc = HiRPC(null);
     }
 
     Document invalid_doc;
@@ -186,9 +195,10 @@ class CorrectHiRPCWithPermissionDenied {
     Document incorrectPermission() {
         check(waitforChildren(Ctrl.ALIVE), "hirpc_verifierService never alived");
         check(hirpc_verifier_handle.tid !is Tid.init, "hirpc_verifier thread is not running");
-        auto params = new HiBON;
-        params["test"] = 42;
-        const invalid_sender = bad_hirpc.action(ContractMethods.submit, params);
+
+        auto signed_contract = create_dummy_signed_contract();
+
+        const invalid_sender = bad_hirpc.action(ContractMethods.submit, signed_contract);
         invalid_doc = invalid_sender.toDoc;
         hirpc_verifier_handle.send(inputDoc(), invalid_doc);
         return result_ok;
@@ -196,8 +206,9 @@ class CorrectHiRPCWithPermissionDenied {
 
     @When("do scenario \'#permission\'")
     Document scenarioPermission() {
-        const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
-        check(receiveTuple[0] == RejectReason.invalidType, "The docuemnt was not rejected for the correct reason");
+        const receiveTuple = receiveOnlyTimeout!(ServiceCode, Document);
+        check(receiveTuple[0] == ServiceCode.sign, "The docuemnt was not rejected for the expected reason : " ~ receiveTuple[0]
+                .toString);
         check(receiveTuple[1] == invalid_doc, "The rejected doc was not the same as was sent");
 
         return result_ok;
@@ -240,7 +251,7 @@ class HIRPCWithIllegalMethod {
 
     Document invalid_doc;
 
-    @Given("i send HiRPC receiver")
+    @Given("i send HiRPC submit with a non SignedContract Document")
     Document transaction() {
         import std.algorithm : map;
         import std.array;
@@ -255,19 +266,13 @@ class HIRPCWithIllegalMethod {
         check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
         check(hirpc_verifier_handle.tid !is Tid.init, "Contract thread is not running");
 
-        Document[] in_bills;
-        in_bills ~= iota(0, 10).map!(_ => TagionBill(10.TGN, sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
-        TagionBill[] out_bills;
-        out_bills ~= iota(0, 10).map!(_ => TagionBill(5.TGN, sdt_t.init, Pubkey.init, Buffer.init)).array;
-        auto contract = Contract(null, null, PayScript(out_bills).toDoc);
-        SignedContract signed_contract = SignedContract(null, contract);
-
+        const signed_contract = create_dummy_signed_contract();
         const sender = hirpc.submit(signed_contract);
 
-        HiRPC.Response message;
-        message.id = sender.method.id;
-        message.result = sender.toDoc;
-        const result = HiRPC.Sender(net, message);
+        HiBON hibon = new HiBON;
+        hibon["a"] = 42;
+
+        const result = hirpc.submit(hibon);
         invalid_doc = result.toDoc;
 
         hirpc_verifier_handle.send(inputDoc(), invalid_doc);
@@ -282,8 +287,9 @@ class HIRPCWithIllegalMethod {
                 (inputHiRPC _, HiRPC.Sender __) { check(false, "Should not have received a doc"); },
         );
 
-        const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
-        check(receiveTuple[0] == RejectReason.invalidType, "The docuemnt was not rejected for the correct reason");
+        const receiveTuple = receiveOnlyTimeout!(ServiceCode, Document);
+        check(receiveTuple[0] == ServiceCode.params, "The docuemnt was not rejected for the expected reason : " ~ receiveTuple[0]
+                .toString);
         check(receiveTuple[1] == invalid_doc, "The rejected doc was not the same as was sent");
 
         hirpc_verifier_handle.send(Sig.STOP);

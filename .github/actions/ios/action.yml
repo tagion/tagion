@@ -21,11 +21,11 @@ runs:
       run: |
         ! nm build/${{ inputs.platform }}/lib/libmobile.dylib | grep __dyld_get_image_slide
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: success()
       with:
-        name: libmobile
-        path: ./build/*/lib/libmobile.dylib
+        name: ${{ inputs.platform }}
+        path: build/*/lib/libmobile.dylib
         if-no-files-found: error
 
     - name: Cleanup

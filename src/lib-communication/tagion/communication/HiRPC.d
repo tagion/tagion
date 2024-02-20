@@ -27,6 +27,7 @@ class HiRPCException : HiBONException {
 /// UDA to make a RPC member
 enum HiRPCMethod;
 
+@safe
 private static string[] _Callers(T)() {
     import std.meta : ApplyRight, Filter;
     import std.traits : hasUDA, isCallable;
@@ -59,7 +60,18 @@ struct HiRPC {
     struct Method {
         @optional @(filter.Initialized) uint id; /// RPC identifier
         @optional @filter(q{!a.empty}) Document params; /// RPC arguments
-        @label("method") @(inspect.Initialized) string name; /// RPC method name
+        @label("method") @(inspect.Initialized) string full_name; /// RPC method name
+
+        string name() pure const nothrow {
+            import std.algorithm;
+            import std.range;
+
+            return assumeWontThrow(full_name.splitter('.').retro.front);
+        }
+
+        void name(string name) pure nothrow @nogc {
+            full_name = name;
+        }
 
         mixin HiBONRecord;
     }
@@ -149,7 +161,7 @@ struct HiRPC {
 
         enum messageName = GetLabel!(Sender.message).name;
         const message_doc = doc[messageName].get!Document;
-        if (message_doc.hasMember(GetLabel!(Method.name).name)) {
+        if (message_doc.hasMember(GetLabel!(Method.full_name).name)) {
             return Type.method;
         }
         if (message_doc.hasMember(GetLabel!(Response.result).name)) {
@@ -538,8 +550,9 @@ struct HiRPC {
     }
 }
 
+/// A good HiRPC result wih no additional data.
 @safe
-@recordType("OK")
+@recordType("OK") @disableSerialize
 struct ResultOk {
     mixin HiBONRecord!();
 }

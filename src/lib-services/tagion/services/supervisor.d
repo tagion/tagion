@@ -82,9 +82,7 @@ struct Supervisor {
 
         log("Supervisor stopping services");
         foreach (handle; handles) {
-            if (handle.state is Ctrl.ALIVE) {
-                handle.send(Sig.STOP);
-            }
+            handle.send(Sig.STOP);
         }
 
         (() @trusted { // NNG shoould be safe

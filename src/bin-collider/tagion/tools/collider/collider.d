@@ -271,7 +271,6 @@ int check_reports(string[] paths) {
 
     TraceCount feature_count;
     TraceCount scenario_count;
-    int result;
     foreach (path; paths) {
         foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth)
                 .filter!(f => f.isFile)) {

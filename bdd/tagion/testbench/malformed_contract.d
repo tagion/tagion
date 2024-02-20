@@ -16,6 +16,7 @@ import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
 import neuewelle = tagion.tools.neuewelle;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.wave.mode0;
 
 mixin Main!(_main);
 
@@ -97,10 +98,36 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
+    import tagion.tools.boot.genesis;
+    import tagion.script.common;
+    import tagion.hibon.Document;
+    import tagion.hibon.BigNumber;
+
+    auto node_opts = getMode0Options(local_options, monitor: false);
+
+    NodeSettings[] node_settings;
+    auto nodenets = dummy_nodenets_for_testing(node_opts);
+    foreach (opt, node_net; zip(node_opts, nodenets)) {
+        node_settings ~= NodeSettings(
+            opt.task_names.epoch_creator, // Name
+            node_net.pubkey,
+            opt.task_names.epoch_creator, // Address
+        );
+    }
+
+    const genesis = createGenesis(
+        node_settings,
+        Document(), 
+        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+    );
+
+    recorder.insert(genesis, Archive.Type.ADD);
+
     // put a random archive in that is not a bill.
 
     auto random_data = new HiBON;
-    random_data["wowo"] = "test";
+    import tagion.script.standardnames;
+    random_data[StdNames.owner] = wallets[1].net.pubkey;
 
     const random_doc = Document(random_data);
     recorder.insert(random_doc, Archive.Type.ADD);
@@ -136,23 +163,11 @@ int _main(string[] args) {
     }
 
     immutable neuewelle_args = [
-        "malformed_contract_test", config_file, "--nodeopts", module_path
+        "malformed_contract_test", config_file
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    import tagion.utils.JSONCommon : load;
-
-    Options[] node_opts;
-
-    Thread.sleep(5.seconds);
-    foreach (i; 0 .. local_options.wave.number_of_nodes) {
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(
-                FileExtension
-                .json));
-        writeln(filename);
-        Options node_opt = load!(Options)(filename);
-        node_opts ~= node_opt;
-    }
+    Thread.sleep(10.seconds);
 
     auto name = "malformed_testing";
     register(name, thisTid);
@@ -162,18 +177,12 @@ int _main(string[] args) {
 
     auto feature = automation!(malformed_contract);
     feature.ContractTypeWithoutCorrectInformation(node_opts[0], wallets[0]);
-    auto feature_context = feature.run;
-
-    bool epoch_on_startup = feature_context[0].epoch_on_startup;
-
-    feature.InputsAreNotBillsInDart(node_opts[1], wallets[1], random_doc, epoch_on_startup);
-    feature.NegativeAmountAndZeroAmountOnOutputBills(node_opts[2], wallets[2], epoch_on_startup);
-    feature.ContractWhereInputIsSmallerThanOutput(node_opts[3], wallets[3], epoch_on_startup);
+    feature.InputsAreNotBillsInDart(node_opts[1], wallets[1], random_doc);
+    feature.NegativeAmountAndZeroAmountOnOutputBills(node_opts[2], wallets[2]);
+    feature.ContractWhereInputIsSmallerThanOutput(node_opts[3], wallets[3]);
 
     feature.run;
-    Thread.sleep(15.seconds);
-
+    writefln("finished test execution");
     stopsignal.set;
-    Thread.sleep(6.seconds);
     return 0;
 }

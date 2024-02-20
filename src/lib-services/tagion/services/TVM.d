@@ -8,7 +8,6 @@ import core.time;
 import std.conv : to;
 import std.stdio;
 import tagion.actor.actor;
-import tagion.basic.Debug : __write;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
@@ -53,7 +52,7 @@ struct TVMService {
     void contract(signedContract, immutable(CollectedSignedContract)* collected) {
 
         if (!engine(collected)) {
-            log(tvm_error, ResponseError.UnsupportedScript.to!string, Document());
+            log.event(tvm_error, ResponseError.UnsupportedScript.to!string, Document());
             return;
         }
         log("sending pload to epoch creator");
@@ -67,7 +66,7 @@ struct TVMService {
     bool engine(immutable(CollectedSignedContract)* collected) {
         log("received signed contract");
         if (!collected.sign_contract.contract.script.isRecord!PayScript) {
-            log(tvm_error, ResponseError.UnsupportedScript.to!string);
+            log.event(tvm_error, ResponseError.UnsupportedScript.to!string, Document());
             return false;
         }
         // import std.algorithm;
@@ -76,7 +75,7 @@ struct TVMService {
         log("before sending to tvm");
         auto result = execute(collected);
         if (result.error) {
-            log(tvm_error, ResponseError.ExecutionError.to!string, Document());
+            log.event(tvm_error, ResponseError.ExecutionError.to!string, Document());
             log.trace("Execution error - %s", result.e.message);
             return false;
         }

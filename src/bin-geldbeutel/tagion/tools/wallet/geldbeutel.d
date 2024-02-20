@@ -66,6 +66,7 @@ int _main(string[] args) {
     bool pubkey_info;
     bool list;
     bool sum;
+    bool history;
     string _passphrase;
     string _salt;
     char[] passphrase;
@@ -116,9 +117,11 @@ int _main(string[] args) {
                 "req", "List all requested bills", &wallet_switch.request,
                 "update", "Request a wallet updated", &wallet_switch.update,
                 "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
+                "trt-read", "TEMPOARY: send trt pubkey read request", &wallet_switch.trt_read,
+                "history", "Request print the transaction history", &history,
 
                 "address", format(
-                    "Sets the address default: %s", options.contract_address),
+                "Sets the address default: %s", options.contract_address),
                 &options.addr,
                 "faucet", "request money from the faucet", &wallet_switch.faucet,
                 "bip39", "Generate bip39 set the number of words", &bip39,
@@ -136,16 +139,16 @@ int _main(string[] args) {
             //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] <config.json> <files>", program),
-                    "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <config.json> <files>", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
@@ -183,7 +186,7 @@ int _main(string[] args) {
             scope (exit) {
                 salt_tmp[] = 0;
             }
-            salt ~= WordList.presalt ~ _salt;
+            salt ~= BIP39.presalt ~ _salt;
         }
         if (bip39 > 0 || bip39_recover) {
             wallet_interface.load;
@@ -232,7 +235,7 @@ int _main(string[] args) {
                 good("Pin-codes matches");
             }
             if (!bip39_recover) {
-                const wordlist = WordList(words);
+                const wordlist = BIP39(words);
                 passphrase = wordlist.passphrase(bip39);
 
                 good("This is the recovery words");
@@ -287,6 +290,67 @@ int _main(string[] args) {
             wallet_interface.listInvoices(vout);
             sum = true;
         }
+        if (history) {
+            import std.range;
+            import std.datetime;
+            import tagion.utils.StdTime;
+            import std.conv;
+
+            auto hist = wallet_interface.secure_wallet.account.reverse_history();
+            const now = Clock.currTime();
+            const today = now.to!Date;
+            const yesterday = today - 1.days;
+
+            // The date of the previous bill
+            Date prev_day;
+
+            foreach (item; hist) {
+                const bill_time = SysTime(cast(long) item.bill.time);
+                const bill_day = bill_time.to!Date;
+                void print_date() {
+
+                    if (bill_day == prev_day) {
+                        return;
+                    }
+
+                    if (bill_day == today) {
+                        writeln("Today:");
+                    }
+                    else if (bill_day == yesterday) {
+                        writeln("Yesterday:");
+                    }
+                    else if (bill_day.month == today.month && bill_day.year == today.year) {
+                        writeln("This Month:");
+                    }
+                    else if (bill_day.month == today.month - 1 && bill_day.year == today.year) {
+                        writeln("Last Month:");
+                    }
+                    else if (bill_day.year == today.year) {
+                        writeln("This Year:");
+                    }
+                    else if (bill_day.year == today.year - 1) {
+                        writeln("Last Year:");
+                    }
+                }
+
+                print_date();
+                prev_day = bill_day;
+
+                final switch (item.type) {
+                case HistoryItemType.receive:
+                    writefln("(%s) %s%8s%s\n", item.balance, GREEN, item.bill.value, RESET);
+                    break;
+                case HistoryItemType.send:
+                    const BALANCE_COLOR = (item.status is ContractStatus.succeeded) ? RED : YELLOW;
+                    writefln("(%s) %s%8s%s (fee: %s) to %s\n", item.balance, BALANCE_COLOR, item.bill.value, RESET, item
+                            .fee, item.bill
+                            .owner.encodeBase64);
+                    break;
+                }
+            }
+            info_only = true;
+        }
+
         if (sum) {
             wallet_interface.sumAccount(vout);
             info_only = true;
@@ -295,6 +359,7 @@ int _main(string[] args) {
             return 0;
         }
 
+        // BUG: wallet asks for pin when no operations are specified
         if (create_account) {
             wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
             return 0;
@@ -325,8 +390,11 @@ int _main(string[] args) {
         foreach (file; args.filter!(file => file.hasExtension(FileExtension.hibon))) {
             check(file.exists, format("File %s not found", file));
 
-            const hirpc_response = file.fread!(HiRPC.Receiver).ifThrown!HiBONException(HiRPC.Receiver.init);
-            if (hirpc_response is HiRPC.Receiver.init) { continue; }
+            const hirpc_response = file.fread!(HiRPC.Receiver)
+                .ifThrown!HiBONException(HiRPC.Receiver.init);
+            if (hirpc_response is HiRPC.Receiver.init) {
+                continue;
+            }
             writefln("File %s %s", file, hirpc_response.toPretty);
             const ok = wallet_interface.secure_wallet.setResponseUpdateWallet(hirpc_response)
                 .ifThrown!HiBONException(

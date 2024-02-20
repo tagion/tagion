@@ -1,7 +1,7 @@
 /// Tagion DART actor service
 module tagion.services.DART;
 
-import std.algorithm : map, filter;
+import std.algorithm : map, filter, canFind;
 import std.array;
 import std.exception;
 import std.file;
@@ -28,8 +28,10 @@ import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
+import tagion.services.DARTInterface : accepted_dart_methods;
 
-@safe
+@safe:
+///
 struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
@@ -45,8 +47,21 @@ struct DARTOptions {
     mixin JSONCommon;
 }
 
-@safe
+/** 
+ * DART Service actor
+ * Responsible for interfacing with the DART. Handling reads and writes.
+ * Main function is the modify, which receives the updates to add from the TaskNames.Transcript actor.
+ * Sends: 
+ * (SendRecorder(), immutable(RecordFactory.Recorder, immutable(DARTIndex), immutable(long)) to TaskNames.Replicator 
+ * HiRPC Request-Respond requests:
+ * (dartHiRPCRR,doc) -> HiRPC.Result ( dartRim, dartBullseye, dartCheckRead, dartRim ))
+ * (dartCheckReadRR, immutable(DARTIndex)[]) -> (immutable(DARTIndex)[])
+ * (dartBullseyeRR) -> (Fingerprint)
+ * (dartReadRR, immutable(DARTIndex)[]) -> (immutable(RecordFactory.Recorder))
+ */
 struct DARTService {
+    static Topic recorder_created = Topic("recorder");
+
     void task(immutable(DARTOptions) opts,
             immutable(TaskNames) task_names,
             shared(StdSecureNet) shared_net,
@@ -77,6 +92,7 @@ struct DARTService {
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 
+        // Checks if archives are present in database and returns all archives that were not found
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
             log("after checkread response");
@@ -88,7 +104,10 @@ struct DARTService {
 
         auto hirpc = HiRPC(net);
 
+        // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead, search(if TRT is not enabled)
         void dartHiRPC(dartHiRPCRR req, Document doc) {
+            import tagion.services.codes;
+            import std.conv: to;
             import tagion.hibon.HiBONJSON;
 
             log("Received HiRPC request");
@@ -99,10 +118,12 @@ struct DARTService {
             }
 
             immutable receiver = hirpc.receive(doc);
-            if (!receiver.isMethod) {
-                log("dart hirpc request was not a method");
+            if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
+                log("unsupported request or method");
+                const err = hirpc.error(receiver, ServiceCode.method.toString, ServiceCode.method);
+                req.respond(err.toDoc);
                 return;
-            }
+            } 
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
@@ -118,19 +139,12 @@ struct DARTService {
                 req.respond(response);
                 return;
             }
-            if (!(receiver.method.name == DART.Queries.dartRead
-                    || receiver.method.name == DART.Queries.dartRim
-                    || receiver.method.name == DART.Queries.dartBullseye
-                    || receiver.method.name == DART.Queries.dartCheckRead)) {
-                log("unsupported request");
-                return;
-            }
-
             Document result = db(receiver, false).toDoc;
             log("darthirpc response: %s", result.toPretty);
             req.respond(result);
         }
 
+        // receives modify from transcript and sends the recorder onwards to the Replicator
         void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @trusted {
 
             log("Received modify request with length=%s", recorder.length);
@@ -145,6 +159,7 @@ struct DARTService {
 
                 req.respond(eye);
                 replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
+                log.event(recorder_created, "recorder", recorder.toDoc);
                 if (trt_enable) {
                     trt_handle.send(trtModify(), recorder);
                 }
