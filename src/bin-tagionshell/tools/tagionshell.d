@@ -1353,9 +1353,9 @@ appoint:
     app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/raw", &dart_handler_v2, ["POST"]);
     app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/read", &dart_handler_v2, ["POST"]);
     app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/checkread", &dart_handler_v2, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye", &dart_handler_v2, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye.json", &dart_handler_v2, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye.hibon", &dart_handler_v2, ["POST"]);
+    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye", &dart_handler_v2, ["GET"]);
+    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye.json", &dart_handler_v2, ["GET"]);
+    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye.hibon", &dart_handler_v2, ["GET"]);
     app.route(options.shell_api_prefix ~ options.i2p_endpoint, &i2p_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.selftest_endpoint ~ "/*", &selftest_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.version_endpoint, &versioninfo_handler, ["GET"]);
