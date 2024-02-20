@@ -7,6 +7,7 @@ import std.conv;
 import std.format;
 import std.stdio;
 import std.getopt;
+import std.range : empty;
 import tagion.basic.Types;
 import tagion.basic.Version;
 import tagion.hibon.Document;
@@ -113,13 +114,13 @@ int _main(string[] args) {
     string address = default_sub_opts.address;
     bool version_switch;
     string[] tags;
-    bool watch;
+    string outputfilename;
 
     auto main_args = getopt(args,
         "v|version", "Print revision information", &version_switch,
-        "address", "specify the address to subscribe to", &address,
-        "w|watch", "Watch logs", &watch,
-        "tag", "Which tags to subscribe to", &tags,
+        "o|output", "Output filename; if empty stdout is used", &outputfilename,
+        "address", "Specify the address to subscribe to", &address,
+        "tag", "Specify tags to subscribe to", &tags,
     );
 
     if (main_args.helpWanted) {
@@ -134,31 +135,39 @@ int _main(string[] args) {
         return 0;
     }
 
-    if (watch) {
-        NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-        sock.recvtimeout = msecs(1000);
-
-        if (tags.length == 0) {
-            stderr.writeln("No tags specified");
-            return 1;
+    File fout = stdout;
+    if (!outputfilename.empty) {
+        fout = File(outputfilename, "w");
+    }
+    scope (exit) {
+        if (fout !is stdout) {
+            fout.close;
         }
+    }
 
-        auto sub = Subscription(address, tags);
-        auto dialed = sub.dial;
-        if (dialed.error) {
-            stderr.writefln("Dial error: %s (%s)", dialed.e.message, address);
-            return 1;
+    NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+    sock.recvtimeout = msecs(1000);
+
+    if (tags.length == 0) {
+        stderr.writeln("No tags specified");
+        return 1;
+    }
+
+    auto sub = Subscription(address, tags);
+    auto dialed = sub.dial;
+    if (dialed.error) {
+        stderr.writefln("Dial error: %s (%s)", dialed.e.message, address);
+        return 1;
+    }
+    stderr.writefln("Listening on, %s", address);
+
+    while (true) {
+        auto result = sub.receive;
+        if (result.error) {
+            fout.writeln(result.e);
         }
-        stderr.writefln("Listening on, %s", address);
-
-        while (true) {
-            auto result = sub.receive;
-            if (result.error) {
-                stderr.writeln(result.e);
-            }
-            else {
-                writeln(result.get.toPretty);
-            }
+        else {
+            fout.writeln(result.get.toPretty);
         }
     }
     return 0;
