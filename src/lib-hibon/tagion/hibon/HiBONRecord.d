@@ -44,6 +44,16 @@ bool isRecord(T)(const Document doc) nothrow pure {
     }
 }
 
+/**
+    Get the record type name set by @recordType("name")
+*/
+string recordName(const Document doc) nothrow pure {
+    if (doc.hasMember(TYPENAME)) {
+        return assumeWontThrow(doc[TYPENAME].get!string);
+    }
+    return string.init;
+}
+
 bool hasHashKey(T)(T doc) if (is(T : const(HiBON)) || is(T : const(Document))) {
     return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH && doc.keys.front != STUB;
 }
@@ -146,7 +156,7 @@ template GetLabel(alias member) {
 }
 
 mixin template HiBONRecordType() {
-    import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
+    import std.traits;
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : TYPENAME, recordType;
 
@@ -160,14 +170,19 @@ mixin template HiBONRecordType() {
             import tagion.hibon.HiBONRecord : isRecordT = isRecord;
 
             alias isRecord = isRecordT!This;
-            version (none) static bool isRecord(const Document doc) nothrow {
-                if (doc.hasMember(TYPENAME)) {
-                    return doc[TYPENAME].get!string == type_name;
-                }
-                return false;
-            }
         }
     }
+
+    /**
+        Get the record type name set by @recordType("name")
+    */
+    static string recordName() @nogc pure nothrow {
+        static if (hasMember!(This, "type_name")) {
+            return type_name;
+        }
+        return string.init;
+    }
+
 }
 
 mixin template HiBONKeys() {
@@ -694,7 +709,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                else {
+                    else {
                         enum name = default_name;
                     }
                     static assert(name.length > 0,

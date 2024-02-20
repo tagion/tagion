@@ -7,6 +7,7 @@ module tagion.wave.common;
 
 import std.sumtype;
 import std.range;
+import std.algorithm;
 
 import tagion.basic.tagionexceptions;
 import tagion.hibon.Document;
@@ -17,8 +18,10 @@ import tagion.communication.HiRPC;
 import CRUD = tagion.dart.DARTcrud;
 import tagion.dart.DART;
 import tagion.dart.DARTBasic;
+import tagion.dart.Recorder;
 import tagion.script.common;
 import tagion.script.standardnames;
+import tagion.script.namerecords;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 
@@ -53,9 +56,94 @@ GenericEpoch getEpoch(const TagionHead head, DART db, const SecureNet net) {
 }
 
 // Get the public keys of the nodes which would be running the network
-Pubkey[] getNodeKeys(GenericEpoch epoch_head) {
+inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
     return epoch_head.match!(
-            (Epoch epoch) { return epoch.active; },
-            (GenesisEpoch epoch) { return epoch.nodes; }
+            (inout Epoch epoch) { return epoch.active; },
+            (inout GenesisEpoch epoch) { return epoch.nodes; }
     );
+}
+
+/// Read the Node names records and put them in the addressbook
+/// Sorts the keys
+immutable(NetworkNodeRecord)*[] readNNRFromDart(string dart_path, Pubkey[] keys, const SecureNet __net)
+in (equal(keys, keys.uniq), "Is trying to read duplicate node keys")
+do {
+    import tagion.gossip.AddressBook;
+    import tagion.services.exception;
+
+    Exception dart_exception;
+    DART db = new DART(__net, dart_path, dart_exception, Yes.read_only);
+    if (dart_exception !is null) {
+        throw dart_exception;
+    }
+    scope (exit) {
+        db.close;
+    }
+
+    const hirpc = HiRPC(__net);
+    auto nodekey_indices = keys.map!(k => __net.dartKey(StdNames.nodekey, k)).array;
+    // Sort keys according to the dartkey
+
+    const receiver = hirpc.receive(CRUD.dartRead(nodekey_indices, hirpc));
+    const response = db(receiver);
+    const recorder = db.recorder(response.result);
+
+    check(recorder.length == nodekey_indices.length, "One or more Network Node Records were not in the dart");
+
+    assert(equal(nodekey_indices, recorder[].map!(a => __net.dartIndex(a.filed))));
+
+    check(recorder[].each!(a => a.filed.isRecord!NetworkNodeRecord), "The read archives were not a NNR");
+
+    immutable(NetworkNodeRecord)*[] nnrs;
+    foreach(a; recorder[]) {
+        nnrs ~= new NetworkNodeRecord(a.filed);
+    }
+    return nnrs;
+}
+
+GenericEpoch getCurrentEpoch(string dart_file_path, SecureNet __net) {
+    import tagion.dart.DART;
+    import tagion.logger;
+
+    Exception dart_exception;
+    DART db = new DART(__net, dart_file_path, dart_exception, Yes.read_only);
+    if (dart_exception !is null) {
+        throw dart_exception;
+    }
+    scope (exit) {
+        db.close;
+    }
+
+    const head = getHead(db, __net);
+    log("Tagion head:\n%s", head.toPretty);
+    GenericEpoch epoch = head.getEpoch(db, __net);
+    epoch.match!(
+            (const Epoch e) { log("Current epoch:\n%s", e.toPretty); },
+            (const GenesisEpoch e) { log("GenesisEpoch epoch:\n%s", e.toPretty); },
+    );
+
+    return epoch;
+}
+
+immutable(NetworkNodeRecord)*[] readAddressFile(string address_file_name) @trusted {
+    import std.stdio;
+    import std.format;
+    import std.string;
+    import tagion.hibon.HiBONtoText;
+    import tagion.basic.Types;
+
+    immutable(NetworkNodeRecord)*[] nnrs;
+
+    auto address_file = File(address_file_name, "r");
+    foreach (line; address_file.byLine) {
+        auto pair = line.split();
+        check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
+        const pkey = Pubkey(pair[0].strip.decode);
+        check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
+        const addr = pair[1].strip;
+
+        nnrs ~= new NetworkNodeRecord(pkey, addr.idup);
+    }
+
+    return nnrs;
 }

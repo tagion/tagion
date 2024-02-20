@@ -107,7 +107,7 @@ struct TRTService {
         }
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
-            import tagion.services.DARTInterface : InterfaceError;
+            import tagion.services.codes;
             import std.conv : to;
             log("trt_read request");
             if (!doc.isRecord!(HiRPC.Sender)) {
@@ -118,7 +118,7 @@ struct TRTService {
 
             if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
                 log("received non valid HIRPC method");
-                const err = hirpc.error(receiver, InterfaceError.InvalidMethod.to!string, InterfaceError.InvalidMethod);
+                const err = hirpc.error(receiver, ServiceCode.method.toString, ServiceCode.method);
                 client_req.respond(err.toDoc);
                 return;
             }
@@ -130,8 +130,7 @@ struct TRTService {
                     import std.conv : to;
 
                     log("the owner doc was empty");
-                    const err = hirpc.error(receiver, InterfaceError
-                            .InvalidDoc.to!string, InterfaceError.InvalidDoc);
+                    const err = hirpc.error(receiver, ServiceCode.params.toString, ServiceCode.params);
                     client_req.respond(err.toDoc);
                     return;
                 }

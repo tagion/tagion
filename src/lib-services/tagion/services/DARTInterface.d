@@ -1,5 +1,8 @@
 /// Service which exposes dart reads over a socket
 module tagion.services.DARTInterface;
+ 
+@safe:
+
 import core.time;
 import core.thread;
 import nngd;
@@ -12,13 +15,11 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
 import tagion.services.messages;
+import tagion.services.codes;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
 import tagion.dart.DART;
-
-@safe:
-
 import tagion.utils.JSONCommon;
 
 struct DARTInterfaceOptions {
@@ -50,14 +51,6 @@ struct DartWorkerContext {
     string trt_task_name;
 }
 
-enum InterfaceError {
-    Timeout,
-    InvalidDoc,
-    DARTLocate,
-    TRTLocate,
-    InvalidMethod,
-}
-
 /// Accepted methods for the DART.
 static immutable accepted_dart_methods = [
     DART.Queries.dartRead, 
@@ -80,13 +73,13 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         msg.body_prepend(doc.serialize);
     }
 
-    void send_error(InterfaceError err_type, string extra_msg = "") @safe {
-        import std.conv;
+    void send_error(ServiceCode err_type, string extra_msg = "") @safe {
+        import tagion.services.codes;
         hirpc.Error message;
         message.code = err_type;
-        message.message = err_type.to!string ~ extra_msg;
+        message.message = err_type.toString ~ extra_msg;
         const sender = hirpc.Sender(null, message);
-        writefln("INTERFACE ERROR: %s", err_type.to!string ~ extra_msg);
+        log("INTERFACE ERROR: %s, %s", err_type.toString, extra_msg);
         send_doc(sender.toDoc);
     }
 
@@ -120,7 +113,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     msg.clear();
 
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        send_error(InterfaceError.InvalidDoc);
+        send_error(ServiceCode.hirpc);
         writeln("Non-valid request received");
         return;
     }
@@ -130,7 +123,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
     immutable receiver = empty_hirpc.receive(doc);
     if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
-        send_error(InterfaceError.InvalidDoc);
+        send_error(ServiceCode.method);
         return;
     }
 
@@ -138,7 +131,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     auto tid = is_trt_req ? locate(cnt.trt_task_name) : locate(cnt.dart_task_name);
 
     if (tid is Tid.init) {
-        send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
+        send_error(ServiceCode.internal, cnt.trt_task_name);
         return;
     }
     bool response;
@@ -150,7 +143,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
     }
     if (!response) {
-        send_error(InterfaceError.Timeout);
+        send_error(ServiceCode.timeout);
         writeln("Timeout on interface request");
         return;
     }

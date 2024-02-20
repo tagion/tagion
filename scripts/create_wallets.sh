@@ -61,7 +61,7 @@ touch $keyfile
 all_infos=""
 
 # Create wallets in a loop
-for ((i = 1; i <= wallets; i++)); 
+for ((i = 0; i < wallets; i++)); 
 do
   # Set up wallet directory and configuration
   wallet_dir=$(readlink -m  "${wdir}/wallet$i")
@@ -80,8 +80,9 @@ do
   # Step 3: Generate a node name and insert into all infos
   name="node_$i"
   $bdir/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
-  address=$($bdir/geldbeutel "$wallet_config" --info) 
-  all_infos+=" -p $address,$name"
+  node_info=$($bdir/geldbeutel "$wallet_config" --info) 
+  address=$(printf "Node_%d_epoch_creator" $i)
+  all_infos+=" -p $node_info,$address"
   echo "wallet$i:$pincode" >> "$keyfile"
 
   # Create bills for the wallet
@@ -112,7 +113,7 @@ cat $wdir/bill*.hibon |"${bdir}/stiefel" --trt -o $wdir/trt_recorder.hibon
 mkdir -p $ndir | echo "folder already exists"
 
 # Loop to initialize and modify nodes
-for ((i = 0; i <= nodes-1; i++)); 
+for ((i = 0; i < nodes; i++)); 
 do
   # Create dart filename for each node
   dartfilename="${ndir}/Node_${i}_dart.drt"

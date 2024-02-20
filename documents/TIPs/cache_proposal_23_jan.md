@@ -17,7 +17,7 @@ We introduce a new method called `hirpc.trt.dartRead` (And also deprecate `hirpc
 
 
 A cache is also created which contains `Document[DARTIndex]` making the lookup on a index very fast and acts as a cache layer on the `DART`.
-The current cache is changed so that instead of holding `TagionBill[Pubkey]` it contains `DARTIndex[][Pubkey]` and acts as a cache layer on the `TRT`. Like the other cache it needs to update itself based on the recorder changes and create new trt requests.
+The current cache is changed so that instead of holding `TagionBill[Pubkey]` it contains `DARTIndex[][DARTIndex]` and acts as a cache layer on the `TRT`. Like the other cache it needs to update itself based on the recorder changes and create new trt requests.
 
 
 

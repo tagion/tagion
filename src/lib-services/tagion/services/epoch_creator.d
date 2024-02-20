@@ -4,7 +4,7 @@ module tagion.services.epoch_creator;
 
 // tagion
 import tagion.actor;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types;
 import tagion.basic.basic : isinit;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet : SecureNet;

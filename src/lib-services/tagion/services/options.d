@@ -9,7 +9,7 @@ import tagion.basic.dir;
 
 /// This function should be renamed
 /// Initially there it was only intended to be used for the contract address for the inputvalidator
-immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
+immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow pure {
     version (linux) {
         return "abstract://" ~ prefix ~ "NEUEWELLE";
     }
@@ -31,20 +31,19 @@ enum NetworkMode {
 
 @safe
 struct WaveOptions {
-    struct Mode1 {
-        string address_book_file = "../address_book.txt";
-
-        mixin JSONCommon;
-    }
 
     import tagion.utils.JSONCommon;
 
+    /** Read node addresses from this files if it's defined
+     *  Usesfull for development
+     *  Formatted likes this. With 1 entry per line.
+     *  <Base64 encoded public key> <address>
+    */
+    string address_file;
     NetworkMode network_mode = NetworkMode.INTERNAL;
     uint number_of_nodes = 5;
     string prefix_format = "Node_%s_";
     bool fail_fast = false;
-
-    Mode1 mode1;
 
     mixin JSONCommon;
 }

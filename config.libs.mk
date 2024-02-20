@@ -1,5 +1,6 @@
 LIBTAGION:=$(DLIB)/libtagion.$(LIBEXT)
 
+libtagion: DFLAGS+=$(OUTPUTDIR)=$(DOBJ)
 libtagion: DFLAGS+=$(FULLY_QUALIFIED)
 libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-behaviour/*" -a -not -path "*/lib-betterc/*"}
 libtagion: $(LIBTAGION) $(DFILES)
