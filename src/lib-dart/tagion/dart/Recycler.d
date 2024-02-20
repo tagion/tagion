@@ -57,12 +57,14 @@ struct RecycleSegment {
     });
 
     /// We never want to create a segment with a size smaller than zero.
-    invariant {
-        assert(size > 0);
-    }
-    /// We never want to create a index at Index.init.
-    invariant {
-        assert(index != Index.init, "RecycleSegment cannot be inserted at index 0");
+    version (DART_RECYCLER_INVARINAT) {
+        invariant {
+            assert(size > 0);
+        }
+        /// We never want to create a index at Index.init.
+        invariant {
+            assert(index != Index.init, "RecycleSegment cannot be inserted at index 0");
+        }
     }
 }
 
@@ -80,16 +82,17 @@ struct Recycler {
     /** 
      * Checks if the recycler has overlapping segments.
      */
-    invariant {
-        assert(noOverlaps, "Recycle segments has overlaps");
-    }
-    /** 
+    version (DART_RECYCLER_INVARINAT) {
+        invariant {
+            assert(noOverlaps, "Recycle segments has overlaps");
+        }
+        /** 
      * Checks if the indicies and segments are the same length;
      */
-    invariant {
-        assert(indices.length == segments.length);
+        invariant {
+            assert(indices.length == segments.length);
+        }
     }
-
     protected {
         BlockFile owner; /// The blockfile owner
         Indices indices; /// Indices that are stored in the blockfile.
@@ -109,10 +112,48 @@ struct Recycler {
      */
     protected auto sortedRecycleSegments() {
         // check if the segments are already sorted. If not then sort.
-        if (!segments.isSorted!((a, b) => a.size < b.size)) {
-            segments.sort!((a, b) => a.size < b.size);
+        version(WITHOUT_SORTING) {
+        } else {
+            if (!segments.isSorted!((a, b) => a.size < b.size)) {
+                segments.sort!((a, b) => a.size < b.size);
+            }
         }
         return assumeSorted!((a, b) => a.size < b.size)(segments);
+    }
+    private ptrdiff_t findIndex(RecycleSegment* segment) pure nothrow @nogc {
+        ptrdiff_t start = 0;
+        ptrdiff_t end = cast(ptrdiff_t) segments.length - 1;
+        while (start <= end) {
+            ptrdiff_t mid = (start + end) / 2;
+            if (segments[mid].size == segment.size) {
+                return mid;
+            }
+            else if (segments[mid].size < segment.size) {
+                start = mid + 1;
+            }
+            else {
+                end = mid - 1;
+            }
+        }
+        return end + 1;
+    }
+
+    
+    /** 
+     * Insert a single segment into the recycler.
+     * Params:
+     *   segment = segment to be inserted.
+     */
+    protected void insert(RecycleSegment* segment) {
+        indices.insert(segment);
+
+        version(WITHOUT_SORTING) {
+            import core.stdc.string : memcpy;
+            const index = findIndex(segment);
+            segments.insertInPlace(index, segment);
+        } else {
+            segments ~= segment;
+        }
     }
     /** 
      * Inserts a range of segments into the recycler.
@@ -122,16 +163,13 @@ struct Recycler {
     protected void insert(R)(R segment_range)
             if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, RecycleSegment*)) {
         indices.stableInsert(segment_range);
-        segments ~= segment_range;
-    }
-    /** 
-     * Insert a single segment into the recycler.
-     * Params:
-     *   segment = segment to be inserted.
-     */
-    protected void insert(RecycleSegment* segment) {
-        indices.insert(segment);
-        segments ~= segment;
+        version(WITHOUT_SORTING) {
+            foreach(seg; segment_range) {
+                insert(seg);
+            }
+        } else {
+            segments ~= segment_range;
+        }
     }
     /** 
      * Removes a segment from the recycler.
@@ -816,6 +854,7 @@ unittest {
 }
 
 @safe
+// version(none)
 unittest {
     immutable filename = fileId("recycle").fullpath;
     filename.forceRemove;
@@ -836,7 +875,7 @@ unittest {
 
     recycler.insert(dispose_segments[]);
     assert(recycler.indices.length == 4);
-    assert(recycler.segments.length == 4);
+    assert(recycler.segments.length == 4, format("length should be 4 was %s", recycler.segments.length));
 
     auto remove_segment = new RecycleSegment(Index(17UL), 5);
 

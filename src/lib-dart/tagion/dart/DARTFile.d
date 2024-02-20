@@ -35,6 +35,7 @@ private {
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONSerialize;
     import std.bitmanip;
 }
 
@@ -79,7 +80,7 @@ class DARTFile {
         Fingerprint _fingerprint;
     }
 
-    protected enum _params = [
+    static immutable _params = [
         "dart_indices",
         "bullseye",
     ];
@@ -268,7 +269,7 @@ class DARTFile {
             }
         }
 
-        auto keys() {
+        auto rim_keys() const pure nothrow {
             return _fingerprints.enumerate
                 .filter!(f => !f.value.empty)
                 .map!(f => f.index);
@@ -282,7 +283,7 @@ class DARTFile {
         }
 
         auto opSlice() {
-            return keys.map!(key => Leave(indices[key], fingerprints[key], get_dart_index(key)));
+            return rim_keys.map!(key => Leave(indices[key], fingerprints[key], get_dart_index(key)));
         }
 
         DARTIndexRange dart_indices() const pure nothrow @nogc {
@@ -385,6 +386,7 @@ class DARTFile {
          *     exclude_indices = If this flag is `true` then indices is not generated
          * Returns: HiBON of the branches
          */
+        // version(none)
         HiBON toHiBON(const bool exclude_indices = false) const
         in {
             assert(merkleroot.isinit, "Fingerprint must be calcuted before toHiBON is called");
@@ -402,7 +404,7 @@ class DARTFile {
                         
 
                         .check(!_fingerprints[key].isinit,
-                                format("Fingerprint key=%02X at index=%d is not defined", key, index));
+                        format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
@@ -433,14 +435,6 @@ class DARTFile {
             return hibon;
         }
 
-        /* 
-     * Convert the Branches to a Document
-     * Returns: document
-     */
-        const(Document) toDoc() const {
-            return Document(toHiBON);
-        }
-
         import tagion.hibon.HiBONJSON : JSONString;
 
         mixin JSONString;
@@ -448,6 +442,28 @@ class DARTFile {
         import tagion.hibon.HiBONRecord : HiBONRecordType;
 
         mixin HiBONRecordType;
+
+        mixin HiBONKeys;
+        /* 
+     * Convert the Branches to a Document
+     * Returns: document
+     */
+        version (DARTFile_BRANCHES_SERIALIZER) {
+            mixin Serialize;
+            const(Document) toDoc() const pure
+            in {
+                assert(merkleroot.isinit, "Fingerprint must be calcuted before toHiBON is called");
+            }
+            do {
+                return Document(serialize);
+            }
+        }
+        else {
+            const(Document) toDoc() const {
+                return Document(toHiBON);
+            }
+
+        }
 
         /**
          * Get the index number of Leave at the leave number key
@@ -558,6 +574,7 @@ class DARTFile {
         }
     }
 
+    static assert(SupportingFullSizeFunction!Branches);
     /** 
     * Reads the data at branch key  
     * Params: 
@@ -977,7 +994,7 @@ class DARTFile {
                         .slide(2)
                         .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
                         .any,
-                    "cannot have multiple operations on same dart-index in one modify");
+                        "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1213,7 +1230,7 @@ class DARTFile {
             }
 
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory
-                    .Recorder recorder) {
+                .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
                 auto find_recorder = dart.loads(_dart_indices);
@@ -2537,13 +2554,13 @@ unittest {
         const hashdoc = HashDoc("hugo", 42);
         recorder_add.add(hashdoc);
         assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
-                "The dart_index and the fingerprint of a archive should not be the same for a # archive");
+        "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
         // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
         assert(bullseye == recorder_add[].front.fingerprint,
-                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         const hashdoc_change = HashDoc("hugo", 17);
         auto recorder_B = dart_A.recorder;
         recorder_B.remove(hashdoc_change);
@@ -2558,7 +2575,7 @@ unittest {
         // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
         assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
         assert(bullseye == recorder_change[].front.fingerprint,
-                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         { // read the dart_index from the dart and check the dart_index 
             auto load_recorder = dart_A.loads(recorder_change[].map!(a => a.dart_index));
             //writefln("load_recorder=%(%02x%)", load_recorder[].front.dart_index);

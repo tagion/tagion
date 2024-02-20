@@ -4,6 +4,8 @@ import std.algorithm;
 import std.range;
 import std.format;
 import std.typecons;
+import std.path;
+import std.file : mkdirRecurse;
 
 import tagion.basic.Types;
 import tagion.basic.basic;
@@ -21,6 +23,8 @@ import tagion.tools.toolsexception;
 import tagion.script.standardnames;
 
 struct RebuildOptions {
+    bool skip_check;
+    string path;
 }
 
 struct Rebuild {
@@ -111,20 +115,54 @@ struct Rebuild {
         return result;
     }
 
+    void prepareFromFile(const HashNet net, const string file, ref Fingerprint previous, const long current_epoch) {
+        auto fin = File(file, "r");
+        scope (exit) {
+            fin.close;
+        }
+        int result;
+        //Fingerprint result;
+        //foreach(doc; HiBONRange(fin)) {
+        File fout;
+        scope(exit) {
+            fout.close;    
+    }
+        foreach (item; HiBONRange(fin).enumerate) {
+            auto block = RecorderBlock(item.value, net);
+            if ((block.epoch_number-current_epoch) >= 1) {
+                if (fout is File.init) {
+                    const new_file=buildPath(opt.path, format("%010d_epoch", block.epoch_number)).setExtension(FileExtension.hibon);
+                    fout=File(new_file, "w");
+                    verbose("write %s", new_file);
+                }
+                fout.fwrite(block);
+                auto recorder=dst.recorder(block.recorder_doc);
+                dst.modify(recorder);
+            }
+            
+        }
+     }
+
     void prepareReplicator(const HashNet hash_net) {
         const tagion_dartindex=hash_net.dartKey(StdNames.name, TagionDomain);
         const tagion_recorder=dst.loads([tagion_dartindex]);
-        foreach(archive; tagion_recorder[]) {
-            writefln("filed=%s", archive.filed.toPretty);    
-    }
+        check(!tagion_recorder[].empty, 
+    format("Destination DART is missing %s", TagionHead.type_name)); 
+        const tagion_head=TagionHead(tagion_recorder[].front.filed); 
+        writefln("Tagion head=%s", tagion_head.toPretty);
+        //foreach(archive; tagion_recorder[]) {
+        //    writefln("filed=%s", archive.filed.toPretty);    
+    //}
         locked_epochs = null;
         Fingerprint fingerprint;
         int result;
+        if (!opt.skip_check) {
         foreach (file; replicator_files) {
-            verbose("file %s", file);
+            verbose("check file %s", file);
             const error_count = checkReplicator(hash_net, file, fingerprint);
             result += error_count;
         }
+    }
         if (result > 0) {
             error("Counted %d errors", result);
         }
@@ -132,8 +170,11 @@ struct Rebuild {
        // writefln("locked_epoch_numbers=%s", locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b));
         auto locked_groups = locked_epoch_numbers.splitWhen!((a, b) => a + 1 != b);
         writefln("%(Locked epochs %(%s, %)\n%)", locked_groups);
-       
-        {
+        mkdirRecurse(opt.path);
+        fingerprint=Fingerprint.init; 
+        foreach(file; replicator_files) {
+            verbose("play file %s", file);
+           prepareFromFile( hash_net, file, fingerprint, tagion_head.current_epoch);
                 
         }
         //locked_groups.each!(list => writefln("Locked epochs %(%d %)", list));

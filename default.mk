@@ -27,15 +27,51 @@ ifndef DEBUG_DISABLE
 DFLAGS+=$(DDEBUG_SYMBOLS)
 endif
 
+DFLAGS+=$(DWARN)
+
+# Uses a modified version of phobos' redblacktree
+# So it's more compatiblae with @safe code
 DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
+
+# This fixes an error in the app wallet where it would be logged out after each operation
+# By copying the securenet each time an operation is done
 DFLAGS+=$(DVERSION)=NET_HACK
-DFLAGS+=$(DVERSION)=NEW_REPLICATOR
+
+# Sets the inputvalidators NNG socket to be blocking
 DFLAGS+=$(DVERSION)=BLOCKING
+
+# Fix a randomly occuring RangeError on hashgraph startup
+# By filtering out empty events
 DFLAGS+=$(DVERSION)=EPOCH_FIX
+
+# This allows an experimental nft function to be used without payment
+# The function is not used in this node
 DFLAGS+=$(DVERSION)=WITHOUT_PAYMENT
+
+# Enables the new wallet update request proposed in 
+# https://docs.tagion.org/#/documents/TIPs/cache_proposal_23_jan
 DFLAGS+=$(DVERSION)=TRT_READ_REQ
+
+# Use compile time sorted, serialization of dart branches
+DFLAGS+=$(DVERSION)=DARTFile_BRANCHES_SERIALIZER
+
+# Dart optimization that inserts segments sorted.
+# Before it would sort the segments every time they were needed
+DFLAGS+=$(DVERSION)=WITHOUT_SORTING
+
+# Always use the Genesis epoch to determine the boot nodes
+# There is currently no way to function to determine the nodes from latest epoch
+DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
+
+# # This enables a redundant check in dart to see if there are overlaps between segments 
+# DFLAGS+=$(DVERSION)=DART_RECYCLER_INVARINAT
+
+# # This is used for the wallet wrapper to generate pseudo random history
+# # which is useful for app development
 # DFLAGS+=$(DVERSION)=WALLET_HISTORY_DUMMY
-DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
+
+
+#DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)

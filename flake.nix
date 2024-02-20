@@ -114,6 +114,7 @@
             automake
             autoreconfHook
             cmake
+            libz
           ];
         };
 

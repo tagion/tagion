@@ -8,6 +8,7 @@ import std.range;
 import std.path : isValidFilename;
 import std.conv;
 import std.algorithm;
+import std.exception;
 
 import tagion.basic.tagionexceptions;
 import tagion.basic.Types;
@@ -18,25 +19,43 @@ import tagion.hibon.HiBONFile;
 import tagion.hibon.HiBONRecord;
 import tagion.logger.Logger : log;
 import tagion.script.standardnames;
+import tagion.script.namerecords;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.Result;
 
-/** Address book for node p2p communication */
+/++
+ + Exceptions used for the addressbook
+ +/
+@safe
+class AddressException : TagionException {
+    //    string task_name; /// Contains the name of the task when the execption has throw
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
+        super(msg, file, line);
+    }
+}
+
+/** 
+ * Address book for node p2p communication
+ */
 @safe
 synchronized class AddressBook {
     /** Addresses for node */
-    protected NodeInfo[Pubkey] addresses;
+    protected immutable(NetworkNodeRecord)*[Pubkey] addresses;
+
+    alias NNRResult = Result!(immutable(NetworkNodeRecord)*, AddressException);
 
     /**
      * Init NodeAddress if public key exist
      * @param pkey - public key for check
      * @return initialized node address
      */
-    const(NodeInfo) opIndex(const Pubkey pkey) const pure nothrow @trusted {
+    NNRResult opIndex(const Pubkey pkey) const pure nothrow {
         auto addr = pkey in addresses;
-        if (addr) {
-            return cast(NodeInfo)*addr;
+        /* static assert(0, typeof(*addr)); */
+        if (addr !is null) {
+            return NNRResult(*addr);
         }
-        return NodeInfo.init;
+        return NNRResult(assumeWontThrow(format!("Address %s not found")(pkey.encodeBase64)));
     }
 
     /**
@@ -44,8 +63,8 @@ synchronized class AddressBook {
      * @param addr - value
      * @param pkey - key
      */
-    void opIndexAssign(const NodeInfo info, const Pubkey pkey)
-    in ((pkey in addresses) is null, format("Address %s has already been set", pkey.encodeBase64))
+    void opIndexAssign(immutable(NetworkNodeRecord)* info, const Pubkey pkey) pure nothrow
+    in ((pkey in addresses) is null, assumeWontThrow(format!("Address %s has already been set")(pkey.encodeBase64)))
     do {
         addresses[pkey] = info;
     }
@@ -54,7 +73,7 @@ synchronized class AddressBook {
      * Remove addresses by public key
      * @param pkey - public key fo remove addresses
      */
-    void erase(const Pubkey pkey) pure nothrow {
+    void remove(const Pubkey pkey) pure nothrow {
         addresses.remove(pkey);
     }
 
@@ -81,11 +100,9 @@ synchronized class AddressBook {
      * @return active node channels
      */
     Pubkey[] activeNodeChannels() @trusted const pure nothrow {
-        auto channels = (cast(string[Pubkey]) addresses).keys;
+        auto channels = (cast(NetworkNodeRecord*[Pubkey])addresses).keys;
         return channels;
     }
-
-    alias getAddress = opIndex;
 
     /**
      * Return amount of nodes in networt
@@ -94,71 +111,26 @@ synchronized class AddressBook {
     size_t numOfNodes() const pure nothrow {
         return addresses.length;
     }
+
+    /**
+     * Sets the Addresses from an array of NNR records
+     * The addresses should be empty when set
+    */
+    void set(immutable(NetworkNodeRecord)*[] nnrs) 
+    in (addresses.empty, "Address have already been set, call clear() first if this is intended")
+    do {
+        foreach(nnr; nnrs) {
+            addresses[nnr.channel] = nnr;
+        }
+    }
+
+    void clear() {
+        addresses = null;
+    }
 }
 
 static shared(AddressBook) addressbook;
 
 shared static this() {
     addressbook = new shared(AddressBook)();
-}
-
-/// https://github.com/multiformats/multiaddr/blob/master/protocols.csv
-enum MultiAddrProto {
-    ip4 = 4,
-    tcp = 6,
-    ip6 = 41,
-}
-
-/** 
- * Node Name Record
- * Holds the information for communicating with a node.
- */
-@safe
-@recordType("NNR")
-struct NodeInfo {
-
-    // The Pubkey is kept as a Buffer internally, because Pubkey is a struct we cannot assign NodeInfo info to a shared.
-    // It'll be exactly the same when serialized to hibon.
-    private @label(StdNames.nodekey) Buffer _owner;
-    @label("a") string address;
-
-    this(Pubkey __owner, string _addr) nothrow pure {
-        _owner = cast(Buffer) __owner;
-        address = _addr;
-    }
-
-    Pubkey owner() => Pubkey(_owner);
-
-    /**
-     * Parse node address to string
-     * @return string address
-     */
-    string toString() const {
-        return address;
-    }
-
-    string toNNGString() const {
-        auto s = address.split("/");
-        const type = s[0];
-        const host = s[1];
-        if (type == "ip4" || type == "ip6") {
-            const proto = s[2];
-            const port = s[3];
-            return proto ~ "://" ~ host ~ ":" ~ port;
-        }
-        else if (type == "abstract" || type == "unix") {
-            const name = s[2];
-            return type ~ name;
-        }
-        // Probably should not assert in the future, or atleast validate the address ahead of time in the constructor
-        assert(0, format("don't know how to convert %s to nng address", address));
-    }
-}
-
-unittest {
-    immutable nnr = NodeInfo(Pubkey(), "ip4/200.185.5.5/tcp/80");
-    assert(nnr.toNNGString == "tcp://200.185.5.5:80");
-
-    immutable nnr2 = NodeInfo(Pubkey(), "ip6/c8b9:505:c8b9:505:c8b9:0:c8b9:505/tcp/80");
-    assert(nnr2.toNNGString == "tcp://c8b9:505:c8b9:505:c8b9:0:c8b9:505:80");
 }

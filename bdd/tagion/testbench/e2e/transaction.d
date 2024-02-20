@@ -46,8 +46,10 @@ alias FeatureContext = Tuple!(
 
 void wrap_shell(immutable(string[]) args) {
     import tagionshell = tagion.tools.tagionshell;
+
     tagionshell._main(cast(string[]) args);
 }
+
 void wrap_neuewelle(immutable(string)[] args) {
     neuewelle._main(cast(string[]) args);
 }
@@ -56,19 +58,20 @@ mixin Main!(_main);
 int _main(string[] args) {
 
     auto module_path = env.bdd_log.buildPath(__MODULE__);
-    if (module_path.exists) { rmdirRecurse(module_path); }
+    if (module_path.exists) {
+        rmdirRecurse(module_path);
+    }
     mkdirRecurse(module_path);
     const shell_config_file = buildPath(module_path, "shell.json");
     const config_file = buildPath(module_path, "tagionwave.json");
 
-
     scope ShellOptions shell_opts = ShellOptions.defaultOptions;
     shell_opts.shell_uri = environment["SHELL_URI"];
     shell_opts.tagion_subscription_addr = contract_sock_addr(environment["SUBSCRIPTION"]);
-    shell_opts.recorder_subscription_task_prefix = "TRANSACTION_Node_0_";
+    shell_opts.dart_subscription_task_prefix = "TRANSACTION_Node_0_";
     shell_opts.mode0_prefix = environment["PREFIX"];
     shell_opts.save(shell_config_file);
-    
+
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.trt.folder_path = buildPath(module_path);
@@ -95,7 +98,7 @@ int _main(string[] args) {
     foreach (i; 0 .. 5) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-            iota(0, 5)
+                iota(0, 5)
                 .map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5)
                 .map!(n => format("%danswer%d", i, n)).array,
@@ -123,6 +126,33 @@ int _main(string[] args) {
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
+
+    import tagion.tools.boot.genesis;
+    import tagion.script.common;
+    import tagion.hibon.Document;
+    import tagion.hibon.BigNumber;
+    import tagion.wave.mode0;
+
+    const node_opts = getMode0Options(local_options, monitor: false);
+
+    NodeSettings[] node_settings;
+    auto nodenets = dummy_nodenets_for_testing(node_opts);
+    foreach (opt, node_net; zip(node_opts, nodenets)) {
+        node_settings ~= NodeSettings(
+            opt.task_names.epoch_creator, // Name
+            node_net.pubkey,
+            opt.task_names.epoch_creator, // Address
+        );
+    }
+
+    const genesis = createGenesis(
+        node_settings,
+        Document(), 
+        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+    );
+
+    recorder.insert(genesis, Archive.Type.ADD);
+
     import tagion.trt.TRT;
 
     auto trt_recorder = factory.recorder;
@@ -149,16 +179,18 @@ int _main(string[] args) {
         db.close;
         trt_db.close;
     }
+
     immutable neuewelle_args = [
-        "transaction_test", config_file, "--nodeopts", module_path
-    ]; 
+        "transaction_test", config_file
+    ];
+
     auto neuewelle_tid = spawn(&wrap_neuewelle, neuewelle_args);
 
     immutable(string[]) shell_args = ["tagionshell_transaction", shell_config_file];
     auto shell_tid = spawn(&wrap_shell, shell_args);
 
     Thread.sleep(20.seconds);
-    
+
     auto feature = automation!(transaction);
     feature.SendAContractWithOneOutputsThroughTheShell(shell_opts, wallets[0], wallets[1]);
     feature.run;
@@ -183,13 +215,11 @@ class SendAContractWithOneOutputsThroughTheShell {
     TagionCurrency start_amount1;
     TagionCurrency start_amount2;
 
-
     string shell_addr;
     string bullseye_address;
     string dart_address;
     string contract_address;
 
-    
     this(ShellOptions shell_opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
         this.shell_opts = shell_opts;
         this.wallet1 = wallet1;
@@ -205,6 +235,7 @@ class SendAContractWithOneOutputsThroughTheShell {
     }
 
     import nngd;
+
     @Given("i have a running network")
     Document network() {
         // we know the network is running since we get the bullseye
@@ -216,7 +247,7 @@ class SendAContractWithOneOutputsThroughTheShell {
         import std.net.curl;
 
         writefln("BEFORE POST addr: %s", bullseye_address);
-        immutable(ubyte[]) raw_res =cast(immutable) get!(AutoProtocol, ubyte)(bullseye_address);
+        immutable(ubyte[]) raw_res = cast(immutable) get!(AutoProtocol, ubyte)(bullseye_address);
         Document bullseye = Document(raw_res);
         writefln("hrep %s", bullseye.toPretty);
         auto receiver = wallet1_hirpc.receive(bullseye);
@@ -255,14 +286,18 @@ class SendAContractWithOneOutputsThroughTheShell {
             if (wallet1_amount != 0.TGN) {
                 writefln("wallet1 sending update to dartaddress %s", dart_address);
                 wallet1_amount = getWalletTRTUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
-            } else {
+            }
+            else {
                 both_updated = true;
             }
             if (wallet2_amount != wallet2_expected) {
                 writefln("wallet2 sending update to dartaddress %s", dart_address);
                 wallet2_amount = getWalletTRTUpdateAmount(wallet2, dart_address, wallet2_hirpc, true);
-            } else {
-                if (both_updated) {break Update;}
+            }
+            else {
+                if (both_updated) {
+                    break Update;
+                }
             }
             Thread.sleep(5.seconds);
         }
