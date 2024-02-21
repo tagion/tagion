@@ -362,7 +362,7 @@ unittest {
 
         assert(account.history.walkLength == 2);
         auto hist = account.history;
-        hist.popFront;
+        hist.popFront; // Pop initial received bill
         const item = hist.front;
         assert(item.bill.value == 2400.TGN, format("Incorrect amount sent %s", item.bill.value));
         assert(item.fee == 80.TGN, format("Incorrect amount fee %s", item.fee));
@@ -384,13 +384,45 @@ unittest {
         auto hist = account.history;
 
         assert(account.history.walkLength == 2);
-        hist.popFront;
+        hist.popFront; // Pop initial received bill
 
         const item = hist.front;
         assert(item.bill.value == 2400.TGN, format("Incorrect amount sent %s", item.bill.value));
         assert(item.type == HistoryItemType.send, format("should've been sent history item: %s", item.type));
         assert(item.status == ContractStatus.pending, format("should've been pending item: %s", item.status));
         assert(item.fee == 80.TGN, format("Incorrect amount fee %s", item.fee));
+    }
+
+    version(none) // BUG: this is not currently implemented
+    {// Payment to self, should result in two history items, one for the sent bill and one for the received
+        AccountDetails account;
+        account.derivers[my_net.pubkey] = [0];
+        account.create_payment(
+            change: 400.TGN,
+            sent: 2400.TGN,
+            fee: 80.TGN,
+            sender: my_net.pubkey,
+            receiver: my_net.pubkey,
+        );
+
+        auto hist = account.history;
+        hist.popFront; // Pop initial received bill
+        assert(account.history.walkLength == 2);
+        {//Sent
+            const item = hist.front;
+            assert(item.bill.value == 2400.TGN, format("Incorrect amount sent %s", item.bill.value));
+            assert(item.type == HistoryItemType.send, format("should've been sent history item: %s", item.type));
+            assert(item.status == ContractStatus.succeeded, format("should've been succeeded item: %s", item.status));
+            assert(item.fee == 80.TGN, format("Incorrect amount fee %s", item.fee));
+        }
+        hist.popFront;
+        {//Received
+            const item = hist.front;
+            assert(item.bill.value == 2400.TGN, format("Incorrect amount sent %s", item.bill.value));
+            assert(item.type == HistoryItemType.receive, format("should've been receive history item: %s", item.type));
+            assert(item.status == ContractStatus.succeeded, format("should've been succeeded item: %s", item.status));
+            assert(item.fee == 0.TGN, format("Incorrect amount fee %s", item.fee));
+        }
     }
 }
 
