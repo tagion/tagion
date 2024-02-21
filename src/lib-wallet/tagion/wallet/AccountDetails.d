@@ -347,6 +347,7 @@ unittest {
         // We don't know the fee
         assert(item.fee == 0.TGN, format("Incorrect amount fee %s", item.fee));
         assert(item.type == HistoryItemType.receive, "Should've been receive history item");
+        // Balance is not calculated on non reverse_history()
     }
 
     {// Sent
@@ -361,13 +362,15 @@ unittest {
         );
 
         assert(account.history.walkLength == 2);
-        auto hist = account.history;
-        hist.popFront; // Pop initial received bill
+        auto hist = account.reverse_history;
         const item = hist.front;
         assert(item.bill.value == 2400.TGN, format("Incorrect amount sent %s", item.bill.value));
         assert(item.fee == 80.TGN, format("Incorrect amount fee %s", item.fee));
         assert(item.type == HistoryItemType.send, format("should've been sent history item: %s", item.type));
         assert(item.status == ContractStatus.succeeded, format("should've been succeeded item: %s", item.status));
+
+        // create_payment creates the input bill and uses everything, so balance should be 0
+        assert(item.balance == 0.TGN);
     }
 
     {// Pending
@@ -381,16 +384,20 @@ unittest {
             receiver: your_net.pubkey,
         );
 
-        auto hist = account.history;
+        auto hist = account.reverse_history;
 
         assert(account.history.walkLength == 2);
-        hist.popFront; // Pop initial received bill
 
         const item = hist.front;
         assert(item.bill.value == 2400.TGN, format("Incorrect amount sent %s", item.bill.value));
         assert(item.type == HistoryItemType.send, format("should've been sent history item: %s", item.type));
         assert(item.status == ContractStatus.pending, format("should've been pending item: %s", item.status));
         assert(item.fee == 80.TGN, format("Incorrect amount fee %s", item.fee));
+
+        // This is probably not the expected behaviour
+        // But for future the function which calculates the balance would have to backtrack because it doesn't know the balance of the future
+        // For interleaved pending transactions, i don't know what to do with past transactions potentially completed in the future.
+        assert(item.balance == account.total);
     }
 
     version(none) // BUG: this is not currently implemented
