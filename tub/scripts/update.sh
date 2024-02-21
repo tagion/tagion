@@ -36,9 +36,9 @@ mkdir -p "$version"
 cd "$version"
 
 echo "Downloading $release_url to $PWD/$artifact_name"
-# wget "$release_url"
-# unzip "$artifact_name"
-# tar xzf *.tar.gz
+wget "$release_url"
+unzip "$artifact_name"
+tar xzf *.tar.gz
 
 echo
 echo "old: $(tagion --version | head -1)"
@@ -48,13 +48,20 @@ prompt "Confirm upgrade from old version to new?"
 
 loginctl enable-linger
 
-cd ./build/x86_64-linux/bin
-
 export INSTALL=~/.local/bin
-mkdir -p "$INSTALL"
-make install
+(cd ./build/x86_64-linux/bin
+    mkdir -p "$INSTALL"
+    make install
+)
 
 echo "Deploying revision" 
 "$INSTALL/tagion" --version
 
 systemctl --user daemon-reload
+
+cd ~/.local/share/tagion/
+
+dbs=$(ls wave/Node_*_dart.drt)
+for db in $dbs; do
+    dartutil --eye $db
+done
