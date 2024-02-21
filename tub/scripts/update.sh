@@ -49,15 +49,12 @@ prompt "Confirm upgrade from old version to new?"
 loginctl enable-linger
 
 cd ./build/x86_64-linux/bin
-export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
-export XDG_RUNTIME_DIR=/run/user/1001
 
-cp run_network.sh ~/.local/share/tagion/wave/
-cp failed.sh ~/.local/share/tagion/wave/
-cp tagion ~/.local/bin/
-~/.local/bin/tagion -s
-cp tagionshell.service neuewelle.service ~/.config/systemd/user
+export INSTALL=~/.local/bin
+mkdir -p "$INSTALL"
+make install
+
 echo "Deploying revision" 
-~/.local/bin/tagion --version
+"$INSTALL/tagion" --version
 
 systemctl --user daemon-reload
