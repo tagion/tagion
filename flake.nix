@@ -165,15 +165,16 @@
             echo DC=dmd >> local.mk
             echo USE_SYSTEM_LIBS=1 >> local.mk
             mkdir -p build/x86_64-linux/
-            echo 'v1.2.0-rc+dev
-                  git@github.com:tagion/tagion.git
-                  current
-                  620aff4d7d268b3538680c15bab61435e5995ed4
-                  13697
-                  imrying
-                  philiprying@gmail.com
-                  gcc (GCC) 13.2.0
-                  DMD64 D Compiler v2.106.1' >> build/x86_64-linux/revision.mixin
+            echo "
+                  ${gitRev}\n
+                  git@github.com:tagion/tagion.git\n
+                  wowo
+                  wowo
+                  wowo
+                  wowo
+                  wowo
+                  wowo
+                  $(dmd --version|head -n 1)" >> build/x86_64-linux/revision.mixin
           '';
 
           buildPhase = ''
@@ -185,7 +186,6 @@
           '';
 
           installPhase = ''
-            # No install target available for unittest
             mkdir -p $out/bin; cp ./build/x86_64-linux/bin/collider $out/bin/
           '';
         };
