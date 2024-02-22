@@ -51,8 +51,8 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
-alias LRUT!(DARTIndex, TRTArchive) TRTCache;
-alias LRUT!(DARTIndex, Document) IndexCache;
+alias TRTCache = LRUT!(DARTIndex, TRTArchive);
+alias IndexCache = LRUT!(DARTIndex, Document);
 
 shared TRTCache tcache;
 shared IndexCache icache;
