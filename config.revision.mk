@@ -11,12 +11,11 @@ CC_VERSION:=${shell ${CC} --version | head -1}
 DC_VERSION:=${shell ${DC} --version | head -1}
 
 # Finds the newest git version tag eg v.1.0.1
-VERSION_REF:=$(shell git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)
+VERSION_REF:=$(shell git describe --tags $(shell git rev-list --tags --max-count=1))
 VERSION_HASH:=${shell git rev-parse $(VERSION_REF)}
 
 ifneq ($(VERSION_HASH),$(GIT_HASH))
-# Not exactly sure what to call this, so now it's dev
-DEVSTRING:=+dev
+DEVSTRING:=+$(shell git rev-parse --short HEAD)
 endif
 
 UNSTAGED_CHANGES:=$(shell git status --porcelain)
