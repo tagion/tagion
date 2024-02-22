@@ -118,14 +118,12 @@ void dart_worker(ShellOptions opt) {
     int rc;
     int attempts = 0;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-    NNGSocket r = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     const net = new StdHashNet();
     auto record_factory = RecordFactory(net);
     const hirpc = HiRPC(null);
     s.recvtimeout = msecs(opt.sock_recvtimeout);
     s.subscribe(opt.recorder_subscription_tag);
     s.subscribe(opt.trt_subscription_tag);
-    r.recvtimeout = msecs(opt.sock_recvtimeout);
     writeit("DS: subscribed");
     while (true) {
         rc = s.dial(opt.tagion_subscription_addr);
@@ -133,15 +131,8 @@ void dart_worker(ShellOptions opt) {
             break;
         enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");
     }
-    while (true) {
-        rc = r.dial(opt.node_dart_addr);
-        if (rc == 0)
-            break;
-        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
-    }
     scope (exit) {
         s.close();
-        r.close();
     }
     writeit("DS: connected");
     while (true) {
@@ -511,7 +502,7 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             stats["idx_fetched"] = ifound.length - stats["idx_found"];
             writeit(stats);
             auto result_recorder = record_factory.recorder;
-            foreach (b; ifound.uniq) {
+            foreach (b; ifound.filter!(a => !a.indices.empty).uniq) {
                 result_recorder.add(b);
             }
             Document response = hirpc.result(receiver, result_recorder.toDoc).toDoc;
