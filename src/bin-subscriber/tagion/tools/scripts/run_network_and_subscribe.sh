@@ -7,16 +7,19 @@ fi
 
 # Parse args
 CREATE_WALLETS="$1"
-FOLDER="${2:-$(pwd)}"
+NETWORK_FOLDER="${2:-$(pwd)}"
 
+# Clear 
+rm /tmp/neuewelle_pm2.log
+rm /tmp/subscriber_pm2.log
 
-# 0. Optionally clear network folder
-read -p "Clear given network folder '$FOLDER'? [Y/n]" answer
+# Optionally clear network folder
+read -p "Clear given network folder '$NETWORK_FOLDER'? [Y/n]: " answer
 
 case $answer in
     [Yy]* ) 
         echo "Clearing given folder..."
-        rm -r $FOLDER/*
+        rm -r $NETWORK_FOLDER/*
         echo "Done"
         ;;
     * ) 
@@ -26,24 +29,30 @@ esac
 
 BIN_FOLDER="/home/ivanbilan/bin/"
 
-# 1. Create wallets
-bash $CREATE_WALLETS -b $BIN_FOLDER/ -n 5 -w 5 -k $FOLDER/wave -t $FOLDER/wallets -u $FOLDER/keys.txt
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-# 2. Start network with pm2
+# Create wallets
+bash $CREATE_WALLETS -b $BIN_FOLDER/ -n 5 -w 5 -k $NETWORK_FOLDER/wave -t $NETWORK_FOLDER/wallets -u $NETWORK_FOLDER/keys.txt
+
+# Start network with pm2
 echo "********* Start network *********"
-pm2 start $BIN_FOLDER/neuewelle --name neuewelle -- --option=subscription.tags:recorder,trt_created $FOLDER/wave/tagionwave.json --keys $FOLDER/wallets < $FOLDER/keys.txt
+pm2 start $SCRIPT_DIR/neuewelle.sh -- $NETWORK_FOLDER
 
-# 3. Start subscriber
-echo "********* Start subscriber *********"
-pm2 start $BIN_FOLDER/subscriber --name sub -- --address abstract://SUBSCRIPTION_NEUEWELLE -w --tag recorder
+# Check neuewelle state
+sleep 1s
+pm2 ls
 
-echo "Wait 5..."
-sleep 5
+# Check neuewelle state
+sleep 1s
+pm2 ls
 
-# 4. Stop subscriber
-echo "********* Stop subscriber *********"
-pm2 delete sub
+# Start subscriber
+pm2 start $SCRIPT_DIR/subscriber.config.json
 
-# 4. Stop network
+# Waiting for user input
+read -n 1 -s -r -p "Press any key to stop"
+echo
+
+# Stop subscriber and neuewelle
 echo "********* Stop network *********"
-pm2 delete neuewelle
+pm2 delete subscriber neuewelle
