@@ -65,11 +65,12 @@ do
   # Step 3: Generate a node name and insert into all infos
   name="node_$i"
   $bdir/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
-  address=$($bdir/geldbeutel "$wallet_config" --info) 
-  pkey="$($bdir/geldbeutel "$wallet_config" --pubkey)"
-  ipaddr=$((10700+i))
-  echo "$pkey tcp://0.0.0.0:$ipaddr" >> "$ndir/address_book.txt"
-  all_infos+=" -p $address,$name"
+  node_info=$("$bdir/geldbeutel" "$wallet_config" --info) 
+  # pkey="$("$bdir/geldbeutel" "$wallet_config" --pubkey)"
+  port=$((10700+i))
+  # echo "$pkey tcp://0.0.0.0:$port" >> "$ndir/address_book.txt"
+  printf 'tcp://0.0.0.0:%s' $port
+  all_infos+=" -p $node_info,$(printf 'tcp://0.0.0.0:%s' $port)"
 
   # Create bills for the wallet
   for (( b=1; b <= bills; b++)); 
