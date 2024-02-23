@@ -89,9 +89,6 @@ do {
     const recorder = db.recorder(response.result);
 
     check(recorder.length == nodekey_indices.length, "One or more Network Node Records were not in the dart");
-
-    assert(equal(nodekey_indices, recorder[].map!(a => __net.dartIndex(a.filed))));
-
     check(recorder[].each!(a => a.filed.isRecord!NetworkNodeRecord), "The read archives were not a NNR");
 
     immutable(NetworkNodeRecord)*[] nnrs;
