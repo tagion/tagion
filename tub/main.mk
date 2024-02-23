@@ -140,4 +140,5 @@ include $(TARGETS)/trunk.mk
 # Used to test the TVM
 #
 include $(TARGETS)/wasi.mk 
+include $(TARGETS)/tvm-sdk.mk 
 

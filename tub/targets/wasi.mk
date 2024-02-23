@@ -52,5 +52,3 @@ proper-wasi:
 .PHONY: proper-wasi
 
 proper: proper-wasi
-
-	
