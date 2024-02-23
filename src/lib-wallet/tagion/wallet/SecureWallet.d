@@ -545,6 +545,7 @@ struct SecureWallet(Net : SecureNet) {
             .map!(a => a.filed)
             .filter!(doc => doc.isRecord!TRTArchive)
             .map!(doc => TRTArchive(doc))
+            .filter!(a => !a.indices.empty)
             .map!(trt_archive => trt_archive.indices)
             .join
             .sort!((a, b) => a < b);
