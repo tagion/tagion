@@ -32,13 +32,15 @@ endif
 ifneq (,$(findstring wasi,$(PLATFORM)))
 DC!=which ldc2
 WASI_DRUNTIME_ROOT?=$(abspath $(REPOROOT)/tools/wasi-druntime)
-include $(WASI_DRUNTIME_ROOT)/wasi_sdk_setup.mk
+-include $(WASI_DRUNTIME_ROOT)/wasi_sdk_setup.mk
 WASI_SDK_ROOT=$(abspath $(WASI_DRUNTIME_ROOT)/$(WASI_SDK))
 WASI_BIN=$(abspath $(WASI_SDK_ROOT)/bin)
 WASMLD?=$(WASI_BIN)/wasm-ld
 
-LDC_RUNTIME_BUILD=$(abspath $(WASI_DRUNTIME_ROOT)/ldc-build-runtime.wasi)
-LDC_RUNTIME_LIB_DIR=$(abspath $(LDC_RUNTIME_BUILD)/lib)
+LDC_RUNTIME_BUILD=$(DLIB)
+#$(abspath $(WASI_DRUNTIME_ROOT)/ldc-build-runtime.wasi)
+LDC_RUNTIME_LIB_DIR=$(DLIB)
+##$(abspath $(LDC_RUNTIME_BUILD)/lib)
 LDC_RUNTIME_ROOT=$(abspath $(WASI_DRUNTIME_ROOT)/ldc/runtime)
 WASI_LIB+=$(LDC_RUNTIME_LIB_DIR)/libdruntime-ldc.a 
 WASI_LIB+=$(LDC_RUNTIME_LIB_DIR)/libphobos2-ldc.a

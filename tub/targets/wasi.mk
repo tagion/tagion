@@ -5,15 +5,11 @@
 WASI_DRUNTIME_ROOT?=$(TOOLS)/wasi-druntime
 WASI_DRUNTIME_REPO?=git@github.com:tagion/wasi-druntime.git 
 
-test48:
-	echo $(TOOLS)
-	echo $(WASI_DRUNTIME_ROOT)
+wasi: $(WASI_DRUNTIME_ROOT)/.git $(DLIB)/.way 
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) prebuild 
 
-wasi: $(WASI_DRUNTIME_ROOT)/.git  
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) prebuild 
-
-wasi-%: $(WASI_DRUNTIME_ROOT)/.git 
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) $*
+wasi-%: $(WASI_DRUNTIME_ROOT)/.git $(DLIB)/.way 
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) $*
 
 env-wasi:
 	$(PRECMD)
