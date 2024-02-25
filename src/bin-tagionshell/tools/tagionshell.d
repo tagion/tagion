@@ -433,20 +433,21 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             rep.msg = "Invalid request method";
             return;
         }
-        ulong[string] stats = ["idx_found": 0, "idx_fetched": 0, "arch_found": 0, "arch_fetched": 0];
+        ulong[string] stats = ["requests": 0, "tofetch": 0, "idx_found": 0, "idx_fetched": 0, "arch_found": 0, "arch_fetched": 0];
         if (receiver.method.full_name == "trt.dartRead" && opt.cache_enabled) {
             auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
             auto owners = doc_dart_indices.range!(DARTIndex[]);
-            
             DARTIndex[] itofetch;
             TRTArchive[] ifound;
             TRTArchive ibuf;
             if(opt.cache_enabled){
                 foreach(o; owners){
+                     stats["requests"]++;
                      if (tcache.get(o, ibuf)) {
                         ifound ~= ibuf;
                      }else{
-                        itofetch ~= o;    
+                        itofetch ~= o;   
+                        stats["tofetch"]++;
                      }
                 }
             } else {
@@ -497,10 +498,12 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
                             .map!(doc => TRTArchive(doc))){
                     tcache.update(DARTIndex(net.dartIndex(a)), a, true);                                    
                     ifound ~= a;
+                    stats["idx_fetched"]++;
+                    if(!itofetch.canFind(DARTIndex(net.dartIndex(a)))){
+                        writeit("Orphan index ", DARTIndex(net.dartIndex(a)));
+                    }    
                 }
             }
-            stats["idx_fetched"] = ifound.length - stats["idx_found"];
-            writeit(stats);
             auto result_recorder = record_factory.recorder;
             foreach (b; ifound.filter!(a => !a.indices.empty).uniq) {
                 result_recorder.add(b);
@@ -512,17 +515,19 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
         } else if (receiver.method.full_name == "dartRead" && opt.cache_enabled) {
             auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
             auto ifound = doc_dart_indices.range!(DARTIndex[]);
-
             DARTIndex[] tofetch;
             Document[] found;
             Document tbuf;
             if(opt.cache_enabled){
                 foreach(id; ifound){
-                     if (icache.get(id, tbuf)) {
+                    stats["requests"]++;                   
+                    if (icache.get(id, tbuf)) {
+                        
                         found ~= tbuf;
-                     }else{
+                    }else{
                         tofetch ~= id;    
-                     }
+                        stats["tofetch"]++;
+                    }
                 }
             } else {
                 tofetch ~= ifound.array;
@@ -572,10 +577,9 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
                     Document filed = a.filed;
                     icache.update(DARTIndex(a.dart_index), filed, true);
                     found ~= a.filed;
+                    stats["arch_fetched"]++;
                 }
-                stats["arch_fetched"] = found.length - stats["arch_found"];
             } 
-            writeit(stats);
             auto result_recorder = record_factory.recorder;
             foreach (b; found.uniq) {
                 result_recorder.add(b);
@@ -614,6 +618,7 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
             rep.type = ContentType.octet;
             rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
         }
+        writeit("DART ALT: ", stats);
     }
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
