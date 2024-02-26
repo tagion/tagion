@@ -83,7 +83,7 @@ struct EpochCreatorService {
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface));
+            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface), opts.timeout.msecs);
             break;
         case NetworkMode.PUB:
             assert(0);

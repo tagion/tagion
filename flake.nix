@@ -147,6 +147,48 @@
             mkdir -p $out/bin; cp ./build/x86_64-linux/bin/unittest $out/bin/
           '';
         };
+      checks.x86_64-linux.commit = with pkgs;
+        stdenv.mkDerivation {
+          name = "commit";
+          doCheck = true;
+
+          buildInputs = [
+            self.packages.x86_64-linux.default.buildInputs
+            which
+          ];
+
+          nativeBuildInputs = self.packages.x86_64-linux.default.nativeBuildInputs;
+
+          src = self;
+
+          configurePhase = ''
+            echo DC=dmd >> local.mk
+            echo USE_SYSTEM_LIBS=1 >> local.mk
+            mkdir -p build/x86_64-linux/
+            echo "
+                  ${gitRev}\n
+                  git@github.com:tagion/tagion.git\n
+                  wowo
+                  wowo
+                  wowo
+                  wowo
+                  wowo
+                  wowo
+                  $(dmd --version|head -n 1)" >> build/x86_64-linux/revision.mixin
+          '';
+
+          buildPhase = ''
+            make bddinit
+          '';
+
+          checkPhase = ''
+            make bddrun bddreport TEST_STAGE=commit
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin; cp ./build/x86_64-linux/bin/collider $out/bin/
+          '';
+        };
 
       packages.x86_64-linux.dockerImage =
         pkgs.dockerTools.buildImage {

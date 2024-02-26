@@ -135,3 +135,10 @@ include $(DTUB)/help.mk
 #
 include $(TARGETS)/trunk.mk
 
+#
+# WASI druntime 
+# Used to test the TVM
+#
+include $(TARGETS)/wasi.mk 
+include $(TARGETS)/tvm-sdk.mk 
+

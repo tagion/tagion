@@ -166,28 +166,7 @@ int _neuewelle(string[] args) {
 
     // Experimental!!
     if (!override_options.empty) {
-        import std.json;
-        import tagion.utils.JSONCommon;
-
-        JSONValue json = local_options.toJSON;
-
-        void set_val(JSONValue j, string[] _key, string val) {
-            if (_key.length == 1) {
-                j[_key[0]] = val.toJSONType(j[_key[0]].type);
-                return;
-            }
-            set_val(j[_key[0]], _key[1 .. $], val);
-        }
-
-        foreach (option; override_options) {
-            const index = option.countUntil(":");
-            assert(index > 0, format("Option '%s' invalid, missing key:value", option));
-            string[] key = option[0 .. index].split(".");
-            string value = option[index + 1 .. $];
-            set_val(json, key, value);
-        }
-        // If options does not parse as a string then some types will not be interpreted correctly
-        local_options.parseJSON(json.toString);
+        local_options.set_override_options(override_options);
     }
 
      // Set the network mode
