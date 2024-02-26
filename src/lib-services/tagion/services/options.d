@@ -100,7 +100,7 @@ public import tagion.services.replicator : ReplicatorOptions;
 public import tagion.services.subscription : SubscriptionServiceOptions;
 public import tagion.services.transcript : TranscriptOptions;
 public import tagion.services.TRTService : TRTOptions;
-public import tagion.services.nodeInterface : NodeInterfaceOptions;
+public import tagion.services.nodeinterface : NodeInterfaceOptions;
 
 /// All options for neuewelle
 @safe
