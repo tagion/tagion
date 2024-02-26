@@ -118,6 +118,7 @@ LDCFLAGS += $(LINKERFLAG)-ldl
 endif
 
 # Define model if not defined
+ifdef DONT
 ifndef MODEL
 ifeq ($(ARCH), $(filter $(ARCH), x86_64 arm64))
 MODEL = 64
@@ -134,6 +135,7 @@ LDCFLAGS += -m64
 else
 DFLAGS  += -m32
 LDCFLAGS += -m32
+endif
 endif
 endif
 
