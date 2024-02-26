@@ -24,7 +24,7 @@ import tagion.services.options;
 import tagion.services.replicator;
 import tagion.services.transcript;
 import tagion.services.TRTService;
-import tagion.services.nodeInterface;
+import tagion.services.nodeinterface;
 import core.memory;
 
 @safe

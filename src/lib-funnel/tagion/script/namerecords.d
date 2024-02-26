@@ -72,6 +72,13 @@ struct NetworkNodeRecord {
             channel = _channel;
             address = _addr;
         }
+        this(Pubkey channel, string name, sdt_t time, State state, string address) nothrow pure {
+            this.channel = channel;
+            this.name = name;
+            this.time = time;
+            this.state = state;
+            this.address = address;
+        }
     });
 }
 

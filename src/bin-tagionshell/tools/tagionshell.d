@@ -180,7 +180,12 @@ void dart_worker(ShellOptions opt) {
                 foreach (a; recorder[]) {
                     if (a.filed.isRecord!TRTArchive) {
                         auto archive = TRTArchive(a.filed);
-                        tcache.update(DARTIndex(a.dart_index), archive, true);
+                        auto empty_archive = TRTArchive.init;
+                        if (archive.indices.empty) {
+                            tcache.update(DARTIndex(a.dart_index), empty_archive, true);
+                        } else {
+                            tcache.update(DARTIndex(a.dart_index), archive, true);
+                        }
                         k++;
                     }
                 }
@@ -492,20 +497,29 @@ static void dart_handler_alt(WebData* req, WebData* rep, void* ctx) {
                 }
                 const recorder_doc = repreceiver.message[Keywords.result].get!Document;
                 const reprecorder = record_factory.recorder(recorder_doc);
-                foreach(a; reprecorder[]
-                            .map!(a => a.filed)
-                            .filter!(doc => doc.isRecord!TRTArchive)
-                            .map!(doc => TRTArchive(doc))){
-                    tcache.update(DARTIndex(net.dartIndex(a)), a, true);                                    
-                    ifound ~= a;
-                    stats["idx_fetched"]++;
-                    if(!itofetch.canFind(DARTIndex(net.dartIndex(a)))){
-                        writeit("Orphan index ", DARTIndex(net.dartIndex(a)));
-                    }    
+
+                TRTArchive[DARTIndex] found_archives;
+                foreach(a; reprecorder[]) {
+                    if (a.filed.isRecord!TRTArchive) {
+                        auto found_archive = TRTArchive(a.filed);
+                        found_archives[DARTIndex(a.dart_index)] = found_archive;
+                    }
+                }
+                foreach(idx; itofetch) {
+                    if (idx !in found_archives || found_archives[idx].indices.empty) {
+                        auto empty_archive = TRTArchive.init;
+                        tcache.update(DARTIndex(idx), empty_archive, true);
+                    } else {
+                        auto a = found_archives[idx];
+                        tcache.update(DARTIndex(idx), a, true);
+                        ifound ~= a;
+                    }
                 }
             }
+            stats["idx_fetched"] = ifound.length - stats["idx_found"];
+            writeit(stats);
             auto result_recorder = record_factory.recorder;
-            foreach (b; ifound.filter!(a => !a.indices.empty).uniq) {
+            foreach (b; ifound.filter!(a => a !is TRTArchive.init).uniq) {
                 result_recorder.add(b);
             }
             Document response = hirpc.result(receiver, result_recorder.toDoc).toDoc;
