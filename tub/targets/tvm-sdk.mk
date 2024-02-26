@@ -13,25 +13,38 @@ env-tvm-sdk:
 
 env: env-tvm-sdk
 
+
 lib-tvm-sdk: $(DLIB)/libtagion.a
 
-test-tvm-sdk: $(TVM_SDK_TESTS:.d=.wasm)
+test33: 
+	echo $(DBIN)/$(TVM_SDK_TESTS:.d=.wasm)
+
+test32: $(DBIN)/$(TVM_SDK_TESTS:.d=.wasm)
 
 help-tvm-sdk:
 	$(PRECMD)
 	$(call log.header, $@ :: help)
 	$(call log.close)
 
-$(DBIN)/%.wasm: $(DOBJ)/%.o 
-	echo WASM $@ $<
+#$(DBIN)/%.wasm: $(DOBJ)/%.wo 
+$(DBIN)/%.wasm: %.wo 
+	@echo $(DOBJ)/$*.o
+	@echo WASM $@ $<
 
-$(DOBJ)/%.o: $(TVM_SDK_TEST_ROOT)/%.d 
+#$(DOBJ)/%.o: $(TVM_SDK_TEST_ROOT)/%.d 
+$(DBIN)/%.wo: 
 	echo DOBJ $@ $<
 
 $(DLIB)/libtagion.a: $(TVM_SDK_DFILES)
+	@echo lib $<
 	@echo $<
 	@echo WASI_DFLAGS=$(WASI_DFLAGS)
+	@echo DC=$(DC)
 	$(DC) $(WASI_DFLAGS) $(TVM_SDK_DINC) $(WASI_LDFALGS) $< $(OUTPUT)=$@ 
 
 .PHONY: help-tvm-sdk
 
+XXX!=which dmdx || which ldc2
+
+testxx:
+	echo $(XXX)

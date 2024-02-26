@@ -31,6 +31,7 @@ endif
 
 ifneq (,$(findstring wasi,$(PLATFORM)))
 DC!=which ldc2
+
 WASI_DRUNTIME_ROOT?=$(abspath $(REPOROOT)/tools/wasi-druntime)
 -include $(WASI_DRUNTIME_ROOT)/wasi_sdk_setup.mk
 WASI_SDK_ROOT=$(abspath $(WASI_DRUNTIME_ROOT)/$(WASI_SDK))
