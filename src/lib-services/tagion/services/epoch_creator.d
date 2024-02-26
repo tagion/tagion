@@ -89,7 +89,7 @@ struct EpochCreatorService {
             assert(0);
         }
 
-        Pubkey[] channels = addressbook.activeNodeChannels;
+        Pubkey[] channels = addressbook.keys;
         Random!size_t random;
         const _seed = getRandom!size_t;
         random.seed(_seed);

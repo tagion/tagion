@@ -121,26 +121,3 @@ GenericEpoch getCurrentEpoch(string dart_file_path, SecureNet __net) {
 
     return epoch;
 }
-
-immutable(NetworkNodeRecord)*[] readAddressFile(string address_file_name) @trusted {
-    import std.stdio;
-    import std.format;
-    import std.string;
-    import tagion.hibon.HiBONtoText;
-    import tagion.basic.Types;
-
-    immutable(NetworkNodeRecord)*[] nnrs;
-
-    auto address_file = File(address_file_name, "r");
-    foreach (line; address_file.byLine) {
-        auto pair = line.split();
-        check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
-        const pkey = Pubkey(pair[0].strip.decode);
-        check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
-        const addr = pair[1].strip;
-
-        nnrs ~= new NetworkNodeRecord(pkey, addr.idup);
-    }
-
-    return nnrs;
-}

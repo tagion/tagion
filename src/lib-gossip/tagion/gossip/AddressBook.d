@@ -9,6 +9,7 @@ import std.path : isValidFilename;
 import std.conv;
 import std.algorithm;
 import std.exception;
+import std.string;
 
 import tagion.basic.tagionexceptions;
 import tagion.basic.Types;
@@ -34,6 +35,8 @@ class AddressException : TagionException {
     }
 }
 
+private alias check = Check!AddressException;
+
 /** 
  * Address book for node p2p communication
  */
@@ -58,15 +61,15 @@ synchronized class AddressBook {
         return NNRResult(assumeWontThrow(format!("Address %s not found")(pkey.encodeBase64)));
     }
 
-    /**
-     * Create associative array addresses
-     * @param addr - value
-     * @param pkey - key
+    /* 
+     * Set an individual channel
+     *
+     * Params:
+     *   nnr = The channel to set
      */
-    void opIndexAssign(immutable(NetworkNodeRecord)* info, const Pubkey pkey) pure nothrow
-    in ((pkey in addresses) is null, assumeWontThrow(format!("Address %s has already been set")(pkey.encodeBase64)))
-    do {
-        addresses[pkey] = info;
+    void set(immutable(NetworkNodeRecord)* nnr) {
+        Pubkey channel = nnr.channel;
+        addresses[channel] = nnr;
     }
 
     /**
@@ -82,7 +85,7 @@ synchronized class AddressBook {
      * @param pkey - public key fo check
      * @return true if public key exist
      */
-    bool exists(const Pubkey pkey) const nothrow {
+    bool exists(const Pubkey pkey) const pure nothrow {
         return (pkey in addresses) !is null;
     }
 
@@ -92,14 +95,14 @@ synchronized class AddressBook {
      * @return true if pkey active
      */
     bool isActive(const Pubkey pkey) const pure nothrow {
-        return (pkey in addresses) !is null;
+        return exists(pkey) && assumeWontThrow(this[pkey].get).state is NetworkNodeRecord.State.ACTIVE;
     }
 
     /**
      * Return active node channels in network
      * @return active node channels
      */
-    Pubkey[] activeNodeChannels() @trusted const pure nothrow {
+    Pubkey[] keys() @trusted const pure nothrow {
         auto channels = (cast(NetworkNodeRecord*[Pubkey])addresses).keys;
         return channels;
     }
@@ -108,7 +111,7 @@ synchronized class AddressBook {
      * Return amount of nodes in networt
      * @return amount of nodes
      */
-    size_t numOfNodes() const pure nothrow {
+    size_t length() const pure nothrow {
         return addresses.length;
     }
 
@@ -116,7 +119,7 @@ synchronized class AddressBook {
      * Sets the Addresses from an array of NNR records
      * The addresses should be empty when set
     */
-    void set(immutable(NetworkNodeRecord)*[] nnrs) 
+    void opAssign(immutable(NetworkNodeRecord)*[] nnrs) 
     in (addresses.empty, "Address have already been set, call clear() first if this is intended")
     do {
         foreach(nnr; nnrs) {
@@ -129,8 +132,100 @@ synchronized class AddressBook {
     }
 }
 
+
 static shared(AddressBook) addressbook;
 
 shared static this() {
     addressbook = new shared(AddressBook)();
+}
+
+// This function is used in dev mode when reading from an address file instead of the dart.
+immutable(NetworkNodeRecord)*[] parseAddressFile(Range)(Range address_file_content) @trusted
+if(isInputRange!Range && is(ElementType!Range : const(char[]))) {
+    import std.format;
+    import tagion.hibon.HiBONtoText;
+    import tagion.basic.Types;
+
+    immutable(NetworkNodeRecord)*[] nnrs;
+
+    foreach (line; address_file_content) {
+        if(line.empty) {
+            continue;
+        }
+        auto pair = line.split(); // Split by whitespace
+        check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
+        const pkey = Pubkey(pair[0].strip.decode);
+        check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
+        const addr = pair[1].strip;
+
+        nnrs ~= new NetworkNodeRecord(pkey, addr.idup);
+    }
+
+    return nnrs;
+}
+
+/// AddressBook
+@trusted 
+unittest {
+    import std.exception;
+    import core.exception;
+    import std.algorithm;
+
+    enum address_content = `
+        @AzZPqaMsYOwXVgitRRVe7XlyCCSdBeFK6b8mTnv8IDfU	node_3
+        @AoL9_T3JJ09fnPKo7Y1in9mpKkjgxSQ_sD0t0CPCcLKk	node_4
+        @AumexnPXMa0mKVsYQeEKvY4Y640DXNCuBU6XdzFOicWC	node_5
+        @AxEDiWOgvaTLn-zMs62msv-54RwVNA7x7xE0rtLrCd3o	node_2
+        @A5VO5-Nk5fUR7Yta7aSIpcXwWzN6cIkbKvg2-So0G52H	node_1`;
+
+    immutable(NetworkNodeRecord)*[] nnrs = parseAddressFile(address_content.splitLines);
+
+    shared(AddressBook) unitbook = new shared(AddressBook)();
+
+    // Can set the address book from a list of nnr records
+    unitbook = nnrs;
+    assert(unitbook.length == 5);
+
+    // It can only be set once
+    assertThrown!AssertError(unitbook = nnrs);
+    assert(unitbook.length == 5);
+
+    // Otherwise it should be explicitly cleared before it can be set again
+    unitbook.clear();
+    assert(unitbook.length == 0);
+    unitbook = nnrs;
+    assert(unitbook.length == 5);
+
+    // Get all of the active channels
+    Pubkey[] channels = unitbook.keys;
+    foreach(channel; channels) {
+        assert(unitbook.exists(channel));
+    }
+
+    // We can update/add a channel
+    {
+        import tagion.utils.StdTime;
+        auto nnr = nnrs[0];
+        assert(!unitbook.isActive(nnr.channel));
+
+        immutable mod_nnr = new NetworkNodeRecord(
+            nnr.channel,
+            "name",
+            sdt_t(0),
+            NetworkNodeRecord.State.ACTIVE,
+            nnr.address
+        );
+
+        unitbook.set(mod_nnr);
+
+        assert(unitbook.isActive(nnr.channel));
+    }
+
+    // Remove channels
+    {
+        Pubkey channel = nnrs[0].channel;
+        assert(unitbook.exists(channel));
+        unitbook.remove(channel);
+        assert(!unitbook.exists(channel));
+    }
 }

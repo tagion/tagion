@@ -280,20 +280,19 @@ int _neuewelle(string[] args) {
             );
 
         if (!local_options.wave.address_file.empty) {
-            // Read from text file. Will probably be removed
-            addressbook.set(readAddressFile(local_options.wave.address_file));
+            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
         }
         else {
             // New version reads the addresses properly from dart
             // However is incompatble with older darts were not set properly
             version (MODE0_ADDRESS_DART) {
-                addressbook.set(readNNRFromDart(node_options[0].dart.dart_path, keys, __net));
+                addressbook = readNNRFromDart(node_options[0].dart.dart_path, keys, __net);
             }
             else { // Old methods sets, address via task name from config file
                 import std.range;
                 foreach (key, opt; zip(keys, node_options)) {
                     verbose("adding Address ", key);
-                    addressbook[key] = new NetworkNodeRecord(key, opt.task_names.epoch_creator);
+                    addressbook.set(new NetworkNodeRecord(key, opt.task_names.epoch_creator));
                 }
             }
         }
@@ -349,10 +348,10 @@ int _neuewelle(string[] args) {
 
         if (!local_options.wave.address_file.empty) {
             // Read from text file. Will probably be removed
-            addressbook.set(readAddressFile(local_options.wave.address_file));
+            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
         }
         else {
-            addressbook.set(readNNRFromDart(local_options.dart.dart_path, keys, __net));
+            addressbook = readNNRFromDart(local_options.dart.dart_path, keys, __net);
         }
 
         foreach (key; keys) {
