@@ -1,0 +1,14 @@
+{
+    "apps": [
+      {
+        "name": "subscriber",
+        "script": "subscriber",
+        "args": "--address abstract://SUBSCRIPTION_NEUEWELLE --tag recorder",
+        "interpreter": "none",
+        "out_file": "/tmp/subscriber_pm2.log",
+        "error_file": "/tmp/subscriber_pm2.log",
+        "merge_logs": true
+      }
+    ]
+  }
+  

@@ -51,6 +51,7 @@ importPaths "src/bin-wasmutil"
 importPaths "src/bin-wave"
 importPaths "src/bin-auszahlung"
 importPaths "src/bin-devutils"
+importPaths "src/bin-subscriber"
 
 configuration "tagion" {
     sourcePaths "src/"

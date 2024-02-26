@@ -14,7 +14,7 @@ int main(string[] args) {
     import hirep = tagion.tools.hirep.hirep;
     import neuewelle = tagion.tools.neuewelle;
     import signs = tagion.tools.signs;
-    import subscribe = tagion.tools.subscribe;
+    import subscriber = tagion.tools.subscriber;
     import tagionshell = tagion.tools.tagionshell;
     import tprofview = tagion.tools.tprofview;
     import geldbeutel = tagion.tools.wallet.geldbeutel;
@@ -25,25 +25,25 @@ int main(string[] args) {
     import vergangenheit = tagion.tools.vergangenheit.vergangenheit;
 
     alias alltools = AliasSeq!(
-            subscribe,
-            neuewelle,
-            dartutil,
-            hibonutil,
-            blockutil,
-            tprofview,
-            graphview,
-            signs,
-            wasmutil,
-            geldbeutel,
-            tagionshell,
-            stiefel,
-            auszahlung,
-            hirep,
-            callstack,
-            ifiler,
-            kette,
-            devutils,
-            vergangenheit,
+        subscriber,
+        neuewelle,
+        dartutil,
+        hibonutil,
+        blockutil,
+        tprofview,
+        graphview,
+        signs,
+        wasmutil,
+        geldbeutel,
+        tagionshell,
+        stiefel,
+        auszahlung,
+        hirep,
+        callstack,
+        ifiler,
+        kette,
+        devutils,
+        vergangenheit,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
