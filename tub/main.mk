@@ -37,6 +37,7 @@ include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
 include $(TARGETS)/commands.mk
+include $(TARGETS)/compiler.mk
 
 #
 # Native platform
@@ -71,7 +72,6 @@ include $(TARGETS)/cov.mk
 #
 # Packages
 #
-include $(TARGETS)/compiler.mk
 include $(TARGETS)/dstep.mk
 include $(TARGETS)/bins.mk
 include $(TARGETS)/format.mk

@@ -16,9 +16,6 @@ env: env-tvm-sdk
 
 lib-tvm-sdk: $(DLIB)/libtagion.a
 
-test33: 
-	echo $(DBIN)/$(TVM_SDK_TESTS:.d=.wasm)
-
 test32: $(DBIN)/$(TVM_SDK_TESTS:.d=.wasm)
 
 help-tvm-sdk:

@@ -30,7 +30,10 @@ WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi
 endif
 
 ifneq (,$(findstring wasi,$(PLATFORM)))
-DC!=which ldc2
+ifneq ($(COMPILER),ldc)
+$(error $(PLATFORM) only supports ldc2 for now)
+endif
+
 
 WASI_DRUNTIME_ROOT?=$(abspath $(REPOROOT)/tools/wasi-druntime)
 -include $(WASI_DRUNTIME_ROOT)/wasi_sdk_setup.mk
