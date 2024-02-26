@@ -8,6 +8,8 @@ import std.range;
 import std.path : isValidFilename;
 import std.conv;
 import std.algorithm;
+import std.exception;
+import std.string;
 
 import tagion.basic.tagionexceptions;
 import tagion.basic.Types;
@@ -18,43 +20,63 @@ import tagion.hibon.HiBONFile;
 import tagion.hibon.HiBONRecord;
 import tagion.logger.Logger : log;
 import tagion.script.standardnames;
+import tagion.script.namerecords;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.Result;
 
-/** Address book for node p2p communication */
+/++
+ + Exceptions used for the addressbook
+ +/
+@safe
+class AddressException : TagionException {
+    //    string task_name; /// Contains the name of the task when the execption has throw
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
+        super(msg, file, line);
+    }
+}
+
+private alias check = Check!AddressException;
+
+/** 
+ * Address book for node p2p communication
+ */
 @safe
 synchronized class AddressBook {
     /** Addresses for node */
-    protected NodeInfo[Pubkey] addresses;
+    protected immutable(NetworkNodeRecord)*[Pubkey] addresses;
+
+    alias NNRResult = Result!(immutable(NetworkNodeRecord)*, AddressException);
 
     /**
      * Init NodeAddress if public key exist
      * @param pkey - public key for check
      * @return initialized node address
      */
-    const(NodeInfo) opIndex(const Pubkey pkey) const pure nothrow @trusted {
+    NNRResult opIndex(const Pubkey pkey) const pure nothrow {
         auto addr = pkey in addresses;
-        if (addr) {
-            return cast(NodeInfo)*addr;
+        /* static assert(0, typeof(*addr)); */
+        if (addr !is null) {
+            return NNRResult(*addr);
         }
-        return NodeInfo.init;
+        return NNRResult(assumeWontThrow(format!("Address %s not found")(pkey.encodeBase64)));
     }
 
-    /**
-     * Create associative array addresses
-     * @param addr - value
-     * @param pkey - key
+    /* 
+     * Set an individual channel
+     *
+     * Params:
+     *   nnr = The channel to set
      */
-    void opIndexAssign(const NodeInfo info, const Pubkey pkey)
-    in ((pkey in addresses) is null, format("Address %s has already been set", pkey.encodeBase64))
-    do {
-        addresses[pkey] = info;
+    void set(immutable(NetworkNodeRecord)* nnr) {
+        Pubkey channel = nnr.channel;
+        addresses[channel] = nnr;
     }
 
     /**
      * Remove addresses by public key
      * @param pkey - public key fo remove addresses
      */
-    void erase(const Pubkey pkey) pure nothrow {
+    void remove(const Pubkey pkey) pure nothrow {
         addresses.remove(pkey);
     }
 
@@ -63,7 +85,7 @@ synchronized class AddressBook {
      * @param pkey - public key fo check
      * @return true if public key exist
      */
-    bool exists(const Pubkey pkey) const nothrow {
+    bool exists(const Pubkey pkey) const pure nothrow {
         return (pkey in addresses) !is null;
     }
 
@@ -73,28 +95,43 @@ synchronized class AddressBook {
      * @return true if pkey active
      */
     bool isActive(const Pubkey pkey) const pure nothrow {
-        return (pkey in addresses) !is null;
+        return exists(pkey) && assumeWontThrow(this[pkey].get).state is NetworkNodeRecord.State.ACTIVE;
     }
 
     /**
      * Return active node channels in network
      * @return active node channels
      */
-    Pubkey[] activeNodeChannels() @trusted const pure nothrow {
-        auto channels = (cast(string[Pubkey]) addresses).keys;
+    Pubkey[] keys() @trusted const pure nothrow {
+        auto channels = (cast(NetworkNodeRecord*[Pubkey])addresses).keys;
         return channels;
     }
-
-    alias getAddress = opIndex;
 
     /**
      * Return amount of nodes in networt
      * @return amount of nodes
      */
-    size_t numOfNodes() const pure nothrow {
+    size_t length() const pure nothrow {
         return addresses.length;
     }
+
+    /**
+     * Sets the Addresses from an array of NNR records
+     * The addresses should be empty when set
+    */
+    void opAssign(immutable(NetworkNodeRecord)*[] nnrs) 
+    in (addresses.empty, "Address have already been set, call clear() first if this is intended")
+    do {
+        foreach(nnr; nnrs) {
+            addresses[nnr.channel] = nnr;
+        }
+    }
+
+    void clear() {
+        addresses = null;
+    }
 }
+
 
 static shared(AddressBook) addressbook;
 
@@ -102,63 +139,102 @@ shared static this() {
     addressbook = new shared(AddressBook)();
 }
 
-/// https://github.com/multiformats/multiaddr/blob/master/protocols.csv
-enum MultiAddrProto {
-    ip4 = 4,
-    tcp = 6,
-    ip6 = 41,
+// This function is used in dev mode when reading from an address file instead of the dart.
+immutable(NetworkNodeRecord)*[] parseAddressFile(Range)(Range address_file_content) @trusted
+if(isInputRange!Range && is(ElementType!Range : const(char[]))) {
+    import std.format;
+    import tagion.hibon.HiBONtoText;
+    import tagion.basic.Types;
+
+    immutable(NetworkNodeRecord)*[] nnrs;
+
+    foreach (line; address_file_content) {
+        if(line.empty) {
+            continue;
+        }
+        auto pair = line.split(); // Split by whitespace
+        check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
+        const pkey = Pubkey(pair[0].strip.decode);
+        check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
+        const addr = pair[1].strip;
+
+        nnrs ~= new NetworkNodeRecord(pkey, addr.idup);
+    }
+
+    return nnrs;
 }
 
-/** 
- * Node Name Record
- * Holds the information for communicating with a node.
- */
-@safe
-@recordType("NNR")
-struct NodeInfo {
-
-    // The Pubkey is kept as a Buffer internally, because Pubkey is a struct we cannot assign NodeInfo info to a shared.
-    // It'll be exactly the same when serialized to hibon.
-    private @label(StdNames.nodekey) Buffer _owner;
-    @label("a") string address;
-
-    this(Pubkey __owner, string _addr) nothrow pure {
-        _owner = cast(Buffer) __owner;
-        address = _addr;
-    }
-
-    Pubkey owner() => Pubkey(_owner);
-
-    /**
-     * Parse node address to string
-     * @return string address
-     */
-    string toString() const {
-        return address;
-    }
-
-    string toNNGString() const {
-        auto s = address.split("/");
-        const type = s[0];
-        const host = s[1];
-        if (type == "ip4" || type == "ip6") {
-            const proto = s[2];
-            const port = s[3];
-            return proto ~ "://" ~ host ~ ":" ~ port;
-        }
-        else if (type == "abstract" || type == "unix") {
-            const name = s[2];
-            return type ~ name;
-        }
-        // Probably should not assert in the future, or atleast validate the address ahead of time in the constructor
-        assert(0, format("don't know how to convert %s to nng address", address));
-    }
-}
-
+/// AddressBook
+@trusted 
 unittest {
-    immutable nnr = NodeInfo(Pubkey(), "ip4/200.185.5.5/tcp/80");
-    assert(nnr.toNNGString == "tcp://200.185.5.5:80");
+    import std.exception;
+    import core.exception;
+    import std.algorithm;
 
-    immutable nnr2 = NodeInfo(Pubkey(), "ip6/c8b9:505:c8b9:505:c8b9:0:c8b9:505/tcp/80");
-    assert(nnr2.toNNGString == "tcp://c8b9:505:c8b9:505:c8b9:0:c8b9:505:80");
+    enum address_content = `
+        @AzZPqaMsYOwXVgitRRVe7XlyCCSdBeFK6b8mTnv8IDfU	node_3
+        @AoL9_T3JJ09fnPKo7Y1in9mpKkjgxSQ_sD0t0CPCcLKk	node_4
+        @AumexnPXMa0mKVsYQeEKvY4Y640DXNCuBU6XdzFOicWC	node_5
+        @AxEDiWOgvaTLn-zMs62msv-54RwVNA7x7xE0rtLrCd3o	node_2
+        @A5VO5-Nk5fUR7Yta7aSIpcXwWzN6cIkbKvg2-So0G52H	node_1`;
+
+    immutable(NetworkNodeRecord)*[] nnrs = parseAddressFile(address_content.splitLines);
+
+    shared(AddressBook) unitbook = new shared(AddressBook)();
+
+    // Can set the address book from a list of nnr records
+    unitbook = nnrs;
+    assert(unitbook.length == 5);
+
+    // It can only be set once
+    assertThrown!AssertError(unitbook = nnrs);
+    assert(unitbook.length == 5);
+
+    // Otherwise it should be explicitly cleared before it can be set again
+    unitbook.clear();
+    assert(unitbook.length == 0);
+    unitbook = nnrs;
+    assert(unitbook.length == 5);
+
+    // Get all of the active channels
+    Pubkey[] channels = unitbook.keys;
+    foreach(channel; channels) {
+        assert(unitbook.exists(channel));
+    }
+
+    // We can update/add a channel
+    {
+        import tagion.utils.StdTime;
+        auto nnr = nnrs[0];
+        assert(!unitbook.isActive(nnr.channel));
+
+        immutable mod_nnr = new NetworkNodeRecord(
+            nnr.channel,
+            "name",
+            sdt_t(0),
+            NetworkNodeRecord.State.ACTIVE,
+            nnr.address
+        );
+
+        unitbook.set(mod_nnr);
+
+        assert(unitbook.isActive(nnr.channel));
+    }
+
+    // Remove channels
+    {
+        Pubkey channel = nnrs[0].channel;
+        assert(unitbook.exists(channel));
+        unitbook.remove(channel);
+        assert(!unitbook.exists(channel));
+    }
+
+    // Retrieving a channels result which doesn't exists will throw
+    {
+        Pubkey channel = [0, 1, 2, 3, 4];
+        assert(!unitbook.exists(channel));
+
+        auto result = unitbook[channel];
+        assertThrown!AddressException(result.get);
+    }
 }

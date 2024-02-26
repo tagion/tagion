@@ -37,8 +37,9 @@ import Wallet = tagion.wallet.SecureWallet;
 import tagion.wallet.WalletException;
 import tagion.basic.tagionexceptions : Check;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
+import tagion.tools.revision;
 
-extern (C) export immutable string TAGION_HASH = import("revision.mixin").splitLines[2];
+extern (C) export immutable string TAGION_HASH = revision_info[3];
 
 /// Used for describing the d-runtime status
 enum DrtStatus {
@@ -66,6 +67,10 @@ extern (C) {
         PAYMENT_ERROR = 2,
         NOT_LOGGED_IN = 9,
         DART_UPDATE_REQUIRED = 16,
+    }
+
+    export const(char)* tagion_revision() {
+        return revision_text.toStringz;
     }
 
     // Staritng d-runtime
@@ -590,18 +595,35 @@ extern (C) {
         immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            const account_doc = Document(account);
-            if (account_doc.isRecord!(Cipher.CipherDocument)) {
-                // encrypted backup
-                __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(account_doc));
-            }
-            else {
-                // not encrypted account backup
-                __wallet_storage.wallet.setAccount(account_doc);
-            }
-            __wallet_storage.write;
-            version (NET_HACK) {
-                __wallet_storage.read;
+
+            try {
+                Document import_doc = Document(account);
+
+                Document unencrypted_doc = import_doc;
+                //decrypt
+                if (import_doc.isRecord!(Cipher.CipherDocument)) {
+                    Cipher cipher;
+                    unencrypted_doc = cipher.decrypt(__wallet_storage.wallet.net, Cipher.CipherDocument(import_doc));
+                } 
+
+                if (unencrypted_doc.isRecord!AccountDetails) {
+                    // not encrypted account backup
+                    __wallet_storage.wallet.setAccount(unencrypted_doc);
+                }
+                else {
+                    import tagion.wallet.prior.AccountDetails : PriorAccountDetails = AccountDetails;
+                    import tagion.wallet.prior.migrate;
+                    auto prior_account = PriorAccountDetails(unencrypted_doc);
+
+                    auto new_account_doc = prior_account.migrate.toDoc;
+                    __wallet_storage.wallet.setAccount(new_account_doc);
+                }
+                __wallet_storage.write;
+                version (NET_HACK) {
+                    __wallet_storage.read;
+                }
+            } catch (Exception e) {
+                return ERROR;
             }
             return SUCCESS;
         }
@@ -1108,11 +1130,24 @@ struct WalletStorage {
     }
 
     void read() {
+        import tagion.hibon.HiBONException;
 
         version (NET_HACK) {
             auto _pin = path(devicefile).fread!DevicePIN;
             auto _wallet = path(walletfile).fread!RecoverGenerator;
-            auto _account = path(accountfile).fread!AccountDetails;
+
+            AccountDetails _account;
+            try {
+                _account = path(accountfile).fread!AccountDetails;
+            }
+            catch(HiBONRecordTypeException) {
+                import prior = tagion.wallet.prior.AccountDetails;
+                import tagion.wallet.prior.migrate;
+
+                auto prior_account = path(accountfile).fread!(prior.AccountDetails);
+
+                _account = migrate(prior_account);
+            }
 
             if (wallet.net !is null) {
                 auto __net = cast(shared(StdSecureNet)) wallet.net;

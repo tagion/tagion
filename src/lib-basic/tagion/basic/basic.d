@@ -1,9 +1,13 @@
 /// Basic functions used in the tagion project
 module tagion.basic.basic;
 
+private import tagion.basic.Version;
 private import std.string : join;
 private import std.traits;
 import std.meta : AliasSeq;
+static if (!ver.WASI) {
+    public import tagion.basic.testbasic;
+}
 
 enum this_dot = "this.";
 import std.conv;
@@ -128,29 +132,6 @@ unittest {
 }
 
 /++
- Generate a temporary file name
-+/
-@trusted
-string tempfile() {
-    import std.file;
-    import std.path;
-    import std.random;
-    import std.range;
-
-    auto rnd = Random(unpredictableSeed);
-    return buildPath(tempDir, generate!(() => uniform('A', 'Z', rnd)).takeExactly(20).array);
-}
-
-@safe
-void forceRemove(const(string) filename) {
-    import std.file : exists, remove;
-
-    if (filename.exists) {
-        filename.remove;
-    }
-}
-
-/++
  Returns:
  true if the type T is one of types in the list TList
 +/
@@ -203,24 +184,6 @@ static unittest {
     static assert(is(uint == CastTo!(ushort, AliasSeq!(uint, string))));
     static assert(is(uint == CastTo!(int, AliasSeq!(string, uint))));
     static assert(is(const(uint) == CastTo!(inout(uint), AliasSeq!(const(uint), const(string)))));
-}
-
-import std.typecons : Tuple;
-
-alias FileNames = Tuple!(string, "tempdir", string, "filename", string, "fullpath");
-const(FileNames) fileId(T)(string ext, string prefix = null) @safe {
-    import std.array : join;
-    import std.file;
-    import std.path;
-    import std.process : environment, thisProcessID;
-
-    //import std.traits;
-    FileNames names;
-    names.tempdir = tempDir.buildPath(environment.get("USER"));
-    names.filename = setExtension([prefix, thisProcessID.to!string, T.stringof].join("_"), ext);
-    names.fullpath = buildPath(names.tempdir, names.filename);
-    names.tempdir.exists || names.tempdir.mkdir;
-    return names;
 }
 
 template EnumContinuousSequency(Enum) if (is(Enum == enum)) {
@@ -390,22 +353,6 @@ static unittest {
     static assert(staticSearchIndexOf!(long, seq) is 2);
     static assert(staticSearchIndexOf!(isIntegral, seq) is 1);
     static assert(staticSearchIndexOf!(isFloatingPoint, seq) is -1);
-}
-
-enum unitdata = "unitdata";
-
-/**
-* Used in unitttest local the path package/unitdata/filename 
-* Params:
-*   filename = name of the unitdata file
-*   file = defailt location of the module
-* Returns:
-*   unittest data filename
- */
-string unitfile(string filename, string file = __FILE__) @safe {
-    import std.path;
-
-    return buildPath(file.dirName, unitdata, filename);
 }
 
 /** 

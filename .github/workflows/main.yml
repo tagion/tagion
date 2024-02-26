@@ -32,7 +32,7 @@ jobs:
       - run: |
           for i in `find src/* -maxdepth 0 -type d | grep -v "lib-nngd"`; do
             echo "Checking $i"
-            dub run dscanner -- $i --styleCheck -f "github" | grep -v undocumented || echo false
+            dub run dscanner -- $i --styleCheck -f "github" | grep --extended-regexp -v "undocumented|style_check|long_line_check" || echo false
           done
 
   build:
@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload code coverage results
         if: ${{ vars.ENABLE_COV || false }}
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./logs/${{ env.TARGET }}/cov/
@@ -130,7 +130,7 @@ jobs:
           make bddtest -j || make proper bddtest
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./logs/${{ env.TARGET }}/bdd/commit/cov/

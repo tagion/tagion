@@ -4,7 +4,7 @@ module tagion.services.epoch_creator;
 
 // tagion
 import tagion.actor;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types;
 import tagion.basic.basic : isinit;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -83,13 +83,13 @@ struct EpochCreatorService {
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface));
+            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface), opts.timeout.msecs);
             break;
         case NetworkMode.PUB:
             assert(0);
         }
 
-        Pubkey[] channels = addressbook.activeNodeChannels;
+        Pubkey[] channels = addressbook.keys;
         Random!size_t random;
         const _seed = getRandom!size_t;
         random.seed(_seed);

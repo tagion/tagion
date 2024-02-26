@@ -69,7 +69,7 @@ bddenv: $(TESTENV)
 
 $(TESTENV): $(DBIN) 
 	$(PRECMD)
-	$(SCRIPTS)/genenv.sh $@
+	bash $(SCRIPTS)/genenv.sh $@
 	chmod 750 $@
 
 .PHONY: $(TESTENV)

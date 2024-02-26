@@ -1,4 +1,5 @@
 /** 
+ *
  * New wave implementation of the tagion node
 **/
 module tagion.tools.neuewelle;
@@ -18,6 +19,7 @@ import std.path;
 import std.range : iota;
 import std.stdio;
 import std.typecons;
+import std.sumtype;
 
 import tagion.GlobalSignals : segment_fault, stopsignal;
 import tagion.actor;
@@ -35,6 +37,8 @@ import tagion.tools.revision;
 import tagion.tools.toolsexception;
 import tagion.utils.Term;
 import tagion.wave.common;
+import tagion.script.common;
+import tagion.script.namerecords;
 
 static abort = false;
 import tagion.services.transcript : graceful_shutdown;
@@ -111,8 +115,8 @@ int _neuewelle(string[] args) {
     bool override_switch;
     bool monitor;
 
-    string mode0_node_opts_path;
     string[] override_options;
+    string network_mode_switch;
 
     auto main_args = getopt(args,
             "version", "Print revision information", &version_switch,
@@ -121,8 +125,8 @@ int _neuewelle(string[] args) {
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
-            "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
-            "m|monitor", "Enable the monitor", &monitor,
+            "m|mode", "Set the node network mode [0,1,2]", &network_mode_switch,
+            "monitor", "Enable the monitor", &monitor,
     );
 
     if (main_args.helpWanted) {
@@ -162,28 +166,40 @@ int _neuewelle(string[] args) {
 
     // Experimental!!
     if (!override_options.empty) {
-        import std.json;
-        import tagion.utils.JSONCommon;
+        local_options.set_override_options(override_options);
+    }
 
-        JSONValue json = local_options.toJSON;
+     // Set the network mode
+    if(!network_mode_switch.empty) {
+        import std.conv;
+        import std.traits;
+        import std.uni;
+        import std.exception;
 
-        void set_val(JSONValue j, string[] _key, string val) {
-            if (_key.length == 1) {
-                j[_key[0]] = val.toJSONType(j[_key[0]].type);
-                return;
+        NetworkMode n_mode;
+        bool good_conversion;
+
+        collectException({ // Convert from string value [INTERNAL, LOCAL, PUB]
+            n_mode = network_mode_switch.toUpper.to!NetworkMode;
+            good_conversion = true;
+        }());
+
+        collectException({ // Convert from number [0, 1, 2]
+            int mode_number = network_mode_switch.to!int;
+            if(mode_number >= NetworkMode.min && mode_number <= NetworkMode.max) {
+                n_mode = cast(NetworkMode)mode_number;
+                good_conversion = true;
             }
-            set_val(j[_key[0]], _key[1 .. $], val);
+        }());
+
+        if(!good_conversion) {
+            throw new ToolsException(format("Mode split should be %(%s,%) or %(%s,%)",
+                   [EnumMembers!NetworkMode],
+                   cast(int[])[EnumMembers!NetworkMode]
+               ));
         }
 
-        foreach (option; override_options) {
-            const index = option.countUntil(":");
-            assert(index > 0, format("Option '%s' invalid, missing key:value", option));
-            string[] key = option[0 .. index].split(".");
-            string value = option[index + 1 .. $];
-            set_val(json, key, value);
-        }
-        // If options does not parse as a string then some types will not be interpreted correctly
-        local_options.parseJSON(json.toString);
+        local_options.wave.network_mode = n_mode;
     }
 
     if (override_switch) {
@@ -201,7 +217,6 @@ int _neuewelle(string[] args) {
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
-
     ActorHandle sub_handle;
     { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
@@ -218,8 +233,10 @@ int _neuewelle(string[] args) {
     final switch (local_options.wave.network_mode) {
     case NetworkMode.INTERNAL:
         import tagion.wave.mode0;
+        import tagion.gossip.AddressBook;
 
-        auto node_options = getMode0Options(local_options, monitor);
+        const node_options = getMode0Options(local_options, monitor);
+
         auto __net = new StdSecureNet();
         __net.generateKeyPair("dart_read_pin");
 
@@ -227,43 +244,73 @@ int _neuewelle(string[] args) {
             assert(0, "DATABASES must be booted with same bullseye - Abort");
         }
 
-        auto nodes = inputKeys(fin, node_options, bootkeys_path);
-        if (nodes is Node[].init) {
+        Node[] nodes = (bootkeys_path.empty)
+            ? dummy_nodestruct_for_testing(node_options) 
+            : inputKeys(fin, node_options, bootkeys_path);
+
+        assert(!nodes.empty, "No node keys were available");
+
+        version (USE_GENESIS_EPOCH) {
+            import tagion.dart.DART;
+
+            Exception dart_exception;
+            DART db = new DART(__net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
+            if (dart_exception !is null) {
+                throw dart_exception;
+            }
+            scope (exit) {
+                db.close;
+            }
+
+            const head = TagionHead("tagion", 0);
+            auto epoch = head.getEpoch(db, __net);
+        }
+        else {
+            auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
+        }
+
+        auto keys = epoch.getNodeKeys();
+        check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
+        check(keys.length == node_options.length,
+                format(
+                    "There was not the same amount of configured nodes as in the genesis epoch %s != %s)",
+                    keys.length,
+                    node_options.length
+                )
+            );
+
+        if (!local_options.wave.address_file.empty) {
+            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
+        }
+        else {
+            // New version reads the addresses properly from dart
+            // However is incompatble with older darts were not set properly
+            version (MODE0_ADDRESS_DART) {
+                addressbook = readNNRFromDart(node_options[0].dart.dart_path, keys, __net);
+            }
+            else { // Old methods sets, address via task name from config file
+                import std.range;
+                foreach (key, opt; zip(keys, node_options)) {
+                    verbose("adding Address ", key);
+                    addressbook.set(new NetworkNodeRecord(key, opt.task_names.epoch_creator));
+                }
+            }
+        }
+
+        if (dry_switch) {
             return 0;
         }
 
-        Document doc = getHead(node_options[0], __net);
         // we only need to read one head since all bullseyes are the same:
-        spawnMode0(node_options, supervisor_handles, nodes, doc);
+        spawnMode0(supervisor_handles, nodes);
         log("started mode 0 net");
 
-        if (mode0_node_opts_path) {
-            foreach (i, opt; node_options) {
-                opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension(
-                        FileExtension
-                        .json)));
-            }
-        }
         break;
     case NetworkMode.LOCAL:
         import tagion.services.supervisor;
         import tagion.script.common;
         import tagion.gossip.AddressBook;
-        import tagion.hibon.HiBONtoText;
-        import tagion.crypto.Types;
-        import std.exception : assumeUnique;
-        import std.string;
-
-        auto address_file = File(local_options.wave.mode1.address_book_file, "r");
-        foreach (line; address_file.byLine) {
-            auto pair = line.split();
-            check(pair.length == 2, format("Expected exactly 2 fields in addresbook line\n%s", line));
-            const pkey = Pubkey(pair[0].strip.decode);
-            check(pkey.length == 33, "Pubkey should have a length of 33 bytes");
-            const addr = pair[1].strip;
-
-            addressbook[pkey] = NodeInfo(pkey, addr.idup);
-        }
+        import tagion.basic.Types;
 
         auto by_line = fin.byLine;
         // Hardcordes config path for now
@@ -296,11 +343,16 @@ int _neuewelle(string[] args) {
             destroy(__net);
         }
 
-        Document epoch_head = getHead(local_options, __net);
+        auto epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
+        auto keys = epoch.getNodeKeys;
 
-        auto genesis = GenesisEpoch(epoch_head);
-
-        const keys = genesis.nodes;
+        if (!local_options.wave.address_file.empty) {
+            // Read from text file. Will probably be removed
+            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
+        }
+        else {
+            addressbook = readNNRFromDart(local_options.dart.dart_path, keys, __net);
+        }
 
         foreach (key; keys) {
             check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
@@ -365,7 +417,10 @@ import tagion.wave.mode0 : Node;
 import tagion.tools.wallet.WalletOptions;
 import tagion.tools.wallet.WalletInterface;
 
-Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path) {
+// Reads node pins key from stdin and uses wallet public key
+Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path)
+in(!bootkeys_path.empty, "Should specify a bootkeys path")
+{
     auto by_line = fin.byLine;
     enum number_of_retry = 3;
 
@@ -376,47 +431,24 @@ Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path) 
             net = null;
         }
 
-        if (bootkeys_path.empty) {
-            net = new StdSecureNet;
-            net.generateKeyPair(opts.task_names.supervisor);
-        }
-        else {
-            WalletOptions wallet_options;
-            LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
-                verbose("Input boot key %d as nodename:pincode", i);
-                const args = (by_line.front.empty) ? string[].init : by_line.front.split(":");
+        WalletOptions wallet_options;
+        LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
+            scope(exit) {
                 by_line.popFront;
-                if (args.length != 2) {
-                    writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
-                }
-                //string wallet_config_file;
-                const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
-                writeln("Looking for " ~ wallet_config_file);
-                verbose("Wallet path %s", wallet_config_file);
-                if (!wallet_config_file.exists) {
-                    writefln("%1$sBoot key file %3$s not found%2$s", RED, RESET, wallet_config_file);
-                    writefln("Try another node name");
-                }
-                else {
-                    verbose("Load config");
-                    wallet_options.load(wallet_config_file);
-                    auto wallet_interface = WalletInterface(wallet_options);
-                    verbose("Load wallet");
-                    wallet_interface.load;
-
-                    const loggedin = wallet_interface.secure_wallet.login(args[1]);
-                    if (wallet_interface.secure_wallet.isLoggedin) {
-                        verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
-                        net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
-                        break LoopTry;
-                    }
-                    else {
-                        writefln("%1$sWrong pincode bootkey %3$s node %4$s%2$s", RED, RESET, i, args[0]);
-                    }
-                }
-                check(tries < number_of_retry, format("Max number of retries is %d", number_of_retry));
             }
+
+            verbose("Input boot key %d as nodename:pincode", i);
+
+            try {
+                net = inputKey(by_line.front, bootkeys_path);
+                break LoopTry;
+            } catch(Exception e) {
+                error(e);
+            }
+
+            check(tries < number_of_retry, format("Max number of retries is %d", number_of_retry));
         }
+
         if (dry_switch && !bootkeys_path.empty) {
             writefln("%1$sBoot keys correct%2$s", GREEN, RESET);
         }
@@ -425,8 +457,38 @@ Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path) 
         nodes ~= Node(opts, shared_net, net.pubkey);
     }
 
-    if (dry_switch) {
-        return Node[].init;
-    }
     return nodes;
+}
+
+StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
+    const args = (node_pin.empty) ? string[].init : node_pin.split(":");
+
+    if (args.length != 2) {
+        throw new ToolsException(format("Bad format %s expected nodename:pincode", node_pin));
+    }
+
+    const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
+    writeln("Looking for " ~ wallet_config_file);
+    verbose("Wallet path %s", wallet_config_file);
+    if (!wallet_config_file.exists) {
+        throw new ToolsException(format("Boot key file not found: %s", wallet_config_file));
+    }
+
+    WalletOptions wallet_options;
+    verbose("Load config");
+    wallet_options.load(wallet_config_file);
+
+    auto wallet_interface = WalletInterface(wallet_options);
+    verbose("Load wallet");
+    if(!wallet_interface.load) {
+        throw new ToolsException(format("Could not find wallet file %s", wallet_options.walletfile));
+    }
+
+    const _ = wallet_interface.secure_wallet.login(args[1]);
+    if (!wallet_interface.secure_wallet.isLoggedin) {
+        throw new ToolsException(format("%1$sWrong pincode bootkey node %3$s%2$s", RED, RESET, args[0]));
+    }
+
+    verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
+    return cast(StdSecureNet)wallet_interface.secure_wallet.net.clone;
 }

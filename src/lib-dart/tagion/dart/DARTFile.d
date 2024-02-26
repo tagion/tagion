@@ -80,10 +80,10 @@ class DARTFile {
         Fingerprint _fingerprint;
     }
 
-    protected enum _params = [
-            "dart_indices",
-            "bullseye",
-        ];
+    static immutable _params = [
+        "dart_indices",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -387,7 +387,7 @@ class DARTFile {
          * Returns: HiBON of the branches
          */
         // version(none)
-        HiBON toHiBON(const bool exclude_indices = false) const
+        HiBON toHiBON(const bool exclude_indices=false) const
         in {
             assert(merkleroot.isinit, "Fingerprint must be calcuted before toHiBON is called");
         }

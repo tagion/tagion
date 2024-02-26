@@ -129,6 +129,8 @@ HiRPC.Receiver sendShellHiRPC(string address, Document doc, HiRPC hirpc) {
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
+    check(response_doc.isRecord!(HiRPC.Receiver), format("Error in response when sending hirpc %s", response_doc.toPretty));
+
     return hirpc.receive(response_doc);
 }
 

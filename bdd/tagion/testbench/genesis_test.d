@@ -112,28 +112,44 @@ int _main(string[] args) {
     // const total_amount = BigNumber(bills.map!(b => b.value).sum);
     const number_of_bills = long(bills.length);
 
-    Pubkey[] keys;
-    foreach (i; 0 .. local_options.wave.number_of_nodes) {
-        auto _net = new StdSecureNet();
-        const pswd = format(local_options.wave.prefix_format, i) ~ "supervisor";
-        writefln("bdd: %s", pswd);
-        _net.generateKeyPair(pswd);
-        keys ~= _net.pubkey;
-        writefln("pkey: %s", _net.pubkey.encodeBase64);
+    import tagion.wave.mode0;
+    import tagion.tools.boot.genesis;
+    import tagion.script.common;
+    import tagion.hibon.Document;
+    import tagion.hibon.BigNumber;
+
+    const(Options)[] node_opts = getMode0Options(local_options, monitor: false);
+    auto nets = dummy_nodenets_for_testing(node_opts);
+    Pubkey[] keys = nets.map!(net => net.pubkey).array;
+    NodeSettings[] node_settings;
+    foreach (opt, key; zip(node_opts, keys)) {
+        node_settings ~= NodeSettings(
+            opt.task_names.epoch_creator, // Name
+            key,
+            opt.task_names.epoch_creator, // Address
+        );
     }
 
     HiBON testamony = new HiBON;
     testamony["hola"] = "Hallo ich bin philip. VERY OFFICIAL TAGION GENESIS BLOCK; DO NOT ALTER IN ANY WAYS";
 
-    auto globals = TagionGlobals(total_start_amount, const BigNumber(0), number_of_bills, const long(
-            0));
-    const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
-    const tagion_head = TagionHead(TagionDomain, 0);
-    writefln("total start_amount: %s, HEAD: %s \n genesis_epoch: %s", total_start_amount, tagion_head.toPretty, genesis_epoch
-            .toPretty);
+    auto globals = TagionGlobals(total_start_amount, BigNumber(0), number_of_bills, 0);
+    /* const tagion_head = TagionHead(TagionDomain, 0); */
+    /* writefln("total start_amount: %s, HEAD: %s \n genesis_epoch: %s", total_start_amount, tagion_head.toPretty, genesis_epoch */
+    /*         .toPretty); */
+    /**/
+    /* recorder.add(tagion_head); */
+    /* recorder.add(genesis_epoch); */
 
-    recorder.add(tagion_head);
-    recorder.add(genesis_epoch);
+    /// FIXME: Duplicate genrate genesis_epoch
+    const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
+    const genesis = createGenesis(
+        node_settings,
+        Document(testamony), 
+        globals,
+    );
+
+    recorder.insert(genesis, Archive.Type.ADD);
 
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
@@ -163,23 +179,9 @@ int _main(string[] args) {
     }
 
     immutable neuewelle_args = [
-        "genesis_test", config_file, "--nodeopts", module_path
+        "genesis_test", config_file
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
-
-    import tagion.utils.JSONCommon : load;
-
-    Options[] node_opts;
-
-    Thread.sleep(5.seconds);
-    foreach (i; 0 .. local_options.wave.number_of_nodes) {
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(
-                FileExtension
-                .json));
-        writeln(filename);
-        Options node_opt = load!(Options)(filename);
-        node_opts ~= node_opt;
-    }
 
     Thread.sleep(15.seconds);
     auto name = "genesis_testing";

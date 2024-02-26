@@ -14,7 +14,7 @@ export DLIB := $(DBUILD)/lib
 export DLOGCOV := $(DLOG)/cov
 export BUILDDOC := $(BUILD)/ddoc
 export TESTLOG := $(DLOG)/testlog
-export FUND := $(REPOROOT)/fundamental
+export FUND := $(abspath $(REPOROOT)/fundamental)
 export SCRIPTS := $(DTUB)/scripts
 
 # directories for integration and dart project

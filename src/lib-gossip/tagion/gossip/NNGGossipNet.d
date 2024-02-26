@@ -1,7 +1,9 @@
 module tagion.gossip.NNGGossipNet;
 
+import core.time;
+import core.thread;
+
 import std.random;
-import nngd;
 
 import tagion.actor;
 import tagion.basic.Types;
@@ -14,16 +16,18 @@ import tagion.utils.StdTime;
 
 @safe
 class NNGGossipNet : GossipNet {
+    private Duration duration;
     private string[Pubkey] addresses;
     private Pubkey[] _pkeys;
     immutable(Pubkey) mypk;
     private Random random;
     private ActorHandle nodeinterface;
 
-    this(const Pubkey mypk, ActorHandle nodeinterface) {
+    this(const Pubkey mypk, ActorHandle nodeinterface, Duration duration) {
         this.nodeinterface = nodeinterface;
         this.random = Random(unpredictableSeed);
         this.mypk = mypk;
+        this.duration = duration;
     }
 
     void add_channel(const Pubkey channel) {
@@ -33,7 +37,7 @@ class NNGGossipNet : GossipNet {
             return;
         }
 
-        const address = addressbook[channel].address;
+        const address = addressbook[channel].get.address;
         _pkeys ~= channel;
         addresses[channel] = address;
     }
@@ -84,8 +88,9 @@ class NNGGossipNet : GossipNet {
         return send_channel;
     }
 
-    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+    void send(const Pubkey channel, const(HiRPC.Sender) sender) @trusted {
         nodeinterface.send(NodeSend(), channel, sender.toDoc);
+        Thread.sleep(duration);
     }
 
     void start_listening() {

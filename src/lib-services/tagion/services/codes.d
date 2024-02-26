@@ -24,16 +24,13 @@ enum ServiceCode {
 
 @safe
 string toString(ServiceCode errno) pure nothrow {
-    switch (errno) {
+    final switch (errno) {
         static foreach (E; EnumMembers!ServiceCode) {
     case E:
             enum error_text = getUDAs!(E, string)[0];
             return (error_text.length) ? error_text : E.stringof;
         }
-    default:
-        return null;
     }
-    assert(0);
 }
 
 int hibon_2_service_code(Document.Element.ErrorCode code) {

@@ -16,6 +16,13 @@ endif
 
 DFLAGS+=-J$(DTUB)/logos/
 
+ifdef SPLIT_LINKER
+# dmd already sets this when it invokes the linker
+LDFLAGS+=-lphobos2
+# Assume that phobos is located in lib directory 1 up from compiler
+LDFLAGS+=-L$(dir $(shell which $(DC)))/../lib
+endif
+
 #
 # Change extend of the LIB
 #
@@ -55,6 +62,19 @@ endif
 # proto targets for binaries
 #
 
+ifdef SPLIT_LINKER
+$(DOBJ)/bin%.$(OBJEXT): $(DOBJ)/.way
+	$(PRECMD)
+	${call log.kvp, compile$(MODE)}
+	echo $(DFILES) > /tmp/$*_dfiles.mk
+	$(DC) $(DCOMPILE_ONLY) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(OUTPUT)$@
+
+$(DBIN)/%: $(DOBJ)/bin%.$(OBJEXT)
+	$(PRECMD)
+	${call log.kvp, split-link$(MODE)}
+	echo ${filter %.$(OBJEXT),$?}
+	$(LD) ${LDFLAGS} ${filter %.$(OBJEXT),$?} $(LIBS) $(OBJS) -o$@
+else
 $(DBIN)/%:
 	$(PRECMD)
 	${call log.kvp, bin$(MOD), $*}
@@ -62,6 +82,7 @@ $(DBIN)/%:
 	echo $(DFILES) > /tmp/$*_dfiles.mk
 	echo $(DFLAGS) $(DFLAGS_DEBUG) > /tmp/$*_dflags.mk
 	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(LIBS) $(OBJS) $(OUTPUT)$@
+endif
 
 
 # Object Clear"

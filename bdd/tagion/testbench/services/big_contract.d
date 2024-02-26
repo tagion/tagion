@@ -102,6 +102,32 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
+    import tagion.tools.boot.genesis;
+    import tagion.script.common;
+    import tagion.hibon.Document;
+    import tagion.hibon.BigNumber;
+    import tagion.wave.mode0;
+
+    const node_opts = getMode0Options(local_options, monitor: false);
+
+    NodeSettings[] node_settings;
+    auto nodenets = dummy_nodenets_for_testing(node_opts);
+    foreach (opt, node_net; zip(node_opts, nodenets)) {
+        node_settings ~= NodeSettings(
+            opt.task_names.epoch_creator, // Name
+            node_net.pubkey,
+            opt.task_names.epoch_creator, // Address
+        );
+    }
+
+    const genesis = createGenesis(
+        node_settings,
+        Document(), 
+        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+    );
+
+    recorder.insert(genesis, Archive.Type.ADD);
+
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options
@@ -130,22 +156,10 @@ int _main(string[] args) {
     }
 
     immutable neuewelle_args = [
-        "big_contract", config_file, "--nodeopts", module_path
+        "big_contract", config_file
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
-    import tagion.utils.JSONCommon : load;
 
-    Options[] node_opts;
-
-    Thread.sleep(5.seconds);
-    foreach (i; 0 .. local_options.wave.number_of_nodes) {
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(
-                FileExtension
-                .json));
-        writeln(filename);
-        Options node_opt = load!(Options)(filename);
-        node_opts ~= node_opt;
-    }
     Thread.sleep(15.seconds);
     auto name = "big_contract_testing";
     register(name, thisTid);

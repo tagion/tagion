@@ -3,8 +3,6 @@
 
 # Tagion
 
-> 🚧 This document is still in development. Some things may be out of date or incomplete
-
 👋 Welcome to the Tagion project! 
 
 Tagion is a decentralized ledger for creating high volume transaction.
@@ -14,6 +12,8 @@ Thus it does not need to record the entire transaction history to maintain integ
 General system documentation https://docs.tagion.org  
 Code documentation https://ddoc.tagion.org  
 Whitepaper https://www.tagion.org/resources/tagion-whitepaper.pdf  
+
+HiBON/HiRPC https://www.hibon.org
 
 ## Installation
 *Installation tested on ubuntu 22.04, nixos-unstable*
@@ -30,17 +30,17 @@ apt-get install git autoconf build-essential libtool dub cmake
 ```
 Download a D compiler ldc or dmd
 
-- LLVM D compiler - ldc2 (v1.35.0)
+- LLVM D compiler - ldc2 (v1.36.0)
 ```bash
-wget https://github.com/ldc-developers/ldc/releases/download/v1.35.0/ldc2-1.35.0-linux-x86_64.tar.xz
-tar xf ldc2-1.35.0-linux-x86_64.tar.xz
+wget https://github.com/ldc-developers/ldc/releases/download/v1.36.0/ldc2-1.36.0-linux-x86_64.tar.xz
+tar xf ldc2-1.36.0-linux-x86_64.tar.xz
 export PATH="path-to-ldc2/ldc2-1.34.0-linux-x86_64/bin:$PATH"
 ```
         
-- Reference D compiler - dmd (v2.105.2)
+- Reference D compiler - dmd (v2.106.1)
 ```bash
-wget https://downloads.dlang.org/releases/2.x/2.105.2/dmd.2.105.2.linux.tar.xz
-tar xf dmd.2.105.2.linux.tar.xz
+wget https://downloads.dlang.org/releases/2.x/2.106.1/dmd.2.106.1.linux.tar.xz
+tar xf dmd.2.106.1.linux.tar.xz
 export PATH="path-to-dmd2/dmd2/linux/bin64:$PATH"
 ```
 
@@ -59,8 +59,8 @@ nix develop
 2. Verify that the binaries are available and check their version (comments showing versions used as of writing)
     
 ```bash
-ldc2 --version # LDC - the LLVM D compiler (1.35.0): ...
-dmd --version # v2.105.2
+ldc2 --version # LDC - the LLVM D compiler (1.36.0): ...
+dmd --version # v2.106.1
 ```
 
 3. Cloning tagion repo

@@ -176,6 +176,8 @@ TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 target-tagion: nng secp256k1
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+target-tagion: DFILES+=$(LIB_DFILES)
+target-tagion: DFILES+=$(TAGION_BINS)
 ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 
 env-tools:
@@ -188,7 +190,8 @@ env-tools:
 #
 # Binary of BBD generator tool
 #
+target-collider: nng secp256k1
 target-collider: DFLAGS+=$(DVERSION)=ONETOOL
-target-collider: LIBS+= $(LIBSECP256K1)  $(LIBNNG)
+target-collider: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 ${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
 

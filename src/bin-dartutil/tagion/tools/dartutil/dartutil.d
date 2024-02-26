@@ -16,7 +16,6 @@ import tagion.dart.DARTFile;
 import tools = tagion.tools.toolsexception;
 import CRUD = tagion.dart.DARTcrud; // : dartRead, dartModify;
 
-import tagion.basic.basic : tempfile;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
