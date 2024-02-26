@@ -39,13 +39,16 @@ WASMLD?=$(WASI_BIN)/wasm-ld
 
 LDC_RUNTIME_BUILD=$(DLIB)
 #$(abspath $(WASI_DRUNTIME_ROOT)/ldc-build-runtime.wasi)
-LDC_RUNTIME_LIB_DIR=$(DLIB)
+#LDC_RUNTIME_LIB_DIR=$(DLIB)
 ##$(abspath $(LDC_RUNTIME_BUILD)/lib)
 LDC_RUNTIME_ROOT=$(abspath $(WASI_DRUNTIME_ROOT)/ldc/runtime)
-WASI_LIB+=$(LDC_RUNTIME_LIB_DIR)/libdruntime-ldc.a 
-WASI_LIB+=$(LDC_RUNTIME_LIB_DIR)/libphobos2-ldc.a
+WASI_LIB+=$(LDC_RUNTIME_BUILD)/libdruntime-ldc.a 
+WASI_LIB+=$(LDC_RUNTIME_BUILD)/libphobos2-ldc.a
 WASI_SYSROOT:=$(WASI_DRUNTIME_ROOT)/$(WASI_SYSROOT)
 WASI_LIB+=$(WASI_SYSROOT)/libc.a
+
+#WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/druntime/src 
+#WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/phobos 
 
 WASI_DFLAGS+=-defaultlib=c,druntime-ldc,phobos2-ldc
 WASI_DFLAGS+=-I$(LDC_RUNTIME_ROOT)/druntime/src
@@ -74,6 +77,7 @@ env-wasm:
 	$(call log.kvp, WASI_SYSROOT, $(WASI_SYSROOT))
 	$(call log.kvp, LDC_RUNTIME_BUILD, $(LDC_RUNTIME_BUILD))
 	$(call log.env, WASI_LIB, $(WASI_LIB))
+	$(call log.env, WASI_DINC, $(WASI_DINC))
 	$(call log.env, WASI_DFLAGS, $(WASI_DFLAGS))
 	$(call log.env, WASI_LDFLAGS, $(WASI_LDFLAGS))
 	$(call log.close)
