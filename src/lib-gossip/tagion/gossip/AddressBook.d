@@ -228,4 +228,13 @@ unittest {
         unitbook.remove(channel);
         assert(!unitbook.exists(channel));
     }
+
+    // Retrieving a channels result which doesn't exists will throw
+    {
+        Pubkey channel = [0, 1, 2, 3, 4];
+        assert(!unitbook.exists(channel));
+
+        auto result = unitbook[channel];
+        assertThrown!AddressException(result.get);
+    }
 }
