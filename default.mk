@@ -10,7 +10,7 @@ export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
 
-ifeq (COMPILER, ldc)
+ifeq ($(COMPILER),ldc)
 RELEASE_DFLAGS+=--allinst
 RELEASE_DFLAGS+=--mcpu=native
 RELEASE_DFLAGS+=--flto=thin
@@ -70,7 +70,7 @@ DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 # # which is useful for app development
 # DFLAGS+=$(DVERSION)=WALLET_HISTORY_DUMMY
 
-
+# Use to check thar toHiBON.serialize is equal to .serialize
 #DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)

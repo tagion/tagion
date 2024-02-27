@@ -117,28 +117,6 @@ ifeq ($(OS),"linux")
 LDCFLAGS += $(LINKERFLAG)-ldl
 endif
 
-# Define model if not defined
-ifdef DONT
-ifndef MODEL
-ifeq ($(ARCH), $(filter $(ARCH), x86_64 arm64))
-MODEL = 64
-else
-MODEL = 32
-endif
-endif
-
-# -m32 and -m64 switches cannot be used together with -march and -mtriple switches
-ifndef CROSS_OS
-ifeq ($(MODEL), 64)
-DFLAGS  += -m64
-LDCFLAGS += -m64
-else
-DFLAGS  += -m32
-LDCFLAGS += -m32
-endif
-endif
-endif
-
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
 DEBUG_FLAGS+=$(DDEBUG)

@@ -54,20 +54,21 @@ WASI_LIB+=$(WASI_SYSROOT)/libc.a
 #WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/druntime/src 
 #WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/phobos 
 
-WASI_DFLAGS+=-defaultlib=c,druntime-ldc,phobos2-ldc
-WASI_DFLAGS+=-I$(LDC_RUNTIME_ROOT)/druntime/src
-WASI_DFLAGS+=-I$(LDC_RUNTIME_ROOT)/phobos
-#WASI_DFLAGS+=-d-version=Posix
-WASI_DFLAGS+=-mtriple=wasm32-unknown-wasi
-WASI_DFLAGS+=-c
+DFLAGS+=-defaultlib=c,druntime-ldc,phobos2-ldc
+DFLAGS+=-I$(LDC_RUNTIME_ROOT)/druntime/src
+DFLAGS+=-I$(LDC_RUNTIME_ROOT)/phobos
+#DFLAGS+=-d-version=Posix
+DFLAGS+=-mtriple=wasm32-unknown-wasi
+#DFLAGS+=-c
 
-WASI_DFLAGS+=-O3 -release -femit-local-var-lifetime 
-WASI_DFLAGS+=-flto=thin 
+DFLAGS+=-O3 -release -femit-local-var-lifetime 
+DFLAGS+=-flto=thin 
 
 WASI_LDFLAGS+=--export=__data_end
 WASI_LDFLAGS+=--export=__heap_base
 WASI_LDFLAGS+=--allow-undefined
 
+#DFILES+=$(TVM_SDK_DFILES)
 endif
 
 env-wasm:

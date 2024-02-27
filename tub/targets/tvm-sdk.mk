@@ -23,25 +23,16 @@ help-tvm-sdk:
 	$(call log.header, $@ :: help)
 	$(call log.close)
 
-#$(DBIN)/%.wasm: $(DOBJ)/%.wo 
-$(DBIN)/%.wasm: %.wo 
-	@echo $(DOBJ)/$*.o
-	@echo WASM $@ $<
-
-#$(DOBJ)/%.o: $(TVM_SDK_TEST_ROOT)/%.d 
-$(DBIN)/%.wo: 
-	echo DOBJ $@ $<
+$(DLIB)/libtagion.a: DFLAGS+=$(DCOMPILE_ONLY)
 
 $(DLIB)/libtagion.a: $(TVM_SDK_DFILES)
-	@echo lib $<
-	@echo $<
-	@echo WASI_DFLAGS=$(WASI_DFLAGS)
-	@echo DC=$(DC)
-	$(DC) $(WASI_DFLAGS) $(TVM_SDK_DINC) $(WASI_LDFALGS) $< $(OUTPUT)=$@ 
+	$(PRECMD)
+	echo lib $<
+	echo $<
+	$(call log.env, DFLAGS, $(DFLAGS))
+	$(call log.env, DFILES, $(DFILES))
+	$(call WASI_LDFALGS, $(WASI_LDFALGS))
+	echo DC=$(DC)
+	$(DC) $(DFLAGS)  $(TVM_SDK_DINC) $(WASI_LDFALGS)  $< $(OUTPUT)=$@ 
 
 .PHONY: help-tvm-sdk
-
-XXX!=which dmdx || which ldc2
-
-testxx:
-	echo $(XXX)
