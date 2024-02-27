@@ -48,6 +48,7 @@ import std.stdio : writefln, writeln;
 import tagion.logger;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hibon.HiBONRecord;
+import tagion.hashgraphview.EventView;
 
 class LogMonitorCallBacks : EventMonitorCallbacks {
 
@@ -57,12 +58,12 @@ class LogMonitorCallBacks : EventMonitorCallbacks {
         topic = Topic(event_topic_name);
     }
 
-    struct EventPackages {
-        const(EventPackage)[] packages;
+    struct EventViews {
+        const(EventView)[] views;
         mixin HiBONRecord!(q{
             this(const(Event)[] events) pure nothrow {
                 foreach(e; events) {
-                    packages ~= *(e.event_package);
+                    views ~= EventView(e);
                 }
             }
         });
@@ -71,27 +72,28 @@ class LogMonitorCallBacks : EventMonitorCallbacks {
     nothrow :
 
     void connect(const(Event) e) {
-        log.event(topic, __FUNCTION__, *(e.event_package));
+        log.event(topic, __FUNCTION__, EventView(e));
     }
     void witness(const(Event) e) {
-        log.event(topic, __FUNCTION__, *(e.event_package));
+        log.event(topic, __FUNCTION__, EventView(e));
     }
     void round(const(Event) e) {
-        log.event(topic, __FUNCTION__, *(e.event_package));
+        log.event(topic, __FUNCTION__, EventView(e));
     }
     void round_decided(const(Round.Rounder) rounder) {
+        log(__FUNCTION__);
     }
     void round_received(const(Event) e) {
-        log.event(topic, __FUNCTION__, *(e.event_package));
+        log.event(topic, __FUNCTION__, EventView(e));
     }
     void famous(const(Event) e) {
-        log.event(topic, __FUNCTION__, *(e.event_package));
+        log.event(topic, __FUNCTION__, EventView(e));
     }
     void remove(const(Event) e) {
-        log.event(topic, __FUNCTION__, *(e.event_package));
+        log.event(topic, __FUNCTION__, EventView(e));
     }
     void epoch(const(Event)[] e) {
-        const packages = EventPackages(e);
+        const packages = EventViews(e);
         log.event(topic, __FUNCTION__, packages);
     }
 }
