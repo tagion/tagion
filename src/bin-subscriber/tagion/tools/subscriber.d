@@ -115,12 +115,14 @@ int _main(string[] args) {
     bool version_switch;
     string[] tags;
     string outputfilename;
+    bool raw_mode;
 
     auto main_args = getopt(args,
         "v|version", "Print revision information", &version_switch,
         "o|output", "Output filename; if empty stdout is used", &outputfilename,
         "address", "Specify the address to subscribe to", &address,
         "tag", "Specify tags to subscribe to", &tags,
+	"raw", "Output the result in raw hibon mode", &raw_mode,
     );
 
     if (main_args.helpWanted) {
@@ -167,7 +169,12 @@ int _main(string[] args) {
             fout.writeln(result.e);
         }
         else {
-            fout.writeln(result.get.toPretty);
+	    if(raw_mode) {
+               fout.writeln(result.get);
+            }
+            else {
+               fout.writeln(result.get.toPretty);
+            }
         }
     }
     return 0;
