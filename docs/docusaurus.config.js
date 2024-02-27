@@ -15,6 +15,21 @@ const config = {
     mermaid: true,
   },
   themes: ['@docusaurus/theme-mermaid'],
+  plugins: [
+    [
+        'content-docs',
+        {
+          id: 'tips',
+          path: 'tips',
+          routeBasePath: 'tips',
+          editUrl: 'https://github.com/tagion/tagion/tree/master/docs/',
+          editCurrentVersion: true,
+          sidebarPath: './sidebarTips.js',
+          showLastUpdateAuthor: true,
+          showLastUpdateTime: true,
+        } // satisfies DocsOptions
+      ],
+  ],
 
   // Set the production url of your site here
   url: 'https://docs.tagion.org',
@@ -49,14 +64,14 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/tagion/tagion/tree/master/',
+            'https://github.com/tagion/tagion/tree/master/docs/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/tagion/tagion/tree/master/',
+            'https://github.com/tagion/tagion/tree/master/docs/',
         },
         pages: {
         },
@@ -86,8 +101,9 @@ const config = {
             position: 'left',
             label: 'Docs',
           },
-          {to: '/blog/tips', label: 'TIPs', position: 'left'},
-          {to: '/changelog', label: 'Changelog', position: 'left'},
+          {to: '/tips', label: 'TIPs', position: 'left'},
+          {to: '/blog', label: 'blog', position: 'left'},
+          {to: '/changelog', label: 'Changelog', position: 'right'},
           {
             href: 'https://github.com/tagion/tagion',
             label: 'GitHub',
