@@ -65,11 +65,11 @@ struct EpochCreatorService {
 
         if (monitor_opts.enable) {
             import tagion.hashgraph.Event : Event;
-            import tagion.monitor.Monitor : MonitorCallBacks;
+            import tagion.monitor.Monitor;
 
             auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
-            Event.callbacks = new MonitorCallBacks(
-                    monitor_socket_tid, monitor_opts.dataformat);
+            Event.callbacks = new MonitorCallBacks(monitor_socket_tid, monitor_opts.dataformat);
+            /* Event.callbacks = new LogMonitorCallBacks(); */
 
             if (!waitforChildren(Ctrl.ALIVE)) {
                 log.warn("Monitor never started, continuing anyway");

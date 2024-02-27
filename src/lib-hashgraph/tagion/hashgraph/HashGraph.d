@@ -589,9 +589,6 @@ class HashGraph {
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node = getNode(from_channel);
 
-        if (Event.callbacks) {
-            Event.callbacks.receive(received_wave);
-        }
         version (EPOCH_LOG) {
             log.trace("received_wave(%s <- %s)", received_wave.state, received_node.state);
         }
