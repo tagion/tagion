@@ -230,6 +230,8 @@ int _neuewelle(string[] args) {
     locator_options = new immutable(LocatorOptions)(20, 5);
     ActorHandle[] supervisor_handles;
 
+    log("Starting network in %s mode", local_options.wave.network_mode);
+
     final switch (local_options.wave.network_mode) {
     case NetworkMode.INTERNAL:
         import tagion.wave.mode0;
@@ -335,6 +337,7 @@ int _neuewelle(string[] args) {
             error("Could not log in");
             break;
         }
+        local_options.task_names.setPrefix(wallet_interface.secure_wallet.account.name);
 
         good("Logged in");
         StdSecureNet __net;
