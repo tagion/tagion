@@ -2,7 +2,9 @@ module tagion.tools.subscriber;
 
 import core.time;
 import nngd;
-import std.algorithm : countUntil;
+import std.algorithm : countUntil, filter;
+import std.algorithm.iteration : splitter;
+import std.array : array;
 import std.conv;
 import std.format;
 import std.stdio;
@@ -113,15 +115,20 @@ int _main(string[] args) {
     default_sub_opts.setDefault();
     string address = default_sub_opts.address;
     bool version_switch;
-    string[] tags;
+    string tagsRaw;
     string outputfilename;
 
     auto main_args = getopt(args,
         "v|version", "Print revision information", &version_switch,
         "o|output", "Output filename; if empty stdout is used", &outputfilename,
         "address", "Specify the address to subscribe to", &address,
-        "tag", "Specify tags to subscribe to", &tags,
+        "tag", "Specify tags to subscribe to", &tagsRaw,
     );
+
+    string[] tags;
+    if (!tagsRaw.empty) {
+        tags = tagsRaw.splitter([',']).filter!((a) => !a.empty).array;
+    }
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
