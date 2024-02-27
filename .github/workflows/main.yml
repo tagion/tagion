@@ -373,20 +373,3 @@ jobs:
       - uses: ./.github/actions/ios
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
-
-  docs_build:
-    if: ${{ github.ref == 'refs/heads/current' }}
-    environment:
-      name: github-pages
-      url: https://docs.tagion.org
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v4
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: "."
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
