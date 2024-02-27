@@ -1379,6 +1379,26 @@ appoint:
         _spawn!(RPCSaver)(options.save_rpcs_task);
     }
 
+    version(none) {
+        import libnng;
+        int rc;
+        NNGSocket sub_kernel = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+        sub_kernel.recvtimeout = msecs(options.sock_recvtimeout);
+        sub_kernel.subscribe(options.recorder_subscription_tag);
+        sub_kernel.subscribe(options.trt_subscription_tag);
+        rc = sub_kernel.dial(options.tagion_subscription_addr);
+        assert(rc == 0);
+
+        NNGSocket pub_shell = NNGSocket(nng_socket_type.NNG_SOCKET_PUB);
+        pub_shell.sendtimeout = msecs(1000);
+        pub_shell.sendbuf = 4096;
+        rc = pub_shell.listen("ws://0.0.0.0:6969");
+        assert(rc == 0);
+
+        NNGAio aio = NNGAio(null, null);
+        nng_device_aio(aio.aio, pub_shell.m_socket, sub_kernel.m_socket);
+    }
+
     while (true) {
         nng_sleep(2000.msecs);
         version (none) {
