@@ -102,7 +102,7 @@ struct NodeInterfaceService {
         this.receive_handle = ActorHandle(message_handler_task);
     }
 
-    void node_send(NodeSend, const(Pubkey) channel, const(Document) payload) @trusted {
+    void node_send(NodeSend, const(Pubkey) channel, Document payload) @trusted {
         const address = addressbook[channel].get.address;
         NNGSocket sock_send = NNGSocket(nng_socket_type.NNG_SOCKET_PAIR);
         assert(sock_send.m_errno == 0, format("Create send sock error %s", nng_errstr(sock_send.m_errno)));
