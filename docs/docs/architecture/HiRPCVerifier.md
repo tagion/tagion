@@ -1,6 +1,6 @@
 # HiRPC Verifier Service
 
-[tagion.services.hirpc_verifier](ddoc://tagion.services.hirpc_verifier)
+[tagion.services.hirpc_verifier](https://ddoc.tagion.org/tagion.services.hirpc_verifier)
 
 This service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system.
 
@@ -10,7 +10,7 @@ Input:
 > - A [HiRPC](https://www.hibon.org/posts/hirpc/).Receiver received from byte package 
 
 Output:  
-> - A [HiBON](https://www.hibon.org/posts/hibon/) Document sent to [Collector](/documents/architecture/Collector.md) Service.
+> - A [HiBON](https://www.hibon.org/posts/hibon/) Document sent to [Collector](/docs/architecture/Collector.md) Service.
 
 The service does the following:
 
@@ -21,7 +21,7 @@ The service does the following:
 
 If one or more of the checks fails an error should be log and contract be dropped.
 
-The acceptance criteria specification can be found in [services/hirpc_verifier](/bdd/tagion/testbench/services/hirpc_verifier.md).
+The acceptance criteria specification can be found in [services/hirpc_verifier](https://github.com/tagion/tagion/tree/master/bdd/tagion/testbench/services/hirpc_verifier.md).
 
 ```mermaid
 sequenceDiagram
