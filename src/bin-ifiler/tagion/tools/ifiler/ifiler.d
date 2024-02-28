@@ -1,8 +1,11 @@
 module tagion.tools.ifiler.ifiler;
 import std.process;
 import std.stdio : writeln, writefln;
+
+version(linux) {
 import core.sys.linux.sys.inotify;
 import core.sys.posix.unistd;
+}
 import core.stdc.stdio;
 import core.stdc.stdlib;
 import std.stdio;
@@ -142,6 +145,7 @@ void icopy(string src, string dest, const size_t block_size) {
 
 }
 
+version(linux) {
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -185,4 +189,11 @@ int _main(string[] args) {
         return 1;
     }
     return 0;
+}
+}
+else {
+int _main(string[] args) {
+    stderr.writefln("%s Not supported on this platform", args[0]);
+    return -1;
+}
 }
