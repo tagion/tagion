@@ -117,6 +117,12 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+    algolia: {
+      appId: 'SK35XFOZMR',
+      apiKey: 'da880a39f3909734f07a1a115c7331de',
+      indexName: 'tagion',
+      contextualSearch: false,
+    },
       // Replace with your project's social card
       image: 'img/tagion-social-card.jpg',
       navbar: {
