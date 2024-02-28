@@ -1,4 +1,6 @@
-Cross compiling mobile library for android from Ubuntu 22.10 x86_64
+# Cross compiling Android 
+
+Guide for cross compiling mobile library for android from Ubuntu 22.10 x86_64
 
 ## Install build tools
 This is the subset of tools from the README used to compile the mobile android library
