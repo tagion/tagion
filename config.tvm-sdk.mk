@@ -1,7 +1,6 @@
 
 TVM_SDK_ROOT:=$(abspath $(DSRC)/wasi)
 TVM_SDK_TEST_ROOT:=$(abspath $(TVM_SDK_ROOT)/tests)
-#TVM_SDK_TEST+=$(REPOROOT)/foundation/tests
 
 TVM_SDK_TESTS+=tvm_sdk_test.d
 
