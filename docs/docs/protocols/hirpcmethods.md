@@ -5,7 +5,7 @@ By default all of these sockets are private, ie. theyre linux abstract sockets a
 The socket address, and thereby the visibillity can be changed in the tagionwave config file.
 
 
-| [Input Validator](/documents/architecture/InputValidator.md) | [Dart Interface](/documents/architecture/DartInterface.md) | [Subscription](/documents/architecture/LoggerSubscription.md) | [Node Interface](/documents/architecture/NodeInterface.md) |
+| [Input Validator](/docs/architecture/InputValidator)         | [Dart Interface](/docs/architecture/DartInterface)         | [Subscription](/docs/architecture/LoggerSubscription)         | [Node Interface](/docs/architecture/NodeInterface)         |
 | -                                                            | -                                                          | -                                                             | -                                                          |
 | Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
 | **Default shell endpoint**                                   | ..                                                         |                                                               |                                                            |
@@ -17,7 +17,7 @@ The socket address, and thereby the visibillity can be changed in the tagionwave
 |                                                              | "dartRead"                                                 |
 |                                                              | "dartRim"                                                  |
 |                                                              | "dartBullseye"                                             |
-| **HiRPC method entities prefixes**                                 | ..                                                         | ..                                                            | ..                                                         |
+| **HiRPC method entities prefixes**                           | ..                                                         | ..                                                            | ..                                                         |
 | ..                                                           | trt                                                        | ..                                                            | ..                                                         |
 | **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
 | REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |

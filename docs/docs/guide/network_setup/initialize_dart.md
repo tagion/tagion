@@ -111,5 +111,5 @@ dartutil dart.drt -r 425f9fc079d0aeaf6d0fc57d7c22de23b40da0bd58475aaf21b45ff320f
 }
 ```
 
-*Continued* [Initialize Genesis Epoch](/documents/network_setup/initialize_genesis_epoch.md)
+*Continued* [Initialize Genesis Epoch](/docs/guide/network_setup/initialize_genesis_epoch)
 

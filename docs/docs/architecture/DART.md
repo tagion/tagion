@@ -71,10 +71,6 @@ Note. The synchronization method can be found in DART. SynchronizationFiber whic
 For sample code see the unittest in the DART module.
 DART also includes a journal-files which can be used in case of a crash.
 
-The acceptance criteria specification for the synchronization  process can be found in [DART Sync](
-/bdd/tagion/testbench/services/DART_Sync.md)
-
-
 ### DART Operation
 
 When the DART success-fully has reached the current bullseye state then the DART is ready to receive Recorders from the transcript service. That will keep the DART in the consensus state as long as the network produces Epochs and Recorders.
@@ -83,8 +79,7 @@ In the case that an Epoch do not have majority voting on the last bullseye, then
 The bullseye after the Recorder has been executed is written into the next Epoch to ensure the consensus state of the database. In other words, a database state is first final in the next consensus round if all the network participants have agreed on the state. That is the last valid consensus database state, consensus bullseye, in the network.
 
 
-The acceptance criteria specification can be found in [DART Service](
-/bdd/tagion/testbench/services/DART_Service.md)
+The acceptance criteria specification can be found in [DART Service](https://github.com/tagion/tagion/tree/master/bdd/tagion/testbench/services/DART_Service.md)
 
 
 ```mermaid
