@@ -16,19 +16,49 @@ const config = {
   },
   themes: ['@docusaurus/theme-mermaid'],
   plugins: [
-    [
-        'content-docs',
-        {
-          id: 'tips',
-          path: 'tips',
-          routeBasePath: 'tips',
-          editUrl: 'https://github.com/tagion/tagion/tree/master/docs/',
-          editCurrentVersion: true,
-          sidebarPath: './sidebarTips.js',
-          showLastUpdateAuthor: true,
-          showLastUpdateTime: true,
-        } // satisfies DocsOptions
-      ],
+    ['@docusaurus/plugin-content-blog',
+      {
+        path: 'tips',
+        id: "TIPS",
+        // Simple use-case: string editUrl
+        editUrl: 'https://github.com/tagion/tagion/edit/master/docs/',
+        editLocalizedFiles: false,
+        blogTitle: 'Tagion Improvement Proposals',
+        blogDescription: 'Blog',
+        blogSidebarCount: 5,
+        blogSidebarTitle: 'All TIPs',
+        routeBasePath: 'tips',
+        include: ['**/*.{md,mdx}'],
+        exclude: [
+          '**/_*.{js,jsx,ts,tsx,md,mdx}',
+          '**/_*/**',
+          '**/*.test.{js,jsx,ts,tsx}',
+          '**/__tests__/**',
+        ],
+        postsPerPage: 10,
+        blogListComponent: '@theme/BlogListPage',
+        blogPostComponent: '@theme/BlogPostPage',
+        blogTagsListComponent: '@theme/BlogTagsListPage',
+        blogTagsPostsComponent: '@theme/BlogTagsPostsPage',
+        truncateMarker: /<!--\s*(truncate)\s*-->/,
+        showReadingTime: true,
+        feedOptions: {
+          type: 'rss',
+          title: 'TIPs',
+          description: 'Tagion Improvement proposals',
+          copyright: 'tagion',
+          language: undefined,
+          createFeedItems: async (params) => {
+            const {blogPosts, defaultCreateFeedItems, ...rest} = params;
+            return defaultCreateFeedItems({
+              // keep only the 10 most recent blog posts in the feed
+              blogPosts: blogPosts.filter((item, index) => index < 10),
+              ...rest,
+            });
+          },
+        },
+      },
+        ]
   ],
 
   // Set the production url of your site here
@@ -66,13 +96,12 @@ const config = {
           editUrl:
             'https://github.com/tagion/tagion/tree/master/docs/',
         },
-        blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/tagion/tagion/tree/master/docs/',
-        },
+        // blog: {
+        //   showReadingTime: true,
+        //   // Please change this to your repo.
+        //   // Remove this to remove the "edit this page" links.
+        //   editUrl: 'https://github.com/tagion/tagion/tree/master/docs/',
+        // },
         pages: {
         },
         theme: {
@@ -118,8 +147,8 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Tutorial',
-                to: '/docs/intro',
+                label: 'Getting Started',
+                to: '/docs/guide',
               },
             ],
           },
