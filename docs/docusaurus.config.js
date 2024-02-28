@@ -134,6 +134,11 @@ const config = {
           {to: '/blog', label: 'blog', position: 'left'},
           {to: '/changelog', label: 'Changelog', position: 'right'},
           {
+            href: 'https://ddoc.tagion.org',
+            label: 'ddoc',
+            position: 'right',
+          },
+          {
             href: 'https://github.com/tagion/tagion',
             label: 'GitHub',
             position: 'right',
@@ -149,6 +154,14 @@ const config = {
               {
                 label: 'Getting Started',
                 to: '/docs/guide',
+              },
+              {
+                label: 'HiBON',
+                href: 'https://www.hibon.org',
+              },
+              {
+                label: 'ddoc',
+                href: 'https://ddoc.tagion.org',
               },
             ],
           },
@@ -175,10 +188,6 @@ const config = {
               {
                 label: 'GitHub',
                 href: 'https://github.com/tagion/tagion',
-              },
-              {
-                label: 'HiBON',
-                href: 'https://www.hibon.org',
               },
             ],
           },
