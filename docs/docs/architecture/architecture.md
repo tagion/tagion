@@ -1,9 +1,4 @@
----
-sidebar_position: 1
-title: Overview
----
-
-# Tagion Network Architecture
+# Architecture
 
 ## Description of the services in a node
 A node consist of the following services.

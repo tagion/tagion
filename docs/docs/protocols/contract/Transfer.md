@@ -3,7 +3,7 @@
 ## Simple transfer Payment
 A simple payment can be initiated from the `payee`.
 
-> - The `payee` creates a [TagionBill](/documents/protocols/contract/Bill.md) to the `payer`.
+> - The `payee` creates a [TagionBill](/docs/protocols/contract/bill) to the `payer`.
 > - The `payer` creates a contract with the bill as output and send it to the network.
 > - The `payer`  can send the signed contract back as a of intent.
 

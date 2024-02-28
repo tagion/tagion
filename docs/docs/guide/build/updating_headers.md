@@ -1,5 +1,4 @@
-
-## Updating c to d headers
+# Updating C Headers
 
 Download release binaries (or follow build instruction from https://github.com/jacob-carlborg/dstep)
     

@@ -1,4 +1,4 @@
-## Collector Service
+# Collector Service
 
 The service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 
