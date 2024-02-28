@@ -9,7 +9,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Tagion',
-  tagline: 'Tagion',
+  tagline: 'Tagion documentation',
   favicon: 'img/favicon.svg',
   markdown: {
     mermaid: true,
@@ -135,7 +135,7 @@ const config = {
           {to: '/changelog', label: 'Changelog', position: 'right'},
           {
             href: 'https://ddoc.tagion.org',
-            label: 'ddoc',
+            label: 'Ddoc',
             position: 'right',
           },
           {
@@ -160,7 +160,7 @@ const config = {
                 href: 'https://www.hibon.org',
               },
               {
-                label: 'ddoc',
+                label: 'Ddoc',
                 href: 'https://ddoc.tagion.org',
               },
             ],
@@ -176,6 +176,10 @@ const config = {
                 label: 'Twitter',
                 href: 'https://twitter.com/TagionOfficial',
               },
+              {
+                label: 'Telegram',
+                href: 'https://t.me/tagionChat',
+              },
             ],
           },
           {
@@ -188,6 +192,10 @@ const config = {
               {
                 label: 'GitHub',
                 href: 'https://github.com/tagion/tagion',
+              },
+              {
+                label: 'Tagion',
+                href: 'https://www.tagion.org',
               },
             ],
           },
