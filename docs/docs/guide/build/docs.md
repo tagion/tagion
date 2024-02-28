@@ -1,6 +1,6 @@
 # Building documentation
 
-The documentation site is based on [docusaurus](https://docusaurus.io/), a documentation generator built by The Facebook
+The documentation site is based on [docusaurus](https://docusaurus.io/), a documentation generator built by The Facebook.  
 You'll need node20 and npm to build it.
 
 # Installation
