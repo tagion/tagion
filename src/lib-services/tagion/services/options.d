@@ -15,6 +15,7 @@ immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
     }
     else version (Posix) {
         import std.path;
+        import std.exception;
 
         return "ipc://" ~ buildPath(assumeWontThrow(base_dir.run), prefix ~ "tagionwave_contract.sock");
     }
