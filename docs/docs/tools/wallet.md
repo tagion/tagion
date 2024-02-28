@@ -39,6 +39,11 @@ geldbeutel [<option>...] <config.json> <files>
            --pubkey Prints the public key
 -h           --help This help information.
 ```
+:::warning
+
+The switch `-x --pin` is purely for testing purposes and should not be used when using a "real wallet". Please use the built-in stdin by not specifying the pin. 
+
+:::
 
 ## Write wallet configuration file `wallet.json`
 This will write a configuration file `wallet.json` and the wallet will be placed in `$HOME/wallet`.  
@@ -57,24 +62,24 @@ Press Enter
 ```
 Create the wallet from a password.
 ```
-> geldbeutel wallet.json -P very_secret --pin 1234
+> geldbeutel wallet.json -P very_secret
 ```
 
 ## Creating requests
 Create payment request. Simplest form of payment.
 ```
-> geldbeutel wallet.json -x 1234 --amount 100 -o payment_request.hibon
+> geldbeutel wallet.json --amount 100 -o payment_request.hibon
 ```
 Create a invoice.
 
 ```
-> geldbeutel wallet.json -x 1234 --create-invoice TEST:1000 -o invoice.hibon
+> geldbeutel wallet.json --create-invoice TEST:1000 -o invoice.hibon
 ```
 
 ## Pay requests
 The send flag may be omitted if you do not want to send to the network directly. Instead use the outputfilename switch to save the request.
 ```
-> geldbeutel wallet.json -x 1234 --pay payment_request.hibon --send
+> geldbeutel wallet.json --pay payment_request.hibon --send
 ```
 
 ## Update wallet
@@ -82,12 +87,12 @@ There is to ways to update a wallet. Either a trt-lookup which looks up on all d
 The --send flag may be omitted and use the outputfilename switch instead to store the request.
 
 ```
-> geldbeutel wallet.json -x 1234 --update --send
+> geldbeutel wallet.json --update --send
 ```
 trt-update. Used for invoices.
 
 ```
-> geldbeutel wallet.json -x 1234 --trt-update --send
+> geldbeutel wallet.json --trt-read --send
 ```
 
 ## Sets an account name 
