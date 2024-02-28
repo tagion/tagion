@@ -5,6 +5,8 @@ sidebar_position: 1
 # Getting started
 
 ## Setup
+
+Install the required tools to build tagion
     
 ### Ubuntu
 
@@ -63,3 +65,12 @@ make tagion
 ```
 
 This will result in an tagion executable in `./build/(host-platform)/bin/tagion`
+
+## Installing
+
+You can install the executables in to the path specified by the `INSTALL` variable
+The directory specified by `INSTALL` should be referenced in Your `PATH` variable.
+
+```bash
+make install INSTALL=~/.local/bin/
+```
