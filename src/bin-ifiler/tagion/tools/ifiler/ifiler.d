@@ -2,10 +2,11 @@ module tagion.tools.ifiler.ifiler;
 import std.process;
 import std.stdio : writeln, writefln;
 
+mixin Main!_main;
+
 version(linux) {
 import core.sys.linux.sys.inotify;
 import core.sys.posix.unistd;
-}
 import core.stdc.stdio;
 import core.stdc.stdlib;
 import std.stdio;
@@ -17,8 +18,6 @@ import std.getopt;
 import tagion.tools.revision;
 import std.format;
 import std.array;
-
-mixin Main!_main;
 
 struct Inotify {
     protected {
@@ -145,7 +144,6 @@ void icopy(string src, string dest, const size_t block_size) {
 
 }
 
-version(linux) {
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
