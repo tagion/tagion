@@ -1,4 +1,4 @@
-# Initialize Genesis Epoch
+# Initialize Genesis Epoch (low level)
 
 *Intialize bills* [Initialize DART](/documents/network_setup/initialize_dart.md)
 
