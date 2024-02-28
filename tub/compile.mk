@@ -33,6 +33,7 @@ LIBEXT=${if $(SHARED),$(DLLEXT),$(STAEXT)}
 #/
 $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
+	$(call log.header, $*.$(OBJEXT) :: compile)
 	${call log.kvp, compile, $(MODE)}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
 
@@ -46,7 +47,7 @@ $(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	echo ${DFILES}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(DCOMPILE_ONLY)  $(OUTPUT)$@
 
-$(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
+$(DLIB)/lib%.$(LIBEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
 	${call log.kvp, split-link$(MODE)}
 	echo ${filter %.$(OBJEXT),$?}
@@ -61,7 +62,6 @@ endif
 #
 # proto targets for binaries
 #
-
 ifdef SPLIT_LINKER
 $(DOBJ)/bin%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
@@ -75,12 +75,14 @@ $(DBIN)/%: $(DOBJ)/bin%.$(OBJEXT)
 	echo ${filter %.$(OBJEXT),$?}
 	$(LD) ${LDFLAGS} ${filter %.$(OBJEXT),$?} $(LIBS) $(OBJS) -o$@
 else
+ifndef DBIN_EXCLUDE
 $(DBIN)/%:
 	$(PRECMD)
-	${call log.kvp, bin$(MOD), $*}
+	$(call log.header, $* :: bin)
+	$(call log.env, DFILES, $(DFILES))
 	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(LIBS) $(OBJS) $(OUTPUT)$@
 endif
-
+endif
 
 # Object Clear"
 clean-obj:

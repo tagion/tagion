@@ -1,6 +1,6 @@
-module tvm_sdk_test;
+module tests.tvm_sdk_test;
 
-import foundation.wasi_main;
+import tvm.wasi_main;
 import core.stdc.stdio;
 
 void main() {

@@ -1,4 +1,4 @@
-module foundation.wasi_main;
+module tvm.wasi_main;
 import core.stdc.stdio;
 
 extern(C) @nogc {
