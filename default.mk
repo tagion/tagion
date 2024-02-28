@@ -63,6 +63,10 @@ DFLAGS+=$(DVERSION)=WITHOUT_SORTING
 # There is currently no way to function to determine the nodes from latest epoch
 DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 
+# Enable websocket pub in shell. 
+# Currently causes the program not to stop properly in bddtests.
+# DFLAGS+=$(DVERSION)=TAGIONSHELL_WEB_SOCKET
+
 # # This enables a redundant check in dart to see if there are overlaps between segments 
 # DFLAGS+=$(DVERSION)=DART_RECYCLER_INVARINAT
 

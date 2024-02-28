@@ -1336,7 +1336,9 @@ int _main(string[] args) {
         auto ds_tid = spawn(&dart_worker, options);
     }
 
-    auto ws_tid = spawn(&ws_worker, options);
+    version(TAGIONSHELL_WEB_SOCKET) {
+        auto ws_tid = spawn(&ws_worker, options);
+    }
 
     writeit("\nTagionShell web service\nListening at "
             ~ options.shell_uri ~ "\n\t"
