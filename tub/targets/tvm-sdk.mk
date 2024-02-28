@@ -50,6 +50,7 @@ test33: $(DOBJ)/wasi/tests/tvm_sdk_test.o
 test34:
 	echo $(OBJEXT)
 
+test36: $(DLIB)/libtvm.a
 test36: $(DLIB)/libdruntime-ldc.a
 test36: $(DLIB)/libdphobos2-ldc.a
 test36: $(DBIN)/tvm_sdk_test.wasm 
