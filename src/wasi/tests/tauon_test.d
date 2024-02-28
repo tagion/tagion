@@ -1,4 +1,4 @@
-module tests.tvm_sdk_test;
+module tests.tauon_test;
 
 import tvm.wasi_main;
 import core.stdc.stdio;
