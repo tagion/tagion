@@ -1,4 +1,4 @@
-# Initialize the network
+# Initialize the network (low level)
 
 ## Create initial wallet
 
