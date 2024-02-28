@@ -19,11 +19,11 @@ LIBTVM=$(DLIB)/libtvm.a
 
 lib-tvm-sdk: $(LIBTVM)
 
-$(DLIB)/libdruntime.a:
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) libdruntime 
+$(DLIB)/libdruntime-ldc.a:
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libdruntime 
 
-$(DLIB)/libdphobos2.a:
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) libdphobos2 
+$(DLIB)/libdphobos2-ldc.a:
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libphobos2 
 
 
 $(DLIB)/libtvm.a: DFILES+=$(TVM_SDK_DFILES)
@@ -50,6 +50,8 @@ test33: $(DOBJ)/wasi/tests/tvm_sdk_test.o
 test34:
 	echo $(OBJEXT)
 
+test36: $(DLIB)/libdruntime-ldc.a
+test36: $(DLIB)/libdphobos2-ldc.a
 test36: $(DBIN)/tvm_sdk_test.wasm 
 
 help-tvm-sdk:
@@ -85,7 +87,7 @@ test45:
 	@echo $(DSRC)
 	@echo $(DSRC)/wasi/tests/tvm_sdk_test.d 
 
-$(DBIN)/%.wasm: |$(DLIB)/libtvm.a $(DLIB)/libdruntime.a $(DLIB)/libdphobos2.a 
+$(DBIN)/%.wasm: |$(DLIB)/libtvm.a $(DLIB)/libdruntime-ldc.a $(DLIB)/libdphobos2-ldc.a 
 
 $(DBIN)/%.wasm: $(DOBJ)/wasi/tests/%.o
 	@echo $@
