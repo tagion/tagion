@@ -13,13 +13,13 @@ Archive types.
 
 ## Archive
 
-[Archive](tagion.dart.Recorder#Archive)
+[Archive](https://ddoc.tagion.org/tagion.dart.Recorder.Archive)
 
-| Name        | D-Type     | Description            |  Required |
-| ----------- | -------- | ---------------------- | --------- |
-| `$t` | [Type] | Is the archive-type  |    Yes    |
-| `$a` | [Documen | Is the filed(leave) as a Document               |    No    |
-| `$#` | [Buffer]   | Is a hash of the filed(leave) (Called a STUB) | No |
+| Name        | D-Type   | Description                                   | Required  |
+| ----------- | -------- | ----------------------                        | --------- |
+| `$t`        | [Type]   | Is the archive-type                           | Yes       |
+| `$a`        | [Documen | Is the filed(leave) as a Document             | No        |
+| `$#`        | [Buffer] | Is a hash of the filed(leave) (Called a STUB) | No        |
 
 Note. An archive should contain either a `$a` value or `$#`. 
 

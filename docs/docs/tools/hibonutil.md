@@ -40,7 +40,7 @@ By default `hibonutil` will convert a `.hibon` file to a `.json` file.
 > hibonutil sample.hibon
 
 ```
-Will produces a `sample.json` which can be seen in [HiBON_JSON_format](/documents/protocols/hibon/HiBON_JSON_format.md).
+Will produces a `sample.json` which can be seen in [HiBON_JSON_format](https://hibon.org/posts/hibonjson).
 
 The json can be printed to stdout with the `-c` and if `-p` is added the in pretty prints the `.json`.
 ```

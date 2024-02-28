@@ -1,7 +1,7 @@
 # Tagionwave ( Tagion full-node )
 
 tagionwave/neuewelle is the tagion node program.
-Currently only mode0 is supported [network modes](docs/architecture/Network_Modes)
+Currently only mode0 is supported [network modes](/docs/architecture/Network_Modes)
 
 ```bash
 Help information for tagion wave program
@@ -71,7 +71,7 @@ echo 10000 > /tmp/epoch_shutdown$(pgrep neuewelle)
 
 ### Missing dartfile ./Node_0_dart.drt
 This mean that the nodes nodes could not find a dart database. 
-For testing the database should be created with the boot tool [Initialize DART](docs/misc/network_setup/initialize_dart.md) or with the helper script `create_wallets.sh`
+For testing the database should be created with the boot tool [Initialize DART](/docs/guide/network_setup/initialize_dart) or with the helper script `create_wallets.sh`
 
 
 ### DATABASES must be booted with same bullseye - Abort

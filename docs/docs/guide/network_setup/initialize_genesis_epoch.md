@@ -1,6 +1,6 @@
 # Initialize Genesis Epoch (low level)
 
-*Intialize bills* [Initialize DART](/documents/network_setup/initialize_dart.md)
+*Intialize bills* [Initialize DART](/docs/guide/network_setup/initialize_dart)
 
 ## Create the epoch genesis data
 The Genesis infomation is generated with stiefel command.

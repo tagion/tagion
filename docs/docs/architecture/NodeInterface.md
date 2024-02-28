@@ -8,11 +8,6 @@ The Node interface services relays the HiRPC between three  services (*EpochCrea
 
 All HiRPC should be signed and contain a pubkey.
 
-The acceptance criteria specification can be found in [Node_Interface Sync](
-/bdd/tagion/testbench/services/NodeInterface.md)
-
-
-
 ```mermaid
 sequenceDiagram
     participant EpochCreator 
@@ -34,5 +29,3 @@ sequenceDiagram
 	NodeInterface ->> P2P: Response(DART) 
 
 ```
-
-

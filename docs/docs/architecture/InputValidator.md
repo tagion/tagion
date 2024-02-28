@@ -2,7 +2,7 @@
 
 [tagion.services.inputvalidator](https://ddoc.tagion.org/tagion.services.inputvalidator)
 
-This service splits the stream into a [HiBON Document](/docis/protocols/hibon) and send package to the next service.
+This service splits the stream into a [HiBON Document](/docs/protocols/hibon) and send package to the next service.
 The services should check that the package does not exceed the max-package length.
 
 
