@@ -14,7 +14,10 @@ const config = {
   markdown: {
     mermaid: true,
   },
-  themes: ['@docusaurus/theme-mermaid'],
+  themes: [
+        '@docusaurus/theme-mermaid',
+        'docusaurus-theme-github-codeblock',
+    ],
   plugins: [
     ['@docusaurus/plugin-content-blog',
       {
