@@ -37,6 +37,7 @@ jobs:
 
       - name: build doc
         run: |
+          cd ..
           make doc
 
       - uses: actions/upload-pages-artifact@v3
