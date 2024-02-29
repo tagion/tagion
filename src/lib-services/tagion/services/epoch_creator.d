@@ -171,14 +171,6 @@ struct EpochCreatorService {
                     &payload);
         }
 
-        /// Receive external payloads from the nodeinterface
-        void node_receive(NodeRecv, Document doc) {
-            // TODOr: Check that it's valid Receiver
-            /* log("received payload %s bytes", doc.data.length); */
-            receiveWavefront(ReceivedWavefront(), doc);
-        }
-
-
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
             if (!init_tide) {
@@ -192,7 +184,6 @@ struct EpochCreatorService {
                     opts.timeout.msecs,
                     &signal,
                     &ownerTerminated,
-                    &node_receive,
                     &receiveWavefront,
                     &unknown
             );
@@ -207,7 +198,7 @@ struct EpochCreatorService {
         }
         Topic inGraph = Topic("in_graph");
         log.event(inGraph, __FUNCTION__, Document());
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &node_receive, &receiveWavefront);
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
     }
 
 }

@@ -139,8 +139,8 @@ struct NodeInterfaceService {
 
         if (buf.length > 0) {
             log.trace("received %s bytes", buf.length);
-            Document doc = buf;
-            receive_handle.send(NodeRecv(), doc);
+            const doc = Document(buf);
+            receive_handle.send(ReceivedWavefront(), doc);
 
             log.event(event_recv, __FUNCTION__, doc);
         }
