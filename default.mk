@@ -56,6 +56,9 @@ DFLAGS+=$(DVERSION)=WITHOUT_SORTING
 # There is currently no way to function to determine the nodes from latest epoch
 DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 
+# Enable verbose epoch logging
+# DFLAGS+=$(DVERSION)=EPOCH_LOG
+
 # Enable websocket pub in shell. 
 # Currently causes the program not to stop properly in bddtests.
 # DFLAGS+=$(DVERSION)=TAGIONSHELL_WEB_SOCKET
