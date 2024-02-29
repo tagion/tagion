@@ -48,8 +48,9 @@ doc: ddoc $(BUILDDOCUSAURUS)/.way
 	$(PRECMD)
 	echo "making docusaurus"
 	npm run build --prefix $(DOCUSAURUS)
-	mkdir $(BUILDDOCUSAURUS)/ddoc
-	$(CP) ${shell find $(BUILDDOC) -type f ! -name 'index.html'} $(BUILDDOCUSAURUS)/ddoc
+	$(CP) -r $(BUILDDOC) $(BUILDDOCUSAURUS)
+	$(RM) $(BUILDDOCUSAURUS)/ddoc/index.html
+
 .PHONY: doc
 
 servedocs:
