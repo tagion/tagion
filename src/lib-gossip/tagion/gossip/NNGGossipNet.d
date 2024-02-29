@@ -35,10 +35,6 @@ class NNGGossipNet : GossipNet {
     void add_channel(const Pubkey channel) {
         import tagion.gossip.AddressBook : addressbook;
 
-        if (channel == mypk) {
-            return;
-        }
-
         const address = addressbook[channel].get.address;
         _pkeys ~= channel;
         addresses[channel] = address;
