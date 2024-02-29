@@ -126,11 +126,10 @@ const config = {
       // Replace with your project's social card
       image: 'img/tagion-social-card.jpg',
       navbar: {
-        title: 'Tagion',
         logo: {
           alt: 'Tagion logo',
-          src: 'img/favicon.svg',
-          srcDark: 'img/favicon-dark.svg',
+          src: 'img/logo.svg',
+          srcDark: 'img/logo-dark.svg',
         },
         items: [
           {
