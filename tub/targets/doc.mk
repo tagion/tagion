@@ -51,6 +51,11 @@ doc: ddoc $(BUILDDOCUSAURUS)/.way
 	$(CP) -r $(BUILDDOC) $(BUILDDOCUSAURUS)
 	$(RM) $(BUILDDOCUSAURUS)/ddoc/index.html
 
+doc-sitemap: 
+	$(PRECMD)
+	echo "making sitemap"
+	python3 $(DOCUSAURUS)/create_sitemap.py $(BUILDDOCUSAURUS)/sitemap.xml $(BUILDDOCUSAURUS)/ddoc
+
 .PHONY: doc
 
 servedocs:

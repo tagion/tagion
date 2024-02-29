@@ -39,6 +39,7 @@ jobs:
         run: |
           cd ..
           make doc
+          make doc-sitemap
 
       - uses: actions/upload-pages-artifact@v3
         with:
