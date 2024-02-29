@@ -27,6 +27,7 @@ import nngd;
 struct NodeInterfaceOptions {
     uint send_timeout = 200; // Milliseconds
     uint recv_timeout = 200; // Milliseconds
+    uint send_max_retry = 0;
     string node_address = "tcp://*:10700"; // Address
 
     import tagion.utils.JSONCommon;
@@ -95,6 +96,20 @@ struct NodeInterfaceService {
     immutable NodeInterfaceOptions opts;
     ActorHandle receive_handle;
 
+    bool retry(bool delegate() send_) @trusted {
+        import conc = tagion.utils.pretend_safe_concurrency;
+
+        int attempts;
+        while(attempts <= opts.send_max_retry && !thisActor.stop) {
+            attempts++;
+            if(send_()) {
+                return true;
+            }
+            conc.receiveTimeout(Duration.zero, &signal);
+        }
+        return false;
+    }
+
     NNGSocket sock_recv;
     this(immutable(NodeInterfaceOptions) opts, string message_handler_task) @trusted {
         this.opts = opts;
@@ -112,20 +127,22 @@ struct NodeInterfaceService {
         sock_send.recvtimeout = opts.recv_timeout.msecs;
         sock_send.sendtimeout = opts.send_timeout.msecs;
         int rc = sock_send.dial(nnr.address);
+
         scope (exit) {
             sock_send.close();
         }
 
         assert(rc != -1, "You did not create the socket you dummy");
-        if (rc != 0) {
-            log.error("attempt to dial (%s)%s %s", channel.encodeBase64, nnr.address, nng_errstr(sock_send.m_errno));
-            return;
-        }
-        rc = sock_send.send(payload.serialize);
-        if (rc != 0) {
-            log.error("attempt to send (%s)%s %s", channel.encodeBase64, nnr.address, nng_errstr(sock_send.m_errno));
-            return;
-        }
+
+        retry({
+            rc = sock_send.send(payload.serialize);
+            if (rc != 0) {
+                log.error("attempt to send (%s)%s %s", channel.encodeBase64, nnr.address, nng_errstr(sock_send.m_errno));
+                return false;
+            }
+            return true;
+        });
+
         log.event(event_send, nnr.name ~ channel.encodeBase64, payload);
         log.trace("successfully sent %s bytes", payload.data.length);
     }
