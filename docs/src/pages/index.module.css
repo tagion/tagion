@@ -21,3 +21,8 @@
   align-items: center;
   justify-content: center;
 }
+
+.tgnGradientBg {
+    background: rgb(63,11,129);
+    background: linear-gradient(90deg, rgba(63,11,129,1) 0%, rgba(77,45,180,1) 26%, rgba(79,54,227,1) 44%, rgba(0,182,193,1) 68%, rgba(85,255,166,1) 92%, rgba(255,255,255,1) 100%);
+}
