@@ -56,6 +56,10 @@ DFLAGS+=$(DVERSION)=WITHOUT_SORTING
 # There is currently no way to function to determine the nodes from latest epoch
 DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 
+# HashGraph.d not_used_channels turn on check of
+# node.state is ExchangeState.NONE. Mode1 does not function with this.
+# DFLAGS+=$(DVERSOIN)=SEND_ALWAYS
+
 # Enable verbose epoch logging
 # DFLAGS+=$(DVERSION)=EPOCH_LOG
 
