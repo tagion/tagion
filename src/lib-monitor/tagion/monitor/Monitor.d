@@ -1,6 +1,6 @@
 module tagion.monitor.Monitor;
 
-//import std.bitmanip : BitArray;
+@safe:
 
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
@@ -9,8 +9,6 @@ import tagion.hashgraph.Round;
 import tagion.hashgraphview.EventMonitorCallbacks : EventMonitorCallbacks;
 import tagion.network.ListenerSocket;
 
-//import tagion.hashg : EventMonitorCallbacks; //NetCallbacks;
-//import tagion.gossip.GossipNet : StdGossipNet;
 import std.format;
 import std.string;
 import tagion.Keywords;
@@ -26,7 +24,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.logger.Logger;
 import tagion.utils.BitMask;
 
-@safe
 class MonitorException : TagionException {
     this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
@@ -48,7 +45,59 @@ import std.concurrency;
 import std.socket;
 import std.stdio : writefln, writeln;
 
-@safe
+import tagion.logger;
+import tagion.hashgraph.HashGraphBasic;
+import tagion.hibon.HiBONRecord;
+import tagion.hashgraphview.EventView;
+
+class LogMonitorCallBacks : EventMonitorCallbacks {
+
+    Topic topic;
+
+    this(string event_topic_name = "monitor") {
+        topic = Topic(event_topic_name);
+    }
+
+    struct EventViews {
+        const(EventView)[] views;
+        mixin HiBONRecord!(q{
+            this(const(Event)[] events) pure nothrow {
+                foreach(e; events) {
+                    views ~= EventView(e);
+                }
+            }
+        });
+    }
+
+    nothrow :
+
+    void connect(const(Event) e) {
+        log.event(topic, __FUNCTION__, EventView(e));
+    }
+    void witness(const(Event) e) {
+        log.event(topic, __FUNCTION__, EventView(e));
+    }
+    void round(const(Event) e) {
+        log.event(topic, __FUNCTION__, EventView(e));
+    }
+    void round_decided(const(Round.Rounder) rounder) {
+        log(__FUNCTION__);
+    }
+    void round_received(const(Event) e) {
+        log.event(topic, __FUNCTION__, EventView(e));
+    }
+    void famous(const(Event) e) {
+        log.event(topic, __FUNCTION__, EventView(e));
+    }
+    void remove(const(Event) e) {
+        log.event(topic, __FUNCTION__, EventView(e));
+    }
+    void epoch(const(Event)[] e) {
+        const packages = EventViews(e);
+        log.event(topic, __FUNCTION__, packages);
+    }
+}
+
 class MonitorCallBacks : EventMonitorCallbacks {
     protected enum _params = [
         "altitude",

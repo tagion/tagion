@@ -61,20 +61,23 @@ struct EpochCreatorService {
 
         const net = new StdSecureNet(shared_net);
 
-        assert(network_mode != NetworkMode.PUB, "Unsupported network mode");
+        assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
 
+        import tagion.hashgraph.Event : Event;
+        import tagion.monitor.Monitor;
         if (monitor_opts.enable) {
-            import tagion.hashgraph.Event : Event;
-            import tagion.monitor.Monitor : MonitorCallBacks;
-
-            auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
-            Event.callbacks = new MonitorCallBacks(
-                    monitor_socket_tid, monitor_opts.dataformat);
-
-            if (!waitforChildren(Ctrl.ALIVE)) {
-                log.warn("Monitor never started, continuing anyway");
+            version(none) {
+                auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
+                Event.callbacks = new MonitorCallBacks(monitor_socket_tid, monitor_opts.dataformat);
+                if (!waitforChildren(Ctrl.ALIVE)) {
+                    log.warn("Monitor never started, continuing anyway");
+                }
+            }
+            else {
+            Event.callbacks = new LogMonitorCallBacks();
             }
         }
+
 
         GossipNet gossip_net;
 
@@ -129,9 +132,12 @@ struct EpochCreatorService {
             counter++;
         }
 
+        auto payload_received = Topic("payload_received");
         /// Receive external payloads from the nodeinterface
-        void node_receive(NodeRecv, const(Document) doc) {
+        void node_receive(NodeRecv, Document doc) {
             // TODOr: Check that it's valid Receiver
+            log("received payload %s bytes", doc.data.length);
+            log.event(payload_received, __FUNCTION__, doc);
             receivePayload(Payload(), doc);
         }
 

@@ -10,6 +10,7 @@ import tagion.basic.Types;
 import tagion.crypto.Types;
 import tagion.communication.HiRPC;
 import tagion.gossip.InterfaceNet;
+import tagion.hibon.Document;
 import tagion.logger;
 import tagion.services.messages;
 import tagion.utils.StdTime;
@@ -89,7 +90,7 @@ class NNGGossipNet : GossipNet {
     }
 
     void send(const Pubkey channel, const(HiRPC.Sender) sender) @trusted {
-        nodeinterface.send(NodeSend(), channel, sender.toDoc);
+        nodeinterface.send(NodeSend(), channel, cast(Document)sender.toDoc);
         Thread.sleep(duration);
     }
 

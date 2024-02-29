@@ -38,7 +38,7 @@ local.*
 
 # Temporary files and directories
 *.tmp
-build
+/build/
 logs
 tools/*
 *.log
