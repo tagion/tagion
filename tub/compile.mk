@@ -30,7 +30,7 @@ LIBEXT=${if $(SHARED),$(DLLEXT),$(STAEXT)}
 
 #
 # D compiler
-#/
+#
 $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
 	$(call log.header, $*.$(OBJEXT) :: compile)

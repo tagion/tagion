@@ -2,6 +2,27 @@
 TAUON_BINS=$(addprefix $(DBIN)/,$(TAUON_TESTS:.d=.wasm))
 LIBTVM=$(DLIB)/libtauon.a
 
+$(DLIB)/libdruntime-ldc.a: $(DLIB)/.way
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libdruntime 
+
+$(DLIB)/libdphobos2-ldc.a: $(DLIB)/.way
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libphobos2 
+
+$(DLIB)/libtauon.a: DFILES+=$(TAUON_DFILES)
+$(DLIB)/libtauon.a: DINC+=$(TAUON_DINC)
+$(DLIB)/libtauon.a: $(DLIB)/.way 
+
+$(TAUON_BINS): $(DBIN)/.way
+
+tauon-test: $(DLIB)/libtauon.a
+tauon-test: $(DLIB)/libdruntime-ldc.a
+tauon-test: $(DLIB)/libdphobos2-ldc.a
+tauon-test: LIB+=$(WASI_LIB)
+tauon-test: LIB+=$(LIBTVM)
+tauon-test: DINC+=$(TAUON_DINC)
+tauon-test: $(TAUON_BINS)
+tauon-test: | $(DLIB)/.way 
+
 env-tauon:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
@@ -19,31 +40,10 @@ env-tauon:
 
 env: env-tauon
 
-$(DLIB)/libdruntime-ldc.a: $(DLIB)/.way
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libdruntime 
 
-$(DLIB)/libdphobos2-ldc.a: $(DLIB)/.way
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libphobos2 
-
-$(DLIB)/libtauon.a: DFILES+=$(TAUON_DFILES)
-$(DLIB)/libtauon.a: DINC+=$(TAUON_DINC)
-$(DLIB)/libtauon.a: $(DLIB)/.way 
-
-#$(DBIN)/tauon_test.wasm: DINC+=$(TVM_SDK_DINC)
-#$(DBIN)/tauon_test.wasm: LIB+=$(WASI_LIB)
-#$(DBIN)/tauon_test.wasm: LIB+=$(LIBTVM)
-$(TAUON_BINS): $(DBIN)/.way
-
-$(DOBJ)/wasi/tests/tvm_sdk_test.o: DINC+=$(TVM_SDK_DINC)
-
-tauon-test: $(DLIB)/libtauon.a
-tauon-test: $(DLIB)/libdruntime-ldc.a
-tauon-test: $(DLIB)/libdphobos2-ldc.a
-tauon-test: LIB+=$(WASI_LIB)
-tauon-test: LIB+=$(LIBTVM)
-tauon-test: DINC+=$(TAUON_DINC)
-tauon-test: $(TAUON_BINS)
-tauon-test: | $(DLIB)/.way 
+tauon-run: tauon-test
+	$(PRECMD)
+	$(foreach wasm,$(TAUON_BINS), wasmer $(wasm);)
 
 help-tauon:
 	$(PRECMD)
