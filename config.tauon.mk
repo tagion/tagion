@@ -27,6 +27,7 @@ TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d
 TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBONBase.d
 TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBONException.d
 TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBONJSON.d
+TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBONtoText.d
 TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/BigNumber.d
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d

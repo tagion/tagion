@@ -5,7 +5,9 @@ import core.stdc.stdio;
 import std.stdio;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
-import tagion.basic.Types;
+import tagion.hibon.HiBONtoText;
+import tagion.hibon.Document;
+import tagion.basic.Types : base64=encodeBase64;
 
 void main() {
     printf("--- Main\n");
@@ -20,6 +22,9 @@ void main() {
     writefln("h=%s", h.serialize);
     writefln("h=%s", h.toPretty);
     writefln("h=%(%02x%)", h.serialize);
-    writefln("h=%s", h.serialize.encodeBase64);
+    writefln("h=%s", h.serialize.base64);
+    const doc=Document(h);
+    writefln("doc=%s", doc.toPretty);
+    writefln("doc=%s", doc.encodeBase64);
 }
 

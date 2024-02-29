@@ -9,6 +9,9 @@ $(DLIB)/libdphobos2-ldc.a: $(DLIB)/.way
 	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libphobos2 
 
 $(DLIB)/libtauon.a: DFILES+=$(TAUON_DFILES)
+$(DLIB)/libtauin.a: DFILES+=--output-o
+$(DLIB)/libtauon.a: DFLAGS+=--op
+$(DLIB)/libtauon.a: DFLAGS+=--od=$(DOBJ)
 $(DLIB)/libtauon.a: DINC+=$(TAUON_DINC)
 $(DLIB)/libtauon.a: $(DLIB)/.way 
 
