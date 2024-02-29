@@ -4,6 +4,7 @@ import core.time;
 import core.thread;
 
 import std.random;
+import std.math : floor;
 
 import tagion.actor;
 import tagion.basic.Types;
@@ -18,6 +19,7 @@ import tagion.utils.StdTime;
 @safe
 class NNGGossipNet : GossipNet {
     private Duration duration;
+    private uint duration_msecs;
     private string[Pubkey] addresses;
     private Pubkey[] _pkeys;
     immutable(Pubkey) mypk;
@@ -25,11 +27,11 @@ class NNGGossipNet : GossipNet {
     private Random random;
     private ActorHandle nodeinterface;
 
-    this(const Pubkey mypk, ActorHandle nodeinterface, Duration duration) {
+    this(const Pubkey mypk, ActorHandle nodeinterface, uint duration) {
         this.nodeinterface = nodeinterface;
         this.random = Random(unpredictableSeed);
         this.mypk = mypk;
-        this.duration = duration;
+        this.duration_msecs = duration_msecs;
     }
 
     void add_channel(const Pubkey channel) {
@@ -106,8 +108,10 @@ class NNGGossipNet : GossipNet {
     }
 
     void send(const Pubkey channel, const(HiRPC.Sender) sender) @trusted {
+
+        Thread.sleep((cast(int)uniform(0.5f, 1.5f, random) * duration_msecs).msecs);
+
         nodeinterface.send(NodeSend(), channel, cast(Document)sender.toDoc);
-        Thread.sleep(duration);
     }
 
     void start_listening() {
