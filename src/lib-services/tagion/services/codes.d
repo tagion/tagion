@@ -22,17 +22,22 @@ enum ServiceCode {
     @("Generic invalid hibon") hibon = 700,
 }
 
+int hibon_2_service_code(Document.Element.ErrorCode code) {
+    return code + ServiceCode.hibon;
+}
+
 @safe
-string toString(ServiceCode errno) pure nothrow {
-    final switch (errno) {
-        static foreach (E; EnumMembers!ServiceCode) {
+string toString(T)(T code) pure nothrow {
+    final switch (code) {
+        static foreach (E; EnumMembers!T) {
     case E:
-            enum error_text = getUDAs!(E, string)[0];
-            return (error_text.length) ? error_text : E.stringof;
+            enum text = getUDAs!(E, string)[0];
+            return (text.length) ? text : E.stringof;
         }
     }
 }
 
-int hibon_2_service_code(Document.Element.ErrorCode code) {
-    return code + ServiceCode.hibon;
+@safe
+string toString(ServiceCode errno) pure nothrow {
+    return errno.toString!ServiceCode;
 }
