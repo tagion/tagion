@@ -63,32 +63,34 @@ class NNGGossipNet : GossipNet {
         return (channel in addresses) !is null;
     }
 
-    version(none) {
+    // version(none) {
     const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+        import std.algorithm : filter;
+        import std.array;
+
         assert(_pkeys.length > 1);
-        Pubkey send_channel;
-        do {
-            send_channel = choice(_pkeys, random);
+        auto keys_to_send = _pkeys.filter!(n => channel_filter(n) && n != mypk); 
+        if (keys_to_send.empty) {
+            log("NO AVAILABLE TO SEND TO");
+            return Pubkey.init;
         }
-        while (!channel_filter(send_channel));
+        return choice(keys_to_send.array, random);
+    }
+    // }
+    // else {
+    // const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+    //     import std.range : dropExactly;
 
-        return send_channel;
-    }
-    }
-    else {
-    const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
-        import std.range : dropExactly;
-
-        foreach (count; 0 .. addresses.length * 2) {
-            const node_index = uniform(0, cast(uint) addresses.length, random);
-            const send_channel = _pkeys[node_index];
-            if ((send_channel != mypk) && channel_filter(send_channel)) {
-                return send_channel;
-            }
-        }
-        return Pubkey();
-    }
-    }
+    //     foreach (count; 0 .. addresses.length * 2) {
+    //         const node_index = uniform(0, cast(uint) addresses.length, random);
+    //         const send_channel = _pkeys[node_index];
+    //         if ((send_channel != mypk) && channel_filter(send_channel)) {
+    //             return send_channel;
+    //         }
+    //     }
+    //     return Pubkey();
+    // }
+    // }
 
     const(Pubkey) gossip(
             const(ChannelFilter) channel_filter,

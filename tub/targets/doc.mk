@@ -20,7 +20,7 @@ clean: clean-ddoc
 
 clean-doc:
 	$(PRECMD)
-	$(RM) -r $(BUILDDOCUSAURUS)
+	$(RM) -rf $(BUILDDOCUSAURUS)
 	@echo cleaning docusaurus
 
 .PHONY: clean-doc
