@@ -21,6 +21,7 @@ class NNGGossipNet : GossipNet {
     private string[Pubkey] addresses;
     private Pubkey[] _pkeys;
     immutable(Pubkey) mypk;
+    protected sdt_t _current_time;
     private Random random;
     private ActorHandle nodeinterface;
 
@@ -59,12 +60,14 @@ class NNGGossipNet : GossipNet {
         import std.exception : assumeWontThrow;
 
         return assumeWontThrow(currentTime());
+        /* return _current_time; */
     }
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
         return (channel in addresses) !is null;
     }
 
+    version(none) {
     const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
         assert(_pkeys.length > 1);
         Pubkey send_channel;
@@ -74,6 +77,21 @@ class NNGGossipNet : GossipNet {
         while (!channel_filter(send_channel));
 
         return send_channel;
+    }
+    }
+    else {
+    const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+        import std.range : dropExactly;
+
+        foreach (count; 0 .. addresses.length * 2) {
+            const node_index = uniform(0, cast(uint) addresses.length, random);
+            const send_channel = _pkeys[node_index];
+            if ((send_channel != mypk) && channel_filter(send_channel)) {
+                return send_channel;
+            }
+        }
+        return Pubkey();
+    }
     }
 
     const(Pubkey) gossip(

@@ -133,7 +133,8 @@ do
         # Configure the network with the neuewelle binary
         "$bdir/neuewelle" -O \
            --option=wave.network_mode:LOCAL \
-           --option=subscription.tags:taskfailure,monitor,recorder,payload_received \
+           --option=epoch_creator.timeout:500 \
+           --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv \
            --option=inputvalidator.sock_addr:abstract://CONTRACT_NEUEWELLE_$i \
            --option=dart_interface.sock_addr:abstract://DART_NEUEWELLE_$i \
            --option=subscription.address:abstract://SUBSCRIPTION_NEUEWELLE_$i \

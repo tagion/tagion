@@ -132,15 +132,6 @@ struct EpochCreatorService {
             counter++;
         }
 
-        auto payload_received = Topic("payload_received");
-        /// Receive external payloads from the nodeinterface
-        void node_receive(NodeRecv, Document doc) {
-            // TODOr: Check that it's valid Receiver
-            log("received payload %s bytes", doc.data.length);
-            log.event(payload_received, __FUNCTION__, doc);
-            receivePayload(Payload(), doc);
-        }
-
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
             import std.array;
             import tagion.hashgraph.HashGraphBasic;
@@ -180,6 +171,14 @@ struct EpochCreatorService {
                     &payload);
         }
 
+        /// Receive external payloads from the nodeinterface
+        void node_receive(NodeRecv, Document doc) {
+            // TODOr: Check that it's valid Receiver
+            /* log("received payload %s bytes", doc.data.length); */
+            receiveWavefront(ReceivedWavefront(), doc);
+        }
+
+
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
             if (!init_tide) {
@@ -187,6 +186,13 @@ struct EpochCreatorService {
             }
             hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
+
+        void sleep(Duration dur) @trusted {
+            import core.thread;
+            Thread.sleep(dur);
+        }
+
+        sleep(opts.timeout.msecs);
 
         while (!thisActor.stop && !hashgraph.areWeInGraph) {
             const received = receiveTimeout(

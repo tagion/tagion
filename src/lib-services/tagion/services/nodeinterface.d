@@ -89,6 +89,9 @@ unittest {
 ///
 struct NodeInterfaceService {
 
+    Topic event_send = Topic("node_send");
+    Topic event_recv = Topic("node_recv");
+
     immutable NodeInterfaceOptions opts;
     ActorHandle receive_handle;
 
@@ -103,26 +106,27 @@ struct NodeInterfaceService {
     }
 
     void node_send(NodeSend, const(Pubkey) channel, Document payload) @trusted {
-        const address = addressbook[channel].get.address;
+        const nnr = addressbook[channel].get;
         NNGSocket sock_send = NNGSocket(nng_socket_type.NNG_SOCKET_PAIR);
         assert(sock_send.m_errno == 0, format("Create send sock error %s", nng_errstr(sock_send.m_errno)));
         sock_send.recvtimeout = opts.recv_timeout.msecs;
         sock_send.sendtimeout = opts.send_timeout.msecs;
-        int rc = sock_send.dial(address);
+        int rc = sock_send.dial(nnr.address);
         scope (exit) {
             sock_send.close();
         }
 
         assert(rc != -1, "You did not create the socket you dummy");
         if (rc != 0) {
-            log.error("attempt to dial (%s)%s %s", channel.encodeBase64, address, nng_errstr(sock_send.m_errno));
+            log.error("attempt to dial (%s)%s %s", channel.encodeBase64, nnr.address, nng_errstr(sock_send.m_errno));
             return;
         }
         rc = sock_send.send(payload.serialize);
         if (rc != 0) {
-            log.error("attempt to send (%s)%s %s", channel.encodeBase64, address, nng_errstr(sock_send.m_errno));
+            log.error("attempt to send (%s)%s %s", channel.encodeBase64, nnr.address, nng_errstr(sock_send.m_errno));
             return;
         }
+        log.event(event_send, nnr.name ~ channel.encodeBase64, payload);
         log.trace("successfully sent %s bytes", payload.data.length);
     }
 
@@ -135,7 +139,10 @@ struct NodeInterfaceService {
 
         if (buf.length > 0) {
             log.trace("received %s bytes", buf.length);
-            receive_handle.send(NodeRecv(), Document(buf));
+            Document doc = buf;
+            receive_handle.send(NodeRecv(), doc);
+
+            log.event(event_recv, __FUNCTION__, doc);
         }
     }
 
