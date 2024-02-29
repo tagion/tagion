@@ -187,13 +187,6 @@ struct EpochCreatorService {
             hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
-        void sleep(Duration dur) @trusted {
-            import core.thread;
-            Thread.sleep(dur);
-        }
-
-        sleep(opts.timeout.msecs);
-
         while (!thisActor.stop && !hashgraph.areWeInGraph) {
             const received = receiveTimeout(
                     opts.timeout.msecs,
@@ -212,6 +205,8 @@ struct EpochCreatorService {
         if (thisActor.stop) {
             return;
         }
+        Topic inGraph = Topic("in_graph");
+        log.event(inGraph, __FUNCTION__, Document());
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &node_receive, &receiveWavefront);
     }
 
