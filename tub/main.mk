@@ -117,7 +117,7 @@ include $(TARGETS)/install.mk
 #
 # Install doc tool
 #
-include $(TARGETS)/ddoc.mk
+include $(TARGETS)/doc.mk
 
 #
 # Enable cleaning
