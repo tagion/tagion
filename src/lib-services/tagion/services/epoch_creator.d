@@ -190,6 +190,10 @@ struct EpochCreatorService {
             timeout();
         }
 
+        if (hashgraph.areWeInGraph) {
+            log("NODE CAME INTO GRAPH");
+        }
+
         if (thisActor.stop) {
             return;
         }

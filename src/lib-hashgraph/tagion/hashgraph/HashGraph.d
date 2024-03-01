@@ -542,20 +542,20 @@ class HashGraph {
         version (EPOCH_LOG) {
             log("owner_epacks %s", own_epacks.length);
         }
-        if (!changes.empty) {
-            // delta received from sharp should be added to our own node. 
-            version (EPOCH_LOG) {
+        version (EPOCH_LOG) {
+            if (!changes.empty) {
                 log("changes found");
             }
-            foreach (epack; changes) {
-                const epack_node = getNode(epack.pubkey);
-                auto first_event = new Event(epack, this);
-                if (epack_node.event is null) {
-                    check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
-                }
-                _event_cache[first_event.fingerprint] = first_event;
-                front_seat(first_event);
+        }
+        // delta received from sharp should be added to our own node. 
+        foreach (epack; changes) {
+            const epack_node = getNode(epack.pubkey);
+            auto first_event = new Event(epack, this);
+            if (epack_node.event is null) {
+                check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
             }
+            _event_cache[first_event.fingerprint] = first_event;
+            front_seat(first_event);
         }
 
         auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
@@ -625,8 +625,21 @@ class HashGraph {
                     }
 
                     // if we receive a ripplewave, we must add the eva events to our own graph.
-                    const received_epacks = received_wave.epacks;
-                    foreach (epack; received_epacks) {
+                    auto received_epacks = received_wave
+                        .epacks
+                        .map!((e) => cast(immutable(EventPackage)*) e)
+                        .array
+                        .sort!((a,b) => a.fingerprint < b.fingerprint);
+                    auto _own_epacks = _nodes.byValue
+                        .map!((n) => n[])
+                        .joiner
+                        .map!((e) => cast(immutable(EventPackage)*) e.event_package)
+                        .array
+                        .sort!((a, b) => a.fingerprint < b.fingerprint);
+
+                    auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, _own_epacks);
+
+                    foreach (epack; changes) {
                         const epack_node = getNode(epack.pubkey);
                         auto first_event = new Event(epack, this);
                         if (epack_node.event is null) {
