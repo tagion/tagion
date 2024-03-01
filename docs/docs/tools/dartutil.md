@@ -1,4 +1,4 @@
-# dartutil ( DART database util )
+# dartutil
 
 > Dartutil is tool read/inspect and manimulate the data store in a DART file (.drt)
 

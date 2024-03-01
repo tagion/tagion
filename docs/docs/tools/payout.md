@@ -1,4 +1,4 @@
-﻿# Tagion payout wallet (Auszahlung)
+﻿# payout (auszahlung)
 
 ```
 Documentation: https://tagion.org/
