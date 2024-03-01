@@ -56,6 +56,10 @@ DFLAGS+=$(DVERSION)=WITHOUT_SORTING
 # There is currently no way to function to determine the nodes from latest epoch
 DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 
+# Startup delay for nodes. Will add 5 seconds between each boot in order to 
+# ensure that the graph is still able to startup with delays between nodes. 
+# DFLAGS+=$(DVERSION)=WITH_STARTUP_DELAY
+
 # HashGraph.d not_used_channels turn on check of
 # node.state is ExchangeState.NONE. Mode1 does not function with this.
 # DFLAGS+=$(DVERSOIN)=SEND_ALWAYS
