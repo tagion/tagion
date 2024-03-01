@@ -42,6 +42,9 @@ private struct ActorInfo {
     private Ctrl[string] childrenState;
     bool stop;
 
+    uint msgs_sent;
+    uint msgs_received;
+
     @property @safe
     bool task_name(string name) nothrow const {
         return log.task_name(name);
@@ -51,10 +54,25 @@ private struct ActorInfo {
     string task_name() const nothrow {
         return log.task_name;
     }
-
 }
 
 static ActorInfo thisActor;
+
+struct ActorInfoRecord {
+    string task_name;
+    uint msgs_sent;
+    uint msgs_received;
+    Ctrl[string] childrenState;
+
+    mixin HiBONRecord!(q{
+        this(ActorInfo info) {
+            this.task_name = info.task_name;
+            this.msgs_sent = info.msgs_sent;
+            this.msgs_received = info.msgs_received;
+            this.childrenState = info.childrenState;
+        }
+    });
+}
 
 ///
 unittest {
@@ -99,10 +117,7 @@ struct Request(string name, ID = uint) {
     /// Send back some data to the task who sent the request
     void respond(Args...)(Args args) {
         auto res = Response(msg, id);
-        auto tid = locate(task_name);
-        if (tid !is Tid.init) {
-            locate(task_name).send(res, args);
-        }
+        ActorHandle(task_name).send(res, args);
     }
 }
 
@@ -262,6 +277,7 @@ struct ActorHandle {
         catch (AssertError _) {
             concurrency.send(tid, args).collectException!AssertError;
         }
+        thisActor.msgs_sent++;
     }
     /// Send a message to this task
     void prioritySend(T...)(T args) @trusted {
@@ -271,6 +287,7 @@ struct ActorHandle {
         catch (AssertError _) {
             concurrency.prioritySend(tid, args).collectException!AssertError;
         }
+        thisActor.msgs_sent++;
     }
 }
 
@@ -467,9 +484,11 @@ if (allSatisfy!(isSafe, Args)) {
                     failhandler,
                     &signal,
                     &control,
+                    &getActorInfo,
                     &ownerTerminated,
                     &unknown,
             );
+            thisActor.msgs_received++;
         }
         catch (MailboxFull t) {
             fail(t);
@@ -511,11 +530,15 @@ if (allSatisfy!(isSafe, Args)) {
                     failhandler,
                     &signal,
                     &control,
+                    &getActorInfo,
                     &ownerTerminated,
                     &unknown,
             );
             if (!message) {
                 timeout();
+            }
+            else {
+                thisActor.msgs_received++;
             }
         }
         catch (MailboxFull t) {
@@ -560,4 +583,9 @@ void ownerTerminated(OwnerTerminated) @safe {
  */
 void unknown(Variant message) @trusted {
     throw new UnknownMessage("No delegate to deal with message: %s".format(message));
+}
+
+alias GetActorInfo = Request!"GetActorInfo";
+void getActorInfo(GetActorInfo req) {
+    req.respond(ActorInfoRecord(thisActor).toDoc);
 }
