@@ -12,10 +12,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.random.random;
 import tagion.gossip.AddressBook;
-import tagion.gossip.EmulatorGossipNet;
-import tagion.gossip.NNGGossipNet;
 import tagion.gossip.GossipNet;
-import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Refinement;
 import tagion.hibon.Document;
@@ -86,7 +83,7 @@ struct EpochCreatorService {
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface), opts.timeout);
+            gossip_net = new NNGGossipNet(net.pubkey, opts.timeout.msecs, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
