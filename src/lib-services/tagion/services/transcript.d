@@ -40,6 +40,7 @@ import std.process : thisProcessID;
 import std.path : buildPath;
 import std.file : exists;
 import std.conv : to;
+import tagion.logger.ContractTracker;
 
 @safe:
 
@@ -59,15 +60,14 @@ struct TranscriptOptions {
 **/
 struct TranscriptService {
     void task(immutable(TranscriptOptions) opts,
-            immutable(size_t) number_of_nodes,
-            shared(StdSecureNet) shared_net,
-            immutable(TaskNames) task_names) {
+        immutable(size_t) number_of_nodes,
+        shared(StdSecureNet) shared_net,
+        immutable(TaskNames) task_names) {
         const(SecureNet) net = new StdSecureNet(shared_net);
         auto rec_factory = RecordFactory(net);
 
         ActorHandle dart_handle = ActorHandle(task_names.dart);
         ActorHandle epoch_creator_handle = ActorHandle(task_names.epoch_creator);
-        
 
         immutable(ContractProduct)*[DARTIndex] products;
 
@@ -76,25 +76,26 @@ struct TranscriptService {
             Epoch epoch;
             LockedArchives locked_archives;
         }
+
         Votes[long] votes;
 
         struct EpochContracts {
             const(SignedContract)[] signed_contracts;
             sdt_t epoch_time;
         }
+
         const(EpochContracts)*[long] epoch_contracts;
 
-        
         const process_file_name = format("%s%d", opts.shutdown_file_prefix, thisProcessID());
         const process_file_path = buildPath(opts.shutdown_folder, process_file_name);
         log("PROCESS FILE PATH %s", process_file_path);
         long shutdown;
 
-
         /** 
          * Get the current head and epoch
          */
-        TagionGlobals last_globals = TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(10_0000), long(0));
+        TagionGlobals last_globals = TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(
+                10_0000), long(0));
         TagionHead last_head = TagionHead(TagionDomain, 0);
 
         Fingerprint previous_epoch = Fingerprint([1, 2, 3, 4]);
@@ -146,7 +147,8 @@ struct TranscriptService {
                         else {
                             import tagion.services.exception;
 
-                            throw new ServiceException("The read epoch was not of type Epoch or GenesisEpoch");
+                            throw new ServiceException(
+                                "The read epoch was not of type Epoch or GenesisEpoch");
                         }
                         previous_epoch = Fingerprint(net.calcHash(doc));
                     }
@@ -181,7 +183,8 @@ struct TranscriptService {
                         else {
                             import tagion.basic.ConsensusExceptions;
 
-                            throw new ConsensusException(format("Bullseyes not the same on epoch %s", v.value.epoch
+                            throw new ConsensusException(format("Bullseyes not the same on epoch %s", v
+                                    .value.epoch
                                     .epoch_number));
                         }
                     }
@@ -201,25 +204,25 @@ struct TranscriptService {
 
             }
 
-
             if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
                 auto req = dartModifyRR();
                 req.id = res.id;
 
                 TagionHead new_head = TagionHead(
-                        TagionDomain,
-                        shutdown,
+                    TagionDomain,
+                    shutdown,
                 );
                 recorder.insert(new_head, Archive.Type.ADD);
 
                 import core.atomic;
-                dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+
+                dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res
+                        .id);
                 graceful_shutdown.atomicOp!"+="(1);
                 thisActor.stop = true;
                 return;
             }
-            
-            
+
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
                 throw new ServiceException(format("unlinked epoch contract %s", res.id));
@@ -316,16 +319,16 @@ struct TranscriptService {
             recorder[].each!(a => billStatistic(a));
 
             TagionGlobals new_globals = TagionGlobals(
-                    total,
-                    total_burned,
-                    number_of_bills,
-                    burnt_bills,
+                total,
+                total_burned,
+                number_of_bills,
+                burnt_bills,
             );
             non_voted_epoch.globals = new_globals;
 
             TagionHead new_head = TagionHead(
-                    TagionDomain,
-                    res.id,
+                TagionDomain,
+                res.id,
             );
             immutable(DARTIndex)[] locked_indexes = recorder[]
                 .filter!(a => a.type == Archive.Type.ADD)
@@ -334,13 +337,11 @@ struct TranscriptService {
 
             LockedArchives outputs = LockedArchives(res.id, locked_indexes);
 
-
             if (shutdown is long.init || res.id < shutdown) {
                 recorder.insert(new_head, Archive.Type.ADD);
                 recorder.insert(non_voted_epoch, Archive.Type.ADD);
                 recorder.insert(outputs, Archive.Type.ADD);
             }
-
 
             last_head = new_head;
             last_globals = new_globals;
@@ -357,21 +358,18 @@ struct TranscriptService {
         }
 
         void epoch(consensusEpoch,
-                immutable(EventPackage*)[] epacks,
-                immutable(long) epoch_number,
-                const(sdt_t) epoch_time) @safe {
+            immutable(EventPackage*)[] epacks,
+            immutable(long) epoch_number,
+            const(sdt_t) epoch_time) @safe {
             last_epoch_number += 1;
             import tagion.utils.Term;
 
-
             log("%sEpoch round: %d time %s%s", BLUE, last_epoch_number, epoch_time, RESET);
-
-
 
             if (process_file_path.exists && shutdown is long.init) {
                 // open the file and set the shutdown sig
                 auto f = File(process_file_path, "r");
-                scope(exit) {
+                scope (exit) {
                     f.close;
                 }
                 shutdown = (() @trusted => f.byLine.front.to!long)();
@@ -380,7 +378,6 @@ struct TranscriptService {
                 log("%sShutdown is scheduled for epoch %d%s", YELLOW, shutdown, RESET);
 
             }
-            
 
             immutable(ConsensusVoting)[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
@@ -421,15 +418,15 @@ struct TranscriptService {
 
         void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
             import tagion.utils.Miscellaneous : cutHex;
+
             const epoch_number = res.id;
 
             votes[epoch_number].epoch.bullseye = bullseye;
 
-
             ConsensusVoting own_vote = ConsensusVoting(
-                    epoch_number,
-                    net.pubkey,
-                    net.sign(bullseye)
+                epoch_number,
+                net.pubkey,
+                net.sign(bullseye)
             );
 
             epoch_creator_handle.send(Payload(), own_vote.toDoc);
@@ -437,6 +434,7 @@ struct TranscriptService {
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {
             log("received ContractProduct");
+            logContractStatus(net.calcHash(product.contract.sign_contract.contract), ContractStatusCode.produced, "Received produced contract");
             auto product_index = net.dartIndex(product.contract.sign_contract.contract);
             products[product_index] = product;
 

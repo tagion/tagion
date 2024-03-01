@@ -24,6 +24,7 @@ import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.hibon.HiBONJSON;
+import tagion.logger.ContractTracker;
 
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
@@ -66,6 +67,7 @@ struct CollectorService {
     void read_indices(dartReadRR req, immutable(SignedContract)* s_contract) {
         if (s_contract.signs.length != s_contract.contract.inputs.length) {
             log.event(reject, "contract_mismatch_signature_length", Document.init);
+            logContractStatus(net.calcHash(s_contract.contract), ContractStatusCode.rejected, "Rejected contract mismatch signature length");
             return;
         }
 
@@ -148,6 +150,7 @@ struct CollectorService {
 
             if (!verify(net, s_contract, inputs)) {
                 log.event(reject, "contract_no_verify", recorder);
+                logContractStatus(net.calcHash(s_contract.contract), ContractStatusCode.rejected, "Rejected contract no verify");
                 return;
             }
 
@@ -155,7 +158,7 @@ struct CollectorService {
             immutable collection =
                 ((res.id in reads) !is null)
                 ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                        CollectedSignedContract)(s_contract, inputs);
+                    CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {
