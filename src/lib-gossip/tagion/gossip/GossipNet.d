@@ -33,16 +33,13 @@ interface GossipNet {
 }
 
 abstract class StdGossipNet : GossipNet {
-    private Duration duration;
-
     private string[immutable(Pubkey)] addresses;
     private immutable(Pubkey)[] _pkeys;
     immutable(Pubkey) mypk;
     Random random;
 
-    this(const Pubkey mypk, Duration duration) {
+    this(const Pubkey mypk) {
         this.random = Random(unpredictableSeed);
-        this.duration = duration;
         this.mypk = mypk;
     }
 
@@ -102,19 +99,24 @@ abstract class StdGossipNet : GossipNet {
     }
 }
 
+private void sleep(Duration dur) @trusted {
+    Thread.sleep(dur);
+}
+
 class EmulatorGossipNet : StdGossipNet {
-    this(const Pubkey mypk, Duration duration) {
-        super(mypk, duration);
+    uint delay;
+    this(const Pubkey mypk, uint avrg_delay_msecs) {
+        this.delay = avrg_delay_msecs;
+        super(mypk);
     }
 
-    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
 
         import tagion.utils.pretend_safe_concurrency;
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
-        Thread.sleep(duration);
+        sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
 
         auto node_tid = locate(addresses[channel]);
         if (node_tid is Tid.init) {
@@ -129,13 +131,15 @@ class EmulatorGossipNet : StdGossipNet {
 }
 
 class NNGGossipNet : StdGossipNet {
+    uint delay;
     private ActorHandle nodeinterface;
-    this(const Pubkey mypk, Duration duration, ActorHandle nodeinterface) {
+    this(const Pubkey mypk, uint avrg_delay_msecs, ActorHandle nodeinterface) {
         this.nodeinterface = nodeinterface;
-        super(mypk, duration);
+        this.delay = avrg_delay_msecs;
+        super(mypk);
     }
-    void send(const Pubkey channel, const(HiRPC.Sender) sender) @trusted {
-        /* Thread.sleep((cast(int)uniform(0.5f, 1.5f, random) * duration_msecs).msecs); */
+    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+        sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
 
         nodeinterface.send(NodeSend(), channel, cast(Document)sender.toDoc);
     }

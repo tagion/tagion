@@ -80,10 +80,10 @@ struct EpochCreatorService {
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL:
-            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, opts.timeout.msecs, ActorHandle(task_names.node_interface));
+            gossip_net = new NNGGossipNet(net.pubkey, opts.timeout, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
