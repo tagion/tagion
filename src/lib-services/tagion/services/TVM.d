@@ -104,7 +104,11 @@ unittest {
     }
     register(task_names.transcript, thisTid);
     register(task_names.epoch_creator, thisTid);
-    auto tvm_service = TVMService(task_names);
+
+    auto net = new StdSecureNet;
+    net.generateKeyPair("fake");
+    shared shared_net = (() @trusted => cast(shared) net)();
+    auto tvm_service = TVMService(shared_net, task_names);
 
     import std.algorithm.iteration : map;
     import std.array;

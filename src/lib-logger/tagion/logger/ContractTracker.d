@@ -4,6 +4,7 @@ import tagion.services.codes : toString;
 import tagion.basic.Types : Buffer;
 import tagion.hibon.HiBONRecord : HiBONRecord;
 import tagion.logger.Logger;
+import tagion.crypto.Types : Fingerprint;
 
 enum ContractStatusCode {
     @("Reject") rejected,
@@ -18,6 +19,7 @@ string toString(ContractStatusCode code) pure nothrow {
     return code.toString!ContractStatusCode;
 }
 
+@safe
 struct ContractStatus {
     Buffer contract_hash;
     ContractStatusCode status_code;
@@ -34,7 +36,8 @@ struct ContractStatus {
 
 Topic contract_event = Topic("contract");
 
-void logContractStatus(const(Buffer) contract_hash, ContractStatusCode status_code, string message) {
-    auto status = ContractStatus(contract_hash, status_code, message);
+@safe
+void logContractStatus(const(Fingerprint) fingerprint, ContractStatusCode status_code, string message) {
+    auto status = ContractStatus(fingerprint[], status_code, message);
     log.event(contract_event, "", status.toDoc);
 }
