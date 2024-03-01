@@ -66,7 +66,7 @@ struct Supervisor {
         // verifies signature
         handles ~= _spawn!CollectorService(tn.collector, tn);
 
-        handles ~= _spawn!TVMService(tn.tvm, shared_net, tn);
+        handles ~= _spawn!TVMService(tn.tvm, tn);
 
         // signs data
         handles ~= spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);

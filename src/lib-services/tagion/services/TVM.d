@@ -18,7 +18,7 @@ import tagion.script.execute;
 import tagion.services.messages;
 import tagion.services.options;
 import tagion.logger.ContractTracker;
-import tagion.crypto.SecureNet;
+import tagion.crypto.SecureNet : StdHashNet;
 
 enum ResponseError {
     UnsupportedScript,
@@ -39,11 +39,9 @@ struct TVMService {
     ActorHandle transcript_handle;
     ActorHandle epoch_handle;
 
-    const(SecureNet) net;
+    const net = new StdHashNet;
 
-    this(shared(StdSecureNet) shared_net, immutable(TaskNames) tn) {
-        this.net = new StdSecureNet(shared_net);
-
+    this(immutable(TaskNames) tn) {
         transcript_handle = ActorHandle(tn.transcript);
         epoch_handle = ActorHandle(tn.epoch_creator);
     }
@@ -71,7 +69,7 @@ struct TVMService {
 
     bool engine(immutable(CollectedSignedContract)* collected) {
         log("received signed contract");
-        logContractStatus(net.calcHash(collected.sign_contract.contract), ContractStatusCode.signed, "Received signed contract");
+        logContractStatus(net.calcHash(collected.sign_contract.contract.toDoc), ContractStatusCode.signed, "Received signed contract");
         if (!collected.sign_contract.contract.script.isRecord!PayScript) {
             log.event(tvm_error, ResponseError.UnsupportedScript.to!string, Document());
             return false;
@@ -105,10 +103,7 @@ unittest {
     register(task_names.transcript, thisTid);
     register(task_names.epoch_creator, thisTid);
 
-    auto net = new StdSecureNet;
-    net.generateKeyPair("fake");
-    shared shared_net = (() @trusted => cast(shared) net)();
-    auto tvm_service = TVMService(shared_net, task_names);
+    auto tvm_service = TVMService(task_names);
 
     import std.algorithm.iteration : map;
     import std.array;
