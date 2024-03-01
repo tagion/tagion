@@ -5,6 +5,8 @@ import tagion.basic.Types : Buffer;
 import tagion.hibon.HiBONRecord : HiBONRecord;
 import tagion.logger.Logger;
 import tagion.crypto.Types : Fingerprint;
+import tagion.crypto.SecureNet : StdHashNet;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 
 enum ContractStatusCode {
     @("Reject") rejected,
@@ -37,7 +39,11 @@ struct ContractStatus {
 Topic contract_event = Topic("contract");
 
 @safe
-void logContractStatus(const(Fingerprint) fingerprint, ContractStatusCode status_code, string message) {
-    auto status = ContractStatus(fingerprint[], status_code, message);
-    log.event(contract_event, "", status.toDoc);
+void logContractStatus(T)(T contract, ContractStatusCode status_code, string message)
+    if (isHiBONRecord!T) {
+    if (contract_event.subscribed) {
+        const net = new StdHashNet;
+        auto status = ContractStatus(net.calcHash(contract.toDoc)[], status_code, message);
+        log.event(contract_event, "", status.toDoc);
+    }
 }

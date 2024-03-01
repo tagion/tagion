@@ -67,7 +67,7 @@ struct CollectorService {
     void read_indices(dartReadRR req, immutable(SignedContract)* s_contract) {
         if (s_contract.signs.length != s_contract.contract.inputs.length) {
             log.event(reject, "contract_mismatch_signature_length", Document.init);
-            logContractStatus(net.calcHash(s_contract.contract), ContractStatusCode.rejected, "Rejected contract mismatch signature length");
+            logContractStatus(s_contract.contract, ContractStatusCode.rejected, "Rejected contract mismatch signature length");
             return;
         }
 
@@ -150,7 +150,7 @@ struct CollectorService {
 
             if (!verify(net, s_contract, inputs)) {
                 log.event(reject, "contract_no_verify", recorder);
-                logContractStatus(net.calcHash(s_contract.contract), ContractStatusCode.rejected, "Rejected contract no verify");
+                logContractStatus(s_contract.contract, ContractStatusCode.rejected, "Rejected contract no verify");
                 return;
             }
 

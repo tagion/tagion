@@ -18,7 +18,6 @@ import tagion.script.execute;
 import tagion.services.messages;
 import tagion.services.options;
 import tagion.logger.ContractTracker;
-import tagion.crypto.SecureNet : StdHashNet;
 
 enum ResponseError {
     UnsupportedScript,
@@ -38,8 +37,6 @@ enum ResponseError {
 struct TVMService {
     ActorHandle transcript_handle;
     ActorHandle epoch_handle;
-
-    const net = new StdHashNet;
 
     this(immutable(TaskNames) tn) {
         transcript_handle = ActorHandle(tn.transcript);
@@ -69,7 +66,7 @@ struct TVMService {
 
     bool engine(immutable(CollectedSignedContract)* collected) {
         log("received signed contract");
-        logContractStatus(net.calcHash(collected.sign_contract.contract.toDoc), ContractStatusCode.signed, "Received signed contract");
+        logContractStatus(collected.sign_contract.contract, ContractStatusCode.signed, "Received signed contract");
         if (!collected.sign_contract.contract.script.isRecord!PayScript) {
             log.event(tvm_error, ResponseError.UnsupportedScript.to!string, Document());
             return false;

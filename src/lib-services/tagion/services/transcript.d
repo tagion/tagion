@@ -434,7 +434,7 @@ struct TranscriptService {
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {
             log("received ContractProduct");
-            logContractStatus(net.calcHash(product.contract.sign_contract.contract), ContractStatusCode.produced, "Received produced contract");
+            logContractStatus(product.contract.sign_contract.contract, ContractStatusCode.produced, "Received produced contract");
             auto product_index = net.dartIndex(product.contract.sign_contract.contract);
             products[product_index] = product;
 
