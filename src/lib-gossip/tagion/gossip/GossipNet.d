@@ -13,7 +13,6 @@ import tagion.actor;
 import tagion.basic.Types;
 import tagion.crypto.Types;
 import tagion.communication.HiRPC;
-import tagion.gossip.InterfaceNet;
 import tagion.hibon.Document;
 import tagion.logger;
 import tagion.services.messages;
@@ -50,7 +49,6 @@ abstract class StdGossipNet : GossipNet {
     void add_channel(const Pubkey channel) {
         import core.thread;
         import tagion.gossip.AddressBook;
-        import tagion.services.locator;
 
         const address = addressbook[channel].get.address;
 

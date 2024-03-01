@@ -29,7 +29,6 @@ import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.execute : ContractProduct;
 import tagion.script.standardnames;
-import tagion.services.locator;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.services.exception;
@@ -105,8 +104,7 @@ struct TranscriptService {
             bool head_found;
             // start by reading the head
             immutable tagion_index = net.dartKey(StdNames.name, TagionDomain);
-            auto dart_tid = tryLocate(task_names.dart);
-            dart_tid.send(dartReadRR(), [tagion_index]);
+            dart_handle.send(dartReadRR(), [tagion_index]);
             log("SENDING HEAD REQUEST TO DART");
 
             receive((dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
@@ -126,7 +124,7 @@ struct TranscriptService {
             if (head_found) {
                 // now we locate the epoch
                 immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
-                dart_tid.send(dartReadRR(), [epoch_index]);
+                dart_handle.send(dartReadRR(), [epoch_index]);
                 receive((dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
                     if (!epoch_recorder.empty) {
                         auto doc = epoch_recorder[].front.filed;
