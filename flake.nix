@@ -3,9 +3,11 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    dfmt-pull.url = "github:jtbx/nixpkgs/d-dfmt";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, pre-commit-hooks, dfmt-pull}:
     let
       gitRev = self.rev or "dirty";
 
@@ -115,8 +117,18 @@
             autoreconfHook
             cmake
             libz
+            dfmt-pull.legacyPackages.x86_64-linux.dlang-dfmt
           ];
         };
+
+      checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
+        src = ./.;
+        hooks = {
+        # add something here
+
+        };
+
+      };
 
       checks.x86_64-linux.unittest = with pkgs;
         stdenv.mkDerivation {
