@@ -126,6 +126,7 @@
         src = ./.;
         hooks = {
           # shellcheck.enable = true;
+          hunspell.enable = true;
           dlang-format = {
             enable = true;
             name = "format d code";
