@@ -104,6 +104,7 @@
       devShells.x86_64-linux.default =
         # Notice the reference to nixpkgs here.
         pkgs.mkShell {
+          inherit (self.checks.x86_64-linux.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
             self.packages.x86_64-linux.default.buildInputs
             self.packages.x86_64-linux.default.nativeBuildInputs
@@ -124,10 +125,14 @@
       checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
         hooks = {
-        # add something here
-
+          # shellcheck.enable = true;
+          dlang-format = {
+            enable = true;
+            name = "format d code";
+            entry = "make format";
+            language = "system";
+          };
         };
-
       };
 
       checks.x86_64-linux.unittest = with pkgs;
