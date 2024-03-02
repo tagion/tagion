@@ -125,9 +125,13 @@
       checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
         hooks = {
-          # shellcheck.enable = true;
-          hunspell.enable = true;
-          dlang-format = {
+          shellcheck = {
+            enable = true;
+          };
+          hunspell = {
+            enable = true;
+          };
+          dlang-format = { # does not work :-( we have to define a proper commit
             enable = true;
             name = "format d code";
             entry = "make format";
