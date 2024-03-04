@@ -10,6 +10,7 @@ alias nng_cb = void function (void*);
 alias nng_aio_cancel_cb = void function(nng_aio *, void *, int);
 alias nng_pipe_notify_cb = void function(nng_pipe, nng_pipe_ev, void *) nothrow;
 alias nng_http_cb = void function (nng_aio*);
+alias nng_ws_listen_cb = int function(void *, nng_http_req *, nng_http_res *);
 
 @safe:
 
@@ -187,6 +188,40 @@ struct nng_iov {
     void * iov_buf;
     size_t iov_len;
 };
+
+struct nng_url {
+    char *u_rawurl;   // never NULL
+    char *u_scheme;   // never NULL
+    char *u_userinfo; // will be NULL if not specified
+    char *u_host;     // including colon and port
+    char *u_hostname; // name only, will be "" if not specified
+    char *u_port;     // port, will be "" if not specified
+    char *u_path;     // path, will be "" if not specified
+    char *u_query;    // without '?', will be NULL if not specified
+    char *u_fragment; // without '#', will be NULL if not specified
+    char *u_requri;   // includes query and fragment, "" if not specified
+};
+
+
+// -- internals
+
+struct nni_list_node {};
+struct nni_list {};
+
+enum nni_type {
+    NNI_TYPE_OPAQUE,
+    NNI_TYPE_BOOL,
+    NNI_TYPE_INT32,
+    NNI_TYPE_UINT32,
+    NNI_TYPE_INT64,
+    NNI_TYPE_UINT64,
+    NNI_TYPE_SIZE,
+    NNI_TYPE_DURATION,
+    NNI_TYPE_STRING,
+    NNI_TYPE_SOCKADDR,
+    NNI_TYPE_POINTER
+};
+
 
 
 // ------------------------------------- common functions
@@ -508,6 +543,79 @@ nng_listener nng_pipe_listener(nng_pipe);
 
 // ------------------------------------- stream functions TODO:
 
+struct nng_stream {};
+struct nng_stream_dialer {};
+struct nng_stream_listener {};
+
+void nng_stream_free(nng_stream *);
+void nng_stream_close(nng_stream *);
+void nng_stream_send(nng_stream *, nng_aio *);
+void nng_stream_recv(nng_stream *, nng_aio *);
+int  nng_stream_get(nng_stream *, const char *, void *, size_t *);
+int  nng_stream_get_bool(nng_stream *, const char *, bool *);
+int  nng_stream_get_int(nng_stream *, const char *, int *);
+int  nng_stream_get_ms(nng_stream *, const char *, nng_duration *);
+int  nng_stream_get_size(nng_stream *, const char *, size_t *);
+int  nng_stream_get_uint64(nng_stream *, const char *, ulong *);
+int  nng_stream_get_string(nng_stream *, const char *, char **);
+int  nng_stream_get_ptr(nng_stream *, const char *, void **);
+int  nng_stream_get_addr(nng_stream *, const char *, nng_sockaddr *);
+int  nng_stream_set(nng_stream *, const char *, const void *, size_t);
+int  nng_stream_set_bool(nng_stream *, const char *, bool);
+int  nng_stream_set_int(nng_stream *, const char *, int);
+int  nng_stream_set_ms(nng_stream *, const char *, nng_duration);
+int  nng_stream_set_size(nng_stream *, const char *, size_t);
+int  nng_stream_set_uint64(nng_stream *, const char *, ulong);
+int  nng_stream_set_string(nng_stream *, const char *, const char *);
+int  nng_stream_set_ptr(nng_stream *, const char *, void *);
+int  nng_stream_set_addr(nng_stream *, const char *, const nng_sockaddr *);
+int nng_stream_dialer_alloc(nng_stream_dialer **, const char *);
+int nng_stream_dialer_alloc_url(nng_stream_dialer **, const nng_url *);
+void nng_stream_dialer_free(nng_stream_dialer *);
+void nng_stream_dialer_close(nng_stream_dialer *);
+void nng_stream_dialer_dial(nng_stream_dialer *, nng_aio *);
+int  nng_stream_dialer_set(nng_stream_dialer *, const char *, const void *, size_t);
+int nng_stream_dialer_get(nng_stream_dialer *, const char *, void *, size_t *);
+int nng_stream_dialer_get_bool(nng_stream_dialer *, const char *, bool *);
+int nng_stream_dialer_get_int(nng_stream_dialer *, const char *, int *);
+int nng_stream_dialer_get_ms(nng_stream_dialer *, const char *, nng_duration *);
+int nng_stream_dialer_get_size(nng_stream_dialer *, const char *, size_t *);
+int nng_stream_dialer_get_uint64(nng_stream_dialer *, const char *, ulong *);
+int nng_stream_dialer_get_string(nng_stream_dialer *, const char *, char **);
+int nng_stream_dialer_get_ptr(nng_stream_dialer *, const char *, void **);
+int nng_stream_dialer_get_addr(nng_stream_dialer *, const char *, nng_sockaddr *);
+int nng_stream_dialer_set_bool(nng_stream_dialer *, const char *, bool);
+int nng_stream_dialer_set_int(nng_stream_dialer *, const char *, int);
+int nng_stream_dialer_set_ms(nng_stream_dialer *, const char *, nng_duration);
+int nng_stream_dialer_set_size(nng_stream_dialer *, const char *, size_t);
+int nng_stream_dialer_set_uint64(nng_stream_dialer *, const char *, ulong);
+int nng_stream_dialer_set_string(nng_stream_dialer *, const char *, const char *);
+int nng_stream_dialer_set_ptr(nng_stream_dialer *, const char *, void *);
+int nng_stream_dialer_set_addr(nng_stream_dialer *, const char *, const nng_sockaddr *);
+int nng_stream_listener_alloc(nng_stream_listener **, const char *);
+int nng_stream_listener_alloc_url(nng_stream_listener **, const nng_url *);
+void nng_stream_listener_free(nng_stream_listener *);
+void nng_stream_listener_close(nng_stream_listener *);
+int  nng_stream_listener_listen(nng_stream_listener *);
+void nng_stream_listener_accept(nng_stream_listener *, nng_aio *);
+int  nng_stream_listener_set(nng_stream_listener *, const char *, const void *, size_t);
+int nng_stream_listener_get(nng_stream_listener *, const char *, void *, size_t *);
+int nng_stream_listener_get_bool(nng_stream_listener *, const char *, bool *);
+int nng_stream_listener_get_int(nng_stream_listener *, const char *, int *);
+int nng_stream_listener_get_ms(nng_stream_listener *, const char *, nng_duration *);
+int nng_stream_listener_get_size(nng_stream_listener *, const char *, size_t *);
+int nng_stream_listener_get_uint64(nng_stream_listener *, const char *, ulong *);
+int nng_stream_listener_get_string(nng_stream_listener *, const char *, char **);
+int nng_stream_listener_get_ptr(nng_stream_listener *, const char *, void **);
+int nng_stream_listener_get_addr(nng_stream_listener *, const char *, nng_sockaddr *);
+int nng_stream_listener_set_bool(nng_stream_listener *, const char *, bool);
+int nng_stream_listener_set_int(nng_stream_listener *, const char *, int);
+int nng_stream_listener_set_ms(nng_stream_listener *, const char *, nng_duration);
+int nng_stream_listener_set_size(nng_stream_listener *, const char *, size_t);
+int nng_stream_listener_set_uint64(nng_stream_listener *, const char *, ulong);
+int nng_stream_listener_set_string(nng_stream_listener *, const char *, const char *);
+int nng_stream_listener_set_ptr(nng_stream_listener *, const char *, void *);
+int nng_stream_listener_set_addr(nng_stream_listener *, const char *, const nng_sockaddr *);
 
 
 // ------------------------------------- protocol functions
@@ -647,19 +755,6 @@ struct nng_http_handler {};
 struct nng_http_client {};
 
 
-struct nng_url {
-    char *u_rawurl;   // never NULL
-    char *u_scheme;   // never NULL
-    char *u_userinfo; // will be NULL if not specified
-    char *u_host;     // including colon and port
-    char *u_hostname; // name only, will be "" if not specified
-    char *u_port;     // port, will be "" if not specified
-    char *u_path;     // path, will be "" if not specified
-    char *u_query;    // without '?', will be NULL if not specified
-    char *u_fragment; // without '#', will be NULL if not specified
-    char *u_requri;   // includes query and fragment, "" if not specified
-};
-
 // http url api
 int nng_url_parse(nng_url **, const char *);
 void nng_url_free(nng_url *);
@@ -751,6 +846,62 @@ int nng_http_client_alloc(nng_http_client **, const nng_url *);
 void nng_http_client_free(nng_http_client *);
 void nng_http_client_connect(nng_http_client *, nng_aio *);
 void nng_http_client_transact(nng_http_client *, nng_http_req *, nng_http_res *, nng_aio *);
+
+
+// ------------------------------------- WS api
+
+// --- structures & enum
+
+enum nng_ws_type {
+    WS_CONT   = 0x0,
+    WS_TEXT   = 0x1,
+    WS_BINARY = 0x2,
+    WS_CLOSE  = 0x8,
+    WS_PING   = 0x9,
+    WS_PONG   = 0xA
+};
+
+enum nng_ws_reason {
+    WS_CLOSE_NORMAL_CLOSE  = 1000,
+    WS_CLOSE_GOING_AWAY    = 1001,
+    WS_CLOSE_PROTOCOL_ERR  = 1002,
+    WS_CLOSE_UNSUPP_FORMAT = 1003,
+    WS_CLOSE_INVALID_DATA  = 1007,
+    WS_CLOSE_POLICY        = 1008,
+    WS_CLOSE_TOO_BIG       = 1009,
+    WS_CLOSE_NO_EXTENSION  = 1010,
+    WS_CLOSE_INTERNAL      = 1011
+};
+
+struct ws_header {
+    nni_list_node node;
+    char         *name;
+    char         *value;
+};    
+
+struct ws_frame {
+    nni_list_node   node;
+    ubyte[14]       head;   // maximum header size
+    ubyte[4]        mask;    // read by server, sent by client
+    ubyte[125]      sdata; // short data (for short frames only)
+    size_t          hlen;       // header length
+    size_t          len;        // payload length
+    nng_ws_type     op;
+    bool            _final;
+    bool            masked;
+    size_t          asize; // allocated size
+    ubyte           *adata;
+    ubyte           *buf;
+    nng_aio         *aio;
+};
+
+struct nni_ws {};
+struct nni_ws_dialer {};
+struct nni_ws_listener {};
+
+
+// --- functions
+
 
 
 version(withtls){
