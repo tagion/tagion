@@ -50,6 +50,7 @@ doc: ddoc $(BUILDDOCUSAURUS)/.way
 	npm run build --prefix $(DOCUSAURUS)
 	$(CP) -r $(BUILDDOC) $(BUILDDOCUSAURUS)
 	$(RM) $(BUILDDOCUSAURUS)/ddoc/index.html
+	echo run 'make servedocs' to start the documentation server
 
 doc-sitemap: 
 	$(PRECMD)
@@ -61,6 +62,4 @@ doc-sitemap:
 servedocs:
 	$(PRECMD)
 	echo "Serving docs"
-	(trap 'kill 0' SIGINT; npm run serve --prefix $(DOCUSAURUS))
-
-
+	npm run serve --prefix $(DOCUSAURUS)
