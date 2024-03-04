@@ -41,7 +41,8 @@ geldbeutel [<option>...] <config.json> <files>
 ```
 :::warning
 
-The switch `-x --pin` is purely for testing purposes and should not be used when using a "real wallet". Please use the built-in stdin by not specifying the pin. 
+The switch `-x --pin` && `-P --passphrase` is purely for testing purposes and should not be used when using a "real wallet".  
+Please use the built-in key prompt by not specifying the pin flag. 
 
 :::
 
@@ -59,10 +60,6 @@ Create the wallet from a list of questions. The questions are listed in the conf
 
 Wallet dont't exists
 Press Enter
-```
-Create the wallet from a password.
-```
-> geldbeutel wallet.json -P very_secret
 ```
 
 ## Creating requests
