@@ -200,6 +200,38 @@ void dart_worker(ShellOptions opt) {
     }
 }
 
+void ws_worker(ShellOptions options) {
+//    version(none) {
+        writeit("WSW: begin");
+        import libnng;
+        int rc;
+        NNGSocket sub_kernel = NNGSocket(nng_socket_type.NNG_SOCKET_SUB, true); // make it raw
+        sub_kernel.recvtimeout = msecs(options.sock_recvtimeout);
+        sub_kernel.subscribe(options.recorder_subscription_tag);
+        sub_kernel.subscribe(options.trt_subscription_tag);
+        rc = sub_kernel.dialer_create(options.tagion_subscription_addr);
+        assert(rc == 0);
+
+        NNGSocket pub_shell = NNGSocket(nng_socket_type.NNG_SOCKET_PUB, true); // make it raw too
+        pub_shell.sendtimeout = msecs(1000);
+        pub_shell.sendbuf = 4096;
+        rc = pub_shell.listener_create("ws://0.0.0.0:6969");
+        assert(rc == 0);
+       
+        writeit("WSW: to start 1");
+        rc = pub_shell.listener_start();
+        assert(rc == 0);
+        writeit("WSW: to start 2");
+        rc = sub_kernel.dialer_start();
+        assert(rc == 0);
+        
+        writeit("WSW: device");
+        rc = nng_device(sub_kernel.m_socket, pub_shell.m_socket);
+        assert(rc == 0);
+        writeit("WSW: end");
+//    }
+}
+
 
 /*
 * query REQ/REP socket once and close it 
@@ -1094,6 +1126,9 @@ static void sysinfo_handler(WebData* req, WebData* rep, void* ctx) {
     try {
         JSONValue data = parseJSON("{}");
         data["memsize"] = getmemstatus();
+        data["cache"] = parseJSON("{}");
+        data["cache"]["index"] = tcache.length;
+        data["cache"]["archive"] = icache.length;
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
         rep.type = ContentType.json;
         rep.json = data;
@@ -1301,6 +1336,9 @@ int _main(string[] args) {
         auto ds_tid = spawn(&dart_worker, options);
     }
 
+    version(TAGIONSHELL_WEB_SOCKET) {
+        auto ws_tid = spawn(&ws_worker, options);
+    }
 
     writeit("\nTagionShell web service\nListening at "
             ~ options.shell_uri ~ "\n\t"

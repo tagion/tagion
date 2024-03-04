@@ -9,14 +9,15 @@ import tagion.basic.dir;
 
 /// This function should be renamed
 /// Initially there it was only intended to be used for the contract address for the inputvalidator
-immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow pure {
+immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
     version (linux) {
         return "abstract://" ~ prefix ~ "NEUEWELLE";
     }
     else version (Posix) {
         import std.path;
+        import std.exception;
 
-        return "ipc://" ~ buildPath(base_dir.run, prefix ~ "tagionwave_contract.sock");
+        return "ipc://" ~ buildPath(assumeWontThrow(base_dir.run), prefix ~ "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");
@@ -171,7 +172,7 @@ unittest {
     assert(opt.task_names.program[0 .. prefix.length] != prefix);
     assert(opt.task_names.transcript[0 .. prefix.length] != prefix);
 
-    opt.task_names.setPrefix(prefix);
+    opt.setPrefix(prefix);
     immutable sub_opt = Options(opt);
     assert(sub_opt.task_names.program[0 .. prefix.length] == prefix);
     assert(sub_opt.task_names.transcript[0 .. prefix.length] == prefix);

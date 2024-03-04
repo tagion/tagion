@@ -27,6 +27,7 @@ import nngd;
 struct NodeInterfaceOptions {
     uint send_timeout = 200; // Milliseconds
     uint recv_timeout = 200; // Milliseconds
+    uint send_max_retry = 0;
     string node_address = "tcp://*:10700"; // Address
 
     import tagion.utils.JSONCommon;
@@ -89,8 +90,25 @@ unittest {
 ///
 struct NodeInterfaceService {
 
+    Topic event_send = Topic("node_send");
+    Topic event_recv = Topic("node_recv");
+
     immutable NodeInterfaceOptions opts;
     ActorHandle receive_handle;
+
+    bool retry(bool delegate() send_) @trusted {
+        import conc = tagion.utils.pretend_safe_concurrency;
+
+        int attempts;
+        while(attempts <= opts.send_max_retry && !thisActor.stop) {
+            attempts++;
+            if(send_()) {
+                return true;
+            }
+            conc.receiveTimeout(Duration.zero, &signal);
+        }
+        return false;
+    }
 
     NNGSocket sock_recv;
     this(immutable(NodeInterfaceOptions) opts, string message_handler_task) @trusted {
@@ -102,27 +120,30 @@ struct NodeInterfaceService {
         this.receive_handle = ActorHandle(message_handler_task);
     }
 
-    void node_send(NodeSend, const(Pubkey) channel, const(Document) payload) @trusted {
-        const address = addressbook[channel].get.address;
+    void node_send(NodeSend, const(Pubkey) channel, Document payload) @trusted {
+        const nnr = addressbook[channel].get;
         NNGSocket sock_send = NNGSocket(nng_socket_type.NNG_SOCKET_PAIR);
         assert(sock_send.m_errno == 0, format("Create send sock error %s", nng_errstr(sock_send.m_errno)));
         sock_send.recvtimeout = opts.recv_timeout.msecs;
         sock_send.sendtimeout = opts.send_timeout.msecs;
-        int rc = sock_send.dial(address);
+        int rc = sock_send.dial(nnr.address);
+
         scope (exit) {
             sock_send.close();
         }
 
         assert(rc != -1, "You did not create the socket you dummy");
-        if (rc != 0) {
-            log.error("attempt to dial (%s)%s %s", channel.encodeBase64, address, nng_errstr(sock_send.m_errno));
-            return;
-        }
-        rc = sock_send.send(payload.serialize);
-        if (rc != 0) {
-            log.error("attempt to send (%s)%s %s", channel.encodeBase64, address, nng_errstr(sock_send.m_errno));
-            return;
-        }
+
+        retry({
+            rc = sock_send.send(payload.serialize);
+            if (rc != 0) {
+                log.error("attempt to send (%s)%s %s", channel.encodeBase64, nnr.address, nng_errstr(sock_send.m_errno));
+                return false;
+            }
+            return true;
+        });
+
+        log.event(event_send, nnr.name ~ channel.encodeBase64, payload);
         log.trace("successfully sent %s bytes", payload.data.length);
     }
 
@@ -135,7 +156,10 @@ struct NodeInterfaceService {
 
         if (buf.length > 0) {
             log.trace("received %s bytes", buf.length);
-            receive_handle.send(NodeRecv(), Document(buf));
+            const doc = Document(buf);
+            receive_handle.send(ReceivedWavefront(), doc);
+
+            log.event(event_recv, __FUNCTION__, doc);
         }
     }
 

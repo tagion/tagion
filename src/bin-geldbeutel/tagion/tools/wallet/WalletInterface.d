@@ -125,7 +125,7 @@ HiRPC.Receiver sendShellHiRPC(string address, Document doc, HiRPC hirpc) {
     ]);
 
     if (rep.status != http_status.NNG_HTTP_STATUS_OK || rep.type != "application/octet-stream") {
-        throw new WalletException(format("send shell submit, received: %s code(%d): %s", rep.type, rep.status, rep.msg));
+        throw new WalletException(format("send shell submit, received: %s code(%d): %s text: %s", rep.type, rep.status, rep.msg, rep.text));
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);

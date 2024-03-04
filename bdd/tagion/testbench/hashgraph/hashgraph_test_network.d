@@ -92,7 +92,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     import std.datetime.systime : SysTime;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.crypto.SecureNet : StdSecureNet;
-    import tagion.gossip.InterfaceNet : GossipNet;
+    import tagion.gossip.GossipNet;
     import tagion.hibon.HiBONJSON;
     import tagion.utils.Queue;
     import tagion.utils.Random;

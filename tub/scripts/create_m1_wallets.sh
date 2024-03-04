@@ -133,13 +133,14 @@ do
         # Configure the network with the neuewelle binary
         "$bdir/neuewelle" -O \
            --option=wave.network_mode:LOCAL \
-           --option=subscription.tags:taskfailure \
+           --option=epoch_creator.timeout:500 \
+           --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
            --option=inputvalidator.sock_addr:abstract://CONTRACT_NEUEWELLE_$i \
            --option=dart_interface.sock_addr:abstract://DART_NEUEWELLE_$i \
            --option=subscription.address:abstract://SUBSCRIPTION_NEUEWELLE_$i \
            --option=node_interface.node_address:"tcp://0.0.0.0:$((10700+i))" 2&> /dev/null
     )
 
-    echo 'echo' "$(printf "%04d" $i)" '|' "$bdir/neuewelle" "$node_dir/tagionwave.json" '&'
+    echo 'echo' "$(printf "%04d" $i)" '|' "$bdir/neuewelle" "--monitor" "$node_dir/tagionwave.json" '&'
 
 done

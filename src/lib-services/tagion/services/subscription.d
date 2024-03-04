@@ -56,7 +56,7 @@ struct SubscriptionPayload {
 struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);
-        log("Subscribing to tags");
+        log("Subscribing to tags %s", opts.tags);
         foreach (tag; opts.tags.split(',')) {
             submask.subscribe(tag);
         }
@@ -81,7 +81,7 @@ struct SubscriptionService {
         void receiveSubscription(LogInfo info, const(Document) data) @trusted {
             immutable(ubyte)[] payload;
 
-            payload = cast(immutable(ubyte)[])(info.topic_name ~ '\0');
+            payload = cast(immutable(ubyte)[])(info.topic_name ~ info.task_name ~ '\0');
 
             auto hibon = SubscriptionPayload(info, data);
             auto sender = hirpc.log(hibon);

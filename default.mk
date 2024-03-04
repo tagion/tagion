@@ -10,16 +10,9 @@ export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
 
-ifeq (COMPILER, ldc)
-RELEASE_DFLAGS+=--allinst
-RELEASE_DFLAGS+=--mcpu=native
-RELEASE_DFLAGS+=--flto=thin
-RELEASE_DFLAGS+=--defaultlib=phobos2-ldc-lto,druntime-ldc-lto
-endif
-
 # USE_SYSTEM_LIBS=1 # Compile with system libraries (nng & secp256k1-zkp)
 
-# If youre using system libraries they'll most likely be compiled with mbedtls support
+# If youre using system libraries nng is most likely be compiled with mbedtls support
 # So mbedtls needs to be linked as well, so this need to be enabled
 # NNG_ENABLE_TLS=1
 
@@ -63,6 +56,21 @@ DFLAGS+=$(DVERSION)=WITHOUT_SORTING
 # There is currently no way to function to determine the nodes from latest epoch
 DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 
+# Startup delay for nodes. Will add 5 seconds between each boot in order to 
+# ensure that the graph is still able to startup with delays between nodes. 
+# DFLAGS+=$(DVERSION)=WITH_STARTUP_DELAY
+
+# HashGraph.d not_used_channels turn on check of
+# node.state is ExchangeState.NONE. Mode1 does not function with this.
+# DFLAGS+=$(DVERSOIN)=SEND_ALWAYS
+
+# Enable verbose epoch logging
+# DFLAGS+=$(DVERSION)=EPOCH_LOG
+
+# Enable websocket pub in shell. 
+# Currently causes the program not to stop properly in bddtests.
+# DFLAGS+=$(DVERSION)=TAGIONSHELL_WEB_SOCKET
+
 # # This enables a redundant check in dart to see if there are overlaps between segments 
 # DFLAGS+=$(DVERSION)=DART_RECYCLER_INVARINAT
 
@@ -70,7 +78,7 @@ DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 # # which is useful for app development
 # DFLAGS+=$(DVERSION)=WALLET_HISTORY_DUMMY
 
-
+# Use to check thar toHiBON.serialize is equal to .serialize
 #DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)

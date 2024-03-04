@@ -8,6 +8,7 @@ import std.array : array;
 import std.conv;
 import std.format;
 import std.stdio;
+import std.traits;
 import std.getopt;
 import std.range : empty;
 import tagion.basic.Types;
@@ -108,6 +109,12 @@ struct Subscription {
 
 mixin Main!_main;
 
+enum SubFormat {
+    pretty, // still json but formatted
+    json,
+    hibon,
+}
+
 int _main(string[] args) {
     immutable program = args[0];
 
@@ -117,10 +124,12 @@ int _main(string[] args) {
     bool version_switch;
     string tagsRaw;
     string outputfilename;
+    SubFormat output_format;
 
     auto main_args = getopt(args,
         "v|version", "Print revision information", &version_switch,
         "o|output", "Output filename; if empty stdout is used", &outputfilename,
+        "f|format", format("Set the output format default: %s, available %s", SubFormat.init, [EnumMembers!SubFormat]), &output_format,
         "address", "Specify the address to subscribe to", &address,
         "tag", "Specify tags to subscribe to", &tagsRaw,
     );
@@ -156,8 +165,8 @@ int _main(string[] args) {
     sock.recvtimeout = msecs(1000);
 
     if (tags.length == 0) {
-        stderr.writeln("No tags specified");
-        return 1;
+        stderr.writeln("Subscribing to all tags");
+        tags ~= ""; // in NNG subscribing to an empty topic will receive all messages
     }
 
     auto sub = Subscription(address, tags);
@@ -174,7 +183,17 @@ int _main(string[] args) {
             fout.writeln(result.e);
         }
         else {
-            fout.writeln(result.get.toPretty);
+            final switch(output_format) {
+                case SubFormat.pretty:
+                    fout.writeln(result.get.toPretty);
+                    break;
+                case SubFormat.json:
+                    fout.writeln(result.get.toJSON);
+                    break;
+                case SubFormat.hibon:
+                    fout.rawWrite(result.get.serialize);
+                    break;
+            }
         }
     }
     return 0;

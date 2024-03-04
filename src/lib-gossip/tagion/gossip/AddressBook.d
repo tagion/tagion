@@ -139,7 +139,12 @@ shared static this() {
     addressbook = new shared(AddressBook)();
 }
 
-// This function is used in dev mode when reading from an address file instead of the dart.
+/**
+ * This function is used in dev mode when reading from an address file instead of the dart.
+ *
+ * Params: 
+ *   address_file_content = A range of strings formatted like <base64url pubkey> <address>
+*/
 immutable(NetworkNodeRecord)*[] parseAddressFile(Range)(Range address_file_content) @trusted
 if(isInputRange!Range && is(ElementType!Range : const(char[]))) {
     import std.format;

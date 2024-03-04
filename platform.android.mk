@@ -43,7 +43,7 @@ endif
 # General android config
 ifneq (,$(findstring android,$(PLATFORM)))
 
-DC:=ldc2
+DC:=tools/ldc2-1.35.0-linux-x86_64/bin/ldc2
 
 # This is the default ANDROID_NDK location where the install script dowloads to.
 # You may override this in your local.mk

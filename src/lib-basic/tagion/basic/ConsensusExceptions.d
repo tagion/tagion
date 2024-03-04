@@ -38,7 +38,7 @@ enum ConsensusFailCode {
 
     HASHGRAPH_EVENT_INITIALIZE,
     HASHGRAPH_EVENT_INITIALIZE_SIZE,
-    HASHGRAPH_DUBLICATE_WITNESS,
+    HASHGRAPH_DUPLICATE_WITNESS,
 
     GOSSIPNET_EVENT_HAS_BEEN_CACHED,
     GOSSIPNET_ILLEGAL_EXCHANGE_STATE,
@@ -205,7 +205,7 @@ shared static this() {
 
             HASHGRAPH_EVENT_INITIALIZE                  : "Majority of events must be witnesses to initialize the network",
             HASHGRAPH_EVENT_INITIALIZE_SIZE             : "Number of events in coherent wavefront is too large",
-            HASHGRAPH_DUBLICATE_WITNESS                 : "Only one witness per node is alowes for a coherent wavefront",
+            HASHGRAPH_DUPLICATE_WITNESS                 : "Only one witness per node is alowes for a coherent wavefront",
 
 //            EVENT_MISSING_BODY                        : "Event is missing eventbody",
 

@@ -30,10 +30,10 @@ import tagion.utils.StdTime;
                     this.time = time;
                     this.owner = owner;
                     this.nonce = nonce;
-                }
-            });
+        }});
 }
 
+///
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
@@ -43,7 +43,7 @@ import tagion.utils.StdTime;
     }
 
     mixin HiBONRecord!(
-            q{
+        q{
                 this(const(DARTIndex)[] inputs, const(DARTIndex)[] reads, Document script) pure nothrow {
                     this.inputs = inputs;
                     this.reads = reads;
@@ -57,11 +57,12 @@ import tagion.utils.StdTime;
             });
 }
 
+///
 @recordType("SSC") struct SignedContract {
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @label("$contract") Contract contract; /// The contract must signed by all inputs
     mixin HiBONRecord!(
-            q{
+        q{
                 this(const(Signature)[] signs, Contract contract) pure nothrow {
                     this.signs = signs;
                     this.contract = contract;
@@ -78,11 +79,12 @@ import tagion.utils.StdTime;
             });
 }
 
+///
 @recordType("pay")
 struct PayScript {
     @label(StdNames.values) const(TagionBill)[] outputs;
     mixin HiBONRecord!(
-            q{
+        q{
                 this(const(TagionBill)[] outputs) pure nothrow {
                     this.outputs = outputs;
                 }
@@ -94,8 +96,12 @@ unittest {
 
     PayScript pay;
     pay.outputs = [
-        TagionBill(TagionCurrency(1000), sdt_t(1234), Pubkey([1, 2, 3]), [14, 16, 17]),
-        TagionBill(TagionCurrency(2000), sdt_t(5678), Pubkey([2, 3, 4]), [42, 17, 3])
+        TagionBill(TagionCurrency(1000), sdt_t(1234), Pubkey([1, 2, 3]), [
+            14, 16, 17
+        ]),
+        TagionBill(TagionCurrency(2000), sdt_t(5678), Pubkey([2, 3, 4]), [
+            42, 17, 3
+        ])
     ];
     const hibon_serialize = pay.toHiBON.serialize;
     const serialize = pay.serialize;
@@ -132,19 +138,19 @@ const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Do
         .array;
 
     result.contract = Contract(
-            sorted_inputs.map!((input) => input.value).array,
-            reads.map!(doc => net.dartIndex(doc)).array,
-            Document(script),
+        sorted_inputs.map!((input) => input.value).array,
+        reads.map!(doc => net.dartIndex(doc)).array,
+        Document(script),
     );
     result.signs = sign(sorted_inputs.map!((input) => nets[input.index]).array, result.contract);
     return result;
 }
 
 const(SignedContract) sign(
-        const(SecureNet[]) nets,
-        const(Document[]) inputs,
-        const(Document[]) reads,
-        const(Document) script) {
+    const(SecureNet[]) nets,
+    const(Document[]) inputs,
+    const(Document[]) reads,
+    const(Document) script) {
     import std.algorithm : map;
     import tagion.hibon.HiBONException;
 

@@ -1,21 +1,24 @@
 module tagion.tools.ifiler.ifiler;
 import std.process;
-import std.stdio : writeln, writefln;
-import core.sys.linux.sys.inotify;
-import core.sys.posix.unistd;
+
+import tagion.tools.Basic;
+mixin Main!_main;
+
+version(linux) {
+import std.stdio: writeln, writefln;
 import core.stdc.stdio;
 import core.stdc.stdlib;
-import std.stdio;
 import std.algorithm;
+import std.stdio;
 import tools = tagion.tools.toolsexception;
-import tagion.tools.Basic;
 import std.string : representation;
 import std.getopt;
 import tagion.tools.revision;
 import std.format;
 import std.array;
 
-mixin Main!_main;
+import core.sys.linux.sys.inotify;
+import core.sys.posix.unistd;
 
 struct Inotify {
     protected {
@@ -185,4 +188,12 @@ int _main(string[] args) {
         return 1;
     }
     return 0;
+}
+}
+else {
+int _main(string[] args) {
+    import std.stdio;
+    stderr.writefln("%s Not supported on this platform", args[0]);
+    return -1;
+}
 }
