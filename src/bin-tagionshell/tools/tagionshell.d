@@ -1112,6 +1112,7 @@ appoint:
     app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".json", &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".hibon", &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.hirpc_endpoint, &hirpc_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint, &hirpc_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &hirpc_handler, ["POST"]);
     app.route(options.shell_api_prefix_v2 ~ options.trt_endpoint, &hirpc_handler, ["POST"]);

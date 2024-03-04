@@ -15,6 +15,7 @@ struct ShellOptions {
     string shell_api_prefix;
     string shell_api_prefix_v2;
     string contract_endpoint;
+    string hirpc_endpoint;
     string dart_endpoint;
     string trt_endpoint;
     string tagion_subscription_addr;
@@ -55,6 +56,7 @@ struct ShellOptions {
         shell_api_prefix = "/api/v1";
         shell_api_prefix_v2 = "/api/v2";
         contract_endpoint = "/contract";
+        hirpc_endpoint = "/hirpc";
         dart_endpoint = "/dart";
         trt_endpoint = "/trt";
         bullseye_endpoint = "/bullseye";
