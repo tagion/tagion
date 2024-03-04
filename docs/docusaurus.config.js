@@ -122,6 +122,7 @@ const config = {
       apiKey: 'da880a39f3909734f07a1a115c7331de',
       indexName: 'tagion',
       contextualSearch: false,
+      extraUrls: ['https://docs.tagion.org/ddoc/tagion'],
     },
       // Replace with your project's social card
       image: 'img/tagion-social-card.jpg',
