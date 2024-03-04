@@ -1,4 +1,4 @@
-# hirep ( HiBON filter )
+# hirep [HiBON filter]
 
 
 > This tool filter from a HiBON-stream 

@@ -1,4 +1,4 @@
-# Collider tool
+# collider [testing tool]
 >The Collider tool handles Behaviour Driven test flow
 - Creates skeletens from the BDD Cucumber syntax.
 - Run the BDD test 

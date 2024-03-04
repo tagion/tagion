@@ -14,7 +14,7 @@ import tagion.basic.Types : Buffer;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.Types : Privkey, Pubkey, Signature;
-import tagion.gossip.InterfaceNet;
+import tagion.gossip.GossipNet;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.RefinementInterface;
@@ -186,7 +186,7 @@ class HashGraph {
         // getNode(channel); // Make sure that node_id == 0 is owner node
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
-                check(!(epack.pubkey in _nodes), ConsensusFailCode.HASHGRAPH_DUBLICATE_WITNESS);
+                check(!(epack.pubkey in _nodes), ConsensusFailCode.HASHGRAPH_DUPLICATE_WITNESS);
                 auto node = getNode(epack.pubkey);
             }
         }
@@ -214,8 +214,10 @@ class HashGraph {
             return false;
         }
         const node = _nodes.get(selected_channel, null);
-        if (node) {
-            return node.state is ExchangeState.NONE;
+        version(SEND_ALWAYS) {
+            if (node) {
+                return node.state is ExchangeState.NONE;
+            }
         }
         return true;
     }
@@ -540,20 +542,20 @@ class HashGraph {
         version (EPOCH_LOG) {
             log("owner_epacks %s", own_epacks.length);
         }
-        if (!changes.empty) {
-            // delta received from sharp should be added to our own node. 
-            version (EPOCH_LOG) {
+        version (EPOCH_LOG) {
+            if (!changes.empty) {
                 log("changes found");
             }
-            foreach (epack; changes) {
-                const epack_node = getNode(epack.pubkey);
-                auto first_event = new Event(epack, this);
-                if (epack_node.event is null) {
-                    check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
-                }
-                _event_cache[first_event.fingerprint] = first_event;
-                front_seat(first_event);
+        }
+        // delta received from sharp should be added to our own node. 
+        foreach (epack; changes) {
+            const epack_node = getNode(epack.pubkey);
+            auto first_event = new Event(epack, this);
+            if (epack_node.event is null) {
+                check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
             }
+            _event_cache[first_event.fingerprint] = first_event;
+            front_seat(first_event);
         }
 
         auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
@@ -623,8 +625,21 @@ class HashGraph {
                     }
 
                     // if we receive a ripplewave, we must add the eva events to our own graph.
-                    const received_epacks = received_wave.epacks;
-                    foreach (epack; received_epacks) {
+                    auto received_epacks = received_wave
+                        .epacks
+                        .map!((e) => cast(immutable(EventPackage)*) e)
+                        .array
+                        .sort!((a,b) => a.fingerprint < b.fingerprint);
+                    auto _own_epacks = _nodes.byValue
+                        .map!((n) => n[])
+                        .joiner
+                        .map!((e) => cast(immutable(EventPackage)*) e.event_package)
+                        .array
+                        .sort!((a, b) => a.fingerprint < b.fingerprint);
+
+                    auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, _own_epacks);
+
+                    foreach (epack; changes) {
                         const epack_node = getNode(epack.pubkey);
                         auto first_event = new Event(epack, this);
                         if (epack_node.event is null) {

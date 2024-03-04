@@ -1,3 +1,51 @@
+# Changelog for Epoch 793069 .. 1048744
+
+**New Documentation page**
+We have created a new documentation webpage that is built using [docusaurus](https://docusaurus.io/). See [https://docs.tagion.org](https://docs.tagion.org) for more info. The DDOC documetation has also been moved to a subpage on `/ddoc/tagion`. This also allows the search-box to support searching across all documentation. Currently there is a problem with the statically generated sites for ddoc in the search box, which requires the client to refresh the page when entering a ddoc page (thanks react :-) ).
+
+**Subscription tool**
+Initial work on the [subscription tool](https://docs.tagion.org/docs/tools/subscriber) has begun, and the tool now works where you are able to subscribe to various tags.
+
+**Async startup of nodes**
+For years we have had problems with booting the hashgraph in a asynchronous way regarding the boot of the hashgraph. This is due to that you somehow have to start a graph by only knowing the other nodes addresses which is rather difficult. This has now been fixed so that each node may be booted with n delay in between. This change also allowed us to remove the Locator.d which was neccesary before.
+
+**Mode1 network boot!**
+The initial mode1 network boot succeeded this week. Lots of work have been going into cleaning up the interfaces and making the new `NNGGossipnet`, and together with the above change regarding async booting the mode1, network can now succesfully start and produce epochs.
+You are even able to shutdown various nodes and the graph will continue running and produce epochs as long as 2/3 of the nodes are still online.
+
+See more information about different modes [here](/docs/architecture/Network_Modes).
+
+**TVM standard library (Tauon)**
+We have begun work on the standard library for Tauon ( *named after the elementary particle [tau/tauon](https://en.wikipedia.org/wiki/Tau_(particle))*). The thing that makes the Tauon difficult to do is that is has to be execuable from WASM which means most of DRuntime is not supported. We are therefore working on adding / removing features from druntime until that we are able to compile all functionality that we would like. Currently we are as an example able to run the following example in WASM/WASI:
+
+```dlang
+module tests.tauon_test;
+
+import tvm.wasi_main;
+import core.stdc.stdio;
+import std.stdio;
+import tagion.hibon.HiBON;
+import tagion.hibon.HiBONJSON;
+import tagion.basic.Types;
+
+void main() {
+    printf("--- Main\n");
+    int[] a;
+    a~=10;
+    printf("a=%d\n", a[0]);
+
+    writefln("a=%s", a);
+    auto h=new HiBON;
+    h["hugo"]=42;
+    writefln("h=%s", h["hugo"].get!int);
+    writefln("h=%s", h.serialize);
+    writefln("h=%s", h.toPretty);
+    writefln("h=%(%02x%)", h.serialize);
+    writefln("h=%s", h.serialize.encodeBase64);
+}
+
+```
+
 # Changelog for Epoch 720414 .. 793069
 
 **Tagionshell automatic test**

@@ -251,7 +251,7 @@ class Round {
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph = hashgraph;
-            last_round = new Round(null, hashgraph.node_size);
+            last_round = new Round(null, hashgraph.node_size); 
             voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
         }
 
@@ -420,6 +420,7 @@ class Round {
         void check_decide_round() {
             auto round_to_be_decided = last_decided_round._next;
             if (!voting_round_per_node.all!(r => r.number > round_to_be_decided.number)) {
+                log("Not decided round");
                 return;
             }
             collect_received_round(round_to_be_decided, hashgraph);
@@ -431,7 +432,7 @@ class Round {
             // } 
         }
 
-        /**
+    /**
      * Call to collect and order the epoch
      * Params:
      *   r = decided round to collect events to produce the epoch

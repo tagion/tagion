@@ -172,7 +172,7 @@ unittest {
     assert(opt.task_names.program[0 .. prefix.length] != prefix);
     assert(opt.task_names.transcript[0 .. prefix.length] != prefix);
 
-    opt.task_names.setPrefix(prefix);
+    opt.setPrefix(prefix);
     immutable sub_opt = Options(opt);
     assert(sub_opt.task_names.program[0 .. prefix.length] == prefix);
     assert(sub_opt.task_names.transcript[0 .. prefix.length] == prefix);

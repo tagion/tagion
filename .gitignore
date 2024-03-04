@@ -20,6 +20,9 @@
 # Vim
 *.vim
 
+# nix pre-commit hook
+.pre-commit-config.yaml
+
 # .lst files for code coverage
 *.lst
 # Local setup file

@@ -1,4 +1,4 @@
-﻿# Tagion wallet (Geldbeutel)
+﻿# wallet (geldbeutel)
 
 ```
 Documentation: https://tagion.org/

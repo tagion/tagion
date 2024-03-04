@@ -15,14 +15,12 @@ Archive types.
 
 [Archive](https://ddoc.tagion.org/tagion.dart.Recorder.Archive)
 
-| Name        | D-Type   | Description                                   | Required  |
-| ----------- | -------- | ----------------------                        | --------- |
-| `$t`        | [Type]   | Is the archive-type                           | Yes       |
-| `$a`        | [Documen | Is the filed(leave) as a Document             | No        |
-| `$#`        | [Buffer] | Is a hash of the filed(leave) (Called a STUB) | No        |
+| Name        | D-Type     | Description                                   | Required  |
+| ----------- | ---------- | ----------------------                        | :-------: |
+| `$t`        | [Type]     | Is the archive-type                           | Yes       |
+| `$a`        | [Document] | Is the filed(leave) as a Document             | No        |
+| `$#`        | [Buffer]   | Is a hash of the filed(leave) (Called a STUB) | No        |
 
 Note. An archive should contain either a `$a` value or `$#`. 
 
 The STUB `$#` is used to hold the hash for filed data when the DART in sharding.
-
-

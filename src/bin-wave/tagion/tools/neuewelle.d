@@ -28,7 +28,6 @@ import tagion.basic.Types : FileExtension, hasExtension;
 import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.logger;
-import tagion.services.locator;
 import tagion.services.logger;
 import tagion.services.options;
 import tagion.services.subscription;
@@ -227,7 +226,6 @@ int _neuewelle(string[] args) {
 
     log.task_name = baseName(program);
 
-    locator_options = new immutable(LocatorOptions)(20, 5);
     ActorHandle[] supervisor_handles;
 
     log("Starting network in %s mode", local_options.wave.network_mode);

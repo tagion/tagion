@@ -11,7 +11,7 @@ env: env-doc
 
 clean-ddoc:
 	$(PRECMD)
-	$(RM) -r $(BUILDDOC)
+	$(RM) -rf $(BUILDDOC)
 	@echo cleaning docs
 
 .PHONY: clean-ddoc
@@ -20,7 +20,7 @@ clean: clean-ddoc
 
 clean-doc:
 	$(PRECMD)
-	$(RM) -r $(BUILDDOCUSAURUS)
+	$(RM) -rf $(BUILDDOCUSAURUS)
 	@echo cleaning docusaurus
 
 .PHONY: clean-doc
@@ -50,12 +50,16 @@ doc: ddoc $(BUILDDOCUSAURUS)/.way
 	npm run build --prefix $(DOCUSAURUS)
 	$(CP) -r $(BUILDDOC) $(BUILDDOCUSAURUS)
 	$(RM) $(BUILDDOCUSAURUS)/ddoc/index.html
+	echo run 'make servedocs' to start the documentation server
+
+doc-sitemap: 
+	$(PRECMD)
+	echo "making sitemap"
+	python3 $(DOCUSAURUS)/create_sitemap.py $(BUILDDOCUSAURUS)/sitemap.xml $(BUILDDOCUSAURUS)/ddoc
 
 .PHONY: doc
 
 servedocs:
 	$(PRECMD)
 	echo "Serving docs"
-	(trap 'kill 0' SIGINT; npm run serve --prefix $(DOCUSAURUS))
-
-
+	npm run serve --prefix $(DOCUSAURUS)

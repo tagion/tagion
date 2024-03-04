@@ -12,10 +12,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.random.random;
 import tagion.gossip.AddressBook;
-import tagion.gossip.EmulatorGossipNet;
-import tagion.gossip.NNGGossipNet;
 import tagion.gossip.GossipNet;
-import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Refinement;
 import tagion.hibon.Document;
@@ -83,10 +80,10 @@ struct EpochCreatorService {
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL:
-            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface), opts.timeout.msecs);
+            gossip_net = new NNGGossipNet(net.pubkey, opts.timeout, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
@@ -130,15 +127,6 @@ struct EpochCreatorService {
         void receivePayload(Payload, const(Document) pload) {
             payload_queue.write(pload);
             counter++;
-        }
-
-        auto payload_received = Topic("payload_received");
-        /// Receive external payloads from the nodeinterface
-        void node_receive(NodeRecv, Document doc) {
-            // TODOr: Check that it's valid Receiver
-            log("received payload %s bytes", doc.data.length);
-            log.event(payload_received, __FUNCTION__, doc);
-            receivePayload(Payload(), doc);
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
@@ -193,7 +181,6 @@ struct EpochCreatorService {
                     opts.timeout.msecs,
                     &signal,
                     &ownerTerminated,
-                    &node_receive,
                     &receiveWavefront,
                     &unknown
             );
@@ -203,10 +190,16 @@ struct EpochCreatorService {
             timeout();
         }
 
+        if (hashgraph.areWeInGraph) {
+            log("NODE CAME INTO GRAPH");
+        }
+
         if (thisActor.stop) {
             return;
         }
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &node_receive, &receiveWavefront);
+        Topic inGraph = Topic("in_graph");
+        log.event(inGraph, __FUNCTION__, Document());
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
     }
 
 }

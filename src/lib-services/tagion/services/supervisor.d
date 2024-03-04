@@ -51,7 +51,8 @@ struct Supervisor {
         case INTERNAL:
             break;
         case LOCAL:
-            handles ~= _spawn!NodeInterfaceService(tn.node_interface, opts.node_interface, tn.epoch_creator);
+            handles ~= _spawn!NodeInterfaceService(tn.node_interface, opts.node_interface, tn
+                    .epoch_creator);
             break;
         case PUB:
             assert(0, "NetworkMode not supported");

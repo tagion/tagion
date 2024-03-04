@@ -17,6 +17,7 @@ import tagion.script.common;
 import tagion.script.execute;
 import tagion.services.messages;
 import tagion.services.options;
+import tagion.logger.ContractTracker;
 
 enum ResponseError {
     UnsupportedScript,
@@ -37,7 +38,7 @@ struct TVMService {
     ActorHandle transcript_handle;
     ActorHandle epoch_handle;
 
-    this(immutable(TaskNames) tn) nothrow {
+    this(immutable(TaskNames) tn) {
         transcript_handle = ActorHandle(tn.transcript);
         epoch_handle = ActorHandle(tn.epoch_creator);
     }
@@ -65,6 +66,7 @@ struct TVMService {
 
     bool engine(immutable(CollectedSignedContract)* collected) {
         log("received signed contract");
+        logContractStatus(collected.sign_contract.contract, ContractStatusCode.signed, "Received signed contract");
         if (!collected.sign_contract.contract.script.isRecord!PayScript) {
             log.event(tvm_error, ResponseError.UnsupportedScript.to!string, Document());
             return false;
@@ -97,6 +99,7 @@ unittest {
     }
     register(task_names.transcript, thisTid);
     register(task_names.epoch_creator, thisTid);
+
     auto tvm_service = TVMService(task_names);
 
     import std.algorithm.iteration : map;
@@ -109,16 +112,18 @@ unittest {
 
     auto createCollected(uint input, uint output) {
         immutable(Document)[] in_bills;
-        in_bills ~= iota(0, 10).map!(_ => TagionBill(TGN(input), sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
+        in_bills ~= iota(0, 10).map!(_ => TagionBill(TGN(input), sdt_t.init, Pubkey.init, Buffer
+                .init).toDoc).array;
         immutable(TagionBill)[] out_bills;
-        out_bills ~= iota(0, 10).map!(_ => TagionBill(TGN(output), sdt_t.init, Pubkey.init, Buffer.init)).array;
+        out_bills ~= iota(0, 10).map!(_ => TagionBill(TGN(output), sdt_t.init, Pubkey.init, Buffer
+                .init)).array;
 
         auto contract = immutable(Contract)(null, null, PayScript(out_bills).toDoc);
         auto s_contract = new immutable(SignedContract)(null, contract);
         return new immutable(CollectedSignedContract)(
-                s_contract,
-                in_bills,
-                null,
+            s_contract,
+            in_bills,
+            null,
         );
     }
 
@@ -128,9 +133,9 @@ unittest {
 
         foreach (_; 0 .. 2) {
             const received = receiveTimeout(
-                    Duration.zero,
-                    (Payload _, const(Document) __) {},
-                    (producedContract _, immutable(ContractProduct)* __) {},
+                Duration.zero,
+                (Payload _, const(Document) __) {},
+                (producedContract _, immutable(ContractProduct)* __) {},
             );
             assert(received, "TVM did not send the contract or payload");
         }
@@ -141,9 +146,9 @@ unittest {
         tvm_service.contract(signedContract(), collected);
 
         const received = receiveTimeout(
-                Duration.zero,
-                (Payload _, const(Document) __) {},
-                (producedContract _, immutable(ContractProduct)* __) {},
+            Duration.zero,
+            (Payload _, const(Document) __) {},
+            (producedContract _, immutable(ContractProduct)* __) {},
         );
         assert(!received, "The tvm should not send a contract where the output bills are greater than the input");
     }

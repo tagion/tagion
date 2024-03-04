@@ -8,7 +8,7 @@ Create wallet and databases with accounting added.
 mkdir /tmp/test_network/
 cd /tmp/test_network/
 
-# Script can be found in tub/scripts/create_wallets.sh
+# Script can be found in scripts/create_wallets.sh
 
 ./create_wallets.sh -h // see up to date information on switches
 # Usage: create_wallets.sh -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-q <bills=50>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>] [-u <key filename=./keys>]

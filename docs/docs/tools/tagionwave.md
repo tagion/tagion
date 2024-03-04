@@ -1,4 +1,4 @@
-# Tagionwave ( Tagion full-node )
+# tagionwave [Tagion full-node]
 
 tagionwave/neuewelle is the tagion node program.
 Currently only mode0 is supported [network modes](/docs/architecture/Network_Modes)
