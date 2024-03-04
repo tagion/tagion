@@ -11,13 +11,15 @@ PLATFORMS+=$(WASI_WASM64)
 ifeq ($(PLATFORM),$(WASI_WASM32))
 
 TRIPLET:=wasm32-unknown-wasi
-WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi
+#WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi
+WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi-threads
 endif
 
 ifeq ($(PLATFORM),$(WASI_WASM64))
 
 TRIPLET:=wasm64-unknown-wasi
-WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi
+#WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi
+WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi-threads
 
 endif
 
@@ -48,6 +50,7 @@ WASI_LIB+=$(LDC_RUNTIME_BUILD)/libdruntime-ldc.a
 WASI_LIB+=$(LDC_RUNTIME_BUILD)/libphobos2-ldc.a
 WASI_SYSROOT:=$(WASI_SDK_ROOT)/$(WASI_SYSROOT)
 WASI_LIB+=$(WASI_SYSROOT)/libc.a
+WASI_LIB+=$(WASI_SYSROOT)/libpthread.a
 
 #WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/druntime/src 
 #WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/phobos 

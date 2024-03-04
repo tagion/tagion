@@ -35,7 +35,7 @@ $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
 	$(call log.header, $*.$(OBJEXT) :: compile)
 	${call log.kvp, compile, $(MODE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $<  $(OUTPUT)$@
 
 #
 # Compile and link or split link

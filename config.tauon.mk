@@ -16,6 +16,7 @@ TAUON_DINC+=$(DSRC)/wasi
 TAUON_DFILES+=$(DSRC)/wasi/tvm/wasi_main.d
 
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/basic.d
+TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Message.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Types.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Version.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/tagionexceptions.d
@@ -33,6 +34,11 @@ TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/BigNumber.d
 
 TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/aes/tiny_aes/tiny_aes.d 
 TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/aes/AESCrypto.d 
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/pbkdf2.d 
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/Types.d 
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/SecureInterfaceNet.d 
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/Cipher.d 
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/random/random.d 
 
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d

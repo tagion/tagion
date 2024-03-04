@@ -1,7 +1,7 @@
 module tvm.wasi_main;
 import core.stdc.stdio;
 import core.internal.backtrace.unwind;
-
+import core.runtime;
 extern(C) @nogc {
 void _Unwind_Resume(void* x) {
     printf("%s\n", &__FUNCTION__[0]);
@@ -16,13 +16,39 @@ extern(C) _Unwind_Reason_Code _Unwind_RaiseException(_Unwind_Exception *exceptio
     printf("%s\n", &__FUNCTION__[0]);
     return _Unwind_Reason_Code(0);
 }
+extern(C) _Unwind_Ptr _Unwind_GetIP(_Unwind_Context* context) {
+    printf("%s\n", &__FUNCTION__[0]);
+    return _Unwind_Ptr.init;
+}
 
-extern(C) void flockfile(FILE* file) {
+extern(C) void _Unwind_SetIP(_Unwind_Context* context, _Unwind_Ptr new_value) {
     printf("%s\n", &__FUNCTION__[0]);
 }
 
-extern(C) void funlockfile(FILE* file) {
+extern(C) void _Unwind_SetGR(_Unwind_Context* context, int index, _Unwind_Word new_value) {
     printf("%s\n", &__FUNCTION__[0]);
+
+}
+
+extern(C) _Unwind_Ptr _Unwind_GetRegionStart(_Unwind_Context* context) {
+    printf("%s\n", &__FUNCTION__[0]);
+    return _Unwind_Ptr.init;
+}
+
+
+extern(C) void* _Unwind_GetLanguageSpecificData(_Unwind_Context*) {
+    printf("%s\n", &__FUNCTION__[0]);
+    return null;
+}
+
+version(none)
+extern(C) void flockfile(FILE* file) {
+    //printf("%s\n", &__FUNCTION__[0]);
+}
+
+version(none)
+extern(C) void funlockfile(FILE* file) {
+    //printf("%s\n", &__FUNCTION__[0]);
 }
 
 extern(C) void tzset() {
@@ -48,9 +74,13 @@ extern(C) void* __tls_get_addr(tls_index* ti) nothrow @nogc {
 
 extern(C) int _Dmain(char[][] args);
 extern(C) void _start() {
+    //rt_init;
+   // scope(exit) {
+      //  rt_term;
+   // }
 //    printf("Hello _start\n");
     import rt.dmain2;
-    const run_ptr=&_d_run_main;
+    //const run_ptr=&_d_run_main;
 //    printf("%p\n", run_ptr);
     _d_run_main(0, null, &_Dmain);
 }

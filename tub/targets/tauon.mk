@@ -24,6 +24,9 @@ tauon-test: LIB+=$(WASI_LIB)
 tauon-test: LIB+=$(LIBTVM)
 tauon-test: DINC+=$(TAUON_DINC)
 tauon-test: $(TAUON_BINS)
+tauon-test: DFLAGS+=-L--no-entry
+tauon-test: DFLAGS+=--linker=$(WASMLD)
+taupn-test: DFLAGS+=/home/carsten/work/tagion/tools/wasi-druntime/wasi-sdk-21.0/share/wasi-sysroot/lib/wasm32-wasi/crt1.o
 tauon-test: | $(DLIB)/.way 
 
 env-tauon:
@@ -56,12 +59,14 @@ help-tauon:
 	$(call log.close)
 
 
-$(DBIN)/%.wasm: $(DOBJ)/wasi/tests/%.o
+$(DBIN)/%.wasm: $(DSRC)/wasi/tests/%.d
 	@echo $@
 	@echo $*
 	@echo $<
 	@echo $(DOBJ)/$*
-	$(WASMLD) $(LIB) $< $(WASI_LDFLAGS) -o $@
+	$(DC) $(DFLAGS) $(LIB) $(addprefix -I,$(DINC)) $< $(OUTPUT)$@
+
+#$(WASMLD) $(LIB) $(DOBJ)/$*.o $(WASI_LDFLAGS) -o $@
 
 .PHONY: help-tauon
 
