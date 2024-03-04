@@ -113,11 +113,5 @@ void spawnMode0(
     foreach (n; nodes) {
         verbose("spawning supervisor ", n.opts.task_names.supervisor);
         supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
-
-        version(WITH_STARTUP_DELAY) {
-            import core.thread;
-            import core.time;
-            Thread.sleep(5000.msecs);
-        }
     }
 }
