@@ -128,6 +128,9 @@
           shellcheck = {
             enable = true;
           };
+          typos = {
+            enable = true;
+          };
           dlang-format = { # does not work :-( we have to define a proper commit
             enable = true;
             name = "format d code";

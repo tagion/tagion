@@ -93,7 +93,7 @@ Path to genesis DART file
 New DART database created and synchronized with recorder blocks and genesis file
 
 #### Failure
-**Result**(genesis file doesn't exist or has incorect extension)
+**Result**(genesis file doesn't exist or has incorrect extension)
 ```
 Incorrect genesis DART file 'genesis.drt'
 ```
