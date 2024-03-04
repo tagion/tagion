@@ -140,11 +140,17 @@ ${call DO_BIN,callstack,$(LIB_DFILES) ${call BIN_DEPS,callstack},tagion}
 target-ifiler:  
 ${call DO_BIN,ifiler,$(LIB_DFILES) ${call BIN_DEPS,ifiler},tagion}
 
+#
+# Subscriber
+#
+target-subscriber: LIBS+=  $(LIBSECP256K1)  $(LIBNNG)
+${call DO_BIN,subscriber,$(LIB_DFILES) ${call BIN_DEPS,subscriber},tagion}
 
 #
 # Tagion onetool
 #
 TAGION_TOOLS+=wave # New wave
+TAGION_TOOLS+=subscriber
 TAGION_TOOLS+=dartutil
 TAGION_TOOLS+=blockutil
 TAGION_TOOLS+=hibonutil

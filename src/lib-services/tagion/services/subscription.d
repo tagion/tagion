@@ -7,7 +7,10 @@ import nngd;
 import std.array;
 import std.format;
 import std.variant;
+import std.string;
+
 import tagion.actor;
+import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
@@ -56,7 +59,7 @@ struct SubscriptionPayload {
 struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);
-        log("Subscribing to tags");
+        log("Subscribing to tags %s", opts.tags);
         foreach (tag; opts.tags.split(',')) {
             submask.subscribe(tag);
         }
@@ -79,9 +82,9 @@ struct SubscriptionService {
         log("Publishing on %s", opts.address);
 
         void receiveSubscription(LogInfo info, const(Document) data) @trusted {
-            immutable(ubyte)[] payload;
+            Buffer payload;
 
-            payload = cast(immutable(ubyte)[])(info.topic_name ~ '\0');
+            payload = (info.topic_name ~ info.task_name ~ '\0').representation;
 
             auto hibon = SubscriptionPayload(info, data);
             auto sender = hirpc.log(hibon);

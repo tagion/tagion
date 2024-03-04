@@ -103,12 +103,12 @@ enum ExchangeState : uint {
     BREAKING_WAVE,
     SHARP,
     RIPPLE, /// Ripple is used the first time a node connects to the network
-    COHERENT, /** Coherent state is when an the least epoch wavefront has been received or
-                        if all the nodes isEva notes (This only occurs at genesis).
-                     */
 
-
-
+    /** 
+        Coherent state is when an the least epoch wavefront has been received or
+        if all the nodes isEva notes (This only occurs at genesis).
+    */
+    COHERENT, 
 }
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);

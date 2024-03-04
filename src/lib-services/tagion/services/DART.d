@@ -36,7 +36,7 @@ struct DARTOptions {
     string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
 
-    string dart_path() inout nothrow {
+    string dart_path() const nothrow {
         return buildPath(folder_path, dart_filename);
     }
 

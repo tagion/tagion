@@ -28,7 +28,6 @@ import tagion.basic.Types : FileExtension, hasExtension;
 import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.logger;
-import tagion.services.locator;
 import tagion.services.logger;
 import tagion.services.options;
 import tagion.services.subscription;
@@ -227,8 +226,9 @@ int _neuewelle(string[] args) {
 
     log.task_name = baseName(program);
 
-    locator_options = new immutable(LocatorOptions)(20, 5);
     ActorHandle[] supervisor_handles;
+
+    log("Starting network in %s mode", local_options.wave.network_mode);
 
     final switch (local_options.wave.network_mode) {
     case NetworkMode.INTERNAL:
@@ -280,20 +280,19 @@ int _neuewelle(string[] args) {
             );
 
         if (!local_options.wave.address_file.empty) {
-            // Read from text file. Will probably be removed
-            addressbook.set(readAddressFile(local_options.wave.address_file));
+            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
         }
         else {
             // New version reads the addresses properly from dart
             // However is incompatble with older darts were not set properly
             version (MODE0_ADDRESS_DART) {
-                addressbook.set(readNNRFromDart(node_options[0].dart.dart_path, keys, __net));
+                addressbook = readNNRFromDart(node_options[0].dart.dart_path, keys, __net);
             }
             else { // Old methods sets, address via task name from config file
                 import std.range;
                 foreach (key, opt; zip(keys, node_options)) {
                     verbose("adding Address ", key);
-                    addressbook[key] = new NetworkNodeRecord(key, opt.task_names.epoch_creator);
+                    addressbook.set(new NetworkNodeRecord(key, opt.task_names.epoch_creator));
                 }
             }
         }
@@ -336,6 +335,7 @@ int _neuewelle(string[] args) {
             error("Could not log in");
             break;
         }
+        local_options.task_names.setPrefix(wallet_interface.secure_wallet.account.name);
 
         good("Logged in");
         StdSecureNet __net;
@@ -349,10 +349,10 @@ int _neuewelle(string[] args) {
 
         if (!local_options.wave.address_file.empty) {
             // Read from text file. Will probably be removed
-            addressbook.set(readAddressFile(local_options.wave.address_file));
+            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
         }
         else {
-            addressbook.set(readNNRFromDart(local_options.dart.dart_path, keys, __net));
+            addressbook = readNNRFromDart(local_options.dart.dart_path, keys, __net);
         }
 
         foreach (key; keys) {

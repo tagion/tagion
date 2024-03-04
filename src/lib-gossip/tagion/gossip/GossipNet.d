@@ -1,86 +1,146 @@
 module tagion.gossip.GossipNet;
 
-import core.time : MonoTime;
-import std.concurrency;
-import std.format;
-import std.string : representation;
-import tagion.basic.ConsensusExceptions;
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.crypto.Types : Pubkey;
-import tagion.gossip.InterfaceNet;
-import tagion.hashgraph.Event;
-import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.HashGraphBasic;
-import tagion.hibon.Document : Document;
+@safe:
 
-@safe
-abstract class StdGossipNet : StdSecureNet, GossipNet {
-    static private shared uint _next_global_id;
-    static private shared uint[immutable(Pubkey)] _node_id_pair;
+import core.time;
+import core.thread;
 
-    uint globalNodeId(immutable(Pubkey) channel) {
-        if (channel in _node_id_pair) {
-            return _node_id_pair[channel];
+import std.random;
+import std.algorithm;
+import std.math : floor;
+
+import tagion.actor;
+import tagion.basic.Types;
+import tagion.crypto.Types;
+import tagion.communication.HiRPC;
+import tagion.hibon.Document;
+import tagion.logger;
+import tagion.services.messages;
+import tagion.utils.StdTime;
+
+
+interface GossipNet {
+    alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
+    alias SenderCallBack = const(HiRPC.Sender) delegate() @safe;
+    const(sdt_t) time() const nothrow;
+
+    bool isValidChannel(const(Pubkey) channel) const nothrow;
+    void add_channel(const(Pubkey) channel);
+    void remove_channel(const(Pubkey) channel);
+    void send(const Pubkey channel, const(HiRPC.Sender) sender);
+    const(Pubkey) gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
+    const(Pubkey) select_channel(const(ChannelFilter) channel_filter);
+}
+
+abstract class StdGossipNet : GossipNet {
+    private string[immutable(Pubkey)] addresses;
+    private immutable(Pubkey)[] _pkeys;
+    immutable(Pubkey) mypk;
+    Random random;
+
+    this(const Pubkey mypk) {
+        this.random = Random(unpredictableSeed);
+        this.mypk = mypk;
+    }
+
+    void add_channel(const Pubkey channel) {
+        import core.thread;
+        import tagion.gossip.AddressBook;
+
+        const address = addressbook[channel].get.address;
+
+        _pkeys ~= channel;
+        addresses[channel] = address;
+
+        log.trace("Add channel: %s tid: %s", channel.encodeBase64, addresses[channel]);
+    }
+
+    void remove_channel(const Pubkey channel) {
+        import std.algorithm.searching;
+
+        const channel_index = countUntil(_pkeys, channel);
+        _pkeys = _pkeys[0 .. channel_index] ~ _pkeys[channel_index + 1 .. $];
+        addresses.remove(channel);
+    }
+
+    const(sdt_t) time() const nothrow {
+        import std.exception : assumeWontThrow;
+        return assumeWontThrow(currentTime);
+    }
+
+    bool isValidChannel(const(Pubkey) channel) const pure nothrow {
+        return (channel in addresses) !is null;
+    }
+
+    const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+        import std.algorithm : filter;
+        import std.array;
+
+        assert(_pkeys.length > 1);
+        auto keys_to_send = _pkeys.filter!(n => channel_filter(n) && n != mypk); 
+        if (keys_to_send.empty) {
+            log("NO AVAILABLE TO SEND TO");
+            return Pubkey.init;
         }
-        else {
-            return setGlobalNodeId(channel);
+        return choice(keys_to_send.array, random);
+    }
+
+    const(Pubkey) gossip(
+            const(ChannelFilter) channel_filter,
+            const(SenderCallBack) sender) {
+        const send_channel = select_channel(channel_filter);
+        version (EPOCH_LOG) {
+            log.trace("Selected channel: %s", send_channel.encodeBase64);
+        }
+        if (send_channel.length) {
+            send(send_channel, sender());
+        }
+        return send_channel;
+    }
+}
+
+private void sleep(Duration dur) @trusted {
+    Thread.sleep(dur);
+}
+
+class EmulatorGossipNet : StdGossipNet {
+    uint delay;
+    this(const Pubkey mypk, uint avrg_delay_msecs) {
+        this.delay = avrg_delay_msecs;
+        super(mypk);
+    }
+
+    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+
+        import tagion.utils.pretend_safe_concurrency;
+        import std.algorithm.searching : countUntil;
+        import tagion.hibon.HiBONJSON;
+
+        sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
+
+        auto node_tid = locate(addresses[channel]);
+        if (node_tid is Tid.init) {
+            return;
+        }
+
+        node_tid.send(ReceivedWavefront(), sender.toDoc);
+        version (EPOCH_LOG) {
+            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender.toDoc.serialize.length);
         }
     }
+}
 
-    @trusted
-    static private uint setGlobalNodeId(immutable(Pubkey) channel) {
-        import core.atomic;
+class NNGGossipNet : StdGossipNet {
+    uint delay;
+    private ActorHandle nodeinterface;
+    this(const Pubkey mypk, uint avrg_delay_msecs, ActorHandle nodeinterface) {
+        this.nodeinterface = nodeinterface;
+        this.delay = avrg_delay_msecs;
+        super(mypk);
+    }
+    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+        sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
 
-        auto result = _next_global_id;
-        _node_id_pair[channel] = _next_global_id;
-        atomicOp!"+="(_next_global_id, 1);
-        return result;
-    }
-
-    this() {
-        super();
-    }
-
-    static struct Init {
-        uint timeout;
-        uint node_id;
-        uint N;
-        string monitor_ip_address;
-        ushort monitor_port;
-        uint seed;
-        string node_name;
-    }
-
-    protected {
-        ulong _current_time;
-        //        HashGraphI _hashgraph;
-    }
-
-    protected Tid _transcript_tid;
-    @property void transcript_tid(Tid tid)
-    @trusted
-    in {
-        assert(_transcript_tid !is _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
-    }
-    do {
-        _transcript_tid = tid;
-    }
-
-    @property Tid transcript_tid() pure nothrow {
-        return _transcript_tid;
-    }
-
-    protected Tid _scripting_engine_tid;
-    @property void scripting_engine_tid(Tid tid) @trusted
-    in {
-        assert(_scripting_engine_tid !is _scripting_engine_tid.init, format(
-                "%s hash already been set", __FUNCTION__));
-    }
-    do {
-        _scripting_engine_tid = tid;
-    }
-
-    @property Tid scripting_engine_tid() pure nothrow {
-        return _scripting_engine_tid;
+        nodeinterface.send(NodeSend(), channel, cast(Document)sender.toDoc);
     }
 }

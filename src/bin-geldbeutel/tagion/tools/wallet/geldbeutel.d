@@ -109,7 +109,7 @@ int _main(string[] args) {
                 "P|passphrase", "Set the wallet passphrase", &_passphrase,
                 "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch
                 .invoice,
-                "x|pin", "Pincode", &pincode,
+                "x|pin", "Specify pincode (Do not use for real wallets)", &pincode,
                 "amount", "Create an payment request in tagion", &wallet_switch.amount,
                 "force", "Force input bill", &wallet_switch.force,
                 "pay", "Creates a payment contract", &wallet_switch.pay,

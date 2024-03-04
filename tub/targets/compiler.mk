@@ -1,30 +1,22 @@
 # If compiler is not defined, try to find it
 ifndef DC
-ifneq ($(strip $(shell which ldc2 2>/dev/null)),)
-DC=ldc2
-else ifneq ($(strip $(shell which ldc 2>/dev/null)),)
-DC=ldc
-else ifneq ($(strip $(shell which dmd 2>/dev/null)),)
-DC=dmd
-else
-DC=gdc
-endif
+DC!=which ldc2||which dmd||which gdc
 endif
 
 # Define a compiler family for other conditionals
-ifeq ($(DC),gdc)
+ifeq ($(notdir $(DC)),gdc)
 COMPILER=gdc
-else ifeq ($(DC),gdmd)
+else ifeq ($(notdir $(DC)),gdmd)
 COMPILER=dmd
-else ifeq ($(DC),ldc)
+else ifeq ($(notdir $(DC)),ldc)
 COMPILER=ldc
-else ifeq ($(DC),ldc2)
+else ifeq ($(notdir $(DC)),ldc2)
 COMPILER=ldc
-else ifeq ($(DC),ldmd)
+else ifeq ($(notdir $(DC)),ldmd)
 COMPILER=ldc
-else ifeq ($(DC),dmd)
+else ifeq ($(notdir $(DC)),dmd)
 COMPILER=dmd
-else ifeq ($(DC),dmd2)
+else ifeq ($(notdir $(DC)),dmd2)
 COMPILER=dmd
 endif
 
@@ -123,26 +115,6 @@ endif
 # Add -ldl flag for linux
 ifeq ($(OS),"linux")
 LDCFLAGS += $(LINKERFLAG)-ldl
-endif
-
-# Define model if not defined
-ifndef MODEL
-ifeq ($(ARCH), $(filter $(ARCH), x86_64 arm64))
-MODEL = 64
-else
-MODEL = 32
-endif
-endif
-
-# -m32 and -m64 switches cannot be used together with -march and -mtriple switches
-ifndef CROSS_OS
-ifeq ($(MODEL), 64)
-DFLAGS  += -m64
-LDCFLAGS += -m64
-else
-DFLAGS  += -m32
-LDCFLAGS += -m32
-endif
 endif
 
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}

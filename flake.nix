@@ -3,9 +3,11 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    dfmt-pull.url = "github:jtbx/nixpkgs/d-dfmt";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, pre-commit-hooks, dfmt-pull}:
     let
       gitRev = self.rev or "dirty";
 
@@ -102,6 +104,7 @@
       devShells.x86_64-linux.default =
         # Notice the reference to nixpkgs here.
         pkgs.mkShell {
+          inherit (self.checks.x86_64-linux.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
             self.packages.x86_64-linux.default.buildInputs
             self.packages.x86_64-linux.default.nativeBuildInputs
@@ -115,8 +118,27 @@
             autoreconfHook
             cmake
             libz
+            dfmt-pull.legacyPackages.x86_64-linux.dlang-dfmt
           ];
         };
+
+      checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
+        src = ./.;
+        hooks = {
+          shellcheck = {
+            enable = true;
+          };
+          hunspell = {
+            enable = true;
+          };
+          dlang-format = { # does not work :-( we have to define a proper commit
+            enable = true;
+            name = "format d code";
+            entry = "make format";
+            language = "system";
+          };
+        };
+      };
 
       checks.x86_64-linux.unittest = with pkgs;
         stdenv.mkDerivation {
