@@ -24,6 +24,7 @@ tauon-test: LIB+=$(WASI_LIB)
 tauon-test: LIB+=$(LIBTVM)
 tauon-test: DINC+=$(TAUON_DINC)
 tauon-test: $(TAUON_BINS)
+tauon-test: DFLAGS+=-L-error-limit=100
 tauon-test: DFLAGS+=-L--no-entry
 tauon-test: DFLAGS+=--linker=$(WASMLD)
 taupn-test: DFLAGS+=/home/carsten/work/tagion/tools/wasi-druntime/wasi-sdk-21.0/share/wasi-sysroot/lib/wasm32-wasi/crt1.o

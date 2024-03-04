@@ -2,7 +2,9 @@ module tvm.wasi_main;
 import core.stdc.stdio;
 import core.internal.backtrace.unwind;
 import core.runtime;
+extern(C) __gshared int __rt_dso_ref;
 extern(C) @nogc {
+
 void _Unwind_Resume(void* x) {
     printf("%s\n", &__FUNCTION__[0]);
 }
