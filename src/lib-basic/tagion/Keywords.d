@@ -9,7 +9,7 @@ protected static immutable _keywords = [
     //    "altitude",
     "order",
     // "tidewave",
-    // "wavefront",  // Wave front is the list of events hashs
+    // "wavefront",  // Wave front is the list of events hashes
     // "ebody",      // Event body
     // "event",      // Event including the eventbody
 
@@ -41,7 +41,7 @@ protected static immutable _keywords = [
     "strong_votes",
     "strong_mask",
     "iterations",
-    //    "altenative",
+    //    "alternative",
     "looked_at_mask",
     "looked_at_count",
     "seeing_completed",
@@ -59,7 +59,7 @@ protected static immutable _keywords = [
     "transaction_id",
     "output",
     "signatures",
-    //    "signatur",
+    //    "signatures",
     "transaction_object",
     "transaction_scripting_object",
     "payers",
