@@ -61,10 +61,7 @@ help-tauon:
 
 
 $(DBIN)/%.wasm: $(DSRC)/wasi/tests/%.d
-	@echo $@
-	@echo $*
-	@echo $<
-	@echo $(DOBJ)/$*
+	$(PRECMD)
 	$(DC) $(DFLAGS) $(LIB) $(addprefix -I,$(DINC)) $< $(OUTPUT)$@
 
 #$(WASMLD) $(LIB) $(DOBJ)/$*.o $(WASI_LDFLAGS) -o $@
