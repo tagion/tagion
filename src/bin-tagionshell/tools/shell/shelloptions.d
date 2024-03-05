@@ -77,7 +77,7 @@ struct ShellOptions {
         process_hirpc = true;
         ws_pub_uri = "";
         version(TAGIONSHELL_WEB_SOCKET) {
-            ws_pub_uri = "ws://0.0.0.0:8080/subscribe";
+            ws_pub_uri = "ws://0.0.0.0:8080/api/v1/subscribe";
         }
     }
 
