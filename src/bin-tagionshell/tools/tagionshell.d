@@ -1006,13 +1006,6 @@ appoint:
 
     help_text ~= ("TagionShell web service\n");
     help_text ~= ("Listening at " ~ options.shell_uri ~ "\n\n");
-
-<<<<<<< HEAD
-    // deprecated
-    app.route(options.shell_api_prefix ~ options.contract_endpoint, &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.dart_endpoint, &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &hirpc_handler, ["POST"]);
-=======
     add_v1_route(app, options.i2p_endpoint, &i2p_handler, [HTTPMethod.POST], "invoice-to-pay hibon");
     add_v1_route(app, options.bullseye_endpoint, &bullseye_handler, [HTTPMethod.GET], "the dart bullseye", [
         "/json": "Result in json format",
@@ -1020,7 +1013,7 @@ appoint:
     ]);
     add_v1_route(app, options.sysinfo_endpoint, &sysinfo_handler, [HTTPMethod.GET], "system info");
     add_v1_route(app, options.version_endpoint, &versioninfo_handler, [HTTPMethod.GET], "network version info");
-    add_v1_route(app, options.contract_endpoint, &contract_handler, [HTTPMethod.POST], "contract hibon");
+    add_v1_route(app, options.contract_endpoint, &hirpc_handler, [HTTPMethod.POST], "contract hibon");
     add_v1_route(app, options.dart_endpoint, &hirpc_handler, [HTTPMethod.POST], "dartCrud methods", [
         "/nocache": "Avoid using the cache on dartRead methods"
     ]);
@@ -1030,8 +1023,6 @@ appoint:
     ]);
 
     writeit(help_text.data);
->>>>>>> b5892c241b63533d5e529701abd44e23308ac1be
-
     app.start();
 
     if (options.save_rpcs_enable) {
