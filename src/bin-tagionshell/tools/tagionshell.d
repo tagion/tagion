@@ -330,6 +330,12 @@ static void hirpc_handler(WebData* req, WebData* rep, void* ctx) {
 
         writeit("HIRPC: got method: " ~ method);
 
+        bool proxy = false;
+        string sockaddr = opt.node_dart_addr;
+        uint recvtimeout = opt.sock_recvtimeout;
+        uint recvdelay = opt.sock_recvdelay;
+        uint connectretry = opt.sock_connectretry;
+
         switch(method){
             case "trt.dartRead":
                 auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
@@ -507,43 +513,49 @@ static void hirpc_handler(WebData* req, WebData* rep, void* ctx) {
                 rep.type = ContentType.octet;
                 rep.rawdata = cast(ubyte[])(response.serialize);
                 break;
+            case "submit":
+                proxy = true;
+                sockaddr = opt.node_contract_addr;
+                recvtimeout = opt.sock_recvtimeout * 6;
+                break;
             default:
-                rc = query_socket_once(
-                    opt.node_dart_addr, // TODO: clarify if it is a common socket for all hirpc and maybe rename it
-                    opt.sock_recvtimeout,
-                    opt.sock_recvdelay,
-                    opt.sock_connectretry,
-                    req.rawdata,
-                    docbuf
-                );
-                if (rc != 0) {
-                    if(rc > 99 && rc < 600){
-                        rep.status = cast(nng_http_status)rc;
-                        writeit("hirpc_handler: query: ",rep.status);
-                    }else{
-                        writeit("hirpc_handler: query: ", nng_errstr(rc));
-                        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                    }    
-                    rep.msg = "socket error";
-                    return;
-                }
-                if (docbuf.empty) {
-                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                    rep.msg = "No response";
-                    return;
-                }
-                doclen = docbuf.length;
-                rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-                rep.type = ContentType.octet;
-                rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
+                proxy = true;
+                sockaddr = opt.node_dart_addr;
                 break;
         } // switch method
         
-        if (receiver.method.full_name == "trt.dartRead" && opt.cache_enabled) {
-        } else if (receiver.method.full_name == "dartRead" && opt.cache_enabled) {
-        } else {
+        if(proxy){
+            rc = query_socket_once(
+                sockaddr, // TODO: clarify if it is a common socket for all hirpc and maybe rename it
+                recvtimeout,
+                recvdelay,
+                connectretry,
+                req.rawdata,
+                docbuf
+            );
+            if (rc != 0) {
+                if(rc > 99 && rc < 600){
+                    rep.status = cast(nng_http_status)rc;
+                    writeit("hirpc_handler: query: ",rep.status);
+                }else{
+                    writeit("hirpc_handler: query: ", nng_errstr(rc));
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                }    
+                rep.msg = "socket error";
+                return;
+            }
+            if (docbuf.empty) {
+                rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+                rep.msg = "No response";
+                return;
+            }
+            doclen = docbuf.length;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = ContentType.octet;
+            rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
         }
-        writeit("DART ALT: ", stats);
+
+        writeit("STATS: ", stats);
     }
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
@@ -558,92 +570,6 @@ static void hirpc_handler(WebData* req, WebData* rep, void* ctx) {
 
 // ---------------- non-hirpc handlers
 
-
-/*
-*
-* Moved to /api/v1/hirpc
-*
-*/
-void contract_handler(WebData* req, WebData* rep, void* ctx) {
-    thread_attachThis();
-    try {
-        int rc;
-        int attempts = 0;
-        ShellOptions* opt = cast(ShellOptions*) ctx;
-        if (req.type != ContentType.octet) {
-            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "invalid data type";
-            return;
-        }
-
-        save_rpc(opt, Document(req.rawdata.idup));
-
-        const contract_addr = opt.node_contract_addr;
-
-        writeit(format("WH: contract: with %d bytes for %s", req.rawdata.length, contract_addr));
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = msecs(opt.sock_recvtimeout * 6);
-        writeit(format("WH: contract: trying to dial %s", contract_addr));
-        while (true) {
-            rc = s.dial(contract_addr);
-            if (rc == 0)
-                break;
-            enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
-        }
-        scope (exit) {
-            s.close();
-        }
-        rc = s.send(req.rawdata);
-        if (rc != 0) {
-            writeit("contract_handler: send: ", nng_errstr(s.errno));
-            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "socket error";
-            return;
-        }
-        const stime = timestamp();
-        NNGMessage msg = NNGMessage(0);
-        ubyte[] buf;
-        size_t len = 0;
-        while (true) {
-            rc = s.receivemsg(&msg, true);
-            if (rc < 0) {
-                if (s.errno == nng_errno.NNG_EAGAIN) {
-                    nng_sleep(msecs(opt.sock_recvdelay));
-                    auto itime = timestamp();
-                    if ((itime - stime) * 1000 > opt.sock_recvtimeout) {
-                        writeit("contract_handler: recv: timeout");
-                        rep.status = nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
-                        rep.msg = "socket timeout";
-                        return;
-                    }
-                    msg.clear();
-                    continue;
-                }
-                if (s.errno != 0) {
-                    writeit("contract_handler: recv: ", nng_errstr(s.errno));
-                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                    rep.msg = "socket error";
-                    return;
-                }
-                writeit("contract_handler: recv: empty response");
-                break;
-            }
-            len = msg.length;
-            buf = msg.body_trim!(ubyte[])(msg.length);
-            break;
-        }
-        rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
-        rep.type = ContentType.octet;
-        rep.rawdata = (len > 0) ? buf[0 .. len] : null;
-    }
-    catch (Throwable e) {
-        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-        rep.type = ContentType.html;
-        rep.msg = e.message().idup;
-        rep.text = dump_exception_recursive(e, "handler: contract");
-        return;
-    }
-}
 
 void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
     import crud = tagion.dart.DARTcrud;
@@ -1104,7 +1030,7 @@ appoint:
     app.route(options.shell_api_prefix ~ options.version_endpoint, &versioninfo_handler, ["GET"]);
 
     // deprecated
-    app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.contract_endpoint, &hirpc_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint, &hirpc_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &hirpc_handler, ["POST"]);
 
