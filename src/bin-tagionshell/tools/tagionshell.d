@@ -64,6 +64,11 @@ enum ContentType {
     html = "text/html",
 }
 
+enum HTTPMethod {
+    GET = "GET",
+    POST = "POST",
+}
+
 long getmemstatus() {
     long sz = -1;
     auto f = File("/proc/self/status", "rt");
@@ -1056,39 +1061,16 @@ int _main(string[] args) {
         auto ws_tid = spawn(&ws_worker, options);
     }
 
-    writeit("\nTagionShell web service\nListening at "
-            ~ "\t= POST dart request hibon (depending on the method send raw request or use cache for pkeys)\n\t"
-            ~ options.shell_uri ~ "\n\t"
-            ~ options.shell_api_prefix
-            ~ options.i2p_endpoint
-            ~ "\t= POST invoice-to-pay hibon\n\t"
-            ~ options.shell_api_prefix
-            ~ options.bullseye_endpoint ~ "/<format>"
-            ~ "= GET dart bullseye\n"
-            ~ "\t\t== /hibon \t- hibon format\n"
-            ~ "\t\t== /json \t- json format\n\t"
-            ~ options.shell_api_prefix
-            ~ options.hirpc_endpoint
-            ~ "\t\t= POST a hirpc\n\t"
-            ~ options.shell_api_prefix
-            ~ options.sysinfo_endpoint
-            ~ "\t\t= GET system info\n\t"
-            ~ options.shell_api_prefix
-            ~ options.version_endpoint
-            ~ "\t\t= GET network version info\n\t"
-            ~ options.shell_api_prefix
-            ~ options.selftest_endpoint ~ "/<endpoint>"
-            ~ " = GET self test results\n\t"
-            ~ "\t== /bullseye \t- test bullseye endpoint\n\t"
-            ~ "\t== /dart \t- test dart request endpoint\n\t"
+    Appender!string help_text;
 
-            ~ "\nDeprecated:\n\t"
-            ~ options.shell_api_prefix
-            ~ options.contract_endpoint
-            ~ "\t= POST contract hibon\n\t"
-            ~ options.shell_api_prefix
-            ~ options.dart_endpoint ~ "/[nocache]"
-    );
+    void add_v1_route(ref WebApp _app, string endpoint, webhandler handler, HTTPMethod[] verbs, string description, string[string] variations = string[string].init) {
+        _app.route(options.shell_api_prefix ~ endpoint, handler, cast(string[])verbs);
+        help_text ~= format!"\t%-25s= %s %s\n"(options.shell_api_prefix ~ endpoint, verbs, description);
+        foreach(k, v; variations) {
+            _app.route(options.shell_api_prefix ~ endpoint ~ k, handler, cast(string[])verbs);
+            help_text ~= format!"\t\t== %-15s - %s\n"(k, v);
+        }
+    }
 
     isz = getmemstatus();
 
@@ -1096,17 +1078,26 @@ appoint:
 
     WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"/tmp/webapp","static_path":"static"}`), &options);
 
-    app.route(options.shell_api_prefix ~ options.sysinfo_endpoint, &sysinfo_handler, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ "/*", &bullseye_handler, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.hirpc_endpoint, &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.i2p_endpoint, &i2p_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.selftest_endpoint ~ "/*", &selftest_handler, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.version_endpoint, &versioninfo_handler, ["GET"]);
+    help_text ~= ("TagionShell web service\n");
+    help_text ~= ("Listening at " ~ options.shell_uri ~ "\n\n");
 
-    // deprecated
-    app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.dart_endpoint, &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &hirpc_handler, ["POST"]);
+    add_v1_route(app, options.i2p_endpoint, &i2p_handler, [HTTPMethod.POST], "invoice-to-pay hibon");
+    add_v1_route(app, options.bullseye_endpoint, &bullseye_handler, [HTTPMethod.GET], "the dart bullseye", [
+        "/json": "Result in json format",
+        "/hibon": "Result in hibon format",
+    ]);
+    add_v1_route(app, options.sysinfo_endpoint, &sysinfo_handler, [HTTPMethod.GET], "system info");
+    add_v1_route(app, options.version_endpoint, &versioninfo_handler, [HTTPMethod.GET], "network version info");
+    add_v1_route(app, options.contract_endpoint, &contract_handler, [HTTPMethod.POST], "contract hibon");
+    add_v1_route(app, options.dart_endpoint, &hirpc_handler, [HTTPMethod.POST], "dartCrud methods", [
+        "/nocache": "Avoid using the cache on dartRead methods"
+    ]);
+    add_v1_route(app, options.selftest_endpoint, &selftest_handler, [HTTPMethod.GET], "self test results", [
+        "/bullseye": "test bullseye endpoint",
+        "/dart": "test dart request endpoint",
+    ]);
+
+    writeit(help_text.data);
 
     app.start();
 
