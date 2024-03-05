@@ -23,8 +23,8 @@ import tagion.services.exception;
 struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
 
-    string tags; /// List of tags that should be enabled seperated by a ','
-    string address; /// The address which the service should pubish events on
+    string tags; /// List of tags that should be enabled separated by a ','
+    string address; /// The address which the service should publish events on
 
     void setDefault() nothrow {
         import tagion.services.options : contract_sock_addr;
@@ -88,7 +88,7 @@ struct SubscriptionService {
 
             auto hibon = SubscriptionPayload(info, data);
             auto sender = hirpc.log(hibon);
-            payload ~= sender.toDoc.serialize;
+            payload ~= sender.toDoc.toPretty;
 
             rc = sock.send(payload);
         }

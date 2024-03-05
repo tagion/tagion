@@ -38,7 +38,7 @@ struct ShellOptions {
     uint dartcache_size;
     double dartcache_ttl_msec;
     string mode0_prefix;
-    bool cache_enabled;    // wether to use caches
+    bool cache_enabled;    // if to use caches
     bool process_hirpc;    // if false - pass all hirpc requests through as is
     string ws_pub_uri;
 
@@ -77,8 +77,8 @@ struct ShellOptions {
         process_hirpc = true;
         ws_pub_uri = "";
         version(TAGIONSHELL_WEB_SOCKET) {
-            ws_pub_uri = "ws://0.0.0.0:6969";
-        }            
+            ws_pub_uri = "ws://0.0.0.0:8080/subscribe";
+        }
     }
 
     /// Gives a new node address each time it is called
