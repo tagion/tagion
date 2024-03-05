@@ -3,7 +3,7 @@
 #
 
 ANDROID_AARCH64=aarch64-linux-android
-PLATFORMS+=$(ANDROID_AARCH64)
+ANDROID_PLATFORMS+=$(ANDROID_AARCH64)
 
 ifeq ($(PLATFORM),$(ANDROID_AARCH64))
 
@@ -16,7 +16,7 @@ endif
 
 
 ANDROID_ARMV7A=armv7a-linux-android
-PLATFORMS+=$(ANDROID_ARMV7A)
+ANDROID_PLATFORMS+=$(ANDROID_ARMV7A)
 
 ifeq ($(PLATFORM),$(ANDROID_ARMV7A))
 
@@ -29,7 +29,7 @@ endif
 
 
 ANDROID_x86_64=x86_64-linux-android
-PLATFORMS+=$(ANDROID_x86_64)
+ANDROID_PLATFORMS+=$(ANDROID_x86_64)
 
 ifeq ($(PLATFORM),$(ANDROID_x86_64))
 
@@ -40,12 +40,18 @@ ANDROID_ARCH=$(ANDROID_x86_64)
 
 endif
 
+PLATFORMS+=$(ANDROID_PLATFORMS)
+
 # General android config
 ifneq (,$(findstring android,$(PLATFORM)))
 
-DC:=tools/ldc2-1.35.0-linux-x86_64/bin/ldc2
+TARGET_ARCH:=$(word 1, $(subst -, ,$(PLATFORM)))
 
-# This is the default ANDROID_NDK location where the install script dowloads to.
+include $(DTUB)/scripts/setup_android_toolchain.mk
+
+DC:=$(TOOLS)/$(LDC_HOST)/bin/ldc2
+
+# This is the default ANDROID_NDK location where the install script downloads to.
 # You may override this in your local.mk
 ANDROID_NDK:=$(REPOROOT)/tools/android-ndk-r21b/
 
@@ -73,6 +79,12 @@ DFLAGS+=$(DDEFAULTLIBSTATIC)
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
+else
+install-android-toolchain:
+	$(PRECMD)
+	echo "You need to specify an android target PLATFORM= to choose which android toolchain to install"
+	${call log.kvp, PLATFORM, $(PLATFORM)}
+	${call log.env, ANDROID_PLATFORMS, $(ANDROID_PLATFORMS)}
 endif
 
 env-android:
@@ -89,6 +101,7 @@ env-android:
 	${call log.kvp, AR, $(AR)}
 	${call log.kvp, RANLIB, $(RANLIB)}
 	${call log.kvp, AS, $(AS)}
+	${call log.env, ANDROID_PLATFORMS, $(ANDROID_PLATFORMS)}
 	${call log.close}
 
 env: env-android
@@ -96,27 +109,10 @@ env: env-android
 help-android:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	echo '     _________________________________________ '
-	echo '    / It looks like youre trying to cross     \'
-	echo '    | compile for android, did you know that  |'
-	echo '    | you need androids snowflake linker in   |'
-	echo '    | order to that. You can specify it by    |'
-	echo '    | providing the path you android ndk with |'
-	echo '    \ ANDROID_NDK=                            /'
-	echo '     ----------------------------------------- '
-	echo '     \                                         '
-	echo '      \                                        '
-	echo '         __                                    '
-	echo '        /  \                                   '
-	echo '        |  |                                   '
-	echo '        @  @                                   '
-	echo '        |  |                                   '
-	echo '        || |/                                  '
-	echo '        || ||                                  '
-	echo '        |\_/|                                  '
-	echo '        \___/                                  '
+	${call log.help, "https://docs.tagion.org/docs/guide/build/android", "View help guide for this target"}
 	${call log.help, "make env-android", "Will list the current setting"}
 	${call log.help, "make help-android", "This will show how to change tagion platform change"}
+	${call log.help, "make install-android-toolchain", "Installs the android ndk and configured ldc compiler"}
 	${call log.close}
 
 help: help-android
