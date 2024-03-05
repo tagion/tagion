@@ -127,10 +127,11 @@
         hooks = {
           shellcheck = {
             enable = true;
+            types_or = [ "sh" ];
           };
-          typos = {
-            enable = true;
-          };
+          typos.enable = true;
+          checkmake.enable = true;
+          actionlint.enable = true;
           dlang-format = { # does not work :-( we have to define a proper commit
             enable = true;
             name = "format d code";

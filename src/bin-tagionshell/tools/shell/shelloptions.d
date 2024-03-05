@@ -15,6 +15,7 @@ struct ShellOptions {
     string shell_api_prefix;
     string shell_api_prefix_v2;
     string contract_endpoint;
+    string hirpc_endpoint;
     string dart_endpoint;
     string trt_endpoint;
     string tagion_subscription_addr;
@@ -37,8 +38,9 @@ struct ShellOptions {
     uint dartcache_size;
     double dartcache_ttl_msec;
     string mode0_prefix;
-    bool cache_enabled;    // wether to use caches
+    bool cache_enabled;    // if to use caches
     bool process_hirpc;    // if false - pass all hirpc requests through as is
+    string ws_pub_uri;
 
     bool save_rpcs_enable = true; // Whether or not the shell should save incoming contracts
     string save_rpcs_task = "rpcs_saver"; // Task name of the worker thread which saves the rpc contracts
@@ -54,6 +56,7 @@ struct ShellOptions {
         shell_api_prefix = "/api/v1";
         shell_api_prefix_v2 = "/api/v2";
         contract_endpoint = "/contract";
+        hirpc_endpoint = "/hirpc";
         dart_endpoint = "/dart";
         trt_endpoint = "/trt";
         bullseye_endpoint = "/bullseye";
@@ -72,6 +75,10 @@ struct ShellOptions {
         mode0_prefix = "Node_%d_";
         cache_enabled = false;
         process_hirpc = true;
+        ws_pub_uri = "";
+        version(TAGIONSHELL_WEB_SOCKET) {
+            ws_pub_uri = "ws://0.0.0.0:8080/api/v1/subscribe";
+        }
     }
 
     /// Gives a new node address each time it is called
