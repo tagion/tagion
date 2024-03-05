@@ -88,7 +88,7 @@ struct SubscriptionService {
 
             auto hibon = SubscriptionPayload(info, data);
             auto sender = hirpc.log(hibon);
-            payload ~= sender.serialize;
+            payload ~= sender.toDoc.serialize;
 
             rc = sock.send(payload);
         }
