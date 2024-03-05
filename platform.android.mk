@@ -49,7 +49,7 @@ TARGET_ARCH:=$(word 1, $(subst -, ,$(PLATFORM)))
 
 include $(DTUB)/scripts/setup_android_toolchain.mk
 
-DC:=$(TOOLS)/$(LDC_HOST)/bin/ldc2
+# DC:=$(TOOLS)/$(LDC_HOST)/bin/ldc2
 
 # This is the default ANDROID_NDK location where the install script downloads to.
 # You may override this in your local.mk
