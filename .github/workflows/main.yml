@@ -346,8 +346,7 @@ jobs:
 
       - name: Build
         run: |
-          export PATH="tools/ldc2-1.35.0-linux-x86_64/bin:$PATH"
-          make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
+          make PLATFORM=${{ matrix.arch }}-linux-android libmobile
           file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
       - uses: actions/upload-artifact@v4
