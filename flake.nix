@@ -130,6 +130,7 @@
             types_or = [ "sh" ];
           };
           typos.enable = true;
+          checkmake.enable = true;
           actionlint.enable = true;
           dlang-format = { # does not work :-( we have to define a proper commit
             enable = true;
