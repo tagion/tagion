@@ -139,27 +139,15 @@ struct DARTService {
             immutable fingerprint_before = Fingerprint(db.bullseye);
             import core.exception : AssertError;
 
-            try {
+            auto eye = db.modify(recorder);
+            log("New bullseye is %(%02x%)", eye);
 
-                auto eye = db.modify(recorder);
-                log("New bullseye is %(%02x%)", eye);
-
-                req.respond(eye);
-                replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
-                log.event(recorder_created, "recorder", recorder.toDoc);
-                if (trt_enable) {
-                    trt_handle.send(trtModify(), recorder);
-                }
+            req.respond(eye);
+            replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
+            log.event(recorder_created, "recorder", recorder.toDoc);
+            if (trt_enable) {
+                trt_handle.send(trtModify(), recorder);
             }
-            catch (AssertError e) {
-                log("Received ASSERT ERROR bullseye before %(%02x%), %s archives that were tried to be added \n%s", fingerprint_before, e, recorder
-                        .toPretty);
-                fail(e);
-            }
-            catch (Error e) {
-                log.error("DART Error %s", e);
-            }
-
         }
 
         void bullseye(dartBullseyeRR req) @safe {
