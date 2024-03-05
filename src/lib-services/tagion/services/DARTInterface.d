@@ -6,7 +6,7 @@ module tagion.services.DARTInterface;
 import core.time;
 import core.thread;
 import nngd;
-import std.algorithm : canFind, startsWith;
+import std.algorithm : map, canFind, startsWith;
 import std.stdio;
 import std.format;
 import tagion.actor;
@@ -60,7 +60,7 @@ static immutable accepted_dart_methods = [
     "search"
 ];
 
-
+static immutable accepted_trt_methods = accepted_dart_methods.map!(m => "trt." ~ m);
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 

@@ -1167,45 +1167,7 @@ class DARTFile {
     }
 
     package Document cacheLoad(const Index index) {
-        return Document(blockfile.cacheLoad(index));
-    }
-
-    HiBON search(Buffer[] owners, const(SecureNet) net) {
-        import std.algorithm : canFind;
-        import tagion.script.common;
-
-        TagionBill[] bills;
-
-        void local_load(
-                const Index branch_index,
-                const ubyte rim_key = 0,
-                const uint rim = 0) @safe {
-            if (branch_index !is Index.init) {
-                const doc = blockfile.load(branch_index);
-                if (Branches.isRecord(doc)) {
-                    const branches = Branches(doc);
-                    if (branches.indices.length) {
-                        foreach (key, index; branches._indices) {
-                            local_load(index, cast(ubyte) key, rim + 1);
-                        }
-                    }
-                }
-                if (TagionBill.isRecord(doc)) {
-                    auto bill = TagionBill(doc);
-                    if (owners.canFind(bill.owner)) {
-                        bills ~= bill;
-                    }
-                }
-            }
-        }
-
-        local_load(blockfile.masterBlock.root_index);
-        HiBON params = new HiBON;
-        foreach (i, bill; bills) {
-            params[i] = bill.toHiBON;
-        }
-        return params;
-
+        return blockfile.cacheLoad(index);
     }
 
     version (unittest) {
@@ -2497,43 +2459,6 @@ unittest {
 
     }
 
-    {
-        pragma(msg, "fixme(cbr): This unittest does not see to be relavant to DARTFile maybe this should be moved");
-        // At least it should not be dependent on tagion.script
-        // Just make a d Document with $Y owner key
-        filename_A.forceRemove;
-        DARTFile.create(filename_A, net);
-        auto dart_A = new DARTFile(net, filename_A);
-        import tagion.crypto.Types;
-        import tagion.script.TagionCurrency;
-        import tagion.script.common;
-        import tagion.utils.StdTime;
-
-        RecordFactory.Recorder recorder_A;
-
-        TagionBill[] bills;
-
-        Pubkey pkey1 = Pubkey([1, 2, 3, 4]);
-        Pubkey pkey2 = Pubkey([2, 3, 4, 5]);
-
-        bills ~= TagionBill(100.TGN, currentTime, pkey1, Buffer.init);
-        bills ~= TagionBill(100.TGN, currentTime, pkey2, Buffer.init);
-
-        recorder_A = dart_A.recorder;
-
-        recorder_A.insert(bills, Archive.Type.ADD);
-        dart_A.modify(recorder_A);
-
-        // dart_A.dump;
-        import tagion.crypto.SecureInterfaceNet;
-        import tagion.crypto.SecureNet;
-
-        SecureNet _net = new StdSecureNet();
-        import tagion.crypto.SecureNet : StdSecureNet;
-
-        _net.generateKeyPair("wowo");
-        auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (() @trusted => cast(immutable) _net)());
-    }
     static struct HashDoc {
         @label("#name") string name;
         int number;

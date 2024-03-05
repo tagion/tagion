@@ -124,21 +124,8 @@ struct DARTService {
                 req.respond(err.toDoc);
                 return;
             } 
+            // TODO REMOVE SEARCH FROM ACCEPTED DARTMETHODS
 
-            if (receiver.method.name == "search") {
-                log("SEARCH REQUEST");
-
-                auto owner_doc = receiver.method.params;
-                Buffer[] owner_pkeys;
-                foreach (owner; owner_doc[]) {
-                    owner_pkeys ~= owner.get!Buffer;
-                }
-                auto res = db.search(owner_pkeys, net);
-
-                Document response = hirpc.result(receiver, Document(res)).toDoc;
-                req.respond(response);
-                return;
-            }
             Document result = db(receiver, false).toDoc;
             log("darthirpc response: %s", result.toPretty);
             req.respond(result);
