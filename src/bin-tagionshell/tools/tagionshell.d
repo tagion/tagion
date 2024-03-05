@@ -561,7 +561,7 @@ static void hirpc_handler(WebData* req, WebData* rep, void* ctx) {
 
 /*
 *
-* NOT to be deprecated with /api/v1, passed to v2
+* Moved to /api/v1/hirpc
 *
 */
 void contract_handler(WebData* req, WebData* rep, void* ctx) {
@@ -645,12 +645,7 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
     }
 }
 
-/*
-*
-* to be deprecated with /api/v1, successor: /api/v2/dart/bullseye
-*
-*/
-static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
+void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
     import crud = tagion.dart.DARTcrud;
 
     thread_attachThis();
@@ -689,18 +684,20 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
             return;
         }
 
-        if (req.path[$ - 1].hasExtension("json")) {
-            const dartindex = parseJSON(receiver.toPretty);
-            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.json;
-            rep.json = dartindex;
+        switch(req.path[$ - 1]) {
+            case "json":
+                const dartindex = parseJSON(receiver.toPretty);
+                rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+                rep.type = ContentType.json;
+                rep.json = dartindex;
+                break;
+            case "hibon":
+            default:
+                rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+                rep.type = ContentType.octet;
+                rep.rawdata = cast(ubyte[]) receiver.serialize;
+                break;
         }
-        else {
-            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.octet;
-            rep.rawdata = cast(ubyte[]) receiver.serialize;
-        }
-
     }
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
@@ -1055,38 +1052,24 @@ int _main(string[] args) {
         auto ds_tid = spawn(&dart_worker, options);
     }
 
-    if(options.ws_pub_uri != ""){
+    if(!options.ws_pub_uri.empty){
         auto ws_tid = spawn(&ws_worker, options);
     }
 
     writeit("\nTagionShell web service\nListening at "
-            ~ options.shell_uri ~ "\n\t"
-            ~ options.shell_api_prefix
-            ~ options.contract_endpoint
-            ~ "\t= POST contract hibon\n\t"
-            ~ options.shell_api_prefix
-            ~ options.dart_endpoint ~ "/[nocache]"
             ~ "\t= POST dart request hibon (depending on the method send raw request or use cache for pkeys)\n\t"
+            ~ options.shell_uri ~ "\n\t"
             ~ options.shell_api_prefix
             ~ options.i2p_endpoint
             ~ "\t= POST invoice-to-pay hibon\n\t"
             ~ options.shell_api_prefix
-            ~ options.bullseye_endpoint ~ ".hibon"
-            ~ "\t= GET dart bullseye json\n\t"
+            ~ options.bullseye_endpoint ~ "/<format>"
+            ~ "= GET dart bullseye\n"
+            ~ "\t\t== /hibon \t- hibon format\n"
+            ~ "\t\t== /json \t- json format\n\t"
             ~ options.shell_api_prefix
-            ~ options.bullseye_endpoint ~ ".json"
-            ~ "\t= GET dart bullseye hibon\n\t"
-            ~ options.shell_api_prefix_v2
-            ~ "/trt" ~ "/<subject>"
-            ~ "\t\t= POST TRT request hibon list of public key indices()\n\t"
-            ~ "\t\t== /read \t- collect DART indices for specific owners\n\t"
-            ~ options.shell_api_prefix_v2
-            ~ "/dart" ~ "/<subject>"
-            ~ "\t\t= POST DART request hibon list of dart indices()\n\t"
-            ~ "\t\t== /[raw] \t- proxy request as is\n\t"
-            ~ "\t\t== /read \t- collect bills by indices\n\t"
-            ~ "\t\t== /checkread \t- check and collect bills by indices\n\t"
-            ~ "\t\t== /bullseye.[hibin,json] \t- get bullseye\n\t"
+            ~ options.hirpc_endpoint
+            ~ "\t\t= POST a hirpc\n\t"
             ~ options.shell_api_prefix
             ~ options.sysinfo_endpoint
             ~ "\t\t= GET system info\n\t"
@@ -1099,6 +1082,12 @@ int _main(string[] args) {
             ~ "\t== /bullseye \t- test bullseye endpoint\n\t"
             ~ "\t== /dart \t- test dart request endpoint\n\t"
 
+            ~ "\nDeprecated:\n\t"
+            ~ options.shell_api_prefix
+            ~ options.contract_endpoint
+            ~ "\t= POST contract hibon\n\t"
+            ~ options.shell_api_prefix
+            ~ options.dart_endpoint ~ "/[nocache]"
     );
 
     isz = getmemstatus();
@@ -1108,25 +1097,16 @@ appoint:
     WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"/tmp/webapp","static_path":"static"}`), &options);
 
     app.route(options.shell_api_prefix ~ options.sysinfo_endpoint, &sysinfo_handler, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.bullseye_endpoint, &bullseye_handler, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".json", &bullseye_handler, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ ".hibon", &bullseye_handler, ["GET"]);
-    app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.bullseye_endpoint ~ "/*", &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.hirpc_endpoint, &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.dart_endpoint, &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.trt_endpoint, &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.trt_endpoint ~ "/read", &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint, &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/raw", &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/read", &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/checkread", &hirpc_handler, ["POST"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye", &bullseye_handler, ["GET"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye.json", &bullseye_handler, ["GET"]);
-    app.route(options.shell_api_prefix_v2 ~ options.dart_endpoint ~ "/bullseye.hibon", &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.i2p_endpoint, &i2p_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.selftest_endpoint ~ "/*", &selftest_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.version_endpoint, &versioninfo_handler, ["GET"]);
+
+    // deprecated
+    app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.dart_endpoint, &hirpc_handler, ["POST"]);
+    app.route(options.shell_api_prefix ~ options.dart_endpoint ~ "/nocache", &hirpc_handler, ["POST"]);
 
     app.start();
 
