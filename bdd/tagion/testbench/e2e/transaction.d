@@ -228,7 +228,7 @@ class SendAContractWithOneOutputsThroughTheShell {
         wallet1_hirpc = HiRPC(wallet1.net);
         wallet2_hirpc = HiRPC(wallet2.net);
         shell_addr = shell_opts.shell_uri ~ shell_opts.shell_api_prefix;
-        bullseye_address = shell_addr ~ shell_opts.bullseye_endpoint ~ ".hibon";
+        bullseye_address = shell_addr ~ shell_opts.bullseye_endpoint ~ "/hibon";
         dart_address = shell_addr ~ shell_opts.dart_endpoint ~ "/nocache";
         contract_address = shell_addr ~ shell_opts.contract_endpoint;
     }

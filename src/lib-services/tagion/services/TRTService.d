@@ -34,7 +34,7 @@ import tagion.trt.TRT;
 import tagion.hibon.HiBON;
 import tagion.script.standardnames;
 import tagion.services.exception;
-import tagion.services.DART : accepted_dart_methods;
+import tagion.services.DARTInterface : accepted_trt_methods;
 
 @safe
 struct TRTOptions {
@@ -116,7 +116,7 @@ struct TRTService {
             log("before hirpc");
             immutable receiver = hirpc.receive(doc);
 
-            if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
+            if (!(receiver.isMethod && accepted_trt_methods.canFind(receiver.method.full_name))) {
                 log("received non valid HIRPC method");
                 const err = hirpc.error(receiver, ServiceCode.method.toString, ServiceCode.method);
                 client_req.respond(err.toDoc);
