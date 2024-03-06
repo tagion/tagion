@@ -46,7 +46,7 @@ DFLAGS+=$(DVERSION)=WITHOUT_PAYMENT
 DFLAGS+=$(DVERSION)=TRT_READ_REQ
 
 # Use compile time sorted, serialization of dart branches
-DFLAGS+=$(DVERSION)=DARTFile_BRANCHES_SERIALIZER
+#DFLAGS+=$(DVERSION)=DARTFile_BRANCHES_SERIALIZER
 
 # Dart optimization that inserts segments sorted.
 # Before it would sort the segments every time they were needed
@@ -79,7 +79,7 @@ DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 # DFLAGS+=$(DVERSION)=WALLET_HISTORY_DUMMY
 
 # Use to check that toHiBON.serialize is equal to .serialize
-#DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
+DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)

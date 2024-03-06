@@ -9,7 +9,7 @@ import tagion.hibon.HiBONtoText;
 import tagion.hibon.Document;
 import tagion.basic.Types : base64=encodeBase64, Buffer;
 import tagion.crypto.SecureNet;
-shared static  this() {
+static this() {
     writefln("%%%%%%%%%%% should call this");
 }
 void main() {
@@ -79,8 +79,10 @@ void main() {
     writefln("hash_net.name=%s", hash_net_typeid);
     writefln("hash_net.name=%s", hash_net_typeid.name);
 
-   //buf = hash_net.rawCalcHash(buf);
-    
+   buf = hash_net.rawCalcHash(buf);
+   
+    writefln("%(%02x %)", buf);
+    writefln("%s", buf.base64);
     //writefln("############## _func.ptr=%x", cast(size_t)(_func.ptr));
     //auto x=_func(buf);
 }

@@ -513,6 +513,7 @@ static size_t size(U)(const(U[]) array) pure {
     const(Member) opIndex(const string key) const {
         auto search = new Member(key);
         auto range = _members.equalRange(search);
+        
         .check(!range.empty, message("Member '%s' does not exist", key));
         return range.front;
     }
@@ -632,7 +633,7 @@ static size_t size(U)(const(U[]) array) pure {
      Returns:
      the number of members in the HiBON
      +/
-    size_t length() const {
+    size_t length() const pure {
         return _members.length;
     }
 
@@ -702,7 +703,7 @@ static size_t size(U)(const(U[]) array) pure {
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
-        alias Tabel = Tuple!(BigNumber, Type.BIGINT.stringof, bool, Type.BOOLEAN.stringof,
+        alias Table = Tuple!(BigNumber, Type.BIGINT.stringof, bool, Type.BOOLEAN.stringof,
                 float, Type.FLOAT32.stringof, double, Type.FLOAT64.stringof,
                 int, Type.INT32.stringof, long, Type.INT64.stringof, uint,
                 Type.UINT32.stringof, ulong, Type.UINT64.stringof, //                utc_t,  Type.UTC.stringof
@@ -711,7 +712,7 @@ static size_t size(U)(const(U[]) array) pure {
 
         );
 
-        Tabel test_tabel;
+        Table test_tabel;
         test_tabel.FLOAT32 = 1.23;
         test_tabel.FLOAT64 = 1.23e200;
         test_tabel.INT32 = -42;
@@ -727,9 +728,9 @@ static size_t size(U)(const(U[]) array) pure {
                 immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
                 string, Type.STRING.stringof,);
 
-        TabelArray test_tabel_array;
-        test_tabel_array.BINARY = [1, 2, 3];
-        test_tabel_array.STRING = "Text";
+        TabelArray test_table_array;
+        test_table_array.BINARY = [1, 2, 3];
+        test_table_array.STRING = "Text";
 
         { // empty
             auto hibon = new HiBON;
@@ -830,9 +831,9 @@ static size_t size(U)(const(U[]) array) pure {
             auto hibon = new HiBON;
 
             string[] keys;
-            foreach (i, t; test_tabel_array) {
-                hibon[test_tabel_array.fieldNames[i]] = t;
-                keys ~= test_tabel_array.fieldNames[i];
+            foreach (i, t; test_table_array) {
+                hibon[test_table_array.fieldNames[i]] = t;
+                keys ~= test_table_array.fieldNames[i];
             }
 
             size_t index;
@@ -841,24 +842,24 @@ static size_t size(U)(const(U[]) array) pure {
                 index++;
             }
 
-            foreach (i, t; test_tabel_array) {
-                enum key = test_tabel_array.fieldNames[i];
+            foreach (i, t; test_table_array) {
+                enum key = test_table_array.fieldNames[i];
                 const m = hibon[key];
                 assert(m.key == key);
                 assert(m.type.to!string == key);
-                assert(m.get!(test_tabel_array.Types[i]) == t);
+                assert(m.get!(test_table_array.Types[i]) == t);
             }
 
             immutable data = hibon.serialize;
             const doc = Document(data);
-            assert(doc.length is test_tabel_array.length);
+            assert(doc.length is test_table_array.length);
 
-            foreach (i, t; test_tabel_array) {
-                enum key = test_tabel_array.fieldNames[i];
+            foreach (i, t; test_table_array) {
+                enum key = test_table_array.fieldNames[i];
                 const e = doc[key];
                 assert(e.key == key);
                 assert(e.type.to!string == key);
-                assert(e.get!(test_tabel_array.Types[i]) == t);
+                assert(e.get!(test_table_array.Types[i]) == t);
             }
 
         }
@@ -921,13 +922,13 @@ static size_t size(U)(const(U[]) array) pure {
         { // Document array
             HiBON[] hibon_array;
             alias TabelDocArray = Tuple!(int, "a", string, "b", float, "c");
-            TabelDocArray tabel_doc_array;
-            tabel_doc_array.a = 42;
-            tabel_doc_array.b = "text";
-            tabel_doc_array.c = 42.42;
+            TabelDocArray table_doc_array;
+            table_doc_array.a = 42;
+            table_doc_array.b = "text";
+            table_doc_array.c = 42.42;
 
-            foreach (i, t; tabel_doc_array) {
-                enum name = tabel_doc_array.fieldNames[i];
+            foreach (i, t; table_doc_array) {
+                enum name = table_doc_array.fieldNames[i];
                 auto local_hibon = new HiBON;
                 local_hibon[name] = t;
                 hibon_array ~= local_hibon;
@@ -959,9 +960,9 @@ static size_t size(U)(const(U[]) array) pure {
                 const doc_e = doc["array"];
                 assert(doc_e.type is Type.DOCUMENT);
                 const doc_array = doc_e.by!(Type.DOCUMENT);
-                foreach (i, t; tabel_doc_array) {
-                    enum name = tabel_doc_array.fieldNames[i];
-                    alias U = tabel_doc_array.Types[i];
+                foreach (i, t; table_doc_array) {
+                    enum name = table_doc_array.fieldNames[i];
+                    alias U = table_doc_array.Types[i];
                     const doc_local = doc_array[i].by!(Type.DOCUMENT);
                     const local_e = doc_local[name];
                     assert(local_e.type is Value.asType!U);
@@ -986,9 +987,9 @@ static size_t size(U)(const(U[]) array) pure {
                 const doc_all = Document(data_array);
                 const doc_array = doc_all["doc_array"].by!(Type.DOCUMENT);
 
-                foreach (i, t; tabel_doc_array) {
-                    enum name = tabel_doc_array.fieldNames[i];
-                    alias U = tabel_doc_array.Types[i];
+                foreach (i, t; table_doc_array) {
+                    enum name = table_doc_array.fieldNames[i];
+                    alias U = table_doc_array.Types[i];
                     alias E = Value.asType!U;
                     const e = doc_array[i];
                     const doc_e = e.by!(Type.DOCUMENT);
