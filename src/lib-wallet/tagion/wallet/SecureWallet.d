@@ -25,7 +25,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : HiBONRecord;
 import tagion.utils.StdTime;
 
-import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureNet : StdSecureNet, SecureNet;
 
 import tagion.Keywords;
 import tagion.basic.Message;
@@ -49,6 +49,7 @@ alias CiphDoc = Cipher.CipherDocument;
 import tagion.communication.HiRPC;
 
 /// Function and data to recover, sign transaction and hold the account information
+alias StdSecureWallet = SecureWallet!StdSecureNet;
 struct SecureWallet(Net : SecureNet) {
     protected RecoverGenerator _wallet; /// Information to recover the seed-generator
     protected DevicePIN _pin; /// Information to check the Pin code
@@ -1242,17 +1243,6 @@ struct SecureWallet(Net : SecureNet) {
             sender_wallet.payment([invoice], contract_2, fees);
         }
     }
-}
-
-version (unittest) {
-    import std.exception;
-    import tagion.crypto.SecureNet;
-
-    //    import std.stdio;
-    import tagion.script.execute;
-
-    alias StdSecureWallet = SecureWallet!StdSecureNet;
-
 }
 
 unittest {
