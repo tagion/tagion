@@ -41,6 +41,7 @@ import tagion.tools.revision;
 import tagion.tools.shell.shelloptions;
 import tagion.tools.shell.contracts;
 import tagion.tools.wallet.WalletInterface;
+import tagion.wallet.request;
 import tagion.tools.wallet.WalletOptions;
 import tagion.utils.StdTime : currentTime;
 import tagion.wallet.AccountDetails;
@@ -733,7 +734,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     const hirpc_submit = hirpc.submit(signed_contract);
     wallet_interface.secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
 
-    auto receiver = sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
+    auto receiver = sendKernelHiRPC(options.contract_address, hirpc_submit, hirpc);
     wallet_interface.save(false);
 
     writeit("i2p: payment sent");
