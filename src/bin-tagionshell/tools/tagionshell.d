@@ -814,7 +814,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     if (reqpath.length > 0) {
         switch (reqpath[0]) {
         case "bullseye":
-            WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ ".json", null);
+            WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ "/json", null);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
                 rep.msg = hrep.msg;

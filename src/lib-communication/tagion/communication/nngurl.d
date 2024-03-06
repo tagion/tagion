@@ -38,6 +38,9 @@ struct NNGURL {
         auto _nng_url = new nng_url;
 
         int rc = nng_url_parse(&_nng_url, toStringz(url_str));
+        if(rc != nng_errno.NNG_OK) {
+            throw new Exception(nng_errstr(rc));
+        }
         scope(exit) {
             nng_url_free(_nng_url);
         }
@@ -53,15 +56,11 @@ struct NNGURL {
         query = fromStringz(_nng_url.u_query).idup;
         fragment = fromStringz(_nng_url.u_fragment).idup;
         requri = fromStringz(_nng_url.u_requri).idup;
-
-        if(rc != nng_errno.NNG_OK) {
-            throw new Exception(nng_errstr(rc));
-        }
     }
 }
 
 unittest {
-    char* cp;
-    auto str = fromStringz(cp);
-    assert(str is (char[]).init);
+    import std.exception;
+    NNGURL("abstract://EPOCURL");
+    assertThrown(NNGURL("blbalablbadurl"));
 }
