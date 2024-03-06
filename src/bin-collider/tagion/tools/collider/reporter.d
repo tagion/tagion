@@ -156,7 +156,7 @@ MdString toMd(FeatureGroup fg) {
         }
     }
     const summary = format("<summary> %s (%s/%s) %s </summary>\n\n", result_type, successful, fg.scenarios.length, fg
-            .info.name);
+            .info.property.description);
 
     // result_md.put(format("%s\n\n", result_type));
 
