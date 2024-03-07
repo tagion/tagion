@@ -18,8 +18,8 @@ endif
 ifeq ($(PLATFORM),$(WASI_WASM64))
 
 TRIPLET:=wasm64-unknown-wasi
-#WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi
-WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi-threads
+WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi
+#WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi-threads
 
 endif
 
@@ -54,9 +54,10 @@ WASI_LIB+=$(WASI_SYSROOT)/librt.a
 WASI_LIB+=$(WASI_SYSROOT)/libutil.a
 WASI_LIB+=$(WASI_SYSROOT)/libcrypt.a
 WASI_LIB+=$(WASI_SYSROOT)/libdl.a
-WASI_LIB+=$(WASI_SYSROOT)/libresolv.a
-WASI_LIB+=$(WASI_SYSROOT)/libpthread.a
-WASI_LIB+=$(WASI_SYSROOT)/libwasi-emulated-process-clocks.a
+#WASI_LIB+=$(WASI_SYSROOT)/libresolv.a
+#WASI_LIB+=$(WASI_SYSROOT)/libpthread.a
+#WASI_LIB+=$(WASI_SYSROOT)/libwasi-emulated-process-clocks.a
+#WASI_LIB+=$(WASI_SYSROOT)/crt1-command.o
 #WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/druntime/src 
 #WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/phobos 
 

@@ -10,8 +10,12 @@ import tagion.hibon.Document;
 import tagion.basic.Types : base64=encodeBase64, Buffer;
 import tagion.crypto.SecureNet;
 static this() {
-    writefln("%%%%%%%%%%% should call this");
+    writefln(" should call this\n");
 }
+static ~this() {
+    writefln(" should call ~this\n");
+}
+pragma(msg, "Main ", main.mangleof);
 void main() {
     printf("--- Main\n");
     interface I {

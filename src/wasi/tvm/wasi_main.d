@@ -3,10 +3,16 @@ import core.stdc.stdio;
 import core.internal.backtrace.unwind;
 import core.runtime;
 import core.sys.wasi.missing;
-
-extern (C) __gshared int __rt_dso_ref;
+import core.sys.wasi.link;
 extern (C) @nogc {
-
+       // extern(C) int nativeCallback(dl_phdr_info* info, size_t, void* data)
+    int dl_iterate_phdr(dl_iterate_phdr_cb __callback, void*__data) {
+        printf("%s %p callback=%p\n", &__FUNCTION__[0], __data, &__callback);
+        return __callback(null, 0, __data);
+    }
+    const(char)* getprogname() nothrow {
+        return "_progname".ptr;
+    }
     void _Unwind_Resume(void* x) {
         printf("%s\n", &__FUNCTION__[0]);
     }
@@ -114,7 +120,8 @@ extern (C) @nogc {
     import core.sys.wasi.unistd;
     pid_t   getpid() @trusted {
         mixin WASIError;
-        assert(0, wasi_error);
+        printf("%s", &wasi_error[0]);
+        return 42;
     }
 }
 
