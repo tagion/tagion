@@ -7,7 +7,10 @@ import core.sys.wasi.link;
 extern (C) @nogc {
        // extern(C) int nativeCallback(dl_phdr_info* info, size_t, void* data)
     int dl_iterate_phdr(dl_iterate_phdr_cb __callback, void*__data) {
-        printf("%s %p callback=%p\n", &__FUNCTION__[0], __data, &__callback);
+        char[128] __dummy;    
+        // printf("%s %p callback=%p\n", &__FUNCTION__[0], __data, &__callback);
+        /// wasmer does not run if we don't do this for some odd reason?
+        sprintf(&__dummy[0], "%p\n",  __data);
         return __callback(null, 0, __data);
     }
     const(char)* getprogname() nothrow {
