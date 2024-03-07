@@ -1,19 +1,21 @@
 #!/bin/bash
 
 usage() {
-    echo "Usage: bash $0 -b <bin_path> -w <create_wallets> -n <network_path> [-t <tags>]"
+    echo "Usage: bash $0 -b <bin_path> -w <create_wallets> -n <network_path> [-t <tags>] [-p <payment_count>]"
     echo "  -b <bin_path>        Specify the path for binaries"
     echo "  -w <create_wallets>  Specify the create_wallets script"
     echo "  -n <network_path>    Specify the path for network files"
     echo "  -t <tags>            Specify the tags to subscribe"
+    echo "  -p <payment_count>   Specify the number of payments to run"
 }
 
 BIN_FOLDER=""
 CREATE_WALLETS=""
 NETWORK_FOLDER=""
 TAGS=""
+PAYMENT_NUM=""
 
-while getopts "b:w:n:t:" opt; do
+while getopts "b:w:n:t:p:" opt; do
   case $opt in
     b)
       BIN_FOLDER="$OPTARG"
@@ -26,6 +28,9 @@ while getopts "b:w:n:t:" opt; do
       ;;
     t)
       TAGS="$OPTARG"
+      ;;
+    p)
+      PAYMENT_NUM="$OPTARG"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -44,7 +49,13 @@ echo "    bin_path       : $BIN_FOLDER"
 echo "    network_path   : $NETWORK_FOLDER"
 echo "    create_wallets : $CREATE_WALLETS"
 echo "    tags           : $TAGS"
+echo "    payment_count  : $PAYMENT_NUM"
 echo ""
+
+if [ -z "$PAYMENT_NUM" ]; then
+    echo "Payment count set to 0"
+    PAYMENT_NUM=0
+fi
 
 # Clear 
 rm /tmp/neuewelle_pm2.log
@@ -86,11 +97,11 @@ pm2 start $SCRIPT_DIR/subscriber.config.json
 
 
 # Make payments
-sleep 5s
-for ((i=1; i<=5; i++)); do
+for ((i=1; i<=$PAYMENT_NUM; i++)); do
     sleep 1s
-    echo "Payment count: $i"
+    echo
     bash $SCRIPT_DIR/make_payment.sh -n $NETWORK_FOLDER -f 0 -t 1 -a 100
+    echo "Payments done: $i"
 done
 
 # Waiting for user input
