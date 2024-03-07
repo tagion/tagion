@@ -84,6 +84,15 @@ pm2 ls
 # Start subscriber
 pm2 start $SCRIPT_DIR/subscriber.config.json
 
+
+# Make payments
+sleep 5s
+for ((i=1; i<=5; i++)); do
+    sleep 1s
+    echo "Payment count: $i"
+    bash $SCRIPT_DIR/make_payment.sh -n $NETWORK_FOLDER -f 0 -t 1 -a 100
+done
+
 # Waiting for user input
 read -n 1 -s -r -p "Press any key to stop"
 echo
