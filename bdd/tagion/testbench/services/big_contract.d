@@ -29,6 +29,7 @@ import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
 import std.format;
 import tagion.wallet.SecureWallet;
+import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 
 mixin Main!(_main);
@@ -243,7 +244,7 @@ class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
         writefln("contract: %s", contract.toPretty);
         writefln("contract: %(%02x%)", contract.toDoc.serialize);
         writefln("CONTRACT size %d", contract.toDoc.full_size);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, contract, wallet1_hirpc);
+        sendHiRPC(opts1.inputvalidator.sock_addr, contract, wallet1_hirpc);
         return result_ok;
     }
 

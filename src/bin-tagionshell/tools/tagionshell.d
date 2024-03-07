@@ -41,6 +41,7 @@ import tagion.tools.revision;
 import tagion.tools.shell.shelloptions;
 import tagion.tools.shell.contracts;
 import tagion.tools.wallet.WalletInterface;
+import tagion.wallet.request;
 import tagion.tools.wallet.WalletOptions;
 import tagion.utils.StdTime : currentTime;
 import tagion.wallet.AccountDetails;
@@ -733,7 +734,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     const hirpc_submit = hirpc.submit(signed_contract);
     wallet_interface.secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
 
-    auto receiver = sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
+    auto receiver = sendKernelHiRPC(options.contract_address, hirpc_submit, hirpc);
     wallet_interface.save(false);
 
     writeit("i2p: payment sent");
@@ -813,7 +814,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     if (reqpath.length > 0) {
         switch (reqpath[0]) {
         case "bullseye":
-            WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ ".json", null);
+            WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ "/json", null);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
                 rep.msg = hrep.msg;
