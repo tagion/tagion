@@ -2,11 +2,10 @@ module tagion.logger.ContractTracker;
 
 import tagion.services.codes : toString;
 import tagion.basic.Types : Buffer;
-import tagion.hibon.HiBONRecord : HiBONRecord;
+import tagion.hibon.HiBONRecord : HiBONRecord, isHiBONRecord, recordType;
 import tagion.logger.Logger;
 import tagion.crypto.Types : Fingerprint;
 import tagion.crypto.SecureNet : StdHashNet;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
 
 enum ContractStatusCode {
     @("Reject") rejected,
@@ -22,6 +21,7 @@ string toString(ContractStatusCode code) pure nothrow {
 }
 
 @safe
+@recordType("ContractStatus")
 struct ContractStatus {
     Buffer contract_hash;
     ContractStatusCode status_code;

@@ -15,7 +15,7 @@ import tagion.basic.Types;
 import tagion.basic.Version;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.services.subscription : SubscriptionServiceOptions;
+import tagion.services.subscription : SubscriptionServiceOptions, SubscriptionPayload;
 import tagion.tools.Basic : Main;
 import tagion.tools.revision;
 
@@ -23,6 +23,8 @@ import std.exception;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.communication.HiRPC;
 import tagion.utils.Result;
+import tagion.logger.ContractTracker : ContractStatus;
+import tagion.hibon.HiBONRecord : isRecord;
 
 struct Subscription {
     string address;
@@ -125,13 +127,17 @@ int _main(string[] args) {
     string tagsRaw;
     string outputfilename;
     SubFormat output_format;
+    string contract;
 
     auto main_args = getopt(args,
         "v|version", "Print revision information", &version_switch,
         "o|output", "Output filename; if empty stdout is used", &outputfilename,
-        "f|format", format("Set the output format default: %s, available %s", SubFormat.init, [EnumMembers!SubFormat]), &output_format,
+        "f|format", format("Set the output format default: %s, available %s", SubFormat.init, [
+                EnumMembers!SubFormat
+            ]), &output_format,
         "address", "Specify the address to subscribe to", &address,
         "tag", "Specify tags to subscribe to", &tagsRaw,
+        "contract", "Subscribe to status of a specific contract (base64url hash)", &contract,
     );
 
     string[] tags;
@@ -169,6 +175,7 @@ int _main(string[] args) {
         tags ~= ""; // in NNG subscribing to an empty topic will receive all messages
     }
 
+    writefln("Starting subscriber with tags [%s]", tagsRaw);
     auto sub = Subscription(address, tags);
     auto dialed = sub.dial;
     if (dialed.error) {
@@ -177,24 +184,48 @@ int _main(string[] args) {
     }
     stderr.writefln("Listening on, %s", address);
 
-    while (true) {
-        auto result = sub.receive;
+    Result!Document receiveResult() {
+        while (true) {
+            auto result = sub.receive;
+
+            // Check for contract
+            if (!contract.empty && !result.error) {
+                const payload = result.get["params"].get!SubscriptionPayload;
+                auto doc = payload.data;
+                if (doc.isRecord!ContractStatus) {
+                    // Drop contact status if it has different hash
+                    if (ContractStatus(doc).contract_hash.encodeBase64 != contract) {
+                        continue;
+                    }
+                }
+            }
+
+            return result;
+        }
+    }
+
+    void outputResult(ref Result!Document result) {
         if (result.error) {
             fout.writeln(result.e);
         }
         else {
-            final switch(output_format) {
-                case SubFormat.pretty:
-                    fout.writeln(result.get.toPretty);
-                    break;
-                case SubFormat.json:
-                    fout.writeln(result.get.toJSON);
-                    break;
-                case SubFormat.hibon:
-                    fout.rawWrite(result.get.serialize);
-                    break;
+            final switch (output_format) {
+            case SubFormat.pretty:
+                fout.writeln(result.get.toPretty);
+                break;
+            case SubFormat.json:
+                fout.writeln(result.get.toJSON);
+                break;
+            case SubFormat.hibon:
+                fout.rawWrite(result.get.serialize);
+                break;
             }
         }
+    }
+
+    while (true) {
+        auto result = receiveResult;
+        outputResult(result);
     }
     return 0;
 }
