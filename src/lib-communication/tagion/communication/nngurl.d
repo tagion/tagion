@@ -1,13 +1,12 @@
 module tagion.communication.nngurl;
 
 import std.string;
-import std.conv;
 
 import libnng;
 
 private extern(C) {
-int nng_url_parse(nng_url **urlp, const char *str) pure;
-void nng_url_free(nng_url *url) pure;
+int nng_url_parse(nng_url **urlp, const char *str);
+void nng_url_free(nng_url *url);
 struct nng_url {
     char *u_rawurl;
     char *u_scheme;
@@ -28,39 +27,47 @@ struct NNGURL {
     string userinfo;
     string host;
     string hostname;
-    int port;
+    string port;
     string path;
     string query;
     string fragment;
     string requri;
 
+    @disable this(this);
+
+    protected nng_url* _nng_url;
     this(const(char)[] url_str) @trusted {
-        auto _nng_url = new nng_url;
+        _nng_url = new nng_url;
 
         int rc = nng_url_parse(&_nng_url, toStringz(url_str));
         if(rc != nng_errno.NNG_OK) {
             throw new Exception(nng_errstr(rc));
         }
-        scope(exit) {
+
+        rawurl = cast(immutable)fromStringz(_nng_url.u_rawurl);
+        scheme = cast(immutable)fromStringz(_nng_url.u_scheme).idup;
+        userinfo = cast(immutable)fromStringz(_nng_url.u_userinfo);
+        host = cast(immutable)fromStringz(_nng_url.u_host);
+        hostname = cast(immutable)fromStringz(_nng_url.u_hostname);
+        port = cast(immutable)fromStringz(_nng_url.u_port);
+        path = cast(immutable)fromStringz(_nng_url.u_path);
+        query = cast(immutable)fromStringz(_nng_url.u_query);
+        fragment = cast(immutable)fromStringz(_nng_url.u_fragment);
+        requri = cast(immutable)fromStringz(_nng_url.u_requri);
+    }
+
+    ~this() {
+        if(_nng_url !is null) {
             nng_url_free(_nng_url);
         }
-
-        rawurl = fromStringz(_nng_url.u_rawurl).idup;
-        scheme = fromStringz(_nng_url.u_scheme).idup;
-        userinfo = fromStringz(_nng_url.u_userinfo).idup;
-        host = fromStringz(_nng_url.u_host).idup;
-        hostname = fromStringz(_nng_url.u_hostname).idup;
-        const _port = fromStringz(_nng_url.u_port);
-        port = _port.empty ? -1 : _port.to!int;
-        path = fromStringz(_nng_url.u_path).idup;
-        query = fromStringz(_nng_url.u_query).idup;
-        fragment = fromStringz(_nng_url.u_fragment).idup;
-        requri = fromStringz(_nng_url.u_requri).idup;
     }
 }
 
 unittest {
     import std.exception;
-    NNGURL("abstract://EPOCURL");
+    auto nn = NNGURL("tcp://0.0.0.0:473");
+    assert(nn.scheme == "tcp");
+    assert(nn.hostname == "0.0.0.0", nn.hostname);
+    assert(nn.port == "473");
     assertThrown(NNGURL("blbalablbadurl"));
 }
