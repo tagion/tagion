@@ -7,7 +7,6 @@ import std.stdio;
 import std.format;
 
 import tagion.communication.HiRPC;
-import tagion.communication.nngurl;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONtoText;
 import tagion.hibon.HiBONRecord;
