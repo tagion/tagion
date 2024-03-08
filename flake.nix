@@ -14,8 +14,6 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
 
-      cfg = pkgs.lib.config.services.tagion;
-
       # Disable mbedtls override is broken upstream see if merged
       # https://github.com/NixOS/nixpkgs/pull/285518
       nng_no_tls = with pkgs;
@@ -274,5 +272,25 @@
             };
           };
         };
+
+      nixosConfigurations = {
+        # System configuration for a test network running in mode0
+        tgn-m0-test = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          # specialArgs = attrs; # Pass flake outputs to our config
+          modules = [
+            self.nixosModules.default
+            ({ pkgs, ... }: {
+              # environment.systemPackages = with pkgs; [ packages.x86_64-linux.default ];
+              # Only allow this to boot as a container
+              boot.isContainer = true;
+              networking.hostName = "tgn-m0-test";
+              tagion.services.tagionwave.enable = true;
+              tagion.services.tagionshell.enable = true;
+              system.stateVersion = "24.05";
+            })
+          ];
+        };
+      };
     };
 }
