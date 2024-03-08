@@ -7,7 +7,7 @@
     dfmt-pull.url = "github:jtbx/nixpkgs/d-dfmt";
   };
 
-  outputs = { self, nixpkgs, pre-commit-hooks, dfmt-pull}:
+  outputs = { self, nixpkgs, pre-commit-hooks, dfmt-pull }:
     let
       gitRev = self.rev or "dirty";
 
@@ -132,7 +132,8 @@
           typos.enable = true;
           checkmake.enable = true;
           actionlint.enable = true;
-          dlang-format = { # does not work :-( we have to define a proper commit
+          dlang-format = {
+            # does not work :-( we have to define a proper commit
             enable = true;
             name = "format d code";
             entry = "make format";
@@ -239,18 +240,39 @@
           };
         };
 
-      nixosModules.default = with pkgs.lib; {
-        options = {
-          services.tagion = {
-            enable = mkEnableOption (lib.mdDoc "tagion");
+      nixosModules.default = with pkgs.lib; { config, ... }:
+        let cfg = config.tagion.services;
+        in {
+          options.tagion.services = {
+            tagionwave = {
+              enable = mkEnableOption "Enable the tagionwave service";
+            };
+
+            tagionshell = {
+              enable = mkEnableOption "Enable the tagionshell service";
+            };
+          };
+
+          config = {
+            systemd.services."tagionwave" = mkIf cfg.tagionwave.enable {
+              wantedBy = [ "multi-user.target" ];
+              serviceConfig =
+                let pkg = self.packages.${pkgs.system}.default;
+                in {
+                  Restart = "on-failure";
+                  ExecStart = "${pkg}/bin/tagion wave";
+                };
+            };
+            systemd.services."tagionshell" = mkIf cfg.tagionshell.enable {
+              wantedBy = [ "multi-user.target" ];
+              serviceConfig =
+                let pkg = self.packages.${pkgs.system}.default;
+                in {
+                  Restart = "on-failure";
+                  ExecStart = "${pkg}/bin/tagion shell";
+                };
+            };
           };
         };
-
-        config = mkIf cfg.enable {
-          environment.systemPackages = [ self.packages.x86_64-linux.default ];
-          systemd.packages = [ self.packages.x86_64-linux.default ];
-        };
-
-      };
     };
 }
