@@ -84,10 +84,10 @@ enum VerboseMode {
 
 }
 
-static Verbose verbose;
+static Verbose wasm_verbose;
 
 static this() {
-    verbose.fout = stdout;
+    wasm_verbose.fout = stdout;
 }
 
 enum Section : ubyte {
@@ -660,7 +660,7 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
         return result;
     }
 
-    void opAssign(T)(T x) nothrow {
+    void opAssign(T)(T x) pure nothrow {
         alias BaseT = Unqual!T;
         static if (is(BaseT == int) || is(BaseT == uint)) {
             _type = Types.I32;
@@ -748,6 +748,21 @@ static assert(isInputRange!ExprRange);
 
         const(Types[]) types() const pure nothrow {
             return _types;
+        }
+
+        IRElement dup() const pure scope nothrow{
+            IRElement result;
+            result.code=code;
+            result.level=level;
+            result._warg=_warg;
+            result._wargs=_wargs.dup;
+            result._types=_types.dup;
+            return result;        
+        }
+
+        version(none)
+        string toString() const pure {
+        
         }
 
     }
@@ -858,7 +873,8 @@ static assert(isInputRange!ExprRange);
                             set(elm._warg, Types.F64);
                             break;
                         default:
-                            throw new WasmException(format("Instruction %s is not a const", elm.code));
+                            throw new WasmExprException(format("Instruction %s is not a const", 
+                            elm.code), elm);
                         }
                     }
                     break;
@@ -867,10 +883,11 @@ static assert(isInputRange!ExprRange);
                     break;
                 case ILLEGAL:
 
-                    throw new WasmException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code));
+                    throw new WasmExprException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code), elm);
                     break;
                 case SYMBOL:
-                    assert(0, "Is a symbol and it does not have an equivalent opcode");
+                    throw new WasmExprException(format("Is a symbol and it does not have an equivalent opcode %02x", elm.code), elm);
+                    break;
                 }
 
             }

@@ -25,7 +25,7 @@ import tagion.wasm.WasmWriter;
 
 //import tagion.script.StandardRecords;
 import std.array : join;
-import tagion.tools.Basic : Main;
+import tagion.tools.Basic;
 import tagion.tools.revision;
 
 template Produce(FileExtension ext) {
@@ -79,7 +79,7 @@ int _main(string[] args) {
     string[] imports;
     string[] attributes;
     bool inject_gas;
-    bool verbose_switch;
+    //bool verbose_switch;
 
     string[] modify_from;
     string[] modify_to;
@@ -89,11 +89,9 @@ int _main(string[] args) {
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch, //"inputfile|i", "Sets the HiBON input file name", &inputfilename,
-                //"outputfile|o", "Sets the output file name", &outputfilename, // "bin|b", "Use HiBON or else use JSON", &binary,
-                // "value|V", format("Bill value : default: %d", value), &value,
+                "version", "display the version", &version_switch, 
                 "gas|g", format("Inject gas countes: %s", inject_gas), &inject_gas,
-                "verbose|v", format("Verbose %s", verbose_switch), &verbose_switch,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
                 "mod|m", "Modify import module name from ", &modify_from,
                 "to", "Modify import module name from ", &modify_to,
                 "imports|i", "Import list", &imports,
@@ -135,7 +133,7 @@ int _main(string[] args) {
         }
 
         version (none)
-            if (verbose_switch && (!print || outputfilename.length is 0)) {
+            if (__verbose_switch && (!print || outputfilename.length is 0)) {
                 verbose.mode = VerboseMode.STANDARD;
             }
 
@@ -198,7 +196,7 @@ int _main(string[] args) {
             case wasm, wo:
                 immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
                 wasm_reader = WasmReader(read_data);
-                verbose.hex(0, read_data);
+                wasm_verbose.hex(0, read_data);
                 wasm_writer = WasmWriter(wasm_reader);
                 break;
             case wast:
@@ -227,8 +225,8 @@ int _main(string[] args) {
         }
         immutable data_out = wasm_writer.serialize;
         writefln("after data_out");
-        if (verbose_switch) {
-            verbose.mode = VerboseMode.STANDARD;
+        if (__verbose_switch) {
+            wasm_verbose.mode = VerboseMode.STANDARD;
         }
 
         const output_extension = (outputfilename.empty) ? type.typeExtension : outputfilename.extension;
@@ -278,8 +276,8 @@ int _main(string[] args) {
         }
     }
     catch (Exception e) {
-        //verbose(e);
-        stderr.writefln("Error: %s", e.msg);
+        error(e);
+        return 1;
     }
     return 0;
 }

@@ -64,14 +64,7 @@ export LD:=$(WASI_BIN)/wasm-ld
 export RANLIB:=$(WASI_BIN)/ranlib
 export STRIP:=$(WASI_BIN)/strip
 export STRIP:=$(WASI_BIN)/objdump
-#WASI_LIB+=$(WASI_SYSROOT)/libresolv.a
-#WASI_LIB+=$(WASI_SYSROOT)/libpthread.a
-#WASI_LIB+=$(WASI_SYSROOT)/libwasi-emulated-process-clocks.a
-#WASI_LIB+=$(WASI_SYSROOT)/crt1-command.o
-#WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/druntime/src 
-#WASI_DINC+=-I$(WASI_DRUNTIME_ROOT)/ldc/runtime/phobos 
 
-#DFLAGS+=-defaultlib=c,druntime-ldc,phobos2-ldc
 DFLAGS+=-I$(LDC_RUNTIME_ROOT)/druntime/src
 DFLAGS+=-I$(LDC_RUNTIME_ROOT)/phobos
 #DFLAGS+=-d-version=Posix
