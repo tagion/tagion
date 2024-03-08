@@ -12,36 +12,51 @@ import tagion.dart.Recorder;
 import tagion.hibon.HiBON : HiBON;
 
 /**
-       * Constructs a HiRPC method for dartRead 
-       * Params:
-       *   dart_indices = List of hash-pointers 
-       *   hirpc = HiRPC credentials 
-       *   id = HiRPC id 
-       * Returns: 
-       *   HiRPC Sender
-       */
-const(HiRPC.Sender) dartRead(Range)(
+ * Constructs a HiRPC method for dartRead 
+ * Params:
+ *   dart_indices = List of hash-pointers 
+ *   hirpc = HiRPC credentials 
+ *   id = HiRPC id 
+ * Returns: 
+ *   HiRPC Sender
+*/
+alias dartRead = _dartIndexCmd!"dartRead";
+/// ditto
+alias dartCheckRead = _dartIndexCmd!"dartCheckRead";
+/// ditto
+alias trtdartRead = _dartIndexCmd!"trt.dartRead";
+/// ditto
+alias trtdartCheckRead = _dartIndexCmd!"trt.dartCheckRead";
+
+template _dartIndexCmd(string method) {
+    const(HiRPC.Sender) _dartIndexCmd(Range)(
+            Range dart_indices,
+            HiRPC hirpc = HiRPC(null),
+            uint id = 0) @safe if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
+
+        auto params = new HiBON;
+        auto params_dart_indices = new HiBON;
+        params_dart_indices = dart_indices.filter!(b => b.length !is 0);
+        params[DART.Params.dart_indices] = params_dart_indices;
+        return hirpc.opDispatch!method(params, id);
+    }
+}
+
+/// General constructor for a dart index cmd [dartRead, dartCheckRead, etc...]
+/// With a runtime method name
+const(HiRPC.Sender) dartIndexCmd(Range)(
+        string method,
         Range dart_indices,
         HiRPC hirpc = HiRPC(null),
         uint id = 0) @safe if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
+
     auto params = new HiBON;
     auto params_dart_indices = new HiBON;
     params_dart_indices = dart_indices.filter!(b => b.length !is 0);
     params[DART.Params.dart_indices] = params_dart_indices;
-    return hirpc.dartRead(params, id);
+    return hirpc.action(method, params, id);
 }
 
-const(HiRPC.Sender) dartCheckRead(Range)(
-        Range dart_indices,
-        HiRPC hirpc = HiRPC(null),
-        uint id = 0) @safe if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
-
-    auto params = new HiBON;
-    auto params_dart_indices = new HiBON;
-    params_dart_indices = dart_indices.filter!(b => b.length !is 0);
-    params[DART.Params.dart_indices] = params_dart_indices;
-    return hirpc.dartCheckRead(params, id);
-}
 
 /**
         * Constructs a HiRPC method for dartRim

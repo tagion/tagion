@@ -73,6 +73,15 @@ struct HiRPC {
             full_name = name;
         }
 
+        string entity() pure const nothrow  {
+            foreach_reverse(i, c; full_name) {
+                if(c == '.') {
+                    return full_name[0..i];
+                }
+            }
+            return string.init;
+        }
+
         mixin HiBONRecord;
     }
     /// HiRPC result from a method
@@ -618,6 +627,21 @@ unittest {
             assert(send_error.error.code == -1);
             assert(send_error.isSigned);
         }
+    }
+
+    {
+        HiRPC.Method method;
+        /* static assert(0, typeof(receiver)); */
+        method.name = "Sexy.Banjo.cow";
+
+        assert(method.full_name == "Sexy.Banjo.cow");
+        assert(method.name == "cow");
+        assert(method.entity == "Sexy.Banjo");
+
+        method.name = "spaceship";
+        assert(method.full_name == "spaceship");
+        assert(method.name == "spaceship");
+        assert(method.entity == "");
     }
 
     {

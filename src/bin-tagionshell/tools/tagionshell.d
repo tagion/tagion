@@ -30,7 +30,7 @@ import tagion.hibon.HiBONRecord : isRecord;
 import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex;
 import tagion.dart.Recorder;
 import tagion.dart.DART;
-import tagion.trt.TRT;
+import crud = tagion.dart.DARTcrud;
 import tagion.services.subscription;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;
@@ -52,11 +52,11 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
-alias TRTCache = LRUT!(DARTIndex, TRTArchive);
 alias IndexCache = LRUT!(DARTIndex, Document);
 
-shared TRTCache tcache;
+shared IndexCache tcache;
 shared IndexCache icache;
+
 shared static bool abort = false;
 
 enum ContentType {
@@ -205,17 +205,15 @@ void dart_worker(ShellOptions opt) {
             } else 
             if(topic.startsWith("trt_created")){
                 if(opt.cache_enabled){
+                    auto empty_archive = Document();
                     foreach (a; recorder[]) {
-                        if (a.filed.isRecord!TRTArchive) {
-                            auto archive = TRTArchive(a.filed);
-                            auto empty_archive = TRTArchive.init;
-                            if (archive.indices.empty) {
-                                tcache.update(DARTIndex(a.dart_index), empty_archive, true);
-                            } else {
-                                tcache.update(DARTIndex(a.dart_index), archive, true);
-                            }
-                            k++;
+                        if (a.type is Archive.Type.REMOVE) {
+                            tcache.update(DARTIndex(a.dart_index), empty_archive, true);
+                        } else {
+                            Document filed = a.filed;
+                            tcache.update(DARTIndex(a.dart_index), filed, true);
                         }
+                        k++;
                     }
                 }
             }
@@ -269,7 +267,7 @@ void ws_worker(ShellOptions options) {
 /*
 * query REQ/REP socket once and close it 
 */
-int query_socket_once ( string addr, uint timeout, uint delay, uint retries,  ubyte[] request, ref immutable(ubyte)[] reply  ){
+int query_socket_once(string addr, uint timeout, uint delay, uint retries,  ubyte[] request, out immutable(ubyte)[] reply) {
     int rc;
     size_t len = 0, doclen = 0, attempts = 0;
     const stime = timestamp();
@@ -324,8 +322,6 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     immutable(ubyte)[] docbuf;
     size_t doclen;
 
-    const stime = timestamp();
-
     const net = new StdHashNet();
     auto record_factory = RecordFactory(net);
     const hirpc = HiRPC(null);
@@ -335,9 +331,11 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         rep.msg = "invalid data type";
         return;
     }
-    save_rpc(opt, Document(req.rawdata.idup));
 
     Document doc = Document(cast(immutable(ubyte[])) req.rawdata);
+    save_rpc(opt, doc);
+
+    bool cache_enabled = opt.cache_enabled && req.path[$-1] == "nocache";
 
     immutable receiver = hirpc.receive(doc);
     if (!receiver.isMethod) {
@@ -348,60 +346,70 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
     ulong[string] stats = [ "requests": 0, "tofetch": 0 ];
     
-    string method = opt.process_hirpc ? receiver.method.full_name : "unprocessed";
+    string method = receiver.method.name;
+    /* string method = opt.cache_enabled ? receiver.method.name : "unprocessed"; */
 
     writeit("HIRPC: got method: " ~ method);
 
-    bool proxy = false;
     string sockaddr = opt.node_dart_addr;
     uint recvtimeout = opt.sock_recvtimeout;
     uint recvdelay = opt.sock_recvdelay;
     uint connectretry = opt.sock_connectretry;
 
     switch(method){
-        case "trt.dartRead":
-            auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
-            auto owners = doc_dart_indices.range!(DARTIndex[]);
+        case "dartRead":
+            if(!cache_enabled) {
+                goto default;
+            }
+
+            auto entity_cache = (receiver.method.entity == "trt")
+                ? tcache 
+                : icache;
+
+            auto indices = receiver
+                .method
+                .params[DART.Params.dart_indices]
+                .get!(Document)
+                .range!(DARTIndex[]);
+
             DARTIndex[] itofetch;
-            TRTArchive[] ifound;
-            TRTArchive ibuf;
+            Document[] ifound;
+            Document ibuf;
             stats["idx_found"] = 0;
             stats["idx_fetched"] = 0;
-            if(opt.cache_enabled){
-                foreach(o; owners){
-                     stats["requests"]++;
-                     if (tcache.get(o, ibuf)) {
-                        ifound ~= ibuf;
-                     }else{
-                        itofetch ~= o;   
-                        stats["tofetch"]++;
-                     }
-                }
-            } else {
-                itofetch ~= owners.array;
-            }    
+            // Find which indices are missing from the cache
+            foreach(idx; indices){
+                 stats["requests"]++;
+                 if (entity_cache.get(idx, ibuf)) {
+                    ifound ~= ibuf;
+                 }else{
+                    itofetch ~= idx;   
+                    stats["tofetch"]++;
+                 }
+            }
             stats["idx_found"] = ifound.length;
-            if(!itofetch.empty){
-                auto dreq = new HiBON;
-                auto dparam = new HiBON;
-                dreq = itofetch;
-                dparam[DART.Params.dart_indices] = dreq;
+
+            if(!itofetch.empty) {
+                const full_method = receiver.method.full_name;
+                const sender = crud.dartIndexCmd(full_method, itofetch);
+
+                // Fetch archives not in cache
                 rc = query_socket_once(
                     opt.node_dart_addr,
                     opt.sock_recvtimeout,
                     opt.sock_recvdelay,
                     opt.sock_connectretry,
-                    cast(ubyte[])(hirpc.action("trt." ~ DART.Queries.dartRead, dparam).toDoc.serialize),
+                    cast(ubyte[])sender.toDoc.serialize,
                     docbuf
                 );
-                if (rc != 0) {
-                    if(rc > 99 && rc < 600){
+                if (rc != nng_errno.NNG_OK) {
+                    if(rc > 99 && rc < 600) {
                         rep.status = cast(nng_http_status)rc;
-                        writeit("hirpc_handler: ", method, " query: ",rep.status);
-                    }else{
-                        writeit("hirpc_handler: ", method, " query: ", nng_errstr(rc));
+                        writeit("hirpc_handler: ", full_method, " query: ", rep.status);
+                    } else {
+                        writeit("hirpc_handler: ", full_method, " query: ", nng_errstr(rc));
                         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                    }    
+                    }
                     rep.msg = "socket error";
                     return;
                 }
@@ -420,162 +428,68 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                 const recorder_doc = repreceiver.message[Keywords.result].get!Document;
                 const reprecorder = record_factory.recorder(recorder_doc);
 
+                // Add missing archives to cache including non existent ones
+                Document empty_doc;
                 foreach(a; reprecorder[]) {
-                    if (a.filed.isRecord!TRTArchive) {
-                        auto archive = TRTArchive(a.filed);
-                        auto empty = TRTArchive.init;
-                        auto index = DARTIndex(a.dart_index);
-                        if(archive.indices.empty){
-                            if(opt.cache_enabled)
-                                tcache.update( index, empty, true);
-                        } else {
-                            if(opt.cache_enabled)
-                                tcache.update( index, archive, true);
-                            ifound ~= archive;
-                        }
-                        itofetch = itofetch.remove!(x => x == index);
-                    }
+                    Document filed = a.filed;
+                    entity_cache.update(a.dart_index, filed, true);
+                    ifound ~= filed;
+                    itofetch = itofetch.remove!(x => x == a.dart_index);
                 }
-                if(!itofetch.empty){
-                    foreach(idx; itofetch) {
-                        auto empty = TRTArchive.init;
-                        if(opt.cache_enabled)
-                            tcache.update( DARTIndex(idx), empty, true);
-                    }
-                }          
+                foreach(idx; itofetch) {
+                    entity_cache.update(idx, empty_doc, true);
+                }
             }
             stats["idx_fetched"] = ifound.length - stats["idx_found"];
+
             auto result_recorder = record_factory.recorder;
-            foreach (b; ifound.filter!(a => a !is TRTArchive.init).uniq) {
+            const empty_doc = Document();
+            foreach (b; ifound.filter!(a => a !is empty_doc).uniq) {
                 result_recorder.add(b);
             }
             Document response = hirpc.result(receiver, result_recorder.toDoc).toDoc;
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
             rep.type = ContentType.octet;
             rep.rawdata = cast(ubyte[])(response.serialize);
-            break;
-        case "dartRead":
-        case "dartCheckRead":
-            auto doc_dart_indices = receiver.method.params[DART.Params.dart_indices].get!(Document);
-            auto indices = doc_dart_indices.range!(DARTIndex[]);
-            DARTIndex[] tofetch;
-            Document[] found;
-            Document tbuf;
-            stats["arch_found"] = 0;
-            stats["arch_fetched"] = 0;
-            if(opt.cache_enabled){
-                foreach(id; indices){
-                    stats["requests"]++;                   
-                    if (icache.get(id, tbuf)) {
-                        found ~= tbuf;
-                    }else{
-                        tofetch ~= id;    
-                        stats["tofetch"]++;
-                    }
-                }
-            } else {
-                tofetch ~= indices.array;
-            }
-            stats["arch_found"] = found.length;
-            if(!tofetch.empty){
-                auto dreq = new HiBON;
-                auto dparam = new HiBON;
-                dreq = tofetch;
-                dparam[DART.Params.dart_indices] = dreq;
-                docbuf.length = 0;
-                rc = query_socket_once(
-                    opt.node_dart_addr,
-                    opt.sock_recvtimeout,
-                    opt.sock_recvdelay,
-                    opt.sock_connectretry,
-                    method == "dartRead" ?
-                        cast(ubyte[])(hirpc.action(DART.Queries.dartRead, dparam).toDoc.serialize) :
-                        cast(ubyte[])(hirpc.action(DART.Queries.dartCheckRead, dparam).toDoc.serialize),
-                    docbuf
-                );
-                if (rc != 0) {
-                    if(rc > 99 && rc < 600){
-                        rep.status = cast(nng_http_status)rc;
-                        writeit("dart_handler: query: ",rep.status);
-                    }else{
-                        writeit("dart_handler: query: ", nng_errstr(rc));
-                        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                    }    
-                    rep.msg = "socket error";
-                    return;
-                }
-                if (docbuf.empty) {
-                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                    rep.msg = "No response";
-                    return;
-                }
-                const repdoc = Document(docbuf);
-                immutable repreceiver = hirpc.receive(repdoc);
-                if (!repreceiver.isResponse){
-                    rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                    rep.msg = "Invalid response";
-                    return;
-                }
-                const recorder_doc = repreceiver.message[Keywords.result].get!Document;
-                const reprecorder = record_factory.recorder(recorder_doc);
-                foreach(a; reprecorder[]){
-                    Document filed = a.filed;
-                    if(opt.cache_enabled)
-                        icache.update(DARTIndex(a.dart_index), filed, true);
-                    found ~= filed;
-                    stats["arch_fetched"]++;
-                }
-            } 
-            auto result_recorder = record_factory.recorder;
-            foreach (b; found.uniq) {
-                result_recorder.add(b);
-            }
-            Document response = hirpc.result(receiver, result_recorder.toDoc).toDoc;
-            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.octet;
-            rep.rawdata = cast(ubyte[])(response.serialize);
-            break;
+            return;
         case "submit":
-            proxy = true;
             sockaddr = opt.node_contract_addr;
+            // Not Sure if this is needed. Submit should be a faster request, since it doesn't retrieve any data from the system.
             recvtimeout = opt.sock_recvtimeout * 6;
             break;
         default:
-            proxy = true;
             sockaddr = opt.node_dart_addr;
             break;
     } // switch method
     
-    if(proxy){
-        rc = query_socket_once(
-            sockaddr, // TODO: clarify if it is a common socket for all hirpc and maybe rename it
-            recvtimeout,
-            recvdelay,
-            connectretry,
-            req.rawdata,
-            docbuf
-        );
-        if (rc != 0) {
-            if(rc > 99 && rc < 600){
-                rep.status = cast(nng_http_status)rc;
-                writeit("hirpc_handler: query: ",rep.status);
-            }else{
-                writeit("hirpc_handler: query: ", nng_errstr(rc));
-                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            }    
-            rep.msg = "socket error";
-            return;
-        }
-        if (docbuf.empty) {
-            rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-            rep.msg = "No response";
-            return;
-        }
-        doclen = docbuf.length;
-        rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-        rep.type = ContentType.octet;
-        rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
+    rc = query_socket_once(
+        sockaddr, // TODO: clarify if it is a common socket for all hirpc and maybe rename it
+        recvtimeout,
+        recvdelay,
+        connectretry,
+        req.rawdata,
+        docbuf
+    );
+    if (rc != 0) {
+        if(rc > 99 && rc < 600){
+            rep.status = cast(nng_http_status)rc;
+            writeit("hirpc_handler: query: ",rep.status);
+        }else{
+            writeit("hirpc_handler: query: ", nng_errstr(rc));
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+        }    
+        rep.msg = "socket error";
+        return;
     }
+    if (docbuf.empty) {
+        rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        rep.msg = "No response";
+        return;
+    }
+    doclen = docbuf.length;
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    rep.type = ContentType.octet;
+    rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
 
     writeit("STATS: ", stats);
 }
@@ -587,7 +501,6 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
 const bullseye_handler = handler_helper!bullseye_handler_impl;
 void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
-    import crud = tagion.dart.DARTcrud;
     int attempts = 0;
 
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -941,7 +854,7 @@ int _main(string[] args) {
     }
 
     if(options.cache_enabled) {
-        tcache = new shared(TRTCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
+        tcache = new shared(IndexCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
                 .dartcache_ttl_msec);
         icache = new shared(IndexCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
                 .dartcache_ttl_msec);
@@ -978,7 +891,9 @@ appoint:
     ]);
     add_v1_route(app, options.sysinfo_endpoint, sysinfo_handler, [HTTPMethod.GET], "system info");
     add_v1_route(app, options.version_endpoint, &versioninfo_handler, [HTTPMethod.GET], "network version info");
-    add_v1_route(app, options.hirpc_endpoint, hirpc_handler, [HTTPMethod.POST], "Any HiRPC call");
+    add_v1_route(app, options.hirpc_endpoint, hirpc_handler, [HTTPMethod.POST], "Any HiRPC call", [
+        "/nocache": "Avoid using the cache on dartRead methods"
+    ]);
     add_v1_route(app, options.contract_endpoint, hirpc_handler, [HTTPMethod.POST], "contract hibon");
     add_v1_route(app, options.dart_endpoint, hirpc_handler, [HTTPMethod.POST], "dartCrud methods", [
         "/nocache": "Avoid using the cache on dartRead methods"

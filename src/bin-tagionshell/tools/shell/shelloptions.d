@@ -37,7 +37,6 @@ struct ShellOptions {
     double dartcache_ttl_msec = 30.0;
     string mode0_prefix = "Node_%d_";
     bool cache_enabled = false; // if to use caches
-    bool process_hirpc = true; // if false - pass all hirpc requests through as is
 
     bool save_rpcs_enable = true; // Whether or not the shell should save incoming contracts
     string save_rpcs_task = "rpcs_saver"; // Task name of the worker thread which saves the rpc contracts
