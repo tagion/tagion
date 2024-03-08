@@ -36,6 +36,7 @@ endif
 
 WASI_DRUNTIME_ROOT?=$(abspath $(REPOROOT)/tools/wasi-druntime)
 -include $(WASI_DRUNTIME_ROOT)/wasi_sdk_setup.mk
+CROSS_OS:=$(TRIPLET)
 WASI_SDK_ROOT=$(abspath $(WASI_DRUNTIME_ROOT)/$(WASI_SDK))
 WASI_BIN=$(abspath $(WASI_SDK_ROOT)/bin)
 WASMLD?=$(WASI_BIN)/wasm-ld
@@ -54,6 +55,15 @@ WASI_LIB+=$(WASI_SYSROOT)/librt.a
 WASI_LIB+=$(WASI_SYSROOT)/libutil.a
 WASI_LIB+=$(WASI_SYSROOT)/libcrypt.a
 WASI_LIB+=$(WASI_SYSROOT)/libdl.a
+
+export AR:=$(WASI_BIN)/llvm-ar
+export AS:=$(WASI_BIN)/llvm-as
+export CC:=$(WASI_BIN)/clang
+export CXX:=$(WASI_BIN)/clang++
+export LD:=$(WASI_BIN)/wasm-ld
+export RANLIB:=$(WASI_BIN)/ranlib
+export STRIP:=$(WASI_BIN)/strip
+export STRIP:=$(WASI_BIN)/objdump
 #WASI_LIB+=$(WASI_SYSROOT)/libresolv.a
 #WASI_LIB+=$(WASI_SYSROOT)/libpthread.a
 #WASI_LIB+=$(WASI_SYSROOT)/libwasi-emulated-process-clocks.a

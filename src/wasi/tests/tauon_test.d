@@ -1,7 +1,7 @@
 module tests.tauon_test;
 
 import tvm.wasi_main;
-import core.stdc.stdio;
+import stdc=core.stdc.stdio;
 import std.stdio;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
@@ -9,8 +9,10 @@ import tagion.hibon.HiBONtoText;
 import tagion.hibon.Document;
 import tagion.basic.Types : base64=encodeBase64, Buffer;
 import tagion.crypto.SecureNet;
+
 static this() {
     writefln(" should call this\n");
+    stdout.flush;
 }
 static ~this() {
     writefln(" should call ~this\n");

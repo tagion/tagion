@@ -130,14 +130,20 @@ extern (C) @nogc {
 
 extern (C) int _Dmain(char[][] args);
 extern (C) void _start() {
+    static bool started=false;
+    scope(exit) {
+        started=true;
+    }
     //rt_init;
     // scope(exit) {
     //  rt_term;
     // }
-    //    printf("Hello _start\n");
-    import rt.dmain2;
+        printf("Hello _start\n");
+    if (!started) {
+        import rt.dmain2;
 
-    //const run_ptr=&_d_run_main;
-    //    printf("%p\n", run_ptr);
-    _d_run_main(0, null, &_Dmain);
+        //const run_ptr=&_d_run_main;
+        //    printf("%p\n", run_ptr);
+        _d_run_main(0, null, &_Dmain);
+    }
 }
