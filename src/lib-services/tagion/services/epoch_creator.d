@@ -71,9 +71,11 @@ struct EpochCreatorService {
                 }
             }
             else {
-            Event.callbacks = new LogMonitorCallBacks();
-            /* Event.callbacks = new FileMonitorCallBacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes); */
+                Event.callbacks = new LogMonitorCallBacks();
             }
+        }
+        version(BDD) {
+            Event.callbacks = new FileMonitorCallBacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes);
         }
 
         GossipNet gossip_net;

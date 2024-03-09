@@ -12,16 +12,12 @@ BDD_D_FILES:=$(BDD_MD_FILES:.md=.d)
 
 bbdinit: DFLAGS+=$(BDDDFLAGS)
 
-bddtest: | bddtagion bddfiles bddinit bddrun
+bddtest: | bddfiles bddinit bddrun
 
-.PHONY: bddtest bddtagion
-
-bddtagion: tagion
-	$(PRECMD)
-	$(DBIN)/tagion -f
-
+.PHONY: bddtest
 
 bddfiles: collider $(DLOG)/.bddfiles
+.PHONY: bddfiles
 
 $(DLOG)/.bddfiles:  $(DLOG)/.way $(BDD_MD_FILES)
 	$(PRECMD)
@@ -98,7 +94,6 @@ env-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
-	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
 	${call log.env, BDD_D_FILES, $(BDD_D_FILES)}
 	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
