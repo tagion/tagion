@@ -6,7 +6,18 @@ import std.exception;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBONRecord;
 
+@recordType("node_amoun")
+struct NodeAmount {
+    long nodes;
+    mixin HiBONRecord!(q{
+            this(long nodes) @safe pure nothrow {
+                this.nodes = nodes;
+            }
+    });
+}
+
 /// EventView is used to store event has a
+@recordType("event_view")
 struct EventView {
     enum eventsName = "$events";
     uint id;
