@@ -35,7 +35,7 @@ import tagion.utils.pretend_safe_concurrency;
 enum feature = Feature(
             "EpochCreator service",
             [
-        "This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
+        "This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
 ]);
 
 alias FeatureContext = Tuple!(
@@ -53,13 +53,13 @@ class SendPayloadAndCreateEpoch {
         MonitorOptions monitor_opts;
     }
 
-    immutable(size_t) number_of_nodes;
+    uint number_of_nodes;
 
     Node[] nodes;
     ActorHandle[] handles;
     Document send_payload;
 
-    this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts, immutable size_t number_of_nodes) {
+    this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts, uint number_of_nodes) {
         import tagion.services.options;
 
         this.number_of_nodes = number_of_nodes;
@@ -129,7 +129,7 @@ class SendPayloadAndCreateEpoch {
         uint counter;
         do {
             const received = receiveOnlyTimeout!(LogInfo, const(Document))(27.seconds);
-            check(received[0].symbol_name.canFind("epoch_succesful"), "Event should have been epoch_succesful");
+            check(received[0].symbol_name.canFind("epoch_successful"), "Event should have been epoch_successful");
             const epoch = received[1];
 
             import tagion.hashgraph.Refinement : FinishedEpoch;
