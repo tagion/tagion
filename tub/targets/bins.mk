@@ -14,8 +14,6 @@ BINS+=$$(_$1)
 
 bins: $1
 
-$3: revision
-
 ifneq ($(and $(ONETOOL),$3),) 
 
 $1: $3
@@ -26,6 +24,7 @@ else
 
 $1: target-$1
 
+$$(DBIN)/$1: revision
 $$(DBIN)/$1: $2
 
 target-$1: $$(DBIN)/$1
