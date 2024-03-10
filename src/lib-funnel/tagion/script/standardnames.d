@@ -13,6 +13,7 @@ enum StdNames {
     name = "#name",
     previous = "$prev",
     nodekey = "#$node",
+    active = "#$active",
     signed = "$signed",
     archive_type = "$T",
     archive = "$a",

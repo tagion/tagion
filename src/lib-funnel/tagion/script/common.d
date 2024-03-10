@@ -1,4 +1,5 @@
 module tagion.script.common;
+
 @safe:
 
 // import std.algorithm;
@@ -223,6 +224,7 @@ struct Epoch {
     @label(StdNames.previous) Fingerprint previous;
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @optional @(filter.Initialized) Pubkey[] active; /// Sorted keys
+    // Would inactive be more appropiate or activated+deactivated
     @optional @(filter.Initialized) Pubkey[] deactive;
     @optional @(filter.Initialized) TagionGlobals globals;
 
@@ -279,6 +281,7 @@ struct TagionGlobals {
     });
 }
 
+pragma(msg, "shouldn't this be $@?");
 @recordType("@$Vote")
 struct ConsensusVoting {
     long epoch;
@@ -286,7 +289,7 @@ struct ConsensusVoting {
     @label(StdNames.signed) Signature signed_bullseye;
 
     mixin HiBONRecord!(q{
-        this(long epoch, Pubkey owner, Signature signed_bullseye) pure {
+        this(long epoch, Pubkey owner, Signature signed_bullseye) pure nothrow {
             this.owner = owner;
             this.signed_bullseye = signed_bullseye;
             this.epoch = epoch;
@@ -297,23 +300,38 @@ struct ConsensusVoting {
         }
     });
 
-    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) const {
+    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) const pure {
         return net.verify(bullseye, signed_bullseye, owner);
     }
 }
 
+pragma(msg, "Why is Locked not reserved?");
 @recordType("@Locked")
 struct LockedArchives {
     @label(StdNames.locked_epoch) long epoch_number;
     @label("outputs") const(DARTIndex)[] locked_outputs;
     mixin HiBONRecord!(q{
-        this(long epoch_number, const(DARTIndex)[] locked_outputs) {
+        this(long epoch_number, const(DARTIndex)[] locked_outputs) pure nothrow {
             this.epoch_number = epoch_number;
             this.locked_outputs = locked_outputs;
         }
-
-
     });
+}
+
+@recordType("$@Active") 
+struct Active {
+    @label(StdNames.active)string name = TagionDomain;
+    @label("nodes") const(Pubkey)[] nodes;
+    mixin HiBONRecord!(q{
+        this(const(Pubkey)[] nodes) pure nothrow {
+            this.nodes = nodes;
+        }
+    });
+
+    bool verify() const pure nothrow {
+        import std.algorithm : isSorted;
+        return nodes.isSorted;
+    }
 }
 
 version (WITHOUT_PAYMENT) {
