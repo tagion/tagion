@@ -36,9 +36,9 @@ import tagion.wasm.WasmException;
 
     @trusted void opCall(InterfaceModule iter) const {
         auto range = opSlice;
-        verbose("WASM '%s'", range.magic);
-        verbose("VERSION %d", range.vernum);
-        verbose("Index %d", range.index);
+        wasm_verbose("WASM '%s'", range.magic);
+        wasm_verbose("VERSION %d", range.vernum);
+        wasm_verbose("Index %d", range.index);
 
         while (!range.empty) {
             auto a = range.front;
@@ -47,15 +47,15 @@ import tagion.wasm.WasmException;
                     foreach (E; EnumMembers!(Section)) {
                 case E:
                         const sec = a.sec!E;
-                        verbose("Begin(%d)", range.index);
-                        verbose.down;
-                        verbose("Section(%s) size %d", a.section, a.data.length);
-                        verbose.hex(range.index, a.data);
+                        wasm_verbose("Begin(%d)", range.index);
+                        wasm_verbose.down;
+                        wasm_verbose("Section(%s) size %d", a.section, a.data.length);
+                        wasm_verbose.hex(range.index, a.data);
                         enum code = format(q{iter.%s(sec);}, secname(E));
                         mixin(code);
-                        verbose.println("%s", sec);
-                        verbose.up;
-                        verbose("End");
+                        wasm_verbose.println("%s", sec);
+                        wasm_verbose.up;
+                        wasm_verbose("End");
                         break;
                     }
                 }

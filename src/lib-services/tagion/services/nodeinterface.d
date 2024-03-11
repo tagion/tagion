@@ -105,6 +105,7 @@ struct NodeInterfaceService {
             if(send_()) {
                 return true;
             }
+            nng_sleep(100.msecs);
             conc.receiveTimeout(Duration.zero, &signal);
         }
         return false;

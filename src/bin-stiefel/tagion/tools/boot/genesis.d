@@ -70,14 +70,17 @@ Document[] createGenesis(const(NodeSettings[]) node_settings, Document testamony
     }
     GenesisEpoch genesis_epoch;
     genesis_epoch.epoch_number = 0;
-    genesis_epoch.nodes = node_settings
-        .map!((node_setting) => node_setting.owner.mut)
-        .array;
-    //.sort;
+    auto node_pubkeys = node_settings
+            .map!((node_setting) => node_setting.owner.mut)
+            .array;
+            /* .sort; */
+
+    genesis_epoch.nodes = node_pubkeys;
     genesis_epoch.time = cast(sdt_t) time;
     genesis_epoch.testamony = testamony;
     genesis_epoch.globals = globals;
 
+    Active active = Active(node_pubkeys);
     
     name_cards.each!((name_card) => verbose("%s", name_card.toPretty));
     node_records.each!((name_card) => verbose("%s", name_card.toPretty));
@@ -86,5 +89,6 @@ Document[] createGenesis(const(NodeSettings[]) node_settings, Document testamony
 
     result ~= node_records.map!(node_record => node_record.toDoc).array;
     result ~= genesis_epoch.toDoc;
+    result ~= active.toDoc;
     return result;
 }

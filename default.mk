@@ -12,7 +12,7 @@ RELEASE_DFLAGS+=$(DOPT)
 
 # USE_SYSTEM_LIBS=1 # Compile with system libraries (nng & secp256k1-zkp)
 
-# If youre using system libraries nng is most likely be compiled with mbedtls support
+# If you are using system libraries nng is most likely be compiled with mbedtls support
 # So mbedtls needs to be linked as well, so this need to be enabled
 # NNG_ENABLE_TLS=1
 
@@ -33,7 +33,7 @@ DFLAGS+=$(DVERSION)=NET_HACK
 # Sets the inputvalidators NNG socket to be blocking
 DFLAGS+=$(DVERSION)=BLOCKING
 
-# Fix a randomly occuring RangeError on hashgraph startup
+# Fix a randomly occurring RangeError on hashgraph startup
 # By filtering out empty events
 DFLAGS+=$(DVERSION)=EPOCH_FIX
 
@@ -46,7 +46,7 @@ DFLAGS+=$(DVERSION)=WITHOUT_PAYMENT
 DFLAGS+=$(DVERSION)=TRT_READ_REQ
 
 # Use compile time sorted, serialization of dart branches
-DFLAGS+=$(DVERSION)=DARTFile_BRANCHES_SERIALIZER
+#DFLAGS+=$(DVERSION)=DARTFile_BRANCHES_SERIALIZER
 
 # Dart optimization that inserts segments sorted.
 # Before it would sort the segments every time they were needed
@@ -72,14 +72,19 @@ DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 # DFLAGS+=$(DVERSION)=TAGIONSHELL_WEB_SOCKET
 
 # # This enables a redundant check in dart to see if there are overlaps between segments 
-# DFLAGS+=$(DVERSION)=DART_RECYCLER_INVARINAT
+# DFLAGS+=$(DVERSION)=DART_RECYCLER_INVARIANT
 
 # # This is used for the wallet wrapper to generate pseudo random history
 # # which is useful for app development
 # DFLAGS+=$(DVERSION)=WALLET_HISTORY_DUMMY
 
-# Use to check thar toHiBON.serialize is equal to .serialize
-#DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
+# # This fixes the names of some reserved archives which were not reserved
+# # $@Vote && @Locked
+# # This is a breaking change so it's not enabled by default
+# DFLAGS+=$(DVERSION)=RESERVED_ARCHIVES_FIX
+
+# Use to check that toHiBON.serialize is equal to .serialize
+DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)

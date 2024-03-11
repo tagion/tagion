@@ -23,6 +23,7 @@ import tagion.testbench.services.helper_functions;
 import tagion.testbench.tools.Environment;
 import tagion.tools.wallet.WalletInterface;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
+import tagion.wallet.request;
 import tagion.wallet.SecureWallet : SecureWallet;
 
 import core.thread;
@@ -100,7 +101,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         long current_epoch_number;
 
         while (current_epoch_number < epoch_number + 10) {
-            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+            sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
@@ -187,7 +188,7 @@ struct SpamWorker {
 
         long current_epoch_number;
         while (!thisActor.stop && current_epoch_number < epoch_number + 10) {
-            sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), hirpc);
+            sendHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);

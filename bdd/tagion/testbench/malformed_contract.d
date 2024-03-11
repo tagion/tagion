@@ -37,7 +37,7 @@ int _main(string[] args) {
     local_options.dart.folder_path = buildPath(module_path);
     local_options.trt.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
-    local_options.wave.prefix_format = "Malformed Contract Node_%s_";
+    local_options.wave.prefix_format = "Malformed_Contract_Node_%s_";
     local_options.subscription.address = contract_sock_addr("MALFORMED_SUBSCRIPTION");
 
     local_options.save(config_file);

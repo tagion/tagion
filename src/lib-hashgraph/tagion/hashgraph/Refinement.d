@@ -79,7 +79,7 @@ class StdRefinement : Refinement {
             const Round decided_round) {
         auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
 
-        log.event(epoch_created, "epoch_succesful", event_payload);
+        log.event(epoch_created, "epoch_successful", event_payload);
 
         if (task_names is TaskNames.init) {
             return;
@@ -208,7 +208,7 @@ class StdRefinement : Refinement {
         bool order_less(const Event a, const Event b, const(int) order_count) @safe {
             bool rare_less(Buffer a_print, Buffer b_print) {
                 // rare_order_compare_count++;
-                pragma(msg, "review(cbr): Concensus order changed");
+                pragma(msg, "review(cbr): Consensus order changed");
                 return a_print < b_print;
             }
 

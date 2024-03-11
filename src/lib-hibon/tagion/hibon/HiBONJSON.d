@@ -19,7 +19,7 @@ import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONtoText;
-
+import tagion.basic.Version;
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
 
@@ -39,7 +39,7 @@ import std.datetime.timezone;
 import core.lifetime;
 
 // We have this class override because we want to make sure that the ISOExt string includes the UTC offset.
-// Because otherwise the HiBON JSON format is not hash invarient when converting a timestamp between two timezones.
+// Because otherwise the HiBON JSON format is not hash invariant when converting a timestamp between two timezones.
 // However toISOExtString has a hardcoded check `_timezone is LocalTime` which removes the timezone extension
 private class DefinitelyNotLocalTime : TimeZone {
     LocalTime lt;
@@ -57,8 +57,10 @@ private class DefinitelyNotLocalTime : TimeZone {
 
 private immutable DefinitelyNotLocalTime def_not_local_time;
 
+static if (!ver.WASI) {
 shared static this() {
     def_not_local_time = new immutable(DefinitelyNotLocalTime);
+}
 }
 
 static unittest {
@@ -304,7 +306,7 @@ struct toJSONT(bool HASHSAFE) {
                     break TypeCase;
                 }
             default:
-                throw new HiBONException(format("Unsuported HiBON type %s", e.type));
+                throw new HiBONException(format("Unsupported HiBON type %s", e.type));
             }
         }
         return doc_element;
@@ -549,7 +551,7 @@ unittest {
     import std.typecons : Tuple;
     import tagion.hibon.HiBON : HiBON;
 
-    alias Tabel = Tuple!(
+    alias Table = Tuple!(
             float, Type.FLOAT32.stringof,
             double, Type.FLOAT64.stringof,
             bool, Type.BOOLEAN.stringof,
@@ -560,27 +562,27 @@ unittest {
             BigNumber, Type.BIGINT.stringof,
             sdt_t, Type.TIME.stringof);
 
-    Tabel test_tabel;
-    test_tabel.FLOAT32 = 1.23;
-    test_tabel.FLOAT64 = 1.23e200;
-    test_tabel.INT32 = -42;
-    test_tabel.INT64 = -0x0123_3456_789A_BCDF;
-    test_tabel.UINT32 = 42;
-    test_tabel.UINT64 = 0x0123_3456_789A_BCDF;
-    test_tabel.BOOLEAN = true;
-    test_tabel.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+    Table test_table;
+    test_table.FLOAT32 = 1.23;
+    test_table.FLOAT64 = 1.23e200;
+    test_table.INT32 = -42;
+    test_table.INT64 = -0x0123_3456_789A_BCDF;
+    test_table.UINT32 = 42;
+    test_table.UINT64 = 0x0123_3456_789A_BCDF;
+    test_table.BOOLEAN = true;
+    test_table.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
 
     pragma(msg, "fixme, hibonjson ISO time does not work with un whole timezones");
-    test_tabel.TIME = sdt_t(638402115766852971); // Whole TZ +01:00
-    /* test_tabel.TIME = sdt_t(1001); */ // Un whole TZ +00:53
+    test_table.TIME = sdt_t(638402115766852971); // Whole TZ +01:00
+    /* test_table.TIME = sdt_t(1001); */ // Un whole TZ +00:53
 
-    alias TabelArray = Tuple!(
+    alias TableArray = Tuple!(
             immutable(ubyte)[], Type.BINARY.stringof,
             string, Type.STRING.stringof,
     );
-    TabelArray test_tabel_array;
-    test_tabel_array.BINARY = [1, 2, 3];
-    test_tabel_array.STRING = "Text";
+    TableArray test_table_array;
+    test_table_array.BINARY = [1, 2, 3];
+    test_table_array.STRING = "Text";
 
     { // Empty Document
         const doc = Document();
@@ -590,14 +592,14 @@ unittest {
     { // Test sample 1 HiBON Objects
         auto hibon = new HiBON;
         {
-            foreach (i, t; test_tabel) {
-                enum name = test_tabel.fieldNames[i];
+            foreach (i, t; test_table) {
+                enum name = test_table.fieldNames[i];
                 hibon[name] = t;
             }
             auto sub_hibon = new HiBON;
             hibon[sub_hibon.stringof] = sub_hibon;
-            foreach (i, t; test_tabel_array) {
-                enum name = test_tabel_array.fieldNames[i];
+            foreach (i, t; test_table_array) {
+                enum name = test_table_array.fieldNames[i];
                 sub_hibon[name] = t;
             }
         }
@@ -618,12 +620,12 @@ unittest {
     { // Test sample 2 HiBON Array and Object
         auto hibon = new HiBON;
         {
-            foreach (i, t; test_tabel) {
+            foreach (i, t; test_table) {
                 hibon[i] = t;
             }
             auto sub_hibon = new HiBON;
             hibon[sub_hibon.stringof] = sub_hibon;
-            foreach (i, t; test_tabel_array) {
+            foreach (i, t; test_table_array) {
                 sub_hibon[i] = t;
             }
         }
@@ -649,14 +651,14 @@ unittest {
     { // Test sample 3 HiBON Array and Object
         auto hibon = new HiBON;
         {
-            foreach (i, t; test_tabel) {
+            foreach (i, t; test_table) {
                 hibon[i] = t;
             }
             auto sub_hibon = new HiBON;
             // Sub hibon is added to the last index of the hibon
             // Which result keep hibon as an array
             hibon[hibon.length] = sub_hibon;
-            foreach (i, t; test_tabel_array) {
+            foreach (i, t; test_table_array) {
                 sub_hibon[i] = t;
             }
         }

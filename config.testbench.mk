@@ -4,8 +4,6 @@ BDD_FLAGS+=-p
 BDD_FLAGS+=-i$(BDD)/bdd_import.di
 BDD_FLAGS+=${addprefix -I,$(BDD)}
 
-BDD_DFLAGS+=${addprefix -I,$(BDD)}
-
 export BDD_LOG=$(DLOG)/bdd/$(TEST_STAGE)/
 export BDD_RESULTS=$(abspath $(BDD_LOG)/results/)
 
@@ -23,8 +21,11 @@ testbench: DINC+=$(DSRC)/bin-stiefel/
 # Binary testbench 
 #
 testbench: bddfiles
+.PHONY: testbench
+
 target-testbench: nng secp256k1
 target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
+target-testbench: DFLAGS+=$(DVERSION)=BDD
 target-testbench: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 target-testbench: DFLAGS+=$(DEBUG_FLAGS)
 

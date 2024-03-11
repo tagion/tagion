@@ -30,6 +30,7 @@ import tagion.script.TagionCurrency;
 import tagion.tools.wallet.WalletInterface;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.wallet.SecureWallet : SecureWallet;
+import tagion.wallet.request;
 import tagion.basic.Types : Buffer;
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
@@ -101,7 +102,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
         int start = 0;
         while(start < max) {
             if (start == 20) {
-                sendSubmitHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+                sendHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
             }
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             log("received something");

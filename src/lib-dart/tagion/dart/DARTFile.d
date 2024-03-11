@@ -59,12 +59,12 @@ enum KEY_SPAN = ubyte.max + 1;
 /++
  + DART File system
  + Distribute Achive of Random Transction
- + This class handels the CRUD Database
+ + This class handles the CRUD Database
  +
  + The archive is hashed and store in structure similar to merkle trees datastruct.
  + Which here is called at sparsed merkle tree the sparse merkle is section in to rims
  + in  hierarchy which is where each rim contains a sub-tree called Branches. If a rim
- + Doens't branche out it contais a Leave which contains a Archive
+ + Doesn't branches out it contains a Leave which contains a Archive
  +
  +/
 class DARTFile {
@@ -387,7 +387,7 @@ class DARTFile {
          * Returns: HiBON of the branches
          */
         // version(none)
-        HiBON toHiBON(const bool exclude_indices=false) const
+        HiBON toHiBON(const bool exclude_indices = false) const pure
         in {
             assert(merkleroot.isinit, "Fingerprint must be calcuted before toHiBON is called");
         }
@@ -817,13 +817,13 @@ class DARTFile {
      * |      |key[0]|key[1]|key[2]|key[3]|key[4]|
      * |  rim |  00  |  01  |  02  |  03  |  04  | ....
      * |------|------|------|------|------|------|-----
-     * |      |  20  |  A3  |  33  |  B1  |  17  | -> arcive fingerprint=20_A3_33_B1_17....
-     * |      |  **  |  **  |  **  |  **  |  42  | -> arcive fingerprint=20_A3_33_B1_42....
-     * |      |  **  |  **  |  57  |  B1  |  17  | -> arcive fingerprint=20_A3_57_B1_17....
-     * |      |  **  |  **  |  **  |  **  |  42  | -> arcive fingerprint=20_A3_57_B1_42....
-     * |      |  **  |  **  |  C2  |      |      | -> arcive fingerprint=20_A3_C3....
-     * |      |  **  |  **  |  CA  |  48  |      | -> arcive fingerprint=20_A3_CA_48....
-     * |      |  **  |  **  |  **  |  68  |      | -> arcive fingerprint=20_A3_CA_48....
+     * |      |  20  |  A3  |  33  |  B1  |  17  | -> archive fingerprint=20_A3_33_B1_17....
+     * |      |  **  |  **  |  **  |  **  |  42  | -> archive fingerprint=20_A3_33_B1_42....
+     * |      |  **  |  **  |  57  |  B1  |  17  | -> archive fingerprint=20_A3_57_B1_17....
+     * |      |  **  |  **  |  **  |  **  |  42  | -> archive fingerprint=20_A3_57_B1_42....
+     * |      |  **  |  **  |  C2  |      |      | -> archive fingerprint=20_A3_C3....
+     * |      |  **  |  **  |  CA  |  48  |      | -> archive fingerprint=20_A3_CA_48....
+     * |      |  **  |  **  |  **  |  68  |      | -> archive fingerprint=20_A3_CA_48....
      * )
      * $(B Sector=[key[0],key[1]]) <br>
      * ### Note ** means the same value as above
@@ -831,7 +831,7 @@ class DARTFile {
      * represents the key index into the Branches incices
      * The modifyrecords contains the archives which is going to be added or deleted
      * The type of archive tells which actions are going to be performed by the modifier
-     * If the function executes succesfully then the DART is updated or else it does not affect the DART
+     * If the function executes successfully then the DART is updated or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
     Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords)
@@ -2498,7 +2498,7 @@ unittest {
     }
 
     {
-        pragma(msg, "fixme(cbr): This unittest does not see to be relavant to DARTFile maybe this should be moved");
+        pragma(msg, "fixme(cbr): This unittest does not see to be relevant to DARTFile maybe this should be moved");
         // At least it should not be dependent on tagion.script
         // Just make a d Document with $Y owner key
         filename_A.forceRemove;
