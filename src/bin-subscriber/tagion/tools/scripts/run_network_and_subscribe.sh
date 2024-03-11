@@ -95,6 +95,7 @@ pm2 ls
 # Start subscriber
 pm2 start $SCRIPT_DIR/subscriber.config.json
 
+sleep 2s
 
 # Make payments
 for ((i=1; i<=$PAYMENT_NUM; i++)); do
