@@ -281,6 +281,30 @@ struct TagionGlobals {
     });
 }
 
+version(RESERVED_ARCHIVES_FIX) {
+@recordType("$@Vote")
+struct ConsensusVoting {
+    long epoch;
+    @label(StdNames.owner) Pubkey owner;
+    @label(StdNames.signed) Signature signed_bullseye;
+
+    mixin HiBONRecord!(q{
+        this(long epoch, Pubkey owner, Signature signed_bullseye) pure nothrow {
+            this.owner = owner;
+            this.signed_bullseye = signed_bullseye;
+            this.epoch = epoch;
+        }
+        this(const(Document) doc) @safe immutable {
+            immutable _this = ConsensusVoting(doc);
+            this.tupleof = _this.tupleof;
+        }
+    });
+
+    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) const pure {
+        return net.verify(bullseye, signed_bullseye, owner);
+    }
+}
+} else {
 pragma(msg, "shouldn't this be $@?");
 @recordType("@$Vote")
 struct ConsensusVoting {
@@ -304,7 +328,21 @@ struct ConsensusVoting {
         return net.verify(bullseye, signed_bullseye, owner);
     }
 }
+}
 
+version(RESERVED_ARCHIVES_FIX) {
+@recordType("$@Locked")
+struct LockedArchives {
+    @label(StdNames.locked_epoch) long epoch_number;
+    @label("outputs") const(DARTIndex)[] locked_outputs;
+    mixin HiBONRecord!(q{
+        this(long epoch_number, const(DARTIndex)[] locked_outputs) pure nothrow {
+            this.epoch_number = epoch_number;
+            this.locked_outputs = locked_outputs;
+        }
+    });
+}
+} else {
 pragma(msg, "Why is Locked not reserved?");
 @recordType("@Locked")
 struct LockedArchives {
@@ -316,6 +354,7 @@ struct LockedArchives {
             this.locked_outputs = locked_outputs;
         }
     });
+}
 }
 
 @recordType("$@Active") 

@@ -78,6 +78,11 @@ DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 # # which is useful for app development
 # DFLAGS+=$(DVERSION)=WALLET_HISTORY_DUMMY
 
+# # This fixes the names of some reserved archives which were not reserved
+# # $@Vote && @Locked
+# # This is a breaking change so it's not enabled by default
+# DFLAGS+=$(DVERSION)=RESERVED_ARCHIVES_FIX
+
 # Use to check that toHiBON.serialize is equal to .serialize
 DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
 # Extra DFLAGS for the testbench 
