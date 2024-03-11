@@ -6,7 +6,7 @@ import std.exception;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBONRecord;
 
-@recordType("node_amoun")
+@recordType("node_amount")
 struct NodeAmount {
     long nodes;
     mixin HiBONRecord!(q{
