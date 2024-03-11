@@ -745,6 +745,19 @@ enum nng_http_status {
     NNG_HTTP_STATUS_NETWORK_AUTH_REQUIRED    = 511,
 };
 
+enum nng_mime_type: string {
+    TEXT         =  "text/plain",
+    HTML         =  "text/html",
+    CSV          =  "text/csv",
+    JSON         =  "application/json",
+    XML          =  "application/xml",
+    HIBON        =  "application/hibon",
+    JPEG         =  "image/jpeg",
+    GIF          =  "image/gif",
+    PNG          =  "image/png",
+    BINARY       =  "application/ocett-stream"
+};
+
 
 // http structures
 struct nng_http_server {};
