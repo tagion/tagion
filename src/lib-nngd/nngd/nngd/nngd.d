@@ -1118,7 +1118,7 @@ struct NNGURL {
         }
 
         rawurl = cast(immutable)fromStringz(_nng_url.u_rawurl);
-        scheme = cast(immutable)fromStringz(_nng_url.u_scheme).idup;
+        scheme = cast(immutable)fromStringz(_nng_url.u_scheme);
         userinfo = cast(immutable)fromStringz(_nng_url.u_userinfo);
         host = cast(immutable)fromStringz(_nng_url.u_host);
         hostname = cast(immutable)fromStringz(_nng_url.u_hostname);
