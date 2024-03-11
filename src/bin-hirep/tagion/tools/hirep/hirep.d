@@ -38,6 +38,8 @@ int _main(string[] args) {
     string record_type;
     string[] types;
     string list;
+    bool filter_submit;
+
     try {
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
@@ -50,7 +52,25 @@ int _main(string[] args) {
                 "t|type", "HiBON data types", &types,
                 "not", "Filter out match", &not_flag,
                 "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
+                "submit", "Filter out submit contract", &filter_submit,
         );
+
+        if(filter_submit) {
+            import tagion.communication.HiRPC;
+            import tagion.hibon.HiBONRecord;
+            import tagion.hibon.HiBONFile;
+
+            HiBONRange hibon_range = HiBONRange(stdin);
+            foreach(hibon; hibon_range) {
+                if(hibon.isRecord!(HiRPC.Receiver)) {
+                    const sender = HiRPC.Receiver(hibon);
+                    if (sender.isMethod && sender.method.name == "submit") {
+                        stdout.rawWrite(hibon.serialize);
+                    }
+                }
+            }
+            return 0;
+        }
 
         if (version_switch) {
             revision_text.writeln;
