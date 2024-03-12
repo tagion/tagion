@@ -43,15 +43,46 @@ HiBON bitarray2bool(const(BitMask) bits) @trusted {
 import core.thread;
 import std.concurrency;
 import std.socket;
-import std.stdio : writefln, writeln;
+import std.stdio;
 
 import tagion.logger;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hibon.HiBONRecord;
 import tagion.hashgraphview.EventView;
 
-class LogMonitorCallBacks : EventMonitorCallbacks {
+abstract class BaseMonitorCallbacks : EventMonitorCallbacks {
+    nothrow :
 
+    void _write_eventview(string event_name, const(Event) e);
+    void _write_eventviews(string event_name, const(Event)[] e);
+
+    void connect(const(Event) e) {
+        _write_eventview(__FUNCTION__, e);
+    }
+    void witness(const(Event) e) {
+        _write_eventview(__FUNCTION__, e);
+    }
+    void round(const(Event) e) {
+        _write_eventview(__FUNCTION__, e);
+    }
+    void round_decided(const(Round.Rounder) rounder) {
+        log("%s not implemented", __FUNCTION__);
+    }
+    void round_received(const(Event) e) {
+        _write_eventview(__FUNCTION__, e);
+    }
+    void famous(const(Event) e) {
+        _write_eventview(__FUNCTION__, e);
+    }
+    void remove(const(Event) e) {
+        _write_eventview(__FUNCTION__, e);
+    }
+    void epoch(const(Event)[] e) {
+        _write_eventviews(__FUNCTION__, e);
+    }
+}
+
+class LogMonitorCallBacks : BaseMonitorCallbacks {
     Topic topic;
 
     this(string event_topic_name = "monitor") {
@@ -71,30 +102,41 @@ class LogMonitorCallBacks : EventMonitorCallbacks {
 
     nothrow :
 
-    void connect(const(Event) e) {
-        log.event(topic, __FUNCTION__, EventView(e));
+    override void _write_eventview(string event_name, const(Event) e) {
+        log.event(topic, event_name, EventView(e));
     }
-    void witness(const(Event) e) {
-        log.event(topic, __FUNCTION__, EventView(e));
+
+    override void _write_eventviews(string event_name, const(Event)[] es) {
+        log.event(topic, event_name, EventViews(es));
     }
-    void round(const(Event) e) {
-        log.event(topic, __FUNCTION__, EventView(e));
+}
+
+
+class FileMonitorCallBacks : BaseMonitorCallbacks {
+    File out_file;
+    this(string file_name, uint nodes) {
+        out_file = File(file_name, "w");
+        out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
     }
-    void round_decided(const(Round.Rounder) rounder) {
-        log(__FUNCTION__);
+
+    nothrow:
+
+    override void _write_eventview(string _, const(Event) e) {
+        try {
+            out_file.rawWrite(EventView(e).toDoc.serialize);
+        } catch(Exception err) {
+            log.error("Could not write monitor event, %s", err.message);
+        }
     }
-    void round_received(const(Event) e) {
-        log.event(topic, __FUNCTION__, EventView(e));
-    }
-    void famous(const(Event) e) {
-        log.event(topic, __FUNCTION__, EventView(e));
-    }
-    void remove(const(Event) e) {
-        log.event(topic, __FUNCTION__, EventView(e));
-    }
-    void epoch(const(Event)[] e) {
-        const packages = EventViews(e);
-        log.event(topic, __FUNCTION__, packages);
+    override void _write_eventviews(string _, const(Event)[] es) {
+        try {
+            foreach(e; es) {
+                out_file.rawWrite(EventView(e).toDoc.serialize);
+            }
+        }
+        catch(Exception err) {
+            log.error("Could not write monitor event, %s", err.message);
+        }
     }
 }
 
@@ -324,7 +366,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
         }
 
         void remove(const(Event) e) {
-            // set the daugther to be grounded
+            // set the daughter to be grounded
             set_grounded(e.daughter);
 
             auto hibon = createHiBON(e);

@@ -1094,6 +1094,65 @@ private:
     } // nothrow
 }   // struct Socket
 
+struct NNGURL {
+    string rawurl;
+    string scheme;
+    string userinfo;
+    string host;
+    string hostname;
+    string port;
+    string path;
+    string query;
+    string fragment;
+    string requri;
+
+    @disable this(this);
+
+    protected nng_url* _nng_url;
+    this(const(char)[] url_str) @trusted {
+        _nng_url = new nng_url;
+
+        int rc = nng_url_parse(&_nng_url, toStringz(url_str));
+        if(rc != nng_errno.NNG_OK) {
+            throw new Exception(nng_errstr(rc));
+        }
+
+        rawurl = cast(immutable)fromStringz(_nng_url.u_rawurl);
+        scheme = cast(immutable)fromStringz(_nng_url.u_scheme);
+        userinfo = cast(immutable)fromStringz(_nng_url.u_userinfo);
+        host = cast(immutable)fromStringz(_nng_url.u_host);
+        hostname = cast(immutable)fromStringz(_nng_url.u_hostname);
+        port = cast(immutable)fromStringz(_nng_url.u_port);
+        path = cast(immutable)fromStringz(_nng_url.u_path);
+        query = cast(immutable)fromStringz(_nng_url.u_query);
+        fragment = cast(immutable)fromStringz(_nng_url.u_fragment);
+        requri = cast(immutable)fromStringz(_nng_url.u_requri);
+    }
+
+    ~this() {
+        if(_nng_url !is null) {
+            nng_url_free(_nng_url);
+        }
+    }
+} // struct NNGURL
+
+unittest {
+    import std.exception;
+    string f1(ref NNGURL url) {
+    return url.hostname;
+    }
+    string f2(NNGURL url) {
+    return url.hostname;
+    }
+    auto nn = NNGURL("tcp://0.0.0.0:473");
+    assert(nn.scheme == "tcp");
+    assert(nn.hostname == "0.0.0.0", nn.hostname);
+    assert(nn.port == "473");
+    assertThrown(NNGURL("blbalablbadurl"));
+
+    f1(nn);
+    static assert(!__traits(compiles, f2(nn)));
+}
 
 alias nng_pool_callback = void function ( NNGMessage*, void* );
 
@@ -2109,16 +2168,3 @@ struct WebClient {
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -7,14 +7,12 @@
     dfmt-pull.url = "github:jtbx/nixpkgs/d-dfmt";
   };
 
-  outputs = { self, nixpkgs, pre-commit-hooks, dfmt-pull}:
+  outputs = { self, nixpkgs, pre-commit-hooks, dfmt-pull }:
     let
       gitRev = self.rev or "dirty";
 
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-
-      cfg = pkgs.lib.config.services.tagion;
 
       # Disable mbedtls override is broken upstream see if merged
       # https://github.com/NixOS/nixpkgs/pull/285518
@@ -127,11 +125,12 @@
         hooks = {
           shellcheck = {
             enable = true;
+            types_or = [ "sh" ];
           };
-          hunspell = {
-            enable = true;
-          };
-          dlang-format = { # does not work :-( we have to define a proper commit
+          typos.enable = true;
+          actionlint.enable = true;
+          dlang-format = {
+            # does not work :-( we have to define a proper commit
             enable = true;
             name = "format d code";
             entry = "make format";
@@ -238,18 +237,59 @@
           };
         };
 
-      nixosModules.default = with pkgs.lib; {
-        options = {
-          services.tagion = {
-            enable = mkEnableOption (lib.mdDoc "tagion");
+      nixosModules.default = with pkgs.lib; { config, ... }:
+        let cfg = config.tagion.services;
+        in {
+          options.tagion.services = {
+            tagionwave = {
+              enable = mkEnableOption "Enable the tagionwave service";
+            };
+
+            tagionshell = {
+              enable = mkEnableOption "Enable the tagionshell service";
+            };
+          };
+
+          config = {
+            systemd.services."tagionwave" = mkIf cfg.tagionwave.enable {
+              wantedBy = [ "multi-user.target" ];
+              serviceConfig =
+                let pkg = self.packages.${pkgs.system}.default;
+                in {
+                  Restart = "on-failure";
+                  ExecStart = "${pkg}/bin/tagion wave";
+                };
+            };
+            systemd.services."tagionshell" = mkIf cfg.tagionshell.enable {
+              wantedBy = [ "multi-user.target" ];
+              serviceConfig =
+                let pkg = self.packages.${pkgs.system}.default;
+                in {
+                  Restart = "on-failure";
+                  ExecStart = "${pkg}/bin/tagion shell";
+                };
+            };
           };
         };
 
-        config = mkIf cfg.enable {
-          environment.systemPackages = [ self.packages.x86_64-linux.default ];
-          systemd.packages = [ self.packages.x86_64-linux.default ];
+      nixosConfigurations = {
+        # System configuration for a test network running in mode0
+        tgn-m0-test = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          # specialArgs = attrs; # Pass flake outputs to our config
+          modules = [
+            self.nixosModules.default
+            ({ pkgs, ... }: {
+              # environment.systemPackages = with pkgs; [ packages.x86_64-linux.default ];
+              # Only allow this to boot as a container
+              boot.isContainer = true;
+              networking.hostName = "tgn-m0-test";
+              tagion.services.tagionwave.enable = true;
+              tagion.services.tagionshell.enable = true;
+              system.stateVersion = "24.05";
+            })
+          ];
         };
-
       };
     };
 }

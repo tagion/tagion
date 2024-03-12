@@ -23,6 +23,7 @@ import tagion.script.common;
 import tagion.communication.HiRPC;
 import tagion.testbench.services.sendcontract;
 import tagion.wallet.SecureWallet;
+import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
@@ -228,9 +229,9 @@ class SendAContractWithOneOutputsThroughTheShell {
         wallet1_hirpc = HiRPC(wallet1.net);
         wallet2_hirpc = HiRPC(wallet2.net);
         shell_addr = shell_opts.shell_uri ~ shell_opts.shell_api_prefix;
-        bullseye_address = shell_addr ~ shell_opts.bullseye_endpoint ~ ".hibon";
-        dart_address = shell_addr ~ shell_opts.dart_endpoint ~ "/nocache";
-        contract_address = shell_addr ~ shell_opts.contract_endpoint;
+        bullseye_address = shell_addr ~ shell_opts.bullseye_endpoint ~ "/hibon";
+        dart_address = shell_addr ~ shell_opts.hirpc_endpoint;
+        contract_address = shell_addr ~ shell_opts.hirpc_endpoint;
     }
 
     import nngd;
@@ -268,7 +269,7 @@ class SendAContractWithOneOutputsThroughTheShell {
 
     @When("i send the contract")
     Document contract() @trusted {
-        auto response = sendShellHiRPC(contract_address, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        auto response = sendHiRPC(contract_address, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         check(!response.isError, format("Error when sending shell submit %s", response.toPretty));
         return result_ok;
     }
@@ -284,14 +285,14 @@ class SendAContractWithOneOutputsThroughTheShell {
             bool both_updated;
             if (wallet1_amount != 0.TGN) {
                 writefln("wallet1 sending update to dartaddress %s", dart_address);
-                wallet1_amount = getWalletTRTUpdateAmount(wallet1, dart_address, wallet1_hirpc, true);
+                wallet1_amount = getWalletTRTUpdateAmount(wallet1, dart_address, wallet1_hirpc);
             }
             else {
                 both_updated = true;
             }
             if (wallet2_amount != wallet2_expected) {
                 writefln("wallet2 sending update to dartaddress %s", dart_address);
-                wallet2_amount = getWalletTRTUpdateAmount(wallet2, dart_address, wallet2_hirpc, true);
+                wallet2_amount = getWalletTRTUpdateAmount(wallet2, dart_address, wallet2_hirpc);
             }
             else {
                 if (both_updated) {

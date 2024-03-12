@@ -342,12 +342,11 @@ jobs:
 
       - name: Install android tools
         run: |
-          make -f tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
+          make PLATFORM=${{ matrix.arch }}-linux-android install-android-toolchain
 
       - name: Build
         run: |
-          export PATH="tools/ldc2-1.35.0-linux-x86_64/bin:$PATH"
-          make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
+          make DC=tools/ldc2-1.35.0-linux-x86_64/bin/ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
           file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
       - uses: actions/upload-artifact@v4

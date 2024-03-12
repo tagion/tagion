@@ -6,7 +6,8 @@ module tagion.services.DARTInterface;
 import core.time;
 import core.thread;
 import nngd;
-import std.algorithm : canFind, startsWith;
+import std.array;
+import std.algorithm : map, canFind, startsWith;
 import std.stdio;
 import std.format;
 import tagion.actor;
@@ -52,15 +53,18 @@ struct DartWorkerContext {
 }
 
 /// Accepted methods for the DART.
-static immutable accepted_dart_methods = [
+static immutable(string[]) accepted_dart_methods = [
     DART.Queries.dartRead, 
     DART.Queries.dartRim, 
     DART.Queries.dartBullseye, 
     DART.Queries.dartCheckRead, 
-    "search"
 ];
 
-
+pragma(msg, "deprecated search method should be removed from trt");
+/// All methods allowed for the TRT
+static immutable(string[]) accepted_trt_methods = accepted_dart_methods.map!(m => "trt." ~ m).array ~ "search";
+/// All allowed methods for the DARTInterface
+static immutable all_dartinterface_methods = accepted_dart_methods ~ accepted_trt_methods;
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
@@ -122,12 +126,12 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     const empty_hirpc = HiRPC(null);
 
     immutable receiver = empty_hirpc.receive(doc);
-    if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
-        send_error(ServiceCode.method);
+    if (!(receiver.isMethod && all_dartinterface_methods.canFind(receiver.method.full_name))) {
+        send_error(ServiceCode.method, format("%s", all_dartinterface_methods));
         return;
     }
 
-    const is_trt_req = cnt.trt_enable && (receiver.method.full_name.startsWith("trt.") || receiver.method.name =="search");
+    const is_trt_req = cnt.trt_enable && accepted_trt_methods.canFind(receiver.method.full_name);
     auto tid = is_trt_req ? locate(cnt.trt_task_name) : locate(cnt.dart_task_name);
 
     if (tid is Tid.init) {

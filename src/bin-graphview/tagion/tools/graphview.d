@@ -1,6 +1,7 @@
 module tagion.tools.graphview;
-import std.algorithm : min;
+import std.algorithm : min, map;
 import std.array : join;
+import std.range;
 import std.conv : to;
 import std.file : exists, fwrite = write;
 import std.format;
@@ -11,22 +12,21 @@ import std.path : extension;
 import std.traits : EnumMembers;
 import std.traits : isIntegral;
 import tagion.basic.basic : EnumText;
-import tagion.hashgraphview.EventView : EventView;
+import tagion.hashgraphview.EventView;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONValid : error_callback;
-import tagion.hibon.HiBONFile : fread;
+import tagion.hibon.HiBONFile : fread, HiBONRange;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
 
-protected enum _params = [
+protected static immutable _params = [
     "events",
     "size",
 ];
 
 mixin(EnumText!("Params", _params));
-
-//
 
 enum pastel19 = [
     "#fbb4ae",
@@ -45,10 +45,6 @@ string color(T)(string[] colors, T index) if (isIntegral!T) {
 
     const i = abs(index) % colors.length;
     return colors[i];
-}
-
-enum fileextensions {
-    HIBON = ".hibon" //    JSON  = ".json"
 }
 
 enum dot_fileextension {
@@ -71,33 +67,20 @@ enum dot_fileextension {
     WBMP = "wbmp", ///Wireless BitMap (WBMP) format.
 }
 
-// dot -Tsvg test.dot -o test1.svg
-
-struct Dot {
+struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
     import std.format;
 
-    static string INDENT;
-    static this() {
-        INDENT = "  ";
-    }
-    // OutputBuf obuf;
-    string name;
-    const size_t node_size;
-    //    string indet;
-    EventView[uint] events;
-    // this(string name, string indent="  ") {
-    //     this.obuf = obuf;
-    //     this.name = name;
-    //     this.indent=indent;
-    // }
+    enum INDENT = "  ";
 
-    this(const Document doc, string name) {
-        node_size = doc[Params.size].get!ulong;
-        const events_doc = doc[Params.events].get!Document;
-        foreach (e; events_doc[]) {
-            auto event = EventView(e.get!Document);
-            events[event.id] = event;
-        }
+    string name;
+    Range doc_range;
+    // default node_size 
+    // if the eventview range does not begin with a NodeAmount record 
+    size_t node_size = 5;
+    EventView[uint] events;
+
+    this(Range doc_range, string name) {
+        this.doc_range = doc_range;
         this.name = name;
     }
 
@@ -136,24 +119,7 @@ struct Dot {
                 options ~= format(`color="%s"`, "red");
                 options ~= format(`fontcolor="%s"`, "blue");
                 options ~= format(`shape="%s"`, "plane");
-
-                // const strongly_seening_mask = mask2text(
-                //     // mother_event.strongly_seeing_mask);
-                // if (strongly_seening_mask) {
-                //     texts ~= format("%s:s", strongly_seening_mask);
-                // }
-                // const round_seen_mask = mask2text(mother_event.round_seen_mask);
-                // if (round_seen_mask) {
-                // texts ~= format("%s:r", round_seen_mask); //mask2text(mother_event.round_seen_mask));
-                // }
             }
-            // texts ~= format("%s:w", witness_mask_text);
-
-            //     //       texts~=mask2text(mother_event.strongly_seeing_mask);
-            // }
-            // else {
-            //     texts~=witness_mask_text;
-            // }
             local_edge(texts, e.mother, options);
         }
     }
@@ -190,6 +156,22 @@ struct Dot {
     }
 
     void draw(ref OutBuffer obuf, const(string) indent = null) {
+        const nodes_doc = doc_range.front;
+        if (nodes_doc.isRecord!NodeAmount) {
+            node_size = NodeAmount(nodes_doc).nodes;
+            doc_range.popFront;
+        }
+
+        foreach (e; doc_range) {
+            if(e.isRecord!EventView) {
+                auto event = EventView(e);
+                events[event.id] = event;
+            }
+            else {
+                throw new Exception("Unknown element in graphview doc_range %s", e.toPretty);
+            }
+        }
+
         import stdio = std.stdio;
 
         obuf.writefln("%sdigraph %s {", indent, name);
@@ -211,7 +193,7 @@ struct Dot {
 
                 }
             }
-            const sub_indent = indent ~ INDENT;
+
             foreach (e; events) {
                 OutBuffer subgraph_header(ref const EventView e) {
                     auto sbuf = new OutBuffer;
@@ -230,23 +212,6 @@ struct Dot {
         subgraphs(indent ~ INDENT);
         foreach (e; events) {
             node(obuf, indent ~ INDENT, e);
-            // if (e.father !is e.father.init) {
-            //     //obuf.writefln("%s%s -> %s;", indent~INDENT, e.id, e.father);
-            //     edge(obuf, indent~INDENT, true, e);
-
-            // }
-            // obuf.writefln(`%s%s [pos="%s, %s!"];`, indent~INDENT, e.id, e.node_id*2, e.order);
-            // if (e.witness) {
-            //     obuf.writefln(`%s%s [fillcolor="%s"];`, indent~INDENT, e.id, "red");
-            // }
-            // if (e.father_less) {
-            //     obuf.writefln(`%s%s [shape="%s"];`, indent~INDENT, e.id, "egg");
-            // }
-            // if (e.witness_mask.length) {
-            //     BitArray witness_mask;
-            //     obuf.writefln(`%s%s [fillcolor="%s"];`, indent~INDENT, e.id, "red");
-
-            // }
         }
     }
 }
@@ -265,19 +230,11 @@ int _main(string[] args) {
     string inputfilename;
     string outputfilename;
 
-    auto logo = import("logo.txt");
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
-            "inputfile|i", "Sets the HiBON input file name", &inputfilename, // "outputfile|o", "Sets the output file name",  &outputfilename,
-            // "bin|b", "Use HiBON or else use JSON", &binary,
-            // "value|V", format("Bill value : default: %d", value), &value,
-            // "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
-            //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-
-            
-
+            "o|output", "output graphviz file", &outputfilename,
     );
 
     if (version_switch) {
@@ -294,13 +251,10 @@ int _main(string[] args) {
             "Example:",
             "graphview Alice.hibon | neato -Tsvg -o outputfile.svg",
             "Usage:",
-            // format("%s [<option>...] <in-file> <out-file>", program),
             format("%s [<option>...] <in-file>", program),
             "",
             "Where:",
             "<in-file>           Is an input file in .hibon format",
-            // "<out-file>          Is an output file in .json or .hibon format",
-            // "                    stdout is used of the output is not specifed the",
             "",
 
             "<option>:",
@@ -312,30 +266,32 @@ int _main(string[] args) {
     if (args.length > 1) {
         inputfilename = args[1];
     }
+
+    File inputfile;
+    if(inputfilename.empty) {
+        inputfile = stdin;
+        verbose("Reading graph data from stdin");
+    }
     else {
-        stderr.writefln("Input file missing");
-        return 1;
+        inputfile = File(inputfilename, "r");
     }
 
-    const input_extension = inputfilename.extension;
-    switch (input_extension) {
-    case fileextensions.HIBON:
-        Document doc = fread(inputfilename);
-        const error_code = doc.valid(toDelegate(&error_callback));
-        if (error_code !is Document.Element.ErrorCode.NONE) {
-            writeln("Document format error");
-            writefln("For the file %s", inputfilename);
-            return 1;
-        }
-        auto dot = Dot(doc, "G");
-        auto obuf = new OutBuffer;
-        dot.draw(obuf);
-        writefln("%s", obuf);
-        break;
-    default:
-        stderr.writefln("File extensions %s not valid (only %s)",
-                input_extension, [EnumMembers!fileextensions]);
+    HiBONRange hibon_range = HiBONRange(inputfile);
+
+    auto dot = Dot!HiBONRange(hibon_range, "G");
+    auto obuf = new OutBuffer;
+
+    dot.draw(obuf);
+
+    File outfile;
+    if(outputfilename.empty) {
+        outfile = stdout();
     }
+    else {
+        outfile = File(outputfilename, "w");
+    }
+
+    outfile.writefln("%s", obuf);
 
     return 0;
 }

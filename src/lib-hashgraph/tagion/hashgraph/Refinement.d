@@ -33,7 +33,7 @@ struct FinishedEpoch {
     @label(StdNames.time) sdt_t time;
     @label("epoch") long epoch;
     mixin HiBONRecord!(q{
-        this(const(Event)[] events, sdt_t time, long epoch) pure {
+        this(const(Event)[] events, sdt_t time, long epoch) pure nothrow {
             this.events = events
                 .map!((e) => *(e.event_package))
                 .array;
@@ -56,17 +56,18 @@ class StdRefinement : Refinement {
     }
 
     void setOwner(HashGraph hashgraph)
+    pure nothrow
     in (this.hashgraph is null)
     do {
         this.hashgraph = hashgraph;
     }
 
-    void setTasknames(TaskNames task_names) {
+    void setTasknames(TaskNames task_names) pure nothrow {
         this.task_names = task_names;
     }
 
     Tid collector_service;
-    void payload(immutable(EventPackage*) epack) {
+    void payload(immutable(EventPackage*) epack) pure const nothrow {
         if (!epack.event_body.payload.empty) {
             // send to collector payload.
 
@@ -76,10 +77,10 @@ class StdRefinement : Refinement {
     void finishedEpoch(
             const(Event[]) events,
             const sdt_t epoch_time,
-            const Round decided_round) {
+            const Round decided_round) const {
         auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
 
-        log.event(epoch_created, "epoch_succesful", event_payload);
+        log.event(epoch_created, "epoch_successful", event_payload);
 
         if (task_names is TaskNames.init) {
             return;
@@ -116,21 +117,21 @@ class StdRefinement : Refinement {
             BigInt order; //sum of received orders
             sdt_t time; //avg received time
 
-            this(BigInt num, BigInt denom, BigInt order, long time) {
+            this(BigInt num, BigInt denom, BigInt order, long time) pure nothrow {
                 this.num = num;
                 this.denom = denom;
                 this.order = order;
                 this.time = time;
             }
 
-            this(int num, int denom, int order, sdt_t time, long round_number, ulong witness_count) {
+            this(int num, int denom, int order, sdt_t time, long round_number, ulong witness_count) pure nothrow {
                 this.num = BigInt(num + denom * round_number);
                 this.denom = BigInt(denom * witness_count);
                 this.order = BigInt(order);
                 this.time = time / witness_count;
             }
 
-            PseudoTime opBinary(string op)(PseudoTime other) if (op == "+") {
+            PseudoTime opBinary(string op)(PseudoTime other) pure const nothrow if (op == "+") {
                 BigInt d = gcd(denom, other.denom);
                 return PseudoTime(other.denom / d * num + denom / d * other.num,
                         denom / d * other.denom,
@@ -145,7 +146,7 @@ class StdRefinement : Refinement {
             .filter!(e => decided_round.famous_mask[e.node_id])
             .array;
 
-        PseudoTime calc_pseudo_time(Event event) {
+        PseudoTime calc_pseudo_time(Event event) pure const {
             auto receivers = famous_witnesses
                 .map!(e => e[].until!(e => !e.sees(event))
                         .array.back);
@@ -161,7 +162,7 @@ class StdRefinement : Refinement {
                 .reduce!((a, b) => a + b);
         }
 
-        bool order_less(Event a, Event b) {
+        bool order_less(Event a, Event b) pure const {
             PseudoTime at = calc_pseudo_time(a);
             PseudoTime bt = calc_pseudo_time(b);
 
@@ -208,7 +209,7 @@ class StdRefinement : Refinement {
         bool order_less(const Event a, const Event b, const(int) order_count) @safe {
             bool rare_less(Buffer a_print, Buffer b_print) {
                 // rare_order_compare_count++;
-                pragma(msg, "review(cbr): Concensus order changed");
+                pragma(msg, "review(cbr): Consensus order changed");
                 return a_print < b_print;
             }
 

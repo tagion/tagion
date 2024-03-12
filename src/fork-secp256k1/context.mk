@@ -26,9 +26,9 @@ endif
 
 CONFIGUREFLAGS_SECP256K1 += --enable-module-ecdh
 CONFIGUREFLAGS_SECP256K1 += --enable-experimental
-CONFIGUREFLAGS_SECP256K1 += --enable-module-recovery
+#CONFIGUREFLAGS_SECP256K1 += --enable-module-recovery
 CONFIGUREFLAGS_SECP256K1 += --enable-module-schnorrsig
-CONFIGUREFLAGS_SECP256K1 += --enable-module-musig
+#CONFIGUREFLAGS_SECP256K1 += --enable-module-musig
 # CONFIGUREFLAGS_SECP256K1 += --enable-examples # Android builds don't work work with examples
 CONFIGUREFLAGS_SECP256K1 += --prefix=$(DLIB)
 CONFIGUREFLAGS_SECP256K1 += CFLAGS=-fPIC

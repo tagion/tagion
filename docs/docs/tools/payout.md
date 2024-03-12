@@ -25,7 +25,7 @@ auszahlung [<option>...] <wallet.json> [<bill.hibon>]
 
 The wallets collection should be create with the `geldbeutel` as a normal wallet.
 
-Thoese wallets will control the access to the payout-wallets.
+Those wallets will control the access to the payout-wallets.
 
 Before the wallets can be used the wallets should have a name. The name of the access-wallet can be set via the `geldbeutel` as follows.
 
@@ -73,7 +73,7 @@ auszahlung wallet1.json --list
 Note. If the bill is green then the wallet has success-fully been updated.
 
 ## Payout 
-The payout is perfomed with ad `.csv` delivered from the `Decard CRM` system.
+The payout is performed with ad `.csv` delivered from the `Decard CRM` system.
 
 The payout file should be copied into `path_to_wallet/payout`
 
@@ -99,7 +99,7 @@ Then the account file `path_file_wallt/contracts/path_file_bill_update.hibon` sh
 
 ## Update the payout-wallet after the network transactions.
 
-Check that the response for the transactions was successfull.
+Check that the response for the transactions was successful.
 
 ```
 hibonutil -pc path_to_wallet/contracts/path_file_response.hibon

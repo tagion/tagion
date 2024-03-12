@@ -51,7 +51,7 @@ struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts,
             immutable(NetworkMode) network_mode,
-            immutable(size_t) number_of_nodes,
+            uint number_of_nodes,
             shared(StdSecureNet) shared_net,
             immutable(MonitorOptions) monitor_opts,
             immutable(TaskNames) task_names) {
@@ -71,10 +71,12 @@ struct EpochCreatorService {
                 }
             }
             else {
-            Event.callbacks = new LogMonitorCallBacks();
+                Event.callbacks = new LogMonitorCallBacks();
             }
         }
-
+        version(BDD) {
+            Event.callbacks = new FileMonitorCallBacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes);
+        }
 
         GossipNet gossip_net;
 

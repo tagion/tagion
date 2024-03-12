@@ -1,26 +1,26 @@
 # Public HiRPC methods
 
 ## Connection types
-By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
-The socket address, and thereby the visibillity can be changed in the tagionwave config file.
+By default all of these sockets are private, ie. they are linux abstract sockets and can only by accessed on the same machine.
+The socket address, and thereby the vissibillity can be changed in the tagionwave config file.
 
 
-| [Input Validator](/docs/architecture/InputValidator)         | [Dart Interface](/docs/architecture/DartInterface)         | [Subscription](/docs/architecture/LoggerSubscription)         | [Node Interface](/docs/architecture/NodeInterface)         |
-| -                                                            | -                                                          | -                                                             | -                                                          |
-| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
-| **Default shell endpoint**                                   | ..                                                         |                                                               |                                                            |
-| /api/v1/contract                                             | /api/v1/dart                                               |                                                               |                                                            |
-| **Default socket address (node_prefix is added in mode0)**   | ..                                                         | ..                                                            | ..                                                         |
-| "\0*node_prefix*CONTRACT_NEUEWELLE"                          | "\0*node_prefix*DART_NEUEWELLE"                            | "\0SUBSCRIPTION_NEUEWELLE"                                    | tcp://localhost:10700                                      |
-| **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
-| "submit"                                                     | "dartCheckRead"                                            | "log"                                                         |
-|                                                              | "dartRead"                                                 |
-|                                                              | "dartRim"                                                  |
-|                                                              | "dartBullseye"                                             |
-| **HiRPC method entities prefixes**                           | ..                                                         | ..                                                            | ..                                                         |
-| ..                                                           | trt                                                        | ..                                                            | ..                                                         |
-| **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
-| REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
+| [Input Validator](/docs/architecture/InputValidator)       | [Dart Interface](/docs/architecture/DartInterface) | [Subscription](/docs/architecture/LoggerSubscription) | [Node Interface](/docs/architecture/NodeInterface) |
+| -                                                          | -                                                  | -                                                     | -                                                  |
+| Write                                                      | Read-only                                          | Pub                                                   | Half-duplex p2p wavefront communication            |
+| **Default shell endpoint**                                 | ..                                                 |                                                       |                                                    |
+| /api/v1/hirpc                                              | /api/v1/hirpc                                      |                                                       |                                                    |
+| **Default socket address (node_prefix is added in mode0)** | ..                                                 | ..                                                    | ..                                                 |
+| "\0*node_prefix*CONTRACT_NEUEWELLE"                        | "\0*node_prefix*DART_NEUEWELLE"                    | "\0SUBSCRIPTION_NEUEWELLE"                            | tcp://localhost:10700                              |
+| **HiRPC methods**                                          | ..                                                 | ..                                                    | ..                                                 |
+| "submit"                                                   | "dartCheckRead"                                    | "log"                                                 |
+|                                                            | "dartRead"                                         |
+|                                                            | "dartRim"                                          |
+|                                                            | "dartBullseye"                                     |
+| **HiRPC method entities prefixes**                         | ..                                                 | ..                                                    | ..                                                 |
+| ..                                                         | trt                                                | ..                                                    | ..                                                 |
+| **NNG Socket type**                                        | ..                                                 | ..                                                    | ..                                                 |
+| REPLY                                                      | REPLY                                              | PUBLISH                                               | ???                                                |
 
 
 These are the hirpc methods exposed by the tagion kernel.

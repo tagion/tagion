@@ -14,11 +14,13 @@ interface EventMonitorCallbacks {
         void connect(const(Event) e);
         void witness(const(Event) e);
         void round(const(Event) e);
-        void round_decided(const(Round.Rounder) rounder);
-        void round_received(const(Event) e);
         void famous(const(Event) e);
         void round(const(Event) e);
         void remove(const(Event) e);
-        void epoch(const(Event[]) received_event);
+
+        // Unused callbacks, will they be used in the future? - Lucas
+        /* void round_decided(const(Round.Rounder) rounder); */
+        /* void round_received(const(Event) e); */
+        /* void epoch(const(Event[]) received_event); */
     }
 }

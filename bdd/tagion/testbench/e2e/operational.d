@@ -30,6 +30,7 @@ import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.utils.JSONCommon;
 import tagion.utils.StdTime;
 import tagion.wallet.AccountDetails;
+import tagion.wallet.request;
 
 alias operational = tagion.testbench.e2e.operational;
 
@@ -283,11 +284,11 @@ class SendNContractsFromwallet1Towallet2 {
             secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
 
             if (sendkernel) {
-                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
+                auto response = sendHiRPC(options.contract_address, hirpc_submit, hirpc);
                 check(!response.isError, format("Error when sending kernel submit\n%s", response.toPretty));
             }
             else {
-                auto response = sendShellHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, hirpc);
+                auto response = sendHiRPC(options.addr ~ options.hirpc_shell_endpoint, hirpc_submit, hirpc);
                 check(!response.isError, format("Error when sending shell submit\n%s", response.toPretty));
             }
 
