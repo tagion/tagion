@@ -1,0 +1,11 @@
+{
+  "name": "assets",
+  "version": "0.0.0",
+  "description": "assets for tagion docs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tagion/tagion"
+  },
+  "author": "tagion",
+  "license": "ISC"
+}
