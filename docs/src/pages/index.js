@@ -11,7 +11,7 @@ function HomepageHeader() {
   return (
     <header className={clsx('hero hero--primary', styles.heroBanner, styles.tgnGradientBg)}>
       <div className="container">
-        <img src="img/logo-dark.svg" />
+        <img src="img/logo-dark.svg" alt="tagion logo"/>
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
