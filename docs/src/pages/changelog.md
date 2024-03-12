@@ -1,22 +1,56 @@
+# Changelog for Epoch 1048744 .. 1104102
+
+**NNG Stream**
+We have wrapped the nng stream api, to use with connections which are not compatible with the nng protocols.
+This could be a simple tcp or websocket connection. To be used for the explorer and possibly p2p communication.
+
+**Subscription API** 
+A proposal was made for the interface to the external subscription API [TIP 3](http://docs.tagion.org/tips/3).
+This proposals goal is to enable an api for realtime wallet and explorer updates.
+
+**Shell HiRPC handler**
+The endpoints for sending hirpcs to the shell has been compressed to a single endpoint `/api/v1/hirpc`.
+This should be simpler to use and fits better with the rpc pattern.
+
+**Contract tracing**
+We have added the the initial events for the contract states.
+And added `--contract` flag to the subscribe tool, this flag takes to the base64url hash of a contract as a parameter.
+The tool will then continuously give you updates about the contracts state.
+This flag is quite specific and we are still dissussing how it should be used.
+It's possible that the flag will be removed again in favour of something more general purpose.
+
+**Graphview**
+Graphview is our development tool to render a graph from the graph data.
+The data format which is uses is now streamable and compatible with the internal event monitor.
+The event monitor, if enabled sends out all the evenview data.
+
+**Nix**
+Several pre-commit checks have been added to flakes development shell.
+These include linting for github actions, shell & spell checking.
+This should help prevent all of the small spelling mistakes that appear from time to time.
+
+A nixosModule for the tagionshell & tagionwave services were added.
+So you enable them directly from your nixosConfiguration by providing "github:tagion/tagion" as an input.
+
 # Changelog for Epoch 793069 .. 1048744
 
 **New Documentation page**
-We have created a new documentation webpage that is built using [docusaurus](https://docusaurus.io/). See [https://docs.tagion.org](https://docs.tagion.org) for more info. The DDOC documetation has also been moved to a subpage on `/ddoc/tagion`. This also allows the search-box to support searching across all documentation. Currently there is a problem with the statically generated sites for ddoc in the search box, which requires the client to refresh the page when entering a ddoc page (thanks react :-) ).
+We have created a new documentation webpage that is built using [docusaurus](https://docusaurus.io/). See [https://docs.tagion.org](https://docs.tagion.org) for more info. The DDOC documentation has also been moved to a subpage on `/ddoc/tagion`. This also allows the search-box to support searching across all documentation. Currently there is a problem with the statically generated sites for ddoc in the search box, which requires the client to refresh the page when entering a ddoc page (thanks react :-) ).
 
 **Subscription tool**
 Initial work on the [subscription tool](https://docs.tagion.org/docs/tools/subscriber) has begun, and the tool now works where you are able to subscribe to various tags.
 
 **Async startup of nodes**
-For years we have had problems with booting the hashgraph in a asynchronous way regarding the boot of the hashgraph. This is due to that you somehow have to start a graph by only knowing the other nodes addresses which is rather difficult. This has now been fixed so that each node may be booted with n delay in between. This change also allowed us to remove the Locator.d which was neccesary before.
+For years we have had problems with booting the hashgraph in a asynchronous way regarding the boot of the hashgraph. This is due to that you somehow have to start a graph by only knowing the other nodes addresses which is rather difficult. This has now been fixed so that each node may be booted with n delay in between. This change also allowed us to remove the Locator.d which was necessary before.
 
 **Mode1 network boot!**
-The initial mode1 network boot succeeded this week. Lots of work have been going into cleaning up the interfaces and making the new `NNGGossipnet`, and together with the above change regarding async booting the mode1, network can now succesfully start and produce epochs.
+The initial mode1 network boot succeeded this week. Lots of work have been going into cleaning up the interfaces and making the new `NNGGossipnet`, and together with the above change regarding async booting the mode1, network can now successfully start and produce epochs.
 You are even able to shutdown various nodes and the graph will continue running and produce epochs as long as 2/3 of the nodes are still online.
 
 See more information about different modes [here](/docs/architecture/Network_Modes).
 
 **TVM standard library (Tauon)**
-We have begun work on the standard library for Tauon ( *named after the elementary particle [tau/tauon](https://en.wikipedia.org/wiki/Tau_(particle))*). The thing that makes the Tauon difficult to do is that is has to be execuable from WASM which means most of DRuntime is not supported. We are therefore working on adding / removing features from druntime until that we are able to compile all functionality that we would like. Currently we are as an example able to run the following example in WASM/WASI:
+We have begun work on the standard library for Tauon ( *named after the elementary particle [tau/tauon](https://en.wikipedia.org/wiki/Tau_(particle))*). The thing that makes the Tauon difficult to do is that is has to be executable from WASM which means most of DRuntime is not supported. We are therefore working on adding / removing features from druntime until that we are able to compile all functionality that we would like. Currently we are as an example able to run the following example in WASM/WASI:
 
 ```dlang
 module tests.tauon_test;
@@ -56,14 +90,14 @@ We have created a proposal for how the tracing of contracts should be implemente
 
 **HiBONJSON timestamp formatting**
 We use a function from D's standard library for converting from hibon's time format sdt time which is represented as a 64-bit integer and the ISO8601 text format. Which looks like this `2024-02-12T11:15:37+07:00`.
-The problem is that the timezone can be ommited like this `2024-02-12T11:15:37` and the timezone would then be assumeed to be the local time.
+The problem is that the timezone can be omitted like this `2024-02-12T11:15:37` and the timezone would then be assumeed to be the local time.
 This is the default behavior for the library function which means that the timezone would never be included in HIBONJSON. 
-Which meant that a hibon including a timestamp. When converted to json and sent to another timezone and coverted back to hibon
+Which meant that a hibon including a timestamp. When converted to json and sent to another timezone and converted back to hibon
 would no longer be the same timestamp and of course no longer the same hash.
 We have made a temporary solution for this, but it seems to cause issues on some platforms see https://github.com/tagion/tagion/issues/406
 
 In the process we also found a bug in the function that converts from the text format to the binary format 'fromISOExtString()`.
-Which would not correctly subtract the time offset in non hourly timezones like Indias IST(UTC +5:30) or Canadas NST(UTC -2:30).
+Which would not correctly subtract the time offset in non hourly timezones like Indias `IST(UTC +5:30)` or Canadas NST(UTC -2:30).
 Which we did not even know existed.
 This means for now that the standard hibonjson implementation does not allow converting from a string timestamp with an un hourly timeoffset.
 
@@ -131,7 +165,7 @@ This should result in faster updates and less load on the core system when reque
 Some changes need to made to the api of TRT request in order to prevent state mismatch between the shell and kernel. 
 
 **TRT hotfix**
-Fixed an issure where if the trt would not find any Archives it would not make reponse and thereby lock up the dartinterface, blocking new incoming requests.
+Fixed an issue where if the trt would not find any Archives it would not make response and thereby lock up the dartinterface, blocking new incoming requests.
 
 **Account history**
 The account history can now be statically calculated based on the info already stored in AccountDetails. This means that the history can now be retrieved when restoring your wallet.
@@ -149,7 +183,7 @@ We have created another endpoint in the shell, which can be used for calling oth
 It is now possible via NNG, to subscribe to the recorder. This is useful for our cache in the shell, which will allow for faster lookups in the system.
 
 **Mode1 initial work**
-We have begun working on a new NNGGossipnet which will be used for a mode1 version of the network. The difference between mode1 and mode0 is that in mode1 the nodes are running in completely seperate processes and instead of using inter-process-communication they will be using proper socket connections.  
+We have begun working on a new NNGGossipnet which will be used for a mode1 version of the network. The difference between mode1 and mode0 is that in mode1 the nodes are running in completely separate processes and instead of using inter-process-communication they will be using proper socket connections.  
 
 
 # Changelog for epoch 131000 .. 392368
@@ -187,9 +221,9 @@ Later you should prefer the to use the latest release. (eg. @v1.1.0)
 
 
 **Docs**
-Improved and added documentaton for several services and api's. 
+Improved and added documentation for several services and api's. 
 Including the TRT, Subscription, Auszahlung, cli & options for neuewelle, architecture overview.
-The documentaton is as always available on docs.tagion.org. Previously some pages were missing from the online deployment, this should be fixed now.
+The documentation is as always available on docs.tagion.org. Previously some pages were missing from the online deployment, this should be fixed now.
 
 The hibon specifications has now been completely removed from the core repo and is now only available on https://www.hibon.org
 
@@ -246,7 +280,7 @@ We have had a problem with the hashgraph, where it sometimes would not produce a
 
 **Open sourcing**
 Regarding open-sourcing the licenses have been updated as well as the CONTRIBUTING.md file.
-The github action for creating the ddoc documentaton has also been fixed so that it now runs.
+The github action for creating the ddoc documentation has also been fixed so that it now runs.
 
 # Changelog for week 48/49 2023
 
@@ -269,13 +303,13 @@ We are getting extremely close to going live now and we are looking so much forw
 # Changelog for week 47/48 2023
 
 **Transcript bug**
-Our operational tests found a bug where because the order of operations when iterating a hash-map is not guranteed we could end up in a scenario where the nodes would have the same state, but write different archives in different epochs regarding the consensus voting. This has now been fixed.
+Our operational tests found a bug where because the order of operations when iterating a hash-map is not guarantees we could end up in a scenario where the nodes would have the same state, but write different archives in different epochs regarding the consensus voting. This has now been fixed.
 
 **Crypto tape-out**
 We have had a final review of our secure-modules and they are now in the process of being externally reviewed one more time before go-live.
 
 **Wallet bug**
-We have fixed a bug in the wallet where the fee would be calculated incorrectly. This was due to a bug in the `createPayment` function that gathers the bills which are neccesary for creating the transaction.
+We have fixed a bug in the wallet where the fee would be calculated incorrectly. This was due to a bug in the `createPayment` function that gathers the bills which are necessary for creating the transaction.
 
 **NNG memory leak**
 We encountered a problem with the NNG-http server where it would leak memory when passing a `char*` to a c-function. This only happens when the string is concatenated with another string, which is a lazy operation. When then taking the pointer of this new variable it only points to the "first" part of the string meaning the other part leaks in memory. This problem has now been mitigated by manually allocating the memory using a static buffer which makes sure it is properly cleaned afterwards and creates a fully monolithic pointer.
@@ -287,19 +321,19 @@ We encountered a problem with the NNG-http server where it would leak memory whe
 The wave program can now boot from passkeys meaning from stdin, meaning that you can use ex. a GPG key to manage the passwords for the network or a usb.
 
 **Epoch chain**
-The Epoch chain implementation is finished, meaning that on each epoch, the epoch including global parameters is written. We have also changed the way that this happens, so that we actually write epochs from the hashgraph immediatly and everytime we add a new vote instead of only writing it once. It is completely finished and includes majority votes. This makes the system more resilient, since if it goes down the votes are stored in the database rather than in memory.
+The Epoch chain implementation is finished, meaning that on each epoch, the epoch including global parameters is written. We have also changed the way that this happens, so that we actually write epochs from the hashgraph immediately and everytime we add a new vote instead of only writing it once. It is completely finished and includes majority votes. This makes the system more resilient, since if it goes down the votes are stored in the database rather than in memory.
 
 **Crypto**
 We do no longer scramble the privatekey, but instead set all bits to 0. This provides the same security while being much faster since we do not have to create a system call to `getrandom(2)` each time.
 
 **ActorHandles**
-The ActorHandle implementation has been changed so that it is no longer templated, and instead of doing a `locate`, it tries to send immediatly to the previous `tid`. If the `tid` does not exist we set the `tid` and try again. This implementation is faster and safer, since we do not have to do a locate each time and handler errors.
+The ActorHandle implementation has been changed so that it is no longer templated, and instead of doing a `locate`, it tries to send immediately to the previous `tid`. If the `tid` does not exist we set the `tid` and try again. This implementation is faster and safer, since we do not have to do a locate each time and handler errors.
 
 **NNG nothrow**
 Most of NNG is now marked nothrow, which allows functions above to also inherit the nothrow attribute making error handling more clear.
 
 **Operational test**
-A operational test has been created which is essentially a wrapper around a bdd-test which sends a tx from walletA to walletB. This randomly selects two wallets and continiously creates a transaction between these for a specified amount of time.
+A operational test has been created which is essentially a wrapper around a bdd-test which sends a tx from walletA to walletB. This randomly selects two wallets and continuously creates a transaction between these for a specified amount of time.
 
 **General Update from the Core**
 We are very happy to announce that all ground components for the network are finished. This means we are going into Tape-Out mode now and will be doing final reviews on everything and have full focus on operational testing of the system.
@@ -309,7 +343,7 @@ We are very happy to announce that all ground components for the network are fin
 
 **Blockfile**
 Fixed an error in the blockfile where the cache would be allocated preruntime,
-meaning that multiple blockfiles would use the same cache, even running in seperate threads;
+meaning that multiple blockfiles would use the same cache, even running in separate threads;
 This was a cause of multiple derived errors, which has now been fixed.
 
 **Crypto**
@@ -318,14 +352,14 @@ Add xonly public key conversion functions.
 
 **NNG**
 fix NNGMessage allocation
-add tests with larger messsages(1-2MB)
+add tests with larger messages(1-2MB)
 
 **Shell**
 Initial documentation for the shell caching layer has been added.
 
 **AssertError**
 There is now a top level catch in each actor thread, which catches AssertErrors and stops the program.
-Previously AssertErrors would stop the thread and reach the main thread wihout being reported or stopping the program.
+Previously AssertErrors would stop the thread and reach the main thread without being reported or stopping the program.
 
 **Wave**
 Add `--option` flag to be able to set individual options.
@@ -336,7 +370,7 @@ The HiRPC error type has been changes so it's always considered an error, if it'
 
 **CI**
 The CI workflow can now run on any branch.
-Testnet worflow cleans old backups & main worflows cleans old artifacts
+Testnet workflow cleans old backups & main workflows cleans old artifacts
 
 # Changelog for week 44/45 2023
 
@@ -359,12 +393,12 @@ The epoch is now created based on the votes of the DART bullseye.
 Schnorr signing and verification functions added.
 The NativeSecp256k1 module now features MuSig2 functions for multi signatures utilizing those Schnorr algorithms.
 
-**Fixes & Stabillity improvements**
+**Fixes & Stability improvements**
  * We have made changes to how the node starts the replicator service. 
  * Improved the way the transcript stores and cleans votes.
  * Removed some unsafe type casts.
  * Fixed error with unflushed DART writes.
- * Created improvements to the Error replys when sending a contract and making a DART read request.
+ * Created improvements to the Error replies when sending a contract and making a DART read request.
  * Fixed the inputvalidator test, which used the wrong socket type.
  * ...
 
@@ -373,7 +407,7 @@ We have removed all of the SSL modules.
 
 **CI Improvements**
 The CI flow now runs in several steps, so we have better error reporting when and which stage fails.
-The worflows times out when a job hangs. And it always produces an artifact so we can inspect the errors.
+The workflows times out when a job hangs. And it always produces an artifact so we can inspect the errors.
 
 
 # Changelog for week 43/44 2023
@@ -389,7 +423,7 @@ We have updated our library from the secp256k1 library located in bitcoin core t
 
 # Changelog for week 42/43 2023
 **Shell Client**
-We have commited a WebClient with TLS support. See [github.com/tagion/nng](http://github.com/tagion/nng) test example test_11_webclient.d. This makes for a very small and easy to use webclient for our CLI wallet among other places. Currently only synchronous GET and POST methods are available.
+We have committed a WebClient with TLS support. See [github.com/tagion/nng](http://github.com/tagion/nng) test example test_11_webclient.d. This makes for a very small and easy to use webclient for our CLI wallet among other places. Currently only synchronous GET and POST methods are available.
 
 **HiBONRecord @labels**
 We have refactored the way HiBONRecord labels are defined so that it is easier to understand. See the following example:
@@ -417,7 +451,7 @@ struct Test {
 We ran into a problem where our securenet would sometimes return that the signature was not valid event though it was. This only happened when running multithreaded and doing it a lot concurrently. The problem was that due to secp256k1 not being thread safe, we were using the same context for all the threads, which of course is not good. Therefore we now pass a shared net down to all services, where each creates its own context. Also services that do not perform any signing by themselves, but purely check signatures like the HiRPC-verifier now create their own SecureNet.
 
 **Consensus Voting**
-We have implemented the functionality for sending the signed bullseye around after a DARTModify. The reason for doing this is in order to check that all nodes have the same excact state. If more than 1/3 of the nodes do not agree then they will perform a roll-back of the epoch.
+We have implemented the functionality for sending the signed bullseye around after a DARTModify. The reason for doing this is in order to check that all nodes have the same exact state. If more than 1/3 of the nodes do not agree then they will perform a roll-back of the epoch.
 
 
 # Changelog for week 41/42 2023
@@ -434,7 +468,8 @@ We have implemented a subscription service that wraps our internal subscription 
 We have created and updated tools to support functionality for the genesis block. This includes asking the database to retrieve all bills with regex searching among many other things.
 
 **Epoch creator**
-The epoch creator has been updated to use true randomness making the communication with other nodes more unpredictable. This is important for security of the nodes, because it helps prevents malicious actors in contructing for an example coin-round scenarios.
+The epoch creator has been updated to use true randomness making the communication with other nodes more unpredictable.
+This is important for security of the nodes, because it helps prevents malicious actors in constructing for an example coin-round scenarios.
 
 **LEB128 check for invariant numbers**
 We only support the shortest form to write numbers with LEB128 in order to make HiBON truly hash invariant. In order to achieve this we have to make sure that the LEB128 number is always represented in the shortest way possible. The number 0x80 and 0x00 are ex. both equal to 0x00.
@@ -455,7 +490,7 @@ Since the DART is a sparsed merkle tree, there can be some scenarios where it is
 It works by using an archive member named "#name" as the dartindex instead of the hash of the archive.
 
 **Collector Service**
-The collector has been updated so that the list it receives of archives is ordered. This makes the logic for the collector much simpler, since it does not have to do unneccesary sorting work.
+The collector has been updated so that the list it receives of archives is ordered. This makes the logic for the collector much simpler, since it does not have to do unnecessary sorting work.
 
 **Build flow updates**
 We are always striving for better workflows in order to minimize time spent compiling etc. This week we have optimized our make flow even more which have drastically reduced our build times.
@@ -480,7 +515,7 @@ This in return means that the updates for the wallets will be much quicker as th
 We have created a new service for the TVM ("Tagion Virtual Machine"). The service is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules.
 
 **BIP39**
-We have updated our implementation of BIP39 mnemonic seed phrases to use pkbdf2 as the standard suggests. This is important because it gurantees that if you use the same keys on other wallets you will generate the same seed phrase. 
+We have updated our implementation of BIP39 mnemonic seed phrases to use pkbdf2 as the standard suggests. This is important because it guarantees that if you use the same keys on other wallets you will generate the same seed phrase. 
 We did though find the standard implementation of BIP39 to be a bit weird in the sense that it does not use the index of the words in the words list for creating the hash but rather all the words?!. Using the words provides no benefits other than making the implementation more language indenpendent.
 Though instead of diverging from the standard we have now implemented it according to the standard as well.
 
@@ -538,7 +573,7 @@ The version flag for the regular socket implementation has been removed and we n
 Implemented an internal mechanism for subscribing to events via a topic in the system. Which makes it easier to develop tests that require to know the falsy states of a service. In the future it will be used to decide which events get sent out through the shell.
 
 **HiBON**
-Updated the documentation for HiBONJSON and provide samples in hibonutil for easier compatibillity testing.
+Updated the documentation for HiBONJSON and provide samples in hibonutil for easier compatibility testing.
 ISO time is now the accepted time format in HiBONJSON as opposed to SDT time
 
 **CRYPTO**
@@ -547,14 +582,14 @@ Random generators are seeded with the hardware random functions provided by the 
 **Epoch Creator**
 The epoch creator is the service that drives the hashgraph. 
 It's implemented using a shared address-book and tested in mode-0.
-The address-book avoids burried state which was a source of several problems previosly when bootstrapping the network.
+The address-book avoids buried state which was a source of several problems previously when bootstrapping the network.
 
 **DART Service**
 The DART service has been implemented and CRUD operations tested. 
 The service allows several services to access the DART.
 
 **OLD TRANSACTION**
-The code for the old transaction mechanism has been seperated and moved in to the prior services. This means that the code lives seperately and the OLD_TRANSACTION version flag has been removed.
+The code for the old transaction mechanism has been separated and moved in to the prior services. This means that the code lives separately and the OLD_TRANSACTION version flag has been removed.
 
 
 
