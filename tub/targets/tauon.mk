@@ -13,6 +13,7 @@ $(DLIB)/libtauon.a: DFILES+=$(TAUON_DFILES)
 $(DLIB)/libtauon.a: DFLAGS+=--oq
 $(DLIB)/libtauon.a: DFLAGS+=--od=$(DOBJ)
 $(DLIB)/libtauon.a: DINC+=$(TAUON_DINC)
+$(DLIB)/libtauon.a: DFLAGS+=-d-debug
 $(DLIB)/libtauon.a: $(DLIB)/.way 
 
 $(TAUON_BINS): $(DBIN)/.way
@@ -26,6 +27,7 @@ tauon-test: LIB+=$(LIBTVM)
 tauon-test: LIB+=$(LIBSECP256K1)
 tauon-test: DINC+=$(TAUON_DINC)
 tauon-test: $(TAUON_BINS)
+tauon-test: DFLAGS+=-d-debug
 tauon-test: DFLAGS+=-L-error-limit=100
 tauon-test: DFLAGS+=-L--no-entry
 #tauon-test: DFLAGS+=-L--lto-O2

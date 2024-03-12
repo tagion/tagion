@@ -94,7 +94,7 @@ void main() {
     writefln("%(%02x %)", buf);
     writefln("%s", buf.base64);
         auto _ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
-    const secp256k1=new NativeSecp256k1;
+    //const secp256k1=new NativeSecp256k1;
     //writefln("############## _func.ptr=%x", cast(size_t)(_func.ptr));
     //auto x=_func(buf);
     writefln("---- random -------");
@@ -113,10 +113,10 @@ void main() {
     writefln("message  =%s", message.base64);
     const signature=net.sign(message);
     
-    writefln("signature=%s", signature.base64);
-   
-    //const ok=net.verify(message, signature, pubkey);
+    writefln("signature=%s len=%d", signature.base64, signature.length);
+    writefln("Before verify"); 
+    const ok=net.verify(message, signature, pubkey);
 
-    //writefln("verify = %s", ok);
+    writefln("verify = %s", ok);
 }
 
