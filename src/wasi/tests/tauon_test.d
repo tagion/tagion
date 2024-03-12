@@ -3,12 +3,16 @@ module tests.tauon_test;
 import tvm.wasi_main;
 import stdc=core.stdc.stdio;
 import std.stdio;
+import std.string;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONtoText;
 import tagion.hibon.Document;
 import tagion.basic.Types : base64=encodeBase64, Buffer;
 import tagion.crypto.SecureNet;
+import tagion.crypto.random.random;
+import tagion.crypto.secp256k1.c.secp256k1;
+import tagion.crypto.secp256k1.NativeSecp256k1;
 
 static this() {
     writefln(" should call this\n");
@@ -89,7 +93,30 @@ void main() {
    
     writefln("%(%02x %)", buf);
     writefln("%s", buf.base64);
+        auto _ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
+    const secp256k1=new NativeSecp256k1;
     //writefln("############## _func.ptr=%x", cast(size_t)(_func.ptr));
     //auto x=_func(buf);
+    writefln("---- random -------");
+    ubyte[] data;
+    data.length=32;
+    getRandom(data);
+    writefln("Random data=%(%02x %)", data);
+    getRandom(data);
+    writefln("Random data=%(%02x %)", data);
+    writefln("---- SecureNet ----");
+    auto net=new StdSecureNet;
+    net.generateKeyPair("Very secret");
+    const pubkey=net.pubkey;
+    writefln("pubkey   =%s len=%d", pubkey.base64, pubkey.length);
+    const message=hash_net.calcHash(doc);
+    writefln("message  =%s", message.base64);
+    const signature=net.sign(message);
+    
+    writefln("signature=%s", signature.base64);
+   
+    //const ok=net.verify(message, signature, pubkey);
+
+    //writefln("verify = %s", ok);
 }
 
