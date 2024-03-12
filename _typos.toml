@@ -1,0 +1,3 @@
+[default.extend-words]
+# India Standard Time
+IST = "IST"
