@@ -4,6 +4,9 @@
 # Production
 /build/
 
+# These files are fetched by npm from the assets branch
+/static/assets/
+
 # Generated files
 .docusaurus
 .cache-loader
