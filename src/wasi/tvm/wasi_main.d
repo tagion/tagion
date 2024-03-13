@@ -61,11 +61,11 @@ extern (C) @nogc {
         assert(0, wasi_error);
     }
 
-    version (none) extern (C) void flockfile(FILE* file) {
+     extern (C) void flockfile(FILE* file) {
         //printf("%s\n", &__FUNCTION__[0]);
     }
 
-    version (none) extern (C) void funlockfile(FILE* file) {
+     extern (C) void funlockfile(FILE* file) {
         //printf("%s\n", &__FUNCTION__[0]);
     }
 
@@ -84,8 +84,8 @@ extern (C) @nogc {
     }
 
     void __multi3(int, long, long, long, long) {
-        printf("%s\n", &__FUNCTION__[0]);
-        assert(0, "Not implemented");
+        //printf("%s\n", &__FUNCTION__[0]);
+        //assert(0, "Not implemented");
     }
 
     import rt.sections_wasm : tls_index;

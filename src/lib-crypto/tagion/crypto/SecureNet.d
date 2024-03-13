@@ -11,7 +11,7 @@ import tagion.crypto.Types : Fingerprint, Signature;
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.random.random;
 import tagion.hibon.Document : Document;
-
+import tagion.basic.Debug;
 package alias check = Check!SecurityConsensusException;
 
 @safe
@@ -51,10 +51,6 @@ class StdHashNet : HashNet {
         return hashname;
     }
 }
-
-import tagion.basic.Debug;
-
-static if (!ver.WASI):
 
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
@@ -108,9 +104,12 @@ class StdSecureNet : StdHashNet, SecureNet {
     const NativeSecp256k1 crypt;
 
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const pure {
+        __write("%s", __FUNCTION__);
+        version(none)
         consensusCheck!(SecurityConsensusException)(
                 signature.length == NativeSecp256k1.SIGNATURE_SIZE,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
+        //return false;
         return crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
