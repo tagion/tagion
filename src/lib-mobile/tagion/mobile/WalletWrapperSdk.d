@@ -381,7 +381,7 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             auto invoice = StdSecureWallet.createInvoice("", 0.TGN);
             
-            invoice.pKey = Pubkey(pubkey.decode());
+            invoice.pkey = Pubkey(pubkey.decode());
 
             const invoiceDocId = recyclerDoc.create(invoice.toDoc);
 
