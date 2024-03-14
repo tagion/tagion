@@ -1,5 +1,5 @@
-// Service for creating epochs
-/// [Documentation](https://docs.tagion.org/#/documents/architecture/EpochCreator)
+/// Service for creating epochs
+/// https://docs.tagion.org/docs/architecture/EpochCreator
 module tagion.services.epoch_creator;
 
 // tagion
