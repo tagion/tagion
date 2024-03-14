@@ -25,6 +25,9 @@ import tagion.wallet.request;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
 import tagion.hibon.HiBONRecord : isRecord;
+import std.conv : to;
+import std.stdio;
+import std.format;
 
 void wrap_neuewelle(immutable(string)[] args) {
     neuewelle._main(cast(string[]) args);
@@ -38,7 +41,6 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
     string config_file = buildPath(module_path, "tagionwave.json");
     import std.exception : ifThrown;
-    import std.conv : to;
     uint timeout = args[1].to!uint.ifThrown(10);
 
     scope Options local_options = Options.defaultOptions;
@@ -52,9 +54,7 @@ int _main(string[] args) {
 
     import std.algorithm;
     import std.array;
-    import std.format;
     import std.range;
-    import std.stdio;
     import tagion.crypto.SecureInterfaceNet;
     import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.dart.DART;
@@ -153,10 +153,12 @@ int _main(string[] args) {
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     auto name = "epoch_testing";
+    Thread.sleep(1.seconds);
     register(name, thisTid);
     log.registerSubscriptionTask(name);
 
     auto feature = automation!(run_epochs);
+    feature.RunPassiveFastNetwork(local_options.wave.number_of_nodes, args[2].to!long);
     feature.run;
     Thread.sleep(5.seconds);
     stopsignal.set;
@@ -179,6 +181,13 @@ class RunPassiveFastNetwork {
     import tagion.testbench.actor.util : receiveOnlyTimeout;
     import tagion.logger.LogRecords : LogInfo;
 
+    uint number_of_nodes;
+    long end_epoch;
+    this(uint number_of_nodes, long end_epoch) {
+        this.number_of_nodes = number_of_nodes;
+        this.end_epoch = end_epoch;
+    }
+
     @Given("i have a running network")
     Document network() {
         return result_ok;
@@ -187,24 +196,37 @@ class RunPassiveFastNetwork {
     @When("the nodes creates epochs")
     Document epochs() {
         submask.subscribe(StdRefinement.epoch_created);
-
         long newest_epoch;
-        long end_epoch = 500;
+
+
+        // epoch <- taskname <- epoch_number
+        FinishedEpoch[string][long] epochs;
+
+        void checkepochs() {
+            writefln("unfinished epochs %s", epochs.length);
+            foreach(epoch; epochs.byKeyValue) {
+                if (epoch.value.length == this.number_of_nodes) {
+                    writeln("FINISHED ENTIRE EPOCH");
+                    epochs.remove(epoch.key);
+                }
+            }
+
+        }
+        
         while(newest_epoch < end_epoch) {
             auto finished_epoch_log = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             check(finished_epoch_log[1].isRecord!(FinishedEpoch), "Did not receive finished epoch");
             FinishedEpoch epoch_received = FinishedEpoch(finished_epoch_log[1]);
+            epochs[epoch_received.epoch][finished_epoch_log[0].to!string] = epoch_received;
+            checkepochs;
             newest_epoch++;
-
         }
-
-
         return result_ok;
     }
 
     @Then("the epochs should be the same")
     Document same() {
-        return Document();
+        return result_ok;
     }
 
 }
