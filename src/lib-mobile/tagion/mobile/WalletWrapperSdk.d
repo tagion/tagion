@@ -369,28 +369,6 @@ extern (C) {
         return ERROR;
     }
 
-    export uint recreate_invoice(
-            const char* pubkeyPtr,
-            const uint32_t pubkeyLen) {
-
-        import tagion.hibon.HiBONtoText;
-
-        const pubkey = pubkeyPtr[0 .. pubkeyLen];
-
-        if (__wallet_storage.wallet.isLoggedin()) {
-            auto invoice = StdSecureWallet.createInvoice(
-                    "", amount.TGN);
-            
-            invoice.pKey = Pubkey(pubkey.decode());
-
-            const invoiceDocId = recyclerDoc.create(invoice.toDoc);
-
-            *invoicePtr = cast(uint8_t) invoiceDocId;
-            return SUCCESS;
-        }
-        return ERROR;
-    }
-
     export uint request_trt_update(uint8_t* requestPtr) {
         if (!__wallet_storage.wallet.isLoggedin()) {
             return NOT_LOGGED_IN;
