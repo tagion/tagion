@@ -24,6 +24,7 @@ import tagion.wallet.SecureWallet;
 import tagion.wallet.request;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
+import tagion.hibon.HiBONRecord : isRecord;
 
 void wrap_neuewelle(immutable(string)[] args) {
     neuewelle._main(cast(string[]) args);
@@ -174,15 +175,31 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("Run passive fast network",
         [])
 class RunPassiveFastNetwork {
+    import tagion.hashgraph.Refinement;
+    import tagion.testbench.actor.util : receiveOnlyTimeout;
+    import tagion.logger.LogRecords : LogInfo;
 
     @Given("i have a running network")
     Document network() {
-        return Document();
+        return result_ok;
     }
 
     @When("the nodes creates epochs")
     Document epochs() {
-        return Document();
+        submask.subscribe(StdRefinement.epoch_created);
+
+        long newest_epoch;
+        long end_epoch = 500;
+        while(newest_epoch < end_epoch) {
+            auto finished_epoch_log = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            check(finished_epoch_log[1].isRecord!(FinishedEpoch), "Did not receive finished epoch");
+            FinishedEpoch epoch_received = FinishedEpoch(finished_epoch_log[1]);
+            newest_epoch++;
+
+        }
+
+
+        return result_ok;
     }
 
     @Then("the epochs should be the same")
