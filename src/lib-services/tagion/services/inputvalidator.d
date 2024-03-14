@@ -1,5 +1,5 @@
 /// Service for validating inputs sent via socket
-/// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/InputValidator)
+/// https://docs.tagion.org/#/documents/architecture/InputValidator
 module tagion.services.inputvalidator;
 
 @safe:
@@ -71,14 +71,14 @@ struct InputValidatorService {
                 hirpc.Error message;
                 message.code = err_type;
                 debug {
-                    // Altough it's a bit excessive, we send back the invalid data we received in debug mode.
+                    // We send back the invalid data we received in debug mode.
                     message.message = err_type.toString;
                     message.data = data;
                 }
                 const sender = hirpc.Sender(net, message);
                 int rc = sock.send(sender.toDoc.serialize);
                 if (rc != 0) {
-                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(rc));
+                    log.error("Failed to respond with rejection %s, because %s", err_type, nng_errstr(rc));
                 }
                 log.event(rejected, err_type.toString, data);
             }
@@ -180,7 +180,7 @@ struct InputValidatorService {
                     continue;
                 }
 
-                // Fixme ReceiveBuffer .size doesn't always return correct lenght
+                // Fixme ReceiveBuffer .size doesn't always return correct length
                 if (result_buf.data.size <= 0) {
                     reject(ServiceCode.buf);
                     continue;

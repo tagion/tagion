@@ -1,4 +1,5 @@
-/// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/Collector)
+/// The collector collects & verifies the inputs in a contract
+/// https://docs.tagion.org/docs/architecture/Collector
 module tagion.services.collector;
 @safe:
 
