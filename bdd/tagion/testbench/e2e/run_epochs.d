@@ -4,6 +4,19 @@ import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
+import tagion.tools.Basic;
+import tagion.testbench.e2e;
+
+mixin Main!(_main);
+int _main(string[] args) {
+    auto feature = automation!(run_epochs);
+    feature.run;
+
+
+    return 0;
+
+}
+
 
 enum feature = Feature(
             "Check network stability when runninng many epochs",
