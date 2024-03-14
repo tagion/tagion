@@ -48,6 +48,9 @@ struct FinishedEpoch {
 class StdRefinement : Refinement {
 
     static Topic epoch_created = Topic("epoch_creator/epoch_created");
+    version(BDD) {
+        static Topic raw_epoch_events = Topic("epoch_creator/raw_epoch_events");
+    }
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
@@ -104,6 +107,7 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
+    version(NEW_ORDERING)
     void epoch(Event[] event_collection, const(Round) decided_round) {
 
         import std.bigint;
@@ -197,11 +201,10 @@ class StdRefinement : Refinement {
         log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, events.length);
 
         finishedEpoch(events, epoch_time, decided_round);
-
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
-    version (none) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
+    version(OLD_ORDERING) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
     void epoch(Event[] event_collection, const(Round) decided_round) {
         import std.algorithm;
         import std.range;
@@ -238,7 +241,6 @@ class StdRefinement : Refinement {
 
         sdt_t[] times;
         auto events = event_collection
-            .filter!((e) => e !is null)
             .tee!((e) => times ~= e.event_body.time)
             .filter!((e) => !e.event_body.payload.empty)
             .array
@@ -253,6 +255,10 @@ class StdRefinement : Refinement {
                 Event.count, Event.Witness.count, events.length, epoch_time);
 
         finishedEpoch(events, epoch_time, decided_round);
+        version(BDD) {
+            auto raw_event_payload = FinishedEpoch(event_collection, epoch_time, decided_round.number);
+            log.event(raw_epoch_events, "raw_epoch_successful", raw_event_payload);
+        }
 
         excludedNodes(hashgraph._excluded_nodes_mask);
     }

@@ -56,6 +56,13 @@ DFLAGS+=$(DVERSION)=WITHOUT_SORTING
 # There is currently no way to function to determine the nodes from latest epoch
 DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 
+# Flags for enabling different order_less functions for the hashgraph
+# See refinement
+# NEW_ORDERING uses PseudoTime
+# OLD_ORDERING uses old simple method
+# DFLAGS+=$(DVERSION)=NEW_ORDERING 
+DFLAGS+=$(DVERSION)=OLD_ORDERING
+
 # Startup delay for nodes. Will add 5 seconds between each boot in order to 
 # ensure that the graph is still able to startup with delays between nodes. 
 # DFLAGS+=$(DVERSION)=WITH_STARTUP_DELAY
