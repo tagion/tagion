@@ -48,7 +48,7 @@ struct FinishedEpoch {
 class StdRefinement : Refinement {
 
     static Topic epoch_created = Topic("epoch_creator/epoch_created");
-    version(BDD) {
+    version (BDD) {
         static Topic raw_epoch_events = Topic("epoch_creator/raw_epoch_events");
     }
 
@@ -107,8 +107,7 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    version(NEW_ORDERING)
-    void epoch(Event[] event_collection, const(Round) decided_round) {
+    version (NEW_ORDERING) void epoch(Event[] event_collection, const(Round) decided_round) {
 
         import std.bigint;
         import std.numeric : gcd;
@@ -204,12 +203,10 @@ class StdRefinement : Refinement {
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
-    version(OLD_ORDERING) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
-    void epoch(Event[] event_collection, const(Round) decided_round) {
-        import std.algorithm;
-        import std.range;
-
-        bool order_less(const Event a, const Event b, const(int) order_count) @safe {
+    version (OLD_ORDERING) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
+    {
+        @safe
+        bool order_less(const Event a, const Event b, const(int) order_count) pure {
             bool rare_less(Buffer a_print, Buffer b_print) {
                 // rare_order_compare_count++;
                 pragma(msg, "review(cbr): Consensus order changed");
@@ -239,28 +236,34 @@ class StdRefinement : Refinement {
             return a.order < b.order;
         }
 
-        sdt_t[] times;
-        auto events = event_collection
-            .tee!((e) => times ~= e.event_body.time)
-            .filter!((e) => !e.event_body.payload.empty)
-            .array
-            .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
-            .release;
-        times.sort;
-        const mid = times.length / 2 + (times.length % 1);
-        const epoch_time = times[mid];
+        void epoch(Event[] event_collection, const(Round) decided_round) {
+            import std.algorithm;
+            import std.range;
 
-        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
-                hashgraph.name, decided_round.number,
-                Event.count, Event.Witness.count, events.length, epoch_time);
+            sdt_t[] times;
+            auto events = event_collection
+                .tee!((e) => times ~= e.event_body.time)
+                .filter!((e) => !e.event_body.payload.empty)
+                .array
+                .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
+                .release;
+            times.sort;
+            const mid = times.length / 2 + (times.length % 1);
+            const epoch_time = times[mid];
 
-        finishedEpoch(events, epoch_time, decided_round);
-        version(BDD) {
-            auto raw_event_payload = FinishedEpoch(event_collection, epoch_time, decided_round.number);
-            log.event(raw_epoch_events, "raw_epoch_successful", raw_event_payload);
+            log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
+                    hashgraph.name, decided_round.number,
+                    Event.count, Event.Witness.count, events.length, epoch_time);
+
+            finishedEpoch(events, epoch_time, decided_round);
+            version (BDD) {
+                auto raw_event_payload = FinishedEpoch(event_collection, epoch_time, decided_round.number);
+                log.event(raw_epoch_events, "raw_epoch_successful", raw_event_payload);
+            }
+
+            excludedNodes(hashgraph._excluded_nodes_mask);
         }
 
-        excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
 }
