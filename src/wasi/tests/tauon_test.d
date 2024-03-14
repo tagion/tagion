@@ -135,9 +135,10 @@ void main() {
         assert(signature == expected_signature);
         const pubkey = crypt.getPubkey(keypair);
         assert(pubkey == expected_pubkey);
-        writefln("pubkey   =%(%02 %)", pubkey);
-    //const signature_ok = crypt.verify(msg_hash, signature, pubkey);
-    //assert(signature_ok, "Schnorr signing failded");
+       // writefln("pubkey   =%(%02 %)", pubkey);
+        const signature_ok = crypt.verify(msg_hash, signature, pubkey);
+        writefln("signature_ok=%s", signature_ok);
+        //assert(signature_ok, "Schnorr signing failded");
 
     }
     //writefln("signature=%s len=%d", signature.base64, signature.length);
