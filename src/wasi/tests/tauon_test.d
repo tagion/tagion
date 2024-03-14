@@ -106,15 +106,8 @@ void main() {
     getRandom(data);
     writefln("Random data=%(%02x %)", data);
     writefln("---- SecureNet ----");
-{
-    auto net=new StdSecureNet;
-    net.generateKeyPair("Very secret");
-    const pubkey=net.pubkey;
-    writefln("pubkey   =%s len=%d", pubkey.base64, pubkey.length);
-    const message=hash_net.calcHash(doc);
-    writefln("message  =%s", message.base64);
-    const signature=net.sign(message);
-    }
+
+  
     writefln("## - ###");
     {
     const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
@@ -141,10 +134,17 @@ void main() {
         //assert(signature_ok, "Schnorr signing failded");
 
     }
-    //writefln("signature=%s len=%d", signature.base64, signature.length);
-    //writefln("Before verify"); 
-    //const ok=net.verify(message, signature, pubkey);
+    auto net=new StdSecureNet;
+    net.generateKeyPair("Very secret");
+    const pubkey=net.pubkey;
+    writefln("pubkey   =%s len=%d", pubkey.base64, pubkey.length);
+    const message=hash_net.calcHash(doc);
+    writefln("message  =%s", message.base64);
+    const signature=net.sign(message);
+    writefln("signature=%s len=%d", signature.base64, signature.length);
+    writefln("Before verify"); 
+    const ok=net.verify(message, signature, pubkey);
 
-    //writefln("verify = %s", ok);
+    writefln("verify = %s", ok);
 }
 
