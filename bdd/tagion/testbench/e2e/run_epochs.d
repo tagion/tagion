@@ -28,10 +28,16 @@ import tagion.hibon.HiBONRecord : isRecord;
 import std.conv : to;
 import std.stdio;
 import std.format;
+import std.algorithm;
+import std.algorithm.comparison : equal;
+import std.range;
+import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
+import tagion.crypto.SecureInterfaceNet;
 
 void wrap_neuewelle(immutable(string)[] args) {
     neuewelle._main(cast(string[]) args);
 }
+
 mixin Main!(_main);
 int _main(string[] args) {
     auto module_path = env.bdd_log.buildPath(__MODULE__);
@@ -41,6 +47,7 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
     string config_file = buildPath(module_path, "tagionwave.json");
     import std.exception : ifThrown;
+
     uint timeout = args[1].to!uint.ifThrown(10);
 
     scope Options local_options = Options.defaultOptions;
@@ -52,11 +59,8 @@ int _main(string[] args) {
     local_options.subscription.address = contract_sock_addr("EPOCH_OPERATIONAL_TEST_SUB");
     local_options.save(config_file);
 
-    import std.algorithm;
     import std.array;
-    import std.range;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.dart.DART;
     import tagion.dart.DARTFile;
     import tagion.dart.Recorder;
@@ -66,7 +70,7 @@ int _main(string[] args) {
     foreach (i; 0 .. 5) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-            iota(0, 5)
+                iota(0, 5)
                 .map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5)
                 .map!(n => format("%danswer%d", i, n)).array,
@@ -108,16 +112,19 @@ int _main(string[] args) {
     auto nodenets = dummy_nodenets_for_testing(node_opts);
     foreach (opt, node_net; zip(node_opts, nodenets)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            node_net.pubkey,
-            opt.task_names.epoch_creator, // Address
+                opt.task_names.epoch_creator, // Name
+                node_net.pubkey,
+                opt.task_names.epoch_creator, // Address
+
+                
+
         );
     }
 
     const genesis = createGenesis(
-        node_settings,
-        Document(), 
-        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+            node_settings,
+            Document(),
+            TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
     );
 
     recorder.insert(genesis, Archive.Type.ADD);
@@ -198,28 +205,62 @@ class RunPassiveFastNetwork {
         submask.subscribe(StdRefinement.epoch_created);
         long newest_epoch;
 
-
         // epoch <- taskname <- epoch_number
         FinishedEpoch[string][long] epochs;
 
-        void checkepochs() {
+        void checkepochs() @trusted {
             writefln("unfinished epochs %s", epochs.length);
-            foreach(epoch; epochs.byKeyValue) {
+            foreach (epoch; epochs.byKeyValue) {
                 if (epoch.value.length == this.number_of_nodes) {
+                    // check that all epoch numbers are the same
+                    check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
+
+                    // check all events are the same
+                    auto events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+                    string print_events() {
+                        HashNet net = new StdHashNet;
+                        string printout;
+                        foreach(i, e; events) {
+                            printout ~= format("\n%s: ", i);
+                            foreach(p; e.map!(e => e.event_body)) {
+                                printout ~= format("%(%02x%) ", net.calcHash(p.payload)[0..8]);
+                            }
+                        }
+                        return printout;
+                    }
+                    if (!events.all!(e => e == events[0])) {
+                        check(0, format("not all events the same \n%s", print_events));
+                    }
+
+                    auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 
+                    if (!timestamps.all!(t => t == timestamps[0])) {
+                        string text;
+                        foreach(i, t; timestamps) {
+                            auto line = format("\n%s: %s", i, t);
+                            text ~= line;
+                        }
+                        check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
+                    }
+
+                    // check all timestamps are the same
+                    // check(epoch.value.byValue.map!(finished_epoch => finished_epoch.time).uniq.walkLength == 1, "not all timestamps were the same!");
+
                     writeln("FINISHED ENTIRE EPOCH");
                     epochs.remove(epoch.key);
                 }
             }
-
         }
-        
-        while(newest_epoch < end_epoch) {
+
+        while (newest_epoch < end_epoch) {
             auto finished_epoch_log = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             check(finished_epoch_log[1].isRecord!(FinishedEpoch), "Did not receive finished epoch");
             FinishedEpoch epoch_received = FinishedEpoch(finished_epoch_log[1]);
             epochs[epoch_received.epoch][finished_epoch_log[0].to!string] = epoch_received;
             checkepochs;
-            newest_epoch++;
+
+            if (newest_epoch < epoch_received.epoch) {
+                newest_epoch = epoch_received.epoch;
+            }
         }
         return result_ok;
     }
