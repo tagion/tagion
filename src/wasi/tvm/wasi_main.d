@@ -4,6 +4,8 @@ import core.internal.backtrace.unwind;
 import core.runtime;
 import core.sys.wasi.missing;
 import core.sys.wasi.link;
+import core.attribute : weak;
+
 extern (C) @nogc {
        // extern(C) int nativeCallback(dl_phdr_info* info, size_t, void* data)
     int dl_iterate_phdr(dl_iterate_phdr_cb __callback, void*__data) {
@@ -99,9 +101,9 @@ extern (C) @nogc {
         assert(0, wasi_error);
     }
 
-
-    int getentropy(void *, size_t);
+    extern int getentropy(void *, size_t) @weak;
     size_t getrandom(void* buf, size_t size, uint) {
+        printf("%s buf=%p size=%d\n", &__FUNCTION__[0], buf, size);
         getentropy(buf, size);
         return size;
     }
@@ -130,20 +132,6 @@ extern (C) @nogc {
 
 extern (C) int _Dmain(char[][] args);
 extern (C) void _start() {
-    static bool started=false;
-    scope(exit) {
-        started=true;
-    }
-    //rt_init;
-    // scope(exit) {
-    //  rt_term;
-    // }
-        printf("Hello _start\n");
-    if (!started) {
-        import rt.dmain2;
-
-        //const run_ptr=&_d_run_main;
-        //    printf("%p\n", run_ptr);
-        _d_run_main(0, null, &_Dmain);
-    }
+    import rt.dmain2;
+    _d_run_main(0, null, &_Dmain);
 }

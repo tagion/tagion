@@ -26,7 +26,7 @@ LD_SECP256K1+=$(LIBSECP256K1)
 endif
 
 CONFIGUREFLAGS_SECP256K1 += --enable-module-ecdh
-CONFIGUREFLAGS_SECP256K1 += --enable-experimental
+#CONFIGUREFLAGS_SECP256K1 += --enable-experimental
 #CONFIGUREFLAGS_SECP256K1 += --enable-module-recovery
 CONFIGUREFLAGS_SECP256K1 += --enable-module-schnorrsig
 #CONFIGUREFLAGS_SECP256K1 += --enable-module-musig
