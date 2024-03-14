@@ -310,7 +310,9 @@
       "timeout": 0.0
     },
     "run_epochs": {
-      "args": [],
+      "args": [
+        "10"
+      ],
       "envs": {},
       "stages": [
         "epochs"
