@@ -9,7 +9,7 @@ import tagion.crypto.random.random;
 import std.algorithm;
 import std.array;
 import tagion.basic.ConsensusExceptions;
-import tagion.basic.Debug;
+
 enum SECP256K1 : uint {
     FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
     FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
@@ -321,7 +321,6 @@ class NativeSecp256k1 {
     in (pubkey.length == PUBKEY_SIZE)
     in (signature.length == SIGNATURE_SIZE)
     do {
-        __write("%s:%d", __FUNCTION__, __LINE__);
         secp256k1_pubkey xy_pubkey;
         secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
         return verify(signature, msg, xy_pubkey);
@@ -336,11 +335,8 @@ class NativeSecp256k1 {
     in (msg.length == MESSAGE_SIZE)
 
     do {
-        __write("%s:%d", __FUNCTION__, __LINE__);
         secp256k1_xonly_pubkey xonly_pubkey;
-        __write("%s:%d _ctx=%x", __FUNCTION__, __LINE__, _ctx);
         int ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
-        __write("%s:%d ret=%d", __FUNCTION__, __LINE__, ret);
         if (ret != 0) {
             ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
         }

@@ -16,7 +16,9 @@ export class Wasi {
 
 	 //really annoying the interface works this way but we MUST set the instance after creating it with the WASI class as an import in order to access it's memory
 	set instance(val) {
+        console.log("Instance set ", val);
 		this.#instance = val;
+        console.log("Instance this ", this);
 	}
 
 	bind(){
@@ -26,6 +28,7 @@ export class Wasi {
 		this.environ_sizes_get = this.environ_sizes_get.bind(this);
 		this.fd_read = this.fd_read.bind(this);
 		this.fd_write = this.fd_write.bind(this);
+		this.random_get = this.random_get.bind(this);
 	}
 
 	args_sizes_get(argCountPtr, argBufferSizePtr) {
@@ -121,7 +124,9 @@ export class Wasi {
     }
     path_open(x0) {
     }
-    random_get(x0) {
+    random_get(bufPtr, bufLen) {
+        const rand_buf = new Uint8Array(this.#instance.exports.memory.buffer, bufPtr, bufLen);
+        crypto.getRandomValues(rand_buf);
     }
 	environ_get(environPtr, environBufferPtr) {
 		const envByteLength = this.#envEncodedStrings.map(s => s.byteLength).reduce((sum, val) => sum + val, 0);
