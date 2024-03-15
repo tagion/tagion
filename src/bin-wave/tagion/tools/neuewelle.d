@@ -25,6 +25,7 @@ import tagion.GlobalSignals : segment_fault, stopsignal;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension, hasExtension;
+import tagion.basic.dir;
 import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.logger;
@@ -62,7 +63,7 @@ void signal_handler(int signal) nothrow {
     }
 }
 
-mixin Main!(_main, "wave");
+mixin Main!(_main, "tagionwave");
 
 int _main(string[] args) {
     try {
@@ -142,7 +143,7 @@ int _neuewelle(string[] args) {
         return 0;
     }
 
-    enum default_wave_config_filename = "tagionwave".setExtension(FileExtension.json);
+    const default_wave_config_filename = buildPath(base_dir.config, "tagionwave".setExtension(FileExtension.json));
     const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
     auto config_file = (user_config_file < 0) ? default_wave_config_filename : args[user_config_file];
 
@@ -151,7 +152,6 @@ int _neuewelle(string[] args) {
         try {
             local_options.load(config_file);
             log("Running with config file %s", config_file);
-            chdir(config_file.dirName);
         }
         catch (Exception e) {
             stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
@@ -163,7 +163,8 @@ int _neuewelle(string[] args) {
         stderr.writefln("No config file exits, running with default options");
     }
 
-    // Experimental!!
+    // Set individual config options by a key value flag
+    // eg: --option=epoch_creator.timeout:500
     if (!override_options.empty) {
         local_options.set_override_options(override_options);
     }

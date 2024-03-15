@@ -247,7 +247,7 @@
                 let pkg = self.packages.${pkgs.system}.default;
                 in {
                   Restart = "on-failure";
-                  ExecStart = "${pkg}/bin/tagion wave";
+                  ExecStart = "${pkg}/bin/tagionwave";
                 };
             };
             systemd.services."tagionshell" = mkIf cfg.tagionshell.enable {
@@ -258,7 +258,7 @@
                 let pkg = self.packages.${pkgs.system}.default;
                 in {
                   Restart = "on-failure";
-                  ExecStart = "${pkg}/bin/tagion shell";
+                  ExecStart = "${pkg}/bin/tagionshell";
                 };
             };
           };
