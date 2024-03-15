@@ -30,26 +30,27 @@ mixin Main!(_main);
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
-    //    bool standard_output;
-    //    bool standard_input;
     bool not_flag;
     string output_filename;
     string name;
     string record_type;
     string[] types;
     string list;
+    bool recursive;
+
     try {
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
-                "v|verbose", "Prints more debug information", &__verbose_switch, //                "c|stdout", "Print to standard output", &standard_output,
+                "version", "display the version", &version_switch,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
                 "o|output", "Output file name (Default stdout)", &output_filename,
                 "n|name", "HiBON member name (name as text or regex as `regex`)", &name,
                 "r|recordtype", "HiBON recordtype (name as text or regex as `regex`)", &record_type,
                 "t|type", "HiBON data types", &types,
                 "not", "Filter out match", &not_flag,
                 "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
+                "rec", "Enables recursive search", &recursive,
         );
 
         if (version_switch) {
@@ -58,10 +59,8 @@ int _main(string[] args) {
         }
 
         if (main_args.helpWanted) {
-            //       writeln(logo);
             defaultGetoptPrinter(
                     [
-                    //                format("%s version %s", program, REVNO),
                     "Documentation: https://tagion.org/",
                     "",
                     "Usage:",
@@ -77,11 +76,8 @@ int _main(string[] args) {
             if (list.empty) {
                 return true;
             }
-            //writefln("list=%s", list.splitter(","));
             foreach (elm; list.splitter(",")) {
-                //writefln("elm=%s", elm);
                 const elm_range = elm.split("..");
-                //writefln("elm_range=%s", elm_range);
                 if (elm_range.length == 1) {
                     if (no == elm_range[0].to!size_t) {
                         return true;
@@ -98,9 +94,9 @@ int _main(string[] args) {
         }
 
         if (name) {
-            verbose("%s", name);
-            verbose("%s", record_type);
-            verbose("%s", types);
+            verbose("name:        [%s]", name);
+            verbose("record type: [%s]", record_type);
+            verbose("types:       %s", types);
         }
         HiBONregex hibon_regex;
         if (name) {
@@ -110,7 +106,6 @@ int _main(string[] args) {
             hibon_regex.record_type = record_type;
         }
         tools.check(args.length <= 2, "Only one file argument accepted");
-        // if (args.length == 1) {
         File fin;
         fin = stdin;
         if (args.length == 2) {
@@ -137,8 +132,15 @@ int _main(string[] args) {
                 fout.close;
             }
         }
+
+        bool isMatch(Document doc)
+        {
+            return hibon_regex.match(doc) || // doc either match filters
+                   (recursive && doc[].any!(elm => (elm.isType!Document && isMatch(elm.get!Document)))); // or search recursively (if enabled)
+        }
+
         foreach (no, doc; HiBONRange(fin).enumerate) {
-            if (inList(no) && hibon_regex.match(doc)) {
+            if (inList(no) && isMatch(doc)) {
                 verbose("%d\n%s", no, doc.toPretty);
                 fout.rawWrite(doc.serialize);
             }
