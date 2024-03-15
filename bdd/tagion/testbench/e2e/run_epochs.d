@@ -216,17 +216,17 @@ class RunPassiveFastNetwork {
                     check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
 
                     // check all events are the same
-                    auto events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+                    auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
                     string print_events() {
                         HashNet net = new StdHashNet;
                         string printout;
-                        uint number_of_empty_events;
-                        foreach(i, e; events) {
+                        // printout ~= format("EPOCH: %s", epoch.value.epoch);
+                        foreach(i, events; epoch_events) {
+                            uint number_of_empty_events;
                             printout ~= format("\n%s: ", i);
-                            foreach(p; e.map!(e => e.event_body)) {
-                                if (!p.payload.empty) {
-                                    printout ~= format("%(%02x%) ", net.calcHash(p.payload)[0..8]);
-                                } else {
+                            foreach(epack; events) {
+                                printout ~= format("%(%02x%) ", net.calcHash(epack)[0..4]);
+                                if (epack.event_body.payload.empty) {
                                     number_of_empty_events++;
                                 }
                             }
@@ -234,7 +234,8 @@ class RunPassiveFastNetwork {
                         }
                         return printout;
                     }
-                    if (!events.all!(e => e == events[0])) {
+
+                    if (!epoch_events.all!(e => e == epoch_events[0])) {
                         check(0, format("not all events the same \n%s", print_events));
                     }
 
