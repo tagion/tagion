@@ -205,6 +205,7 @@ class StdRefinement : Refinement {
     void epoch(Event[] event_collection, const(Round) decided_round) {
         import std.range : tee;
 
+
         sdt_t[] times;
         auto events = event_collection
             .tee!((e) => times ~= e.event_body.time)
@@ -232,6 +233,12 @@ class StdRefinement : Refinement {
         version(NEW_ORDERING) {
             const epoch_time = times[times.length / 2];
         }
+        version(BDD) {
+            // raw event_collection subscription
+            auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
+            log.event(raw_epoch_events, "epoch_successful", event_payload);
+        }
+
         version (EPOCH_LOG) {
             log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                     hashgraph.name, decided_round.number,

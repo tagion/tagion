@@ -202,7 +202,7 @@ class RunPassiveFastNetwork {
 
     @When("the nodes creates epochs")
     Document epochs() {
-        submask.subscribe(StdRefinement.epoch_created);
+        submask.subscribe(StdRefinement.raw_epoch_events);
         long newest_epoch;
 
         // epoch <- taskname <- epoch_number
