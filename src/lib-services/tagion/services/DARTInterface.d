@@ -1,4 +1,5 @@
 /// Service which exposes dart reads over a socket
+/// https://docs.tagion.org/docs/architecture/DartInterface
 module tagion.services.DARTInterface;
  
 @safe:

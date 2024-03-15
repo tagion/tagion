@@ -44,7 +44,9 @@ struct WaveOptions {
     NetworkMode network_mode = NetworkMode.INTERNAL;
     uint number_of_nodes = 5;
     string prefix_format = "Node_%s_";
-    bool fail_fast = false;
+
+    // The program stops if an actor taskfailure reaches the top thread
+    bool fail_fast = true;
 
     mixin JSONCommon;
 }

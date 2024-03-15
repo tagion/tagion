@@ -1,3 +1,4 @@
+/// Service Error codes
 module tagion.services.codes;
 
 import tagion.hibon.Document;
@@ -5,7 +6,7 @@ import std.traits;
 
 enum ServiceCode {
     @("No Errors") none = 0,
-    @("An internal error occured") internal = 1,
+    @("An internal error occurred") internal = 1,
 
     @("Received an invalid buffer") buf = 5,
     @("The request timed out") timeout = 6,

@@ -6,8 +6,11 @@ Compilation for iOS is only supported with OSX as a host.
 
 ## Setup
 
-1. Install the ldc v1.36 OSX multilib from https://github.com/ldc-developers/ldc/releases/tag/v1.36.0
-and add it to your `$PATH`.
+1. Install build tools using brew
+
+```
+brew install autoconf libtool m4 automake make pkg-config ldc
+```
 
 2. Install xcode. Make sure that xcode-select is available
 

@@ -1,5 +1,5 @@
 /// Service for the tagion virtual machine 
-/// [Documentation](https://docs.tagion.org/#/documents/architecture/TVM)
+/// https://docs.tagion.org/docs/architecture/TVM
 module tagion.services.TVM;
 
 @safe:

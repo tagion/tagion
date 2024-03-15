@@ -52,7 +52,7 @@ class TestRefinement : StdRefinement {
     }
 
     static Epoch[][Pubkey] epoch_events;
-    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
+    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) const {
 
         auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time, cast(Round) decided_round))();
         epoch_events[hashgraph.owner_node.channel] ~= epoch;

@@ -1,4 +1,5 @@
 /// Interface for the Node against other Nodes
+/// https://docs.tagion.org/docs/architecture/NodeInterface
 module tagion.services.nodeinterface;
 
 @safe:
