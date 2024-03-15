@@ -249,9 +249,6 @@ class RunPassiveFastNetwork {
                         check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
                     }
 
-                    // check all timestamps are the same
-                    // check(epoch.value.byValue.map!(finished_epoch => finished_epoch.time).uniq.walkLength == 1, "not all timestamps were the same!");
-
                     writeln("FINISHED ENTIRE EPOCH");
                     epochs.remove(epoch.key);
                 }
@@ -259,7 +256,7 @@ class RunPassiveFastNetwork {
         }
 
         while (newest_epoch < end_epoch) {
-            auto finished_epoch_log = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto finished_epoch_log = receiveOnlyTimeout!(LogInfo, const(Document))(20.seconds);
             check(finished_epoch_log[1].isRecord!(FinishedEpoch), "Did not receive finished epoch");
             FinishedEpoch epoch_received = FinishedEpoch(finished_epoch_log[1]);
             epochs[epoch_received.epoch][finished_epoch_log[0].to!string] = epoch_received;

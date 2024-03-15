@@ -235,7 +235,18 @@ class StdRefinement : Refinement {
         }
         version(BDD) {
             // raw event_collection subscription
-            auto event_payload = FinishedEpoch(event_collection, epoch_time, decided_round.number);
+            version(OLD_ORDERING) {
+                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+            }
+            version(NEW_ORDERING) {
+                const famous_witnesses = decided_round
+                    ._events
+                    .filter!(e => e !is null)
+                    .filter!(e => decided_round.famous_mask[e.node_id])
+                    .array;
+                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+            }
+            auto event_payload = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
             log.event(raw_epoch_events, "raw_epoch", event_payload);
         }
 

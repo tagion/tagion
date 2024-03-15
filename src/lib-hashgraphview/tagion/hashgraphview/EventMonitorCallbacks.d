@@ -15,7 +15,6 @@ interface EventMonitorCallbacks {
         void witness(const(Event) e);
         void round(const(Event) e);
         void famous(const(Event) e);
-        void round(const(Event) e);
         void remove(const(Event) e);
 
         // Unused callbacks, will they be used in the future? - Lucas
