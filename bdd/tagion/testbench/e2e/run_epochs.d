@@ -220,11 +220,17 @@ class RunPassiveFastNetwork {
                     string print_events() {
                         HashNet net = new StdHashNet;
                         string printout;
+                        uint number_of_empty_events;
                         foreach(i, e; events) {
                             printout ~= format("\n%s: ", i);
                             foreach(p; e.map!(e => e.event_body)) {
-                                printout ~= format("%(%02x%) ", net.calcHash(p.payload)[0..8]);
+                                if (!p.payload.empty) {
+                                    printout ~= format("%(%02x%) ", net.calcHash(p.payload)[0..8]);
+                                } else {
+                                    number_of_empty_events++;
+                                }
                             }
+                            printout ~= format("EMPTY: %s", number_of_empty_events);
                         }
                         return printout;
                     }

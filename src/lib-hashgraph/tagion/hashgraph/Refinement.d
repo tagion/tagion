@@ -214,7 +214,7 @@ class StdRefinement : Refinement {
 
 
         version(OLD_ORDERING) {
-            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT));
+            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
         }
         version(NEW_ORDERING) {
             const famous_witnesses = decided_round
@@ -222,7 +222,7 @@ class StdRefinement : Refinement {
                 .filter!(e => e !is null)
                 .filter!(e => decided_round.famous_mask[e.node_id])
                 .array;
-            auto sorted_events = events.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round));
+            auto sorted_events = events.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
         }
         times.sort;
         
@@ -235,8 +235,8 @@ class StdRefinement : Refinement {
         }
         version(BDD) {
             // raw event_collection subscription
-            auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
-            log.event(raw_epoch_events, "epoch_successful", event_payload);
+            auto event_payload = FinishedEpoch(event_collection, epoch_time, decided_round.number);
+            log.event(raw_epoch_events, "raw_epoch", event_payload);
         }
 
         version (EPOCH_LOG) {
@@ -248,7 +248,7 @@ class StdRefinement : Refinement {
         log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, events
                 .length);
 
-        finishedEpoch(events, epoch_time, decided_round);
+        finishedEpoch(sorted_events, epoch_time, decided_round);
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 }
