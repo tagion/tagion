@@ -926,6 +926,8 @@ class HashGraph {
         import tagion.hashgraphview.EventView;
         import tagion.hibon.HiBONFile : fwrite;
 
+        File graphfile = File(filename, "w");
+
         size_t[Pubkey] node_id_relocation;
         if (node_labels.length) {
             // assert(node_labels.length is _nodes.length);
@@ -936,7 +938,9 @@ class HashGraph {
             }
 
         }
-        auto events = new HiBON;
+
+        EventView[size_t] events;
+        /* auto events = new HiBON; */
         (() @trusted {
             foreach (n; _nodes) {
                 const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
@@ -945,10 +949,15 @@ class HashGraph {
                     .each!((e) => events[e.id] = EventView(e, node_id));
             }
         })();
-        auto h = new HiBON;
-        h[Params.size] = node_size;
-        h[Params.events] = events;
-        filename.fwrite(h);
+
+        graphfile.fwrite(NodeAmount(node_size));
+        foreach(e; events) {
+            graphfile.fwrite(e);
+        }
+        /* auto h = new HiBON; */
+        /* h[Params.size] = node_size; */
+        /* h[Params.events] = events; */
+        /* graphfile.fwrite(h); */
     }
 
 }
