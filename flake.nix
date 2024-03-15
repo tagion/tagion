@@ -254,6 +254,8 @@
           config = {
             systemd.services."tagionwave" = mkIf cfg.tagionwave.enable {
               wantedBy = [ "multi-user.target" ];
+              wants = [ "network-online.target" ];
+              after = [ "network-online.target" ];
               serviceConfig =
                 let pkg = self.packages.${pkgs.system}.default;
                 in {
@@ -263,6 +265,8 @@
             };
             systemd.services."tagionshell" = mkIf cfg.tagionshell.enable {
               wantedBy = [ "multi-user.target" ];
+              wants = [ "network-online.target" ];
+              after = [ "network-online.target" ];
               serviceConfig =
                 let pkg = self.packages.${pkgs.system}.default;
                 in {
