@@ -121,7 +121,11 @@ mixin template doOneMain(alltools...) {
                         }
                     }
                     writefln("%s -> %s", toolname, thisExePath);
-                    symlink(thisExePath, symlink_filename);
+                    try {
+                        symlink(thisExePath, symlink_filename);
+                    }
+                    catch(Exception _) {
+                    }
                 }
                 return Result(0, true);
             }
