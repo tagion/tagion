@@ -92,24 +92,12 @@ class ItWork {
 
         immutable task_names = TaskNames();
         { // Start dart service
-            auto module_path = env.bdd_log.buildPath(__MODULE__);
             immutable opts = DARTOptions(
-                    module_path,
+                    ".",
                     "dart".setExtension(FileExtension.dart),
             );
 
-            auto replicator_path = buildPath(module_path, "replicator");
-            immutable replicator_opts = ReplicatorOptions(replicator_path);
-
-            mkdirRecurse(replicator_path);
-            if (replicator_path.exists) {
-                rmdirRecurse(replicator_path);
-            }
-            mkdirRecurse(opts.dart_filename.dirName);
-
-            if (opts.dart_path.exists) {
-                opts.dart_path.remove;
-            }
+            immutable ReplicatorOptions replicator_opts;
 
             import tagion.dart.DART;
 

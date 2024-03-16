@@ -23,18 +23,9 @@ void wrap_neuewelle(immutable(string)[] args) {
 }
 
 int _main(string[] args) {
-    auto module_path = env.bdd_log.buildPath(__MODULE__);
-
-    if (module_path.exists) {
-        rmdirRecurse(module_path);
-    }
-    mkdirRecurse(module_path);
-    string config_file = buildPath(module_path, "tagionwave.json");
+    string config_file = "tagionwave.json";
 
     scope Options local_options = Options.defaultOptions;
-    local_options.dart.folder_path = buildPath(module_path);
-    local_options.trt.folder_path = buildPath(module_path);
-    local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "Spam_DoubleSpend_Node_%s_";
     local_options.subscription.address = contract_sock_addr("SPAM_SUBSCRIPTION");
 

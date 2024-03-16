@@ -4,7 +4,7 @@ import core.thread;
 import std.algorithm;
 import std.array;
 import std.datetime.systime;
-import std.file : exists, mkdirRecurse;
+import std.file : exists, isDir, mkdirRecurse, rmdirRecurse;
 import std.format;
 import std.path : buildNormalizedPath, setExtension;
 import std.process;
@@ -172,12 +172,16 @@ struct ScheduleRunner {
                 const ptrdiff_t job_index,
                 const SysTime time,
                 const(char[][]) cmd,
-                const(string) log_filename,
+                const(string) test_name,
                 const(string[string]) env) {
             static uint job_count;
             scope (exit) {
                 job_count++;
             }
+
+            const log_filename = buildNormalizedPath(env[BDD_RESULTS],
+                    test_name).setExtension("log");
+
             if (dry_switch) {
                 const line_length = cmd.map!(c => c.length).sum;
                 writefln("%-(%s%)", '#'.repeat(max(min(line_length, 30), 80)));
@@ -189,9 +193,15 @@ struct ScheduleRunner {
                 auto fout = File(log_filename, "w");
                 auto _stdin = (() @trusted => stdin)();
 
+                const workdir = buildPath(env[BDD_LOG], test_name);
+                if(workdir.exists && workdir.isDir) {
+                    rmdirRecurse(workdir);
+                }
+                mkdirRecurse(workdir);
+
                 Pid pid;
                 if (!cov_enable) {
-                    pid = spawnProcess(cmd, _stdin, fout, fout, env);
+                    pid = spawnProcess(cmd, _stdin, fout, fout, env, workDir: workdir);
                 }
                 else {
                     import std.conv;
@@ -202,7 +212,7 @@ struct ScheduleRunner {
                     mkdirRecurse(cov_path);
                     // For some reason the drt cov flags don't work when spawned as a process 
                     // so we just run it in a shell
-                    pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
+                    pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env, workDir: workdir);
                 }
 
                 writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
@@ -250,9 +260,10 @@ struct ScheduleRunner {
                         setEnv(env, schedule_list.front.stage);
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
-                        const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                                schedule_list.front.name).setExtension("log");
-                        batch(job_index, time, cmd, log_filename, env);
+
+                        const test_name = schedule_list.front.name;
+
+                        batch(job_index, time, cmd, test_name, env);
                         schedule_list.popFront;
                     }
                     catch (Exception e) {

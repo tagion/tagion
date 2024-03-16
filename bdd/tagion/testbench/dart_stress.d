@@ -21,19 +21,12 @@ import tagion.tools.Basic;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    const string module_path = env.bdd_log.buildPath(__MODULE__);
-    const string dartfilename = buildPath(module_path, "dart_stress_test".setExtension(FileExtension.dart));
+    const dartfilename = "dart_stress_test".setExtension(FileExtension.dart);
 
-    if (module_path.exists) {
-        rmdirRecurse(module_path);
-    }
-    mkdirRecurse(module_path);
-
-    // create the dartfile
     const SecureNet net = new DARTFakeNet("very_secret");
     const hirpc = HiRPC(net);
 
-    DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+    DartInfo dart_info = DartInfo(dartfilename, ".", net, hirpc);
 
     const ulong samples = 1000;
     const ulong number_of_records = 10;

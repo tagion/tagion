@@ -16,12 +16,11 @@ import tagion.tools.Basic;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    const string module_path = env.bdd_log.buildPath(__MODULE__);
-    const string dartfilename = buildPath(module_path, "dart_mapping_two_archives".setExtension(FileExtension.dart));
+    const string dartfilename = "dart_mapping_two_archives".setExtension(FileExtension.dart);
     const SecureNet net = new DARTFakeNet("very_secret");
     const hirpc = HiRPC(net);
 
-    DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+    DartInfo dart_info = DartInfo(dartfilename, ".", net, hirpc);
 
     auto dart_mapping_two_archives_feature = automation!(dart_mapping_two_archives)();
 

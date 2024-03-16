@@ -41,12 +41,26 @@ struct WaveOptions {
      *  <Base64 encoded public key> <address>
     */
     string address_file;
+
+    /// The network mode to start in or [INTERNAL, LOCAL, PUB]
     NetworkMode network_mode = NetworkMode.INTERNAL;
+
+    /// How many nodes to spawn in mode0
     uint number_of_nodes = 5;
+
+    /// This is used in mode0 to prefix all task names and files.
+    /// Use a %s format specifier to include the note number
     string prefix_format = "Node_%s_";
 
-    // The program stops if an actor taskfailure reaches the top thread
+    /// The program stops if an actor taskfailure reaches the top thread
     bool fail_fast = true;
+
+    /// All data files will be prefixed with this directory
+    /// dart, replicator, etc..
+    string data_dir;
+
+    // FIXME: This is an ugly hack so we can use the prefix data dir in other services
+    static string data_dir_;
 
     mixin JSONCommon;
 }

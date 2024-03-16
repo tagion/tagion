@@ -24,9 +24,7 @@ mixin Main!(_main);
 int _main(string[] args) {
 
     if (env.stage == Stage.performance) {
-        const string module_path = env.bdd_log.buildPath(__MODULE__);
-        const string dartfilename = buildPath(module_path, "dart_insert_remove_stress_test".setExtension(FileExtension
-                .dart));
+        const dartfilename = "dart_insert_remove_stress_test".setExtension(FileExtension.dart);
 
         SecureNet net;
 
@@ -40,7 +38,7 @@ int _main(string[] args) {
 
         const hirpc = HiRPC(net);
 
-        DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+        DartInfo dart_info = DartInfo(dartfilename, ".", net, hirpc);
 
         auto dart_ADD_REMOVE_stress_feature = automation!(insert_remove_stress)();
         dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info, env.getSeed, 100_000, 20, 1000);
@@ -50,9 +48,7 @@ int _main(string[] args) {
     }
 
     if (env.stage == Stage.commit) {
-        const string module_path = env.bdd_log.buildPath(__MODULE__);
-        const string dartfilename = buildPath(module_path, "dart_insert_remove_stress_test".setExtension(FileExtension
-                .dart));
+        const dartfilename = "dart_insert_remove_stress_test".setExtension(FileExtension.dart);
 
         SecureNet net;
 
@@ -66,7 +62,7 @@ int _main(string[] args) {
 
         const hirpc = HiRPC(net);
 
-        DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+        DartInfo dart_info = DartInfo(dartfilename, ".", net, hirpc);
 
         auto dart_ADD_REMOVE_stress_feature = automation!(insert_remove_stress)();
         dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info, env.getSeed, 100, 5, 5);
