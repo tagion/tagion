@@ -99,11 +99,11 @@
           '';
         };
 
-      devShells.x86_64-linux.default =
-        # Notice the reference to nixpkgs here.
+      _devShell =
         pkgs.mkShell {
           inherit (self.checks.x86_64-linux.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
+            # This is a bit misleading now but should this work fine
             self.packages.x86_64-linux.default.buildInputs
             self.packages.x86_64-linux.default.nativeBuildInputs
             dub
@@ -120,6 +120,11 @@
             dfmt-pull.legacyPackages.x86_64-linux.dlang-dfmt
           ];
         };
+
+      devShells.x86_64-linux.default = self._devShell;
+      devShells.aarch64-linux.default = self._devShell;
+      devShells.x86_64-darwin.default = self._devShell;
+      devShells.aarch64--darwin.default = self._devShell;
 
       checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
