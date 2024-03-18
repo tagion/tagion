@@ -32,6 +32,7 @@ int main(string[] args) {
     import big_contract = tagion.testbench.services.big_contract;
     import transaction = tagion.testbench.e2e.transaction;
     import run_epochs = tagion.testbench.e2e.run_epochs;
+    import mode1 = tagion.testbench.e2e.mode1;
 
     alias alltools = AliasSeq!(
             collector,
@@ -62,6 +63,7 @@ int main(string[] args) {
             big_contract,
             transaction,
             run_epochs,
+            mode1,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
