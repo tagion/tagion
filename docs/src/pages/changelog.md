@@ -1,3 +1,23 @@
+# Changelog for Epoch 1104102 .. 1189390
+
+**Epoch operational test**
+We have created a test that runs many epochs very fast, which is able to give us insights into problems with the Hashgraph. It subscribes and checks raw epochs before they enter Refinement. 
+
+** WASM get_random and signatures in the browser **
+We managed to get the `get_random` function to work in WASM in the browser. This is difficult since the normal system functions are not available, and therefore we have to call a browser function in order to retrieve random data from WASM. This is now working, which has allowed us to create Signatures in the browser with WASM. A huge milestone in the process of creating Tauon.
+**Recursive search for HiREP**
+We have implemented recursive search for the tool hirep. This allows for a more broad range of use-cases, since it can eg. be used to retrieve all pubkeys in a database.
+
+```bash
+  dartutil dart.drt --dump |hirep -n \$Y --rec|hibonutil -pc
+```
+
+**Graph View**
+Fixed a bug where the graphview tool used int instead of long for the epoch height.
+
+**NNG websocket**
+We have created a high level wrapper around STREAM, which allows for easier websocket handling like in other languages with `on_connect`, `on_message` etc.
+
 # Changelog for Epoch 1048744 .. 1104102
 
 **NNG Stream**
