@@ -124,7 +124,7 @@
       devShells.x86_64-linux.default = self._devShell;
       devShells.aarch64-linux.default = self._devShell;
       devShells.x86_64-darwin.default = self._devShell;
-      devShells.aarch64--darwin.default = self._devShell;
+      devShells.aarch64-darwin.default = self._devShell;
 
       checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
