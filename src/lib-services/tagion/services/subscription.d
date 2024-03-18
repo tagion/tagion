@@ -1,4 +1,5 @@
 /// Service for publishing event subscription
+/// https://docs.tagion.org/docs/architecture/LoggerSubscription
 module tagion.services.subscription;
 @safe:
 

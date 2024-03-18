@@ -145,8 +145,8 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
         else if (e.father_less) {
             obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "egg");
         }
-        string round_text = (e.round is int.min) ? "\u2693" : e.round.to!string;
-        if (e.round_received !is int.min) {
+        string round_text = (e.round is long.min) ? "\u2693" : e.round.to!string;
+        if (e.round_received !is long.min) {
             round_text ~= format(":%s", e.round_received);
         }
         // if (e.erased) {

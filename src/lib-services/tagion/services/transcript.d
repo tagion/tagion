@@ -1,4 +1,5 @@
-/// Service for Transcript responsible for creating recorder for DART [Documentation](https://docs.tagion.org/#/documents/architecture/transcript)
+/// Service for Transcript responsible for creating recorder for DART 
+/// [DART Documentation](https://docs.tagion.org/docus/architecture/transcript)
 module tagion.services.transcript;
 
 @safe:
@@ -166,7 +167,8 @@ struct TranscriptService {
                 The vote array is already updated. We must go through all the different vote indices and update the epoch that was stored in the dart if any new votes are found.
             */
 
-            Finished: foreach (v; votes.byKeyValue) {
+            pragma(msg, "fixme(pr): instead of sorting each time there must be a better way for us to do this");
+            foreach (v; votes.byKeyValue.array.sort!((a,b) => a.value.epoch.epoch_number < b.value.epoch.epoch_number)) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
                 if (v.value.epoch.bullseye !is Fingerprint.init) {
                     // add the signatures to the epoch. Only add them if the signature match ours
@@ -195,7 +197,6 @@ struct TranscriptService {
                         recorder.insert(v.value.epoch, Archive.Type.ADD);
                         recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
                         votes.remove(v.value.epoch.epoch_number);
-                        break Finished;
                     }
 
                 }
@@ -275,12 +276,12 @@ struct TranscriptService {
             }
 
             /*
-            Since we write all inromation that is known immediatly we create the epoch chain block here and make it empty.
+            Since we write all inromation that is known immediately we create the epoch chain block here and make it empty.
             The following information can be added:
                 epoch_number
                 time
                 active
-                deactive
+                deactivate
                 globals
             This will be added to thed DART. We also keep this in our cache in order to make the reads as few as possible.
             */

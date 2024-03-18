@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
     dfmt-pull.url = "github:jtbx/nixpkgs/d-dfmt";
   };
 
@@ -253,6 +254,8 @@
           config = {
             systemd.services."tagionwave" = mkIf cfg.tagionwave.enable {
               wantedBy = [ "multi-user.target" ];
+              wants = [ "network-online.target" ];
+              after = [ "network-online.target" ];
               serviceConfig =
                 let pkg = self.packages.${pkgs.system}.default;
                 in {
@@ -262,6 +265,8 @@
             };
             systemd.services."tagionshell" = mkIf cfg.tagionshell.enable {
               wantedBy = [ "multi-user.target" ];
+              wants = [ "network-online.target" ];
+              after = [ "network-online.target" ];
               serviceConfig =
                 let pkg = self.packages.${pkgs.system}.default;
                 in {
@@ -273,10 +278,15 @@
         };
 
       nixosConfigurations = {
+        #  qa = nixpkgs.lib.nixosSystem {
+        #   system = "x86_64-linux";
+        #   modules = [
+        #     ./tub/qa-config.nix
+        #   ];
+        # };
         # System configuration for a test network running in mode0
         tgn-m0-test = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          # specialArgs = attrs; # Pass flake outputs to our config
           modules = [
             self.nixosModules.default
             ({ pkgs, ... }: {

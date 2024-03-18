@@ -11,8 +11,8 @@ PLATFORMS+=$(WASI_WASM64)
 ifeq ($(PLATFORM),$(WASI_WASM32))
 
 TRIPLET:=wasm32-unknown-wasi
-#WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi
-WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi-threads
+WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi
+#WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi-threads
 endif
 
 ifeq ($(PLATFORM),$(WASI_WASM64))

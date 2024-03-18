@@ -337,7 +337,6 @@ class NativeSecp256k1 {
     do {
         secp256k1_xonly_pubkey xonly_pubkey;
         int ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
-
         if (ret != 0) {
             ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
         }

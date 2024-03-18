@@ -56,7 +56,6 @@ struct HiBONregex {
     }
 
     bool match(const Document doc) const {
-        bool result;
         if (!record_type.empty) {
             if (record_type == "!") {
                 return doc.getType.isinit;

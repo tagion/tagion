@@ -1,5 +1,5 @@
 /// Service for verifying contracts
-/// [Documentation](https://docs.tagion.org/#/documents/architecture/HiRPCVerifier)
+/// https://docs.tagion.org/docs/architecture/HiRPCVerifier
 module tagion.services.hirpc_verifier;
 
 import std.stdio;

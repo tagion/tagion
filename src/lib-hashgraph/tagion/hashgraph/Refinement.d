@@ -48,6 +48,9 @@ struct FinishedEpoch {
 class StdRefinement : Refinement {
 
     static Topic epoch_created = Topic("epoch_creator/epoch_created");
+    version (BDD) {
+        static Topic raw_epoch_events = Topic("epoch_creator/raw_epoch_events");
+    }
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
@@ -104,13 +107,12 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    void epoch(Event[] event_collection, const(Round) decided_round) {
-
+    version (NEW_ORDERING) 
+    static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
         import std.bigint;
         import std.numeric : gcd;
         import std.range : back, retro, tee;
 
-        pragma(msg, "fixme(bbh): move pseudotime out and add function labels");
         struct PseudoTime {
             BigInt num; //fraction representing the avg received round
             BigInt denom;
@@ -139,13 +141,6 @@ class StdRefinement : Refinement {
                         time + other.time);
             }
         }
-
-        const famous_witnesses = decided_round
-            ._events
-            .filter!(e => e !is null)
-            .filter!(e => decided_round.famous_mask[e.node_id])
-            .array;
-
         PseudoTime calc_pseudo_time(Event event) pure const {
             auto receivers = famous_witnesses
                 .map!(e => e[].until!(e => !e.sees(event))
@@ -161,102 +156,112 @@ class StdRefinement : Refinement {
                 .array
                 .reduce!((a, b) => a + b);
         }
+        PseudoTime at = calc_pseudo_time(a);
+        PseudoTime bt = calc_pseudo_time(b);
 
-        bool order_less(Event a, Event b) pure const {
-            PseudoTime at = calc_pseudo_time(a);
-            PseudoTime bt = calc_pseudo_time(b);
-
-            if (at.num * bt.denom == at.denom * bt.num) {
-                if (at.order == bt.order) {
-                    if (a.order == b.order) {
-                        return a.fingerprint < b.fingerprint;
-                    }
-                    return a.order < b.order;
+        if (at.num * bt.denom == at.denom * bt.num) {
+            if (at.order == bt.order) {
+                if (a.order == b.order) {
+                    return a.fingerprint < b.fingerprint;
                 }
-                return at.order < bt.order;
+                return a.order < b.order;
             }
-            return at.num * bt.denom < at.denom * bt.num;
+            return at.order < bt.order;
         }
+        return at.num * bt.denom < at.denom * bt.num;
+    }
+    
+    version (OLD_ORDERING) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
+    @safe static bool order_less(const Event a, const Event b, const(int) order_count) pure {
+        bool rare_less(Buffer a_print, Buffer b_print) {
+            // rare_order_compare_count++;
+            pragma(msg, "review(cbr): Consensus order changed");
+            return a_print < b_print;
+        }
+
+        if (order_count < 0) {
+            return rare_less(a.fingerprint, b.fingerprint);
+        }
+        if (a.order is b.order) {
+            if (a.father && b.father) {
+                return order_less(a.father, b.father, order_count - 1);
+            }
+            if (a.father) {
+                return true;
+            }
+            if (b.father) {
+                return false;
+            }
+
+            if (!a.isFatherLess && !b.isFatherLess) {
+                return order_less(a.mother, b.mother, order_count - 1);
+            }
+
+            return rare_less(a.fingerprint, b.fingerprint);
+        }
+        return a.order < b.order;
+    }
+
+    void epoch(Event[] event_collection, const(Round) decided_round) {
+        import std.range : tee;
+
 
         sdt_t[] times;
         auto events = event_collection
             .tee!((e) => times ~= e.event_body.time)
             .filter!((e) => !e.event_body.payload.empty)
-            .array
-            .sort!((a, b) => order_less(a, b))
-            .release;
+            .array;
 
+
+        version(OLD_ORDERING) {
+            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        }
+        version(NEW_ORDERING) {
+            const famous_witnesses = decided_round
+                ._events
+                .filter!(e => e !is null)
+                .filter!(e => decided_round.famous_mask[e.node_id])
+                .array;
+            auto sorted_events = events.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+        }
         times.sort;
-        const epoch_time = times[times.length / 2];
+        
+        version(OLD_ORDERING) {
+            const mid = times.length / 2 + (times.length % 1);
+            const epoch_time = times[mid];
+        }
+        version(NEW_ORDERING) {
+            const epoch_time = times[times.length / 2];
+        }
+        version(BDD) {
+            // raw event_collection subscription
+            version(OLD_ORDERING) {
+                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+            }
+            version(NEW_ORDERING) {
+                const famous_witnesses = decided_round
+                    ._events
+                    .filter!(e => e !is null)
+                    .filter!(e => decided_round.famous_mask[e.node_id])
+                    .array;
+                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+            }
+            auto event_payload = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
+            log.event(raw_epoch_events, "raw_epoch", event_payload);
+        }
 
         version (EPOCH_LOG) {
             log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                     hashgraph.name, decided_round.number,
                     Event.count, Event.Witness.count, events.length, epoch_time);
         }
-        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, events.length);
 
-        finishedEpoch(events, epoch_time, decided_round);
+        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, events
+                .length);
 
+        finishedEpoch(sorted_events, epoch_time, decided_round);
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
-
-    version (none) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
-    void epoch(Event[] event_collection, const(Round) decided_round) {
-        import std.algorithm;
-        import std.range;
-
-        bool order_less(const Event a, const Event b, const(int) order_count) @safe {
-            bool rare_less(Buffer a_print, Buffer b_print) {
-                // rare_order_compare_count++;
-                pragma(msg, "review(cbr): Consensus order changed");
-                return a_print < b_print;
-            }
-
-            if (order_count < 0) {
-                return rare_less(a.fingerprint, b.fingerprint);
-            }
-            if (a.order is b.order) {
-                if (a.father && b.father) {
-                    return order_less(a.father, b.father, order_count - 1);
-                }
-                if (a.father) {
-                    return true;
-                }
-                if (b.father) {
-                    return false;
-                }
-
-                if (!a.isFatherLess && !b.isFatherLess) {
-                    return order_less(a.mother, b.mother, order_count - 1);
-                }
-
-                return rare_less(a.fingerprint, b.fingerprint);
-            }
-            return a.order < b.order;
-        }
-
-        sdt_t[] times;
-        auto events = event_collection
-            .filter!((e) => e !is null)
-            .tee!((e) => times ~= e.event_body.time)
-            .filter!((e) => !e.event_body.payload.empty)
-            .array
-            .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
-            .release;
-        times.sort;
-        const mid = times.length / 2 + (times.length % 1);
-        const epoch_time = times[mid];
-
-        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
-                hashgraph.name, decided_round.number,
-                Event.count, Event.Witness.count, events.length, epoch_time);
-
-        finishedEpoch(events, epoch_time, decided_round);
-
-        excludedNodes(hashgraph._excluded_nodes_mask);
-    }
-
 }
 
 @safe

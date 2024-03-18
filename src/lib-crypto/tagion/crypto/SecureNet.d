@@ -52,10 +52,6 @@ class StdHashNet : HashNet {
     }
 }
 
-import tagion.basic.Debug;
-
-static if (!ver.WASI):
-
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;

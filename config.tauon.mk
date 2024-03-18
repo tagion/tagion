@@ -46,7 +46,10 @@ TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/SecureNet.d
 TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/Cipher.d 
 TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/random/random.d 
 TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/NativeSecp256k1.d 
-
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/c/secp256k1.di
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/c/secp256k1_ecdh.di
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/c/secp256k1_schnorrsig.di
+TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/c/secp256k1_extrakeys.di
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d
 

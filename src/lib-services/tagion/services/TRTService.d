@@ -1,4 +1,5 @@
-// Transaction reverse table service using a DART
+/// Transaction reverse table service using a DART
+/// https://docs.tagion.org/docs/architecture/TRT
 module tagion.services.TRTService;
 import tagion.services.options : TaskNames;
 
