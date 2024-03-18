@@ -236,7 +236,7 @@ class RunPassiveFastNetwork {
                     }
 
                     if (!epoch_events.all!(e => e == epoch_events[0])) {
-                        check(0, format("not all events the same \n%s", print_events));
+                        check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
                     }
 
                     auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 
