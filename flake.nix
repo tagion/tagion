@@ -76,7 +76,6 @@
 
           nativeBuildInputs = with pkgs; [
             dmd
-            dtools
             gnumake
             pkg-config
           ];
@@ -117,6 +116,7 @@
             autoreconfHook
             cmake
             libz
+            dtools
             dfmt-pull.legacyPackages.x86_64-linux.dlang-dfmt
           ];
         };
@@ -211,6 +211,12 @@
             mkdir -p $out/bin; cp ./build/x86_64-linux/bin/collider $out/bin/
           '';
         };
+
+      docker = pkgs.dockerTools.buildLayeredImage {
+          name = "tagion";
+          tag = "latest";
+          config.Cmd = "${self.packages.x86_64-linux.default}/bin/tagion";
+      };
 
       packages.x86_64-linux.dockerImage =
         pkgs.dockerTools.buildImage {
