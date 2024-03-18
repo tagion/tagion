@@ -116,7 +116,11 @@ class EmulatorGossipNet : StdGossipNet {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
-        sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
+        version(RANDOM_DELAY) {
+            sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
+        } else {
+            sleep(delay.msecs);
+        }
 
         auto node_tid = locate(addresses[channel]);
         if (node_tid is Tid.init) {

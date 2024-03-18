@@ -63,9 +63,10 @@ DFLAGS+=$(DVERSION)=USE_GENESIS_EPOCH
 # DFLAGS+=$(DVERSION)=NEW_ORDERING 
 DFLAGS+=$(DVERSION)=OLD_ORDERING
 
-# Startup delay for nodes. Will add 5 seconds between each boot in order to 
-# ensure that the graph is still able to startup with delays between nodes. 
-# DFLAGS+=$(DVERSION)=WITH_STARTUP_DELAY
+# Flag for random delay between messages
+# see GossipNet
+# DFLAGS+=$(DVERSION)=RANDOM_DELAY
+
 
 # HashGraph.d not_used_channels turn on check of
 # node.state is ExchangeState.NONE. Mode1 does not function with this.
