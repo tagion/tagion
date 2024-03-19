@@ -128,7 +128,7 @@ unittest { // Markdown scenario test
     }
 }
 
-/// Examples: Convering a FeatureGroup to Markdown
+/// Examples: Converting a FeatureGroup to Markdown
 @safe
 unittest {
     auto bout = new OutBuffer;

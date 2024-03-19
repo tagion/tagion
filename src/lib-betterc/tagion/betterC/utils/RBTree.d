@@ -5,7 +5,7 @@ module tagion.betterC.utils.RBTree;
  * [PROG]               : Red Black Tree
  * [AUTHOR]             : Ashfaqur Rahman <sajib.finix@gmail.com>
  * [PURPOSE]            : Red-Black tree is an algorithm for creating a balanced
- *                        binary search tree data structure. Implementing a red-balck tree
+ *                        binary search tree data structure. Implementing a red-black tree
  *                        data structure is the purpose of this program.
  *
  * [DESCRIPTION]        : Its almost like the normal binary search tree data structure. But

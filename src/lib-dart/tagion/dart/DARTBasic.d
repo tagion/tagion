@@ -202,7 +202,7 @@ Fingerprint binaryHash(const(HashNet) net, scope const(Fingerprint) h1, scope co
 
  * Calculates the sparsed Merkle root from the branch-table list
 * The size of the table must be KEY_SPAN
-* Leaves in the branch table which doen't exist should have the value null
+* Leaves in the branch table which don't exist should have the value null
  * Params:
  *   net = The hash object/function used to calculate the hashes
  *   table = List if hash-value(fingerprint) in the branch

@@ -74,7 +74,7 @@ synchronized class AddressBook {
 
     /**
      * Remove addresses by public key
-     * @param pkey - public key fo remove addresses
+     * @param pkey - public key of remove addresses
      */
     void remove(const Pubkey pkey) pure nothrow {
         addresses.remove(pkey);
@@ -82,7 +82,7 @@ synchronized class AddressBook {
 
     /**
      * Check for a public key in network
-     * @param pkey - public key fo check
+     * @param pkey - public key of check
      * @return true if public key exist
      */
     bool exists(const Pubkey pkey) const pure nothrow {
@@ -91,7 +91,7 @@ synchronized class AddressBook {
 
     /**
      * Check for an active public key in network
-     * @param pkey - public key fo check
+     * @param pkey - public key of check
      * @return true if pkey active
      */
     bool isActive(const Pubkey pkey) const pure nothrow {

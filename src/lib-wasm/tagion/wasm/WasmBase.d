@@ -134,7 +134,7 @@ struct Instr {
     uint cost;
     IRType irtype;
     uint pops; // Number of pops from the stack
-    uint push; // Number of valus pushed
+    uint push; // Number of values pushed
     bool extend; // Extended
 }
 
@@ -791,7 +791,7 @@ static assert(isInputRange!ExprRange);
                 default:
                     assumeWontThrow({
                         wasm_exception = new WasmException(format(
-                            "Assembler argument type not vaild as an argument %s", type));
+                            "Assembler argument type not valid as an argument %s", type));
                     });
                 }
             }
@@ -807,7 +807,7 @@ static assert(isInputRange!ExprRange);
                 case CODE:
                     break;
                 case PREFIX:
-                    elm._warg = int(data[index]); // Extened insruction
+                    elm._warg = int(data[index]); // Extended insructions
                     index += ubyte.sizeof;
                     break;
                 case BLOCK:

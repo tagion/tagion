@@ -199,7 +199,7 @@ unittest {
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
 }
 
-/// Test of camelName with traling white white space
+/// Test of camelName with trailing white space
 @safe
 unittest {
     string name = "  This is some description ";
