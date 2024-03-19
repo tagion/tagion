@@ -39,7 +39,7 @@ Document getRim(Rims rim, HiRPC hirpc, DART db) @safe {
 }
 
 /** 
- * Reads a list of DARTIndexes and returnts the document
+ * Reads a list of DARTindices and returnts the document
  * Params:
  *   fingerprints = list of fingerprints to read
  *   hirpc = the hirpc used
@@ -112,7 +112,7 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
  */
 
 DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @safe {
-    DARTIndex[] dart_indexs;
+    DARTIndex[] dart_indices;
 
     foreach (state; states.dup.randomShuffle(rnd)) {
         auto recorder = db.recorder();
@@ -120,41 +120,41 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
         const(Document[]) docs = state.list.map!(r => DARTFakeNet.fake_doc(r)).array;
         foreach (doc; docs) {
             recorder.add(doc);
-            dart_indexs ~= DARTIndex(recorder[].front.dart_index);
+            dart_indices ~= DARTIndex(recorder[].front.dart_index);
         }
         db.modify(recorder);
     }
-    return dart_indexs;
+    return dart_indices;
 }
 
 DARTIndex[] randomAdd(T)(T ranges, MinstdRand0 rnd, DART db) @safe
         if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(
             ElementType!(ElementType!T) : const(ulong))) {
-    DARTIndex[] dart_indexs;
+    DARTIndex[] dart_indices;
     foreach (range; ranges.randomShuffle(rnd)) {
         auto recorder = db.recorder();
         auto docs = range.map!(r => DARTFakeNet.fake_doc(r));
         foreach (doc; docs) {
             recorder.add(doc);
-            dart_indexs ~= DARTIndex(recorder[].front.dart_index);
+            dart_indices ~= DARTIndex(recorder[].front.dart_index);
         }
         db.modify(recorder);
     }
-    return dart_indexs;
+    return dart_indices;
 }
 
 /** 
  * Removes archive in a random order.
  * Params:
- *   dart_indexs = The dart_indexs to remove
+ *   dart_indices = The dart_indices to remove
  *   rnd = the random seed
  *   db = the database
  */
-void randomRemove(const DARTIndex[] dart_indexs, MinstdRand0 rnd, DART db) @safe {
+void randomRemove(const DARTIndex[] dart_indices, MinstdRand0 rnd, DART db) @safe {
     auto recorder = db.recorder();
 
-    const random_order_dart_indexs = dart_indexs.dup.randomShuffle(rnd);
-    foreach (dart_index; random_order_dart_indexs) {
+    const random_order_dart_indices = dart_indices.dup.randomShuffle(rnd);
+    foreach (dart_index; random_order_dart_indices) {
         writefln("removing %(%02x%)", dart_index);
         recorder.remove(dart_index);
     }

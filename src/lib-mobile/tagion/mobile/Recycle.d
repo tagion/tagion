@@ -81,7 +81,7 @@ version (none) unittest {
     // import std.stdio : writeln;
     /**
      * create Documents' recycler;
-     * get the indexes with calling 'create()' method
+     * get the indices with calling 'create()' method
      * of the Recycle object
     */
     Recycle!Document recycler;
@@ -130,7 +130,7 @@ version (none) unittest {
     const doc5_id = recycler.create(doc5);
 
     /**
-     * And check indexes for equality with
+     * And check indices for equality with
      * created before doc1 and doc2
     */
     assert(doc1_id is doc4_id);

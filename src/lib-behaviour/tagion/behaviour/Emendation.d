@@ -111,7 +111,7 @@ unittest {
 /** 
 * This function add a word in reverse order from the description
 * Params:
-*   action_name = names which alreay was take
+*   action_name = names which already was take
 *   description = description of the action or scenario
 * Returns: The camel case name
 */

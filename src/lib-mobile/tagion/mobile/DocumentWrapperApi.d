@@ -316,7 +316,7 @@ version (none) unittest {
         writefln("doc_id_1=%d", doc_id_data_b);
         assert(recyclerDoc.exists(doc_id_data_b));
     }
-    // Range of Document' indexes in RecyclerDoc [0 .. 3]
+    // Range of Document' indices in RecyclerDoc [0 .. 3]
 
     // Tests for doc_get_int_by_key()
     pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");

@@ -10,6 +10,15 @@ Nto = "Nto"
 deactive = "deactive"
 # Wasm instruction. Not sure if it's correct.
 truct_sat = "truct_sat"
+indexes = "indices"
+indexs = "indices"
 
 [files]
-extend-exclude = ["LICENSE.md", "src/lib-nngd/", "src/fork-*", "src/lib-crypto/tagion/crypto/secp256k1/c", "unitdata/*"]
+extend-exclude = [
+    "LICENSE.md",
+    "src/lib-nngd/",
+    "src/fork-*",
+    "src/lib-crypto/tagion/crypto/secp256k1/c",
+    "*.wast",
+    "src/lib-behaviour/tagion/behaviour/unitdata/"
+]

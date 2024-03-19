@@ -333,7 +333,7 @@ extern (C) {
     //         create_doc(data.ptr, cast(uint) data.length);
     //         assert(recyclerDoc.exists(0));
     //     }
-    //     // Range of Document' indexes in RecyclerDoc [0 .. 3]
+    //     // Range of Document' indices in RecyclerDoc [0 .. 3]
 
     //     // Tests for doc_get_int_by_key()
     //     {
