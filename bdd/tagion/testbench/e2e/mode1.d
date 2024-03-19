@@ -5,11 +5,13 @@ import core.thread;
 import core.time;
 
 import std.stdio;
+import std.path;
 import std.process;
 import std.range;
 import std.algorithm;
 
 import tagion.tools.Basic;
+import tagion.testbench.tools.Environment : bddenv = env;
 import neuewelle = tagion.tools.neuewelle;
 
 void kill_waves(Pid[] pids, Duration grace_time) {
@@ -41,8 +43,10 @@ void kill_waves(Pid[] pids, Duration grace_time) {
 mixin Main!(_main);
 
 int _main(string[] _) {
-    auto pid = spawnProcess("/home/lucas/wrk/tagion/bin/neuewelle");
-    writeln("Started %s", pid);
+    const dbin = bddenv.dbin;
+    auto pid = spawnProcess(buildPath(dbin, "neuewelle"));
+
+    writeln("Started %s", pid.processID);
 
     Thread.sleep(3.seconds);
 
