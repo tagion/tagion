@@ -224,7 +224,7 @@ struct Epoch {
     @label(StdNames.previous) Fingerprint previous;
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @optional @(filter.Initialized) Pubkey[] active; /// Sorted keys
-    // Would inactive be more appropiate or activated+deactivated
+    // Would inactive be more appropriate or activated+deactivated
     @optional @(filter.Initialized) Pubkey[] deactive;
     @optional @(filter.Initialized) TagionGlobals globals;
 

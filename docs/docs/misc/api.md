@@ -14,7 +14,7 @@ The user can send a hirpc contract to the shell. Two replies to user. Either suc
 input: DARTIndex[] output Archive[].
 The user can ask for a specific archive on dartindex.
 
-## dart check indexes
+## dart check indices
 input: DARTIndex[] output DARTIndex[] (all dartindexes that were not in the dart).
 The user wants to check if there archives are located in the database without getting the archive returned.
 
@@ -26,7 +26,7 @@ The user can ask if the network is running
 ## Send contract
 
 ## async dart read
-## async dart check indexes
+## async dart check indices
 
 ## subscribe to recorder (list of new archives).
 

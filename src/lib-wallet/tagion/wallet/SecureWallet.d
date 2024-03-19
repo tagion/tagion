@@ -470,7 +470,7 @@ struct SecureWallet(Net : SecureNet) {
         return hirpc.search(h);
     }
 
-    const(DARTIndex[]) billIndexes(const(TagionBill)[] bills) const {
+    const(DARTIndex[]) billindices(const(TagionBill)[] bills) const {
         return bills
             .map!(bill => net.dartIndex(bill))
             .array;
@@ -485,7 +485,7 @@ struct SecureWallet(Net : SecureNet) {
         if (to_check is null) {
             to_check = account.bills ~ account.requested.values;
         }
-        return dartCheckRead(billIndexes(to_check), hirpc);
+        return dartCheckRead(billindices(to_check), hirpc);
 
     }
 
@@ -515,10 +515,10 @@ struct SecureWallet(Net : SecureNet) {
     /** 
      * Second stage in updating wallet.
      * Takes a read trt.dartRead recorder.
-     * Creates an array of DARTIndexes from readIndicesByPubkey recorder
-     * If some indexes were found in the wallet but not in the trt, the indexes are removed
+     * Creates an array of DARTindices from readIndicesByPubkey recorder
+     * If some indices were found in the wallet but not in the trt, the indices are removed
         from the wallet.
-     * If some indices were found in the trt but not in the wallet, the indexes are put
+     * If some indices were found in the trt but not in the wallet, the indices are put
         into a new dartRead request.
      * Params:
      *   receiver = Received response from trt.dartRead
@@ -782,13 +782,13 @@ struct SecureWallet(Net : SecureNet) {
 
         }
 
-        auto locked_indexes = account.activated
+        auto locked_indices = account.activated
             .byKeyValue
             .filter!(a => a.value == true)
             .map!(a => a.key);
 
         auto found_indices = found_bills.map!(found => net.dartIndex(found));
-        foreach (idx; locked_indexes) {
+        foreach (idx; locked_indices) {
             if (!(found_indices.canFind(idx))) {
                 account.activated.remove(idx);
                 account.remove_bill_by_hash(idx);
