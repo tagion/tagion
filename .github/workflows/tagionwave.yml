@@ -89,14 +89,16 @@ jobs:
 
       - name: start service
         run: |
-          export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
-          export XDG_RUNTIME_DIR=/run/user/1001
+          DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+          export DBUS_SESSION_BUS_ADDRESS
+          XDG_RUNTIME_DIR=/run/user/1001
+          export XDG_RUNTIME_DIR
 
           systemctl stop --user neuewelle.service || echo "No wave service was running"
           systemctl stop --user tagionshell.service || echo "No shell service was running"
 
           make install
-          ~/.local/bin/tagion --version >> $GITHUB_STEP_SUMMARY
+          ~/.local/bin/tagion --version >> "$GITHUB_STEP_SUMMARY"
 
           systemctl --user daemon-reload
           systemctl restart --user neuewelle.service
