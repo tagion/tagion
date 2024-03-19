@@ -6,6 +6,8 @@ sidebar_position: 2
 
 This document describes the different modes for the Tagion-network.
 
+![overview of network modes](/img/network_modes_light.excalidraw.svg#gh-light-mode-only)![overview of network modes](/img/network_modes_dark.excalidraw.svg#gh-dark-mode-only)
+
 ## Mode 0
 This mode emulates the network via *inter-process communication* and runs as a single program where each node is spawned as different threads.
 
