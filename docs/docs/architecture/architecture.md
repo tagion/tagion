@@ -13,7 +13,7 @@ A node consist of the following services.
 	- [TVM](/docs/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs and sending new contracts to the Epoch Creator.
 	- [Transcript](/docs/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/docs/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
-	- [DART](/docs/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
+	- [DART](/docs/architecture/DART.md "Distributed Archive of Random Transactions") service is responsible for executing data-base instruction and read/write to the physical file system.
 	- [DART Interface](/docs/architecture/DartInterface.md) handles outside read requests to the dart
     - [TRT](/docs/architecture/TRT.md) "Transaction reverse table" stores a copy of the owner to bill relationship.
 	- [Replicator](/docs/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
@@ -26,7 +26,7 @@ A node consist of the following services.
 
 ## Connection types
 By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
-The socket address, and thereby the visibillity can be changed in the tagionwave config file.
+The socket address, and thereby the visibility can be changed in the tagionwave config file.
 
 
 | [Input Validator](/docs/architecture/InputValidator.md) | [Dart Interface](/docs/architecture/DartInterface.md) | [Subscription](/docs/architecture/LoggerSubscription.md) | [Node Interface](/docs/architecture/NodeInterface.md) |

@@ -5,7 +5,7 @@
 
 # Shell user api
 ## Send contract
-The user can send a hirpc contract to the shell. Two replies to user. Either succes in sending to kernel or error from shell.
+The user can send a hirpc contract to the shell. Two replies to user. Either success in sending to kernel or error from shell.
 * Check HiBON validity
 * Send to kernel
 * Reply back to user kernel status

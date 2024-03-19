@@ -220,7 +220,7 @@ struct ScheduleRunner {
             showEnv(env, schedule_list.front.unit);
         }
 
-        void teminate(ref Runner runner) {
+        void terminate(ref Runner runner) {
             this.stopped(runner);
             runner = Runner.init;
         }
@@ -268,7 +268,7 @@ struct ScheduleRunner {
             runners
                 .filter!(r => r.pid !is r.pid.init)
                 .filter!(r => tryWait(r.pid).terminated)
-                .each!((ref r) => teminate(r));
+                .each!((ref r) => terminate(r));
             progress("%s Running jobs %s",
                     progress_meter[count % progress_meter.length],
                     runners

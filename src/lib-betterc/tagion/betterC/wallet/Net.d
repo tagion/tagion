@@ -148,26 +148,26 @@ struct SecureNet {
 
         int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null);
         if (_format_sign is Format.DER) {
-            ubyte[DER_SIGNATURE_SIZE] outputSer_array;
-            ubyte* outputSer = outputSer_array.ptr;
-            size_t outputLen = outputSer_array.length;
-            ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
+            ubyte[DER_SIGNATURE_SIZE] outputSet_array;
+            ubyte* outputSet = outputSet_array.ptr;
+            size_t outputLen = outputSet_array.length;
+            ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSet, &outputLen, sig);
             if (ret) {
                 result.create(outputLen);
-                result[0 .. $] = outputSer_array[0 .. outputLen];
-                // immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
+                result[0 .. $] = outputSet_array[0 .. outputLen];
+                // immutable(ubyte[]) result = outputSet_array[0 .. outputLen].idup;
                 return cast(immutable) result;
             }
         }
         if (_format_sign is Format.COMPACT) {
-            ubyte[SIGNATURE_SIZE] outputSer_array;
-            ubyte* outputSer = outputSer_array.ptr;
-            //            size_t outputLen = outputSer_array.length;
-            ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSer, sig);
+            ubyte[SIGNATURE_SIZE] outputSet_array;
+            ubyte* outputSet = outputSet_array.ptr;
+            //            size_t outputLen = outputSet_array.length;
+            ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSet, sig);
             if (ret) {
-                // immutable(ubyte[]) result = outputSer_array.idup;
-                result.create(outputSer_array.length);
-                result[0 .. $] = outputSer_array[0 .. $];
+                // immutable(ubyte[]) result = outputSet_array.idup;
+                result.create(outputSet_array.length);
+                result[0 .. $] = outputSet_array[0 .. $];
                 return cast(immutable) result;
             }
         }
@@ -185,7 +185,7 @@ struct SecureNet {
     // do {
     // import std.traits;
 
-    // assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
+    // assert(_secret !is null, format("Signature function has not been initialized. Use the %s function", fullyQualifiedName!generateKeyPair));
 
     // return Signature(sign_dg(message));
     // }
@@ -234,25 +234,25 @@ struct SecureNet {
 
         ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
 
-        ubyte[] outputSer_array;
+        ubyte[] outputSet_array;
         SECP256K1 flag;
         if (compress) {
-            outputSer_array.create(COMPRESSED_PUBKEY_SIZE);
-            // outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
+            outputSet_array.create(COMPRESSED_PUBKEY_SIZE);
+            // outputSet_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
             flag = SECP256K1.EC_COMPRESSED;
         }
         else {
-            outputSer_array.create(UNCOMPRESSED_PUBKEY_SIZE);
-            // outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
+            outputSet_array.create(UNCOMPRESSED_PUBKEY_SIZE);
+            // outputSet_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
             flag = SECP256K1.EC_UNCOMPRESSED;
         }
 
-        ubyte* outputSer = outputSer_array.ptr;
-        size_t outputLen = outputSer_array.length;
+        ubyte* outputSet = outputSet_array.ptr;
+        size_t outputLen = outputSet_array.length;
 
-        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag);
+        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSet, &outputLen, &pubkey_result, flag);
 
-        return cast(immutable)(outputSer_array);
+        return cast(immutable)(outputSet_array);
     }
 
     @trusted
@@ -275,28 +275,28 @@ struct SecureNet {
         secp256k1_pubkey pubkey;
 
         int ret = secp256k1_ec_pubkey_create(_ctx, &pubkey, sec);
-        // ubyte[pubkey_size] outputSer_array;
-        ubyte[] outputSer_array;
+        // ubyte[pubkey_size] outputSet_array;
+        ubyte[] outputSet_array;
         SECP256K1 flag;
         if (compress) {
-            outputSer_array.create(COMPRESSED_PUBKEY_SIZE);
-            // outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
+            outputSet_array.create(COMPRESSED_PUBKEY_SIZE);
+            // outputSet_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
             flag = SECP256K1.EC_COMPRESSED;
         }
         else {
-            outputSer_array.create(UNCOMPRESSED_PUBKEY_SIZE);
-            // outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
+            outputSet_array.create(UNCOMPRESSED_PUBKEY_SIZE);
+            // outputSet_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
             flag = SECP256K1.EC_UNCOMPRESSED;
         }
-        ubyte* outputSer = outputSer_array.ptr;
-        size_t outputLen = outputSer_array.length;
+        ubyte* outputSet = outputSet_array.ptr;
+        size_t outputLen = outputSet_array.length;
 
-        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey, flag);
+        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSet, &outputLen, &pubkey, flag);
 
-        // immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
+        // immutable(ubyte[]) result = outputSet_array[0 .. outputLen].idup;
         ubyte[] result;
         result.create(outputLen);
-        result[0 .. $] = outputSer_array[0 .. outputLen];
+        result[0 .. $] = outputSet_array[0 .. outputLen];
         return cast(immutable) result;
     }
 
@@ -412,22 +412,22 @@ struct SecureNet {
             // int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null);
             // check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
             // if (_format_sign is Format.DER) {
-            //     ubyte[DER_SIGNATURE_SIZE] outputSer_array;
-            //     ubyte* outputSer = outputSer_array.ptr;
-            //     size_t outputLen = outputSer_array.length;
-            //     ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
+            //     ubyte[DER_SIGNATURE_SIZE] outputSet_array;
+            //     ubyte* outputSet = outputSet_array.ptr;
+            //     size_t outputLen = outputSet_array.length;
+            //     ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSet, &outputLen, sig);
             //     if (ret) {
-            //         immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
+            //         immutable(ubyte[]) result = outputSet_array[0 .. outputLen].idup;
             //         return result;
             //     }
             // }
             // if (_format_sign is Format.COMPACT) {
-            //     ubyte[SIGNATURE_SIZE] outputSer_array;
-            //     ubyte* outputSer = outputSer_array.ptr;
-            //     //            size_t outputLen = outputSer_array.length;
-            //     ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSer, sig);
+            //     ubyte[SIGNATURE_SIZE] outputSet_array;
+            //     ubyte* outputSet = outputSet_array.ptr;
+            //     //            size_t outputLen = outputSet_array.length;
+            //     ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSet, sig);
             //     if (ret) {
-            //         immutable(ubyte[]) result = outputSer_array.idup;
+            //         immutable(ubyte[]) result = outputSet_array.idup;
             //         return result;
             //     }
             // }

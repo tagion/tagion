@@ -230,7 +230,7 @@ struct WasmGas {
             TypeIndex func_index = TypeIndex(type_idx); //Types.FUNC, [Types.I32], null);
             const func_idx = inject(func_index);
             /+
-             Inject the function body to the set_gas_gauage
+             Inject the function body to the set_gas_gauge
              +/
             CodeType code_type;
             {

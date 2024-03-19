@@ -160,7 +160,7 @@ unittest {
         const dart_key = dartKeyT(t, 42);
         assert(dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
         assert(dart_index != net.calcHash(dart_key.toDoc), format(
-                "%s dart_index should not be equal to the fingerpint", Fields!Table[i]
+                "%s dart_index should not be equal to the fingerprint", Fields!Table[i]
                 .stringof));
     }
 }
@@ -204,7 +204,7 @@ Fingerprint binaryHash(const(HashNet) net, scope const(Fingerprint) h1, scope co
 * The size of the table must be KEY_SPAN
 * Leaves in the branch table which doen't exist should have the value null
  * Params:
- *   net = The hash object/function used to calculate the hashs
+ *   net = The hash object/function used to calculate the hashes
  *   table = List if hash-value(fingerprint) in the branch
  * Returns: 
  *  The Merkle root

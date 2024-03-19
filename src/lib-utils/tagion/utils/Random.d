@@ -101,7 +101,7 @@ struct Random(T = uint) {
     }
     /**
      * 
-     * Returns: inner parameter for the random sequnece 
+     * Returns: inner parameter for the random sequence 
      */
     string toString() const pure {
         return format("m_z %s, m_w %s, value %s", m_z, m_w, front);

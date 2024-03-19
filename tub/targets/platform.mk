@@ -26,7 +26,7 @@ help-platform:
 	${call log.line}
 	${call log.help, "make proper-platform", "Will makes proper clean in the selected platform "}
 	${call log.line}
-	${call log.help, "make proper-<PLATFORM>", "Will execute the make proper-platfrom for the target <PLATFORM> "}
+	${call log.help, "make proper-<PLATFORM>", "Will execute the make proper-platform for the target <PLATFORM> "}
 	${call log.line}
 	${call log.help, "Platform setting", "The platform setting can be found in the platform.<NAME>.mk"}
 	${call log.close}

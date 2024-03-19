@@ -1,15 +1,15 @@
 # Initialize Genesis Epoch (low level)
 
-*Intialize bills* [Initialize DART](/docs/guide/network_setup/initialize_dart)
+*Initialize bills* [Initialize DART](/docs/guide/network_setup/initialize_dart)
 
 ## Create the epoch genesis data
-The Genesis infomation is generated with stiefel command.
+The Genesis information is generated with stiefel command.
 
 A list of node identifier `node_name_record,pubkey,address` should be create.
 
 Atleast number active node N should be defined.
 
-Here is an example with two node indetifers **(Note in practist the minimun should be 5)**
+Here is an example with two node indetifers **(Note in practist the minimum should be 5)**
 
 Example.
 ```

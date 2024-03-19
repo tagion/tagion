@@ -16,7 +16,7 @@ sequenceDiagram
     participant NodeInterface
 	EpochCreator ->> NodeInterface: HiRPC(Wavefront)
 	NodeInterface ->> P2P: Document(Wavefront)
-	P2P ->> NodeInterface: Documen(Wavefront)
+	P2P ->> NodeInterface: Document(Wavefront)
 	NodeInterface ->> EpochCreator: HiRPC(Wavefront)
 	P2P ->> NodeInterface: HiRPC(Request-recorder)
 	NodeInterface ->> Replicator: Request-recorder

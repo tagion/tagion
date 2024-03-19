@@ -141,7 +141,7 @@ int _main(string[] args) {
     /* recorder.add(tagion_head); */
     /* recorder.add(genesis_epoch); */
 
-    /// FIXME: Duplicate genrate genesis_epoch
+    /// FIXME: Duplicate generate genesis_epoch
     const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
     const genesis = createGenesis(
         node_settings,

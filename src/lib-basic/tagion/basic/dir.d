@@ -1,6 +1,6 @@
 /** 
  * Provides simple getters for XDG base directories and FHS
- * Apropiate directoies a choosen based on whether the program is run as root or not.
+ * Appropriate directories a chosen based on whether the program is run as root or not.
  * All directories are namespaced with tagion.
 **/
 module tagion.basic.dir;

@@ -20,7 +20,7 @@ Assuming you have installed the binaries in `~/bin/`.
 # Run the network this way:
 # ~/bin/neuewelle /tmp/test/network/tagionwave.json --keys /tmp/test/wallets < /tmp/test/keys
 ```
-The above script command will output the neccesary steps for starting the network with `neuewelle`. 
+The above script command will output the necessary steps for starting the network with `neuewelle`. 
 If the shell is also going to be started with caching remember to add `--option=subscription.tags:recorder,trt_created` to the `neuewelle` command. 
 
 

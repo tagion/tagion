@@ -65,16 +65,16 @@ version (unittest) {
     @safe
     struct TestStream {
         const(void)[] buffer;
-        size_t chunck;
+        size_t chunk;
         uint count;
         this(const(ubyte[]) buf) {
             buffer = buf;
         }
 
         ptrdiff_t receive(scope void[] buf) nothrow {
-            const _chunck = (count < 3) ? 1 : chunck;
+            const _chunk = (count < 3) ? 1 : chunk;
             count++;
-            const len = (() @trusted => cast(ptrdiff_t) min(_chunck, buf.length, buffer.length))();
+            const len = (() @trusted => cast(ptrdiff_t) min(_chunk, buf.length, buffer.length))();
             if (len >= 0) {
                 (() @trusted { buf[0 .. len] = buffer[0 .. len]; })();
                 buffer = buffer[len .. $];
@@ -96,7 +96,7 @@ unittest {
     testdata.texts = iota(17).map!((i) => format("Some text %d", i)).array;
 
     teststream = TestStream(testdata.serialize);
-    teststream.chunck = 0x100;
+    teststream.chunk = 0x100;
     ReceiveBuffer receive_buffer;
     {
         const result_buffer = receive_buffer(&teststream.receive);
@@ -105,7 +105,7 @@ unittest {
 
     testdata.texts = iota(120).map!((i) => format("Some text %d", i)).array;
     teststream = TestStream(testdata.serialize);
-    teststream.chunck = 0x100;
+    teststream.chunk = 0x100;
     assert(testdata.serialize.length > receive_buffer.START_SIZE,
             "Test data should large than START_SIZE");
     {

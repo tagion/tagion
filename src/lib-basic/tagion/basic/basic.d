@@ -17,7 +17,7 @@ import std.conv;
  a immuatble do
 +/
 immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
-    pragma(msg, "fixme(cbr): looks redundent");
+    pragma(msg, "fixme(cbr): looks redundant");
     return cast(BUF)(buffer.idup);
 }
 

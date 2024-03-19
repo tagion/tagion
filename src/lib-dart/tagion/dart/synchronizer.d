@@ -62,7 +62,7 @@ interface Synchronizer {
 abstract class StdSynchronizer : Synchronizer {
 
     protected DART.SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
-    immutable uint chunck_size; /// Max number of archives operates in one recorder action
+    immutable uint chunk_size; /// Max number of archives operates in one recorder action
     protected {
         //        BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
         bool _finished; /// Finish flag set when the Fiber function returns
@@ -71,8 +71,8 @@ abstract class StdSynchronizer : Synchronizer {
         //        Index index; /// Current block index
         HiRPC hirpc;
     }
-    this(const uint chunck_size = 0x400) {
-        this.chunck_size = chunck_size;
+    this(const uint chunk_size = 0x400) {
+        this.chunk_size = chunk_size;
     }
 
     /** 
@@ -90,7 +90,7 @@ abstract class StdSynchronizer : Synchronizer {
             assert(!archive_doc.empty, "archive should not be empty");
             recorder_worker.remove(archive_doc);
             count++;
-            if (count > chunck_size) {
+            if (count > chunk_size) {
                 record(recorder_worker);
                 count = 0;
                 recorder_worker.clear;
@@ -154,9 +154,9 @@ class JournalSynchronizer : StdSynchronizer {
         BlockFile journalfile; /// The actives is stored in this journal file. Which later can be run via the replay function
         Index index; /// Current block index
     }
-    this(BlockFile journalfile, const uint chunck_size = 0x400) {
+    this(BlockFile journalfile, const uint chunk_size = 0x400) {
         this.journalfile = journalfile;
-        super(chunck_size);
+        super(chunk_size);
     }
 
     /** 

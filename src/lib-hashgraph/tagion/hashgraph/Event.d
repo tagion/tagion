@@ -111,7 +111,7 @@ class Event {
 
     /**
      * The witness event will point to the witness object
-     * This object contains infomation about the voting etc. for the witness event
+     * This object contains information about the voting etc. for the witness event
      */
     @safe
     class Witness {
@@ -130,7 +130,7 @@ class Event {
          * Contsruct a witness of an event
          * Params:
          *   owner_event = the event which is voted to be a witness
-         *   seeing_witness_in_previous_round_mask = The witness seen from this event to the privious witness.
+         *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
         this(Event owner_event, ulong node_size) nothrow
         in {
@@ -426,7 +426,7 @@ class Event {
         }
 
         /**
-     * The recived round for this event
+     * The received round for this event
      * Returns: received round
      */
         const(Round) round_received() {
@@ -458,7 +458,7 @@ class Event {
         }
 
         /**
-     * Check if an evnet has around 
+     * Check if an event has around 
      * Returns: true if an round exist for this event
      */
 
@@ -504,7 +504,7 @@ class Event {
 
         /**
           * Is this event owner but this node 
-          * Returns: true if the evnet is owned
+          * Returns: true if the event is owned
           */
         bool nodeOwner() const pure nothrow @nogc {
             return node_id is 0;

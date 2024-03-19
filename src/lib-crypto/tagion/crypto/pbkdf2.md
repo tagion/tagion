@@ -8,7 +8,7 @@ PBKDF2 for D
 
 D-language implementation of Password Based Key Derivation Function 2 [RFC2898](https://tools.ietf.org/html/rfc2898#section-5.2). 
 
-Unlike bcrypt this is easy to understand, secure enough given a sufficently
+Unlike bcrypt this is easy to understand, secure enough given a sufficiently
 random salt and implemented on top of the standard Phobos library.
 
 It uses HMAC as a pseudorandom function, with SHA1 as a default hashing function.

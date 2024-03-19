@@ -20,7 +20,7 @@ flowchart TB
 
 ## CRUD
 
-This service is reponsible for executing data-base instruction and read/write to the physical file system.
+This service is responsible for executing data-base instruction and read/write to the physical file system.
 
 Note.
 The DART does not support `update` only `add` and `delete`. 

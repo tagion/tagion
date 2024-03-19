@@ -272,7 +272,7 @@ int _main(string[] args) {
                 index_range.formattedRead("%d:%d", index_from, index_to)
                     .ifThrown(0);
             tools.check(fields == 2,
-                    format("Angle range shoud be ex. --range 42:117 not %s", index_range));
+                    format("Angle range should be ex. --range 42:117 not %s", index_range));
             verbose("Angle from [%d:%d]", index_from, index_to);
             analyzer.index_from = index_from;
             analyzer.index_to = index_to;

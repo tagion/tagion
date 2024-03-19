@@ -1,5 +1,5 @@
-/// Actor framework iplementation
-/// Examles: [tagion.testbench.services]
+/// Actor framework implementation
+/// Examples: [tagion.testbench.services]
 module tagion.actor.actor;
 
 @safe:
@@ -317,7 +317,7 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
             }
             catch (Exception t) {
                 fail(t);
-            } // This is bad but, We catch assert per thread because there is no message otherwise, when runnning multithreaded
+            } // This is bad but, We catch assert per thread because there is no message otherwise, when running multithreaded
             catch (AssertError e) {
                 import tagion.GlobalSignals;
 
@@ -359,7 +359,7 @@ if (isActor!A) {
             }
             catch (Exception t) {
                 fail(t);
-            } // This is bad but, We catch assert per thread because there is no message otherwise, when runnning multithreaded
+            } // This is bad but, We catch assert per thread because there is no message otherwise, when running multithreaded
             catch (AssertError e) {
                 import tagion.GlobalSignals;
 

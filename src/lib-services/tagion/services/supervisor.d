@@ -29,7 +29,7 @@ import core.memory;
 
 @safe
 struct Supervisor {
-    // auto failHandler = (TaskFailure tf) @trusted { log("Stoping program because Supervisor caught exception: \n%s", tf); };
+    // auto failHandler = (TaskFailure tf) @trusted { log("Stopping program because Supervisor caught exception: \n%s", tf); };
 
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         immutable tn = opts.task_names;
@@ -86,7 +86,7 @@ struct Supervisor {
             handle.send(Sig.STOP);
         }
 
-        (() @trusted { // NNG shoould be safe
+        (() @trusted { // NNG should be safe
             import core.time;
             import nngd;
 

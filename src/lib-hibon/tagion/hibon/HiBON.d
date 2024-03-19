@@ -712,23 +712,23 @@ static size_t size(U)(const(U[]) array) pure {
 
         );
 
-        Table test_tabel;
-        test_tabel.FLOAT32 = 1.23;
-        test_tabel.FLOAT64 = 1.23e200;
-        test_tabel.INT32 = -42;
-        test_tabel.INT64 = -0x0123_3456_789A_BCDF;
-        test_tabel.UINT32 = 42;
-        test_tabel.UINT64 = 0x0123_3456_789A_BCDF;
-        test_tabel.BOOLEAN = true;
-        test_tabel.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+        Table test_table;
+        test_table.FLOAT32 = 1.23;
+        test_table.FLOAT64 = 1.23e200;
+        test_table.INT32 = -42;
+        test_table.INT64 = -0x0123_3456_789A_BCDF;
+        test_table.UINT32 = 42;
+        test_table.UINT64 = 0x0123_3456_789A_BCDF;
+        test_table.BOOLEAN = true;
+        test_table.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
-        alias TabelArray = Tuple!(
+        alias TableArray = Tuple!(
                 immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
                 string, Type.STRING.stringof,);
 
-        TabelArray test_table_array;
+        TableArray test_table_array;
         test_table_array.BINARY = [1, 2, 3];
         test_table_array.STRING = "Text";
 
@@ -747,17 +747,17 @@ static size_t size(U)(const(U[]) array) pure {
         { // Single element
             auto hibon = new HiBON;
             enum pos = 2;
-            static assert(is(test_tabel.Types[pos] == float));
-            hibon[test_tabel.fieldNames[pos]] = test_tabel[pos];
+            static assert(is(test_table.Types[pos] == float));
+            hibon[test_table.fieldNames[pos]] = test_table[pos];
 
             assert(hibon.length is 1);
 
-            const m = hibon[test_tabel.fieldNames[pos]];
+            const m = hibon[test_table.fieldNames[pos]];
 
             assert(m.type is Type.FLOAT32);
             assert(m.key is Type.FLOAT32.stringof);
-            assert(m.get!(test_tabel.Types[pos]) == test_tabel[pos]);
-            assert(m.by!(Type.FLOAT32) == test_tabel[pos]);
+            assert(m.get!(test_table.Types[pos]) == test_table[pos]);
+            assert(m.by!(Type.FLOAT32) == test_table[pos]);
 
             immutable size = hibon.serialize_size;
 
@@ -771,7 +771,7 @@ static size_t size(U)(const(U[]) array) pure {
                 //    + Type.sizeof                    // The HiBON object ends with a (Type.NONE) 14
                 ;
 
-            const doc_size = Document.sizeT(Type.FLOAT32, Type.FLOAT32.stringof, test_tabel[pos]);
+            const doc_size = Document.sizeT(Type.FLOAT32, Type.FLOAT32.stringof, test_table[pos]);
 
             assert(size is hibon_size);
             assert(size is LEB128.calc_size(14) + doc_size);
@@ -785,16 +785,16 @@ static size_t size(U)(const(U[]) array) pure {
 
             assert(e.type is Type.FLOAT32);
             assert(e.key == Type.FLOAT32.stringof);
-            assert(e.by!(Type.FLOAT32) == test_tabel[pos]);
+            assert(e.by!(Type.FLOAT32) == test_table[pos]);
 
         }
 
         { // HiBON Test for basic types
             auto hibon = new HiBON;
             string[] keys;
-            foreach (i, t; test_tabel) {
-                hibon[test_tabel.fieldNames[i]] = t;
-                keys ~= test_tabel.fieldNames[i];
+            foreach (i, t; test_table) {
+                hibon[test_table.fieldNames[i]] = t;
+                keys ~= test_table.fieldNames[i];
             }
 
             size_t index;
@@ -803,27 +803,27 @@ static size_t size(U)(const(U[]) array) pure {
                 index++;
             }
 
-            foreach (i, t; test_tabel) {
+            foreach (i, t; test_table) {
 
-                enum key = test_tabel.fieldNames[i];
+                enum key = test_table.fieldNames[i];
 
                 const m = hibon[key];
                 assert(m.key == key);
                 assert(m.type.to!string == key);
-                assert(m.get!(test_tabel.Types[i]) == t);
+                assert(m.get!(test_table.Types[i]) == t);
             }
 
             immutable data = hibon.serialize;
             const doc = Document(data);
-            assert(doc.length is test_tabel.length);
+            assert(doc.length is test_table.length);
 
-            foreach (i, t; test_tabel) {
-                enum key = test_tabel.fieldNames[i];
+            foreach (i, t; test_table) {
+                enum key = test_table.fieldNames[i];
 
                 const e = doc[key];
                 assert(e.key == key);
                 assert(e.type.to!string == key);
-                assert(e.get!(test_tabel.Types[i]) == t);
+                assert(e.get!(test_table.Types[i]) == t);
             }
         }
 
@@ -864,7 +864,7 @@ static size_t size(U)(const(U[]) array) pure {
 
         }
 
-        { // HIBON test containg an child HiBON
+        { // HIBON test containing an child HiBON
             auto hibon = new HiBON;
             auto hibon_child = new HiBON;
             enum chile_name = "child";
@@ -921,8 +921,8 @@ static size_t size(U)(const(U[]) array) pure {
 
         { // Document array
             HiBON[] hibon_array;
-            alias TabelDocArray = Tuple!(int, "a", string, "b", float, "c");
-            TabelDocArray table_doc_array;
+            alias TableDocArray = Tuple!(int, "a", string, "b", float, "c");
+            TableDocArray table_doc_array;
             table_doc_array.a = 42;
             table_doc_array.b = "text";
             table_doc_array.c = 42.42;

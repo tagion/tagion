@@ -132,7 +132,7 @@ class ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt {
         auto pid = spawnShell(cmd);
         writefln("%s", cmd);
         const ret = wait(pid);
-        check(ret == 0, format("Compilation of %s faild", betterc_file));
+        check(ret == 0, format("Compilation of %s failed", betterc_file));
         return result_ok;
     }
 
