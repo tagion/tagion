@@ -3,7 +3,7 @@
 HiRPC is a RPC which can including digital signatures and it is base on HiBON data format.
 
 ## Structure of HiRPC
-```javascipt
+```javascript
 {
     $@ : 'HiPRC',
     $sign : <bin>, // Optional
@@ -18,7 +18,7 @@ HiRPC is a RPC which can including digital signatures and it is base on HiBON da
 The member **sign** is the $sign **hirpc** object and **$pkey** is the public-key which also include a $sign schema code in the genetic package.
 
 ### Success full result
-```javascipt
+```javascript
 {
     $@ : 'HiRPC',
     $sign : <bin>, // Optional
@@ -32,7 +32,7 @@ The member **sign** is the $sign **hirpc** object and **$pkey** is the public-ke
 ```
 
 ### Failure result
-```javascipt
+```javascript
 {
     $@ : 'HiRPC',
     $sign : <bin>, // Optional

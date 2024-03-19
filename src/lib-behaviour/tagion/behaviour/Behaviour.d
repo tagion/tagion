@@ -97,7 +97,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
     return scenario_group;
 }
 
-///Examples: How use the rub fuction on a feature
+///Examples: How use the rub function on a feature
 @safe
 unittest {
     import std.algorithm.comparison : equal;
@@ -210,7 +210,7 @@ auto automation(alias M)() if (isFeature!M) {
             enum tuple_index = [FeatureContext.fieldNames]
                     .countUntil(scenario_name);
             static assert(tuple_index >= 0,
-                    format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
+                    format("Scenario '%s' does not exists. Possible scenarios is\n%s",
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
             alias _Scenario = FeatureContext.Types[tuple_index];
             context[tuple_index] = new _Scenario(args);

@@ -101,7 +101,7 @@ struct label {
     string name; /// Name of the HiBON member
 }
 
-struct optional; /// This flag is set to true if this paramer is optional
+struct optional; /// This flag is set to true if this parameter is optional
 
 struct exclude; // Exclude the member from the HiBONRecord
 /++
@@ -446,7 +446,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         else {
                             static assert(is(BaseT == HiBON) || is(BaseT : const(Document)),
                                     format(`A sub class/struct '%s' of type %s must have"~
-                            " a toHiBON or must be ingnored with @exclude UDA tag`,
+                            " a toHiBON or must be ignored with @exclude UDA tag`,
                                     name, BaseT.stringof));
                             hibon[name] = cast(BaseT) m;
                         }
@@ -670,7 +670,7 @@ mixin template HiBONRecord(string CTOR = "") {
                 && isCallable!(valid) && __traits(compiles, valid(doc));
             static if (do_valid) {
                 check(valid(doc),
-                        format("Document verification faild for HiBONRecord %s",
+                        format("Document verification failed for HiBONRecord %s",
                         This.stringof));
             }
 
@@ -682,7 +682,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         format("%s.verify() should be const pure nothrow", This.stringof));
                 scope (exit) {
                     check(this.verify(),
-                            format("Document verification faild for HiBONRecord %s",
+                            format("Document verification failed for HiBONRecord %s",
                             This.stringof));
                 }
             }
@@ -1537,26 +1537,26 @@ unittest {
 
         { // Typedef on HiBON.type is used as key in an associative-array
             alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
-            alias Tabel = int[Bytes];
+            alias Table = int[Bytes];
             static struct StructBytes {
-                Tabel tabel;
+                Table table;
                 mixin HiBONRecord;
             }
 
-            static assert(isSpecialKeyType!Tabel);
+            static assert(isSpecialKeyType!Table);
 
             import std.outbuffer;
 
-            Tabel tabel;
+            Table table;
             auto list = [-17, 117, 3, 17, 42];
             auto buffer = new ubyte[int.sizeof];
             foreach (i; list) {
                 binwrite(buffer, i, 0);
-                tabel[Bytes(buffer.idup)] = i;
+                table[Bytes(buffer.idup)] = i;
             }
 
             StructBytes s;
-            s.tabel = tabel;
+            s.table = table;
             const s_doc = s.toDoc;
             const result = StructBytes(s_doc);
             assert(s_doc == result.toDoc);
@@ -1576,25 +1576,25 @@ unittest {
 
             alias Key = Typedef!(KeyStruct, KeyStruct.init, "Key");
 
-            alias Tabel = int[Key];
+            alias Table = int[Key];
 
             static struct StructKeys {
-                Tabel tabel;
+                Table table;
                 mixin HiBONRecord;
             }
 
-            Tabel list = [
+            Table list = [
                 Key(KeyStruct(2, "two")): 2, Key(KeyStruct(4, "four")): 4,
                 Key(KeyStruct(1, "one")): 1, Key(KeyStruct(3, "three")): 3
             ];
 
             StructKeys s;
-            s.tabel = list;
+            s.table = list;
 
             const s_doc = s.toDoc;
 
-            // Checks that the key is ordered in the tabel
-            assert(s_doc["tabel"].get!Document[].map!(
+            // Checks that the key is ordered in the table
+            assert(s_doc["table"].get!Document[].map!(
                     a => a.get!Document[0].get!Document.serialize).array.isStrictlyMonotonic);
 
             const result = StructKeys(s_doc);
@@ -1737,8 +1737,8 @@ unittest {
 }
 
 ///
-unittest { /// Reseved keys and types
-{ /// Check for reseved HiBON types
+unittest { /// Reserved keys and types
+{ /// Check for reserved HiBON types
         @recordType("$@")
         static struct S {
             int x;
@@ -1749,7 +1749,7 @@ unittest { /// Reseved keys and types
         const doc = s.toDoc;
         assert(doc.valid is Document.Element.ErrorCode.RESERVED_HIBON_TYPE);
     }
-    { /// Check for reseved keys 
+    { /// Check for reserved keys 
         static struct S {
             @label("$@x") int x;
             mixin HiBONRecord;

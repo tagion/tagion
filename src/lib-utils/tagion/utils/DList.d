@@ -364,7 +364,7 @@ unittest {
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
-            // The element shoud now be ordred as
+            // The element should now be ordred as
             // [1, 0, 2, 3]
             I = l[];
             // This statem does not work anymore
@@ -381,7 +381,7 @@ unittest {
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
-            // The element shoud now be ordred as
+            // The element should now be ordred as
             // [1, 0, 2, 3]
             I = l[];
             // This statem does not work anymore

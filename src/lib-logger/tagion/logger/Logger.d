@@ -419,11 +419,11 @@ version (Posix) {
 
     /* 
      * Note: non portable
-     * Altough implemented on most platforms, it might behave differently
+     * Although implemented on most platforms, it might behave differently
      */
     extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
-    // The max task name lenght is set when you compile your kernel,
+    // The max task name length is set when you compile your kernel,
     // You might have set it differently
     enum TASK_COMM_LEN = 16;
 

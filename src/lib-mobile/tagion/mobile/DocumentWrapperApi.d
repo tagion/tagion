@@ -306,7 +306,7 @@ version (none) unittest {
         assert(!recyclerDoc.exists(1));
         assert(!recyclerDoc.exists(2));
 
-        // Append two docs and check whether they exists by indicies
+        // Append two docs and check whether they exists by indices
         const data = hib.serialize;
         const doc_id_data_a = create_doc(data.ptr, cast(uint) data.length);
         writefln("doc_id_0=%d", doc_id_data_a);
@@ -327,7 +327,7 @@ version (none) unittest {
         assert(doc_get_int_by_key(2, "doc1", 4) is 100);
         assert(doc_get_int_by_key(3, "doc1", 4) is 100);
 
-        // Testing an absense of the key
+        // Testing an absence of the key
         assert(doc_get_int_by_key(0, "doc", 3) is BAD_RESULT);
         assert(doc_get_int_by_key(1, "doc", 3) is BAD_RESULT);
         assert(doc_get_int_by_key(2, "doc", 3) is BAD_RESULT);
@@ -354,7 +354,7 @@ version (none) unittest {
         assert(doc_get_int_by_id(2, 1) is 101);
         assert(doc_get_int_by_id(3, 1) is 101);
 
-        // Testing an absense of the key
+        // Testing an absence of the key
         assert(doc_get_int_by_id(0, 3) is BAD_RESULT);
         assert(doc_get_int_by_id(1, 3) is BAD_RESULT);
         assert(doc_get_int_by_id(2, 3) is BAD_RESULT);
@@ -388,7 +388,7 @@ version (none) unittest {
         assert(fromStringz(doc_get_str_by_key(2, "doc2", 4)) == expected_str);
         assert(fromStringz(doc_get_str_by_key(3, "doc2", 4)) == expected_str);
 
-        // Testing an absense of the key
+        // Testing an absence of the key
         assert(doc_get_str_by_key(0, "doc", 3) is null);
         assert(doc_get_str_by_key(1, "doc", 3) is null);
         assert(doc_get_str_by_key(2, "doc", 3) is null);

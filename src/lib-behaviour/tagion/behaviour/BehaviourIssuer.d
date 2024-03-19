@@ -38,7 +38,7 @@ struct MarkdownFMT {
 }
 
 /** 
- * Default formater for Markdown 
+ * Default formatter for Markdown 
  */
 @safe
 static MarkdownFMT masterMarkdown = {

@@ -112,7 +112,7 @@ struct RecordType {
 
 struct Label {
     string name; /// Name of the HiBON member
-    bool optional; /// This flag is set to true if this paramer is optional
+    bool optional; /// This flag is set to true if this parameter is optional
 }
 
 enum VOID = "*";
@@ -243,7 +243,7 @@ template GetLabel(alias member) {
         @Label("$bills") StandardBill[] bills;
         @Label("$state") Buffer derive_state;
         // boll[Pubkey]
-        @Label("$active") Document activated; /// Actived bills
+        @Label("$active") Document activated; /// Activated bills
         import std.algorithm : any, each, filter, map, sum;
 
         this(Document doc) {

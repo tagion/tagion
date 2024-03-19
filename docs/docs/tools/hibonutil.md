@@ -68,14 +68,14 @@ Convert to base64 to `.hibon`
 
 ## Convert from stdin
 
-The util can read from stdin by specifing a file name with the `-o` switch.
+The util can read from stdin by specifying a file name with the `-o` switch.
 
 Convert from `.hibon` to `.json`
 ```
 > cat sample.hibon |hibonutil -po test.json
 ```
 
-## Coverting a list of files
+## Converting a list of files
 The `hibonutil` can convert a list of file from `.hibon` to `.json` and vica versa.
 
 ```

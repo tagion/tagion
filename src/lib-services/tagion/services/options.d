@@ -36,7 +36,7 @@ struct WaveOptions {
     import tagion.utils.JSONCommon;
 
     /** Read node addresses from this files if it's defined
-     *  Usesfull for development
+     *  Useful for development
      *  Formatted likes this. With 1 entry per line.
      *  <Base64 encoded public key> <address>
     */

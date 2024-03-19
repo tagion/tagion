@@ -96,7 +96,7 @@ struct BIP39 {
     enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
     /**
      * Calculates the entropy of a list of mnemonic-indices without the checksum
-     * This function should alo be used analize a mnemonic-indices list 
+     * This function should also be used analyze a mnemonic-indices list 
      * To produces a entropy the function mnemonicToEntropy should be used instead
      * Params:
      *   mnemonic_indices = list of mnemonic-indices
@@ -138,7 +138,7 @@ struct BIP39 {
 
     /**
      * Reverse function of entropy
-     * This function should only be used to analize an entropy buffer
+     * This function should only be used to analyze an entropy buffer
      * Params:
      *   entropy_buf = byte array of an entropy buffer 
      * Returns: 
@@ -235,7 +235,7 @@ struct BIP39 {
      * Params:
      *   mnemonic_sentence = mnemonic sentence as a text string 
      * Returns: 
-     *   entropy buffer in encluding the checksum
+     *   entropy buffer in including the checksum
      * 
      */
     const(ubyte[]) mnemonicToEntropy(string mnemonic_sentence) const pure {

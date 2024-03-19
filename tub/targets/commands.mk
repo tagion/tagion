@@ -41,7 +41,7 @@ OBJEXT ?= o
 
 CD ?= cd
 
-# Only define dstep if it's avaliable in your path
+# Only define dstep if it's available in your path
 ifneq ($(strip $(shell which dstep 2>/dev/null)),)
 	DSTEP?=dstep
 endif

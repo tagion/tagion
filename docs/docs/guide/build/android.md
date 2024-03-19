@@ -35,7 +35,7 @@ It will do 4 things
 make PLATFORM=aarch64-linux-android install-android-toolchain
 ```
 
-## Buiding mobile lib
+## Building mobile lib
 
 ```sh
 make PLATFORM=aarch64-linux-android libmobile

@@ -156,8 +156,8 @@ int _main(string[] args) {
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     auto feature = automation!(spam_double_spend);
-    feature.SpamOneNodeUntil10EpochsHaveOccured(node_opts, wallets[0], wallets[1]);
-    feature.SpamMultipleNodesUntil10EpochsHaveOccured(node_opts, wallets[2], wallets[3]);
+    feature.SpamOneNodeUntil10EpochsHaveOccurred(node_opts, wallets[0], wallets[1]);
+    feature.SpamMultipleNodesUntil10EpochsHaveOccurred(node_opts, wallets[2], wallets[3]);
 
     feature.run();
 

@@ -48,7 +48,7 @@ neuewelle wavedir/tagionwave.json --keys wallets/
 This start the network by loading a config file and specifying a directory to search for wallets configs. 
 The program will sets its working directory to the directory of the config file. If no config file is specified it will look for a file called `tagionwave.json` in the current working directory, if none is found it'll use the default options.
 
-The program will prompt you for a wallet configs and passwords. Where the walletconfig is specified without the `.json` file extenson and seperated by a colon. like this
+The program will prompt you for a wallet configs and passwords. Where the walletconfig is specified without the `.json` file extension and separated by a colon. like this
 ```
 node1_config:secretpassword
 ```
@@ -61,7 +61,7 @@ pass node_keys | neuewelle ...
 
 ### Synchronized mode0 network stop 
 
-For a synchronized mode0 stop you can specify a future epoch where the nodes should stopp by putting the epoch number in a file in `/tmp/epoch_shutdown_PID`
+For a synchronized mode0 stop you can specify a future epoch where the nodes should stop by putting the epoch number in a file in `/tmp/epoch_shutdown_PID`
 ```
 echo 10000 > /tmp/epoch_shutdown$(pgrep neuewelle)
 ```
@@ -75,5 +75,5 @@ For testing the database should be created with the boot tool [Initialize DART](
 
 
 ### DATABASES must be booted with same bullseye - Abort
-This means that the databases were not synchronized. Mode0 does not automatically syncronize the databases on startup. It can be syncronized with [dartutil](/docs/tools/blockutil).  
+This means that the databases were not synchronized. Mode0 does not automatically synchronize the databases on startup. It can be synchronized with [dartutil](/docs/tools/blockutil).  
 To prevent this from happening, you can make sure that the network is stopped synchronously by setting the epoch number as explained above.

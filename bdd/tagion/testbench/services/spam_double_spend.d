@@ -42,14 +42,14 @@ enum feature = Feature(
             []);
 
 alias FeatureContext = Tuple!(
-        SpamOneNodeUntil10EpochsHaveOccured, "SpamOneNodeUntil10EpochsHaveOccured",
-        SpamMultipleNodesUntil10EpochsHaveOccured, "SpamMultipleNodesUntil10EpochsHaveOccured",
+        SpamOneNodeUntil10EpochsHaveOccurred, "SpamOneNodeUntil10EpochsHaveOccurred",
+        SpamMultipleNodesUntil10EpochsHaveOccurred, "SpamMultipleNodesUntil10EpochsHaveOccurred",
         FeatureGroup*, "result"
 );
 
-@safe @Scenario("Spam one node until 10 epochs have occured.",
+@safe @Scenario("Spam one node until 10 epochs have occurred.",
         [])
-class SpamOneNodeUntil10EpochsHaveOccured {
+class SpamOneNodeUntil10EpochsHaveOccurred {
 
     Options node1_opts;
     const(Options)[] opts;
@@ -203,9 +203,9 @@ struct SpamWorker {
 
 }
 
-@safe @Scenario("Spam multiple nodes until 10 epochs have occured.",
+@safe @Scenario("Spam multiple nodes until 10 epochs have occurred.",
         [])
-class SpamMultipleNodesUntil10EpochsHaveOccured {
+class SpamMultipleNodesUntil10EpochsHaveOccurred {
     const(Options)[] opts;
     StdSecureWallet wallet1;
     StdSecureWallet wallet2;

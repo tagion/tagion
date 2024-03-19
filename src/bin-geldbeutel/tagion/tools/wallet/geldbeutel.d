@@ -41,7 +41,7 @@ import Wallet = tagion.wallet.SecureWallet;
 /**
  * @brief build file path if needed file with folder long path
  * @param file - input/output parameter with filename
- * @param path - forlders destination to file
+ * @param path - folders destination to file
  */
 @safe
 static void set_path(ref string file, string path) {

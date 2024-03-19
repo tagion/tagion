@@ -4,7 +4,7 @@ The reverse SBox are generated in pre-runtime this means it's only calculated on
 
 SL-2:
 The crypt calls crypt_parse which calls the `real` AES function.
-The diffence between crypt and crypt_parse is that crypt_parse overwrites the input data but crypt copies it if the input and out data does not overlap.
+The difference between crypt and crypt_parse is that crypt_parse overwrites the input data but crypt copies it if the input and out data does not overlap.
 
 SL-3:
 NativeSecp256k1 context constructor change to use SECP256K1_CONTEXT_NONE
@@ -56,7 +56,7 @@ SL-15:
 entropyToMnemonic has been added
 
 SL-16:
-generateMnemonic checkes that the number of words is a multiple of 3 and the entropy is between 16 and 32 bytes,
+generateMnemonic checks that the number of words is a multiple of 3 and the entropy is between 16 and 32 bytes,
 meanng from 12 to 24 words.
 validateMnemonic has also been added.
 

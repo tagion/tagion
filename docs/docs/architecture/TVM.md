@@ -20,8 +20,8 @@ The service does the following:
 - Loads the Consensus Rules (only Tagion to start with).
 - Loads the input data.
 - Executes the instruction(s).
-    - Ensures the intructions are valid.
-    - Ensures the intructions follow the Consensus Rules.
+    - Ensures the instructions are valid.
+    - Ensures the instructions follow the Consensus Rules.
     - Executes the instructions and produces draft output archives.
 - If input was Contract-S then a Contract-SC is sent to the Epoch Creator Service.
 - Sends output archives draft are send to Transcript Service.

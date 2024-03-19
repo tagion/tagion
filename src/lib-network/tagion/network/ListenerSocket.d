@@ -43,11 +43,11 @@ struct ListenerSocket {
     void stop() {
         if (!stop_listener) {
             stop_listener = true;
-            if (listerner_thread !is null) {
+            if (listener_thread !is null) {
                 //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
                 auto ping = new TcpSocket(new InternetAddress(address, port));
                 ping.close;
-                listerner_thread.join();
+                listener_thread.join();
             }
         }
     }
@@ -140,7 +140,7 @@ struct ListenerSocket {
         void send(T)(const uint socket_id, T arg) if (is(T : const(Buffer)) || is(T : const(Document))) {
             auto clients = cast(Socket[uint])*locate_clients;
             auto client = clients.get(socket_id, null);
-            check(clinet !is null, message("Socket with the id %d is not avaible", socket_id));
+            check(client !is null, message("Socket with the id %d is not available", socket_id));
             if (client.active) {
                 send(client, arg);
             }
@@ -210,17 +210,17 @@ struct ListenerSocket {
         close;
     }
 
-    protected Thread listerner_thread;
+    protected Thread listener_thread;
     Thread start()
     in {
-        assert(listerner_thread is null, format("Listerner on port %d has already been started", port));
+        assert(listener_thread is null, format("Listener on port %d has already been started", port));
     }
     do {
-        void delegate() listerner;
-        listerner = &ListenerSocket.run;
-        //        listerner.ptr = &listener_socket;
-        listerner_thread = new Thread(listerner).start();
-        return listerner_thread;
+        void delegate() listener;
+        listener = &ListenerSocket.run;
+        //        listener.ptr = &listener_socket;
+        listener_thread = new Thread(listener).start();
+        return listener_thread;
     }
 
     protected shared(SharedClients) shared_clients;

@@ -1,6 +1,6 @@
 # Epoch Creator Service
 
-This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch.
+This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch.
 
 Input:
   - A Contract-SC (Signed Consensus) is received from the [TVM](/docs/architecture/TVM.md) Service. 

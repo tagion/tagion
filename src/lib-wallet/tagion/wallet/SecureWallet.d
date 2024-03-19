@@ -72,7 +72,7 @@ struct SecureWallet(Net : SecureNet) {
      * Params:
      *   pin = Devices pin code information
      *   wallet = Information to recover the pin-code
-     *   account =  Acount to hold bills and derivers
+     *   account =  Account to hold bills and derivers
      */
     this(DevicePIN pin,
             RecoverGenerator wallet = RecoverGenerator.init,
@@ -101,7 +101,7 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     /**
-     * Retreive the device-pin generation
+     * Retrieve the device-pin generation
      * Returns: Device PIN information
      */
     @nogc const(DevicePIN) pin() pure const nothrow {

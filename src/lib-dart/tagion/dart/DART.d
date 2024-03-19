@@ -390,7 +390,7 @@ received = the HiRPC received package
     }
 
     /**
-     * This function handels HPRC Queries to the DART
+     * This function handles HPRC Queries to the DART
      * Params:
      *     received = Request HiRPC object
      * If read_only is true deleting and erasing data in the DART will return an error
@@ -498,7 +498,7 @@ received = the HiRPC received package
         }
 
         /**
-         * Function to hanle syncronization stage for the DART
+         * Function to handle synchronization stage for the DART
          */
         final void run()
         in {
@@ -545,7 +545,7 @@ received = the HiRPC received package
                             }
                         }
                         else if (!foreign_print.isinit) {
-                            // Foreign is poits to branches
+                            // Foreign is points to branches
                             if (!local_print.empty) {
                                 const possible_branches_data = load(local_branches, key);
                                 if (!Branches.isRecord(Document(possible_branches_data))) {
@@ -635,7 +635,7 @@ received = the HiRPC received package
             const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request) {
                 Document send_request_to_foreign_dart(const Document foreign_doc) {
                     //
-                    // Remote excution
+                    // Remote execution
                     // Receive on the foreign end
                     const foreign_receiver = foreign_dart.hirpc.receive(foreign_doc);
                     // Make query in to the foreign DART
@@ -646,7 +646,7 @@ received = the HiRPC received package
 
                 immutable foreign_doc = request.toDoc;
                 (() @trusted { fiber.yield; })();
-                // Here a yield loop should be implement to poll for response from the foriegn DART
+                // Here a yield loop should be implement to poll for response from the foreign DART
                 // A timeout should also be implemented in this poll loop
                 const response_doc = send_request_to_foreign_dart(foreign_doc);
                 //
@@ -682,8 +682,8 @@ received = the HiRPC received package
 
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
-            auto random_tabel = new ulong[N];
-            foreach (ref r; random_tabel) {
+            auto random_table = new ulong[N];
+            foreach (ref r; random_table) {
                 immutable sector = rand.value(0x0000_0000_0000_ABBAUL, 0x0000_0000_0000_ABBDUL) << (
                         8 * 6);
                 r = rand.value(0x0000_1234_5678_0000UL | sector, 0x0000_1334_FFFF_0000UL | sector);
@@ -697,7 +697,7 @@ received = the HiRPC received package
 
             //            import std.stdio;
             { // Single element same sector sectors
-                const ulong[] same_sector_tabel = [
+                const ulong[] same_sector_table = [
                     0xABB9_13ab_cdef_1234,
                     0xABB9_14ab_cdef_1234,
                     0xABB9_15ab_cdef_1234
@@ -726,16 +726,16 @@ received = the HiRPC received package
 
                     switch (test_no) {
                     case 0:
-                        write(dart_A, same_sector_tabel[0 .. 1], recorder_A);
-                        write(dart_B, same_sector_tabel[0 .. 0], recorder_B);
+                        write(dart_A, same_sector_table[0 .. 1], recorder_A);
+                        write(dart_B, same_sector_table[0 .. 0], recorder_B);
                         break;
                     case 1:
-                        write(dart_A, same_sector_tabel[0 .. 1], recorder_A);
-                        write(dart_B, same_sector_tabel[1 .. 2], recorder_B);
+                        write(dart_A, same_sector_table[0 .. 1], recorder_A);
+                        write(dart_B, same_sector_table[1 .. 2], recorder_B);
                         break;
                     case 2:
-                        write(dart_A, same_sector_tabel[0 .. 2], recorder_A);
-                        write(dart_B, same_sector_tabel[1 .. 3], recorder_B);
+                        write(dart_A, same_sector_table[0 .. 2], recorder_A);
+                        write(dart_B, same_sector_table[1 .. 3], recorder_B);
                         break;
                     default:
                         assert(0);
@@ -802,8 +802,8 @@ received = the HiRPC received package
                     }
                 }
 
-                write(dart_B, random_tabel[0 .. 1], recorder_B);
-                write(dart_A, random_tabel[1 .. 2], recorder_A);
+                write(dart_B, random_table[0 .. 1], recorder_B);
+                write(dart_A, random_table[1 .. 2], recorder_A);
                 // writefln("dart_A.dump");
                 // dart_A.dump;
                 // writefln("dart_B.dump");
@@ -908,7 +908,7 @@ received = the HiRPC received package
                     }
                 }
 
-                write(dart_B, random_tabel[0 .. 17], recorder_B);
+                write(dart_B, random_table[0 .. 17], recorder_B);
                 // writefln("dart_A.dump");
                 // dart_A.dump;
                 // writefln("dart_B.dump");
@@ -961,8 +961,8 @@ received = the HiRPC received package
                     filename_B.remove;
                 }
 
-                write(dart_A, random_tabel[0 .. 17], recorder_A);
-                write(dart_B, random_tabel[0 .. 27], recorder_B);
+                write(dart_A, random_table[0 .. 17], recorder_A);
+                write(dart_B, random_table[0 .. 27], recorder_B);
                 // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
                 // writefln("dart_A.dump");
                 // dart_A.dump;
@@ -1014,8 +1014,8 @@ received = the HiRPC received package
                     filename_B.remove;
                 }
 
-                write(dart_A, random_tabel[0 .. 27], recorder_A);
-                write(dart_B, random_tabel[0 .. 17], recorder_B);
+                write(dart_A, random_table[0 .. 27], recorder_A);
+                write(dart_B, random_table[0 .. 17], recorder_B);
                 //                write(dart_B, random_table[0..17], recorder_B);
                 // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
                 // writefln("dart_A.dump");
@@ -1068,8 +1068,8 @@ received = the HiRPC received package
                     filename_B.remove;
                 }
 
-                write(dart_A, random_tabel[0 .. 27], recorder_A);
-                write(dart_B, random_tabel[28 .. 54], recorder_B);
+                write(dart_A, random_table[0 .. 27], recorder_A);
+                write(dart_B, random_table[28 .. 54], recorder_B);
                 //                write(dart_B, random_table[0..17], recorder_B);
                 // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
                 // writefln("dart_A.dump");
@@ -1122,8 +1122,8 @@ received = the HiRPC received package
                     filename_B.remove;
                 }
 
-                write(dart_A, random_tabel[0 .. 54], recorder_A);
-                write(dart_B, random_tabel[28 .. 81], recorder_B);
+                write(dart_A, random_table[0 .. 54], recorder_A);
+                write(dart_B, random_table[28 .. 81], recorder_B);
                 //                write(dart_B, random_table[0..17], recorder_B);
                 // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
                 // writefln("dart_A.dump");
@@ -1175,8 +1175,8 @@ received = the HiRPC received package
                     filename_B.remove;
                 }
 
-                write(dart_A, random_tabel[0 .. 544], recorder_A);
-                write(dart_B, random_tabel[288 .. 811], recorder_B);
+                write(dart_A, random_table[0 .. 544], recorder_A);
+                write(dart_B, random_table[288 .. 811], recorder_B);
                 //                write(dart_B, random_table[0..17], recorder_B);
                 // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
                 // writefln("dart_A.dump");

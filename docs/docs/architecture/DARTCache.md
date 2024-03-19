@@ -82,7 +82,7 @@ Check the cache if the any bills pubkeys match the bills in cache pubkeys that a
     ]
 }
 ```
-The following command gives dart_indexes and returns all the indexes that were not found in the database. In other words we return all the DART_indexes back to the client where they could not be found in the dart. This means if all the users tagionbills are in the dart. We return an empty hirpc.checkRead response. This command is much faster than the hirpc.search and should be preffered any time it can.
+The following command gives dart_indexes and returns all the indexes that were not found in the database. In other words we return all the DART_indexes back to the client where they could not be found in the dart. This means if all the users tagionbills are in the dart. We return an empty hirpc.checkRead response. This command is much faster than the hirpc.search and should be preferred any time it can.
 
 Cache logic.
 Check the cache if any of the dart_indexes marked as Archive.Type.ADD match. For all matches we remove the dartindex from our response.

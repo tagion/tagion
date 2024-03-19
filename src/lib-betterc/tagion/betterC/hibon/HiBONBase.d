@@ -45,7 +45,7 @@ enum Type : ubyte {
     //       FLOAT128        = 0x13, /// Decimal 128bits
     BIGINT = 0x1B, /// Signed Bigint
 
-    UINT32 = 0x20, /// 32 bit unsigend integer
+    UINT32 = 0x20, /// 32 bit unsigned integer
     FLOAT32 = 0x21, /// 32 bit Float
     UINT64 = 0x22, /// 64 bit unsigned integer
     HASHDOC = 0x23, /// Hash point to documement, public key or signature
@@ -513,7 +513,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     //     alias CastT=castTo!(UnqualT, CastTypes);
     //     static assert(is(CastT==void), "Type "~T.stringof~" not supported");
     //     alias E=asType!UnqualT;
-    //     opAssing(cast(CastT)x);
+    //     opAssign(cast(CastT)x);
     // }
 
     /**
@@ -570,16 +570,16 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
 //     }
 
 //     { // Simple data type
-//         auto test_tabel=tuple(
+//         auto test_table=tuple(
 //             float(-1.23), double(2.34), "Text", true, ulong(0x1234_5678_9ABC_DEF0),
 //             int(-42), uint(42), long(-0x1234_5678_9ABC_DEF0)
 //             );
-//         foreach(i, t; test_tabel) {
+//         foreach(i, t; test_table) {
 //             Value v;
-//             v=test_tabel[i];
-//             alias U = test_tabel.Types[i];
+//             v=test_table[i];
+//             alias U = test_table.Types[i];
 //             enum E  = Value.asType!U;
-//             assert(test_tabel[i] == v.by!E);
+//             assert(test_table[i] == v.by!E);
 //         }
 //     }
 

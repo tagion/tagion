@@ -5,7 +5,7 @@ DIRECTORY="/home/imrying/work/demo"
 DART_DIR="/home/imrying/work/darts"
 CONTAINER_ID="$1"
 echo "Copying from $CONTAINER_ID:/opt/tagion/nodes/data"
-echo "Succesfully copied 173kB to /home/imrying/work/demo"
+echo "Successfully copied 173kB to /home/imrying/work/demo"
 # docker cp "$CONTAINER_ID:/opt/tagion/nodes/node-master/data/" "$DIRECTORY"
 
 

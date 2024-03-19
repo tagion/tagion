@@ -21,7 +21,7 @@ clean: clean-unittest-cov
 help-unittest-cov:
 	$(PRECMD)
 	$(call log.header, $@ :: help)
-	$(call log.help, "make unittest-cov", "Creats an unittest with code-covarage")
+	$(call log.help, "make unittest-cov", "Creates an unittest with code-coverage")
 	$(call log.help, "make env-unittest-cov", "List the params for unittest-cov")
 	$(call log.close)
 

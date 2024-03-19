@@ -16,7 +16,7 @@ class OptionException : TagionException {
 enum isJSONCommon(T) = is(T == struct) && hasMember!(T, "toJSON");
 
 /++
- mixin for implememts a JSON interface for a struct
+ mixin for implements a JSON interface for a struct
  +/
 mixin template JSONCommon() {
     import tagion.basic.tagionexceptions : Check;
@@ -107,7 +107,7 @@ mixin template JSONCommon() {
     }
 
     /++
-     Intialize a struct from a JSON
+     Initialize a struct from a JSON
      Params:
      json_value = JSON used
      +/

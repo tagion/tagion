@@ -2,3 +2,14 @@
 # India Standard Time
 IST = "IST"
 inout = "inout"
+# opendoas bsd privilege escalation tools
+doas = "doas"
+# In Module name HiBONtoText
+Nto = "Nto"
+# Fixing this is a breaking change
+deactive = "deactive"
+# Wasm instruction. Not sure if it's correct.
+truct_sat = "truct_sat"
+
+[files]
+extend-exclude = ["LICENSE.md", "src/lib-nngd/", "src/fork-*", "src/lib-crypto/tagion/crypto/secp256k1/c", "unitdata/*"]

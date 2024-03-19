@@ -258,7 +258,7 @@ enum Type : ubyte {
     INT64 = 0x12, /// 64-bit integer,
     // INT128 = 0x13, /// 128-bit integer,
 
-    UINT32 = 0x14, /// 32 bit unsigend integer
+    UINT32 = 0x14, /// 32 bit unsigned integer
     UINT64 = 0x15, /// 64 bit unsigned integer
     // UINT128 = 0x16, /// 128-bit unsigned integer,
 
@@ -633,14 +633,14 @@ unittest {
     }
 
     { // Simple data type
-        auto test_tabel = tuple(float(-1.23), double(2.34), "Text", true,
+        auto test_table = tuple(float(-1.23), double(2.34), "Text", true,
                 ulong(0x1234_5678_9ABC_DEF0), int(-42), uint(42), long(-0x1234_5678_9ABC_DEF0));
-        foreach (i, t; test_tabel) {
+        foreach (i, t; test_table) {
             Value v;
-            v = test_tabel[i];
-            alias U = test_tabel.Types[i];
+            v = test_table[i];
+            alias U = test_table.Types[i];
             enum E = Value.asType!U;
-            assert(test_tabel[i] == v.by!E);
+            assert(test_table[i] == v.by!E);
         }
     }
 

@@ -406,11 +406,11 @@ struct RBNode(V) {
         else
             x = _right;
 
-        bool deferedUnlink = false;
+        bool deferredUnlink = false;
         if (x is null) {
             // pretend this is a null node, defer unlinking the node
             x = &this;
-            deferedUnlink = true;
+            deferredUnlink = true;
         }
         else if (isLeftNode)
             _parent.left = x;
@@ -489,7 +489,7 @@ struct RBNode(V) {
             x.color = Node.Color.Black;
         }
 
-        if (deferedUnlink) {
+        if (deferredUnlink) {
             //
             // unlink this node from the tree
             //

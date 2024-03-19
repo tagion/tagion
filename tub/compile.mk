@@ -103,7 +103,7 @@ env: env-build
 help-cov:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${call log.help, "make <target> COV=1", "Enable <target> with code covarage"}
+	${call log.help, "make <target> COV=1", "Enable <target> with code coverage"}
 	${call log.close}
 
 help: help-cov

@@ -136,7 +136,7 @@ struct HiRPC {
     enum Type : uint {
         none, /// No valid Type
         method, /// HiRPC Action method
-        result, /// HiRPC Respose message
+        result, /// HiRPC Response message
         error /// HiRPC Error message
     }
 
@@ -462,7 +462,7 @@ struct HiRPC {
      * Params:
      *   method = method name 
      *   params = argument for the method
-     *   id = opitional id
+     *   id = optional id
      * Returns: 
      */
     immutable(Sender) action(string method, const Document params, const uint id = uint.max) const {
@@ -559,7 +559,7 @@ struct HiRPC {
     }
 }
 
-/// A good HiRPC result wih no additional data.
+/// A good HiRPC result with no additional data.
 @safe
 @recordType("OK") @disableSerialize
 struct ResultOk {
@@ -589,7 +589,7 @@ unittest {
         params["test"] = 42;
         // Create a send method name func_name and argument params
         const sender = hirpc.action(func_name, params);
-        // Sender with bad credetials
+        // Sender with bad credentials
         const invalid_sender = bad_hirpc.action(func_name, params, sender.method.id);
 
         const doc = sender.toDoc;
@@ -601,7 +601,7 @@ unittest {
 
         assert(receiver.method.id is sender.method.id);
         assert(receiver.method.name == sender.method.name);
-        // Check that the received HiRPC is sigen correctly
+        // Check that the received HiRPC is sign correctly
         assert(receiver.signed is HiRPC.SignedState.VALID);
 
         assert(invalid_receiver.method.id is sender.method.id);
@@ -646,7 +646,7 @@ unittest {
 
     {
         HiRPC hirpc;
-        { /// Unsigend message (no permission)
+        { /// Unsigned message (no permission)
             HiBON t = new HiBON();
             t["$test"] = 5;
 

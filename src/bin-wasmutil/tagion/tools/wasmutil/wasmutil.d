@@ -90,7 +90,7 @@ int _main(string[] args) {
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, 
-                "gas|g", format("Inject gas countes: %s", inject_gas), &inject_gas,
+                "gas|g", format("Inject gas counters: %s", inject_gas), &inject_gas,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "mod|m", "Modify import module name from ", &modify_from,
                 "to", "Modify import module name from ", &modify_to,
@@ -118,7 +118,7 @@ int _main(string[] args) {
                         only(FileExtension.wasm, FileExtension.wat)),
                     format("<out-file>          Is an output file in (%-(%s -%)) format",
                         only(FileExtension.wat, FileExtension.dsrc)),
-                    "                    stdout is used of the output is not specifed the",
+                    "                    stdout is used of the output is not specified the",
                     "",
 
                     "<option>:",

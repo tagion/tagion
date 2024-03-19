@@ -437,7 +437,7 @@ unittest {
 @recordType("Invoice")
 struct Invoice {
     string name; /// Name of the invoice
-    TagionCurrency amount; /// Amount to be payed
+    TagionCurrency amount; /// Amount to be paid
     @label(StdNames.owner) Pubkey pkey; /// Key to the payee
     @optional Document info; /// Information about the invoice
     mixin HiBONRecord;

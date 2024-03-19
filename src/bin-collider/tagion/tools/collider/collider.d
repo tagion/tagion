@@ -50,7 +50,7 @@ bool checkValidFile(string file_name) {
  * Parses markdown BDD and produce a new format markdown
 * and a d-source skeleton
  * @param opts - options for behaviour
- * @return amount of erros in markdown files
+ * @return amount of errors in markdown files
  */
 int parse_bdd(ref const(BehaviourOptions) opts) {
     const regex_include = regex(opts.regex_inc);
@@ -101,7 +101,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             feature.emendation(file.name.suggestModuleName(opts.paths));
 
             if (errors.length) {
-                writefln("Amount of erros in %s: %s", file.name, errors.length);
+                writefln("Amount of errors in %s: %s", file.name, errors.length);
                 errors.join("\n").writeln;
                 result_errors++;
                 continue;
@@ -322,7 +322,7 @@ int main(string[] args) {
     immutable program = args[0]; /** file for configurations */
     auto config_file = "collider".setExtension(FileExtension.json); /** flag for print current version of behaviour */
     bool version_switch; /** flag for overwrite config file */
-    bool overwrite_switch; /** falg for to enable report checks */
+    bool overwrite_switch; /** flag for to enable report checks */
     bool Check_reports_switch;
     bool check_reports_switch;
     //    string[] stages;
@@ -371,7 +371,7 @@ int main(string[] args) {
                 "f|force", "Force a symbolic link to be created", &force_switch,
                 "v|verbose", "Enable verbose print-out", &__verbose_switch,
                 "n|dry", "Shows the parameter for a schedule run (dry-run)", &__dry_switch,
-                "silent", "Don't show progess", &options.silent,
+                "silent", "Don't show progress", &options.silent,
         );
         if (version_switch) {
             revision_text.writeln;

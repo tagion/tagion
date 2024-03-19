@@ -3,7 +3,7 @@
 This service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 
 Input:
-  - Receives an Epoch list contaning ordered events from the [Epoch Creator](/docs/architecture/EpochCreator).
+  - Receives an Epoch list containing ordered events from the [Epoch Creator](/docs/architecture/EpochCreator).
   - Receives all Draft outputs archives from the [TVM](/docs/architecture/TVM).
 
 Request:
@@ -41,6 +41,6 @@ sequenceDiagram
     Epoch Creator ->> Transcript: Epoch list  
     Transcript ->> DART:  Verify all inputs 
     DART ->> Transcript : List of invalid inputs 
-    Transcript ->> DART: Recorder(Modifiy)
+    Transcript ->> DART: Recorder(Modify)
 ```
 

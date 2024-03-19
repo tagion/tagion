@@ -158,7 +158,7 @@ class ItWork {
         auto collected = receiveOnlyTimeout!(signedContract, immutable(CollectedSignedContract)*)[1];
 
         check(collected !is null, "The collected was null");
-        // check(collected.inputs.length == inputs.length, "The lenght of inputs were not the same");
+        // check(collected.inputs.length == inputs.length, "The length of inputs were not the same");
         // check(collected.inputs.map!(a => node_net.dartIndex(a)).array == inputs, "The collected archives did not match the index");
         return result_ok;
     }

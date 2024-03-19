@@ -24,7 +24,7 @@ help-aux: help-auxiliary
 help-auxiliary:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${call log.kvp, "This is list parmeter which can be change from command line macros"}
+	${call log.kvp, "This is list parameter which can be change from command line macros"}
 	${call log.help, DC, "This is the d compiler used"}
 	${call log.help, PRECMD, "The pre-command macro (Default @) 'make PRECMD=' will echo all commands"}
 	${call log.help, SHARED, "This switch can be set to 1 to enable shard lib eg .$(DLLEXT) file"}

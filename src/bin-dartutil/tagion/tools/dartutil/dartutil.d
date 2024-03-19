@@ -95,10 +95,10 @@ int _main(string[] args) {
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
-                "r|read", "Excutes a DART read sequency", &dartread_args,
+                "r|read", "Executes a DART read sequency", &dartread_args,
                 "rim", "Performs DART rim read", &dartrim,
-                "m|modify", "Excutes a DART modify sequency", &dartmodify,
-                "rpc", "Excutes a HiPRC on the DART", &dartrpc,
+                "m|modify", "Executes a DART modify sequency", &dartmodify,
+                "rpc", "Executes a HiPRC on the DART", &dartrpc,
                 "strip", "Strips the dart-recoder dumps archives", &strip,
                 "f|force", "Force erase and create journal and destination DART", &force,
                 "print", "prints all the archives with in the given angle", &print,
@@ -157,7 +157,7 @@ int _main(string[] args) {
                 angle_range.formattedRead("%x:%x", _from, _to)
                     .ifThrown(0);
             tools.check(fields == 2,
-                    format("Angle range shoud be ex. --range A0F0:B0F8 not %s", angle_range));
+                    format("Angle range should be ex. --range A0F0:B0F8 not %s", angle_range));
             verbose("Angle from %04x to %04x", _from, _to);
             sectors = SectorRange(_from, _to);
         }
@@ -343,7 +343,7 @@ int _main(string[] args) {
         const onehot = dartrpc + dartread + !dartrim.empty + dartmodify;
 
         tools.check(onehot <= 1,
-                "Only one of the dartrpc, dartread, dartrim, dartmodify switched alowed");
+                "Only one of the dartrpc, dartread, dartrim, dartmodify switched allowed");
 
         if (dartrpc) {
             tools.check(!inputfilename.empty, "Missing input file for DART-rpc");
@@ -374,8 +374,8 @@ int _main(string[] args) {
             if (strip) {
 
                 auto recorder = db.recorder(response.result);
-                foreach (arcive; recorder[]) {
-                    fout.rawWrite(arcive.filed.serialize);
+                foreach (archive; recorder[]) {
+                    fout.rawWrite(archive.filed.serialize);
                 }
                 return 0;
             }

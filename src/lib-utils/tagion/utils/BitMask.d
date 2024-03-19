@@ -282,7 +282,7 @@ struct BitMask {
 
         BitMask bits_a, bits_b;
         enum op_list = ["|", "&", "^", "-"];
-        //enum righ
+        //enum right
         static struct Expected {
             BitMask Y, A, B; /// y = a OP b
         }

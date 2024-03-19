@@ -45,7 +45,7 @@ enum ConsensusFailCode {
     GOSSIPNET_EXPECTED_EXCHANGE_STATE,
     GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE,
     GOSSIPNET_EXPECTED_3_EXCHANGE_STATE,
-    //    GOSSIPNET_BAD_EXCHNAGE_STATE,
+    //    GOSSIPNET_BAD_EXCHANGE_STATE,
     GOSSIPNET_REPLICATED_PUBKEY,
     GOSSIPNET_EVENTPACKAGE_NOT_FOUND,
     GOSSIPNET_MISSING_EVENTS,
@@ -72,9 +72,9 @@ enum ConsensusFailCode {
     SECURITY_PRIVATE_KEY_INVALID,
     SECURITY_PUBKEY_KEY_INVALID,
 
-    SECURITY_FAILD_TO_CREATE_KEYPAIR,
-    SECURITY_FAILD_TO_SIGN_MESSAGE,
-    SECURITY_FAILD_PUBKEY_FROM_KEYPAIR,
+    SECURITY_FAILED_TO_CREATE_KEYPAIR,
+    SECURITY_FAILED_TO_SIGN_MESSAGE,
+    SECURITY_FAILED_PUBKEY_FROM_KEYPAIR,
     SECURITY_EDCH_FAULT,
 
     SECURITY_MASK_VECTOR_IS_ZERO,
@@ -91,7 +91,7 @@ enum ConsensusFailCode {
 
     SCRIPTING_ENGINE_HiBON_FORMAT_FAULT,
     SCRIPTING_ENGINE_DATA_VALIDATION_FAULT,
-    SCRIPTING_ENGINE_SIGNATUR_FAULT,
+    SCRIPTING_ENGINE_SIGNATURE_FAULT,
 
     SMARTSCRIPT_NO_SIGNATURE,
     SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS,
@@ -195,8 +195,8 @@ shared static this() {
             EVENT_FATHER_FORK                           : "Event father fork",
             EVENT_MOTHER_LESS                           : "Event is mother less",
             EVENT_MOTHER_CHANNEL                        : "Event should be on the same channel as the mother",
-            EVENT_MOTHER_GROUNDED                       : "Mother can't be accessed becuase this event is dead",
-            EVENT_FATHER_GROUNDED                       : "Father can't be accessed becuase this event is dead",
+            EVENT_MOTHER_GROUNDED                       : "Mother can't be accessed because this event is dead",
+            EVENT_FATHER_GROUNDED                       : "Father can't be accessed because this event is dead",
             EVENT_PHONY_EVA                             : "Event already exist's for this node",
             EVENT_ALTITUDE                              : "The Event's altitude must increase by one from mother to daughter",
             EVENT_MISSING_IN_CACHE                      : "Event missing in the cache",
@@ -242,11 +242,11 @@ shared static this() {
             SECURITY_PRIVATE_KEY_INVALID                : "Invalid private key",
             SECURITY_PUBKEY_KEY_INVALID                 : "Invalid pubkey key",
             
-            SECURITY_FAILD_TO_CREATE_KEYPAIR            : "Faild to create keypair",
-            SECURITY_FAILD_TO_SIGN_MESSAGE              : "Faild to sign message",
-            SECURITY_FAILD_PUBKEY_FROM_KEYPAIR          : "Faild to procude pubkey from keypair",
+            SECURITY_FAILED_TO_CREATE_KEYPAIR            : "Failed to create keypair",
+            SECURITY_FAILED_TO_SIGN_MESSAGE              : "Failed to sign message",
+            SECURITY_FAILED_PUBKEY_FROM_KEYPAIR          : "Failed to produce pubkey from keypair",
             SECURITY_MASK_VECTOR_IS_ZERO                : "Mask vector must be different from zero",
-            SECURITY_MESSAGE_HASH_KEY                   : "A message containg a hash-kye can not be signed",
+            SECURITY_MESSAGE_HASH_KEY                   : "A message containing a hash-kye can not be signed",
 
             CIPHER_DECRYPT_CRC_ERROR                    : "Decrypt CRC checksum failure",
             CIPHER_DECRYPT_ERROR                        : "Decrypt failure",
@@ -258,9 +258,9 @@ shared static this() {
 
             SCRIPTING_ENGINE_HiBON_FORMAT_FAULT         : "The data is not a HiBON format",
             SCRIPTING_ENGINE_DATA_VALIDATION_FAULT      : "Transaction object does not contain the right elements",
-            SCRIPTING_ENGINE_SIGNATUR_FAULT             : "Signatures are not correct",
+            SCRIPTING_ENGINE_SIGNATURE_FAULT             : "Signatures are not correct",
 
-            SMARTSCRIPT_NO_SIGNATURE                    : "Smart script does not contain enought signatures",
+            SMARTSCRIPT_NO_SIGNATURE                    : "Smart script does not contain enough signatures",
             SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS     : "Smart script is missing some signatures for some inputs",
             SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING       : "Smart script number of input figerprints does not match the number of inputs",
             SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT: "Smart script fingerprint does not match the input",

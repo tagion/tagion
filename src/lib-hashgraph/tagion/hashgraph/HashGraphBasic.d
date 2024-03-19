@@ -83,7 +83,7 @@ bool isAllVotes(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
 
 enum int eva_altitude = -77;
 @safe @nogc
-int nextAltitide(const Event event) pure nothrow {
+int nextAltitude(const Event event) pure nothrow {
     return (event) ? event.altitude + 1 : eva_altitude;
 }
 
@@ -141,7 +141,7 @@ struct EventBody {
                 this.mother    =    (mother is null)?null:mother.fingerprint;
                 this.father    =    (father is null)?null:father.fingerprint;
                 this.payload   =    payload;
-                this.altitude  =    mother.nextAltitide;
+                this.altitude  =    mother.nextAltitude;
                 consensus();
             }
 
@@ -204,7 +204,7 @@ struct EventPackage {
     mixin HiBONRecord!(
             q{
             /++
-             Used when a Event is receved from another node
+             Used when a Event is received from another node
              +/
             this(const SecureNet net, const(Document) doc_epack) immutable pure {
                 immutable _this=EventPackage(doc_epack);
