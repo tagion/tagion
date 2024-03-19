@@ -1,6 +1,6 @@
 # Developing with Nix
 
-Nix is a package manager for building reproducible packages accross machines.  
+Nix is a package manager for building reproducible packages across machines.  
 You can see how to install nix at https://nixos.org/download
 
 The tagion repo contains a `flake.nix` which means that it provides a variety of outputs.

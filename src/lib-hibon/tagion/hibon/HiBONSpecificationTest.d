@@ -217,7 +217,7 @@ unittest {
             6, SpecType.Int32,
             3, 107, 101, 121, // Pascal string "key"
             9
-        ]; // square size of key lenght"
+        ]; // square size of key length"
         int value = cast(int)(key.length * key.length);
         auto hibon = new HiBON;
         hibon[key] = value;

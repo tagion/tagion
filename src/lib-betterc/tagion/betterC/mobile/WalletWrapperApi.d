@@ -45,7 +45,7 @@ enum drtStatus {
     STARTED,
     TERMINATED
 }
-/// Variable, which repsresents the d-runtime status
+/// Variable, which represents the d-runtime status
 __gshared drtStatus __runtimeStatus = drtStatus.DEFAULT_STS;
 
 string[] parse_string(const char* str, const uint len) {

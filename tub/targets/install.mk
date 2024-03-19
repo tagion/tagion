@@ -62,7 +62,7 @@ $(INSTALLEDCOLLIDER): collider
 	$(CP) $(COLLIDER) $(INSTALLEDCOLLIDER)
 	$(INSTALLEDCOLLIDER) -f
 
-# Auxillary scripts for operations testing
+# Auxiliary scripts for operations testing
 OPS_SERVICE:=$(XDG_CONFIG_HOME)/systemd/user/tagion-ops-mngr.service
 INSTALLED_FILES+=$(OPS_SERVICE)
 OPS_TIMER:=$(XDG_CONFIG_HOME)/systemd/user/tagion-ops-mngr.timer

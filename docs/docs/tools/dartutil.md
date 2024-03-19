@@ -16,10 +16,10 @@ dartutil --sync src.drt dst.drt
              --dry Dry-run this will not save the wallet
 -I    --initialize Create a dart file
 -o    --outputfile Sets the output file name
--r          --read Excutes a DART read sequency
+-r          --read Executes a DART read sequency
              --rim Performs DART rim read
--m        --modify Excutes a DART modify sequency
-             --rpc Excutes a HiPRC on the DART
+-m        --modify Executes a DART modify sequency
+             --rpc Executes a HiPRC on the DART
            --strip Strips the dart-recoder dumps archives
 -f         --force Force erase and create journal and destination DART
            --print prints all the archives with in the given angle
@@ -634,7 +634,7 @@ Creates a new DART file.
 
 
 
-Can be used as independed function or in combination with [exclusive functions](#exclusive-functions).
+Can be used as independent function or in combination with [exclusive functions](#exclusive-functions).
 
 # inputfile
 
@@ -685,7 +685,7 @@ Sets the output file name.
 
 Output file could have any extension. Dartutil writes output in HiBON format.  
 
-To open output file using `hibonutil` it should have extenson `.hibon`.
+To open output file using `hibonutil` it should have extension `.hibon`.
 
 Default value: path generated with random seed. Variants of this path:
 ```

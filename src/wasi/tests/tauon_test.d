@@ -131,7 +131,7 @@ void main() {
        // writefln("pubkey   =%(%02 %)", pubkey);
         const signature_ok = crypt.verify(msg_hash, signature, pubkey);
         writefln("signature_ok=%s", signature_ok);
-        //assert(signature_ok, "Schnorr signing failded");
+        //assert(signature_ok, "Schnorr signing failed");
 
     }
     auto net=new StdSecureNet;

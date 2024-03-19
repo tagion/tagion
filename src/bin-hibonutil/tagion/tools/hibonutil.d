@@ -255,7 +255,7 @@ int _main(string[] args) {
                             const(Document.Element) current, const(
                             Document.Element) previous) nothrow{ return true; }, reserved_flag);
                     tools.check(error_code is Document.Element.ErrorCode.NONE,
-                            format("Streamed document %d faild with %s", no, error_code));
+                            format("Streamed document %d failed with %s", no, error_code));
                 }
                 print(doc);
             }

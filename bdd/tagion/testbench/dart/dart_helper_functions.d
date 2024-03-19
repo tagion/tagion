@@ -200,7 +200,7 @@ static class TestSynchronizer : JournalSynchronizer {
     const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request) {
         Document send_request_to_foreign_dart(const Document foreign_doc) {
             //
-            // Remote excution
+            // Remote execution
             // Receive on the foreign end
             const foreign_receiver = foreign_dart.hirpc.receive(foreign_doc);
             // Make query in to the foreign DART
@@ -211,7 +211,7 @@ static class TestSynchronizer : JournalSynchronizer {
 
         immutable foreign_doc = request.toDoc;
         (() @trusted { fiber.yield; })();
-        // Here a yield loop should be implement to poll for response from the foriegn DART
+        // Here a yield loop should be implement to poll for response from the foreign DART
         // A timeout should also be implemented in this poll loop
         const response_doc = send_request_to_foreign_dart(foreign_doc);
         //

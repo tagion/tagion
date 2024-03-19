@@ -10,7 +10,7 @@ module tagion.betterC.utils.RBTree;
  *
  * [DESCRIPTION]        : Its almost like the normal binary search tree data structure. But
  *                        for keeping the tree balanced an extra color field is introduced to each node.
- *                        This tree will mantain bellow properties.
+ *                        This tree will maintain bellow properties.
  *                                1. Nodes can be either RED or BLACK.
  *                                2. root is BLACK.
  *                                3. Leaves of this tree are null nodes. Here null is represented bya special node null.
@@ -218,7 +218,7 @@ struct RBTreeT(K) {
     /*
      * Insertion is done by the same procedure for BST Insert. Except new node is colored
      * RED. As it is coloured RED it may violate property 2 or 4. For this reason an
-     * auxilary procedure called insert_fixup is called to fix these violation.
+     * auxiliary procedure called insert_fixup is called to fix these violation.
      */
 
     bool insert(K item) {
@@ -252,7 +252,7 @@ struct RBTreeT(K) {
         y = nill;
 
         /*
-         * Go through the tree untill a leaf(null) is reached. y is used for keeping
+         * Go through the tree until a leaf(null) is reached. y is used for keeping
          * track of the last non-null node which will be z's parent.
          */
         while (x !is nill) {
@@ -287,7 +287,7 @@ struct RBTreeT(K) {
     }
 
     /*
-     * Here is the psudocode for fixing violations.
+     * Here is the pseudocode for fixing violations.
      *
      * while (z's parent is RED)
      *              if (z's parent is z's grand parent's left child) then
@@ -460,7 +460,7 @@ struct RBTreeT(K) {
      *
      * As removing or moving y can harm red-black tree properties a variable
      * yOriginalColor is used to keep track of the original colour. If its BLACK then
-     * removing or moving y harm red-black tree properties. In that case an auxilary
+     * removing or moving y harm red-black tree properties. In that case an auxiliary
      * procedure remove_fixup(x) is called to recover this.
      */
 

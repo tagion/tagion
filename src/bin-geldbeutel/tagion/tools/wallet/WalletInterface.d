@@ -48,7 +48,7 @@ import tagion.tools.secretinput;
 /**
  * @brief strip white spaces in begin/end of text
  * @param word - input parameter with out
- * return dublicate out parameter
+ * return duplicate out parameter
  */
 const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc {
     import std.ascii : isWhite;
@@ -268,7 +268,7 @@ struct WalletInterface {
                 string select_code;
                 string chosen_code;
                 if (select_index == i) {
-                    select_code = BLUE ~ BACKGOUND_WHITE;
+                    select_code = BLUE ~ BACKGROUND_WHITE;
                 }
                 if (answer.length) {
                     chosen_code = GREEN;
@@ -646,7 +646,7 @@ struct WalletInterface {
                             bool res = trt_update ? secure_wallet.setResponseUpdateWallet(
                                     received) : secure_wallet.setResponseCheckRead(received);
                         }
-                        writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
+                        writeln(res ? "wallet updated successfully" : "wallet not updated successfully");
                         save_wallet = true;
                     }
 

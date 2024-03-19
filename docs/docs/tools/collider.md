@@ -41,8 +41,8 @@ Sample of a config file
 {
     "bdd_ext": ".md",  /// bdd markdown extension
     "bdd_gen_ext": "gen.md", /// Generated markdown
-    "d_ext": "gen.d",   /// Regenrated D-source extension
-    "dfmt": "\/home\/carsten\/bin\/dfmt\n", /// D-source formater
+    "d_ext": "gen.d",   /// Regenerated D-source extension
+    "dfmt": "\/home\/carsten\/bin\/dfmt\n", /// D-source formatter
     "dfmt_flags": [
         "-i"
     ],

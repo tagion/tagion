@@ -86,7 +86,7 @@ This allows us to get a list of all the segments that are "recycled. They contai
 | `next`        | `Index` | `"next"` | Points to next index  |
 | `size`        | `uint`  | `"size"` | Size of the field     |
 
-As it can be seen the `index` is not saved in the `HiBONRecord`. This is because it is not neccesary in order to produce the list of [RecycleSegments](https://ddoc.tagion.org/tagion.dart.Recycler.RecycleSegment.html)
+As it can be seen the `index` is not saved in the `HiBONRecord`. This is because it is not necessary in order to produce the list of [RecycleSegments](https://ddoc.tagion.org/tagion.dart.Recycler.RecycleSegment.html)
 . 
 
 The RecycleSegments are stored in a [RedBlackTree](https://dlang.org/phobos/std_container_rbtree.html) in memory called [indices](https://ddoc.tagion.org/tagion.dart.Recycler.Indices.html).
@@ -138,7 +138,7 @@ The purpose of the recycler is to keep track of erased blocks. This is important
 The dispose in the recycler simply creates a new `RecycleSegment` and adds it to the list called [`to_be_recycled`](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.to_be_recycled.html). 
 
 ### [Claim](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.claim.html) in recycler
-The claim in the recycler first checks a internal list called `to_be_recycled`. This list contains all the disposed segments that are going to be added to the recycler when the `blockfile.store` function is called. If it finds a segment in the `to_be_recycled`, which is the same size amount of blocks neccesary to store the document, it returns the index.
+The claim in the recycler first checks a internal list called `to_be_recycled`. This list contains all the disposed segments that are going to be added to the recycler when the `blockfile.store` function is called. If it finds a segment in the `to_be_recycled`, which is the same size amount of blocks necessary to store the document, it returns the index.
 
 If no segment in the `to_be_recycled` is found, we do the following:
 

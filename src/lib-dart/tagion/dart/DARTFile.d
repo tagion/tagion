@@ -58,7 +58,7 @@ enum KEY_SPAN = ubyte.max + 1;
 
 /++
  + DART File system
- + Distribute Achive of Random Transction
+ + Distribute Achive of Random Transaction
  + This class handles the CRUD Database
  +
  + The archive is hashed and store in structure similar to merkle trees datastruct.
@@ -201,7 +201,7 @@ class DARTFile {
     /**
  * Ditto
  * Params:
- *   archives = Archive data which contails an ordred list of archives 
+ *   archives = Archive data which contains an ordred list of archives 
  * Returns: 
  * recorder of the list of archives
  */
@@ -843,7 +843,7 @@ class DARTFile {
          * Note that this function is recursive and called from itself. 
          * Can be broken up into 3 sections. The first is for going through the branches
          * In the sectors. Next section is for going through branches deeper than the sectors.
-         * The last section is responsible for acutally doing the work with the archives.
+         * The last section is responsible for actually doing the work with the archives.
          * Params:
          *   range = RimKeyRange to traverse with.
          *   branch_index = The branch index to modify.
@@ -1338,17 +1338,17 @@ unittest {
     { // Test RimKeyRange
         auto recorder = manufactor.recorder;
 
-        auto test_tabel = table[0 .. 8].dup;
-        foreach (t; test_tabel) {
+        auto test_table = table[0 .. 8].dup;
+        foreach (t; test_table) {
             const doc = DARTFakeNet.fake_doc(t);
             recorder.add(doc);
         }
 
-        test_tabel.sort;
+        test_table.sort;
 
         uint i;
         foreach (a; recorder.archives) {
-            assert(a.filed.data == net.fake_doc(test_tabel[i]).data);
+            assert(a.filed.data == net.fake_doc(test_table[i]).data);
             i++;
         }
 
@@ -1360,7 +1360,7 @@ unittest {
             i = 0;
             immutable key = rim_range.front.dart_index.rim_key(rim);
             foreach (a; rim_range) {
-                while (net.dartIndex(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
+                while (net.dartIndex(DARTFakeNet.fake_doc(test_table[i])).rim_key(rim) !is key) {
                     i++;
                 }
                 i++;
@@ -2465,12 +2465,12 @@ unittest {
         auto dart_A = new DARTFile(net, filename_A);
         RecordFactory.Recorder recorder;
 
-        const ulong[] datas = [
+        const ulong[] data = [
             0xABB9_130b_11ef_0923,
             0x1234_5678_9120_1234,
             0xABCD_1234_0000_0000,
         ];
-        auto docs = datas.map!(a => DARTFakeNet.fake_doc(a));
+        auto docs = data.map!(a => DARTFakeNet.fake_doc(a));
 
         recorder = dart_A.recorder();
 

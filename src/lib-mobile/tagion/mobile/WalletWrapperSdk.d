@@ -47,7 +47,7 @@ enum DrtStatus {
     STARTED,
     TERMINATED
 }
-/// Variable, which repsresents the d-runtime status
+/// Variable, which represents the d-runtime status
 __gshared DrtStatus __runtimeStatus = DrtStatus.DEFAULT_STS;
 // Wallet global variable.
 alias StdSecureWallet = Wallet.SecureWallet!(StdSecureNet);
@@ -214,7 +214,7 @@ extern (C) {
                     __wallet_storage.read;
                 }
                 // Since secure_wallet do logout after pincode change
-                // we need to perform a login manualy.
+                // we need to perform a login manually.
                 __wallet_storage.wallet.login(newPincode);
                 return SUCCESS;
             }

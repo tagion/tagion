@@ -27,7 +27,7 @@ struct NodeSettings {
     this(string params) {
         const list = params.split(",");
         check(list.length == 3,
-            "Argument %s should have three parameter seperated with a ','", params);
+            "Argument %s should have three parameter separated with a ','", params);
         name = list[0];
         owner = Pubkey(list[1].decode);
         address = list[2];

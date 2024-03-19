@@ -34,7 +34,7 @@ struct BehaviourError {
 }
 
 /**
- * Stores the result from a BDD Action, Senario or Feature
+ * Stores the result from a BDD Action, Scenario or Feature
  */
 @safe
 @recordType("BDDResult") @disableSerialize

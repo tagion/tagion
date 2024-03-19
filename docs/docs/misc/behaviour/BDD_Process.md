@@ -170,9 +170,9 @@ The out of the BDD (Feature) should be stored in a file an can be process or ana
 
 ```d
 /// Example executing the Scenario Some_awesome_feature.
-const senario_result = run!(Some_awesome_feature); 
+const scenario_result = run!(Some_awesome_feature); 
 
-/// Example excuting the full BDD tagion.behaviour.BehaviourUnittest
+/// Example executing the full BDD tagion.behaviour.BehaviourUnittest
 const feature_result = run!(tagion.behaviour.BehaviourUnittest);
     
 ```

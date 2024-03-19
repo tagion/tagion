@@ -6,7 +6,7 @@ Case, when initial database in empty
 
 Given: empty database
 
-Given: expected databse bullseye
+Given: expected database bullseye
 
 Given: valid recorder chain
 
@@ -15,10 +15,10 @@ When: perform backup functionality
 Then: restored database bullseye is same as expected bullseye
 
 
-Scenario: backup databse with recorder chain
+Scenario: backup database with recorder chain
 Case, when provided database is not empty
 
-Given: expected databse bullseye
+Given: expected database bullseye
 
 Given: valid recorder chain
 

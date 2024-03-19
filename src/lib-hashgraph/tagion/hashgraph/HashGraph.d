@@ -106,7 +106,7 @@ class HashGraph {
  *   valid_channel = call-back to check if a node is valid
  *   epoch_callback = call-back which is called when an epoch has been produced
  *   epack_callback = call-back call if when a package has been added to the cache.
- *   name = used for debuging label the node name
+ *   name = used for debugging label the node name
  */
     this(const size_t node_size,
             const SecureNet net,
@@ -222,22 +222,22 @@ class HashGraph {
         return true;
     }
 
-    alias GraphResonse = const(Pubkey) delegate(
+    alias GraphResponse = const(Pubkey) delegate(
             GossipNet.ChannelFilter channel_filter,
             GossipNet.SenderCallBack sender) @safe;
     alias GraphPayload = const(Document) delegate() @safe;
 
     void init_tide(
-            const(GraphResonse) responde,
+            const(GraphResponse) responde,
             const(GraphPayload) payload,
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
             immutable epack = event_pack(time, null, doc);
 
-            const registrated = registerEventPackage(epack);
+            const registered = registerEventPackage(epack);
 
-            assert(registrated, "Should not fail here");
+            assert(registered, "Should not fail here");
             const sender = hirpc.wavefront(tidalWave);
             return sender;
         }
@@ -726,8 +726,8 @@ class HashGraph {
                     received_node.state = NONE;
                     const from_front_seat = register_wavefront(received_wave, from_channel);
                     immutable epack = event_pack(time, from_front_seat, payload());
-                    const registrated = registerEventPackage(epack);
-                    assert(registrated, "The event package has not been registered correct (The wave should be dumped)");
+                    const registered = registerEventPackage(epack);
+                    assert(registered, "The event package has not been registered correct (The wave should be dumped)");
                 }
                 return buildWavefront(NONE);
             }

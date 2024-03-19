@@ -138,7 +138,7 @@ class StdHandlerPool(TValue : ResponseHandler, TKey) : HandlerPool!(TValue, TKey
             }
         }
         else {
-            writeln("no respponse handler found");
+            writeln("no response handler found");
         }
         tick;
     }

@@ -7,7 +7,7 @@ enum unitdata = "unitdata";
 * Used in unitttest local the path package/unitdata/filename 
 * Params:
 *   filename = name of the unitdata file
-*   file = defailt location of the module
+*   file = default location of the module
 * Returns:
 *   unittest data filename
  */

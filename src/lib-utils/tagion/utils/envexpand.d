@@ -72,7 +72,7 @@ unittest {
     // Environment without brackets
     assert("text$NAME".envExpand(["NAME": "hugo"]) == "texthugo");
     // Undefined env without brackets expansion
-    assert("text$NAMEend".envExpand(["NAME": "hugo"]) == "text");
+    assert("text$NAMEEend".envExpand(["NAME": "hugo"]) == "text");
     // Expansion of undefined environment of environment
     assert("text$(OF${NAME})".envExpand(["NAME": "hugo"]) == "text");
     // Expansion of defined environment of environment

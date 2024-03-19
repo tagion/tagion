@@ -28,7 +28,7 @@ class DARTUtilSynchronizer : JournalSynchronizer {
     const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request) {
         Document send_request_to_source(const Document foreign_doc) {
             //
-            // Remote excution
+            // Remote execution
             // Receive on the foreign end
             const foreign_receiver = source.hirpc.receive(foreign_doc);
             // Make query in to the foreign DART
@@ -39,7 +39,7 @@ class DARTUtilSynchronizer : JournalSynchronizer {
 
         immutable foreign_doc = request.toDoc;
         (() @trusted { fiber.yield; })();
-        // Here a yield loop should be implement to poll for response from the foriegn DART
+        // Here a yield loop should be implement to poll for response from the foreign DART
         // A timeout should also be implemented in this poll loop
         const response_doc = send_request_to_source(foreign_doc);
         //
@@ -105,6 +105,6 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
             noboseln("!");
         }
     }
-    noboseln("\n%d journal files has been syncronized", count);
+    noboseln("\n%d journal files has been synchronized", count);
     return journal_filenames;
 }

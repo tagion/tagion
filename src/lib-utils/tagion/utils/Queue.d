@@ -202,7 +202,7 @@ module tagion.utils.Queue;
             assert(q.read == elm[1]);
             assert(q.read == elm[2]);
         }
-        { // Remove middel
+        { // Remove middle
             auto q = new Queue!string;
             foreach (ref e; elm) {
                 q.write(e);

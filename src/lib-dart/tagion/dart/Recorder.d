@@ -61,7 +61,7 @@ class RecordFactory {
     /**
      * Creates an Recorder from a document
      * Params:
-     *   doc = Documemt formated as recorder
+     *   doc = Document formatted as recorder
      * Returns:
      *   new recorder created from doc
      */
@@ -451,7 +451,7 @@ class Archive {
     }
     /**
      * Convert archive to a Document 
-     * Returns: documnet of the archive
+     * Returns: document of the archive
      */
     const(Document) toDoc() const pure {
         auto hibon = new HiBON;

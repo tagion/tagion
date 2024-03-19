@@ -284,7 +284,7 @@ int _neuewelle(string[] args) {
         }
         else {
             // New version reads the addresses properly from dart
-            // However is incompatble with older darts were not set properly
+            // However is incompatible with older darts were not set properly
             version (MODE0_ADDRESS_DART) {
                 addressbook = readNNRFromDart(node_options[0].dart.dart_path, keys, __net);
             }
@@ -490,6 +490,6 @@ StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
         throw new ToolsException(format("%1$sWrong pincode bootkey node %3$s%2$s", RED, RESET, args[0]));
     }
 
-    verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
+    verbose("%1$sNode %3$s successful%2$s", GREEN, RESET, args[0]);
     return cast(StdSecureNet)wallet_interface.secure_wallet.net.clone;
 }

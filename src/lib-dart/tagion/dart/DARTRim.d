@@ -231,7 +231,7 @@ struct Rims {
 /++
  + Sector is the little ending value the first two bytes of an fingerprint
  + Returns:
- +     Sector number of a fingerpint
+ +     Sector number of a fingerprint
  +/
 @safe
 ushort sector(F)(const(F) fingerprint) pure nothrow @nogc if (isBufferType!F)

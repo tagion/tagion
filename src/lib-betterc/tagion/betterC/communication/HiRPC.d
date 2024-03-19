@@ -130,7 +130,7 @@ struct HiRPC {
     enum Type : uint {
         none, /// No valid Type
         method, /// Action method
-        result, /// Respose
+        result, /// Response
         error
     }
 
