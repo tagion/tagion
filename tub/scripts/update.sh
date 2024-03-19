@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage() { echo "Usage: $0 <version tage>" 1>&2; exit 1;}
+usage() { echo "Usage: $0 <version tag>" 1>&2; exit 1;}
 
 prompt() {
     text=$1

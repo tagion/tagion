@@ -13,7 +13,7 @@ The network also runs with fixed number of nodes.
 This mode allows for easy debugging since all logs and the startup are very easily created.
 
 # Mode 1
-This mode uses NNG sockets for creating a simple gossip protocol. The address of the nodes is loaded from the dart and the number of nodes are still fixed. The nodes are spawned as *separate* programs and one node can go down (ex. segfault) without the entire network chrashing.
+This mode uses NNG sockets for creating a simple gossip protocol. The address of the nodes is loaded from the dart and the number of nodes are still fixed. The nodes are spawned as *separate* programs and one node can go down (ex. segfault) without the entire network crashing.
 
 # Mode 2
 This mode runs like Mode 1, but where mode1 does not allow for *catch-up* if a node goes down and wants to join again mode 2 does. This means that a node is able to subscribe to the recorder as well as synchronize the database simultaneously in the end being able to join theg graph again.

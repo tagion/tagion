@@ -465,7 +465,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                     else {
                         static assert(0, format(
-                                "Convering for member '%s' of type" ~
+                                "converting for member '%s' of type" ~
                                 " %s is not supported by default",
                                 name, MemberT.stringof));
                     }
@@ -703,7 +703,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
-                                    format("Fixed %s is already definded to %s" ~
+                                    format("Fixed %s is already defined to %s" ~
                                     " but is redefined for %s.%s",
                                     TYPENAME, TYPE, This.stringof,
                                     basename!(this.tupleof[i])));
@@ -790,7 +790,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         else {
                             static assert(0,
-                                    format("Convering for member '%s' of type %s" ~
+                                    format("Converting for member '%s' of type %s" ~
                                     " is not supported by default",
                                     name, MemberT.stringof));
 

@@ -271,7 +271,7 @@ struct SecureWallet(Net : SecureNet) {
     }
     /**
      * Checks if the wallet contains a key-pair
-     * Returns: true if the wallet is loggin
+     * Returns: true if the wallet is logged in
      */
     @nogc bool isLoggedin() pure const nothrow {
         return _net !is null;

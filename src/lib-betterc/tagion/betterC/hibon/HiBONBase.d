@@ -51,7 +51,7 @@ enum Type : ubyte {
     HASHDOC = 0x23, /// Hash point to documement, public key or signature
     VER = 0x3F, /// Version field
     DEFINED_NATIVE = 0x40, /// Reserved as a definition tag it's for Native types
-    NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
+    NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal representation (Document type)
 
     DEFINED_ARRAY = 0x80, /// Indicated an Intrinsic array types
     /// Native types is only used inside the BSON object
@@ -790,7 +790,7 @@ bool is_key_ordered(R)(R range) if (isInputRange!R) {
 //     assert(!is_key_valid(text));
 //     text=`"`; // Double quote
 //     assert(!is_key_valid(text));
-//     text="'"; // Sigle quote
+//     text="'"; // Single quote
 //     assert(!is_key_valid(text));
 //     text="`"; // Back quote
 //     assert(!is_key_valid(text));

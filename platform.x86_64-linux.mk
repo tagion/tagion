@@ -23,7 +23,7 @@ DFLAGS+=$(DDEBUG)
 endif
 
 #
-# Platform dependend setting for secp256k1
+# Platform dependant setting for secp256k1
 #
 CONFIGUREFLAGS_SECP256K1 += --enable-examples 
 endif

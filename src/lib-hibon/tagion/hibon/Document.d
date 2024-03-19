@@ -1277,7 +1277,7 @@ static assert(uint.sizeof == 4);
                 KEY_INVALID, /// Key is not a valid string
                 //                KEY_SIZE_OVERFLOW, /// Key size overflow (Key size extents beyond the data buffer
                 KEY_POS_OVERFLOW, /// The start
-                BAD_SUB_DOCUMENT, /// Error convering sub document
+                BAD_SUB_DOCUMENT, /// Error converting sub document
                 NOT_AN_ARRAY, /// Not an Document array
                 KEY_ZERO_SIZE, /// Invalid zero key size
                 KEY_INVALID_LEB128, /// Key size is not leb128 minimum invariant
@@ -1286,8 +1286,8 @@ static assert(uint.sizeof == 4);
                 VALUE_SIZE_INVALID_LEB128, /// The size of the value element is not leb128 minimum invariant
                 RESERVED_KEY, /// Name of the key is reserved 
                 RESERVED_HIBON_TYPE, /// HiBON type name is reserved for internal use
-                UNKNOW_TAGION, /// Unknow error (used when some underlying function thows an TagionException
-                UNKNOW /// Unknow error (used when some underlying function thows an Exception
+                UNKNOW_TAGION, /// Unknow error (used when some underlying function throws an TagionException
+                UNKNOW /// Unknow error (used when some underlying function throws an Exception
 
             }
 

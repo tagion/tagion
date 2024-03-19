@@ -130,7 +130,7 @@ struct ScheduleRunner {
 
             
 
-                .kill(pid); //.ifThown!ProcessException;
+                .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {
             // ignore

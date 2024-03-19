@@ -25,7 +25,7 @@ A node consist of the following services.
 	- [Monitor](/docs/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
 ## Connection types
-By default all of these sockets are private, ie. theyre linux abstract sockets and can only by accessed on the same machine.
+By default all of these sockets are private, ie. they are linux abstract sockets and can only by accessed on the same machine.
 The socket address, and thereby the visibility can be changed in the tagionwave config file.
 
 
