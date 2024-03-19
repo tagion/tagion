@@ -67,11 +67,6 @@ DFLAGS+=$(DVERSION)=OLD_ORDERING
 # see GossipNet
 # DFLAGS+=$(DVERSION)=RANDOM_DELAY
 
-# Flag for enabling round epoch recursion
-# See Round.d
-DFLAGS+=$(DVERSION)=ROUND_RECURSION
-
-
 # HashGraph.d not_used_channels turn on check of
 # node.state is ExchangeState.NONE. Mode1 does not function with this.
 # DFLAGS+=$(DVERSOIN)=SEND_ALWAYS

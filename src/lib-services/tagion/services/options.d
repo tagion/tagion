@@ -98,7 +98,6 @@ public import tagion.services.collector : CollectorOptions;
 public import tagion.services.epoch_creator : EpochCreatorOptions;
 public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
 public import tagion.services.inputvalidator : InputValidatorOptions;
-public import tagion.services.monitor : MonitorOptions;
 public import tagion.services.replicator : ReplicatorOptions;
 public import tagion.services.subscription : SubscriptionServiceOptions;
 public import tagion.services.transcript : TranscriptOptions;
@@ -116,7 +115,6 @@ struct Options {
     HiRPCVerifierOptions hirpc_verifier;
     DARTOptions dart;
     EpochCreatorOptions epoch_creator;
-    MonitorOptions monitor;
     ReplicatorOptions replicator;
     DARTInterfaceOptions dart_interface;
     SubscriptionServiceOptions subscription;

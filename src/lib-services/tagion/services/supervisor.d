@@ -61,7 +61,7 @@ struct Supervisor {
 
         // signs data
         handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
-                .network_mode, opts.wave.number_of_nodes, shared_net, opts.monitor, tn);
+                .network_mode, opts.wave.number_of_nodes, shared_net, tn);
 
         // verifies signature
         handles ~= _spawn!CollectorService(tn.collector, tn);

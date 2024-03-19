@@ -26,7 +26,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
-import tagion.hashgraphview.EventMonitorCallbacks;
+import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord;
@@ -161,6 +161,8 @@ class Round {
         void scrap_events(Event e) {
             if (e !is null) {
                 count++;
+
+                version(none)
                 if (Event.callbacks) {
                     Event.callbacks.remove(e);
                 }
@@ -426,12 +428,6 @@ class Round {
             collect_received_round(round_to_be_decided, hashgraph);
             round_to_be_decided._decided = true;
             last_decided_round = round_to_be_decided;
-            version(ROUND_RECURSION) {
-                if (voting_round_per_node.all!(r => r.number > round_to_be_decided.number))
-                {
-                    check_decide_round();        
-                } 
-            }
         }
 
     /**
@@ -489,6 +485,9 @@ class Round {
                 .joiner.array;
 
             event_collection.each!(e => e._round_received = r);
+            if (Event.callbacks) {
+                event_collection.each!(e => Event.callbacks.connect(e));
+            }
 
             hashgraph.epoch(event_collection, r);
         }

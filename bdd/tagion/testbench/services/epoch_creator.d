@@ -23,7 +23,6 @@ import tagion.logger.LogRecords : LogInfo;
 import tagion.logger.Logger;
 import tagion.services.epoch_creator;
 import tagion.services.messages;
-import tagion.services.monitor;
 import tagion.services.options;
 import tagion.services.options : NetworkMode;
 import tagion.script.namerecords : NetworkNodeRecord;
@@ -50,7 +49,6 @@ class SendPayloadAndCreateEpoch {
         shared(StdSecureNet) node_net;
         string name;
         EpochCreatorOptions opts;
-        MonitorOptions monitor_opts;
     }
 
     uint number_of_nodes;
@@ -59,7 +57,7 @@ class SendPayloadAndCreateEpoch {
     ActorHandle[] handles;
     Document send_payload;
 
-    this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts, uint number_of_nodes) {
+    this(EpochCreatorOptions epoch_creator_options, uint number_of_nodes) {
         import tagion.services.options;
 
         this.number_of_nodes = number_of_nodes;
@@ -74,8 +72,7 @@ class SendPayloadAndCreateEpoch {
                 net = null;
             }
             writefln("node task name %s", task_names.epoch_creator);
-            auto monitor_local_options = monitor_opts;
-            nodes ~= Node(shared_net, task_names.epoch_creator, epoch_creator_options, monitor_local_options);
+            nodes ~= Node(shared_net, task_names.epoch_creator, epoch_creator_options);
             addressbook.set(new NetworkNodeRecord(net.pubkey, task_names.epoch_creator));
         }
 
@@ -92,7 +89,6 @@ class SendPayloadAndCreateEpoch {
                     NetworkMode.INTERNAL,
                     number_of_nodes,
                     n.node_net,
-                    cast(immutable) n.monitor_opts,
                     TaskNames(),
             );
         }

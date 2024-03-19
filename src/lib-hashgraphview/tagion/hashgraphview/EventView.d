@@ -53,12 +53,13 @@ struct EventView {
             node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
             altitude=event.altitude;
             order=event.order;
-            witness=event.witness !is null;
+            witness=event.isWitness;
+            if (witness) {
+                famous = event.isFamous;
+            }
+
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
-            if (witness) {
-                famous = event.round.famous_mask[event.node_id];
-            }
             if (!event.round_received_mask[].empty) {
                 event.round_received_mask[].each!((n) => round_received_mask~=cast(uint)(n));
             }

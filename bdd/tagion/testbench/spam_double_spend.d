@@ -98,7 +98,7 @@ int _main(string[] args) {
     import tagion.hibon.Document;
     import tagion.hibon.BigNumber;
 
-    const(Options)[] node_opts = getMode0Options(local_options, false);
+    const(Options)[] node_opts = getMode0Options(local_options);
 
     NodeSettings[] node_settings;
     auto nodenets = dummy_nodenets_for_testing(node_opts);
