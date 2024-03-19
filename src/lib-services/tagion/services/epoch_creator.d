@@ -94,9 +94,6 @@ struct EpochCreatorService {
 
         HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;
-        scope(exit) {
-            hashgraph.fwrite(thisActor.task_name ~ "_fwrite.hibon");
-        }
 
         PayloadQueue payload_queue = new PayloadQueue();
         {
