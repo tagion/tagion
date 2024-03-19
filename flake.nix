@@ -128,12 +128,14 @@
 
       checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
+        settings.typos.configPath = ".typos.toml";
         hooks = {
           shellcheck = {
             enable = true;
             types_or = [ "sh" ];
           };
           typos.enable = true;
+          typos.pass_filenames = false;
           actionlint.enable = true;
           dlang-format = {
             # does not work :-( we have to define a proper commit
