@@ -57,8 +57,14 @@ void wrap_neuewelle(immutable(string)[] args) {
 
 mixin Main!(_main);
 int _main(string[] args) {
-    const shell_config_file = "shell.json";
-    const config_file = "tagionwave.json";
+
+    auto module_path = env.bdd_log.buildPath(__MODULE__);
+    if (module_path.exists) {
+        rmdirRecurse(module_path);
+    }
+    mkdirRecurse(module_path);
+    const shell_config_file = buildPath(module_path, "shell.json");
+    const config_file = buildPath(module_path, "tagionwave.json");
 
     scope ShellOptions shell_opts = ShellOptions.defaultOptions;
     shell_opts.shell_uri = environment["SHELL_URI"];
@@ -68,7 +74,10 @@ int _main(string[] args) {
     shell_opts.save(shell_config_file);
 
     scope Options local_options = Options.defaultOptions;
+    local_options.dart.folder_path = buildPath(module_path);
+    local_options.trt.folder_path = buildPath(module_path);
     local_options.trt.enable = true;
+    local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.epoch_creator.timeout = 250;
     local_options.wave.prefix_format = environment["PREFIX"];
     local_options.subscription.address = contract_sock_addr(environment["SUBSCRIPTION"]);

@@ -144,16 +144,8 @@ int _neuewelle(string[] args) {
     }
 
     const default_wave_config_filename = buildPath(base_dir.config, "tagionwave".setExtension(FileExtension.json));
-    const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json));
-
-    // If no .json file is passed we use the default system config file path.
-    string config_file;
-    if(user_config_file < 0) {
-        config_file = default_wave_config_filename;
-    }
-    else {
-        config_file = args[user_config_file];
-    }
+    const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
+    auto config_file = (user_config_file < 0) ? default_wave_config_filename : args[user_config_file];
 
     Options local_options;
     if (config_file.exists) {
@@ -168,9 +160,6 @@ int _neuewelle(string[] args) {
     }
     else {
         local_options = Options.defaultOptions;
-        if(user_config_file < 0) {
-            local_options.wave.data_dir = base_dir.data;
-        }
         stderr.writefln("No config file exits, running with default options");
     }
 
@@ -241,9 +230,6 @@ int _neuewelle(string[] args) {
     ActorHandle[] supervisor_handles;
 
     log("Starting network in %s mode", local_options.wave.network_mode);
-
-    // FIXME: using static member to set globale data_dir string
-    WaveOptions.data_dir_ = local_options.wave.data_dir;
 
     final switch (local_options.wave.network_mode) {
     case NetworkMode.INTERNAL:

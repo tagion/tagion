@@ -40,9 +40,19 @@ void wrap_neuewelle(immutable(string)[] args) {
 
 enum CONTRACT_TIMEOUT = 40;
 int _main(string[] args) {
-    string config_file = "tagionwave.json";
+    auto module_path = env.bdd_log.buildPath(__MODULE__);
+
+    if (module_path.exists) {
+        rmdirRecurse(module_path);
+    }
+    mkdirRecurse(module_path);
+
+    string config_file = buildPath(module_path, "tagionwave.json");
 
     scope Options local_options = Options.defaultOptions;
+    local_options.dart.folder_path = buildPath(module_path);
+    local_options.trt.folder_path = buildPath(module_path);
+    local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "BigContract_Node_%s_";
     local_options.subscription.address = contract_sock_addr("BIG_CONTRACT_SUBSCRIPTION");
     local_options.save(config_file);

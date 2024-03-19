@@ -26,7 +26,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
 import tagion.services.messages;
-import tagion.services.options : TaskNames, WaveOptions;
+import tagion.services.options : TaskNames;
 import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
@@ -43,8 +43,8 @@ struct TRTOptions {
     string folder_path = buildPath(".");
     string trt_filename = "trt".setExtension(FileExtension.dart);
 
-    string trt_path() const nothrow {
-        return buildPath(WaveOptions.data_dir_, folder_path, trt_filename);
+    string trt_path() inout nothrow {
+        return buildPath(folder_path, trt_filename);
     }
 
     void setPrefix(string prefix) nothrow {

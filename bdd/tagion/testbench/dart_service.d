@@ -14,8 +14,11 @@ import tagion.tools.Basic;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    auto opts = DARTOptions(".", "dart".setExtension(FileExtension.dart));
-    auto replicator_path = "replicator";
+
+    auto module_path = env.bdd_log.buildPath(__MODULE__);
+    mkdirRecurse(module_path);
+    auto opts = DARTOptions(module_path, "dart".setExtension(FileExtension.dart));
+    auto replicator_path = buildPath(module_path, "replicator");
     if (replicator_path.exists) {
         rmdirRecurse(replicator_path);
     }

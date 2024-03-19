@@ -142,7 +142,7 @@ class AddPseudoRandomData {
     @Then("the data should be read and checked.")
     Document checked() {
 
-        auto fout = File("dart_stress_test.csv", "w");
+        auto fout = File(format("%s", buildPath(info.module_path, "dart_stress_test.csv")), "w");
 
         scope (exit) {
             fout.close();

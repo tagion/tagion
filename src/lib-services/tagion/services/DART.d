@@ -23,7 +23,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
 import tagion.services.messages;
-import tagion.services.options : TaskNames, WaveOptions;
+import tagion.services.options : TaskNames;
 import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
@@ -33,16 +33,14 @@ import tagion.services.DARTInterface : accepted_dart_methods;
 @safe:
 ///
 struct DARTOptions {
-    // This options should not be set directly.
-    // Should be configured by the wave.data_dir options
-    string folder_path;
+    string folder_path = buildPath(".");
     string dart_filename = "dart".setExtension(FileExtension.dart);
 
     string dart_path() const nothrow {
-        return buildPath(WaveOptions.data_dir_, folder_path, dart_filename);
+        return buildPath(folder_path, dart_filename);
     }
 
-    void setPrefix(string prefix) pure nothrow {
+    void setPrefix(string prefix) nothrow {
         dart_filename = prefix ~ dart_filename;
     }
 
