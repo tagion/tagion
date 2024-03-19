@@ -228,7 +228,7 @@ class HashGraph {
     alias GraphPayload = const(Document) delegate() @safe;
 
     void init_tide(
-            const(GraphResponse) responde,
+            const(GraphResponse) respond,
             const(GraphPayload) payload,
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
@@ -253,7 +253,7 @@ class HashGraph {
         }
 
         if (areWeInGraph) {
-            const send_channel = responde(
+            const send_channel = respond(
                     &not_used_channels,
                     &payload_sender);
             if (send_channel !is Pubkey.init) {
@@ -261,7 +261,7 @@ class HashGraph {
             }
         }
         else {
-            const send_channel = responde(
+            const send_channel = respond(
                     &not_used_channels,
                     &sharp_sender);
         }
@@ -337,7 +337,7 @@ class HashGraph {
     Event registerEventPackage(
             immutable(EventPackage*) event_pack)
     in (event_pack.fingerprint !in _event_cache,
-        format("Event %(%02x%) has already been registerd",
+        format("Event %(%02x%) has already been registered",
             event_pack.fingerprint))
     do {
         if (valid_channel(event_pack.pubkey)) {

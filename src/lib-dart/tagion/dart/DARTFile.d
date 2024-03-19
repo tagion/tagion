@@ -58,7 +58,7 @@ enum KEY_SPAN = ubyte.max + 1;
 
 /++
  + DART File system
- + Distribute Achive of Random Transaction
+ + Distributed Archive of Random Transaction
  + This class handles the CRUD Database
  +
  + The archive is hashed and store in structure similar to merkle trees datastruct.

@@ -329,12 +329,12 @@ struct TranscriptService {
                 TagionDomain,
                 res.id,
             );
-            immutable(DARTIndex)[] locked_indexes = recorder[]
+            immutable(DARTIndex)[] locked_indices = recorder[]
                 .filter!(a => a.type == Archive.Type.ADD)
                 .map!(a => net.dartIndex(a.filed))
                 .array;
 
-            LockedArchives outputs = LockedArchives(res.id, locked_indexes);
+            LockedArchives outputs = LockedArchives(res.id, locked_indices);
 
             if (shutdown is long.init || res.id < shutdown) {
                 recorder.insert(new_head, Archive.Type.ADD);

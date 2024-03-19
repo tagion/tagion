@@ -9,7 +9,33 @@ Nto = "Nto"
 # Fixing this is a breaking change
 deactive = "deactive"
 # Wasm instruction. Not sure if it's correct.
-truct_sat = "truct_sat"
+truct = "truct"
+# Hex value which typos thinks is a word
+ba = "ba"
+# Value which is used to derive something
+deriver = "deriver"
+# short for Cipher
+Ciph = "Ciph"
+# Ignore this because we highlight N in notation
+otation = "otation"
+
+# Actual fixes
+indexes = "indices"
+indexs = "indices"
+convering = "converting"
+definded = "defined"
+fo = "of"
+Thown = "Thrown"
+Thows = "Throws"
+responde = "respond"
+registerd = "registered"
 
 [files]
-extend-exclude = ["LICENSE.md", "src/lib-nngd/", "src/fork-*", "src/lib-crypto/tagion/crypto/secp256k1/c", "unitdata/*"]
+extend-exclude = [
+    "LICENSE.md",
+    "src/lib-nngd/",
+    "src/fork-*",
+    "src/lib-crypto/tagion/crypto/secp256k1/c/",
+    "*.wast",
+    "src/lib-behaviour/tagion/behaviour/unitdata/"
+]

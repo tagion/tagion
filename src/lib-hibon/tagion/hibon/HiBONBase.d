@@ -270,7 +270,7 @@ enum Type : ubyte {
     VER = 0x1F, /// Version field
     /// The following is only used internal (by HiBON) and should to be use in a stream Document
     DEFINED_NATIVE = 0x40, /// Reserved as a definition tag it's for Native types
-    NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
+    NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal representation (Document type)
 
     DEFINED_ARRAY = 0x80, /// Indicated an Intrinsic array types
     /// Native types is only used inside the BSON object
@@ -796,7 +796,7 @@ do {
 /++
  Checks if the keys in the range is ordred
  Returns:
- ture if all keys in the range is ordered
+ true if all keys in the range is ordered
 +/
 bool is_key_ordered(R)(R range) if (isInputRange!R) {
     string prev_key;
@@ -869,7 +869,7 @@ unittest { // Check is_key_valid
     assert(!is_key_valid(text));
     text = [char(34)]; // Double quote
     assert(!is_key_valid(text));
-    text = "'"; // Sigle quote
+    text = "'"; // Single quote
     assert(!is_key_valid(text));
     text = "`"; // Back quote
     assert(!is_key_valid(text));

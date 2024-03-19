@@ -111,7 +111,7 @@ unittest {
 /** 
 * This function add a word in reverse order from the description
 * Params:
-*   action_name = names which alreay was take
+*   action_name = names which already was take
 *   description = description of the action or scenario
 * Returns: The camel case name
 */
@@ -199,7 +199,7 @@ unittest {
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
 }
 
-/// Test of camelName with traling white white space
+/// Test of camelName with trailing white space
 @safe
 unittest {
     string name = "  This is some description ";

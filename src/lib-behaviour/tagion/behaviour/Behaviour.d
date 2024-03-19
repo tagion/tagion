@@ -34,11 +34,11 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
     try {
         // Mixin code to produce the action Given, When, Then, But
         alias memberCode = format!(q{
-            // Scenario group      %1$s
-            // Action propery info %2$s
-            // Info index (i)      %3$d
-            // Test scenario       %4$s
-            // Test member         %5$s
+            // Scenario group       %1$s
+            // Action property info %2$s
+            // Info index (i)       %3$d
+            // Test scenario        %4$s
+            // Test member          %5$s
             //            $ Given: some scenario scenario descriotion
             debug(bdd) writeln("%2$s: ", %1$s.%2$s.infos[%3$d].property.description);
             try {
@@ -56,7 +56,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
         import std.uni : toLower;
 
         behaviour_exception.check(scenario !is null,
-                format("The constructor must be called for %s before it's runned", T.stringof));
+                format("The constructor must be called for %s before it's run", T.stringof));
         static foreach (_Property; ActionProperties) {
             {
                 alias all_actions = getActions!(T, _Property);
@@ -455,7 +455,7 @@ bool hasPassed(const(FeatureGroup*) feature_group) nothrow {
 /**
 Used to checks if a scenario has passed all tests
 Params:
-scenario_group = The scenario which been runned
+scenario_group = The scenario which ran
 Returns: true if the scenario has passed all tests
 */
 @safe

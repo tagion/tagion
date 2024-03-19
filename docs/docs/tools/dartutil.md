@@ -44,7 +44,7 @@ dartutil --initialize database.drt
 The DART can also be created with to use the fake hash with the  `--fake` option.
 
 ## Display an inspect the DART file
-The .drt file is a block-file so thei [blockutil](/docs/tools/blockutil) can also be used to inspect the file.
+The .drt file is a block-file so the [blockutil](/docs/tools/blockutil) can also be used to inspect the file.
 
 #### The bullseye of the DART can be display with the `--eye` switch.
 ```
@@ -193,7 +193,7 @@ dartutil genesis.drt --angle 1175:1B2A --dump-branches --depth 3 |hibonutil -pc
 
 By default the `--rim` returns the `HiRPC` response (rim-path as hex-string).
 
-The rim-path can also be set in decimal by separating the number with a comman.
+The rim-path can also be set in decimal by separating the number with a command.
 
 ```
 dartutil genesis.drt --rim C034 |hibonutil -pc

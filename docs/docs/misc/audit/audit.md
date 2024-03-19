@@ -17,7 +17,7 @@ The sign function can not be called with a zero-length aux_random anymore.
 If the aux_random is not specified then the aux_random is now generated internally.
 
 SL-6:
-Note. Accoring to secp256k1.h documentation for
+Note. According to secp256k1.h documentation for
 secp256k1_context_create it is recommended to call secp256k1_context_randomize after calling
 secp256k1_context_create.
 

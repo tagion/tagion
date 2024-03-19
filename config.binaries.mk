@@ -111,7 +111,7 @@ target-kette: LIBS+=  $(LIBSECP256K1)
 ${call DO_BIN,kette,$(LIB_DFILES) ${call BIN_DEPS,kette},tagion}
 
 #
-# Convering a old data-base to 
+# Converting an old data-base to a new one
 #
 target-vergangenheit: $LIBS += $(LIBSECP256K1)
 ${call DO_BIN,vergangenheit,$(LIB_DFILES) ${call BIN_DEPS,vergangenheit},tagion}

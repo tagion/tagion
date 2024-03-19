@@ -18,7 +18,7 @@ Usage: neuewelle <tagionwave.json>
 
 ```
 
-The intended way to run the node is whith the systemd service included in the installation.
+The intended way to run the node is with the systemd service included in the installation.
 Running the node manually is mostly useful for development and debugging.
 The service can be accessed with the following commands.
 ```bash
