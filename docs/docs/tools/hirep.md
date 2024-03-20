@@ -1,13 +1,15 @@
 # hirep [HiBON filter]
 
 
-> This tool filter from a HiBON-stream 
- The *herep* support the following arguments.
- ```
+> This tool filters from a HiBON-stream 
+
+The *hirep* supports the following arguments.
+
+```
 Documentation: https://docs.tagion.org/
 
 Usage:
-hirep [<option>...] [<hibon-file>]
+hirep [<option>...] [<hibon-files>...]
 
 <option>:
       --version display the version
@@ -18,6 +20,8 @@ hirep [<option>...] [<hibon-file>]
 -t       --type HiBON data types
           --not Filter out match
 -l       --list List of indices in a hibon stream (ex. 1,10,20..23)
+          --rec Enables recursive search
+-s   --subhibon Output only subhibon that match criteria
 -h       --help This help information.
 ```
 
@@ -34,7 +38,7 @@ Three filter functions can be given to the *hirep*.
 Ex. dump all dart-indices in DART with an owner `$Y` by combining the *dartutil* and the *hibonutil*
 
 ```
-dartutil Node_0_dart.drt --dump|hirep -n\$Y |hibonutil -cDt
+dartutil dart.drt --dump|hirep -n\$Y |hibonutil -cDt
 @AuRKHG2glc-tPP9kIyQE27__PvGc4dq1qabsNmy42m8=
 @BGJ01Ase_55xhBqJmT3bjs0jn7jaq6-siJm3aFd74XI=
 ....
@@ -45,7 +49,7 @@ dartutil Node_0_dart.drt --dump|hirep -n\$Y |hibonutil -cDt
 
 Ex. dump all fingerprints in DART with the record-type `$@E`.
 ```
-dartutil Node_0_dart.drt --dump|hirep -r\$\@\E |hibonutil -cHt
+dartutil dart.drt --dump|hirep -r\$\@\E |hibonutil -cHt
 @JRubbKZ3K6uVlf8ljdeT7hdzWCJH36_2sUBw5Wms7To=
 @rSpACNqG3S5gUWD5eBl4reAZPQjjg7VBr9XqA6DsgPs=
 @xX8iKWzhnsB9m0UDWmHwOjiNusY-WKipQEMB1rpdDsM=
@@ -54,9 +58,9 @@ dartutil Node_0_dart.drt --dump|hirep -r\$\@\E |hibonutil -cHt
 ....
 ```
 
-Ex. dump all fingerprints in DART with the member name `$V` and the hibon-type `i64`.
+Example: dump all fingerprints in DART with the member name `$V` and the hibon-type `i64`.
 ```
-blockutil ~/tmp/prod_node/wave/Node_0_dart.drt --dump|hirep -n\$V -t i64 |hibonutil -cHt
+blockutil dart.drt --dump|hirep -n\$V -t i64 |hibonutil -cHt
 @AuRKHG2glc-tPP9kIyQE27__PvGc4dq1qabsNmy42m8=
 @BGJ01Ase_55xhBqJmT3bjs0jn7jaq6-siJm3aFd74XI=
 @Cri1PSAAg26dc3x7B3cxgrBiDCxfAq2rc_sZQBg2N6Q=
@@ -71,6 +75,11 @@ blockutil ~/tmp/prod_node/wave/Node_0_dart.drt --dump|hirep -n\$V -t i64 |hibonu
 @T0LPApUT1Ml-SlAobsBs-zrUHyxXhCpK3TDb0kQ7FyM=
 ```
 
+Example: Filter out all hibons which have an owner field.
+```
+dartutil dart.drt --dump | hirep -n \$Y
+```
+
 ## Select specific hibon indices in the HiBON-stream
 
 The `-l` will select the indices in the hibon-stream.
@@ -81,4 +90,9 @@ hirep 0000200000_epoch.hibon -l7,100..102|hibonutil -pDt
 @EHXhFrCJiFFli7eeoMUCT2ESdhEDMH7LkxOjlzqQXM0=
 @6N-14VlktCMS6zELF3Ak62v8Cj1AC2B3UK7GNvlij1k=
 @m5XCfqonHoqpGSb79aUyXfOdRqslTLgyBFKU_x04LAo=
+```
+
+## Filter out sub document in a hibon
+```
+hirep -n submit --rec -s < rpcs.hibon
 ```
