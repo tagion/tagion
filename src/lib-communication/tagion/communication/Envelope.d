@@ -19,9 +19,21 @@ void makeBigEndian(T)(ref T value) {
     }
 }
 
+void makeLittleEndian(T)(ref T value) {
+    if (endian == Endian.bigEndian) {
+        value = *cast(T*)nativeToLittleEndian(value).ptr;
+    }
+}
+
 void makeFromBigEndian(T)(ref T value) {
     if (endian == Endian.littleEndian) {
         value = *cast(T*)bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(value)).ptr;
+    }
+}
+
+void makeFromLittleEndian(T)(ref T value) {
+    if (endian == Endian.bigEndian) {
+        value = *cast(T*)littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(value)).ptr;
     }
 }
 
@@ -31,6 +43,14 @@ T bigEndian(T)(T val) pure {
 
 T fromBigEndian(T)(T val) pure {
     return (endian == Endian.littleEndian) ? bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
+}
+
+T littleEndian(T)(T val) pure {
+    return (endian == Endian.bigEndian) ? *cast(T*)nativeToLittleEndian(val).ptr : val;  
+}
+
+T fromLittleEndian(T)(T val) pure {
+    return (endian == Endian.bigEndian) ? littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
 }
 
 // TODO: Test it with communication between little- and big endian platforms
@@ -49,7 +69,7 @@ struct Envelope {
             return true;                    
         }
         int compression() pure {
-            return fromBigEndian(cast(int)level);
+            return fromLittleEndian(cast(int)level);
         }
     
     align(4):
@@ -89,8 +109,8 @@ struct Envelope {
         }
         
         this(int schema, int level){
-            this.schema = bigEndian(schema);
-            this.level = cast(CompressionLevel)bigEndian!int(level);
+            this.schema = littleEndian(schema);
+            this.level = cast(CompressionLevel)littleEndian!int(level);
         }
         
     }   
@@ -102,10 +122,10 @@ struct Envelope {
     
     ubyte[] toBuffer() {
         ubyte[] compressed;
-        this.header.datsize = bigEndian(this.data.length);
+        this.header.datsize = littleEndian(this.data.length);
         if(this.header.compression > 0){
             compressed = compress(this.data[0..$], this.header.compression);
-            this.header.datsize = bigEndian(compressed.length);
+            this.header.datsize = littleEndian(compressed.length);
             this.header.datsum = crc64ECMAOf(compressed);
         }else{
             this.header.datsum = crc64ECMAOf(this.data[0..$]);
@@ -125,7 +145,7 @@ struct Envelope {
         this.header = EnvelopeHeader.fromBuffer(buf);
         enforce(this.header.isValid,"Envelope header invalid");
         this.data = buf[EnvelopeHeader.sizeof..$];
-        enforce(fromBigEndian(this.header.datsize) == this.data.length, "Envelope data length invalid");
+        enforce(fromLittleEndian(this.header.datsize) == this.data.length, "Envelope data length invalid");
         auto ds = crc64ECMAOf(this.data[0..this.data.length]);
         enforce(this.header.datsum == ds, "Envelope data checksum invalid");
     }
