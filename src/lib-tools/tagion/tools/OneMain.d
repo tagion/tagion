@@ -134,7 +134,7 @@ mixin template doOneMain(alltools...) {
                 defaultGetoptPrinter(
                         [
                     revision_text,
-                    "Documentation: https://tagion.org/",
+                    "Documentation: https://docs.tagion.org/",
                     "Usage:",
                     format("%s <program> [<option>...]", program),
                     format("Tool programs %-(%s, %)", toolnames),

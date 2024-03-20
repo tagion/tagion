@@ -63,7 +63,7 @@ int _main(string[] args) {
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
                 [
-                "Documentation: https://tagion.org/",
+                "Documentation: https://docs.tagion.org/",
                 "",
                 "Usage:",
                 format("%s [<option>...] [<hibon-files>...]", program),

@@ -1,7 +1,7 @@
 ﻿# wallet (geldbeutel)
 
 ```
-Documentation: https://tagion.org/
+Documentation: https://docs.tagion.org/
 
 Usage:
 geldbeutel [<option>...] <config.json> <files>

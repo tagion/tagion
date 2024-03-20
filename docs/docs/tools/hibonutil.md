@@ -4,7 +4,7 @@
 > This tool converts to and from HiBON
  The `hibonutil` support the following arguments.
  ```
- Documentation: https://tagion.org/
+ Documentation: https://docs.tagion.org/
 
 Usage:
 hibonutil [<option>...] <in-file>

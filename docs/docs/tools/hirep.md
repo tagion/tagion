@@ -4,7 +4,7 @@
 > This tool filter from a HiBON-stream 
  The *herep* support the following arguments.
  ```
-Documentation: https://tagion.org/
+Documentation: https://docs.tagion.org/
 
 Usage:
 hirep [<option>...] [<hibon-file>]
