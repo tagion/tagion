@@ -118,6 +118,7 @@
             libz
             dtools
             dfmt-pull.legacyPackages.x86_64-linux.dlang-dfmt
+            graphviz
           ];
         };
 
