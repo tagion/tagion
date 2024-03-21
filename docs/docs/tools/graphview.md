@@ -1,4 +1,4 @@
-# Graphview
+# graphview
 > Tool for generating hashgraph graph visualisations with graphviz neato. 
 The tool takes a HiBONRange and returns the corresponding dot hashgraph format.
 
@@ -18,7 +18,7 @@ Since graphviz is fails to generate large graphs we can use [hirep](/docs/tools/
 First see how many events are in the HiBONRange:
 
 ```
-cat graph.hibon|hirep -l 0..-1|hibonutil -pc|grep "event_view"|wc -l
+cat graph.hibon|hibonutil -pc|grep "event_view"|wc -l
 143000
 ```
 Generate the graph from a slice of the newest events. We need to include the first element in the graph since it contains the node_amount.

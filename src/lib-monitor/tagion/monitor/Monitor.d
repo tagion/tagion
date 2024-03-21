@@ -62,16 +62,23 @@ class LogMonitorCallBacks : BaseMonitorCallbacks {
 
 class FileMonitorCallBacks : BaseMonitorCallbacks {
     File out_file;
-    this(string file_name, uint nodes) {
+    size_t[Pubkey] node_id_relocation;
+    this(string file_name, uint nodes, Pubkey[] node_keys) {
         out_file = File(file_name, "w");
         out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
+
+        import std.algorithm : sort;
+        import std.range : enumerate;
+        foreach(i, k; node_keys.sort.enumerate) {
+            this.node_id_relocation[k] = i;
+        }
     }
 
     nothrow:
 
     override void _write_eventview(string _, const(Event) e) {
         try {
-            out_file.rawWrite(EventView(e).toDoc.serialize);
+            out_file.rawWrite(EventView(e, node_id_relocation[e.event_package.pubkey]).toDoc.serialize);
         } catch(Exception err) {
             log.error("Could not write monitor event, %s", err.message);
         }
