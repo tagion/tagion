@@ -80,17 +80,12 @@ int _main(string[] args) {
             }
             foreach (elm; list.splitter(",")) {
                 const elm_range = elm.split("..");
-                if (elm_range.length == 1) {
-                    if (no == elm_range[0].to!size_t) {
-                        return true;
-                    }
+                if (elm_range.length == 1 && no == elm_range[0].to!size_t) {
+                    return true;
                 }
-                else if (elm_range.length == 2) {
-                    if ((elm_range[0].to!size_t <= no) && (no < elm_range[1].to!size_t)) {
-                        return true;
-                    }
+                if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1].to!size_t)) {
+                    return true;
                 }
-
             }
             return false;
         }
