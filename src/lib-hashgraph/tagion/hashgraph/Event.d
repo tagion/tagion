@@ -320,7 +320,8 @@ class Event {
         if (voting_round.number + 1 == round.number) {
             _witness._vote_on_earliest_witnesses[vote_node_id] = _witness._prev_seen_witnesses[vote_node_id];
             return;
-        }        if (voting_event is null) {
+        }        
+        if (voting_event is null) {
             hashgraph._rounds.vote(hashgraph, vote_node_id);
             return;
         }
@@ -329,10 +330,14 @@ class Event {
         const yes_votes = votes.count;
         const no_votes = votes.walkLength - yes_votes;
         _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
-        if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
-            voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
-            hashgraph._rounds.vote(hashgraph, vote_node_id);
-        } 
+        const isYesMajority = hashgraph.isMajority(yes_votes);
+        voting_round.famous_mask[vote_node_id] = isYesMajority;
+
+
+        // if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
+            // voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
+        hashgraph._rounds.vote(hashgraph, vote_node_id);
+        // } 
     }
 
     /**

@@ -495,6 +495,7 @@ class Round {
         package void vote(HashGraph hashgraph, size_t vote_node_id) {
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
             Round current_round = voting_round_per_node[vote_node_id];
+            assert(current_round !is null, "Should not be null");
             if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) {
                 check_decide_round();
             }
