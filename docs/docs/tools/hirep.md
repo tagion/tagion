@@ -91,8 +91,16 @@ hirep 0000200000_epoch.hibon -l7,100..102|hibonutil -pDt
 @6N-14VlktCMS6zELF3Ak62v8Cj1AC2B3UK7GNvlij1k=
 @m5XCfqonHoqpGSb79aUyXfOdRqslTLgyBFKU_x04LAo=
 ```
+Select until end of range with (index..-1). Example of selecting first item and from 100 to end of range:
+```
+hirep 0000200000_epoch.hibon -l0..1,100..-1
+```
 
 ## Filter out sub document in a hibon
 ```
 hirep -n submit --rec -s < rpcs.hibon
 ```
+
+
+
+
