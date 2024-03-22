@@ -95,15 +95,18 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
         if (father_flag && e.father !is e.father.init && e.father in events) {
             const father_event = events[e.father];
             string[] texts;
+            string[] options;
             // texts ~= mask2text(father_event.witness_mask);
-            local_edge(texts, e.father);
+            options ~= format(`color="%s"`, pastel19.color(e.id));
+            options ~= "penwidth=2";
+            local_edge(texts, e.father, options);
         }
         else if (e.mother !is e.mother.init && e.mother in events) {
             const mother_event = events[e.mother];
             string[] texts;
             string[] options;
-            // const witness_mask_text=mask2text(mother_event.witness_mask);
-            //texts~=mask2text(mother_event.witness_mask);
+             // const witness_mask_text=mask2text(mother_event.witness_mask);
+            // texts~=mask2text(mother_event.witness_mask);
             const round_received_mask = mask2text(mother_event.round_received_mask);
             if (round_received_mask) {
                 texts ~= format("%s:e", round_received_mask);
