@@ -67,7 +67,7 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
         auto opt = Options(local_options);
 
         opt.task_names.setPrefix(format(opt.wave.prefix_format, node_n));
-        opt.node_interface.node_address = format("tcp://::1:%s", base_port+node_n);
+        opt.node_interface.node_address = format("tcp://[::1]:%s", base_port+node_n);
 
         all_opts ~= opt;
     }
