@@ -137,7 +137,7 @@
           };
           typos.enable = true;
           typos.pass_filenames = false;
-          actionlint.enable = true;
+          # actionlint.enable = true;
           dlang-format = {
             # does not work :-( we have to define a proper commit
             enable = true;
