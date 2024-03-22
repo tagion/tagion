@@ -111,7 +111,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             // position
             fatherline_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
             // colors
-            fatherline_options ~= format(`class="behind" style="stroke:%s";stroke-width:3"`, "black");
+            fatherline_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(e.id));
             obuf.writefln("<line %s />", fatherline_options);
         }
         if (e.mother !is e.mother.init && e.mother in events) {
@@ -123,7 +123,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             // position
             mother_line_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
             // colors
-            mother_line_options ~= format(`style="stroke:%s";stroke-width:3"`, mother_event.witness ? "red" : "black");
+            mother_line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, mother_event.witness ? "red" : "black");
             obuf.writefln("<line %s />", mother_line_options);
         }
 
@@ -136,10 +136,22 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             node_opts ~= format(`fill="%s"`, e.famous ? "red" : "lightgreen");
         } else {
             node_opts ~= format(`fill="%s"`, pastel19.color(e.round_received));
-
         }
         node_opts ~= format(`stroke="%s" stroke-width="%s" fill="%s"`, "red", 4, "yellow");
-        obuf.writefln("<circle %s />", node_opts);
+        string escapeHtml(string input) {
+            string result;
+            foreach (char c; input) {
+                switch (c) {
+                    case '&': result ~= "&amp;"; break;
+                    case '<': result ~= "&lt;"; break;
+                    case '>': result ~= "&gt;"; break;
+                    case '"': result ~= "&quot;"; break;
+                    default: result ~= c; break;
+                }
+            }
+            return result;
+        }
+        obuf.writefln(`<circle class=myCircle %s data-info="'%s'" />`, node_opts, escapeHtml(e.toPretty));
 
         string node_text_options;
         // position
@@ -174,10 +186,67 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         // obuf.write("<!DOCTYPE html>\n<html>\n<body>\n");
         scope(success) {
             start.writefln("<!DOCTYPE html>\n<html>");
+            start.writefln(` 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive SVG</title>
+  <style>
+    /* Style for the pop-up box */
+    #popup {
+      display: none;
+      position: absolute;
+      background-color: #ffffff;
+      border: 1px solid #000000;
+      padding: 10px;
+      z-index: 1;
+    }
+  </style>
+</head>`);
+
             start.writefln(`<body>\n<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
             start.writefln(`<g transform="translate(0,%s)">`, max_height);
-
             end.writefln("</g>");
+
+            end.writefln("</svg>");
+end.writefln(q"EX
+<!-- The pop-up box -->
+<div id="popup"></div>
+<script>
+// Get the SVG element
+const svg = document.querySelector('svg');
+
+// Get all circle elements with the class 'myCircle'
+const circles = document.querySelectorAll('.myCircle');
+
+// Add click event listener to each circle
+circles.forEach(circle => {
+  circle.addEventListener('click', function() {
+      console.log("circle pressed!");
+    // Get the information from the circle's data-info attribute
+    const information = circle.getAttribute('data-info');
+
+    // Show the pop-up box with the information
+    const popup = document.getElementById('popup');
+    popup.innerHTML = information;
+    popup.style.display = 'block';
+
+    // Position the pop-up box near the circle
+    const circleBounds = circle.getBoundingClientRect();
+    popup.style.top = `${circleBounds.top}px`;
+    popup.style.left = `${circleBounds.right}px`;
+  });
+});
+
+// Close the pop-up box when clicking outside of it
+svg.addEventListener('click', function(event) {
+  const popup = document.getElementById('popup');
+  if (!event.target.classList.contains('myCircle') && event.target !== popup) {
+    popup.style.display = 'none';
+  }
+});
+</script>            
+EX");
             end.writefln("</body>\n</html>");
         }
 
@@ -427,3 +496,5 @@ int _main(string[] args) {
     outfile.write(endbuf);
     return 0;
 }
+
+
