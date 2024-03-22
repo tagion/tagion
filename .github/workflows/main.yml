@@ -259,9 +259,9 @@ jobs:
           cd ${{ env.ARTIFACT_DIR }}
           graph_files=$(find logs -name "*_graph.hibon")
           for file in $graph_files; do
-            ./build/${{ env.TARGET }}/bin/tagion graphview --svg -i $file > $file.svg || echo could not create graph
+            ./build/${{ env.TARGET }}/bin/tagion graphview --svg $file > $file.svg || echo could not create graph
             url=$(gh gist create $file.svg) || echo could not create gist
-            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+            echo "[$(basename $file).svg]($url)" >> $GITHUB_STEP_SUMMARY
           done
   ddoc:
     if: ${{ github.ref == 'refs/heads/current' }}
