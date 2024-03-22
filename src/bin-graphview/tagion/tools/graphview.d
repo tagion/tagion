@@ -76,7 +76,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     long max_height = long.min;
     long max_width = long.min;
 
-    private void node(ref OutBuffer obuf, ref const EventView e) {
+    private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
 
         const cx = long(e.node_id)*NODE_INDENT + NODE_INDENT;
         const cy = long(e.order*NODE_INDENT) + NODE_INDENT;
@@ -151,7 +151,12 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             }
             return result;
         }
-        obuf.writefln(`<circle class=myCircle %s data-info="'%s'" />`, node_opts, escapeHtml(e.toPretty));
+        string html_node_opts = "";
+        if (!raw_svg) {
+            html_node_opts ~= format(" class=myCircle data-info='%s' ", escapeHtml(e.toPretty));
+        }
+
+        obuf.writefln(`<circle class=myCircle %s %s />`, node_opts, html_node_opts);
 
         string node_text_options;
         // position
@@ -163,7 +168,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     }
     
 
-    void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end) {
+    void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
         const nodes_doc = doc_range.front;
         if (nodes_doc.isRecord!NodeAmount) {
             node_size = NodeAmount(nodes_doc).nodes;
@@ -180,35 +185,38 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             }
         }
         foreach(e; events) {
-            node(obuf, e);
+            node(obuf, e, raw_svg);
         }
 
         // obuf.write("<!DOCTYPE html>\n<html>\n<body>\n");
         scope(success) {
-            start.writefln("<!DOCTYPE html>\n<html>");
-            start.writefln(` 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive SVG</title>
-  <style>
-    /* Style for the pop-up box */
-    #popup {
-      display: none;
-      position: absolute;
-      background-color: #ffffff;
-      border: 1px solid #000000;
-      padding: 10px;
-      z-index: 1;
-    }
-  </style>
-</head>`);
-
-            start.writefln(`<body>\n<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
+            if (!raw_svg) {
+                start.writefln("<!DOCTYPE html>\n<html>");
+                start.writefln(` 
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Interactive SVG</title>
+                  <style>
+                    /* Style for the pop-up box */
+                    #popup {
+                      display: none;
+                      position: absolute;
+                      background-color: #ffffff;
+                      border: 1px solid #000000;
+                      padding: 10px;
+                      z-index: 1;
+                    }
+                  </style>
+                </head>`);
+                start.writefln("<body>");
+            }
+            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
             start.writefln(`<g transform="translate(0,%s)">`, max_height);
             end.writefln("</g>");
 
             end.writefln("</svg>");
+            if (!raw_svg) {
 end.writefln(q"EX
 <!-- The pop-up box -->
 <div id="popup"></div>
@@ -248,6 +256,8 @@ svg.addEventListener('click', function(event) {
 </script>            
 EX");
             end.writefln("</body>\n</html>");
+            }
+
         }
 
     }
@@ -420,6 +430,7 @@ int _main(string[] args) {
     string inputfilename;
     string outputfilename;
 
+    bool html;
     bool svg;
 
     auto main_args = getopt(args,
@@ -427,7 +438,8 @@ int _main(string[] args) {
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
             "o|output", "output graphviz file", &outputfilename,
-            "s|svg", "Generate svg", &svg,
+            "html", "Generate html page", &html,
+            "svg", "generate raw svg", &svg,
     );
 
     if (version_switch) {
@@ -475,9 +487,10 @@ int _main(string[] args) {
     auto startbuf = new OutBuffer;
     auto endbuf = new OutBuffer;
 
-    if (svg) {
+    if (html || svg) {
+        assert(!(html && svg), "cannot set both html and svg");
         auto dot = SVGDot!HiBONRange(hibon_range);
-        dot.draw(obuf, startbuf, endbuf);
+        dot.draw(obuf, startbuf, endbuf, svg);
     } else {
         auto dot = Dot!HiBONRange(hibon_range, "G");
         dot.draw(obuf);
