@@ -1,0 +1,3 @@
+
+wasmer:
+	echo $(DBUILD)
