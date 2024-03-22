@@ -59,6 +59,70 @@ const(string) color(T)(const(string[]) colors, T index) pure nothrow @nogc if (i
 }
 
 @safe
+struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document)) {
+    import std.format;
+    import std.algorithm.comparison : max;
+
+    Range doc_range;
+    size_t node_size = 5;
+    EventView[uint] events;
+    long NODE_INDENT = 100;
+
+    this(Range doc_range) {
+        this.doc_range = doc_range;
+    }
+
+    long max_height = long.min;
+    long max_width = long.min;
+
+    private void node(ref OutBuffer obuf, ref const EventView e) {
+        const cx = long(e.node_id)*100 + NODE_INDENT;
+        const cy = long(e.order*100) + NODE_INDENT;
+        max_width = max(cx, max_width);
+        max_height = max(cy, max_height);
+
+        obuf.writefln(`<circle cx=%s cy=%s r="25" stroke="red" stroke-width="4" fill="yellow"/>`,cx, cy);
+
+       // <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+    }
+    
+
+    void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end) {
+        const nodes_doc = doc_range.front;
+        if (nodes_doc.isRecord!NodeAmount) {
+            node_size = NodeAmount(nodes_doc).nodes;
+            doc_range.popFront;
+        }
+
+        foreach (e; doc_range) {
+            if(e.isRecord!EventView) {
+                auto event = EventView(e);
+                events[event.id] = event;
+            }
+            else {
+                throw new Exception("Unknown element in graphview doc_range %s", e.toPretty);
+            }
+        }
+        foreach(e; events) {
+            node(obuf, e);
+        }
+
+        // obuf.write("<!DOCTYPE html>\n<html>\n<body>\n");
+        scope(success) {
+            start.writefln("<!DOCTYPE html>\n<html>\n<body>");
+            start.writefln(`<svg width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
+            start.writefln(`<g transform="scale(1,-1) translate(0,%s)">`, -max_height);
+
+            end.writefln("</g>");
+            end.writefln("</body>\n</html>");
+        }
+
+    }
+
+
+}
+
+@safe
 struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
     @safe:
     import std.format;
@@ -223,11 +287,14 @@ int _main(string[] args) {
     string inputfilename;
     string outputfilename;
 
+    bool svg;
+
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
             "o|output", "output graphviz file", &outputfilename,
+            "s|svg", "Generate svg", &svg,
     );
 
     if (version_switch) {
@@ -271,10 +338,17 @@ int _main(string[] args) {
 
     HiBONRange hibon_range = HiBONRange(inputfile);
 
-    auto dot = Dot!HiBONRange(hibon_range, "G");
     auto obuf = new OutBuffer;
+    auto startbuf = new OutBuffer;
+    auto endbuf = new OutBuffer;
 
-    dot.draw(obuf);
+    if (svg) {
+        auto dot = SVGDot!HiBONRange(hibon_range);
+        dot.draw(obuf, startbuf, endbuf);
+    } else {
+        auto dot = Dot!HiBONRange(hibon_range, "G");
+        dot.draw(obuf);
+    }
 
     File outfile;
     if(outputfilename.empty) {
@@ -284,7 +358,8 @@ int _main(string[] args) {
         outfile = File(outputfilename, "w");
     }
 
-    outfile.writefln("%s", obuf);
-
+    outfile.write(startbuf);
+    outfile.write(obuf);
+    outfile.write(endbuf);
     return 0;
 }
