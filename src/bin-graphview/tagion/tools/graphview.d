@@ -67,6 +67,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     size_t node_size = 5;
     EventView[uint] events;
     long NODE_INDENT = 100;
+    const NODE_CIRCLE_SIZE = 30;
 
     this(Range doc_range) {
         this.doc_range = doc_range;
@@ -76,14 +77,77 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     long max_width = long.min;
 
     private void node(ref OutBuffer obuf, ref const EventView e) {
-        const cx = long(e.node_id)*100 + NODE_INDENT;
-        const cy = long(e.order*100) + NODE_INDENT;
+
+        const cx = long(e.node_id)*NODE_INDENT + NODE_INDENT;
+        const cy = long(e.order*NODE_INDENT) + NODE_INDENT;
         max_width = max(cx, max_width);
         max_height = max(cy, max_height);
 
-        obuf.writefln(`<circle cx=%s cy=%s r="25" stroke="red" stroke-width="4" fill="yellow"/>`,cx, cy);
+        const node_cx = cx;
+        const node_cy = -cy;
 
-       // <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+
+        const(long[2]) edgePos(long x1, long y1, long x2, long y2, long radius) pure {
+            import std.math;
+            double angle = atan2(float(abs(y2) - abs(y1)), float(x2 - x1));
+
+            double ex = x2 + radius * cos(angle);
+            double ey = y2 + radius * sin(angle);
+    
+            return [ex.to!long,ey.to!long];
+        }
+
+        
+        if (e.father !is e.father.init && e.father in events) {
+            const father_event = events[e.father];
+            
+            const father_cx = long(father_event.node_id)*NODE_INDENT + NODE_INDENT;
+            const father_cy = -(long(father_event.order*NODE_INDENT) + NODE_INDENT);
+
+            const father_edge_point = edgePos(node_cx, node_cy, father_cx,father_cy, NODE_CIRCLE_SIZE);
+            
+
+            string fatherline_options;
+            // position
+            fatherline_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
+            // colors
+            fatherline_options ~= format(`class="behind" style="stroke:%s";stroke-width:3"`, "black");
+            obuf.writefln("<line %s />", fatherline_options);
+        }
+        if (e.mother !is e.mother.init && e.mother in events) {
+            const mother_event = events[e.mother];
+            const mother_cx = long(mother_event.node_id)*NODE_INDENT + NODE_INDENT;
+            const mother_cy = long(mother_event.order*NODE_INDENT) + NODE_INDENT;
+
+            string mother_line_options;
+            // position
+            mother_line_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
+            // colors
+            mother_line_options ~= format(`style="stroke:%s";stroke-width:3"`, mother_event.witness ? "red" : "black");
+            obuf.writefln("<line %s />", mother_line_options);
+        }
+
+        string node_opts;
+        // position
+        node_opts ~= format("cx=%s cy=%s r=%s ", node_cx, node_cy, NODE_CIRCLE_SIZE);
+        node_opts ~= `stroke="black" stroke-width="4" `;
+        // colors
+        if (e.witness) {
+            node_opts ~= format(`fill="%s"`, e.famous ? "red" : "lightgreen");
+        } else {
+            node_opts ~= format(`fill="%s"`, pastel19.color(e.round_received));
+
+        }
+        node_opts ~= format(`stroke="%s" stroke-width="%s" fill="%s"`, "red", 4, "yellow");
+        obuf.writefln("<circle %s />", node_opts);
+
+        string node_text_options;
+        // position
+        node_text_options ~= format("x=%s y=%s ", node_cx, node_cy);
+        node_text_options ~= `text-anchor="middle" dominant-baseline="middle" fill="black"`;
+        obuf.writefln("<text %s > %s </text>", node_text_options, e.id);
+
+
     }
     
 
@@ -109,9 +173,9 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
         // obuf.write("<!DOCTYPE html>\n<html>\n<body>\n");
         scope(success) {
-            start.writefln("<!DOCTYPE html>\n<html>\n<body>");
-            start.writefln(`<svg width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
-            start.writefln(`<g transform="scale(1,-1) translate(0,%s)">`, -max_height);
+            start.writefln("<!DOCTYPE html>\n<html>");
+            start.writefln(`<body>\n<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
+            start.writefln(`<g transform="translate(0,%s)">`, max_height);
 
             end.writefln("</g>");
             end.writefln("</body>\n</html>");
