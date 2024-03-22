@@ -437,6 +437,7 @@ int _main(string[] args) {
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
+            "v|verbose", "Prints more debug information", &__verbose_switch,
             "o|output", "output graphviz file", &outputfilename,
             "html", "Generate html page", &html,
             "svg", "generate raw svg", &svg,
@@ -484,6 +485,8 @@ int _main(string[] args) {
     HiBONRange hibon_range = HiBONRange(inputfile);
 
     auto obuf = new OutBuffer;
+    obuf.reserve(inputfile.size * 2);
+    verbose("inputfile size=%s", inputfile.size);
     auto startbuf = new OutBuffer;
     auto endbuf = new OutBuffer;
 
@@ -507,6 +510,7 @@ int _main(string[] args) {
     outfile.write(startbuf);
     outfile.write(obuf);
     outfile.write(endbuf);
+    verbose("outfile size=%s", outfile.size);
     return 0;
 }
 
