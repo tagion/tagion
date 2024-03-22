@@ -255,7 +255,15 @@ jobs:
             url=$(gh gist create $file.unstack) || echo could not create gist
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
-
+      - name: Generate graph svgs
+        run: |
+          cd ${{ env.ARTIFACT_DIR }}
+          graph_files=$(find logs -name "*_graph.hibon")
+          for file in $graph_files; do
+            ./build/${{ env.TARGET }}/bin/graphview --svg -i $file > $file.svg || echo could not create graph
+            url=$(gh gist create $file.svg) || echo could not create gist
+            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+          done
   ddoc:
     if: ${{ github.ref == 'refs/heads/current' }}
     runs-on: ubuntu-latest
