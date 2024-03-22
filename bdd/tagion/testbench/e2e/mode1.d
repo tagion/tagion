@@ -141,7 +141,7 @@ string[] create_nodes_data(string genesis_dart_path, ref const(Options)[] node_o
 Pid[] spawn_nodes(string dbin, string[] pins, const(string[]) node_data_paths) {
     Pid[] pids;
     foreach(pin, node_path; zip(pins, node_data_paths)) {
-        const cmd = buildPath(dbin, "neuewelle");
+        const cmd = [buildPath(dbin, "testbench"), "test_wave"];
         writefln("run: %s", cmd);
 
         const pin_path = buildPath(node_path, "pin.txt");
