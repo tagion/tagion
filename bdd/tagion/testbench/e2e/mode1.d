@@ -29,28 +29,36 @@ import tagion.crypto.SecureNet;
 
 void kill_waves(Pid[] pids, Duration grace_time) {
     const begin_time = MonoTime.currTime;
+    enum SIGINT = 2;
+    enum SIGKILL = 9;
 
     Pid[size_t] alive_pids;
     foreach(i, pid; pids) {
         alive_pids[i] = pid;
-        kill(pid);
+        kill(pid, SIGINT);
+        Thread.sleep(200.msecs);
+        kill(pid, SIGINT);
         writefln("SIGINT: %s", pid.processID);
     }
 
     while(!alive_pids.empty || MonoTime.currTime - begin_time <= grace_time) {
+        Thread.sleep(200.msecs);
+
         foreach(i, pid; alive_pids) {
             auto proc_status = tryWait(pid);
+            writefln("%s: %s", pid.processID, proc_status);
+
             if(proc_status.terminated) {
+                writeln("remove ", i); 
                 alive_pids.remove(i);
             }
-            writefln("%s: %s", pid.processID, proc_status);
         }
-        Thread.sleep(100.msecs);
     }
 
     foreach(pid; alive_pids) {
-        kill(pid, 9);
+        kill(pid, SIGKILL);
         writefln("SIGKILL: %s", pid.processID);
+        wait(pid);
     }
 }
 
@@ -133,10 +141,16 @@ string[] create_nodes_data(string genesis_dart_path, ref const(Options)[] node_o
 Pid[] spawn_nodes(string dbin, string[] pins, const(string[]) node_data_paths) {
     Pid[] pids;
     foreach(pin, node_path; zip(pins, node_data_paths)) {
-        const cmd = format("echo %s | %s", pin, buildPath(dbin, "neuewelle"));
+        const cmd = buildPath(dbin, "neuewelle");
         writefln("run: %s", cmd);
 
-        Pid pid = spawnShell(cmd, workDir: node_path);
+        const pin_path = buildPath(node_path, "pin.txt");
+
+        import file = std.file;
+        file.write(pin_path, pin);
+        auto pin_file = File(pin_path, "r");
+
+        Pid pid = spawnProcess(cmd, workDir: node_path, stdin: pin_file);
         writefln("Started %s", pid.processID);
         pids ~= pid;
     }
@@ -202,7 +216,9 @@ int _main(string[] args) {
     const dbin = bddenv.dbin;
     Pid[] pids = spawn_nodes(dbin, pins, node_data_paths);
 
+    writefln("Spawned nodes, waiting for %s seconds", timeout_secs);
     Thread.sleep(timeout_secs.seconds);
+    writefln("Waited for %s seconds", timeout_secs);
 
     kill_waves(pids, grace_time: 3.seconds);
     return 0;
