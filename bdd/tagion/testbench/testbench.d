@@ -33,6 +33,7 @@ int main(string[] args) {
     import transaction = tagion.testbench.e2e.transaction;
     import run_epochs = tagion.testbench.e2e.run_epochs;
     import mode1 = tagion.testbench.e2e.mode1;
+    import test_wave = tagion.testbench.e2e.test_wave;
 
     alias alltools = AliasSeq!(
             collector,
@@ -64,6 +65,7 @@ int main(string[] args) {
             transaction,
             run_epochs,
             mode1,
+            test_wave,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

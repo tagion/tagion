@@ -59,6 +59,213 @@ const(string) color(T)(const(string[]) colors, T index) pure nothrow @nogc if (i
 }
 
 @safe
+struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document)) {
+    import std.format;
+    import std.algorithm.comparison : max;
+
+    Range doc_range;
+    size_t node_size = 5;
+    EventView[uint] events;
+    long NODE_INDENT = 100;
+    const NODE_CIRCLE_SIZE = 30;
+
+    this(Range doc_range) {
+        this.doc_range = doc_range;
+    }
+
+    long max_height = long.min;
+    long max_width = long.min;
+
+    private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
+
+        const cx = long(e.node_id)*NODE_INDENT + NODE_INDENT;
+        const cy = long(e.order*NODE_INDENT) + NODE_INDENT;
+        max_width = max(cx, max_width);
+        max_height = max(cy, max_height);
+
+        const node_cx = cx;
+        const node_cy = -cy;
+
+
+        const(long[2]) edgePos(long x1, long y1, long x2, long y2, long radius) pure {
+            import std.math;
+            double angle = atan2(float(abs(y2) - abs(y1)), float(x2 - x1));
+
+            double ex = x2 + radius * cos(angle);
+            double ey = y2 + radius * sin(angle);
+    
+            return [ex.to!long,ey.to!long];
+        }
+
+        
+        if (e.father !is e.father.init && e.father in events) {
+            const father_event = events[e.father];
+            
+            const father_cx = long(father_event.node_id)*NODE_INDENT + NODE_INDENT;
+            const father_cy = -(long(father_event.order*NODE_INDENT) + NODE_INDENT);
+
+            const father_edge_point = edgePos(node_cx, node_cy, father_cx,father_cy, NODE_CIRCLE_SIZE);
+            
+
+            string fatherline_options;
+            // position
+            fatherline_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
+            // colors
+            fatherline_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(e.id));
+            obuf.writefln("<line %s />", fatherline_options);
+        }
+        if (e.mother !is e.mother.init && e.mother in events) {
+            const mother_event = events[e.mother];
+            const mother_cx = long(mother_event.node_id)*NODE_INDENT + NODE_INDENT;
+            const mother_cy = long(mother_event.order*NODE_INDENT) + NODE_INDENT;
+
+            string mother_line_options;
+            // position
+            mother_line_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
+            // colors
+            mother_line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, mother_event.witness ? "red" : "black");
+            obuf.writefln("<line %s />", mother_line_options);
+        }
+
+        string node_opts;
+        // position
+        node_opts ~= format("cx=%s cy=%s r=%s ", node_cx, node_cy, NODE_CIRCLE_SIZE);
+        node_opts ~= `stroke="black" stroke-width="4" `;
+        // colors
+        if (e.witness) {
+            node_opts ~= format(`fill="%s"`, e.famous ? "red" : "lightgreen");
+        } else {
+            node_opts ~= format(`fill="%s"`, pastel19.color(e.round_received));
+        }
+        node_opts ~= format(`stroke="%s" stroke-width="%s" fill="%s"`, "red", 4, "yellow");
+        string escapeHtml(string input) {
+            string result;
+            foreach (char c; input) {
+                switch (c) {
+                    case '&': result ~= "&amp;"; break;
+                    case '<': result ~= "&lt;"; break;
+                    case '>': result ~= "&gt;"; break;
+                    case '"': result ~= "&quot;"; break;
+                    default: result ~= c; break;
+                }
+            }
+            return result;
+        }
+        string html_node_opts = "";
+        if (!raw_svg) {
+            html_node_opts ~= format(" class=myCircle data-info='%s' ", escapeHtml(e.toPretty));
+        }
+
+        obuf.writefln(`<circle class=myCircle %s %s />`, node_opts, html_node_opts);
+
+        string node_text_options;
+        // position
+        node_text_options ~= format("x=%s y=%s ", node_cx, node_cy);
+        node_text_options ~= `text-anchor="middle" dominant-baseline="middle" fill="black"`;
+        obuf.writefln("<text %s > %s </text>", node_text_options, e.id);
+
+
+    }
+    
+
+    void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
+        const nodes_doc = doc_range.front;
+        if (nodes_doc.isRecord!NodeAmount) {
+            node_size = NodeAmount(nodes_doc).nodes;
+            doc_range.popFront;
+        }
+
+        foreach (e; doc_range) {
+            if(e.isRecord!EventView) {
+                auto event = EventView(e);
+                events[event.id] = event;
+            }
+            else {
+                throw new Exception("Unknown element in graphview doc_range %s", e.toPretty);
+            }
+        }
+        foreach(e; events) {
+            node(obuf, e, raw_svg);
+        }
+
+        // obuf.write("<!DOCTYPE html>\n<html>\n<body>\n");
+        scope(success) {
+            if (!raw_svg) {
+                start.writefln("<!DOCTYPE html>\n<html>");
+                start.writefln(` 
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Interactive SVG</title>
+                  <style>
+                    /* Style for the pop-up box */
+                    #popup {
+                      display: none;
+                      position: absolute;
+                      background-color: #ffffff;
+                      border: 1px solid #000000;
+                      padding: 10px;
+                      z-index: 1;
+                    }
+                  </style>
+                </head>`);
+                start.writefln("<body>");
+            }
+            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
+            start.writefln(`<g transform="translate(0,%s)">`, max_height);
+            end.writefln("</g>");
+
+            end.writefln("</svg>");
+            if (!raw_svg) {
+end.writefln(q"EX
+<!-- The pop-up box -->
+<div id="popup"></div>
+<script>
+// Get the SVG element
+const svg = document.querySelector('svg');
+
+// Get all circle elements with the class 'myCircle'
+const circles = document.querySelectorAll('.myCircle');
+
+// Add click event listener to each circle
+circles.forEach(circle => {
+  circle.addEventListener('click', function() {
+      console.log("circle pressed!");
+    // Get the information from the circle's data-info attribute
+    const information = circle.getAttribute('data-info');
+
+    // Show the pop-up box with the information
+    const popup = document.getElementById('popup');
+    popup.innerHTML = information;
+    popup.style.display = 'block';
+
+    // Position the pop-up box near the circle
+    const circleBounds = circle.getBoundingClientRect();
+    popup.style.top = `${circleBounds.top}px`;
+    popup.style.left = `${circleBounds.right}px`;
+  });
+});
+
+// Close the pop-up box when clicking outside of it
+svg.addEventListener('click', function(event) {
+  const popup = document.getElementById('popup');
+  if (!event.target.classList.contains('myCircle') && event.target !== popup) {
+    popup.style.display = 'none';
+  }
+});
+</script>            
+EX");
+            end.writefln("</body>\n</html>");
+            }
+
+        }
+
+    }
+
+
+}
+
+@safe
 struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
     @safe:
     import std.format;
@@ -223,11 +430,17 @@ int _main(string[] args) {
     string inputfilename;
     string outputfilename;
 
+    bool html;
+    bool svg;
+
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
+            "v|verbose", "Prints more debug information", &__verbose_switch,
             "o|output", "output graphviz file", &outputfilename,
+            "html", "Generate html page", &html,
+            "svg", "generate raw svg", &svg,
     );
 
     if (version_switch) {
@@ -271,10 +484,20 @@ int _main(string[] args) {
 
     HiBONRange hibon_range = HiBONRange(inputfile);
 
-    auto dot = Dot!HiBONRange(hibon_range, "G");
     auto obuf = new OutBuffer;
+    obuf.reserve(inputfile.size * 2);
+    verbose("inputfile size=%s", inputfile.size);
+    auto startbuf = new OutBuffer;
+    auto endbuf = new OutBuffer;
 
-    dot.draw(obuf);
+    if (html || svg) {
+        assert(!(html && svg), "cannot set both html and svg");
+        auto dot = SVGDot!HiBONRange(hibon_range);
+        dot.draw(obuf, startbuf, endbuf, svg);
+    } else {
+        auto dot = Dot!HiBONRange(hibon_range, "G");
+        dot.draw(obuf);
+    }
 
     File outfile;
     if(outputfilename.empty) {
@@ -284,7 +507,11 @@ int _main(string[] args) {
         outfile = File(outputfilename, "w");
     }
 
-    outfile.writefln("%s", obuf);
-
+    outfile.write(startbuf);
+    outfile.write(obuf);
+    outfile.write(endbuf);
+    verbose("outfile size=%s", outfile.size);
     return 0;
 }
+
+

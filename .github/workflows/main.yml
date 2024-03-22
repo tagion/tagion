@@ -20,21 +20,6 @@ permissions:
   id-token: write
 
 jobs:
-  dscanner-check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    continue-on-error: true
-    steps:
-      - uses: dlang-community/setup-dlang@v1
-        with:
-          compiler: dmd-latest
-      - uses: actions/checkout@v4
-      - run: |
-          for i in `find src/* -maxdepth 0 -type d | grep -v "lib-nngd"`; do
-            echo "Checking $i"
-            dub run dscanner -- $i --styleCheck -f "github" | grep --extended-regexp -v "undocumented|style_check|long_line_check" || echo false
-          done
-
   build:
     runs-on: CI
     timeout-minutes: 5
@@ -248,8 +233,8 @@ jobs:
           if-no-files-found: error
 
   add_logs:
-    runs-on: CI
     if: failure()
+    runs-on: CI
     needs: acceptance_stage
     steps:
       - name: Add logs
@@ -270,7 +255,15 @@ jobs:
             url=$(gh gist create $file.unstack) || echo could not create gist
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
-
+      - name: Generate graph svgs
+        run: |
+          cd ${{ env.ARTIFACT_DIR }}
+          graph_files=$(find logs -name "*_graph.hibon")
+          for file in $graph_files; do
+            ./build/${{ env.TARGET }}/bin/tagion graphview --svg $file > $file.svg || echo could not create graph
+            url=$(gh gist create $file.svg) || echo could not create gist
+            echo "[$(basename $file).svg]($url)" >> $GITHUB_STEP_SUMMARY
+          done
   ddoc:
     if: ${{ github.ref == 'refs/heads/current' }}
     runs-on: ubuntu-latest
