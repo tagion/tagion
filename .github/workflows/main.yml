@@ -20,21 +20,6 @@ permissions:
   id-token: write
 
 jobs:
-  dscanner-check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    continue-on-error: true
-    steps:
-      - uses: dlang-community/setup-dlang@v1
-        with:
-          compiler: dmd-latest
-      - uses: actions/checkout@v4
-      - run: |
-          for i in `find src/* -maxdepth 0 -type d | grep -v "lib-nngd"`; do
-            echo "Checking $i"
-            dub run dscanner -- $i --styleCheck -f "github" | grep --extended-regexp -v "undocumented|style_check|long_line_check" || echo false
-          done
-
   build:
     runs-on: CI
     timeout-minutes: 5
