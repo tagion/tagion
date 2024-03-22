@@ -53,7 +53,7 @@ class Event {
         Event _daughter;
         Event _son;
 
-        int _order;
+         long _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -99,12 +99,12 @@ class Event {
                 assert(
                         event_package.event_body.altitude - _mother
                         .event_package.event_body.altitude is 1);
-                assert(_order is int.init || (_order - _mother._order > 0));
+                assert(_order is long.init || (_order - _mother._order > 0));
             }
             if (_father) {
                 pragma(msg, "fixme(bbh) this test should be reimplemented once new witness def works");
                 // assert(_father._son is this, "fathers is not me");
-                assert(_order is int.init || (_order - _father._order > 0));
+                assert(_order is long.init || (_order - _father._order > 0));
             }
         }
     }
@@ -194,7 +194,7 @@ class Event {
     immutable size_t node_id; /// Node number of the event
 
     void initializeOrder() pure nothrow @nogc {
-        if (order is int.init) {
+        if (order is long.init) {
             _order = -1;
         }
     }
@@ -332,7 +332,7 @@ class Event {
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
             hashgraph._rounds.vote(hashgraph, vote_node_id);
-        }
+        } 
     }
 
     /**
@@ -507,7 +507,7 @@ class Event {
          * Gets the event order number 
          * Returns: order
          */
-        int order() const pure nothrow @nogc {
+        long order() const pure nothrow @nogc {
             return _order;
         }
 

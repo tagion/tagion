@@ -121,6 +121,7 @@ unittest {
     }
 }
 
+@safe
 struct HiBONRange {
     File file;
     this(File file) {

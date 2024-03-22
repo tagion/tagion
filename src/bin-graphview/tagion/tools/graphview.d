@@ -28,46 +28,39 @@ protected static immutable _params = [
 
 mixin(EnumText!("Params", _params));
 
-enum pastel19 = [
-    "#fbb4ae",
-    "#b3cde3",
-    "#ccebc5",
-    "#decde4",
-    "#fed9a6",
-    "#ffffcc",
-    "#e5d8bd",
-    "#fddaec",
-    "#f2f2f2"
+static immutable pastel19 = [
+    "#fbb4ae", // Light pink
+    "#b3cde3", // Light blue
+    "#ccebc5", // Light green
+    "#decde4", // Light lavender
+    "#fed9a6", // Light peach
+    "#ffffcc", // Light yellow
+    "#e5d8bd", // Light beige
+    "#fddaec", // Light lavender pink
+    "#f2f2f2", // Light gray
+    "#ffcccc", // Light coral pink
+    "#b9f6ca", // Light mint
+    "#ffd8b1", // Light apricot
+    "#d9d9d9", // Light grayish
+    "#c2f0c2", // Light pastel green
+    "#ffcc99", // Light peachy
+    "#ffd1dc", // Light pinkish lavender
+    "#d9f2d9", // Light pale green
+    "#b2ebf2", // Light pale blue
+    "#ffccff"  // Light lavender pink
 ];
 
-string color(T)(string[] colors, T index) if (isIntegral!T) {
+@safe
+const(string) color(T)(const(string[]) colors, T index) pure nothrow @nogc if (isIntegral!T) {
     import std.math : abs;
 
     const i = abs(index) % colors.length;
     return colors[i];
 }
 
-enum dot_fileextension {
-    CMAPX = "cmapx", /// Produces HTML map files for client-side image maps.
-    PDF = "pdf", /++ Adobe PDF via the Cairo library. We have seen problems when embedding
-                       into, other documents. Instead, use -Tps2 as described below. +/
-    PLAIN = "txt", /++ Simple, line-based ASCII format. Appendix E describes this output. An
-                     alternate format is plain-ext, which provides port names on the head and
-                     tail nodes of edges. +/
-    PNG = "png", /// PNG (Portable Network Graphics) output.
-    PS = "ps", /// PostScript (EPSF) output.
-    PS2 = "ps2", /++
-                   PostScript (EPSF) output with PDF annotations.
-                   This output should be distilled into PDF,
-                   such as for pdflatex, before being included in a document.
-                   (Use ps2pdf; epstopdf doesn’t handle %%BoundingBox: (atend).)
-                   +/
-    SVG = "svg", /// SVG output. The alternate form svgz produces compressed SVG.
-    VRML = "vrml", /// VRML output.
-    WBMP = "wbmp", ///Wireless BitMap (WBMP) format.
-}
-
+@safe
 struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
+    @safe:
     import std.format;
 
     enum INDENT = "  ";
@@ -95,7 +88,7 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
         }
 
         string mask2text(const(uint[]) mask) {
-            const mask_text = format("%s", BitMask(mask));
+            const mask_text = (()@trusted => format("%s", BitMask(mask)))();
             return mask_text[0 .. min(node_size, mask_text.length)];
         }
 
