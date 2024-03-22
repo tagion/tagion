@@ -234,7 +234,6 @@ jobs:
 
   add_logs:
     runs-on: CI
-    if: failure()
     needs: acceptance_stage
     steps:
       - name: Add logs
