@@ -28,6 +28,22 @@ struct TRTArchive {
     });
 }
 
+@safe:
+@recordType(TYPENAME ~ "trt_contract")
+struct TRTContractArchive {
+    @label(StdNames.hash) DARTIndex contract_hash;
+    Document contract;
+    long epoch;
+
+    mixin HiBONRecord!(q{
+        this(DARTIndex contract_hash, Document contract, long epoch) {
+            this.contract_hash = contract_hash;
+            this.contract = contract;
+            this.epoch = epoch;
+        }
+    });
+}
+
 void createTRTUpdateRecorder(
     immutable(RecordFactory.Recorder) dart_recorder,
     const(RecordFactory.Recorder) read_recorder,

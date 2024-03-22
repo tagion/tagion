@@ -62,12 +62,14 @@ struct TranscriptService {
     void task(immutable(TranscriptOptions) opts,
         immutable(size_t) number_of_nodes,
         shared(StdSecureNet) shared_net,
-        immutable(TaskNames) task_names) {
+        immutable(TaskNames) task_names,
+        bool trt_enable) {
         const(SecureNet) net = new StdSecureNet(shared_net);
         auto rec_factory = RecordFactory(net);
 
         ActorHandle dart_handle = ActorHandle(task_names.dart);
         ActorHandle epoch_creator_handle = ActorHandle(task_names.epoch_creator);
+        ActorHandle trt_handle = ActorHandle(task_names.trt);
 
         immutable(ContractProduct)*[DARTIndex] products;
 
@@ -168,7 +170,8 @@ struct TranscriptService {
             */
 
             pragma(msg, "fixme(pr): instead of sorting each time there must be a better way for us to do this");
-            foreach (v; votes.byKeyValue.array.sort!((a,b) => a.value.epoch.epoch_number < b.value.epoch.epoch_number)) {
+            foreach (v; votes.byKeyValue.array.sort!((a, b) => a.value.epoch.epoch_number < b
+                    .value.epoch.epoch_number)) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
                 if (v.value.epoch.bullseye !is Fingerprint.init) {
                     // add the signatures to the epoch. Only add them if the signature match ours
@@ -265,6 +268,11 @@ struct TranscriptService {
 
                     recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
                     recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
+
+                    if (trt_enable) {
+                        immutable doc = signed_contract.contract.toDoc;
+                        trt_handle.send(trtContract(), doc);
+                    }
 
                     used ~= signed_contract.contract.inputs;
                     products.remove(net.dartIndex(signed_contract.contract));
