@@ -14,12 +14,12 @@ import std.exception;
 import nngd;
 import nngtestutil;
 
-void onaccept_handler ( WebSocket *ws ){
+void onaccept_handler ( WebSocket *ws, void *ctx ){
     log("===> ONACCEPT handler:");
     stdout.flush();
 }   
 
-void onmessage_handler ( WebSocket *ws, ubyte[] data ){
+void onmessage_handler ( WebSocket *ws, ubyte[] data, void *ctx ){
     log("===> ONMESSAGE handler:");
     writeln("RECV: ",cast(string)data);
     stdout.flush();
@@ -46,7 +46,7 @@ main()
 
     log("TEST ---------------------------------------------------  WS SERVER ");
     
-    WebSocketApp wsa = WebSocketApp(uri, &onaccept_handler, &onmessage_handler );
+    WebSocketApp wsa = WebSocketApp(uri, &onaccept_handler, &onmessage_handler, null );
 
     wsa.start();
 
