@@ -2248,7 +2248,7 @@ struct WebSocket {
     void nng_ws_txcb(void *ptr){
         int rc;
         rc = nng_aio_result(txaio);
-        enforce(rc == 0, "txcb res");
+        //TBD:
     }
 
     void send(ubyte[] data){
