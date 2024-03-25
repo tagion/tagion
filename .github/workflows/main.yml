@@ -357,11 +357,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [arm64]
-        target: [apple-ios, apple-ios-simulator]
+        # arch: [arm64]
+        target: [arm64-apple-ios, arm64-apple-ios-simulator, x86_64-apple-ios-simulator]
     runs-on: macOS
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/ios
         with:
-          platform: ${{ matrix.arch }}-${{ matrix.target }}
+          platform: ${{ matrix.target }}
