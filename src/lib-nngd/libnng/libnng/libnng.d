@@ -755,7 +755,7 @@ enum nng_mime_type: string {
     JPEG         =  "image/jpeg",
     GIF          =  "image/gif",
     PNG          =  "image/png",
-    BINARY       =  "application/octet-stream"
+    BINARY       =  "application/ocett-stream"
 };
 
 
