@@ -123,14 +123,14 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         string node_opts;
         // position
         node_opts ~= format(`cx="%s" cy="%s" r="%s" `, node_cx, node_cy, NODE_CIRCLE_SIZE);
-        node_opts ~= `stroke="black" stroke-width="4" `;
+        // node_opts ~= `stroke="black" stroke-width="4" `;
         // colors
         if (e.witness) {
-            node_opts ~= format(`fill="%s"`, e.famous ? "red" : "lightgreen");
+            node_opts ~= format(`fill="%s" `, e.famous ? "red" : "lightgreen");
         } else {
-            node_opts ~= format(`fill="%s"`, pastel19.color(e.round_received));
+            node_opts ~= format(`fill="%s" `, pastel19.color(e.round_received));
         }
-        node_opts ~= format(`stroke="%s" stroke-width="%s" fill="%s"`, "red", 4, "yellow");
+        node_opts ~= format(`stroke="%s" stroke-width="%s" `, "black", 4);
         string escapeHtml(string input) {
             string result;
             foreach (char c; input) {
@@ -146,14 +146,14 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         }
         string html_node_opts = "";
         if (!raw_svg) {
-            html_node_opts ~= format(" class=myCircle data-info='%s' ", escapeHtml(e.toPretty));
+            html_node_opts ~= format(` class="myCircle" data-info="%s" `, escapeHtml(e.toPretty));
         }
 
-        obuf.writefln(`<circle class=myCircle %s %s />`, node_opts, html_node_opts);
+        obuf.writefln(`<circle %s %s />`, node_opts, html_node_opts);
 
         string node_text_options;
         // position
-        node_text_options ~= format("x=%s y=%s ", node_cx, node_cy);
+        node_text_options ~= format(`x="%s" y="%s" `, node_cx, node_cy);
         node_text_options ~= `text-anchor="middle" dominant-baseline="middle" fill="black"`;
         obuf.writefln("<text %s > %s </text>", node_text_options, e.id);
 
