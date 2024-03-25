@@ -1,2 +1,2 @@
 
-WASMER_DIR:=$(DBUILD)/wasmer
+#WASMER_DIR:=$(DBUILD)/wasmer
