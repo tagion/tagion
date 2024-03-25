@@ -21,13 +21,6 @@ import tagion.hibon.HiBONFile : fread, HiBONRange;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
 
-protected static immutable _params = [
-    "events",
-    "size",
-];
-
-mixin(EnumText!("Params", _params));
-
 static immutable pastel19 = [
     "#fbb4ae", // Light pink
     "#b3cde3", // Light blue
@@ -169,6 +162,9 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     
 
     void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
+        // If the first document is a node amount record we set amount of nodes...
+        // Maybe this should be always be possible to set.
+        // Or even better it's a part of the EventView package
         const nodes_doc = doc_range.front;
         if (nodes_doc.isRecord!NodeAmount) {
             node_size = NodeAmount(nodes_doc).nodes;
@@ -356,6 +352,9 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
     }
 
     void draw(ref OutBuffer obuf, const(string) indent = null) {
+        // If the first document is a node amount record we set amount of nodes...
+        // Maybe this should be always be possible to set.
+        // Or even better it's a part of the EventView package
         const nodes_doc = doc_range.front;
         if (nodes_doc.isRecord!NodeAmount) {
             node_size = NodeAmount(nodes_doc).nodes;
