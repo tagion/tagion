@@ -14,9 +14,11 @@ struct ShellOptions {
     string contract_addr_prefix = "CONTRACT_";
     string dart_addr_prefix = "DART_";
     string shell_uri = "http://0.0.0.0:8080";
+    string monitor_pub_uri = "tcp://127.0.0.1:8081";
     string recorder_subscription_tag = "recorder";
     string dart_subscription_task_prefix = "Node_0_";
     string trt_subscription_tag = "trt_created";
+    string monitor_subscription_tag = "monitor";
     string shell_api_prefix = "/api/v1";
     string contract_endpoint = "/contract";
     string hirpc_endpoint = "/hirpc";
@@ -47,7 +49,7 @@ struct ShellOptions {
     void setDefault() nothrow {
         tagion_subscription_addr = contract_sock_addr("SUBSCRIPTION_");
         version(TAGIONSHELL_WEB_SOCKET) {
-            ws_pub_uri = "ws://0.0.0.0:8080/api/v1/subscribe";
+            ws_pub_uri = "ws://0.0.0.0:8080"~shell_api_prefix~"/subscribe";
         }
     }
 

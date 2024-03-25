@@ -162,6 +162,7 @@ class Round {
             if (e !is null) {
                 count++;
 
+                pragma(msg, "fixme(phr): make event remove work with eventview");
                 version(none)
                 if (Event.callbacks) {
                     Event.callbacks.remove(e);

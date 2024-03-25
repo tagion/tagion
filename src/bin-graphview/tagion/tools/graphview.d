@@ -21,13 +21,6 @@ import tagion.hibon.HiBONFile : fread, HiBONRange;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
 
-protected static immutable _params = [
-    "events",
-    "size",
-];
-
-mixin(EnumText!("Params", _params));
-
 static immutable pastel19 = [
     "#fbb4ae", // Light pink
     "#b3cde3", // Light blue
@@ -109,7 +102,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
             string fatherline_options;
             // position
-            fatherline_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
+            fatherline_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
             // colors
             fatherline_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(e.id));
             obuf.writefln("<line %s />", fatherline_options);
@@ -121,7 +114,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
             string mother_line_options;
             // position
-            mother_line_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
+            mother_line_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
             // colors
             mother_line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, mother_event.witness ? "red" : "black");
             obuf.writefln("<line %s />", mother_line_options);
@@ -129,15 +122,15 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
         string node_opts;
         // position
-        node_opts ~= format("cx=%s cy=%s r=%s ", node_cx, node_cy, NODE_CIRCLE_SIZE);
-        node_opts ~= `stroke="black" stroke-width="4" `;
+        node_opts ~= format(`cx="%s" cy="%s" r="%s" `, node_cx, node_cy, NODE_CIRCLE_SIZE);
+        // node_opts ~= `stroke="black" stroke-width="4" `;
         // colors
         if (e.witness) {
-            node_opts ~= format(`fill="%s"`, e.famous ? "red" : "lightgreen");
+            node_opts ~= format(`fill="%s" `, e.famous ? "red" : "lightgreen");
         } else {
-            node_opts ~= format(`fill="%s"`, pastel19.color(e.round_received));
+            node_opts ~= format(`fill="%s" `, pastel19.color(e.round_received));
         }
-        node_opts ~= format(`stroke="%s" stroke-width="%s" fill="%s"`, "red", 4, "yellow");
+        node_opts ~= format(`stroke="%s" stroke-width="%s" `, "black", 4);
         string escapeHtml(string input) {
             string result;
             foreach (char c; input) {
@@ -153,14 +146,14 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         }
         string html_node_opts = "";
         if (!raw_svg) {
-            html_node_opts ~= format(" class=myCircle data-info='%s' ", escapeHtml(e.toPretty));
+            html_node_opts ~= format(` class="myCircle" data-info="%s" `, escapeHtml(e.toPretty));
         }
 
-        obuf.writefln(`<circle class=myCircle %s %s />`, node_opts, html_node_opts);
+        obuf.writefln(`<circle %s %s />`, node_opts, html_node_opts);
 
         string node_text_options;
         // position
-        node_text_options ~= format("x=%s y=%s ", node_cx, node_cy);
+        node_text_options ~= format(`x="%s" y="%s" `, node_cx, node_cy);
         node_text_options ~= `text-anchor="middle" dominant-baseline="middle" fill="black"`;
         obuf.writefln("<text %s > %s </text>", node_text_options, e.id);
 
@@ -169,6 +162,9 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     
 
     void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
+        // If the first document is a node amount record we set amount of nodes...
+        // Maybe this should be always be possible to set.
+        // Or even better it's a part of the EventView package
         const nodes_doc = doc_range.front;
         if (nodes_doc.isRecord!NodeAmount) {
             node_size = NodeAmount(nodes_doc).nodes;
@@ -356,6 +352,9 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
     }
 
     void draw(ref OutBuffer obuf, const(string) indent = null) {
+        // If the first document is a node amount record we set amount of nodes...
+        // Maybe this should be always be possible to set.
+        // Or even better it's a part of the EventView package
         const nodes_doc = doc_range.front;
         if (nodes_doc.isRecord!NodeAmount) {
             node_size = NodeAmount(nodes_doc).nodes;
