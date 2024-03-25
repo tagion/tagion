@@ -78,6 +78,7 @@ env-unittest:
 	${call log.env, UNITTEST_DOBJ, $(UNITTEST_DOBJ)}
 	${call log.env, UNITTEST_FLAGS, $(UNITTEST_FLAGS)}
 	${call log.env, UNITTEST_BIN, $(UNITTEST_BIN)}
+	${call log.env, UNITTEST_DFILES, $(UNITTEST_DFILES)}
 	${call log.close}
 
 env: env-unittest
