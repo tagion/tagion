@@ -102,7 +102,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
             string fatherline_options;
             // position
-            fatherline_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
+            fatherline_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
             // colors
             fatherline_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(e.id));
             obuf.writefln("<line %s />", fatherline_options);
@@ -114,7 +114,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
             string mother_line_options;
             // position
-            mother_line_options ~= format("x1=%s y1=%s x2=%s y2=%s ", node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
+            mother_line_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
             // colors
             mother_line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, mother_event.witness ? "red" : "black");
             obuf.writefln("<line %s />", mother_line_options);
@@ -122,7 +122,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
         string node_opts;
         // position
-        node_opts ~= format("cx=%s cy=%s r=%s ", node_cx, node_cy, NODE_CIRCLE_SIZE);
+        node_opts ~= format(`cx="%s" cy="%s" r="%s" `, node_cx, node_cy, NODE_CIRCLE_SIZE);
         node_opts ~= `stroke="black" stroke-width="4" `;
         // colors
         if (e.witness) {
