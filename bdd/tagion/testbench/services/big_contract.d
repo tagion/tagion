@@ -252,8 +252,8 @@ class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
     Document through() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 1: %s, WALLET 2: %s", wallet1_amount, wallet2_amount);
         const wallet1_expected = start_amount1 - wallet1.calcTotal(bills) - fee;
         check(wallet1_amount == wallet1_expected, format("Wallet1 should have %s had %s", wallet1_expected, wallet1_amount));

@@ -40,7 +40,7 @@ static immutable pastel19 = [
     "#ffd1dc", // Light pinkish lavender
     "#d9f2d9", // Light pale green
     "#b2ebf2", // Light pale blue
-    "#ffccff"  // Light lavender pink
+    "#ffccff" // Light lavender pink
 ];
 
 @safe
@@ -52,9 +52,35 @@ const(string) color(T)(const(string[]) colors, T index) pure nothrow @nogc if (i
 }
 
 @safe
-struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document)) {
+static string escapeHtml(string input) pure nothrow {
+    string result;
+    foreach (char c; input) {
+        switch (c) {
+        case '&':
+            result ~= "&amp;";
+            break;
+        case '<':
+            result ~= "&lt;";
+            break;
+        case '>':
+            result ~= "&gt;";
+            break;
+        case '"':
+            result ~= "&quot;";
+            break;
+        default:
+            result ~= c;
+            break;
+        }
+    }
+    return result;
+}
+
+@safe
+struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
     import std.format;
     import std.algorithm.comparison : max;
+    import std.typecons;
 
     Range doc_range;
     size_t node_size = 5;
@@ -69,97 +95,141 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     long max_height = long.min;
     long max_width = long.min;
 
-    private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
+    alias Pos = Tuple!(long, "x", long, "y");
 
-        const cx = long(e.node_id)*NODE_INDENT + NODE_INDENT;
-        const cy = long(e.order*NODE_INDENT) + NODE_INDENT;
-        max_width = max(cx, max_width);
-        max_height = max(cy, max_height);
+    struct SVGCircle {
+        bool raw_svg;
+        Pos pos;
+        int radius;
+        string fill;
+        string stroke;
+        int stroke_width;
 
-        const node_cx = cx;
-        const node_cy = -cy;
+        // for html
+        string classes;
+        string data_info;
 
-
-        const(long[2]) edgePos(long x1, long y1, long x2, long y2, long radius) pure {
-            import std.math;
-            double angle = atan2(float(abs(y2) - abs(y1)), float(x2 - x1));
-
-            double ex = x2 + radius * cos(angle);
-            double ey = y2 + radius * sin(angle);
-    
-            return [ex.to!long,ey.to!long];
+        string toString() const pure @safe {
+            string options = format(`cx="%s" cy="%s" r="%s" fill="%s" stroke="%s" stroke-width="%s" `, pos.x, pos.y, radius, fill, stroke, stroke_width);
+            if (!raw_svg) {
+                options ~= format(`class="%s" data-info="%s"`, classes, data_info);
+            }
+            return format(`<circle %s />`, options);
         }
+    }
 
-        
+    struct SVGLine {
+        Pos pos1;
+        Pos pos2;
+        string stroke;
+        int stroke_width;
+
+        string toString() const pure @safe {
+            return format(`<line x1="%s" y1="%s" x2="%s" y2="%s" style="stroke: %s; stroke-width: %s"/>`, pos1.x, pos1
+                    .y, pos2.x, pos2.y, stroke, stroke_width);
+        }
+    }
+
+    struct SVGText {
+        Pos pos;
+        string fill;
+        string text_anchor;
+        string dominant_baseline;
+        string text;
+
+        string toString() const pure @safe {
+            return format(`<text x="%s" y="%s" text-anchor="%s" dominant-baseline="%s" fill="%s"> %s </text>`, pos.x, pos
+                    .y, text_anchor, dominant_baseline, fill, text);
+
+        }
+    }
+
+    private const(Pos) getPos(ref const EventView e) pure nothrow {
+        return Pos(long(e.node_id) * NODE_INDENT + NODE_INDENT, -(long(e.order * NODE_INDENT) + NODE_INDENT));
+    }
+
+    private const(Pos) edgePos(const Pos p1, const Pos p2, const long radius, bool isMother) pure nothrow {
+        if (isMother) {
+            return Pos(p2.x, p2.y - radius);
+        }
+        import std.math;
+
+        double angle = atan2(float(abs(p2.y) - abs(p1.y)), float(p2.x - p1.x));
+
+        double ex = p2.x + radius * cos(angle);
+        double ey = p2.y + radius * sin(angle);
+
+        import std.exception : assumeWontThrow;
+
+        // only throws ConvException if it is NaN. So safe to assume
+        return assumeWontThrow(Pos(ex.to!long, ey.to!long));
+    }
+
+    private void drawEdge(ref OutBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother) pure {
+
+        // const father_event = events[e.father];
+        const ref_pos = getPos(ref_event);
+
+        const ref_edge = edgePos(event_pos, ref_pos, NODE_CIRCLE_SIZE, isMother);
+
+        SVGLine line;
+        line.pos1 = event_pos;
+        line.pos2 = ref_edge;
+        line.stroke_width = 4;
+
+        // colors
+        if (isMother) {
+            line.stroke = ref_event.witness ? "red" : "black";
+        }
+        else {
+            line.stroke = pastel19.color(ref_event.id);
+        }
+        obuf.writefln("%s", line.toString);
+    }
+
+    private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
+        const pos = getPos(e);
+        max_width = max(pos.x, max_width);
+        max_height = max(-pos.y, max_height);
+
         if (e.father !is e.father.init && e.father in events) {
-            const father_event = events[e.father];
-            
-            const father_cx = long(father_event.node_id)*NODE_INDENT + NODE_INDENT;
-            const father_cy = -(long(father_event.order*NODE_INDENT) + NODE_INDENT);
-
-            const father_edge_point = edgePos(node_cx, node_cy, father_cx,father_cy, NODE_CIRCLE_SIZE);
-            
-
-            string fatherline_options;
-            // position
-            fatherline_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
-            // colors
-            fatherline_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(e.id));
-            obuf.writefln("<line %s />", fatherline_options);
+            drawEdge(obuf, pos, events[e.father], isMother: false);
         }
         if (e.mother !is e.mother.init && e.mother in events) {
-            const mother_event = events[e.mother];
-            const mother_cx = long(mother_event.node_id)*NODE_INDENT + NODE_INDENT;
-            const mother_cy = long(mother_event.order*NODE_INDENT) + NODE_INDENT;
-
-            string mother_line_options;
-            // position
-            mother_line_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
-            // colors
-            mother_line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, mother_event.witness ? "red" : "black");
-            obuf.writefln("<line %s />", mother_line_options);
+            drawEdge(obuf, pos, events[e.mother], isMother: true);
         }
 
-        string node_opts;
-        // position
-        node_opts ~= format(`cx="%s" cy="%s" r="%s" `, node_cx, node_cy, NODE_CIRCLE_SIZE);
-        // node_opts ~= `stroke="black" stroke-width="4" `;
+        SVGCircle node_circle;
+
+        node_circle.raw_svg = raw_svg;
+        node_circle.pos = pos;
+        node_circle.radius = NODE_CIRCLE_SIZE;
+        node_circle.stroke = "black";
+        node_circle.stroke_width = 4;
+
         // colors
         if (e.witness) {
-            node_opts ~= format(`fill="%s" `, e.famous ? "red" : "lightgreen");
-        } else {
-            node_opts ~= format(`fill="%s" `, pastel19.color(e.round_received));
+            node_circle.fill = e.famous ? "red" : "lightgreen";
         }
-        node_opts ~= format(`stroke="%s" stroke-width="%s" `, "black", 4);
-        string escapeHtml(string input) {
-            string result;
-            foreach (char c; input) {
-                switch (c) {
-                    case '&': result ~= "&amp;"; break;
-                    case '<': result ~= "&lt;"; break;
-                    case '>': result ~= "&gt;"; break;
-                    case '"': result ~= "&quot;"; break;
-                    default: result ~= c; break;
-                }
-            }
-            return result;
+        else {
+            node_circle.fill = pastel19.color(e.round_received);
         }
-        string html_node_opts = "";
+
         if (!raw_svg) {
-            html_node_opts ~= format(` class="myCircle" data-info="%s" `, escapeHtml(e.toPretty));
+            node_circle.classes = "myCircle";
+            node_circle.data_info = escapeHtml(e.toPretty);
         }
 
-        obuf.writefln(`<circle %s %s />`, node_opts, html_node_opts);
+        obuf.writefln("%s", node_circle.toString);
 
-        string node_text_options;
-        // position
-        node_text_options ~= format(`x="%s" y="%s" `, node_cx, node_cy);
-        node_text_options ~= `text-anchor="middle" dominant-baseline="middle" fill="black"`;
-        obuf.writefln("<text %s > %s </text>", node_text_options, e.id);
-
-
+        SVGText text;
+        text.pos = pos;
+        text.text_anchor = "middle";
+        text.dominant_baseline = "middle";
+        text.fill = "black";
+        text.text = format("%s", e.id);
+        obuf.writefln("%s", text.toString);
     }
-    
 
     void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
         // If the first document is a node amount record we set amount of nodes...
@@ -172,7 +242,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         }
 
         foreach (e; doc_range) {
-            if(e.isRecord!EventView) {
+            if (e.isRecord!EventView) {
                 auto event = EventView(e);
                 events[event.id] = event;
             }
@@ -180,32 +250,13 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
                 throw new Exception("Unknown element in graphview doc_range %s", e.toPretty);
             }
         }
-        foreach(e; events) {
+        foreach (e; events) {
             node(obuf, e, raw_svg);
         }
 
-        // obuf.write("<!DOCTYPE html>\n<html>\n<body>\n");
-        scope(success) {
+        scope (success) {
             if (!raw_svg) {
-                start.writefln("<!DOCTYPE html>\n<html>");
-                start.writefln(` 
-                <head>
-                  <meta charset="UTF-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Interactive SVG</title>
-                  <style>
-                    /* Style for the pop-up box */
-                    #popup {
-                      display: none;
-                      position: absolute;
-                      background-color: #ffffff;
-                      border: 1px solid #000000;
-                      padding: 10px;
-                      z-index: 1;
-                    }
-                  </style>
-                </head>`);
-                start.writefln("<body>");
+                start.writefln(HTML_BEGIN);
             }
             start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
             start.writefln(`<g transform="translate(0,%s)">`, max_height);
@@ -213,57 +264,19 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
             end.writefln("</svg>");
             if (!raw_svg) {
-end.writefln(q"EX
-<!-- The pop-up box -->
-<div id="popup"></div>
-<script>
-// Get the SVG element
-const svg = document.querySelector('svg');
-
-// Get all circle elements with the class 'myCircle'
-const circles = document.querySelectorAll('.myCircle');
-
-// Add click event listener to each circle
-circles.forEach(circle => {
-  circle.addEventListener('click', function() {
-      console.log("circle pressed!");
-    // Get the information from the circle's data-info attribute
-    const information = circle.getAttribute('data-info');
-
-    // Show the pop-up box with the information
-    const popup = document.getElementById('popup');
-    popup.innerHTML = information;
-    popup.style.display = 'block';
-
-    // Position the pop-up box near the circle
-    const circleBounds = circle.getBoundingClientRect();
-    popup.style.top = `${circleBounds.top}px`;
-    popup.style.left = `${circleBounds.right}px`;
-  });
-});
-
-// Close the pop-up box when clicking outside of it
-svg.addEventListener('click', function(event) {
-  const popup = document.getElementById('popup');
-  if (!event.target.classList.contains('myCircle') && event.target !== popup) {
-    popup.style.display = 'none';
-  }
-});
-</script>            
-EX");
-            end.writefln("</body>\n</html>");
+                end.writefln(EVENT_POPUP);
+                end.writefln(HTML_END);
             }
 
         }
 
     }
 
-
 }
 
 @safe
-struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
-    @safe:
+struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
+@safe:
     import std.format;
 
     enum INDENT = "  ";
@@ -291,7 +304,7 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
         }
 
         string mask2text(const(uint[]) mask) {
-            const mask_text = (()@trusted => format("%s", BitMask(mask)))();
+            const mask_text = (() @trusted => format("%s", BitMask(mask)))();
             return mask_text[0 .. min(node_size, mask_text.length)];
         }
 
@@ -362,7 +375,7 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
         }
 
         foreach (e; doc_range) {
-            if(e.isRecord!EventView) {
+            if (e.isRecord!EventView) {
                 auto event = EventView(e);
                 events[event.id] = event;
             }
@@ -473,7 +486,7 @@ int _main(string[] args) {
     }
 
     File inputfile;
-    if(inputfilename.empty) {
+    if (inputfilename.empty) {
         inputfile = stdin;
         verbose("Reading graph data from stdin");
     }
@@ -493,13 +506,14 @@ int _main(string[] args) {
         assert(!(html && svg), "cannot set both html and svg");
         auto dot = SVGDot!HiBONRange(hibon_range);
         dot.draw(obuf, startbuf, endbuf, svg);
-    } else {
+    }
+    else {
         auto dot = Dot!HiBONRange(hibon_range, "G");
         dot.draw(obuf);
     }
 
     File outfile;
-    if(outputfilename.empty) {
+    if (outputfilename.empty) {
         outfile = stdout();
     }
     else {
@@ -513,4 +527,67 @@ int _main(string[] args) {
     return 0;
 }
 
+static immutable HTML_BEGIN = q"EX
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive SVG</title>
+  <style>
+    #popup {
+      display: none;
+      position: absolute;
+      background-color: #ffffff;
+      border: 1px solid #000000;
+      padding: 10px;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+EX";
 
+static immutable HTML_END = q"EX
+</body>
+</html>
+EX";
+
+static immutable EVENT_POPUP = q"EX
+<!-- The pop-up box -->
+<div id="popup"></div>
+<script>
+// Get the SVG element
+const svg = document.querySelector('svg');
+
+// Get all circle elements with the class 'myCircle'
+const circles = document.querySelectorAll('.myCircle');
+
+// Add click event listener to each circle
+circles.forEach(circle => {
+  circle.addEventListener('click', function() {
+      console.log("circle pressed!");
+    // Get the information from the circle's data-info attribute
+    const information = circle.getAttribute('data-info');
+
+    // Show the pop-up box with the information
+    const popup = document.getElementById('popup');
+    popup.innerHTML = information;
+    popup.style.display = 'block';
+
+    // Position the pop-up box near the circle
+    const circleBounds = circle.getBoundingClientRect();
+    popup.style.top = `${circleBounds.top}px`;
+    popup.style.left = `${circleBounds.right}px`;
+  });
+});
+
+// Close the pop-up box when clicking outside of it
+svg.addEventListener('click', function(event) {
+  const popup = document.getElementById('popup');
+  if (!event.target.classList.contains('myCircle') && event.target !== popup) {
+    popup.style.display = 'none';
+  }
+});
+</script>            
+EX";

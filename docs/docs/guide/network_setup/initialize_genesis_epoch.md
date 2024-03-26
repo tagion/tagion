@@ -9,7 +9,7 @@ A list of node identifier `node_name_record,pubkey,address` should be create.
 
 Atleast number active node N should be defined.
 
-Here is an example with two node indetifers **(Note in practist the minimum should be 5)**
+Here is an example with two node identifiers **(Note in practice the minimum should be 5)**
 
 Example.
 ```

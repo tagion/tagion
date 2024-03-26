@@ -2,11 +2,10 @@
 
 ## In Progress
 
-### Clean up graphview mess
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
-Assignee: Philip
+Assignee: phr
 
 ### Websocket Hashgraph monitor
 Description: Websocket hashgraph viewer with NNG websocket using EventView as package object
@@ -55,6 +54,16 @@ Labels: [Tracing, TRT]
 
 Assignee: Ivan
 
+### Mode1 bdd test
+Description: Create a test for mode1 which can run in aceptance stage
+
+Tasks:
+- [x] Create a testbench program which will run the nodes in different processes.
+- [ ] Add a check that all nodes produce epochs
+- [ ] Add the test to acceptance stage
+
+Assignee: lr
+
 ## Backlog
 
 ### Subscription API implementation
@@ -74,11 +83,16 @@ Description: Create Query nodes which can be used for both sending and receiving
 ### Implement "not" flag in HiREP
 
 ## Done
-
+### Clean up graphview mess
+Description: Refactor new svg graphview stuff
+Assignee: phr
 
 ## Template
 ### Task Title
 Description: Brief description of the task.
+- [] This is an
+- [X] Example of how a task can be broken down
+
 
 Assignee: Name.
 
