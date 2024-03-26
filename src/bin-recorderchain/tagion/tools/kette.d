@@ -69,7 +69,7 @@ int _main(string[] args) {
             defaultGetoptPrinter(
                     [
                     // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
+                    "Documentation: https://docs.tagion.org/",
                     "",
                     "Usage:",
                     "",

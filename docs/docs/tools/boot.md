@@ -7,7 +7,7 @@ and the [create_wallets script](https://github.com/tagion/tagion/blob/current/sc
 The alias name for this tool is `stiefel`, which is the German word for boot :boot:
 
 ```
-Documentation: https://tagion.org/
+Documentation: https://docs.tagion.org/
 
 Usage:
 tagionboot [<option>...] <hibon-files> ...

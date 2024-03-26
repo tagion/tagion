@@ -33,6 +33,8 @@ TagionHead getHead(DART db, const SecureNet net) {
     auto response = db(receiver, false);
     auto recorder = db.recorder(response.result);
 
+    check!ServiceException(recorder[].walkLength == 1, "No tagionhead was found");
+
     return TagionHead(recorder[].front.filed);
 }
 
@@ -98,7 +100,7 @@ do {
     return nnrs;
 }
 
-GenericEpoch getCurrentEpoch(string dart_file_path, SecureNet __net) {
+GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet __net) {
     import tagion.dart.DART;
     import tagion.logger;
 

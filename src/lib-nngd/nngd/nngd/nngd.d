@@ -2174,13 +2174,13 @@ struct WebClient {
 
 // WebSocket tools
 
-alias nng_ws_onconnect = void function ( WebSocket* );
-alias nng_ws_onmessage = void function ( WebSocket*, ubyte[] );
+alias nng_ws_onconnect = void function ( WebSocket*, void* );
+alias nng_ws_onmessage = void function ( WebSocket*, ubyte[], void* );
 
 
 struct WebSocket {
-    
     WebSocketApp *app;
+    void* context;
     nng_aio *rxaio;
     nng_aio *txaio;
     nng_stream *s;
@@ -2189,6 +2189,8 @@ struct WebSocket {
     nng_iov txiov;
     ubyte[] rxbuf;
     ubyte[] txbuf;
+    bool closed;
+    bool ready;
     
     @disable this();
 
@@ -2196,12 +2198,15 @@ struct WebSocket {
         WebSocketApp *_app, 
         nng_stream *_s, 
         nng_ws_onmessage _onmessage, 
+        void* _context,
         size_t _bufsize = 4096 )
     {
         int rc;
         app = _app;
         s = _s;
         onmessage = _onmessage;
+        context = _context;
+        closed = false;
         void delegate(void*) d1 = &(this.nng_ws_rxcb);
         rc = nng_aio_alloc(&rxaio, d1.funcptr, self());
         enforce(rc == 0, "Conn aio init0");
@@ -2218,6 +2223,7 @@ struct WebSocket {
         enforce(rc == 0, "Invalid rx iov");
         rc = nng_aio_set_iov(txaio, 1, &txiov);
         enforce(rc == 0, "Invalid tx iov");
+        ready = true;
         nng_stream_recv(s, rxaio);
     }
     
@@ -2228,14 +2234,19 @@ struct WebSocket {
 
     void nng_ws_rxcb( void *ptr ){
         int rc;
+        if(closed)
+            return;
         rc = nng_aio_result(rxaio);
         if(rc == 0){
             auto sz = nng_aio_count(rxaio);
             if(sz > 0){
                 if(onmessage != null){
-                    onmessage(cast(WebSocket*)self(), cast(ubyte[])(rxbuf[0..sz].dup));
+                    onmessage(cast(WebSocket*)self(), cast(ubyte[])(rxbuf[0..sz].dup), context);
                 }                
             }
+        }else{
+            closed = true;
+            return;
         }
         rc = nng_aio_set_iov(rxaio, 1, &rxiov);
         enforce(rc == 0, "Invalid rx iov1");
@@ -2244,12 +2255,21 @@ struct WebSocket {
 
     void nng_ws_txcb(void *ptr){
         int rc;
+        if(closed)
+            return;
         rc = nng_aio_result(txaio);
-        enforce(rc == 0, "txcb res");
+        if(rc == 0){
+            //TBD:
+        }else{
+            closed = true;
+            return;
+        }    
     }
 
     void send(ubyte[] data){
         int rc;
+        if(closed)
+            return;
         txbuf[0..data.length] = data[0..data.length];
         txiov.iov_len = data.length;
         rc = nng_aio_set_iov(txaio, 1, &txiov);
@@ -2257,7 +2277,6 @@ struct WebSocket {
         nng_stream_send(s, txaio);
         nng_aio_wait(txaio);
     }
-
 }
 
 struct WebSocketApp {
@@ -2266,7 +2285,8 @@ struct WebSocketApp {
     this( 
         string iuri, 
         nng_ws_onconnect ionconnect,
-        nng_ws_onmessage ionmessage
+        nng_ws_onmessage ionmessage,
+        void* icontext
     )
     {
         int rc;
@@ -2276,6 +2296,7 @@ struct WebSocketApp {
         s = null;
         onconnect = ionconnect;
         onmessage = ionmessage;
+        context = icontext;
         rc = nng_mtx_alloc(&mtx);
         enforce(rc==0,"Listener init0");
         rc = nng_stream_listener_alloc(&sl, uri.toStringz());            
@@ -2311,6 +2332,7 @@ struct WebSocketApp {
         nng_mtx *mtx;
         int starts;
         string uri;
+        void* context;
         nng_stream_listener *sl;
         nng_aio *accio;
         nng_stream *s;
@@ -2330,10 +2352,10 @@ struct WebSocketApp {
             }
             s = cast(nng_stream*)nng_aio_get_output(accio, 0);
             enforce(s != null, "Invalid stream pointer");
-            c = new WebSocket(cast(WebSocketApp*)self(), s, onmessage, 8192);
+            c = new WebSocket(cast(WebSocketApp*)self(), s, onmessage, context, 8192);
             enforce(c != null, "Invalid conn pointer");
             conns ~= c;
-            onconnect(c);   
+            onconnect(c, context);   
             nng_stream_listener_accept(sl, accio);
             nng_mtx_unlock(mtx);
         }

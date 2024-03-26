@@ -49,6 +49,7 @@ int _main(string[] args) {
     import std.exception : ifThrown;
 
     uint timeout = args[1].to!uint.ifThrown(10);
+    uint number_of_nodes = args[3].to!uint.ifThrown(5);
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
@@ -57,6 +58,7 @@ int _main(string[] args) {
     local_options.epoch_creator.timeout = timeout;
     local_options.wave.prefix_format = "EPOCH_TEST_Node_%s_";
     local_options.subscription.address = contract_sock_addr("EPOCH_OPERATIONAL_TEST_SUB");
+    local_options.wave.number_of_nodes = number_of_nodes;
     local_options.save(config_file);
 
     import std.array;

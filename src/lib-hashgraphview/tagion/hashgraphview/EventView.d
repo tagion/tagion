@@ -25,7 +25,7 @@ struct EventView {
     @label("$f") @optional @(filter.Initialized) uint father;
     @label("$n") size_t node_id;
     @label("$a") int altitude;
-    @label("$o") int order;
+    @label("$o") long order;
     @label("$r") long round;
     @label("$rec") long round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;

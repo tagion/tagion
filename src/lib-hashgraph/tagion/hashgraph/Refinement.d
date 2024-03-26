@@ -126,7 +126,7 @@ class StdRefinement : Refinement {
                 this.time = time;
             }
 
-            this(int num, int denom, int order, sdt_t time, long round_number, ulong witness_count) pure nothrow {
+            this(int num, int denom, long order, sdt_t time, long round_number, ulong witness_count) pure nothrow {
                 this.num = BigInt(num + denom * round_number);
                 this.denom = BigInt(denom * witness_count);
                 this.order = BigInt(order);

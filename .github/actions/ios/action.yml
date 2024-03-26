@@ -11,7 +11,7 @@ runs:
     - name: Build
       shell: bash
       run: |
-        export PATH="/Users/piss/tools/ldc2-1.35.0-osx-universal/bin/:$PATH"
+        export PATH="/Users/piss/tools/ldc2-1.37.0-osx-universal/bin/:$PATH"
         which ldc2
         make DC=ldc2 PLATFORM=${{ inputs.platform }} libmobile
         file ./build/${{ inputs.platform }}/lib/libmobile.dylib

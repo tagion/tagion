@@ -1,5 +1,4 @@
 #DC?=dmd
-export GODEBUG:=cgocheck=0
 ONETOOL?=1
 DEBUGGER?=ddd
 VERBOSE_COMPILER_ERRORS=1

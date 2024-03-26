@@ -60,10 +60,9 @@ struct EpochCreatorService {
         assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
 
         import tagion.hashgraph.Event : Event;
-
         Event.callbacks = new LogMonitorCallBacks();
         version(BDD) {
-            Event.callbacks = new FileMonitorCallBacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes);
+            Event.callbacks = new FileMonitorCallBacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook.keys);
         }
 
         GossipNet gossip_net;

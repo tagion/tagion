@@ -38,13 +38,13 @@ fi
 bdir=$(readlink -m "$bdir")
 
 # Validate the number of nodes
-if [ $nodes -lt 3 -o $nodes -gt 23 ]; then
+if [ $nodes -lt 3 -o $nodes -gt 51 ]; then
     echo "Invalid nodes number" 1>&2
     usage
 fi
 
 # Validate the number of wallets
-if [ $wallets -lt 3 -o $wallets -gt 23 ]; then
+if [ $wallets -lt 3 -o $wallets -gt 51 ]; then
     echo "Invalid wallets number" 1>&2
     usage
 fi

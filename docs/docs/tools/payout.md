@@ -1,7 +1,7 @@
 ﻿# payout (auszahlung)
 
 ```
-Documentation: https://tagion.org/
+Documentation: https://docs.tagion.org/
 
 Usage:
 auszahlung [<option>...] <wallet.json> [<bill.hibon>] 
