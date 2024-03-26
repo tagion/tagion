@@ -82,6 +82,9 @@ Description: Create Query nodes which can be used for both sending and receiving
 ## Template
 ### Task Title
 Description: Brief description of the task.
+- [] This is an
+- [X] Example of how a task can be broken down
+
 
 Assignee: Name.
 
