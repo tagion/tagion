@@ -46,6 +46,21 @@ Labels: [Tracing, TRT]
 Assignee: Ivan
 
 ## Backlog
+
+### Subscription API implementation
+Description: Provide external API for subscribing and querying data in the system as in [Subscription API proposal](https://docs.tagion.org/tips/2)
+Labels: [Tracing]
+
+### Envelope communication
+Description: 
+
+Create functionalitiy in wallet to serialize to Envelope.
+
+Create functionality for shell to accept Envelope.
+
+### Mirror Node
+Description: Create Query nodes which can be used for both sending and receiving information from the DART.
+
 ## Done
 
 
