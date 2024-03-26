@@ -51,7 +51,7 @@ int _main(string[] args) {
             "t|type", "HiBON data types", &types,
             "not", "Filter out match", &not_flag,
             "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
-            "rec", "Enables recursive search", &recursive_flag,
+            "R|recursive", "Enables recursive search", &recursive_flag,
             "s|subhibon", "Output only subhibon that match criteria", &subhibon_flag,
         );
 
@@ -83,7 +83,8 @@ int _main(string[] args) {
                 if (elm_range.length == 1 && no == elm_range[0].to!size_t) {
                     return true;
                 }
-                if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1].to!size_t)) {
+                if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1]
+                        .to!size_t)) {
                     return true;
                 }
             }
