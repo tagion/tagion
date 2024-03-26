@@ -370,13 +370,19 @@ extern (C) {
     }
 
     export uint request_trt_update(uint8_t* requestPtr) {
+        import std.stdio;
+        writeln("call request_trt_update");
         if (!__wallet_storage.wallet.isLoggedin()) {
+            writeln("request_trt_update NOT_LOGGED_IN");
             return NOT_LOGGED_IN;
-
         }
+        writeln("request_trt_update LOGGED_IN");
         const request = __wallet_storage.wallet.readIndicesByPubkey();
+        writeln("request_trt_update readIndicesByPubkey");
         const requestDocId = recyclerDoc.create(request.toDoc);
+        writeln("request_trt_update create request.toDoc");
         *requestPtr = cast(uint8_t) requestDocId;
+        writeln("request_trt_update SUCCESS");
         return SUCCESS;
     }
 
