@@ -296,7 +296,7 @@
       ],
       "timeout": 0.0
     },
-    "subscription": {
+    "subscription_test": {
       "args": [],
       "envs": {},
       "stages": [
