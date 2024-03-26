@@ -19,6 +19,13 @@ Assignee: Yuriy
 ### Wasmer execution engine prototype
 Description: Integrate Wasmer as a simple execution engine for WASM smart contracts
 
+Setup the build flow for libwasmer
+
+Implement the interface from D to C of libwasmer.
+
+Initial TVM cli tool.
+
+
 Assignee: Carsten
 
 ### Contract storage / tracing in TRT
