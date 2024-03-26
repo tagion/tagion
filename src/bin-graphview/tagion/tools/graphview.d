@@ -52,6 +52,21 @@ const(string) color(T)(const(string[]) colors, T index) pure nothrow @nogc if (i
 }
 
 @safe
+static string escapeHtml(string input) pure nothrow {
+    string result;
+    foreach (char c; input) {
+        switch (c) {
+            case '&': result ~= "&amp;"; break;
+            case '<': result ~= "&lt;"; break;
+            case '>': result ~= "&gt;"; break;
+            case '"': result ~= "&quot;"; break;
+            default: result ~= c; break;
+        }
+    }
+    return result;
+}
+
+@safe
 struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document)) {
     import std.format;
     import std.algorithm.comparison : max;
@@ -131,19 +146,6 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             node_opts ~= format(`fill="%s" `, pastel19.color(e.round_received));
         }
         node_opts ~= format(`stroke="%s" stroke-width="%s" `, "black", 4);
-        string escapeHtml(string input) {
-            string result;
-            foreach (char c; input) {
-                switch (c) {
-                    case '&': result ~= "&amp;"; break;
-                    case '<': result ~= "&lt;"; break;
-                    case '>': result ~= "&gt;"; break;
-                    case '"': result ~= "&quot;"; break;
-                    default: result ~= c; break;
-                }
-            }
-            return result;
-        }
         string html_node_opts = "";
         if (!raw_svg) {
             html_node_opts ~= format(` class="myCircle" data-info="%s" `, escapeHtml(e.toPretty));
