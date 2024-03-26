@@ -184,28 +184,9 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             node(obuf, e, raw_svg);
         }
 
-        // obuf.write("<!DOCTYPE html>\n<html>\n<body>\n");
         scope(success) {
             if (!raw_svg) {
-                start.writefln("<!DOCTYPE html>\n<html>");
-                start.writefln(` 
-                <head>
-                  <meta charset="UTF-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Interactive SVG</title>
-                  <style>
-                    /* Style for the pop-up box */
-                    #popup {
-                      display: none;
-                      position: absolute;
-                      background-color: #ffffff;
-                      border: 1px solid #000000;
-                      padding: 10px;
-                      z-index: 1;
-                    }
-                  </style>
-                </head>`);
-                start.writefln("<body>");
+                start.writefln(HTML_BEGIN);
             }
             start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
             start.writefln(`<g transform="translate(0,%s)">`, max_height);
@@ -213,45 +194,8 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
             end.writefln("</svg>");
             if (!raw_svg) {
-end.writefln(q"EX
-<!-- The pop-up box -->
-<div id="popup"></div>
-<script>
-// Get the SVG element
-const svg = document.querySelector('svg');
-
-// Get all circle elements with the class 'myCircle'
-const circles = document.querySelectorAll('.myCircle');
-
-// Add click event listener to each circle
-circles.forEach(circle => {
-  circle.addEventListener('click', function() {
-      console.log("circle pressed!");
-    // Get the information from the circle's data-info attribute
-    const information = circle.getAttribute('data-info');
-
-    // Show the pop-up box with the information
-    const popup = document.getElementById('popup');
-    popup.innerHTML = information;
-    popup.style.display = 'block';
-
-    // Position the pop-up box near the circle
-    const circleBounds = circle.getBoundingClientRect();
-    popup.style.top = `${circleBounds.top}px`;
-    popup.style.left = `${circleBounds.right}px`;
-  });
-});
-
-// Close the pop-up box when clicking outside of it
-svg.addEventListener('click', function(event) {
-  const popup = document.getElementById('popup');
-  if (!event.target.classList.contains('myCircle') && event.target !== popup) {
-    popup.style.display = 'none';
-  }
-});
-</script>            
-EX");
-            end.writefln("</body>\n</html>");
+                end.writefln(EVENT_POPUP);
+                end.writefln(HTML_END);
             }
 
         }
@@ -514,3 +458,67 @@ int _main(string[] args) {
 }
 
 
+static immutable HTML_BEGIN = q"EX
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive SVG</title>
+  <style>
+    #popup {
+      display: none;
+      position: absolute;
+      background-color: #ffffff;
+      border: 1px solid #000000;
+      padding: 10px;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+EX";
+
+static immutable HTML_END = q"EX
+</body>
+</html>
+EX";
+
+static immutable EVENT_POPUP = q"EX
+<!-- The pop-up box -->
+<div id="popup"></div>
+<script>
+// Get the SVG element
+const svg = document.querySelector('svg');
+
+// Get all circle elements with the class 'myCircle'
+const circles = document.querySelectorAll('.myCircle');
+
+// Add click event listener to each circle
+circles.forEach(circle => {
+  circle.addEventListener('click', function() {
+      console.log("circle pressed!");
+    // Get the information from the circle's data-info attribute
+    const information = circle.getAttribute('data-info');
+
+    // Show the pop-up box with the information
+    const popup = document.getElementById('popup');
+    popup.innerHTML = information;
+    popup.style.display = 'block';
+
+    // Position the pop-up box near the circle
+    const circleBounds = circle.getBoundingClientRect();
+    popup.style.top = `${circleBounds.top}px`;
+    popup.style.left = `${circleBounds.right}px`;
+  });
+});
+
+// Close the pop-up box when clicking outside of it
+svg.addEventListener('click', function(event) {
+  const popup = document.getElementById('popup');
+  if (!event.target.classList.contains('myCircle') && event.target !== popup) {
+    popup.style.display = 'none';
+  }
+});
+</script>            
+EX";
