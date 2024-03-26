@@ -167,9 +167,6 @@ int _main(string[] args) {
         }
     }
 
-    NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-    sock.recvtimeout = msecs(1000);
-
     if (tags.length == 0) {
         stderr.writeln("Subscribing to all tags");
         tags ~= ""; // in NNG subscribing to an empty topic will receive all messages

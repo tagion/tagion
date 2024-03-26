@@ -21,6 +21,7 @@ int main(string[] args) {
     import hashgraph_test = tagion.testbench.hashgraph_test;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
+    import subscription_test = tagion.testbench.services.subscription_test;
     import malformed_contract = tagion.testbench.malformed_contract;
     import send_contract = tagion.testbench.send_contract;
     import spam_double_spend = tagion.testbench.spam_double_spend;
@@ -39,6 +40,7 @@ int main(string[] args) {
             collector,
             hirpc_verifier,
             inputvalidator,
+            subscription_test,
             dart_test,
             dart_deep_rim_test,
             dart_pseudo_random_archives,
