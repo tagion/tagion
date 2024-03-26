@@ -1,6 +1,8 @@
 # Task Pool
 
 ## In Progress
+
+### Clean up graphview mess
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
@@ -8,6 +10,7 @@ Assignee: Philip
 
 ### Websocket Hashgraph monitor
 Description: Websocket hashgraph viewer with NNG websocket using EventView as package object
+Note: Changes requested: https://github.com/tagion/tagion/pull/418#pullrequestreview-1959941864
 
 Labels: [Tracing]
 
@@ -48,7 +51,7 @@ Assignee: Ivan
 ## Backlog
 
 ### Subscription API implementation
-Description: Provide external API for subscribing and querying data in the system as in [Subscription API proposal](https://docs.tagion.org/tips/2)
+Description: Provide external API for subscribing and querying data in the system as in [Subscription API proposal](https://docs.tagion.org/tips/3)
 Labels: [Tracing]
 
 ### Envelope communication
@@ -58,8 +61,10 @@ Create functionalitiy in wallet to serialize to Envelope.
 
 Create functionality for shell to accept Envelope.
 
-### Mirror Node
+### Mirror Node proposal
 Description: Create Query nodes which can be used for both sending and receiving information from the DART.
+
+### Implement "not" flag in HiREP
 
 ## Done
 
