@@ -128,10 +128,11 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
             histories[task_name].epochs ~= epochs;
             writefln("EPOCH NUMBERS %s", epochs.map!(e => format("%(%02x%)", e.previous)).array);
 
-
             start++;
         }
-        // (() @trusted => writefln("%s", histories))();
+
+        const epoch_lengths = histories.byValue.map!(h => h.epochs.length).array;
+        check(epoch_lengths.all!(e_len => e_len > 2), format("all nodes did not create at least two epochs got %s", epoch_lengths)); 
 
         return result_ok;
     }
