@@ -70,6 +70,7 @@ static string escapeHtml(string input) pure nothrow {
 struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document)) {
     import std.format;
     import std.algorithm.comparison : max;
+    import std.typecons;
 
     Range doc_range;
     size_t node_size = 5;
@@ -84,57 +85,54 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     long max_height = long.min;
     long max_width = long.min;
 
-    private const(long) getX(ref const EventView e) pure nothrow @nogc {
-        return long(e.node_id)*NODE_INDENT + NODE_INDENT;
+    alias Pos = Tuple!(long, "x", long, "y");
+    private const(Pos) getPos(ref const EventView e) pure nothrow {
+        return Pos(long(e.node_id)*NODE_INDENT + NODE_INDENT, -(long(e.order*NODE_INDENT) + NODE_INDENT));
     }
-    private const(long) getY(ref const EventView e) pure nothrow @nogc {
-        return long(e.order*NODE_INDENT) + NODE_INDENT;
+
+    // private const(long) getX(ref const EventView e) pure nothrow @nogc {
+    //     return long(e.node_id)*NODE_INDENT + NODE_INDENT;
+    // }
+    // private const(long) getY(ref const EventView e) pure nothrow @nogc {
+    //     return long(e.order*NODE_INDENT) + NODE_INDENT;
+    // }
+
+    private const(Pos) edgePos(const Pos p1, const Pos p2, long radius) pure {
+        import std.math;
+        double angle = atan2(float(abs(p2.y) - abs(p1.y)), float(p2.x - p1.x));
+
+        double ex = p2.x + radius * cos(angle);
+        double ey = p2.y + radius * sin(angle);
+
+        return Pos(ex.to!long, ey.to!long);
     }
 
     private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
-        const cx = getX(e);
-        const cy = getY(e);
-
-        max_width = max(cx, max_width);
-        max_height = max(cy, max_height);
-
-        const node_cx = cx;
-        const node_cy = -cy;
-
-
-        const(long[2]) edgePos(long x1, long y1, long x2, long y2, long radius) pure {
-            import std.math;
-            double angle = atan2(float(abs(y2) - abs(y1)), float(x2 - x1));
-
-            double ex = x2 + radius * cos(angle);
-            double ey = y2 + radius * sin(angle);
-    
-            return [ex.to!long,ey.to!long];
-        }
+        const pos = getPos(e);
+        max_width = max(pos.x, max_width);
+        max_height = max(-pos.y, max_height);
 
         
         if (e.father !is e.father.init && e.father in events) {
             const father_event = events[e.father];
-            const father_cx = getX(father_event);
-            const father_cy = -getY(father_event);
+            const father_pos = getPos(father_event);
 
-            const father_edge_point = edgePos(node_cx, node_cy, father_cx,father_cy, NODE_CIRCLE_SIZE);
+            const father_edge = edgePos(pos, father_pos, NODE_CIRCLE_SIZE);
 
             string fatherline_options;
             // position
-            fatherline_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, node_cx, node_cy, father_edge_point[0], father_edge_point[1]);
+            fatherline_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, pos.x, pos.y, father_edge.x, father_edge.y);
             // colors
             fatherline_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(e.id));
             obuf.writefln("<line %s />", fatherline_options);
         }
         if (e.mother !is e.mother.init && e.mother in events) {
             const mother_event = events[e.mother];
-            const mother_cx = long(mother_event.node_id)*NODE_INDENT + NODE_INDENT;
-            const mother_cy = long(mother_event.order*NODE_INDENT) + NODE_INDENT;
+            const mother_pos = getPos(mother_event);
 
             string mother_line_options;
             // position
-            mother_line_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, node_cx, node_cy, mother_cx, -mother_cy-NODE_CIRCLE_SIZE);
+            mother_line_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, pos.x, pos.y, mother_pos.x, mother_pos.y-NODE_CIRCLE_SIZE);
             // colors
             mother_line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, mother_event.witness ? "red" : "black");
             obuf.writefln("<line %s />", mother_line_options);
@@ -142,7 +140,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
         string node_opts;
         // position
-        node_opts ~= format(`cx="%s" cy="%s" r="%s" `, node_cx, node_cy, NODE_CIRCLE_SIZE);
+        node_opts ~= format(`cx="%s" cy="%s" r="%s" `, pos.x, pos.y, NODE_CIRCLE_SIZE);
         // node_opts ~= `stroke="black" stroke-width="4" `;
         // colors
         if (e.witness) {
@@ -160,7 +158,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
         string node_text_options;
         // position
-        node_text_options ~= format(`x="%s" y="%s" `, node_cx, node_cy);
+        node_text_options ~= format(`x="%s" y="%s" `, pos.x, pos.y);
         node_text_options ~= `text-anchor="middle" dominant-baseline="middle" fill="black"`;
         obuf.writefln("<text %s > %s </text>", node_text_options, e.id);
 
