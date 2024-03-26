@@ -1885,7 +1885,6 @@ static void webclientrouter ( void* p ) {
 }
 
 struct WebClient {
-
     nng_http_client *cli;
     nng_http_conn *conn;
     nng_http_req *req;
@@ -2169,7 +2168,6 @@ struct WebClient {
         nng_http_client_transact(cli, req, res, aio);
         return NNGAio(aio);
     }
-
 }
 
 // WebSocket tools
@@ -2177,7 +2175,14 @@ struct WebClient {
 alias nng_ws_onconnect = void function ( WebSocket*, void* );
 alias nng_ws_onmessage = void function ( WebSocket*, ubyte[], void* );
 
-
+/**
+ *  {WebSocket}      
+ *  WebSocket connection accepted by the {WebSocketApp} server    
+ *  Not for manual construction    
+ *  Passed to the on_connect and om_message callbacks      
+ *  Methods:      
+ *      send(ubyte[])    
+ */
 struct WebSocket {
     WebSocketApp *app;
     void* context;
@@ -2279,6 +2284,23 @@ struct WebSocket {
     }
 }
 
+/**
+ *  {WebSocketApp}
+ *  WebSocket Application (server to accept http-urgrade connections)
+ *  Constructor:   
+ *    WebSocketApp(
+ *      strind URI to listen should start with "ws://"
+ *      on_connect callback: void function ( WebSocket*, void* context )      
+ *      on_message callback: void function ( WebSocket*, ubyte[], void* context )     
+ *      void* context
+ *    )
+ *  Methods:
+ *      start() - start server to listen
+ *
+ *  TODO:
+ *      - add on_disconnect callback
+ *      - add on_error callback
+ */
 struct WebSocketApp {
     @disable this();
 
