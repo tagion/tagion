@@ -85,27 +85,45 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     long max_height = long.min;
     long max_width = long.min;
 
+  
     alias Pos = Tuple!(long, "x", long, "y");
     private const(Pos) getPos(ref const EventView e) pure nothrow {
         return Pos(long(e.node_id)*NODE_INDENT + NODE_INDENT, -(long(e.order*NODE_INDENT) + NODE_INDENT));
     }
 
-    // private const(long) getX(ref const EventView e) pure nothrow @nogc {
-    //     return long(e.node_id)*NODE_INDENT + NODE_INDENT;
-    // }
-    // private const(long) getY(ref const EventView e) pure nothrow @nogc {
-    //     return long(e.order*NODE_INDENT) + NODE_INDENT;
-    // }
-
-    private const(Pos) edgePos(const Pos p1, const Pos p2, long radius) pure {
+    private const(Pos) edgePos(const Pos p1, const Pos p2, const long radius, bool isMother) pure nothrow {
+        if (isMother) {
+            return Pos(p2.x, p2.y-radius);
+        }
         import std.math;
         double angle = atan2(float(abs(p2.y) - abs(p1.y)), float(p2.x - p1.x));
 
         double ex = p2.x + radius * cos(angle);
         double ey = p2.y + radius * sin(angle);
 
-        return Pos(ex.to!long, ey.to!long);
+        import std.exception : assumeWontThrow;
+        // only throws ConvException if it is NaN. So safe to assume
+        return assumeWontThrow(Pos(ex.to!long, ey.to!long));
     }
+
+    private void drawEdge(ref OutBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother) pure {
+
+        // const father_event = events[e.father];
+        const ref_pos = getPos(ref_event);
+
+        const ref_edge = edgePos(event_pos, ref_pos, NODE_CIRCLE_SIZE, isMother);
+
+        string line_options;
+        // position
+        line_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, event_pos.x, event_pos.y, ref_edge.x, ref_edge.y);
+        // colors
+        if (isMother) {
+            line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, ref_event.witness ? "red" : "black");
+        } else {
+            line_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(ref_event.id));
+        }
+        obuf.writefln("<line %s />", line_options);
+    } 
 
     private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
         const pos = getPos(e);
@@ -114,34 +132,15 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
         
         if (e.father !is e.father.init && e.father in events) {
-            const father_event = events[e.father];
-            const father_pos = getPos(father_event);
-
-            const father_edge = edgePos(pos, father_pos, NODE_CIRCLE_SIZE);
-
-            string fatherline_options;
-            // position
-            fatherline_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, pos.x, pos.y, father_edge.x, father_edge.y);
-            // colors
-            fatherline_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(e.id));
-            obuf.writefln("<line %s />", fatherline_options);
+            drawEdge(obuf, pos, events[e.father], isMother: false);
         }
         if (e.mother !is e.mother.init && e.mother in events) {
-            const mother_event = events[e.mother];
-            const mother_pos = getPos(mother_event);
-
-            string mother_line_options;
-            // position
-            mother_line_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, pos.x, pos.y, mother_pos.x, mother_pos.y-NODE_CIRCLE_SIZE);
-            // colors
-            mother_line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, mother_event.witness ? "red" : "black");
-            obuf.writefln("<line %s />", mother_line_options);
+            drawEdge(obuf, pos, events[e.mother], isMother: true);
         }
 
         string node_opts;
         // position
         node_opts ~= format(`cx="%s" cy="%s" r="%s" `, pos.x, pos.y, NODE_CIRCLE_SIZE);
-        // node_opts ~= `stroke="black" stroke-width="4" `;
         // colors
         if (e.witness) {
             node_opts ~= format(`fill="%s" `, e.famous ? "red" : "lightgreen");
@@ -161,8 +160,6 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         node_text_options ~= format(`x="%s" y="%s" `, pos.x, pos.y);
         node_text_options ~= `text-anchor="middle" dominant-baseline="middle" fill="black"`;
         obuf.writefln("<text %s > %s </text>", node_text_options, e.id);
-
-
     }
     
 
