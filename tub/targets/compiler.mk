@@ -121,7 +121,6 @@ INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep
 
 DEBUG_FLAGS+=$(DDEBUG)
 DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
-DEBUG_FLAGS+=$(DEXPORT_DYN)
 
 COVOPT=--DRT-covopt=\"dstpath:$(DLOG)\"
 
