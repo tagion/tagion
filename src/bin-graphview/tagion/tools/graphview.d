@@ -85,8 +85,29 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     long max_height = long.min;
     long max_width = long.min;
 
-  
     alias Pos = Tuple!(long, "x", long, "y");
+
+    struct SVGCircle {
+        bool raw_svg;
+        Pos pos;
+        int radius;
+        string fill;
+        string stroke;
+        int stroke_width;
+
+        // for html
+        string classes;
+        string data_info;
+
+        string toString() const pure @safe {
+            string options = format(`cx="%s" cy="%s" r="%s" fill="%s" stroke="%s" stroke-width="%s" `, pos.x, pos.y, radius, fill, stroke, stroke_width);
+            if (!raw_svg) {
+                options ~= format(`class="%s" data-info="%s"`, classes, data_info);
+            }
+            return format(`<circle %s />`, options);
+        }
+    }
+  
     private const(Pos) getPos(ref const EventView e) pure nothrow {
         return Pos(long(e.node_id)*NODE_INDENT + NODE_INDENT, -(long(e.order*NODE_INDENT) + NODE_INDENT));
     }
@@ -138,22 +159,28 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             drawEdge(obuf, pos, events[e.mother], isMother: true);
         }
 
-        string node_opts;
-        // position
-        node_opts ~= format(`cx="%s" cy="%s" r="%s" `, pos.x, pos.y, NODE_CIRCLE_SIZE);
+        SVGCircle node_circle;
+
+        node_circle.raw_svg = raw_svg;
+        node_circle.pos = pos;
+        node_circle.radius = NODE_CIRCLE_SIZE;
+        node_circle.stroke = "black";
+        node_circle.stroke_width = 4;
+
+
         // colors
         if (e.witness) {
-            node_opts ~= format(`fill="%s" `, e.famous ? "red" : "lightgreen");
+            node_circle.fill = e.famous ? "red" : "lightgreen";
         } else {
-            node_opts ~= format(`fill="%s" `, pastel19.color(e.round_received));
-        }
-        node_opts ~= format(`stroke="%s" stroke-width="%s" `, "black", 4);
-        string html_node_opts = "";
-        if (!raw_svg) {
-            html_node_opts ~= format(` class="myCircle" data-info="%s" `, escapeHtml(e.toPretty));
+            node_circle.fill = pastel19.color(e.round_received);
         }
 
-        obuf.writefln(`<circle %s %s />`, node_opts, html_node_opts);
+        if (!raw_svg) {
+            node_circle.classes = "myCircle";
+            node_circle.data_info = escapeHtml(e.toPretty);
+        }
+
+        obuf.writefln("%s", node_circle.toString);
 
         string node_text_options;
         // position
