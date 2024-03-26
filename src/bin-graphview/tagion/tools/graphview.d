@@ -84,10 +84,17 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
     long max_height = long.min;
     long max_width = long.min;
 
-    private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
+    private const(long) getX(ref const EventView e) pure nothrow @nogc {
+        return long(e.node_id)*NODE_INDENT + NODE_INDENT;
+    }
+    private const(long) getY(ref const EventView e) pure nothrow @nogc {
+        return long(e.order*NODE_INDENT) + NODE_INDENT;
+    }
 
-        const cx = long(e.node_id)*NODE_INDENT + NODE_INDENT;
-        const cy = long(e.order*NODE_INDENT) + NODE_INDENT;
+    private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
+        const cx = getX(e);
+        const cy = getY(e);
+
         max_width = max(cx, max_width);
         max_height = max(cy, max_height);
 
@@ -108,12 +115,10 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         
         if (e.father !is e.father.init && e.father in events) {
             const father_event = events[e.father];
-            
-            const father_cx = long(father_event.node_id)*NODE_INDENT + NODE_INDENT;
-            const father_cy = -(long(father_event.order*NODE_INDENT) + NODE_INDENT);
+            const father_cx = getX(father_event);
+            const father_cy = -getY(father_event);
 
             const father_edge_point = edgePos(node_cx, node_cy, father_cx,father_cy, NODE_CIRCLE_SIZE);
-            
 
             string fatherline_options;
             // position
