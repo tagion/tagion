@@ -271,7 +271,7 @@ struct TranscriptService {
 
                     if (trt_enable) {
                         immutable doc = signed_contract.contract.toDoc;
-                        trt_handle.send(trtContract(), doc);
+                        trt_handle.send(trtContract(), doc, last_epoch_number);
                     }
 
                     used ~= signed_contract.contract.inputs;

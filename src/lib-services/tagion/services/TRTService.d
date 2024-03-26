@@ -192,11 +192,11 @@ struct TRTService {
             }
         }
 
-        void add_contract(trtContract, immutable(Document) doc) {
+        void add_contract(trtContract, immutable(Document) doc, long epoch) {
             log("add contract from transcript");
             auto recorder = rec_factory.recorder;
-            recorder.insert(TRTContractArchive(net.dartIndex(doc), doc, 0), Archive
-                    .Type.ADD); // TBD: pass correct epoch number
+            recorder.insert(TRTContractArchive(net.dartIndex(doc), doc, epoch), Archive
+                    .Type.ADD);
 
             log("contract added %s", recorder.toPretty);
             trt_db.modify(recorder);
