@@ -292,7 +292,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     static int testing;
-    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
+    void addNode(immutable(ulong) N, const(string) name, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
@@ -305,7 +305,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 h.__debug_print = true;
             }
         }
-        h.scrap_depth = 0;
+        h.scrap_depth = scrap_depth;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
 
@@ -314,10 +314,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     FiberNetwork[Pubkey] networks;
-    this(const(string[]) node_names) {
+    this(const(string[]) node_names, int scrap_depth = 0) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
-        node_names.each!(name => addNode(N, name));
+        node_names.each!(name => addNode(N, name, scrap_depth));
     }
 }
 

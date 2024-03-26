@@ -37,18 +37,6 @@ fi
 # Finalize binary directory path
 bdir=$(readlink -m "$bdir")
 
-# Validate the number of nodes
-if [ $nodes -lt 3 -o $nodes -gt 51 ]; then
-    echo "Invalid nodes number" 1>&2
-    usage
-fi
-
-# Validate the number of wallets
-if [ $wallets -lt 3 -o $wallets -gt 51 ]; then
-    echo "Invalid wallets number" 1>&2
-    usage
-fi
-
 # Create network and wallets directories, handle existing folders
 mkdir -p $ndir || echo "folder already exists"
 mkdir -p $wdir || echo "folder already exists"
