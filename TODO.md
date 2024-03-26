@@ -2,11 +2,10 @@
 
 ## In Progress
 
-### Clean up graphview mess
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
-Assignee: Philip
+Assignee: phr
 
 ### Websocket Hashgraph monitor
 Description: Websocket hashgraph viewer with NNG websocket using EventView as package object
@@ -77,7 +76,9 @@ Description: Create Query nodes which can be used for both sending and receiving
 ### Implement "not" flag in HiREP
 
 ## Done
-
+### Clean up graphview mess
+Description: Refactor new svg graphview stuff
+Assignee: phr
 
 ## Template
 ### Task Title
