@@ -28,15 +28,6 @@ import tagion.utils.StdTime;
 
 class TestRefinement : StdRefinement {
 
-    struct ExcludedNodesHistory {
-        Pubkey pubkey;
-        bool state;
-        int round;
-        bool stop_communication;
-    }
-
-    static ExcludedNodesHistory[] excluded_nodes_history;
-
     struct Swap {
         Pubkey swap_out;
         Pubkey swap_in;
@@ -57,28 +48,6 @@ class TestRefinement : StdRefinement {
         auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time, cast(Round) decided_round))();
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
-
-    // override void excludedNodes(ref BitMask excluded_mask) {
-    //     import tagion.basic.Debug;
-    //     import std.algorithm : filter;
-
-    //     if (excluded_nodes_history is null) {
-    //         return;
-    //     }
-
-    //     const last_decided_round = hashgraph.rounds.last_decided_round.number;
-
-    //     auto histories = excluded_nodes_history.filter!(h => h.round == last_decided_round);
-    //     foreach (history; histories) {
-    //         const node = hashgraph.nodes.get(history.pubkey, HashGraph.Node.init);
-    //         if (node !is HashGraph.Node.init) {
-    //             excluded_mask[node.node_id] = history.state;
-    //             __write("setting exclude mask");
-    //         }
-    //     }
-    //     __write("callback<%s>", excluded_mask);
-
-    // }
 
 }
 
