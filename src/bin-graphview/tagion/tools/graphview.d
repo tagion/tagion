@@ -40,7 +40,7 @@ static immutable pastel19 = [
     "#ffd1dc", // Light pinkish lavender
     "#d9f2d9", // Light pale green
     "#b2ebf2", // Light pale blue
-    "#ffccff"  // Light lavender pink
+    "#ffccff" // Light lavender pink
 ];
 
 @safe
@@ -56,18 +56,28 @@ static string escapeHtml(string input) pure nothrow {
     string result;
     foreach (char c; input) {
         switch (c) {
-            case '&': result ~= "&amp;"; break;
-            case '<': result ~= "&lt;"; break;
-            case '>': result ~= "&gt;"; break;
-            case '"': result ~= "&quot;"; break;
-            default: result ~= c; break;
+        case '&':
+            result ~= "&amp;";
+            break;
+        case '<':
+            result ~= "&lt;";
+            break;
+        case '>':
+            result ~= "&gt;";
+            break;
+        case '"':
+            result ~= "&quot;";
+            break;
+        default:
+            result ~= c;
+            break;
         }
     }
     return result;
 }
 
 @safe
-struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document)) {
+struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
     import std.format;
     import std.algorithm.comparison : max;
     import std.typecons;
@@ -107,22 +117,50 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
             return format(`<circle %s />`, options);
         }
     }
-  
+
+    struct SVGLine {
+        Pos pos1;
+        Pos pos2;
+        string stroke;
+        int stroke_width;
+
+        string toString() const pure @safe {
+            return format(`<line x1="%s" y1="%s" x2="%s" y2="%s" style="stroke: %s; stroke-width: %s"/>`, pos1.x, pos1
+                    .y, pos2.x, pos2.y, stroke, stroke_width);
+        }
+    }
+
+    struct SVGText {
+        Pos pos;
+        string fill;
+        string text_anchor;
+        string dominant_baseline;
+        string text;
+
+        string toString() const pure @safe {
+            return format(`<text x="%s" y="%s" text-anchor="%s" dominant-baseline="%s" fill="%s"> %s </text>`, pos.x, pos
+                    .y, text_anchor, dominant_baseline, fill, text);
+
+        }
+    }
+
     private const(Pos) getPos(ref const EventView e) pure nothrow {
-        return Pos(long(e.node_id)*NODE_INDENT + NODE_INDENT, -(long(e.order*NODE_INDENT) + NODE_INDENT));
+        return Pos(long(e.node_id) * NODE_INDENT + NODE_INDENT, -(long(e.order * NODE_INDENT) + NODE_INDENT));
     }
 
     private const(Pos) edgePos(const Pos p1, const Pos p2, const long radius, bool isMother) pure nothrow {
         if (isMother) {
-            return Pos(p2.x, p2.y-radius);
+            return Pos(p2.x, p2.y - radius);
         }
         import std.math;
+
         double angle = atan2(float(abs(p2.y) - abs(p1.y)), float(p2.x - p1.x));
 
         double ex = p2.x + radius * cos(angle);
         double ey = p2.y + radius * sin(angle);
 
         import std.exception : assumeWontThrow;
+
         // only throws ConvException if it is NaN. So safe to assume
         return assumeWontThrow(Pos(ex.to!long, ey.to!long));
     }
@@ -134,24 +172,26 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
         const ref_edge = edgePos(event_pos, ref_pos, NODE_CIRCLE_SIZE, isMother);
 
-        string line_options;
-        // position
-        line_options ~= format(`x1="%s" y1="%s" x2="%s" y2="%s" `, event_pos.x, event_pos.y, ref_edge.x, ref_edge.y);
+        SVGLine line;
+        line.pos1 = event_pos;
+        line.pos2 = ref_edge;
+        line.stroke_width = 4;
+
         // colors
         if (isMother) {
-            line_options ~= format(`style="stroke: %s; stroke-width: 4;" `, ref_event.witness ? "red" : "black");
-        } else {
-            line_options ~= format(`style="stroke: %s;stroke-width: 4;" `, pastel19.color(ref_event.id));
+            line.stroke = ref_event.witness ? "red" : "black";
         }
-        obuf.writefln("<line %s />", line_options);
-    } 
+        else {
+            line.stroke = pastel19.color(ref_event.id);
+        }
+        obuf.writefln("%s", line.toString);
+    }
 
     private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
         const pos = getPos(e);
         max_width = max(pos.x, max_width);
         max_height = max(-pos.y, max_height);
 
-        
         if (e.father !is e.father.init && e.father in events) {
             drawEdge(obuf, pos, events[e.father], isMother: false);
         }
@@ -167,11 +207,11 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         node_circle.stroke = "black";
         node_circle.stroke_width = 4;
 
-
         // colors
         if (e.witness) {
             node_circle.fill = e.famous ? "red" : "lightgreen";
-        } else {
+        }
+        else {
             node_circle.fill = pastel19.color(e.round_received);
         }
 
@@ -182,13 +222,14 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
         obuf.writefln("%s", node_circle.toString);
 
-        string node_text_options;
-        // position
-        node_text_options ~= format(`x="%s" y="%s" `, pos.x, pos.y);
-        node_text_options ~= `text-anchor="middle" dominant-baseline="middle" fill="black"`;
-        obuf.writefln("<text %s > %s </text>", node_text_options, e.id);
+        SVGText text;
+        text.pos = pos;
+        text.text_anchor = "middle";
+        text.dominant_baseline = "middle";
+        text.fill = "black";
+        text.text = format("%s", e.id);
+        obuf.writefln("%s", text.toString);
     }
-    
 
     void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
         // If the first document is a node amount record we set amount of nodes...
@@ -201,7 +242,7 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
         }
 
         foreach (e; doc_range) {
-            if(e.isRecord!EventView) {
+            if (e.isRecord!EventView) {
                 auto event = EventView(e);
                 events[event.id] = event;
             }
@@ -209,11 +250,11 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
                 throw new Exception("Unknown element in graphview doc_range %s", e.toPretty);
             }
         }
-        foreach(e; events) {
+        foreach (e; events) {
             node(obuf, e, raw_svg);
         }
 
-        scope(success) {
+        scope (success) {
             if (!raw_svg) {
                 start.writefln(HTML_BEGIN);
             }
@@ -231,12 +272,11 @@ struct SVGDot(Range) if(isInputRange!Range && is (ElementType!Range : Document))
 
     }
 
-
 }
 
 @safe
-struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
-    @safe:
+struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
+@safe:
     import std.format;
 
     enum INDENT = "  ";
@@ -264,7 +304,7 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
         }
 
         string mask2text(const(uint[]) mask) {
-            const mask_text = (()@trusted => format("%s", BitMask(mask)))();
+            const mask_text = (() @trusted => format("%s", BitMask(mask)))();
             return mask_text[0 .. min(node_size, mask_text.length)];
         }
 
@@ -335,7 +375,7 @@ struct Dot(Range) if(isInputRange!Range && is(ElementType!Range : Document)){
         }
 
         foreach (e; doc_range) {
-            if(e.isRecord!EventView) {
+            if (e.isRecord!EventView) {
                 auto event = EventView(e);
                 events[event.id] = event;
             }
@@ -446,7 +486,7 @@ int _main(string[] args) {
     }
 
     File inputfile;
-    if(inputfilename.empty) {
+    if (inputfilename.empty) {
         inputfile = stdin;
         verbose("Reading graph data from stdin");
     }
@@ -466,13 +506,14 @@ int _main(string[] args) {
         assert(!(html && svg), "cannot set both html and svg");
         auto dot = SVGDot!HiBONRange(hibon_range);
         dot.draw(obuf, startbuf, endbuf, svg);
-    } else {
+    }
+    else {
         auto dot = Dot!HiBONRange(hibon_range, "G");
         dot.draw(obuf);
     }
 
     File outfile;
-    if(outputfilename.empty) {
+    if (outputfilename.empty) {
         outfile = stdout();
     }
     else {
@@ -485,7 +526,6 @@ int _main(string[] args) {
     verbose("outfile size=%s", outfile.size);
     return 0;
 }
-
 
 static immutable HTML_BEGIN = q"EX
 <!DOCTYPE html>
