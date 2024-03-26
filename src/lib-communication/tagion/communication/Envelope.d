@@ -10,6 +10,7 @@ import std.algorithm.searching: find, boyerMooreFinder;
 
 auto i2a(T)(ref T val) 
 {
+    T norm = littleEndian(val);
     return cast(ubyte[T.sizeof])(cast(ubyte*) &val)[0 .. T.sizeof];
 }
 
@@ -27,13 +28,13 @@ void makeLittleEndian(T)(ref T value) {
 
 void makeFromBigEndian(T)(ref T value) {
     if (endian == Endian.littleEndian) {
-        value = *cast(T*)bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(value)).ptr;
+        value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(value));
     }
 }
 
 void makeFromLittleEndian(T)(ref T value) {
     if (endian == Endian.bigEndian) {
-        value = *cast(T*)littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(value)).ptr;
+        value = littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(value));
     }
 }
 
@@ -68,14 +69,14 @@ struct Envelope {
                 return false;
             return true;                    
         }
-        int compression() pure {
-            return fromLittleEndian(cast(int)level);
+        uint compression() pure {
+            return cast(uint)level;
         }
     
     align(4):
         
         enum : ubyte[4] { MagicBytes = [0xDE, 0xAD, 0xBE, 0xEF] } ;
-        enum CompressionLevel {
+        enum CompressionLevel : uint {
             none  = 0,
             zlib1 = 1,
             zlib2 = 2,
@@ -89,7 +90,7 @@ struct Envelope {
         }
         
         ubyte[4] magic = MagicBytes;
-        int schema;
+        uint schema;
         CompressionLevel level;
         ulong datsize;
         ubyte[8] datsum;
@@ -105,27 +106,31 @@ struct Envelope {
         
         static EnvelopeHeader fromBuffer (const ubyte[] raw) pure {
             enforce(raw.length >= this.sizeof);
-            return *(cast(EnvelopeHeader*) raw[0..this.sizeof]);
+            EnvelopeHeader hdr =  *(cast(EnvelopeHeader*) raw[0..this.sizeof]);
+            makeFromLittleEndian!uint(cast(uint)hdr.level);
+            makeFromLittleEndian!uint(hdr.schema);
+            makeFromLittleEndian!ulong(hdr.datsize);
+            return hdr;
         }
         
-        this(int schema, int level){
-            this.schema = littleEndian(schema);
-            this.level = cast(CompressionLevel)littleEndian!int(level);
+        this(uint schema, uint level){
+            this.schema = schema;
+            this.level = cast(CompressionLevel)level;
         }
         
     }   
 
-    this(int schema, int level, ref ubyte[] data){
+    this(uint schema, uint level, ref ubyte[] data){
         this.header = EnvelopeHeader(schema, level);
         this.data = data;
     }
     
     ubyte[] toBuffer() {
         ubyte[] compressed;
-        this.header.datsize = littleEndian(this.data.length);
+        this.header.datsize = this.data.length;
         if(this.header.compression > 0){
             compressed = compress(this.data[0..$], this.header.compression);
-            this.header.datsize = littleEndian(compressed.length);
+            this.header.datsize = compressed.length;
             this.header.datsum = crc64ECMAOf(compressed);
         }else{
             this.header.datsum = crc64ECMAOf(this.data[0..$]);
@@ -157,7 +162,30 @@ struct Envelope {
 
 
 unittest {
+ 
+    pragma(msg, "Envelope: TODO: make test for endian change case ");
     
+    uint x1 = 12345;
+    uint x2 = x1;
+    uint x3 = 0;
+    uint x4 = x1;
+    static if (endian == Endian.littleEndian) {
+        makeFromBigEndian!uint(x2);
+        x3 = x2;
+        makeBigEndian!uint(x3);
+        makeFromLittleEndian!uint(x4);
+        makeLittleEndian!uint(x4);
+    } else {        
+        makeFromLittleEndian!uint(x2);
+        x3 = x2;
+        makeLittleEndian!uint(x3);
+        makeFromBigEndian!uint(x4);
+        makeBigEndian!uint(x4);
+    }    
+    assert(x1 != x2);
+    assert(x1 == x3);
+    assert(x4 == x1);
+
     ubyte[] rawdata = cast(ubyte[])(
         "the quick brown fox jumps over the lazy dog\r
          the quick brown fox jumps over the lazy dog\r");
@@ -166,6 +194,8 @@ unittest {
     ubyte[] b1 = e1.toBuffer();
     Envelope e2 = Envelope(b1);
     assert(e2.header.isValid());
+    assert(e2.header.datsize == rawdata.length);
+    assert(e2.header.schema == 1);
     ubyte[] b2 = e2.toData();
     assert(b2 == rawdata);
     
