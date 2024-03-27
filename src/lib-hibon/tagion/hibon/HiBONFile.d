@@ -144,10 +144,17 @@ struct HiBONRange {
     void popFront() {
         if (!empty) {
             buf.length = LEB128.DataSize!size_t;
-            const read_size = file.rawRead(buf).length;
+            foreach(pos; 0..buf.length) {
+                if (file.rawRead(buf[pos..pos+1]).length == 0) {
+                    break;
+                }
+                if ((buf[pos] & 0x80) == 0) {
+                    break;
+                }
+            }
             const doc_size = LEB128.decode!size_t(buf);
             buf.length = doc_size.size + doc_size.value;
-            file.rawRead(buf[read_size .. $]);
+            file.rawRead(buf[doc_size.size .. $]);
             doc = Document(buf.idup);
         }
     }
