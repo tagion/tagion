@@ -82,6 +82,13 @@ Description: Create Query nodes which can be used for both sending and receiving
 
 ### Implement "not" flag in HiREP
 
+### HiBON Document max-size check test 
+We should make sure that we have check for max-size/out-of-memory
+For all external Documents
+Like the inputvalidator...
+
+Test should also be made for NNG buffer overrun!
+
 ## Done
 ### Clean up graphview mess
 Description: Refactor new svg graphview stuff
