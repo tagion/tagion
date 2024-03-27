@@ -8,6 +8,7 @@ enum StdNames {
     values = "$vals",
     derive = "$D",
     epoch = "#$epoch",
+    epoch_number = "$epoch",
     locked_epoch = "#$locked_epoch",
     bullseye = "$eye",
     name = "#name",
@@ -17,7 +18,7 @@ enum StdNames {
     signed = "$signed",
     archive_type = "$T",
     archive = "$a",
-    hash = "#hash",
+    contract = "#contract",
 }
 
 enum TagionDomain = "tagion";

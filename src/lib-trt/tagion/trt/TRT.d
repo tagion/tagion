@@ -31,9 +31,9 @@ struct TRTArchive {
 @safe:
 @recordType(TYPENAME ~ "trt_contract")
 struct TRTContractArchive {
-    @label(StdNames.hash) DARTIndex contract_hash;
+    @label(StdNames.contract) DARTIndex contract_hash;
     Document contract;
-    long epoch;
+    @label(StdNames.epoch_number) long epoch;
 
     mixin HiBONRecord!(q{
         this(DARTIndex contract_hash, Document contract, long epoch) {
