@@ -20,6 +20,10 @@ We have added a test which produces a HiBON containing all fields. This HiBON is
 ** Envelope fixes **
 We have refactored the Envelope so that it is little endian by default among other things.
 
+** True websocket server **
+We have created a websocket server that works in the same way as normal websockets such as socket.io etc in the NNG library. This will allow us to easily show our graph and be more compatible with other languages standard websocket implementations. 
+
+
 # Changelog for Epoch 1104102 .. 1189390
 
 **Epoch operational test**
