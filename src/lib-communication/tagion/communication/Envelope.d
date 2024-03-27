@@ -10,26 +10,8 @@ import std.algorithm.searching: find, boyerMooreFinder;
 
 auto i2a(T)(ref T val) 
 {
-    T norm = littleEndian(val);
+    /* T norm = littleEndian(val); */
     return cast(ubyte[T.sizeof])(cast(ubyte*) &val)[0 .. T.sizeof];
-}
-
-void makeBigEndian(T)(ref T value) {
-    if (endian == Endian.littleEndian) {
-        value = *cast(T*)nativeToBigEndian(value).ptr;
-    }
-}
-
-void makeLittleEndian(T)(ref T value) {
-    if (endian == Endian.bigEndian) {
-        value = *cast(T*)nativeToLittleEndian(value).ptr;
-    }
-}
-
-void makeFromBigEndian(T)(ref T value) {
-    if (endian == Endian.littleEndian) {
-        value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(value));
-    }
 }
 
 void makeFromLittleEndian(T)(ref T value) {
@@ -38,21 +20,10 @@ void makeFromLittleEndian(T)(ref T value) {
     }
 }
 
-T bigEndian(T)(T val) pure {
-    return (endian == Endian.littleEndian) ? *cast(T*)nativeToBigEndian(val).ptr : val;  
-}
-
-T fromBigEndian(T)(T val) pure {
-    return (endian == Endian.littleEndian) ? bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
-}
-
-T littleEndian(T)(T val) pure {
-    return (endian == Endian.bigEndian) ? *cast(T*)nativeToLittleEndian(val).ptr : val;  
-}
-
 T fromLittleEndian(T)(T val) pure {
     return (endian == Endian.bigEndian) ? littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
 }
+
 
 // TODO: Test it with communication between little- and big endian platforms
 
@@ -160,6 +131,37 @@ struct Envelope {
     }    
 }
 
+version(unittest) {
+    T littleEndian(T)(T val) pure {
+        return (endian == Endian.bigEndian) ? *cast(T*)nativeToLittleEndian(val).ptr : val;  
+    }
+
+    void makeBigEndian(T)(ref T value) {
+        if (endian == Endian.littleEndian) {
+            value = *cast(T*)nativeToBigEndian(value).ptr;
+        }
+    }
+
+    void makeLittleEndian(T)(ref T value) {
+        if (endian == Endian.bigEndian) {
+            value = *cast(T*)nativeToLittleEndian(value).ptr;
+        }
+    }
+
+    void makeFromBigEndian(T)(ref T value) {
+        if (endian == Endian.littleEndian) {
+            value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(value));
+        }
+    }
+
+    T bigEndian(T)(T val) pure {
+        return (endian == Endian.littleEndian) ? *cast(T*)nativeToBigEndian(val).ptr : val;  
+    }
+
+    T fromBigEndian(T)(T val) pure {
+        return (endian == Endian.littleEndian) ? bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
+    }
+}
 
 unittest {
  
