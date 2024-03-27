@@ -1,6 +1,7 @@
 
 WASMER_DIR=$(DSRC)/fork-wasmer/wasmer
 
+WASMER_CSRC=$(WASMER_DIR)/lib/c-api
 ifdef ENABLE_WASMER
 
 ifeq ($(PLATFORM),$(LINUX_X86_64))

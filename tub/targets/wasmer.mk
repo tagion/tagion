@@ -25,7 +25,7 @@ proper: proper-libwasmer
 help-libwasmer:
 	$(PRECMD)
 	$(call log.header, $@ :: help)
-	$(call log.help, "make libwasmer", "Compiles the lib  
+	$(call log.help, "make libwasmer", "Compiles the libwasmer")  
 	$(call log.help, "make proper-libwasmer", "Remove the pre-build of wasmer")
 	$(call log.help, "make env-libwasmer", "Show the environment for libwasmer")
 	$(call log.close)
