@@ -25,10 +25,10 @@ runs:
       if: success()
       with:
         name: ${{ inputs.platform }}
-        path: build/*/lib/libmobile.dylib
+        path: build/${{ inputs.platform }}/lib/libmobile.dylib
         if-no-files-found: error
 
     - name: Cleanup
       shell: bash
       run: |
-        make PLATFORM=arm64-apple-ios clean
+        make PLATFORM=${{ inputs.platform }} clean
