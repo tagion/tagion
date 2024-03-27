@@ -9,7 +9,7 @@ libwasmer:
 	cargo build --manifest-path $(WASMER_MANIFEST) $(WASMER_FLAG) --target $(WASMER_TARGET)
 else
 libwasmer: 
-	$(error wasmer not supported of $(PLATFORM))
+	$(warning wasmer not supported of $(PLATFORM))
 endif
 
 proper-libwasmer:

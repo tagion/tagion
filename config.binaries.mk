@@ -38,7 +38,7 @@ BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_D
 #
 # New Wave
 #
-target-neuewelle: LIBS+=  $(LIBSECP256K1)  $(LIBNNG) $(LIBWASMER)
+target-neuewelle: LIBS+=  $(LIBSECP256K1)  $(LIBNNG) 
 ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
 #
@@ -171,6 +171,7 @@ TAGION_TOOLS+=vergangenheit
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
+target-tagion: libwasmer 
 target-tagion: nng secp256k1
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
