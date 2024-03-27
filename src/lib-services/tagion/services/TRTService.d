@@ -57,6 +57,7 @@ struct TRTOptions {
 @safe
 struct TRTService {
     static Topic trt_created = Topic("trt_created");
+    static Topic trt_contract = Topic("trt_contract");
     void task(immutable(TRTOptions) opts, immutable(TaskNames) task_names, shared(StdSecureNet) shared_net) {
         DART trt_db;
         Exception dart_exception;
@@ -110,6 +111,7 @@ struct TRTService {
         void trt_read(trtHiRPCRR client_req, Document doc) {
             import tagion.services.codes;
             import std.conv : to;
+
             log("trt_read request");
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
@@ -131,7 +133,8 @@ struct TRTService {
                     import std.conv : to;
 
                     log("the owner doc was empty");
-                    const err = hirpc.error(receiver, ServiceCode.params.toString, ServiceCode.params);
+                    const err = hirpc.error(receiver, ServiceCode.params.toString, ServiceCode
+                            .params);
                     client_req.respond(err.toDoc);
                     return;
                 }
@@ -189,7 +192,18 @@ struct TRTService {
             }
         }
 
-        run(&modify, &trt_read, &receive_recorder);
+        void add_contract(trtContract, immutable(Document) doc, long epoch) {
+            log("add contract from transcript");
+            auto recorder = rec_factory.recorder;
+            recorder.insert(TRTContractArchive(net.dartIndex(doc), doc, epoch), Archive
+                    .Type.ADD);
+
+            log("contract added %s", recorder.toPretty);
+            trt_db.modify(recorder);
+            log.event(trt_contract, "trt_contract", recorder.toDoc);
+        }
+
+        run(&modify, &trt_read, &receive_recorder, &add_contract);
 
     }
 

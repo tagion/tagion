@@ -134,7 +134,7 @@ int _main(string[] args) {
     import tagion.hibon.BigNumber;
     import tagion.wave.mode0;
 
-    const node_opts = getMode0Options(local_options, monitor: false);
+    const node_opts = getMode0Options(local_options);
 
     NodeSettings[] node_settings;
     auto nodenets = dummy_nodenets_for_testing(node_opts);

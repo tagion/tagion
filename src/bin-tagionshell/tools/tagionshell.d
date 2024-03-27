@@ -47,6 +47,7 @@ import tagion.utils.StdTime : currentTime;
 import tagion.wallet.AccountDetails;
 import tagion.wallet.SecureWallet;
 import tagion.utils.LRUT;
+import tagion.hashgraphview.EventView;
 import core.thread;
 import nngd.nngd;
 
@@ -58,13 +59,6 @@ shared IndexCache tcache;
 shared IndexCache icache;
 
 shared static bool abort = false;
-
-enum ContentType {
-    octet = "application/octet-stream",
-    json = "application/json",
-    html = "text/html",
-    plain = "text/plain",
-}
 
 enum HTTPMethod {
     GET = "GET",
@@ -121,6 +115,85 @@ string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat k
     return join(res, "\r\n");
 }
 
+JSONValue json_dehibonize(JSONValue obj)
+{
+    foreach( string key, val; obj)
+    {
+        if(val.type() == JSONType.array)
+        {
+            auto t = (val.array[0]).str;
+            auto x = val.array[1];
+            if(x.type() == JSONType.integer)
+            {
+                obj[key] = x.integer;
+            }
+            else if(x.type() == JSONType.uinteger)
+            {
+                obj[key] = x.uinteger;
+            }
+            else if (x.type() == JSONType.float_)
+            {
+                obj[key] = x.floating;    
+            }
+            else
+            {
+                auto y = x.str;
+                switch(t){
+                    case "i32":
+                        obj[key] = y.startsWith("0x") ? to!int(y[2..$],16) : to!int(y,10);
+                        break;
+                    case "u32":
+                        obj[key] = y.startsWith("0x") ? to!uint(y[2..$],16) : to!uint(y,10);
+                        break;
+                    case "i64":
+                        obj[key] = y.startsWith("0x") ? to!ulong(y[2..$],16) : to!ulong(y,10);
+                        break;
+                    case "u64":
+                        obj[key] = y.startsWith("0x") ? to!ulong(y[2..$],16) : to!ulong(y,10);
+                        break;
+                    case "f32":
+                        if(y.startsWith("0x")){
+                            auto z = to!uint(y[2..$],16);
+                            obj[key] = *cast(float*)&z;
+                        }else{
+                            obj[key] = to!float(y);
+                        }
+                        break;
+                    case "f64":
+                        if(y.startsWith("0x")){
+                            auto z = to!ulong(y[2..$],16);
+                            obj[key] = *cast(double*)&z;
+                        }else{
+                            obj[key] = to!double(y);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        if(val.type() == JSONType.object)
+        {
+            obj[key] = json_dehibonize(val);
+        }
+    }
+    return obj;
+}
+
+JSONValue json_remap( JSONValue obj, JSONValue map )
+{
+    JSONValue res = parseJSON("{}");
+    foreach( string key, val; obj){
+        auto k2 = (key in map) ? map[key].str : key;
+        if(val.type() == JSONType.object){
+            res[k2] = json_remap(val, map);
+        } else {
+            res[k2] = val;
+        } 
+    }
+    return res;
+}
+
 /* 
  * Params: void function(WebData*, WebData*, ShellOptions*)
  *
@@ -142,13 +215,31 @@ webhandler handler_helper(alias cb)() {
 void dart_worker(ShellOptions opt) {
     int rc;
     int attempts = 0;
+    const monitor_map = JSONValue([
+        "$m": "mother",
+        "$f": "father",
+        "$n": "node_id",
+        "$a": "altitude",
+        "$o": "order",
+        "$r": "round",
+        "$rec": "round_received",
+        "$w": "witness",
+        "$famous": "famous",
+        "$received": "round_received_mask",
+        "$error": "error"
+    ]);
+
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+    NNGSocket m = NNGSocket(nng_socket_type.NNG_SOCKET_PUB);
     const net = new StdHashNet();
     auto record_factory = RecordFactory(net);
     const hirpc = HiRPC(null);
     s.recvtimeout = msecs(opt.sock_recvtimeout);
     s.subscribe(opt.recorder_subscription_tag);
     s.subscribe(opt.trt_subscription_tag);
+    s.subscribe(opt.monitor_subscription_tag);
+    m.sendtimeout = msecs(opt.sock_recvtimeout);
+    m.sendbuf = 8192;
     writeit("DS: subscribed");
     while (true) {
         rc = s.dial(opt.tagion_subscription_addr);
@@ -156,8 +247,11 @@ void dart_worker(ShellOptions opt) {
             break;
         enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");
     }
+    rc = m.listen(opt.monitor_pub_uri);
+    enforce(rc == 0, "Couldnt setup the monitor socket");
     scope (exit) {
         s.close();
+        m.close();
     }
     writeit("DS: connected");
     while (true) {
@@ -185,8 +279,8 @@ void dart_worker(ShellOptions opt) {
                 }
             }
             int k = 0;
-            auto recorder = record_factory.recorder(payload.data);
             if(topic.startsWith("recorder")){
+                auto recorder = record_factory.recorder(payload.data);
                 if(opt.cache_enabled){
                     foreach (a; recorder[]) {
                         if (a.filed.isRecord!TagionBill) {
@@ -204,6 +298,7 @@ void dart_worker(ShellOptions opt) {
                 }
             } else 
             if(topic.startsWith("trt_created")){
+                auto recorder = record_factory.recorder(payload.data);
                 if(opt.cache_enabled){
                     auto empty_archive = Document();
                     foreach (a; recorder[]) {
@@ -216,6 +311,12 @@ void dart_worker(ShellOptions opt) {
                         k++;
                     }
                 }
+            }else
+            if(topic.startsWith("monitor")){
+                auto adoc = EventView(payload.data);
+                auto jdoc = adoc.toJSON;
+                auto jres = json_dehibonize(json_remap(jdoc, monitor_map));
+                m.send(jres.toString);
             }
             if (k > 0)
                 writeit(format("DS: Cache updated in %d objects", k));
@@ -227,6 +328,7 @@ void dart_worker(ShellOptions opt) {
     }
 }
 
+// deprecated: TODO: clarify how to separate recorders and monitor
 void ws_worker(ShellOptions options) {
         writeit("WSW: begin");
         import libnng;
@@ -263,6 +365,39 @@ void ws_worker(ShellOptions options) {
         writeit("WSW: end");
 }
 
+void ws_on_connect(WebSocket *ws, void *ctx){
+    int rc;
+    int attempts = 0;
+    writeit("WS: connected");
+    ShellOptions* opt = cast(ShellOptions*)ctx;   
+    NNGSocket sub_monitor = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+    sub_monitor.recvtimeout = msecs(opt.sock_recvtimeout);
+    sub_monitor.subscribe("");
+    while (true) {
+        rc = sub_monitor.dial(opt.monitor_pub_uri);
+        if (rc == 0)
+            break;
+        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the monitor socket");
+    }
+    writeit("WS: subscribed");
+    while (!ws.closed) {
+        try {
+            auto received = sub_monitor.receive!(ubyte[])();
+            if (received.empty) {
+                continue;
+            }
+            ws.send(received);
+        }
+        catch (Throwable e) {
+            writeit(dump_exception_recursive(e, "ws on_connect: ", ExceptionFormat.PLAIN));
+            continue;
+        }
+    }
+}
+
+void ws_on_message(WebSocket *ws, ubyte[] data, void *ctx){
+    ShellOptions* opt = cast(ShellOptions*)ctx;    
+}
 
 /*
 * query REQ/REP socket once and close it 
@@ -326,7 +461,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     auto record_factory = RecordFactory(net);
     const hirpc = HiRPC(null);
 
-    if (req.type != ContentType.octet) {
+    if (req.type != mime_type.BINARY) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.msg = "invalid data type";
         return;
@@ -449,7 +584,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             }
             Document response = hirpc.result(receiver, result_recorder.toDoc).toDoc;
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.octet;
+            rep.type = mime_type.BINARY;
             rep.rawdata = cast(ubyte[])(response.serialize);
             return;
         case "submit":
@@ -488,7 +623,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     }
     doclen = docbuf.length;
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-    rep.type = ContentType.octet;
+    rep.type = mime_type.BINARY;
     rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
 
     writeit("STATS: ", stats);
@@ -537,13 +672,13 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         case "json":
             const dartindex = parseJSON(receiver.toPretty);
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.json;
+            rep.type = mime_type.JSON;
             rep.json = dartindex;
             break;
         case "hibon":
         default:
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.octet;
+            rep.type = mime_type.BINARY;
             rep.rawdata = cast(ubyte[]) receiver.serialize;
             break;
     }
@@ -553,7 +688,7 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 const i2p_handler = handler_helper!i2p_handler_impl;
 void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     int rc;
-    if (req.type != ContentType.octet) {
+    if (req.type != mime_type.BINARY) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.msg = "invalid data type";
         return;
@@ -661,7 +796,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     wallet_interface.operate(wallet_update_switch, []);
 
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-    rep.type = ContentType.octet;
+    rep.type = mime_type.BINARY;
     rep.rawdata = cast(ubyte[])(receiver.toDoc.serialize);
 }
 
@@ -675,7 +810,7 @@ void sysinfo_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         data["cache"]["archive"] = icache.length;
     }    
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-    rep.type = ContentType.json;
+    rep.type = mime_type.JSON;
     rep.json = data;
 }
 
@@ -739,7 +874,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             enforce("bullseye" in jdata["$msg"]["result"], "Test: bullseye: parse result");
             auto res = jdata["$msg"]["result"]["bullseye"][1].str;
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.json;
+            rep.type = mime_type.JSON;
             rep.json = parseJSON(`{"test": "bullseye", "passed": "ok", "result":{"bullseye":"` ~ res ~ `"}}`);
             break;
         case "dart":
@@ -751,7 +886,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             const hreq = wallet_interface.secure_wallet.getRequestUpdateWallet(hirpc);
             WebData hrep = WebClient.post(uri ~ opt.dart_endpoint,
                     cast(ubyte[])(hreq.serialize),
-                    ["Content-type": ContentType.octet]);
+                    ["Content-type": mime_type.BINARY]);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
                 rep.msg = hrep.msg;
@@ -764,7 +899,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             enforce("result" in jdata["$msg"], "Test: dart(cache): parse result");
             auto cnt = jdata["$msg"]["result"].array.length;
             rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-            rep.type = ContentType.json;
+            rep.type = mime_type.JSON;
             rep.json = parseJSON(format(`{"test": "%s", "passed": "ok", "result":{"count": %d}}`, reqpath[0], cnt));
             break;
         default:
@@ -774,7 +909,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
     if (rep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-        rep.type = ContentType.html;
+        rep.type = mime_type.HTML;
         rep.text = "<h2>The requested test couldn`t be processed</h2>\n\r<pre>\n\r" ~ to!string(
                 reqpath) ~ "\r\n" ~ rep.msg ~ "\r\n" ~ rep.text ~ "\n\r</pre>\n\r";
     }
@@ -782,7 +917,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
 void versioninfo_handler(WebData* req, WebData* rep, void* _) nothrow {
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-    rep.type = ContentType.plain;
+    rep.type = mime_type.TEXT;
     rep.text = imported!"tagion.tools.revision".revision_text;
 }
 
@@ -835,7 +970,7 @@ int _main(string[] args) {
         defaultGetoptPrinter(
                 [
             // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
+            "Documentation: https://docs.tagion.org/",
             "",
             "Usage:",
             format("%s [<option>...] <config.json> <files>", program),
@@ -862,8 +997,12 @@ int _main(string[] args) {
     }
 
     if(!options.ws_pub_uri.empty){
-        auto ws_tid = spawn(&ws_worker, options);
+        //auto ws_tid = spawn(&ws_worker, options);
+        WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_message, cast(void*)&options );
+        wsa.start();
     }
+    
+
 
     Appender!string help_text;
 

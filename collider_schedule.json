@@ -105,8 +105,8 @@
     },
     "hashgraph_test": {
       "args": [
-        "4",
-        "200"
+        "5",
+        "5000"
       ],
       "envs": {},
       "stages": [
@@ -296,6 +296,15 @@
       ],
       "timeout": 0.0
     },
+    "subscription_test": {
+      "args": [],
+      "envs": {},
+      "stages": [
+        "commit",
+        "subscription"
+      ],
+      "timeout": 0.0
+    },
     "transaction": {
       "args": [],
       "envs": {
@@ -311,8 +320,9 @@
     },
     "run_epochs": {
       "args": [
-        "100",
-        "50"
+        "1",
+        "10000",
+        "5"
       ],
       "envs": {},
       "stages": [

@@ -36,21 +36,23 @@ int _main(string[] args) {
     string record_type;
     string[] types;
     string list;
-    bool recursive;
+    bool recursive_flag;
+    bool subhibon_flag;
 
     try {
         auto main_args = getopt(args,
-                std.getopt.config.caseSensitive,
-                std.getopt.config.bundling,
-                "version", "display the version", &version_switch,
-                "v|verbose", "Prints more debug information", &__verbose_switch,
-                "o|output", "Output file name (Default stdout)", &output_filename,
-                "n|name", "HiBON member name (name as text or regex as `regex`)", &name,
-                "r|recordtype", "HiBON recordtype (name as text or regex as `regex`)", &record_type,
-                "t|type", "HiBON data types", &types,
-                "not", "Filter out match", &not_flag,
-                "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
-                "rec", "Enables recursive search", &recursive,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch,
+            "v|verbose", "Prints more debug information", &__verbose_switch,
+            "o|output", "Output file name (Default stdout)", &output_filename,
+            "n|name", "HiBON member name (name as text or regex as `regex`)", &name,
+            "r|recordtype", "HiBON recordtype (name as text or regex as `regex`)", &record_type,
+            "t|type", "HiBON data types", &types,
+            "not", "Filter out match", &not_flag,
+            "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
+            "R|recursive", "Enables recursive search", &recursive_flag,
+            "s|subhibon", "Output only subhibon that match criteria", &subhibon_flag,
         );
 
         if (version_switch) {
@@ -60,16 +62,16 @@ int _main(string[] args) {
 
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
-                    [
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] [<hibon-files>...]", program),
-                    "",
-                    "<option>:",
+                [
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] [<hibon-files>...]", program),
+                "",
+                "<option>:",
 
-                    ].join("\n"),
-                    main_args.options);
+            ].join("\n"),
+            main_args.options);
             return 0;
         }
         bool inList(const size_t no) {
@@ -78,17 +80,13 @@ int _main(string[] args) {
             }
             foreach (elm; list.splitter(",")) {
                 const elm_range = elm.split("..");
-                if (elm_range.length == 1) {
-                    if (no == elm_range[0].to!size_t) {
-                        return true;
-                    }
+                if (elm_range.length == 1 && no == elm_range[0].to!size_t) {
+                    return true;
                 }
-                else if (elm_range.length == 2) {
-                    if ((elm_range[0].to!size_t <= no) && (no < elm_range[1].to!size_t)) {
-                        return true;
-                    }
+                if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1]
+                        .to!size_t)) {
+                    return true;
                 }
-
             }
             return false;
         }
@@ -111,7 +109,7 @@ int _main(string[] args) {
         if (args.length == 2) {
             const file_name = args[1];
             tools.check(file_name.hasExtension(FileExtension.hibon),
-                    format("Input %s should be a .%s file", file_name, FileExtension.hibon));
+                format("Input %s should be a .%s file", file_name, FileExtension.hibon));
             fin = File(file_name, "r");
         }
         else {
@@ -124,7 +122,7 @@ int _main(string[] args) {
         }
         else {
             tools.check(output_filename.hasExtension(FileExtension.hibon),
-                    format("Output %s should be a .%s file", output_filename, FileExtension.hibon));
+                format("Output %s should be a .%s file", output_filename, FileExtension.hibon));
             fout = File(output_filename, "w");
         }
         scope (exit) {
@@ -133,17 +131,44 @@ int _main(string[] args) {
             }
         }
 
-        bool isMatch(Document doc)
-        {
-            return hibon_regex.match(doc) || // doc either match filters
-                   (recursive && doc[].any!(elm => (elm.isType!Document && isMatch(elm.get!Document)))); // or search recursively (if enabled)
+        Document[] getMatchDocs(Document doc) {
+            if (hibon_regex.match(doc))
+                return [doc];
+
+            if (!recursive_flag)
+                return [];
+
+            // Going recursive
+            Document[] docs;
+            foreach (elem; doc[]) {
+                if (!(elem.isType!Document))
+                    continue; // Skip non-Document records
+
+                docs ~= getMatchDocs(elem.get!Document);
+            }
+
+            return docs;
+        }
+
+        void output(Document[] docs) {
+            foreach (doc; docs) {
+                verbose("%s", doc.toPretty);
+                fout.rawWrite(doc.serialize);
+            }
         }
 
         foreach (no, doc; HiBONRange(fin).enumerate) {
-            if (inList(no) && isMatch(doc)) {
-                verbose("%d\n%s", no, doc.toPretty);
-                fout.rawWrite(doc.serialize);
-            }
+            if (!inList(no)) // Empty list is true
+                continue;
+
+            auto match_docs = getMatchDocs(doc);
+            if (match_docs.empty)
+                continue;
+
+            if (subhibon_flag)
+                output(match_docs);
+            else
+                output([doc]);
         }
     }
     catch (Exception e) {

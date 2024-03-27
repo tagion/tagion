@@ -46,9 +46,6 @@ ifneq ($(strip $(shell which dstep 2>/dev/null)),)
 	DSTEP?=dstep
 endif
 
-GO?=${shell which go}
-
-
 env-commands:
 	$(PRECMD)
 	$(call log.header, $@ :: commands ($(OS)))
@@ -65,7 +62,6 @@ env-commands:
 	$(call log.kvp, DLLEXT, $(DLLEXT))
 	$(call log.kvp, OBJEXT, $(OBJEXT))
 	$(call log.kvp, DSTEP,  "$(DSTEP)")
-	$(call log.kvp, GO,  "$(GO)")
 	$(call log.close)
 
 env: env-commands

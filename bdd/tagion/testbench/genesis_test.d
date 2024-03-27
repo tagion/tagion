@@ -118,7 +118,7 @@ int _main(string[] args) {
     import tagion.hibon.Document;
     import tagion.hibon.BigNumber;
 
-    const(Options)[] node_opts = getMode0Options(local_options, monitor: false);
+    const(Options)[] node_opts = getMode0Options(local_options);
     auto nets = dummy_nodenets_for_testing(node_opts);
     Pubkey[] keys = nets.map!(net => net.pubkey).array;
     NodeSettings[] node_settings;

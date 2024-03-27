@@ -55,7 +55,7 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
 }
 
 // Return: A range of options prefixed with the node number
-const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
+const(Options)[] getMode0Options(const(Options) options) {
     const number_of_nodes = options.wave.number_of_nodes;
     const prefix_f = options.wave.prefix_format;
     Options[] all_opts;
@@ -63,10 +63,6 @@ const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
         auto opt = Options(options);
         opt.setPrefix(format(prefix_f, node_n));
         all_opts ~= opt;
-    }
-
-    if (monitor) {
-        all_opts[0].monitor.enable = true;
     }
 
     return all_opts;

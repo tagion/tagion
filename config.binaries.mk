@@ -1,5 +1,3 @@
-export GODEBUG=cgocheck=0
-
 NO_UNITDATA=-a -not -path "*/unitdata/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
@@ -40,7 +38,7 @@ BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_D
 #
 # New Wave
 #
-target-neuewelle: LIBS+=  $(LIBSECP256K1)  $(LIBNNG)
+target-neuewelle: LIBS+=  $(LIBSECP256K1)  $(LIBNNG) $(LIBWASMER)
 ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
 #

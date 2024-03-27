@@ -1320,6 +1320,9 @@ struct NNGPool {
 alias nng_http_status = libnng.nng_http_status;
 alias http_status = nng_http_status;
 
+alias nng_mime_type = libnng.nng_mime_type;
+alias mime_type = nng_mime_type;
+
 alias nng_http_req = libnng.nng_http_req;
 alias nng_http_res = libnng.nng_http_res;
 
@@ -1882,7 +1885,6 @@ static void webclientrouter ( void* p ) {
 }
 
 struct WebClient {
-
     nng_http_client *cli;
     nng_http_conn *conn;
     nng_http_req *req;
@@ -2166,5 +2168,217 @@ struct WebClient {
         nng_http_client_transact(cli, req, res, aio);
         return NNGAio(aio);
     }
+}
 
+// WebSocket tools
+
+alias nng_ws_onconnect = void function ( WebSocket*, void* );
+alias nng_ws_onmessage = void function ( WebSocket*, ubyte[], void* );
+
+/**
+ *  {WebSocket}      
+ *  WebSocket connection accepted by the {WebSocketApp} server    
+ *  Not for manual construction    
+ *  Passed to the on_connect and om_message callbacks      
+ *  Methods:      
+ *      send(ubyte[])    
+ */
+struct WebSocket {
+    WebSocketApp *app;
+    void* context;
+    nng_aio *rxaio;
+    nng_aio *txaio;
+    nng_stream *s;
+    nng_ws_onmessage onmessage;
+    nng_iov rxiov;
+    nng_iov txiov;
+    ubyte[] rxbuf;
+    ubyte[] txbuf;
+    bool closed;
+    bool ready;
+    
+    @disable this();
+
+    this( 
+        WebSocketApp *_app, 
+        nng_stream *_s, 
+        nng_ws_onmessage _onmessage, 
+        void* _context,
+        size_t _bufsize = 4096 )
+    {
+        int rc;
+        app = _app;
+        s = _s;
+        onmessage = _onmessage;
+        context = _context;
+        closed = false;
+        void delegate(void*) d1 = &(this.nng_ws_rxcb);
+        rc = nng_aio_alloc(&rxaio, d1.funcptr, self());
+        enforce(rc == 0, "Conn aio init0");
+        void delegate(void*) d2 = &(this.nng_ws_txcb);
+        rc = nng_aio_alloc(&txaio, d2.funcptr, self());
+        enforce(rc == 0, "Conn aio init1");
+        rxbuf = new ubyte[](_bufsize);
+        txbuf = new ubyte[](_bufsize);
+        rxiov.iov_buf = rxbuf.ptr;
+        rxiov.iov_len = _bufsize;
+        txiov.iov_buf = txbuf.ptr;
+        txiov.iov_len = _bufsize;
+        rc = nng_aio_set_iov(rxaio, 1, &rxiov);
+        enforce(rc == 0, "Invalid rx iov");
+        rc = nng_aio_set_iov(txaio, 1, &txiov);
+        enforce(rc == 0, "Invalid tx iov");
+        ready = true;
+        nng_stream_recv(s, rxaio);
+    }
+    
+    void* self () {
+        return cast(void*)&this;
+    }
+
+
+    void nng_ws_rxcb( void *ptr ){
+        int rc;
+        if(closed)
+            return;
+        rc = nng_aio_result(rxaio);
+        if(rc == 0){
+            auto sz = nng_aio_count(rxaio);
+            if(sz > 0){
+                if(onmessage != null){
+                    onmessage(cast(WebSocket*)self(), cast(ubyte[])(rxbuf[0..sz].dup), context);
+                }                
+            }
+        }else{
+            closed = true;
+            return;
+        }
+        rc = nng_aio_set_iov(rxaio, 1, &rxiov);
+        enforce(rc == 0, "Invalid rx iov1");
+        nng_stream_recv(s, rxaio);
+    }
+
+    void nng_ws_txcb(void *ptr){
+        int rc;
+        if(closed)
+            return;
+        rc = nng_aio_result(txaio);
+        if(rc == 0){
+            //TBD:
+        }else{
+            closed = true;
+            return;
+        }    
+    }
+
+    void send(ubyte[] data){
+        int rc;
+        if(closed)
+            return;
+        txbuf[0..data.length] = data[0..data.length];
+        txiov.iov_len = data.length;
+        rc = nng_aio_set_iov(txaio, 1, &txiov);
+        enforce(rc == 0, "Invalid tx iov");
+        nng_stream_send(s, txaio);
+        nng_aio_wait(txaio);
+    }
+}
+
+/**
+ *  {WebSocketApp}
+ *  WebSocket Application (server to accept http-urgrade connections)
+ *  Constructor:   
+ *    WebSocketApp(
+ *      strind URI to listen should start with "ws://"
+ *      on_connect callback: void function ( WebSocket*, void* context )      
+ *      on_message callback: void function ( WebSocket*, ubyte[], void* context )     
+ *      void* context
+ *    )
+ *  Methods:
+ *      start() - start server to listen
+ *
+ *  TODO:
+ *      - add on_disconnect callback
+ *      - add on_error callback
+ */
+struct WebSocketApp {
+    @disable this();
+
+    this( 
+        string iuri, 
+        nng_ws_onconnect ionconnect,
+        nng_ws_onmessage ionmessage,
+        void* icontext
+    )
+    {
+        int rc;
+        enforce(iuri.startsWith("ws://"),"URI should be ws://*");
+        uri = iuri;
+        starts = 0;
+        s = null;
+        onconnect = ionconnect;
+        onmessage = ionmessage;
+        context = icontext;
+        rc = nng_mtx_alloc(&mtx);
+        enforce(rc==0,"Listener init0");
+        rc = nng_stream_listener_alloc(&sl, uri.toStringz());            
+        enforce(rc==0,"Listener init1");
+        rc = nng_stream_listener_set_bool(sl, toStringz(NNG_OPT_WS_RECV_TEXT), true);
+        enforce(rc==0,"Listener init2");
+        rc = nng_stream_listener_set_bool(sl, toStringz(NNG_OPT_WS_SEND_TEXT), true);
+        enforce(rc==0,"Listener init3");
+        void delegate(void*) d = &(this.accb);
+        rc = nng_aio_alloc( &accio, d.funcptr, self() );
+        enforce(rc==0,"Accept aio init");
+        
+    }
+
+    void start()
+    {
+        int rc;
+        nng_mtx_lock(mtx);
+        if(starts == 0){
+            rc = nng_stream_listener_listen(sl);
+            enforce(rc==0,"Listener start");
+            nng_stream_listener_accept(sl, accio);
+        }
+        starts++;
+        nng_mtx_unlock(mtx);        
+    }
+
+    void* self () {
+        return cast(void*)&this;
+    }
+
+    private:
+        nng_mtx *mtx;
+        int starts;
+        string uri;
+        void* context;
+        nng_stream_listener *sl;
+        nng_aio *accio;
+        nng_stream *s;
+        nng_iov rxiov;
+        nng_ws_onconnect onconnect;
+        nng_ws_onmessage onmessage;
+        WebSocket*[] conns;
+
+        void accb ( void* ptr ){
+            int rv;
+            WebSocket *c;
+            nng_mtx_lock(mtx);
+            rv = nng_aio_result(accio);    
+            if(rv != 0){
+                nng_stream_listener_accept(sl, accio);
+                return;
+            }
+            s = cast(nng_stream*)nng_aio_get_output(accio, 0);
+            enforce(s != null, "Invalid stream pointer");
+            c = new WebSocket(cast(WebSocketApp*)self(), s, onmessage, context, 8192);
+            enforce(c != null, "Invalid conn pointer");
+            conns ~= c;
+            onconnect(c, context);   
+            nng_stream_listener_accept(sl, accio);
+            nng_mtx_unlock(mtx);
+        }
 }

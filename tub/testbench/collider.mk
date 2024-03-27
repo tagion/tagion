@@ -52,7 +52,7 @@ run-%: bddfiles bddinit
 test-%: run-%
 	$(PRECMD)
 	${call log.header, $* :: test bdd}
-	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
+	$(DBIN)/tagion hibonutil -p $(ALL_BDD_REPORTS)
 	$(COLLIDER) -c $(BDD_RESULTS)
 
 ddd-%:
@@ -78,7 +78,7 @@ bddinit: testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 
 bddreport: 
 	$(PRECMD)
-	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
+	$(DBIN)/tagion hibonutil -p $(ALL_BDD_REPORTS)
 	$(COLLIDER) -cv $(BDD_RESULTS)
 
 .PHONY: bddreport

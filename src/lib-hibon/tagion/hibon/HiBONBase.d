@@ -856,6 +856,11 @@ bool is_key_valid(const(char[]) a) pure nothrow {
     return false;
 }
 
+shared static this() @system {
+    uint little_endian=0x0000_0001;
+    uint* x=&little_endian;
+    assert(x[0] == 1, "Only supports little endian for now!");
+}
 ///
 unittest { // Check is_key_valid
     import std.algorithm.iteration : each, map;

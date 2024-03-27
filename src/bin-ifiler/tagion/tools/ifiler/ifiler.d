@@ -168,7 +168,7 @@ int _main(string[] args) {
             //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                    "Documentation: https://tagion.org/",
+                    "Documentation: https://docs.tagion.org/",
                     "",
                     "Usage:",
                     format("%s [<option>...] <src-file> <dst-file> ", program),

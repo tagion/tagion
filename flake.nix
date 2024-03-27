@@ -76,7 +76,6 @@
 
           nativeBuildInputs = with pkgs; [
             dmd
-            dtools
             gnumake
             pkg-config
           ];
@@ -100,11 +99,11 @@
           '';
         };
 
-      devShells.x86_64-linux.default =
-        # Notice the reference to nixpkgs here.
+      _devShell =
         pkgs.mkShell {
           inherit (self.checks.x86_64-linux.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
+            # This is a bit misleading now but should this work fine
             self.packages.x86_64-linux.default.buildInputs
             self.packages.x86_64-linux.default.nativeBuildInputs
             dub
@@ -117,19 +116,28 @@
             autoreconfHook
             cmake
             libz
+            dtools
             dfmt-pull.legacyPackages.x86_64-linux.dlang-dfmt
+            graphviz
           ];
         };
 
+      devShells.x86_64-linux.default = self._devShell;
+      devShells.aarch64-linux.default = self._devShell;
+      # devShells.x86_64-darwin.default = self._devShell;
+      # devShells.aarch64-darwin.default = self._devShell;
+
       checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
+        settings.typos.configPath = ".typos.toml";
         hooks = {
           shellcheck = {
             enable = true;
             types_or = [ "sh" ];
           };
           typos.enable = true;
-          actionlint.enable = true;
+          typos.pass_filenames = false;
+          # actionlint.enable = true;
           dlang-format = {
             # does not work :-( we have to define a proper commit
             enable = true;
@@ -212,31 +220,11 @@
           '';
         };
 
-      packages.x86_64-linux.dockerImage =
-        pkgs.dockerTools.buildImage {
-          name = "tagion-docker";
+      packages.x86_64-linux.dockerImage = pkgs.dockerTools.buildLayeredImage {
+          name = "tagion";
           tag = "latest";
-          fromImage = pkgs.dockerTools.pullImage {
-            imageName = "alpine";
-            imageDigest = "sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd";
-            sha256 = "sha256-6tIIMFzCUPRJahTPoM4VG3XlD7ofFPfShf3lKdmKSn0=";
-            finalImageName = "alpine";
-            os = "linux";
-            arch = "x86_64";
-          };
-          copyToRoot = pkgs.buildEnv {
-            name = "image-root";
-            paths = [ self.packages.x86_64-linux.default ];
-            pathsToLink = [ "/bin" ];
-          };
-
-          # contents = [ self.packages.x86_64-linux.default];
-          config = {
-            Cmd = [ "/bin/sh" ];
-            Env = [ ];
-            Volumes = { };
-          };
-        };
+          config.Cmd = "${self.packages.x86_64-linux.default}/bin/tagion";
+      };
 
       nixosModules.default = with pkgs.lib; { config, ... }:
         let cfg = config.tagion.services;

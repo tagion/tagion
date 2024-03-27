@@ -29,63 +29,11 @@ struct NodeInterfaceOptions {
     uint send_timeout = 200; // Milliseconds
     uint recv_timeout = 200; // Milliseconds
     uint send_max_retry = 0;
-    string node_address = "tcp://*:10700"; // Address
+    string node_address = "tcp://[::1]:10700"; // Address
 
     import tagion.utils.JSONCommon;
 
-    // Convert the first number in a string to a number
-    static int node_name_to_number(string node_name) pure nothrow {
-        long i;
-        foreach_reverse(c; node_name) {
-            if(!c.isDigit) {
-                break;
-            }
-            i++;
-        }
-        try {
-            return node_name[$-i..$].to!int;
-        } catch(Exception e) {
-        }
-        return 0;
-    }
-
-    void setPrefix(string prefix) nothrow {
-        enum ABSTRACT = "abstract://";
-        // FIXME: need proper address parser
-        // 🤮🤮🤮
-        if(node_address.startsWith("tcp://")) {
-            const port = node_name_to_number(node_address) + node_name_to_number(prefix);
-            const split_str = node_address.split(":");
-            node_address = split_str[0] ~ ":" ~ split_str[1] ~ ":" ~ assumeWontThrow(port.to!string);
-        }
-        else if(node_address.startsWith(ABSTRACT)) {
-            node_address = node_address[0 .. ABSTRACT.length] ~ prefix ~ node_address[ABSTRACT.length .. $];
-        }
-    }
-
     mixin JSONCommon;
-}
-
-unittest {
-    NodeInterfaceOptions opt;
-    assert(opt.node_name_to_number("1") == 1);
-    assert(opt.node_name_to_number("no-9") == 9);
-    assert(opt.node_name_to_number("node39") == 39);
-    assert(opt.node_name_to_number("node0") == 0);
-    assert(opt.node_name_to_number("39node") == 0);
-    assert(opt.node_name_to_number("no39de") == 0);
-    assert(opt.node_name_to_number("no-39de") == 0);
-    assert(opt.node_name_to_number("node") == 0);
-    
-    opt.node_address = "tcp://*:10700";
-    opt.setPrefix("node_1");
-    assert(opt.node_address == "tcp://*:10701", opt.node_address);
-    opt.setPrefix("node_1");
-    assert(opt.node_address == "tcp://*:10702", opt.node_address);
-
-    opt.node_address = "abstract://NODEINTERFACE";
-    opt.setPrefix("node_1");
-    assert(opt.node_address == "abstract://node_1NODEINTERFACE");
 }
 
 ///

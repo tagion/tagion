@@ -39,6 +39,9 @@ alias SendRecorder = Msg!"SendRecorder";
 /// [FROM: DART, TO: TRT] send the recorder to the trt for update
 alias trtModify = Msg!"trtModify";
 
+/// [FROM: Transcript, TO: TRT] send the signed contract to the TRT for storing contract
+alias trtContract = Msg!"trtContract";
+
 alias trtHiRPCRR = Request!"trtRead"; // trt.dartCRUD: [dartRead, dartCheckRead, dartRim]
 alias dartReadRR = Request!"dartRead"; // dartRead Request
 alias dartCheckReadRR = Request!("dartCheckRead", long); // dartCheckRead Request

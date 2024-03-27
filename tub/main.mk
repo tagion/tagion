@@ -141,4 +141,5 @@ include $(TARGETS)/trunk.mk
 #
 include $(TARGETS)/wasi.mk 
 include $(TARGETS)/tauon.mk 
+include $(TARGETS)/wasmer.mk 
 

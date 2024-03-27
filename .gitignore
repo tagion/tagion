@@ -54,6 +54,8 @@ tools/*
 #
 *.hibon
 
+# Unignore sample HiBON file
+!*samplehibon.hibon
 
 # Auto-generated .pem files
 pem_files

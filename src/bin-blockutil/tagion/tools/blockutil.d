@@ -240,7 +240,7 @@ int _main(string[] args) {
             defaultGetoptPrinter(
                     [
                 revision_text,
-                "Documentation: https://tagion.org/",
+                "Documentation: https://docs.tagion.org/",
                 "",
                 "Usage:",
                 format("%s <file> [<option>...]", program),

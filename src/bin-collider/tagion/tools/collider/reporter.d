@@ -45,7 +45,7 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter([
             revision_text,
-            "Documentation: https://tagion.org/",
+            "Documentation: https://docs.tagion.org/",
             "",
             "Usage:",
             format("%s [<option>...]", program),

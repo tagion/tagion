@@ -224,7 +224,7 @@ is ready and has been started correctly
 
     /// Conditional subscription logging
     @trusted
-    void event(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
+    void event(ref Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
         // report(LogLevel.INFO, "%s|%s| %s", topic.name, identifier, data.toPretty);
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
@@ -243,7 +243,7 @@ is ready and has been started correctly
         }
     }
 
-    void event(T)(Topic topic, lazy string identifier, lazy T data) const nothrow if (isHiBONRecord!T) {
+    void event(T)(ref Topic topic, lazy string identifier, lazy T data) const nothrow if (isHiBONRecord!T) {
         event(topic, identifier, data.toDoc);
     }
 

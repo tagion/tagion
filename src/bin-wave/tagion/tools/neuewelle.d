@@ -112,7 +112,6 @@ int _neuewelle(string[] args) {
 
     bool version_switch;
     bool override_switch;
-    bool monitor;
 
     string[] override_options;
     string network_mode_switch;
@@ -125,7 +124,6 @@ int _neuewelle(string[] args) {
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
             "m|mode", "Set the node network mode [0,1,2]", &network_mode_switch,
-            "monitor", "Enable the monitor", &monitor,
     );
 
     if (main_args.helpWanted) {
@@ -235,7 +233,7 @@ int _neuewelle(string[] args) {
         import tagion.wave.mode0;
         import tagion.gossip.AddressBook;
 
-        const node_options = getMode0Options(local_options, monitor);
+        const node_options = getMode0Options(local_options);
 
         auto __net = new StdSecureNet();
         __net.generateKeyPair("dart_read_pin");

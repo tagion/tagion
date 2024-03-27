@@ -28,15 +28,6 @@ import tagion.utils.StdTime;
 
 class TestRefinement : StdRefinement {
 
-    struct ExcludedNodesHistory {
-        Pubkey pubkey;
-        bool state;
-        int round;
-        bool stop_communication;
-    }
-
-    static ExcludedNodesHistory[] excluded_nodes_history;
-
     struct Swap {
         Pubkey swap_out;
         Pubkey swap_in;
@@ -57,28 +48,6 @@ class TestRefinement : StdRefinement {
         auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time, cast(Round) decided_round))();
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
-
-    // override void excludedNodes(ref BitMask excluded_mask) {
-    //     import tagion.basic.Debug;
-    //     import std.algorithm : filter;
-
-    //     if (excluded_nodes_history is null) {
-    //         return;
-    //     }
-
-    //     const last_decided_round = hashgraph.rounds.last_decided_round.number;
-
-    //     auto histories = excluded_nodes_history.filter!(h => h.round == last_decided_round);
-    //     foreach (history; histories) {
-    //         const node = hashgraph.nodes.get(history.pubkey, HashGraph.Node.init);
-    //         if (node !is HashGraph.Node.init) {
-    //             excluded_mask[node.node_id] = history.state;
-    //             __write("setting exclude mask");
-    //         }
-    //     }
-    //     __write("callback<%s>", excluded_mask);
-
-    // }
 
 }
 
@@ -292,7 +261,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     static int testing;
-    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
+    void addNode(immutable(ulong) N, const(string) name, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
@@ -305,7 +274,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 h.__debug_print = true;
             }
         }
-        h.scrap_depth = 0;
+        h.scrap_depth = scrap_depth;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
 
@@ -314,10 +283,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     FiberNetwork[Pubkey] networks;
-    this(const(string[]) node_names) {
+    this(const(string[]) node_names, int scrap_depth = 0) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
-        node_names.each!(name => addNode(N, name));
+        node_names.each!(name => addNode(N, name, scrap_depth));
     }
 }
 

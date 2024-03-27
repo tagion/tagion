@@ -49,6 +49,7 @@ int _main(string[] args) {
     import std.exception : ifThrown;
 
     uint timeout = args[1].to!uint.ifThrown(10);
+    uint number_of_nodes = args[3].to!uint.ifThrown(5);
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
@@ -57,6 +58,7 @@ int _main(string[] args) {
     local_options.epoch_creator.timeout = timeout;
     local_options.wave.prefix_format = "EPOCH_TEST_Node_%s_";
     local_options.subscription.address = contract_sock_addr("EPOCH_OPERATIONAL_TEST_SUB");
+    local_options.wave.number_of_nodes = number_of_nodes;
     local_options.save(config_file);
 
     import std.array;
@@ -106,7 +108,7 @@ int _main(string[] args) {
     import tagion.hibon.BigNumber;
     import tagion.wave.mode0;
 
-    const node_opts = getMode0Options(local_options, monitor: false);
+    const node_opts = getMode0Options(local_options);
 
     NodeSettings[] node_settings;
     auto nodenets = dummy_nodenets_for_testing(node_opts);
@@ -236,7 +238,7 @@ class RunPassiveFastNetwork {
                     }
 
                     if (!epoch_events.all!(e => e == epoch_events[0])) {
-                        check(0, format("not all events the same \n%s", print_events));
+                        check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
                     }
 
                     auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 

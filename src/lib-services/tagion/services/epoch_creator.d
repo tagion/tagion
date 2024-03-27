@@ -20,13 +20,13 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONJSON;
 import tagion.logger.Logger;
 import tagion.services.messages;
-import tagion.services.monitor;
 import tagion.services.options : NetworkMode, TaskNames;
 import tagion.utils.JSONCommon;
 import tagion.utils.Queue;
 import tagion.utils.Random;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.monitor.Monitor;
 
 // core
 import core.time;
@@ -42,7 +42,7 @@ alias PayloadQueue = Queue!Document;
 @safe
 struct EpochCreatorOptions {
     uint timeout = 250; // timeout in msecs 
-    uint scrap_depth = 10;
+    uint scrap_depth = 100;
     mixin JSONCommon;
 }
 
@@ -53,7 +53,6 @@ struct EpochCreatorService {
             immutable(NetworkMode) network_mode,
             uint number_of_nodes,
             shared(StdSecureNet) shared_net,
-            immutable(MonitorOptions) monitor_opts,
             immutable(TaskNames) task_names) {
 
         const net = new StdSecureNet(shared_net);
@@ -61,21 +60,9 @@ struct EpochCreatorService {
         assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
 
         import tagion.hashgraph.Event : Event;
-        import tagion.monitor.Monitor;
-        if (monitor_opts.enable) {
-            version(none) {
-                auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
-                Event.callbacks = new MonitorCallBacks(monitor_socket_tid, monitor_opts.dataformat);
-                if (!waitforChildren(Ctrl.ALIVE)) {
-                    log.warn("Monitor never started, continuing anyway");
-                }
-            }
-            else {
-                Event.callbacks = new LogMonitorCallBacks();
-            }
-        }
+        Event.callbacks = new LogMonitorCallBacks();
         version(BDD) {
-            Event.callbacks = new FileMonitorCallBacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes);
+            Event.callbacks = new FileMonitorCallBacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook.keys);
         }
 
         GossipNet gossip_net;

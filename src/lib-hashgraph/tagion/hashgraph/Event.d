@@ -23,7 +23,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
 import tagion.hashgraph.Round;
-import tagion.hashgraphview.EventMonitorCallbacks;
+import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord;
@@ -53,7 +53,7 @@ class Event {
         Event _daughter;
         Event _son;
 
-        int _order;
+         long _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -99,12 +99,12 @@ class Event {
                 assert(
                         event_package.event_body.altitude - _mother
                         .event_package.event_body.altitude is 1);
-                assert(_order is int.init || (_order - _mother._order > 0));
+                assert(_order is long.init || (_order - _mother._order > 0));
             }
             if (_father) {
                 pragma(msg, "fixme(bbh) this test should be reimplemented once new witness def works");
                 // assert(_father._son is this, "fathers is not me");
-                assert(_order is int.init || (_order - _father._order > 0));
+                assert(_order is long.init || (_order - _father._order > 0));
             }
         }
     }
@@ -194,7 +194,7 @@ class Event {
     immutable size_t node_id; /// Node number of the event
 
     void initializeOrder() pure nothrow @nogc {
-        if (order is int.init) {
+        if (order is long.init) {
             _order = -1;
         }
     }
@@ -247,9 +247,6 @@ class Event {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
         }
-        if (callbacks) {
-            callbacks.round(this);
-        }
         _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
 
         // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
@@ -281,9 +278,6 @@ class Event {
         }
         with (hashgraph) {
             log.event(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
-        }
-        if (callbacks) {
-            callbacks.witness(this);
         }
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
@@ -326,8 +320,7 @@ class Event {
         if (voting_round.number + 1 == round.number) {
             _witness._vote_on_earliest_witnesses[vote_node_id] = _witness._prev_seen_witnesses[vote_node_id];
             return;
-        }
-        if (voting_event is null) {
+        }        if (voting_event is null) {
             hashgraph._rounds.vote(hashgraph, vote_node_id);
             return;
         }
@@ -339,7 +332,7 @@ class Event {
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
             hashgraph._rounds.vote(hashgraph, vote_node_id);
-        }
+        } 
     }
 
     /**
@@ -514,7 +507,7 @@ class Event {
          * Gets the event order number 
          * Returns: order
          */
-        int order() const pure nothrow @nogc {
+        long order() const pure nothrow @nogc {
             return _order;
         }
 

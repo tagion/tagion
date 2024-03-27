@@ -21,6 +21,7 @@ int main(string[] args) {
     import hashgraph_test = tagion.testbench.hashgraph_test;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
+    import subscription_test = tagion.testbench.services.subscription_test;
     import malformed_contract = tagion.testbench.malformed_contract;
     import send_contract = tagion.testbench.send_contract;
     import spam_double_spend = tagion.testbench.spam_double_spend;
@@ -32,11 +33,14 @@ int main(string[] args) {
     import big_contract = tagion.testbench.services.big_contract;
     import transaction = tagion.testbench.e2e.transaction;
     import run_epochs = tagion.testbench.e2e.run_epochs;
+    import mode1 = tagion.testbench.e2e.mode1;
+    import test_wave = tagion.testbench.e2e.test_wave;
 
     alias alltools = AliasSeq!(
             collector,
             hirpc_verifier,
             inputvalidator,
+            subscription_test,
             dart_test,
             dart_deep_rim_test,
             dart_pseudo_random_archives,
@@ -62,6 +66,8 @@ int main(string[] args) {
             big_contract,
             transaction,
             run_epochs,
+            mode1,
+            test_wave,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
