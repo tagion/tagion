@@ -63,7 +63,7 @@ class LogMonitorCallBacks : BaseMonitorCallbacks {
 class FileMonitorCallBacks : BaseMonitorCallbacks {
     File out_file;
     size_t[Pubkey] node_id_relocation;
-    this(string file_name, uint nodes, Pubkey[] node_keys) {
+    this(string file_name, uint nodes, const(Pubkey[]) node_keys) {
         out_file = File(file_name, "w");
         out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
 
