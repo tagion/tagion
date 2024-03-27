@@ -1,3 +1,25 @@
+# Changelog for Epoch 1189390 .. 1287717
+
+** HiREP updates **
+The HiREP tool has been updated so that it can filter on sub-hibons. This is very smart for ex filtering out specific elements from ex. the TRT.
+
+A new feature was also added to the `-l` flag which means you can specify `-1` as an index which will give you the last index in the range.
+
+** Mode1 BDD test **
+We have created a testbench bdd which can run nodes in different processes. This means that we now can spawn a mode1 network using a testing tool allowing us to implement various other tests on the mode1 network.
+
+** Graphview **
+We have a bug in our hashgraph which occurs very rarely. This means that the graphs we have to debug are extremely large and using [GraphViz](https://graphviz.org/) for generating the graphs have become a real problem since it crashes with more than ~10000 events. Therefore we have implemented a way to generate the svg directly without graphviz which is much simpler and faster. Our CI has also been updated so that it now generates the graphs automatically if there was an error. If you did not think the core-team could do styling think again! :-D.
+
+** TRT Contract storing **
+We have implemented a new archive in the TRT, which stores successfully executed contracts along with the epoch number. This allows clients to perform a `trt.dartRead` with the dartindex being the contracts hash and getting back which epoch it went through. Common for the TRT is that it is not the database but merely a lookup table for clients to more easily use the system.
+
+** HiBON Backward compatibility test **
+We have added a test which produces a HiBON containing all fields. This HiBON is then committed in git and checked in the unittest each time they are executed that the current binaries produce the same output.
+
+** Envelope fixes **
+We have refactored the Envelope so that it is little endian by default among other things.
+
 # Changelog for Epoch 1104102 .. 1189390
 
 **Epoch operational test**
