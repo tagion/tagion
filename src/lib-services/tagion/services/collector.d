@@ -136,6 +136,12 @@ struct CollectorService {
 
         immutable s_contract = contracts[res.id];
         auto fingerprints = recorder[].map!(a => a.dart_index).array;
+
+        // The collector can be in 1 of 2 states when receiving the recorder from the dart
+        // First if we requested any read documents and they all exist. Then we'll add it to out collected contract.
+        // When a request for the input archives is received, the inputs for each signature is checked.
+        // before it's sent to the tvm.
+        // if any archive is missing in inputs/reads or any of the signatures are incorrect. then the contract will be rejected.
         if (s_contract.contract.reads !is null && fingerprints == contracts[res.id].contract.reads) {
             reads[res.id] = recorder[].map!(a => a.filed).array;
             return;
