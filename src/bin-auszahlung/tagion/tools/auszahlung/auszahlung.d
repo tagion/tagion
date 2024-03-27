@@ -117,7 +117,6 @@ int _main(string[] args) {
             //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
                 "Documentation: https://docs.tagion.org/",
                 "",
                 "Usage:",

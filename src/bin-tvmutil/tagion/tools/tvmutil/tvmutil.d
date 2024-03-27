@@ -13,11 +13,11 @@ int _main(string[] args) {
     bool version_switch;
     GetoptResult main_args;
     try {
-            main_args = getopt(args, std.getopt.config.caseSensitive,
+
+        main_args = getopt(args, std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
-                "v|verbose", "Enable verbose print-out", &__verbose_switch,
-/*
+                "v|verbose", "Enable verbose print-out", &__verbose_switch,/*
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "C|create", "Create the wallet an set the confidence", &confidence,
                 "l|list", "List wallet content", &list,
@@ -28,29 +28,28 @@ int _main(string[] args) {
                 "force", "Force input bill", &force,
                 "migrate", "Migrate from old account to dart-index account", &migrate,
 */
+                
         );
         if (version_switch) {
             revision_text.writeln;
             return 0;
         }
         if (main_args.helpWanted) {
-            //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://docs.tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <wallet.json> [<bill.hibon>] ", program),
-                "",
+                    "Documentation: https://docs.tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] file.wasm [file.hibon ...] ", program),
+                    "",
 
-                "<option>:",
+                    "<option>:",
 
-            ].join("\n"),
+                    ].join("\n"),
                     main_args.options);
             return 0;
         }
- }
+    }
     catch (GetOptException e) {
         error(e.msg);
         return 1;
@@ -61,4 +60,3 @@ int _main(string[] args) {
     }
     return 0;
 }
-
