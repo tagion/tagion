@@ -50,6 +50,56 @@ class TestRefinement : StdRefinement {
     }
 
 }
+class NewTestRefinement : StdRefinement {
+    static FinishedEpoch[string][long] epochs;
+
+
+    override void epoch(Event[] event_collection, const Round decided_round) const {
+        import std.range : tee;
+        sdt_t[] times;
+        auto events = event_collection
+            .tee!((e) => times ~= e.event_body.time)
+            .filter!((e) => !e.event_body.payload.empty)
+            .array;
+
+        version(OLD_ORDERING) {
+            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        }
+        version(NEW_ORDERING) {
+            const famous_witnesses = decided_round
+                ._events
+                .filter!(e => e !is null)
+                .filter!(e => decided_round.famous_mask[e.node_id])
+                .array;
+            auto sorted_events = events.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+        }
+        times.sort;
+        
+        version(OLD_ORDERING) {
+            const mid = times.length / 2 + (times.length % 1);
+            const epoch_time = times[mid];
+        }
+        version(NEW_ORDERING) {
+            const epoch_time = times[times.length / 2];
+        }
+        version(OLD_ORDERING) {
+            auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        }
+        version(NEW_ORDERING) {
+            const famous_witnesses = decided_round
+                ._events
+                .filter!(e => e !is null)
+                .filter!(e => decided_round.famous_mask[e.node_id])
+                .array;
+            auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+        }
+        auto event_payload = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
+
+        epochs[event_payload.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = event_payload;
+        checkepoch(hashgraph.nodes.length.to!uint, epochs);
+    }
+
+}
 
 /++
     This function makes sure that the HashGraph has all the events connected to this event
@@ -323,4 +373,57 @@ void printStates(TestNetwork network) {
         }
     }
 
+}
+
+
+@safe
+static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs) {
+    import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
+    import tagion.crypto.SecureInterfaceNet;
+    import tagion.behaviour.BehaviourException : check;
+
+    writefln("unfinished epochs %s", epochs.length);
+    foreach (epoch; epochs.byKeyValue) {
+        if (epoch.value.length == number_of_nodes) {
+            // check that all epoch numbers are the same
+            check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
+
+            // check all events are the same
+            auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+            string print_events() {
+                HashNet net = new StdHashNet;
+                string printout;
+                // printout ~= format("EPOCH: %s", epoch.value.epoch);
+                foreach(i, events; epoch_events) {
+                    uint number_of_empty_events;
+                    printout ~= format("\n%s: ", i);
+                    foreach(epack; events) {
+                        printout ~= format("%(%02x%) ", net.calcHash(epack)[0..4]);
+                        if (epack.event_body.payload.empty) {
+                            number_of_empty_events++;
+                        }
+                    }
+                    printout ~= format("EMPTY: %s", number_of_empty_events);
+                }
+                return printout;
+            }
+
+            if (!epoch_events.all!(e => e == epoch_events[0])) {
+                check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
+            }
+
+            auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 
+            if (!timestamps.all!(t => t == timestamps[0])) {
+                string text;
+                foreach(i, t; timestamps) {
+                    auto line = format("\n%s: %s", i, t);
+                    text ~= line;
+                }
+                check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
+            }
+
+            writeln("FINISHED ENTIRE EPOCH");
+            epochs.remove(epoch.key);
+        }
+    }
 }
