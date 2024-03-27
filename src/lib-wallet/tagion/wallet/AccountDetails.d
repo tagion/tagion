@@ -18,8 +18,6 @@ import tagion.script.standardnames;
 
 import tagion.crypto.SecureNet;
 
-const hash_net = new StdHashNet;
-
 @recordType("$Account")
 struct AccountDetails {
     @optional string name;
