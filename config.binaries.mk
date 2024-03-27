@@ -115,6 +115,12 @@ target-vergangenheit: $LIBS += $(LIBSECP256K1)
 ${call DO_BIN,vergangenheit,$(LIB_DFILES) ${call BIN_DEPS,vergangenheit},tagion}
 
 #
+# Converting an old data-base to a new one
+#
+target-tvmutil: 
+${call DO_BIN,tvmutil,$(LIB_DFILES) ${call BIN_DEPS,tvmutil},tagion}
+
+#
 # Profile view
 #
 target-tprofview: LIBS+=  $(LIBSECP256K1) 
@@ -168,6 +174,7 @@ TAGION_TOOLS+=callstack
 TAGION_TOOLS+=ifiler
 TAGION_TOOLS+=devutils
 TAGION_TOOLS+=vergangenheit
+TAGION_TOOLS+=tvmutil
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
