@@ -111,13 +111,13 @@ ${call DO_BIN,kette,$(LIB_DFILES) ${call BIN_DEPS,kette},tagion}
 #
 # Converting an old data-base to a new one
 #
-target-vergangenheit: $LIBS += $(LIBSECP256K1)
+target-vergangenheit: LIBS += $(LIBSECP256K1)
 ${call DO_BIN,vergangenheit,$(LIB_DFILES) ${call BIN_DEPS,vergangenheit},tagion}
 
 #
 # Converting an old data-base to a new one
 #
-target-tvmutil: 
+target-tvmutil:  LIBS += $(LIBSECP256K1) $(LIBWASMER)
 ${call DO_BIN,tvmutil,$(LIB_DFILES) ${call BIN_DEPS,tvmutil},tagion}
 
 #
@@ -181,7 +181,7 @@ TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 target-tagion: libwasmer 
 target-tagion: nng secp256k1
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
-target-tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+target-tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG) $(LIBWASMER)
 target-tagion: DFILES+=$(LIB_DFILES)
 target-tagion: DFILES+=$(TAGION_BINS)
 ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}

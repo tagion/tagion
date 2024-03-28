@@ -2,6 +2,8 @@
 
 module tagion.wasmer.c.wasm;
 
+import tagion.wasmer.c.wasm_types;
+
 extern (C):
 nothrow:
 @nogc:
@@ -60,12 +62,12 @@ void wasm_byte_vec_delete (wasm_byte_vec_t*);
 
 alias wasm_name_t = wasm_byte_vec_t;
 
-enum wasm_name = wasm_byte_vec;
-enum wasm_name_new = wasm_byte_vec_new;
-enum wasm_name_new_empty = wasm_byte_vec_new_empty;
-enum wasm_name_new_new_uninitialized = wasm_byte_vec_new_uninitialized;
-enum wasm_name_copy = wasm_byte_vec_copy;
-enum wasm_name_delete = wasm_byte_vec_delete;
+alias wasm_name = wasm_byte_vec_t;
+alias wasm_name_new = wasm_byte_vec_new;
+alias wasm_name_new_empty = wasm_byte_vec_new_empty;
+alias wasm_name_new_new_uninitialized = wasm_byte_vec_new_uninitialized;
+alias wasm_name_copy = wasm_byte_vec_copy;
+alias wasm_name_delete = wasm_byte_vec_delete;
 
 void wasm_name_new_from_string (wasm_name_t* out_, const(char)* s);
 
@@ -378,6 +380,7 @@ struct wasm_val_t
     }
 
     _Anonymous_0 of;
+    mixin wasm_val_this;
 }
 
 void wasm_val_delete (wasm_val_t* v);
@@ -387,6 +390,7 @@ struct wasm_val_vec_t
 {
     size_t size;
     wasm_val_t* data;
+    mixin wasm_val_vec_this;
 }
 
 void wasm_val_vec_new_empty (wasm_val_vec_t* out_);
