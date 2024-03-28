@@ -68,7 +68,7 @@ class RunPassiveFastHashgraph {
         writeln("wowo");
         network = new TestNetworkT!(NewTestRefinement)(node_names);
         writeln("wowo2");
-        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
+        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 100);
         network.random.seed(123456789);
         writeln(network.random);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
