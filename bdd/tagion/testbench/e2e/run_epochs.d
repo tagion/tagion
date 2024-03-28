@@ -50,6 +50,7 @@ int _main(string[] args) {
 
     uint timeout = args[1].to!uint.ifThrown(10);
     uint number_of_nodes = args[3].to!uint.ifThrown(5);
+    long end_epoch = args[2].to!long;
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
@@ -167,7 +168,7 @@ int _main(string[] args) {
     log.registerSubscriptionTask(name);
 
     auto feature = automation!(run_epochs);
-    feature.RunPassiveFastNetwork(local_options.wave.number_of_nodes, args[2].to!long);
+    feature.RunPassiveFastNetwork(local_options.wave.number_of_nodes, end_epoch);
     feature.run;
     Thread.sleep(5.seconds);
     stopsignal.set;

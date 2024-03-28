@@ -16,6 +16,7 @@ import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Refinement;
+import tagion.hashgraph.RefinementInterface;
 import tagion.hashgraph.Round;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
@@ -101,11 +102,12 @@ class NewTestRefinement : StdRefinement {
 
 }
 
+alias TestNetwork = TestNetworkT!TestRefinement;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
 @safe
-static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
+static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import core.time;
     import std.datetime.systime : SysTime;
@@ -311,11 +313,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     static int testing;
-    void addNode(immutable(ulong) N, const(string) name, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
+    void addNode(Refinement refinement, immutable(ulong) N, const(string) name, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
-        auto refinement = new TestRefinement;
 
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
         if (testing < 4) {
@@ -336,7 +337,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     this(const(string[]) node_names, int scrap_depth = 0) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
-        node_names.each!(name => addNode(N, name, scrap_depth));
+        node_names.each!(name => addNode(new R, N, name, scrap_depth));
     }
 }
 

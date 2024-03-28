@@ -331,7 +331,10 @@
       "timeout": 0.0
     },
     "run_fiber_epoch": {
-      "args": [],
+      "args": [
+        "5000",
+        "5"
+      ],
       "envs": {},
       "stages": [
         "fiber"

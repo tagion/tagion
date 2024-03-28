@@ -16,6 +16,8 @@ import tagion.crypto.Types : Pubkey;
 import std.datetime.systime : SysTime;
 import tagion.hashgraph.Event;
 import std.format;
+import std.conv : to;
+import std.exception : ifThrown;
 import tagion.monitor.Monitor;
 
 enum feature = Feature(
@@ -37,9 +39,12 @@ int _main(string[] args) {
     }
     mkdirRecurse(module_path);
 
+    uint MAX_CALLS = args[1].to!uint.ifThrown(5000);
+    uint number_of_nodes = args[2].to!uint.ifThrown(5);
+
 
     auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
-    hashgraph_fiber_feature.RunPassiveFastHashgraph(5, module_path);
+    hashgraph_fiber_feature.RunPassiveFastHashgraph(number_of_nodes, MAX_CALLS, module_path);
     hashgraph_fiber_feature.run;
 
     return 0;
@@ -50,16 +55,19 @@ int _main(string[] args) {
 class RunPassiveFastHashgraph {
     string[] node_names;
     string module_path;
-    TestNetwork network;
-    enum MAX_CALLS = 1000;
+    TestNetworkT!NewTestRefinement network;
+    uint MAX_CALLS;
     uint number_of_nodes = 5;
 
-    this(uint number_of_nodes, string module_path) {
+    this(uint number_of_nodes, uint MAX_CALLS, string module_path) {
         this.number_of_nodes = number_of_nodes;
         this.module_path = module_path;
         this.node_names = number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
+        this.MAX_CALLS = MAX_CALLS;
 
-        network = new TestNetwork(node_names);
+        writeln("wowo");
+        network = new TestNetworkT!(NewTestRefinement)(node_names);
+        writeln("wowo2");
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
         writeln(network.random);
