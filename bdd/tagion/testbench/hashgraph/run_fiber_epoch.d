@@ -37,7 +37,6 @@ int _main(string[] args) {
     }
     mkdirRecurse(module_path);
 
-    writeln("WE ARE RUNNING SOMETHING");
 
     auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
     hashgraph_fiber_feature.RunPassiveFastHashgraph(5, module_path);
@@ -61,7 +60,7 @@ class RunPassiveFastHashgraph {
         this.node_names = number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
 
         network = new TestNetwork(node_names);
-        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 10);
+        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
         writeln(network.random);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
