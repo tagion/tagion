@@ -3,297 +3,187 @@
     "receive_epoch": {
       "args": [],
       "envs": {},
-      "stages": [
-        "none"
-      ],
+      "stages": ["none"],
       "timeout": 0.0
     },
     "dart_test": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "dart"
-      ],
+      "stages": ["commit", "dart"],
       "timeout": 0.0
     },
     "dart_deep_rim_test": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "dart"
-      ],
+      "stages": ["commit", "dart"],
       "timeout": 0.0
     },
     "dart_pseudo_random_archives": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "dart"
-      ],
+      "stages": ["commit", "dart"],
       "timeout": 0.0
     },
     "dart_sync": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "dart"
-      ],
+      "stages": ["commit", "dart"],
       "timeout": 0.0
     },
     "dart_partial_sync": {
       "args": [],
       "envs": {},
-      "stages": [
-        "performance"
-      ],
+      "stages": ["performance"],
       "timeout": 0.0
     },
     "dart_stress": {
       "args": [],
       "envs": {},
-      "stages": [
-        "dart_stress",
-        "performance",
-        "acceptance"
-      ],
+      "stages": ["dart_stress", "performance", "acceptance"],
       "timeout": 0.0
     },
     "dart_insert_remove_stress": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "performance"
-      ],
+      "stages": ["commit", "performance"],
       "timeout": 0.0
     },
     "dart_sync_stress": {
       "args": [],
       "envs": {},
-      "stages": [
-        "performance"
-      ],
+      "stages": ["performance"],
       "timeout": 0.0
     },
     "actor_tests": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit"
-      ],
+      "stages": ["commit"],
       "timeout": 0.0
     },
     "inputvalidator": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit"
-      ],
+      "stages": ["commit"],
       "timeout": 0.0
     },
     "hirpc_verifier": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit"
-      ],
+      "stages": ["commit"],
       "timeout": 0.0
     },
     "hashgraph_test": {
-      "args": [
-        "5",
-        "5000"
-      ],
+      "args": ["5", "5000"],
       "envs": {},
-      "stages": [
-        "hashgraph",
-        "acceptance"
-      ],
+      "stages": ["hashgraph", "acceptance"],
       "timeout": 0.0
     },
     "hashgraph_contributors": {
-      "args": [
-        "Alice",
-        "Bob",
-        "Carol",
-        "Dave",
-        "Elisa",
-        "Freja",
-        "Nonvoting"
-      ],
+      "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Nonvoting"],
       "envs": {},
-      "stages": [
-        "none"
-      ],
+      "stages": ["none"],
       "timeout": 0.0
     },
     "hashgraph_exclude": {
-      "args": [
-        "Alice",
-        "Bob",
-        "Carol",
-        "Dave",
-        "Elisa",
-        "Freja",
-        "Gretha"
-      ],
+      "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"],
       "envs": {},
-      "stages": [
-        "none"
-      ],
+      "stages": ["none"],
       "timeout": 0.0
     },
     "hashgraph_swap": {
-      "args": [
-        "4",
-        "500"
-      ],
+      "args": ["4", "500"],
       "envs": {},
-      "stages": [
-        "swap"
-      ],
+      "stages": ["swap"],
       "timeout": 0.0
     },
     "tvm_betterc": {
-      "args": [
-        "i32.wast"
-      ],
+      "args": ["i32.wast"],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
         "imports": "wasm=foundation.wasm",
         "attributes": "@safe"
       },
-      "stages": [
-        "tvm",
-        "commit"
-      ],
+      "stages": ["tvm", "commit"],
       "timeout": 0.0
     },
     "epoch_creator": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "epoch"
-      ],
+      "stages": ["commit", "epoch"],
       "timeout": 0.0
     },
     "tvm_service": {
       "args": [],
       "envs": {},
-      "stages": [
-        "tvm_service",
-        "services"
-      ],
+      "stages": ["tvm_service", "services"],
       "timeout": 0.0
     },
     "collector": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "collector",
-        "services"
-      ],
+      "stages": ["commit", "collector", "services"],
       "timeout": 0.0
     },
     "transaction_service": {
       "args": [],
       "envs": {},
-      "stages": [
-        "transaction_service",
-        "services"
-      ],
+      "stages": ["transaction_service", "services"],
       "timeout": 0.0
     },
     "collider_test": {
-      "args": [
-        "-f$WORKDIR"
-      ],
+      "args": ["-f$WORKDIR"],
       "envs": {
-        "WORKDIR": "$(HOME)\/work"
+        "WORKDIR": "$(HOME)/work"
       },
-      "stages": [
-        "example"
-      ],
+      "stages": ["example"],
       "timeout": 0.0
     },
     "dart_service": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "dart_service",
-        "services"
-      ],
+      "stages": ["commit", "dart_service", "services"],
       "timeout": 0.0
     },
     "send_contract": {
       "args": [],
       "envs": {},
-      "stages": [
-        "acceptance",
-        "contract",
-        "services"
-      ],
+      "stages": ["acceptance", "contract", "services"],
       "timeout": 0.0
     },
     "double_spend": {
       "args": [],
       "envs": {},
-      "stages": [
-        "acceptance",
-        "double_spend"
-      ],
+      "stages": ["acceptance", "double_spend"],
       "timeout": 0.0
     },
     "spam_double_spend": {
       "args": [],
       "envs": {},
-      "stages": [
-        "acceptance",
-        "spam_double_spend"
-      ],
+      "stages": ["acceptance", "spam_double_spend"],
       "timeout": 0.0
     },
     "malformed_contract": {
       "args": [],
       "envs": {},
-      "stages": [
-        "acceptance",
-        "malformed_contract"
-      ],
+      "stages": ["acceptance", "malformed_contract"],
       "timeout": 0.0
     },
     "genesis_test": {
       "args": [],
       "envs": {},
-      "stages": [
-        "acceptance",
-        "genesis"
-      ],
+      "stages": ["acceptance", "genesis"],
       "timeout": 0.0
     },
     "trt_service": {
       "args": [],
       "envs": {},
-      "stages": [
-        "acceptance",
-        "trt"
-      ],
+      "stages": ["acceptance", "trt", "trt_service"],
       "timeout": 0.0
     },
     "big_contract": {
       "args": [],
       "envs": {},
-      "stages": [
-        "acceptance",
-        "big_contract"
-      ],
+      "stages": ["acceptance", "big_contract"],
       "timeout": 0.0
     },
     "subscription_test": {
@@ -312,22 +202,19 @@
         "SUBSCRIPTION": "TRANSACTION_TEST_SUBSCRIPTION_",
         "PREFIX": "TRANSACTION_Node_%s_"
       },
-      "stages": [
-        "shell",
-        "acceptance"
-      ],
+      "stages": ["shell", "acceptance"],
       "timeout": 0.0
     },
     "run_epochs": {
-      "args": [
-        "1",
-        "10000",
-        "5"
-      ],
+      "args": ["1", "10000", "5"],
       "envs": {},
-      "stages": [
-        "epochs"
-      ],
+      "stages": ["epochs"],
+      "timeout": 0.0
+    },
+    "trt_contract": {
+      "args": [],
+      "envs": {},
+      "stages": ["commit", "trt", "trt_contract"],
       "timeout": 0.0
     }
   }
