@@ -423,7 +423,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
             }
 
-            writeln("FINISHED ENTIRE EPOCH");
+            writefln("FINISHED ENTIRE EPOCH %s", epoch.key);
             epochs.remove(epoch.key);
         }
     }
