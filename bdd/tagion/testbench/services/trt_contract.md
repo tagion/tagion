@@ -3,7 +3,8 @@ Feature: TRT contract scenarios
 Scenario: Proper contract
 Given a network
 Given a correctly signed contract
-When the contract is sent to the network and goes through
+When the contract is sent to the network
+When the contract goes through
 Then the contract should be saved in the TRT 
 
 Scenario: Invalid contract
