@@ -303,7 +303,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.target }}
+          name: ${{ env.TARGET }}
           path: ${{ env.ARTIFACT_DIR }}
           if-no-files-found: error
 
