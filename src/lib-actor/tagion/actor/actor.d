@@ -461,6 +461,7 @@ void end() @trusted nothrow {
  * Params:
  *   task_name = the name of the task
  *   args = a list of message handlers for the task
+ *   the first message handler may be a failHandler to deal with TaskFailure from other tasks
  */
 void run(Args...)(Args args) @safe nothrow
 if (allSatisfy!(isSafe, Args)) {
@@ -506,6 +507,7 @@ if (allSatisfy!(isSafe, Args)) {
  *   duration = the duration for the timeout
  *   timeout = delegate function to call
  *   args = normal message handlers for the task
+ *   the first message handler may be a failHandler to deal with TaskFailure from other tasks
  */
 void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow
 if (allSatisfy!(isSafe, Args)) {

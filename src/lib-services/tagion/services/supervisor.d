@@ -69,11 +69,10 @@ struct Supervisor {
         handles ~= _spawn!TVMService(tn.tvm, tn);
 
         // signs data
-        handles ~= spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net,
+        handles ~= _spawn!TranscriptService(tn.transcript, TranscriptOptions(), opts.wave.number_of_nodes, shared_net,
             tn, opts.trt.enable);
 
-        handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn
-                .dart_interface);
+        handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn.dart_interface);
 
         if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
             run();
