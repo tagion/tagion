@@ -303,8 +303,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: successful_artifact
-          path: ${{ env.ARTIFACT_DIR }}.tar.gz
+          name: ${{ env.target }}
+          path: ${{ env.ARTIFACT_DIR }}
           if-no-files-found: error
 
       - name: Post run
