@@ -80,7 +80,7 @@ $(DBIN)/%:
 	$(PRECMD)
 	$(call log.header, $* :: bin)
 	$(call log.env, DFILES, $(DFILES))
-	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(LIBS) $(OBJS) $(OUTPUT)$@
+	$(DC) $(DINCIMPORT) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OBJS) $(OUTPUT)$@
 endif
 endif
 
