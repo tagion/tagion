@@ -7,7 +7,7 @@ struct Engine {
         wasm_config_t* _config;
         
     }
-    this(
+//    this(
     @disable this(this);
     ~this() {
          
