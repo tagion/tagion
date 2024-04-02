@@ -189,27 +189,26 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
         }
 
         const(Pubkey) select_channel(ChannelFilter channel_filter) {
-            foreach (count; 0 .. channel_queues.length / 2) {
+            auto send_channels = channel_queues
+                .byKey
+                .filter!(k => online_states[k])
+                .filter!(k => channel_filter(k))
+                .array;
 
-                const node_index = random.value(0, channel_queues.length);
-
-                auto send_channels = channel_queues
-                    .byKey
-                    .dropExactly(node_index)
-                    .filter!((k) => online_states[k]);
-
-                if (!send_channels.empty && channel_filter(send_channels.front)) {
-                    return send_channels.front;
-                }
+            if (!send_channels.empty) {
+                const node_index = random.value(0, send_channels.length); 
+                return send_channels[node_index];
             }
-            return Pubkey();
+
+            
+            return Pubkey.init;
         }
 
         const(Pubkey) gossip(
                 ChannelFilter channel_filter,
                 SenderCallBack sender) {
             const send_channel = select_channel(channel_filter);
-            if (send_channel.length) {
+            if (send_channel != Pubkey.init) {
                 send(send_channel, sender());
             }
             return send_channel;
