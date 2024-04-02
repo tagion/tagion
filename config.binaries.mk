@@ -1,6 +1,5 @@
 SRC_DFILES=$(shell find $(DSRC) -name "*.d")
 BIN_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" )
-LIB_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/lib-*" )
 SRC_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" -or -path "*/src/lib-*")
 
 env-dinc:
@@ -220,7 +219,7 @@ $(call DO_BIN,tagion)
 COLLIDER::=$(DBIN)/collider
 $(COLLIDER): DFILES::=$(DSRC)/bin-collider/tagion/tools/collider/collider.d
 $(COLLIDER): DINC+=src/bin-collider
-$(COLLIDER): DINC+=$(LIB_DINC)
+$(COLLIDER): DINC+=$(SRC_DINC)
 $(COLLIDER): DFLAGS+=$(DVERSION)=ONETOOL
 $(call DO_BIN,collider)
 
