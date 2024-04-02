@@ -279,7 +279,7 @@ jobs:
     steps:
       - uses: dlang-community/setup-dlang@v1
         with:
-          compiler: dmd-latest
+          compiler: dmd-2.106.1
 
       - uses: actions/checkout@v4
 
