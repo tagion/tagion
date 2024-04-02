@@ -256,6 +256,9 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
                 writefln("NODE SIZE OF TEST HASHGRAPH %s", _hashgraph.node_size);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
+                if (Event.callbacks) {
+                    Event.callbacks.connect(eva_event);
+                }
 
             }
             uint count;
@@ -358,7 +361,7 @@ bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @
 }
 
 @safe
-void printStates(TestNetwork network) {
+void printStates(R)(TestNetworkT!(R) network) if (is (R:Refinement)) {
     foreach (channel; network.networks) {
         writeln("----------------------");
         foreach (channel_key; network.channels) {
