@@ -161,6 +161,7 @@ class StartNetworkWithNAmountOfNodes {
                 .events
                 .map!(e => cast(Buffer) e.event_package.fingerprint)
                 .array;
+            writefln("comparing epoch %s", i);
             auto compare_round_fingerprint = hashLastDecidedRound(compare_epoch.decided_round);
 
             // compare_events.sort!((a,b) => a < b);

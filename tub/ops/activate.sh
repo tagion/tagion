@@ -15,8 +15,7 @@ get_workflow_artifact() {
 
     if [ ! -d "$_outdir/build" ]; then
         (cd "$_outdir"
-            gh run download "$_worflowid" --repo tagion/tagion -n successful_artifact
-            tar xzf ./*.tar.gz
+            gh run download "$_worflowid" --repo tagion/tagion -n x86_64-linux
         )
     fi
 

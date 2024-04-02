@@ -14,7 +14,7 @@ import std.traits;
 import std.path;
 import std.typecons : Tuple, tuple;
 import tagion.hibon.HiBONJSON;
-import tagion.tools.Basic : dry_switch, verbose_switch;
+import tagion.tools.Basic : dry_switch, verbose_switch, error;
 import tagion.tools.collider.BehaviourOptions;
 import tagion.tools.collider.trace : ScheduleTrace;
 import tagion.tools.toolsexception;
@@ -162,8 +162,8 @@ struct ScheduleRunner {
                     .map!(unit => Stage(unit.value, unit.key, stage)))
             .joiner;
         if (schedule_list.empty) {
-            writefln("None of the stage %s available", stages);
-            writefln("Available stages %s", schedule.stages);
+            error("None of the stage %s available", stages);
+            error("Available stages %s", schedule.stages);
             return 1;
         }
         auto runners = new Runner[jobs];
@@ -256,7 +256,7 @@ struct ScheduleRunner {
                         schedule_list.popFront;
                     }
                     catch (Exception e) {
-                        writefln("Error %s", e.msg);
+                        error(e);
                         runners[job_index].fout.writeln("Error: %s", e.msg);
                         runners[job_index].fout.close;
                         kill(runners[job_index].pid);

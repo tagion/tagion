@@ -2,37 +2,52 @@
 .ONESHELL:
 .NOTPARALLEL:
 
+# default is ON
+NNG_WITH_MBEDTLS?=ON
 
 DC=dmd
-DCFLAGS=-O -d -m64 -i
+DCFLAGS=-O -d -m64 -i -debug -g -gf -gs -gx -dip1000
 DINC=nngd extern/libnng/libnng
-DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -lnng
 
-DTESTS=$(wildcard test/test*.d)
+DTESTS=$(wildcard tests/test*.d)
 
-all: lib test
+ifeq ($(NNG_WITH_MBEDTLS),ON)
+	DCFLAGS=-O -d -m64 -i -debug -g -version=withtls
+	DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -Lextern/libnng/extern/mbedtls/build/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
+else
+	DCFLAGS=-O -d -m64 -i -debug -g
+	DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -lnng
+endif
+
+
+all: extern lib test
 	@echo "All done!"
 
 test: $(DTESTS)
 
 extern:
-	git submodule update --init --checkout --recursive --remote --force && \
+	git submodule update --init --recursive && \
 	$(MAKE) -C extern/
 
-$(DTESTS): 
-	$(DC) $(DCFLAGS) -od=test/build -of=test/build/$(basename $@) ${addprefix -I,$(DINC)} -Itest ${addprefix -L,$(DLFLAGS)} $@
+$(DTESTS):
+	$(DC) $(DCFLAGS) -od=tests/build -of=tests/build/$(basename $@) ${addprefix -I,$(DINC)} -Itests ${addprefix -L,$(DLFLAGS)} $@
 
-lib: extern
+lib: 
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
 clean: clean-extern clean-local
 
+proper: proper-extern clean-local
+
 clean-local:
 	rm -rf ./build && \
-	rm -rf ./test/build 
+	rm -rf ./tests/build
 
 clean-extern:
-	$(MAKE) -C extern/ clean 
+	$(MAKE) clean -C extern/
+
+proper-extern:
+	$(MAKE) proper -C extern/
 
 .PHONY: all extern lib clean $(DTESTS)
 

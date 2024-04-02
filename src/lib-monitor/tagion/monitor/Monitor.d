@@ -7,6 +7,7 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.Round;
 
 import std.format;
+import std.file : exists;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.basic : EnumText, basename;
 import tagion.basic.tagionexceptions : TagionException;
@@ -64,14 +65,24 @@ class FileMonitorCallBacks : BaseMonitorCallbacks {
     File out_file;
     size_t[Pubkey] node_id_relocation;
     this(string file_name, uint nodes, Pubkey[] node_keys) {
-        out_file = File(file_name, "w");
-        out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
+        // we only want to add the nodeamount if the file does not exist 
+        if (file_name.exists) {
+            out_file = File(file_name, "a");
+        } else {
+            // the "a" creates the file as well
+            out_file = File(file_name, "a");
+            out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
+        }
 
         import std.algorithm : sort;
         import std.range : enumerate;
         foreach(i, k; node_keys.sort.enumerate) {
             this.node_id_relocation[k] = i;
         }
+    }
+
+    ~this() {
+        out_file.close;
     }
 
     nothrow:

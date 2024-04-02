@@ -14,6 +14,9 @@ import tagion.hibon.Document : Document;
 
 package alias check = Check!SecurityConsensusException;
 
+///
+const hash_net = new StdHashNet;
+
 @safe
 class StdHashNet : HashNet {
     import std.format;

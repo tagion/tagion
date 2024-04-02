@@ -5,6 +5,9 @@
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
+Tasks:
+- [] Create fiber test that is deterministic.
+- [] Fix graph?
 Assignee: phr
 
 ### Websocket Hashgraph monitor
