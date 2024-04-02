@@ -31,7 +31,6 @@ TMP_FILE=${shell mktemp -q /tmp/make.XXXXXXXX}
 -include $(REPOROOT)/local.*.mk
 -include $(REPOROOT)/local.mk
 include $(REPOROOT)/default.mk
-include $(DTUB)/testbench/default.mk
 include $(DTUB)/utilities/utils.mk
 include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
@@ -73,7 +72,6 @@ include $(TARGETS)/cov.mk
 # Packages
 #
 include $(TARGETS)/dstep.mk
-include $(TARGETS)/bins.mk
 include $(TARGETS)/format.mk
 include $(TARGETS)/dscanner.mk
 
@@ -82,7 +80,6 @@ include $(DTUB)/compile.mk
 #
 # Include all unit make files
 #
--include $(DSRC)/wrap-*/context.mk
 -include $(DSRC)/fork-*/context.mk
 -include $(DSRC)/lib-*/context.mk
 -include $(DSRC)/bin-*/context.mk
@@ -103,7 +100,7 @@ include $(TARGETS)/valgrind.mk
 # Testbench
 #
 include $(DTUB)/testbench/unittest.mk
-include $(DTUB)/testbench/collider.mk
+include $(DTUB)/testbench/bdd.mk
 include $(DTUB)/testbench/test.mk
 include $(DTUB)/testbench/citest.mk
 include $(DTUB)/testbench/release.mk

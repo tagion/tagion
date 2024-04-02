@@ -77,8 +77,6 @@ CROSS_OS:=android
 SHARED?=1
 DFLAGS+=$(DDEFAULTLIBSTATIC)
 
-DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-
 else
 install-android-toolchain:
 	$(PRECMD)
