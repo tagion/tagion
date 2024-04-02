@@ -7,26 +7,19 @@ BDD_FLAGS+=${addprefix -I,$(BDD)}
 export BDD_LOG=$(DLOG)/bdd/$(TEST_STAGE)/
 export BDD_RESULTS=$(abspath $(BDD_LOG)/results/)
 
-BDD_DFILES+=${shell find $(BDD) -name "*.d" -a -not -name "*.gen.d" -a -path "*/testbench/*" -a -not -path "*/unitdata/*" -a -not -path "*/backlog/*" }
-testbench: DFILES+=${shell find $(DSRC)/bin-wave/ -name "*.d"}
-testbench: DFILES+=${shell find $(DSRC)/bin-tagionshell/ -name "*.d"}
-testbench: DFILES+=${shell find $(DSRC)/bin-geldbeutel/ -name "*.d"}
-testbench: DFILES+=${shell find $(DSRC)/bin-stiefel/ -name "*.d"}
+TESTBENCH::=$(DBIN)/testbench
+$(TESTBENCH): revision
+$(TESTBENCH): nng secp256k1
+$(TESTBENCH): DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" -or -path "*/src/lib-*"}
+$(TESTBENCH): DINC+=bdd/
+$(TESTBENCH): DFLAGS+=$(DVERSION)=ONETOOL
+$(TESTBENCH): DFLAGS+=$(DVERSION)=BDD
+$(TESTBENCH): LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(TESTBENCH): DFLAGS+=$(DEBUG_FLAGS)
+$(TESTBENCH): DFILES::=$(BDD)/tagion/testbench/testbench.d
+$(TESTBENCH): $(shell find $(DSRC) -name "*.d")
+$(TESTBENCH): $(shell find $(BDD) -name "*.d")
+$(TESTBENCH): bddfiles
 
-testbench: DINC+=$(DSRC)/bin-wave/
-testbench: DINC+=$(DSRC)/bin-tagionshell/
-testbench: DINC+=$(DSRC)/bin-stiefel/
-
-#
-# Binary testbench 
-#
-testbench: bddfiles
+testbench: $(DBIN)/testbench
 .PHONY: testbench
-
-target-testbench: nng secp256k1
-target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
-target-testbench: DFLAGS+=$(DVERSION)=BDD
-target-testbench: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
-target-testbench: DFLAGS+=$(DEBUG_FLAGS)
-
-${call DO_BIN,testbench,$(LIB_DFILES) $(BDD_DFILES)}
