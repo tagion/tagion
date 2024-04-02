@@ -1,6 +1,5 @@
 SRC_DFILES=$(shell find $(DSRC) -name "*.d")
 BIN_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" )
-LIB_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/lib-*" )
 SRC_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" -or -path "*/src/lib-*")
 
 env-dinc:
@@ -8,7 +7,6 @@ env-dinc:
 	$(call log.header, $@ :: env)
 	$(call log.env, SRC_DINC, $(SRC_DINC))
 	$(call log.env, BIN_DINC, $(BIN_DINC))
-	$(call log.env, LIB_DINC, $(LIB_DINC))
 	$(call log.close)
 
 .PHONY: env-dinc
@@ -219,8 +217,7 @@ $(call DO_BIN,tagion)
 #
 COLLIDER::=$(DBIN)/collider
 $(COLLIDER): DFILES::=$(DSRC)/bin-collider/tagion/tools/collider/collider.d
-$(COLLIDER): DINC+=src/bin-collider
-$(COLLIDER): DINC+=$(LIB_DINC)
+$(COLLIDER): DINC+=$(SRC_DINC)
 $(COLLIDER): DFLAGS+=$(DVERSION)=ONETOOL
 $(call DO_BIN,collider)
 

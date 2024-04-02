@@ -1,7 +1,10 @@
 LIBTAGION:=$(DLIB)/libtagion.$(LIBEXT)
 
+LIB_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/lib-*" )
+
 libtagion: DFLAGS+=$(OUTPUTDIR)=$(DOBJ)
 libtagion: DFLAGS+=$(FULLY_QUALIFIED)
+libtagion: DINC+=$(LIB_DINC)
 libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-behaviour/*" -a -not -path "*/lib-betterc/*"}
 libtagion: $(LIBTAGION) $(DFILES)
 
@@ -13,6 +16,7 @@ clean: clean-libtagion
 
 LIBMOBILE:=$(DLIB)/libmobile.$(LIBEXT)
 libmobile: DFLAGS+=-i
+libmobile: DINC+=$(LIB_DINC)
 libmobile: LIBS+=$(LIBSECP256K1_STATIC)
 libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
 
