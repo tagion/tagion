@@ -2188,7 +2188,9 @@ struct WebSocket {
     void* context;
     nng_aio *rxaio;
     nng_aio *txaio;
+    nng_aio *connaio;
     nng_stream *s;
+    nng_ws_onconnect onconnect;
     nng_ws_onmessage onmessage;
     nng_iov rxiov;
     nng_iov txiov;
@@ -2202,6 +2204,7 @@ struct WebSocket {
     this( 
         WebSocketApp *_app, 
         nng_stream *_s, 
+        nng_ws_onconnect _onconnect, 
         nng_ws_onmessage _onmessage, 
         void* _context,
         size_t _bufsize = 4096 )
@@ -2209,6 +2212,7 @@ struct WebSocket {
         int rc;
         app = _app;
         s = _s;
+        onconnect = _onconnect;
         onmessage = _onmessage;
         context = _context;
         closed = false;
@@ -2218,6 +2222,9 @@ struct WebSocket {
         void delegate(void*) d2 = &(this.nng_ws_txcb);
         rc = nng_aio_alloc(&txaio, d2.funcptr, self());
         enforce(rc == 0, "Conn aio init1");
+        void delegate(void*) d3 = &(this.nng_ws_conncb);
+        rc = nng_aio_alloc(&connaio, d3.funcptr, self());
+        enforce(rc == 0, "Conn aio init2");
         rxbuf = new ubyte[](_bufsize);
         txbuf = new ubyte[](_bufsize);
         rxiov.iov_buf = rxbuf.ptr;
@@ -2229,6 +2236,7 @@ struct WebSocket {
         rc = nng_aio_set_iov(txaio, 1, &txiov);
         enforce(rc == 0, "Invalid tx iov");
         ready = true;
+        nng_sleep_aio(100, connaio);
         nng_stream_recv(s, rxaio);
     }
     
@@ -2236,6 +2244,18 @@ struct WebSocket {
         return cast(void*)&this;
     }
 
+    void nng_ws_conncb( void *ptr ){
+        int rc;
+        if(closed)
+            return;
+        rc = nng_aio_result(connaio);
+        if(rc == 0){
+            onconnect(cast(WebSocket*)self(), context);
+        }else{
+            closed = true;
+            return;
+        }
+    }
 
     void nng_ws_rxcb( void *ptr ){
         int rc;
@@ -2374,10 +2394,9 @@ struct WebSocketApp {
             }
             s = cast(nng_stream*)nng_aio_get_output(accio, 0);
             enforce(s != null, "Invalid stream pointer");
-            c = new WebSocket(cast(WebSocketApp*)self(), s, onmessage, context, 8192);
+            c = new WebSocket(cast(WebSocketApp*)self(), s, onconnect, onmessage, context, 8192);
             enforce(c != null, "Invalid conn pointer");
             conns ~= c;
-            onconnect(c, context);   
             nng_stream_listener_accept(sl, accio);
             nng_mtx_unlock(mtx);
         }
