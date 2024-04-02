@@ -38,6 +38,7 @@ clean-libmobile:
 clean: clean-libmobile
 
 LIBBETTERC:=$(DLIB)/libbetterc.$(LIBEXT)
+$(LIBBETTERC): revision
 $(LIBBETTERC): secp256k1
 libbetterc: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-betterc/*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*"}
 libbetterc: DFLAGS+=-i

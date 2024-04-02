@@ -7,10 +7,6 @@ libwasmer:
 	$(call log.header, $@ :: libwasmer)
 	$(CD) $(WASMER_DIR)
 	cargo build --manifest-path $(WASMER_MANIFEST) $(WASMER_FLAG) --target $(WASMER_TARGET)
-else
-libwasmer: 
-	$(warning wasmer not supported of $(PLATFORM))
-endif
 
 proper-libwasmer:
 	$(PRECMD)
@@ -21,6 +17,11 @@ proper-libwasmer:
 .PHONY: proper-libwasmer
 
 proper: proper-libwasmer
+
+else
+libwasmer: 
+	$(warning wasmer not supported of $(PLATFORM))
+endif
 
 help-libwasmer:
 	$(PRECMD)
