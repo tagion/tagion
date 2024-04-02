@@ -241,11 +241,16 @@ jobs:
         run: |
           cd ${{ env.ARTIFACT_DIR }}
           log_files=$(find logs -name "*.log")
-          for file in $log_files; do
+
+          process_file() {
+            file="$1"
             url=$(gh gist create $file) || echo could not create gist
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
-          done
+          }
 
+          export -f process_file
+
+          echo "$log_files" | parallel -j process_file >> $GITHUB_STEP_SUMMARY
       - name: Add callstacks
         run: |
           cd ${{ env.ARTIFACT_DIR }}
@@ -260,7 +265,6 @@ jobs:
           cd ${{ env.ARTIFACT_DIR }}
           graph_files=$(find logs -name "*_graph.hibon")
 
-          # Define a function to process each file
           process_file() {
               file="$1"
               ./build/${{ env.TARGET }}/bin/tagion graphview --svg "$file" > "$file.svg" || echo could not create graph
@@ -268,11 +272,9 @@ jobs:
               echo "[$(basename "$file").svg]($url)" >> $GITHUB_STEP_SUMMARY
           }
 
-          # Export the function so that it's available to GNU Parallel
           export -f process_file
 
-          # Use GNU Parallel to run the function in parallel
-          echo "$graph_files" | parallel -j 20 process_file >> $GITHUB_STEP_SUMMARY
+          echo "$graph_files" | parallel -j process_file >> $GITHUB_STEP_SUMMARY
   ddoc:
     if: ${{ github.ref == 'refs/heads/current' }}
     runs-on: ubuntu-latest
