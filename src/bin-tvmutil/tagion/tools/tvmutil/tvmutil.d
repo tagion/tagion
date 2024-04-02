@@ -108,7 +108,6 @@ int _main(string[] args) {
         return 1;
     }
 
-    printf("Executing `swap(1, 2)`...\n");
     wasm_func_t* swap = wasm_extern_as_func(exports.data[0]);
 
     wasm_val_t[2] arguments =  [wasm_val_t(1), wasm_val_t(long(2)) ];
@@ -117,6 +116,7 @@ int _main(string[] args) {
     wasm_val_vec_t arguments_as_array = wasm_val_vec_t(arguments);
     wasm_val_vec_t results_as_array = wasm_val_vec_t(results);
 
+    writefln("Executing `swap(%d, %d)`...", arguments[0].of.i32, arguments[1].of.i64);
     trap = wasm_func_call(swap, &arguments_as_array, &results_as_array);
 
     if (trap !is null) {
@@ -125,13 +125,13 @@ int _main(string[] args) {
         return 1;
     }
 
+    writefln("Got `(%d, %d)`!", results[0].of.i64, results[1].of.i32);
     if (results[0].of.i64 != 2 || results[1].of.i32 != 1) {
         printf("> Multi-value failed.\n");
 
         return 1;
     }
 
-    writefln("Got `(%d, %d)`!", results[0].of.i64, results[1].of.i32);
 
     wasm_extern_vec_delete(&exports);
     wasm_module_delete(_module);
