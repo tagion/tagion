@@ -50,6 +50,7 @@ int _main(string[] args) {
 
     uint timeout = args[1].to!uint.ifThrown(10);
     uint number_of_nodes = args[3].to!uint.ifThrown(5);
+    long end_epoch = args[2].to!long;
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
@@ -167,7 +168,7 @@ int _main(string[] args) {
     log.registerSubscriptionTask(name);
 
     auto feature = automation!(run_epochs);
-    feature.RunPassiveFastNetwork(local_options.wave.number_of_nodes, args[2].to!long);
+    feature.RunPassiveFastNetwork(local_options.wave.number_of_nodes, end_epoch);
     feature.run;
     Thread.sleep(5.seconds);
     stopsignal.set;
@@ -190,6 +191,7 @@ class RunPassiveFastNetwork {
     import tagion.testbench.actor.util : receiveOnlyTimeout;
     import tagion.logger.LogRecords : LogInfo;
 
+    enum EPOCH_TIMEOUT_SECONDS = 60;
     uint number_of_nodes;
     long end_epoch;
     this(uint number_of_nodes, long end_epoch) {
@@ -210,59 +212,13 @@ class RunPassiveFastNetwork {
         // epoch <- taskname <- epoch_number
         FinishedEpoch[string][long] epochs;
 
-        void checkepochs() @trusted {
-            writefln("unfinished epochs %s", epochs.length);
-            foreach (epoch; epochs.byKeyValue) {
-                if (epoch.value.length == this.number_of_nodes) {
-                    // check that all epoch numbers are the same
-                    check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
-
-                    // check all events are the same
-                    auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
-                    string print_events() {
-                        HashNet net = new StdHashNet;
-                        string printout;
-                        // printout ~= format("EPOCH: %s", epoch.value.epoch);
-                        foreach(i, events; epoch_events) {
-                            uint number_of_empty_events;
-                            printout ~= format("\n%s: ", i);
-                            foreach(epack; events) {
-                                printout ~= format("%(%02x%) ", net.calcHash(epack)[0..4]);
-                                if (epack.event_body.payload.empty) {
-                                    number_of_empty_events++;
-                                }
-                            }
-                            printout ~= format("EMPTY: %s", number_of_empty_events);
-                        }
-                        return printout;
-                    }
-
-                    if (!epoch_events.all!(e => e == epoch_events[0])) {
-                        check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
-                    }
-
-                    auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 
-                    if (!timestamps.all!(t => t == timestamps[0])) {
-                        string text;
-                        foreach(i, t; timestamps) {
-                            auto line = format("\n%s: %s", i, t);
-                            text ~= line;
-                        }
-                        check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
-                    }
-
-                    writeln("FINISHED ENTIRE EPOCH");
-                    epochs.remove(epoch.key);
-                }
-            }
-        }
-
+        import tagion.testbench.hashgraph.hashgraph_test_network;
         while (newest_epoch < end_epoch) {
-            auto finished_epoch_log = receiveOnlyTimeout!(LogInfo, const(Document))(20.seconds);
+            auto finished_epoch_log = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT_SECONDS.seconds);
             check(finished_epoch_log[1].isRecord!(FinishedEpoch), "Did not receive finished epoch");
             FinishedEpoch epoch_received = FinishedEpoch(finished_epoch_log[1]);
             epochs[epoch_received.epoch][finished_epoch_log[0].to!string] = epoch_received;
-            checkepochs;
+            checkepoch(this.number_of_nodes, epochs);
 
             if (newest_epoch < epoch_received.epoch) {
                 newest_epoch = epoch_received.epoch;

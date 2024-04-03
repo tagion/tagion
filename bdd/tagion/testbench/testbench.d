@@ -19,6 +19,7 @@ int main(string[] args) {
     import epoch_creator = tagion.testbench.epoch_creator;
     import hashgraph_swap = tagion.testbench.hashgraph_swap;
     import hashgraph_test = tagion.testbench.hashgraph_test;
+    import run_fiber_epoch = tagion.testbench.hashgraph.run_fiber_epoch;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
     import subscription_test = tagion.testbench.services.subscription_test;
@@ -69,6 +70,7 @@ int main(string[] args) {
         run_epochs,
         mode1,
         test_wave,
+        run_fiber_epoch,
         trt_contract,
     );
     mixin doOneMain!(alltools);

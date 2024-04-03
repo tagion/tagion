@@ -84,6 +84,7 @@ uninstall:
 	$(PRECMD)
 	$(RM) $(INSTALLEDCOLLIDER)
 	$(RM) $(INSTALLED_FILES)
+	$(call log.close)
 
 help-install:
 	$(PRECMD)

@@ -7,10 +7,6 @@ libwasmer:
 	$(call log.header, $@ :: libwasmer)
 	$(CD) $(WASMER_DIR)
 	cargo build --manifest-path $(WASMER_MANIFEST) $(WASMER_FLAG) --target $(WASMER_TARGET)
-else
-libwasmer: 
-	$(error wasmer not supported of $(PLATFORM))
-endif
 
 proper-libwasmer:
 	$(PRECMD)
@@ -22,10 +18,15 @@ proper-libwasmer:
 
 proper: proper-libwasmer
 
+else
+libwasmer: 
+	$(warning wasmer not supported of $(PLATFORM))
+endif
+
 help-libwasmer:
 	$(PRECMD)
 	$(call log.header, $@ :: help)
-	$(call log.help, "make libwasmer", "Compiles the lib  
+	$(call log.help, "make libwasmer", "Compiles the libwasmer")  
 	$(call log.help, "make proper-libwasmer", "Remove the pre-build of wasmer")
 	$(call log.help, "make env-libwasmer", "Show the environment for libwasmer")
 	$(call log.close)

@@ -23,7 +23,6 @@ import tagion.tools.revision;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions;
 import tagion.utils.Term;
-import tagion.utils.Term;
 import tagion.wallet.AccountDetails;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.SecureWallet;
@@ -118,7 +117,6 @@ int _main(string[] args) {
             //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
                 "Documentation: https://docs.tagion.org/",
                 "",
                 "Usage:",

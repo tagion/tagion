@@ -56,7 +56,7 @@ else
 $(DLIB)/%.$(LIBEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${addprefix -L,$(LDFLAGS)} $(LIBS) $(OBJS) $(DLIBTYPE) $(OUTPUT)$@
+	$(DC) $(DINCIMPORT) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${addprefix -L,$(LDFLAGS)} $(LIBS) $(OBJS) $(DLIBTYPE) $(OUTPUT)$@
 endif
 
 #
@@ -80,7 +80,7 @@ $(DBIN)/%:
 	$(PRECMD)
 	$(call log.header, $* :: bin)
 	$(call log.env, DFILES, $(DFILES))
-	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(LIBS) $(OBJS) $(OUTPUT)$@
+	$(DC) $(DINCIMPORT) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OBJS) $(OUTPUT)$@
 endif
 endif
 

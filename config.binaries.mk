@@ -1,195 +1,227 @@
-NO_UNITDATA=-a -not -path "*/unitdata/*"
-EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
-EXCLUDED_DIRS+=-a -not -path "*/tests/*"
-EXCLUDED_DIRS+=-a -not -path "*/.dub/*"
+SRC_DFILES=$(shell find $(DSRC) -name "*.d")
+BIN_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" )
+SRC_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" -or -path "*/src/lib-*")
 
-LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
+env-dinc:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
+	$(call log.env, SRC_DINC, $(SRC_DINC))
+	$(call log.env, BIN_DINC, $(BIN_DINC))
+	$(call log.env, LIB_DINC, $(LIB_DINC))
+	$(call log.close)
+
+.PHONY: env-dinc
+env: env-dinc
 
 env-dfiles:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
-	$(call log.env, LIB_DFILES, $(LIB_DFILES))
+	$(call log.env, SRC_DFILES, $(SRC_DFILES))
 	$(call log.close)
 
 .PHONY: env-dfiles
 
 env: env-dfiles
 
-env-exclude-dirs:
-	$(PRECMD)
-	$(call log.header, $@ :: env)
-	$(call log.env, EXCLUDED_DIRS, $(EXCLUDED_DIRS))
-	$(call log.close)
-
-.PHONY: env-exclude-dirs
-
-env: env-exclude-dirs
- 
-LIB_BETTERC:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-betterc/*" -a -not -path "*/tests/*" $(NO_UNITDATA) }
-
-
-BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_DIRS) $(NO_UNITDATA) $(NO_WOLFSSL) }
-
-
-#
-# Targets for all binaries
-#
-
-#
-# New Wave
-#
-target-neuewelle: LIBS+=  $(LIBSECP256K1)  $(LIBNNG) $(LIBWASMER)
-${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
-
-#
-# Shell
-#
-target-tagionshell: LIBS+= $(LIBNNG)
-${call DO_BIN,tagionshell,$(LIB_DFILES) ${call BIN_DEPS,tagionshell},tagion}
-
-#
-# Tagion Wallet
-#
-target-geldbeutel: LIBS+=  $(LIBSECP256K1)  
-${call DO_BIN,geldbeutel,$(LIB_DFILES) ${call BIN_DEPS,geldbeutel},tagion}
-
-#
-# Tagion boot
-#
-target-stiefel: LIBS+=  $(LIBSECP256K1)  
-${call DO_BIN,stiefel,$(LIB_DFILES) ${call BIN_DEPS,stiefel},tagion}
-
-#
-# Tagion payout 
-#
-target-auszahlung: LIBS+=  $(LIBSECP256K1)  
-${call DO_BIN,auszahlung,$(LIB_DFILES) ${call BIN_DEPS,auszahlung},tagion}
-
-#
-#  HiBON reqular expression print
-#
-target-hirep: LIBS+=  $(LIBSECP256K1)  
-${call DO_BIN,hirep,$(LIB_DFILES) ${call BIN_DEPS,hirep},tagion}
-
-
-
-#
-# HiBON utility
-#
-target-hibonutil: LIBS+=  $(LIBSECP256K1) 
-${call DO_BIN,hibonutil,$(LIB_DFILES) ${call BIN_DEPS,hibonutil},tagion}
-
-
-#
-# DART utility
-#
-target-dartutil: LIBS+=  $(LIBSECP256K1) 
-${call DO_BIN,dartutil,$(LIB_DFILES) ${call BIN_DEPS,dartutil},tagion}
-
-#
-# DART utility
-#
-target-blockutil: LIBS+=  $(LIBSECP256K1) 
-${call DO_BIN,blockutil,$(LIB_DFILES) ${call BIN_DEPS,blockutil},tagion}
-
-#
-# WASM utility
-#
-target-wasmutil: LIBS+=  $(LIBSECP256K1) 
-${call DO_BIN,wasmutil,$(LIB_DFILES) ${call BIN_DEPS,wasmutil},tagion}
-
-
-target-signs: LIBS+=  $(LIBSECP256K1) 
-${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
-
-#
-# kette recorderchain utility
-#
-target-kette: LIBS+=  $(LIBSECP256K1) 
-${call DO_BIN,kette,$(LIB_DFILES) ${call BIN_DEPS,kette},tagion}
-
-#
-# Converting an old data-base to a new one
-#
-target-vergangenheit: $LIBS += $(LIBSECP256K1)
-${call DO_BIN,vergangenheit,$(LIB_DFILES) ${call BIN_DEPS,vergangenheit},tagion}
-
-#
-# Profile view
-#
-target-tprofview: LIBS+=  $(LIBSECP256K1) 
-${call DO_BIN,tprofview,$(LIB_DFILES) ${call BIN_DEPS,tprofview},tagion}
-
-#
-# Hashgraph view
-#
-target-graphview: LIBS+= $(LIBSECP256K1) 
-${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
-
-#
-#  callstack
-#
-target-callstack:  
-${call DO_BIN,callstack,$(LIB_DFILES) ${call BIN_DEPS,callstack},tagion}
-
-#
-#  callstack
-#
-target-ifiler:  
-${call DO_BIN,ifiler,$(LIB_DFILES) ${call BIN_DEPS,ifiler},tagion}
-
-#
-# Subscriber
-#
-target-subscriber: LIBS+=  $(LIBSECP256K1)  $(LIBNNG)
-${call DO_BIN,subscriber,$(LIB_DFILES) ${call BIN_DEPS,subscriber},tagion}
-
-#
-# Tagion onetool
-#
-TAGION_TOOLS+=wave # New wave
-TAGION_TOOLS+=subscriber
-TAGION_TOOLS+=dartutil
-TAGION_TOOLS+=blockutil
-TAGION_TOOLS+=hibonutil
-TAGION_TOOLS+=wallet
-TAGION_TOOLS+=tprofview
-TAGION_TOOLS+=tools
-TAGION_TOOLS+=graphview
-TAGION_TOOLS+=signs
-TAGION_TOOLS+=recorderchain
-TAGION_TOOLS+=wasmutil
-TAGION_TOOLS+=geldbeutel
-TAGION_TOOLS+=tagionshell
-TAGION_TOOLS+=stiefel
-TAGION_TOOLS+=auszahlung
-TAGION_TOOLS+=hirep
-TAGION_TOOLS+=callstack
-TAGION_TOOLS+=ifiler
-TAGION_TOOLS+=devutils
-TAGION_TOOLS+=vergangenheit
-
-TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
-
-target-tagion: nng secp256k1
-target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
-target-tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
-target-tagion: DFILES+=$(LIB_DFILES)
-target-tagion: DFILES+=$(TAGION_BINS)
-${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
-
 env-tools:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
 	$(call log.env, TAGION_TOOLS, $(TAGION_TOOLS))
-	$(call log.env, TAGION_BINS, $(TAGION_BINS))
 	$(call log.close)
+
+.PHONY: env-tools
+
+env: env-tools
+
+# $1: target name
+define DO_BIN
+${eval
+$(DBIN)/$1: | revision
+$(DBIN)/$1: $(SRC_DFILES)
+$1: $(DBIN)/$1
+.PHONY: $1
+TAGION_TOOLS+=$1
+}
+endef
+
+#
+# New tagion wave
+#
+$(DBIN)/neuewelle: secp256k1 nng
+$(DBIN)/neuewelle: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(DBIN)/neuewelle: DINC+=$(SRC_DINC)
+$(DBIN)/neuewelle: DFILES::=$(DSRC)/bin-wave/tagion/tools/neuewelle.d
+$(call DO_BIN,neuewelle)
+
+#
+# Shell
+#
+$(DBIN)/tagionshell: secp256k1 nng
+$(DBIN)/tagionshell: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(DBIN)/tagionshell: DINC+=$(SRC_DINC)
+$(DBIN)/tagionshell: DFILES::=$(DSRC)/bin-tagionshell/tagion/tools/tagionshell.d
+$(call DO_BIN,tagionshell)
+
+#
+# Tagion Wallet
+#
+$(DBIN)/geldbeutel: secp256k1 nng
+$(DBIN)/geldbeutel: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(DBIN)/geldbeutel: DINC+=$(SRC_DINC)
+$(DBIN)/geldbeutel: DFILES::=$(DSRC)/bin-geldbeutel/tagion/tools/wallet/geldbeutel.d
+$(call DO_BIN,geldbeutel)
+
+#
+# Tagion payout 
+#
+$(DBIN)/auszahlung: secp256k1 nng
+$(DBIN)/auszahlung: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(DBIN)/auszahlung: DINC+=$(SRC_DINC)
+$(DBIN)/auszahlung: DFILES::=$(DSRC)/bin-auszahlung/tagion/tools/auszahlung/auszahlung.d
+$(call DO_BIN,auszahlung)
+
+#
+# Tagion boot
+#
+$(DBIN)/stiefel: secp256k1
+$(DBIN)/stiefel: LDFLAGS+=$(LD_SECP256K1)
+$(DBIN)/stiefel: DINC+=$(SRC_DINC)
+$(DBIN)/stiefel: DFILES::=$(DSRC)/bin-stiefel/tagion/tools/boot/stiefel.d
+$(call DO_BIN,stiefel)
+
+#
+#  HiBON reqular expression print
+#
+$(DBIN)/hirep: secp256k1
+$(DBIN)/hirep: LDFLAGS+=$(LD_SECP256K1)
+$(DBIN)/hirep: DINC+=$(SRC_DINC)
+$(DBIN)/hirep: DFILES::=$(DSRC)/bin-hirep/tagion/tools/hirep/hirep.d
+$(call DO_BIN,hirep)
+
+#
+# HiBON utility
+#
+$(DBIN)/hibonutil: secp256k1
+$(DBIN)/hibonutil: LDFLAGS+=$(LD_SECP256K1)
+$(DBIN)/hibonutil: DINC+=$(SRC_DINC)
+$(DBIN)/hibonutil: DFILES::=$(DSRC)/bin-hibonutil/tagion/tools/hibonutil.d
+$(call DO_BIN,hibonutil)
+
+#
+# DART utility
+#
+$(DBIN)/dartutil: secp256k1
+$(DBIN)/dartutil: LDFLAGS+=$(LD_SECP256K1)
+$(DBIN)/dartutil: DINC+=$(SRC_DINC)
+$(DBIN)/dartutil: DFILES::=$(DSRC)/bin-dartutil/tagion/tools/dartutil/dartutil.d
+$(call DO_BIN,dartutil)
+
+#
+# Blocfile utility
+#
+$(DBIN)/blockutil: DINC+=$(SRC_DINC)
+$(DBIN)/blockutil: DFILES::=$(DSRC)/bin-blockutil/tagion/tools/blockutil.d
+$(call DO_BIN,blockutil)
+
+#
+# WASM utility
+#
+$(DBIN)/wasmutil: DINC+=$(SRC_DINC)
+$(DBIN)/wasmutil: DFILES::=$(DSRC)/bin-wasmutil/tagion/tools/wasmutil/wasmutil.d
+$(call DO_BIN,wasmutil)
+
+#
+# Signature util
+#
+$(DBIN)/signs: secp256k1
+$(DBIN)/signs: LDFLAGS+=$(LD_SECP256K1)
+$(DBIN)/signs: DINC+=$(SRC_DINC)
+$(DBIN)/signs: DFILES::=$(DSRC)/bin-signs/tagion/tools/signs.d
+$(call DO_BIN,signs)
+
+#
+# kette recorderchain utility
+#
+$(DBIN)/kette: secp256k1
+$(DBIN)/kette: LDFLAGS+=$(LD_SECP256K1)
+$(DBIN)/kette: DINC+=$(SRC_DINC)
+$(DBIN)/kette: DFILES::=$(DSRC)/bin-recorderchain/tagion/tools/kette.d
+$(call DO_BIN,kette)
+
+#
+# Converting an old data-base to a new one
+#
+$(DBIN)/vergangenheit: secp256k1 nng
+$(DBIN)/vergangenheit: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(DBIN)/vergangenheit: DINC+=$(SRC_DINC)
+$(DBIN)/vergangenheit: DFILES::=$(DSRC)/bin-vergangenheit/tagion/tools/vergangenheit/vergangenheit.d
+$(call DO_BIN,vergangenheit)
+
+#
+# Tagion virtual machine utility
+#
+$(DBIN)/tvmutil: DINC+=$(SRC_DINC)
+$(DBIN)/tvmutil: DFILES::=$(DSRC)/bin-tvmutil/tagion/tools/tvmutil/tvmutil.d
+$(call DO_BIN,tvmutil)
+
+#
+# Profile view
+#
+$(DBIN)/tprofview: DINC+=$(SRC_DINC)
+$(DBIN)/tprofview: DFILES::=$(DSRC)/bin-tprofview/tagion/tools/tprofview.d
+$(call DO_BIN,tprofview)
+
+#
+# Hashgraph view
+#
+$(DBIN)/graphview: secp256k1 nng
+$(DBIN)/graphview: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(DBIN)/graphview: DINC+=$(SRC_DINC)
+$(DBIN)/graphview: DFILES::=$(DSRC)/bin-graphview/tagion/tools/graphview.d
+$(call DO_BIN,graphview)
+
+#
+#  callstack
+#
+$(DBIN)/callstack: DINC+=$(SRC_DINC)
+$(DBIN)/callstack: DFILES::=$(DSRC)/bin-callstack/tagion/tools/callstack/callstack.d
+$(call DO_BIN,callstack)
+
+#
+#  file watching util
+#
+$(DBIN)/ifiler: DINC+=$(SRC_DINC)
+$(DBIN)/ifiler: DFILES::=$(DSRC)/bin-ifiler/tagion/tools/ifiler/ifiler.d
+$(call DO_BIN,ifiler)
+
+#
+# Subscriber
+#
+$(DBIN)/subscriber: nng secp256k1
+$(DBIN)/subscriber: LDFLAGS+=$(LD_NNG) $(LD_SECP256K1)
+$(DBIN)/subscriber: DINC+=$(SRC_DINC)
+$(DBIN)/subscriber: DFILES::=$(DSRC)/bin-subscriber/tagion/tools/subscriber.d
+$(call DO_BIN,subscriber)
+
+#
+# ONETOOL
+#
+$(DBIN)/tagion: nng secp256k1
+$(DBIN)/tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(DBIN)/tagion: DFILES::=$(DSRC)/bin-tools/tagion/tools/tools.d
+$(DBIN)/tagion: DINC+=$(SRC_DINC)
+$(DBIN)/tagion: DFLAGS+=$(DVERSION)=ONETOOL
+$(call DO_BIN,tagion)
 
 #
 # Binary of BBD generator tool
 #
-target-collider: nng secp256k1
-target-collider: DFLAGS+=$(DVERSION)=ONETOOL
-target-collider: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
-${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
+COLLIDER::=$(DBIN)/collider
+$(COLLIDER): DFILES::=$(DSRC)/bin-collider/tagion/tools/collider/collider.d
+$(COLLIDER): DINC+=src/bin-collider
+$(COLLIDER): DINC+=$(SRC_DINC)
+$(COLLIDER): DFLAGS+=$(DVERSION)=ONETOOL
+$(call DO_BIN,collider)
 
+all-tools: $(TAGION_TOOLS)
+.PHONY: all-tools
