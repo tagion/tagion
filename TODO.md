@@ -62,7 +62,7 @@ Description: Create a test for mode1 which can run in aceptance stage
 
 Tasks:
 - [x] Create a testbench program which will run the nodes in different processes.
-- [ ] Add a check that all nodes produce epochs
+- [x] Add a check that all nodes produce epochs
 - [ ] Add the test to acceptance stage
 
 Assignee: lr
