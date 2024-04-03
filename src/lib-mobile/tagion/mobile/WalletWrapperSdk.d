@@ -94,11 +94,18 @@ extern (C) {
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
     export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
+        import std.file;
+        import std.stdio;
+        printf("printf wallet_storage_init");
+        
         const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
         if (directoryPath.length > 0) {
             // Full path to stored wallet data.
             const walletDataPath = directoryPath;
             __wallet_storage = new WalletStorage(walletDataPath);
+            string logPath = buildPath(walletDataPath, "testlog.txt");
+            logPath.append("wallet_storage_init call\n");
+            logPath.append("log is written\n");
             return SUCCESS;
         }
 
@@ -370,19 +377,13 @@ extern (C) {
     }
 
     export uint request_trt_update(uint8_t* requestPtr) {
-        import std.stdio;
-        stderr.writeln("call request_trt_update");
         if (!__wallet_storage.wallet.isLoggedin()) {
-            stderr.writeln("request_trt_update NOT_LOGGED_IN");
+        
             return NOT_LOGGED_IN;
         }
-        stderr.writeln("request_trt_update LOGGED_IN");
         const request = __wallet_storage.wallet.readIndicesByPubkey();
-        stderr.writeln("request_trt_update readIndicesByPubkey");
         const requestDocId = recyclerDoc.create(request.toDoc);
-        stderr.writeln("request_trt_update create request.toDoc");
         *requestPtr = cast(uint8_t) requestDocId;
-        stderr.writeln("request_trt_update SUCCESS");
         return SUCCESS;
     }
 
