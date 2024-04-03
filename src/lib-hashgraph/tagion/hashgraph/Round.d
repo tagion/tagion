@@ -509,9 +509,9 @@ class Round {
         }
 
         /**
-     * Range from this round and down
-     * Returns: range of rounds 
-     */
+         * Range from this round and down
+         * Returns: range of rounds 
+         */
         @nogc
         package Range!false opSlice() pure nothrow {
             return Range!false(last_round);
