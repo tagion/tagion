@@ -2,21 +2,26 @@
 
 ## In Progress
 
+### Logging of events in android
+Description: Open a file with the `WalletWrapperSdk path()` function which can be printed to the log in flutter later.
+
+Assignee: ab
+
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
 Tasks:
-- [] Create fiber test that is deterministic.
+- [X] Create fiber test that is deterministic.
+- [X] Create weighted random in order to get the failure earlier
+- [] Create multi-hashgraph viewer
 - [] Fix graph?
 Assignee: phr
 
-### Websocket Hashgraph monitor
-Description: Websocket hashgraph viewer with NNG websocket using EventView as package object
-Note: Changes requested: https://github.com/tagion/tagion/pull/418#pullrequestreview-1959941864
-
-Labels: [Tracing]
-
-Assignee: Yuriy
+### Hashgraph monitor updates
+Tasks: 
+- [] Remove old events that are older than X round received. 
+- [] Document the hashgraph monitor widget. `docs/docs/gui-tools/hashgraph_viewer.md` 
+Assignee: yr
 
 ### Wasmer execution engine prototype
 Description: Integrate Wasmer as a simple execution engine for WASM smart contracts
@@ -27,25 +32,20 @@ Implement the interface from D to C of libwasmer.
 
 Initial TVM cli tool.
 
+Assignee: cbr
 
-Assignee: Carsten
-
-### Contract storage / tracing in TRT
-Description: We want to save signed contracts going through Transcript service. These contracts should be saved in TRT, but we need to add another type of trt archive. When these contracts are saved in TRT, we can be be notified using subscription on TRT events
-
-Labels: [Tracing, TRT]
-
-Assignee: Ivan 
 
 ### Contract storage behaviour test
 Description: 
 
+DONE
 Scenario: Proper contract
 * Given a network
 * Given a correctly signed contract
 * When the contract is sent to the network and goes through
 * Then the contract should be saved in the TRT 
 
+WIP
 Scenario: Invalid contract
 * Given a network
 * Given a incorrect contract which fails in the Transcript
@@ -55,7 +55,7 @@ Scenario: Invalid contract
 
 Labels: [Tracing, TRT]
 
-Assignee: Ivan
+Assignee: ib
 
 ### Mode1 bdd test
 Description: Create a test for mode1 which can run in aceptance stage
@@ -93,9 +93,26 @@ Like the inputvalidator...
 Test should also be made for NNG buffer overrun!
 
 ## Done
+### Contract storage / tracing in TRT
+Description: We want to save signed contracts going through Transcript service. These contracts should be saved in TRT, but we need to add another type of trt archive. When these contracts are saved in TRT, we can be be notified using subscription on TRT events
+
+Labels: [Tracing, TRT]
+
+Assignee: ib
+### Websocket Hashgraph monitor
+Description: Websocket hashgraph viewer with NNG websocket using EventView as package object
+Note: Changes requested: https://github.com/tagion/tagion/pull/418#pullrequestreview-1959941864
+
+Labels: [Tracing]
+
+Assignee: Yuriy
 ### Clean up graphview mess
 Description: Refactor new svg graphview stuff
 Assignee: phr
+
+### Make-flow use dmd -I
+Description: Use dmd -I since it greatly reduces build times
+Assignee: lr
 
 ## Template
 ### Task Title
