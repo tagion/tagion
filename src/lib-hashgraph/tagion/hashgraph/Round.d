@@ -482,10 +482,10 @@ class Round {
             }
 
             auto event_collection = consensus_tide
-                .map!(e => e[].until!(e => e._round_received !is null))
+                .map!(e => e[].until!(e => e.round_received !is null))
                 .joiner.array;
 
-            event_collection.each!(e => e._round_received = r);
+            event_collection.each!(e => e.round_received = r);
             if (Event.callbacks) {
                 event_collection.each!(e => Event.callbacks.connect(e));
             }
