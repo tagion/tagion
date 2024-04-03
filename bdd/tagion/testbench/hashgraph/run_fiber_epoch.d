@@ -97,13 +97,13 @@ class RunPassiveFastHashgraph {
             } else {
                 channel_number = network.random.value(0, network.channels.length);
             }
-            writefln("channel_number: %s", channel_number);
+            // writefln("channel_number: %s", channel_number);
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
-            writefln("current: %(%02x%)", network.current);
+            // writefln("current: %(%02x%)", network.current);
             Event.callbacks = new FileMonitorCallBacks(buildPath(module_path, format("%(%02x%)_graph.hibon", network.current)), number_of_nodes, cast(Pubkey[]) network.channels);
             (() @trusted { current.call; Event.callbacks.destroy; })();
-            network.printStates;
+            // network.printStates;
             i++;
         }
         sw.stop;
