@@ -240,10 +240,15 @@ jobs:
       - name: Add logs
         run: |
           cd ${{ env.ARTIFACT_DIR }}
+          add_log_file() {
+              file="$1"
+              url=$(gh gist create $file) || echo could not create gist
+              echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+          }
+
           log_files=$(find logs -name "*.log")
           for file in $log_files; do
-            url=$(gh gist create $file) || echo could not create gist
-            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+            add_log_file $file &
           done
 
       - name: Add callstacks
