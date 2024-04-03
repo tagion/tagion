@@ -227,7 +227,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text_anchor = "middle";
         text.dominant_baseline = "middle";
         text.fill = "black";
-        text.text = format("%s", e.round_received);
+        text.text = format("%s", e.round_received == long.min ? "NaN" : format("%s", e.round_received));
         obuf.writefln("%s", text.toString);
     }
 

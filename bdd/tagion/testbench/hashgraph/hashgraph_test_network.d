@@ -26,6 +26,7 @@ import tagion.services.options;
 import tagion.utils.BitMask;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.utils.StdTime;
+import tagion.behaviour.BehaviourException : check;
 
 class TestRefinement : StdRefinement {
 
@@ -55,7 +56,14 @@ class NewTestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
 
 
+
     override void epoch(Event[] event_collection, const Round decided_round) const {
+        static bool first_epoch;
+        if (!first_epoch) {
+            check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
+        } 
+        first_epoch = true;
+        
         import std.range : tee;
         sdt_t[] times;
         auto events = event_collection
@@ -97,6 +105,7 @@ class NewTestRefinement : StdRefinement {
         auto event_payload = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
 
         epochs[event_payload.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = event_payload;
+
         checkepoch(hashgraph.nodes.length.to!uint, epochs);
     }
 
@@ -383,7 +392,6 @@ void printStates(R)(TestNetworkT!(R) network) if (is (R:Refinement)) {
 static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs) {
     import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.behaviour.BehaviourException : check;
 
     writefln("unfinished epochs %s", epochs.length);
     foreach (epoch; epochs.byKeyValue) {
@@ -406,7 +414,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                             number_of_empty_events++;
                         }
                     }
-                    printout ~= format("EMPTY: %s", number_of_empty_events);
+                    printout ~= format("TOTAL: %s EMPTY: %s", events.length, number_of_empty_events);
                 }
                 return printout;
             }
