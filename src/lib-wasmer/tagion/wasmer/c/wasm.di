@@ -366,7 +366,7 @@ const(wasm_externtype_t)* wasm_exporttype_type (const(wasm_exporttype_t)*);
 
 struct wasm_ref_t;
 
-struct wasm_val_t
+version(none) struct wasm_val_t
 {
     wasm_valkind_t kind;
 
@@ -380,17 +380,15 @@ struct wasm_val_t
     }
 
     _Anonymous_0 of;
-    mixin wasm_val_this;
 }
 
 void wasm_val_delete (wasm_val_t* v);
 void wasm_val_copy (wasm_val_t* out_, const(wasm_val_t)*);
 
-struct wasm_val_vec_t
+version(none) struct wasm_val_vec_t
 {
     size_t size;
     wasm_val_t* data;
-    mixin wasm_val_vec_this;
 }
 
 void wasm_val_vec_new_empty (wasm_val_vec_t* out_);
