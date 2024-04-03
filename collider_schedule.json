@@ -227,6 +227,14 @@
         "fiber"
       ],
       "timeout": 0.0
+    },
+    "mode1": {
+      "args": [],
+      "envs": {},
+      "stages": [
+        "acceptance", "mode1"
+      ],
+      "timeout": 0.0
     }
   }
 }
