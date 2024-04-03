@@ -38,7 +38,7 @@ make PLATFORM=aarch64-linux-android install-android-toolchain
 ## Building mobile lib
 
 ```sh
-make PLATFORM=aarch64-linux-android libmobile
+make DC=tools/ldc2-1.35.0-linux-x86_64/bin/ldc2 PLATFORM=aarch64-linux-android libmobile
 ```
 
 

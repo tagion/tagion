@@ -91,13 +91,19 @@ class RunPassiveFastHashgraph {
         auto rnd = MinstdRand0(42);
 
         while (i < MAX_CALLS) {
-            const channel_number = rnd.dice(weights);
-            writefln("channel_number: %s", channel_number);
-            // const channel_number = network.random.value(0, network.channels.length);
+            size_t channel_number;
+            if (NewTestRefinement.epochs.length > 0) {
+                channel_number = rnd.dice(weights);
+            } else {
+                channel_number = network.random.value(0, network.channels.length);
+            }
+            // writefln("channel_number: %s", channel_number);
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
+            // writefln("current: %(%02x%)", network.current);
             Event.callbacks = new FileMonitorCallBacks(buildPath(module_path, format("%(%02x%)_graph.hibon", network.current)), number_of_nodes, cast(Pubkey[]) network.channels);
             (() @trusted { current.call; Event.callbacks.destroy; })();
+            // network.printStates;
             i++;
         }
         sw.stop;

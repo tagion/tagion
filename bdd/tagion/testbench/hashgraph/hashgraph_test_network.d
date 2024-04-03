@@ -189,27 +189,26 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
         }
 
         const(Pubkey) select_channel(ChannelFilter channel_filter) {
-            foreach (count; 0 .. channel_queues.length / 2) {
+            auto send_channels = channel_queues
+                .byKey
+                .filter!(k => online_states[k])
+                .filter!(k => channel_filter(k))
+                .array;
 
-                const node_index = random.value(0, channel_queues.length);
-
-                auto send_channels = channel_queues
-                    .byKey
-                    .dropExactly(node_index)
-                    .filter!((k) => online_states[k]);
-
-                if (!send_channels.empty && channel_filter(send_channels.front)) {
-                    return send_channels.front;
-                }
+            if (!send_channels.empty) {
+                const node_index = random.value(0, send_channels.length); 
+                return send_channels[node_index];
             }
-            return Pubkey();
+
+            
+            return Pubkey.init;
         }
 
         const(Pubkey) gossip(
                 ChannelFilter channel_filter,
                 SenderCallBack sender) {
             const send_channel = select_channel(channel_filter);
-            if (send_channel.length) {
+            if (send_channel != Pubkey.init) {
                 send(send_channel, sender());
             }
             return send_channel;
@@ -257,6 +256,9 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
                 writefln("NODE SIZE OF TEST HASHGRAPH %s", _hashgraph.node_size);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
+                if (Event.callbacks) {
+                    Event.callbacks.connect(eva_event);
+                }
 
             }
             uint count;
@@ -359,7 +361,7 @@ bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @
 }
 
 @safe
-void printStates(TestNetwork network) {
+void printStates(R)(TestNetworkT!(R) network) if (is (R:Refinement)) {
     foreach (channel; network.networks) {
         writeln("----------------------");
         foreach (channel_key; network.channels) {
