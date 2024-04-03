@@ -18,9 +18,16 @@ import tagion.communication.HiRPC;
 import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 import tagion.crypto.SecureNet;
-import tagion.dart.DARTBasic : dartIndex;
+import tagion.dart.DARTBasic : dartIndex, dartKey;
 import std.digest : toHexString;
 import tagion.basic.Types : encodeBase64;
+import tagion.dart.DART;
+import tagion.script.standardnames;
+import tagion.hibon.HiBON;
+import tagion.Keywords;
+import tagion.trt.TRT;
+import tagion.dart.Recorder;
+import tagion.hibon.HiBONRecord : isRecord;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum CONTRACT_TIMEOUT = 40;
@@ -105,7 +112,29 @@ class ProperContract {
 
     @Then("the contract should be saved in the TRT")
     Document tRT() {
-        // TBD
+        auto dart_key = net.dartKey(StdNames.contract, net.dartIndex(
+                signed_contract.contract.toDoc));
+
+        auto params = new HiBON;
+        auto params_dart_indices = new HiBON;
+        params_dart_indices = [dart_key];
+        params[DART.Params.dart_indices] = params_dart_indices;
+        auto sender = wallet1_hirpc.action("trt." ~ DART.Queries.dartRead, params);
+
+        auto receiver = sendHiRPC(opts1.dart_interface.sock_addr, sender, wallet1_hirpc);
+
+        auto recorder_doc = receiver.message[Keywords.result].get!Document;
+        RecordFactory record_factory = RecordFactory(net);
+
+        const recorder = record_factory.recorder(recorder_doc);
+        auto result_archives = recorder[].map!(a => a.filed)
+            .filter!(doc => doc.isRecord!TRTContractArchive)
+            .map!(doc => TRTContractArchive(doc))
+            .array;
+
+        check(!result_archives.empty, "No contract recorded in TRT");
+        check(result_archives[0].contract == signed_contract.contract.toDoc, "Received contract doesn't match expected");
+
         return result_ok;
     }
 
