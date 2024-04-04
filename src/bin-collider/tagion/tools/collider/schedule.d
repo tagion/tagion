@@ -3,9 +3,7 @@ module tagion.tools.collider.schedule;
 import core.thread;
 import std.algorithm;
 import std.array;
-import std.datetime.systime;
-import std.file : exists, mkdirRecurse;
-import std.format;
+import std.datetime.systime; import std.file : exists, mkdirRecurse; import std.format;
 import std.path : buildNormalizedPath, setExtension;
 import std.process;
 import std.range;
@@ -190,6 +188,8 @@ struct ScheduleRunner {
                 auto _stdin = (() @trusted => stdin)();
 
                 Pid pid;
+
+
                 if (!cov_enable) {
                     pid = spawnProcess(cmd, _stdin, fout, fout, env);
                 }
@@ -242,7 +242,7 @@ struct ScheduleRunner {
                         auto env = environment.toAA;
                         schedule_list.front.unit.envs.byKeyValue
                             .each!(e => env[e.key] = envExpand(e.value, env));
-                        const cmd = args ~
+                        const(char[])[] cmd = args ~
                             schedule_list.front.name ~
                             schedule_list.front.unit.args
                                 .map!(arg => envExpand(arg, env))
@@ -250,6 +250,12 @@ struct ScheduleRunner {
                         setEnv(env, schedule_list.front.stage);
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
+
+                        bool unshare_net = ("UNSHARE_NET" in env) !is null;
+                        if(unshare_net) {
+                            cmd = ["bwrap", "--unshare-net", "--dev-bind", "/", "/"] ~ cmd;
+                        }
+
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                                 schedule_list.front.name).setExtension("log");
                         batch(job_index, time, cmd, log_filename, env);

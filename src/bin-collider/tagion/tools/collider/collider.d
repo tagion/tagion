@@ -392,6 +392,8 @@ int main(string[] args) {
                 revision_text,
                 "Documentation: https://docs.tagion.org/",
                 "",
+                "Setting the UNSHARE_NET=true will spawn each test with a seperate network namespace using bubblewrap",
+                "",
                 "Usage:",
                 format("%s [<option>...]", program),
                 "# Sub-tools",
