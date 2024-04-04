@@ -29,12 +29,12 @@ import tagion.utils.pretend_safe_concurrency;
 @safe
 @recordType("finishedEpoch")
 struct FinishedEpoch {
-    @label("events") const(EventPackage)[] events;
+    @label("event_packages") const(EventPackage)[] event_packages;
     @label(StdNames.time) sdt_t time;
     @label("epoch") long epoch;
     mixin HiBONRecord!(q{
         this(const(Event)[] events, sdt_t time, long epoch) pure nothrow {
-            this.events = events
+            this.event_packages = events
                 .map!((e) => *(e.event_package))
                 .array;
 

@@ -396,13 +396,37 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
     writefln("unfinished epochs %s", epochs.length);
     foreach (epoch; epochs.byKeyValue) {
         if (epoch.value.length == number_of_nodes) {
+            HashNet net = new StdHashNet;
             // check that all epoch numbers are the same
             check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
 
+            
+            const(EventPackage)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
+            const(EventPackage)[] not_the_same;
+            foreach(i, node_events; all_node_events[0..$-1]) {
+                foreach(to_compare; all_node_events[i+1..$]) {
+                    foreach(e; node_events) {
+                        if (!to_compare.canFind(e)) {
+                            not_the_same ~= e;
+                            // DO SOME CALLBACK
+                        }
+                    }
+                    foreach(e; to_compare) {
+                        if (!node_events.canFind(e)) {
+                            not_the_same ~= e;
+                            //do some callback
+                        }
+                    }
+                }
+            }
+            const(EventPackage)[] not_the_same_uniq = not_the_same.uniq!((a,b) => net.calcHash(a) == net.calcHash(b)).array;
+            foreach(j, e; not_the_same_uniq) {
+                writefln("%s:%(%02x%)", j, net.calcHash(e));
+            }
+
             // check all events are the same
-            auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+            auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
             string print_events() {
-                HashNet net = new StdHashNet;
                 string printout;
                 // printout ~= format("EPOCH: %s", epoch.value.epoch);
                 foreach(i, events; epoch_events) {
