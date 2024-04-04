@@ -8,6 +8,7 @@ version(WRITE_LOGS)
         debug {
             string logPath = "/data/user/0/io.decard.tagion_wallet_api_example/app_flutter/";
             if (logPath.exists) {
+                assert(0);
                 string logFileName = "logfile.txt";
                 string logFile = buildPath(logPath, logFileName);
                 logFile.append(message);
