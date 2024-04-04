@@ -29,14 +29,12 @@ import tagion.hibon.HiBONRecord : isRecord;
 struct Subscription {
     string address;
     string[] tags;
-    SecureNet net;
     uint max_attempts = 5;
 
     private NNGSocket sock;
-    this(string _address, string[] _tags, SecureNet _net = null) @trusted nothrow {
+    this(string _address, string[] _tags) @trusted nothrow {
         address = _address;
         tags = _tags;
-        net = _net;
         sock = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
         sock.recvtimeout = 100.seconds;
         foreach (tag; tags) {
@@ -98,14 +96,7 @@ struct Subscription {
             return _Result("Received data does not contain a document");
         }
 
-        try {
-            auto _doc = Document(data[index + 1 .. $]);
-            auto _receiver = HiRPC.Receiver(net, _doc);
-            return result(_receiver.message); // This could be a hirpc error
-        }
-        catch (Exception e) {
-            return _Result(e);
-        }
+        return _Result(Document(data[index + 1 .. $]));
     }
 }
 
@@ -187,7 +178,7 @@ int _main(string[] args) {
 
             // Check for contract
             if (!contract.empty && !result.error) {
-                const payload = result.get["params"].get!SubscriptionPayload;
+                const payload = result.get["$msg"].get!Document["params"].get!SubscriptionPayload;
                 auto doc = payload.data;
                 if (doc.isRecord!ContractStatus) {
                     // Drop contact status if it has different hash

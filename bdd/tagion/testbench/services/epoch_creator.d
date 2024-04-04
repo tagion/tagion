@@ -132,7 +132,7 @@ class SendPayloadAndCreateEpoch {
             import tagion.hibon.HiBONRecord;
 
             check(epoch.isRecord!FinishedEpoch, "received event should be an FinishedEpoch record");
-            const events = FinishedEpoch(epoch).events;
+            const events = FinishedEpoch(epoch).event_packages;
             writefln("Received epoch %s \n event_length %s", epoch.toPretty, events.length);
 
             if (events.length == 1) {

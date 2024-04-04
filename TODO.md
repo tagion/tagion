@@ -57,16 +57,6 @@ Labels: [Tracing, TRT]
 
 Assignee: ib
 
-### Mode1 bdd test
-Description: Create a test for mode1 which can run in aceptance stage
-
-Tasks:
-- [x] Create a testbench program which will run the nodes in different processes.
-- [ ] Add a check that all nodes produce epochs
-- [ ] Add the test to acceptance stage
-
-Assignee: lr
-
 ## Backlog
 
 ### Subscription API implementation
@@ -93,6 +83,17 @@ Like the inputvalidator...
 Test should also be made for NNG buffer overrun!
 
 ## Done
+
+### Mode1 bdd test
+Description: Create a test for mode1 which can run in aceptance stage
+
+Tasks:
+- [x] Create a testbench program which will run the nodes in different processes.
+- [x] Add a check that all nodes produce epochs
+- [x] Add the test to acceptance stage
+
+Assignee: lr
+
 ### Contract storage / tracing in TRT
 Description: We want to save signed contracts going through Transcript service. These contracts should be saved in TRT, but we need to add another type of trt archive. When these contracts are saved in TRT, we can be be notified using subscription on TRT events
 

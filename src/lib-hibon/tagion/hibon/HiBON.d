@@ -113,6 +113,10 @@ static size_t size(U)(const(U[]) array) pure {
      The byte stream
      +/
     immutable(ubyte[]) serialize() const pure {
+        version(WRITE_LOGS){
+            import tagion.mobile.mobilelog : write_log;
+            write_log("WOWOWOWO");
+        }
         AppendBuffer buffer;
         buffer.reserve(serialize_size);
         append(buffer);
