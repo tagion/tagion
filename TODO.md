@@ -128,7 +128,7 @@ Assignee: lr
 
 ### Collider network ns
 Description: 
-add an option to collider so each test runs in seperate network namespaces. 
+add an option to collider so each test runs in separate network namespaces. 
 So we can run multiple acceptance stage tests on the same machine
 
 Assignee: lr
