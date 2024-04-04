@@ -161,8 +161,17 @@ class Event {
 
     package {
         Round _round; /// The where the event has been created
-        Round _round_received; /// The round in which the event has been voted to be received
         BitMask _round_received_mask; /// Voting mask for the received rounds
+    }
+    protected {
+        Round _round_received; /// The round in which the event has been voted to be received
+    }
+
+    invariant {
+        if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
+
+            assert(_round_received.number == _round_received.previous.number + 1, format("Round was not added by 1: current: %s previous %s", _round_received.number, _round_received.previous.number)); 
+        }
     }
 
     /**
@@ -410,22 +419,26 @@ class Event {
         return _father;
     }
 
+    void round_received(Round round_received) nothrow {
+        _round_received = round_received;
+    }
     @nogc pure nothrow const final {
-        /**
-  * The event-body from this event 
-  * Returns: event-body
-  */
-        ref const(EventBody) event_body() {
-            return event_package.event_body;
-        }
-
         /**
      * The received round for this event
      * Returns: received round
      */
-        const(Round) round_received() {
+        const(Round) round_received() const {
             return _round_received;
         }
+
+        /**
+      * The event-body from this event 
+      * Returns: event-body
+      */
+        ref const(EventBody) event_body() {
+            return event_package.event_body;
+        }
+
 
         /**
      * Channel from which this event has received

@@ -20,12 +20,16 @@ import tagion.services.options;
 import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.hibon.Document;
+import tagion.communication.HiRPC;
+import tagion.services.subscription : SubscriptionPayload;
 import tagion.testbench.tools.Environment : bddenv = env;
 import tagion.wave.mode0 : dummy_nodenets_for_testing;
 import tagion.dart.Recorder;
-import tagion.dart.DART;
-import tagion.dart.DARTFile;
+import tagion.dart.DART : DART;
+import tagion.dart.DARTFile : DARTFile;
 import tagion.crypto.SecureNet;
+import tagion.hashgraph.Refinement;
+import tagion.tools.subscriber : Subscription;
 
 void kill_waves(Pid[] pids, Duration grace_time) {
     const begin_time = MonoTime.currTime;
@@ -67,6 +71,8 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     Options local_options;
     local_options.setDefault;
     local_options.wave.network_mode = NetworkMode.LOCAL;
+    local_options.epoch_creator.timeout = 300; //msecs
+    local_options.subscription.tags = StdRefinement.epoch_created.name;
 
     enum base_port = 10_700;
 
@@ -162,7 +168,7 @@ mixin Main!(_main);
 int _main(string[] args) {
     immutable program = args[0];
     uint number_of_nodes = 5;
-    uint timeout_secs = 30;
+    uint timeout_secs = 100;
 
     auto main_args = getopt(args,
         "n|nodes", format("Amount of nodes to spawn (%s)", number_of_nodes), &number_of_nodes,
@@ -187,39 +193,119 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
     chdir(module_path);
 
-    // create recorder
-    SecureNet net = new StdSecureNet();
-    net.generateKeyPair("very_secret");
-
-
     auto node_opts = getMode1Options(number_of_nodes);
-    const genesis_node_settings = mk_node_settings(node_opts);
-    const genesis_doc = createGenesis(genesis_node_settings, Document(), TagionGlobals.init);
 
-    auto factory = RecordFactory(net);
-    auto recorder = factory.recorder;
-    recorder.insert(genesis_doc, Archive.Type.ADD);
+    auto feature = automation!(mixin(__MODULE__));
+    feature.Mode1NetworkStart(node_opts, timeout_secs.seconds);
+    feature.run;
 
-    const genesis_dart_path = "genesis_dart.drt";
-
-    TagionHead tagion_head;
-    tagion_head.name = TagionDomain;
-    tagion_head.current_epoch = 0;
-    recorder.add(tagion_head);
-
-    DARTFile.create(genesis_dart_path, net);
-    auto db = new DART(net, genesis_dart_path);
-    db.modify(recorder);
-
-    string[] pins;
-    const node_data_paths = create_nodes_data(genesis_dart_path, node_opts, pins);
-    const dbin = bddenv.dbin;
-    Pid[] pids = spawn_nodes(dbin, pins, node_data_paths);
-
-    writefln("Spawned nodes, waiting for %s seconds", timeout_secs);
-    Thread.sleep(timeout_secs.seconds);
-    writefln("Waited for %s seconds", timeout_secs);
-
-    kill_waves(pids, grace_time: 3.seconds);
     return 0;
+}
+
+// Default import list for bdd
+import tagion.behaviour;
+import tagion.hibon.Document;
+import std.typecons : Tuple;
+import tagion.testbench.tools.Environment;
+
+enum feature = Feature(
+            "basic mode1 test",
+            []);
+
+alias FeatureContext = Tuple!(
+        Mode1NetworkStart, "Mode1NetworkStart",
+        FeatureGroup*, "result"
+);
+
+@trusted @Scenario("mode1 network start",
+        [])
+class Mode1NetworkStart {
+    const(Options)[] node_opts;
+    Duration timeout;
+
+    enum expected_epoch = 5;
+
+    
+    this(const(Options)[] node_opts, Duration timeout) {
+        this.node_opts = node_opts;
+        this.timeout = timeout;
+    }
+
+    Pid[] pids;
+
+    @Given("i have a network started in mode1")
+    Document mode1() {
+
+        // create recorder
+        SecureNet net = new StdSecureNet();
+        net.generateKeyPair("very_secret");
+
+        const genesis_node_settings = mk_node_settings(node_opts);
+        const genesis_doc = createGenesis(genesis_node_settings, Document(), TagionGlobals.init);
+
+        auto factory = RecordFactory(net);
+        auto recorder = factory.recorder;
+        recorder.insert(genesis_doc, Archive.Type.ADD);
+
+        const genesis_dart_path = "genesis_dart.drt";
+
+        TagionHead tagion_head;
+        tagion_head.name = TagionDomain;
+        tagion_head.current_epoch = 0;
+        recorder.add(tagion_head);
+
+        DARTFile.create(genesis_dart_path, net);
+        auto db = new DART(net, genesis_dart_path);
+        db.modify(recorder);
+
+        string[] pins;
+        const node_data_paths = create_nodes_data(genesis_dart_path, node_opts, pins);
+
+        const dbin = bddenv.dbin;
+        pids = spawn_nodes(dbin, pins, node_data_paths);
+        return result_ok;
+    }
+
+    @When("all nodes have produced 5 epochs")
+    Document epochs() {
+        Subscription[] subs;
+        long[] epochs;
+
+        foreach(opt; node_opts) {
+            auto sub =  Subscription(opt.subscription.address, [StdRefinement.epoch_created.name]);
+            sub.dial;
+            subs ~= sub;
+            epochs ~= -1;
+        }
+
+        Thread.sleep(5.seconds);
+
+        const begin_time = MonoTime.currTime;
+        HiRPC hirpc = HiRPC(null);
+
+        while(!epochs.all!(i => i >= expected_epoch) && MonoTime.currTime - begin_time <= timeout) {
+            foreach(i, sub; subs) {
+                auto doc = sub.receive();
+                writeln(doc.get.toPretty);
+
+                const rec_hirpc = hirpc.receive(doc.get);
+                const payload = SubscriptionPayload(rec_hirpc.method.params);
+                const finished_epoch = FinishedEpoch(payload.data);
+                epochs[i] = finished_epoch.epoch;
+            }
+        }
+
+        check(epochs.all!(i => i >= expected_epoch), format("%s", epochs));
+
+        writefln("Nodes ended at epochs %s", epochs);
+
+        return result_ok;
+    }
+
+    @Then("i stop the network")
+    Document network() {
+        kill_waves(pids, grace_time: 3.seconds);
+        return result_ok;
+    }
+
 }
