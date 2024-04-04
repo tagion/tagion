@@ -1138,6 +1138,11 @@ struct WalletStorage {
 
     void write() const {
         // Create a hibon for wallet data.
+        version(WRITE_LOGS){
+            import tagion.mobile.mobilelog : log_file;
+            import std.file : append;
+            log_file.append("WalletStorage write");
+        }    
 
         path(devicefile).fwrite(wallet.pin);
         path(accountfile).fwrite(wallet.account);

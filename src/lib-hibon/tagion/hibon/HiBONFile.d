@@ -20,6 +20,9 @@ import std.format;
     version(WRITE_LOGS){
         import tagion.mobile.mobilelog : write_log;
         write_log("HiBONFile fwrite file.write(filename, hibon.serialize)");
+        import tagion.mobile.mobilelog : log_file;
+        import std.file : append;
+        log_file.append("HiBONFile fwrite file.write(filename, hibon.serialize)");
     }
     file.write(filename, hibon.serialize);
 }
@@ -34,6 +37,9 @@ import std.format;
     version(WRITE_LOGS){
         import tagion.mobile.mobilelog : write_log;
         write_log("HiBONFile fwrite file.write(filename, doc.serialize)");
+        import tagion.mobile.mobilelog : log_file;
+        import std.file : append;
+        log_file.append("HiBONFile fwrite file.write(filename, doc.serialize)");
     }
     file.write(filename, doc.serialize);
 }
@@ -42,6 +48,9 @@ import std.format;
     version(WRITE_LOGS){
         import tagion.mobile.mobilelog : write_log;
         write_log("HiBONFile fwrite fwrite(filename, rec.toDoc)");
+        import tagion.mobile.mobilelog : log_file;
+        import std.file : append;
+        log_file.append("HiBONFile fwrite fwrite(filename, rec.toDoc)");
     }
     fwrite(filename, rec.toDoc);
 }
