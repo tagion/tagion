@@ -807,11 +807,19 @@ mixin template HiBONRecord(string CTOR = "") {
 
     static if (isSerializeDisabled!This) {
         @safe final immutable(ubyte[]) serialize() const pure {
+            version(WRITE_LOGS){
+                import tagion.mobile.mobilelog : write_log;
+                write_log("HiBONRecord serialize toHiBON.serialize");
+            }
             return toHiBON.serialize;
         }
     }
 
     @safe final const(Document) toDoc() const pure {
+        version(WRITE_LOGS){
+            import tagion.mobile.mobilelog : write_log;
+            write_log("HiBONRecord toDoc Document(serialize)");
+        }
         return Document(serialize);
     }
 }
