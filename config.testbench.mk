@@ -20,6 +20,10 @@ $(TESTBENCH): DFILES::=$(BDD)/tagion/testbench/testbench.d
 $(TESTBENCH): $(shell find $(DSRC) -name "*.d")
 $(TESTBENCH): $(shell find $(BDD) -name "*.d")
 $(TESTBENCH): bddfiles
+ifdef ENABLE_WASMER
+$(TESTBENCH): libwasmer
+$(TESTBENCH): LDFLAGS+=$(LIBWASMER)
+endif
 
 testbench: $(DBIN)/testbench
 .PHONY: testbench
