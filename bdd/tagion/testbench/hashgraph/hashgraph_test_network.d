@@ -471,10 +471,10 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
             }
         }
     } catch (BehaviourException e) {
-        writefln("ANOTHER NODE RECEIVED EPOCH");
-        error_count++;
-        if (error_count == 5) {
+        // writefln("ANOTHER NODE RECEIVED EPOCH");
+        // error_count++;
+        // if (error_count == 5) {
             throw e;
-        }
+        // }
     }
 }
