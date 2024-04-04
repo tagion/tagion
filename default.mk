@@ -90,6 +90,8 @@ DFLAGS+=$(DVERSION)=OLD_ORDERING
 
 # Use to check that toHiBON.serialize is equal to .serialize
 DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
+# Use to write logs into a file.
+DFLAGS+=$(DVERSION)=WRITE_LOGS
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)

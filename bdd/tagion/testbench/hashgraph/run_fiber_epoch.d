@@ -46,6 +46,8 @@ int _main(string[] args) {
     
     // uint number_of_nodes = args[2].to!uint.ifThrown(5);
 
+    import tagion.utils.pretend_safe_concurrency : register, thisTid;
+    register("run_fiber_epoch", thisTid);
 
     auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
     hashgraph_fiber_feature.RunPassiveFastHashgraph(number_of_nodes, weights, MAX_CALLS, module_path);

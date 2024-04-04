@@ -26,6 +26,7 @@ import tagion.services.options;
 import tagion.utils.BitMask;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.utils.StdTime;
+import tagion.behaviour.BehaviourException : check;
 
 class TestRefinement : StdRefinement {
 
@@ -55,7 +56,14 @@ class NewTestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
 
 
+
     override void epoch(Event[] event_collection, const Round decided_round) const {
+        static bool first_epoch;
+        if (!first_epoch) {
+            check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
+        } 
+        first_epoch = true;
+        
         import std.range : tee;
         sdt_t[] times;
         auto events = event_collection
@@ -94,9 +102,10 @@ class NewTestRefinement : StdRefinement {
                 .array;
             auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
         }
-        auto event_payload = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
+        auto finished_epoch = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
 
-        epochs[event_payload.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = event_payload;
+        epochs[finished_epoch.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = finished_epoch;
+
         checkepoch(hashgraph.nodes.length.to!uint, epochs);
     }
 
@@ -383,18 +392,48 @@ void printStates(R)(TestNetworkT!(R) network) if (is (R:Refinement)) {
 static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs) {
     import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.behaviour.BehaviourException : check;
 
     writefln("unfinished epochs %s", epochs.length);
     foreach (epoch; epochs.byKeyValue) {
         if (epoch.value.length == number_of_nodes) {
+            HashNet net = new StdHashNet;
             // check that all epoch numbers are the same
             check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
 
+            
+            const(Event)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+            const(Event)[] not_the_same;
+            foreach(i, node_events; all_node_events[0..$-1]) {
+                foreach(to_compare; all_node_events[i+1..$]) {
+                    foreach(event; node_events) {
+                        if (!to_compare.map!(e => *e.event_package).canFind(*event.event_package)) {
+                            not_the_same ~= event;
+                        }
+                    }
+                    foreach(event; to_compare) {
+                        if (!node_events.map!(e => *e.event_package).canFind(*event.event_package)) {
+                            not_the_same ~= event;
+                            //do some callback
+                        }
+                    }
+                }
+            }
+            
+            auto not_the_same_uniq  = not_the_same
+                .map!((e) @trusted => cast(Event) e)
+                .array.sort!((a,b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
+                .uniq!((a,b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
+            if (Event.callbacks && !not_the_same_uniq.empty) {
+                foreach(event; not_the_same_uniq) {
+                    writefln("%(%02x%)", net.calcHash(*event.event_package));
+                    event.error = true;
+                    Event.callbacks.connect(event);
+                }
+            }
+
             // check all events are the same
-            auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+            auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
             string print_events() {
-                HashNet net = new StdHashNet;
                 string printout;
                 // printout ~= format("EPOCH: %s", epoch.value.epoch);
                 foreach(i, events; epoch_events) {
@@ -406,7 +445,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                             number_of_empty_events++;
                         }
                     }
-                    printout ~= format("EMPTY: %s", number_of_empty_events);
+                    printout ~= format("TOTAL: %s EMPTY: %s", events.length, number_of_empty_events);
                 }
                 return printout;
             }

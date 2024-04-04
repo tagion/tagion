@@ -94,18 +94,11 @@ extern (C) {
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
     export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
-        import std.file;
-        import std.stdio;
-        printf("printf wallet_storage_init");
-        
         const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
         if (directoryPath.length > 0) {
             // Full path to stored wallet data.
             const walletDataPath = directoryPath;
             __wallet_storage = new WalletStorage(walletDataPath);
-            string logPath = buildPath(walletDataPath, "testlog.txt");
-            logPath.append("wallet_storage_init call\n");
-            logPath.append("log is written\n");
             return SUCCESS;
         }
 
