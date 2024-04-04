@@ -61,7 +61,7 @@ int _main(string[] args) {
 
     StdSecureWallet[] wallets;
     // create the wallets
-    foreach (i; 0 .. 3) {
+    foreach (i; 0 .. 4) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
             iota(0, 5)
@@ -165,7 +165,7 @@ int _main(string[] args) {
     log.registerSubscriptionTask(name);
     auto feature = automation!(trt_contract);
     feature.ProperContract(node_opts[0], wallets[0], wallets[1]);
-    feature.InvalidContract();
+    feature.InvalidContract(node_opts[0], wallets[2], wallets[3]);
     feature.run();
 
     stopsignal.set;
