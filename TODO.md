@@ -82,6 +82,14 @@ Like the inputvalidator...
 
 Test should also be made for NNG buffer overrun!
 
+### Impklement wavefront for nodeinterface
+description: nodes should be able to communicate p2p on a half-duplex communication using the wavefront protocol
+Assignee: lr
+
+### Daily operational test
+description: Add a github ci script which activates the operational test once a day
+Assignee: lr
+
 ## Done
 
 ### Mode1 bdd test
@@ -107,12 +115,20 @@ Note: Changes requested: https://github.com/tagion/tagion/pull/418#pullrequestre
 Labels: [Tracing]
 
 Assignee: Yuriy
+
 ### Clean up graphview mess
 Description: Refactor new svg graphview stuff
 Assignee: phr
 
 ### Make-flow use dmd -I
 Description: Use dmd -I since it greatly reduces build times
+Assignee: lr
+
+### Collider network ns
+Description: 
+add an option to collider so each test runs in seperate network namespaces. 
+So we can run multiple acceptance stage tests on the same machine
+
 Assignee: lr
 
 ## Template
