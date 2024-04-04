@@ -207,8 +207,11 @@ $(call DO_BIN,subscriber)
 #
 # ONETOOL
 #
-$(DBIN)/tagion: nng secp256k1
-$(DBIN)/tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+ifdef ENABLE_WASMER
+$(DBIN)/tagion: libwasmer
+endif
+$(DBIN)/tagion: nng secp256k1 
+$(DBIN)/tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG) $(LIBWASMER)
 $(DBIN)/tagion: DFILES::=$(DSRC)/bin-tools/tagion/tools/tools.d
 $(DBIN)/tagion: DINC+=$(SRC_DINC)
 $(DBIN)/tagion: DFLAGS+=$(DVERSION)=ONETOOL

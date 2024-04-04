@@ -53,7 +53,7 @@ class Event {
         Event _daughter;
         Event _son;
 
-         long _order;
+        long _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -306,7 +306,7 @@ class Event {
         iota(hashgraph.node_size)
             .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
-                    .order > _youngest_son_ancestors[node_id].order)
+            .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
@@ -320,7 +320,8 @@ class Event {
         if (voting_round.number + 1 == round.number) {
             _witness._vote_on_earliest_witnesses[vote_node_id] = _witness._prev_seen_witnesses[vote_node_id];
             return;
-        }        if (voting_event is null) {
+        }
+        if (voting_event is null) {
             hashgraph._rounds.vote(hashgraph, vote_node_id);
             return;
         }
@@ -332,7 +333,7 @@ class Event {
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
             hashgraph._rounds.vote(hashgraph, vote_node_id);
-        } 
+        }
     }
 
     /**
