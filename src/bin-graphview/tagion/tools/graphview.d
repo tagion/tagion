@@ -214,7 +214,12 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         else {
             node_circle.fill = pastel19.color(e.round_received);
         }
-
+        if (e.error) {
+            verbose("had error");
+            node_circle.stroke = "yellow";
+            node_circle.stroke_width = 6;
+        }
+    
         if (!raw_svg) {
             node_circle.classes = "myCircle";
             node_circle.data_info = escapeHtml(e.toPretty);
