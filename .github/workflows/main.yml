@@ -154,6 +154,7 @@ jobs:
           export DC=${{ env.DC }}
           export TEST_STAGE=commit
           export TESTBENCH_FLAGS=--silent 
+          export UNSHARE_NET=1
           make bddtest -j || make proper bddtest
 
       - name: Report commit stage tests
@@ -192,6 +193,7 @@ jobs:
           pwd
           hostname
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
+          export UNSHARE_NET=1
           export DBIN=$PWD/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
