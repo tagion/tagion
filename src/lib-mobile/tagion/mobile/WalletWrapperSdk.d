@@ -699,6 +699,11 @@ extern (C) {
     static sdt_t dummy_time;
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
+
+        version(WRITE_LOGS){
+            import tagion.mobile.mobilelog : write_log;
+            write_log("GET HISTORY");
+        }
         version (WALLET_HISTORY_DUMMY) {
             if (dummy_time == sdt_t.init) {
                 dummy_time = currentTime();
