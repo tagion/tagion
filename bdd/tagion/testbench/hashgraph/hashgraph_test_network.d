@@ -102,9 +102,9 @@ class NewTestRefinement : StdRefinement {
                 .array;
             auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
         }
-        auto event_payload = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
+        auto finished_epoch = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
 
-        epochs[event_payload.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = event_payload;
+        epochs[finished_epoch.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = finished_epoch;
 
         checkepoch(hashgraph.nodes.length.to!uint, epochs);
     }
@@ -401,27 +401,34 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
             check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
 
             
-            const(EventPackage)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
-            const(EventPackage)[] not_the_same;
+            const(Event)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+            const(Event)[] not_the_same;
             foreach(i, node_events; all_node_events[0..$-1]) {
                 foreach(to_compare; all_node_events[i+1..$]) {
-                    foreach(e; node_events) {
-                        if (!to_compare.canFind(e)) {
-                            not_the_same ~= e;
-                            // DO SOME CALLBACK
+                    foreach(event; node_events) {
+                        if (!to_compare.map!(e => *e.event_package).canFind(*event.event_package)) {
+                            not_the_same ~= event;
                         }
                     }
-                    foreach(e; to_compare) {
-                        if (!node_events.canFind(e)) {
-                            not_the_same ~= e;
+                    foreach(event; to_compare) {
+                        if (!node_events.map!(e => *e.event_package).canFind(*event.event_package)) {
+                            not_the_same ~= event;
                             //do some callback
                         }
                     }
                 }
             }
-            const(EventPackage)[] not_the_same_uniq = not_the_same.uniq!((a,b) => net.calcHash(a) == net.calcHash(b)).array;
-            foreach(j, e; not_the_same_uniq) {
-                writefln("%s:%(%02x%)", j, net.calcHash(e));
+            
+            auto not_the_same_uniq  = not_the_same
+                .map!((e) @trusted => cast(Event) e)
+                .array.sort!((a,b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
+                .uniq!((a,b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
+            if (Event.callbacks && !not_the_same_uniq.empty) {
+                foreach(event; not_the_same_uniq) {
+                    writefln("%(%02x%)", net.calcHash(*event.event_package));
+                    event.error = true;
+                    Event.callbacks.connect(event);
+                }
             }
 
             // check all events are the same
