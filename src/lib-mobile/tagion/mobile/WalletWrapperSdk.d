@@ -94,6 +94,10 @@ extern (C) {
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
     export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
+        version(WRITE_LOGS){
+            import tagion.mobile.mobilelog : write_log;
+            write_log("WalletWrapperSdk wallet_storage_init");
+        } 
         const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
         if (directoryPath.length > 0) {
             // Full path to stored wallet data.
