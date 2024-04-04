@@ -286,6 +286,11 @@ class Mode1NetworkStart {
         while(!epochs.all!(i => i >= expected_epoch) && MonoTime.currTime - begin_time <= timeout) {
             foreach(i, sub; subs) {
                 auto doc = sub.receive();
+                if(doc.error) {
+                    writeln(doc.e.message);
+                    continue;
+                }
+
                 writeln(doc.get.toPretty);
 
                 const rec_hirpc = hirpc.receive(doc.get);
