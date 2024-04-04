@@ -13,7 +13,9 @@ Description: After very many epochs a consensus bug is incurred where the epochs
 Tasks:
 - [X] Create fiber test that is deterministic.
 - [X] Create weighted random in order to get the failure earlier
-- [] Create multi-hashgraph viewer
+- [X] Create multi-hashgraph viewer
+- [X] Show error code for the hashgraph that gets the epoch list
+- [] Show all errors for multi-view
 - [] profit?
 Assignee: phr
 

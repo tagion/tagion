@@ -1090,6 +1090,7 @@ unittest {
 
 }
 
+
 alias Store = WalletStorage;
 struct WalletStorage {
     StdSecureWallet wallet;
@@ -1105,7 +1106,13 @@ struct WalletStorage {
 
         wallet_data_path = walletDataPath.idup;
         import std.file;
-
+        version(WRITE_LOGS) {
+            import tagion.mobile.mobilelog : log_file;
+            writefln("creating file at %s", wallet_data_path);
+            log_file = buildPath(wallet_data_path, "logfile.txt"); 
+            import std.file : write;
+            log_file.write("wowo");
+        }
         if (!wallet_data_path.exists) {
             wallet_data_path.mkdirRecurse;
         }
