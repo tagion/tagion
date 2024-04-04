@@ -114,18 +114,8 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     immutable(ubyte[]) serialize() const pure {
         version(WRITE_LOGS){
-            import std.file;
-            import std.path;
-            debug {
-                if (!__ctfe) {
-                    string logPath = "/data/user/0/io.decard.tagion_wallet_api_example/app_flutter/";
-                    string logFileName = "logfile.txt";
-                    string logFile = buildPath(logPath, logFileName);
-                    if (logPath.exists) {
-                        logPath.append("--- HiBON serialize", );
-                    }
-                } 
-            }
+            import tagion.mobile.mobilelog : write_log;
+            write_log("WOWOWOWO");
         }
         AppendBuffer buffer;
         buffer.reserve(serialize_size);
