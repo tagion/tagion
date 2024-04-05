@@ -71,7 +71,6 @@ int _main(string[] args) {
 
             printf("Creating the config and the features...\n");
             wasm_config_t* config = wasm_config_new();
-
             wasmer_features_t* features = wasmer_features_new();
             wasmer_features_multi_value(features, true); // enable multi-value!
             wasm_config_set_features(config, features);
