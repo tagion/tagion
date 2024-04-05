@@ -37,7 +37,6 @@ jobs:
         run: |
           export DC=${{ env.DC }}
           make tagion release || make proper tagion release
-          # make tagion release -j || make proper tagion release
 
       - name: Post run
         if: always()
@@ -65,7 +64,6 @@ jobs:
         run: |
           export DC=${{ env.DC }}
           make unittest-cov || make proper unittest-cov
-          # make unittest-cov -j || make proper unittest-cov
 
       - name: Report unittest
         run: |
