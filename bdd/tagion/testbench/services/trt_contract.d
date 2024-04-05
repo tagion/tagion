@@ -82,7 +82,7 @@ class ProperContract {
     Document contract() {
         auto payment_request = wallet2.requestBill(amount);
         check(wallet1.createPayment([payment_request], signed_contract, fee)
-                .value, "Error creating wallet");
+                .value, "Error creating payment");
         check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 
         writeln("Contract hash: ", net.dartIndex(signed_contract.contract.toDoc).encodeBase64);
@@ -93,7 +93,6 @@ class ProperContract {
     @When("the contract is sent to the network")
     Document theNetwork() {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
         sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
 
         return result_ok;
@@ -180,7 +179,7 @@ class InvalidContract {
     Document signedContract() {
         auto payment_request = wallet2.requestBill(amount);
         check(wallet1.createPayment([payment_request], signed_contract1, fee)
-                .value, "Error creating wallet");
+                .value, "Error creating payment");
         check(signed_contract1.contract.inputs.uniq.array.length == signed_contract1.contract.inputs.length, "signed contract inputs invalid");
 
         writeln("Contract hash: ", net.dartIndex(signed_contract1.contract.toDoc).encodeBase64);
@@ -237,10 +236,8 @@ class InvalidContract {
     Document theNetwork() {
         auto hirpc_submit1 = wallet1_hirpc.submit(signed_contract1);
         sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit1, wallet1_hirpc);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit1, wallet1_hirpc);
 
         auto hirpc_submit2 = wallet1_hirpc.submit(signed_contract2);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit2, wallet1_hirpc);
         sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit2, wallet1_hirpc);
 
         return result_ok;
@@ -250,11 +247,13 @@ class InvalidContract {
     Document beRejected() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
+        const expected1 = start_amount1 - amount - fee;
         auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        check(wallet1_amount == start_amount1 - amount - fee, "did not send money");
+        check(wallet1_amount == expected1, format("Did not send money. Should have %s had %s", expected1, wallet1_amount));
 
+        const expected2 = start_amount2 + amount;
         auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
-        check(wallet2_amount == start_amount2 + amount, "did not receive money");
+        check(wallet2_amount == expected2, format("Did not send money. Should have %s had %s", expected2, wallet2_amount));
 
         return result_ok;
     }
