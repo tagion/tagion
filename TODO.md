@@ -2,6 +2,12 @@
 
 ## In Progress
 
+
+### Hashgraph viewer
+Description: Be able in frontend via query parameter or other in order to specify tagionshell url for websocket that it should connect to.
+
+Assignee: yr
+
 ### Logging of events in android
 Description: Open a file with the `WalletWrapperSdk path()` function which can be printed to the log in flutter later.
 [] - Create DEBUG_ANDROID flag instead of WRITE_LOGS
@@ -9,19 +15,12 @@ Description: Open a file with the `WalletWrapperSdk path()` function which can b
 
 Assignee: ab
 
-### Hashgraph Consensus bug
+### Hashgraph Consensus bug week 2
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
-Tasks:
-- [X] Create fiber test that is deterministic.
-- [X] Create weighted random in order to get the failure earlier
-- [X] Create multi-hashgraph viewer
-- [X] Show error code for the hashgraph that gets the epoch list
 - [] Create callback array and reassign pointer on fiber switch
 - [] Show all errors for multi-view
-- [X] Ifthrown stuff
 - [] profit?
-Assignee: phr
 
 ### Hashgraph monitor updates
 Tasks: 
@@ -39,6 +38,11 @@ Implement the interface from D to C of libwasmer.
 Initial TVM cli tool.
 
 Assignee: cbr
+
+### Implement "not" flag in HiREP
+Description: cbr
+
+Assigneee: ib
 
 
 ### Contract storage behaviour test
@@ -68,6 +72,19 @@ Assignee: ib
 
 ## Backlog
 
+### Envelope on shell
+Description: The shell should be able to accept a envelope package.
+
+[] - Create function in CLI-wallet to serialize to envelope.
+[] - Shell to deserialize to HiRPC hibon based on if it receives an Envelope
+
+Assignee: yr
+
+### NNG test flow
+Description: Extend the CI-pipeline for github.com/tagion/nng to automatically build and execute tests
+
+Assignee: yr
+
 ### Subscription API implementation
 Description: Provide external API for subscribing and querying data in the system as in [Subscription API proposal](https://docs.tagion.org/tips/3)
 Labels: [Tracing]
@@ -82,7 +99,6 @@ Create functionality for shell to accept Envelope.
 ### Mirror Node proposal
 Description: Create Query nodes which can be used for both sending and receiving information from the DART.
 
-### Implement "not" flag in HiREP
 
 ### HiBON Document max-size check test 
 We should make sure that we have check for max-size/out-of-memory
@@ -100,6 +116,16 @@ description: Add a github ci script which activates the operational test once a 
 Assignee: lr
 
 ## Done
+
+### Hashgraph Consensus bug week 1
+Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
+Tasks:
+- [X] Create fiber test that is deterministic.
+- [X] Create weighted random in order to get the failure earlier
+- [X] Create multi-hashgraph viewer
+- [X] Show error code for the hashgraph that gets the epoch list
+- [X] Ifthrown stuff
+Assignee: phr
 
 ### Mode1 bdd test
 Description: Create a test for mode1 which can run in aceptance stage
