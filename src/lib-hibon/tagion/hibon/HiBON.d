@@ -127,7 +127,8 @@ static size_t size(U)(const(U[]) array) pure {
         append(buffer);
         debug(android){
             import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::serialize append(buffer)\n");
+            import std.string : format;
+            write_log(format("HiBON::serialize append(buffer) %d\n", buffer.data.length));
         }
         return buffer.data;
     }
