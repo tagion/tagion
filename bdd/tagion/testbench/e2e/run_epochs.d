@@ -48,9 +48,9 @@ int _main(string[] args) {
     string config_file = buildPath(module_path, "tagionwave.json");
     import std.exception : ifThrown;
 
-    uint timeout = args[1].to!uint.ifThrown(10);
-    long end_epoch = args[2].to!long;
-    uint number_of_nodes = args[3].to!uint.ifThrown(5);
+    uint timeout = args[1].ifThrown("10").to!uint.ifThrown(10);
+    long end_epoch = args[2].ifThrown("10000").to!long.ifThrown(10000);
+    uint number_of_nodes = args[3].ifThrown("5").to!uint.ifThrown(5);
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
