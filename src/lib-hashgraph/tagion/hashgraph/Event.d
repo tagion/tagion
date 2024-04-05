@@ -267,14 +267,11 @@ class Event {
 
         calc_youngest_son_ancestors(hashgraph);
         BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
-        if (strongly_seen_nodes.isMajority(hashgraph)) {
-            hashgraph._rounds.next_round(this);
-        }
-
-        if (!higher(round.number, mother.round.number)) {
+        if (!strongly_seen_nodes.isMajority(hashgraph)) {
             return;
         }
-
+        // we have a witness event and need to create a witness and calculate through the masks
+        hashgraph._rounds.next_round(this);
         _witness = new Witness(this, hashgraph.node_size);
 
         pseudo_time_counter = 0;
