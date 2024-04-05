@@ -115,20 +115,20 @@ static size_t size(U)(const(U[]) array) pure {
     immutable(ubyte[]) serialize() const pure {
         debug(android){
             import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::serialize begin\n");
+            write_log("115 tagion.hibon.HiBON::serialize begin\n");
         }
         AppendBuffer buffer;
         buffer.reserve(serialize_size);
         debug(android){
             import tagion.mobile.mobilelog : write_log;
             import std.string : format;
-            write_log(format("HiBON::serialize buffer.reserve %d\n", serialize_size));
+            write_log(format("121 tagion.hibon.HiBON::serialize buffer.reserve %d\n", serialize_size));
         }
         append(buffer);
         debug(android){
             import tagion.mobile.mobilelog : write_log;
             import std.string : format;
-            write_log(format("HiBON::serialize append(buffer) %d\n", buffer.data.length));
+            write_log(format("127 tagion.hibon.HiBON::serialize append(buffer) %d\n", buffer.data.length));
         }
         return buffer.data;
     }
@@ -139,7 +139,7 @@ static size_t size(U)(const(U[]) array) pure {
     private void append(ref scope AppendBuffer buffer) const pure {
         debug(android){
             import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append begin\n");
+            write_log("139 tagion.hibon.HiBON::append begin\n");
         }
         if (_members[].empty) {
             buffer ~= ubyte(0);
@@ -147,22 +147,22 @@ static size_t size(U)(const(U[]) array) pure {
         }
         debug(android){
             import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append _members[].empty false\n");
+            write_log("144 tagion.hibon.HiBON::append _members[].empty false\n");
         }
         const size = cast(uint) _members[].map!(a => a.size).sum;
         debug(android){
             import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append size\n");
+            write_log("152 tagion.hibon.HiBON::append size\n");
         }
         buffer ~= LEB128.encode(size);
         debug(android){
             import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append LEB128.encode(size)\n");
+            write_log("157 tagion.hibon.HiBON::append LEB128.encode(size)\n");
         }
         _members[].each!(a => a.append(buffer));
         debug(android){
             import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append _members[].each!(a => a.append(buffer))\n");
+            write_log("162 tagion.hibon.HiBON::append _members[].each!(a => a.append(buffer))\n");
         }
     }
 
