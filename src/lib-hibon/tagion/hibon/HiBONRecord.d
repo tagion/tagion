@@ -816,12 +816,13 @@ mixin template HiBONRecord(string CTOR = "") {
             import tagion.mobile.mobilelog : write_log;
             write_log("814 tagion.hibon.HiBONRecord::toDoc start\n");
         }
-        return Document(serialize);
+        auto tmpSerialize = serialize;
         debug(android){
             import tagion.mobile.mobilelog : write_log;
             import std.string : format;
-            write_log(format("819 tagion.hibon.HiBONRecord::toDoc Document(serialize) %d\n", serialize.length));
+            write_log(format("819 tagion.hibon.HiBONRecord::toDoc tmpSerialize.length %d\n", tmpSerialize.length));
         }
+        return Document(tmpSerialize);
     }
 }
 
