@@ -41,9 +41,13 @@ import std.format;
 @safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
     debug(android){
         import tagion.mobile.mobilelog : write_log;
-        write_log("HiBONFile::fwrite fwrite(filename, rec.toDoc)\n");
+        write_log("HiBONFile::fwrite fwrite(filename, rec.toDoc) begin\n");
     }
     fwrite(filename, rec.toDoc);
+    debug(android){
+        import tagion.mobile.mobilelog : write_log;
+        write_log("HiBONFile::fwrite fwrite(filename, rec.toDoc) end\n");
+    }
 }
 
 /++

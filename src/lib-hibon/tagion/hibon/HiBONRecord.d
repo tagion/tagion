@@ -807,10 +807,6 @@ mixin template HiBONRecord(string CTOR = "") {
 
     static if (isSerializeDisabled!This) {
         @safe final immutable(ubyte[]) serialize() const pure {
-            debug(android){
-                import tagion.mobile.mobilelog : write_log;
-                write_log("HiBONRecord serialize toHiBON.serialize");
-            }
             return toHiBON.serialize;
         }
     }
@@ -818,7 +814,7 @@ mixin template HiBONRecord(string CTOR = "") {
     @safe final const(Document) toDoc() const pure {
         debug(android){
             import tagion.mobile.mobilelog : write_log;
-            write_log("HiBONRecord toDoc Document(serialize)");
+            write_log("HiBONRecord::toDoc Document(serialize)\n");
         }
         return Document(serialize);
     }
