@@ -4,6 +4,8 @@
 
 ### Logging of events in android
 Description: Open a file with the `WalletWrapperSdk path()` function which can be printed to the log in flutter later.
+[] - Create DEBUG_ANDROID flag instead of WRITE_LOGS
+[] - Check if debug symbols on android libmobile. Are they compiled in?
 
 Assignee: ab
 
@@ -15,7 +17,9 @@ Tasks:
 - [X] Create weighted random in order to get the failure earlier
 - [X] Create multi-hashgraph viewer
 - [X] Show error code for the hashgraph that gets the epoch list
+- [] Create callback array and reassign pointer on fiber switch
 - [] Show all errors for multi-view
+- [] Ifthrown stuff
 - [] profit?
 Assignee: phr
 
@@ -54,6 +58,9 @@ Scenario: Invalid contract
 * When the contract is sent to the network 
 * Then it should be rejected
 * Then the contract should not be stored in the TRT
+
+[] - Add function in SecureWallet.d which takes contract and produces hirpc for trt.dartRead of the contract hash.
+[] - Check functions should show the amount and expected amount on error.
 
 Labels: [Tracing, TRT]
 
