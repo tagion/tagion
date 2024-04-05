@@ -1114,7 +1114,9 @@ struct WalletStorage {
         debug(android) {
             import tagion.mobile.mobilelog : log_file;
             writefln("creating file at %s", wallet_data_path);
-            log_file = buildPath(wallet_data_path, "logfile.txt"); 
+            log_file = buildPath(wallet_data_path, "logfile.txt");
+            import std.file : write;
+            log_file.write("----- LOG START -----\n");
         }
         if (!wallet_data_path.exists) {
             wallet_data_path.mkdirRecurse;
