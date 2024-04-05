@@ -1115,8 +1115,6 @@ struct WalletStorage {
             import tagion.mobile.mobilelog : log_file;
             writefln("creating file at %s", wallet_data_path);
             log_file = buildPath(wallet_data_path, "logfile.txt"); 
-            import std.file : write;
-            log_file.write("wowo");
         }
         if (!wallet_data_path.exists) {
             wallet_data_path.mkdirRecurse;
@@ -1138,6 +1136,11 @@ struct WalletStorage {
 
     void write() const {
         // Create a hibon for wallet data.
+
+        debug(android){
+           import tagion.mobile.mobilelog : write_log;
+            write_log("WalletStorage::write");
+        }
 
         path(devicefile).fwrite(wallet.pin);
         path(accountfile).fwrite(wallet.account);
