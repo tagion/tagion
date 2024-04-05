@@ -426,7 +426,7 @@ class Event {
      * The received round for this event
      * Returns: received round
      */
-        const(Round) round_received() const {
+        const(Round) round_received() {
             return _round_received;
         }
 
