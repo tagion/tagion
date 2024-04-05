@@ -14,52 +14,11 @@
 
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+      secp256k1-zkp = pkgs.callPackage ./tub/secp256k1-zkp.nix {};
 
       # Disable mbedtls override is broken upstream see if merged
       # https://github.com/NixOS/nixpkgs/pull/285518
-      nng_no_tls = with pkgs;
-        stdenv.mkDerivation {
-          pname = "nng";
-          version = "git";
-
-          src = fetchFromGitHub {
-            owner = "nanomsg";
-            repo = "nng";
-            rev = "c5e9d8acfc226418dedcf2e34a617bffae043ff6";
-            hash = "sha256-bFsL3IMmJzjSaVfNBSfj5dStRD/6e7QOkTo01RSUN6g=";
-          };
-
-          nativeBuildInputs = [ cmake ninja ];
-          cmakeFlags = [ "-G Ninja" ];
-        };
-
-      # BlockstreamResearch secp256k1-zkp fork
-      secp256k1-zkp = with pkgs;
-        stdenv.mkDerivation {
-          pname = "secp256k1-zkp";
-
-          version = "0.3.2";
-
-          src = fetchFromGitHub {
-            owner = "BlockstreamResearch";
-            repo = "secp256k1-zkp";
-            rev = "d575ef9aca7cd1ed79735c95ec9f296554ea1df7";
-            sha256 = "sha256-Z8TrMxlNduPc4lEzA34jjo75sUJYh5fLNBnXg7KJy8I=";
-          };
-
-          nativeBuildInputs = [ autoreconfHook ];
-
-          configureFlags = [
-            "--enable-experimental"
-            "--enable-benchmark=no"
-            "--enable-module-recovery"
-            "--enable-module-schnorrsig"
-            "--enable-module-musig"
-          ];
-
-          doCheck = true;
-
-        };
+      nng = pkgs.callPackage ./tub/nng.nix {};
     in
     {
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
@@ -69,8 +28,9 @@
         pkgs.stdenv.mkDerivation {
           name = "tagion";
 
+
           buildInputs = [
-            nng_no_tls
+            nng
             secp256k1-zkp
           ];
 
@@ -126,7 +86,6 @@
       devShells.aarch64-linux.default = self._devShell;
       # devShells.x86_64-darwin.default = self._devShell;
       # devShells.aarch64-darwin.default = self._devShell;
-
       checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
         settings.typos.configPath = ".typos.toml";
