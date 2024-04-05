@@ -94,7 +94,7 @@ extern (C) {
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
     export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
-        version(WRITE_LOGS){
+        debug(android){
             import tagion.mobile.mobilelog : write_log;
             write_log("WalletWrapperSdk wallet_storage_init");
         } 
@@ -700,7 +700,7 @@ extern (C) {
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
 
-        version(WRITE_LOGS){
+        debug(android){
             import tagion.mobile.mobilelog : write_log;
             write_log("GET HISTORY");
         }
@@ -1111,7 +1111,7 @@ struct WalletStorage {
 
         wallet_data_path = walletDataPath.idup;
         import std.file;
-        version(WRITE_LOGS) {
+        debug(android) {
             import tagion.mobile.mobilelog : log_file;
             writefln("creating file at %s", wallet_data_path);
             log_file = buildPath(wallet_data_path, "logfile.txt"); 

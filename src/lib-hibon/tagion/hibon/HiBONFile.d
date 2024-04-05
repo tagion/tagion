@@ -17,7 +17,7 @@ import std.format;
  hibon = is the HiBON object
  +/
 @safe void fwrite(const(char[]) filename, const HiBON hibon) {
-    version(WRITE_LOGS){
+    debug(android){
         import tagion.mobile.mobilelog : write_log;
         write_log("HiBONFile fwrite file.write(filename, hibon.serialize)");
     }
@@ -31,7 +31,7 @@ import std.format;
  hibon = is the HiBON object
  +/
 @safe void fwrite(const(char[]) filename, const Document doc) {
-    version(WRITE_LOGS){
+    debug(android){
         import tagion.mobile.mobilelog : write_log;
         write_log("HiBONFile fwrite file.write(filename, doc.serialize)");
     }
@@ -39,7 +39,7 @@ import std.format;
 }
 
 @safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
-    version(WRITE_LOGS){
+    debug(android){
         import tagion.mobile.mobilelog : write_log;
         write_log("HiBONFile fwrite fwrite(filename, rec.toDoc)");
     }

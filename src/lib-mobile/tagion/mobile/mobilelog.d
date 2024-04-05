@@ -2,12 +2,12 @@ module tagion.mobile.mobilelog;
 import std.file;
 import std.path;
 
-version(WRITE_LOGS) {
+debug(android) {
 static string log_file;
 
 @safe void write_log(const(string) message) pure nothrow {
     if (!__ctfe) { 
-        debug {
+        debug(android) {
             import core.stdc.stdio;
             // printf("%.*s", cast(int) message.length, message.ptr);
             // fprintf(stderr, "%.*s", cast(int) message.length, message.ptr);
