@@ -217,7 +217,7 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
                 ChannelFilter channel_filter,
                 SenderCallBack sender) {
             const send_channel = select_channel(channel_filter);
-            if (send_channel != Pubkey.init) {
+            if (send_channel !is Pubkey.init) {
                 send(send_channel, sender());
             }
             return send_channel;

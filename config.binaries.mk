@@ -116,7 +116,7 @@ $(DBIN)/dartutil: DFILES::=$(DSRC)/bin-dartutil/tagion/tools/dartutil/dartutil.d
 $(call DO_BIN,dartutil)
 
 #
-# Blocfile utility
+# Blockfile utility
 #
 $(DBIN)/blockutil: DINC+=$(SRC_DINC)
 $(DBIN)/blockutil: DFILES::=$(DSRC)/bin-blockutil/tagion/tools/blockutil.d
