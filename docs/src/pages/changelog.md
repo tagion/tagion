@@ -10,13 +10,13 @@ The collider tool is now able to use `bubblewrap` in order to spawn the differen
 We have finished an initial prototype of a new hashgraph web monitor which works with the NNG websocket server functionality that was made last week. 
 
 ** Contract storage / tracing in TRT tests **
-The contract storage testing has now been tested with both contracts that should and should not go through. 
+The contract storage tracing has now been tested with both contracts that should and should not go through. 
 
 ** Automatic Mode1 bddtest on acceptance stage **
 The mode1 test has been improved and is now executed automatically on acceptance stage. It also checks if all the nodes are producing epochs by subscribing to them.
 
 ** Hashgraph consensus debugging **
-We are still working on fixing the consensus bug in the hashgraph. We have implemented a test which runs in a fiber instead of separate threads. By defining weighted randomness on how often the nodes are selected for communication and using deterministic randomness we have managed to create a test which fails consistently. This makes debugging the problem a lot easier since we are able to actually now if it fails or not. The `graphview` tool has also been updated so that it now can generate side-by-side graphs for all the nodes, allowing them to be easily compared.
+We are still working on fixing the consensus bug in the hashgraph. We have implemented a test which runs in a fiber instead of separate threads. By defining weighted randomness on how often the nodes are selected for communication and using deterministic randomness we have managed to create a test which fails consistently. This makes debugging the problem a lot easier since we are now actually able to see if it fails or not. The `graphview` tool has also been updated so that it now can generate side-by-side graphs for all the nodes, allowing them to be easily compared.
 
 
 # Changelog for Epoch 1189390 .. 1287717
