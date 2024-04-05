@@ -43,6 +43,12 @@ import std.format;
         import tagion.mobile.mobilelog : write_log;
         write_log("HiBONFile::fwrite fwrite(filename, rec.toDoc) begin\n");
     }
+    auto doc = rec.toDoc;
+    debug(android){
+        import tagion.mobile.mobilelog : write_log;
+        write_log("HiBONFile::fwrite auto doc = rec.toDoc\n");
+    }
+
     fwrite(filename, rec.toDoc);
     debug(android){
         import tagion.mobile.mobilelog : write_log;
