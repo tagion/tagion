@@ -14,50 +14,21 @@
 
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-      secp256k1-zkp = pkgs.callPackage ./tub/secp256k1-zkp.nix {};
+      secp256k1-zkp = pkgs.callPackage ./tub/secp256k1-zkp.nix { };
 
       # Disable mbedtls override is broken upstream see if merged
       # https://github.com/NixOS/nixpkgs/pull/285518
-      nng = pkgs.callPackage ./tub/nng.nix {};
+      nng = pkgs.callPackage ./tub/nng.nix { };
     in
     {
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
 
-      packages.x86_64-linux.default =
-        # Notice the reference to nixpkgs here.
-        pkgs.stdenv.mkDerivation {
-          name = "tagion";
-
-
-          buildInputs = [
-            nng
-            secp256k1-zkp
-          ];
-
-          nativeBuildInputs = with pkgs; [
-            dmd
-            gnumake
-            pkg-config
-          ];
-
+      packages.x86_64-linux.default = pkgs.callPackage ./tub/tagion.nix { 
           src = self;
-
-          configurePhase = ''
-            echo DC=dmd >> local.mk
-            echo USE_SYSTEM_LIBS=1 >> local.mk
-            echo INSTALL=$out/bin >> local.mk
-            echo XDG_DATA_HOME=$out/.local/share >> local.mk
-            echo XDG_CONFIG_HOME=$out/.config >> local.mk
-          '';
-
-          buildPhase = ''
-            make GIT_HASH=${gitRev} tagion
-          '';
-
-          installPhase = ''
-            mkdir -p $out/bin; make install
-          '';
-        };
+          gitRev = gitRev; 
+          secp256k1-zkp = secp256k1-zkp;
+          nng = nng; 
+      };
 
       _devShell =
         pkgs.mkShell {
@@ -180,9 +151,9 @@
         };
 
       packages.x86_64-linux.dockerImage = pkgs.dockerTools.buildLayeredImage {
-          name = "tagion";
-          tag = "latest";
-          config.Cmd = "${self.packages.x86_64-linux.default}/bin/tagion";
+        name = "tagion";
+        tag = "latest";
+        config.Cmd = "${self.packages.x86_64-linux.default}/bin/tagion";
       };
 
       nixosModules.default = with pkgs.lib; { config, ... }:

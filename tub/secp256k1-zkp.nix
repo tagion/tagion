@@ -10,10 +10,10 @@ stdenv.mkDerivation {
   version = "0.3.2";
 
   src = fetchFromGitHub {
-      owner = "BlockstreamResearch";
-      repo = "secp256k1-zkp";
-      rev = "d575ef9aca7cd1ed79735c95ec9f296554ea1df7";
-      sha256 = "sha256-Z8TrMxlNduPc4lEzA34jjo75sUJYh5fLNBnXg7KJy8I=";
+    owner = "BlockstreamResearch";
+    repo = "secp256k1-zkp";
+    rev = "d575ef9aca7cd1ed79735c95ec9f296554ea1df7";
+    sha256 = "sha256-Z8TrMxlNduPc4lEzA34jjo75sUJYh5fLNBnXg7KJy8I=";
   };
 
   nativeBuildInputs = [ autoreconfHook ];
