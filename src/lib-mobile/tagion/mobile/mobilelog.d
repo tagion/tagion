@@ -13,7 +13,7 @@ static string log_file;
             // fprintf(stderr, "%.*s", cast(int) message.length, message.ptr);
             if (log_file !is string.init && log_file.exists) {
                 log_file.append(message);
-                log_file.append("\n");
+                // log_file.append("\n");
             }
         }
     }

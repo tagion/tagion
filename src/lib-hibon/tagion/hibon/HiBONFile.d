@@ -19,7 +19,7 @@ import std.format;
 @safe void fwrite(const(char[]) filename, const HiBON hibon) {
     debug(android){
         import tagion.mobile.mobilelog : write_log;
-        write_log("HiBONFile::fwrite file.write(filename, hibon.serialize)");
+        write_log("HiBONFile::fwrite file.write(filename, hibon.serialize)\n");
     }
     file.write(filename, hibon.serialize);
 }
@@ -33,7 +33,7 @@ import std.format;
 @safe void fwrite(const(char[]) filename, const Document doc) {
     debug(android){
         import tagion.mobile.mobilelog : write_log;
-        write_log("HiBONFile::fwrite file.write(filename, doc.serialize)");
+        write_log("HiBONFile::fwrite file.write(filename, doc.serialize)\n");
     }
     file.write(filename, doc.serialize);
 }
@@ -41,7 +41,7 @@ import std.format;
 @safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
     debug(android){
         import tagion.mobile.mobilelog : write_log;
-        write_log("HiBONFile::fwrite fwrite(filename, rec.toDoc)");
+        write_log("HiBONFile::fwrite fwrite(filename, rec.toDoc)\n");
     }
     fwrite(filename, rec.toDoc);
 }

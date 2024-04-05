@@ -1139,7 +1139,7 @@ struct WalletStorage {
 
         debug(android){
            import tagion.mobile.mobilelog : write_log;
-            write_log("WalletStorage::write");
+            write_log("WalletStorage::write\n");
         }
 
         path(devicefile).fwrite(wallet.pin);
