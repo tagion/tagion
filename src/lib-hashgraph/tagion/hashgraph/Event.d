@@ -53,7 +53,7 @@ class Event {
         Event _daughter;
         Event _son;
 
-         long _order;
+        long _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -161,8 +161,17 @@ class Event {
 
     package {
         Round _round; /// The where the event has been created
-        Round _round_received; /// The round in which the event has been voted to be received
         BitMask _round_received_mask; /// Voting mask for the received rounds
+    }
+    protected {
+        Round _round_received; /// The round in which the event has been voted to be received
+    }
+
+    invariant {
+        if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
+
+            assert(_round_received.number == _round_received.previous.number + 1, format("Round was not added by 1: current: %s previous %s", _round_received.number, _round_received.previous.number)); 
+        }
     }
 
     /**
@@ -306,7 +315,7 @@ class Event {
         iota(hashgraph.node_size)
             .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
-                    .order > _youngest_son_ancestors[node_id].order)
+            .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
@@ -320,7 +329,8 @@ class Event {
         if (voting_round.number + 1 == round.number) {
             _witness._vote_on_earliest_witnesses[vote_node_id] = _witness._prev_seen_witnesses[vote_node_id];
             return;
-        }        if (voting_event is null) {
+        }
+        if (voting_event is null) {
             hashgraph._rounds.vote(hashgraph, vote_node_id);
             return;
         }
@@ -332,7 +342,7 @@ class Event {
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
             hashgraph._rounds.vote(hashgraph, vote_node_id);
-        } 
+        }
     }
 
     /**
@@ -409,15 +419,10 @@ class Event {
         return _father;
     }
 
+    void round_received(Round round_received) nothrow {
+        _round_received = round_received;
+    }
     @nogc pure nothrow const final {
-        /**
-  * The event-body from this event 
-  * Returns: event-body
-  */
-        ref const(EventBody) event_body() {
-            return event_package.event_body;
-        }
-
         /**
      * The received round for this event
      * Returns: received round
@@ -425,6 +430,15 @@ class Event {
         const(Round) round_received() {
             return _round_received;
         }
+
+        /**
+      * The event-body from this event 
+      * Returns: event-body
+      */
+        ref const(EventBody) event_body() {
+            return event_package.event_body;
+        }
+
 
         /**
      * Channel from which this event has received

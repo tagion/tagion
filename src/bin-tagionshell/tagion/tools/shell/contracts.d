@@ -4,6 +4,7 @@ module tagion.tools.shell.contracts;
 
 import std.stdio;
 import std.path;
+import std.datetime;
 
 import tagion.actor;
 import tagion.basic.Types;
@@ -13,7 +14,6 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONFile;
 import tagion.logger;
 import tagion.tools.shell.shelloptions;
-import tagion.utils.StdTime;
 
 alias SaveRPC = Msg!"SaveRPC";
 
@@ -31,7 +31,7 @@ struct RPCSaver {
 
     void task() {
         net = new StdHashNet();
-        const rpcs_file_name = "rpcs_" ~ currentTime.toText.setExtension(FileExtension.hibon);
+        const rpcs_file_name = "rpcs_" ~ Clock.currTime.toISOString.setExtension(FileExtension.hibon);
 
         rpcs_file = File(rpcs_file_name, "w");
 

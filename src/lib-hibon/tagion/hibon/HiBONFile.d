@@ -3,10 +3,12 @@ import file = std.file;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
 import std.exception : assumeUnique;
 import std.stdio : File;
 import std.typecons : No;
+import std.format;
 
 /++
  Serialize the hibon and writes it a file
@@ -15,6 +17,10 @@ import std.typecons : No;
  hibon = is the HiBON object
  +/
 @safe void fwrite(const(char[]) filename, const HiBON hibon) {
+    debug(android){
+        import tagion.mobile.mobilelog : write_log;
+        write_log("HiBONFile::fwrite file.write(filename, hibon.serialize)\n");
+    }
     file.write(filename, hibon.serialize);
 }
 
@@ -25,10 +31,18 @@ import std.typecons : No;
  hibon = is the HiBON object
  +/
 @safe void fwrite(const(char[]) filename, const Document doc) {
+    debug(android){
+        import tagion.mobile.mobilelog : write_log;
+        write_log("HiBONFile::fwrite file.write(filename, doc.serialize)\n");
+    }
     file.write(filename, doc.serialize);
 }
 
 @safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
+    debug(android){
+        import tagion.mobile.mobilelog : write_log;
+        write_log("HiBONFile::fwrite fwrite(filename, rec.toDoc)\n");
+    }
     fwrite(filename, rec.toDoc);
 }
 
@@ -124,8 +138,11 @@ unittest {
 @safe
 struct HiBONRange {
     File file;
-    this(File file) {
+    enum default_max_size = 0x100_0000;
+    size_t max_size;
+    this(File file, const size_t max_size=default_max_size) {
         this.file = file;
+        this.max_size=max_size;
         popFront;
     }
 
@@ -144,10 +161,19 @@ struct HiBONRange {
     void popFront() {
         if (!empty) {
             buf.length = LEB128.DataSize!size_t;
-            const read_size = file.rawRead(buf).length;
+            foreach(pos; 0..buf.length) {
+                if (file.rawRead(buf[pos..pos+1]).length == 0) {
+                    break;
+                }
+                if ((buf[pos] & 0x80) == 0) {
+                    break;
+                }
+            }
             const doc_size = LEB128.decode!size_t(buf);
-            buf.length = doc_size.size + doc_size.value;
-            file.rawRead(buf[read_size .. $]);
+            const buf_size=doc_size.size+doc_size.value;
+            check(buf_size <= max_size, format("The read buffer size is %d max size is set to %d", buf_size, max_size));
+            buf.length = buf_size;
+            file.rawRead(buf[doc_size.size .. $]);
             doc = Document(buf.idup);
         }
     }

@@ -18,7 +18,7 @@ prompt() {
 }
 
 version=$1
-artifact_name="successful_artifact.zip"
+artifact_name="x86_64-linux.zip"
 release_url="https://github.com/tagion/tagion/releases/download/$version/$artifact_name"
 
 if [[ -z "$version" ]]; then
@@ -38,7 +38,6 @@ cd "$version"
 echo "Downloading $release_url to $PWD/$artifact_name"
 wget "$release_url"
 unzip "$artifact_name"
-tar xzf *.tar.gz
 
 echo
 echo "old: $(tagion --version | head -1)"

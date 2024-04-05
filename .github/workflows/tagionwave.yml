@@ -48,9 +48,8 @@ jobs:
         run: |
           rm -rf *
           loginctl enable-linger moonbase
-          gh run download ${{ inputs.run_id }} -n successful_artifact --repo tagion/tagion
+          gh run download ${{ inputs.run_id }} -n x86_64-linux --repo tagion/tagion
           ls
-          tar -xzf *.tar.gz
 
       - name: Delete stuff
         if: ${{ inputs.clean }}

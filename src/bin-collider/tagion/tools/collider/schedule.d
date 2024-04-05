@@ -14,7 +14,7 @@ import std.traits;
 import std.path;
 import std.typecons : Tuple, tuple;
 import tagion.hibon.HiBONJSON;
-import tagion.tools.Basic : dry_switch, verbose_switch;
+import tagion.tools.Basic : dry_switch, verbose_switch, error;
 import tagion.tools.collider.BehaviourOptions;
 import tagion.tools.collider.trace : ScheduleTrace;
 import tagion.tools.toolsexception;
@@ -162,8 +162,8 @@ struct ScheduleRunner {
                     .map!(unit => Stage(unit.value, unit.key, stage)))
             .joiner;
         if (schedule_list.empty) {
-            writefln("None of the stage %s available", stages);
-            writefln("Available stages %s", schedule.stages);
+            error("None of the stage %s available", stages);
+            error("Available stages %s", schedule.stages);
             return 1;
         }
         auto runners = new Runner[jobs];
@@ -190,6 +190,8 @@ struct ScheduleRunner {
                 auto _stdin = (() @trusted => stdin)();
 
                 Pid pid;
+
+
                 if (!cov_enable) {
                     pid = spawnProcess(cmd, _stdin, fout, fout, env);
                 }
@@ -242,7 +244,7 @@ struct ScheduleRunner {
                         auto env = environment.toAA;
                         schedule_list.front.unit.envs.byKeyValue
                             .each!(e => env[e.key] = envExpand(e.value, env));
-                        const cmd = args ~
+                        const(char[])[] cmd = args ~
                             schedule_list.front.name ~
                             schedule_list.front.unit.args
                                 .map!(arg => envExpand(arg, env))
@@ -250,13 +252,19 @@ struct ScheduleRunner {
                         setEnv(env, schedule_list.front.stage);
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
+
+                        bool unshare_net = ("UNSHARE_NET" in env) !is null;
+                        if(unshare_net) {
+                            cmd = ["bwrap", "--unshare-net", "--dev-bind", "/", "/"] ~ cmd;
+                        }
+
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                                 schedule_list.front.name).setExtension("log");
                         batch(job_index, time, cmd, log_filename, env);
                         schedule_list.popFront;
                     }
                     catch (Exception e) {
-                        writefln("Error %s", e.msg);
+                        error(e);
                         runners[job_index].fout.writeln("Error: %s", e.msg);
                         runners[job_index].fout.close;
                         kill(runners[job_index].pid);

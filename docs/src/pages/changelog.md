@@ -1,3 +1,50 @@
+# Changelog for Epoch 1287717 .. 1397424
+
+** Make-flow improvements **
+We have updated the makeflow to use `dmd -I` instead of specifying all the files. This has turned out to be must faster to compile which has lead to a 50% decrease in our compilation times. 
+
+** Collider network namespaces **
+The collider tool is now able to use `bubblewrap` in order to spawn the different processes in their own namespace. This means that multiple of the same tests with the same sockets can be executed on the same machine parallelly. This is basically the same thing that Docker and similar container tools do, but the smart thing is that we do not have to for an example create a virtual filesystem as well. 
+
+** Websocket hashgraph monitor **
+We have finished an initial prototype of a new hashgraph web monitor which works with the NNG websocket server functionality that was made last week. 
+
+** Contract storage / tracing in TRT tests **
+The contract storage tracing has now been tested with both contracts that should and should not go through. 
+
+** Automatic Mode1 bddtest on acceptance stage **
+The mode1 test has been improved and is now executed automatically on acceptance stage. It also checks if all the nodes are producing epochs by subscribing to them.
+
+** Hashgraph consensus debugging **
+We are still working on fixing the consensus bug in the hashgraph. We have implemented a test which runs in a fiber instead of separate threads. By defining weighted randomness on how often the nodes are selected for communication and using deterministic randomness we have managed to create a test which fails consistently. This makes debugging the problem a lot easier since we are now actually able to see if it fails or not. The `graphview` tool has also been updated so that it now can generate side-by-side graphs for all the nodes, allowing them to be easily compared.
+
+
+# Changelog for Epoch 1189390 .. 1287717
+
+** HiREP updates **
+The HiREP tool has been updated so that it can filter on sub-hibons. This is very smart for ex filtering out specific elements from ex. the TRT.
+
+A new feature was also added to the `-l` flag which means you can specify `-1` as an index which will give you the last index in the range.
+
+** Mode1 BDD test **
+We have created a testbench bdd which can run nodes in different processes. This means that we now can spawn a mode1 network using a testing tool allowing us to implement various other tests on the mode1 network.
+
+** Graphview **
+We have a bug in our hashgraph which occurs very rarely. This means that the graphs we have to debug are extremely large and using [GraphViz](https://graphviz.org/) for generating the graphs have become a real problem since it crashes with more than ~10000 events. Therefore we have implemented a way to generate the svg directly without graphviz which is much simpler and faster. Our CI has also been updated so that it now generates the graphs automatically if there was an error. If you did not think the core-team could do styling think again! :-D.
+
+** TRT Contract storing **
+We have implemented a new archive in the TRT, which stores successfully executed contracts along with the epoch number. This allows clients to perform a `trt.dartRead` with the dartindex being the contracts hash and getting back which epoch it went through. Common for the TRT is that it is not the database but merely a lookup table for clients to more easily use the system.
+
+** HiBON Backward compatibility test **
+We have added a test which produces a HiBON containing all fields. This HiBON is then committed in git and checked in the unittest each time they are executed that the current binaries produce the same output.
+
+** Envelope fixes **
+We have refactored the Envelope so that it is little endian by default among other things.
+
+** True websocket server **
+We have created a websocket server that works in the same way as normal websockets such as python standard websockets etc in the NNG library. This will allow us to easily show our graph and be more compatible with other languages standard websocket implementations. 
+
+
 # Changelog for Epoch 1104102 .. 1189390
 
 **Epoch operational test**

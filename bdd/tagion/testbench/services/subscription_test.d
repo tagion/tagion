@@ -67,7 +67,7 @@ class ReceiveSubscribedTopicsOnASocket {
 
         // Spawn the subscription task which open the nng pub socket
         sub_handle = spawn!SubscriptionService("sub_test_task", sub_opts);
-        check(waitforChildren(Ctrl.ALIVE), "Service didn't start");
+        check(waitforChildren(Ctrl.ALIVE, 5.seconds), "Service didn't start");
 
         // Connect a client socket
         sock.recvtimeout = msecs(1000);
@@ -130,7 +130,7 @@ class ReceiveSubscribedTopicsOnASocket {
     @Then("we stop the service")
     Document weStopTheService() {
         sub_handle.send(Sig.STOP);
-        check(waitforChildren(Ctrl.END), "Service did not stop");
+        check(waitforChildren(Ctrl.END, 5.seconds), "Service did not stop");
 
         return result_ok;
     }

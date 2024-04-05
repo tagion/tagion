@@ -94,6 +94,10 @@ extern (C) {
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
     export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
+        debug(android){
+            import tagion.mobile.mobilelog : write_log;
+            write_log("WalletWrapperSdk wallet_storage_init");
+        } 
         const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
         if (directoryPath.length > 0) {
             // Full path to stored wallet data.
@@ -370,19 +374,13 @@ extern (C) {
     }
 
     export uint request_trt_update(uint8_t* requestPtr) {
-        import std.stdio;
-        stderr.writeln("call request_trt_update");
         if (!__wallet_storage.wallet.isLoggedin()) {
-            stderr.writeln("request_trt_update NOT_LOGGED_IN");
+        
             return NOT_LOGGED_IN;
         }
-        stderr.writeln("request_trt_update LOGGED_IN");
         const request = __wallet_storage.wallet.readIndicesByPubkey();
-        stderr.writeln("request_trt_update readIndicesByPubkey");
         const requestDocId = recyclerDoc.create(request.toDoc);
-        stderr.writeln("request_trt_update create request.toDoc");
         *requestPtr = cast(uint8_t) requestDocId;
-        stderr.writeln("request_trt_update SUCCESS");
         return SUCCESS;
     }
 
@@ -701,6 +699,11 @@ extern (C) {
     static sdt_t dummy_time;
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
+
+        debug(android){
+            import tagion.mobile.mobilelog : write_log;
+            write_log("GET HISTORY");
+        }
         version (WALLET_HISTORY_DUMMY) {
             if (dummy_time == sdt_t.init) {
                 dummy_time = currentTime();
@@ -1092,6 +1095,7 @@ unittest {
 
 }
 
+
 alias Store = WalletStorage;
 struct WalletStorage {
     StdSecureWallet wallet;
@@ -1107,7 +1111,13 @@ struct WalletStorage {
 
         wallet_data_path = walletDataPath.idup;
         import std.file;
-
+        debug(android) {
+            import tagion.mobile.mobilelog : log_file;
+            writefln("creating file at %s", wallet_data_path);
+            log_file = buildPath(wallet_data_path, "logfile.txt");
+            import std.file : write;
+            log_file.write("----- LOG START -----\n");
+        }
         if (!wallet_data_path.exists) {
             wallet_data_path.mkdirRecurse;
         }
@@ -1128,6 +1138,11 @@ struct WalletStorage {
 
     void write() const {
         // Create a hibon for wallet data.
+
+        debug(android){
+           import tagion.mobile.mobilelog : write_log;
+            write_log("WalletStorage::write\n");
+        }
 
         path(devicefile).fwrite(wallet.pin);
         path(accountfile).fwrite(wallet.account);

@@ -13,4 +13,5 @@ public import sendcontract = tagion.testbench.services.sendcontract;
 public import spam_double_spend = tagion.testbench.services.spam_double_spend;
 public import subscription_test = tagion.testbench.services.subscription_test;
 public import transcript = tagion.testbench.services.transcript;
+public import trt_contract = tagion.testbench.services.trt_contract;
 public import trt_service = tagion.testbench.services.trt_service;

@@ -7,6 +7,7 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.Round;
 
 import std.format;
+import std.file : exists;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.basic : EnumText, basename;
 import tagion.basic.tagionexceptions : TagionException;
@@ -30,7 +31,7 @@ abstract class BaseMonitorCallbacks : EventMonitorCallbacks {
     }
 }
 
-class LogMonitorCallBacks : BaseMonitorCallbacks {
+class LogMonitorCallbacks : BaseMonitorCallbacks {
     Topic topic;
 
     this(string event_topic_name = "monitor") {
@@ -60,11 +61,12 @@ class LogMonitorCallBacks : BaseMonitorCallbacks {
 }
 
 
-class FileMonitorCallBacks : BaseMonitorCallbacks {
+class FileMonitorCallbacks : BaseMonitorCallbacks {
     File out_file;
     size_t[Pubkey] node_id_relocation;
     this(string file_name, uint nodes, Pubkey[] node_keys) {
-        out_file = File(file_name, "w");
+        // the "a" creates the file as well
+        out_file = File(file_name, "a");
         out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
 
         import std.algorithm : sort;
@@ -72,6 +74,10 @@ class FileMonitorCallBacks : BaseMonitorCallbacks {
         foreach(i, k; node_keys.sort.enumerate) {
             this.node_id_relocation[k] = i;
         }
+    }
+
+    ~this() {
+        out_file.close;
     }
 
     nothrow:
