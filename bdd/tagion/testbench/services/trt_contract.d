@@ -113,25 +113,9 @@ class ProperContract {
 
     @Then("the contract should be saved in the TRT")
     Document tRT() {
-        auto dart_key = net.dartKey(StdNames.contract, net.dartIndex(
-                signed_contract.contract.toDoc));
-
-        auto params = new HiBON;
-        auto params_dart_indices = new HiBON;
-        params_dart_indices = [dart_key];
-        params[DART.Params.dart_indices] = params_dart_indices;
-        auto sender = wallet1_hirpc.action("trt." ~ DART.Queries.dartRead, params);
-
-        auto receiver = sendHiRPC(opts1.dart_interface.sock_addr, sender, wallet1_hirpc);
-
-        auto recorder_doc = receiver.message[Keywords.result].get!Document;
-        RecordFactory record_factory = RecordFactory(net);
-
-        const recorder = record_factory.recorder(recorder_doc);
-        auto result_archives = recorder[].map!(a => a.filed)
-            .filter!(doc => doc.isRecord!TRTContractArchive)
-            .map!(doc => TRTContractArchive(doc))
-            .array;
+        auto result_archives = getTRTStoredContracts([
+            signed_contract.contract.toDoc
+        ], wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
 
         check(!result_archives.empty, "No contract recorded in TRT");
         check(result_archives[0].contract == signed_contract.contract.toDoc, "Received contract doesn't match expected");
@@ -260,28 +244,9 @@ class InvalidContract {
 
     @Then("one contract should be stored in TRT and another should not")
     Document shouldNot() {
-        auto dart_key1 = net.dartKey(StdNames.contract, net.dartIndex(
-                signed_contract1.contract.toDoc));
-
-        auto dart_key2 = net.dartKey(StdNames.contract, net.dartIndex(
-                signed_contract2.contract.toDoc));
-
-        auto params = new HiBON;
-        auto params_dart_indices = new HiBON;
-        params_dart_indices = [dart_key1, dart_key2];
-        params[DART.Params.dart_indices] = params_dart_indices;
-        auto sender = wallet1_hirpc.action("trt." ~ DART.Queries.dartRead, params);
-
-        auto receiver = sendHiRPC(opts1.dart_interface.sock_addr, sender, wallet1_hirpc);
-
-        auto recorder_doc = receiver.message[Keywords.result].get!Document;
-        RecordFactory record_factory = RecordFactory(net);
-
-        const recorder = record_factory.recorder(recorder_doc);
-        auto result_archives = recorder[].map!(a => a.filed)
-            .filter!(doc => doc.isRecord!TRTContractArchive)
-            .map!(doc => TRTContractArchive(doc))
-            .array;
+        auto result_archives = getTRTStoredContracts([
+            signed_contract1.contract.toDoc, signed_contract2.contract.toDoc
+        ], wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
 
         check(result_archives.length == 1, "Should be only one contract in TRT");
         check(result_archives[0].contract == signed_contract1.contract.toDoc, "Received contract doesn't match expected");
