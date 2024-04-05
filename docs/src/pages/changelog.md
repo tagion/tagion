@@ -1,3 +1,24 @@
+# Changelog for Epoch 1287717 .. 1397424
+
+** Make-flow improvements **
+We have updated the makeflow to use `dmd -I` instead of specifying all the files. This has turned out to be must faster to compile which has lead to a 50% decrease in our compilation times. 
+
+** Collider network namespaces **
+The collider tool is now able to use `bubblewrap` in order to spawn the different processes in their own namespace. This means that multiple of the same tests with the same sockets can be executed on the same machine parallelly. This is basically the same thing that Docker and similar container tools do, but the smart thing is that we do not have to for an example create a virtual filesystem as well. 
+
+** Websocket hashgraph monitor **
+We have finished an initial prototype of a new hashgraph web monitor which works with the NNG websocket server functionality that was made last week. 
+
+** Contract storage / tracing in TRT tests **
+The contract storage testing has now been tested with both contracts that should and should not go through. 
+
+** Automatic Mode1 bddtest on acceptance stage **
+The mode1 test has been improved and is now executed automatically on acceptance stage. It also checks if all the nodes are producing epochs by subscribing to them.
+
+** Hashgraph consensus debugging **
+We are still working on fixing the consensus bug in the hashgraph. We have implemented a test which runs in a fiber instead of separate threads. By defining weighted randomness on how often the nodes are selected for communication and using deterministic randomness we have managed to create a test which fails consistently. This makes debugging the problem a lot easier since we are able to actually now if it fails or not. The `graphview` tool has also been updated so that it now can generate side-by-side graphs for all the nodes, allowing them to be easily compared.
+
+
 # Changelog for Epoch 1189390 .. 1287717
 
 ** HiREP updates **

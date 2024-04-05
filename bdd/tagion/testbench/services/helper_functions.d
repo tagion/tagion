@@ -2,6 +2,8 @@ module tagion.testbench.services.helper_functions;
 
 import std.format;
 import std.stdio;
+import std.array;
+import std.algorithm;
 import tagion.behaviour;
 import tagion.behaviour.BehaviourException : check;
 import tagion.communication.HiRPC;
@@ -11,10 +13,14 @@ import tagion.script.TagionCurrency;
 import tagion.tools.wallet.WalletInterface;
 import tagion.wallet.SecureWallet;
 import tagion.wallet.request;
+import tagion.trt.TRT : TRTContractArchive;
+import tagion.hibon.Document : Document;
+import tagion.Keywords;
+import tagion.crypto.SecureNet : StdHashNet;
+import tagion.dart.Recorder : RecordFactory;
+import tagion.hibon.HiBONRecord : isRecord;
 
 @safe:
-
-
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 pragma(msg, "remove trusted when nng is safe");
@@ -54,4 +60,21 @@ TagionCurrency getWalletTRTUpdateAmount(ref StdSecureWallet wallet, string sock_
     check(!dart_received.isError, format("Received HiRPC error: %s", dart_received.toPretty));
     check(wallet.updateFromRead(dart_received), "dart req, wallet not updated successfully");
     return wallet.calcTotal(wallet.account.bills);
+}
+
+TRTContractArchive[] getTRTStoredContracts(const(Document)[] contracts, ref StdSecureWallet wallet, string sock_addr, HiRPC hirpc) {
+    const sender = wallet.readContractsTRT(contracts, hirpc);
+    auto receiver = sendHiRPC(sock_addr, sender, hirpc);
+
+    auto recorder_doc = receiver.message[Keywords.result].get!Document;
+
+    auto net = new StdHashNet;
+    RecordFactory record_factory = RecordFactory(net);
+
+    const recorder = record_factory.recorder(recorder_doc);
+    return recorder[].map!(a => a.filed)
+        .filter!(doc => doc.isRecord!TRTContractArchive)
+        .map!(doc => TRTContractArchive(doc))
+        .array;
+
 }
