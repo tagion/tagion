@@ -31,7 +31,7 @@ abstract class BaseMonitorCallbacks : EventMonitorCallbacks {
     }
 }
 
-class LogMonitorCallBacks : BaseMonitorCallbacks {
+class LogMonitorCallbacks : BaseMonitorCallbacks {
     Topic topic;
 
     this(string event_topic_name = "monitor") {
@@ -61,18 +61,13 @@ class LogMonitorCallBacks : BaseMonitorCallbacks {
 }
 
 
-class FileMonitorCallBacks : BaseMonitorCallbacks {
+class FileMonitorCallbacks : BaseMonitorCallbacks {
     File out_file;
     size_t[Pubkey] node_id_relocation;
     this(string file_name, uint nodes, Pubkey[] node_keys) {
-        // we only want to add the nodeamount if the file does not exist 
-        if (file_name.exists) {
-            out_file = File(file_name, "a");
-        } else {
-            // the "a" creates the file as well
-            out_file = File(file_name, "a");
-            out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
-        }
+        // the "a" creates the file as well
+        out_file = File(file_name, "a");
+        out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
 
         import std.algorithm : sort;
         import std.range : enumerate;

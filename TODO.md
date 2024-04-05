@@ -19,7 +19,7 @@ Tasks:
 - [X] Show error code for the hashgraph that gets the epoch list
 - [] Create callback array and reassign pointer on fiber switch
 - [] Show all errors for multi-view
-- [] Ifthrown stuff
+- [X] Ifthrown stuff
 - [] profit?
 Assignee: phr
 

@@ -13,4 +13,4 @@ Given one correctly signed contract
 Given another malformed contract correctly signed with two inputs which are the same
 When contracts are sent to the network 
 Then one contract goes through and another should be rejected
-Then one contract should be stored in TRT and anohter should not 
+Then one contract should be stored in TRT and another should not 

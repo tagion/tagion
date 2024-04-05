@@ -259,7 +259,7 @@ class InvalidContract {
         return result_ok;
     }
 
-    @Then("one contract should be stored in TRT and anohter should not")
+    @Then("one contract should be stored in TRT and another should not")
     Document shouldNot() {
         auto dart_key1 = net.dartKey(StdNames.contract, net.dartIndex(
                 signed_contract1.contract.toDoc));
