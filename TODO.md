@@ -40,9 +40,12 @@ Initial TVM cli tool.
 Assignee: cbr
 
 ### Implement "not" flag in HiREP
-Description: cbr
 
-Assigneee: ib
+Description:
+The not flag should implement similar function as the `grep -v` or like the `find . -not ...`.
+This it should filter out all which matches the pattern.
+
+Assignee: ib
 
 
 ### Contract storage behaviour test
