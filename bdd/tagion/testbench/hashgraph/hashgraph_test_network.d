@@ -425,13 +425,13 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     .map!((e) @trusted => cast(Event) e)
                      .array.sort!((a,b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
                      .uniq!((a,b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
-                if (Event.callbacks && !not_the_same_uniq.empty) {
-                    foreach(event; not_the_same_uniq) {
-                        writefln("%(%02x%)", net.calcHash(*event.event_package));
-                        event.error = true;
-                        Event.callbacks.connect(event);
-                    }
-                }
+                // if (Event.callbacks && !not_the_same_uniq.empty) {
+                //     foreach(event; not_the_same_uniq) {
+                //         writefln("%(%02x%)", net.calcHash(*event.event_package));
+                //         event.error = true;
+                //         Event.callbacks.connect(event);
+                //     }
+                // }
 
                 // check all events are the same
                 auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
