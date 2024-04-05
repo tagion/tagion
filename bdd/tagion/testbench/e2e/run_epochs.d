@@ -49,8 +49,8 @@ int _main(string[] args) {
     import std.exception : ifThrown;
 
     uint timeout = args[1].to!uint.ifThrown(10);
-    uint number_of_nodes = args[3].to!uint.ifThrown(5);
     long end_epoch = args[2].to!long;
+    uint number_of_nodes = args[3].to!uint.ifThrown(5);
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);

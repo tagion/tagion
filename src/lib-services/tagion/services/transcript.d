@@ -1,5 +1,5 @@
 /// Service for Transcript responsible for creating recorder for DART 
-/// [DART Documentation](https://docs.tagion.org/docus/architecture/transcript)
+/// [DART Documentation](https://docs.tagion.org/docs/architecture/transcript)
 module tagion.services.transcript;
 
 @safe:

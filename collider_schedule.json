@@ -214,7 +214,7 @@
     "trt_contract": {
       "args": [],
       "envs": {},
-      "stages": ["commit", "trt", "trt_contract"],
+      "stages": ["acceptance", "trt", "trt_contract"],
       "timeout": 0.0
     },
     "run_fiber_epoch": {

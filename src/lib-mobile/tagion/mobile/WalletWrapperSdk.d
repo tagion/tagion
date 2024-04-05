@@ -699,6 +699,11 @@ extern (C) {
     static sdt_t dummy_time;
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
+
+        version(WRITE_LOGS){
+            import tagion.mobile.mobilelog : write_log;
+            write_log("GET HISTORY");
+        }
         version (WALLET_HISTORY_DUMMY) {
             if (dummy_time == sdt_t.init) {
                 dummy_time = currentTime();
@@ -1090,6 +1095,7 @@ unittest {
 
 }
 
+
 alias Store = WalletStorage;
 struct WalletStorage {
     StdSecureWallet wallet;
@@ -1105,7 +1111,13 @@ struct WalletStorage {
 
         wallet_data_path = walletDataPath.idup;
         import std.file;
-
+        version(WRITE_LOGS) {
+            import tagion.mobile.mobilelog : log_file;
+            writefln("creating file at %s", wallet_data_path);
+            log_file = buildPath(wallet_data_path, "logfile.txt"); 
+            import std.file : write;
+            log_file.write("wowo");
+        }
         if (!wallet_data_path.exists) {
             wallet_data_path.mkdirRecurse;
         }

@@ -26,7 +26,7 @@ import tagion.services.options;
 import tagion.utils.BitMask;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.utils.StdTime;
-import tagion.behaviour.BehaviourException : check;
+import tagion.behaviour.BehaviourException : check, BehaviourException;
 
 class TestRefinement : StdRefinement {
 
@@ -390,82 +390,91 @@ void printStates(R)(TestNetworkT!(R) network) if (is (R:Refinement)) {
 
 @safe
 static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs) {
+    static int error_count;
     import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
     import tagion.crypto.SecureInterfaceNet;
 
-    writefln("unfinished epochs %s", epochs.length);
-    foreach (epoch; epochs.byKeyValue) {
-        if (epoch.value.length == number_of_nodes) {
-            HashNet net = new StdHashNet;
-            // check that all epoch numbers are the same
-            check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
+    try {
+        writefln("unfinished epochs %s", epochs.length);
+        foreach (epoch; epochs.byKeyValue) {
+            if (epoch.value.length == number_of_nodes) {
+                HashNet net = new StdHashNet;
+                // check that all epoch numbers are the same
+                check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
 
             
-            const(Event)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
-            const(Event)[] not_the_same;
-            foreach(i, node_events; all_node_events[0..$-1]) {
-                foreach(to_compare; all_node_events[i+1..$]) {
-                    foreach(event; node_events) {
-                        if (!to_compare.map!(e => *e.event_package).canFind(*event.event_package)) {
-                            not_the_same ~= event;
+                const(Event)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+                const(Event)[] not_the_same;
+                foreach(i, node_events; all_node_events[0..$-1]) {
+                    foreach(to_compare; all_node_events[i+1..$]) {
+                        foreach(event; node_events) {
+                            if (!to_compare.map!(e => *e.event_package).canFind(*event.event_package)) {
+                                not_the_same ~= event;
+                            }
                         }
-                    }
-                    foreach(event; to_compare) {
-                        if (!node_events.map!(e => *e.event_package).canFind(*event.event_package)) {
-                            not_the_same ~= event;
-                            //do some callback
+                        foreach(event; to_compare) {
+                            if (!node_events.map!(e => *e.event_package).canFind(*event.event_package)) {
+                                not_the_same ~= event;
+                                //do some callback
+                            }
                         }
                     }
                 }
-            }
             
-            auto not_the_same_uniq  = not_the_same
-                .map!((e) @trusted => cast(Event) e)
-                .array.sort!((a,b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
-                .uniq!((a,b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
-            if (Event.callbacks && !not_the_same_uniq.empty) {
-                foreach(event; not_the_same_uniq) {
-                    writefln("%(%02x%)", net.calcHash(*event.event_package));
-                    event.error = true;
-                    Event.callbacks.connect(event);
-                }
-            }
-
-            // check all events are the same
-            auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
-            string print_events() {
-                string printout;
-                // printout ~= format("EPOCH: %s", epoch.value.epoch);
-                foreach(i, events; epoch_events) {
-                    uint number_of_empty_events;
-                    printout ~= format("\n%s: ", i);
-                    foreach(epack; events) {
-                        printout ~= format("%(%02x%) ", net.calcHash(epack)[0..4]);
-                        if (epack.event_body.payload.empty) {
-                            number_of_empty_events++;
-                        }
+                auto not_the_same_uniq  = not_the_same
+                    .map!((e) @trusted => cast(Event) e)
+                     .array.sort!((a,b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
+                     .uniq!((a,b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
+                if (Event.callbacks && !not_the_same_uniq.empty) {
+                    foreach(event; not_the_same_uniq) {
+                        writefln("%(%02x%)", net.calcHash(*event.event_package));
+                        event.error = true;
+                        Event.callbacks.connect(event);
                     }
-                    printout ~= format("TOTAL: %s EMPTY: %s", events.length, number_of_empty_events);
                 }
-                return printout;
-            }
 
-            if (!epoch_events.all!(e => e == epoch_events[0])) {
-                check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
-            }
-
-            auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 
-            if (!timestamps.all!(t => t == timestamps[0])) {
-                string text;
-                foreach(i, t; timestamps) {
-                    auto line = format("\n%s: %s", i, t);
-                    text ~= line;
+                // check all events are the same
+                auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
+                string print_events() {
+                    string printout;
+                    // printout ~= format("EPOCH: %s", epoch.value.epoch);
+                    foreach(i, events; epoch_events) {
+                        uint number_of_empty_events;
+                        printout ~= format("\n%s: ", i);
+                        foreach(epack; events) {
+                            printout ~= format("%(%02x%) ", net.calcHash(epack)[0..4]);
+                            if (epack.event_body.payload.empty) {
+                                number_of_empty_events++;
+                            }
+                        }
+                        printout ~= format("TOTAL: %s EMPTY: %s", events.length, number_of_empty_events);
+                    }
+                    return printout;
                 }
-                check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
-            }
 
-            writefln("FINISHED ENTIRE EPOCH %s", epoch.key);
-            epochs.remove(epoch.key);
+                if (!epoch_events.all!(e => e == epoch_events[0])) {
+                    check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
+                }
+
+                auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 
+                if (!timestamps.all!(t => t == timestamps[0])) {
+                    string text;
+                    foreach(i, t; timestamps) {
+                        auto line = format("\n%s: %s", i, t);
+                        text ~= line;
+                    }
+                    check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
+                }
+
+                writefln("FINISHED ENTIRE EPOCH %s", epoch.key);
+                epochs.remove(epoch.key);
+            }
         }
+    } catch (BehaviourException e) {
+        // writefln("ANOTHER NODE RECEIVED EPOCH");
+        // error_count++;
+        // if (error_count == 5) {
+            throw e;
+        // }
     }
 }
