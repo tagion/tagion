@@ -3,7 +3,7 @@
 , stdenv
 , nng
 , secp256k1-zkp
-, dmd
+, ldc
 , gnumake
 , pkg-config
 }:
@@ -17,7 +17,7 @@ stdenv.mkDerivation {
   ];
 
   nativeBuildInputs = [
-    dmd
+    ldc
     gnumake
     pkg-config
   ];
@@ -25,7 +25,7 @@ stdenv.mkDerivation {
   src = src;
 
   configurePhase = ''
-    echo DC=dmd >> local.mk
+    echo DC=ldc2 >> local.mk
     echo USE_SYSTEM_LIBS=1 >> local.mk
     echo INSTALL=$out/bin >> local.mk
     echo XDG_DATA_HOME=$out/.local/share >> local.mk
