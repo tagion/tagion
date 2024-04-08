@@ -333,6 +333,7 @@ class Event {
         auto votes = _witness._prev_strongly_seen_witnesses[].map!(
                 i => round.previous.events[i]._witness._vote_on_earliest_witnesses[vote_node_id]);
         const yes_votes = votes.count;
+        pragma(msg, "no_votes is always 0. should it be no_votes = hashgraph.node_size - yes_votes?");
         const no_votes = votes.walkLength - yes_votes;
         _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
