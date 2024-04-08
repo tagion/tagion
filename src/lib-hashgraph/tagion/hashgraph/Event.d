@@ -250,7 +250,10 @@ class Event {
         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
         _mother._daughter = this;
         _father = hashgraph.register(event_package.event_body.father);
+
+        // r <- max round of parents of event. 
         _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
+
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
@@ -276,8 +279,7 @@ class Event {
         pseudo_time_counter = 0;
 
         _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
-                .round.number))));
+        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
             _round.add(this);
         }
@@ -309,7 +311,7 @@ class Event {
         _youngest_son_ancestors = _mother._youngest_son_ancestors.dup();
         _youngest_son_ancestors[node_id] = this;
         iota(hashgraph.node_size)
-            .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
+            .filter!(node_id => _father._youngest_son_ancestors[node_id] !is null) 
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
             .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
