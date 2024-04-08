@@ -46,7 +46,7 @@ import std.format;
         write_log("fwrite auto doc = rec.toDoc\n");
     }
 
-    fwrite(filename, rec.toDoc);
+    fwrite(filename, doc);
     debug(android){
         import tagion.mobile.mobilelog : write_log;
         write_log("fwrite fwrite(filename, rec.toDoc) end\n");
