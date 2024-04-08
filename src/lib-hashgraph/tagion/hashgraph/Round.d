@@ -445,7 +445,9 @@ class Round {
             pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
             auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors).joiner;
 
-            Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
+
+            pragma(msg, "What is this. Is this guaranteed to be the same across nodes????");
+            Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup(); 
 
             foreach (son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
                 if (consensus_son_tide[son_ancestor.node_id] is null) {
