@@ -85,8 +85,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
     Range doc_range;
     size_t node_size = 5;
     EventView[uint] events;
-    long NODE_INDENT = 100;
-    const NODE_CIRCLE_SIZE = 30;
+    long NODE_INDENT = 110;
+    const NODE_CIRCLE_SIZE = 40;
 
     this(Range doc_range) {
         this.doc_range = doc_range;
@@ -232,7 +232,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text_anchor = "middle";
         text.dominant_baseline = "middle";
         text.fill = "black";
-        text.text = format("%s\n%s", e.round_received == long.min ? "NaN" : format("%s", e.round_received), e.id);
+        text.text = format("%s:%s", e.round == long.min ? "NaN" : format("%s", e.round), e.round_received == long.min ? "NaN" : format("%s", e.round_received));
         obuf.writefln("%s", text.toString);
     }
 
