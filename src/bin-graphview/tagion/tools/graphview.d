@@ -314,10 +314,6 @@ struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
             string[] options;
             // const witness_mask_text=mask2text(mother_event.witness_mask);
             //texts~=mask2text(mother_event.witness_mask);
-            const round_received_mask = mask2text(mother_event.round_received_mask);
-            if (round_received_mask) {
-                texts ~= format("%s:e", round_received_mask);
-            }
             if (mother_event.witness) {
                 options ~= format(`color="%s"`, "red");
                 options ~= format(`fontcolor="%s"`, "blue");
