@@ -130,7 +130,13 @@ static size_t size(U)(const(U[]) array) pure {
             import std.string : format;
             write_log(format("127 tagion.hibon.HiBON::serialize append(buffer) %d\n", buffer.data.length));
         }
-        return buffer.data;
+        auto data = buffer.data;
+        debug(android){
+            import tagion.mobile.mobilelog : write_log;
+            import std.string : format;
+            write_log(format("133 tagion.hibon.HiBON::serialize buffer.data %d\n", data.length));
+        }
+        return data;
     }
 
     // /++
