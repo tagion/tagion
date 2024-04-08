@@ -225,7 +225,6 @@ void dart_worker(ShellOptions opt) {
         "$rec": "round_received",
         "$w": "witness",
         "$famous": "famous",
-        "$received": "round_received_mask",
         "$error": "error"
     ]);
 
