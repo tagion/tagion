@@ -59,12 +59,12 @@ class HashGraph {
     Statistic!uint live_witness_statistic;
     Statistic!long epoch_delay_statistic;
     BitMask _excluded_nodes_mask;
-    private {
+    //private {
         Node[Pubkey] _nodes; // List of participating _nodes T
         uint event_id;
         sdt_t last_epoch_time;
         Flag!"joining" _joining;
-    }
+    //}
     Refinement refinement;
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
@@ -201,7 +201,7 @@ class HashGraph {
         return _rounds.last_decided_round !is null;
     }
 
-    final Pubkey channel() const pure nothrow {
+    Pubkey channel() const pure nothrow {
         return hirpc.net.pubkey;
     }
 

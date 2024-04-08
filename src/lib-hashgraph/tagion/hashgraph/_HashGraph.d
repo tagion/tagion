@@ -1,5 +1,5 @@
 /// Consensus HashGraph main object 
-module tagion.hashgraph.HashGraph;
+module tagion.hashgraph._HashGraph;
 
 import std.algorithm;
 import std.array : array;
@@ -15,7 +15,8 @@ import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.Types : Privkey, Pubkey, Signature;
 import tagion.gossip.GossipNet;
-import tagion.hashgraph.Event;
+//import tagion.hashgraph.Event;
+import tagion.hashgraph._Event;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.RefinementInterface;
 import tagion.hashgraph.Round;
@@ -30,9 +31,10 @@ import tagion.utils.StdTime;
 import tagion.basic.Debug;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
+import current_hashgraph = tagion.hashgraph.HashGraph;
 
 @safe
-class HashGraph {
+class _HashGraph : current_hashgraph.HashGraph {
     enum default_scrap_depth = 10;
     //bool print_flag;
     int scrap_depth = default_scrap_depth;
@@ -44,8 +46,9 @@ class HashGraph {
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.logger.Statistic;
 
-    immutable size_t node_size; /// Number of active nodes in the graph
-    immutable(string) name; // Only used for debugging
+    //immutable size_t node_size; /// Number of active nodes in the graph
+    //immutable(string) name; // Only used for debugging
+    /*
     Statistic!uint witness_search_statistic;
     Statistic!uint strong_seeing_statistic;
     Statistic!uint received_order_statistic;
@@ -66,12 +69,15 @@ class HashGraph {
         Flag!"joining" _joining;
     }
     Refinement refinement;
+    */
     protected Node _owner_node;
+    
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
     }
 
-    Flag!"joining" joining() const pure nothrow @nogc {
+    version(none)
+    override Flag!"joining" joining() const pure nothrow @nogc {
         return _joining;
     }
 
@@ -79,25 +85,27 @@ class HashGraph {
  * Get a map of all the nodes currently handled by the graph 
  * Returns: 
  */
+    version(none)
     const(Node[Pubkey]) nodes() const pure nothrow @nogc {
         return _nodes;
     }
 
-    const HiRPC hirpc;
-
+    //const HiRPC hirpc;
+    version(none)
     @nogc
-    const(BitMask) excluded_nodes_mask() const pure nothrow {
+    override const(BitMask) excluded_nodes_mask() const pure nothrow {
         return _excluded_nodes_mask;
     }
 
-    void excluded_nodes_mask(const(BitMask) mask) pure nothrow {
+    version(none)
+    override void excluded_nodes_mask(const(BitMask) mask) pure nothrow {
         _excluded_nodes_mask = mask;
     }
 
-    package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
+    //package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
-    alias ValidChannel = bool delegate(const Pubkey channel);
-    const ValidChannel valid_channel; /// Valiates of a node at channel is valid
+    //alias ValidChannel = bool delegate(const Pubkey channel);
+    //const ValidChannel valid_channel; /// Valiates of a node at channel is valid
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -116,6 +124,8 @@ class HashGraph {
             string name = null)
     in (node_size >= 4)
     do {
+        super(node_size, net, refinement, valid_channel, joining, name);
+        /*
         hirpc = HiRPC(net);
         this.node_size = node_size;
         this._owner_node = getNode(hirpc.net.pubkey);
@@ -125,10 +135,11 @@ class HashGraph {
 
         this._joining = joining;
         this.name = name;
-        _rounds = Round.Rounder(this);
+        */
+        //_rounds = Round.Rounder(this);
     }
 
-    void initialize_witness(const(immutable(EventPackage)*[]) epacks)
+    override void initialize_witness(const(immutable(EventPackage)*[]) epacks)
     in {
         assert(_nodes.length > 0 && (channel in _nodes),
                 "Owen Eva event needs to be create before witness can be initialized");
@@ -193,23 +204,23 @@ class HashGraph {
     }
 
     @nogc
-    const(Round.Rounder) rounds() const pure nothrow {
+    override const(Round.Rounder) rounds() const pure nothrow {
         return _rounds;
     }
 
-    bool areWeInGraph() const pure nothrow {
+    override bool areWeInGraph() const pure nothrow {
         return _rounds.last_decided_round !is null;
     }
 
-    final Pubkey channel() const pure nothrow {
+    override Pubkey channel() const pure nothrow {
         return hirpc.net.pubkey;
     }
 
-    const(Pubkey[]) channels() const pure nothrow {
+    override const(Pubkey[]) channels() const pure nothrow {
         return _nodes.keys;
     }
 
-    bool not_used_channels(const(Pubkey) selected_channel) {
+    override bool not_used_channels(const(Pubkey) selected_channel) {
         if (selected_channel == channel) {
             return false;
         }
@@ -227,7 +238,7 @@ class HashGraph {
             GossipNet.SenderCallBack sender) @safe;
     alias GraphPayload = const(Document) delegate() @safe;
 
-    void init_tide(
+    override void init_tide(
             const(GraphResponse) respond,
             const(GraphPayload) payload,
             lazy const sdt_t time) {
@@ -267,7 +278,7 @@ class HashGraph {
         }
     }
 
-    immutable(EventPackage)* event_pack(
+    override immutable(EventPackage)* event_pack(
             lazy const sdt_t time,
             const(Event) father_event,
             const Document doc) {
@@ -280,14 +291,14 @@ class HashGraph {
         return result;
     }
 
-    immutable(EventPackage*) eva_pack(lazy const sdt_t time, const Buffer nonce) {
+    override immutable(EventPackage*) eva_pack(lazy const sdt_t time, const Buffer nonce) {
         const payload = EvaPayload(channel, nonce);
         immutable eva_event_body = EventBody(payload.toDoc, null, null, time);
         immutable epack = new immutable(EventPackage)(hirpc.net, eva_event_body);
         return epack;
     }
 
-    Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
+    override Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
         immutable eva_epack = eva_pack(time, nonce);
         auto eva_event = new Event(eva_epack, this);
 
@@ -304,22 +315,23 @@ class HashGraph {
         EventCache _event_cache;
     }
 
-    void eliminate(scope const(Buffer) fingerprint) pure nothrow {
+    override void eliminate(scope const(Buffer) fingerprint) pure nothrow {
         _event_cache.remove(fingerprint);
     }
 
     @nogc
-    size_t number_of_registered_event() const pure nothrow {
+    override size_t number_of_registered_event() const pure nothrow {
         return _event_cache.length;
     }
 
     // function not used
     @nogc
-    bool isRegistered(scope const(ubyte[]) fingerprint) const pure nothrow {
+    override bool isRegistered(scope const(ubyte[]) fingerprint) const pure nothrow {
         return (fingerprint in _event_cache) !is null;
     }
 
     Topic topic = Topic("hashgraph_event");
+    version(none)
     package void epoch(Event[] event_collection, const Round decided_round) {
         refinement.epoch(event_collection, decided_round);
         if (scrap_depth > 0) {
@@ -334,7 +346,7 @@ class HashGraph {
     /++
      @return true if the event package has been register correct
      +/
-    Event registerEventPackage(
+    override Event registerEventPackage(
             immutable(EventPackage*) event_pack)
     in (event_pack.fingerprint !in _event_cache,
         format("Event %(%02x%) has already been registered",
@@ -419,7 +431,7 @@ class HashGraph {
      Returns:
      The front event of the send channel
      +/
-    const(Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
+    override const(Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
         _register = new Register(received_wave);
 
         scope (exit) {
@@ -444,7 +456,7 @@ class HashGraph {
         return front_seat_event;
     }
 
-    @HiRPCMethod const(HiRPC.Sender) wavefront(
+    override @HiRPCMethod const(HiRPC.Sender) wavefront(
             const Wavefront wave,
             const uint id = 0) {
         return hirpc.wavefront(wave, id);
@@ -464,7 +476,8 @@ class HashGraph {
      +  3)
      +  A send the rest of the event which is in front of B's wave-front
      +/
-    const(Wavefront) tidalWave() pure {
+    version(none)
+    override const(Wavefront) tidalWave() pure {
         Tides tides;
         foreach (pkey, n; _nodes) {
             if (n.isOnline) {
@@ -475,7 +488,7 @@ class HashGraph {
         return Wavefront(tides);
     }
 
-    const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides = null) {
+    override const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides = null) {
         if (state is ExchangeState.NONE || state is ExchangeState.BREAKING_WAVE) {
             return Wavefront(null, null, state);
         }
@@ -507,7 +520,7 @@ class HashGraph {
      *   received_wave = The sharp received wave
      * Returns: either coherent if in graph or rippleWave
      */
-    const(Wavefront) sharpResponse(const Wavefront received_wave)
+    override const(Wavefront) sharpResponse(const Wavefront received_wave)
     in {
         assert(received_wave.state is ExchangeState.SHARP);
     }
@@ -570,7 +583,8 @@ class HashGraph {
      * Later we send everything it knows.  
      * Returns: the wavefront for a node that either wants to join or is booting.
      */
-    const(Wavefront) sharpWave() {
+    version(none)
+    override const(Wavefront) sharpWave() {
         auto result = _nodes.byValue
             .filter!((n) => (n._event !is null))
             .map!((n) => cast(immutable(EventPackage)*) n._event.event_package)
@@ -579,7 +593,7 @@ class HashGraph {
         return Wavefront(result, null, ExchangeState.SHARP);
     }
 
-    void wavefront(
+    override void wavefront(
             const HiRPC.Receiver received,
             lazy const(sdt_t) time,
             void delegate(const(HiRPC.Sender) send_wave) @safe response,
@@ -740,14 +754,14 @@ class HashGraph {
         }
     }
 
-    void front_seat(Event event)
+    override void front_seat(Event event)
     in {
         assert(event, "event must be defined");
     }
     do {
         getNode(event.channel).front_seat(event);
     }
-
+    
     @safe
     class Node {
         ExchangeState state;
@@ -837,30 +851,31 @@ class HashGraph {
 
     import std.traits : fullyQualifiedName;
 
-    alias NodeRange = typeof((cast(const) _nodes).byValue);
-
+    //alias NodeRange = typeof((cast(const) _nodes).byValue);
+    version(none)
     @nogc
     NodeRange opSlice() const pure nothrow {
         return _nodes.byValue;
     }
-
+    version(none)
     @nogc
-    size_t active_nodes() const pure nothrow {
+    override size_t active_nodes() const pure nothrow {
         return _nodes.length;
     }
 
+    version(none)
     @nogc
-    const(SecureNet) net() const pure nothrow {
+    override const(SecureNet) net() const pure nothrow {
         return hirpc.net;
     }
-
+    version(none)
     package Node getNode(Pubkey channel) pure {
         const next_id = next_node_id;
         return _nodes.require(channel, new Node(channel, next_id));
     }
 
     @nogc
-    bool isMajority(const size_t voting) const pure nothrow {
+    override bool isMajority(const size_t voting) const pure nothrow {
         return .isMajority(voting, node_size);
     }
 
@@ -874,7 +889,7 @@ class HashGraph {
         _nodes.remove(n.channel);
     }
 
-    bool remove_node(const Pubkey pkey) nothrow {
+   override bool remove_node(const Pubkey pkey) nothrow {
         if (pkey in _nodes) {
             _nodes.remove(pkey);
             return true;
@@ -882,7 +897,7 @@ class HashGraph {
         return false;
     }
 
-    void mark_offline(const(size_t) node_id) nothrow {
+    override void mark_offline(const(size_t) node_id) nothrow {
 
         auto mark_node = _nodes.byKeyValue
             .filter!((pair) => !pair.value._offline)
@@ -895,7 +910,7 @@ class HashGraph {
     }
 
     @nogc
-    uint next_event_id() pure nothrow {
+    override uint next_event_id() pure nothrow {
         event_id++;
         if (event_id is event_id.init) {
             return event_id.init + 1;
@@ -903,7 +918,7 @@ class HashGraph {
         return event_id;
     }
 
-    size_t next_node_id() const pure nothrow {
+    override size_t next_node_id() const pure nothrow {
         if (_nodes.length is 0) {
             return 0;
         }
@@ -922,7 +937,7 @@ class HashGraph {
     /++
      Dumps all events in the Hashgraph to a file
      +/
-    void fwrite(string filename, Pubkey[string] node_labels = null) {
+    override void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hashgraphview.EventView;
         import tagion.hibon.HiBONFile : fwrite;
 
