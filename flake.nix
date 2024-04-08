@@ -11,101 +11,54 @@
   outputs = { self, nixpkgs, pre-commit-hooks, dfmt-pull }:
     let
       gitRev = self.rev or "dirty";
+      linuxPackages = nixpkgs.legacyPackages.x86_64-linux;
 
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      forAllSystems = function:
+        nixpkgs.lib.genAttrs [
+          "x86_64-linux"
+          "aarch64-linux"
+          "aarch64-darwin"
+          "x86_64-darwin"
+        ]
+          (system: function nixpkgs.legacyPackages.${system});
 
-      # Disable mbedtls override is broken upstream see if merged
-      # https://github.com/NixOS/nixpkgs/pull/285518
-      nng_no_tls = with pkgs;
-        stdenv.mkDerivation {
-          pname = "nng";
-          version = "git";
-
-          src = fetchFromGitHub {
-            owner = "nanomsg";
-            repo = "nng";
-            rev = "c5e9d8acfc226418dedcf2e34a617bffae043ff6";
-            hash = "sha256-bFsL3IMmJzjSaVfNBSfj5dStRD/6e7QOkTo01RSUN6g=";
-          };
-
-          nativeBuildInputs = [ cmake ninja ];
-          cmakeFlags = [ "-G Ninja" ];
-        };
-
-      # BlockstreamResearch secp256k1-zkp fork
-      secp256k1-zkp = with pkgs;
-        stdenv.mkDerivation {
-          pname = "secp256k1-zkp";
-
-          version = "0.3.2";
-
-          src = fetchFromGitHub {
-            owner = "BlockstreamResearch";
-            repo = "secp256k1-zkp";
-            rev = "d575ef9aca7cd1ed79735c95ec9f296554ea1df7";
-            sha256 = "sha256-Z8TrMxlNduPc4lEzA34jjo75sUJYh5fLNBnXg7KJy8I=";
-          };
-
-          nativeBuildInputs = [ autoreconfHook ];
-
-          configureFlags = [
-            "--enable-experimental"
-            "--enable-benchmark=no"
-            "--enable-module-recovery"
-            "--enable-module-schnorrsig"
-            "--enable-module-musig"
-          ];
-
-          doCheck = true;
-
-        };
     in
     {
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
 
-      packages.x86_64-linux.default =
-        # Notice the reference to nixpkgs here.
-        pkgs.stdenv.mkDerivation {
-          name = "tagion";
+      packages = forAllSystems (pkgs:
+        let
+          secp256k1-zkp = pkgs.callPackage ./tub/secp256k1-zkp.nix { };
 
-          buildInputs = [
-            nng_no_tls
-            secp256k1-zkp
-          ];
+          # Disable mbedtls override is broken upstream see if merged
+          # https://github.com/NixOS/nixpkgs/pull/285518
+          nng = pkgs.callPackage ./tub/nng.nix { };
+        in
+        {
+          default = pkgs.callPackage ./tub/tagion.nix {
+            gitRev = gitRev;
+            src = self;
+            secp256k1-zkp = secp256k1-zkp;
+            nng = nng;
+          };
 
-          nativeBuildInputs = with pkgs; [
-            dmd
-            gnumake
-            pkg-config
-          ];
+          dockerImage =
+            let package = self.packages.${pkgs.system}.default;
+            in pkgs.dockerTools.buildLayeredImage
+              {
+                name = "tagion";
+                tag = "latest";
+                config.Cmd = "${package}/bin/tagion";
+              };
 
-          src = self;
+        });
 
-          configurePhase = ''
-            echo DC=dmd >> local.mk
-            echo USE_SYSTEM_LIBS=1 >> local.mk
-            echo INSTALL=$out/bin >> local.mk
-            echo XDG_DATA_HOME=$out/.local/share >> local.mk
-            echo XDG_CONFIG_HOME=$out/.config >> local.mk
-          '';
-
-          buildPhase = ''
-            make GIT_HASH=${gitRev} tagion
-          '';
-
-          installPhase = ''
-            mkdir -p $out/bin; make install
-          '';
-        };
-
-      _devShell =
-        pkgs.mkShell {
-          inherit (self.checks.x86_64-linux.pre-commit-check) shellHook;
+      devShells = forAllSystems (pkgs: {
+        # inherit (self.checks.${pkgs.system}.pre-commit-check) shellHook;
+        default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            # This is a bit misleading now but should this work fine
-            self.packages.x86_64-linux.default.buildInputs
-            self.packages.x86_64-linux.default.nativeBuildInputs
+            self.packages.${system}.default.buildInputs
+            self.packages.${system}.default.nativeBuildInputs
             dub
             ldc
             gcc
@@ -117,95 +70,77 @@
             cmake
             libz
             dtools
-            dfmt-pull.legacyPackages.x86_64-linux.dlang-dfmt
+            dfmt-pull.legacyPackages.${system}.dlang-dfmt
             graphviz
           ];
         };
+      });
 
-      devShells.x86_64-linux.default = self._devShell;
-      devShells.aarch64-linux.default = self._devShell;
-      # devShells.x86_64-darwin.default = self._devShell;
-      # devShells.aarch64-darwin.default = self._devShell;
-
-      checks.x86_64-linux.pre-commit-check = pre-commit-hooks.lib.x86_64-linux.run {
-        src = ./.;
-        settings.typos.configPath = ".typos.toml";
-        hooks = {
-          shellcheck = {
-            enable = true;
-            types_or = [ "sh" ];
-          };
-          typos.enable = true;
-          typos.pass_filenames = false;
-          # actionlint.enable = true;
-          dlang-format = {
-            # does not work :-( we have to define a proper commit
-            enable = true;
-            name = "format d code";
-            entry = "make format";
-            language = "system";
+      checks = forAllSystems (pkgs: {
+        pre-commit-check = pre-commit-hooks.lib.${pkgs.system}.run {
+          src = ./.;
+          settings.typos.configPath = ".typos.toml";
+          hooks = {
+            shellcheck = {
+              enable = true;
+              types_or = [ "sh" ];
+            };
+            typos.enable = true;
+            typos.pass_filenames = false;
+            # actionlint.enable = true;
+            dlang-format = {
+              # does not work :-( we have to define a proper commit
+              enable = true;
+              name = "format d code";
+              entry = "make format";
+              language = "system";
+            };
           };
         };
-      };
 
-      checks.x86_64-linux.unittest = with pkgs;
-        stdenv.mkDerivation {
-          name = "unittest";
-          doCheck = true;
+        unittest = with pkgs;
+          stdenv.mkDerivation {
+            name = "unittest";
+            doCheck = true;
 
-          buildInputs = self.packages.x86_64-linux.default.buildInputs;
+            buildInputs = [ self.packages.x86_64-linux.default.buildInputs  dmd];
+            nativeBuildInputs = self.packages.x86_64-linux.default.nativeBuildInputs;
 
-          nativeBuildInputs = self.packages.x86_64-linux.default.nativeBuildInputs;
+            src = self;
 
-          src = self;
+            # unittests only work with dmd
+            configurePhase = ''
+              echo DC=dmd >> local.mk
+              echo USE_SYSTEM_LIBS=1 >> local.mk
+            '';
 
-          configurePhase = ''
-            echo DC=dmd >> local.mk
-            echo USE_SYSTEM_LIBS=1 >> local.mk
-          '';
+            buildPhase = ''
+              make proto-unittest-build
+            '';
 
-          buildPhase = ''
-            make proto-unittest-build
-          '';
+            checkPhase = ''
+              ./build/${system}/bin/unittest
+            '';
 
-          checkPhase = ''
-            ./build/x86_64-linux/bin/unittest
-          '';
+            installPhase = ''
+              # No install target available for unittest
+              mkdir -p $out/bin; cp ./build/x86_64-linux/bin/unittest $out/bin/
+            '';
+          };
 
-          installPhase = ''
-            # No install target available for unittest
-            mkdir -p $out/bin; cp ./build/x86_64-linux/bin/unittest $out/bin/
-          '';
-        };
-      checks.x86_64-linux.commit = with pkgs;
-        stdenv.mkDerivation {
+        commit = with pkgs; stdenv.mkDerivation {
           name = "commit";
           doCheck = true;
 
           buildInputs = [
-            self.packages.x86_64-linux.default.buildInputs
+            self.packages.${system}.default.buildInputs
             which
           ];
 
-          nativeBuildInputs = self.packages.x86_64-linux.default.nativeBuildInputs;
+          nativeBuildInputs = self.packages.${system}.default.nativeBuildInputs;
 
           src = self;
-
-          configurePhase = ''
-            echo DC=dmd >> local.mk
-            echo USE_SYSTEM_LIBS=1 >> local.mk
-            mkdir -p build/x86_64-linux/
-            echo "
-                  ${gitRev}\n
-                  git@github.com:tagion/tagion.git\n
-                  wowo
-                  wowo
-                  wowo
-                  wowo
-                  wowo
-                  wowo
-                  $(dmd --version|head -n 1)" >> build/x86_64-linux/revision.mixin
-          '';
+          configurePhase = self.packages.${system}.default.configurePhase;
 
           buildPhase = ''
             make bddinit
@@ -216,54 +151,51 @@
           '';
 
           installPhase = ''
-            mkdir -p $out/bin; cp ./build/x86_64-linux/bin/collider $out/bin/
+            mkdir -p $out/bin; cp ./build/${system}/bin/collider $out/bin/
           '';
         };
+      });
 
-      packages.x86_64-linux.dockerImage = pkgs.dockerTools.buildLayeredImage {
-          name = "tagion";
-          tag = "latest";
-          config.Cmd = "${self.packages.x86_64-linux.default}/bin/tagion";
-      };
+      nixosModules.default =
+        let pkgs = linuxPackages;
+        in with pkgs.lib; { config, ... }:
+          let cfg = config.tagion.services;
+          in {
+            options.tagion.services = {
+              tagionwave = {
+                enable = mkEnableOption "Enable the tagionwave service";
+              };
 
-      nixosModules.default = with pkgs.lib; { config, ... }:
-        let cfg = config.tagion.services;
-        in {
-          options.tagion.services = {
-            tagionwave = {
-              enable = mkEnableOption "Enable the tagionwave service";
+              tagionshell = {
+                enable = mkEnableOption "Enable the tagionshell service";
+              };
             };
 
-            tagionshell = {
-              enable = mkEnableOption "Enable the tagionshell service";
-            };
-          };
-
-          config = {
-            systemd.services."tagionwave" = mkIf cfg.tagionwave.enable {
-              wantedBy = [ "multi-user.target" ];
-              wants = [ "network-online.target" ];
-              after = [ "network-online.target" ];
-              serviceConfig =
-                let pkg = self.packages.${pkgs.system}.default;
-                in {
-                  Restart = "on-failure";
-                  ExecStart = "${pkg}/bin/tagion wave";
-                };
-            };
-            systemd.services."tagionshell" = mkIf cfg.tagionshell.enable {
-              wantedBy = [ "multi-user.target" ];
-              wants = [ "network-online.target" ];
-              after = [ "network-online.target" ];
-              serviceConfig =
-                let pkg = self.packages.${pkgs.system}.default;
-                in {
-                  Restart = "on-failure";
-                  ExecStart = "${pkg}/bin/tagion shell";
-                };
+            config = {
+              systemd.services."tagionwave" = mkIf cfg.tagionwave.enable {
+                wantedBy = [ "multi-user.target" ];
+                wants = [ "network-online.target" ];
+                after = [ "network-online.target" ];
+                serviceConfig =
+                  let pkg = self.packages.${pkgs.system}.default;
+                  in {
+                    Restart = "on-failure";
+                    ExecStart = "${pkg}/bin/tagion wave";
+                  };
+              };
+              systemd.services."tagionshell" = mkIf cfg.tagionshell.enable {
+                wantedBy = [ "multi-user.target" ];
+                wants = [ "network-online.target" ];
+                after = [ "network-online.target" ];
+                serviceConfig =
+                  let pkg = self.packages.${pkgs.system}.default;
+                  in {
+                    Restart = "on-failure";
+                    ExecStart = "${pkg}/bin/tagion shell";
+                  };
+              };
             };
           };
-        };
 
       nixosConfigurations = {
         #  qa = nixpkgs.lib.nixosSystem {
