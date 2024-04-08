@@ -57,10 +57,9 @@
         # inherit (self.checks.${pkgs.system}.pre-commit-check) shellHook;
         default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            self.packages.${system}.default.buildInputs
-            self.packages.${system}.default.nativeBuildInputs
+            self.packages.${pkgs.system}.default.buildInputs
+            self.packages.${pkgs.system}.default.nativeBuildInputs
             dub
-            ldc
             gcc
             git
             libtool
@@ -70,9 +69,10 @@
             cmake
             libz
             dtools
-            dfmt-pull.legacyPackages.${system}.dlang-dfmt
+            dfmt-pull.legacyPackages.${pkgs.system}.dlang-dfmt
             graphviz
-          ];
+          ] 
+          ++ lib.optionals stdenv.isx86_64 [ dmd ];
         };
       });
 
