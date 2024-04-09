@@ -351,7 +351,7 @@ class HashGraph {
     }
 
     class Register {
-        private EventPackageCache event_package_cache;
+         EventPackageCache event_package_cache;
 
         this(const Wavefront received_wave) pure nothrow {
             uint count_events;
@@ -792,7 +792,7 @@ class HashGraph {
             }
         }
 
-        private Event _event; /// This is the last event in this Node
+        protected Event _event; /// This is the last event in this Node
 
         @nogc
         const(Event) event() const pure nothrow {

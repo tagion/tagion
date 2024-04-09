@@ -126,6 +126,13 @@ class Event {
             BitMask _prev_seen_witnesses;
         }
 
+        package void prev_strongly_seen_witnesses(ref BitMask mask) pure nothrow {
+            _prev_strongly_seen_witnesses = mask;
+        }
+
+        package void prev_seen_witnesses(BitMask mask) pure nothrow {
+            _prev_seen_witnesses = mask;
+        }
         /**
          * Contsruct a witness of an event
          * Params:

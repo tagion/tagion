@@ -34,22 +34,25 @@ import tagion.logger.Logger;
 import tagion.utils.BitMask : BitMask;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
+import current_round=tagion.hashgraph.Round;
+import current_event=tagion.hashgraph.Event;
 
 /// Handles the round information for the events in the Hashgraph
 @safe
-class Round {
+class _Round : current_round.Round {
     //    bool erased;
-    enum uint total_limit = 3;
-    enum int coin_round_limit = 10;
+    //enum uint total_limit = 3;
+    //enum int coin_round_limit = 10;
+    version(none)
     protected {
-        Round _previous;
-        Round _next;
+        _Round _previous;
+        _Round _next;
         bool _decided;
     }
-    immutable long number;
+    //immutable long number;
 
-    package Event[] _events;
-    public BitMask famous_mask;
+    //package Event[] _events;
+    //public BitMask famous_mask;
 
     /**
  * Compare the round number 
@@ -57,7 +60,8 @@ class Round {
  *   rhs = round to be checked
  * Returns: true if equal or less than
  */
-    @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
+    version(none)
+    @nogc bool lessOrEqual(const _Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
     }
 
@@ -66,6 +70,7 @@ class Round {
      * as the number of nodes in the hashgraph
      * Returns: number of nodes in the round 
      */
+    version(none)
     @nogc const(uint) node_size() pure const nothrow {
         return cast(uint) _events.length;
     }
@@ -76,7 +81,7 @@ class Round {
      *   previous = previous round
      *   node_size = size of events in a round
      */
-    private this(Round previous, const size_t node_size) pure nothrow {
+    private this(_Round previous, const size_t node_size) pure nothrow {
         if (previous) {
             number = previous.number + 1;
             previous._next = this;
@@ -85,13 +90,14 @@ class Round {
         else {
             number = 0;
         }
-        _events = new Event[node_size];
+        _events = new _Event[node_size];
     }
 
     /**
      * All the events in the first ooccurrences of this round
      * Returns: all events in a round
      */
+    version(none)
     @nogc
     const(Event[]) events() const pure nothrow {
         return _events;
@@ -102,6 +108,7 @@ class Round {
      * Params:
      *   event = the event to be added
      */
+    version(none)
     package void add(Event event) pure nothrow
     in {
         assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
@@ -115,6 +122,7 @@ class Round {
      * Check of the round has no events
      * Returns: true of the round is empty
      */
+    version(none)
     @nogc
     bool empty() const pure nothrow {
         return !_events.any!((e) => e !is null);
@@ -124,6 +132,7 @@ class Round {
      * Counts the number of events which has been set in this round
      * Returns: number of events set
      */
+    version(none)
     @nogc
     size_t event_count() const pure nothrow {
         return _events.count!((e) => e !is null);
@@ -134,6 +143,7 @@ class Round {
      * Params:
      *   event = event to be removed
      */
+   version(none)
     @nogc
     package void remove(const(Event) event) nothrow
     in {
@@ -152,9 +162,10 @@ class Round {
      * Params:
      *   hashgraph = the hashgraph owning the events/rounds
      */
+    version(none)
     private void scrap(HashGraph hashgraph) @trusted
     in {
-        assert(!_previous, "Round can not be scrapped due that a previous round still exists");
+        assert(!_previous, "_Round can not be scrapped due that a previous round still exists");
     }
     do {
         uint count;
@@ -186,11 +197,12 @@ class Round {
      * Check if the round has been decided
      * Returns: true if the round has been decided
      */
+    version(none)
     @nogc bool decided() const pure nothrow {
         return _decided;
     }
 
-    const(Round) next() const pure nothrow {
+    override const(_Round) next() const pure nothrow {
         return _next;
     }
 
@@ -202,7 +214,7 @@ class Round {
      *   Event at the node_id
      */
     @nogc
-    override inout(Event) event(const size_t node_id) pure inout {
+    override inout(current_event.Event) event(const size_t node_id) pure inout {
         return _events[node_id];
     }
 
@@ -210,13 +222,14 @@ class Round {
      * Previous round from this round
      * Returns: previous round
      */
+    version(none)
     @nogc
-    package Round previous() pure nothrow {
+    package _Round previous() pure nothrow {
         return _previous;
     }
 
     @nogc
-    const(Round) previous() const pure nothrow {
+    override const(_Round) previous() const pure nothrow {
         return _previous;
     }
 
@@ -224,12 +237,14 @@ class Round {
  * Range from this round and down
  * Returns: range of rounds 
  */
+    version(none)
     @nogc
     package Rounder.Range!false opSlice() pure nothrow {
         return Rounder.Range!false(this);
     }
 
     /// Ditto
+    version(none)
     @nogc
     Rounder.Range!true opSlice() const pure nothrow {
         return Rounder.Range!true(this);
@@ -245,21 +260,21 @@ class Round {
      * and keeps track of if an round has been decided or can be decided
      */
     struct Rounder {
-        Round last_round;
-        Round last_decided_round;
-        HashGraph hashgraph;
-        Round[] voting_round_per_node;
+        _Round last_round;
+        _Round last_decided_round;
+        _HashGraph hashgraph;
+        _Round[] voting_round_per_node;
 
         @disable this();
 
-        this(HashGraph hashgraph) pure nothrow {
+        this(_HashGraph hashgraph) pure nothrow {
             this.hashgraph = hashgraph;
-            last_round = new Round(null, hashgraph.node_size); 
+            last_round = new _Round(null, hashgraph.node_size); 
             voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
         }
 
         package void erase() {
-            void local_erase(Round r) @trusted {
+            void local_erase(_Round r) @trusted {
                 if (r !is null) {
                     local_erase(r._previous);
                     r.scrap(hashgraph);
@@ -279,7 +294,7 @@ class Round {
 
         package
         void dustman() {
-            void local_dustman(Round r) {
+            void local_dustman(_Round r) {
                 if (r !is null) {
                     local_dustman(r._previous);
                     r.scrap(hashgraph);
@@ -292,7 +307,7 @@ class Round {
             }
             if (hashgraph.scrap_depth != 0) {
                 int depth = hashgraph.scrap_depth;
-                for (Round r = last_decided_round; r !is null; r = r._previous) {
+                for (_Round r = last_decided_round; r !is null; r = r._previous) {
                     depth--;
                     if (depth < 0) {
                         local_dustman(r);
@@ -329,7 +344,7 @@ class Round {
      * Params:
      *   e = event
      */
-        void next_round(Event e) nothrow
+        void next_round(_Event e) nothrow
         in {
             assert(last_round, "Base round must be created");
             assert(last_decided_round, "Last decided round must exist");
@@ -346,7 +361,7 @@ class Round {
                 e._round = e._round._next;
             }
             else {
-                e._round = new Round(last_round, hashgraph.node_size);
+                e._round = new _Round(last_round, hashgraph.node_size);
                 last_round = e._round;
                 // if (Event.callbacks) {
                 //     Event.callbacks.round_seen(e);
@@ -354,7 +369,7 @@ class Round {
             }
         }
 
-        bool isEventInLastDecidedRound(const(Event) event) const pure nothrow @nogc {
+         bool isEventInLastDecidedRound(const(_Event) event) const pure nothrow @nogc {
             if (!last_decided_round) {
                 return false;
             }
@@ -372,8 +387,9 @@ class Round {
      * Returns: 
      */
         @nogc
-        bool decided(const Round test_round) pure const nothrow {
-            bool _decided(const Round r) pure nothrow {
+        bool decided(const _Round test_round) pure const nothrow {
+
+            bool _decided(const _Round r) pure nothrow {
                 if (r) {
                     if (test_round is r) {
                         return true;
@@ -401,7 +417,7 @@ class Round {
      */
         @nogc
         uint cached_decided_count() pure const nothrow {
-            uint _cached_decided_count(const Round r, const uint i = 0) pure nothrow {
+            uint _cached_decided_count(const _Round r, const uint i = 0) pure nothrow {
                 if (r) {
                     return _cached_decided_count(r._previous, i + 1);
                 }
@@ -416,11 +432,11 @@ class Round {
      * Returns: true if the coin round has been exceeded 
      */
         @nogc
-        override bool check_decided_round_limit() pure const nothrow {
+         bool check_decided_round_limit() pure const nothrow {
             return cached_decided_count > total_limit;
         }
 
-        void check_decide_round() {
+         void check_decide_round() {
             auto round_to_be_decided = last_decided_round._next;
             if (!voting_round_per_node.all!(r => r.number > round_to_be_decided.number)) {
                 log("Not decided round");
@@ -438,7 +454,7 @@ class Round {
      *   hashgraph = hashgraph which owns this round
      */
 
-        package void collect_received_round(Round r, HashGraph hashgraph) {
+        package  void collect_received_round(_Round r, _HashGraph hashgraph) {
 
             auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
 
@@ -493,9 +509,9 @@ class Round {
             hashgraph.epoch(event_collection, r);
         }
 
-        package void vote(HashGraph hashgraph, size_t vote_node_id) {
+        package void vote(_HashGraph hashgraph, size_t vote_node_id) {
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
-            Round current_round = voting_round_per_node[vote_node_id];
+            _Round current_round = voting_round_per_node[vote_node_id];
             if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) {
                 check_decide_round();
             }
@@ -512,12 +528,14 @@ class Round {
          * Range from this round and down
          * Returns: range of rounds 
          */
+        version(none)
         @nogc
         package Range!false opSlice() pure nothrow {
             return Range!false(last_round);
         }
 
         /// Ditto
+        version(noen)
         @nogc
         Range!true opSlice() const pure nothrow {
             return Range!true(last_round);
@@ -526,21 +544,22 @@ class Round {
         /**
      * Range of rounds 
      */
+        version(none)
         @nogc
         struct Range(bool CONST = true) {
-            private Round round;
-            this(const Round round) pure nothrow @trusted {
-                this.round = cast(Round) round;
+            private _Round round;
+            this(const _Round round) pure nothrow @trusted {
+                this.round = cast(_Round) round;
             }
 
             pure nothrow {
                 static if (CONST) {
-                    const(Round) front() const {
+                    const(_Round) front() const {
                         return round;
                     }
                 }
                 else {
-                    Round front() {
+                    _Round front() {
                         return round;
                     }
                 }
@@ -566,10 +585,11 @@ class Round {
             }
 
         }
-
+        version(none) {
         static assert(isInputRange!(Range!true));
         static assert(isForwardRange!(Range!true));
         static assert(isBidirectionalRange!(Range!true));
+        }
     }
 
 }

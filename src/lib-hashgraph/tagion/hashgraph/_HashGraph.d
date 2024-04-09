@@ -19,7 +19,7 @@ import tagion.gossip.GossipNet;
 import tagion.hashgraph._Event;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.RefinementInterface;
-import tagion.hashgraph.Round;
+import tagion.hashgraph._Round;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
@@ -32,6 +32,9 @@ import tagion.basic.Debug;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
 import current_hashgraph = tagion.hashgraph.HashGraph;
+import current_round = tagion.hashgraph.Round;
+import current_event = tagion.hashgraph.Event;
+
 
 @safe
 class _HashGraph : current_hashgraph.HashGraph {
@@ -70,8 +73,9 @@ class _HashGraph : current_hashgraph.HashGraph {
     }
     Refinement refinement;
     */
-    protected Node _owner_node;
-    
+    //protected Node _owner_node;
+   
+    version(none)
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
     }
@@ -102,7 +106,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         _excluded_nodes_mask = mask;
     }
 
-    //package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
+    package _Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     //alias ValidChannel = bool delegate(const Pubkey channel);
     //const ValidChannel valid_channel; /// Valiates of a node at channel is valid
@@ -136,7 +140,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         this._joining = joining;
         this.name = name;
         */
-        //_rounds = Round.Rounder(this);
+        _rounds = _Round.Rounder(this);
     }
 
     override void initialize_witness(const(immutable(EventPackage)*[]) epacks)
@@ -152,7 +156,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         Node[Pubkey] recovered_nodes;
         scope (success) {
             void init_event(immutable(EventPackage*) epack) {
-                auto event = new Event(epack, this);
+                auto event = new _Event(epack, this);
                 _event_cache[event.fingerprint] = event;
                 event.witness_event(node_size);
                 version (EPOCH_LOG) {
@@ -164,10 +168,10 @@ class _HashGraph : current_hashgraph.HashGraph {
             }
 
             _rounds.erase;
-            _rounds = Round.Rounder(this);
+            _rounds = _Round.Rounder(this);
             _rounds.last_decided_round = _rounds.last_round;
             (() @trusted { _event_cache.clear; })();
-            init_event(_owner_node.event.event_package);
+            init_event(owner_node.event.event_package);
             // front_seat(owen_event);
             foreach (epack; epacks) {
                 if (epack.pubkey != channel) {
@@ -203,8 +207,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         }
     }
 
-    @nogc
-    override const(Round.Rounder) rounds() const pure nothrow {
+    const(_Round.Rounder) rounds() const pure nothrow @nogc {
         return _rounds;
     }
 
@@ -280,7 +283,7 @@ class _HashGraph : current_hashgraph.HashGraph {
 
     override immutable(EventPackage)* event_pack(
             lazy const sdt_t time,
-            const(Event) father_event,
+            const(current_event.Event) father_event,
             const Document doc) {
 
         const mother_event = getNode(channel).event;
@@ -298,9 +301,9 @@ class _HashGraph : current_hashgraph.HashGraph {
         return epack;
     }
 
-    override Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
+    override current_event.Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
         immutable eva_epack = eva_pack(time, nonce);
-        auto eva_event = new Event(eva_epack, this);
+        auto eva_event = new _Event(eva_epack, this);
 
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
@@ -309,7 +312,7 @@ class _HashGraph : current_hashgraph.HashGraph {
     }
 
     alias EventPackageCache = immutable(EventPackage)*[Buffer]; /// EventPackages received from another node in the hashgraph.
-    alias EventCache = Event[Buffer]; /// Events already connected to this hashgraph. 
+    //alias EventCache = Event[Buffer]; /// Events already connected to this hashgraph. 
 
     protected {
         EventCache _event_cache;
@@ -346,14 +349,14 @@ class _HashGraph : current_hashgraph.HashGraph {
     /++
      @return true if the event package has been register correct
      +/
-    override Event registerEventPackage(
+    override current_event.Event registerEventPackage(
             immutable(EventPackage*) event_pack)
     in (event_pack.fingerprint !in _event_cache,
         format("Event %(%02x%) has already been registered",
             event_pack.fingerprint))
     do {
         if (valid_channel(event_pack.pubkey)) {
-            auto event = new Event(event_pack, this);
+            auto event = new _Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
             refinement.epack(event_pack);
             event.connect(this);
@@ -362,6 +365,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         return null;
     }
 
+    version(none)
     class Register {
         private EventPackageCache event_package_cache;
 
@@ -379,7 +383,7 @@ class _HashGraph : current_hashgraph.HashGraph {
             }
         }
 
-        final Event lookup(const(Buffer) fingerprint) {
+        final _Event lookup(const(Buffer) fingerprint) {
             if (fingerprint in _event_cache) {
                 return _event_cache[fingerprint];
             }
@@ -387,7 +391,7 @@ class _HashGraph : current_hashgraph.HashGraph {
             if (fingerprint in event_package_cache) {
                 immutable event_pack = event_package_cache[fingerprint];
                 if (valid_channel(event_pack.pubkey)) {
-                    auto event = new Event(event_pack, this.outer);
+                    auto event = new _Event(event_pack, this.outer);
                     _event_cache[fingerprint] = event;
                     return event;
                 }
@@ -400,8 +404,8 @@ class _HashGraph : current_hashgraph.HashGraph {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        final Event register(const(Buffer) fingerprint) {
-            Event event;
+        final _Event register(const(Buffer) fingerprint) {
+            _Event event;
 
             if (!fingerprint) {
                 return event;
@@ -409,7 +413,7 @@ class _HashGraph : current_hashgraph.HashGraph {
 
             // event either from event_package_cache or event_cache.
             event = lookup(fingerprint);
-            Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+            _Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
             if (event !is null) {
                 event.connect(this.outer);
             }
@@ -417,9 +421,10 @@ class _HashGraph : current_hashgraph.HashGraph {
         }
     }
 
-    protected Register _register;
+    //protected Register _register;
 
-    package final Event register(const(Buffer) fingerprint) {
+    version(none)
+    package final _Event register(const(Buffer) fingerprint) {
         if (_register) {
             return _register.register(fingerprint);
         }
@@ -431,7 +436,8 @@ class _HashGraph : current_hashgraph.HashGraph {
      Returns:
      The front event of the send channel
      +/
-    override const(Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
+    version(none)
+    override const(current_event.Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
         _register = new Register(received_wave);
 
         scope (exit) {
@@ -440,12 +446,12 @@ class _HashGraph : current_hashgraph.HashGraph {
             _register = null;
         }
 
-        Event front_seat_event;
-        foreach (fingerprint; _register.event_package_cache.byKey) {
+        _Event front_seat_event;
+        foreach (fingerprint; super._register.event_package_cache.byKey) {
             auto registered_event = register(fingerprint);
             if (registered_event.channel == from_channel) {
                 if (front_seat_event is null) {
-                    front_seat_event = registered_event;
+                    front_seat_event = cast(_Event)registered_event;
                 }
                 else if (higher(registered_event.altitude, front_seat_event.altitude)) {
                     front_seat_event = registered_event;
@@ -563,7 +569,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         // delta received from sharp should be added to our own node. 
         foreach (epack; changes) {
             const epack_node = getNode(epack.pubkey);
-            auto first_event = new Event(epack, this);
+            auto first_event = new _Event(epack, this);
             if (epack_node.event is null) {
                 check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
             }
@@ -655,7 +661,7 @@ class _HashGraph : current_hashgraph.HashGraph {
 
                     foreach (epack; changes) {
                         const epack_node = getNode(epack.pubkey);
-                        auto first_event = new Event(epack, this);
+                        auto first_event = new _Event(epack, this);
                         if (epack_node.event is null) {
                             check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                         }
@@ -754,14 +760,16 @@ class _HashGraph : current_hashgraph.HashGraph {
         }
     }
 
-    override void front_seat(Event event)
+    version(none)
+    override void front_seat(current_event.Event event)
     in {
         assert(event, "event must be defined");
     }
     do {
         getNode(event.channel).front_seat(event);
     }
-    
+   
+    version(none)
     @safe
     class Node {
         ExchangeState state;
@@ -792,7 +800,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         /++
          Register first event
          +/
-        private void front_seat(Event event)
+        private void front_seat(_Event event)
         in {
             assert(event.channel == channel, "Wrong channel");
         }
@@ -806,22 +814,25 @@ class _HashGraph : current_hashgraph.HashGraph {
             }
         }
 
-        private Event _event; /// This is the last event in this Node
+        private _Event _event; /// This is the last event in this Node
 
+        version(none)
         @nogc
         const(Event) event() const pure nothrow {
             return _event;
         }
 
         @nogc pure nothrow {
+            version(none)
             package final Event event() {
                 return _event;
             }
-
+            version(none)
             final bool isOnline() const {
                 return (_event !is null);
             }
 
+            version(none)
             final int altitude() const
             in {
                 assert(_event !is null, "This node has no events so the altitude is not set yet");
@@ -832,7 +843,7 @@ class _HashGraph : current_hashgraph.HashGraph {
             do {
                 return _event.altitude;
             }
-
+            version(none)
             package Event.Range!false opSlice() {
                 if (_event) {
                     return _event[];
@@ -840,6 +851,7 @@ class _HashGraph : current_hashgraph.HashGraph {
                 return Event.Range!false(null);
             }
 
+            version(none)
             Event.Range!true opSlice() const {
                 if (_event) {
                     return _event[];
@@ -874,8 +886,9 @@ class _HashGraph : current_hashgraph.HashGraph {
         return _nodes.require(channel, new Node(channel, next_id));
     }
 
+    version(none)
     @nogc
-    override bool isMajority(const size_t voting) const pure nothrow {
+    bool isMajority(const size_t voting) const pure nothrow {
         return .isMajority(voting, node_size);
     }
 

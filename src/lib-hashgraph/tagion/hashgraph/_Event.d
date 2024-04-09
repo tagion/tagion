@@ -20,9 +20,9 @@ import std.typecons;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
 import tagion.crypto.Types : Pubkey;
-import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.hashgraph._HashGraph : _HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
-import tagion.hashgraph.Round;
+import tagion.hashgraph._Round;
 import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
@@ -33,20 +33,22 @@ import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
 import current_event=tagion.hashgraph.Event;
+import current_round=tagion.hashgraph.Round;
 /// HashGraph Event
 @safe
-class Event : current_event.Event {
-    package static bool scrapping;
+class _Event : current_event.Event {
+    version(none) package static bool scrapping;
 
     import tagion.basic.ConsensusExceptions;
 
+    
     alias check = Check!EventConsensusException;
-    protected static uint _count;
+    version(none) protected static uint _count;
 
-    package Event[] _youngest_son_ancestors;
+    //package Event[] _youngest_son_ancestors;
 
-    package int pseudo_time_counter;
-
+    //package int pseudo_time_counter;
+    version(none)
     package {
         // This is the internal pointer to the connected Event's
         Event _mother;
@@ -61,14 +63,15 @@ class Event : current_event.Event {
         BitMask _round_seen_mask;
     }
 
+    version(none)
     @nogc
     static uint count() nothrow {
         return _count;
     }
 
-    bool error;
+    //bool error;
 
-    Topic topic = Topic("hashgraph_event");
+    //Topic topic = Topic("hashgraph_event");
 
     /**
      * Builds an event from an eventpackage
@@ -78,14 +81,11 @@ class Event : current_event.Event {
      */
     package this(
             immutable(EventPackage)* epack,
-            HashGraph hashgraph,
+            _HashGraph hashgraph,
     )
     in (epack !is null)
     do {
-        event_package = epack;
-        this.id = hashgraph.next_event_id;
-        this.node_id = hashgraph.getNode(channel).node_id;
-        _count++;
+        super(epack, hashgraph);
     }
 
     protected ~this() {
@@ -114,6 +114,7 @@ class Event : current_event.Event {
      * The witness event will point to the witness object
      * This object contains information about the voting etc. for the witness event
      */
+    version(none)
     @safe
     class Witness {
         protected static uint _count;
@@ -147,27 +148,29 @@ class Event : current_event.Event {
 
     }
 
-    static EventMonitorCallbacks callbacks;
+    version(none) static EventMonitorCallbacks callbacks;
 
     // The altitude increases by one from mother to daughter
-    immutable(EventPackage*) event_package;
+    version(none) immutable(EventPackage*) event_package;
 
     /**
   * The rounds see forward from this event
   * Returns:  round seen mask
   */
+    version(none)
     const(BitMask) round_seen_mask() const pure nothrow @nogc {
         return _round_seen_mask;
     }
 
+    version(none) {
     package {
         Round _round; /// The where the event has been created
-        BitMask _round_received_mask; /// Voting mask for the received rounds
+        version(none) BitMask _round_received_mask; /// Voting mask for the received rounds
     }
     protected {
         Round _round_received; /// The round in which the event has been voted to be received
     }
-
+    }
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
 
@@ -180,13 +183,13 @@ class Event : current_event.Event {
      * Params:
      *   hashgraph = the graph which produces this event
      */
-    package void attach_round(HashGraph hashgraph) pure nothrow {
+    package void attach_round(_HashGraph hashgraph) pure nothrow {
         if (!_round) {
             _round = _mother._round;
         }
     }
 
-    immutable uint id;
+    //immutable uint id;
 
     /**
     *  Makes the event a witness  
@@ -197,7 +200,7 @@ class Event : current_event.Event {
     }
     do {
         _witness = new Witness(this, node_size);
-        _youngest_son_ancestors = new Event[node_size];
+        _youngest_son_ancestors = new _Event[node_size];
         _youngest_son_ancestors[node_id] = this;
     }
 
@@ -215,7 +218,7 @@ class Event : current_event.Event {
       * Params:
       *   hashgraph = event owner 
       */
-    package final void connect(HashGraph hashgraph)
+    package final void connect(_HashGraph hashgraph)
     in {
         assert(hashgraph.areWeInGraph);
     }
@@ -229,14 +232,14 @@ class Event : current_event.Event {
         }
         scope (exit) {
             if (_mother) {
-                Event.check(this.altitude - _mother.altitude is 1,
+                current_event.Event.check(this.altitude - _mother.altitude is 1,
                         ConsensusFailCode.EVENT_ALTITUDE);
-                Event.check(channel == _mother.channel,
+                current_event.Event.check(channel == _mother.channel,
                         ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
             hashgraph.front_seat(this);
-            if (Event.callbacks) {
-                Event.callbacks.connect(this);
+            if (current_event.Event.callbacks) {
+                current_event.Event.callbacks.connect(this);
             }
             // refinement
             hashgraph.refinement.payload(event_package);
@@ -278,8 +281,8 @@ class Event : current_event.Event {
 
         pseudo_time_counter = 0;
 
-        _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
+        _witness.prev_strongly_seen_witnesses = strongly_seen_nodes;
+        _witness.prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
                 .round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
             _round.add(this);
@@ -292,7 +295,7 @@ class Event : current_event.Event {
         }
     }
 
-    private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+    private BitMask calc_strongly_seen_nodes(const _HashGraph hashgraph) {
         auto see_through_matrix = _youngest_son_ancestors
             .filter!(e => e !is null && e.round is round)
             .map!(e => e._youngest_son_ancestors
@@ -303,7 +306,7 @@ class Event : current_event.Event {
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
     }
 
-    private void calc_youngest_son_ancestors(const HashGraph hashgraph) {
+    private void calc_youngest_son_ancestors(const _HashGraph hashgraph) {
         if (!_father) {
             _youngest_son_ancestors = _mother._youngest_son_ancestors;
             return;
@@ -318,7 +321,8 @@ class Event : current_event.Event {
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
-    package void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
+    version(none)
+    package void calc_vote(_HashGraph hashgraph, size_t vote_node_id) {
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
         Event voting_event = voting_round._events[vote_node_id];
 
@@ -350,6 +354,7 @@ class Event : current_event.Event {
      * Params:
      *   hashgraph = event owner
      */
+    version(none)
     final package void disconnect(HashGraph hashgraph) nothrow @trusted
     in {
         assert(!_mother, "Event with a mother can not be disconnected");
@@ -370,7 +375,7 @@ class Event : current_event.Event {
         _daughter = _son = null;
     }
 
-    const bool sees(Event b) pure {
+    override const bool sees(current_event.Event b) pure {
 
         if (_youngest_son_ancestors[b.node_id] is null) {
             return false;
@@ -403,6 +408,7 @@ class Event : current_event.Event {
      * Throws: EventException if the mother has been grounded
      * Returns: mother event 
      */
+    version(none)
     final const(Event) mother() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_MOTHER_GROUNDED);
         return _mother;
@@ -413,14 +419,17 @@ class Event : current_event.Event {
      * Throws: EventException if the mother has been grounded
      * Returns: mother event 
      */
+    version(none)
     final const(Event) father() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_FATHER_GROUNDED);
         return _father;
     }
 
-    void round_received(Round round_received) nothrow {
+    override void round_received(current_round.Round round_received) nothrow {
         _round_received = round_received;
     }
+
+    version(none)
     @nogc pure nothrow const final {
         /**
      * The received round for this event
@@ -598,11 +607,12 @@ class Event : current_event.Event {
         }
     }
 
+    version(none)
     @nogc
     package Range!false opSlice() pure nothrow {
         return Range!false(this);
     }
-
+    version(none)
     @nogc
     struct Range(bool CONST = true) {
         private Event current;
