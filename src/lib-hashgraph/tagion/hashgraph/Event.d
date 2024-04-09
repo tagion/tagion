@@ -57,7 +57,6 @@ class Event {
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
-        BitMask _round_seen_mask;
     }
 
     @nogc
@@ -150,14 +149,6 @@ class Event {
 
     // The altitude increases by one from mother to daughter
     immutable(EventPackage*) event_package;
-
-    /**
-  * The rounds see forward from this event
-  * Returns:  round seen mask
-  */
-    const(BitMask) round_seen_mask() const pure nothrow @nogc {
-        return _round_seen_mask;
-    }
 
     package {
         Round _round; /// The where the event has been created
