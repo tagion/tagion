@@ -913,9 +913,4 @@ class HashGraph {
             .each!((n) { used_nodes[n] = true; });
         return (~used_nodes)[].front;
     }
-
-    //bool disable_scrapping;
-
-    enum max_package_size = 0x1000;
-    enum round_clean_limit = 10;
 }
