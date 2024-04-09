@@ -35,15 +35,14 @@ import tagion.utils.StdTime;
 /// HashGraph Event
 @safe
 class Event {
-    package static bool scrapping;
 
     import tagion.basic.ConsensusExceptions;
 
     alias check = Check!EventConsensusException;
-    protected static uint _count;
 
 
     package {
+        static bool scrapping; /// If the events should be scrapped
         Event _mother; /// Mother internal pointer
         Event _father; /// Father internal pointer
         Event _daughter; // Daughter internal pointer
@@ -56,6 +55,7 @@ class Event {
         Round _round; /// The where the event has been created
     }
     protected {
+        static uint _count;
         Round _round_received; /// The round in which the event has been voted to be received
     }
 
