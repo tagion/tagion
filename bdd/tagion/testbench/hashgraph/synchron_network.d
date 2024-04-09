@@ -204,6 +204,7 @@ class StartNetworkWithNAmountOfNodes {
     @Then("stop the network")
     Document _network() {
         Pubkey[string] node_labels;
+        import tagion.hashgraphview.EventView;
         foreach (channel, _net; network.networks) {
             node_labels[_net._hashgraph.name] = channel;
         }
