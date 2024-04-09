@@ -46,18 +46,11 @@ class HashGraph {
 
     immutable size_t node_size; /// Number of active nodes in the graph
     immutable(string) name; // Only used for debugging
-    Statistic!uint witness_search_statistic;
     Statistic!uint strong_seeing_statistic;
-    Statistic!uint received_order_statistic;
-    Statistic!uint mark_received_statistic;
-    Statistic!uint order_compare_statistic;
-    Statistic!uint rare_order_compare_statistic;
-    Statistic!uint epoch_events_statistic;
     Statistic!uint wavefront_event_package_statistic;
     Statistic!uint wavefront_event_package_used_statistic;
     Statistic!uint live_events_statistic;
     Statistic!uint live_witness_statistic;
-    Statistic!long epoch_delay_statistic;
     BitMask _excluded_nodes_mask;
     private {
         Node[Pubkey] _nodes; // List of participating _nodes T

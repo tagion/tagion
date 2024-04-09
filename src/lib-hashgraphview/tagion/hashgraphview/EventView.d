@@ -104,9 +104,5 @@ void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node
     foreach(e; events) {
         graphfile.fwrite(e);
     }
-    /* auto h = new HiBON; */
-    /* h[Params.size] = node_size; */
-    /* h[Params.events] = events; */
-    /* graphfile.fwrite(h); */
 }
 

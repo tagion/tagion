@@ -248,9 +248,6 @@ class Event {
         // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
         // if (_father) { pseudo_time_counter += 1; }
         pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
-        with (hashgraph) {
-            log.event(topic, received_order_statistic.stringof, received_order_statistic);
-        }
 
         calc_youngest_son_ancestors(hashgraph);
         BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
