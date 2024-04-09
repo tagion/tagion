@@ -42,22 +42,23 @@ class Event {
     alias check = Check!EventConsensusException;
     protected static uint _count;
 
-    package Event[] _youngest_son_ancestors;
-
-    package int pseudo_time_counter;
 
     package {
-        // This is the internal pointer to the connected Event's
-        Event _mother;
-        Event _father;
-        Event _daughter;
-        Event _son;
-
+        Event _mother; /// Mother internal pointer
+        Event _father; /// Father internal pointer
+        Event _daughter; // Daughter internal pointer
+        Event _son; // Son internal pointer
+        Event[] _youngest_son_ancestors; /// Youngest events to all the fathers for all nodes
         long _order;
-        // The withness mask contains the mask of the nodes
-        // Which can be seen by the next rounds witness
-        Witness _witness;
+
+        int pseudo_time_counter;
+        Witness _witness; /// The witness contains the witness mask of the nodes
+        Round _round; /// The where the event has been created
     }
+    protected {
+        Round _round_received; /// The round in which the event has been voted to be received
+    }
+
 
     @nogc
     static uint count() nothrow {
@@ -149,13 +150,6 @@ class Event {
 
     // The altitude increases by one from mother to daughter
     immutable(EventPackage*) event_package;
-
-    package {
-        Round _round; /// The where the event has been created
-    }
-    protected {
-        Round _round_received; /// The round in which the event has been voted to be received
-    }
 
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
