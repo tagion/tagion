@@ -19,7 +19,7 @@ import tagion.gossip.GossipNet;
 import tagion.hashgraph._Event;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.RefinementInterface;
-import tagion.hashgraph._Round;
+import tagion.hashgraph.Round;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
@@ -32,7 +32,7 @@ import tagion.basic.Debug;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
 import current_hashgraph = tagion.hashgraph.HashGraph;
-import current_round = tagion.hashgraph.Round;
+//import current_round = tagion.hashgraph.Round;
 import current_event = tagion.hashgraph.Event;
 
 
@@ -106,7 +106,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         _excluded_nodes_mask = mask;
     }
 
-    package _Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
+    //package _Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     //alias ValidChannel = bool delegate(const Pubkey channel);
     //const ValidChannel valid_channel; /// Valiates of a node at channel is valid
@@ -140,7 +140,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         this._joining = joining;
         this.name = name;
         */
-        _rounds = _Round.Rounder(this);
+        //_rounds = _Round.Rounder(this);
     }
 
     override void initialize_witness(const(immutable(EventPackage)*[]) epacks)
@@ -168,7 +168,7 @@ class _HashGraph : current_hashgraph.HashGraph {
             }
 
             _rounds.erase;
-            _rounds = _Round.Rounder(this);
+            _rounds = Round.Rounder(this);
             _rounds.last_decided_round = _rounds.last_round;
             (() @trusted { _event_cache.clear; })();
             init_event(owner_node.event.event_package);
@@ -207,22 +207,27 @@ class _HashGraph : current_hashgraph.HashGraph {
         }
     }
 
+    version(none)
     const(_Round.Rounder) rounds() const pure nothrow @nogc {
         return _rounds;
     }
 
+    version(none)
     override bool areWeInGraph() const pure nothrow {
         return _rounds.last_decided_round !is null;
     }
 
+    version(none)
     override Pubkey channel() const pure nothrow {
         return hirpc.net.pubkey;
     }
 
+    version(none)
     override const(Pubkey[]) channels() const pure nothrow {
         return _nodes.keys;
     }
 
+    version(none)
     override bool not_used_channels(const(Pubkey) selected_channel) {
         if (selected_channel == channel) {
             return false;
@@ -235,12 +240,13 @@ class _HashGraph : current_hashgraph.HashGraph {
         }
         return true;
     }
-
+    version(none) {
     alias GraphResponse = const(Pubkey) delegate(
             GossipNet.ChannelFilter channel_filter,
             GossipNet.SenderCallBack sender) @safe;
     alias GraphPayload = const(Document) delegate() @safe;
-
+    }
+    version(none)
     override void init_tide(
             const(GraphResponse) respond,
             const(GraphPayload) payload,
@@ -365,11 +371,12 @@ class _HashGraph : current_hashgraph.HashGraph {
         return null;
     }
 
-    version(none)
-    class Register {
-        private EventPackageCache event_package_cache;
+    class Register : current_hashgraph.HashGraph.Register {
+        //private EventPackageCache event_package_cache;
 
         this(const Wavefront received_wave) pure nothrow {
+            super(received_wave);
+            /*
             uint count_events;
             scope (exit) {
                 wavefront_event_package_statistic(count_events);
@@ -381,18 +388,19 @@ class _HashGraph : current_hashgraph.HashGraph {
                     event_package_cache[e.fingerprint] = e;
                 }
             }
+            */
         }
 
-        final _Event lookup(const(Buffer) fingerprint) {
-            if (fingerprint in _event_cache) {
-                return _event_cache[fingerprint];
+         override current_event.Event lookup(const(Buffer) fingerprint) {
+            if (fingerprint in this.outer._event_cache) {
+                return this.outer._event_cache[fingerprint];
             }
 
             if (fingerprint in event_package_cache) {
                 immutable event_pack = event_package_cache[fingerprint];
                 if (valid_channel(event_pack.pubkey)) {
                     auto event = new _Event(event_pack, this.outer);
-                    _event_cache[fingerprint] = event;
+                    this.outer._event_cache[fingerprint] = event;
                     return event;
                 }
             }
@@ -400,11 +408,13 @@ class _HashGraph : current_hashgraph.HashGraph {
         }
 
         // function not used
+        version(none)
         final bool isCached(scope const(Buffer) fingerprint) const pure nothrow {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        final _Event register(const(Buffer) fingerprint) {
+        version(none)
+        final Event register(const(Buffer) fingerprint) {
             _Event event;
 
             if (!fingerprint) {
@@ -436,7 +446,6 @@ class _HashGraph : current_hashgraph.HashGraph {
      Returns:
      The front event of the send channel
      +/
-    version(none)
     override const(current_event.Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
         _register = new Register(received_wave);
 
@@ -454,7 +463,7 @@ class _HashGraph : current_hashgraph.HashGraph {
                     front_seat_event = cast(_Event)registered_event;
                 }
                 else if (higher(registered_event.altitude, front_seat_event.altitude)) {
-                    front_seat_event = registered_event;
+                    front_seat_event = cast(_Event)registered_event;
                 }
             }
         }
@@ -672,7 +681,7 @@ class _HashGraph : current_hashgraph.HashGraph {
                     const contain_all =
                         _nodes
                             .byValue
-                            .all!((n) => n._event !is null);
+                            .all!((n) => n.event !is null);
 
                     if (contain_all && node_size == _nodes.length) {
                         const own_epacks = _nodes
@@ -902,6 +911,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         _nodes.remove(n.channel);
     }
 
+    version(none)
    override bool remove_node(const Pubkey pkey) nothrow {
         if (pkey in _nodes) {
             _nodes.remove(pkey);
@@ -910,10 +920,11 @@ class _HashGraph : current_hashgraph.HashGraph {
         return false;
     }
 
+    version(none)
     override void mark_offline(const(size_t) node_id) nothrow {
 
         auto mark_node = _nodes.byKeyValue
-            .filter!((pair) => !pair.value._offline)
+            .filter!((pair) => !pair.value.offline)
             .filter!((pair) => pair.value.node_id == node_id)
             .map!(pair => pair.value);
         if (mark_node.empty) {

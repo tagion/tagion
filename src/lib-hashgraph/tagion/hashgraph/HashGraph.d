@@ -367,7 +367,8 @@ class HashGraph {
             }
         }
 
-        final Event lookup(const(Buffer) fingerprint) {
+        //final 
+        Event lookup(const(Buffer) fingerprint) {
             if (fingerprint in _event_cache) {
                 return _event_cache[fingerprint];
             }

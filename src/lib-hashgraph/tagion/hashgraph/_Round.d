@@ -82,6 +82,8 @@ class _Round : current_round.Round {
      *   node_size = size of events in a round
      */
     private this(_Round previous, const size_t node_size) pure nothrow {
+        super(previous, node_size);
+    /*
         if (previous) {
             number = previous.number + 1;
             previous._next = this;
@@ -90,6 +92,7 @@ class _Round : current_round.Round {
         else {
             number = 0;
         }
+*/
         _events = new _Event[node_size];
     }
 
@@ -202,7 +205,8 @@ class _Round : current_round.Round {
         return _decided;
     }
 
-    override const(_Round) next() const pure nothrow {
+    version(none)
+    override const(curreRound) next() const pure nothrow {
         return _next;
     }
 
@@ -213,6 +217,7 @@ class _Round : current_round.Round {
      * Returns: 
      *   Event at the node_id
      */
+    version(none)
     @nogc
     override inout(current_event.Event) event(const size_t node_id) pure inout {
         return _events[node_id];
@@ -228,6 +233,7 @@ class _Round : current_round.Round {
         return _previous;
     }
 
+    version(none)
     @nogc
     override const(_Round) previous() const pure nothrow {
         return _previous;
@@ -250,6 +256,7 @@ class _Round : current_round.Round {
         return Rounder.Range!true(this);
     }
 
+    version(none)
     invariant {
         assert(!_previous || (_previous.number + 1 is number));
         assert(!_next || (_next.number - 1 is number));
@@ -259,6 +266,7 @@ class _Round : current_round.Round {
      * The rounder takes care of cleaning up old round 
      * and keeps track of if an round has been decided or can be decided
      */
+    version(none)
     struct Rounder {
         _Round last_round;
         _Round last_decided_round;
