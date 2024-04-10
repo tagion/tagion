@@ -89,7 +89,7 @@ DFLAGS+=$(DVERSION)=OLD_ORDERING
 
 # This is used to intentionaly provoke a crash in the app.
 # Needed for GDB testing.
-DFLAGS+=$(DVERSION)=PROVOKE_CRASH
+# DFLAGS+=$(DVERSION)=PROVOKE_CRASH
 
 # Use to write logs into a file.
 DFLAGS+=$(DDEBUG)=android
