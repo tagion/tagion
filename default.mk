@@ -39,10 +39,6 @@ DFLAGS+=$(DVERSION)=EPOCH_FIX
 # The function is not used in this node
 DFLAGS+=$(DVERSION)=WITHOUT_PAYMENT
 
-# Enables the new wallet update request proposed in 
-# https://docs.tagion.org/#/documents/TIPs/cache_proposal_23_jan
-DFLAGS+=$(DVERSION)=TRT_READ_REQ
-
 # Use compile time sorted, serialization of dart branches
 #DFLAGS+=$(DVERSION)=DARTFile_BRANCHES_SERIALIZER
 
