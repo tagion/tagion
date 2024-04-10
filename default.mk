@@ -26,7 +26,7 @@ DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
 
 # This fixes an error in the app wallet where it would be logged out after each operation
 # By copying the securenet each time an operation is done
-DFLAGS+=$(DVERSION)=NET_HACK
+# DFLAGS+=$(DVERSION)=NET_HACK
 
 # Sets the inputvalidators NNG socket to be blocking
 DFLAGS+=$(DVERSION)=BLOCKING
