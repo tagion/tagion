@@ -40,32 +40,32 @@ import current_event = tagion.hashgraph.Event;
 class _HashGraph : current_hashgraph.HashGraph {
     enum default_scrap_depth = 10;
     //bool print_flag;
-    int scrap_depth = default_scrap_depth;
+    //int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
 
-    bool __debug_print;
+    //bool __debug_print;
 
-    protected alias check = Check!HashGraphConsensusException;
+    //protected alias check = Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
-    import tagion.logger.Statistic;
+    //import tagion.logger.Statistic;
 
     //immutable size_t node_size; /// Number of active nodes in the graph
     //immutable(string) name; // Only used for debugging
     /*
-    Statistic!uint witness_search_statistic;
-    Statistic!uint strong_seeing_statistic;
-    Statistic!uint wavefront_event_package_statistic;
-    Statistic!uint wavefront_event_package_used_statistic;
-    Statistic!uint live_events_statistic;
-    Statistic!uint live_witness_statistic;
-    BitMask _excluded_nodes_mask;
-    private {
-        Node[Pubkey] _nodes; // List of participating _nodes T
-        uint event_id;
-        sdt_t last_epoch_time;
-        Flag!"joining" _joining;
-    }
-    Refinement refinement;
+//    Statistic!uint witness_search_statistic;
+//    Statistic!uint strong_seeing_statistic;
+//    Statistic!uint wavefront_event_package_statistic;
+//   Statistic!uint wavefront_event_package_used_statistic;
+//    Statistic!uint live_events_statistic;
+//    Statistic!uint live_witness_statistic;
+//    BitMask _excluded_nodes_mask;
+ //   private {
+ //       Node[Pubkey] _nodes; // List of participating _nodes T
+ //       uint event_id;
+ //       sdt_t last_epoch_time;
+ //       Flag!"joining" _joining;
+//    }	
+//    Refinement refinement;
     */
     //protected Node _owner_node;
    
@@ -311,23 +311,26 @@ class _HashGraph : current_hashgraph.HashGraph {
         return eva_event;
     }
 
-    alias EventPackageCache = immutable(EventPackage)*[Buffer]; /// EventPackages received from another node in the hashgraph.
+    //alias EventPackageCache = immutable(EventPackage)*[Buffer]; /// EventPackages received from another node in the hashgraph.
     //alias EventCache = Event[Buffer]; /// Events already connected to this hashgraph. 
-
+    version(none)
     protected {
         EventCache _event_cache;
     }
 
+    version(none)
     override void eliminate(scope const(Buffer) fingerprint) pure nothrow {
         _event_cache.remove(fingerprint);
     }
 
+    version(none)
     @nogc
     override size_t number_of_registered_event() const pure nothrow {
         return _event_cache.length;
     }
 
     // function not used
+    version(none)
     @nogc
     override bool isRegistered(scope const(ubyte[]) fingerprint) const pure nothrow {
         return (fingerprint in _event_cache) !is null;
@@ -365,7 +368,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         return null;
     }
 
-    class Register : current_hashgraph.HashGraph.Register {
+    class _Register : current_hashgraph.HashGraph.Register {
         //private EventPackageCache event_package_cache;
 
         this(const Wavefront received_wave) pure nothrow {
@@ -441,7 +444,7 @@ class _HashGraph : current_hashgraph.HashGraph {
      The front event of the send channel
      +/
     override const(current_event.Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
-        _register = new Register(received_wave);
+        _register = new _Register(received_wave);
 
         scope (exit) {
             log.event(topic, wavefront_event_package_statistic.stringof, wavefront_event_package_statistic);
@@ -455,9 +458,11 @@ class _HashGraph : current_hashgraph.HashGraph {
             if (registered_event.channel == from_channel) {
                 if (front_seat_event is null) {
                     front_seat_event = cast(_Event)registered_event;
+                    assert(front_seat_event !is null);
                 }
                 else if (higher(registered_event.altitude, front_seat_event.altitude)) {
                     front_seat_event = cast(_Event)registered_event;
+                    assert(front_seat_event !is null);
                 }
             }
         }
@@ -465,6 +470,7 @@ class _HashGraph : current_hashgraph.HashGraph {
         return front_seat_event;
     }
 
+    version(none)
     override @HiRPCMethod const(HiRPC.Sender) wavefront(
             const Wavefront wave,
             const uint id = 0) {

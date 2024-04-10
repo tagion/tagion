@@ -33,6 +33,7 @@ import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
 import current_event=tagion.hashgraph.Event;
+import current_hashgraph=tagion.hashgraph.HashGraph;
 /// HashGraph Event
 @safe
 class _Event : current_event.Event {
@@ -170,6 +171,7 @@ class _Event : current_event.Event {
         Round _round_received; /// The round in which the event has been voted to be received
     }
     }
+    version(none)
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
 
@@ -182,6 +184,7 @@ class _Event : current_event.Event {
      * Params:
      *   hashgraph = the graph which produces this event
      */
+    version(none)
     package void attach_round(_HashGraph hashgraph) pure nothrow {
         if (!_round) {
             _round = _mother._round;
@@ -193,7 +196,7 @@ class _Event : current_event.Event {
     /**
     *  Makes the event a witness  
     */
-    package void witness_event(ulong node_size) nothrow
+    override void witness_event(ulong node_size) nothrow
     in {
         assert(!_witness);
     }
@@ -217,9 +220,10 @@ class _Event : current_event.Event {
       * Params:
       *   hashgraph = event owner 
       */
-    package final void connect(_HashGraph hashgraph)
+    override void connect(current_hashgraph.HashGraph hashgraph)
     in {
         assert(hashgraph.areWeInGraph);
+	    assert(cast(_HashGraph)hashgraph !is null);
     }
     out {
         assert(event_package.event_body.mother && _mother || !_mother);
@@ -291,7 +295,7 @@ class _Event : current_event.Event {
         }
     }
 
-    private BitMask calc_strongly_seen_nodes(const _HashGraph hashgraph) {
+    override BitMask calc_strongly_seen_nodes(const current_hashgraph.HashGraph hashgraph) {
         auto see_through_matrix = _youngest_son_ancestors
             .filter!(e => e !is null && e.round is round)
             .map!(e => e._youngest_son_ancestors
@@ -302,7 +306,7 @@ class _Event : current_event.Event {
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
     }
 
-    private void calc_youngest_son_ancestors(const _HashGraph hashgraph) {
+    override  void calc_youngest_son_ancestors(const current_hashgraph.HashGraph hashgraph) {
         if (!_father) {
             _youngest_son_ancestors = _mother._youngest_son_ancestors;
             return;
@@ -657,8 +661,9 @@ class _Event : current_event.Event {
             }
         }
     }
-
+    version(none) {
     static assert(isInputRange!(Range!true));
     static assert(isForwardRange!(Range!true));
     static assert(isBidirectionalRange!(Range!true));
+   }       
 }

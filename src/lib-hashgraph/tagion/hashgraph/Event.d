@@ -181,7 +181,7 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    package void witness_event(ulong node_size) nothrow
+    void witness_event(ulong node_size) nothrow
     in {
         assert(!_witness);
     }
@@ -204,7 +204,7 @@ class Event {
       * Params:
       *   hashgraph = event owner 
       */
-    package final void connect(HashGraph hashgraph)
+    void connect(HashGraph hashgraph)
     in {
         assert(hashgraph.areWeInGraph);
     }
@@ -284,7 +284,7 @@ class Event {
         }
     }
 
-    private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+     BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
         auto see_through_matrix = _youngest_son_ancestors
             .filter!(e => e !is null && e.round is round)
             .map!(e => e._youngest_son_ancestors
@@ -295,7 +295,7 @@ class Event {
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
     }
 
-    private void calc_youngest_son_ancestors(const HashGraph hashgraph) {
+     void calc_youngest_son_ancestors(const HashGraph hashgraph) {
         if (!_father) {
             _youngest_son_ancestors = _mother._youngest_son_ancestors;
             return;

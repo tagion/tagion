@@ -14,6 +14,7 @@ import tagion.communication.HiRPC;
 import tagion.crypto.Types;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
+import tagion.hashgraph._HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Refinement;
 import tagion.hashgraph.RefinementInterface;
@@ -329,8 +330,13 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
-
-        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+        HashGraph h;
+        if (graphtype) {
+            h = new _HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+        }
+        else {
+            h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+        }
         if (testing < 4) {
             testing++;
             if (testing == 1) {
