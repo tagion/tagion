@@ -55,6 +55,15 @@ int _main(string[] args) {
             "s|subhibon", "Output only subhibon that match criteria", &subhibon_flag,
         );
 
+        if (not_flag) {
+            // Can't output subhibon with "not" filtering
+            subhibon_flag = false;
+        }
+
+        bool withNot(bool flag) {
+            return not_flag ? (!flag) : flag;
+        }
+
         if (version_switch) {
             revision_text.writeln;
             return 0;
@@ -81,14 +90,15 @@ int _main(string[] args) {
             foreach (elm; list.splitter(",")) {
                 const elm_range = elm.split("..");
                 if (elm_range.length == 1 && no == elm_range[0].to!size_t) {
-                    return true;
+                    return withNot(true);
                 }
                 if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1]
                         .to!size_t)) {
-                    return true;
+                    return withNot(true);
                 }
             }
-            return false;
+
+            return withNot(false);
         }
 
         if (name) {
@@ -162,7 +172,7 @@ int _main(string[] args) {
                 continue;
 
             auto match_docs = getMatchDocs(doc);
-            if (match_docs.empty)
+            if (withNot(match_docs.empty))
                 continue;
 
             if (subhibon_flag)
