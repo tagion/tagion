@@ -23,7 +23,6 @@ import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
 enum minimum_nodes = 3;
-import tagion.utils.Miscellaneous : cutHex;
 
 @safe @nogc
 T highest(T)(T a, T b) pure nothrow if (isSigned!(T)) {

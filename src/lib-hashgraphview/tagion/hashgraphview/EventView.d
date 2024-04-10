@@ -63,3 +63,46 @@ struct EventView {
         }
     });
 }
+
+
+
+
+import tagion.hashgraph.HashGraph;
+import tagion.crypto.Types : Pubkey; 
+@safe
+void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node_labels = null) {
+    import std.algorithm : sort, filter, each;
+    import std.stdio;
+    import tagion.hashgraphview.EventView;
+    import tagion.hibon.HiBONFile : fwrite;
+
+    File graphfile = File(filename, "w");
+
+    size_t[Pubkey] node_id_relocation;
+    if (node_labels.length) {
+        // assert(node_labels.length is _nodes.length);
+        auto names = node_labels.keys;
+        names.sort;
+        foreach (i, name; names) {
+            node_id_relocation[node_labels[name]] = i;
+        }
+
+    }
+
+    EventView[size_t] events;
+    /* auto events = new HiBON; */
+    (() @trusted {
+        foreach (n; hashgraph.nodes) {
+            const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
+            n[]
+                .filter!((e) => !e.isGrounded)
+                .each!((e) => events[e.id] = EventView(e, node_id));
+        }
+    })();
+
+    graphfile.fwrite(NodeAmount(hashgraph.node_size));
+    foreach(e; events) {
+        graphfile.fwrite(e);
+    }
+}
+
