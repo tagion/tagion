@@ -22,7 +22,7 @@ import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
 import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph._HashGraph : _HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
-import tagion.hashgraph._Round;
+import tagion.hashgraph.Round;
 import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
@@ -33,7 +33,6 @@ import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
 import current_event=tagion.hashgraph.Event;
-import current_round=tagion.hashgraph.Round;
 /// HashGraph Event
 @safe
 class _Event : current_event.Event {
@@ -425,7 +424,7 @@ class _Event : current_event.Event {
         return _father;
     }
 
-    override void round_received(current_round.Round round_received) nothrow {
+    override void round_received(Round round_received) nothrow {
         _round_received = round_received;
     }
 
