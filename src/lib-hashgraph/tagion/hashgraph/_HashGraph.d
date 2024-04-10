@@ -54,16 +54,10 @@ class _HashGraph : current_hashgraph.HashGraph {
     /*
     Statistic!uint witness_search_statistic;
     Statistic!uint strong_seeing_statistic;
-    Statistic!uint received_order_statistic;
-    Statistic!uint mark_received_statistic;
-    Statistic!uint order_compare_statistic;
-    Statistic!uint rare_order_compare_statistic;
-    Statistic!uint epoch_events_statistic;
     Statistic!uint wavefront_event_package_statistic;
     Statistic!uint wavefront_event_package_used_statistic;
     Statistic!uint live_events_statistic;
     Statistic!uint live_witness_statistic;
-    Statistic!long epoch_delay_statistic;
     BitMask _excluded_nodes_mask;
     private {
         Node[Pubkey] _nodes; // List of participating _nodes T
@@ -952,51 +946,4 @@ class _HashGraph : current_hashgraph.HashGraph {
             .each!((n) { used_nodes[n] = true; });
         return (~used_nodes)[].front;
     }
-
-    //bool disable_scrapping;
-
-    enum max_package_size = 0x1000;
-    enum round_clean_limit = 10;
-
-    /++
-     Dumps all events in the Hashgraph to a file
-     +/
-    override void fwrite(string filename, Pubkey[string] node_labels = null) {
-        import tagion.hashgraphview.EventView;
-        import tagion.hibon.HiBONFile : fwrite;
-
-        File graphfile = File(filename, "w");
-
-        size_t[Pubkey] node_id_relocation;
-        if (node_labels.length) {
-            // assert(node_labels.length is _nodes.length);
-            auto names = node_labels.keys;
-            names.sort;
-            foreach (i, name; names) {
-                node_id_relocation[node_labels[name]] = i;
-            }
-
-        }
-
-        EventView[size_t] events;
-        /* auto events = new HiBON; */
-        (() @trusted {
-            foreach (n; _nodes) {
-                const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
-                n[]
-                    .filter!((e) => !e.isGrounded)
-                    .each!((e) => events[e.id] = EventView(e, node_id));
-            }
-        })();
-
-        graphfile.fwrite(NodeAmount(node_size));
-        foreach(e; events) {
-            graphfile.fwrite(e);
-        }
-        /* auto h = new HiBON; */
-        /* h[Params.size] = node_size; */
-        /* h[Params.events] = events; */
-        /* graphfile.fwrite(h); */
-    }
-
 }
