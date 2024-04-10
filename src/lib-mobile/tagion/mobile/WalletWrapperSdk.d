@@ -156,6 +156,11 @@ extern (C) {
             const uint32_t mnemonicLen,
             const uint8_t* saltPtr,
             const uint32_t saltLen) nothrow {
+        // For testing purposes.
+        version(PROVOKE_CRASH) {
+            int* ptr = null; 
+            *ptr = 10;
+        }
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];

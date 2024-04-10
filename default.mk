@@ -90,6 +90,10 @@ DFLAGS+=$(DVERSION)=OLD_ORDERING
 # Use to write logs into a file.
 DFLAGS+=$(DDEBUG)=android
 
+# This is used to intentionaly provoke a crash in the app.
+# Needed for GDB testing.
+DFLAGS+=$(DDEBUG)=PROVOKE_CRASH
+
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)
