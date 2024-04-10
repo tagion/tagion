@@ -61,7 +61,7 @@ class StartNetworkWithNAmountOfNodes {
         (() @trusted { getrlimit(RLIMIT_STACK, &limit); })();
         writefln("RESOURCE LIMIT = %s", limit);
 
-        network = new TestNetwork(node_names);
+        network = new TestNetwork(node_names, null, 0);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
         writeln(network.random);

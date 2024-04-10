@@ -47,7 +47,7 @@ class NodeSwap {
     @Given("i have a hashgraph testnetwork with n number of nodes.")
     Document nodes() {
 
-        network = new TestNetwork(node_names);
+        network = new TestNetwork(node_names, null);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
         writeln(network.random);

@@ -8,6 +8,7 @@ import tagion.tools.Basic;
 import std.file : mkdirRecurse, rmdirRecurse, exists;
 import std.path : buildPath;
 import std.stdio;
+import std.algorithm;
 import tagion.testbench.hashgraph;
 import tagion.testbench.hashgraph.hashgraph_test_network;
 import std.range;
@@ -40,8 +41,10 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
 
     uint MAX_CALLS = args[1].ifThrown("10000").to!uint.ifThrown(10000);
-    int[] weights = args[2].ifThrown("100,5,100,100,100").split(",").map!(n => n.to!int).array;
-    writefln("%s", weights);
+    int[] weights = args[2].ifThrown("100,5,100,100,100")
+        .split(",").map!(n => n.to!int).array;
+    int[] graphtypes = args[3].ifThrown(format("%(%s,%)", 0.repeat(weights.length)))
+        .split(",").map!(n => n.to!int).array;
     uint number_of_nodes = cast(uint) weights.length;
     
     // uint number_of_nodes = args[2].to!uint.ifThrown(5);
@@ -50,7 +53,7 @@ int _main(string[] args) {
     register("run_fiber_epoch", thisTid);
 
     auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
-    hashgraph_fiber_feature.RunPassiveFastHashgraph(number_of_nodes, weights, MAX_CALLS, module_path);
+    hashgraph_fiber_feature.RunPassiveFastHashgraph(number_of_nodes, weights, graphtypes, MAX_CALLS, module_path);
     hashgraph_fiber_feature.run;
 
     return 0;
@@ -65,15 +68,17 @@ class RunPassiveFastHashgraph {
     uint MAX_CALLS;
     uint number_of_nodes = 5;
     int[] weights;
+    int[] graphtypes;
 
-    this(uint number_of_nodes, int[] weights, uint MAX_CALLS, string module_path) {
+    this(uint number_of_nodes, int[] weights, int[] graphtypes, uint MAX_CALLS, string module_path) {
         this.number_of_nodes = number_of_nodes;
         this.module_path = module_path;
         this.node_names = number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
         this.MAX_CALLS = MAX_CALLS;
         this.weights = weights;
+        this.graphtypes = graphtypes;
 
-        network = new TestNetworkT!(NewTestRefinement)(node_names);
+        network = new TestNetworkT!(NewTestRefinement)(node_names, graphtypes);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 100);
         network.random.seed(123456789);
         writeln(network.random);

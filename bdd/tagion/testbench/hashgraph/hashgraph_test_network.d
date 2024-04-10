@@ -324,7 +324,8 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
     }
 
     static int testing;
-    void addNode(Refinement refinement, immutable(ulong) N, const(string) name, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
+    void addNode(Refinement refinement, immutable(ulong) N, const(string) name, 
+        const int graphtype, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
@@ -345,10 +346,12 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
     }
 
     FiberNetwork[Pubkey] networks;
-    this(const(string[]) node_names, int scrap_depth = 0) {
+    this(const(string[]) node_names,  int[] graphtypes, int scrap_depth = 0) {
         authorising = new TestGossipNet;
-        immutable N = node_names.length; //EnumMembers!NodeList.length;
-        node_names.each!(name => addNode(new R, N, name, scrap_depth));
+        immutable N = node_names.length;//EnumMembers!NodeList.length;
+        foreach(name, graphtype; zip(node_names, graphtypes)) { 
+            addNode(new R, N, name, graphtype, scrap_depth);
+        }
     }
 }
 
