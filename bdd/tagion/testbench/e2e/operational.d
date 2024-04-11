@@ -307,18 +307,11 @@ class SendNContractsFromwallet1Towallet2 {
     @Then("wallet1 and wallet2 balances should be updated")
     Document updated() @trusted {
         //dfmt off
-        version(TRT_READ_REQ) {
         const wallet_switch = WalletInterface.Switch(
             trt_read: true, 
             sendkernel: sendkernel,
             send: send);
-        }
-        else {
-        const wallet_switch = WalletInterface.Switch(
-            trt_update : true,
-            sendkernel: sendkernel,
-            send: send);
-        }
+        
 
         enum update_retries = 20;
         enum retry_delay = 5.seconds;

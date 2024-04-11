@@ -26,7 +26,7 @@ DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
 
 # This fixes an error in the app wallet where it would be logged out after each operation
 # By copying the securenet each time an operation is done
-DFLAGS+=$(DVERSION)=NET_HACK
+# DFLAGS+=$(DVERSION)=NET_HACK
 
 # Sets the inputvalidators NNG socket to be blocking
 DFLAGS+=$(DVERSION)=BLOCKING
@@ -38,10 +38,6 @@ DFLAGS+=$(DVERSION)=EPOCH_FIX
 # This allows an experimental nft function to be used without payment
 # The function is not used in this node
 DFLAGS+=$(DVERSION)=WITHOUT_PAYMENT
-
-# Enables the new wallet update request proposed in 
-# https://docs.tagion.org/#/documents/TIPs/cache_proposal_23_jan
-DFLAGS+=$(DVERSION)=TRT_READ_REQ
 
 # Use compile time sorted, serialization of dart branches
 #DFLAGS+=$(DVERSION)=DARTFile_BRANCHES_SERIALIZER
@@ -90,6 +86,10 @@ DFLAGS+=$(DVERSION)=OLD_ORDERING
 
 # Use to check that toHiBON.serialize is equal to .serialize
 #DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
+
+# This is used to intentionaly provoke a crash in the app.
+# Needed for GDB testing.
+# DFLAGS+=$(DVERSION)=PROVOKE_CRASH
 
 # Use to write logs into a file.
 DFLAGS+=$(DDEBUG)=android
