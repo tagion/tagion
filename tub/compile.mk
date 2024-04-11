@@ -26,7 +26,6 @@ endif
 define DO_COMPILE_FLAGS
 $(DFLAGS)\
 $(DFLAGS_DEBUG)\
-$(DFILES)\
 $(addprefix -I,$(DINC))\
 $(addprefix -L,$(LDFLAGS))\
 $(addprefix $(DVERSION)=,$(DVERSIONS))\
@@ -67,7 +66,7 @@ else
 $(DLIB)/%.$(LIBEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(OUTPUT)$@
+	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(DFILES) $(OUTPUT)$@
 endif
 
 #
@@ -91,7 +90,7 @@ $(DBIN)/%:
 	$(PRECMD)
 	$(call log.header, $* :: bin)
 	$(call log.env, DFILES, $(DFILES))
-	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(OUTPUT)$@
+	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(DFILES) $(OUTPUT)$@
 endif
 endif
 	

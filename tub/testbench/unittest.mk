@@ -45,12 +45,11 @@ $(UNITTEST_BIN): LDFLAGS+=$(LIBWASMER)
 endif
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} ${addprefix -L,$(LDFLAGS)} $(OUTPUT)$@
-
+	$(DC) $(UNITTEST_FLAGS) $(DRTFLAGS) $(call DO_COMPILE_FLAGS) ${sort ${filter %.d,$^}} $(OUTPUT)$@
 
 .PHONY: unittest
 
-unitmain: DFLAGS+=$(DVERSION)=unitmain
+unitmain: DVERSIONS+=unitmain
 unitmain: UNITTEST_FLAGS:=$(DDEBUG) $(DDBUG_SYMBOLS)
 unitmain: unittest
 
