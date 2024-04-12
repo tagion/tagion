@@ -87,13 +87,6 @@ DVERSIONS+=OLD_ORDERING
 # Use to check that toHiBON.serialize is equal to .serialize
 DVERSIONS+=TOHIBON_SERIALIZE_CHECK
 
-# This is used to intentionally provoke a crash in the app.
-# Needed for GDB testing.
-# DVERSIONS+=PROVOKE_CRASH
-
-# Use to write logs into a file.
-DDEBUG_VERSIONS+=android
-
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)
