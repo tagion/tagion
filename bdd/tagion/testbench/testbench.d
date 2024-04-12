@@ -37,6 +37,7 @@ int main(string[] args) {
     import mode1 = tagion.testbench.e2e.mode1;
     import test_wave = tagion.testbench.e2e.test_wave;
     import trt_contract = tagion.testbench.trt_contract;
+    import dartutil_test = tagion.testbench.testtools.dartutil_test;
 
     alias alltools = AliasSeq!(
         collector,
@@ -72,6 +73,7 @@ int main(string[] args) {
         test_wave,
         run_fiber_epoch,
         trt_contract,
+        dartutil_test,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

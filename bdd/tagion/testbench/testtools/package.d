@@ -1,3 +1,3 @@
 module tagion.testbench.testtools;
 
-public import dartutil = tagion.testbench.testtools.dartutil;
+public import dartutil_test = tagion.testbench.testtools.dartutil_test;
