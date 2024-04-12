@@ -70,7 +70,7 @@ export LD:=$(ANDROID_TOOLCHAIN)/bin/ld.ldd
 export RANLIB:=$(ANDROID_TOOLCHAIN)/bin/llvm-ranlib
 export STRIP:=$(ANDROID_TOOLCHAIN)/bin/llvm-strip
 
-DFLAGS+=$(DVERSION)=MOBILE
+DVERSIONS+=MOBILE
 CROSS_ENABLED:=1
 CROSS_OS:=android
 

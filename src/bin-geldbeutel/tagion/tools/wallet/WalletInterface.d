@@ -620,32 +620,26 @@ struct WalletInterface {
 
                         verbose("Received response", received.toPretty);
 
-                        version (TRT_READ_REQ) {
-                            bool setRequest(const(HiRPC.Receiver) receiver) {
-                                if (trt_update) {
-                                    return secure_wallet.setResponseUpdateWallet(receiver);
-                                }
-                                else if (update) {
-                                    return secure_wallet.setResponseCheckRead(receiver);
-                                }
-                                else {
-                                    const difference_req = secure_wallet.differenceInIndices(receiver);
-                                    if (difference_req is HiRPC.Sender.init) {
-                                        return true;
-                                    }
-                                    HiRPC.Receiver dart_received = 
-                                        sendHiRPC(sendkernel ? options.dart_address : options.addr ~ options.hirpc_shell_endpoint, difference_req, hirpc);
-
-                                    return secure_wallet.updateFromRead(dart_received);
-                                }
+                        bool setRequest(const(HiRPC.Receiver) receiver) {
+                            if (trt_update) {
+                                return secure_wallet.setResponseUpdateWallet(receiver);
                             }
+                            else if (update) {
+                                return secure_wallet.setResponseCheckRead(receiver);
+                            }
+                            else {
+                                const difference_req = secure_wallet.differenceInIndices(receiver);
+                                if (difference_req is HiRPC.Sender.init) {
+                                    return true;
+                                }
+                                HiRPC.Receiver dart_received = 
+                                    sendHiRPC(sendkernel ? options.dart_address : options.addr ~ options.hirpc_shell_endpoint, difference_req, hirpc);
 
-                            bool res = setRequest(received);
+                                return secure_wallet.updateFromRead(dart_received);
+                            }
                         }
-                        else {
-                            bool res = trt_update ? secure_wallet.setResponseUpdateWallet(
-                                    received) : secure_wallet.setResponseCheckRead(received);
-                        }
+
+                        bool res = setRequest(received);
                         writeln(res ? "wallet updated successfully" : "wallet not updated successfully");
                         save_wallet = true;
                     }

@@ -2,6 +2,11 @@
 
 ## In Progress
 
+### CLI testing
+Description: Create proposal for how to test CLI-tools
+
+Assignee: ib
+
 
 ### Hashgraph viewer
 Description: Be able in frontend via query parameter or other in order to specify tagionshell url for websocket that it should connect to.
@@ -18,8 +23,9 @@ Assignee: ab
 ### Hashgraph Consensus bug week 2
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
-- [] Create callback array and reassign pointer on fiber switch
-- [] Show all errors for multi-view
+- [X] Create callback array and reassign pointer on fiber switch
+- [] Show all errors for multi-view. (having problems with this)
+- [] Create Event overload (CBR)
 - [] profit?
 
 ### Hashgraph monitor updates
@@ -48,30 +54,6 @@ This it should filter out all which matches the pattern.
 Assignee: ib
 
 
-### Contract storage behaviour test
-Description: 
-
-DONE
-Scenario: Proper contract
-* Given a network
-* Given a correctly signed contract
-* When the contract is sent to the network and goes through
-* Then the contract should be saved in the TRT 
-
-WIP
-Scenario: Invalid contract
-* Given a network
-* Given a incorrect contract which fails in the Transcript
-* When the contract is sent to the network 
-* Then it should be rejected
-* Then the contract should not be stored in the TRT
-
-[] - Add function in SecureWallet.d which takes contract and produces hirpc for trt.dartRead of the contract hash.
-[] - Check functions should show the amount and expected amount on error.
-
-Labels: [Tracing, TRT]
-
-Assignee: ib
 
 ## Backlog
 
@@ -120,6 +102,31 @@ Assignee: lr
 
 ## Done
 
+### Contract storage behaviour test
+Description: 
+
+DONE
+Scenario: Proper contract
+* Given a network
+* Given a correctly signed contract
+* When the contract is sent to the network and goes through
+* Then the contract should be saved in the TRT 
+
+DONE
+Scenario: Invalid contract
+* Given a network
+* Given a incorrect contract which fails in the Transcript
+* When the contract is sent to the network 
+* Then it should be rejected
+* Then the contract should not be stored in the TRT
+
+[X] - Add function in SecureWallet.d which takes contract and produces hirpc for trt.dartRead of the contract hash.
+[X] - Check functions should show the amount and expected amount on error.
+
+Labels: [Tracing, TRT]
+
+Assignee: ib
+
 ## Template
 ### Task Title
 Description: Brief description of the task.
@@ -134,3 +141,4 @@ Labels (optional): [Label 1], [Label 2]
 Priority (optional): High/Medium/Low
 
 Due Date: YYYY-MM-DD
+

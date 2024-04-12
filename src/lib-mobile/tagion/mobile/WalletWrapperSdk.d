@@ -72,10 +72,45 @@ extern (C) {
     export const(char)* tagion_revision() {
         return revision_text.toStringz;
     }
+    
+    version(Android)
+    enum android_fdsan_error_level {
+      // No errors.
+      ANDROID_FDSAN_ERROR_LEVEL_DISABLED,
+      // Warn once(ish) on error, and then downgrade to ANDROID_FDSAN_ERROR_LEVEL_DISABLED.
+      ANDROID_FDSAN_ERROR_LEVEL_WARN_ONCE,
+      // Warn always on error.
+      ANDROID_FDSAN_ERROR_LEVEL_WARN_ALWAYS,
+      // Abort on error.
+      ANDROID_FDSAN_ERROR_LEVEL_FATAL,
+    }
+
+    version(Android)
+    void disable_fdsan() {
+        import core.sys.posix.dlfcn;
+        void* lib_handle = dlopen("libc.so", RTLD_LAZY);
+        if (lib_handle is null) {
+            return;
+        }
+        scope(exit) {
+            dlclose(lib_handle);
+        }
+
+        alias func = void function(android_fdsan_error_level); 
+        const set_fdsan_error_level = cast(func) dlsym(lib_handle, "android_fdsan_set_error_level"); 
+
+        if(set_fdsan_error_level is null) {
+            return;
+        }
+        set_fdsan_error_level(android_fdsan_error_level.ANDROID_FDSAN_ERROR_LEVEL_DISABLED);
+    }
 
     // Staritng d-runtime
     export static int64_t start_rt() {
         if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
+            version(Android) {
+                disable_fdsan();
+            }
             __runtimeStatus = DrtStatus.STARTED;
             return rt_init;
         }
@@ -121,6 +156,11 @@ extern (C) {
             const uint32_t mnemonicLen,
             const uint8_t* saltPtr,
             const uint32_t saltLen) nothrow {
+        // For testing purposes.
+        version(PROVOKE_CRASH) {
+            int* ptr = null; 
+            *ptr = 10;
+        }
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
