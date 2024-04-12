@@ -32,6 +32,8 @@ alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias NodeSend = Msg!"nodeSend";
 /// [FROM: Node Interface] HiRPC from other node
 alias NodeRecv = Msg!"nodeRecv";
+alias NodeAIOTask = Msg!"nodeaiotask";
+alias NodeConn = Msg!"nodeConnectionEstablished";
 
 /// [FROM: DART, TO: Replicator] Send the produced recorder for replication
 alias SendRecorder = Msg!"SendRecorder";

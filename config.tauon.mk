@@ -50,8 +50,15 @@ TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/c/secp256k1.di
 TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/c/secp256k1_ecdh.di
 TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/c/secp256k1_schnorrsig.di
 TAUON_DFILES+=$(DSRC)/lib-crypto/tagion/crypto/secp256k1/c/secp256k1_extrakeys.di
+
+
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/HiBON.d
 
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/Version.d
+
+### C-api
+TAUON_DINC+=$(DSRC)/lib-api
+TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/document.d 
+TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/errors.d 
 

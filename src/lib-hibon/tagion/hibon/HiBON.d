@@ -113,21 +113,9 @@ static size_t size(U)(const(U[]) array) pure {
      The byte stream
      +/
     immutable(ubyte[]) serialize() const pure {
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::serialize begin\n");
-        }
         AppendBuffer buffer;
         buffer.reserve(serialize_size);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::serialize buffer.reserve\n");
-        }
         append(buffer);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::serialize append(buffer)\n");
-        }
         return buffer.data;
     }
 
@@ -135,33 +123,13 @@ static size_t size(U)(const(U[]) array) pure {
     //  Helper function to append
     //  +/
     private void append(ref scope AppendBuffer buffer) const pure {
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append begin\n");
-        }
         if (_members[].empty) {
             buffer ~= ubyte(0);
             return;
         }
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append _members[].empty false\n");
-        }
         const size = cast(uint) _members[].map!(a => a.size).sum;
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append size\n");
-        }
         buffer ~= LEB128.encode(size);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append LEB128.encode(size)\n");
-        }
         _members[].each!(a => a.append(buffer));
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("HiBON::append _members[].each!(a => a.append(buffer))\n");
-        }
     }
 
     /++
