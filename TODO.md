@@ -56,6 +56,9 @@ This it should filter out all which matches the pattern.
 Assignee: ib
 
 
+### Impklement wavefront for nodeinterface
+description: nodes should be able to communicate p2p on a half-duplex communication using the wavefront protocol
+Assignee: lr
 
 ## Backlog
 
@@ -93,10 +96,6 @@ For all external Documents
 Like the inputvalidator...
 
 Test should also be made for NNG buffer overrun!
-
-### Impklement wavefront for nodeinterface
-description: nodes should be able to communicate p2p on a half-duplex communication using the wavefront protocol
-Assignee: lr
 
 ### Daily operational test
 description: Add a github ci script which activates the operational test once a day
