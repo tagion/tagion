@@ -4,6 +4,8 @@
 
 ### CLI testing
 Description: Create proposal for how to test CLI-tools
+[X] Create proposal
+[] Create test using pytest and bdd dlang
 
 Assignee: ib
 
@@ -25,7 +27,7 @@ Description: After very many epochs a consensus bug is incurred where the epochs
 
 - [X] Create callback array and reassign pointer on fiber switch
 - [] Show all errors for multi-view. (having problems with this)
-- [] Create Event overload (CBR)
+- [X] Create Event overload (CBR)
 - [] profit?
 
 ### Hashgraph monitor updates
@@ -54,6 +56,9 @@ This it should filter out all which matches the pattern.
 Assignee: ib
 
 
+### Impklement wavefront for nodeinterface
+description: nodes should be able to communicate p2p on a half-duplex communication using the wavefront protocol
+Assignee: lr
 
 ## Backlog
 
@@ -91,10 +96,6 @@ For all external Documents
 Like the inputvalidator...
 
 Test should also be made for NNG buffer overrun!
-
-### Impklement wavefront for nodeinterface
-description: nodes should be able to communicate p2p on a half-duplex communication using the wavefront protocol
-Assignee: lr
 
 ### Daily operational test
 description: Add a github ci script which activates the operational test once a day

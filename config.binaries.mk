@@ -214,7 +214,7 @@ $(DBIN)/tagion: nng secp256k1
 $(DBIN)/tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG) $(LIBWASMER)
 $(DBIN)/tagion: DFILES::=$(DSRC)/bin-tools/tagion/tools/tools.d
 $(DBIN)/tagion: DINC+=$(SRC_DINC)
-$(DBIN)/tagion: DFLAGS+=$(DVERSION)=ONETOOL
+$(DBIN)/tagion: DVERSIONS+=ONETOOL
 $(call DO_BIN,tagion)
 
 #
@@ -223,7 +223,7 @@ $(call DO_BIN,tagion)
 COLLIDER::=$(DBIN)/collider
 $(COLLIDER): DFILES::=$(DSRC)/bin-collider/tagion/tools/collider/collider.d
 $(COLLIDER): DINC+=$(SRC_DINC)
-$(COLLIDER): DFLAGS+=$(DVERSION)=ONETOOL
+$(COLLIDER): DVERSIONS+=ONETOOL
 $(call DO_BIN,collider)
 
 all-tools: $(TAGION_TOOLS)
