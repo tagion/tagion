@@ -224,13 +224,6 @@ struct HiRPC {
                 Callers!T.canFind(method.name);
         }
 
-        bool verify(const Document doc) {
-            if (pubkey.length) {
-                check(signature.length !is 0, "Message Post has a public key without signature");
-            }
-            return true;
-        }
-
         static if (DIRECTION is Direction.RECEIVE) {
             @exclude protected Message _message;
             @exclude immutable SignedState signed;
