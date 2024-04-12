@@ -52,13 +52,10 @@ int _main(string[] args) {
             "not", "Filter out match", &not_flag,
             "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
             "R|recursive", "Enables recursive search", &recursive_flag,
-            "s|subhibon", "Output only subhibon that match criteria", &subhibon_flag,
+            "s|subhibon", "Output only subhibon that match criteria (not working with --not flag)", &subhibon_flag,
         );
 
-        if (not_flag) {
-            // Can't output subhibon with "not" filtering
-            subhibon_flag = false;
-        }
+        tools.check(!(not_flag && subhibon_flag), "Can't handle --not and --subhibon simultaneously");
 
         bool withNot(bool flag) {
             return not_flag ? (!flag) : flag;
