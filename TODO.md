@@ -4,6 +4,8 @@
 
 ### CLI testing
 Description: Create proposal for how to test CLI-tools
+[X] Create proposal
+[] Create test using pytest and bdd dlang
 
 Assignee: ib
 
@@ -25,7 +27,7 @@ Description: After very many epochs a consensus bug is incurred where the epochs
 
 - [X] Create callback array and reassign pointer on fiber switch
 - [] Show all errors for multi-view. (having problems with this)
-- [] Create Event overload (CBR)
+- [X] Create Event overload (CBR)
 - [] profit?
 
 ### Hashgraph monitor updates
