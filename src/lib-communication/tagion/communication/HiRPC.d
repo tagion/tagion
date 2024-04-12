@@ -10,6 +10,7 @@ import tagion.basic.Types : Buffer;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey, Signature;
+import tagion.script.standardnames;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONException;
@@ -193,9 +194,10 @@ struct HiRPC {
         static assert(Message.response.id.alignof == Message.id.alignof);
         static assert(Message.error.id.alignof == Message.id.alignof);
 
+        pragma(msg, __MODULE__ ~ ": Should $sign be the same as standardnames.signed?");
         @label("$sign") @optional @(filter.Initialized) Signature signature; /// Signature of the message
-        @label("$Y") @optional @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
-        @label("$msg") Document message; /// the HiRPC message
+        @label(StdNames.owner) @optional @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
+        @label(StdNames.msg) Document message; /// the HiRPC message
         @exclude immutable Type type;
 
         @nogc const pure nothrow {
