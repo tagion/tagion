@@ -29,8 +29,7 @@ $(DFLAGS_DEBUG)\
 $(addprefix -I,$(DINC))\
 $(addprefix -L,$(LDFLAGS))\
 $(addprefix $(DVERSION)=,$(DVERSIONS))\
-$(addprefix $(DDEBUG)=,$(DDEBUG_VERSIONS))\
-$(LIBS) $(OBJS)
+$(addprefix $(DDEBUG)=,$(DDEBUG_VERSIONS))
 endef
 
 #
