@@ -19,6 +19,7 @@ enum StdNames {
     archive_type = "$T",
     archive = "$a",
     contract = "#contract",
+    msg = "$msg",
 }
 
 enum TagionDomain = "tagion";
