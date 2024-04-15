@@ -8,20 +8,25 @@ import std.exception;
 import std.zlib;
 import std.algorithm.searching: find, boyerMooreFinder;
 
-auto i2a(T)(ref T val) 
+auto i2a(T)(ref T val, bool asis = false) pure
 {
-    /* T norm = littleEndian(val); */
-    return cast(ubyte[T.sizeof])(cast(ubyte*) &val)[0 .. T.sizeof];
+    return (endian == Endian.bigEndian && !asis) ?
+        nativeToLittleEndian!T(val) :
+        cast(ubyte[T.sizeof])(cast(ubyte*) &val)[0 .. T.sizeof];
 }
 
-void makeFromLittleEndian(T)(ref T value) {
+void makeFromLittleEndian(T)(ref T value) pure {
     if (endian == Endian.bigEndian) {
-        value = littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(value));
+        value = littleEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(value, true));
     }
 }
 
 T fromLittleEndian(T)(T val) pure {
-    return (endian == Endian.bigEndian) ? littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
+    return (endian == Endian.bigEndian) ? littleEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(val, true)) : val;  
+}
+    
+T fromBigEndian(T)(T val) pure {
+    return (endian == Endian.bigEndian) ? bigEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(val, true)) : val;  
 }
 
 
@@ -68,11 +73,11 @@ struct Envelope {
         ubyte[4] hdrsum;
 
         ubyte[] toBuffer() pure {
-            return (magic ~ i2a(schema) ~ i2a(level) ~ i2a(datsize) ~ datsum ~ hdrsum).dup;
+            return (magic ~ i2a!uint(schema) ~ i2a!uint(cast(uint)level) ~ i2a!ulong(datsize) ~ datsum ~ hdrsum).dup;
         }
 
         ubyte[] getsum() pure {
-            return crc32Of( magic ~ i2a(schema) ~ i2a(level) ~ i2a(datsize) ~ datsum ).dup;
+            return crc32Of( magic ~ i2a!uint(schema) ~ i2a!uint(cast(uint)level) ~ i2a!ulong(datsize) ~ datsum ).dup;
         }
         
         static EnvelopeHeader fromBuffer (const ubyte[] raw) pure {
@@ -150,7 +155,7 @@ version(unittest) {
 
     void makeFromBigEndian(T)(ref T value) {
         if (endian == Endian.littleEndian) {
-            value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(value));
+            value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(value));
         }
     }
 
@@ -158,9 +163,6 @@ version(unittest) {
         return (endian == Endian.littleEndian) ? *cast(T*)nativeToBigEndian(val).ptr : val;  
     }
 
-    T fromBigEndian(T)(T val) pure {
-        return (endian == Endian.littleEndian) ? bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
-    }
 }
 
 unittest {
@@ -171,6 +173,7 @@ unittest {
     uint x2 = x1;
     uint x3 = 0;
     uint x4 = x1;
+    
     static if (endian == Endian.littleEndian) {
         makeFromBigEndian!uint(x2);
         x3 = x2;
