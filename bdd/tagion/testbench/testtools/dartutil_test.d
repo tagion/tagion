@@ -1,4 +1,4 @@
-module bdd.tagion.testbench.testtools.dartutil_test;
+module tagion.testbench.testtools.dartutil_test;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -8,7 +8,6 @@ import tagion.testbench.tools.Environment;
 import std.file;
 import std.path : buildPath;
 import std.stdio;
-import std.process;
 import std.digest : toHexString;
 import std.ascii : LetterCase;
 import std.string : strip;
@@ -24,6 +23,7 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.hibon.Document;
 import tagion.behaviour.BehaviourException : check;
+import tagion.testbench.testtools.helper_functions;
 
 mixin Main!(_main);
 
@@ -87,13 +87,7 @@ class Bullseye {
 
     @When("dartutil is called with given input file")
     Document inputFile() {
-        auto executable = env.dbin ~ "/" ~ dartutil_name;
-
-        auto result = execute([executable, this.dart_path, "--eye"]);
-        check(result.status == 0, format("Execution failed. Error: %s", result.output));
-
-        this.output = result.output.strip;
-
+        this.output = execute_tool(dartutil_name, [this.dart_path, "--eye"]).strip;
         return result_ok;
     }
 
@@ -102,7 +96,7 @@ class Bullseye {
         string expected_eye = db.fingerprint[].toHexString!(LetterCase.lower);
         string actual_eye = this.output.strip(eye_prefix);
 
-        check(expected_eye == actual_eye, format("Bullseye is not as expected. Expected: %s Actual: %s", expected_eye, actual_eye));
+        check(expected_eye == actual_eye, format("Bullseye is not as expected. Expected: {%s} Actual: {%s}", expected_eye, actual_eye));
 
         return result_ok;
     }
