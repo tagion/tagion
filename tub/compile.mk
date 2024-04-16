@@ -30,7 +30,7 @@ $(addprefix -I,$(DINC))\
 $(addprefix -L,$(LDFLAGS))\
 $(addprefix $(DVERSION)=,$(DVERSIONS))\
 $(addprefix $(DDEBUG)=,$(DDEBUG_VERSIONS))\
-$(LIBS) $(OBJS)
+$(if $(filter-out 1,$(USE_SYSTEM_LIBS)),$(LIBS) $(OBJS))
 endef
 
 #
