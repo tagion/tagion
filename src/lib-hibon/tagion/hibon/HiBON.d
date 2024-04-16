@@ -113,63 +113,23 @@ static size_t size(U)(const(U[]) array) pure {
      The byte stream
      +/
     immutable(ubyte[]) serialize() const pure {
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("serialize start\n");
-        }
         AppendBuffer buffer;
         buffer.reserve(serialize_size);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            import std.string : format;
-            write_log(format("serialize buffer.reserve %d\n", serialize_size));
-        }
         append(buffer);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            import std.string : format;
-            write_log(format("serialize append(buffer) %d\n", buffer.data.length));
-        }
-        auto data = buffer.data;
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            import std.string : format;
-            write_log(format("serialize buffer.data %d\n", data.length));
-        }
-        return data;
+        return buffer.data;
     }
 
     // /++
     //  Helper function to append
     //  +/
     private void append(ref scope AppendBuffer buffer) const pure {
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append begin\n");
-        }
         if (_members[].empty) {
             buffer ~= ubyte(0);
             return;
         }
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append _members[].empty false\n");
-        }
         const size = cast(uint) _members[].map!(a => a.size).sum;
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append size\n");
-        }
         buffer ~= LEB128.encode(size);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append LEB128.encode(size)\n");
-        }
         _members[].each!(a => a.append(buffer));
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append _members[].each!(a => a.append(buffer))\n");
-        }
     }
 
     /++

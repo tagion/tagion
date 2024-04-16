@@ -73,44 +73,9 @@ extern (C) {
         return revision_text.toStringz;
     }
     
-    version(Android)
-    enum android_fdsan_error_level {
-      // No errors.
-      ANDROID_FDSAN_ERROR_LEVEL_DISABLED,
-      // Warn once(ish) on error, and then downgrade to ANDROID_FDSAN_ERROR_LEVEL_DISABLED.
-      ANDROID_FDSAN_ERROR_LEVEL_WARN_ONCE,
-      // Warn always on error.
-      ANDROID_FDSAN_ERROR_LEVEL_WARN_ALWAYS,
-      // Abort on error.
-      ANDROID_FDSAN_ERROR_LEVEL_FATAL,
-    }
-
-    version(Android)
-    void disable_fdsan() {
-        import core.sys.posix.dlfcn;
-        void* lib_handle = dlopen("libc.so", RTLD_LAZY);
-        if (lib_handle is null) {
-            return;
-        }
-        scope(exit) {
-            dlclose(lib_handle);
-        }
-
-        alias func = void function(android_fdsan_error_level); 
-        const set_fdsan_error_level = cast(func) dlsym(lib_handle, "android_fdsan_set_error_level"); 
-
-        if(set_fdsan_error_level is null) {
-            return;
-        }
-        set_fdsan_error_level(android_fdsan_error_level.ANDROID_FDSAN_ERROR_LEVEL_DISABLED);
-    }
-
     // Staritng d-runtime
     export static int64_t start_rt() {
         if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
-            version(Android) {
-                disable_fdsan();
-            }
             __runtimeStatus = DrtStatus.STARTED;
             return rt_init;
         }
@@ -129,10 +94,6 @@ extern (C) {
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
     export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("WalletWrapperSdk wallet_storage_init");
-        } 
         const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
         if (directoryPath.length > 0) {
             // Full path to stored wallet data.
@@ -156,11 +117,6 @@ extern (C) {
             const uint32_t mnemonicLen,
             const uint8_t* saltPtr,
             const uint32_t saltLen) nothrow {
-        // For testing purposes.
-        version(PROVOKE_CRASH) {
-            int* ptr = null; 
-            *ptr = 10;
-        }
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
@@ -739,11 +695,6 @@ extern (C) {
     static sdt_t dummy_time;
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
-
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("GET HISTORY");
-        }
         version (WALLET_HISTORY_DUMMY) {
             if (dummy_time == sdt_t.init) {
                 dummy_time = currentTime();
@@ -1151,13 +1102,6 @@ struct WalletStorage {
 
         wallet_data_path = walletDataPath.idup;
         import std.file;
-        debug(android) {
-            import tagion.mobile.mobilelog : log_file;
-            writefln("creating file at %s", wallet_data_path);
-            log_file = buildPath(wallet_data_path, "logfile.txt");
-            import std.file : write;
-            log_file.write("----- LOG START -----\n");
-        }
         if (!wallet_data_path.exists) {
             wallet_data_path.mkdirRecurse;
         }
@@ -1178,14 +1122,9 @@ struct WalletStorage {
 
     void write() const {
         // Create a hibon for wallet data.
-        debug(android){
-           import tagion.mobile.mobilelog : write_log;
-            write_log("write start\n");
-        }
         path(devicefile).fwrite(wallet.pin);
         path(accountfile).fwrite(wallet.account);
         path(walletfile).fwrite(wallet.wallet);
-
     }
 
     void read() {
