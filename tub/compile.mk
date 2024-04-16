@@ -66,7 +66,7 @@ else
 $(DLIB)/%.$(LIBEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(DFILES) $(OUTPUT)$@
+	$(DC) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(DFILES) $(OUTPUT)$@
 endif
 
 #
