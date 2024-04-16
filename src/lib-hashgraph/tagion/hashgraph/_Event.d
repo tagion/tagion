@@ -378,6 +378,7 @@ class _Event : current_event.Event {
             return true;
         }
 
+        pragma(msg, "why is pseudotime used for calculating see through candidates?")
         auto see_through_candidates = b[].retro
             .until!(e => e.pseudo_time_counter != b.pseudo_time_counter)
             .filter!(e => e._son)
