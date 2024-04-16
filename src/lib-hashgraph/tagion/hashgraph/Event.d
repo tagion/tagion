@@ -120,11 +120,11 @@ class Event {
             return _count;
         }
 
-        private {
+        // private {
             BitMask _vote_on_earliest_witnesses;
             BitMask _prev_strongly_seen_witnesses;
             BitMask _prev_seen_witnesses;
-        }
+        // }
 
         package void prev_strongly_seen_witnesses(ref BitMask mask) pure nothrow {
             _prev_strongly_seen_witnesses = mask;
@@ -310,7 +310,7 @@ class Event {
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
-    package void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
+    void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
         Event voting_event = voting_round._events[vote_node_id];
 

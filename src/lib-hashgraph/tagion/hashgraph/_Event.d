@@ -282,8 +282,7 @@ class _Event : current_event.Event {
         pseudo_time_counter = 0;
 
         _witness.prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness.prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
-                .round.number))));
+        _witness.prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
         }
@@ -305,7 +304,6 @@ class _Event : current_event.Event {
             _youngest_son_ancestors = _mother._youngest_son_ancestors;
             return;
         }
-
         _youngest_son_ancestors = _mother._youngest_son_ancestors.dup();
         _youngest_son_ancestors[node_id] = this;
         iota(hashgraph.node_size)
@@ -315,10 +313,9 @@ class _Event : current_event.Event {
             .each!(n => _youngest_son_ancestors[n] = _father._youngest_son_ancestors[n]);
     }
 
-    version(none)
-    package void calc_vote(_HashGraph hashgraph, size_t vote_node_id) {
+    override void calc_vote(current_hashgraph.HashGraph hashgraph, size_t vote_node_id) {
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
-        Event voting_event = voting_round._events[vote_node_id];
+        auto voting_event = voting_round._events[vote_node_id];
 
         if (!higher(round.number, voting_round.number)) {
             return;
