@@ -276,8 +276,8 @@ class _Event : current_event.Event {
             return;
         }
         // we have a witness event and need to create a witness and calculate through the masks
-        hashgraph._rounds.next_round(this);
         _witness = new Witness(this, hashgraph.node_size);
+        hashgraph._rounds.next_round(this);
 
         pseudo_time_counter = 0;
 
