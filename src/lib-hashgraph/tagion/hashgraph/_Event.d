@@ -284,12 +284,6 @@ class _Event : current_event.Event {
         _witness.prev_strongly_seen_witnesses = strongly_seen_nodes;
         _witness.prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
                 .round.number))));
-        if (!strongly_seen_nodes.isMajority(hashgraph)) {
-            _round.add(this);
-        }
-        with (hashgraph) {
-            log.event(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
-        }
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
         }
@@ -315,10 +309,10 @@ class _Event : current_event.Event {
         _youngest_son_ancestors = _mother._youngest_son_ancestors.dup();
         _youngest_son_ancestors[node_id] = this;
         iota(hashgraph.node_size)
-            .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
-            .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
-            .order > _youngest_son_ancestors[node_id].order)
-            .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
+            .filter!(n => _father._youngest_son_ancestors[n] !is null)
+            .filter!(n => _youngest_son_ancestors[n] is null || _father._youngest_son_ancestors[n]
+            .order > _youngest_son_ancestors[n].order)
+            .each!(n => _youngest_son_ancestors[n] = _father._youngest_son_ancestors[n]);
     }
 
     version(none)
