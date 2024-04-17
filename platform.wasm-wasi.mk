@@ -51,10 +51,10 @@ WASI_LIB+=$(LDC_RUNTIME_BUILD)/libdruntime-ldc.a
 WASI_LIB+=$(LDC_RUNTIME_BUILD)/libphobos2-ldc.a
 WASI_SYSROOT:=$(WASI_SDK_ROOT)/$(WASI_SYSROOT)
 WASI_LIB+=$(WASI_SYSROOT)/libc.a
-WASI_LIB+=$(WASI_SYSROOT)/librt.a
-WASI_LIB+=$(WASI_SYSROOT)/libutil.a
-WASI_LIB+=$(WASI_SYSROOT)/libcrypt.a
-WASI_LIB+=$(WASI_SYSROOT)/libdl.a
+#WASI_LIB+=$(WASI_SYSROOT)/librt.a
+#WASI_LIB+=$(WASI_SYSROOT)/libutil.a
+#WASI_LIB+=$(WASI_SYSROOT)/libcrypt.a
+#WASI_LIB+=$(WASI_SYSROOT)/libdl.a
 
 export AR:=$(WASI_BIN)/llvm-ar
 export AS:=$(WASI_BIN)/llvm-as

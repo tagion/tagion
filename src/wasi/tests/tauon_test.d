@@ -14,8 +14,8 @@ import tagion.crypto.random.random;
 import tagion.crypto.secp256k1.c.secp256k1;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.utils.Miscellaneous : decode;
-import tagion.api.document;
-import tagion.api.errors;
+//import tagion.api.document;
+//import tagion.api.errors;
 
 static this() {
     writefln(" should call this\n");

@@ -610,7 +610,7 @@ class BlockFile {
 
     /** 
      * Allocates new document
-     * Does not acctually update the BlockFile just reserves new block's
+     * Does not actually update the BlockFile just reserves new block's
      * Params:
      *   doc = Document to be reserved and allocated
      * Returns: a pointer to the blocksegment.

@@ -21,7 +21,7 @@ import std.stdio;
 import std.typecons;
 import std.sumtype;
 
-import tagion.GlobalSignals : segment_fault, stopsignal;
+import tagion.GlobalSignals;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension, hasExtension;
@@ -53,7 +53,7 @@ void signal_handler(int signal) nothrow {
             printf("Terminating\n");
             exit(1);
         }
-        stopsignal.set;
+        stopsignal.setIfInitialized;
         abort = true;
         printf("Received stop signal, telling services to stop\n");
     }

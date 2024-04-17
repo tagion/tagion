@@ -22,7 +22,7 @@ $(TESTBENCH): $(shell find $(BDD) -name "*.d")
 $(TESTBENCH): bddfiles
 ifdef ENABLE_WASMER
 $(TESTBENCH): libwasmer
-$(TESTBENCH): LDFLAGS+=$(LIBWASMER)
+$(TESTBENCH): LDFLAGS+=$(LD_WASMER)
 endif
 
 testbench: $(DBIN)/testbench
