@@ -195,7 +195,7 @@ int _main(string[] args) {
     auto feature = automation!(transaction);
     feature.SendAContractWithOneOutputsThroughTheShell(shell_opts, wallets[0], wallets[1]);
     feature.run;
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     abort = true;
     Thread.sleep(5.seconds);
     return 0;

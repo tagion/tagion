@@ -171,6 +171,6 @@ int _main(string[] args) {
     feature.BillAge(node_opts[3], wallets[13], wallets[14]);
     feature.run();
 
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     return 0;
 }

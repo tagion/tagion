@@ -168,6 +168,6 @@ int _main(string[] args) {
     feature.InvalidContract(node_opts[0], wallets[2], wallets[3]);
     feature.run();
 
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     return 0;
 }

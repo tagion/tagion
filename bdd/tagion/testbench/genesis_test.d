@@ -192,6 +192,6 @@ int _main(string[] args) {
     feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch);
     feature.run;
 
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     return 0;
 }
