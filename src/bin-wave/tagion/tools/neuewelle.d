@@ -53,7 +53,7 @@ void signal_handler(int signal) nothrow {
             printf("Terminating\n");
             exit(1);
         }
-        stopsignal.set;
+        stopsignal.setIfInitialized;
         abort = true;
         printf("Received stop signal, telling services to stop\n");
     }

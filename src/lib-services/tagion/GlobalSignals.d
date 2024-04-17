@@ -1,5 +1,7 @@
 module tagion.GlobalSignals;
 
+import std.compiler;
+
 import core.stdc.signal;
 import core.stdc.stdio;
 import core.stdc.stdlib : exit, system;
@@ -22,6 +24,14 @@ static if (ver.Posix && not_unittest) {
 }
 
 __gshared Event stopsignal;
+
+// Event.set renamed to setIfInitialized in 2.108
+static if (version_minor < 108) {
+    void setIfInitialized(ref Event e) {
+        e.set();
+    }
+}
+
 static shared bool abort = false;
 
 private shared bool fault;
