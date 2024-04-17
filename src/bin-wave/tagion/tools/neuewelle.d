@@ -21,7 +21,7 @@ import std.stdio;
 import std.typecons;
 import std.sumtype;
 
-import tagion.GlobalSignals : segment_fault, stopsignal;
+import tagion.GlobalSignals;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension, hasExtension;

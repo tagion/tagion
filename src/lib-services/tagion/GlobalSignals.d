@@ -27,7 +27,7 @@ __gshared Event stopsignal;
 
 // Event.set renamed to setIfInitialized in 2.108
 static if (version_minor < 108) {
-    void setIfInitialized(ref Event e) {
+    void setIfInitialized(ref Event e) nothrow {
         e.set();
     }
 }
