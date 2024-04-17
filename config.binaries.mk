@@ -160,7 +160,7 @@ $(call DO_BIN,vergangenheit)
 # Tagion virtual machine utility
 #
 $(DBIN)/tvmutil: libwasmer
-$(DBIN)/tvmutil: LDFLAGS+=$(LIBWASMER) 
+$(DBIN)/tvmutil: LDFLAGS+=$(LD_WASMER) 
 $(DBIN)/tvmutil: DINC+=$(SRC_DINC)
 $(DBIN)/tvmutil: DFILES::=$(DSRC)/bin-tvmutil/tagion/tools/tvmutil/tvmutil.d
 $(call DO_BIN,tvmutil)
@@ -209,9 +209,10 @@ $(call DO_BIN,subscriber)
 #
 ifdef ENABLE_WASMER
 $(DBIN)/tagion: libwasmer
+$(DBIN)/tagion: LDFLAGS+=$(LD_WASMER)
 endif
 $(DBIN)/tagion: nng secp256k1 
-$(DBIN)/tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG) $(LIBWASMER)
+$(DBIN)/tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 $(DBIN)/tagion: DFILES::=$(DSRC)/bin-tools/tagion/tools/tools.d
 $(DBIN)/tagion: DINC+=$(SRC_DINC)
 $(DBIN)/tagion: DVERSIONS+=ONETOOL
