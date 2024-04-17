@@ -9,9 +9,6 @@ ifeq ($(PLATFORM),$(LINUX_X86_64))
 
 $(UNITTEST_BIN): $(DFILES)
 
-proto-unittest-build: LIBS+=$(LIBSECP256K1)
-proto-unittest-build: LIBS+=$(LIBNNG)
-
 unittest: proto-unittest-run
 
 build-unittest: proto-unittest-build
