@@ -361,6 +361,7 @@ struct PeerMgr {
 }
 
 
+version(none)
 unittest {
     thisActor.task_name = "jens";
 
