@@ -331,7 +331,7 @@ class _Event : current_event.Event {
         auto votes = _witness._prev_strongly_seen_witnesses[].map!(
                 i => round.previous.events[i]._witness._vote_on_earliest_witnesses[vote_node_id]);
         const yes_votes = votes.count;
-        const no_votes = votes.walkLength - yes_votes;
+        const no_votes = hashgraph.node_size - yes_votes;
         _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
@@ -378,7 +378,7 @@ class _Event : current_event.Event {
             return true;
         }
 
-        pragma(msg, "why is pseudotime used for calculating see through candidates?")
+        pragma(msg, "why is pseudotime used for calculating see through candidates?");
         auto see_through_candidates = b[].retro
             .until!(e => e.pseudo_time_counter != b.pseudo_time_counter)
             .filter!(e => e._son)
