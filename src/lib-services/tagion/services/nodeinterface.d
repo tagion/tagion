@@ -103,7 +103,7 @@ struct Peer {
         try {
             thread_attachThis();
             This* _this = cast(This*)ctx;
-            check(_this !is null, "did not get this* throught the ctx");
+            check(_this !is null, "did not get this* through the ctx");
 
             int rc = nng_aio_result(_this.aio);
             if(rc != nng_errno.NNG_OK) {

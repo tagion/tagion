@@ -28,7 +28,7 @@ struct NetworkNameCard {
 @recordType("$@NRC")
 struct NetworkNameRecord {
     @label("$name") string name; /// Hash of the NNC.name
-    @label(StdNames.previous) Fingerprint previous; /// Hash pointer to the previuos NRC
+    @label(StdNames.previous) Fingerprint previous; /// Hash pointer to the previous NRC
     @label("$index") uint index; /// Current index previous.index+1
     @label("$payload") @optional Document payload;
     mixin HiBONRecord;
