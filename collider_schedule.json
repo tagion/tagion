@@ -231,6 +231,12 @@
       "envs": {},
       "stages": ["acceptance", "tools", "dartutil_test"],
       "timeout": 0.0
+    },
+    "hirep_test": {
+      "args": [],
+      "envs": {},
+      "stages": ["acceptance", "tools", "hirep_test"],
+      "timeout": 0.0
     }
   }
 }

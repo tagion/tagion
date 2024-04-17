@@ -50,7 +50,6 @@ alias FeatureContext = Tuple!(
     FeatureGroup*, "result"
 );
 
-enum dartutil_name = "dartutil";
 enum eye_prefix = "EYE: ";
 
 @safe @Scenario("Bullseye",
@@ -61,7 +60,7 @@ class Bullseye {
     string output;
 
     this(string module_path) {
-        this.dart_path = module_path ~ "/dartutil_test.drt";
+        this.dart_path = module_path ~ "/eye_test.drt";
     }
 
     @Given("initial dart file")
@@ -87,7 +86,7 @@ class Bullseye {
 
     @When("dartutil is called with given input file")
     Document inputFile() {
-        this.output = execute_tool(dartutil_name, [this.dart_path, "--eye"]).strip;
+        this.output = execute_tool(ToolName.dartutil, [this.dart_path, "--eye"]).strip;
         return result_ok;
     }
 
