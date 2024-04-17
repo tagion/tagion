@@ -237,6 +237,12 @@
       "envs": {},
       "stages": ["acceptance", "tools", "hirep_test"],
       "timeout": 0.0
+    },
+    "hibonutil_test": {
+      "args": [],
+      "envs": {},
+      "stages": ["acceptance", "tools", "hibonutil_test"],
+      "timeout": 0.0
     }
   }
 }

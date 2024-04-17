@@ -39,6 +39,7 @@ int main(string[] args) {
     import trt_contract = tagion.testbench.trt_contract;
     import dartutil_test = tagion.testbench.testtools.dartutil_test;
     import hirep_test = tagion.testbench.testtools.hirep_test;
+    import hibonutil_test = tagion.testbench.testtools.hibonutil_test;
 
     alias alltools = AliasSeq!(
         collector,
@@ -76,6 +77,7 @@ int main(string[] args) {
         trt_contract,
         dartutil_test,
         hirep_test,
+        hibonutil_test,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

@@ -11,6 +11,7 @@ import tagion.behaviour.BehaviourException : check;
 
 enum ToolName {
     dartutil = "dartutil",
+    hibonutil = "hibonutil",
     hirep = "hirep",
 }
 
