@@ -6,6 +6,7 @@ import std.digest.crc;
 import std.bitmanip;
 import std.exception;
 import std.zlib;
+import std.format;
 import std.algorithm.searching: find, boyerMooreFinder;
 
 auto i2a(T)(ref T val, bool asis = false) pure
@@ -32,10 +33,14 @@ T fromBigEndian(T)(T val) pure {
 
 // TODO: Test it with communication between little- and big endian platforms
 
+// TODO: Add sequence number to handle chunked envelopes
 
 struct Envelope {
     EnvelopeHeader header;
     ubyte[] data;
+    ubyte[] tail;
+    bool errorstate = false;
+    string[] errors;
     
     static align(1) struct EnvelopeHeader {
         bool isValid() pure {
@@ -81,28 +86,48 @@ struct Envelope {
         }
         
         static EnvelopeHeader fromBuffer (const ubyte[] raw) pure {
-            enforce(raw.length >= this.sizeof);
-            EnvelopeHeader hdr =  *(cast(EnvelopeHeader*) raw[0..this.sizeof]);
-            makeFromLittleEndian!uint(cast(uint)hdr.level);
-            makeFromLittleEndian!uint(hdr.schema);
-            makeFromLittleEndian!ulong(hdr.datsize);
-            return hdr;
+            if(raw.length >= this.sizeof){
+                EnvelopeHeader hdr =  *(cast(EnvelopeHeader*) raw[0..this.sizeof]);
+                makeFromLittleEndian!uint(cast(uint)hdr.level);
+                makeFromLittleEndian!uint(hdr.schema);
+                makeFromLittleEndian!ulong(hdr.datsize);
+                return hdr;
+            } else {
+                return EnvelopeHeader.init;
+            }
         }
         
         this(uint schema, uint level){
             this.schema = schema;
             this.level = cast(CompressionLevel)level;
         }
+
+        string toString(){
+            return format("valid:\t%s\nschema:\t%d\nlevel:\t%d\nsize:\t%d\n"
+                ,this.isValid()
+                ,this.schema
+                ,cast(uint)this.level
+                ,this.datsize
+                );
+        }
         
     }   
+
+    void error(string msg) pure {
+        this.errorstate = true;
+        this.errors ~= msg;
+    }
 
     this(uint schema, uint level, ref ubyte[] data){
         this.header = EnvelopeHeader(schema, level);
         this.data = data;
+        this.errorstate = false;
     }
     
     ubyte[] toBuffer() {
         ubyte[] compressed;
+        if(this.errorstate)
+            return [];
         this.header.datsize = this.data.length;
         if(this.header.compression > 0){
             compressed = compress(this.data[0..$], this.header.compression);
@@ -119,20 +144,37 @@ struct Envelope {
         }            
     }
 
-    this ( ubyte[] raw ) pure {
-        enforce(raw.length > EnvelopeHeader.sizeof, "Envelope too short");
+    this ( ref ubyte[] raw ) pure {
+        if(raw.length < EnvelopeHeader.sizeof){
+            this.error("Buffer too short");
+            return;
+        }    
         auto buf = find(raw,boyerMooreFinder(cast(ubyte[])EnvelopeHeader.MagicBytes));
-        enforce(!buf.empty(), "Envelope header not found");
+        if(buf.empty()){
+            this.error("Header not found");
+            return;
+        }    
         this.header = EnvelopeHeader.fromBuffer(buf);
-        enforce(this.header.isValid,"Envelope header invalid");
-        this.data = buf[EnvelopeHeader.sizeof..$];
-        enforce(fromLittleEndian(this.header.datsize) == this.data.length, "Envelope data length invalid");
-        auto ds = crc64ECMAOf(this.data[0..this.data.length]);
-        enforce(this.header.datsum == ds, "Envelope data checksum invalid");
+        if(!this.header.isValid){
+            this.error("Envelope header invalid");
+            return;
+        }    
+        auto dsize = fromLittleEndian(this.header.datsize);
+        if(buf.length - EnvelopeHeader.sizeof < dsize){
+            this.error("Envelope data length invalid");
+            return;
+        }    
+        this.data = buf[EnvelopeHeader.sizeof..EnvelopeHeader.sizeof+dsize];
+        this.tail = buf[EnvelopeHeader.sizeof+dsize..$];
+        auto dsum = crc64ECMAOf(this.data[0..this.data.length]);
+        if(this.header.datsum != dsum){ 
+            this.error("Envelope data checksum invalid");
+            return;
+        }    
     }
 
     ubyte[] toData() {
-        return  (this.header.compression > 0) ? cast(ubyte[])uncompress(this.data[0..$]) : this.data[0..$];
+        return  (this.errorstate) ? [] : (this.header.compression > 0) ? cast(ubyte[])uncompress(this.data[0..$]) : this.data[0..$];
     }    
 }
 

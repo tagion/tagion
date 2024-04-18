@@ -17,6 +17,7 @@ import std.range;
 import std.string : representation;
 import std.stdio : File, toFile, stderr, stdout, writefln, writeln;
 import std.datetime.systime : Clock;
+import std.digest.crc;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
 import tagion.basic.range : doFront;
 import tagion.communication.HiRPC;
@@ -48,6 +49,8 @@ import tagion.wallet.AccountDetails;
 import tagion.wallet.SecureWallet;
 import tagion.utils.LRUT;
 import tagion.hashgraphview.EventView;
+import tagion.communication.Envelope;
+
 import core.thread;
 import nngd.nngd;
 
@@ -402,6 +405,7 @@ void ws_on_connect(WebSocket *ws, void *ctx){
 
 void ws_on_message(WebSocket *ws, ubyte[] data, void *ctx){
     ShellOptions* opt = cast(ShellOptions*)ctx;    
+    // TODO: add wemsocket-based subscription management
 }
 
 /*
@@ -458,7 +462,7 @@ int query_socket_once(string addr, uint timeout, uint delay, uint retries,  ubyt
 const hirpc_handler = handler_helper!hirpc_handler_impl;
 void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     int rc;
-
+    writeit("hirpc handler start");
     immutable(ubyte)[] docbuf;
     size_t doclen;
 
@@ -471,8 +475,10 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         rep.msg = "invalid data type";
         return;
     }
-
-    Document doc = Document(cast(immutable(ubyte[])) req.rawdata);
+    
+    auto epack = Envelope(req.rawdata);
+    auto rawbuf = (!epack.errorstate && epack.header.isValid()) ? epack.toData() : req.rawdata;
+    Document doc = Document(cast(immutable(ubyte[]))rawbuf);
     save_rpc(opt, doc);
 
     bool cache_enabled = opt.cache_enabled && req.path[$-1] == "nocache";
@@ -501,7 +507,6 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             if(!cache_enabled) {
                 goto default;
             }
-
             auto entity_cache = (receiver.method.entity == "trt")
                 ? tcache 
                 : icache;
@@ -532,7 +537,6 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             if(!itofetch.empty) {
                 const full_method = receiver.method.full_name;
                 const sender = crud.dartIndexCmd(full_method, itofetch);
-
                 // Fetch archives not in cache
                 rc = query_socket_once(
                     opt.node_dart_addr,
@@ -607,7 +611,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         recvtimeout,
         recvdelay,
         connectretry,
-        req.rawdata,
+        rawbuf,
         docbuf
     );
     if (rc != 0) {
