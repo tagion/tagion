@@ -438,7 +438,7 @@ class Round {
      *   hashgraph = hashgraph which owns this round
      */
 
-        package void collect_received_round(Round r, HashGraph hashgraph) {
+        void collect_received_round(Round r, HashGraph hashgraph) {
 
             auto famous_witnesses = r._events.filter!(e => e !is null && r.famous_mask[e.node_id]);
 
