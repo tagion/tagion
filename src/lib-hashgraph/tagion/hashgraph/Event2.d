@@ -114,14 +114,15 @@ class Event2 : current_event.Event {
      * The witness event will point to the witness object
      * This object contains information about the voting etc. for the witness event
      */
-    version(none)
+    //version(none)
     @safe
-    class Witness {
-        protected static uint _count;
+    class Witness2 : current_event.Event.Witness {
+        //protected static uint _count;
+        version(none)
         @nogc static uint count() nothrow {
             return _count;
         }
-
+        version(none)
         private {
             BitMask _vote_on_earliest_witnesses;
             BitMask _prev_strongly_seen_witnesses;
@@ -134,14 +135,11 @@ class Event2 : current_event.Event {
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
-        this(Event owner_event, ulong node_size) nothrow
-        in {
-            assert(owner_event);
-        }
-        do {
-            _count++;
+        this(Event2 owner_event, ulong node_size) nothrow {
+            super(owner_event, node_size);
         }
 
+        version(none)
         ~this() {
             _count--;
         }
@@ -201,7 +199,7 @@ class Event2 : current_event.Event {
         assert(!_witness);
     }
     do {
-        _witness = new Witness(this, node_size);
+        _witness = new Witness2(this, node_size);
         _youngest_son_ancestors = new Event2[node_size];
         _youngest_son_ancestors[node_id] = this;
     }
@@ -276,7 +274,7 @@ class Event2 : current_event.Event {
             return;
         }
         // we have a witness event and need to create a witness and calculate through the masks
-        _witness = new Witness(this, hashgraph.node_size);
+        _witness = new Witness2(this, hashgraph.node_size);
         hashgraph._rounds.next_round(this);
 
         pseudo_time_counter = 0;
