@@ -368,7 +368,7 @@ class HashGraph2 : current_hashgraph.HashGraph {
         return null;
     }
 
-    class _Register : current_hashgraph.HashGraph.Register {
+    class Register2 : current_hashgraph.HashGraph.Register {
         //private EventPackageCache event_package_cache;
 
         this(const Wavefront received_wave) pure nothrow {
@@ -410,8 +410,8 @@ class HashGraph2 : current_hashgraph.HashGraph {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        version(none)
-        final Event register(const(Buffer) fingerprint) {
+        
+        override current_event.Event register(const(Buffer) fingerprint) {
             Event2 event;
 
             if (!fingerprint) {
@@ -419,7 +419,7 @@ class HashGraph2 : current_hashgraph.HashGraph {
             }
 
             // event either from event_package_cache or event_cache.
-            event = lookup(fingerprint);
+            event = cast(Event2)lookup(fingerprint);
             Event2.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
             if (event !is null) {
                 event.connect(this.outer);
@@ -444,7 +444,7 @@ class HashGraph2 : current_hashgraph.HashGraph {
      The front event of the send channel
      +/
     override const(current_event.Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
-        _register = new _Register(received_wave);
+        _register = new Register2(received_wave);
 
         scope (exit) {
             log.event(topic, wavefront_event_package_statistic.stringof, wavefront_event_package_statistic);

@@ -60,9 +60,10 @@ class Event2 : current_event.Event {
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
-        BitMask _round_seen_mask;
+       // BitMask _round_seen_mask;
     }
 
+    BitMask _witness_seen_mask; /// Witness seen in privious round
     version(none)
     @nogc
     static uint count() nothrow {
@@ -86,8 +87,22 @@ class Event2 : current_event.Event {
     in (epack !is null)
     do {
         super(epack, hashgraph);
+        //connect(hashgraph);
+        version(none) {
+        _witness_seen_mask[node_id]=true;
+        if (_mother) {
+            _witness_seen_mask|=(cast(Event2)_mother)._witness_seen_mask;
+        }
+        if (_father) {
+            _witness_seen_mask|=(cast(Event2)_father)._witness_seen_mask;
+        }
+        if (_witness_seen_mask.isMajority(hashgraph)) {
+            _witness = new Witness2();
+        }
+    }
     }
 
+    version(none)
     protected ~this() {
         _count--;
     }
@@ -136,7 +151,7 @@ class Event2 : current_event.Event {
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
         this(Event2 owner_event, ulong node_size) nothrow {
-            super(owner_event, node_size);
+	   super(owner_event, node_size);
         }
 
         version(none)
@@ -263,7 +278,15 @@ class Event2 : current_event.Event {
             _father._son = this;
         }
         _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
-
+        /// Set the mask of seend witness
+        _witness_seen_mask[node_id]=true;
+        if (_mother) {
+            _witness_seen_mask|=(cast(Event2)_mother)._witness_seen_mask;
+        }
+        if (_father) {
+            _witness_seen_mask|=(cast(Event2)_father)._witness_seen_mask;
+        }
+ 
         // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
         // if (_father) { pseudo_time_counter += 1; }
         pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
@@ -274,7 +297,7 @@ class Event2 : current_event.Event {
             return;
         }
         // we have a witness event and need to create a witness and calculate through the masks
-        _witness = new Witness2(this, hashgraph.node_size);
+        _witness = new Witness(this, hashgraph.node_size);
         hashgraph._rounds.next_round(this);
 
         pseudo_time_counter = 0;

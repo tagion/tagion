@@ -206,7 +206,8 @@ class Event {
       */
     void connect(HashGraph hashgraph)
     in {
-        assert(hashgraph.areWeInGraph);
+        import tagion.hashgraph.Event2;
+        //assert(hashgraph.areWeInGraph);
     }
     out {
         assert(event_package.event_body.mother && _mother || !_mother);
@@ -258,19 +259,21 @@ class Event {
 
         calc_youngest_son_ancestors(hashgraph);
         BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
-        if (!strongly_seen_nodes.isMajority(hashgraph)) {
-            pragma(msg, "see below");
+        if (strongly_seen_nodes.isMajority(hashgraph)) {
+            hashgraph._rounds.next_round(this);
+        }
+
+        if (!higher(round.number, mother.round.number)) {
             return;
         }
-        // we have a witness event and need to create a witness and calculate through the masks
-        hashgraph._rounds.next_round(this);
+
         _witness = new Witness(this, hashgraph.node_size);
 
         pseudo_time_counter = 0;
 
         _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
-
+        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
+                .round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
             pragma(msg, "this is never called due to above check. Looks veryvery weird");
             assert(0, "this is never called");

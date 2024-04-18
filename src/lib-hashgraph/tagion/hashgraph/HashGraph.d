@@ -382,7 +382,7 @@ class HashGraph {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        final Event register(const(Buffer) fingerprint) {
+        Event register(const(Buffer) fingerprint) {
             Event event;
 
             if (!fingerprint) {
