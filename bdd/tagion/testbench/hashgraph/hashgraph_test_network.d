@@ -265,7 +265,7 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
             { // Eva Event
                 immutable buf = cast(Buffer) _hashgraph.channel;
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
-                writefln("NODE SIZE OF TEST HASHGRAPH %s", _hashgraph.node_size);
+                // writefln("NODE SIZE OF TEST HASHGRAPH %s", _hashgraph.node_size);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
                 if (Event.callbacks) {
                     Event.callbacks.connect(eva_event);
