@@ -276,20 +276,13 @@ class _Event : current_event.Event {
             return;
         }
         // we have a witness event and need to create a witness and calculate through the masks
-        hashgraph._rounds.next_round(this);
         _witness = new Witness(this, hashgraph.node_size);
+        hashgraph._rounds.next_round(this);
 
         pseudo_time_counter = 0;
 
         _witness.prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness.prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
-                .round.number))));
-        if (!strongly_seen_nodes.isMajority(hashgraph)) {
-            _round.add(this);
-        }
-        with (hashgraph) {
-            log.event(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
-        }
+        _witness.prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
         }
@@ -311,20 +304,18 @@ class _Event : current_event.Event {
             _youngest_son_ancestors = _mother._youngest_son_ancestors;
             return;
         }
-
         _youngest_son_ancestors = _mother._youngest_son_ancestors.dup();
         _youngest_son_ancestors[node_id] = this;
         iota(hashgraph.node_size)
-            .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
-            .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
-            .order > _youngest_son_ancestors[node_id].order)
-            .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
+            .filter!(n => _father._youngest_son_ancestors[n] !is null)
+            .filter!(n => _youngest_son_ancestors[n] is null || _father._youngest_son_ancestors[n]
+            .order > _youngest_son_ancestors[n].order)
+            .each!(n => _youngest_son_ancestors[n] = _father._youngest_son_ancestors[n]);
     }
 
-    version(none)
-    package void calc_vote(_HashGraph hashgraph, size_t vote_node_id) {
+    override void calc_vote(current_hashgraph.HashGraph hashgraph, size_t vote_node_id) {
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
-        Event voting_event = voting_round._events[vote_node_id];
+        auto voting_event = voting_round._events[vote_node_id];
 
         if (!higher(round.number, voting_round.number)) {
             return;
@@ -340,7 +331,7 @@ class _Event : current_event.Event {
         auto votes = _witness._prev_strongly_seen_witnesses[].map!(
                 i => round.previous.events[i]._witness._vote_on_earliest_witnesses[vote_node_id]);
         const yes_votes = votes.count;
-        const no_votes = votes.walkLength - yes_votes;
+        const no_votes = hashgraph.node_size - yes_votes;
         _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
@@ -387,6 +378,7 @@ class _Event : current_event.Event {
             return true;
         }
 
+        pragma(msg, "why is pseudotime used for calculating see through candidates?");
         auto see_through_candidates = b[].retro
             .until!(e => e.pseudo_time_counter != b.pseudo_time_counter)
             .filter!(e => e._son)

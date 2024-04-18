@@ -146,7 +146,11 @@ JSONValue json_dehibonize(JSONValue obj)
                         obj[key] = y.startsWith("0x") ? to!uint(y[2..$],16) : to!uint(y,10);
                         break;
                     case "i64":
-                        obj[key] = y.startsWith("0x") ? to!ulong(y[2..$],16) : to!ulong(y,10);
+                        if(y == "0x8000000000000000"){
+                            obj[key] = long.max;
+                        } else {    
+                            obj[key] = y.startsWith("0x") ? to!long(y[2..$],16) : to!long(y,10);
+                        }    
                         break;
                     case "u64":
                         obj[key] = y.startsWith("0x") ? to!ulong(y[2..$],16) : to!ulong(y,10);
@@ -225,7 +229,8 @@ void dart_worker(ShellOptions opt) {
         "$rec": "round_received",
         "$w": "witness",
         "$famous": "famous",
-        "$error": "error"
+        "$error": "error",
+        "father_less": "father_less"
     ]);
 
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);

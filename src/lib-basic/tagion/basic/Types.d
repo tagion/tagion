@@ -4,11 +4,6 @@ import std.traits : Unqual;
 import std.typecons : Typedef, TypedefType;
 
 @safe:
-enum BillType {
-    NON_USABLE,
-    TAGIONS,
-    CONTRACTS
-}
 
 alias Buffer = immutable(ubyte)[]; /// General buffer
 /+

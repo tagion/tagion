@@ -438,22 +438,21 @@ class Round {
      *   hashgraph = hashgraph which owns this round
      */
 
-        package void collect_received_round(Round r, HashGraph hashgraph) {
+        void collect_received_round(Round r, HashGraph hashgraph) {
 
-            auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
+            auto famous_witnesses = r._events.filter!(e => e !is null && r.famous_mask[e.node_id]);
 
             pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
             auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors).joiner;
 
 
-            pragma(msg, "What is this. Is this guaranteed to be the same across nodes????");
-            Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup(); 
+            // pragma(msg, "What is this. Is this guaranteed to be the same across nodes????");
+            // writefln("%s", r._events.enumerate.find!(e => e.value !is null).map!(e => e.index));
+            // Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup(); 
+            Event[] consensus_son_tide = new Event[hashgraph.node_size];
 
-            foreach (son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
-                if (consensus_son_tide[son_ancestor.node_id] is null) {
-                    continue;
-                }
-                if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
+            foreach (son_ancestor; famous_witness_youngest_son_ancestors) {
+                if (consensus_son_tide[son_ancestor.node_id] is null || higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
                     consensus_son_tide[son_ancestor.node_id] = son_ancestor;
                 }
             }
