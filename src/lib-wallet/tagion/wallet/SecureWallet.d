@@ -366,7 +366,7 @@ struct SecureWallet(Net : SecureNet) {
      * Params:
      *   label = Name of the invoice
      *   amount = Amount 
-     *   info = Invoce information
+     *   info = Invoice information
      * Returns: The created invoice
      */
     static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) pure {

@@ -87,7 +87,7 @@ DVERSIONS+=OLD_ORDERING
 # Use to check that toHiBON.serialize is equal to .serialize
 #DVERSIONS+=TOHIBON_SERIALIZE_CHECK
 
-# This is used to intentionaly provoke a crash in the app.
+# This is used to intentionally provoke a crash in the app.
 # Needed for GDB testing.
 # DVERSIONS+=PROVOKE_CRASH
 

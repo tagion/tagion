@@ -198,7 +198,7 @@ struct KeyRecover {
         }
         check(A.length > 1, message("Number of questions must be more than one"));
         check(confidence <= A.length, message(
-                "Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
+                "Number of questions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, confidence));
         check(A.length <= MAX_QUESTION, message("Number of question is %d but it should not exceed %d",
                 A.length, MAX_QUESTION));
@@ -246,7 +246,7 @@ struct KeyRecover {
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
         check(A.length > 1, message("Number of questions must be more than one"));
         check(generator.confidence <= A.length,
-                message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
+                message("Number of questions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, generator.confidence));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);

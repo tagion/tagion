@@ -71,7 +71,7 @@
             dtools
             dfmt-pull.legacyPackages.${pkgs.system}.dlang-dfmt
             graphviz
-          ] 
+          ]
           ++ lib.optionals stdenv.isx86_64 [ dmd ];
         };
       });
@@ -79,14 +79,16 @@
       checks = forAllSystems (pkgs: {
         pre-commit-check = pre-commit-hooks.lib.${pkgs.system}.run {
           src = ./.;
-          settings.typos.configPath = ".typos.toml";
           hooks = {
             shellcheck = {
               enable = true;
               types_or = [ "sh" ];
             };
-            typos.enable = true;
-            typos.pass_filenames = false;
+            typos = {
+              enable = true;
+              settings.configPath = ".typos.toml";
+              pass_filenames = false;
+            };
             # actionlint.enable = true;
             dlang-format = {
               # does not work :-( we have to define a proper commit
@@ -103,7 +105,7 @@
             name = "unittest";
             doCheck = true;
 
-            buildInputs = [ self.packages.x86_64-linux.default.buildInputs  dmd];
+            buildInputs = [ self.packages.x86_64-linux.default.buildInputs dmd ];
             nativeBuildInputs = self.packages.x86_64-linux.default.nativeBuildInputs;
 
             src = self;

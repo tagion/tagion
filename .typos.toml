@@ -1,6 +1,7 @@
 [default.extend-words]
 # India Standard Time
 IST = "IST"
+# D keyword
 inout = "inout"
 # opendoas bsd privilege escalation tools
 doas = "doas"
@@ -24,11 +25,18 @@ indexes = "indices"
 indexs = "indices"
 convering = "converting"
 definded = "defined"
-fo = "of"
 Thown = "Thrown"
 Thows = "Throws"
 responde = "respond"
 registerd = "registered"
+
+[default]
+extend-ignore-re = [
+    # Ignore base64url encoded strings
+    "@.*=",
+    # Ignore hex values
+    "0x.*",
+]
 
 [files]
 extend-exclude = [
@@ -38,5 +46,6 @@ extend-exclude = [
     "src/fork-*",
     "src/lib-crypto/tagion/crypto/secp256k1/c/",
     "*.wast",
-    "src/lib-behaviour/tagion/behaviour/unitdata/"
+    "src/lib-behaviour/tagion/behaviour/unitdata/",
+    "*.svg",
 ]

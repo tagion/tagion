@@ -171,7 +171,7 @@ int _main(string[] args) {
     feature.SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs(
         node_opts[0], wallets[0], wallets[1]);
     feature.run;
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     Thread.sleep(6.seconds);
     return 0;
 

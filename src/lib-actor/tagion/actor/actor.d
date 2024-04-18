@@ -322,7 +322,7 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
                 import tagion.GlobalSignals;
 
                 log(e);
-                stopsignal.set;
+                stopsignal.setIfInitialized;
             }
             end;
         }, actor, name, args);
@@ -364,7 +364,7 @@ if (isActor!A) {
                 import tagion.GlobalSignals;
 
                 log(e);
-                stopsignal.set;
+                stopsignal.setIfInitialized;
             }
             end;
         }, name, args);

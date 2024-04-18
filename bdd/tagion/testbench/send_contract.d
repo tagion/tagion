@@ -163,7 +163,7 @@ int _main(string[] args) {
     send_contract_feature.run();
     writefln("finished test execution");
 
-    stopsignal.set;
+    stopsignal.setIfInitialized;
 
     return 0;
 

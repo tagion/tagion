@@ -9,7 +9,15 @@ ifeq ($(PLATFORM),$(LINUX_X86_64))
 endif
 
 ifdef WASMER_TARGET
-LIBWASMER=$(WASMER_DIR)/target/$(WASMER_TARGET)/release/libwasmer.a
-endif
+LIBWASMER:=$(WASMER_DIR)/target/$(WASMER_TARGET)/release/libwasmer.a
+ifdef USE_SYSTEM_LIBS
+LD_WASMER_LIB:=-lwasmer
+LD_WASMER+=$(LD_WASMER_LIB)
+LD_WASMER+=-L$(LD_WASMER_PATH)
+else
+LD_WASMER+=$(LIBWASMER)
+endif # USE_SYSTEM_LIBS
 
-endif
+endif # WASMER_TARGET
+
+endif # ENABLE_WASMER
