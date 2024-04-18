@@ -301,23 +301,31 @@ mixin template Serialize() {
             }
         }
 
-        Buffer serialize() const pure @safe
-        out (ret) {
-            version (TOHIBON_SERIALIZE_CHECK) {
-                const hibon_serialize = this.toHiBON.serialize;
-                assert(ret == hibon_serialize, moduleName!This ~ "." ~ This.stringof ~ " toHiBON.serialize failed");
+
+        version(Android) {
+            Buffer serialize() const pure @safe {
+                return this.toHiBON.serialize;
             }
-        }
-        do {
-            Appender!(ubyte[]) buf;
-            static if (SupportingFullSizeFunction!(This)) {
-                const reserve_size = full_size(this);
-                buf.reserve(reserve_size);
+        } 
+        else {
+            Buffer serialize() const pure @safe
+            out (ret) {
+                version (TOHIBON_SERIALIZE_CHECK) {
+                    const hibon_serialize = this.toHiBON.serialize;
+                    assert(ret == hibon_serialize, moduleName!This ~ "." ~ This.stringof ~ " toHiBON.serialize failed");
+                }
             }
-            const start_index = buf.data.length;
-            serialize(buf);
-            emplace_buffer(buf, start_index);
-            return buf.data;
+            do {
+                Appender!(ubyte[]) buf;
+                static if (SupportingFullSizeFunction!(This)) {
+                    const reserve_size = full_size(this);
+                    buf.reserve(reserve_size);
+                }
+                const start_index = buf.data.length;
+                serialize(buf);
+                emplace_buffer(buf, start_index);
+                return buf.data;
+            }
         }
     }
 }
