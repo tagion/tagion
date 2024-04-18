@@ -121,21 +121,28 @@ struct Peer {
     nng_iov sendiov;
     ubyte[] sendbuf;
 
+    enum bufsize = 4096;
+
     this(int id, nng_stream* socket) @trusted {
         this.id = id;
         int rc = nng_aio_alloc(&aio, &callback, self);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
         owner_task = thisActor.task_name;
         this.socket = socket;
-        sendbuf = new ubyte[](4096);
+        sendbuf = new ubyte[](bufsize);
+        sendiov.iov_len = bufsize;
         sendiov.iov_buf = &sendbuf[0];
+
+        rc = nng_aio_set_iov(aio, 1, &sendiov);
+        check(rc == 0, nng_errstr(rc));
     }
 
     ~this() {
-        nng_stream_free(socket);
         nng_aio_free(aio);
+        nng_stream_free(socket);
     }
 
+    // FIXME: sending and receive of partial buffers
     static void callback(void* ctx) nothrow {
         This* _this = self(ctx);
         try {
@@ -180,8 +187,8 @@ struct Peer {
         sendbuf = data;
         sendiov.iov_len = data.length;
 
-        int rc = nng_aio_set_iov(aio, 1, &sendiov);
-        check(rc == 0, nng_errstr(rc));
+        /* int rc = nng_aio_set_iov(aio, 1, &sendiov); */
+        /* check(rc == 0, nng_errstr(rc)); */
         nng_stream_send(socket, aio);
     }
 
@@ -226,7 +233,6 @@ struct PeerMgr {
 
     private {
         nng_stream_listener* listener;
-        nng_socket listener_sock;
     }
 
     SecureNet net;
@@ -300,14 +306,10 @@ struct PeerMgr {
 
     // TODO: use envelope
     void on_recv(NodeRecv, int id, Buffer buf) {
-        // Verify and add to known_peers
-        if (buf.length <= 0) {
-            // error
-            return;
-        }
 
         log.trace("received %s bytes", buf.length);
         Document doc = buf;
+
         if(!doc.isInorder) {
             // error
             return;
@@ -328,7 +330,9 @@ struct PeerMgr {
     // A connection was established by dial
     void on_dial(NodeDial, int id) {
         assert((id in dialers) !is null, "No dialer was allocated for this id");
-
+        scope(exit) {
+            dialers.remove(id);
+        }
         auto dialer = dialers[id];
 
         nng_stream* socket = dialer.get_output;
@@ -376,7 +380,7 @@ version(unittest) {
         bool received = conc.receiveTimeout(dur, 
             handlers,
             (Variant var) @trusted {
-                assert(0, format("Unknown msg: %s", var)); 
+                throw new Exception(format("Unknown msg: %s", var));
             }
         );
         assert(received, "Timed out");
@@ -413,8 +417,6 @@ unittest {
     assert(listener.all_peers.length == 1);
     assert(dialer.all_peers.byValue.all!(p => p.state is Peer.State.ready));
     assert(listener.all_peers.byValue.all!(p => p.state is Peer.State.ready));
-
-
 
     listener.recv_all_ready();
     dialer.send(NodeSend(), net2.pubkey, [1,23,53,53]);
