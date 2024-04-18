@@ -77,6 +77,7 @@ jobs:
         run: |
           chmod +x build/x86_64-linux/bin/tagion 
           chmod +x scripts/create_wallets.sh
+          chmod +x scripts/run_network.sh
           ./build/x86_64-linux/bin/tagion --version
 
       - name: Create new bills
