@@ -15,6 +15,7 @@ import tagion.crypto.Types;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph._HashGraph;
+import tagion.hashgraph.HashGraph2;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Refinement;
 import tagion.hashgraph.RefinementInterface;
@@ -331,11 +332,18 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
         HashGraph h;
-        if (graphtype) {
-            h = new _HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
-        }
-        else {
+        switch (graphtype) {
+        case 0:
             h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+            break;
+        case 1:
+            h = new _HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+            break;
+        case 2:
+            h = new HashGraph2(N, net, refinement, &authorising.isValidChannel, joining, name);
+            break;
+        default:
+            check(0, format("Invalid graphtype number %d", graphtype));
         }
         if (testing < 4) {
             testing++;
