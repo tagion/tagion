@@ -5,15 +5,16 @@ module tagion.services.nodeinterface;
 @safe:
 
 import core.time;
-import core.thread : thread_attachThis;
 
 import std.format;
 import std.conv;
 import std.exception;
 import std.algorithm;
 import std.typecons;
+import std.traits;
 
 import tagion.actor;
+import tagion.actor.exceptions;
 import tagion.basic.Types;
 import tagion.crypto.Types;
 import tagion.gossip.AddressBook;
@@ -26,6 +27,7 @@ import tagion.crypto.SecureNet;
 import tagion.communication.HiRPC;
 
 import nngd;
+import libnng;
 
 ///
 struct NodeInterfaceOptions {
@@ -39,12 +41,67 @@ struct NodeInterfaceOptions {
     mixin JSONCommon;
 }
 
-struct Peer {
-    import libnng;
+enum NodeErrorCode {
+    invalid_state,
+    nng_err,
+    empty_msg,
+}
 
+struct Dialer {
+    // disable copy/postblitz
+    @disable this(this);
+
+    int id;
+    string address;
+    nng_stream_dialer* dialer;
+    nng_aio* aio;
+    string owner_task;
+    Pubkey pkey;
+
+    this(int id, string address_, Pubkey pkey) @trusted {
+        int rc = nng_aio_alloc(&aio, &callback, self);
+        this.pkey = pkey;
+        this.id = id;
+
+        this.address = address_;
+        address_ ~= '\0';
+
+        rc = nng_stream_dialer_alloc(&dialer, &address[0]);
+        check(rc == nng_errno.NNG_OK, nng_errstr(rc));
+        owner_task = thisActor.task_name;
+    }
+
+    ~this() {
+        nng_aio_free(aio);
+        nng_stream_dialer_free(dialer);
+    }
+
+    void dial() {
+        nng_stream_dialer_dial(dialer, aio);
+    }
+
+    // TODO: Use nullable?
+    nng_stream* get_output() @trusted {
+        return cast(nng_stream*)nng_aio_get_output(aio, 0);
+    }
+
+    static callback(void* ctx) nothrow {
+        This* _this = self(ctx);
+        try {
+            thread_attachThis();
+            ActorHandle(_this.owner_task).send(NodeDial(), _this.id);
+        } 
+        catch(Exception e) {
+            fail(_this.owner_task, e);
+        }
+    }
+
+    mixin NodeHelpers;
+}
+
+struct Peer {
     enum State {
         ready,
-        dial,
         receive,
         send,
     }
@@ -55,7 +112,7 @@ struct Peer {
     int id;
 
     // taskname is used inside the nng callback to know which thread to notify
-    string ownerTask;
+    string owner_task;
     string address;
     shared State state;
 
@@ -64,89 +121,63 @@ struct Peer {
     nng_iov sendiov;
     ubyte[] sendbuf;
 
-    nng_stream_dialer* dialer;
+    enum bufsize = 4096;
 
     this(int id, nng_stream* socket) @trusted {
         this.id = id;
         int rc = nng_aio_alloc(&aio, &callback, self);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
-        ownerTask = thisActor.task_name;
+        owner_task = thisActor.task_name;
         this.socket = socket;
-        sendbuf = new ubyte[](4096);
-        sendiov.iov_buf = &sendbuf[0];
-    }
-
-    this(int id, string address) @trusted {
-        this.id = id;
-        int rc = nng_aio_alloc(&aio, &callback, self);
-        check(rc == nng_errno.NNG_OK, nng_errstr(rc));
-        ownerTask = thisActor.task_name;
-        sendbuf = new ubyte[](4096);
+        sendbuf = new ubyte[](bufsize);
+        sendiov.iov_len = bufsize;
         sendiov.iov_buf = &sendbuf[0];
 
-        rc = nng_stream_dialer_alloc(&dialer, &address[0]);
-        check(rc == nng_errno.NNG_OK, nng_errstr(rc));
+        rc = nng_aio_set_iov(aio, 1, &sendiov);
+        check(rc == 0, nng_errstr(rc));
     }
 
     ~this() {
-        nng_stream_free(socket);
         nng_aio_free(aio);
+        nng_stream_free(socket);
     }
 
-
-    alias This = typeof(this);
-    private void* self () @trusted {
-        return cast(void*)&this;
-    }
-
-    static void callback(void* ctx) @trusted nothrow {
+    // FIXME: sending and receive of partial buffers
+    static void callback(void* ctx) nothrow {
+        This* _this = self(ctx);
         try {
             thread_attachThis();
-            This* _this = cast(This*)ctx;
-            check(_this !is null, "did not get this* through the ctx");
 
             int rc = nng_aio_result(_this.aio);
             if(rc != nng_errno.NNG_OK) {
-                // FIXME: send up an error message
+                node_error(_this.owner_task, NodeErrorCode.nng_err, _this.id, nng_errstr(rc));
                 return;
             }
 
             switch(_this.state) {
-                case state.dial:
-                    imported!"std.stdio".writefln("dialit!! %s", _this.ownerTask);
-                    ActorHandle(_this.ownerTask).send(NodeDial(), _this.id);
-                    _this.state = State.ready;
-                    break;
                 case state.receive:
                     nng_msg* recv_msg = nng_aio_get_msg(_this.aio);
                     if (recv_msg is null) {
-                        // error
+                        node_error(_this.owner_task, NodeErrorCode.empty_msg, _this.id);
                         return;
                     }
 
-                    Buffer buf = cast(Buffer)nng_msg_body(recv_msg)[0 .. nng_msg_len(recv_msg)]; 
+                    Buffer buf = get_full_msg!Buffer(recv_msg);
 
-                    ActorHandle(_this.ownerTask).send(NodeRecv(), _this.id, buf);
+                    ActorHandle(_this.owner_task).send(NodeRecv(), _this.id, buf);
                     
                     _this.state = State.ready;
                     break;
                 default:
-                    imported!"std.stdio".writefln("sendit!! %s", _this.ownerTask);
-                    ActorHandle(_this.ownerTask).send(NodeAIOTask(), _this.state);
+                    imported!"std.stdio".writefln("sendit!! %s", _this.owner_task);
+                    ActorHandle(_this.owner_task).send(NodeAIOTask(), _this.state);
                     _this.state = State.ready;
                     break;
             }
 
         } catch(Exception e) {
-            log(e);
-            // error
+            fail(_this.owner_task, e);
         }
-    }
-
-    void dial() {
-        check(state is State.ready, "Can not call dial when not ready");
-        state = State.dial;
-        nng_stream_dialer_dial(dialer, aio);
     }
 
     void send(ubyte[] data) @trusted {
@@ -156,8 +187,8 @@ struct Peer {
         sendbuf = data;
         sendiov.iov_len = data.length;
 
-        int rc = nng_aio_set_iov(aio, 1, &sendiov);
-        check(rc == 0, nng_errstr(rc));
+        /* int rc = nng_aio_set_iov(aio, 1, &sendiov); */
+        /* check(rc == 0, nng_errstr(rc)); */
         nng_stream_send(socket, aio);
     }
 
@@ -170,11 +201,12 @@ struct Peer {
         state = State.receive;
         nng_stream_recv(socket, aio);
     }
+
+    mixin NodeHelpers;
 }
 
 /// Manages p2p node connections by pubkey
 struct PeerMgr {
-    import libnng;
 
     // disable copy/postblitz
     @disable this(this);
@@ -184,8 +216,6 @@ struct PeerMgr {
         this.net = net;
         this.hirpc = HiRPC(net);
         int rc = nng_aio_alloc(&aio_conn, &callback, self);
-        check(rc == 0, nng_errstr(rc));
-        rc = nng_aio_alloc(&aio_none, null, null);
         check(rc == 0, nng_errstr(rc));
         this.task_name = thisActor.task_name;
 
@@ -198,42 +228,36 @@ struct PeerMgr {
 
     ~this() {
         nng_aio_free(aio_conn);
-        nng_aio_free(aio_none);
         nng_stream_listener_free(listener);
     }
 
     private {
         nng_stream_listener* listener;
-        nng_socket listener_sock;
     }
 
     SecureNet net;
     HiRPC hirpc;
     string address;
 
+    Dialer*[int] dialers;
+
     // All the peers who we know the public key off
     Peer*[Pubkey] peers;
 
     // We store all peers with an id
     // Since we don't know their public key if we are receing from them for the first time
-    Peer*[long] all_peers;
+    Peer*[int] all_peers;
 
     nng_aio* aio_conn;
-    nng_aio* aio_none;
 
     // This task name is used inside the nng callback to know which thread to notify
     string task_name;
 
-    alias This = typeof(this);
-    private void* self () @trusted {
-        return cast(void*)&this;
-    }
-
     // This thread callback is used to notify the NodeInterface thread of incoming connections
-    static void callback(void* ctx) @trusted {
+    static void callback(void* ctx) nothrow {
+        This* _this = self(ctx);
         try {
             thread_attachThis(); // Attach the current thread to the gc
-            This* _this = cast(This*)ctx;
             int rc = nng_aio_result(_this.aio_conn);
 
             int id = generateId!int;
@@ -242,12 +266,11 @@ struct PeerMgr {
                 ActorHandle(_this.task_name).send(NodeAccept(), id);
             }
             else {
-                // TODO error
+                node_error(_this.task_name, NodeErrorCode.nng_err, id);
             }
         }
         catch(Exception e) {
-            log(e);
-            // TODO: error
+            fail(_this.task_name, e);
         }
     }
 
@@ -257,31 +280,15 @@ struct PeerMgr {
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
     }
 
-    void accept() @trusted {
+    void accept() {
         nng_stream_listener_accept(listener, aio_conn);
     }
 
-    void dial(string address, Pubkey pkey) @trusted {
-        int unknown_peer_id = generateId!int;
-        Peer* peer_connection = new Peer(unknown_peer_id, address);
-        peer_connection.dial();
-
-        peers[pkey] = peer_connection;
-        all_peers[unknown_peer_id] = peer_connection;
-
-        // FIXME: dial should be async
-        /* nng_aio_wait(aio_none); */
-        /* nng_stream* socket = cast(nng_stream*)nng_aio_get_output(aio_none, 0); */
-        /* assert(socket !is null); */
-        /* if(socket is null) { */
-        /*     // error */
-        /*     return; */
-        /* } */
-        /**/
-        /* long unknown_peer_id = generateId!long; */
-        /* Peer* peer_connection = new Peer(unknown_peer_id, socket); */
-        /* all_peers[unknown_peer_id] = peer_connection; */
-        /* peers[pkey] = peer_connection; */
+    void dial(string address, Pubkey pkey) {
+        int id = generateId!int;
+        auto dialer = new Dialer(id, address, pkey);
+        dialer.dial();
+        dialers[id] = dialer;
     }
 
     // Receive messages from all the peers that are not doing anything else
@@ -299,14 +306,10 @@ struct PeerMgr {
 
     // TODO: use envelope
     void on_recv(NodeRecv, int id, Buffer buf) {
-        // Verify and add to known_peers
-        if (buf.length <= 0) {
-            // error
-            return;
-        }
 
         log.trace("received %s bytes", buf.length);
         Document doc = buf;
+
         if(!doc.isInorder) {
             // error
             return;
@@ -324,16 +327,22 @@ struct PeerMgr {
         // receive_handle.send(ReceivedWavefront(), doc);
     }
 
-    // A connection was established
-    // Either by dial or accept
-    void on_dial(NodeDial, int id) @trusted {
-        if((id in all_peers) !is null) {
-            Peer* dialed_peer = all_peers[id];
-            dialed_peer.socket = cast(nng_stream*)dialed_peer.get_output;
-            return;
+    // A connection was established by dial
+    void on_dial(NodeDial, int id) {
+        assert((id in dialers) !is null, "No dialer was allocated for this id");
+        scope(exit) {
+            dialers.remove(id);
         }
+        auto dialer = dialers[id];
+
+        nng_stream* socket = dialer.get_output;
+        auto peer = new Peer(id, socket);
+
+        all_peers[id] = peer;
+        peers[dialer.pkey] = peer;
     }
 
+    // A connections was established by accept
     void on_accept(NodeAccept, int id) @trusted {
         nng_stream* socket = cast(nng_stream*)nng_aio_get_output(aio_conn, 0);
         if(socket is null) {
@@ -358,6 +367,8 @@ struct PeerMgr {
 
     void task() {
     }
+
+    mixin NodeHelpers;
 }
 
 
@@ -369,7 +380,7 @@ version(unittest) {
         bool received = conc.receiveTimeout(dur, 
             handlers,
             (Variant var) @trusted {
-                assert(0, format("Unknown msg: %s", var)); 
+                throw new Exception(format("Unknown msg: %s", var));
             }
         );
         assert(received, "Timed out");
@@ -393,13 +404,14 @@ unittest {
 
     /* dialer.listen(); */
     listener.listen();
-    writeln("Connected ", dialer.peers.length);
 
     dialer.dial(listener.address, net2.pubkey);
     listener.accept();
-    writeln("Connected ", dialer.peers.length);
+
+    writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length);
     receiveOnlyTimeout(2.seconds, &dialer.on_dial, &listener.on_accept);
     receiveOnlyTimeout(2.seconds, &dialer.on_dial, &listener.on_accept);
+    writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length);
 
     assert(dialer.all_peers.length == 1);
     assert(listener.all_peers.length == 1);
@@ -500,5 +512,42 @@ struct NodeInterfaceService {
         log("Listening on %s", opts.node_address);
 
         runTimeout(opts.send_timeout.msecs, &node_receive, &node_send);
+    }
+}
+
+
+void thread_attachThis() @trusted {
+    import core.thread : thread_attachThis;
+    thread_attachThis();
+}
+void fail(string owner_task, Throwable t) @trusted nothrow {
+    try {
+        immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
+        log.event(taskfailure, "taskfailure", tf);
+        ActorHandle(owner_task).prioritySend(tf);
+    }
+    catch(Exception e) {
+        log(e);
+    }
+}
+
+void node_error(string owner_task, NodeErrorCode code, int id, string msg = "", int line = __LINE__) {
+    ActorHandle(owner_task).send(NodeError(), code, id, msg, line);
+}
+
+T get_full_msg(T)(nng_msg* msg) @trusted if(isArray!T) {
+    return cast(T)nng_msg_body(msg)[0 .. nng_msg_len(msg)]; 
+}
+
+mixin template NodeHelpers() {
+    alias This = typeof(this);
+    private void* self () @trusted nothrow {
+        return cast(void*)&this;
+    }
+
+    private static This* self(void* ctx) @trusted nothrow {
+        This* _this = cast(This*)ctx;
+        assert(_this !is null, "did not get this* through the ctx");
+        return _this;
     }
 }

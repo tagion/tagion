@@ -187,11 +187,11 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
                 return false;
             }
             receiveTimeout(
-                    timeout / thisActor.childrenState.length,
-                    defaultFailhandler,
-                    &control,
-                    &signal,
-                    &ownerTerminated
+                timeout / thisActor.childrenState.length,
+                defaultFailhandler,
+                &control,
+                &signal,
+                &ownerTerminated
 
             );
         }
@@ -237,7 +237,7 @@ template isSpawnable(F, T...) {
             enum isParamsImplicitlyConvertible = true;
         else static if (isImplicitlyConvertible!(param2[i], param1[i]))
             enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
-                        F2, i + 1);
+                    F2, i + 1);
         else
             enum isParamsImplicitlyConvertible = false;
     }
@@ -292,7 +292,7 @@ struct ActorHandle {
 }
 
 ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
-if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
+        if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
 
     try {
         Tid tid;
@@ -384,25 +384,13 @@ if (isActor!A) {
     return spawn(actor, name, args);
 }
 
-/// Nullable and nothrow wrapper around ownerTid
-Nullable!Tid tidOwner() @safe nothrow {
-    // tid is "null"
-    Nullable!Tid tid;
-    try {
-        // Tid is assigned
-        tid = ownerTid;
-    }
-    catch (Exception _) {
-    }
-    return tid;
-}
 
 /// Send to the owner if there is one
 void sendOwner(T...)(T vals) @safe {
-    if (!tidOwner.isNull) {
-        concurrency.send(tidOwner.get, vals);
+    try {
+        concurrency.send(ownerTid, vals);
     }
-    else {
+    catch(Exception) {
         log.error("No owner tried to send a message to it");
         log.error("%s", tuple(vals));
     }
@@ -481,13 +469,9 @@ if (allSatisfy!(isSafe, Args)) {
     while (!thisActor.stop) {
         try {
             receive(
-                    args, // The message handlers you pass to your Actor template
-                    failhandler,
-                    &signal,
-                    &control,
-                    &getActorInfo,
-                    &ownerTerminated,
-                    &unknown,
+                args, // The message handlers you pass to your Actor template
+                failhandler,
+                default_handlers.expand,
             );
             thisActor.msgs_received++;
         }
@@ -510,7 +494,7 @@ if (allSatisfy!(isSafe, Args)) {
  *   the first message handler may be a failHandler to deal with TaskFailure from other tasks
  */
 void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow
-if (allSatisfy!(isSafe, Args)) {
+        if (allSatisfy!(isSafe, Args)) {
     // Check if a failHandler was passed as an arg
     static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
@@ -527,14 +511,10 @@ if (allSatisfy!(isSafe, Args)) {
     while (!thisActor.stop) {
         try {
             const message = receiveTimeout(
-                    duration,
-                    args, // The message handlers you pass to your Actor template
-                    failhandler,
-                    &signal,
-                    &control,
-                    &getActorInfo,
-                    &ownerTerminated,
-                    &unknown,
+                duration,
+                args, // The message handlers you pass to your Actor template
+                failhandler,
+                default_handlers.expand,
             );
             if (!message) {
                 timeout();
@@ -554,8 +534,10 @@ if (allSatisfy!(isSafe, Args)) {
 }
 
 enum defaultFailhandler = (TaskFailure tf) @safe {
-    if (!tidOwner.isNull) {
+    try {
         ownerTid.prioritySend(tf);
+    } catch(Exception e) {
+        log(e);
     }
 };
 
@@ -591,3 +573,11 @@ alias GetActorInfo = Request!"GetActorInfo";
 void getActorInfo(GetActorInfo req) {
     req.respond(ActorInfoRecord(thisActor).toDoc);
 }
+
+private auto default_handlers = tuple(
+    &signal,
+    &control,
+    &getActorInfo,
+    &ownerTerminated,
+    &unknown,
+);

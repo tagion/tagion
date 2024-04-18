@@ -29,17 +29,14 @@
       packages = forAllSystems (pkgs:
         let
           secp256k1-zkp = pkgs.callPackage ./tub/secp256k1-zkp.nix { };
-
-          # Disable mbedtls override is broken upstream see if merged
-          # https://github.com/NixOS/nixpkgs/pull/285518
-          nng = pkgs.callPackage ./tub/nng.nix { };
+          nng_no_tls = pkgs.nng.override { mbedtlsSupport = false; };
         in
         {
           default = pkgs.callPackage ./tub/tagion.nix {
             gitRev = gitRev;
             src = self;
             secp256k1-zkp = secp256k1-zkp;
-            nng = nng;
+            nng = nng_no_tls;
           };
 
           dockerImage =
