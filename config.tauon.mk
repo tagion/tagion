@@ -59,7 +59,7 @@ TAUON_DFILES+=$(DSRC)/lib-phobos/tagion/std/container/rbtree.d
 #TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/Version.d
 
 ### C-api
-#TAUON_DINC+=$(DSRC)/lib-api
-#TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/document.d 
-#TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/errors.d 
+TAUON_DINC+=$(DSRC)/lib-api
+TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/document.d 
+TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/errors.d 
 

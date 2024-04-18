@@ -4,11 +4,12 @@ import tagion.api.errors;
 import tagion.hibon.Document;
 import tagion.basic.tagionexceptions;
 import core.stdc.stdint;
-
+import std.stdio;
+import core.lifetime;
 extern(C):
 nothrow:
 
-int tagion_hibon_document_get_int(
+int tagion_document(
     const uint8_t* buf, 
     const size_t buf_len, 
     const char* key, 
@@ -22,13 +23,23 @@ int tagion_hibon_document_get_int(
         if (doc_error !is Document.Element.ErrorCode.NONE) {
             return cast(int)doc_error;
         }
-        auto element_data = doc[_key].data;
-        element=cast(Document.Element*)&element_data[0];
-        //element=doc[_key].data;
+        auto doc_elm=doc[_key];
+        copyEmplace(doc_elm, *element);
     }
     catch (Exception e) {
+        last_error = e;
         return ErrorCode.exception;
     }
     return ErrorCode.none;
-    
+}
+
+int tagion_document_get_int(const Document.Element* elmenet, int* value) {
+    try {
+        *value = elmenet.get!int; 
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
 }
