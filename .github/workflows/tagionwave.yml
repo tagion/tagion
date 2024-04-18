@@ -75,6 +75,8 @@ jobs:
 
       - name: Check new version
         run: |
+          chmod +x build/x86_64-linux/bin/tagion 
+          chmod +x scripts/create_wallets.sh
           ./build/x86_64-linux/bin/tagion --version
 
       - name: Create new bills
