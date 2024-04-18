@@ -2,16 +2,17 @@
 
 $(REVISION_FILE): $(DBUILD)/.way
 	$(PRECMD)
-	# ${call log.header, revision :: $(shell date +'%F %H:%M')}
-	echo '$(VERSION_STRING)' > $@
-	echo '$(GIT_INFO)' >> $@
-	echo '$(GIT_BRANCH)' >> $@
-	echo '$(GIT_HASH)' >> $@
-	echo '$(GIT_REVNO)' >> $@
-	echo '$(GIT_USER)' >> $@
-	echo '$(GIT_EMAIL)' >> $@
-	echo '$(CC_VERSION)' >> $@
-	echo '$(DC_VERSION)' >> $@
+	${call log.header, revision :: $(shell date +'%F %H:%M')}
+	echo 'version: $(VERSION_STRING)' > $@
+	echo 'git: $(GIT_INFO)' >> $@
+	echo 'branch: $(GIT_BRANCH)' >> $@
+	echo 'hash: $(GIT_HASH)' >> $@
+	echo 'revno: $(GIT_REVNO)' >> $@
+	echo 'builder_name: $(GIT_USER)' >> $@
+	echo 'builder_email: $(GIT_EMAIL)' >> $@
+	echo 'build_date:  $(BUILD_DATE)' >> $@
+	echo 'CC: $(CC_VERSION)' >> $@
+	echo 'DC: $(DC_VERSION)' >> $@
 
 revision: $(REVISION_FILE)
 

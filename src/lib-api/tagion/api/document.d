@@ -33,9 +33,9 @@ int tagion_document(
     return ErrorCode.none;
 }
 
-int tagion_document_get_int(const Document.Element* elmenet, int* value) {
+int tagion_document_get_int(const Document.Element* element, int* value) {
     try {
-        *value = elmenet.get!int; 
+        *value = element.get!int; 
     }
     catch (Exception e) {
         last_error = e;
