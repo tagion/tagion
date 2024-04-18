@@ -471,11 +471,7 @@ if (allSatisfy!(isSafe, Args)) {
             receive(
                 args, // The message handlers you pass to your Actor template
                 failhandler,
-                &signal,
-                &control,
-                &getActorInfo,
-                &ownerTerminated,
-                &unknown,
+                default_handlers.expand,
             );
             thisActor.msgs_received++;
         }
@@ -518,11 +514,7 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
                 duration,
                 args, // The message handlers you pass to your Actor template
                 failhandler,
-                &signal,
-                &control,
-                &getActorInfo,
-                &ownerTerminated,
-                &unknown,
+                default_handlers.expand,
             );
             if (!message) {
                 timeout();
@@ -581,3 +573,11 @@ alias GetActorInfo = Request!"GetActorInfo";
 void getActorInfo(GetActorInfo req) {
     req.respond(ActorInfoRecord(thisActor).toDoc);
 }
+
+private auto default_handlers = tuple(
+    &signal,
+    &control,
+    &getActorInfo,
+    &ownerTerminated,
+    &unknown,
+);
