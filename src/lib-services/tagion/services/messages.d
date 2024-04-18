@@ -38,6 +38,8 @@ alias NodeAIOTask = Msg!"node_aio_task";
 alias NodeDial = Msg!"node_dial";
 /// An accept task was completed
 alias NodeAccept = Msg!"node_accept";
+/// An error occured while doing an aio task
+alias NodeError = Msg!"node_error";
 
 /// [FROM: DART, TO: Replicator] Send the produced recorder for replication
 alias SendRecorder = Msg!"SendRecorder";
