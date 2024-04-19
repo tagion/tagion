@@ -81,6 +81,107 @@ int tagion_document_array(
     return ErrorCode.none;
 }
 
+
+enum DocumentTextFormat {
+    JSON,
+    PRETTYJSON,
+    BASE64,
+    HEX,
+}
+
+int tagion_document_get_text(
+    const uint8_t* buf, 
+    const size_t buf_len, 
+    const int text_format,
+    char** str, 
+    size_t* str_len
+    ) {
+    import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBONtoText;
+    import std.format;
+    try {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        const doc_error = doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int)doc_error;
+        }
+
+        const fmt = cast(DocumentTextFormat) text_format;
+
+        string text;
+        with (DocumentTextFormat) {
+            switch(fmt) {
+                case JSON:
+                    text = doc.toJSON.toString;
+                    break;
+                case PRETTYJSON:
+                    text = doc.toPretty;
+                    break;
+                case BASE64:
+                    text = doc.encodeBase64;
+                    break;
+                case HEX:
+                    text = format("%(%02x%)", doc.serialize);
+                    break;
+                default:
+                    return ErrorCode.error;
+            }
+        }
+        *str = cast(char*) &text[0];
+        *str_len = text.length;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+
+    return ErrorCode.none;
+}
+
+/// 
+unittest {
+    import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBONtoText;
+    import std.format;
+
+    auto h = new HiBON;
+    h["hai"] = "bon";
+    const doc = Document(h);
+
+    // hex
+    char* str_value;
+    size_t str_len;
+    int rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.HEX, &str_value, &str_len); 
+    assert(rt == ErrorCode.none);
+    auto str = str_value[0..str_len];
+    assert(str == format("%(%02x%)", doc.serialize));
+
+    // json
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.JSON, &str_value, &str_len); 
+    assert(rt == ErrorCode.none);
+    str = str_value[0..str_len];
+    assert(str == doc.toJSON.toString);
+
+
+    // jsonpretty
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.PRETTYJSON, &str_value, &str_len); 
+    assert(rt == ErrorCode.none);
+    str = str_value[0..str_len];
+    assert(str == doc.toPretty);
+
+    // base64
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.BASE64, &str_value, &str_len); 
+    assert(rt == ErrorCode.none);
+    str = str_value[0..str_len];
+    assert(str == doc.encodeBase64);
+
+    // none existing format
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, 100, &str_value, &str_len); 
+    assert(rt == ErrorCode.error);
+}
+
+
 /** 
  * Get an sub doc from a document
  * Params:
