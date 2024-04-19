@@ -132,19 +132,18 @@ struct TranscriptService {
         epoch_creator_handle.send(Payload(), own_vote.toDoc);
     }
 
-    TagionGlobals last_globals = TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(
-            10_0000), long(0));
-    TagionHead last_head = TagionHead(TagionDomain, 0);
+    TagionGlobals last_globals;
+    TagionHead last_head;
 
-    Fingerprint previous_epoch = Fingerprint([1, 2, 3, 4]);
-    long last_epoch_number = 0;
-    long last_consensus_epoch = 0;
+    Fingerprint previous_epoch;
+    long last_epoch_number;
+    long last_consensus_epoch;
 
     void epoch(consensusEpoch,
         immutable(EventPackage*)[] epacks,
         immutable(long) epoch_number,
         const(sdt_t) epoch_time) @safe {
-        last_epoch_number += 1;
+        last_epoch_number++;
         import tagion.utils.Term;
 
         log("%sEpoch round: %d time %s%s", BLUE, last_epoch_number, epoch_time, RESET);
@@ -409,7 +408,6 @@ struct TranscriptService {
         log("PROCESS FILE PATH %s", process_file_path);
 
         {
-            bool head_found;
             // start by reading the head
             immutable tagion_index = net.dartKey(StdNames.name, TagionDomain);
             dart_handle.send(dartReadRR(), [tagion_index]);
@@ -420,42 +418,37 @@ struct TranscriptService {
                     log("FOUND A TAGIONHEAD");
                     // yay we found a head!
                     last_head = TagionHead(head_recorder[].front.filed);
-                    head_found = true;
                 }
                 else {
-                    log("NO HEAD FOUND");
-                    /* throw new ServiceError("Transcript booted without getting head"); */
+                    throw new ServiceError("Transcript booted without getting head");
                 }
-
             });
 
-            if (head_found) {
-                // now we locate the epoch
-                immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
-                dart_handle.send(dartReadRR(), [epoch_index]);
-                receive((dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
-                    if (!epoch_recorder.empty) {
-                        auto doc = epoch_recorder[].front.filed;
-                        if (doc.isRecord!Epoch) {
-                            log("FOUND A EPOCH");
-                            auto epoch = Epoch(doc);
-                            last_epoch_number = epoch.epoch_number;
-                            last_consensus_epoch = epoch.epoch_number;
-                            last_globals = epoch.globals;
-                        }
-                        else if (doc.isRecord!GenesisEpoch) {
-                            auto genesis_epoch = GenesisEpoch(doc);
-                            last_epoch_number = genesis_epoch.epoch_number;
-                            last_globals = genesis_epoch.globals;
-                            log("FOUND A EPOCH");
-                        }
-                        else {
-                            throw new ServiceError("The read epoch was not of type Epoch or GenesisEpoch");
-                        }
-                        previous_epoch = Fingerprint(net.calcHash(doc));
+            // now we locate the epoch
+            immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
+            dart_handle.send(dartReadRR(), [epoch_index]);
+            receive((dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
+                if (!epoch_recorder.empty) {
+                    auto doc = epoch_recorder[].front.filed;
+                    if (doc.isRecord!Epoch) {
+                        log("FOUND A EPOCH");
+                        auto epoch = Epoch(doc);
+                        last_epoch_number = epoch.epoch_number;
+                        last_consensus_epoch = epoch.epoch_number;
+                        last_globals = epoch.globals;
                     }
-                });
-            }
+                    else if (doc.isRecord!GenesisEpoch) {
+                        auto genesis_epoch = GenesisEpoch(doc);
+                        last_epoch_number = genesis_epoch.epoch_number;
+                        last_globals = genesis_epoch.globals;
+                        log("FOUND A EPOCH");
+                    }
+                    else {
+                        throw new ServiceError("The read epoch was not of type Epoch or GenesisEpoch");
+                    }
+                    previous_epoch = Fingerprint(net.calcHash(doc));
+                }
+            });
         }
         log("Booting with globals: %s\n last_head: %s", last_globals.toPretty, last_head.toPretty);
 

@@ -260,7 +260,7 @@ int _neuewelle(string[] args) {
                 db.close;
             }
 
-            const head = TagionHead("tagion", 0);
+            const head = TagionHead();
             auto epoch = head.getEpoch(db, __net);
         }
         else {

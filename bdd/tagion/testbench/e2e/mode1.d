@@ -249,11 +249,6 @@ class Mode1NetworkStart {
 
         const genesis_dart_path = "genesis_dart.drt";
 
-        TagionHead tagion_head;
-        tagion_head.name = TagionDomain;
-        tagion_head.current_epoch = 0;
-        recorder.add(tagion_head);
-
         DARTFile.create(genesis_dart_path, net);
         auto db = new DART(net, genesis_dart_path);
         db.modify(recorder);
