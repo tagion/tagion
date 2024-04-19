@@ -23,7 +23,6 @@ import tagion.utils.BitMask;
 
 static immutable pastel19 = [
     "#fbb4ae", // Light pink
-    "#b3cde3", // Light blue
     "#ccebc5", // Light green
     "#decde4", // Light lavender
     "#fed9a6", // Light peach
@@ -39,8 +38,26 @@ static immutable pastel19 = [
     "#ffcc99", // Light peachy
     "#ffd1dc", // Light pinkish lavender
     "#d9f2d9", // Light pale green
-    "#b2ebf2", // Light pale blue
     "#ffccff" // Light lavender pink
+];
+static immutable nonPastel19 = [
+    "#f06292", // Pink
+    "#4caf50", // Green
+    "#9c27b0", // Lavender
+    "#ff9800", // Peach
+    "#ffeb3b", // Yellow
+    "#795548", // Brown
+    "#e91e63", // Lavender pink
+    "#9e9e9e", // Gray
+    "#f44336", // Coral pink
+    "#00e676", // Mint
+    "#ff5722", // Apricot
+    "#616161", // Grayish
+    "#4caf50", // Pastel green
+    "#ff9800", // Peachy
+    "#e91e63", // Pinkish lavender
+    "#8bc34a", // Pale green
+    "#9c27b0" // Lavender pink
 ];
 
 @safe
@@ -209,7 +226,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
 
         // colors
         if (e.witness) {
-            node_circle.fill = e.famous ? "red" : "lightgreen";
+            node_circle.fill = e.famous ? nonPastel19.color(e.round_received) : "blue";
         }
         else {
             node_circle.fill = pastel19.color(e.round_received);
