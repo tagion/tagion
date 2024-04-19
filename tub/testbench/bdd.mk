@@ -12,7 +12,7 @@ BDD_D_FILES:=$(BDD_MD_FILES:.md=.d)
 
 bbdinit: DFLAGS+=$(BDDDFLAGS)
 
-bddtest: | bddfiles bddinit bddrun
+bddtest: | bddfiles tagion bddinit bddrun
 
 .PHONY: bddtest
 
