@@ -49,7 +49,7 @@ void test_document() {
     }
     {
         int value;
-        const rt=tagion_document_get_int(&elm_i32, &value);
+        const rt=tagion_document_get_int32(&elm_i32, &value);
         writefln("rt=%s", rt);
         writefln("value=%s", value);
         

@@ -69,43 +69,6 @@ unittest {
     assert(rt == ErrorCode.exception, "Should throw an error");
 }
 
-/** 
- * Get an integer from a document element
- * Params:
- *   element = element to get
- *   value = pointer to the returned integer
- * Returns: ErrorCode
- */
-int tagion_document_get_int(const Document.Element* element, int* value) {
-    try {
-        *value = element.get!int; 
-    }
-    catch (Exception e) {
-        last_error = e;
-        return ErrorCode.exception;
-    }
-    return ErrorCode.none;
-}
-
-///
-unittest {
-    auto h = new HiBON;
-    string key_i32="i32";
-    int insert_int = 42;
-    h["i32"]=insert_int;
-    const doc = Document(h);
-    Document.Element elm_i32;
-
-    // get element that exists
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
-    assert(rt == ErrorCode.none, "Get Document.element returned error");
-
-    // get the integer
-    int value;
-    rt = tagion_document_get_int(&elm_i32, &value);
-    assert(rt == ErrorCode.none, "Get integer returned error");
-    assert(value == insert_int, "The document int was not the same");
-}
 
 /** 
  * Get an string from a document
@@ -272,4 +235,195 @@ unittest {
     assert(rt == ErrorCode.none, "get bool returned error");
 
     assert(value == true, "did not read bool");
+}
+
+/** 
+ * Get time from a document element
+ * Params:
+ *   element = element to get 
+ *   time = pointer to the returned time
+ * Returns: ErrorCode
+ */
+int tagion_document_get_time(const Document.Element* element, int64_t* time) {
+    import tagion.utils.StdTime;
+    try {
+        *time = cast(long) element.get!sdt_t;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+unittest {
+    auto h = new HiBON;
+    string key_time = "time";
+    import tagion.utils.StdTime;
+    auto insert_time = sdt_t(12_345);
+    h[key_time] = insert_time;
+    const doc = Document(h);
+
+    Document.Element elm_time;
+    int rt = tagion_document(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_time);
+    assert(rt == ErrorCode.none, "Get document element time returned error");
+
+    long value;
+    rt = tagion_document_get_time(&elm_time, &value);
+    assert(rt == ErrorCode.none, "get time returned error");
+
+    assert(value == cast(long) insert_time, "did not read time");
+}
+
+/** 
+ * Get an i32 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned i32
+ * Returns: ErrorCode
+ */
+int tagion_document_get_int32(const Document.Element* element, int32_t* value) {
+    try {
+        *value = element.get!int; 
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    auto h = new HiBON;
+    string key_i32="i32";
+    int insert_int = 42;
+    h["i32"]=insert_int;
+    const doc = Document(h);
+    Document.Element elm_i32;
+
+    // get element that exists
+    int rt = tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
+    assert(rt == ErrorCode.none, "Get Document.element returned error");
+
+    // get the integer
+    int value;
+    rt = tagion_document_get_int32(&elm_i32, &value);
+    assert(rt == ErrorCode.none, "Get integer returned error");
+    assert(value == insert_int, "The document int was not the same");
+}
+/** 
+ * Get an i64 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned i64
+ * Returns: ErrorCode
+ */
+int tagion_document_get_int64(const Document.Element* element, int64_t* value) {
+    try {
+        *value = element.get!long; 
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+/** 
+ * Get an uint32 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned uint32
+ * Returns: ErrorCode
+ */
+int tagion_document_get_uint32(const Document.Element* element, uint32_t* value) {
+    try {
+        *value = element.get!uint; 
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+/** 
+ * Get an uint64 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned uint64
+ * Returns: ErrorCode
+ */
+int tagion_document_get_uint64(const Document.Element* element, uint64_t* value) {
+    try {
+        *value = element.get!ulong; 
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+
+/** 
+ * Get an f32 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned f32
+ * Returns: ErrorCode
+ */
+int tagion_document_get_float32(const Document.Element* element, float* value) {
+    try {
+        *value = element.get!float;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+/** 
+ * Get an f64 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned f64
+ * Returns: ErrorCode
+ */
+int tagion_document_get_float64(const Document.Element* element, double* value) {
+    try {
+        *value = element.get!double;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+
+
+/** 
+ * Get bigint from a document. Returned as serialized leb128 ubyte buffer
+ * Params:
+ *   element = element to get
+ *   bigint_buf = pointer to read buffer
+ *   bigint_buf_len = pointer to buffer length
+ * Returns: ErrorCode
+ */
+int tagion_document_get_bigint(const Document.Element* element, uint8_t** bigint_buf, size_t* bigint_buf_len) {
+    import tagion.hibon.BigNumber;
+
+    try {
+        auto big_number = element.get!BigNumber;
+        auto data = big_number.serialize;
+        *bigint_buf = cast(uint8_t*) &data[0];
+        *bigint_buf_len = data.length; 
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
 }
