@@ -41,6 +41,7 @@ struct NodeInterfaceOptions {
     mixin JSONCommon;
 }
 
+///
 enum NodeErrorCode {
     invalid_state,
     nng_err,
@@ -52,7 +53,7 @@ enum NodeErrorCode {
  * All aio tasks notify the calling thread by sending a message
  */
 struct Dialer {
-    // disable copy/postblitz
+    /// copy/postblitz disabled
     @disable this(this);
 
     int id;
@@ -62,6 +63,7 @@ struct Dialer {
     string owner_task;
     Pubkey pkey;
 
+    ///
     this(int id, string address_, Pubkey pkey) @trusted {
         int rc = nng_aio_alloc(&aio, &callback, self);
         this.pkey = pkey;
@@ -75,11 +77,13 @@ struct Dialer {
         owner_task = thisActor.task_name;
     }
 
+    /// free nng memory
     ~this() {
         nng_aio_free(aio);
         nng_stream_dialer_free(dialer);
     }
 
+    /// Initiate a connection to the address
     void dial() {
         nng_stream_dialer_dial(dialer, aio);
     }
@@ -114,7 +118,7 @@ struct Peer {
         send,
     }
 
-    // disable copy/postblitz
+    /// copy/postblitz disabled
     @disable this(this);
 
     int id;
@@ -131,6 +135,7 @@ struct Peer {
 
     enum bufsize = 256;
 
+    ///
     this(int id, nng_stream* socket) @trusted {
         this.id = id;
         int rc = nng_aio_alloc(&aio, &callback, self);
@@ -145,6 +150,7 @@ struct Peer {
         check(rc == 0, nng_errstr(rc));
     }
 
+    /// free nng memory
     ~this() {
         nng_aio_free(aio);
         nng_stream_free(socket);
@@ -186,6 +192,7 @@ struct Peer {
         }
     }
 
+    /// Send a buffer to the peer
     void send(const(ubyte)[] data) @trusted {
         assert(socket !is null, "This peer is not connected");
         check(state is State.ready, "Can not call send when not ready");
@@ -198,6 +205,7 @@ struct Peer {
         nng_stream_send(socket, aio);
     }
 
+    /// Receive a buffer from the peer
     void recv() {
         assert(socket !is null, "This peer is not connected");
         /* check(state = State.stale); */
@@ -215,10 +223,10 @@ struct Peer {
  */
 struct PeerMgr {
 
-    // disable copy/postblitz
+    /// copy/postblitz disabled
     @disable this(this);
 
-    // TODO: eject lru connections when max connections is exceeded
+    ///
     this(SecureNet net, string address) @trusted {
         this.net = net;
         this.hirpc = HiRPC(net);
@@ -233,6 +241,7 @@ struct PeerMgr {
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
     }
 
+    /// free nng memory
     ~this() {
         nng_aio_free(aio_conn);
         nng_stream_listener_free(listener);
@@ -282,15 +291,16 @@ struct PeerMgr {
     }
 
     /**
-     * Sync: 
      * Listen on the specified address. 
      * This should be called before doing anything else.
+     * Finishes immediately
     */
     void listen() {
         int rc = cast(nng_errno)nng_stream_listener_listen(listener);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
     }
 
+    // Accept incoming connections
     void accept() {
         nng_stream_listener_accept(listener, aio_conn);
     }
