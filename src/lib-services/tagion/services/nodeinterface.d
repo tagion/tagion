@@ -211,7 +211,7 @@ struct Peer {
 /**
  * Establishes new connections either by dial or accept
  * And associates active connections with a public key
- * Most operations are asynchronous and when complete will send a message to the calling thread.
+ * Most operations are asynchronous and when completed will send a message to the calling thread.
  */
 struct PeerMgr {
 
@@ -380,22 +380,6 @@ struct PeerMgr {
     auto handlers = tuple(&on_recv, &on_dial, &on_accept, &on_aio_task, &send);
 
     mixin NodeHelpers;
-}
-
-
-version(unittest) {
-    import std.variant;
-    import conc = tagion.utils.pretend_safe_concurrency;
-
-    void receiveOnlyTimeout(Args...)(Duration dur, Args handlers) {
-        bool received = conc.receiveTimeout(dur, 
-            handlers,
-            (Variant var) @trusted {
-                throw new Exception(format("Unknown msg: %s", var));
-            }
-        );
-        assert(received, "Timed out");
-    }
 }
 
 ///
@@ -571,5 +555,20 @@ mixin template NodeHelpers() {
         This* _this = cast(This*)ctx;
         assert(_this !is null, "did not get this* through the ctx");
         return _this;
+    }
+}
+
+version(unittest) {
+    import std.variant;
+    import conc = tagion.utils.pretend_safe_concurrency;
+
+    void receiveOnlyTimeout(Args...)(Duration dur, Args handlers) {
+        bool received = conc.receiveTimeout(dur, 
+            handlers,
+            (Variant var) @trusted {
+                throw new Exception(format("Unknown msg: %s", var));
+            }
+        );
+        assert(received, "Timed out");
     }
 }

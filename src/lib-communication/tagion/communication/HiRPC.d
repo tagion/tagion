@@ -553,13 +553,6 @@ struct HiRPC {
     }
 }
 
-/// A good HiRPC result with no additional data.
-@safe
-@recordType("OK") @disableSerialize
-struct ResultOk {
-    mixin HiBONRecord!();
-}
-
 ///
 unittest {
     import tagion.crypto.SecureNet : BadSecureNet, StdSecureNet;
@@ -664,4 +657,11 @@ unittest {
         }
         // writefln("recever.verified=%s", recever.verified);
     }
+}
+
+/// A good HiRPC result with no additional data.
+@safe @disableSerialize
+@recordType("OK")
+struct ResultOk {
+    mixin HiBONRecord!();
 }
