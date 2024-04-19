@@ -118,7 +118,6 @@ unittest {
 int tagion_document_get_string(const Document.Element* element, char** value, size_t* str_len) {
     try {
         auto str = element.get!string;
-        stdout.flush;
         *value = cast(char*) &str[0];
         *str_len = str.length;
     } catch (Exception e) {
@@ -196,6 +195,49 @@ unittest {
     auto read_data = cast(immutable) buf[0..buf_len];
     assert(sub_doc == Document(read_data), "read doc was not the same");
 }
+
+/** 
+ * Get binary from a document
+ * Params:
+ *   element = element to get
+ *   buf = pointer to read buffer
+ *   buf_len = pointer to buffer length
+ * Returns: ErrorCode
+ */
+int tagion_document_get_binary(const Document.Element* element, uint8_t** buf, size_t* buf_len) {
+    try {
+        auto data = element.get!(immutable(ubyte[]));
+        *buf = cast(uint8_t*) &data[0];
+        *buf_len = data.length; 
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+unittest {
+    auto h = new HiBON;
+    string key_binary = "binary";
+    immutable(ubyte[]) binary_data = [0,1,0,1];
+    h[key_binary] = binary_data;
+    const doc = Document(h);
+
+    Document.Element elm_binary;
+    int rt = tagion_document(&doc.data[0], doc.data.length, &key_binary[0], key_binary.length, &elm_binary);
+    assert(rt == ErrorCode.none, "Get document element binary returned error");
+
+    uint8_t* buf;
+    size_t buf_len;
+    rt = tagion_document_get_binary(&elm_binary, &buf, &buf_len);
+    assert(rt == ErrorCode.none);
+
+    auto read_data = cast(immutable) buf[0..buf_len];
+
+    assert(binary_data == read_data); 
+}
+
 
 /** 
  * Get a bool from a document element
