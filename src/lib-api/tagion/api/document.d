@@ -7,10 +7,10 @@ import tagion.basic.tagionexceptions;
 import core.stdc.stdint;
 import std.stdio;
 import core.lifetime;
-import tagion.hibon.HiBON;
 extern(C):
 
 version(unittest) {
+import tagion.hibon.HiBON;
 } 
 else {
 nothrow:
@@ -50,66 +50,36 @@ int tagion_document(
     return ErrorCode.none;
 }
 
-///
-unittest {
-    auto h = new HiBON;
-    string key_i32="i32";
-    h["i32"]=42;
-    const doc = Document(h);
-    Document.Element elm_i32;
-
-    // get element that exists
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
-    assert(rt == ErrorCode.none, "Get Document.element returned error");
-
-    // try to get element not present should throw
-    Document.Element elm_none;
-    string key_time="time";
-    rt = tagion_document(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_none);
-    assert(rt == ErrorCode.exception, "Should throw an error");
-}
-
-
 /** 
- * Get an string from a document
+ * Get a document element from index
  * Params:
- *   element = element to get
- *   value = pointer to the string
- *   str_len = length of string
- * Returns: ErrorCode 
+ *   buf = the document buffer
+ *   buf_len = length of the buffer
+ *   index = index to
+ *   element = 
+ * Returns: 
  */
-int tagion_document_get_string(const Document.Element* element, char** value, size_t* str_len) {
+int tagion_document_array(
+    const uint8_t* buf, 
+    const size_t buf_len, 
+    const size_t index, 
+    Document.Element* element) {
     try {
-        auto str = element.get!string;
-        *value = cast(char*) &str[0];
-        *str_len = str.length;
-    } catch (Exception e) {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        const doc_error = doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int)doc_error;
+        }
+        auto doc_elm=doc[index];
+        copyEmplace(doc_elm, *element);
+    }
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
     return ErrorCode.none;
 }
-
-unittest {
-    auto h = new HiBON;
-    string key_string = "string";
-    h[key_string] = "wowo";
-    const doc = Document(h);
-    Document.Element elm_string;
-
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_string[0], key_string.length, &elm_string);
-    assert(rt == ErrorCode.none, "Get document element string returned error");
-
-    char* str_value;
-    size_t str_len;
-
-    rt = tagion_document_get_string(&elm_string, &str_value, &str_len);
-    assert(rt == ErrorCode.none, "get string returned error");
-
-    auto str = str_value[0..str_len];
-    assert(str == "wowo", "read string was different"); 
-}
-
 
 /** 
  * Get an sub doc from a document
@@ -158,6 +128,68 @@ unittest {
     auto read_data = cast(immutable) buf[0..buf_len];
     assert(sub_doc == Document(read_data), "read doc was not the same");
 }
+
+/** 
+ * Get an string from a document
+ * Params:
+ *   element = element to get
+ *   value = pointer to the string
+ *   str_len = length of string
+ * Returns: ErrorCode 
+ */
+int tagion_document_get_string(const Document.Element* element, char** value, size_t* str_len) {
+    try {
+        auto str = element.get!string;
+        *value = cast(char*) &str[0];
+        *str_len = str.length;
+    } catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+unittest {
+    auto h = new HiBON;
+    string key_string = "string";
+    h[key_string] = "wowo";
+    const doc = Document(h);
+    Document.Element elm_string;
+
+    int rt = tagion_document(&doc.data[0], doc.data.length, &key_string[0], key_string.length, &elm_string);
+    assert(rt == ErrorCode.none, "Get document element string returned error");
+
+    char* str_value;
+    size_t str_len;
+
+    rt = tagion_document_get_string(&elm_string, &str_value, &str_len);
+    assert(rt == ErrorCode.none, "get string returned error");
+
+    auto str = str_value[0..str_len];
+    assert(str == "wowo", "read string was different"); 
+}
+
+unittest {
+    auto h = new HiBON;
+    h = ["hey0", "hey1", "hey2"];
+    const doc = Document(h);
+    Document.Element elm_string;
+    int rt = tagion_document_array(&doc.data[0], doc.data.length, 0, &elm_string);
+    assert(rt == ErrorCode.none, "get array index returned error");
+    char* str_value;
+    size_t str_len;
+
+    rt = tagion_document_get_string(&elm_string, &str_value, &str_len);
+    assert(rt == ErrorCode.none, "get string returned error");
+    auto str = str_value[0..str_len];
+    assert(str == "hey0", "read string was different"); 
+
+    // read index to trigger range error
+    rt = tagion_document_array(&doc.data[0], doc.data.length, 5, &elm_string);
+    assert(rt == ErrorCode.exception, "should throw error on undefined index");
+}
+
+
 
 /** 
  * Get binary from a document
@@ -292,6 +324,24 @@ int tagion_document_get_int32(const Document.Element* element, int32_t* value) {
     }
     return ErrorCode.none;
 }
+///
+unittest {
+    auto h = new HiBON;
+    string key_i32="i32";
+    h["i32"]=42;
+    const doc = Document(h);
+    Document.Element elm_i32;
+
+    // get element that exists
+    int rt = tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
+    assert(rt == ErrorCode.none, "Get Document.element returned error");
+
+    // try to get element not present should throw
+    Document.Element elm_none;
+    string key_time="time";
+    rt = tagion_document(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_none);
+    assert(rt == ErrorCode.exception, "Should throw an error");
+}
 
 ///
 unittest {
@@ -402,8 +452,6 @@ int tagion_document_get_float64(const Document.Element* element, double* value) 
     return ErrorCode.none;
 }
 
-
-
 /** 
  * Get bigint from a document. Returned as serialized leb128 ubyte buffer
  * Params:
@@ -427,3 +475,4 @@ int tagion_document_get_bigint(const Document.Element* element, uint8_t** bigint
     }
     return ErrorCode.none;
 }
+
