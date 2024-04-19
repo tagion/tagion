@@ -92,6 +92,38 @@ unittest {
 }
 
 /** 
+ * Get document error code
+ * Params:
+ *   buf = doc buf
+ *   buf_len = doc len 
+ *   error_code = pointer to error code
+ * Returns: ErrorCode
+ */
+int tagion_document_valid(const uint8_t* buf, const size_t buf_len, int32_t* error_code) {
+    try {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        *error_code = cast(int) doc.valid;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+///
+unittest {
+    auto h = new HiBON;
+    h["good"] = "document";
+    const doc = Document(h);
+
+    int error_code = 7;
+    int rt = tagion_document_valid(&doc.data[0], doc.data.length, &error_code);
+    assert(rt == ErrorCode.none);
+    assert(error_code == Document.Element.ErrorCode.NONE);
+}
+
+/** 
  * Get a document element from index
  * Params:
  *   buf = the document buffer
