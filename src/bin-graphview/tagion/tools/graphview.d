@@ -226,7 +226,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
 
         // colors
         if (e.witness) {
-            node_circle.fill = e.famous ? nonPastel19.color(e.round_received) : "blue";
+            node_circle.fill = e.famous ? nonPastel19.color(e.round) : "blue";
         }
         else {
             node_circle.fill = pastel19.color(e.round_received);
