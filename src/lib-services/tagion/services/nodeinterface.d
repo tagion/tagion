@@ -398,6 +398,7 @@ version(unittest) {
     }
 }
 
+///
 unittest {
     thisActor.task_name = "jens";
 
@@ -412,7 +413,7 @@ unittest {
     auto dialer = PeerMgr(net1, "abstract://whomisam" ~ generateId.to!string);
     auto listener = PeerMgr(net2, "abstract://whomisam" ~ generateId.to!string);
 
-    /* dialer.listen(); */
+    dialer.listen();
     listener.listen();
 
     dialer.dial(listener.address, net2.pubkey);
@@ -428,15 +429,26 @@ unittest {
     assert(dialer.all_peers.byValue.all!(p => p.state is Peer.State.ready));
     assert(listener.all_peers.byValue.all!(p => p.state is Peer.State.ready));
 
-    listener.recv_all_ready();
-    Buffer send_payload = HiRPC(net1).action("manythanks").serialize;
+    {
+        listener.recv_all_ready();
+        Buffer send_payload_p1 = HiRPC(net1).action("manythanks").serialize;
 
-    dialer.send(net2.pubkey, send_payload);
+        dialer.send(net2.pubkey, send_payload_p1);
 
-    receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
-    receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
+        receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
+        receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
 
-    assert(listener.peers.length == 1);
+        assert(listener.peers.length == 1);
+    }
+
+    {
+        dialer.recv_all_ready;
+        Buffer send_payload_p2 = HiRPC(net2).action("manythanks").serialize;
+        listener.send(net1.pubkey, send_payload_p2);
+
+        receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_aio_task);
+        receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_aio_task);
+    }
 }
 
 ///
