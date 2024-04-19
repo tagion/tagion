@@ -118,10 +118,10 @@ int _neuewelle(string[] args) {
 
     auto main_args = getopt(args,
             "version", "Print revision information", &version_switch,
+            "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
-            "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
             "m|mode", "Set the node network mode [0,1,2]", &network_mode_switch,
     );
