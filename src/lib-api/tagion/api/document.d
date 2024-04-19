@@ -51,13 +51,54 @@ int tagion_document(
 }
 
 /** 
+ * Return the version of the document
+ * Params:
+ *   buf = doc buf 
+ *   buf_len = doc len
+ *   ver = 
+ * Returns: ErrorCode
+ */
+int tagion_document_get_version(
+    const uint8_t* buf, 
+    const size_t buf_len,
+    uint32_t* ver) {
+    try {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        const doc_error = doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int)doc_error;
+        }
+        *ver = doc.ver();
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    auto h = new HiBON;
+    h["version_test"] = 2;
+    const doc = Document(h);
+
+    uint ver = 10; // set the version equal to something else since current ver is 0 
+    int rt = tagion_document_get_version(&doc.data[0], doc.data.length, &ver);
+    assert(rt == ErrorCode.none);
+    import tagion.hibon.HiBONBase : HIBON_VERSION;
+    assert(ver == HIBON_VERSION);
+}
+
+/** 
  * Get a document element from index
  * Params:
  *   buf = the document buffer
  *   buf_len = length of the buffer
  *   index = index to
  *   element = 
- * Returns: 
+ * Returns: ErrorCode
  */
 int tagion_document_array(
     const uint8_t* buf, 
