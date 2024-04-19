@@ -29,11 +29,17 @@ alias consensusEpoch = Msg!"consensus_epoch";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 
 /// [TO: Node Interface] send HiRPC to another node 
-alias NodeSend = Msg!"nodeSend";
+alias NodeSend = Msg!"node_send";
 /// [FROM: Node Interface] HiRPC from other node
-alias NodeRecv = Msg!"nodeRecv";
-alias NodeAIOTask = Msg!"nodeaiotask";
-alias NodeConn = Msg!"nodeConnectionEstablished";
+alias NodeRecv = Msg!"node_recv";
+// Basic node aio task completed
+alias NodeAIOTask = Msg!"node_aio_task";
+/// A Dial task was completed
+alias NodeDial = Msg!"node_dial";
+/// An accept task was completed
+alias NodeAccept = Msg!"node_accept";
+/// An error occurred while doing an aio task
+alias NodeError = Msg!"node_error";
 
 /// [FROM: DART, TO: Replicator] Send the produced recorder for replication
 alias SendRecorder = Msg!"SendRecorder";

@@ -119,7 +119,7 @@ static assert(uint.sizeof == 4);
 
     @property @nogc const pure nothrow {
         @safe bool empty() {
-            return _data.length <= ubyte.sizeof;
+            return _data.length == 0 || _data[0] == 0;
         }
 
         uint size() {
@@ -146,7 +146,7 @@ static assert(uint.sizeof == 4);
     }
 
     unittest { // Empty doc
-    {
+        {
             const doc = Document();
             assert(doc._data.length is 0);
             assert(doc.data.length is 1);
@@ -163,6 +163,18 @@ static assert(uint.sizeof == 4);
         {
             immutable(ubyte[]) _data = [0];
             assert(_data.length is 1);
+            const doc = Document(_data);
+            assert(doc.data.length is 1);
+            assert(doc.empty);
+            assert(doc.size is 0);
+            assert(doc.length is 0);
+            assert(doc[].empty);
+            assert(doc.isInorder);
+        }
+
+        {
+            immutable(ubyte[]) _data = [0, 0, 0, 0];
+            assert(_data.length is 4);
             const doc = Document(_data);
             assert(doc.data.length is 1);
             assert(doc.empty);

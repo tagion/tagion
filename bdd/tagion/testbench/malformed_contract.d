@@ -183,6 +183,6 @@ int _main(string[] args) {
 
     feature.run;
     writefln("finished test execution");
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     return 0;
 }

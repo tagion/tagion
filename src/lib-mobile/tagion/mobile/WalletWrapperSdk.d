@@ -39,8 +39,6 @@ import tagion.basic.tagionexceptions : Check;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.tools.revision;
 
-extern (C) export immutable string TAGION_HASH = revision_info[3];
-
 /// Used for describing the d-runtime status
 enum DrtStatus {
     DEFAULT_STS,

@@ -6,31 +6,41 @@ import std.digest.crc;
 import std.bitmanip;
 import std.exception;
 import std.zlib;
+import std.format;
 import std.algorithm.searching: find, boyerMooreFinder;
 
-auto i2a(T)(ref T val) 
+auto i2a(T)(ref T val, bool asis = false) pure
 {
-    /* T norm = littleEndian(val); */
-    return cast(ubyte[T.sizeof])(cast(ubyte*) &val)[0 .. T.sizeof];
+    return (endian == Endian.bigEndian && !asis) ?
+        nativeToLittleEndian!T(val) :
+        cast(ubyte[T.sizeof])(cast(ubyte*) &val)[0 .. T.sizeof];
 }
 
-void makeFromLittleEndian(T)(ref T value) {
+void makeFromLittleEndian(T)(ref T value) pure {
     if (endian == Endian.bigEndian) {
-        value = littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(value));
+        value = littleEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(value, true));
     }
 }
 
 T fromLittleEndian(T)(T val) pure {
-    return (endian == Endian.bigEndian) ? littleEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
+    return (endian == Endian.bigEndian) ? littleEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(val, true)) : val;  
+}
+    
+T fromBigEndian(T)(T val) pure {
+    return (endian == Endian.bigEndian) ? bigEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(val, true)) : val;  
 }
 
 
 // TODO: Test it with communication between little- and big endian platforms
 
+// TODO: Add sequence number to handle chunked envelopes
 
 struct Envelope {
     EnvelopeHeader header;
     ubyte[] data;
+    ubyte[] tail;
+    bool errorstate = false;
+    string[] errors;
     
     static align(1) struct EnvelopeHeader {
         bool isValid() pure {
@@ -68,36 +78,56 @@ struct Envelope {
         ubyte[4] hdrsum;
 
         ubyte[] toBuffer() pure {
-            return (magic ~ i2a(schema) ~ i2a(level) ~ i2a(datsize) ~ datsum ~ hdrsum).dup;
+            return (magic ~ i2a!uint(schema) ~ i2a!uint(cast(uint)level) ~ i2a!ulong(datsize) ~ datsum ~ hdrsum).dup;
         }
 
         ubyte[] getsum() pure {
-            return crc32Of( magic ~ i2a(schema) ~ i2a(level) ~ i2a(datsize) ~ datsum ).dup;
+            return crc32Of( magic ~ i2a!uint(schema) ~ i2a!uint(cast(uint)level) ~ i2a!ulong(datsize) ~ datsum ).dup;
         }
         
         static EnvelopeHeader fromBuffer (const ubyte[] raw) pure {
-            enforce(raw.length >= this.sizeof);
-            EnvelopeHeader hdr =  *(cast(EnvelopeHeader*) raw[0..this.sizeof]);
-            makeFromLittleEndian!uint(cast(uint)hdr.level);
-            makeFromLittleEndian!uint(hdr.schema);
-            makeFromLittleEndian!ulong(hdr.datsize);
-            return hdr;
+            if(raw.length >= this.sizeof){
+                EnvelopeHeader hdr =  *(cast(EnvelopeHeader*) raw[0..this.sizeof]);
+                makeFromLittleEndian!uint(cast(uint)hdr.level);
+                makeFromLittleEndian!uint(hdr.schema);
+                makeFromLittleEndian!ulong(hdr.datsize);
+                return hdr;
+            } else {
+                return EnvelopeHeader.init;
+            }
         }
         
         this(uint schema, uint level){
             this.schema = schema;
             this.level = cast(CompressionLevel)level;
         }
+
+        string toString(){
+            return format("valid:\t%s\nschema:\t%d\nlevel:\t%d\nsize:\t%d\n"
+                ,this.isValid()
+                ,this.schema
+                ,cast(uint)this.level
+                ,this.datsize
+                );
+        }
         
     }   
+
+    void error(string msg) pure {
+        this.errorstate = true;
+        this.errors ~= msg;
+    }
 
     this(uint schema, uint level, ref ubyte[] data){
         this.header = EnvelopeHeader(schema, level);
         this.data = data;
+        this.errorstate = false;
     }
     
     ubyte[] toBuffer() {
         ubyte[] compressed;
+        if(this.errorstate)
+            return [];
         this.header.datsize = this.data.length;
         if(this.header.compression > 0){
             compressed = compress(this.data[0..$], this.header.compression);
@@ -114,20 +144,37 @@ struct Envelope {
         }            
     }
 
-    this ( ubyte[] raw ) pure {
-        enforce(raw.length > EnvelopeHeader.sizeof, "Envelope too short");
+    this ( ref ubyte[] raw ) pure {
+        if(raw.length < EnvelopeHeader.sizeof){
+            this.error("Buffer too short");
+            return;
+        }    
         auto buf = find(raw,boyerMooreFinder(cast(ubyte[])EnvelopeHeader.MagicBytes));
-        enforce(!buf.empty(), "Envelope header not found");
+        if(buf.empty()){
+            this.error("Header not found");
+            return;
+        }    
         this.header = EnvelopeHeader.fromBuffer(buf);
-        enforce(this.header.isValid,"Envelope header invalid");
-        this.data = buf[EnvelopeHeader.sizeof..$];
-        enforce(fromLittleEndian(this.header.datsize) == this.data.length, "Envelope data length invalid");
-        auto ds = crc64ECMAOf(this.data[0..this.data.length]);
-        enforce(this.header.datsum == ds, "Envelope data checksum invalid");
+        if(!this.header.isValid){
+            this.error("Envelope header invalid");
+            return;
+        }    
+        auto dsize = fromLittleEndian(this.header.datsize);
+        if(buf.length - EnvelopeHeader.sizeof < dsize){
+            this.error("Envelope data length invalid");
+            return;
+        }    
+        this.data = buf[EnvelopeHeader.sizeof..EnvelopeHeader.sizeof+dsize];
+        this.tail = buf[EnvelopeHeader.sizeof+dsize..$];
+        auto dsum = crc64ECMAOf(this.data[0..this.data.length]);
+        if(this.header.datsum != dsum){ 
+            this.error("Envelope data checksum invalid");
+            return;
+        }    
     }
 
     ubyte[] toData() {
-        return  (this.header.compression > 0) ? cast(ubyte[])uncompress(this.data[0..$]) : this.data[0..$];
+        return  (this.errorstate) ? [] : (this.header.compression > 0) ? cast(ubyte[])uncompress(this.data[0..$]) : this.data[0..$];
     }    
 }
 
@@ -150,7 +197,7 @@ version(unittest) {
 
     void makeFromBigEndian(T)(ref T value) {
         if (endian == Endian.littleEndian) {
-            value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(value));
+            value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(value));
         }
     }
 
@@ -158,9 +205,6 @@ version(unittest) {
         return (endian == Endian.littleEndian) ? *cast(T*)nativeToBigEndian(val).ptr : val;  
     }
 
-    T fromBigEndian(T)(T val) pure {
-        return (endian == Endian.littleEndian) ? bigEndianToNative!T(cast(ubyte[T.sizeof])i2a(val)) : val;  
-    }
 }
 
 unittest {
@@ -171,6 +215,7 @@ unittest {
     uint x2 = x1;
     uint x3 = 0;
     uint x4 = x1;
+    
     static if (endian == Endian.littleEndian) {
         makeFromBigEndian!uint(x2);
         x3 = x2;

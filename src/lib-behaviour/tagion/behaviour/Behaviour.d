@@ -39,7 +39,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
             // Info index (i)       %3$d
             // Test scenario        %4$s
             // Test member          %5$s
-            //            $ Given: some scenario scenario descriotion
+            //            $ Given: some scenario scenario description
             debug(bdd) writeln("%2$s: ", %1$s.%2$s.infos[%3$d].property.description);
             try {
                 // Example.

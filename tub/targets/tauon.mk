@@ -70,7 +70,7 @@ help-tauon:
 
 $(DBIN)/%.wasm: $(DSRC)/wasi/tests/%.d
 	$(PRECMD)
-	$(DC) $(DFLAGS) $(LIB) $(addprefix -I,$(DINC)) $< $(OUTPUT)$@
+	$(DC) $(DFLAGS) $(LIB) $(addprefix $(DVERSION)=,$(DVERSIONS)) $(addprefix -I,$(DINC)) $< $(OUTPUT)$@
 
 #$(WASMLD) $(LIB) $(DOBJ)/$*.o $(WASI_LDFLAGS) -o $@
 

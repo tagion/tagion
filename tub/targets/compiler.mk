@@ -152,6 +152,7 @@ env-compiler:
 	${call log.kvp, DIP, $(DIP)}
 	${call log.kvp, DIP1000, $(DIP1000)}
 	${call log.kvp, DPREVIEW, $(DPREVIEW)}
+	${call log.kvp, DINCIMPORT, $(DINCIMPORT)}
 	${call log.kvp, DFPIC, $(DFPIC)}
 	${call log.kvp, DCOMPILE_ONLY, $(DCOMPILE_ONLY)}
 	${call log.kvp, DBETTERC, $(DBETTERC)}

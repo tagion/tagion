@@ -171,7 +171,7 @@ int _main(string[] args) {
     feature.RunPassiveFastNetwork(local_options.wave.number_of_nodes, end_epoch);
     feature.run;
     Thread.sleep(5.seconds);
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     return 0;
 }
 
