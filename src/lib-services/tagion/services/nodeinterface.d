@@ -181,7 +181,7 @@ struct Peer {
         }
     }
 
-    void send(ubyte[] data) @trusted {
+    void send(const(ubyte)[] data) @trusted {
         assert(socket !is null, "This peer is not connected");
         check(state is State.ready, "Can not call send when not ready");
         state = State.send;
@@ -316,7 +316,7 @@ struct PeerMgr {
         }
 
         const hirpcmsg = hirpc.receive(doc);
-        if(!hirpcmsg.signed !is HiRPC.SignedState.VALID) {
+        if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
             // error
             return;
         }
@@ -356,7 +356,7 @@ struct PeerMgr {
         writefln("aio_task complete, %s", state);
     }
 
-    void send(NodeSend, Pubkey pkey, ubyte[] buf) {
+    void send(NodeSend, Pubkey pkey, const(ubyte)[] buf) {
         check((pkey in peers) !is null, "No established connection");
         peers[pkey].send(buf);
     }
@@ -417,10 +417,14 @@ unittest {
     assert(listener.all_peers.byValue.all!(p => p.state is Peer.State.ready));
 
     listener.recv_all_ready();
-    dialer.send(NodeSend(), net2.pubkey, [1,23,53,53]);
+    Buffer send_payload = HiRPC(net1).action("manythanks").serialize;
+
+    dialer.send(NodeSend(), net2.pubkey, send_payload);
 
     receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
     receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
+
+    assert(listener.peers.length == 1);
 }
 
 ///
