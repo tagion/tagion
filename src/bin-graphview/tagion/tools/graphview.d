@@ -23,7 +23,6 @@ import tagion.utils.BitMask;
 
 static immutable pastel19 = [
     "#fbb4ae", // Light pink
-    "#b3cde3", // Light blue
     "#ccebc5", // Light green
     "#decde4", // Light lavender
     "#fed9a6", // Light peach
@@ -39,8 +38,26 @@ static immutable pastel19 = [
     "#ffcc99", // Light peachy
     "#ffd1dc", // Light pinkish lavender
     "#d9f2d9", // Light pale green
-    "#b2ebf2", // Light pale blue
     "#ffccff" // Light lavender pink
+];
+static immutable nonPastel19 = [
+    "#f06292", // Pink
+    "#4caf50", // Green
+    "#9c27b0", // Lavender
+    "#ff9800", // Peach
+    "#ffeb3b", // Yellow
+    "#795548", // Brown
+    "#e91e63", // Lavender pink
+    "#9e9e9e", // Gray
+    "#f44336", // Coral pink
+    "#00e676", // Mint
+    "#ff5722", // Apricot
+    "#616161", // Grayish
+    "#4caf50", // Pastel green
+    "#ff9800", // Peachy
+    "#e91e63", // Pinkish lavender
+    "#8bc34a", // Pale green
+    "#9c27b0" // Lavender pink
 ];
 
 @safe
@@ -85,8 +102,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
     Range doc_range;
     size_t node_size = 5;
     EventView[uint] events;
-    long NODE_INDENT = 100;
-    const NODE_CIRCLE_SIZE = 30;
+    long NODE_INDENT = 110;
+    const NODE_CIRCLE_SIZE = 40;
 
     this(Range doc_range) {
         this.doc_range = doc_range;
@@ -209,7 +226,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
 
         // colors
         if (e.witness) {
-            node_circle.fill = e.famous ? "red" : "lightgreen";
+            node_circle.fill = e.famous ? nonPastel19.color(e.round_received) : "blue";
         }
         else {
             node_circle.fill = pastel19.color(e.round_received);
@@ -232,7 +249,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text_anchor = "middle";
         text.dominant_baseline = "middle";
         text.fill = "black";
-        text.text = format("%s", e.round_received == long.min ? "NaN" : format("%s", e.round_received));
+        text.text = format("%s:%s", e.round == long.min ? "NaN" : format("%s", e.round), e.round_received == long.min ? "NaN" : format("%s", e.round_received));
         obuf.writefln("%s", text.toString);
     }
 
@@ -314,10 +331,6 @@ struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
             string[] options;
             // const witness_mask_text=mask2text(mother_event.witness_mask);
             //texts~=mask2text(mother_event.witness_mask);
-            const round_received_mask = mask2text(mother_event.round_received_mask);
-            if (round_received_mask) {
-                texts ~= format("%s:e", round_received_mask);
-            }
             if (mother_event.witness) {
                 options ~= format(`color="%s"`, "red");
                 options ~= format(`fontcolor="%s"`, "blue");

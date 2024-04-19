@@ -121,7 +121,7 @@ struct Peer {
     nng_iov sendiov;
     ubyte[] sendbuf;
 
-    enum bufsize = 4096;
+    enum bufsize = 256;
 
     this(int id, nng_stream* socket) @trusted {
         this.id = id;
@@ -143,7 +143,7 @@ struct Peer {
     }
 
     // FIXME: sending and receive of partial buffers
-    static void callback(void* ctx) nothrow {
+    static void callback(void* ctx) @trusted nothrow {
         This* _this = self(ctx);
         try {
             thread_attachThis();
@@ -156,13 +156,14 @@ struct Peer {
 
             switch(_this.state) {
                 case state.receive:
-                    nng_msg* recv_msg = nng_aio_get_msg(_this.aio);
-                    if (recv_msg is null) {
+                    size_t msg_size = nng_aio_count(_this.aio);
+                    if(msg_size <= 0) {
                         node_error(_this.owner_task, NodeErrorCode.empty_msg, _this.id);
-                        return;
                     }
+                    imported!"std.stdio".writefln("msg_size!! %s", msg_size);
 
-                    Buffer buf = get_full_msg!Buffer(recv_msg);
+                    Buffer buf = _this.sendbuf[0..msg_size].idup;
+                    check(buf !is null, "Got invalid buf output");
 
                     ActorHandle(_this.owner_task).send(NodeRecv(), _this.id, buf);
                     
@@ -184,19 +185,16 @@ struct Peer {
         assert(socket !is null, "This peer is not connected");
         check(state is State.ready, "Can not call send when not ready");
         state = State.send;
-        sendbuf = data;
+        sendbuf[0..data.length] = data[0..data.length];
         sendiov.iov_len = data.length;
 
-        /* int rc = nng_aio_set_iov(aio, 1, &sendiov); */
-        /* check(rc == 0, nng_errstr(rc)); */
+        int rc = nng_aio_set_iov(aio, 1, &sendiov);
+        check(rc == 0, nng_errstr(rc));
         nng_stream_send(socket, aio);
     }
 
-    void* get_output() {
-        return nng_aio_get_output(aio, 0);
-    }
-
     void recv() {
+        assert(socket !is null, "This peer is not connected");
         /* check(state = State.stale); */
         state = State.receive;
         nng_stream_recv(socket, aio);
@@ -307,10 +305,12 @@ struct PeerMgr {
     // TODO: use envelope
     void on_recv(NodeRecv, int id, Buffer buf) {
 
-        log.trace("received %s bytes", buf.length);
+        assert(buf.length > 1);
+
+        imported!"std.stdio".writefln("received %s bytes %s", buf.length, buf);
         Document doc = buf;
 
-        if(!doc.isInorder) {
+        if(!doc.isInorder && !doc.empty) {
             // error
             return;
         }
@@ -323,8 +323,6 @@ struct PeerMgr {
 
         // Add to the list of known connections
         peers.require(hirpcmsg.pubkey, all_peers[id]);
-
-        // receive_handle.send(ReceivedWavefront(), doc);
     }
 
     // A connection was established by dial
@@ -420,9 +418,9 @@ unittest {
 
     listener.recv_all_ready();
     dialer.send(NodeSend(), net2.pubkey, [1,23,53,53]);
-    /* int rc = conc.receiveTimeout(2.seconds, (NodeAIOTask _, Peer.State s) { writeln(s); }); */
-    receiveOnlyTimeout(2.seconds, &dialer.on_aio_task);
-    /* assert(rc, "not sent"); */
+
+    receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
+    receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
 }
 
 ///
@@ -533,10 +531,6 @@ void fail(string owner_task, Throwable t) @trusted nothrow {
 
 void node_error(string owner_task, NodeErrorCode code, int id, string msg = "", int line = __LINE__) {
     ActorHandle(owner_task).send(NodeError(), code, id, msg, line);
-}
-
-T get_full_msg(T)(nng_msg* msg) @trusted if(isArray!T) {
-    return cast(T)nng_msg_body(msg)[0 .. nng_msg_len(msg)]; 
 }
 
 mixin template NodeHelpers() {
