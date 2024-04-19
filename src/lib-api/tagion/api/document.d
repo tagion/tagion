@@ -92,6 +92,64 @@ unittest {
 }
 
 /** 
+ * Get document record type
+ * Params:
+ *   buf = 
+ *   buf_len = 
+ *   record_name = 
+ *   record_name_len = 
+ * Returns: ErrorCode
+ */
+int tagion_document_get_record_name(
+    const uint8_t* buf, 
+    const size_t buf_len, 
+    char** record_name, 
+    size_t* record_name_len) {
+    import tagion.hibon.HiBONRecord : recordName;
+    try {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        const doc_error = doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int)doc_error;
+        }
+        string data = doc.recordName;
+        if (data !is string.init) {
+            *record_name = cast(char*) &data[0];
+            *record_name_len = data.length;
+        }
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    import tagion.hibon.HiBONRecord : recordType, HiBONRecord;
+    enum some_record = "SomeRecord";
+    @recordType(some_record)
+    static struct S {
+        int test;
+        mixin HiBONRecord;
+    }
+    S s;
+    s.test = 5;
+    const doc = s.toDoc;
+
+    char* record_name_value;
+    size_t record_name_len;
+    int rt = tagion_document_get_record_name(&doc.data[0], doc.data.length, &record_name_value, &record_name_len);
+    assert(rt == ErrorCode.none);
+
+    const record_name = record_name_value[0..record_name_len];
+    assert(record_name == some_record); 
+}
+
+
+/** 
  * Get document error code
  * Params:
  *   buf = doc buf
