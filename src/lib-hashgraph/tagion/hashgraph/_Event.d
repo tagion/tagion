@@ -281,8 +281,8 @@ class _Event : current_event.Event {
 
         pseudo_time_counter = 0;
 
-        _witness.prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness.prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
+        _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
+        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
         }

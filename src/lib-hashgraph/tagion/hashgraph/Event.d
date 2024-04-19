@@ -35,30 +35,30 @@ import tagion.utils.StdTime;
 /// HashGraph Event
 @safe
 class Event {
+    package static bool scrapping;
 
     import tagion.basic.ConsensusExceptions;
 
     alias check = Check!EventConsensusException;
+    protected static uint _count;
 
+    package Event[] _youngest_son_ancestors;
+
+    package int pseudo_time_counter;
 
     package {
-        static bool scrapping; /// If the events should be scrapped
-        Event _mother; /// Mother internal pointer
-        Event _father; /// Father internal pointer
-        Event _daughter; // Daughter internal pointer
-        Event _son; // Son internal pointer
-        Event[] _youngest_son_ancestors; /// Youngest events to all the fathers for all nodes
+        // This is the internal pointer to the connected Event's
+        Event _mother;
+        Event _father;
+        Event _daughter;
+        Event _son;
+
         long _order;
-
-        int pseudo_time_counter;
-        Witness _witness; /// The witness contains the witness mask of the nodes
-        Round _round; /// The where the event has been created
+        // The withness mask contains the mask of the nodes
+        // Which can be seen by the next rounds witness
+        Witness _witness;
+        BitMask _round_seen_mask;
     }
-    protected {
-        static uint _count;
-        Round _round_received; /// The round in which the event has been voted to be received
-    }
-
 
     @nogc
     static uint count() nothrow {
@@ -126,13 +126,6 @@ class Event {
             BitMask _prev_seen_witnesses;
         //}
 
-        package void prev_strongly_seen_witnesses(ref BitMask mask) pure nothrow {
-            _prev_strongly_seen_witnesses = mask;
-        }
-
-        package void prev_seen_witnesses(BitMask mask) pure nothrow {
-            _prev_seen_witnesses = mask;
-        }
         /**
          * Contsruct a witness of an event
          * Params:
@@ -157,6 +150,22 @@ class Event {
 
     // The altitude increases by one from mother to daughter
     immutable(EventPackage*) event_package;
+
+    /**
+  * The rounds see forward from this event
+  * Returns:  round seen mask
+  */
+    const(BitMask) round_seen_mask() const pure nothrow @nogc {
+        return _round_seen_mask;
+    }
+
+    package {
+        Round _round; /// The where the event has been created
+        BitMask _round_received_mask; /// Voting mask for the received rounds
+    }
+    protected {
+        Round _round_received; /// The round in which the event has been voted to be received
+    }
 
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
@@ -206,8 +215,7 @@ class Event {
       */
     void connect(HashGraph hashgraph)
     in {
-        import tagion.hashgraph.Event2;
-        //assert(hashgraph.areWeInGraph);
+        assert(hashgraph.areWeInGraph);
     }
     out {
         assert(event_package.event_body.mother && _mother || !_mother);
@@ -243,10 +251,7 @@ class Event {
         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
         _mother._daughter = this;
         _father = hashgraph.register(event_package.event_body.father);
-
-        // r <- max round of parents of event. 
         _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
-
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
@@ -256,6 +261,9 @@ class Event {
         // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
         // if (_father) { pseudo_time_counter += 1; }
         pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
+        with (hashgraph) {
+            log.event(topic, received_order_statistic.stringof, received_order_statistic);
+        }
 
         calc_youngest_son_ancestors(hashgraph);
         BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
@@ -275,8 +283,6 @@ class Event {
         _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
                 .round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
-            pragma(msg, "this is never called due to above check. Looks veryvery weird");
-            assert(0, "this is never called");
             _round.add(this);
         }
         with (hashgraph) {
@@ -287,7 +293,7 @@ class Event {
         }
     }
 
-     BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+    BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
         auto see_through_matrix = _youngest_son_ancestors
             .filter!(e => e !is null && e.round is round)
             .map!(e => e._youngest_son_ancestors
@@ -298,7 +304,7 @@ class Event {
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
     }
 
-     void calc_youngest_son_ancestors(const HashGraph hashgraph) {
+    void calc_youngest_son_ancestors(const HashGraph hashgraph) {
         if (!_father) {
             _youngest_son_ancestors = _mother._youngest_son_ancestors;
             return;
@@ -307,13 +313,13 @@ class Event {
         _youngest_son_ancestors = _mother._youngest_son_ancestors.dup();
         _youngest_son_ancestors[node_id] = this;
         iota(hashgraph.node_size)
-            .filter!(node_id => _father._youngest_son_ancestors[node_id] !is null) 
+            .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
             .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
-     void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
+    void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
         Event voting_event = voting_round._events[vote_node_id];
 
@@ -331,7 +337,6 @@ class Event {
         auto votes = _witness._prev_strongly_seen_witnesses[].map!(
                 i => round.previous.events[i]._witness._vote_on_earliest_witnesses[vote_node_id]);
         const yes_votes = votes.count;
-        pragma(msg, "no_votes is always 0. should it be no_votes = hashgraph.node_size - yes_votes?");
         const no_votes = votes.walkLength - yes_votes;
         _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
@@ -443,8 +448,15 @@ class Event {
             return event_package.pubkey;
         }
 
+        /**
+     * Get the mask of the received rounds
+     * Returns: received round mask 
+     */
+        const(BitMask) round_received_mask() {
+            return _round_received_mask;
+        }
 
-    /**
+        /**
      * Checks if this event is the last one on this node
      * Returns: true if the event is in front
      */
