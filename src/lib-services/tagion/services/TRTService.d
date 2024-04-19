@@ -67,7 +67,7 @@ struct TRTService {
         auto hirpc = HiRPC(net);
         ActorHandle dart_handle = ActorHandle(task_names.dart);
 
-        check(opts.trt_path.exists, format("TRT database %s file not found", opts.trt_path));
+        enforce!ServiceError(opts.trt_path.exists, format("TRT database %s file not found", opts.trt_path));
         log("TRT PATH FOR DATABASE=%s", opts.trt_path);
         trt_db = new DART(net, opts.trt_path, dart_exception);
         if (dart_exception !is null) {

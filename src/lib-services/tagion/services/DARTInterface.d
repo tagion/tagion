@@ -155,14 +155,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 }
 
 import tagion.services.exception;
-
-void checkSocketError(int rc) {
-    if (rc != 0) {
-        import std.format;
-
-        throw new ServiceException(format("Failed to dial %s", nng_errstr(rc)));
-    }
-}
+import tagion.basic.tagionexceptions;
 
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
@@ -190,7 +183,7 @@ struct DARTInterfaceService {
         }
         pool.init();
         auto rc = sock.listen(opts.sock_addr);
-        checkSocketError(rc);
+        check!ServiceError(rc == nng_errno.NNG_OK, format("Failed to dial %s", nng_errstr(rc)));
 
         // Receive actor signals
         run();
