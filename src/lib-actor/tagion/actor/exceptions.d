@@ -2,6 +2,7 @@ module tagion.actor.exceptions;
 
 import std.traits;
 import std.exception;
+import std.format;
 import tagion.basic.tagionexceptions : TagionException;
 
 import tagion.hibon.HiBONRecord;
@@ -35,6 +36,10 @@ immutable struct TaskFailure {
         hibon[(GetLabel!task_name).name] = task_name;
         hibon[(GetLabel!throwable).name] = _Throwable(throwable).toDoc;
         return Document(hibon);
+    }
+
+    string toString() const nothrow {
+        return assumeWontThrow(format!"FROM(%s): %s"(task_name, throwable));
     }
 }
 

@@ -536,7 +536,14 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
 enum defaultFailhandler = (TaskFailure tf) @safe {
     try {
         ownerTid.prioritySend(tf);
-    } catch(Exception e) {
+    }
+    catch(TidMissingException e) {
+        log.error("%s", tf);
+        /* import tagion.GlobalSignals; */
+        /* void trust() @trusted { stopsignal.setIfInitialized(); } */
+        /* trust(); */
+    }
+    catch(Exception e) {
         log(e);
     }
 };
