@@ -229,19 +229,25 @@
     "dartutil_test": {
       "args": [],
       "envs": {},
-      "stages": ["acceptance", "tools", "dartutil_test"],
+      "stages": ["tools", "dartutil_test"],
       "timeout": 0.0
     },
     "hirep_test": {
       "args": [],
       "envs": {},
-      "stages": ["acceptance", "tools", "hirep_test"],
+      "stages": ["tools", "hirep_test"],
       "timeout": 0.0
     },
     "hibonutil_test": {
       "args": [],
       "envs": {},
-      "stages": ["acceptance", "tools", "hibonutil_test"],
+      "stages": ["tools", "hibonutil_test"],
+      "timeout": 0.0
+    },
+    "wallet_test": {
+      "args": [],
+      "envs": {},
+      "stages": ["tools", "wallet_test"],
       "timeout": 0.0
     }
   }

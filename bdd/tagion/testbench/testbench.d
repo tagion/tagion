@@ -40,6 +40,7 @@ int main(string[] args) {
     import dartutil_test = tagion.testbench.testtools.dartutil_test;
     import hirep_test = tagion.testbench.testtools.hirep_test;
     import hibonutil_test = tagion.testbench.testtools.hibonutil_test;
+    import wallet_test = tagion.testbench.testtools.wallet_test;
 
     alias alltools = AliasSeq!(
         collector,
@@ -78,6 +79,7 @@ int main(string[] args) {
         dartutil_test,
         hirep_test,
         hibonutil_test,
+        wallet_test,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

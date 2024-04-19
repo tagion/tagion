@@ -13,6 +13,7 @@ enum ToolName {
     dartutil = "dartutil",
     hibonutil = "hibonutil",
     hirep = "hirep",
+    geldbeutel = "geldbeutel",
 }
 
 @safe
