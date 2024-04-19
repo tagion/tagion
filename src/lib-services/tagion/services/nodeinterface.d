@@ -47,6 +47,10 @@ enum NodeErrorCode {
     empty_msg,
 }
 
+/**
+ * A Single pending outgoing connection
+ * All aio tasks notify the calling thread by sending a message
+ */
 struct Dialer {
     // disable copy/postblitz
     @disable this(this);
@@ -99,6 +103,10 @@ struct Dialer {
     mixin NodeHelpers;
 }
 
+/**
+ * A Single active socket connection
+ * All aio tasks notify the calling thread by sending a message
+ */
 struct Peer {
     enum State {
         ready,
@@ -200,7 +208,11 @@ struct Peer {
     mixin NodeHelpers;
 }
 
-/// Manages p2p node connections by pubkey
+/**
+ * Establishes new connections either by dial or accept
+ * And associates active connections with a public key
+ * Most operations are asynchronous and when complete will send a message to the calling thread.
+ */
 struct PeerMgr {
 
     // disable copy/postblitz
@@ -269,7 +281,11 @@ struct PeerMgr {
         }
     }
 
-
+    /**
+     * Sync: 
+     * Listen on the specified address. 
+     * This should be called before doing anything else.
+    */
     void listen() {
         int rc = cast(nng_errno)nng_stream_listener_listen(listener);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
@@ -279,6 +295,7 @@ struct PeerMgr {
         nng_stream_listener_accept(listener, aio_conn);
     }
 
+    /// Connect to an address an associate it with a public key
     void dial(string address, Pubkey pkey) {
         int id = generateId!int;
         auto dialer = new Dialer(id, address, pkey);
@@ -286,7 +303,7 @@ struct PeerMgr {
         dialers[id] = dialer;
     }
 
-    // Receive messages from all the peers that are not doing anything else
+    /// Receive messages from all the peers that are not doing anything else
     void recv_all_ready() {
         foreach(peer; all_peers) {
             if(peer.state !is Peer.State.ready) {
@@ -295,6 +312,12 @@ struct PeerMgr {
 
             peer.recv();
         }
+    }
+
+    /// Send to an active connection with a known public key
+    void send(Pubkey pkey, const(ubyte)[] buf) {
+        check((pkey in peers) !is null, "No established connection");
+        peers[pkey].send(buf);
     }
 
     // --- Message handlers --- //
@@ -348,20 +371,13 @@ struct PeerMgr {
         all_peers[id] = new Peer(id, socket);
     }
 
+    // A send task was completed
     void on_aio_task(NodeAIOTask, shared(Peer.State) state) {
         /* import std.stdio; */
         /* writefln("aio_task complete, %s", state); */
     }
 
-    void send(NodeSend, Pubkey pkey, const(ubyte)[] buf) {
-        check((pkey in peers) !is null, "No established connection");
-        peers[pkey].send(buf);
-    }
-
     auto handlers = tuple(&on_recv, &on_dial, &on_accept, &on_aio_task, &send);
-
-    void task() {
-    }
 
     mixin NodeHelpers;
 }
@@ -415,7 +431,7 @@ unittest {
     listener.recv_all_ready();
     Buffer send_payload = HiRPC(net1).action("manythanks").serialize;
 
-    dialer.send(NodeSend(), net2.pubkey, send_payload);
+    dialer.send(net2.pubkey, send_payload);
 
     receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
     receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
