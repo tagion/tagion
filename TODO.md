@@ -56,8 +56,15 @@ This it should filter out all which matches the pattern.
 Assignee: ib
 
 
-### Impklement wavefront for nodeinterface
+### Implement wavefront for nodeinterface
 description: nodes should be able to communicate p2p on a half-duplex communication using the wavefront protocol
+
+tasks:
+    - [x]: make nng_stream aio tasks convenient to use with std.concurrency
+    - [x]: associate in/out-comming connections with public keys
+    - [ ]: handle breaking waves
+    - [ ]: tests, tests, tests...
+
 Assignee: lr
 
 ## Backlog
