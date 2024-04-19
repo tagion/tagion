@@ -197,4 +197,37 @@ unittest {
     assert(sub_doc == Document(read_data), "read doc was not the same");
 }
 
+/** 
+ * Get a bool from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned bool
+ * Returns: ErrorCode
+ */
+int tagion_document_get_bool(const Document.Element* element, bool* value) {
+    try {
+        *value = element.get!bool; 
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
 
+unittest {
+    auto h = new HiBON;
+    string key_bool = "bool";
+    h[key_bool] = true;
+    const doc = Document(h);
+
+    Document.Element elm_bool;
+    int rt = tagion_document(&doc.data[0], doc.data.length, &key_bool[0], key_bool.length, &elm_bool);
+    assert(rt == ErrorCode.none, "Get document element bool returned error");
+
+    bool value;
+    rt = tagion_document_get_bool(&elm_bool, &value);
+    assert(rt == ErrorCode.none, "get bool returned error");
+
+    assert(value == true, "did not read bool");
+}
