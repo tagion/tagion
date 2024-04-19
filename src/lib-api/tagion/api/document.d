@@ -190,7 +190,6 @@ unittest {
 }
 
 
-
 /** 
  * Get binary from a document
  * Params:

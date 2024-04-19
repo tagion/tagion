@@ -1,3 +1,21 @@
+# Changelog for Epoch 1287717 .. 1569150
+
+** Envelope tool **
+We have created a new CLI tool for packaging hibons into an envelope.  
+
+** Tagionshell envelope **
+The shell now accepts envelope packages along normal raw documents.  
+
+** Document API **
+Initial work on the document API has started and most basic functions are supported for getting the native hibon types out. This is one of the interfaces that will be used for WASM.
+
+** Tool tests **
+We have started to implement CLI tool testing in BDD, in order to test that all user-facing switches work as intended
+
+** Node Interface **
+//tbd
+
+
 # Changelog for Epoch 1287717 .. 1397424
 
 ** Make-flow improvements **
