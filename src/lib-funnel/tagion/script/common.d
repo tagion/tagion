@@ -286,7 +286,7 @@ version(RESERVED_ARCHIVES_FIX) {
 struct ConsensusVoting {
     long epoch;
     @label(StdNames.owner) Pubkey owner;
-    @label(StdNames.signed) Signature signed_bullseye;
+    @label(StdNames.sign) Signature signed_bullseye;
 
     mixin HiBONRecord!(q{
         this(long epoch, Pubkey owner, Signature signed_bullseye) pure nothrow {
@@ -310,7 +310,7 @@ pragma(msg, "shouldn't this be $@?");
 struct ConsensusVoting {
     long epoch;
     @label(StdNames.owner) Pubkey owner;
-    @label(StdNames.signed) Signature signed_bullseye;
+    @label(StdNames.sign) Signature signed_bullseye;
 
     mixin HiBONRecord!(q{
         this(long epoch, Pubkey owner, Signature signed_bullseye) pure nothrow {

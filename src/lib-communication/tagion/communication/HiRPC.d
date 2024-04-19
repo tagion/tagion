@@ -194,8 +194,7 @@ struct HiRPC {
         static assert(Message.response.id.alignof == Message.id.alignof);
         static assert(Message.error.id.alignof == Message.id.alignof);
 
-        pragma(msg, __MODULE__ ~ ": Should $sign be the same as standardnames.signed?");
-        @label("$sign") @optional @(filter.Initialized) Signature signature; /// Signature of the message
+        @label(StdNames.sign) @optional @(filter.Initialized) Signature signature; /// Signature of the message
         @label(StdNames.owner) @optional @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
         @label(StdNames.msg) Document message; /// the HiRPC message
         @exclude immutable Type type;
