@@ -81,14 +81,24 @@ int tagion_document_array(
     return ErrorCode.none;
 }
 
-
+///
 enum DocumentTextFormat {
-    JSON,
-    PRETTYJSON,
-    BASE64,
+    JSON, 
+    PRETTYJSON, 
+    BASE64, 
     HEX,
 }
 
+/** 
+ * Get document as string
+ * Params:
+ *   buf = doc buffer
+ *   buf_len = doc len
+ *   text_format = See DocumentTextFormat for supported formats
+ *   str = returned pointer
+ *   str_len = returned str len
+ * Returns: 
+ */
 int tagion_document_get_text(
     const uint8_t* buf, 
     const size_t buf_len, 
