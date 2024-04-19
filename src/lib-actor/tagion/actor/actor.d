@@ -403,12 +403,12 @@ static Topic taskfailure = Topic("taskfailure");
  * Silently fails if there is no owner
  * Does NOT exit regular control flow
 */
-void fail(Throwable t) @trusted nothrow {
+void fail(Throwable t) nothrow {
     try {
         debug (actor) {
             log(t);
         }
-        immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
+        immutable tf = TaskFailure(thisActor.task_name, t);
         log.event(taskfailure, "taskfailure", tf);
         ownerTid.prioritySend(tf);
     }

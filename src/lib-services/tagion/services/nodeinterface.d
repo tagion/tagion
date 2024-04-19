@@ -614,9 +614,9 @@ void thread_attachThis() @trusted {
     import core.thread : thread_attachThis;
     thread_attachThis();
 }
-void fail(string owner_task, Throwable t) @trusted nothrow {
+void fail(string owner_task, Throwable t) nothrow {
     try {
-        immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
+        immutable tf = TaskFailure(thisActor.task_name, t);
         log.event(taskfailure, "taskfailure", tf);
         ActorHandle(owner_task).prioritySend(tf);
     }
