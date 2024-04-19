@@ -227,7 +227,7 @@ struct PeerMgr {
     @disable this(this);
 
     ///
-    this(SecureNet net, string address) @trusted {
+    this(const(SecureNet) net, string address) @trusted {
         this.net = net;
         this.hirpc = HiRPC(net);
         int rc = nng_aio_alloc(&aio_conn, &callback, self);
@@ -251,8 +251,8 @@ struct PeerMgr {
         nng_stream_listener* listener;
     }
 
-    SecureNet net;
-    HiRPC hirpc;
+    const SecureNet net;
+    const HiRPC hirpc;
     string address;
 
     Dialer*[int] dialers;
@@ -325,9 +325,14 @@ struct PeerMgr {
     }
 
     /// Send to an active connection with a known public key
-    void send(Pubkey pkey, const(ubyte)[] buf) {
-        check((pkey in peers) !is null, "No established connection");
+    void send(Pubkey pkey, immutable(ubyte)[] buf) {
+        assert(active(pkey), "No established connection");
         peers[pkey].send(buf);
+    }
+
+    /// Check if an active known connection exists with this public key
+    bool active(Pubkey channel) const pure nothrow {
+        return (channel in peers) !is null;
     }
 
     // --- Message handlers --- //
@@ -373,21 +378,18 @@ struct PeerMgr {
     // A connections was established by accept
     void on_accept(NodeAccept, int id) @trusted {
         nng_stream* socket = cast(nng_stream*)nng_aio_get_output(aio_conn, 0);
-        if(socket is null) {
-            // error
-            return;
-        }
+        assert(socket !is null, "No connections established?");
 
         all_peers[id] = new Peer(id, socket);
     }
 
     // A send task was completed
-    void on_aio_task(NodeAIOTask, shared(Peer.State) state) {
+    void on_aio_task(NodeAIOTask, shared(Peer.State) _) {
         /* import std.stdio; */
         /* writefln("aio_task complete, %s", state); */
     }
 
-    auto handlers = tuple(&on_recv, &on_dial, &on_accept, &on_aio_task, &send);
+    auto handlers = tuple(&on_dial, &on_accept, &on_recv, &on_aio_task);
 
     mixin NodeHelpers;
 }
@@ -442,6 +444,77 @@ unittest {
 
         receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_aio_task);
         receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_aio_task);
+    }
+}
+
+///
+struct NodeInterfaceService_ {
+    NodeInterfaceOptions opts;
+    const(SecureNet) net;
+    ActorHandle receive_handle;
+
+    PeerMgr p2p;
+
+    ///
+    this(immutable(NodeInterfaceOptions) opts, shared(StdSecureNet) shared_net, string message_handler_task) {
+        this.opts = opts;
+        this.net = new StdSecureNet(shared_net);
+        this.receive_handle = ActorHandle(message_handler_task);
+        this.p2p = PeerMgr(net, opts.node_address);
+    }
+
+    // Messages which are waiting for dial connection
+    // TODO: use LRU?
+    Document[Pubkey] msg_queue;
+
+    void node_send(NodeSend, const(Pubkey) channel, Document payload) {
+        if (p2p.active(channel)) {
+            // TODO: check if this peer is already doing something
+            p2p.send(channel, payload.serialize);
+        }
+        else {
+            msg_queue[channel] = payload;
+            const nnr = addressbook[channel].get;
+            p2p.dial(nnr.address, channel);
+        }
+    }
+
+    void on_dial(NodeDial m, int id) {
+        Pubkey channel = p2p.dialers[id].pkey;
+
+        Document payload = msg_queue[channel];
+        scope(exit) {
+            msg_queue.remove(channel);
+        }
+
+        // Update state of connections
+        p2p.on_dial(m, id);
+        p2p.send(channel, payload.serialize);
+    }
+
+    void on_accept(NodeAccept m, int id) {
+        p2p.on_accept(m, id);
+        p2p.all_peers[id].recv();
+    }
+
+    void on_recv(NodeRecv m, int id, Buffer buf) {
+        p2p.on_recv(m, id, buf);
+        const doc = Document(buf);
+        // Send to hasgraph/epoch_creator
+        receive_handle.send(ReceivedWavefront(), doc);
+    }
+
+    // On send
+    void on_aio_task(NodeAIOTask m, shared(Peer.State) state) {
+        p2p.on_aio_task(m, state);
+    }
+
+    auto handlers = tuple(&node_send, &on_dial, &on_accept, &on_recv, &on_aio_task);
+
+    void task() {
+        p2p.listen;
+
+        run(handlers.expand);
     }
 }
 
@@ -516,6 +589,7 @@ struct NodeInterfaceService {
         if (buf.length > 0) {
             log.trace("received %s bytes", buf.length);
             const doc = Document(buf);
+
             receive_handle.send(ReceivedWavefront(), doc);
 
             log.event(event_recv, __FUNCTION__, doc);
