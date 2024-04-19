@@ -35,7 +35,6 @@ tauon-test: DFLAGS+=--O2
 #tauon-test: DFLAGS+=-L--initial-memory=16777216
 #tauon-test: DFLAGS+=-L--max-memory=1024
 tauon-test: DFLAGS+=--linker=$(WASMLD)
-tauon-test: DINCINMPORT=
 #taupn-test: DFLAGS+=/home/carsten/work/tagion/tools/wasi-druntime/wasi-sdk-21.0/share/wasi-sysroot/lib/wasm32-wasi/crt1.o
 tauon-test: | $(DLIB)/.way 
 
