@@ -160,8 +160,6 @@ struct Peer {
                     if(msg_size <= 0) {
                         node_error(_this.owner_task, NodeErrorCode.empty_msg, _this.id);
                     }
-                    imported!"std.stdio".writefln("msg_size!! %s", msg_size);
-
                     Buffer buf = _this.sendbuf[0..msg_size].idup;
                     check(buf !is null, "Got invalid buf output");
 
@@ -170,7 +168,6 @@ struct Peer {
                     _this.state = State.ready;
                     break;
                 default:
-                    imported!"std.stdio".writefln("sendit!! %s", _this.owner_task);
                     ActorHandle(_this.owner_task).send(NodeAIOTask(), _this.state);
                     _this.state = State.ready;
                     break;
@@ -307,7 +304,7 @@ struct PeerMgr {
 
         assert(buf.length > 1);
 
-        imported!"std.stdio".writefln("received %s bytes %s", buf.length, buf);
+        /* imported!"std.stdio".writefln("received %s bytes %s", buf.length, buf); */
         Document doc = buf;
 
         if(!doc.isInorder && !doc.empty) {
@@ -352,8 +349,8 @@ struct PeerMgr {
     }
 
     void on_aio_task(NodeAIOTask, shared(Peer.State) state) {
-        import std.stdio;
-        writefln("aio_task complete, %s", state);
+        /* import std.stdio; */
+        /* writefln("aio_task complete, %s", state); */
     }
 
     void send(NodeSend, Pubkey pkey, const(ubyte)[] buf) {
@@ -385,7 +382,6 @@ version(unittest) {
     }
 }
 
-version(WIP_WAVEFRONT)
 unittest {
     thisActor.task_name = "jens";
 
@@ -397,8 +393,8 @@ unittest {
     auto net2 = new StdSecureNet();
     net2.generateKeyPair("me2");
 
-    auto dialer = PeerMgr(net1, "abstract://whomisam1");
-    auto listener = PeerMgr(net2, "abstract://whomisam2");
+    auto dialer = PeerMgr(net1, "abstract://whomisam" ~ generateId.to!string);
+    auto listener = PeerMgr(net2, "abstract://whomisam" ~ generateId.to!string);
 
     /* dialer.listen(); */
     listener.listen();
@@ -406,10 +402,10 @@ unittest {
     dialer.dial(listener.address, net2.pubkey);
     listener.accept();
 
-    writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length);
+    /* writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length); */
     receiveOnlyTimeout(2.seconds, &dialer.on_dial, &listener.on_accept);
     receiveOnlyTimeout(2.seconds, &dialer.on_dial, &listener.on_accept);
-    writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length);
+    /* writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length); */
 
     assert(dialer.all_peers.length == 1);
     assert(listener.all_peers.length == 1);
