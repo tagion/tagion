@@ -217,6 +217,7 @@ int tagion_document_get_document(const Document.Element* element, uint8_t** buf,
     return ErrorCode.none;
 }
 
+///
 unittest {
     auto sub_hibon = new HiBON;
     sub_hibon["i32"] = "hello";
@@ -259,7 +260,7 @@ int tagion_document_get_string(const Document.Element* element, char** value, si
     }
     return ErrorCode.none;
 }
-
+///
 unittest {
     auto h = new HiBON;
     string key_string = "string";
@@ -279,7 +280,7 @@ unittest {
     auto str = str_value[0..str_len];
     assert(str == "wowo", "read string was different"); 
 }
-
+///
 unittest {
     auto h = new HiBON;
     h = ["hey0", "hey1", "hey2"];
@@ -322,6 +323,7 @@ int tagion_document_get_binary(const Document.Element* element, uint8_t** buf, s
     return ErrorCode.none;
 }
 
+///
 unittest {
     auto h = new HiBON;
     string key_binary = "binary";
@@ -361,7 +363,7 @@ int tagion_document_get_bool(const Document.Element* element, bool* value) {
     }
     return ErrorCode.none;
 }
-
+///
 unittest {
     auto h = new HiBON;
     string key_bool = "bool";
@@ -397,7 +399,7 @@ int tagion_document_get_time(const Document.Element* element, int64_t* time) {
     }
     return ErrorCode.none;
 }
-
+///
 unittest {
     auto h = new HiBON;
     string key_time = "time";
