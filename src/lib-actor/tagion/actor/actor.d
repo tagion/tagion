@@ -101,14 +101,14 @@ struct Request(string name, ID = uint) {
 
     static Request opCall() @safe nothrow {
         import tagion.utils.Random;
+        static assert(isNumeric!ID, "Can not auto generate an id for non numeric ID type");
+        return typeof(this).opCall(generateId!(Unqual!ID));
+    }
 
-        Request!(name, ID) r;
-        r.msg = Msg!name();
-        static if (isNumeric!ID) {
-            r.id = generateId!ID;
-        }
+    static Request opCall(ID id) @safe nothrow {
         assert(thisActor.task_name !is string.init, "The requester is not registered as a task");
-        r.task_name = thisActor.task_name;
+
+        Request!(name, ID) r = { Msg!name(), id, thisActor.task_name };
         return r;
     }
 
@@ -581,7 +581,7 @@ void getActorInfo(GetActorInfo req) {
     req.respond(ActorInfoRecord(thisActor).toDoc);
 }
 
-private auto default_handlers = tuple(
+auto default_handlers = tuple(
     &signal,
     &control,
     &getActorInfo,
