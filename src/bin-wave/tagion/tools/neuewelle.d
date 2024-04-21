@@ -10,7 +10,7 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.thread;
 import core.time;
-import std.algorithm : countUntil, map, uniq, equal;
+import std.algorithm : countUntil, map, uniq, equal, canFind;
 import std.array;
 import std.file : chdir, exists;
 import std.format;
@@ -367,24 +367,23 @@ int _neuewelle(string[] args) {
     }
 
     version(NO_WAIT) {
-        bool signaled;
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
         import core.atomic;
 
-        do {
-            signaled = stopsignal.wait(100.msecs);
-            if (!signaled) {
-                receiveTimeout(
-                        Duration.zero,
-                        (TaskFailure tf) { 
-                            signaled = true;
-                            log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
-                        },
-                        default_handlers.expand,
-                );
-            }
+        while(!thisActor.stop) {
+            thisActor.stop |= stopsignal.wait(100.msecs);
+
+            receiveTimeout(Duration.zero,
+                (TaskFailure tf) { 
+                    thisActor.stop = true;
+                    log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
+                },
+                default_handlers.expand,
+            );
+
+            // If all supervisors stopped then we stop as well
+            thisActor.stop |= graceful_shutdown.atomicLoad() == local_options.wave.number_of_nodes;
         }
-        while (!signaled && graceful_shutdown.atomicLoad() != local_options.wave.number_of_nodes);
     } // VERSION NO_WAIT
     else {
     if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
