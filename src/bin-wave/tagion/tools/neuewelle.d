@@ -366,6 +366,27 @@ int _neuewelle(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
+    version(NO_WAIT) {
+        bool signaled;
+        import tagion.utils.pretend_safe_concurrency : receiveTimeout;
+        import core.atomic;
+
+        do {
+            signaled = stopsignal.wait(100.msecs);
+            if (!signaled) {
+                receiveTimeout(
+                        Duration.zero,
+                        (TaskFailure tf) { 
+                            signaled = true;
+                            log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
+                        },
+                        default_handlers.expand,
+                );
+            }
+        }
+        while (!signaled && graceful_shutdown.atomicLoad() != local_options.wave.number_of_nodes);
+    } // VERSION NO_WAIT
+    else {
     if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
         log("alive");
         bool signaled;
@@ -376,9 +397,13 @@ int _neuewelle(string[] args) {
             signaled = stopsignal.wait(100.msecs);
             if (!signaled) {
                 if (local_options.wave.fail_fast) {
-                    signaled = receiveTimeout(
+                    receiveTimeout(
                             Duration.zero,
-                            (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure\n%s", tf); }
+                            (TaskFailure tf) { 
+                                signaled = true;
+                                log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
+                            },
+                            default_handlers.expand,
                     );
                 }
                 else {
@@ -394,6 +419,7 @@ int _neuewelle(string[] args) {
     else {
         log("Program did not start");
         return 1;
+    }
     }
 
     sub_handle.send(Sig.STOP);
