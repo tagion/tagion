@@ -42,8 +42,6 @@ import std.file : exists;
 import std.conv : to;
 import tagion.logger.ContractTracker;
 
-@safe:
-
 shared static size_t graceful_shutdown;
 enum BUFFER_TIME_SECONDS = 30;
 
@@ -186,8 +184,7 @@ struct TranscriptService {
             .join
             .array;
 
-        auto req = dartCheckReadRR();
-        req.id = last_epoch_number;
+        auto req = dartCheckReadRR(id: last_epoch_number);
         epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
 
         if (inputs.length == 0) {
@@ -247,8 +244,7 @@ struct TranscriptService {
         }
 
         if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
-            auto req = dartModifyRR();
-            req.id = res.id;
+            auto req = dartModifyRR(res.id);
 
             TagionHead new_head = TagionHead(
                 TagionDomain,
@@ -258,8 +254,7 @@ struct TranscriptService {
 
             import core.atomic;
 
-            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res
-                    .id);
+            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
             graceful_shutdown.atomicOp!"+="(1);
             thisActor.stop = true;
             return;
@@ -292,7 +287,7 @@ struct TranscriptService {
                 import std.datetime;
                 import tagion.utils.StdTime;
 
-                const max_time = sdt_t((SysTime(cast(long) epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
+                const max_time = sdt_t((SysTime(cast(long)epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
                         .stdTime);
 
                 foreach (doc; tvm_contract_outputs.outputs) {
@@ -398,10 +393,9 @@ struct TranscriptService {
         new_vote.locked_archives = outputs;
         votes[non_voted_epoch.epoch_number] = new_vote;
 
-        auto req = dartModifyRR();
-        req.id = res.id;
+        auto req = dartModifyRR(res.id);
 
-        dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+        dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
     }
 
     void task() {
