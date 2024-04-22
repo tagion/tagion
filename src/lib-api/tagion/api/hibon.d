@@ -139,7 +139,7 @@ unittest {
 }
 
 /** 
- * 
+ * Add hibon to hibon instance
  * Params:
  *   instance = pointer to the hibon instance
  *   key = pointer to the key 
