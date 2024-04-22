@@ -212,7 +212,7 @@ int tagion_document_array(
     return ErrorCode.none;
 }
 
-///
+/// Format to use for tagion_document_get_text
 enum DocumentTextFormat {
     JSON, 
     PRETTYJSON, 
