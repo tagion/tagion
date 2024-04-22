@@ -570,7 +570,6 @@ enum defaultFailhandler = (TaskFailure tf) @safe nothrow {
 };
 
 void signal(Sig signal) @safe {
-    log.trace("Receivd stop signal");
     with (Sig) final switch (signal) {
     case STOP:
         thisActor.stop = true;
