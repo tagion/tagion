@@ -9,7 +9,6 @@ public import genesis_test = tagion.testbench.services.genesis_test;
 public import hirpc_verifier = tagion.testbench.services.hirpc_verifier;
 public import inputvalidator = tagion.testbench.services.inputvalidator;
 public import malformed_contract = tagion.testbench.services.malformed_contract;
-public import node_interface = tagion.testbench.services.node_interface;
 public import sendcontract = tagion.testbench.services.sendcontract;
 public import spam_double_spend = tagion.testbench.services.spam_double_spend;
 public import subscription_test = tagion.testbench.services.subscription_test;
