@@ -32,8 +32,8 @@ immutable struct TaskFailure {
     Throwable throwable;
 
     this(string task_name, const(Throwable) e) @trusted pure nothrow {
-        task_name =task_name;
-        throwable = cast(immutable) e;
+        this.task_name = task_name;
+        this.throwable = cast(immutable) e;
     }
 
     const(Document) toDoc() @safe const {
