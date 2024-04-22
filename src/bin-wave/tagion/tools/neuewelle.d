@@ -12,10 +12,11 @@ import core.thread;
 import core.time;
 import std.algorithm : countUntil, map, uniq, equal, canFind;
 import std.array;
-import std.file : chdir, exists;
+import std.file : chdir, exists, remove;
 import std.format;
 import std.getopt;
 import std.path;
+import std.process : thisProcessID;
 import std.range : iota;
 import std.stdio;
 import std.typecons;
@@ -25,12 +26,14 @@ import tagion.GlobalSignals;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension, hasExtension;
+import tagion.basic.dir;
 import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.logger;
 import tagion.services.logger;
 import tagion.services.options;
 import tagion.services.subscription;
+import tagion.services.messages;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.tools.toolsexception;
@@ -40,7 +43,6 @@ import tagion.script.common;
 import tagion.script.namerecords;
 
 static abort = false;
-import tagion.services.transcript : graceful_shutdown;
 
 private extern (C)
 void signal_handler(int signal) nothrow {
@@ -367,13 +369,20 @@ int _neuewelle(string[] args) {
     }
 
     version(NO_WAIT) {
+        const shutdown_file = buildPath(base_dir.run, format("epoch_shutdown_%d", thisProcessID()));
+        log.trace("Epoch Shutdown file %s", shutdown_file);
+
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
-        import core.atomic;
 
         while(!thisActor.stop) {
             thisActor.stop |= stopsignal.wait(100.msecs);
 
             receiveTimeout(Duration.zero,
+                (EpochShutdown m, long shutdown_) { //
+                    foreach(handle; supervisor_handles) {
+                        handle.send(m, shutdown_);
+                    }
+                },
                 (TaskFailure tf) { 
                     thisActor.stop = true;
                     log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
@@ -381,8 +390,27 @@ int _neuewelle(string[] args) {
                 default_handlers.expand,
             );
 
+            try {
+                if(shutdown_file.exists) {
+                    auto f = File(shutdown_file, "r");
+                    scope (exit) {
+                        f.close;
+                        shutdown_file.remove;
+                    }
+                    import std.conv;
+                    check(!f.byLine.empty, "shutdown_file is empty");
+                    long shutdown = f.byLine.front.to!long;
+                    foreach(handle; supervisor_handles) {
+                        handle.send(EpochShutdown(), shutdown);
+                    }
+                }
+            }
+            catch(Exception e) {
+                error(e);
+            }
+
             // If all supervisors stopped then we stop as well
-            thisActor.stop |= graceful_shutdown.atomicLoad() == local_options.wave.number_of_nodes;
+            thisActor.stop |= statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor));
         }
     } // VERSION NO_WAIT
     else {
@@ -421,13 +449,13 @@ int _neuewelle(string[] args) {
     }
     }
 
-    sub_handle.send(Sig.STOP);
-    log("Sending stop signal to supervisor");
+    log("Sending stop signal to supervisors");
     foreach (supervisor; supervisor_handles) {
-        supervisor.send(Sig.STOP);
+        supervisor.prioritySend(Sig.STOP);
     }
-    logger_service.send(Sig.STOP);
 
+    sub_handle.prioritySend(Sig.STOP);
+    logger_service.prioritySend(Sig.STOP);
     // supervisor_handle.send(Sig.STOP);
     if (!waitforChildren(Ctrl.END, 5.seconds)) {
         log("Timed out before all services stopped");
