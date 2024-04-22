@@ -38,31 +38,38 @@ void kill_waves(Pid[] pids, Duration grace_time) {
 
     Pid[size_t] alive_pids;
     foreach(i, pid; pids) {
-        alive_pids[i] = pid;
-        kill(pid, SIGINT);
-        Thread.sleep(200.msecs);
-        kill(pid, SIGINT);
-        writefln("SIGINT: %s", pid.processID);
+        try {
+            alive_pids[i] = pid;
+            kill(pid, SIGINT);
+            Thread.sleep(200.msecs);
+            kill(pid, SIGINT);
+            writefln("SIGINT: %s", pid.processID);
+        }
+        catch(Exception _) {}
     }
 
     while(!alive_pids.empty || MonoTime.currTime - begin_time <= grace_time) {
         Thread.sleep(200.msecs);
 
         foreach(i, pid; alive_pids) {
-            auto proc_status = tryWait(pid);
-            writefln("%s: %s", pid.processID, proc_status);
+            try {
+                auto proc_status = tryWait(pid);
+                writefln("%s: %s", pid.processID, proc_status);
 
-            if(proc_status.terminated) {
-                writeln("remove ", i); 
-                alive_pids.remove(i);
-            }
+                if(proc_status.terminated) {
+                    writeln("remove ", i); 
+                    alive_pids.remove(i);
+                }
+            } catch(Exception _) {}
         }
     }
 
     foreach(pid; alive_pids) {
-        kill(pid, SIGKILL);
-        writefln("SIGKILL: %s", pid.processID);
-        wait(pid);
+        try {
+            kill(pid, SIGKILL);
+            writefln("SIGKILL: %s", pid.processID);
+            wait(pid);
+        } catch(Exception _) {}
     }
 }
 
@@ -70,6 +77,7 @@ void kill_waves(Pid[] pids, Duration grace_time) {
 const(Options)[] getMode1Options(uint number_of_nodes) {
     Options local_options;
     local_options.setDefault;
+    local_options.trt.enable = false;
     local_options.wave.network_mode = NetworkMode.LOCAL;
     local_options.epoch_creator.timeout = 300; //msecs
     local_options.subscription.tags = StdRefinement.epoch_created.name;
@@ -80,7 +88,10 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     foreach (node_n; 0 .. number_of_nodes) {
         auto opt = Options(local_options);
 
-        opt.task_names.setPrefix(format(opt.wave.prefix_format, node_n));
+        const prefix_f = format(opt.wave.prefix_format, node_n);
+        opt.task_names.setPrefix(prefix_f);
+        opt.dart_interface.setPrefix(prefix_f);
+        opt.inputvalidator.setPrefix(prefix_f);
         opt.node_interface.node_address = format("tcp://[::1]:%s", base_port+node_n);
 
         all_opts ~= opt;
