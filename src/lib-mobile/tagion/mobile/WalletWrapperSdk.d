@@ -668,6 +668,35 @@ extern (C) {
     export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
+        static int check_inputs_and_outputs_or_something(const(AccountDetails) account, const(DARTIndex)[] inputs, const(Document[]) outputs) {
+            import std.algorithm : countUntil;
+            import tagion.script.standardnames;
+
+            auto billsHashes = account.bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
+
+            // Look for input matches. Return 0 from func if found.
+            foreach (inputHash; inputs) {
+                const index = countUntil!"a == b"(billsHashes, inputHash);
+                if (index >= 0) {
+                    return 0;
+                }
+            }
+            // Proceed if inputs are not matched.
+            // Look for outputs matches. Return 1 from func if found or 2 if not.
+            foreach (outputPubkey; outputs.map!(output => output[StdNames.owner].get!Pubkey)) {
+                const index = countUntil!"a.owner == b"(account.bills, outputPubkey);
+                if (index >= 0) {
+                    return 1;
+                }
+            }
+
+            if (account.bills.length == 0) {
+                return 1;
+            }
+
+            return 2;
+        }
+
         if (__wallet_storage.wallet.isLoggedin()) {
 
             auto contractDoc = Document(contractBuffer);
@@ -681,8 +710,7 @@ extern (C) {
             auto sContract = SignedContract(paramsDoc);
             const outputs = PayScript(sContract.contract.script).outputs.map!(output => output.toDoc).array;
 
-            int status = __wallet_storage.wallet.account.check_contract_payment(
-                    sContract.contract.inputs, outputs);
+            int status = check_inputs_and_outputs_or_something(__wallet_storage.wallet.account, sContract.contract.inputs, outputs);
 
             *statusPtr = cast(uint8_t) status;
             return SUCCESS;

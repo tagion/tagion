@@ -48,35 +48,6 @@ struct AccountDetails {
         activated.remove(billHash);
     }
 
-    pragma(msg, "I don't think this function belongs in AccountDetails");
-    int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) const {
-        import std.algorithm : countUntil;
-
-        auto billsHashes = bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
-
-        // Look for input matches. Return 0 from func if found.
-        foreach (inputHash; inputs) {
-            const index = countUntil!"a == b"(billsHashes, inputHash);
-            if (index >= 0) {
-                return 0;
-            }
-        }
-        // Proceed if inputs are not matched.
-        // Look for outputs matches. Return 1 from func if found or 2 if not.
-        foreach (outputPubkey; outputs.map!(output => output[StdNames.owner].get!Pubkey)) {
-            const index = countUntil!"a.owner == b"(bills, outputPubkey);
-            if (index >= 0) {
-                return 1;
-            }
-        }
-
-        if (bills.length == 0) {
-            return 1;
-        }
-
-        return 2;
-    }
-
     bool add_bill(TagionBill bill) {
         auto index = hash_net.dartIndex(bill);
         if (index in requested) {
