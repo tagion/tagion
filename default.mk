@@ -75,10 +75,6 @@ DVERSIONS+=OLD_ORDERING
 # # This enables a redundant check in dart to see if there are overlaps between segments 
 # DVERSIONS+=DART_RECYCLER_INVARIANT
 
-# # This is used for the wallet wrapper to generate pseudo random history
-# # which is useful for app development
-# DVERSIONS+=WALLET_HISTORY_DUMMY
-
 # # This fixes the names of some reserved archives which were not reserved
 # # $@Vote && @Locked
 # # This is a breaking change so it's not enabled by default
