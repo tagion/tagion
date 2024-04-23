@@ -271,7 +271,7 @@ unittest {
     HiBON result = cast(HiBON) h.hibon;
     import tagion.hibon.HiBONBase : Type;
     assert(result[key].type == Type.TIME);
-    assert(Document(result)[key].get!sdt_t == insert_time);
+    assert(result[key].get!sdt_t == insert_time);
 }
 
 /** 
