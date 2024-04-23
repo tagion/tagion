@@ -19,8 +19,8 @@ ANDROID_NDK_ZIP:=$(ANDROID_NDK)-linux-x86_64.zip
 ANDROID_CMAKE_ZIP:=cmake-3.10.2-linux-x86_64.zip
 ANDROID_CMAKE:=android-cmake
 
-install: $(TOOLS)/.way
-install: $(LDC_TARGET) $(ANDROID_NDK) $(LDC_HOST) $(ANDROID_CMAKE)
+install-android-toolchain: $(TOOLS)/.way
+install-android-toolchain: $(LDC_TARGET) $(ANDROID_NDK) $(LDC_HOST) $(ANDROID_CMAKE)
 
 $(TOOLS)/.way:
 	mkdir -p $(TOOLS)
@@ -58,8 +58,10 @@ $(TOOLS)/$(ANDROID_NDK)/.done:
 $(ANDROID_NDK): $(TOOLS)/$(ANDROID_NDK)/.done
 
 $(TOOLS)/$(ANDROID_CMAKE)/.done:
-	cd $(TOOLS); wget https://dl.google.com/android/repository/${ANDROID_CMAKE_ZIP} -O ${ANDROID_CMAKE_ZIP}
-	cd $(TOOLS); unzip $(ANDROID_CMAKE_ZIP) -d $(ANDROID_CMAKE)
+	cd $(TOOLS)
+	wget https://dl.google.com/android/repository/${ANDROID_CMAKE_ZIP} -O ${ANDROID_CMAKE_ZIP}
+	unzip $(ANDROID_CMAKE_ZIP) -d $(ANDROID_CMAKE)
+	cd -
 	touch $@
 
 $(ANDROID_CMAKE): $(TOOLS)/$(ANDROID_CMAKE)/.done
