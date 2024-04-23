@@ -302,6 +302,8 @@ mixin template Serialize() {
         }
 
 
+        /// version flag added because new serialization causes crash on snapdragon gen 8 1
+        /// Do not remove
         version(Android) {
             Buffer serialize() const pure @safe {
                 return this.toHiBON.serialize;

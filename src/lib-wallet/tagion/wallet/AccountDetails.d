@@ -36,7 +36,7 @@ struct AccountDetails {
     void remove_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove, countUntil;
 
-        const billsHashes = bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize)).array;
+        auto billsHashes = bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
         const index = billsHashes.countUntil(billHash);
         if (index >= 0) {
             used_bills ~= bills[index];
@@ -46,35 +46,6 @@ struct AccountDetails {
 
     void unlock_bill_by_hash(const(DARTIndex) billHash) {
         activated.remove(billHash);
-    }
-
-    pragma(msg, "I don't think this function belongs in AccountDetails");
-    int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) const {
-        import std.algorithm : countUntil;
-
-        auto billsHashes = bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize)).array;
-
-        // Look for input matches. Return 0 from func if found.
-        foreach (inputHash; inputs) {
-            const index = countUntil!"a == b"(billsHashes, inputHash);
-            if (index >= 0) {
-                return 0;
-            }
-        }
-        // Proceed if inputs are not matched.
-        // Look for outputs matches. Return 1 from func if found or 2 if not.
-        foreach (outputPubkey; outputs.map!(output => output[StdNames.owner].get!Pubkey)) {
-            const index = countUntil!"a.owner == b"(bills, outputPubkey);
-            if (index >= 0) {
-                return 1;
-            }
-        }
-
-        if (bills.length == 0) {
-            return 1;
-        }
-
-        return 2;
     }
 
     bool add_bill(TagionBill bill) {
@@ -268,6 +239,7 @@ struct HistoryItem {
 
 version(unittest) {
 import std.range;
+import tagion.communication.HiRPC;
 
 HiRPC.Sender create_contract(
         TagionCurrency change,
@@ -445,36 +417,4 @@ struct Invoice {
 struct Invoices {
     Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
-}
-
-import tagion.dart.Recorder;
-import tagion.communication.HiRPC;
-
-struct AccountManager {
-    private AccountDetails _details;
-
-    const details() => _details;
-
-    alias total = _details.total;
-    alias available = _details.available;
-    alias locked = _details.locked;
-    alias history = _details.history;
-
-    // Call this if you send a hirpc submit contract
-    void send_hirpc(HiRPC.Sender hirpc) {
-        // ~= hirpcs
-        // lock bills
-    }
-
-    // Call this if your contract has been rejected
-    void reject_hipc(HiRPC.Sender hirpc) {
-        // -= hirpcs
-        // unlock bills
-    }
-
-    // Update
-    void update(HiRPC.Receiver receiver) {
-        // Add new bills
-        // move locked bills to used bills if' its output of pending hirpc.
-    }
 }

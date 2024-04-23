@@ -52,8 +52,10 @@ alias trtContract = Msg!"trtContract";
 
 alias trtHiRPCRR = Request!"trtRead"; // trt.dartCRUD: [dartRead, dartCheckRead, dartRim]
 alias dartReadRR = Request!"dartRead"; // dartRead Request
-alias dartCheckReadRR = Request!("dartCheckRead", long); // dartCheckRead Request
+alias dartCheckReadRR = Request!("dartCheckRead", immutable(long)); // dartCheckRead Request
 alias dartRimRR = Request!"dartRim"; // dartRim Request
 alias dartBullseyeRR = Request!"dartBullseye"; // dartBullseye Request
-alias dartModifyRR = Request!("dartModify", long); // dartModify Request
+alias dartModifyRR = Request!("dartModify", immutable(long)); // dartModify Request
 alias dartHiRPCRR = Request!"dartHiRPCRequest"; // dartCRUD HiRPC commands: [dartRead, dartCheckRead, dartRim]
+
+alias EpochShutdown = Msg!"epoch_shutdown"; // Tell the transcript to stop at a specific epoch

@@ -50,6 +50,7 @@ struct NetworkNodeRecord {
     @label("$state") State state; /// Node state
     @label("$addr") string address; /// Network address
 
+    /// Tries to convert address from a multiaddr to the nng format
     string toNNGString() const {
         auto s = address.split("/");
         const type = s[0];
@@ -64,7 +65,7 @@ struct NetworkNodeRecord {
             return type ~ name;
         }
         // Probably should not assert in the future, or atleast validate the address ahead of time in the constructor
-        assert(0, format("don't know how to convert %s to nng address", address));
+        assert(0, format("Unable to convert %s to nng address", address));
     }
 
     mixin HiBONRecord!(q{

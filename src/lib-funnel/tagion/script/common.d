@@ -254,7 +254,7 @@ alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
 
 @recordType("$@Tagion")
 struct TagionHead {
-    @label(StdNames.name) string name; // Default name should always be "tagion"
+    @label(StdNames.name) string name = TagionDomain; // Default name should always be "tagion"
     long current_epoch;
     mixin HiBONRecord!(q{
         this(const(string) name, const(long) current_epoch) {
@@ -281,12 +281,11 @@ struct TagionGlobals {
     });
 }
 
-version(RESERVED_ARCHIVES_FIX) {
 @recordType("$@Vote")
 struct ConsensusVoting {
     long epoch;
     @label(StdNames.owner) Pubkey owner;
-    @label(StdNames.signed) Signature signed_bullseye;
+    @label(StdNames.sign) Signature signed_bullseye;
 
     mixin HiBONRecord!(q{
         this(long epoch, Pubkey owner, Signature signed_bullseye) pure nothrow {
@@ -303,31 +302,6 @@ struct ConsensusVoting {
     bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) const pure {
         return net.verify(bullseye, signed_bullseye, owner);
     }
-}
-} else {
-pragma(msg, "shouldn't this be $@?");
-@recordType("@$Vote")
-struct ConsensusVoting {
-    long epoch;
-    @label(StdNames.owner) Pubkey owner;
-    @label(StdNames.signed) Signature signed_bullseye;
-
-    mixin HiBONRecord!(q{
-        this(long epoch, Pubkey owner, Signature signed_bullseye) pure nothrow {
-            this.owner = owner;
-            this.signed_bullseye = signed_bullseye;
-            this.epoch = epoch;
-        }
-        this(const(Document) doc) @safe immutable {
-            immutable _this = ConsensusVoting(doc);
-            this.tupleof = _this.tupleof;
-        }
-    });
-
-    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) const pure {
-        return net.verify(bullseye, signed_bullseye, owner);
-    }
-}
 }
 
 version(RESERVED_ARCHIVES_FIX) {

@@ -248,6 +248,13 @@ static size_t size(U)(const(U[]) array) pure {
             return T(ret);
         }
 
+        import tagion.utils.StdTime;
+        const(T) get(T)() const if (is(T == sdt_t)) {
+            .check(type is Type.TIME, message("Expected HiBON type %s but apply type %s (%s)",
+                    type, Type.TIME, T.stringof));
+            return value.by!(Type.TIME);
+        }
+
         unittest {
             import std.typecons : Typedef;
 
@@ -1065,6 +1072,17 @@ static size_t size(U)(const(U[]) array) pure {
         const doc = Document(h);
         assert(doc[time].type is Type.TIME);
         assert(doc[time].get!sdt_t == 1_100_100_101);
+    }
+    unittest { // Test sdt_t
+        import std.typecons : TypedefType;
+        import tagion.utils.StdTime;
+
+        auto h = new HiBON;
+        enum time = "$t";
+        h[time] = sdt_t(1_100_100_101);
+
+        assert(h[time].type is Type.TIME);
+        assert(h[time].get!sdt_t == 1_100_100_101);
     }
 
     unittest { // Test of empty Document

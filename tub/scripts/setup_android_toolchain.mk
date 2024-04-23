@@ -16,8 +16,11 @@ LDC_TARGET_TAR:=$(LDC_TARGET).tar.xz
 ANDROID_NDK:=android-ndk-r21b
 ANDROID_NDK_ZIP:=$(ANDROID_NDK)-linux-x86_64.zip
 
+ANDROID_CMAKE_ZIP:=cmake-3.10.2-linux-x86_64.zip
+ANDROID_CMAKE:=android-cmake
+
 install-android-toolchain: $(TOOLS)/.way
-install-android-toolchain: $(LDC_TARGET) $(ANDROID_NDK) $(LDC_HOST)
+install-android-toolchain: $(LDC_TARGET) $(ANDROID_NDK) $(LDC_HOST) $(ANDROID_CMAKE)
 
 $(TOOLS)/.way:
 	mkdir -p $(TOOLS)
@@ -53,6 +56,15 @@ $(TOOLS)/$(ANDROID_NDK)/.done:
 	touch $@
 
 $(ANDROID_NDK): $(TOOLS)/$(ANDROID_NDK)/.done
+
+$(TOOLS)/$(ANDROID_CMAKE)/.done:
+	cd $(TOOLS)
+	wget https://dl.google.com/android/repository/${ANDROID_CMAKE_ZIP} -O ${ANDROID_CMAKE_ZIP}
+	unzip $(ANDROID_CMAKE_ZIP) -d $(ANDROID_CMAKE)
+	cd -
+	touch $@
+
+$(ANDROID_CMAKE): $(TOOLS)/$(ANDROID_CMAKE)/.done
 
 clean-tools:
 	$(RM) -vr $(TOOLS)

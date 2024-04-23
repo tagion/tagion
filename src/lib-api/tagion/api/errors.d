@@ -8,6 +8,7 @@ nothrow:
 enum ErrorCode {
     none = 0,
     exception = -1, 
+    error = -2,
 }
 
 static Exception last_error;

@@ -2,10 +2,8 @@
 DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
 
-include ${call dir.resolve, importc.mk} 
-
-
 LIBNNG := $(DTMP_NNG)/libnng.a
+CMAKE := cmake
 
 ifdef USE_SYSTEM_LIBS
 # NNG Does not provide a .pc file,
@@ -35,8 +33,8 @@ $(NNG_HEAD): $(NNG_GIT_MODULE)
 
 $(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD)
 	cd $(DTMP_NNG)
-	cmake $(NNGFLAGS) $(DSRC_NNG)
-	cmake --build $(DTMP_NNG)
+	$(CMAKE) $(NNG_CMAKE_FLAGS) $(DSRC_NNG)
+	$(MAKE)
 
 ifdef USE_SYSTEM_LIBS
 nng: # NOTHING TO BUILD
@@ -77,3 +75,7 @@ proper-nng:
 	$(PRECMD)
 	${call log.header, $@ :: nng}
 	$(RMDIR) $(DTMP_NNG)
+
+proper: proper-nng
+
+
