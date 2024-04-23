@@ -236,19 +236,14 @@ unittest {
     assert(result[key].get!(immutable(ubyte[])) == binary_data);
 }
 
-/** 
- * Add boolean to hibon instance
- * Params:
- *   instance = pointer to the instance
- *   key = pointer to the key
- *   key_len = length of the key
- *   value = bool to add
- * Returns: 
- */
-int tagion_hibon_add_bool(const(HiBONT*) instance,
+                            
+
+mixin template add_T(T, string func_name) {
+    pragma(mangle, func_name)
+    extern(C) int add_T(const(HiBONT*) instance,
                         const char* key,
                         const size_t key_len,
-                        const bool value) {
+                        const(T) value) {
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
             return ErrorCode.exception;
@@ -262,8 +257,84 @@ int tagion_hibon_add_bool(const(HiBONT*) instance,
         return ErrorCode.exception;
     }
     return ErrorCode.none;
+
+    }
+    import std.format;
+    enum mangled_name = format("extern(C) int %s(%s,%s,%s,%s);", func_name, "const(HiBONT*)", "const char*", "const size_t", T.stringof);
+    mixin(mangled_name);
 }
-                            
+
+/** 
+* Add boolean to hibon instance
+* Params:
+*   instance = pointer to the instance
+*   key = pointer to the key
+*   key_len = length of the key
+*   value = bool to add
+* Returns: ErrorCode
+*/
+mixin add_T!(bool, "tagion_hibon_add_bool");
+/** 
+* Add int32 to hibon instance
+* Params:
+*   instance = pointer to the instance
+*   key = pointer to the key
+*   key_len = length of the key
+*   value = int32 to add
+* Returns: ErrorCode
+*/
+mixin add_T!(int32_t, "tagion_hibon_add_int32");
+/** 
+* Add int64 to hibon instance
+* Params:
+*   instance = pointer to the instance
+*   key = pointer to the key
+*   key_len = length of the key
+*   value = int64 to add
+* Returns: ErrorCode
+*/
+mixin add_T!(int64_t, "tagion_hibon_add_int64");
+/** 
+* Add uint32 to hibon instance
+* Params:
+*   instance = pointer to the instance
+*   key = pointer to the key
+*   key_len = length of the key
+*   value = uint32 to add
+* Returns: ErrorCode
+*/
+mixin add_T!(uint32_t, "tagion_hibon_add_uint32");
+/** 
+* Add uint64 to hibon instance
+* Params:
+*   instance = pointer to the instance
+*   key = pointer to the key
+*   key_len = length of the key
+*   value = uint64 to add
+* Returns: ErrorCode
+*/
+mixin add_T!(uint64_t, "tagion_hibon_add_uint64");
+/** 
+* Add float32 to hibon instance
+* Params:
+*   instance = pointer to the instance
+*   key = pointer to the key
+*   key_len = length of the key
+*   value = float32 to add
+* Returns: ErrorCode
+*/
+mixin add_T!(float, "tagion_hibon_add_float32");
+/** 
+* Add float64 to hibon instance
+* Params:
+*   instance = pointer to the instance
+*   key = pointer to the key
+*   key_len = length of the key
+*   value = float64 to add
+* Returns: ErrorCode
+*/
+mixin add_T!(double, "tagion_hibon_add_float64");
+
 ///
 unittest {
     HiBONT h;
@@ -278,5 +349,3 @@ unittest {
     HiBON result = cast(HiBON) h.hibon;
     assert(result[key].get!bool == wowo);
 }
-
-
