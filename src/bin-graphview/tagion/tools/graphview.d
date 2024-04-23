@@ -192,19 +192,20 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         SVGLine line;
         line.pos1 = event_pos;
         line.pos2 = ref_edge;
-        line.stroke_width = 4;
+        line.stroke_width = 10;
 
         // colors
         if (isMother) {
-            line.stroke = ref_event.witness ? "red" : "black";
+            line.stroke = ref_event.witness ? "red" : nonPastel19.color(ref_event.node_id);
         }
         else {
-            line.stroke = pastel19.color(ref_event.id);
+            line.stroke = nonPastel19.color(ref_event.node_id);
         }
         obuf.writefln("%s", line.toString);
     }
 
     private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
+        const vote_fmt="%"~node_size.to!string~".8s";
         const pos = getPos(e);
         max_width = max(pos.x, max_width);
         max_height = max(-pos.y, max_height);
@@ -249,8 +250,26 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text_anchor = "middle";
         text.dominant_baseline = "middle";
         text.fill = "black";
-        text.text = format("%s:%s", e.round == long.min ? "NaN" : format("%s", e.round), e.round_received == long.min ? "NaN" : format("%s", e.round_received));
+        text.text = format("%s:%s", e.round == long.min ? "X" : format("%s", e.round), e.round_received == long.min ? "X" : format("%s", e.round_received));
         obuf.writefln("%s", text.toString);
+        if (e.seen.length) {
+            //BitMask vote_mask;
+            //vote_mask=e.seen;
+            text.text=format("%d",e.id);
+            text.pos.y+=NODE_CIRCLE_SIZE/2;
+            obuf.writefln("%s", text.toString);
+            if (e.witness) {
+                text.pos.y+=NODE_CIRCLE_SIZE/2;
+                text.text="Matrix";
+                foreach(strong_vector; e.strongly_seen_matrix) {
+                    BitMask bits;
+                    bits=strong_vector;
+                    text.text=(() @trusted => format(vote_fmt, bits))();
+                    text.pos.y+=NODE_CIRCLE_SIZE/2;
+                    obuf.writefln("%s", text.toString);
+                }
+            }
+        }
     }
 
     void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {

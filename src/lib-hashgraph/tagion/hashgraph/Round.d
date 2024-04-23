@@ -96,7 +96,7 @@ class Round {
     const(Event[]) events() const pure nothrow {
         return _events;
     }
-
+  
     /**
      * Adds the even to round
      * Params:

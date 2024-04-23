@@ -28,6 +28,17 @@ struct BitMask {
         mask = rhs.mask.dup;
     }
 
+
+    void opAssign(const(ubyte)[] buf) pure nothrow @trusted {
+        if (buf.length == 0) {
+            mask=null;
+            return;
+        }
+        const size=(buf.length / size_t.sizeof) + (buf.length % size_t.sizeof !=0);
+        buf.length=size * size_t.sizeof;
+        mask=(cast(size_t*)&buf[0])[0..size].dup;
+    }
+    
     /++
      This set the mask as bit stream with LSB first
      +/
@@ -40,14 +51,29 @@ struct BitMask {
         }
     }
 
-    this(R)(scope R range) pure nothrow if ((isInputRange!R) && is(ElementType!R : bool)) {
+    this(R)(scope R range) pure nothrow if ((isInputRange!R) && is(ElementType!R : bool) && !is(Uqual!(Element!R) == ubyte)) {
         this(range.enumerate
                 .filter!(b => b.value)
                 .map!(b => b.index));
     }
 
-    this(R)(scope R range) pure nothrow if ((isInputRange!R) && isIntegral!(ElementType!R) && !is(ElementType!R : bool)) {
+    this(R)(scope R range) pure nothrow if ((isInputRange!R) && isIntegral!(ElementType!R) && !is(ElementType!R : bool) && !is(Uqual!(ElementType!R) == ubyte)) {
         range.each!((n) => this[n] = true);
+    }
+
+    const(ubyte[]) bytes() const pure nothrow @trusted {
+        if (mask.length == 0) {
+            return null;
+        }
+        return (cast(ubyte*)&mask[0])[0..mask.length*size_t.sizeof];
+    }
+
+    unittest {
+        const(ubyte[]) buf = [0x10,0x01, 0x80];
+        BitMask bits;    
+        bits=buf;
+        assert(equal(bits[], [4,8,23]));
+        assert(equal(bits.bytes, [16, 1, 128, 0, 0, 0, 0, 0]));
     }
 
     BitMask dup() const pure nothrow {
@@ -76,6 +102,7 @@ struct BitMask {
     }
 
     unittest {
+        import std.algorithm;
         BitMask bits_a, bits_b;
         assert(bits_a == bits_b);
         bits_b.mask.length = 1;

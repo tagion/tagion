@@ -5,6 +5,7 @@ import std.exception;
 
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBONRecord;
+import tagion.basic.Types : Buffer;
 
 @recordType("node_amount")
 struct NodeAmount {
@@ -31,6 +32,8 @@ struct EventView {
     @label("$w") @optional @(filter.Initialized) bool witness;
     @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$error") @optional bool error;
+    @label("$seen")  @optional Buffer seen;
+    @label("$strong") @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -60,6 +63,21 @@ struct EventView {
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:long.min;
+            import tagion.hashgraph.Event2;
+            const event2=cast(const(Event2))event;
+            if (event2 !is null) {
+                seen=event2._witness_seen_mask.bytes;    
+                if (event2.isWitness) {
+                    //pragma(msg, "Event2 witness ", typeof(event._witness));
+                    auto witness=cast(const(Event2.Witness2))(event._witness);
+                    strongly_seen_matrix.length=witness.strongly_seen_matrix.length;
+                    foreach(i, ref strongly_seen_vector; strongly_seen_matrix) {
+                        strongly_seen_vector=witness.strongly_seen_matrix[i].bytes;
+                        
+                    }
+                }
+            }
+            
         }
     });
 }

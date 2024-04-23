@@ -56,9 +56,9 @@ class Event {
         long _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
-        Witness _witness;
         BitMask _round_seen_mask;
     }
+        Witness _witness;
 
     @nogc
     static uint count() nothrow {

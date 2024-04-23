@@ -144,21 +144,112 @@ class Event2 : current_event.Event {
             BitMask _prev_seen_witnesses;
         }
 
+        BitMask[] strongly_seen_matrix;
+        BitMask strongly_seen_mask;
         /**
          * Contsruct a witness of an event
          * Params:
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
-        this(Event2 owner_event, ulong node_size) nothrow {
-	   super(owner_event, node_size);
+        this(Event2 owner_event, const current_hashgraph.HashGraph hashgraph) nothrow {
+	        super(this.outer, hashgraph.node_size);
+            strongly_seen_matrix.length=hashgraph.node_size;
+            strongly_seen_matrix[this.outer.node_id][this.outer.node_id]=true;
+            if (!isEva) {
+                if (higher(_father.round.number, _mother.round.number)) {
+                    _father._round.add(this.outer);
+                }
+                else {
+                    hashgraph._rounds.next_round(this.outer); 
+                }
+            }
         }
-
+    /+
         version(none)
+        bool calc_strongly_seen(current_event.Event event_seeing_witness, const current_hashgraph.HashGraph hashgraph) { 
+            if (!event_seeing_witness._father) {
+                return false;
+            }
+            const newly_seen_witness=(cast(Event2)event_seeing_witness._father)._witness_seen_mask ; //-
+         //   (cast(Event2)event_seeing_witness._mother)._witness_seen_mask;
+            const witness_node_id=this.outer.node_id;
+            (() @trusted => writefln("newly_seen_witness %5s witness_id=%d", newly_seen_witness, this.outer.node_id))();
+            const event_seeing_node_id=event_seeing_witness.node_id;
+            auto evnet_seen_witness = cast(Witness2)(event_seeing_witness._round._events[event_seeing_node_id]._witness);
+            strongly_seen_matrix[witness_node_id]|=event_seeing_witness.strongly_seen_matrix[wi
+            /*
+            foreach(witness_seen_through_node_id; newly_seen_witness) {
+                (() @trusted => writef("%5s:", strongly_seen_matrix[witness_seen_through_node_id]))();
+                strongly_seen_matrix[witness_node_id][witness_seen_through_node_id]=true;
+                (() @trusted => writefln("%5s %d->%d", strongly_seen_matrix[witness_node_id], witness_node_id, witness_seen_through_node_id))();
+                if (!strongly_seen_mask[witness_seen_through_node_id]) {
+                    strongly_seen_mask[witness_seen_through_node_id]=
+                    isMajority(strongly_seen_matrix[witness_seen_through_node_id], hashgraph);
+                }
+            }
+            */  
+            foreach(i, mask; strongly_seen_matrix) {
+                (() @trusted => writefln("%d:%5s", i, mask))();
+            }
+            return isMajority(strongly_seen_mask, hashgraph);
+        }
+    +/     
+    version(none)
         ~this() {
             _count--;
         }
 
+    }
+    
+    bool calc_strongly_seen(const current_hashgraph.HashGraph hashgraph) {
+        if (!_father || isEva) {
+            return false;
+        }
+        auto mother_withess_event=cast(Event2)(_round._events[node_id]);
+        auto mother_withess = cast(Witness2)(mother_withess_event._witness);
+        auto father_withess_event=cast(Event2)(_father._round._events[_father.node_id]);
+        auto father_withess = cast(Witness2)(father_withess_event._witness);
+        mother_withess.strongly_seen_matrix[_father.node_id][node_id]=true;
+        foreach(n; 0..mother_withess.strongly_seen_matrix.length) {
+            mother_withess.strongly_seen_matrix[n]|=father_withess.strongly_seen_matrix[n];
+            if (!mother_withess.strongly_seen_mask[n]) {
+                mother_withess.strongly_seen_mask[n]=
+                isMajority(mother_withess.strongly_seen_matrix[n], hashgraph);
+            }
+       
+       
+        }
+        //return isMajority(mother_withess.strongly_seen_mask, hashgraph);
+        /*
+        if (isMajority(mother_withess.strongly_seen_matrix[_father.node_id], hashgraph)) {
+            mother_withess.strongly_seen_mask[_father.node_id]=true;
+        }
+        mother_withess.strongly_seen_matrix[node_id]|=father_withess.strongly_seen_matrix[node_id];
+        if (isMajority(mother_withess.strongly_seen_matrix[node_id], hashgraph)) {
+            mother_withess.strongly_seen_mask[node_id]=true;
+        }
+        */
+        writefln("node_id=%d event_id=%d %d->%d", node_id, id, node_id, _father.node_id);    
+        foreach(i, mask; mother_withess.strongly_seen_matrix) {
+                (() @trusted => writefln("%d:%5s", i, mask))();
+            }
+        
+        const result=isMajority(mother_withess.strongly_seen_mask, hashgraph);
+        if (result) {
+            current_event.Event.callbacks.connect(mother_withess_event);
+        }
+        return result;
+    }
+        
+    private void calc_witness_seen() pure nothrow {
+        _witness_seen_mask[node_id]=true;
+        if (_mother) {
+            _witness_seen_mask|=(cast(Event2)_mother)._witness_seen_mask;
+        }
+        if (_father) {
+            _witness_seen_mask|=(cast(Event2)_father)._witness_seen_mask;
+        }
     }
 
     version(none) static EventMonitorCallbacks callbacks;
@@ -279,14 +370,17 @@ class Event2 : current_event.Event {
         }
         _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
         /// Set the mask of seend witness
-        _witness_seen_mask[node_id]=true;
-        if (_mother) {
-            _witness_seen_mask|=(cast(Event2)_mother)._witness_seen_mask;
+        calc_witness_seen;
+        //pragma(msg, "events round ", typeof(_mother._round._events[node_id]));
+        //pragma(msg, "witness round ", typeof(_mother._round._events[node_id]._witness));
+        //auto previous_round_witness=cast(Witness2)_round._events[node_id]._witness;
+        //pragma(msg, "witness round 2 ", typeof(previous_round_witness));
+
+        const strongly_seen=calc_strongly_seen(hashgraph);
+        if (strongly_seen) {
+            _witness=new Witness2(this, hashgraph.node_size);    
         }
-        if (_father) {
-            _witness_seen_mask|=(cast(Event2)_father)._witness_seen_mask;
-        }
- 
+        version(none) { 
         // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
         // if (_father) { pseudo_time_counter += 1; }
         pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
@@ -307,6 +401,7 @@ class Event2 : current_event.Event {
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
         }
+    }
     }
 
     override BitMask calc_strongly_seen_nodes(const current_hashgraph.HashGraph hashgraph) {
