@@ -812,7 +812,17 @@ mixin template HiBONRecord(string CTOR = "") {
     }
 
     @safe final const(Document) toDoc() const pure {
-        return Document(serialize);
+        debug(android){
+            import tagion.mobile.mobilelog : write_log;
+            write_log("toDoc start\n");
+        }
+        auto tmpSerialize = serialize;
+        debug(android){
+            import tagion.mobile.mobilelog : write_log;
+            import std.string : format;
+            write_log(format("toDoc tmpSerialize.length %d\n", tmpSerialize.length));
+        }
+        return Document(tmpSerialize);
     }
 }
 

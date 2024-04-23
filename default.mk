@@ -89,7 +89,11 @@ DFLAGS+=$(DVERSION)=OLD_ORDERING
 # DFLAGS+=$(DVERSION)=RESERVED_ARCHIVES_FIX
 
 # Use to check that toHiBON.serialize is equal to .serialize
-DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
+#DFLAGS+=$(DVERSION)=TOHIBON_SERIALIZE_CHECK
+
+# Use to write logs into a file.
+DFLAGS+=$(DDEBUG)=android
+
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)

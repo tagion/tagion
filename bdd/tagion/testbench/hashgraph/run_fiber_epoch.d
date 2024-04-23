@@ -39,13 +39,15 @@ int _main(string[] args) {
     }
     mkdirRecurse(module_path);
 
-    uint MAX_CALLS = args[1].to!uint.ifThrown(5000);
-    int[] weights = args[2].split(",").map!(n => n.to!int).array;
+    uint MAX_CALLS = args[1].ifThrown("10000").to!uint.ifThrown(10000);
+    int[] weights = args[2].ifThrown("100,5,100,100,100").split(",").map!(n => n.to!int).array;
     writefln("%s", weights);
     uint number_of_nodes = cast(uint) weights.length;
     
     // uint number_of_nodes = args[2].to!uint.ifThrown(5);
 
+    import tagion.utils.pretend_safe_concurrency : register, thisTid;
+    register("run_fiber_epoch", thisTid);
 
     auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
     hashgraph_fiber_feature.RunPassiveFastHashgraph(number_of_nodes, weights, MAX_CALLS, module_path);
@@ -90,6 +92,12 @@ class RunPassiveFastHashgraph {
         import std.random : MinstdRand0, dice;
         auto rnd = MinstdRand0(42);
 
+        FileMonitorCallbacks[Pubkey] node_callbacks;
+
+        foreach(pkey; network.channels) {
+            node_callbacks[pkey] = new FileMonitorCallbacks(buildPath(module_path, format("%(%02x%)_graph.hibon", pkey)), number_of_nodes, cast(Pubkey[]) network.channels);
+        }
+
         while (i < MAX_CALLS) {
             size_t channel_number;
             if (NewTestRefinement.epochs.length > 0) {
@@ -100,10 +108,8 @@ class RunPassiveFastHashgraph {
             writefln("channel_number: %s", channel_number);
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
-            writefln("current: %(%02x%)", network.current);
-            Event.callbacks = new FileMonitorCallBacks(buildPath(module_path, format("%(%02x%)_graph.hibon", network.current)), number_of_nodes, cast(Pubkey[]) network.channels);
-            (() @trusted { current.call; Event.callbacks.destroy; })();
-            network.printStates;
+            Event.callbacks = node_callbacks[network.current];
+            (() @trusted { current.call; })();
             i++;
         }
         sw.stop;

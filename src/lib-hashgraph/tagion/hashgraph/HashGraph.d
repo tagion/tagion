@@ -149,7 +149,7 @@ class HashGraph {
                 }
                 _rounds.last_round.add(event);
                 front_seat(event);
-                event._round_received = _rounds.last_round;
+                event.round_received = _rounds.last_round;
             }
 
             _rounds.erase;

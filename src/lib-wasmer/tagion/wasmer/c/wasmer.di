@@ -4,6 +4,7 @@ module tagion.wasmer.c.wasmer;
 
 import core.stdc.config;
 import core.stdc.stdint;
+import tagion.wasmer.c.wasm;
 
 extern (C):
 nothrow:

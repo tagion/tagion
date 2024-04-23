@@ -1,5 +1,4 @@
 module tagion.tools.graphview;
-import std.algorithm : min, map;
 import std.array : join;
 import std.range;
 import std.conv : to;
@@ -18,6 +17,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONValid : error_callback;
 import tagion.hibon.HiBONFile : fread, HiBONRange;
+import std.algorithm : min, map, each, filter;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
 
@@ -214,7 +214,12 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         else {
             node_circle.fill = pastel19.color(e.round_received);
         }
-
+        if (e.error) {
+            verbose("had error");
+            node_circle.stroke = "yellow";
+            node_circle.stroke_width = 6;
+        }
+    
         if (!raw_svg) {
             node_circle.classes = "myCircle";
             node_circle.data_info = escapeHtml(e.toPretty);
@@ -227,7 +232,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text_anchor = "middle";
         text.dominant_baseline = "middle";
         text.fill = "black";
-        text.text = format("%s", e.id);
+        text.text = format("%s", e.round_received == long.min ? "NaN" : format("%s", e.round_received));
         obuf.writefln("%s", text.toString);
     }
 
@@ -255,23 +260,12 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
 
         scope (success) {
-            if (!raw_svg) {
-                start.writefln(HTML_BEGIN);
-            }
             start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
             start.writefln(`<g transform="translate(0,%s)">`, max_height);
             end.writefln("</g>");
-
             end.writefln("</svg>");
-            if (!raw_svg) {
-                end.writefln(EVENT_POPUP);
-                end.writefln(HTML_END);
-            }
-
         }
-
     }
-
 }
 
 @safe
@@ -439,7 +433,7 @@ int _main(string[] args) {
 
     bool version_switch;
 
-    string inputfilename;
+    string[] inputfilenames;
     string outputfilename;
 
     bool html;
@@ -481,35 +475,21 @@ int _main(string[] args) {
         return 0;
     }
 
-    if (args.length > 1) {
-        inputfilename = args[1];
-    }
+    // if (args.length > 1) {
+    //     inputfilename = args[1];
+    // }
 
-    File inputfile;
-    if (inputfilename.empty) {
-        inputfile = stdin;
+    import tagion.basic.Types : hasExtension, FileExtension;
+    inputfilenames = args.filter!(arg => arg.hasExtension(FileExtension.hibon)).array; 
+
+
+    File[] inputfiles;
+    if (inputfilenames.empty) {
+        inputfiles ~= stdin;
         verbose("Reading graph data from stdin");
     }
     else {
-        inputfile = File(inputfilename, "r");
-    }
-
-    HiBONRange hibon_range = HiBONRange(inputfile);
-
-    auto obuf = new OutBuffer;
-    obuf.reserve(inputfile.size * 2);
-    verbose("inputfile size=%s", inputfile.size);
-    auto startbuf = new OutBuffer;
-    auto endbuf = new OutBuffer;
-
-    if (html || svg) {
-        assert(!(html && svg), "cannot set both html and svg");
-        auto dot = SVGDot!HiBONRange(hibon_range);
-        dot.draw(obuf, startbuf, endbuf, svg);
-    }
-    else {
-        auto dot = Dot!HiBONRange(hibon_range, "G");
-        dot.draw(obuf);
+        inputfilenames.each!(inputfilename => inputfiles ~= File(inputfilename, "r"));
     }
 
     File outfile;
@@ -519,11 +499,40 @@ int _main(string[] args) {
     else {
         outfile = File(outputfilename, "w");
     }
+    
+    assert(inputfiles.length != 0);
+    foreach(i, inputfile; inputfiles) {
+        HiBONRange hibon_range = HiBONRange(inputfile);
 
-    outfile.write(startbuf);
-    outfile.write(obuf);
-    outfile.write(endbuf);
-    verbose("outfile size=%s", outfile.size);
+        auto obuf = new OutBuffer;
+        obuf.reserve(inputfile.size * 2);
+        verbose("inputfile size=%s", inputfile.size);
+        auto startbuf = new OutBuffer;
+        auto endbuf = new OutBuffer;
+        if (i == 0 && !svg) {
+            startbuf.writefln(HTML_BEGIN);
+        }
+
+        if (html || svg) {
+            assert(!(html && svg), "cannot set both html and svg");
+            auto dot = SVGDot!HiBONRange(hibon_range);
+            dot.draw(obuf, startbuf, endbuf, svg);
+        }
+        else {
+            auto dot = Dot!HiBONRange(hibon_range, "G");
+            dot.draw(obuf);
+        }
+        if (inputfiles.length == i+1 && !svg) {
+            endbuf.writefln(EVENT_POPUP);
+            endbuf.writefln(HTML_END);
+        }
+
+        outfile.write(startbuf);
+        outfile.write(obuf);
+        outfile.write(endbuf);
+        verbose("outfile size=%s", outfile.size);
+    }
+
     return 0;
 }
 

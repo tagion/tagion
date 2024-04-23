@@ -7,7 +7,6 @@ env-dinc:
 	$(call log.header, $@ :: env)
 	$(call log.env, SRC_DINC, $(SRC_DINC))
 	$(call log.env, BIN_DINC, $(BIN_DINC))
-	$(call log.env, LIB_DINC, $(LIB_DINC))
 	$(call log.close)
 
 .PHONY: env-dinc
@@ -117,7 +116,7 @@ $(DBIN)/dartutil: DFILES::=$(DSRC)/bin-dartutil/tagion/tools/dartutil/dartutil.d
 $(call DO_BIN,dartutil)
 
 #
-# Blocfile utility
+# Blockfile utility
 #
 $(DBIN)/blockutil: DINC+=$(SRC_DINC)
 $(DBIN)/blockutil: DFILES::=$(DSRC)/bin-blockutil/tagion/tools/blockutil.d
@@ -160,6 +159,8 @@ $(call DO_BIN,vergangenheit)
 #
 # Tagion virtual machine utility
 #
+$(DBIN)/tvmutil: libwasmer
+$(DBIN)/tvmutil: LDFLAGS+=$(LIBWASMER) 
 $(DBIN)/tvmutil: DINC+=$(SRC_DINC)
 $(DBIN)/tvmutil: DFILES::=$(DSRC)/bin-tvmutil/tagion/tools/tvmutil/tvmutil.d
 $(call DO_BIN,tvmutil)
@@ -206,8 +207,11 @@ $(call DO_BIN,subscriber)
 #
 # ONETOOL
 #
-$(DBIN)/tagion: nng secp256k1
-$(DBIN)/tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+ifdef ENABLE_WASMER
+$(DBIN)/tagion: libwasmer
+endif
+$(DBIN)/tagion: nng secp256k1 
+$(DBIN)/tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG) $(LIBWASMER)
 $(DBIN)/tagion: DFILES::=$(DSRC)/bin-tools/tagion/tools/tools.d
 $(DBIN)/tagion: DINC+=$(SRC_DINC)
 $(DBIN)/tagion: DFLAGS+=$(DVERSION)=ONETOOL
@@ -218,7 +222,6 @@ $(call DO_BIN,tagion)
 #
 COLLIDER::=$(DBIN)/collider
 $(COLLIDER): DFILES::=$(DSRC)/bin-collider/tagion/tools/collider/collider.d
-$(COLLIDER): DINC+=src/bin-collider
 $(COLLIDER): DINC+=$(SRC_DINC)
 $(COLLIDER): DFLAGS+=$(DVERSION)=ONETOOL
 $(call DO_BIN,collider)

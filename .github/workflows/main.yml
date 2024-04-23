@@ -36,7 +36,7 @@ jobs:
       - name: Build tagion
         run: |
           export DC=${{ env.DC }}
-          make tagion release -j || make proper tagion release
+          make tagion release || make proper tagion release
 
       - name: Post run
         if: always()
@@ -63,7 +63,7 @@ jobs:
       - name: Run unittest
         run: |
           export DC=${{ env.DC }}
-          make unittest-cov -j || make proper unittest-cov
+          make unittest-cov || make proper unittest-cov
 
       - name: Report unittest
         run: |
@@ -152,6 +152,7 @@ jobs:
           export DC=${{ env.DC }}
           export TEST_STAGE=commit
           export TESTBENCH_FLAGS=--silent 
+          export UNSHARE_NET=1
           make bddtest -j || make proper bddtest
 
       - name: Report commit stage tests
@@ -190,6 +191,7 @@ jobs:
           pwd
           hostname
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
+          export UNSHARE_NET=1
           export DBIN=$PWD/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
@@ -240,10 +242,15 @@ jobs:
       - name: Add logs
         run: |
           cd ${{ env.ARTIFACT_DIR }}
+          add_log_file() {
+              file="$1"
+              url=$(gh gist create $file) || echo could not create gist
+              echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+          }
+
           log_files=$(find logs -name "*.log")
           for file in $log_files; do
-            url=$(gh gist create $file) || echo could not create gist
-            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+            add_log_file $file &
           done
 
       - name: Add callstacks

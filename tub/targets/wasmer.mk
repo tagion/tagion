@@ -20,7 +20,7 @@ proper: proper-libwasmer
 
 else
 libwasmer: 
-	$(warning wasmer not supported of $(PLATFORM))
+	$(warning wasmer not supported of $(PLATFORM) or it's not enabled with ENABLE_WASMER)
 endif
 
 help-libwasmer:
