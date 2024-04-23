@@ -5,6 +5,7 @@ import tagion.hibon.HiBON;
 import core.stdc.stdint;
 import tagion.hibon.Document;
 import tagion.utils.StdTime;
+import tagion.hibon.BigNumber;
 
 extern(C):
 version(unittest) {
@@ -272,7 +273,56 @@ unittest {
     assert(result[key].type == Type.TIME);
     assert(Document(result)[key].get!sdt_t == insert_time);
 }
-                            
+
+/** 
+ * Add big number to hibon
+ * Params:
+ *   instance = pointer to the instance
+ *   key = pointer to the key
+ *   key_len = length of the key
+ *   bigint_buf = big int buffer as serialized leb128
+ *   bigint_buf_len = length of the buffer
+ * Returns: ErrorCode
+ */
+int tagion_hibon_add_bigint(const(HiBONT*) instance,
+                        const char* key,
+                        const size_t key_len,
+                        const uint8_t* bigint_buf,
+                        const size_t bigint_buf_len) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            return ErrorCode.exception;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        const _key = key[0..key_len].idup;
+        auto buf = bigint_buf[0..bigint_buf_len];
+        h[_key] = BigNumber(buf);
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+
+    HiBONT h;
+    int rt = tagion_hibon_create(&h);
+    assert(rt == ErrorCode.none, "could not create hibon");
+    string key = "some_key";
+    auto big_number = BigNumber(321);
+    auto big_number_data = big_number.serialize;
+
+    rt = tagion_hibon_add_bigint(&h, &key[0], key.length, &big_number_data[0], big_number_data.length);
+    assert(rt == ErrorCode.none);
+    HiBON result = cast(HiBON) h.hibon;
+    assert(result[key].get!(BigNumber) == big_number);
+}
+                         
+                    
+
 
 mixin template add_T(T, string func_name) {
     pragma(mangle, func_name)
