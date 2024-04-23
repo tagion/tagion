@@ -4,6 +4,7 @@ import tagion.api.errors;
 import tagion.hibon.HiBON;
 import core.stdc.stdint;
 import tagion.hibon.Document;
+import tagion.utils.StdTime;
 
 extern(C):
 version(unittest) {
@@ -236,6 +237,41 @@ unittest {
     assert(result[key].get!(immutable(ubyte[])) == binary_data);
 }
 
+int tagion_hibon_add_time(const(HiBONT*) instance,
+                    const char* key,
+                    const size_t key_len,
+                    const(int64_t) time) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            return ErrorCode.exception;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        const _key = key[0..key_len].idup;
+        h[_key] = sdt_t(time);
+    } 
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    HiBONT h;
+    int rt = tagion_hibon_create(&h);
+    assert(rt == ErrorCode.none, "could not create hibon");
+    string key = "some_key";
+    auto insert_time = sdt_t(12_345);
+
+    rt = tagion_hibon_add_time(&h, &key[0], key.length, cast(int64_t) insert_time);
+    assert(rt == ErrorCode.none, "could not add time");
+
+    HiBON result = cast(HiBON) h.hibon;
+    import tagion.hibon.HiBONBase : Type;
+    assert(result[key].type == Type.TIME);
+    assert(Document(result)[key].get!sdt_t == insert_time);
+}
                             
 
 mixin template add_T(T, string func_name) {
@@ -335,17 +371,30 @@ mixin add_T!(float, "tagion_hibon_add_float32");
 */
 mixin add_T!(double, "tagion_hibon_add_float64");
 
-///
-unittest {
+void testAddFunc(T)(
+    T call_value, 
+    int function(const(HiBONT*), const char*, const size_t, T) func) 
+{
     HiBONT h;
     int rt = tagion_hibon_create(&h);
-    assert(rt == ErrorCode.none, "could not create hibon");
+    assert(rt == ErrorCode.none);
     string key = "some_key";
-    bool wowo = true;
 
-    rt = tagion_hibon_add_bool(&h, &key[0], key.length, wowo);
-    assert(rt == ErrorCode.none, "could not add bool");
-
+    rt = func(&h, &key[0], key.length, call_value);
+    assert(rt == ErrorCode.none, "could not add time");
     HiBON result = cast(HiBON) h.hibon;
-    assert(result[key].get!bool == wowo);
+
+    assert(result[key].get!T == call_value);
+}
+
+unittest {
+    import std.stdio;
+
+    testAddFunc!(bool)(true, &tagion_hibon_add_bool);
+    testAddFunc!(int)(42, &tagion_hibon_add_int32);
+    testAddFunc!(long)(long(42), &tagion_hibon_add_int64);
+    testAddFunc!(uint)(uint(42), &tagion_hibon_add_uint32);
+    testAddFunc!(ulong)(ulong(42), &tagion_hibon_add_uint64);
+    testAddFunc!(float)(21.1f, &tagion_hibon_add_float32); 
+    testAddFunc!(double)(321.312312f, &tagion_hibon_add_float64);
 }
