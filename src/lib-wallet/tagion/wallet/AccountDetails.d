@@ -239,6 +239,7 @@ struct HistoryItem {
 
 version(unittest) {
 import std.range;
+import tagion.communication.HiRPC;
 
 HiRPC.Sender create_contract(
         TagionCurrency change,
@@ -416,36 +417,4 @@ struct Invoice {
 struct Invoices {
     Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
-}
-
-import tagion.dart.Recorder;
-import tagion.communication.HiRPC;
-
-struct AccountManager {
-    private AccountDetails _details;
-
-    const details() => _details;
-
-    alias total = _details.total;
-    alias available = _details.available;
-    alias locked = _details.locked;
-    alias history = _details.history;
-
-    // Call this if you send a hirpc submit contract
-    void send_hirpc(HiRPC.Sender hirpc) {
-        // ~= hirpcs
-        // lock bills
-    }
-
-    // Call this if your contract has been rejected
-    void reject_hipc(HiRPC.Sender hirpc) {
-        // -= hirpcs
-        // unlock bills
-    }
-
-    // Update
-    void update(HiRPC.Receiver receiver) {
-        // Add new bills
-        // move locked bills to used bills if' its output of pending hirpc.
-    }
 }
