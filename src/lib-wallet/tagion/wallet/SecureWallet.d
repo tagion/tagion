@@ -1734,8 +1734,7 @@ unittest {
 }
 
 // pay same invoice twice
-pragma(msg, "to remove or not to remove?");
-version (none) unittest {
+unittest {
     import std.stdio;
 
     import tagion.dart.DART;

@@ -25,11 +25,23 @@ import tagion.services.replicator;
 import tagion.services.transcript;
 import tagion.services.TRTService;
 import tagion.services.nodeinterface;
-import core.memory;
+import tagion.services.messages;
+import tagion.services.exception;
 
 @safe
 struct Supervisor {
-    // auto failHandler = (TaskFailure tf) @trusted { log("Stopping program because Supervisor caught exception: \n%s", tf); };
+    enum failHandler_ = (TaskFailure tf) @safe nothrow {
+        log.error("%s", tf);
+
+        if(cast(immutable(ServiceError))tf.throwable !is null) {
+            thisActor.stop = true;
+        }
+        else {
+            sendOwner(tf);
+        }
+    };
+
+    static assert(isFailHandler!(typeof(failHandler_)));
 
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         immutable tn = opts.task_names;
@@ -69,21 +81,38 @@ struct Supervisor {
         handles ~= _spawn!TVMService(tn.tvm, tn);
 
         // signs data
-        handles ~= _spawn!TranscriptService(tn.transcript, TranscriptOptions(), opts.wave.number_of_nodes, shared_net,
-            tn, opts.trt.enable);
+        auto transcript_handle = _spawn!TranscriptService(
+                tn.transcript,
+                TranscriptOptions(),
+                opts.wave.number_of_nodes,
+                shared_net,
+                tn,
+                opts.trt.enable
+        );
+        handles ~= transcript_handle;
 
         handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn.dart_interface);
 
-        if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
-            run();
+        version(NO_WAIT) {
+            run(
+                (EpochShutdown m, long shutdown_) { //
+                    transcript_handle.send(m, shutdown_);
+                },
+                failHandler_,
+            );
         }
         else {
-            log.error("Not all children became Alive");
+            if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
+                run();
+            }
+            else {
+                log.error("Not all children became Alive");
+            }
         }
 
         log("Supervisor stopping services");
         foreach (handle; handles) {
-            handle.send(Sig.STOP);
+            handle.prioritySend(Sig.STOP);
         }
 
         (() @trusted { // NNG should be safe

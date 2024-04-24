@@ -236,7 +236,7 @@ int _main(string[] args) {
             }
             if (!bip39_recover) {
                 const wordlist = BIP39(words);
-                passphrase = wordlist.passphrase(bip39);
+                passphrase = wordlist.generateMnemonic(bip39).dup;
 
                 good("This is the recovery words");
                 printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]);

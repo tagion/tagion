@@ -26,7 +26,7 @@ DVERSIONS+=REDBLACKTREE_SAFE_PROBLEM
 
 # This fixes an error in the app wallet where it would be logged out after each operation
 # By copying the securenet each time an operation is done
-# DVERSIONS+=NET_HACK
+DVERSIONS+=NET_HACK
 
 # Sets the inputvalidators NNG socket to be blocking
 DVERSIONS+=BLOCKING
@@ -75,10 +75,6 @@ DVERSIONS+=OLD_ORDERING
 # # This enables a redundant check in dart to see if there are overlaps between segments 
 # DVERSIONS+=DART_RECYCLER_INVARIANT
 
-# # This is used for the wallet wrapper to generate pseudo random history
-# # which is useful for app development
-# DVERSIONS+=WALLET_HISTORY_DUMMY
-
 # # This fixes the names of some reserved archives which were not reserved
 # # $@Vote && @Locked
 # # This is a breaking change so it's not enabled by default
@@ -86,6 +82,10 @@ DVERSIONS+=OLD_ORDERING
 
 # Use to check that toHiBON.serialize is equal to .serialize
 #DVERSIONS+=TOHIBON_SERIALIZE_CHECK
+
+# DISABLES supervisors Waiting for services to tell that they're "alive"
+# The idea is that the rest of the services should not rely on internal state of other service
+DVERSIONS+=NO_WAIT
 
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
