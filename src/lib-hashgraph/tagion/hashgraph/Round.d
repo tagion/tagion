@@ -110,6 +110,16 @@ class Round {
         _events[event.node_id] = event;
         event._round = this;
     }
+    
+    package void add2(Event event) pure nothrow
+    in {
+        assert(event._witness, "The event id "~event.id.to!string~" added to the round should be a witness ");
+        assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
+    }
+    do {
+        _events[event.node_id] = event;
+        event._round = this;
+    }
 
     /**
      * Check of the round has no events
@@ -352,6 +362,41 @@ class Round {
                 //     Event.callbacks.round_seen(e);
                 // }
             }
+        }
+        
+        void set_round(Event e) nothrow
+        in {
+            assert(!e._round, "Round has allready been added");
+            assert(last_round, "Base round must be created");
+            assert(last_decided_round, "Last decided round must exist");
+            assert(e, "Event must create before a round can be added");
+        }
+        out {
+            assert(e._round !is null);
+        }
+        do {
+            scope (exit) {
+                if (e._witness) {
+                    e._round.add2(e);
+                }
+            }
+            if (e._father && higher(e._father.round.number, e._mother.round.number)) {
+                e._round = e._father._round;
+                return; 
+            }
+            e._round = e._mother._round;
+            if (e._witness) {
+                if (e._round._next) {
+                
+                    e._round = e._round._next;
+                    return;
+                }
+                e._round = new Round(last_round, hashgraph.node_size);
+                last_round = e._round;
+            }
+                // if (Event.callbacks) {
+                //     Event.callbacks.round_seen(e);
+                // }
         }
 
         bool isEventInLastDecidedRound(const(Event) event) const pure nothrow @nogc {

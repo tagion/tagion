@@ -152,6 +152,7 @@ class HashGraph2 : current_hashgraph.HashGraph {
             void init_event(immutable(EventPackage*) epack) {
                 auto event = new Event2(epack, this);
                 _event_cache[event.fingerprint] = event;
+                
                 event.witness_event(this);
                 version (EPOCH_LOG) {
                     log("init_event time %s", event.event_body.time);
@@ -307,6 +308,7 @@ class HashGraph2 : current_hashgraph.HashGraph {
 
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
+        current_event.Event.callbacks.connect(eva_event);
         // set_strongly_seen_mask(eva_event);
         return eva_event;
     }

@@ -87,7 +87,7 @@ class Event2 : current_event.Event {
     in (epack !is null)
     do {
         super(epack, hashgraph);
-        //connect(hashgraph);
+        //onnect(hashgraph);
         version(none) {
         _witness_seen_mask[node_id]=true;
         if (_mother) {
@@ -152,22 +152,28 @@ class Event2 : current_event.Event {
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
-        this(Event2 owner_event, current_hashgraph.HashGraph hashgraph) nothrow {
+        this(current_hashgraph.HashGraph hashgraph) nothrow {
+            //scope(exit) {
 	        super(this.outer, hashgraph.node_size);
+                this.outer._witness=this;
+            //}
             strongly_seen_matrix.length=hashgraph.node_size;
             strongly_seen_matrix[this.outer.node_id][this.outer.node_id]=true;
-            version(none)
             if (!isEva) {
                 __write("Witness round");
                 __write("Mother %d", _mother.round.number);
                 __write("Father %d", _father.round.number);
-                
-                if (higher(_father.round.number, _mother.round.number)) {
+               
+                version(none) {
+                if ((_father.round.number-_mother.round.number) > 0) {
                     _father._round.add(this.outer);
                 }
                 else {
-                    hashgraph._rounds.next_round(this.outer); 
+            //        hashgraph._rounds.next_round(this.outer); 
+                    __write("evnet round %d node_id=%d", this.outer.round.number, this.outer.node_id);
                 }
+        }
+           // current_event.Event.callbacks.connect(this.outer);
             }
         }
     /+
@@ -211,9 +217,14 @@ class Event2 : current_event.Event {
         if (!_father || isEva) {
             return false;
         }
-        auto mother_withess_event=cast(Event2)(_round._events[node_id]);
+        auto mother_withess_event=cast(Event2)(_mother._round._events[node_id]);
+        if (mother_withess_event is null) {
+            __write("round=%d node_id=%d id_%d", _mother._round.number, node_id, id);
+            __write("rounds %s", _mother._round.events.map!(e => e !is null));
+            current_event.Event.callbacks.connect(this);
+        }
         auto mother_withess = cast(Witness2)(mother_withess_event._witness);
-        auto father_withess_event=cast(Event2)(_father._round._events[_father.node_id]);
+        auto father_withess_event=cast(Event2)(_mother._round._events[_father.node_id]);
         auto father_withess = cast(Witness2)(father_withess_event._witness);
         mother_withess.strongly_seen_matrix[_father.node_id][node_id]=true;
         foreach(n; 0..mother_withess.strongly_seen_matrix.length) {
@@ -306,13 +317,14 @@ class Event2 : current_event.Event {
     *  Makes the event a witness  
     */
     override void witness_event( current_hashgraph.HashGraph hashgraph) nothrow
-    in {
-        assert(!_witness);
+    in(!_witness, "Witness has already been set")
+    out {
+        assert(_witness, "Witness should be set");
     }
     do {
-        _witness = new Witness2(this, hashgraph);
-        _youngest_son_ancestors = new Event2[hashgraph.node_size];
-        _youngest_son_ancestors[node_id] = this;
+         new Witness2(hashgraph);
+        //_youngest_son_ancestors = new Event2[hashgraph.node_size];
+        //_youngest_son_ancestors[node_id] = this;
     }
 
     //immutable size_t node_id; /// Node number of the event
@@ -368,14 +380,17 @@ class Event2 : current_event.Event {
         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
         _mother._daughter = this;
         _father = hashgraph.register(event_package.event_body.father);
-        _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
         }
+        /*
+        _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
+        */
         _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
+        current_event.Event.callbacks.connect(this);
         /// Set the mask of seend witness
-        calc_witness_seen;
+        //calc_witness_seen;
         //pragma(msg, "events round ", typeof(_mother._round._events[node_id]));
         //pragma(msg, "witness round ", typeof(_mother._round._events[node_id]._witness));
         //auto previous_round_witness=cast(Witness2)_round._events[node_id]._witness;
@@ -383,30 +398,27 @@ class Event2 : current_event.Event {
 
         const strongly_seen=calc_strongly_seen(hashgraph);
         if (strongly_seen) {
-            _witness=new Witness2(this, hashgraph);    
+            new Witness2(hashgraph);  
+        /*
+                if ((_father.round.number-_mother.round.number) > 0) {
+                    __write("Select father round %d", _father.round.number);
+                    _father._round.add(this);
+                }
+                else {
+                    hashgraph._rounds.next_round(this); 
+                    __write("evnet round %d node_id=%d", this.round.number, this.node_id);
+                }
+        */
+             //current_event.Event.callbacks.connect(this);
+            __write("Witness id=%d", id);
         }
-        version(none) { 
-        // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
-        // if (_father) { pseudo_time_counter += 1; }
-        pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
-
-        calc_youngest_son_ancestors(hashgraph);
-        BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
-        if (!strongly_seen_nodes.isMajority(hashgraph)) {
-            return;
-        }
-        // we have a witness event and need to create a witness and calculate through the masks
-        _witness = new Witness(this, hashgraph.node_size);
-        hashgraph._rounds.next_round(this);
-
-        pseudo_time_counter = 0;
-
-        _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
-        foreach (i; 0 .. hashgraph.node_size) {
-            calc_vote(hashgraph, i);
-        }
-    }
+        
+        hashgraph._rounds.set_round(this);
+        if (_witness) {
+            __write("Witness id=%d round=%d", id, _round.number);
+        }   
+             current_event.Event.callbacks.connect(this);
+        
     }
 
     override BitMask calc_strongly_seen_nodes(const current_hashgraph.HashGraph hashgraph) {

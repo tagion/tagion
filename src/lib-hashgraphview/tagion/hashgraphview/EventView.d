@@ -33,7 +33,7 @@ struct EventView {
     @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$error") @optional bool error;
     @label("$seen")  @optional Buffer seen;
-    @label("$strong") @optional Buffer[] strongly_seen_matrix;
+    @label("$strong") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -59,7 +59,6 @@ struct EventView {
             if (witness) {
                 famous = event.isFamous;
             }
-
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:long.min;

@@ -252,7 +252,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.fill = "black";
         text.text = format("%s:%s", e.round == long.min ? "X" : format("%s", e.round), e.round_received == long.min ? "X" : format("%s", e.round_received));
         obuf.writefln("%s", text.toString);
-        if (e.seen.length) {
+        //if (e.seen.length) {
             //BitMask vote_mask;
             //vote_mask=e.seen;
             text.text=format("%d",e.id);
@@ -260,16 +260,16 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             obuf.writefln("%s", text.toString);
             if (e.witness) {
                 text.pos.y+=NODE_CIRCLE_SIZE/2;
-                text.text="Matrix";
-                foreach(strong_vector; e.strongly_seen_matrix) {
+                //text.text="Matrix";
+                foreach(i, strong_vector; e.strongly_seen_matrix) {
                     BitMask bits;
                     bits=strong_vector;
-                    text.text=(() @trusted => format(vote_fmt, bits))();
+                    text.text=(() @trusted => format("%d:"~vote_fmt, i, bits))();
                     text.pos.y+=NODE_CIRCLE_SIZE/2;
                     obuf.writefln("%s", text.toString);
                 }
             }
-        }
+        //}
     }
 
     void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
