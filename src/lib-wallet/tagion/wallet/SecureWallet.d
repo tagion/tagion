@@ -1407,6 +1407,13 @@ unittest {
             .total_balance, wallet.available_balance));
 }
 
+
+version(LDC) {
+} else {
+version = NOT_LDC;
+}
+pragma(msg, "This unittest causes a SIGILL on DC=ldc");
+version(NOT_LDC)
 unittest {
     // check get fee greater than user amount
 
@@ -1666,6 +1673,8 @@ unittest {
 }
 
 // amount test
+pragma(msg, "This unittest causes a SIGILL on DC=ldc");
+version(NOT_LDC)
 unittest {
     import std.stdio;
 
@@ -1734,6 +1743,8 @@ unittest {
 }
 
 // pay same invoice twice
+pragma(msg, "This unittest causes a SIGILL on DC=ldc");
+version(NOT_LDC)
 unittest {
     import std.stdio;
 
