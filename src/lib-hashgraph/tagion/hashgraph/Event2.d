@@ -225,6 +225,9 @@ class Event2 : current_event.Event {
         }
         auto mother_withess = cast(Witness2)(mother_withess_event._witness);
         auto father_withess_event=cast(Event2)(_mother._round._events[_father.node_id]);
+        if (!father_withess_event) {
+            return false;
+        }
         auto father_withess = cast(Witness2)(father_withess_event._witness);
         mother_withess.strongly_seen_matrix[_father.node_id][node_id]=true;
         foreach(n; 0..mother_withess.strongly_seen_matrix.length) {
