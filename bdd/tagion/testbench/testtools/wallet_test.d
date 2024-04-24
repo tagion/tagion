@@ -48,7 +48,7 @@ class CreateWallet {
 
     this(string module_path) {
         this.wallet_folder = module_path ~ "/wallet";
-        this.wallet_config = "wallet.json";
+        this.wallet_config = module_path ~ "wallet.json";
     }
 
     @Given("empty folder for creating a wallet")
