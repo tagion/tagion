@@ -143,7 +143,7 @@ class HashGraph {
             void init_event(immutable(EventPackage*) epack) {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
-                event.witness_event(node_size);
+                event.witness_event(this);
                 version (EPOCH_LOG) {
                     log("init_event time %s", event.event_body.time);
                 }

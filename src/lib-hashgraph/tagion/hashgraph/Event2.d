@@ -31,7 +31,7 @@ import tagion.logger.Logger;
 import tagion.utils.BitMask : BitMask;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
-
+import tagion.basic.Debug;
 import current_event=tagion.hashgraph.Event;
 import current_hashgraph=tagion.hashgraph.HashGraph;
 /// HashGraph Event
@@ -152,11 +152,16 @@ class Event2 : current_event.Event {
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
-        this(Event2 owner_event, const current_hashgraph.HashGraph hashgraph) nothrow {
+        this(Event2 owner_event, current_hashgraph.HashGraph hashgraph) nothrow {
 	        super(this.outer, hashgraph.node_size);
             strongly_seen_matrix.length=hashgraph.node_size;
             strongly_seen_matrix[this.outer.node_id][this.outer.node_id]=true;
+            version(none)
             if (!isEva) {
+                __write("Witness round");
+                __write("Mother %d", _mother.round.number);
+                __write("Father %d", _father.round.number);
+                
                 if (higher(_father.round.number, _mother.round.number)) {
                     _father._round.add(this.outer);
                 }
@@ -300,13 +305,13 @@ class Event2 : current_event.Event {
     /**
     *  Makes the event a witness  
     */
-    override void witness_event(ulong node_size) nothrow
+    override void witness_event( current_hashgraph.HashGraph hashgraph) nothrow
     in {
         assert(!_witness);
     }
     do {
-        _witness = new Witness2(this, node_size);
-        _youngest_son_ancestors = new Event2[node_size];
+        _witness = new Witness2(this, hashgraph);
+        _youngest_son_ancestors = new Event2[hashgraph.node_size];
         _youngest_son_ancestors[node_id] = this;
     }
 
@@ -378,7 +383,7 @@ class Event2 : current_event.Event {
 
         const strongly_seen=calc_strongly_seen(hashgraph);
         if (strongly_seen) {
-            _witness=new Witness2(this, hashgraph.node_size);    
+            _witness=new Witness2(this, hashgraph);    
         }
         version(none) { 
         // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;

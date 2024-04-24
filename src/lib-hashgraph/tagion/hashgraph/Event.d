@@ -190,13 +190,13 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    void witness_event(ulong node_size) nothrow
+    void witness_event(HashGraph hashgraph) nothrow
     in {
         assert(!_witness);
     }
     do {
-        _witness = new Witness(this, node_size);
-        _youngest_son_ancestors = new Event[node_size];
+        _witness = new Witness(this, hashgraph.node_size);
+        _youngest_son_ancestors = new Event[hashgraph.node_size];
         _youngest_son_ancestors[node_id] = this;
     }
 

@@ -196,13 +196,13 @@ class _Event : current_event.Event {
     /**
     *  Makes the event a witness  
     */
-    override void witness_event(ulong node_size) nothrow
+    override void witness_event(current_hashgraph.HashGraph hashgraph) nothrow
     in {
         assert(!_witness);
     }
     do {
-        _witness = new Witness(this, node_size);
-        _youngest_son_ancestors = new _Event[node_size];
+        _witness = new Witness(this, hashgraph.node_size);
+        _youngest_son_ancestors = new _Event[hashgraph.node_size];
         _youngest_son_ancestors[node_id] = this;
     }
 
