@@ -87,6 +87,9 @@ DVERSIONS+=OLD_ORDERING
 # The idea is that the rest of the services should not rely on internal state of other service
 DVERSIONS+=NO_WAIT
 
+# Runs a stopwatch on all unittest modules
+# DVERSIONS+=UNIT_STOPWATCH
+
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)
