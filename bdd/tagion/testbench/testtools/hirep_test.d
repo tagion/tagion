@@ -78,13 +78,8 @@ class ListFiltering {
 
     @When("hirep filter specific items in list")
     Document list() {
-        // Command: cat input | hirep --list 1,2 > output
         string command = tagionTool ~ " " ~ ToolName.hirep ~ " --list 1,2";
-
-        string output = execute_pipe_shell("cat " ~ this.input_path ~ " | " ~ command);
-        writeln("Output pipeShell: ", output);
-
-        execute_pipe_process(command, this.input_path, this.output_path);
+        execute_spawn_shell(command, this.input_path, this.output_path);
 
         return result_ok;
     }
