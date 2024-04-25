@@ -1,6 +1,8 @@
 module tagion.unitmain;
 
 import core.runtime;
+import std.process : environment;
+
 shared static this()
 {
 
@@ -9,10 +11,11 @@ shared static this()
 
 UnitTestResult customModuleUnitTester()
 {
-    version(UNIT_STOPWATCH) import std.datetime.stopwatch;
     import std.stdio;
-
+    version(UNIT_STOPWATCH) import std.datetime.stopwatch;
     version(UNIT_STOPWATCH) StopWatch sw;
+
+    string UNIT_MODULE = environment.get("UNIT_MODULE");
 
     // Do the same thing as the default moduleUnitTester:
     UnitTestResult result;
@@ -21,6 +24,10 @@ UnitTestResult customModuleUnitTester()
         if (m)
         {
             auto fp = m.unitTest;
+
+            if(UNIT_MODULE !is string.init && UNIT_MODULE != m.name) {
+                continue;
+            }
 
             if (fp)
             {
