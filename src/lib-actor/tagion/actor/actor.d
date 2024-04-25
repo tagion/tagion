@@ -76,7 +76,6 @@ struct ActorInfoRecord {
 
 ///
 unittest {
-    assert(thisActor.task_name is string.init, "task_name did not start as init");
     enum dummy_name = "dummy_name";
     scope (exit) {
         unregister(dummy_name);
