@@ -1,6 +1,9 @@
 module tagion.unitmain;
 
 import core.runtime;
+import core.atomic;
+import core.thread;
+
 shared static this()
 {
 
@@ -16,6 +19,7 @@ UnitTestResult customModuleUnitTester()
 
     // Do the same thing as the default moduleUnitTester:
     UnitTestResult result;
+    shared uint passed;
     foreach (m; ModuleInfo)
     {
         if (m)
@@ -29,19 +33,27 @@ UnitTestResult customModuleUnitTester()
                 ++result.executed;
                 /* stderr.writefln("Running %s", m.name); */
 
-                try
-                {
-                    fp();
-                    ++result.passed;
-                }
-                catch (Throwable e)
-                {
-                    writeln(e);
-                }
+                new Thread({
+                    try
+                    {
+                        fp();
+                        passed.atomicOp!"+="(1);
+                        /* ++result.passed; */
+                    }
+                    catch (Throwable e)
+                    {
+                        writeln(e);
+                    }
+                }).start();
                 version(UNIT_STOPWATCH) stderr.writefln("%s: %s", m.name, sw.peek);
             }
         }
     }
+
+    thread_joinAll();
+    result.passed = passed;
+
+
     if (result.executed != result.passed)
     {
         result.runMain = false;  // don't run main
