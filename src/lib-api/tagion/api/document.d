@@ -616,64 +616,32 @@ mixin get_T!(float, "tagion_document_get_float32");
  */
 mixin get_T!(double, "tagion_document_get_float64");
 
-/// get bool test
-unittest {
+
+void testGetFunc(T)(
+    T h_value,
+    int function(const Document.Element*, T* value) func)
+{
     auto h = new HiBON;
-    string key_bool = "bool";
-    h[key_bool] = true;
+    string key = "some_keyT";
+    h[key] = h_value;
     const doc = Document(h);
+    Document.Element elmT;
+    int rt = tagion_document(&doc.data[0], doc.data.length, &key[0], key.length, &elmT);
+    assert(rt == ErrorCode.none);
 
-    Document.Element elm_bool;
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_bool[0], key_bool.length, &elm_bool);
-    assert(rt == ErrorCode.none, "Get document element bool returned error");
-
-    bool value;
-    rt = tagion_document_get_bool(&elm_bool, &value);
-    assert(rt == ErrorCode.none, "get bool returned error");
-
-    assert(value == true, "did not read bool");
+    T get_value;
+    rt = func(&elmT, &get_value);
+    import std.format;
+    assert(rt == ErrorCode.none, format("get %s returned error", T.stringof));
+    assert(get_value == h_value, format("returned value for %s was not the same", T.stringof));
 }
 
-/// get int32 test
 unittest {
-    auto h = new HiBON;
-    string key_i32="i32";
-    h["i32"]=42;
-    const doc = Document(h);
-    Document.Element elm_i32;
-
-    // get element that exists
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
-    assert(rt == ErrorCode.none, "Get Document.element returned error");
-
-    // try to get element not present should throw
-    Document.Element elm_none;
-    string key_time="time";
-    rt = tagion_document(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_none);
-    assert(rt == ErrorCode.exception, "Should throw an error");
+    testGetFunc!(bool)(true, &tagion_document_get_bool);
+    testGetFunc!(int)(42, &tagion_document_get_int32);
+    testGetFunc!(long)(long(42), &tagion_document_get_int64);
+    testGetFunc!(uint)(uint(42), &tagion_document_get_uint32);
+    testGetFunc!(ulong)(ulong(42), &tagion_document_get_uint64);
+    testGetFunc!(float)(21.1f, &tagion_document_get_float32); 
+    testGetFunc!(double)(321.312312f, &tagion_document_get_float64);
 }
-
-///
-unittest {
-    auto h = new HiBON;
-    string key_i32="i32";
-    int insert_int = 42;
-    h["i32"]=insert_int;
-    const doc = Document(h);
-    Document.Element elm_i32;
-
-    // get element that exists
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
-    assert(rt == ErrorCode.none, "Get Document.element returned error");
-
-    // get the integer
-    int value;
-    rt = tagion_document_get_int32(&elm_i32, &value);
-    assert(rt == ErrorCode.none, "Get integer returned error");
-    assert(value == insert_int, "The document int was not the same");
-}
-
-
-
-
-
