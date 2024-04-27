@@ -26,6 +26,7 @@ struct SubscriptionServiceOptions {
 
     string tags; /// List of tags that should be enabled separated by a ','
     string address; /// The address which the service should publish events on
+    bool enable = true; /// Should the service be started
 
     void setDefault() nothrow {
         import tagion.services.options : contract_sock_addr;

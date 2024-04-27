@@ -3,6 +3,8 @@
 **/
 module tagion.wave.mode0;
 
+@safe:
+
 import std.array;
 import std.file;
 import std.algorithm;
@@ -106,7 +108,7 @@ void spawnMode0(
         Node[] nodes) {
 
     /// spawn the nodes
-    foreach (n; nodes) {
+    foreach (ref n; nodes) {
         verbose("spawning supervisor ", n.opts.task_names.supervisor);
         supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
     }

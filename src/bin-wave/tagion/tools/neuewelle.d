@@ -1,5 +1,4 @@
 /** 
- *
  * New wave implementation of the tagion node
 **/
 module tagion.tools.neuewelle;
@@ -217,7 +216,7 @@ int _neuewelle(string[] args) {
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
     ActorHandle sub_handle;
-    { // Spawn logger subscription service
+    if(local_options.subscription.enable) { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
         writeln("logsub started: ", waitforChildren(Ctrl.ALIVE));
