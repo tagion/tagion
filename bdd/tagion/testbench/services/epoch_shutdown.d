@@ -4,6 +4,7 @@ import core.time;
 
 import std.stdio;
 import std.format;
+import std.exception;
 
 // Default import list for bdd
 import tagion.behaviour;
@@ -64,7 +65,7 @@ class StoppingAllNodesAtASpecificEpoch {
 
         writeln("waiting for epoch");
         bool epochs_created = test_net.wait_for_epochs(1, 100.seconds);
-        check(epochs_created, format("%s", test_net.epochs));
+        enforce(epochs_created, format("%s", test_net.epochs));
         writeln("waiting end");
 
         return result_ok;
@@ -81,11 +82,10 @@ class StoppingAllNodesAtASpecificEpoch {
     @Then("the network should stop at the specified epoch")
     Document epoch() {
         bool epochs_created = test_net.wait_for_epochs(10, 100.seconds);
-        check(epochs_created, format("Nodes did not create the expected amount of epochs %s", test_net.epochs));
+        enforce(epochs_created, format("Nodes did not create the expected amount of epochs %s", test_net.epochs));
         // 
         test_net.wait_for_epochs(20, 100.seconds);
         /* check(!epochs_created, format("nodes created epochs after they should've stopped %s", test_net.epochs)); */
         return result_ok;
     }
-
 }
