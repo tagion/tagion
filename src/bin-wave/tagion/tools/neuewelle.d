@@ -9,7 +9,7 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.thread;
 import core.time;
-import std.algorithm : countUntil, map, uniq, equal, canFind;
+import std.algorithm : filter, countUntil, map, uniq, equal, canFind, all;
 import std.array;
 import std.file : chdir, exists, remove;
 import std.format;
@@ -408,8 +408,12 @@ int _neuewelle(string[] args) {
                 error(e);
             }
 
+            /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
             // If all supervisors stopped then we stop as well
-            thisActor.stop |= statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor));
+            thisActor.stop |= 
+                thisActor.childrenState
+                .byKeyValue
+                .filter!(c => canFind(c.key, local_options.task_names.supervisor)).all!(c => c.value is Ctrl.END);
         }
     } // VERSION NO_WAIT
     else {
