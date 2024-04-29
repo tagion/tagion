@@ -122,9 +122,14 @@ endif
 
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
-DEBUG_FLAGS+=$(DDEBUG)
-DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
-DEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
+DDEBUG_FLAGS+=$(DDEBUG)
+DDEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
+DDEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
+DDEBUG_FLAGS+=$(DEXPORT_DYN)
+
+ifdef DEBUG_ENABLE
+DFLAGS+=$(DDEBUG_FLAGS)
+endif
 
 COVOPT=--DRT-covopt=\"dstpath:$(DLOG)\"
 
@@ -162,7 +167,7 @@ env-compiler:
 	${call log.kvp, DEXPORT_DYN, $(DEXPORT_DYN)}
 	${call log.kvp, DCOV, $(DCOV)}
 	${call log.kvp, DIMPORTFILE, $(DIMPORTFILE)}
-	${call log.kvp, DEBUG_FLAGS, "$(DEBUG_FLAGS)"}
+	${call log.kvp, DDEBUG_FLAGS, "$(DDEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
 	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
 	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
