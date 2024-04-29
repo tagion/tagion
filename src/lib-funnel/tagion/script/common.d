@@ -1,3 +1,4 @@
+/// Common tagion records
 module tagion.script.common;
 
 @safe:
@@ -19,6 +20,9 @@ import tagion.script.TagionCurrency;
 import tagion.script.standardnames;
 import tagion.utils.StdTime;
 
+/**
+ * Tagion bill
+ */
 @recordType("TGN") struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; // Time stamp
@@ -34,11 +38,15 @@ import tagion.utils.StdTime;
         }});
 }
 
-///
+/** 
+ * Tagion contract
+ * inputs will be consumed in the execution
+ * Reads are extract optional data for the smart contract
+ */
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
-    @label("$run") Document script; // Smart contract 
+    @label("$run") Document script; // the Smart contract to be executed
     bool verify() const pure nothrow @nogc {
         return (inputs.length > 0);
     }
@@ -58,7 +66,10 @@ import tagion.utils.StdTime;
             });
 }
 
-///
+/**
+ *  Tagion SignedContract
+ *  Includes the contract to be executed and the signatures of all inputs sorted by the dartIndex of the inputs
+ */
 @recordType("SSC") struct SignedContract {
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @label("$contract") Contract contract; /// The contract must signed by all inputs
@@ -80,7 +91,12 @@ import tagion.utils.StdTime;
             });
 }
 
-///
+/**
+ * Tagion PayScript
+ * bultin transfer script,
+ * Included in a contract to eventually be outputs in the DART
+ * The sum of the value of the outputs should be less than the sum of inputs + fees
+ */
 @recordType("pay")
 struct PayScript {
     @label(StdNames.values) const(TagionBill)[] outputs;
@@ -114,6 +130,9 @@ unittest {
     assert(serialize == doc.serialize);
 }
 
+/** 
+ * Create a signature for each input in a contract
+ */
 Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
     import std.algorithm : map;
 
@@ -123,8 +142,14 @@ Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
         .array;
 }
 
-const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Document[]) reads, const(
-        Document) script) {
+/**
+ * Create a SignedContract from a list of inputs, reads and a smartcontract
+ */
+const(SignedContract) sign(
+        const(SecureNet[]) nets,
+        DARTIndex[] inputs,
+        const(Document[]) reads,
+        const(Document) script) {
     import std.algorithm : map, sort;
     import tagion.hibon.HiBONException;
 
@@ -147,6 +172,7 @@ const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Do
     return result;
 }
 
+/// ditto
 const(SignedContract) sign(
     const(SecureNet[]) nets,
     const(Document[]) inputs,
@@ -161,6 +187,9 @@ const(SignedContract) sign(
             .array, reads, script);
 }
 
+/**
+ * Verify a SignedContract from a list public keys
+ */
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Pubkey[]) owners) nothrow {
     import std.algorithm;
 
@@ -177,6 +206,9 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
     return false;
 }
 
+/**
+ * Verify a SignedContract from the inputs read from the inputs read from the DART
+ */
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Document[]) inputs) nothrow {
     import std.algorithm : map;
 
@@ -198,13 +230,16 @@ unittest {
     assert(!verify(net, contract, Document[].init), "Contract with no inputs should fail");
 }
 
+/**
+ * The very first epoch
+ */
 @recordType("$@G")
 struct GenesisEpoch {
     @label(StdNames.epoch) long epoch_number; //should always be zero
-    Pubkey[] nodes;
-    Document testamony;
-    @label(StdNames.time) sdt_t time;
-    TagionGlobals globals;
+    Pubkey[] nodes; // Initial nodes
+    Document testamony; // blabber
+    @label(StdNames.time) sdt_t time; // Time of consensus for the epoch
+    TagionGlobals globals; // global statistics
     mixin HiBONRecord!(q{
         this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time, const(TagionGlobals) globals) {
             this.epoch_number = epoch_number;
@@ -216,17 +251,20 @@ struct GenesisEpoch {
     });
 }
 
+/**
+ * Epoch
+ */
 @recordType("$@E")
 struct Epoch {
-    @label(StdNames.epoch) long epoch_number;
+    @label(StdNames.epoch) long epoch_number; /// The epoch number
     @label(StdNames.time) sdt_t time; // Time stamp
-    @label(StdNames.bullseye) Fingerprint bullseye;
-    @label(StdNames.previous) Fingerprint previous;
+    @label(StdNames.bullseye) Fingerprint bullseye; // bullseye of the DART at this epoch
+    @label(StdNames.previous) Fingerprint previous; // bullseye of the DART at the previous epoch
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
-    @optional @(filter.Initialized) Pubkey[] active; /// Sorted keys
+    @optional @(filter.Initialized) Pubkey[] active; /// Nodes which became active this epoch
     // Would inactive be more appropriate or activated+deactivated
-    @optional @(filter.Initialized) Pubkey[] deactive;
-    @optional @(filter.Initialized) TagionGlobals globals;
+    @optional @(filter.Initialized) Pubkey[] deactive; // The nodes which deactivated this epoch
+    @optional @(filter.Initialized) TagionGlobals globals; // Global statistics
 
     mixin HiBONRecord!(q{
         this(long epoch_number,
@@ -250,8 +288,13 @@ struct Epoch {
     });
 }
 
+/// A genesis epoch or a standard epoch
 alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
 
+/**
+ * Name record to get the current epoch
+ * Is updated each epoch
+ */
 @recordType("$@Tagion")
 struct TagionHead {
     @label(StdNames.name) string name = TagionDomain; // Default name should always be "tagion"
@@ -265,11 +308,14 @@ struct TagionHead {
     });
 }
 
+/**
+ * Global tagion statistics
+ */
 struct TagionGlobals {
-    @label("total") BigNumber total;
-    @label("total_burned") BigNumber total_burned;
-    @label("number_of_bills") long number_of_bills;
-    @label("burnt_bills") long burnt_bills;
+    @label("total") BigNumber total; // The sum of value at the epoch
+    @label("total_burned") BigNumber total_burned; // Burned this epoch
+    @label("number_of_bills") long number_of_bills; // Total number of bills this epoch
+    @label("burnt_bills") long burnt_bills; // Number of bills spent this epoch
 
     mixin HiBONRecord!(q{
         this(const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
@@ -281,6 +327,9 @@ struct TagionGlobals {
     });
 }
 
+/**
+ * Gossiped through the graph for votes on the bullseye of next epochs
+ */
 @recordType("$@Vote")
 struct ConsensusVoting {
     long epoch;
@@ -305,6 +354,9 @@ struct ConsensusVoting {
 }
 
 version(RESERVED_ARCHIVES_FIX) {
+/**
+ * Output which did not reach consensus at this epoch
+ */
 @recordType("$@Locked")
 struct LockedArchives {
     @label(StdNames.locked_epoch) long epoch_number;
@@ -318,6 +370,7 @@ struct LockedArchives {
 }
 } else {
 pragma(msg, "Why is Locked not reserved?");
+///
 @recordType("@Locked")
 struct LockedArchives {
     @label(StdNames.locked_epoch) long epoch_number;
@@ -331,6 +384,9 @@ struct LockedArchives {
 }
 }
 
+/**
+ * Create the DARTindices for the LockedArchives from a range of epochs
+ */
 DARTIndex[] lockedArchiveIndices(Range)(Range epochs, SecureNet net) 
 if (isInputRange!Range && is(ElementType!Range : long)) {
     DARTIndex[] indices;
@@ -340,6 +396,9 @@ if (isInputRange!Range && is(ElementType!Range : long)) {
     return indices;
 }
 
+/**
+ * The currently active nodes
+ */
 @recordType("$@Active") 
 struct Active {
     @label(StdNames.active)string name = TagionDomain;
