@@ -84,7 +84,7 @@ class Bullseye {
 
     @When("dartutil is called with given input file")
     Document inputFile() {
-        this.output = execute_tool(ToolName.dartutil, [this.dart_path, "--eye"]).strip;
+        this.output = executeTool(ToolName.dartutil, [this.dart_path, "--eye"]).strip;
         return result_ok;
     }
 

@@ -61,7 +61,7 @@ class CreateWallet {
 
     @When("set wallet folder and config file")
     Document file() {
-        execute_tool(ToolName.geldbeutel, [
+        executeTool(ToolName.geldbeutel, [
                 "-O", "--path", this.wallet_folder, this.wallet_config
             ]);
         return result_ok;
@@ -69,7 +69,7 @@ class CreateWallet {
 
     @When("set password and pin")
     Document pin() {
-        execute_tool(ToolName.geldbeutel, [
+        executeTool(ToolName.geldbeutel, [
                 this.wallet_config, "-P", "password", "-x", "0000"
             ]);
         return result_ok;
@@ -78,12 +78,10 @@ class CreateWallet {
     @Then("wallet folder should contanin non-empty wallet hibon files")
     Document files() {
         auto device_hibon = buildPath(this.wallet_folder, "device.hibon");
-        auto device_hibon_f = File(device_hibon, "r");
-        check(device_hibon.exists && device_hibon_f.size > 0, format("File %s not exists", device_hibon));
+        check(device_hibon.exists && !device_hibon.fileEmpty, format("File %s not exists", device_hibon));
 
         auto wallet_hibon = buildPath(this.wallet_folder, "wallet.hibon");
-        auto wallet_hibon_f = File(wallet_hibon, "r");
-        check(wallet_hibon.exists && wallet_hibon_f.size > 0, format("File %s not exists", wallet_hibon));
+        check(wallet_hibon.exists && !wallet_hibon.fileEmpty, format("File %s not exists", wallet_hibon));
 
         return result_ok;
     }

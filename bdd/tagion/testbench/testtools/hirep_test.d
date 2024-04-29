@@ -71,49 +71,84 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("No filters",
     [])
 class NoFilters {
+    string input_path;
+    string output_path;
 
     this(string module_path) {
+        mkdirRecurse(module_path);
+
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.output_path = buildPath(module_path, "out.hibon");
     }
 
     @Given("initial hibon file with several records")
     Document records() {
-        return Document();
+        auto hibon1 = new HiBON;
+        hibon1["a"] = 42;
+        auto hibon2 = new HiBON;
+        hibon2["b"] = 84;
+        auto hibon3 = new HiBON;
+        hibon3["c"] = 126;
+
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+        return result_ok;
     }
 
     @When("hirep run without filters")
     Document filters() {
-        return Document();
+        string command = tagionTool ~ " " ~ ToolName.hirep;
+        executeSpawnShell(command, this.input_path, this.output_path);
+
+        return result_ok;
     }
 
     @Then("the output should be as initial hibon")
     Document hibon() {
-        return Document();
+        check(filesEqual(this.output_path, this.input_path), "Output should be the same as input");
+        return result_ok;
     }
-
 }
 
 @safe @Scenario("No filters with not",
     [])
 class NoFiltersWithNot {
+    string input_path;
+    string output_path;
 
     this(string module_path) {
+        mkdirRecurse(module_path);
+
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.output_path = buildPath(module_path, "out.hibon");
     }
 
     @Given("initial hibon file with several records")
     Document records() {
-        return Document();
+        auto hibon1 = new HiBON;
+        hibon1["a"] = 42;
+        auto hibon2 = new HiBON;
+        hibon2["b"] = 84;
+        auto hibon3 = new HiBON;
+        hibon3["c"] = 126;
+
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+        return result_ok;
     }
 
     @When("hirep run without filters with not")
-    Document not() {
-        return Document();
+    Document filters() {
+        string command = tagionTool ~ " " ~ ToolName.hirep ~ " --not";
+        executeSpawnShell(command, this.input_path, this.output_path);
+
+        return result_ok;
     }
 
     @Then("the output should be empty")
-    Document empty() {
-        return Document();
-    }
+    Document hibon() {
+        check(output_path.exists && output_path.fileEmpty, "Output should be empty");
 
+        return result_ok;
+    }
 }
 
 @safe @Scenario("List filtering",
@@ -143,23 +178,15 @@ class ListFiltering {
         auto hibon3 = new HiBON;
         hibon3["c"] = 126;
 
-        std.file.write(this.input_path, Document(hibon1)
-                .serialize ~ Document(hibon2)
-                .serialize ~ Document(hibon3).serialize);
-
-        std.file.write(this.expected_path, Document(hibon2)
-                .serialize ~ Document(hibon3).serialize);
-
-        assert(this.input_path.exists, "Input hibon file not exists");
-        assert(this.expected_path.exists, "Expected hibon file not exists");
-
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+        writeHiBONs(this.expected_path, [hibon2, hibon3]);
         return result_ok;
     }
 
     @When("hirep filter several specific items in list")
     Document itemsInList() {
         string command = tagionTool ~ " " ~ ToolName.hirep ~ " --list 1,2";
-        execute_spawn_shell(command, this.input_path, this.output_items_path);
+        executeSpawnShell(command, this.input_path, this.output_items_path);
 
         return result_ok;
     }
@@ -167,15 +194,15 @@ class ListFiltering {
     @When("hirep filter the same with range in list")
     Document rangeInList() {
         string command = tagionTool ~ " " ~ ToolName.hirep ~ " --list 1..3";
-        execute_spawn_shell(command, this.input_path, this.output_range_path);
+        executeSpawnShell(command, this.input_path, this.output_range_path);
 
         return result_ok;
     }
 
     @Then("both outputs should be the same and as expected")
     Document andAsExpected() {
-        check(compare_files(this.output_items_path, this.expected_path), "Actual output doesn't match the expected");
-        check(compare_files(this.output_items_path, this.output_range_path), "Items filtering doesn't match range filtering");
+        check(filesEqual(this.output_items_path, this.expected_path), "Actual output doesn't match the expected");
+        check(filesEqual(this.output_items_path, this.output_range_path), "Items filtering doesn't match range filtering");
         return result_ok;
     }
 }
@@ -207,28 +234,59 @@ class ListFilteringMixed {
 @safe @Scenario("Test output and stdout",
     [])
 class TestOutputAndStdout {
+    string input_path;
+
+    string output_file_path;
+    string stdout_file;
 
     this(string module_path) {
+        mkdirRecurse(module_path);
+
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.output_file_path = buildPath(module_path, "out.hibon");
+        this.stdout_file = buildPath(module_path, "stdout.hibon");
     }
 
     @Given("initial hibon file with several records")
     Document severalRecords() {
-        return Document();
+        auto hibon1 = new HiBON;
+        hibon1["a"] = 42;
+        auto hibon2 = new HiBON;
+        hibon2["b"] = 84;
+        auto hibon3 = new HiBON;
+        hibon3["c"] = 126;
+
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+
+        return result_ok;
     }
 
     @When("hirep run with output specified")
     Document outputSpecified() {
-        return Document();
+        string command = tagionTool ~ " " ~ ToolName.hirep ~ " -o " ~ this.output_file_path;
+        executeSpawnShell(command, this.input_path, this.stdout_file);
+        check(stdout_file.fileEmpty, "File with stdout should be empty");
+
+        return result_ok;
+
     }
 
     @When("hirep run with stdout")
     Document withStdout() {
-        return Document();
+        string command = tagionTool ~ " " ~ ToolName.hirep;
+        executeSpawnShell(command, this.input_path, this.stdout_file);
+
+        check(!stdout_file.fileEmpty, "File with stdout shouldn't be empty");
+
+        return result_ok;
     }
 
     @Then("the output file should be equal to stdout")
     Document toStdout() {
-        return Document();
+        check(filesEqual(this.stdout_file, this.input_path), "Actual output doesn't match the expected");
+        check(filesEqual(this.output_file_path, this.stdout_file), "Output file doesn't match stdout result");
+
+        return result_ok;
     }
 
 }

@@ -61,16 +61,13 @@ class FormatHex {
         hibon["b"] = 84;
         hibon["c"] = 126;
 
-        std.file.write(this.input_path, Document(hibon).serialize);
-
-        assert(this.input_path.exists, "Input hibon file not exists");
-
+        writeHiBONs(this.input_path, [hibon]);
         return result_ok;
     }
 
     @When("hibonutil is called with given input file in format hex")
     Document hex() {
-        this.output = execute_tool(ToolName.hibonutil, [
+        this.output = executeTool(ToolName.hibonutil, [
                 this.input_path, "-xc"
             ]).strip;
         return result_ok;
