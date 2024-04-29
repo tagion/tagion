@@ -64,6 +64,7 @@ DSTATICLIB=--lib
 DSHAREDLIB=--shared
 OUTPUTDIR = --od
 FULLY_QUALIFIED = -oq
+DDEBUG_DEFAULTLIB::=--link-defaultlib-debug
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -123,6 +124,7 @@ INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep
 
 DEBUG_FLAGS+=$(DDEBUG)
 DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
+DEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
 
 COVOPT=--DRT-covopt=\"dstpath:$(DLOG)\"
 
