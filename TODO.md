@@ -46,6 +46,10 @@ tasks:
 
 Assignee: lr
 
+### Epoch shutdown test
+description: Test the synchronized mode0 epch stop, where all nodes stop at a specific epoch
+assignee: lr
+
 ## Backlog
 
 ### Subscription API implementation
