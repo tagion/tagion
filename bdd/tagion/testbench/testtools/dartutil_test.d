@@ -58,7 +58,7 @@ class Bullseye {
     string output;
 
     this(string module_path) {
-        this.dart_path = module_path ~ "/eye_test.drt";
+        this.dart_path = buildPath(module_path, "eye_test.drt");
     }
 
     @Given("initial dart file")

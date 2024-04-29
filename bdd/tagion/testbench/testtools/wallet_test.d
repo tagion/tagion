@@ -47,8 +47,8 @@ class CreateWallet {
     string wallet_config;
 
     this(string module_path) {
-        this.wallet_folder = module_path ~ "/wallet";
-        this.wallet_config = module_path ~ "wallet.json";
+        this.wallet_folder = buildPath(module_path, "wallet");
+        this.wallet_config = buildPath(module_path, "wallet.json");
     }
 
     @Given("empty folder for creating a wallet")
@@ -77,11 +77,11 @@ class CreateWallet {
 
     @Then("wallet folder should contanin non-empty wallet hibon files")
     Document files() {
-        auto device_hibon = this.wallet_folder ~ "/device.hibon";
+        auto device_hibon = buildPath(this.wallet_folder, "device.hibon");
         auto device_hibon_f = File(device_hibon, "r");
         check(device_hibon.exists && device_hibon_f.size > 0, format("File %s not exists", device_hibon));
 
-        auto wallet_hibon = this.wallet_folder ~ "/wallet.hibon";
+        auto wallet_hibon = buildPath(this.wallet_folder, "wallet.hibon");
         auto wallet_hibon_f = File(wallet_hibon, "r");
         check(wallet_hibon.exists && wallet_hibon_f.size > 0, format("File %s not exists", wallet_hibon));
 

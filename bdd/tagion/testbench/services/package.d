@@ -5,6 +5,7 @@ public import big_contract = tagion.testbench.services.big_contract;
 public import collector = tagion.testbench.services.collector;
 public import double_spend = tagion.testbench.services.double_spend;
 public import epoch_creator = tagion.testbench.services.epoch_creator;
+public import epoch_shutdown = tagion.testbench.services.epoch_shutdown;
 public import genesis_test = tagion.testbench.services.genesis_test;
 public import hirpc_verifier = tagion.testbench.services.hirpc_verifier;
 public import inputvalidator = tagion.testbench.services.inputvalidator;

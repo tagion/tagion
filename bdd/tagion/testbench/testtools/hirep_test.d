@@ -29,19 +29,19 @@ int _main(string[] args) {
     auto feature = automation!(hirep_test);
     feature.ListFiltering(module_path);
 
-    feature.NoFilters(module_path ~ "/NoFilters");
-    feature.NoFiltersWithNot(module_path ~ "/NoFiltersWithNot");
-    feature.ListFiltering(module_path ~ "/ListFiltering");
-    feature.ListFilteringMixed(module_path ~ "/ListFilteringMixed");
-    feature.TestOutputAndStdout(module_path ~ "/TestOutputAndStdout");
-    feature.TestName(module_path ~ "/TestName");
-    feature.TestRecordtype(module_path ~ "/TestRecordtype");
-    feature.TestType(module_path ~ "/TestType");
-    feature.TestNameAndType(module_path ~ "/TestNameAndType");
-    feature.TestRecursive(module_path ~ "/TestRecursive");
-    feature.TestRecursiveWithNot(module_path ~ "/TestRecursiveWithNot");
-    feature.TestSubhibon(module_path ~ "/TestSubhibon");
-    feature.TestSubhibonWithNot(module_path ~ "/TestSubhibonWithNot");
+    feature.NoFilters(buildPath(module_path, "NoFilters"));
+    feature.NoFiltersWithNot(buildPath(module_path, "NoFiltersWithNot"));
+    feature.ListFiltering(buildPath(module_path, "ListFiltering"));
+    feature.ListFilteringMixed(buildPath(module_path, "ListFilteringMixed"));
+    feature.TestOutputAndStdout(buildPath(module_path, "TestOutputAndStdout"));
+    feature.TestName(buildPath(module_path, "TestName"));
+    feature.TestRecordtype(buildPath(module_path, "TestRecordtype"));
+    feature.TestType(buildPath(module_path, "TestType"));
+    feature.TestNameAndType(buildPath(module_path, "TestNameAndType"));
+    feature.TestRecursive(buildPath(module_path, "TestRecursive"));
+    feature.TestRecursiveWithNot(buildPath(module_path, "TestRecursiveWithNot"));
+    feature.TestSubhibon(buildPath(module_path, "TestSubhibon"));
+    feature.TestSubhibonWithNot(buildPath(module_path, "TestSubhibonWithNot"));
     feature.run;
 
     return 0;
@@ -128,10 +128,10 @@ class ListFiltering {
     this(string module_path) {
         mkdirRecurse(module_path);
 
-        this.input_path = module_path ~ "/in.hibon";
-        this.expected_path = module_path ~ "/exp.hibon";
-        this.output_items_path = module_path ~ "/out_items.hibon";
-        this.output_range_path = module_path ~ "/out_range.hibon";
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.expected_path = buildPath(module_path, "exp.hibon");
+        this.output_items_path = buildPath(module_path, "out_items.hibon");
+        this.output_range_path = buildPath(module_path, "out_range.hibon");
     }
 
     @Given("initial hibon file with several records")

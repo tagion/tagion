@@ -51,7 +51,7 @@ class FormatHex {
     string output;
 
     this(string module_path) {
-        this.input_path = module_path ~ "/hex_test.hibon";
+        this.input_path = buildPath(module_path, "hex_test.hibon");
     }
 
     @Given("input hibon file")

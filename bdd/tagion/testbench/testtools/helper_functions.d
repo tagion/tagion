@@ -6,6 +6,7 @@ import std.format;
 import std.file;
 import std.algorithm.comparison : equal;
 import std.stdio;
+import std.path : buildPath;
 
 import tagion.testbench.tools.Environment;
 import tagion.behaviour.BehaviourException : check;
@@ -19,7 +20,7 @@ enum ToolName {
 
 @safe
 string tagionTool() {
-    return env.dbin ~ "/tagion";
+    return buildPath(env.dbin, "tagion");
 }
 
 @safe
