@@ -9,7 +9,11 @@ export SEED:=$(shell git rev-parse HEAD)
 RELEASE_DFLAGS+=$(DOPT)
 
 # Enable all debug flags
-DEBUG_ENABLE:=1
+DEBUG_ENABLE::=1
+
+# ERROR || INFO || undef
+# enable informational 
+WARNINGS::=INFO
 
 # USE_SYSTEM_LIBS=1 # Compile with system libraries (nng & secp256k1-zkp)
 

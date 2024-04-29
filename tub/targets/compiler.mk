@@ -65,6 +65,8 @@ DSHAREDLIB=--shared
 OUTPUTDIR = --od
 FULLY_QUALIFIED = -oq
 DDEBUG_DEFAULTLIB::=--link-defaultlib-debug
+DWARNERROR::=-w
+DWARNINFO::=--wi
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -104,6 +106,8 @@ DSTATICLIB=-lib
 DSHAREDLIB=-shared
 OUTPUTDIR = -od
 VERRORS=-verrors=context
+DWARNERROR::=-w
+DWARNINFO::=-wi
 endif
 
 DIP1000 := $(DIP)1000
@@ -130,6 +134,16 @@ DDEBUG_FLAGS+=$(DEXPORT_DYN)
 ifdef DEBUG_ENABLE
 DFLAGS+=$(DDEBUG_FLAGS)
 endif
+
+ifdef WARNINGS
+ifeq ($(WARNINGS),ERROR)
+DFLAGS+=$(DWARNERROR)
+else ifeq ($(WARNINGS),INFO)
+DFLAGS+=$(DWARNINFO)
+else # ifeq INFO
+DFLAGS+=$(DWARNINFO)
+endif
+endif # ifdef WARNINGS
 
 COVOPT=--DRT-covopt=\"dstpath:$(DLOG)\"
 
