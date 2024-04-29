@@ -538,9 +538,8 @@ int tagion_document_get_bigint(const Document.Element* element, uint8_t** bigint
 }
 
 
-mixin template get_T(T, string func_name) {
-    pragma(mangle, func_name)
-    extern(C) int get_T(const Document.Element* element, T* value) {
+template get_T(T) {
+    int get_T(const Document.Element* element, T* value) {
         try {
             *value = element.get!(T);
         }
@@ -550,9 +549,6 @@ mixin template get_T(T, string func_name) {
         }
         return ErrorCode.none;
     }
-    import std.format;
-    enum mangled_name = format("extern(C) int %s(%s, %s);", func_name, "const Document.Element*", T.stringof~"*");
-    mixin(mangled_name);
 }
 
 /** 
@@ -562,7 +558,9 @@ mixin template get_T(T, string func_name) {
  *   value = pointer to the returned bool
  * Returns: ErrorCode
  */
-mixin get_T!(bool, "tagion_document_get_bool");
+int tagion_document_get_bool(const Document.Element* element, bool* value) {
+    return get_T!bool(__traits(parameters));
+}
 
 /** 
  * Get an i32 from a document element
@@ -571,7 +569,9 @@ mixin get_T!(bool, "tagion_document_get_bool");
  *   value = pointer to the returned i32
  * Returns: ErrorCode
  */
-mixin get_T!(int32_t, "tagion_document_get_int32");
+int tagion_document_get_int32(const Document.Element* element, int32_t* value) {
+    return get_T!int32_t(__traits(parameters));
+}
 
 /** 
  * Get an i64 from a document element
@@ -580,7 +580,9 @@ mixin get_T!(int32_t, "tagion_document_get_int32");
  *   value = pointer to the returned i64
  * Returns: ErrorCode
  */
-mixin get_T!(int64_t, "tagion_document_get_int64");
+int tagion_document_get_int64(const Document.Element* element, int64_t* value) {
+    return get_T!int64_t(__traits(parameters));
+}
 /** 
  * Get an uint32 from a document element
  * Params:
@@ -588,7 +590,9 @@ mixin get_T!(int64_t, "tagion_document_get_int64");
  *   value = pointer to the returned uint32
  * Returns: ErrorCode
  */
-mixin get_T!(uint32_t, "tagion_document_get_uint32");
+int tagion_document_get_uint32(const Document.Element* element, uint32_t* value) {
+    return get_T!uint32_t(__traits(parameters));
+}
 
 /** 
  * Get an uint64 from a document element
@@ -597,7 +601,9 @@ mixin get_T!(uint32_t, "tagion_document_get_uint32");
  *   value = pointer to the returned uint64
  * Returns: ErrorCode
  */
-mixin get_T!(uint64_t, "tagion_document_get_uint64");
+int tagion_document_get_uint64(const Document.Element* element, uint64_t* value) {
+    return get_T!uint64_t(__traits(parameters));
+}
 
 /** 
  * Get an f32 from a document element
@@ -606,7 +612,10 @@ mixin get_T!(uint64_t, "tagion_document_get_uint64");
  *   value = pointer to the returned f32
  * Returns: ErrorCode
  */
-mixin get_T!(float, "tagion_document_get_float32");
+int tagion_document_get_float32(const Document.Element* element, float* value) {
+    return get_T!float(__traits(parameters));
+}
+
 /** 
  * Get an f64 from a document element
  * Params:
@@ -614,8 +623,9 @@ mixin get_T!(float, "tagion_document_get_float32");
  *   value = pointer to the returned f64
  * Returns: ErrorCode
  */
-mixin get_T!(double, "tagion_document_get_float64");
-
+int tagion_document_get_float64(const Document.Element* element, double* value) {
+    return get_T!double(__traits(parameters));
+}
 
 void testGetFunc(T)(
     T h_value,

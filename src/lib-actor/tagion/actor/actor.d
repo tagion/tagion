@@ -39,7 +39,7 @@ struct Msg(string name) {
 }
 
 private struct ActorInfo {
-    private Ctrl[string] childrenState;
+    Ctrl[string] childrenState;
     bool stop;
 
     uint msgs_sent;
@@ -168,18 +168,6 @@ alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 bool statusChildren(Ctrl ctrl) @safe nothrow {
     foreach (val; thisActor.childrenState.byValue) {
         if (val != ctrl) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool statusChildren(Ctrl ctrl, bool delegate(string) @safe nothrow task_filter) @safe nothrow {
-    foreach (child; thisActor.childrenState.byKeyValue) {
-        if (!task_filter(child.key)) {
-            continue;
-        }
-        if (child.value != ctrl) {
             return false;
         }
     }

@@ -235,7 +235,6 @@ class Mode1NetworkStart {
     Duration timeout;
 
     enum expected_epoch = 5;
-
     
     this(const(Options)[] node_opts, Duration timeout) {
         this.node_opts = node_opts;

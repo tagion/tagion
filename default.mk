@@ -83,10 +83,6 @@ DVERSIONS+=OLD_ORDERING
 # Use to check that toHiBON.serialize is equal to .serialize
 #DVERSIONS+=TOHIBON_SERIALIZE_CHECK
 
-# DISABLES supervisors Waiting for services to tell that they're "alive"
-# The idea is that the rest of the services should not rely on internal state of other service
-DVERSIONS+=NO_WAIT
-
 # Runs a stopwatch on all unittest modules
 # DVERSIONS+=UNIT_STOPWATCH
 
