@@ -66,6 +66,7 @@ struct EventView {
             import tagion.hashgraph.Event2;
             const event2=cast(const(Event2))event;
             if (event2 !is null) {
+                intermediate=event2._intermidiate_event;
                 seen=event2._witness_seen_mask.bytes;    
                 if (event2.isWitness) {
                     //pragma(msg, "Event2 witness ", typeof(event._witness));

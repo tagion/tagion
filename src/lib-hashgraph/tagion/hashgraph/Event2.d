@@ -65,6 +65,7 @@ class Event2 : current_event.Event {
 
     BitMask _witness_seen_mask; /// Witness seen in privious round
     BitMask _intermidiate_event_seen; 
+bool _intermidiate_event;
         BitMask[] strongly_seen_matrix;
         BitMask strongly_seen_mask;
     version(none)
@@ -419,6 +420,7 @@ class Event2 : current_event.Event {
             _witness_seen_mask|=(cast(Event2)_father)._witness_seen_mask;
             const majority_witness_seen=isMajority(_witness_seen_mask, hashgraph);
             if (majority_witness_seen) {
+                _intermidiate_event=true;
                 _intermidiate_event_seen[node_id]=true;
                 const new_witness_seen=(cast(Event2)_father)._witness_seen_mask-(cast(Event2)_mother)._witness_seen_mask;
                 //foreach(w; 
