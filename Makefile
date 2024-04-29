@@ -11,6 +11,8 @@ DINC=nngd extern/libnng/libnng
 
 DTESTS=$(wildcard tests/test*.d)
 
+RUNTESTS=test_01_pushpull test_02_pushpull test_03_pushpull test_04_pubsub test_05_reqrep test_06_message test_07_aio
+
 ifeq ($(NNG_WITH_MBEDTLS),ON)
 	DCFLAGS=-O -d -m64 -i -debug -g -version=withtls
 	DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -Lextern/libnng/extern/mbedtls/build/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
@@ -35,6 +37,13 @@ $(DTESTS):
 lib: 
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
+runtest: $(RUNTESTS)
+
+.SILENT: $(RUNTESTS)
+
+$(RUNTESTS):
+	tests/build/tests/$@
+
 clean: clean-extern clean-local
 
 proper: proper-extern clean-local
@@ -49,5 +58,4 @@ clean-extern:
 proper-extern:
 	$(MAKE) proper -C extern/
 
-.PHONY: all extern lib clean $(DTESTS)
-
+.PHONY: all extern lib clean $(DTESTS) $(RUNTESTS)
