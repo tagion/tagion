@@ -50,8 +50,6 @@ alias FeatureContext = Tuple!(
     FeatureGroup*, "result"
 );
 
-enum eye_prefix = "EYE: ";
-
 @safe @Scenario("Bullseye",
     [])
 class Bullseye {
@@ -93,7 +91,7 @@ class Bullseye {
     @Then("the bullseye should be as expected")
     Document asExpected() {
         string expected_eye = db.fingerprint[].toHexString!(LetterCase.lower);
-        string actual_eye = this.output.strip(eye_prefix);
+        string actual_eye = this.output.strip(DARTFile.eye_prefix);
 
         check(expected_eye == actual_eye, format("Bullseye is not as expected. Expected: {%s} Actual: {%s}", expected_eye, actual_eye));
 
