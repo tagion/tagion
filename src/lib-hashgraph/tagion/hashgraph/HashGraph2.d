@@ -305,7 +305,7 @@ class HashGraph2 : current_hashgraph.HashGraph {
     override current_event.Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
         immutable eva_epack = eva_pack(time, nonce);
         auto eva_event = new Event2(eva_epack, this);
-
+        __write("Create eva event %d", eva_event.id);
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
         current_event.Event.callbacks.connect(eva_event);

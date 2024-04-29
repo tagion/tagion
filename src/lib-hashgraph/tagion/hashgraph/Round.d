@@ -48,7 +48,8 @@ class Round {
     }
     immutable long number;
 
-    package Event[] _events;
+    Event[] _events;
+    //package Event[] _events;
     public BitMask famous_mask;
 
     /**

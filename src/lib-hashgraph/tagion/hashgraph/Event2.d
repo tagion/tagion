@@ -64,6 +64,8 @@ class Event2 : current_event.Event {
     }
 
     BitMask _witness_seen_mask; /// Witness seen in privious round
+        BitMask[] strongly_seen_matrix;
+        BitMask strongly_seen_mask;
     version(none)
     @nogc
     static uint count() nothrow {
@@ -87,8 +89,11 @@ class Event2 : current_event.Event {
     in (epack !is null)
     do {
         super(epack, hashgraph);
+//        if (!_mother) {
+//            strongly_seen_matrix.length=hashgraph.node_size;
+//            strongly_seen_matrix[node_id][node_id]=true;
+//        }
         //onnect(hashgraph);
-        version(none) {
         _witness_seen_mask[node_id]=true;
         if (_mother) {
             _witness_seen_mask|=(cast(Event2)_mother)._witness_seen_mask;
@@ -97,9 +102,9 @@ class Event2 : current_event.Event {
             _witness_seen_mask|=(cast(Event2)_father)._witness_seen_mask;
         }
         if (_witness_seen_mask.isMajority(hashgraph)) {
-            _witness = new Witness2();
+            _witness = new Witness2(hashgraph);
         }
-    }
+//    }
     }
 
     version(none)
@@ -154,11 +159,16 @@ class Event2 : current_event.Event {
          */
         this(current_hashgraph.HashGraph hashgraph) nothrow {
             //scope(exit) {
-	        super(this.outer, hashgraph.node_size);
-                this.outer._witness=this;
+	        auto witness_event=this.outer;
+            super(witness_event, hashgraph.node_size);
+
+            witness_event._witness=this;
             //}
-            strongly_seen_matrix.length=hashgraph.node_size;
-            strongly_seen_matrix[this.outer.node_id][this.outer.node_id]=true;
+           
+            witness_event.strongly_seen_matrix.length=hashgraph.node_size;
+            //witness_event.strongly_seen_matrix.each!((ref mask) => mask.clear);
+            witness_event.strongly_seen_matrix[witness_event.node_id][witness_event.node_id]=true;
+/+
             if (!isEva) {
                 __write("Witness round");
                 __write("Mother %d", _mother.round.number);
@@ -175,6 +185,7 @@ class Event2 : current_event.Event {
         }
            // current_event.Event.callbacks.connect(this.outer);
             }
+        +/
         }
     /+
         version(none)
@@ -214,9 +225,16 @@ class Event2 : current_event.Event {
     }
     
     bool calc_strongly_seen(const current_hashgraph.HashGraph hashgraph) {
-        if (!_father || isEva) {
+        auto mother2=cast(Event2)_mother;
+         strongly_seen_matrix=mother2.strongly_seen_matrix;
+         strongly_seen_mask=mother2.strongly_seen_mask;
+       writefln("mother2 matrix size=%d id=%d eva=%s", mother2.strongly_seen_matrix.length, mother2.id, mother2.isEva);
+        //    strongly_seen_matrix[node_id][node_id]=true;
+        
+        if (!_father) {
             return false;
         }
+        /*
         auto mother_withess_event=cast(Event2)(_mother._round._events[node_id]);
         if (mother_withess_event is null) {
             __write("round=%d node_id=%d id_%d", _mother._round.number, node_id, id);
@@ -228,13 +246,22 @@ class Event2 : current_event.Event {
         if (!father_withess_event) {
             return false;
         }
-        auto father_withess = cast(Witness2)(father_withess_event._witness);
-        mother_withess.strongly_seen_matrix[_father.node_id][node_id]=true;
-        foreach(n; 0..mother_withess.strongly_seen_matrix.length) {
-            mother_withess.strongly_seen_matrix[n]|=father_withess.strongly_seen_matrix[n];
-            if (!mother_withess.strongly_seen_mask[n]) {
-                mother_withess.strongly_seen_mask[n]=
-                isMajority(mother_withess.strongly_seen_matrix[n], hashgraph);
+        */
+        //auto father_withess = cast(Witness2)(father_withess_event._witness);
+        
+        writefln("node_id=%d event_id=%d %d->%d", node_id, id, _father.node_id, node_id);    
+        foreach(i, mask; strongly_seen_matrix) {
+                (() @trusted => writefln("%d:%5s", i, mask))();
+            }
+        //strongly_seen_matrix.each!(ref mask==strongly_seen_matrix.dup;
+        strongly_seen_matrix=strongly_seen_matrix.map!(mask => mask.dup).array;
+        strongly_seen_matrix[node_id][_father.node_id]=true;
+        auto father2=cast(Event2)_father;
+        foreach(n; 0..strongly_seen_matrix.length) {
+            strongly_seen_matrix[n]|=father2.strongly_seen_matrix[n];
+            if (!strongly_seen_mask[n]) {
+                strongly_seen_mask[n]=
+                isMajority(strongly_seen_matrix[n], hashgraph);
             }
        
        
@@ -249,15 +276,11 @@ class Event2 : current_event.Event {
             mother_withess.strongly_seen_mask[node_id]=true;
         }
         */
-        writefln("node_id=%d event_id=%d %d->%d", node_id, id, node_id, _father.node_id);    
-        foreach(i, mask; mother_withess.strongly_seen_matrix) {
-                (() @trusted => writefln("%d:%5s", i, mask))();
+        foreach(i, mask; strongly_seen_matrix) {
+                (() @trusted => writefln("%d:%5s %5s", i, mask, father2.strongly_seen_matrix[i]))();
             }
         
-        const result=isMajority(mother_withess.strongly_seen_mask, hashgraph);
-        if (result) {
-            current_event.Event.callbacks.connect(mother_withess_event);
-        }
+        const result=isMajority(strongly_seen_mask, hashgraph);
         return result;
     }
         
@@ -365,9 +388,9 @@ class Event2 : current_event.Event {
                         ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
             hashgraph.front_seat(this);
-            if (current_event.Event.callbacks) {
+            //if (current_event.Event.callbacks) {
                 current_event.Event.callbacks.connect(this);
-            }
+            //}
             // refinement
             hashgraph.refinement.payload(event_package);
         }
@@ -377,6 +400,7 @@ class Event2 : current_event.Event {
             if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this)) {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
+             //   calc_strongly_seen(hashgraph);
             return;
         }
 
@@ -391,7 +415,7 @@ class Event2 : current_event.Event {
         _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
         */
         _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
-        current_event.Event.callbacks.connect(this);
+        //current_event.Event.callbacks.connect(this);
         /// Set the mask of seend witness
         //calc_witness_seen;
         //pragma(msg, "events round ", typeof(_mother._round._events[node_id]));
@@ -420,7 +444,7 @@ class Event2 : current_event.Event {
         if (_witness) {
             __write("Witness id=%d round=%d", id, _round.number);
         }   
-             current_event.Event.callbacks.connect(this);
+        //     current_event.Event.callbacks.connect(this);
         
     }
 

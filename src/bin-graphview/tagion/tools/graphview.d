@@ -14,13 +14,13 @@ import tagion.basic.basic : EnumText;
 import tagion.hashgraphview.EventView;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONRecord : HiBONRecord, isRecord;
 import tagion.hibon.HiBONValid : error_callback;
 import tagion.hibon.HiBONFile : fread, HiBONRange;
-import std.algorithm : min, map, each, filter;
+import std.algorithm; 
 import tagion.tools.revision;
 import tagion.utils.BitMask;
-
+import tagion.basic.Debug;
 static immutable pastel19 = [
     "#fbb4ae", // Light pink
     "#ccebc5", // Light green
@@ -182,7 +182,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         return assumeWontThrow(Pos(ex.to!long, ey.to!long));
     }
 
-    private void drawEdge(ref OutBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother) pure {
+    private void drawEdge(ref HeightBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother)  {
 
         // const father_event = events[e.father];
         const ref_pos = getPos(ref_event);
@@ -193,7 +193,6 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         line.pos1 = event_pos;
         line.pos2 = ref_edge;
         line.stroke_width = 10;
-
         // colors
         if (isMother) {
             line.stroke = ref_event.witness ? "red" : nonPastel19.color(ref_event.node_id);
@@ -201,10 +200,10 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         else {
             line.stroke = nonPastel19.color(ref_event.node_id);
         }
-        obuf.writefln("%s", line.toString);
+        obuf[0].writefln("%s", line.toString);
     }
 
-    private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
+    private void node(ref HeightBuffer obuf, ref const EventView e, const bool raw_svg) {
         const vote_fmt="%"~node_size.to!string~".8s";
         const pos = getPos(e);
         max_width = max(pos.x, max_width);
@@ -243,7 +242,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             node_circle.data_info = escapeHtml(e.toPretty);
         }
 
-        obuf.writefln("%s", node_circle.toString);
+        obuf[10].writefln("%s", node_circle.toString);
 
         SVGText text;
         text.pos = pos;
@@ -251,28 +250,30 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.dominant_baseline = "middle";
         text.fill = "black";
         text.text = format("%s:%s", e.round == long.min ? "X" : format("%s", e.round), e.round_received == long.min ? "X" : format("%s", e.round_received));
-        obuf.writefln("%s", text.toString);
+        obuf[20].writefln("%s", text.toString);
         //if (e.seen.length) {
-            //BitMask vote_mask;
-            //vote_mask=e.seen;
-            text.text=format("%d",e.id);
+            BitMask vote_mask;
+            vote_mask=e.seen;
+            text.text=(() @trusted => format(vote_fmt~":%d",  vote_mask, vote_mask.count))();
+            //text.text=format("%d",e.id);
             text.pos.y+=NODE_CIRCLE_SIZE/2;
-            obuf.writefln("%s", text.toString);
-            if (e.witness) {
+            obuf[20].writefln("%s", text.toString);
+            version(none) {
+            //if (e.witness) {
                 text.pos.y+=NODE_CIRCLE_SIZE/2;
                 //text.text="Matrix";
                 foreach(i, strong_vector; e.strongly_seen_matrix) {
                     BitMask bits;
                     bits=strong_vector;
-                    text.text=(() @trusted => format("%d:"~vote_fmt, i, bits))();
+                    text.text=(() @trusted => format("%d:"~vote_fmt~":%d", i, bits, bits.count))();
                     text.pos.y+=NODE_CIRCLE_SIZE/2;
-                    obuf.writefln("%s", text.toString);
+                    obuf[20].writefln("%s", text.toString);
                 }
             }
         //}
     }
 
-    void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
+    void draw(ref HeightBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
         // If the first document is a node amount record we set amount of nodes...
         // Maybe this should be always be possible to set.
         // Or even better it's a part of the EventView package
@@ -296,8 +297,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
 
         scope (success) {
-            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
-            start.writefln(`<g transform="translate(0,%s)">`, max_height);
+            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height+NODE_INDENT);
+            start.writefln(`<g transform="translate(0,%s)">`, max_height-NODE_INDENT);
             end.writefln("</g>");
             end.writefln("</svg>");
         }
@@ -454,6 +455,41 @@ struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
     }
 }
 
+@safe
+     struct HeightBuffer {
+        OutBuffer[int] obufs;
+        OutBuffer opIndex(const int height) {
+            return obufs.require(height, new OutBuffer);
+        }
+        Range opSlice() pure nothrow {
+            return Range(this);
+        }
+        struct Range {
+            HeightBuffer owner;
+            int[] height_order;
+            this(ref HeightBuffer owner) pure nothrow {
+                this.owner=owner;
+                height_order=owner.obufs.keys;
+                height_order.sort;
+                __write("height_order %s", height_order);
+            }
+            OutBuffer front() pure nothrow {
+                if (height_order.empty) {
+                    return null;
+                }
+                return owner.obufs[height_order[0]];
+            }
+            bool empty() const pure nothrow {
+                return height_order.empty;
+            }
+            void popFront() pure nothrow {
+                if (!empty) {
+                    height_order=height_order[1..$];
+                }
+            }
+        }
+    }
+
 import tagion.tools.Basic;
 
 mixin Main!_main;
@@ -536,8 +572,9 @@ int _main(string[] args) {
     foreach(i, inputfile; inputfiles) {
         HiBONRange hibon_range = HiBONRange(inputfile);
 
-        auto obuf = new OutBuffer;
-        obuf.reserve(inputfile.size * 2);
+        //auto obuf = new OutBuffer;
+        //obuf.reserve(inputfile.size * 2);
+        HeightBuffer obuf;
         verbose("inputfile size=%s", inputfile.size);
         auto startbuf = new OutBuffer;
         auto endbuf = new OutBuffer;
@@ -552,7 +589,8 @@ int _main(string[] args) {
         }
         else {
             auto dot = Dot!HiBONRange(hibon_range, "G");
-            dot.draw(obuf);
+            auto dot_buf=obuf[0];
+            dot.draw(dot_buf);
         }
         if (inputfiles.length == i+1 && !svg) {
             endbuf.writefln(EVENT_POPUP);
@@ -560,7 +598,9 @@ int _main(string[] args) {
         }
 
         outfile.write(startbuf);
-        outfile.write(obuf);
+        obuf[].each!(buf => outfile.write(buf));
+
+        //outfile.write(obuf);
         outfile.write(endbuf);
         verbose("outfile size=%s", outfile.size);
     }

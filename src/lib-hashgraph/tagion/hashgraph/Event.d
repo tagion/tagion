@@ -158,9 +158,9 @@ class Event {
     const(BitMask) round_seen_mask() const pure nothrow @nogc {
         return _round_seen_mask;
     }
+        Round _round; /// The where the event has been created
 
     package {
-        Round _round; /// The where the event has been created
         BitMask _round_received_mask; /// Voting mask for the received rounds
     }
     protected {
