@@ -42,7 +42,7 @@ runtest: $(RUNTESTS)
 .SILENT: $(RUNTESTS)
 
 $(RUNTESTS):
-	tests/build/tests/$@
+	tests/build/tests/$@ >> logs/runtest.log
 
 clean: clean-extern clean-local
 
