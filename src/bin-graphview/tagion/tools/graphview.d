@@ -252,11 +252,13 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text = format("%s:%s", e.round == long.min ? "X" : format("%s", e.round), e.round_received == long.min ? "X" : format("%s", e.round_received));
         obuf[20].writefln("%s", text.toString);
         //if (e.seen.length) {
+            text.text=format("%d",e.id);
+            text.pos.y+=NODE_CIRCLE_SIZE/2;
+            obuf[20].writefln("%s", text.toString);
             BitMask vote_mask;
             vote_mask=e.seen;
             text.text=(() @trusted => format(vote_fmt~":%d",  vote_mask, vote_mask.count))();
-            //text.text=format("%d",e.id);
-            text.pos.y+=NODE_CIRCLE_SIZE/2;
+            text.pos.y+=NODE_CIRCLE_SIZE;
             obuf[20].writefln("%s", text.toString);
             version(none) {
             //if (e.witness) {

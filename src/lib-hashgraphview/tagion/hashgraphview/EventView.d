@@ -30,6 +30,7 @@ struct EventView {
     @label("$r") long round;
     @label("$rec") long round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
+    @label("$i") @optional @(filter.Initialized) bool intermediate;
     @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$error") @optional bool error;
     @label("$seen")  @optional Buffer seen;

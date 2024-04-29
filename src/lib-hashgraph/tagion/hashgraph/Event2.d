@@ -64,6 +64,7 @@ class Event2 : current_event.Event {
     }
 
     BitMask _witness_seen_mask; /// Witness seen in privious round
+    BitMask _intermidiate_event_seen; 
         BitMask[] strongly_seen_matrix;
         BitMask strongly_seen_mask;
     version(none)
@@ -95,6 +96,7 @@ class Event2 : current_event.Event {
 //        }
         //onnect(hashgraph);
         _witness_seen_mask[node_id]=true;
+        version(none) {
         if (_mother) {
             _witness_seen_mask|=(cast(Event2)_mother)._witness_seen_mask;
         }
@@ -103,6 +105,7 @@ class Event2 : current_event.Event {
         }
         if (_witness_seen_mask.isMajority(hashgraph)) {
             _witness = new Witness2(hashgraph);
+        }
         }
 //    }
     }
@@ -151,6 +154,7 @@ class Event2 : current_event.Event {
 
         BitMask[] strongly_seen_matrix;
         BitMask strongly_seen_mask;
+        Event2[] _intermidiate_events;
         /**
          * Contsruct a witness of an event
          * Params:
@@ -163,6 +167,7 @@ class Event2 : current_event.Event {
             super(witness_event, hashgraph.node_size);
 
             witness_event._witness=this;
+            _intermidiate_events.length=hashgraph.node_size;
             //}
            
             witness_event.strongly_seen_matrix.length=hashgraph.node_size;
@@ -406,10 +411,27 @@ class Event2 : current_event.Event {
 
         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
         _mother._daughter = this;
+        _witness_seen_mask|=(cast(Event2)_mother)._witness_seen_mask;
         _father = hashgraph.register(event_package.event_body.father);
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
+            _witness_seen_mask|=(cast(Event2)_father)._witness_seen_mask;
+            const majority_witness_seen=isMajority(_witness_seen_mask, hashgraph);
+            if (majority_witness_seen) {
+                _intermidiate_event_seen[node_id]=true;
+                const new_witness_seen=(cast(Event2)_father)._witness_seen_mask-(cast(Event2)_mother)._witness_seen_mask;
+                //foreach(w; 
+                new_witness_seen[]
+                .filter!((n) => _mother._round._events[n] !is null)
+                .map!((n) => cast(Witness2)(_mother._round._events[n]._witness))
+                .filter!((witness) => witness._intermidiate_events[node_id] !is null)
+                .each!((witness) => witness._intermidiate_events[node_id]=this);
+                //pragma(msg, "xx ", typeof(w));
+                
+                //}
+                //.map!((w) @trusted => w._intermidiate_events[node_id]).front;
+            }
         }
         /*
         _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
