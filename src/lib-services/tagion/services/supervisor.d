@@ -93,22 +93,12 @@ struct Supervisor {
 
         handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn.dart_interface);
 
-        version(NO_WAIT) {
-            run(
-                (EpochShutdown m, long shutdown_) { //
-                    transcript_handle.send(m, shutdown_);
-                },
-                failHandler_,
-            );
-        }
-        else {
-            if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
-                run();
-            }
-            else {
-                log.error("Not all children became Alive");
-            }
-        }
+        run(
+            (EpochShutdown m, long shutdown_) { //
+                transcript_handle.send(m, shutdown_);
+            },
+            failHandler_,
+        );
 
         log("Supervisor stopping services");
         foreach (handle; handles) {

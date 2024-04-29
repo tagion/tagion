@@ -367,89 +367,52 @@ int _neuewelle(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    version(NO_WAIT) {
-        const shutdown_file = buildPath(base_dir.run, format("epoch_shutdown_%d", thisProcessID()));
-        log.trace("Epoch Shutdown file %s", shutdown_file);
+    const shutdown_file = buildPath(base_dir.run, format("epoch_shutdown_%d", thisProcessID()));
+    log.trace("Epoch Shutdown file %s", shutdown_file);
 
-        import tagion.utils.pretend_safe_concurrency : receiveTimeout;
+    import tagion.utils.pretend_safe_concurrency : receiveTimeout;
 
-        while(!thisActor.stop) {
-            thisActor.stop |= stopsignal.wait(100.msecs);
+    while(!thisActor.stop) {
+        thisActor.stop |= stopsignal.wait(100.msecs);
 
-            receiveTimeout(Duration.zero,
-                (EpochShutdown m, long shutdown_) { //
-                    foreach(handle; supervisor_handles) {
-                        handle.send(m, shutdown_);
-                    }
-                },
-                (TaskFailure tf) { 
-                    thisActor.stop = true;
-                    log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
-                },
-                default_handlers.expand,
-            );
-
-            try {
-                if(shutdown_file.exists) {
-                    auto f = File(shutdown_file, "r");
-                    scope (exit) {
-                        f.close;
-                        shutdown_file.remove;
-                    }
-                    import std.conv;
-                    check(!f.byLine.empty, "shutdown_file is empty");
-                    long shutdown = f.byLine.front.to!long;
-                    foreach(handle; supervisor_handles) {
-                        handle.send(EpochShutdown(), shutdown);
-                    }
+        receiveTimeout(Duration.zero,
+            (EpochShutdown m, long shutdown_) { //
+                foreach(handle; supervisor_handles) {
+                    handle.send(m, shutdown_);
                 }
-            }
-            catch(Exception e) {
-                error(e);
-            }
+            },
+            (TaskFailure tf) { 
+                thisActor.stop = true;
+                log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
+            },
+            default_handlers.expand,
+        );
 
-            /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
-            // If all supervisors stopped then we stop as well
-            thisActor.stop |= 
-                thisActor.childrenState
-                .byKeyValue
-                .filter!(c => canFind(c.key, local_options.task_names.supervisor)).all!(c => c.value is Ctrl.END);
-        }
-    } // VERSION NO_WAIT
-    else {
-    if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
-        log("alive");
-        bool signaled;
-        import tagion.utils.pretend_safe_concurrency : receiveTimeout;
-        import core.atomic;
-
-        do {
-            signaled = stopsignal.wait(100.msecs);
-            if (!signaled) {
-                if (local_options.wave.fail_fast) {
-                    receiveTimeout(
-                            Duration.zero,
-                            (TaskFailure tf) { 
-                                signaled = true;
-                                log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
-                            },
-                            default_handlers.expand,
-                    );
+        try {
+            if(shutdown_file.exists) {
+                auto f = File(shutdown_file, "r");
+                scope (exit) {
+                    f.close;
+                    shutdown_file.remove;
                 }
-                else {
-                    receiveTimeout(
-                            Duration.zero,
-                            (TaskFailure tf) { log.error("Received an unhandled taskfailure\n%s", tf); }
-                    );
+                import std.conv;
+                check(!f.byLine.empty, "shutdown_file is empty");
+                long shutdown = f.byLine.front.to!long;
+                foreach(handle; supervisor_handles) {
+                    handle.send(EpochShutdown(), shutdown);
                 }
             }
         }
-        while (!signaled && graceful_shutdown.atomicLoad() != local_options.wave.number_of_nodes);
-    }
-    else {
-        log("Program did not start");
-        return 1;
-    }
+        catch(Exception e) {
+            error(e);
+        }
+
+        /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
+        // If all supervisors stopped then we stop as well
+        thisActor.stop |= 
+            thisActor.childrenState
+            .byKeyValue
+            .filter!(c => canFind(c.key, local_options.task_names.supervisor)).all!(c => c.value is Ctrl.END);
     }
 
     log("Sending stop signal to supervisors");
