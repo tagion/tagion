@@ -5,6 +5,7 @@ import core.time;
 import std.stdio;
 import std.format;
 import std.exception;
+import std.range;
 
 // Default import list for bdd
 import tagion.behaviour;
@@ -19,9 +20,15 @@ import tagion.hashgraph.Refinement;
 import tagion.actor;
 import tagion.services.messages;
 import tagion.testbench.utils.create_network;
+import tagion.crypto.SecureNet;
+import tagion.communication.HiRPC;
+import tagion.script.common;
 
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
+import tagion.dart.DARTBasic;
+import tagion.dart.DARTcrud;
+import tagion.wave.common;
 
 
 enum feature = Feature(
@@ -48,6 +55,8 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("Stopping all nodes at a specific epoch", [])
 class StoppingAllNodesAtASpecificEpoch {
     TestNetwork test_net;
+
+    enum SHUTDOWN_EPOCH = 10;
 
     this(TestNetwork test_net) {
         this.test_net = test_net;
@@ -81,11 +90,31 @@ class StoppingAllNodesAtASpecificEpoch {
 
     @Then("the network should stop at the specified epoch")
     Document epoch() {
-        bool epochs_created = test_net.wait_for_epochs(10, 100.seconds);
+        bool epochs_created = test_net.wait_for_epochs(SHUTDOWN_EPOCH, 100.seconds);
         enforce(epochs_created, format("Nodes did not create the expected amount of epochs %s", test_net.epochs));
-        // 
-        test_net.wait_for_epochs(20, 100.seconds);
-        /* check(!epochs_created, format("nodes created epochs after they should've stopped %s", test_net.epochs)); */
+        // We wait for a few more epochs, just to be sure that all consensus epochs are reached
+        test_net.wait_for_epochs(SHUTDOWN_EPOCH + 10, 100.seconds);
+
+        SecureNet net = new StdSecureNet();
+        net.generateKeyPair(__MODULE__);
+        const hirpc = HiRPC(net);
+
+        foreach(opt; test_net.node_opts) {
+            const node_name = opt.task_names.supervisor;
+            auto db = new DART(net, opt.dart.dart_path);
+            TagionHead head = getHead(db, net);
+            enforce(head.current_epoch == SHUTDOWN_EPOCH, format("%s Wrong head %s", node_name, head.current_epoch));
+
+            const locked_indices = lockedArchiveIndices(iota(SHUTDOWN_EPOCH, SHUTDOWN_EPOCH + 10), net);
+            const sender = dartRead(locked_indices, hirpc);
+            const receiver = hirpc.receive(sender);
+            auto response = db(receiver);
+            auto locked_archives_recorder = db.recorder(response.result);
+            enforce(locked_archives_recorder[].empty, format("%s locked archives %s", node_name, locked_archives_recorder[].walkLength));
+
+            /* opt.replicator. */
+        }
+
         return result_ok;
     }
 }

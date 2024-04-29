@@ -331,6 +331,15 @@ struct LockedArchives {
 }
 }
 
+DARTIndex[] lockedArchiveIndices(Range)(Range epochs, SecureNet net) 
+if (isInputRange!Range && is(ElementType!Range : long)) {
+    DARTIndex[] indices;
+    foreach(epoch; epochs) {
+        indices ~= net.dartKey(StdNames.locked_epoch, epoch);
+    }
+    return indices;
+}
+
 @recordType("$@Active") 
 struct Active {
     @label(StdNames.active)string name = TagionDomain;

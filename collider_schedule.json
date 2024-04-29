@@ -249,6 +249,12 @@
       "envs": {},
       "stages": ["tools", "wallet_test"],
       "timeout": 0.0
+    },
+    "epoch_shutdown": {
+      "args": [],
+      "envs": {},
+      "stages": ["epoch_shutdown"],
+      "timeout": 0.0
     }
   }
 }
