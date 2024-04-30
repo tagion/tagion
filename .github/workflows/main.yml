@@ -206,6 +206,37 @@ jobs:
           ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/results
           $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/acceptance/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results | grep "Test result success!"
+  tool_stage:
+    runs-on: CD
+    timeout-minutes: 3
+    needs: [commit_stage, unittest, build]
+    steps:
+      - name: Copy Artifact to local machine
+        run: |
+          find . -mindepth 1 -delete
+          cp -r ${{ env.ARTIFACT_DIR }}/. .
+
+      - name: Run collider tests
+        run: |
+          id
+          pwd
+          hostname
+          source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
+          export UNSHARE_NET=1
+          export DBIN=$PWD/build/${{ env.TARGET }}/bin
+          export DLOG=$PWD/logs/${{ env.TARGET }}
+          export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
+          export PATH=$DBIN:$PATH
+          ./build/${{ env.TARGET }}/bin/collider --silent -r tools -j${{ env.ACCEPTANCE_STAGE_CORES }} -b build/${{ env.TARGET }}/bin/testbench
+
+      - name: Generate reports
+        if: always()
+        run: |
+          sleep 5
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/tools/results
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/tools/results
+          $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/tools/results
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/tools/results | grep "Test result success!"
 
       - name: Post run
         if: always()
