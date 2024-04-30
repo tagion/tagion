@@ -668,7 +668,7 @@ extern (C) {
     export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
-        static int check_inputs_and_outputs_or_something(const(AccountDetails) account, const(DARTIndex)[] inputs, const(Document[]) outputs) {
+        static int check_contract_payment_(const(AccountDetails) account, const(DARTIndex)[] inputs, const(Document[]) outputs) {
             import std.algorithm : countUntil;
             import tagion.script.standardnames;
 
@@ -710,7 +710,7 @@ extern (C) {
             auto sContract = SignedContract(paramsDoc);
             const outputs = PayScript(sContract.contract.script).outputs.map!(output => output.toDoc).array;
 
-            int status = check_inputs_and_outputs_or_something(__wallet_storage.wallet.account, sContract.contract.inputs, outputs);
+            int status = check_contract_payment_(__wallet_storage.wallet.account, sContract.contract.inputs, outputs);
 
             *statusPtr = cast(uint8_t) status;
             return SUCCESS;
