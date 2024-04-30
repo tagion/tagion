@@ -44,9 +44,21 @@ struct AccountDetails {
         }
     }
 
+    void remove_requested_by_hash(const(DARTIndex) billHash) {
+        requested.remove(billHash);
+    }
+    void remove_invoice_by_pkey(const(Pubkey) bill_key) {
+        const invoice_index = requested_invoices
+            .countUntil!(invoice => invoice.pkey == bill_key);
+        if (invoice_index >= 0) {
+            requested_invoices = requested_invoices.remove(invoice_index);
+        }
+    }
+
     void unlock_bill_by_hash(const(DARTIndex) billHash) {
         activated.remove(billHash);
     }
+
 
     bool add_bill(TagionBill bill) {
         auto index = hash_net.dartIndex(bill);
@@ -68,7 +80,6 @@ struct AccountDetails {
     }
 
     void requestBill(TagionBill bill, Buffer derive) {
-        check((bill.owner in derivers) is null, format("Bill %(%x%) already exists", bill.owner));
         derivers[bill.owner] = derive;
         requested[hash_net.dartIndex(bill)] = bill;
     }
