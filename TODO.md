@@ -138,6 +138,14 @@ Initial TVM cli tool.
 
 Assignee: cbr
 
+### Types filtering in hirep 
+Description: hirep have --types arg, but it's not implemented yet.
+
+- [] - Implement --type filtering in hirep.
+- [] - Write bdd test for this feature
+
+Assignee: ib
+
 ## Template
 ### Task Title
 Description: Brief description of the task.
