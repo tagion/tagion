@@ -64,8 +64,9 @@ class Event2 : current_event.Event {
     }
 
     BitMask _witness_seen_mask; /// Witness seen in privious round
-    BitMask _intermediate_event_seen; 
+    BitMask _intermediate_seen_mask; 
 bool _intermediate_event;
+    current_event.Event[] _intermediate_events_seen;
         BitMask[] strongly_seen_matrix;
         BitMask strongly_seen_mask;
     version(none)
@@ -154,7 +155,7 @@ bool _intermediate_event;
 
         BitMask[] strongly_seen_matrix;
         BitMask strongly_seen_mask;
-        Event2[] _intermediate_events;
+        current_event.Event[] _intermediate_events;
         /**
          * Contsruct a witness of an event
          * Params:
@@ -168,11 +169,17 @@ bool _intermediate_event;
 
             witness_event._witness = this;
             _intermediate_events.length = hashgraph.node_size;
+            _intermediate_events[node_id]=witness_event;
             //}
 
             witness_event.strongly_seen_matrix.length = hashgraph.node_size;
             //witness_event.strongly_seen_matrix.each!((ref mask) => mask.clear);
             witness_event.strongly_seen_matrix[witness_event.node_id][witness_event.node_id] = true;
+            witness_event._intermediate_seen_mask.clear;
+            witness_event._intermediate_event = false;
+            witness_event._witness_seen_mask.clear;
+            witness_event._witness_seen_mask[witness_event.node_id]=true;
+            //current_event.Event.callbacks.connect(witness_event);
             /+
             if (!isEva) {
                 __write("Witness round");
@@ -228,13 +235,21 @@ bool _intermediate_event;
 
     }
 
-    bool calc_strongly_seen2(current_hashgraph.HashGraph hashgraph) {
-        const majority_intermediate_seen = isMajority(_intermediate_event_seen, hashgraph);
+    bool calc_strongly_seen2(current_hashgraph.HashGraph hashgraph) const pure nothrow
+    in (_father, "Calclation of strongly seen only makes sense if we have a father")
+    do {
+        if (_father._witness && higher(_father._round.number, _mother._round.number)) {
+            return true;
+        }
+        const majority_intermediate_seen = isMajority(_intermediate_seen_mask, hashgraph);
         if (majority_intermediate_seen) {
             const vote_strongly_seen=_mother._round._events
             .filter!(e => e !is null)
             .map!(e => cast(Witness2)e._witness)
-            .map!(w => w._intermediate_events[node_id] !is null)
+            .map!(w => w._intermediate_events[node_id])
+            .map!(event_seeing => event_seeing !is null)
+            //.filter!(w => w._intermediate_events[node_id] !is null)
+            //.map!(event_seeing => (order) > 0)
             .count;
             return isMajority(vote_strongly_seen, hashgraph.node_size);
             //const vote_strongly_seen=cast(Witness2)(_mother._round
@@ -301,6 +316,7 @@ bool _intermediate_event;
         return result;
     }
 
+    version(none)
     private void calc_witness_seen() pure nothrow {
         _witness_seen_mask[node_id] = true;
         if (_mother) {
@@ -420,64 +436,56 @@ bool _intermediate_event;
 
         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
         _mother._daughter = this;
-        _witness_seen_mask |= (cast(Event2) _mother)._witness_seen_mask;
-        _intermediate_event_seen |= (cast(Event2) _mother)._intermediate_event_seen;
         _father = hashgraph.register(event_package.event_body.father);
+        _order = ((_father && higher(_father.order, _mother.order)) ? _father.order  : _mother.order) + 1 ;
+        _witness_seen_mask |= (cast(Event2) _mother)._witness_seen_mask;
+        _intermediate_seen_mask |= (cast(Event2) _mother)._intermediate_seen_mask;
+        //hashgraph._rounds._round(this);
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
-            _witness_seen_mask |= (cast(Event2) _father)._witness_seen_mask;
-            _intermediate_event_seen |= (cast(Event2) _father)._intermediate_event_seen;
-            //           const majority_witness_seen=isMajority(_witness_seen_mask, hashgraph);
-            //           if (majority_witness_seen) {
-            //_intermediate_event=true;
-            const new_witness_seen = (cast(Event2) _father)._witness_seen_mask - (cast(Event2) _mother)
+            BitMask new_witness_seen;
+            if (higher(_father._round.number, _mother._round.number)) {
+                _witness_seen_mask = (cast(Event2) _father)._witness_seen_mask.dup;
+                _intermediate_seen_mask = (cast(Event2) _father)._intermediate_seen_mask.dup;
+                
+                new_witness_seen=_witness_seen_mask;
+            }
+            else  {
+                _witness_seen_mask |= (cast(Event2) _father)._witness_seen_mask;
+                _intermediate_seen_mask |= (cast(Event2) _father)._intermediate_seen_mask;
+                 new_witness_seen = (cast(Event2) _father)._witness_seen_mask - (cast(Event2) _mother)
                 ._witness_seen_mask;
+            }
             (() @trusted => writefln("new_witness_seen=%5s  %s", new_witness_seen, new_witness_seen[]))();
 
+            
+            
             if (!new_witness_seen[].empty) {
                 _intermediate_event = true;
-                _intermediate_event_seen[node_id] = true;
+                //_intermediate_seen_mask.clear;
+                _intermediate_seen_mask[node_id] = true;
 
                 //foreach(w; 
+                auto max_round=maxRound;
                 new_witness_seen[]
-                    .filter!((n) => _mother._round._events[n]!is null)
-                    .map!((n) => cast(Witness2)(_mother._round._events[n]._witness))
+                    .filter!((n) => max_round._events[n]!is null)
+                    .map!((n) => cast(Witness2)(max_round._events[n]._witness))
                     .filter!((witness) => witness._intermediate_events[node_id] is null)
                     .each!((witness) => witness._intermediate_events[node_id] = this);
                 //pragma(msg, "xx ", typeof(w));
 
                 auto list_of_events = new_witness_seen[]
-                    .filter!((n) => _mother._round._events[n]!is null)
-                    .map!((n) => cast(Event2)(_mother._round._events[n]));
+                    .filter!((n) => max_round._events[n]!is null)
+                    .map!((n) => cast(Event2)(max_round._events[n]));
                 foreach (e; list_of_events) {
                     const witness = cast(Witness2)(e._witness);
                     writefln("%d] %(%s %)", e.node_id, witness._intermediate_events.map!(seen_e => (seen_e) ? int(seen_e
                             .id) : -1));
-                    //_intermediate_event_seen
+                    //_intermediate_seen_mask
                     current_event.Event.callbacks.connect(e);
                 }
             }
-
-            //pragma(msg, "xxx ", typeof(xxx.front.outer.id));
-            //pragma(msg, "xxx -- ", typeof(cast(Witness2)(xxx.front)._intermediate_events));
-            //.each!((witness) => writefln("%s %(%s %)", witness.other.node_id, witness._intermediate_events.map!(e => (e)?e.id:0)));
-            //}
-            //.map!((w) @trusted => w._intermediate_events[node_id]).front;
-            //}
-        }
-        /*
-        _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
-        */
-        _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
-        //current_event.Event.callbacks.connect(this);
-        /// Set the mask of seend witness
-        //calc_witness_seen;
-        //pragma(msg, "events round ", typeof(_mother._round._events[node_id]));
-        //pragma(msg, "witness round ", typeof(_mother._round._events[node_id]._witness));
-        //auto previous_round_witness=cast(Witness2)_round._events[node_id]._witness;
-        //pragma(msg, "witness round 2 ", typeof(previous_round_witness));
-
         const strongly_seen=calc_strongly_seen2(hashgraph);
         if (strongly_seen) {
             new Witness2(hashgraph);
@@ -495,12 +503,41 @@ bool _intermediate_event;
             __write("Witness id=%d", id);
         }
 
+
+            //pragma(msg, "xxx ", typeof(xxx.front.outer.id));
+            //pragma(msg, "xxx -- ", typeof(cast(Witness2)(xxx.front)._intermediate_events));
+            //.each!((witness) => writefln("%s %(%s %)", witness.other.node_id, witness._intermediate_events.map!(e => (e)?e.id:0)));
+            //}
+            //.map!((w) @trusted => w._intermediate_events[node_id]).front;
+            //}
+        }
+        /*
+        _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
+        */
+        //current_event.Event.callbacks.connect(this);
+        /// Set the mask of seend witness
+        //calc_witness_seen;
+        //pragma(msg, "events round ", typeof(_mother._round._events[node_id]));
+        //pragma(msg, "witness round ", typeof(_mother._round._events[node_id]._witness));
+        //auto previous_round_witness=cast(Witness2)_round._events[node_id]._witness;
+        //pragma(msg, "witness round 2 ", typeof(previous_round_witness));
+
         hashgraph._rounds.set_round(this);
         if (_witness) {
             __write("Witness id=%d round=%d", id, _round.number);
         }
         //     current_event.Event.callbacks.connect(this);
         
+    }
+
+    Round maxRound() nothrow {
+        if (_round) {
+            return _round;
+        }
+        if (_father && higher(_father._round.number, _mother._round.number)) {
+            return _father._round;
+        }
+        return _mother._round;
     }
 
     override BitMask calc_strongly_seen_nodes(const current_hashgraph.HashGraph hashgraph) {

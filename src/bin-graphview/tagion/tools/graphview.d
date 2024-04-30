@@ -142,8 +142,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         int stroke_width;
 
         string toString() const pure @safe {
-            return format(`<line x1="%s" y1="%s" x2="%s" y2="%s" style="stroke: %s; stroke-width: %s"/>`, pos1.x, pos1
-                    .y, pos2.x, pos2.y, stroke, stroke_width);
+            return format(`<line x1="%s" y1="%s" x2="%s" y2="%s" style="stroke: %s; stroke-width: %s"/>`, 
+                    pos1.x, pos1.y, pos2.x, pos2.y, stroke, stroke_width);
         }
     }
 
@@ -155,8 +155,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         string text;
 
         string toString() const pure @safe {
-            return format(`<text x="%s" y="%s" text-anchor="%s" dominant-baseline="%s" fill="%s"> %s </text>`, pos.x, pos
-                    .y, text_anchor, dominant_baseline, fill, text);
+            return format(`<text x="%d" y="%d" text-anchor="%s" dominant-baseline="%s" fill="%s"> %s </text>`, 
+                    pos.x, pos.y,  text_anchor, dominant_baseline, fill, text);
 
         }
     }
@@ -165,33 +165,14 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         return Pos(long(e.node_id) * NODE_INDENT + NODE_INDENT, -(long(e.order * NODE_INDENT) + NODE_INDENT));
     }
 
-    private const(Pos) edgePos(const Pos p1, const Pos p2, const long radius, bool isMother) pure nothrow {
-        if (isMother) {
-            return Pos(p2.x, p2.y - radius);
-        }
-        import std.math;
-
-        double angle = atan2(float(abs(p2.y) - abs(p1.y)), float(p2.x - p1.x));
-
-        double ex = p2.x + radius * cos(angle);
-        double ey = p2.y + radius * sin(angle);
-
-        import std.exception : assumeWontThrow;
-
-        // only throws ConvException if it is NaN. So safe to assume
-        return assumeWontThrow(Pos(ex.to!long, ey.to!long));
-    }
-
     private void drawEdge(ref HeightBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother)  {
 
         // const father_event = events[e.father];
         const ref_pos = getPos(ref_event);
 
-        const ref_edge = edgePos(event_pos, ref_pos, NODE_CIRCLE_SIZE, isMother);
-
         SVGLine line;
         line.pos1 = event_pos;
-        line.pos2 = ref_edge;
+        line.pos2 = ref_pos;
         line.stroke_width = 10;
         // colors
         if (isMother) {
@@ -270,11 +251,13 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             obuf[20].writefln("%s", text.toString);
             if (e.witness) {
                 text.text=format("%(%s %)", e.intermediate_event_ids);
-                text.pos.y+=NODE_CIRCLE_SIZE/2;
+                text.pos=pos;
+                text.pos.y-=NODE_CIRCLE_SIZE/2;
                 obuf[20].writefln("%s", text.toString);
             }
             version(none) {
             //if (e.witness) {
+        
                 text.pos.y+=NODE_CIRCLE_SIZE/2;
                 //text.text="Matrix";
                 foreach(i, strong_vector; e.strongly_seen_matrix) {

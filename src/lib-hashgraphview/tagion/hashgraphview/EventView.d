@@ -31,7 +31,7 @@ struct EventView {
     @label("$rec") long round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
     @label("$i") @optional @(filter.Initialized) bool intermediate;
-    @label("$I") @optional @(filter.Initialized) uint[] intermediate_event_ids; 
+    @label("$I") @reserve @optional @(filter.Initialized) uint[] intermediate_event_ids; 
     @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$error") @optional bool error;
     @label("$seen")  @optional Buffer seen;
@@ -70,7 +70,7 @@ struct EventView {
             if (event2 !is null) {
                 intermediate=event2._intermediate_event;
                 seen=event2._witness_seen_mask.bytes;   
-                intermediate_seen=event2._intermediate_event_seen.bytes;
+                intermediate_seen=event2._intermediate_seen_mask.bytes;
                 if (event2.isWitness) {
                     auto witness=cast(const(Event2.Witness2))(event._witness);
                     intermediate_event_ids=witness._intermediate_events

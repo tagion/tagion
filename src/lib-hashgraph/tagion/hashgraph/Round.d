@@ -364,7 +364,7 @@ class Round {
                 // }
             }
         }
-        
+       
         void set_round(Event e) nothrow
         in {
             assert(!e._round, "Round has allready been added");
@@ -381,12 +381,16 @@ class Round {
                     e._round.add2(e);
                 }
             }
+            import tagion.hashgraph.Event2;
+             e._round=(cast(Event2)e).maxRound;
+            /*
             if (e._father && higher(e._father.round.number, e._mother.round.number)) {
                 e._round = e._father._round;
                 return; 
             }
             e._round = e._mother._round;
-            if (e._witness) {
+            */
+            if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
                 
                     e._round = e._round._next;
