@@ -45,6 +45,7 @@ PLATFORMS+=$(ANDROID_PLATFORMS)
 # General android config
 ifneq (,$(findstring android,$(PLATFORM)))
 
+LD_EXPORT_DYN?=-export-dynamic
 TARGET_ARCH:=$(word 1, $(subst -, ,$(PLATFORM)))
 
 include $(DTUB)/scripts/setup_android_toolchain.mk

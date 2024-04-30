@@ -55,7 +55,6 @@ DCOMPILE_ONLY := -c
 DPREVIEW :=--preview
 NO_OBJ ?= --o-
 DJSON ?= --Xf
-DEXPORT_DYN?=-L-export-dynamic
 DCOV=--cov
 DIMPORTFILE=-J
 DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
@@ -64,6 +63,9 @@ DSTATICLIB=--lib
 DSHAREDLIB=--shared
 OUTPUTDIR = --od
 FULLY_QUALIFIED = -oq
+DDEBUG_DEFAULTLIB::=--link-defaultlib-debug
+DWARNERROR::=-w
+DWARNINFO::=--wi
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -103,6 +105,8 @@ DSTATICLIB=-lib
 DSHAREDLIB=-shared
 OUTPUTDIR = -od
 VERRORS=-verrors=context
+DWARNERROR::=-w
+DWARNINFO::=-wi
 endif
 
 DIP1000 := $(DIP)1000
@@ -114,15 +118,26 @@ else
 # FPIC = -fPIC
 endif
 
-# Add -ldl flag for linux
-ifeq ($(OS),"linux")
-LDCFLAGS += $(LINKERFLAG)-ldl
-endif
-
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
-DEBUG_FLAGS+=$(DDEBUG)
-DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
+DDEBUG_FLAGS+=$(DDEBUG)
+DDEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
+DDEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
+
+ifdef DEBUG_ENABLE
+DFLAGS+=$(DDEBUG_FLAGS)
+LDFLAGS+=$(LD_EXPORT_DYN)
+endif
+
+ifdef WARNINGS
+ifeq ($(WARNINGS),ERROR)
+DFLAGS+=$(DWARNERROR)
+else ifeq ($(WARNINGS),INFO)
+DFLAGS+=$(DWARNINFO)
+else # ifeq INFO
+DFLAGS+=$(DWARNINFO)
+endif
+endif # ifdef WARNINGS
 
 COVOPT=--DRT-covopt=\"dstpath:$(DLOG)\"
 
@@ -160,9 +175,8 @@ env-compiler:
 	${call log.kvp, DEXPORT_DYN, $(DEXPORT_DYN)}
 	${call log.kvp, DCOV, $(DCOV)}
 	${call log.kvp, DIMPORTFILE, $(DIMPORTFILE)}
-	${call log.kvp, DEBUG_FLAGS, "$(DEBUG_FLAGS)"}
+	${call log.kvp, DDEBUG_FLAGS, "$(DDEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
-	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
 	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
 	${call log.close}
 

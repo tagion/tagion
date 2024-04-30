@@ -8,17 +8,18 @@ export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
 
+# Enable all debug flags
+DEBUG_ENABLE?=1
+
+# ERROR || INFO || undef
+# enable informational 
+WARNINGS?=INFO
+
 # USE_SYSTEM_LIBS=1 # Compile with system libraries (nng & secp256k1-zkp)
 
 # If you are using system libraries nng is most likely be compiled with mbedtls support
 # So mbedtls needs to be linked as well, so this need to be enabled
 # NNG_ENABLE_TLS=1
-
-ifndef DEBUG_DISABLE
-DFLAGS+=$(DDEBUG_SYMBOLS)
-endif
-
-DFLAGS+=$(DWARN)
 
 # Uses a modified version of phobos' redblacktree
 # So it's more compatiblae with @safe code
@@ -85,10 +86,6 @@ DVERSIONS+=OLD_ORDERING
 
 # Runs a stopwatch on all unittest modules
 # DVERSIONS+=UNIT_STOPWATCH
-
-# Extra DFLAGS for the testbench 
-BDDDFLAGS+=$(DDEBUG_SYMBOLS)
-BDDDFLAGS+=$(DEXPORT_DYN)
 
 INSTALL?=$(HOME)/bin
 

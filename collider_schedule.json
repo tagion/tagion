@@ -235,7 +235,7 @@
     "hirep_test": {
       "args": [],
       "envs": {},
-      "stages": ["tools", "hirep_test"],
+      "stages": ["_tools", "hirep_test"],
       "timeout": 0.0
     },
     "hibonutil_test": {
@@ -248,6 +248,12 @@
       "args": [],
       "envs": {},
       "stages": ["tools", "wallet_test"],
+      "timeout": 0.0
+    },
+    "epoch_shutdown": {
+      "args": [],
+      "envs": {},
+      "stages": ["epoch_shutdown"],
       "timeout": 0.0
     }
   }

@@ -41,6 +41,7 @@ int main(string[] args) {
     import hirep_test = tagion.testbench.testtools.hirep_test;
     import hibonutil_test = tagion.testbench.testtools.hibonutil_test;
     import wallet_test = tagion.testbench.testtools.wallet_test;
+    import epoch_shutdown = tagion.testbench.services.epoch_shutdown;
 
     alias alltools = AliasSeq!(
         collector,
@@ -80,6 +81,7 @@ int main(string[] args) {
         hirep_test,
         hibonutil_test,
         wallet_test,
+        epoch_shutdown,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
