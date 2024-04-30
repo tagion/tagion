@@ -226,6 +226,10 @@ struct PeerMgr {
     /// copy/postblitz disabled
     @disable this(this);
 
+    invariant() {
+        assert(net !is null && aio_conn !is null, "PeerMgr was not initialized");
+    }
+
     ///
     this(const(SecureNet) net, string address) @trusted {
         this.net = net;
@@ -296,7 +300,7 @@ struct PeerMgr {
      * Finishes immediately
     */
     void listen() {
-        int rc = cast(nng_errno)nng_stream_listener_listen(listener);
+        int rc = nng_stream_listener_listen(listener);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
     }
 
@@ -467,7 +471,7 @@ struct NodeInterfaceService_ {
     // TODO: use LRU?
     Document[Pubkey] msg_queue;
 
-    void node_send(NodeSend, const(Pubkey) channel, Document payload) {
+    void node_send(NodeSend, Pubkey channel, Document payload) {
         if (p2p.active(channel)) {
             // TODO: check if this peer is already doing something
             p2p.send(channel, payload.serialize);
@@ -552,7 +556,7 @@ struct NodeInterfaceService {
         this.receive_handle = ActorHandle(message_handler_task);
     }
 
-    void node_send(NodeSend, const(Pubkey) channel, Document payload) @trusted {
+    void node_send(NodeSend, Pubkey channel, Document payload) @trusted {
         const nnr = addressbook[channel].get;
         NNGSocket sock_send = NNGSocket(nng_socket_type.NNG_SOCKET_PAIR);
         assert(sock_send.m_errno == 0, format("Create send sock error %s", nng_errstr(sock_send.m_errno)));
