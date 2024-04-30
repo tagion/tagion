@@ -25,9 +25,9 @@ import tagion.utils.StdTime;
  */
 @recordType("TGN") struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
-    @label(StdNames.time) sdt_t time; // Time stamp
-    @label(StdNames.owner) Pubkey owner; // owner key
-    @label(StdNames.nonce) @optional Buffer nonce; // extra nonce 
+    @label(StdNames.time) sdt_t time; /// Time stamp
+    @label(StdNames.owner) Pubkey owner; /// owner key
+    @label(StdNames.nonce) @optional Buffer nonce; /// extra nonce 
     mixin HiBONRecord!(
             q{
                 this(const(TagionCurrency) value, const sdt_t time, Pubkey owner, Buffer nonce) pure nothrow {
@@ -46,7 +46,7 @@ import tagion.utils.StdTime;
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
-    @label("$run") Document script; // the Smart contract to be executed
+    @label("$run") Document script; /// the Smart contract to be executed
     bool verify() const pure nothrow @nogc {
         return (inputs.length > 0);
     }
@@ -93,13 +93,13 @@ import tagion.utils.StdTime;
 
 /**
  * Tagion PayScript
- * bultin transfer script,
+ * builtin transfer script,
  * Included in a contract to eventually be outputs in the DART
  * The sum of the value of the outputs should be less than the sum of inputs + fees
  */
 @recordType("pay")
 struct PayScript {
-    @label(StdNames.values) const(TagionBill)[] outputs;
+    @label(StdNames.values) const(TagionBill)[] outputs; /// Outputs of the contract to be Stored in DART
     mixin HiBONRecord!(
         q{
                 this(const(TagionBill)[] outputs) pure nothrow {
@@ -235,11 +235,11 @@ unittest {
  */
 @recordType("$@G")
 struct GenesisEpoch {
-    @label(StdNames.epoch) long epoch_number; //should always be zero
-    Pubkey[] nodes; // Initial nodes
-    Document testamony; // blabber
-    @label(StdNames.time) sdt_t time; // Time of consensus for the epoch
-    TagionGlobals globals; // global statistics
+    @label(StdNames.epoch) long epoch_number; /// should always be zero
+    Pubkey[] nodes; /// Initial nodes
+    Document testamony; /// blabber
+    @label(StdNames.time) sdt_t time; /// Time of consensus for the epoch
+    TagionGlobals globals; /// global statistics
     mixin HiBONRecord!(q{
         this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time, const(TagionGlobals) globals) {
             this.epoch_number = epoch_number;
@@ -257,14 +257,14 @@ struct GenesisEpoch {
 @recordType("$@E")
 struct Epoch {
     @label(StdNames.epoch) long epoch_number; /// The epoch number
-    @label(StdNames.time) sdt_t time; // Time stamp
-    @label(StdNames.bullseye) Fingerprint bullseye; // bullseye of the DART at this epoch
-    @label(StdNames.previous) Fingerprint previous; // bullseye of the DART at the previous epoch
+    @label(StdNames.time) sdt_t time; /// Time stamp
+    @label(StdNames.bullseye) Fingerprint bullseye; /// bullseye of the DART at this epoch
+    @label(StdNames.previous) Fingerprint previous; /// bullseye of the DART at the previous epoch
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @optional @(filter.Initialized) Pubkey[] active; /// Nodes which became active this epoch
     // Would inactive be more appropriate or activated+deactivated
-    @optional @(filter.Initialized) Pubkey[] deactive; // The nodes which deactivated this epoch
-    @optional @(filter.Initialized) TagionGlobals globals; // Global statistics
+    @optional @(filter.Initialized) Pubkey[] deactive; /// The nodes which deactivated this epoch
+    @optional @(filter.Initialized) TagionGlobals globals; /// Global statistics
 
     mixin HiBONRecord!(q{
         this(long epoch_number,
@@ -293,11 +293,11 @@ alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
 
 /**
  * Name record to get the current epoch
- * Is updated each epoch
+ * The record is updated on each epoch
  */
 @recordType("$@Tagion")
 struct TagionHead {
-    @label(StdNames.name) string name = TagionDomain; // Default name should always be "tagion"
+    @label(StdNames.name) string name = TagionDomain; /// Default name should always be "tagion"
     long current_epoch;
     mixin HiBONRecord!(q{
         this(const(string) name, const(long) current_epoch) {
@@ -312,10 +312,10 @@ struct TagionHead {
  * Global tagion statistics
  */
 struct TagionGlobals {
-    @label("total") BigNumber total; // The sum of value at the epoch
-    @label("total_burned") BigNumber total_burned; // Burned this epoch
-    @label("number_of_bills") long number_of_bills; // Total number of bills this epoch
-    @label("burnt_bills") long burnt_bills; // Number of bills spent this epoch
+    @label("total") BigNumber total; /// The sum of value at the epoch
+    @label("total_burned") BigNumber total_burned; /// Burned this epoch
+    @label("number_of_bills") long number_of_bills; /// Total number of bills this epoch
+    @label("burnt_bills") long burnt_bills; /// Number of bills spent this epoch
 
     mixin HiBONRecord!(q{
         this(const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
@@ -332,9 +332,9 @@ struct TagionGlobals {
  */
 @recordType("$@Vote")
 struct ConsensusVoting {
-    long epoch;
-    @label(StdNames.owner) Pubkey owner;
-    @label(StdNames.sign) Signature signed_bullseye;
+    long epoch; /// The epoch being voted on
+    @label(StdNames.owner) Pubkey owner; /// The signee
+    @label(StdNames.sign) Signature signed_bullseye; /// Signature of the bullseye
 
     mixin HiBONRecord!(q{
         this(long epoch, Pubkey owner, Signature signed_bullseye) pure nothrow {
@@ -359,8 +359,8 @@ version(RESERVED_ARCHIVES_FIX) {
  */
 @recordType("$@Locked")
 struct LockedArchives {
-    @label(StdNames.locked_epoch) long epoch_number;
-    @label("outputs") const(DARTIndex)[] locked_outputs;
+    @label(StdNames.locked_epoch) long epoch_number; ///
+    @label("outputs") const(DARTIndex)[] locked_outputs; ///
     mixin HiBONRecord!(q{
         this(long epoch_number, const(DARTIndex)[] locked_outputs) pure nothrow {
             this.epoch_number = epoch_number;
@@ -398,11 +398,12 @@ if (isInputRange!Range && is(ElementType!Range : long)) {
 
 /**
  * The currently active nodes
+ * This record is updated each time a node state changes
  */
 @recordType("$@Active") 
 struct Active {
-    @label(StdNames.active)string name = TagionDomain;
-    @label("nodes") const(Pubkey)[] nodes;
+    @label(StdNames.active)string name = TagionDomain; /// Default name should always be "tagion"
+    @label("nodes") const(Pubkey)[] nodes; /// All of the active nodes
     mixin HiBONRecord!(q{
         this(const(Pubkey)[] nodes) pure nothrow {
             this.nodes = nodes;
