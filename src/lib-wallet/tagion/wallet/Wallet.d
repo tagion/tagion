@@ -259,11 +259,6 @@ struct Wallet(Net : SecureNet) {
         return nonce;
     }
 
-    SignedContract createPayment(const(Invoice) order, out TagionCurrency fees, bool print = false) {
-        const bill = TagionBill(order.amount, currentTime, order.pkey, getNonce);
-        return createPayment([bill], fees, print);
-    }
-    
     Pubkey getCurrentPubkey() {
         return _net.derivePubkey(_account.derive_state);
     }
