@@ -9,7 +9,7 @@ import std.zlib;
 import std.format;
 import std.algorithm.searching: find, boyerMooreFinder;
 
-auto i2a(T)(ref T val, bool asis = false) pure
+auto i2a(T)(const ref T val, bool asis = false) pure
 {
     return (endian == Endian.bigEndian && !asis) ?
         nativeToLittleEndian!T(val) :
@@ -43,7 +43,7 @@ struct Envelope {
     string[] errors;
     
     static align(1) struct EnvelopeHeader {
-        bool isValid() pure {
+        const bool isValid() pure {
             if(magic != MagicBytes)
                 return false;
             if(hdrsum != getsum())
@@ -77,12 +77,12 @@ struct Envelope {
         ubyte[8] datsum;
         ubyte[4] hdrsum;
 
-        ubyte[] toBuffer() pure {
-            return (magic ~ i2a!uint(schema) ~ i2a!uint(cast(uint)level) ~ i2a!ulong(datsize) ~ datsum ~ hdrsum).dup;
+        const ubyte[] toBuffer() pure {
+            return (magic ~ i2a!uint(schema) ~ i2a!uint(cast(const uint)level) ~ i2a!ulong(datsize) ~ datsum ~ hdrsum).dup;
         }
 
-        ubyte[] getsum() pure {
-            return crc32Of( magic ~ i2a!uint(schema) ~ i2a!uint(cast(uint)level) ~ i2a!ulong(datsize) ~ datsum ).dup;
+        const ubyte[] getsum() pure {
+            return crc32Of( magic ~ i2a!uint(schema) ~ i2a!uint(cast(const uint)level) ~ i2a!ulong(datsize) ~ datsum ).dup;
         }
         
         static EnvelopeHeader fromBuffer (const ubyte[] raw) pure {
@@ -102,7 +102,7 @@ struct Envelope {
             this.level = cast(CompressionLevel)level;
         }
 
-        string toString(){
+        const string toString() pure {
             return format("valid:\t%s\nschema:\t%d\nlevel:\t%d\nsize:\t%d\n"
                 ,this.isValid()
                 ,this.schema
@@ -144,7 +144,7 @@ struct Envelope {
         }            
     }
 
-    this ( ref ubyte[] raw ) pure {
+    this ( ubyte[] raw ) pure {
         if(raw.length < EnvelopeHeader.sizeof){
             this.error("Buffer too short");
             return;

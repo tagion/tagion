@@ -107,9 +107,7 @@ struct InputValidatorService {
         else {
             import tagion.services.exception;
 
-            throw new ServiceException(
-                    format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening))
-            );
+            throw new ServiceError(format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening)));
         }
         const recv = (scope void[] b) @trusted {
             // 

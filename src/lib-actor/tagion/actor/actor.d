@@ -39,7 +39,7 @@ struct Msg(string name) {
 }
 
 private struct ActorInfo {
-    private Ctrl[string] childrenState;
+    Ctrl[string] childrenState;
     bool stop;
 
     uint msgs_sent;
@@ -76,7 +76,6 @@ struct ActorInfoRecord {
 
 ///
 unittest {
-    assert(thisActor.task_name is string.init, "task_name did not start as init");
     enum dummy_name = "dummy_name";
     scope (exit) {
         unregister(dummy_name);
@@ -101,14 +100,14 @@ struct Request(string name, ID = uint) {
 
     static Request opCall() @safe nothrow {
         import tagion.utils.Random;
+        static assert(isNumeric!ID, "Can not auto generate an id for non numeric ID type");
+        return typeof(this).opCall(generateId!(Unqual!ID));
+    }
 
-        Request!(name, ID) r;
-        r.msg = Msg!name();
-        static if (isNumeric!ID) {
-            r.id = generateId!ID;
-        }
+    static Request opCall(ID id) @safe nothrow {
         assert(thisActor.task_name !is string.init, "The requester is not registered as a task");
-        r.task_name = thisActor.task_name;
+
+        Request!(name, ID) r = { Msg!name(), id, thisActor.task_name };
         return r;
     }
 
@@ -133,6 +132,7 @@ unittest {
     thisActor.task_name = "req_resp";
     scope (exit) {
         unregister("req_resp");
+        thisActor.task_name = "";
     }
     alias Some_req = Request!"some_req";
     void some_responder(Some_req req) {
@@ -324,7 +324,7 @@ ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe 
                 log(e);
                 stopsignal.setIfInitialized;
             }
-            end;
+            end();
         }, actor, name, args);
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
@@ -351,10 +351,10 @@ if (isActor!A) {
                 if (!statusChildren(Ctrl.END)) {
                     foreach (child_task_name, ctrl; thisActor.childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
-                            ActorHandle(child_task_name).send(Sig.STOP);
+                            ActorHandle(child_task_name).prioritySend(Sig.STOP);
                         }
                     }
-                    waitforChildren(Ctrl.END);
+                    /* waitforChildren(Ctrl.END); */
                 }
             }
             catch (Exception t) {
@@ -366,7 +366,7 @@ if (isActor!A) {
                 log(e);
                 stopsignal.setIfInitialized;
             }
-            end;
+            end();
         }, name, args);
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
@@ -403,12 +403,12 @@ static Topic taskfailure = Topic("taskfailure");
  * Silently fails if there is no owner
  * Does NOT exit regular control flow
 */
-void fail(Throwable t) @trusted nothrow {
+void fail(Throwable t) nothrow {
     try {
         debug (actor) {
             log(t);
         }
-        immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
+        immutable tf = TaskFailure(thisActor.task_name, t);
         log.event(taskfailure, "taskfailure", tf);
         ownerTid.prioritySend(tf);
     }
@@ -454,7 +454,7 @@ void end() @trusted nothrow {
 void run(Args...)(Args args) @safe nothrow
 if (allSatisfy!(isSafe, Args)) {
     // Check if a failHandler was passed as an arg
-    static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
+    static if (args.length >= 1 && isFailHandler!(typeof(args[$ - 1]))) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
@@ -463,6 +463,10 @@ if (allSatisfy!(isSafe, Args)) {
 
     scope (failure) {
         setState(Ctrl.END);
+    }
+
+    if(thisActor.stop) {
+        return;
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running
@@ -496,7 +500,7 @@ if (allSatisfy!(isSafe, Args)) {
 void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow
         if (allSatisfy!(isSafe, Args)) {
     // Check if a failHandler was passed as an arg
-    static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
+    static if (args.length >= 1 && isFailHandler!(typeof(args[$ - 1]))) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
@@ -505,6 +509,10 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
 
     scope (failure) {
         setState(Ctrl.END);
+    }
+
+    if(thisActor.stop) {
+        return;
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running
@@ -533,15 +541,23 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
     }
 }
 
-enum defaultFailhandler = (TaskFailure tf) @safe {
+enum defaultFailhandler = (TaskFailure tf) @safe nothrow {
     try {
         ownerTid.prioritySend(tf);
-    } catch(Exception e) {
+    }
+    catch(TidMissingException e) {
+        log.error("%s", tf);
+        /* import tagion.GlobalSignals; */
+        /* void trust() @trusted { stopsignal.setIfInitialized(); } */
+        /* trust(); */
+    }
+    catch(Exception e) {
         log(e);
     }
 };
 
 void signal(Sig signal) @safe {
+    log.trace("Received stop signal");
     with (Sig) final switch (signal) {
     case STOP:
         thisActor.stop = true;
@@ -574,7 +590,7 @@ void getActorInfo(GetActorInfo req) {
     req.respond(ActorInfoRecord(thisActor).toDoc);
 }
 
-private auto default_handlers = tuple(
+auto default_handlers = tuple(
     &signal,
     &control,
     &getActorInfo,

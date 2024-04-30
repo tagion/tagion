@@ -68,6 +68,9 @@
             dtools
             dfmt-pull.legacyPackages.${pkgs.system}.dlang-dfmt
             graphviz
+            dstep
+            wasmer # wasm-executor
+            clang # used for wasm compilation
           ]
           ++ lib.optionals stdenv.isx86_64 [ dmd ];
         };

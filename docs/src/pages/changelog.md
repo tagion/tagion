@@ -1,3 +1,18 @@
+# Changelog for Epoch 1569150 .. 1689534
+
+# Tool Testing
+Implemented multiple CLI tool tests for dartutil, hirep, and hibonutil.
+
+** HiBON API **
+Introduced a C-API for HiBON, enabling the addition of keyalue pairs to HiBON objects through a `void*` parameter as an extension to what was done last week on the Document API. Documentation for both the HiBON API and Document API can be accessed [here](https://ddoc.tagion.org/tagion.api.html).
+
+** NNG CI Workflows **
+Established CI workflows for the NNG library, automating build processes and test executions directly on the library functions.
+
+** Service Refactoring **
+Removed the `waitForChildren` step in the tagionwave program. Tasks can now send messages without waiting for thread startup completion. This eliminates the "starting" state, simplifying network stopping logic previously affected during the "starting phase."
+
+
 # Changelog for Epoch 1287717 .. 1569150
 
 ** Envelope tool **

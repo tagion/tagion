@@ -45,6 +45,7 @@ PLATFORMS+=$(ANDROID_PLATFORMS)
 # General android config
 ifneq (,$(findstring android,$(PLATFORM)))
 
+LD_EXPORT_DYN?=-export-dynamic
 TARGET_ARCH:=$(word 1, $(subst -, ,$(PLATFORM)))
 
 include $(DTUB)/scripts/setup_android_toolchain.mk
@@ -69,6 +70,9 @@ export CXX:=$(ANDROID_TOOLCHAIN)/bin/$(ANDROID_ABI)$(ANDROID_API)-clang++
 export LD:=$(ANDROID_TOOLCHAIN)/bin/ld.ldd
 export RANLIB:=$(ANDROID_TOOLCHAIN)/bin/llvm-ranlib
 export STRIP:=$(ANDROID_TOOLCHAIN)/bin/llvm-strip
+export CMAKE:=$(REPOROOT)/cmake-android/bin/cmake
+
+NNG_CMAKE_FLAGS+=-DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake
 
 DVERSIONS+=MOBILE
 CROSS_ENABLED:=1

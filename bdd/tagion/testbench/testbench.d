@@ -37,6 +37,11 @@ int main(string[] args) {
     import mode1 = tagion.testbench.e2e.mode1;
     import test_wave = tagion.testbench.e2e.test_wave;
     import trt_contract = tagion.testbench.trt_contract;
+    import dartutil_test = tagion.testbench.testtools.dartutil_test;
+    import hirep_test = tagion.testbench.testtools.hirep_test;
+    import hibonutil_test = tagion.testbench.testtools.hibonutil_test;
+    import wallet_test = tagion.testbench.testtools.wallet_test;
+    import epoch_shutdown = tagion.testbench.services.epoch_shutdown;
 
     alias alltools = AliasSeq!(
         collector,
@@ -72,6 +77,11 @@ int main(string[] args) {
         test_wave,
         run_fiber_epoch,
         trt_contract,
+        dartutil_test,
+        hirep_test,
+        hibonutil_test,
+        wallet_test,
+        epoch_shutdown,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

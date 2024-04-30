@@ -16,7 +16,7 @@ import tagion.basic.Version;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.services.subscription : SubscriptionServiceOptions, SubscriptionPayload;
-import tagion.tools.Basic : Main;
+import tools = tagion.tools.Basic;
 import tagion.tools.revision;
 
 import std.exception;
@@ -100,7 +100,7 @@ struct Subscription {
     }
 }
 
-mixin Main!_main;
+mixin tools.Main!_main;
 
 enum SubFormat {
     pretty, // still json but formatted
@@ -109,6 +109,16 @@ enum SubFormat {
 }
 
 int _main(string[] args) {
+    try {
+        return __main(args);
+    }
+    catch (Exception e) {
+        tools.error(e);
+        return 1;
+    }
+}
+
+int __main(string[] args) {
     immutable program = args[0];
 
     auto default_sub_opts = SubscriptionServiceOptions();
@@ -121,7 +131,8 @@ int _main(string[] args) {
     string contract;
 
     auto main_args = getopt(args,
-        "v|version", "Print revision information", &version_switch,
+        "version", "Print revision information", &version_switch,
+        "v|verbose", "Enable verbose print-out", &tools.__verbose_switch,
         "o|output", "Output filename; if empty stdout is used", &outputfilename,
         "f|format", format("Set the output format default: %s, available %s", SubFormat.init, [
                 EnumMembers!SubFormat

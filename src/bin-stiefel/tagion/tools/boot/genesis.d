@@ -90,5 +90,10 @@ Document[] createGenesis(const(NodeSettings[]) node_settings, Document testamony
     result ~= node_records.map!(node_record => node_record.toDoc).array;
     result ~= genesis_epoch.toDoc;
     result ~= active.toDoc;
+
+    // Add TagioHead
+    TagionHead tagion_head;
+    result ~= tagion_head.toDoc;
+
     return result;
 }

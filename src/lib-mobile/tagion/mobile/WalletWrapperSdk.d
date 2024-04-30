@@ -668,6 +668,35 @@ extern (C) {
     export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
+        static int check_contract_payment_(const(AccountDetails) account, const(DARTIndex)[] inputs, const(Document[]) outputs) {
+            import std.algorithm : countUntil;
+            import tagion.script.standardnames;
+
+            auto billsHashes = account.bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
+
+            // Look for input matches. Return 0 from func if found.
+            foreach (inputHash; inputs) {
+                const index = countUntil!"a == b"(billsHashes, inputHash);
+                if (index >= 0) {
+                    return 0;
+                }
+            }
+            // Proceed if inputs are not matched.
+            // Look for outputs matches. Return 1 from func if found or 2 if not.
+            foreach (outputPubkey; outputs.map!(output => output[StdNames.owner].get!Pubkey)) {
+                const index = countUntil!"a.owner == b"(account.bills, outputPubkey);
+                if (index >= 0) {
+                    return 1;
+                }
+            }
+
+            if (account.bills.length == 0) {
+                return 1;
+            }
+
+            return 2;
+        }
+
         if (__wallet_storage.wallet.isLoggedin()) {
 
             auto contractDoc = Document(contractBuffer);
@@ -681,8 +710,7 @@ extern (C) {
             auto sContract = SignedContract(paramsDoc);
             const outputs = PayScript(sContract.contract.script).outputs.map!(output => output.toDoc).array;
 
-            int status = __wallet_storage.wallet.account.check_contract_payment(
-                    sContract.contract.inputs, outputs);
+            int status = check_contract_payment_(__wallet_storage.wallet.account, sContract.contract.inputs, outputs);
 
             *statusPtr = cast(uint8_t) status;
             return SUCCESS;
@@ -693,42 +721,22 @@ extern (C) {
     static sdt_t dummy_time;
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
-        version (WALLET_HISTORY_DUMMY) {
-            if (dummy_time == sdt_t.init) {
-                dummy_time = currentTime();
-            }
+        assert(__wallet_storage !is null, "The Wallet storage was not initialised");
 
-            DummyHistGen hist_gen;
+        WHistory hist;
 
-            WHistory hist;
-            hist_gen.popFront();
-            if (count == 0) {
-                hist.items = hist_gen.drop(from).array;
-            }
-            else {
-                hist.items = hist_gen.drop(from).take(count).array;
-            }
-
-            *historyId = recyclerDoc.create(hist.toDoc);
+        if (count == 0) {
+            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from)
+                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                .array;
         }
         else {
-            assert(__wallet_storage !is null, "The Wallet storage was not initialised");
-
-            WHistory hist;
-
-            if (count == 0) {
-                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from)
-                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
-                    .array;
-            }
-            else {
-                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
-                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
-                    .array;
-            }
-
-            *historyId = recyclerDoc.create(hist.toDoc);
+            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
+                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                .array;
         }
+
+        *historyId = recyclerDoc.create(hist.toDoc);
 
         return SUCCESS;
     }
@@ -764,41 +772,6 @@ struct WHistoryItem {
 struct WHistory {
     WHistoryItem[] items;
     mixin HiBONRecord;
-}
-
-pragma(msg, "remove wrapper dummy history");
-struct DummyHistGen {
-    import tagion.utils.Random;
-
-    enum max_length = 37;
-
-    Random!uint rnd = Random!uint(42);
-
-    WHistoryItem genHistItem() {
-        WHistoryItem hist_item;
-        with (hist_item) {
-            amount = rnd.value;
-            balance = rnd.value;
-            fee = rnd.value;
-            status = rnd.value % 2;
-            type = rnd.value % 2;
-            timestamp = dummy_time;
-            pubkey = Pubkey(rnd.take(33).map!(i => cast(ubyte)(i)).array.idup);
-            index = DARTIndex(rnd.take(32).map!(i => cast(ubyte)(i)).array.idup);
-        }
-        return hist_item;
-    }
-
-    int i = 0;
-
-    bool empty() => i > max_length;
-    WHistoryItem _front;
-    void popFront() {
-        _front = genHistItem();
-        i++;
-    }
-
-    WHistoryItem front() => _front;
 }
 
 unittest {

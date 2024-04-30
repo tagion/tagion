@@ -58,7 +58,7 @@ synchronized class AddressBook {
         if (addr !is null) {
             return NNRResult(*addr);
         }
-        return NNRResult(assumeWontThrow(format!("Address %s not found")(pkey.encodeBase64)));
+        return NNRResult(assumeWontThrow(format!("Channel %s not found")(pkey.encodeBase64)));
     }
 
     /* 
@@ -179,8 +179,8 @@ unittest {
     enum address_content = `
         @AzZPqaMsYOwXVgitRRVe7XlyCCSdBeFK6b8mTnv8IDfU	node_3
         @AoL9_T3JJ09fnPKo7Y1in9mpKkjgxSQ_sD0t0CPCcLKk	node_4
-        @AumexnPXMa0mKVsYQeEKvY4Y640DXNCuBU6XdzFOicWC	node_5
-        @AxEDiWOgvaTLn-zMs62msv-54RwVNA7x7xE0rtLrCd3o	node_2
+        @AumexnPXMa0mKVsYQeEKvY4Y640DXNCuBU6XdzFOicWC node_5
+        @AxEDiWOgvaTLn-zMs62msv-54RwVNA7x7xE0rtLrCd3o  node_2
         @A5VO5-Nk5fUR7Yta7aSIpcXwWzN6cIkbKvg2-So0G52H	node_1`;
 
     immutable(NetworkNodeRecord)*[] nnrs = parseAddressFile(address_content.splitLines);

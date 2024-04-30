@@ -7,6 +7,7 @@ import tagion.basic.tagionexceptions;
 import core.stdc.stdint;
 import std.stdio;
 import core.lifetime;
+import tagion.utils.StdTime;
 extern(C):
 
 version(unittest) {
@@ -51,13 +52,144 @@ int tagion_document(
 }
 
 /** 
+ * Return the version of the document
+ * Params:
+ *   buf = doc buf 
+ *   buf_len = doc len
+ *   ver = 
+ * Returns: ErrorCode
+ */
+int tagion_document_get_version(
+    const uint8_t* buf, 
+    const size_t buf_len,
+    uint32_t* ver) {
+    try {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        const doc_error = doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int)doc_error;
+        }
+        *ver = doc.ver();
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    auto h = new HiBON;
+    h["version_test"] = 2;
+    const doc = Document(h);
+
+    uint ver = 10; // set the version equal to something else since current ver is 0 
+    int rt = tagion_document_get_version(&doc.data[0], doc.data.length, &ver);
+    assert(rt == ErrorCode.none);
+    import tagion.hibon.HiBONBase : HIBON_VERSION;
+    assert(ver == HIBON_VERSION);
+}
+
+/** 
+ * Get document record type
+ * Params:
+ *   buf = 
+ *   buf_len = 
+ *   record_name = 
+ *   record_name_len = 
+ * Returns: ErrorCode
+ */
+int tagion_document_get_record_name(
+    const uint8_t* buf, 
+    const size_t buf_len, 
+    char** record_name, 
+    size_t* record_name_len) {
+    import tagion.hibon.HiBONRecord : recordName;
+    try {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        const doc_error = doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int)doc_error;
+        }
+        string data = doc.recordName;
+        if (data !is string.init) {
+            *record_name = cast(char*) &data[0];
+            *record_name_len = data.length;
+        }
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    import tagion.hibon.HiBONRecord : recordType, HiBONRecord;
+    enum some_record = "SomeRecord";
+    @recordType(some_record)
+    static struct S {
+        int test;
+        mixin HiBONRecord;
+    }
+    S s;
+    s.test = 5;
+    const doc = s.toDoc;
+
+    char* record_name_value;
+    size_t record_name_len;
+    int rt = tagion_document_get_record_name(&doc.data[0], doc.data.length, &record_name_value, &record_name_len);
+    assert(rt == ErrorCode.none);
+
+    const record_name = record_name_value[0..record_name_len];
+    assert(record_name == some_record); 
+}
+
+
+/** 
+ * Get document error code
+ * Params:
+ *   buf = doc buf
+ *   buf_len = doc len 
+ *   error_code = pointer to error code
+ * Returns: ErrorCode
+ */
+int tagion_document_valid(const uint8_t* buf, const size_t buf_len, int32_t* error_code) {
+    try {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        *error_code = cast(int) doc.valid;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+///
+unittest {
+    auto h = new HiBON;
+    h["good"] = "document";
+    const doc = Document(h);
+
+    int error_code = 7;
+    int rt = tagion_document_valid(&doc.data[0], doc.data.length, &error_code);
+    assert(rt == ErrorCode.none);
+    assert(error_code == Document.Element.ErrorCode.NONE);
+}
+
+/** 
  * Get a document element from index
  * Params:
  *   buf = the document buffer
  *   buf_len = length of the buffer
  *   index = index to
  *   element = 
- * Returns: 
+ * Returns: ErrorCode
  */
 int tagion_document_array(
     const uint8_t* buf, 
@@ -80,6 +212,117 @@ int tagion_document_array(
     }
     return ErrorCode.none;
 }
+
+/// Format to use for tagion_document_get_text
+enum DocumentTextFormat {
+    JSON, 
+    PRETTYJSON, 
+    BASE64, 
+    HEX,
+}
+
+/** 
+ * Get document as string
+ * Params:
+ *   buf = doc buffer
+ *   buf_len = doc len
+ *   text_format = See DocumentTextFormat for supported formats
+ *   str = returned pointer
+ *   str_len = returned str len
+ * Returns: 
+ */
+int tagion_document_get_text(
+    const uint8_t* buf, 
+    const size_t buf_len, 
+    const int text_format,
+    char** str, 
+    size_t* str_len
+    ) {
+    import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBONtoText;
+    import std.format;
+    try {
+        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        const doc = Document(_buf);
+        const doc_error = doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int)doc_error;
+        }
+
+        const fmt = cast(DocumentTextFormat) text_format;
+
+        string text;
+        with (DocumentTextFormat) {
+            switch(fmt) {
+                case JSON:
+                    text = doc.toJSON.toString;
+                    break;
+                case PRETTYJSON:
+                    text = doc.toPretty;
+                    break;
+                case BASE64:
+                    text = doc.encodeBase64;
+                    break;
+                case HEX:
+                    text = format("%(%02x%)", doc.serialize);
+                    break;
+                default:
+                    return ErrorCode.error;
+            }
+        }
+        *str = cast(char*) &text[0];
+        *str_len = text.length;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+
+    return ErrorCode.none;
+}
+
+/// 
+unittest {
+    import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBONtoText;
+    import std.format;
+
+    auto h = new HiBON;
+    h["hai"] = "bon";
+    const doc = Document(h);
+
+    // hex
+    char* str_value;
+    size_t str_len;
+    int rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.HEX, &str_value, &str_len); 
+    assert(rt == ErrorCode.none);
+    auto str = str_value[0..str_len];
+    assert(str == format("%(%02x%)", doc.serialize));
+
+    // json
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.JSON, &str_value, &str_len); 
+    assert(rt == ErrorCode.none);
+    str = str_value[0..str_len];
+    assert(str == doc.toJSON.toString);
+
+
+    // jsonpretty
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.PRETTYJSON, &str_value, &str_len); 
+    assert(rt == ErrorCode.none);
+    str = str_value[0..str_len];
+    assert(str == doc.toPretty);
+
+    // base64
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.BASE64, &str_value, &str_len); 
+    assert(rt == ErrorCode.none);
+    str = str_value[0..str_len];
+    assert(str == doc.encodeBase64);
+
+    // none existing format
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, 100, &str_value, &str_len); 
+    assert(rt == ErrorCode.error);
+}
+
 
 /** 
  * Get an sub doc from a document
@@ -106,6 +349,7 @@ int tagion_document_get_document(const Document.Element* element, uint8_t** buf,
     return ErrorCode.none;
 }
 
+///
 unittest {
     auto sub_hibon = new HiBON;
     sub_hibon["i32"] = "hello";
@@ -148,7 +392,7 @@ int tagion_document_get_string(const Document.Element* element, char** value, si
     }
     return ErrorCode.none;
 }
-
+///
 unittest {
     auto h = new HiBON;
     string key_string = "string";
@@ -168,7 +412,7 @@ unittest {
     auto str = str_value[0..str_len];
     assert(str == "wowo", "read string was different"); 
 }
-
+///
 unittest {
     auto h = new HiBON;
     h = ["hey0", "hey1", "hey2"];
@@ -211,6 +455,7 @@ int tagion_document_get_binary(const Document.Element* element, uint8_t** buf, s
     return ErrorCode.none;
 }
 
+///
 unittest {
     auto h = new HiBON;
     string key_binary = "binary";
@@ -231,43 +476,6 @@ unittest {
 
     assert(binary_data == read_data); 
 }
-
-
-/** 
- * Get a bool from a document element
- * Params:
- *   element = element to get
- *   value = pointer to the returned bool
- * Returns: ErrorCode
- */
-int tagion_document_get_bool(const Document.Element* element, bool* value) {
-    try {
-        *value = element.get!bool; 
-    }
-    catch (Exception e) {
-        last_error = e;
-        return ErrorCode.exception;
-    }
-    return ErrorCode.none;
-}
-
-unittest {
-    auto h = new HiBON;
-    string key_bool = "bool";
-    h[key_bool] = true;
-    const doc = Document(h);
-
-    Document.Element elm_bool;
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_bool[0], key_bool.length, &elm_bool);
-    assert(rt == ErrorCode.none, "Get document element bool returned error");
-
-    bool value;
-    rt = tagion_document_get_bool(&elm_bool, &value);
-    assert(rt == ErrorCode.none, "get bool returned error");
-
-    assert(value == true, "did not read bool");
-}
-
 /** 
  * Get time from a document element
  * Params:
@@ -286,7 +494,7 @@ int tagion_document_get_time(const Document.Element* element, int64_t* time) {
     }
     return ErrorCode.none;
 }
-
+///
 unittest {
     auto h = new HiBON;
     string key_time = "time";
@@ -305,152 +513,6 @@ unittest {
 
     assert(value == cast(long) insert_time, "did not read time");
 }
-
-/** 
- * Get an i32 from a document element
- * Params:
- *   element = element to get
- *   value = pointer to the returned i32
- * Returns: ErrorCode
- */
-int tagion_document_get_int32(const Document.Element* element, int32_t* value) {
-    try {
-        *value = element.get!int; 
-    }
-    catch (Exception e) {
-        last_error = e;
-        return ErrorCode.exception;
-    }
-    return ErrorCode.none;
-}
-///
-unittest {
-    auto h = new HiBON;
-    string key_i32="i32";
-    h["i32"]=42;
-    const doc = Document(h);
-    Document.Element elm_i32;
-
-    // get element that exists
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
-    assert(rt == ErrorCode.none, "Get Document.element returned error");
-
-    // try to get element not present should throw
-    Document.Element elm_none;
-    string key_time="time";
-    rt = tagion_document(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_none);
-    assert(rt == ErrorCode.exception, "Should throw an error");
-}
-
-///
-unittest {
-    auto h = new HiBON;
-    string key_i32="i32";
-    int insert_int = 42;
-    h["i32"]=insert_int;
-    const doc = Document(h);
-    Document.Element elm_i32;
-
-    // get element that exists
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
-    assert(rt == ErrorCode.none, "Get Document.element returned error");
-
-    // get the integer
-    int value;
-    rt = tagion_document_get_int32(&elm_i32, &value);
-    assert(rt == ErrorCode.none, "Get integer returned error");
-    assert(value == insert_int, "The document int was not the same");
-}
-/** 
- * Get an i64 from a document element
- * Params:
- *   element = element to get
- *   value = pointer to the returned i64
- * Returns: ErrorCode
- */
-int tagion_document_get_int64(const Document.Element* element, int64_t* value) {
-    try {
-        *value = element.get!long; 
-    }
-    catch (Exception e) {
-        last_error = e;
-        return ErrorCode.exception;
-    }
-    return ErrorCode.none;
-}
-
-/** 
- * Get an uint32 from a document element
- * Params:
- *   element = element to get
- *   value = pointer to the returned uint32
- * Returns: ErrorCode
- */
-int tagion_document_get_uint32(const Document.Element* element, uint32_t* value) {
-    try {
-        *value = element.get!uint; 
-    }
-    catch (Exception e) {
-        last_error = e;
-        return ErrorCode.exception;
-    }
-    return ErrorCode.none;
-}
-/** 
- * Get an uint64 from a document element
- * Params:
- *   element = element to get
- *   value = pointer to the returned uint64
- * Returns: ErrorCode
- */
-int tagion_document_get_uint64(const Document.Element* element, uint64_t* value) {
-    try {
-        *value = element.get!ulong; 
-    }
-    catch (Exception e) {
-        last_error = e;
-        return ErrorCode.exception;
-    }
-    return ErrorCode.none;
-}
-
-
-/** 
- * Get an f32 from a document element
- * Params:
- *   element = element to get
- *   value = pointer to the returned f32
- * Returns: ErrorCode
- */
-int tagion_document_get_float32(const Document.Element* element, float* value) {
-    try {
-        *value = element.get!float;
-    }
-    catch (Exception e) {
-        last_error = e;
-        return ErrorCode.exception;
-    }
-    return ErrorCode.none;
-}
-
-/** 
- * Get an f64 from a document element
- * Params:
- *   element = element to get
- *   value = pointer to the returned f64
- * Returns: ErrorCode
- */
-int tagion_document_get_float64(const Document.Element* element, double* value) {
-    try {
-        *value = element.get!double;
-    }
-    catch (Exception e) {
-        last_error = e;
-        return ErrorCode.exception;
-    }
-    return ErrorCode.none;
-}
-
 /** 
  * Get bigint from a document. Returned as serialized leb128 ubyte buffer
  * Params:
@@ -475,3 +537,121 @@ int tagion_document_get_bigint(const Document.Element* element, uint8_t** bigint
     return ErrorCode.none;
 }
 
+
+template get_T(T) {
+    int get_T(const Document.Element* element, T* value) {
+        try {
+            *value = element.get!(T);
+        }
+        catch(Exception e) {
+            last_error = e;
+            return ErrorCode.exception;
+        }
+        return ErrorCode.none;
+    }
+}
+
+/** 
+ * Get a bool from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned bool
+ * Returns: ErrorCode
+ */
+int tagion_document_get_bool(const Document.Element* element, bool* value) {
+    return get_T!bool(__traits(parameters));
+}
+
+/** 
+ * Get an i32 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned i32
+ * Returns: ErrorCode
+ */
+int tagion_document_get_int32(const Document.Element* element, int32_t* value) {
+    return get_T!int32_t(__traits(parameters));
+}
+
+/** 
+ * Get an i64 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned i64
+ * Returns: ErrorCode
+ */
+int tagion_document_get_int64(const Document.Element* element, int64_t* value) {
+    return get_T!int64_t(__traits(parameters));
+}
+/** 
+ * Get an uint32 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned uint32
+ * Returns: ErrorCode
+ */
+int tagion_document_get_uint32(const Document.Element* element, uint32_t* value) {
+    return get_T!uint32_t(__traits(parameters));
+}
+
+/** 
+ * Get an uint64 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned uint64
+ * Returns: ErrorCode
+ */
+int tagion_document_get_uint64(const Document.Element* element, uint64_t* value) {
+    return get_T!uint64_t(__traits(parameters));
+}
+
+/** 
+ * Get an f32 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned f32
+ * Returns: ErrorCode
+ */
+int tagion_document_get_float32(const Document.Element* element, float* value) {
+    return get_T!float(__traits(parameters));
+}
+
+/** 
+ * Get an f64 from a document element
+ * Params:
+ *   element = element to get
+ *   value = pointer to the returned f64
+ * Returns: ErrorCode
+ */
+int tagion_document_get_float64(const Document.Element* element, double* value) {
+    return get_T!double(__traits(parameters));
+}
+
+void testGetFunc(T)(
+    T h_value,
+    int function(const Document.Element*, T* value) func)
+{
+    auto h = new HiBON;
+    string key = "some_keyT";
+    h[key] = h_value;
+    const doc = Document(h);
+    Document.Element elmT;
+    int rt = tagion_document(&doc.data[0], doc.data.length, &key[0], key.length, &elmT);
+    assert(rt == ErrorCode.none);
+
+    T get_value;
+    rt = func(&elmT, &get_value);
+    import std.format;
+    assert(rt == ErrorCode.none, format("get %s returned error", T.stringof));
+    assert(get_value == h_value, format("returned value for %s was not the same", T.stringof));
+}
+
+unittest {
+    testGetFunc!(bool)(true, &tagion_document_get_bool);
+    testGetFunc!(int)(42, &tagion_document_get_int32);
+    testGetFunc!(long)(long(42), &tagion_document_get_int64);
+    testGetFunc!(uint)(uint(42), &tagion_document_get_uint32);
+    testGetFunc!(ulong)(ulong(42), &tagion_document_get_uint64);
+    testGetFunc!(float)(21.1f, &tagion_document_get_float32); 
+    testGetFunc!(double)(321.312312f, &tagion_document_get_float64);
+}
