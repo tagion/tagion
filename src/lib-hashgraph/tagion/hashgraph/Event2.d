@@ -235,10 +235,15 @@ bool _intermediate_event;
 
     }
 
+    bool father_witness_is_leading() const pure nothrow {
+        return _father && 
+            higher(_father._round.number, _mother._round.number) && 
+            _father._round._events[_father.node_id];
+    }
     bool calc_strongly_seen2(current_hashgraph.HashGraph hashgraph) const pure nothrow
-    in (_father, "Calclation of strongly seen only makes sense if we have a father")
+    in (_father, "Calculation of strongly seen only makes sense if we have a father")
     do {
-        if (_father._witness && higher(_father._round.number, _mother._round.number)) {
+        if (father_witness_is_leading) { 
             return true;
         }
         const majority_intermediate_seen = isMajority(_intermediate_seen_mask, hashgraph);
@@ -248,11 +253,8 @@ bool _intermediate_event;
             .map!(e => cast(Witness2)e._witness)
             .map!(w => w._intermediate_events[node_id])
             .map!(event_seeing => event_seeing !is null)
-            //.filter!(w => w._intermediate_events[node_id] !is null)
-            //.map!(event_seeing => (order) > 0)
             .count;
             return isMajority(vote_strongly_seen, hashgraph.node_size);
-            //const vote_strongly_seen=cast(Witness2)(_mother._round
         }
         return false;
     }
@@ -445,17 +447,16 @@ bool _intermediate_event;
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
             BitMask new_witness_seen;
-            if (higher(_father._round.number, _mother._round.number)) {
-                _witness_seen_mask = (cast(Event2) _father)._witness_seen_mask.dup;
-                _intermediate_seen_mask = (cast(Event2) _father)._intermediate_seen_mask.dup;
-                
-                new_witness_seen=_witness_seen_mask;
-            }
-            else  {
+            if (_father._round.number == _mother._round.number) {
                 _witness_seen_mask |= (cast(Event2) _father)._witness_seen_mask;
                 _intermediate_seen_mask |= (cast(Event2) _father)._intermediate_seen_mask;
                  new_witness_seen = (cast(Event2) _father)._witness_seen_mask - (cast(Event2) _mother)
                 ._witness_seen_mask;
+            }
+            else {
+                //_witness_seen_mask = (cast(Event2) _mother)._witness_seen_mask.dup;
+                //_intermediate_seen_mask = (cast(Event2) _mother)._intermediate_seen_mask.dup;
+                new_witness_seen=_witness_seen_mask;
             }
             (() @trusted => writefln("new_witness_seen=%5s  %s", new_witness_seen, new_witness_seen[]))();
 
