@@ -55,7 +55,6 @@ DCOMPILE_ONLY := -c
 DPREVIEW :=--preview
 NO_OBJ ?= --o-
 DJSON ?= --Xf
-DEXPORT_DYN?=-L-export-dynamic
 DCOV=--cov
 DIMPORTFILE=-J
 DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
@@ -119,20 +118,15 @@ else
 # FPIC = -fPIC
 endif
 
-# Add -ldl flag for linux
-ifeq ($(OS),"linux")
-LDCFLAGS += $(LINKERFLAG)-ldl
-endif
-
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
 DDEBUG_FLAGS+=$(DDEBUG)
 DDEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
 DDEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
-DDEBUG_FLAGS+=$(DEXPORT_DYN)
 
 ifdef DEBUG_ENABLE
 DFLAGS+=$(DDEBUG_FLAGS)
+LDFLAGS+=$(LD_EXPORT_DYN)
 endif
 
 ifdef WARNINGS
@@ -183,7 +177,6 @@ env-compiler:
 	${call log.kvp, DIMPORTFILE, $(DIMPORTFILE)}
 	${call log.kvp, DDEBUG_FLAGS, "$(DDEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
-	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
 	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
 	${call log.close}
 
