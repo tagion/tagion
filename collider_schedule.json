@@ -235,7 +235,7 @@
     "hirep_test": {
       "args": [],
       "envs": {},
-      "stages": ["tools", "hirep_test"],
+      "stages": ["_tools", "hirep_test"],
       "timeout": 0.0
     },
     "hibonutil_test": {
