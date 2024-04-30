@@ -68,12 +68,12 @@ struct EventView {
             import tagion.hashgraph.Event2;
             const event2=cast(const(Event2))event;
             if (event2 !is null) {
-                intermediate=event2._intermidiate_event;
+                intermediate=event2._intermediate_event;
                 seen=event2._witness_seen_mask.bytes;   
-                intermediate_seen=event2._intermidiate_event_seen.bytes;
+                intermediate_seen=event2._intermediate_event_seen.bytes;
                 if (event2.isWitness) {
                     auto witness=cast(const(Event2.Witness2))(event._witness);
-                    intermediate_event_ids=witness._intermidiate_events
+                    intermediate_event_ids=witness._intermediate_events
                     .map!(e => (e)?e.id:0)
                     .array;
                     //pragma(msg, "Event2 witness ", typeof(event._witness));
