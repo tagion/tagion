@@ -102,7 +102,7 @@ struct Envelope {
             this.level = cast(CompressionLevel)level;
         }
 
-        const string toString() pure {
+        string toString() pure const {
             return format("valid:\t%s\nschema:\t%d\nlevel:\t%d\nsize:\t%d\n"
                 ,this.isValid()
                 ,this.schema
