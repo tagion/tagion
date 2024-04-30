@@ -205,10 +205,10 @@ jobs:
         if: always()
         run: |
           sleep 5
-          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/{{ matrix.stages }}/results
-          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/{{ matrix.stages }}/results
-          $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/{{ matrix.stages }}/results
-          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/{{ matrix.stages }}/results | grep "Test result success!"
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ matrix.stage }}/results
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/${{ matrix.stage }}/results
+          $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/${{ matrix.stage }}/results
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ matrix.stage }}/results | grep "Test result success!"
       - name: Post run
         if: always()
         run: |
