@@ -62,7 +62,7 @@ class TestNetwork {
         local_options.subscription.enable = false;
         local_options.trt.folder_path = buildPath(module_path);
         local_options.replicator.folder_path = buildPath(module_path, "recorders");
-        local_options.epoch_creator.timeout = 500;
+        local_options.epoch_creator.timeout = 100;
 
         this.node_opts = getMode0Options(local_options);
     }

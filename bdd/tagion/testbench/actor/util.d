@@ -1,9 +1,12 @@
 module tagion.testbench.actor.util;
 
 import core.time;
+import std.traits;
+import std.meta;
 import std.variant;
 import tagion.actor.exceptions;
 import tagion.utils.pretend_safe_concurrency : MessageMismatch, receiveTimeout;
+
 
 private string format(Args...)(Args args) @trusted {
     import f = std.format;
@@ -33,7 +36,8 @@ private template receiveOnlyRet(T...) {
 * Throws: MessageTimeout, if no message is received before Duration
 * Throws: WrongMessage, if incorrect message was received
 */
-T receiveOnlyTimeout(T)(Duration d = 1.seconds) @safe {
+T receiveOnlyTimeout(T)(Duration d = 1.seconds)
+@safe if(isType!T) {
     T ret;
     const received = receiveTimeout(
             d,
@@ -55,12 +59,23 @@ T receiveOnlyTimeout(T)(Duration d = 1.seconds) @safe {
     return ret;
 }
 
+
+void receiveOnlyTimeout(Args...)(Args handlers, Duration dur = 1.seconds)
+@safe if(allSatisfy!(isCallable, Args) && allSatisfy!(isSafe, Args)) {
+    bool received = receiveTimeout(dur, 
+            handlers,
+            (Variant var) @trusted {
+                throw new Exception(format("Unknown msg: %s", var));
+            }
+        );
+    assert(received, "Timed out");
+}
+
 import std.typecons : Tuple;
 
 /// ditto
-Tuple!(T) receiveOnlyTimeout(T...)(Duration d = 1.seconds) @safe if (T.length > 1) {
-    import std.meta : allSatisfy;
-    import std.traits : isAssignable;
+Tuple!(T) receiveOnlyTimeout(T...)(Duration d = 1.seconds) @safe
+if (T.length > 1 && allSatisfy!(isType, T)) {
 
     Tuple!(T) ret;
     const received = receiveTimeout(

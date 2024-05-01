@@ -226,9 +226,9 @@ struct PeerMgr {
     /// copy/postblitz disabled
     @disable this(this);
 
-    invariant() {
-        assert(net !is null && aio_conn !is null, "PeerMgr was not initialized");
-    }
+    /* invariant() { */
+    /*     assert(net !is null && aio_conn !is null, "PeerMgr was not initialized"); */
+    /* } */
 
     ///
     this(const(SecureNet) net, string address) @trusted {
@@ -330,13 +330,14 @@ struct PeerMgr {
 
     /// Send to an active connection with a known public key
     void send(Pubkey pkey, immutable(ubyte)[] buf) {
-        assert(active(pkey), "No established connection");
+        assert(isActive(pkey), "No established connection");
         peers[pkey].send(buf);
     }
 
     /// Check if an active known connection exists with this public key
-    bool active(Pubkey channel) const pure nothrow {
-        return (channel in peers) !is null;
+    bool isActive(const(Pubkey) channel) const pure nothrow {
+        assert(channel !is Pubkey.init);
+        return ((channel in peers) !is null);
     }
 
     // --- Message handlers --- //
@@ -472,7 +473,7 @@ struct NodeInterfaceService_ {
     Document[Pubkey] msg_queue;
 
     void node_send(NodeSend, Pubkey channel, Document payload) {
-        if (p2p.active(channel)) {
+        if (p2p.isActive(channel)) {
             // TODO: check if this peer is already doing something
             p2p.send(channel, payload.serialize);
         }

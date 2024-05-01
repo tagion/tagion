@@ -255,6 +255,12 @@
       "envs": {},
       "stages": ["epoch_shutdown"],
       "timeout": 0.0
+    },
+    "node_interface": {
+      "args": [],
+      "envs": {},
+      "stages": ["node_interface"],
+      "timeout": 0.0
     }
   }
 }
