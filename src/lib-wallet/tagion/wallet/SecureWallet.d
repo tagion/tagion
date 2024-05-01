@@ -528,7 +528,7 @@ struct SecureWallet(Net : SecureNet) {
         import tagion.script.standardnames;
 
         DARTIndex[] contract_indices = contracts.map!(doc => net.dartIndex(doc))
-            .map!(idx => net.dartKey(StdNames.contract, idx))
+            .map!(idx => net.dartKey(StdNames.hash_contract, idx))
             .array;
 
         auto params = new HiBON;
