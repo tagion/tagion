@@ -226,23 +226,19 @@ struct PeerMgr {
     /// copy/postblitz disabled
     @disable this(this);
 
-    /* invariant() { */
-    /*     assert(net !is null && aio_conn !is null, "PeerMgr was not initialized"); */
-    /* } */
-
     ///
     this(const(SecureNet) net, string address) @trusted {
         this.net = net;
         this.hirpc = HiRPC(net);
         int rc = nng_aio_alloc(&aio_conn, &callback, self);
-        check(rc == 0, nng_errstr(rc));
+        check!ServiceError(rc == 0, nng_errstr(rc));
         this.task_name = thisActor.task_name;
 
         this.address = address;
         address ~= '\0';
         assert(this.address.length < address.length);
         rc = cast(nng_errno)nng_stream_listener_alloc(&listener, &address[0]);
-        check(rc == nng_errno.NNG_OK, nng_errstr(rc));
+        check!ServiceError(rc == nng_errno.NNG_OK, nng_errstr(rc));
     }
 
     /// free nng memory
@@ -251,9 +247,7 @@ struct PeerMgr {
         nng_stream_listener_free(listener);
     }
 
-    private {
-        nng_stream_listener* listener;
-    }
+    nng_stream_listener* listener;
 
     const SecureNet net;
     const HiRPC hirpc;
@@ -336,7 +330,6 @@ struct PeerMgr {
 
     /// Check if an active known connection exists with this public key
     bool isActive(const(Pubkey) channel) const pure nothrow {
-        assert(channel !is Pubkey.init);
         return ((channel in peers) !is null);
     }
 
@@ -368,10 +361,11 @@ struct PeerMgr {
     // A connection was established by dial
     void on_dial(NodeDial, int id) {
         assert((id in dialers) !is null, "No dialer was allocated for this id");
+        auto dialer = dialers[id];
         scope(exit) {
             dialers.remove(id);
+            /* destroy(dialer); */
         }
-        auto dialer = dialers[id];
 
         nng_stream* socket = dialer.get_output;
         auto peer = new Peer(id, socket);
@@ -425,6 +419,9 @@ unittest {
     receiveOnlyTimeout(2.seconds, &dialer.on_dial, &listener.on_accept);
     /* writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length); */
 
+    assert(dialer.isActive(listener.net.pubkey));
+    assert(!listener.isActive(dialer.net.pubkey));
+
     assert(dialer.all_peers.length == 1);
     assert(listener.all_peers.length == 1);
     assert(dialer.all_peers.byValue.all!(p => p.state is Peer.State.ready));
@@ -465,7 +462,7 @@ struct NodeInterfaceService_ {
         this.opts = opts;
         this.net = new StdSecureNet(shared_net);
         this.receive_handle = ActorHandle(message_handler_task);
-        this.p2p = PeerMgr(net, opts.node_address);
+        this.p2p = PeerMgr(this.net, opts.node_address);
     }
 
     // Messages which are waiting for dial connection
@@ -473,6 +470,8 @@ struct NodeInterfaceService_ {
     Document[Pubkey] msg_queue;
 
     void node_send(NodeSend, Pubkey channel, Document payload) {
+        log(__FUNCTION__);
+        p2p.isActive(channel);
         if (p2p.isActive(channel)) {
             // TODO: check if this peer is already doing something
             p2p.send(channel, payload.serialize);
@@ -485,6 +484,7 @@ struct NodeInterfaceService_ {
     }
 
     void on_dial(NodeDial m, int id) {
+        log(__FUNCTION__);
         Pubkey channel = p2p.dialers[id].pkey;
 
         Document payload = msg_queue[channel];
@@ -498,11 +498,13 @@ struct NodeInterfaceService_ {
     }
 
     void on_accept(NodeAccept m, int id) {
+        log(__FUNCTION__);
         p2p.on_accept(m, id);
         p2p.all_peers[id].recv();
     }
 
     void on_recv(NodeRecv m, int id, Buffer buf) {
+        log(__FUNCTION__);
         p2p.on_recv(m, id, buf);
         const doc = Document(buf);
         // Send to hasgraph/epoch_creator
@@ -511,15 +513,14 @@ struct NodeInterfaceService_ {
 
     // On send
     void on_aio_task(NodeAIOTask m, shared(Peer.State) state) {
+        log(__FUNCTION__);
         p2p.on_aio_task(m, state);
     }
 
-    auto handlers = tuple(&node_send, &on_dial, &on_accept, &on_recv, &on_aio_task);
-
     void task() {
-        p2p.listen;
+        p2p.listen();
 
-        run(handlers.expand);
+        run(&node_send, &on_accept, &on_recv, &on_aio_task, &on_dial);
     }
 }
 
