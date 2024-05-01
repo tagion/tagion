@@ -27,7 +27,7 @@ interface GossipNet {
     bool isValidChannel(const(Pubkey) channel) const nothrow;
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
-    void send(const Pubkey channel, const(HiRPC.Sender) sender);
+    void send(Pubkey channel, const(HiRPC.Sender) sender);
     Pubkey gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
     Pubkey select_channel(const(ChannelFilter) channel_filter);
 }
@@ -110,7 +110,7 @@ class EmulatorGossipNet : StdGossipNet {
         super(mypk);
     }
 
-    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+    void send(Pubkey channel, const(HiRPC.Sender) sender) {
 
         import tagion.utils.pretend_safe_concurrency;
         import std.algorithm.searching : countUntil;
@@ -142,7 +142,7 @@ class NNGGossipNet : StdGossipNet {
         this.delay = avrg_delay_msecs;
         super(mypk);
     }
-    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+    void send(Pubkey channel, const(HiRPC.Sender) sender) {
         sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
 
         nodeinterface.send(NodeSend(), channel, cast(Document)sender.toDoc);
