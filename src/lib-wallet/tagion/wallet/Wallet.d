@@ -66,6 +66,11 @@ struct Wallet(Net : SecureNet) {
             _pin.setPin(_net, R, pincode.representation, seed.idup);
         }
 
+        scope(success) {
+            // derive the first pubkey so that the root is never used
+            deriveNewPubkey;
+        }
+
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
@@ -494,8 +499,20 @@ unittest {
     import tagion.crypto.SecureNet;
     alias SimpleWallet = Wallet!StdSecureNet;
 
-    SimpleWallet wallet;
-    wallet.createWallet("wowo wowo", "1234");
+    SimpleWallet wallet1;
+    wallet1.createWallet("wowo wowo", "1234");
+
+
+    const current_pkey = wallet1.getCurrentPubkey;
+    wallet1.deriveNewPubkey;
+    const new_pkey = wallet1.getCurrentPubkey;
+    const same_pkey = wallet1.getCurrentPubkey;
+
+    assert(current_pkey != new_pkey, "did not derive new pkey");
+    assert(new_pkey == same_pkey, "should be the same on call without derivation");
+    
+
+    
     
 
 }
