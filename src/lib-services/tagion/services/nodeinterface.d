@@ -1,10 +1,11 @@
-/// Interface for the Node against other Nodes
+/// Interface for the Peer to Peer communicatio
 /// https://docs.tagion.org/docs/architecture/NodeInterface
 module tagion.services.nodeinterface;
 
 @safe:
 
 import core.time;
+import core.atomic;
 
 import std.format;
 import std.conv;
@@ -53,7 +54,7 @@ enum NodeErrorCode {
  * All aio tasks notify the calling thread by sending a message
  */
 struct Dialer {
-    /// copy/postblitz disabled
+    /// copy/postblit disabled
     @disable this(this);
 
     int id;
@@ -118,7 +119,7 @@ struct Peer {
         send,
     }
 
-    /// copy/postblitz disabled
+    /// copy/postblit disabled
     @disable this(this);
 
     int id;
@@ -126,7 +127,7 @@ struct Peer {
     // taskname is used inside the nng callback to know which thread to notify
     string owner_task;
     string address;
-    shared State state;
+    shared State state = State.ready;
 
     nng_stream* socket;
     nng_aio* aio;
@@ -177,16 +178,14 @@ struct Peer {
                     Buffer buf = _this.sendbuf[0..msg_size].idup;
                     check(buf !is null, "Got invalid buf output");
 
+                    _this.state.atomicStore(State.ready);
                     ActorHandle(_this.owner_task).send(NodeRecv(), _this.id, buf);
-                    
-                    _this.state = State.ready;
                     break;
                 default:
-                    ActorHandle(_this.owner_task).send(NodeAIOTask(), _this.state);
-                    _this.state = State.ready;
+                    _this.state.atomicStore(State.ready);
+                    ActorHandle(_this.owner_task).send(NodeSendDone(), _this.id);
                     break;
             }
-
         } catch(Exception e) {
             fail(_this.owner_task, e);
         }
@@ -223,7 +222,7 @@ struct Peer {
  */
 struct PeerMgr {
 
-    /// copy/postblitz disabled
+    /// copy/postblit disabled
     @disable this(this);
 
     ///
@@ -341,7 +340,7 @@ struct PeerMgr {
         assert(buf.length > 1);
 
         Document doc = buf;
-        /* imported!"std.stdio".writefln("received %s bytes %s", buf.length, doc.toPretty); */
+        /* imported!"std.stdio".writefln("received %s bytes %s", buf.length, doc.topretty); */
 
         if(!doc.isInorder && !doc.empty) {
             // error
@@ -349,6 +348,7 @@ struct PeerMgr {
         }
 
         const hirpcmsg = hirpc.receive(doc);
+        assert(hirpcmsg.pubkey != this.net.pubkey, "Do you really want to send a message to yourself?");
         if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
             // error
             return;
@@ -383,12 +383,8 @@ struct PeerMgr {
     }
 
     // A send task was completed
-    void on_aio_task(NodeAIOTask, shared(Peer.State) _) {
-        /* import std.stdio; */
-        /* writefln("aio_task complete, %s", state); */
+    void on_send(NodeSendDone, int id) {
     }
-
-    auto handlers = tuple(&on_dial, &on_accept, &on_recv, &on_aio_task);
 
     mixin NodeHelpers;
 }
@@ -433,8 +429,8 @@ unittest {
 
         dialer.send(net2.pubkey, send_payload_p1);
 
-        receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
-        receiveOnlyTimeout(1.seconds, &dialer.on_aio_task, &listener.on_recv);
+        receiveOnlyTimeout(1.seconds, &dialer.on_send, &listener.on_recv);
+        receiveOnlyTimeout(1.seconds, &dialer.on_send, &listener.on_recv);
 
         assert(listener.peers.length == 1);
     }
@@ -444,8 +440,20 @@ unittest {
         Buffer send_payload_p2 = HiRPC(net2).action("manythanks").serialize;
         listener.send(net1.pubkey, send_payload_p2);
 
-        receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_aio_task);
-        receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_aio_task);
+        receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_send);
+        receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_send);
+    }
+
+    {
+        listener.recv_all_ready();
+        Buffer send_payload_p1 = HiRPC(net1).action("manythanks").serialize;
+
+        dialer.send(net2.pubkey, send_payload_p1);
+
+        receiveOnlyTimeout(1.seconds, &dialer.on_send, &listener.on_recv);
+        receiveOnlyTimeout(1.seconds, &dialer.on_send, &listener.on_recv);
+
+        assert(listener.peers.length == 1);
     }
 }
 
@@ -453,6 +461,7 @@ unittest {
 struct NodeInterfaceService_ {
     NodeInterfaceOptions opts;
     const(SecureNet) net;
+    const(HiRPC) hirpc;
     ActorHandle receive_handle;
 
     PeerMgr p2p;
@@ -461,6 +470,7 @@ struct NodeInterfaceService_ {
     this(immutable(NodeInterfaceOptions) opts, shared(StdSecureNet) shared_net, string message_handler_task) {
         this.opts = opts;
         this.net = new StdSecureNet(shared_net);
+        this.hirpc = HiRPC(this.net);
         this.receive_handle = ActorHandle(message_handler_task);
         this.p2p = PeerMgr(this.net, opts.node_address);
     }
@@ -470,6 +480,7 @@ struct NodeInterfaceService_ {
     Document[Pubkey] msg_queue;
 
     void node_send(NodeSend, Pubkey channel, Document payload) {
+        debug(nodeinterface) log("%s %s", __FUNCTION__, HiRPC(null).receive(payload).method.name);
         p2p.isActive(channel);
         if (p2p.isActive(channel)) {
             // TODO: check if this peer is already doing something
@@ -483,6 +494,7 @@ struct NodeInterfaceService_ {
     }
 
     void on_dial(NodeDial m, int id) {
+        debug(nodeinterface) log(__FUNCTION__);
         Pubkey channel = p2p.dialers[id].pkey;
 
         Document payload = msg_queue[channel];
@@ -496,28 +508,56 @@ struct NodeInterfaceService_ {
     }
 
     void on_accept(NodeAccept m, int id) {
+        debug(nodeinterface) log(__FUNCTION__);
         p2p.on_accept(m, id);
         p2p.all_peers[id].recv();
         p2p.accept(); // Accept a new request
     }
 
-    void on_recv(NodeRecv m, int id, Buffer buf) {
-        p2p.on_recv(m, id, buf);
-        const doc = Document(buf);
+    void on_recv(NodeRecv, int id, Buffer buf) {
+        debug(nodeinterface) log(__FUNCTION__);
+
+        debug(nodeinterface) log("received %s bytes", buf.length);
+
+        assert(buf.length >= 1);
+
+        const(Document) doc = buf;
+
+        if(!doc.isInorder && !doc.empty) {
+            // error
+            return;
+        }
+
+        const hirpcmsg = hirpc.receive(doc);
+        if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
+            // error
+            return;
+        }
+
+        assert(hirpcmsg.pubkey != this.net.pubkey, "Do you really want to send a message to yourself?");
+
+        // Add to the list of known connections
+        p2p.peers.require(hirpcmsg.pubkey, p2p.all_peers[id]);
+
         // Send to hasgraph/epoch_creator
         receive_handle.send(ReceivedWavefront(), doc);
     }
 
-    // On send
-    void on_aio_task(NodeAIOTask m, shared(Peer.State) state) {
-        p2p.on_aio_task(m, state);
+    void on_send(NodeSendDone m, int id) {
+        debug(nodeinterface) log(__FUNCTION__);
+        p2p.on_send(m, id);
+        p2p.all_peers[id].recv; // Be ready to receive next message
+    }
+
+    void on_error(NodeError, NodeErrorCode code, int id, string msg, int _) {
+        log.error("(%s)%s:%s", id, code, msg);
     }
 
     void task() {
         p2p.listen();
         p2p.accept();
 
-        run(&node_send, &on_accept, &on_recv, &on_aio_task, &on_dial);
+        run(&node_send, &on_accept, &on_recv, &on_send, &on_dial, &on_error);
     }
 }
 
