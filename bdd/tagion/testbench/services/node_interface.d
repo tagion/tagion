@@ -9,9 +9,11 @@ import std.stdio;
 import tagion.actor;
 import tagion.services.nodeinterface;
 import tagion.services.messages;
+import tagion.script.namerecords;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureNet;
 import tagion.tools.Basic;
+import tagion.gossip.AddressBook;
 /* import tagion.utils.pretend_safe_concurrency; */
 
 import tagion.testbench.actor.util;
@@ -58,12 +60,16 @@ class PubkeyASendsAMessageToPubkeyB {
         { // A
             immutable opts = NodeInterfaceOptions(node_address: "abstract://nodeinterface_a");
             shared _net = cast(shared(StdSecureNet))(a_net.clone());
-            a_handle = _spawn!NodeInterfaceService_("node_interface_a", opts, _net, thisActor.task_name);
+            immutable nnr = new NetworkNodeRecord(a_net.pubkey, opts.node_address);
+            addressbook.set(nnr);
+            a_handle = _spawn!NodeInterfaceService_("interface_a", opts, _net, thisActor.task_name);
         }
         { // B
             immutable opts = NodeInterfaceOptions(node_address: "abstract://nodeinterface_b");
             shared _net = cast(shared(StdSecureNet))(b_net.clone());
-            b_handle = _spawn!NodeInterfaceService_("node_interface_b", opts, _net, thisActor.task_name);
+            immutable nnr = new NetworkNodeRecord(b_net.pubkey, opts.node_address);
+            addressbook.set(nnr);
+            b_handle = _spawn!NodeInterfaceService_("interface_b", opts, _net, thisActor.task_name);
         }
 
         check(waitforChildren(Ctrl.ALIVE), "No all node_interfaces became alive");
@@ -81,7 +87,7 @@ class PubkeyASendsAMessageToPubkeyB {
 
     @Then("B should receive the message")
     Document message() {
-        receiveOnlyTimeout((ReceivedWavefront _, Document doc) { writeln("received ", doc.toPretty);});
+        receiveOnlyTimeout((ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
 
         /* receive_handle.send(ReceivedWavefront(), doc); */
 

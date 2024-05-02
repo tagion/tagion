@@ -259,7 +259,7 @@
     "node_interface": {
       "args": [],
       "envs": {},
-      "stages": ["node_interface"],
+      "stages": ["node_interface", "commit"],
       "timeout": 0.0
     }
   }

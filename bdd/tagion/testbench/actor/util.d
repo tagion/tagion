@@ -65,10 +65,12 @@ void receiveOnlyTimeout(Args...)(Args handlers, Duration dur = 1.seconds)
     bool received = receiveTimeout(dur, 
             handlers,
             (Variant var) @trusted {
-                throw new Exception(format("Unknown msg: %s", var));
+                throw new MessageMismatch(format("Unknown msg: %s", var));
             }
         );
-    assert(received, "Timed out");
+    if(!received) {
+        throw new MessageTimeout("Timed out");
+    }
 }
 
 import std.typecons : Tuple;

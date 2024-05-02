@@ -340,8 +340,8 @@ struct PeerMgr {
 
         assert(buf.length > 1);
 
-        /* imported!"std.stdio".writefln("received %s bytes %s", buf.length, buf); */
         Document doc = buf;
+        /* imported!"std.stdio".writefln("received %s bytes %s", buf.length, doc.toPretty); */
 
         if(!doc.isInorder && !doc.empty) {
             // error
@@ -470,7 +470,6 @@ struct NodeInterfaceService_ {
     Document[Pubkey] msg_queue;
 
     void node_send(NodeSend, Pubkey channel, Document payload) {
-        log(__FUNCTION__);
         p2p.isActive(channel);
         if (p2p.isActive(channel)) {
             // TODO: check if this peer is already doing something
@@ -484,7 +483,6 @@ struct NodeInterfaceService_ {
     }
 
     void on_dial(NodeDial m, int id) {
-        log(__FUNCTION__);
         Pubkey channel = p2p.dialers[id].pkey;
 
         Document payload = msg_queue[channel];
@@ -498,13 +496,12 @@ struct NodeInterfaceService_ {
     }
 
     void on_accept(NodeAccept m, int id) {
-        log(__FUNCTION__);
         p2p.on_accept(m, id);
         p2p.all_peers[id].recv();
+        p2p.accept(); // Accept a new request
     }
 
     void on_recv(NodeRecv m, int id, Buffer buf) {
-        log(__FUNCTION__);
         p2p.on_recv(m, id, buf);
         const doc = Document(buf);
         // Send to hasgraph/epoch_creator
@@ -513,12 +510,12 @@ struct NodeInterfaceService_ {
 
     // On send
     void on_aio_task(NodeAIOTask m, shared(Peer.State) state) {
-        log(__FUNCTION__);
         p2p.on_aio_task(m, state);
     }
 
     void task() {
         p2p.listen();
+        p2p.accept();
 
         run(&node_send, &on_accept, &on_recv, &on_aio_task, &on_dial);
     }
@@ -618,7 +615,7 @@ struct NodeInterfaceService {
 
 void thread_attachThis() @trusted {
     import core.thread : thread_attachThis;
-    thread_attachThis();
+    /* thread_attachThis(); */
 }
 void fail(string owner_task, Throwable t) nothrow {
     try {
@@ -637,11 +634,11 @@ void node_error(string owner_task, NodeErrorCode code, int id, string msg = "", 
 
 mixin template NodeHelpers() {
     alias This = typeof(this);
-    private void* self () @trusted nothrow {
+    private void* self () @trusted @nogc nothrow {
         return cast(void*)&this;
     }
 
-    private static This* self(void* ctx) @trusted nothrow {
+    private static This* self(void* ctx) @trusted @nogc nothrow {
         This* _this = cast(This*)ctx;
         assert(_this !is null, "did not get this* through the ctx");
         return _this;
