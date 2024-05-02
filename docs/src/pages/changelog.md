@@ -160,7 +160,7 @@ For years we have had problems with booting the hashgraph in a asynchronous way 
 The initial mode1 network boot succeeded this week. Lots of work have been going into cleaning up the interfaces and making the new `NNGGossipnet`, and together with the above change regarding async booting the mode1, network can now successfully start and produce epochs.
 You are even able to shutdown various nodes and the graph will continue running and produce epochs as long as 2/3 of the nodes are still online.
 
-See more information about different modes [here](/docs/architecture/Network_Modes).
+See more information about different modes [here](/docs/architecture/network_modes).
 
 **TVM standard library (Tauon)**
 We have begun work on the standard library for Tauon ( *named after the elementary particle [tau/tauon](https://en.wikipedia.org/wiki/Tau_(particle))*). The thing that makes the Tauon difficult to do is that is has to be executable from WASM which means most of DRuntime is not supported. We are therefore working on adding / removing features from druntime until that we are able to compile all functionality that we would like. Currently we are as an example able to run the following example in WASM/WASI:
