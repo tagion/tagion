@@ -228,7 +228,8 @@ struct Wallet(Net : SecureNet) {
             collected_bills.length = 0;
             const amount_to_collect = amount_to_pay + (-1 * (amount_remainder)) + fees;
             const can_pay = collect_bills(amount_to_collect, collected_bills);
-            check(collected_bills.length == previous_bill_count || collected_bills.length == 0, "unable to pay");
+            check(collected_bills.length != previous_bill_count, "unable to pay");
+            check(collected_bills.length != 0, "unable to pay");
             check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN",
                     amount_to_pay.value,
                     available_balance.value));
@@ -289,6 +290,9 @@ struct Wallet(Net : SecureNet) {
      */
     void deriveNewPubkey() {
         account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
+
+        auto pkey = _net.derivePubkey(account.derive_state);
+        account.derivers[pkey] = account.derive_state;
     }
 
     /**
@@ -489,15 +493,26 @@ struct Wallet(Net : SecureNet) {
         return true;
     }
 
+    version(unittest) {
+        TagionBill addBill(TagionCurrency amount) {
+            auto bill_to_add = requestBill(amount, getCurrentPubkey);
+            account.bills ~= bill_to_add;
+            account.remove_requested_by_hash(_net.dartIndex(bill_to_add));
+            account.remove_invoice_by_pkey(bill_to_add.owner);
+            return bill_to_add;
+        }
+    }
 }
 
+
+version(unittest) {
+    import tagion.crypto.SecureNet;
+    alias SimpleWallet = Wallet!StdSecureNet;
+}
 
 
 /// check pubkey derivation
 unittest {
-
-    import tagion.crypto.SecureNet;
-    alias SimpleWallet = Wallet!StdSecureNet;
 
     SimpleWallet wallet1;
     wallet1.createWallet("wowo wowo", "1234");
@@ -516,7 +531,24 @@ unittest {
     wallet_copy.login("1234");
 
     assert(new_pkey == wallet_copy.getCurrentPubkey, "Should be the same after new login");
+}
+
+/// add some bills
+unittest {
+    // /// create a wallet
+    SimpleWallet wallet1;
+    SimpleWallet wallet2;
+
+    wallet1.createWallet("wowo wowo", "1234");
+    wallet2.createWallet("wowo loko", "2234");
+
+    auto bill = wallet1.addBill(1000.TGN);
+
+    // wallet 1 pays to wallet2 pkey;
+    auto bill_to_pay = requestBill(500.TGN, wallet2.getCurrentPubkey);
+
+    TagionCurrency fees;
+    const signed_contract = wallet1.createPayment([bill_to_pay], fees);
 
 
-    
 }
