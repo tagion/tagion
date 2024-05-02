@@ -493,7 +493,7 @@ struct Wallet(Net : SecureNet) {
 
 
 
-// create wallet
+/// check pubkey derivation
 unittest {
 
     import tagion.crypto.SecureNet;
@@ -502,7 +502,6 @@ unittest {
     SimpleWallet wallet1;
     wallet1.createWallet("wowo wowo", "1234");
 
-
     const current_pkey = wallet1.getCurrentPubkey;
     wallet1.deriveNewPubkey;
     const new_pkey = wallet1.getCurrentPubkey;
@@ -510,9 +509,14 @@ unittest {
 
     assert(current_pkey != new_pkey, "did not derive new pkey");
     assert(new_pkey == same_pkey, "should be the same on call without derivation");
-    
+
+    /// open the same wallet login and check keys
+    SimpleWallet wallet_copy;
+    wallet_copy.readWallet(wallet1._pin, wallet1._wallet, wallet1.account);
+    wallet_copy.login("1234");
+
+    assert(new_pkey == wallet_copy.getCurrentPubkey, "Should be the same after new login");
+
 
     
-    
-
 }
