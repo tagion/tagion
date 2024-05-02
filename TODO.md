@@ -18,6 +18,8 @@ Description: After very many epochs a consensus bug is incurred where the epochs
 - [] Investigate Youngest Son Ancestor impl.
 - [] profit?
 
+### Wallet 
+Description: simplify the wallet logic so that there is only one way to do everything
 
 ### Hashgraph monitor updates
 Tasks: 
