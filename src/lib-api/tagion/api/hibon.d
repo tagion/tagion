@@ -28,15 +28,15 @@ struct HiBONT {
  * Returns: ErrorCode
  */
 int tagion_hibon_create(HiBONT* instance) {
-    writefln("CALLING hibon");
+    // writefln("CALLING hibon");
     try {
         if (instance is null) {
-            writefln("instance is null");
+    //         writefln("instance is null");
             return ErrorCode.error;
         }
         instance.hibon = cast(void*) new HiBON;
         instance.magic_byte = MAGIC_HIBON;
-        writefln("created hibon");
+    //     writefln("created hibon");
     }
     catch (Exception e) {
         last_error = e;
