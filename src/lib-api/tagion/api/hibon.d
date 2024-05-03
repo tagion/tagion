@@ -51,6 +51,43 @@ unittest {
     assert(rt == ErrorCode.none, "could not create hibon");
 }
 
+int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, size_t* str_len) {
+    import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBONtoText;
+    import tagion.api.document : DocumentTextFormat;
+
+    try {
+        const fmt = cast(DocumentTextFormat) text_format;
+
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            return ErrorCode.exception;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+
+        string text;
+        with (DocumentTextFormat) {
+            switch(fmt) {
+                // case JSON:
+                //     text = h.toJSON.toString; 
+                //     break;
+                case PRETTYJSON:
+                    text = h.toPretty;
+                    break;
+                default:
+                    return ErrorCode.error;
+            }
+        }
+        *str = cast(char*) &text[0];
+        *str_len = text.length;
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+
 /** 
  * Insert string into hibon
  * Params:

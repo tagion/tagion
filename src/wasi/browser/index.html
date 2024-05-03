@@ -1,5 +1,42 @@
+<!-- <html> -->
+
+<!-- <body> -->
+<!-- <script src="app.js" type="module"></script> -->
+<!-- </body> -->
+
+<!-- </html> -->
 <html>
-	<body>
-		<script src="app.js" type="module"></script>
-	</body>
+
+<body>
+	<script type="module">
+		import {Wasi} from "./wasi.js";
+		import {HiBON} from "./hibon.js";
+		(async () => {
+
+			const wasi = new Wasi({
+				stdin: "stdio",
+				env: {
+					FOO: "FOO",
+					BAR: "BAR"
+				},
+				args: ["--my-arg"]
+			});
+
+			const {instance} = await WebAssembly.instantiateStreaming(fetch("tauon_test.wasm"), {
+				"wasi_snapshot_preview1": wasi
+			});
+			wasi.instance = instance;
+
+			let h = new HiBON(instance, 1);
+			//h.addString("wowo", "hahah");
+			//h.toPretty(); 
+
+
+
+		})();
+
+
+	</script>
+</body>
+
 </html>
