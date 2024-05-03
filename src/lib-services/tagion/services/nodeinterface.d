@@ -127,7 +127,7 @@ struct Peer {
     // taskname is used inside the nng callback to know which thread to notify
     string owner_task;
     string address;
-    shared State state = State.ready;
+    State state;
 
     nng_stream* socket;
     nng_aio* aio;
@@ -178,11 +178,11 @@ struct Peer {
                     Buffer buf = _this.sendbuf[0..msg_size].idup;
                     check(buf !is null, "Got invalid buf output");
 
-                    _this.state.atomicStore(State.ready);
+                    /* _this.state.atomicStore(State.ready); */
                     ActorHandle(_this.owner_task).send(NodeRecv(), _this.id, buf);
                     break;
                 default:
-                    _this.state.atomicStore(State.ready);
+                    /* _this.state.atomicStore(State.ready); */
                     ActorHandle(_this.owner_task).send(NodeSendDone(), _this.id);
                     break;
             }
@@ -207,7 +207,7 @@ struct Peer {
     /// Receive a buffer from the peer
     void recv() {
         assert(socket !is null, "This peer is not connected");
-        /* check(state = State.stale); */
+        check(state is State.ready, "Can not call recv when not ready");
         state = State.receive;
         nng_stream_recv(socket, aio);
     }
@@ -357,8 +357,10 @@ struct PeerMgr {
             return;
         }
 
+        Peer* peer = all_peers[id];
+        peer.state = Peer.State.ready;
         // Add to the list of known connections
-        peers.require(hirpcmsg.pubkey, all_peers[id]);
+        peers.require(hirpcmsg.pubkey, peer);
     }
 
     // A connection was established by dial
@@ -387,6 +389,7 @@ struct PeerMgr {
 
     // A send task was completed
     void on_send(NodeSendDone, int id) {
+        all_peers[id].state = Peer.State.ready;
     }
 
     mixin NodeHelpers;
@@ -541,8 +544,10 @@ struct NodeInterfaceService_ {
             return;
         }
 
+        Peer* peer = p2p.all_peers[id];
+        peer.state = Peer.State.ready;
         // Add to the list of known connections
-        p2p.peers.require(hirpcmsg.pubkey, p2p.all_peers[id]);
+        p2p.peers.require(hirpcmsg.pubkey, peer);
 
         // Send to hasgraph/epoch_creator
         receive_handle.send(ReceivedWavefront(), doc);
