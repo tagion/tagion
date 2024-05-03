@@ -6,6 +6,7 @@ import core.stdc.stdint;
 import tagion.hibon.Document;
 import tagion.utils.StdTime;
 import tagion.hibon.BigNumber;
+        import std.stdio;
 
 extern (C):
 version (unittest) {
@@ -27,12 +28,15 @@ struct HiBONT {
  * Returns: ErrorCode
  */
 int tagion_hibon_create(HiBONT* instance) {
+    writefln("CALLING hibon");
     try {
         if (instance is null) {
+            writefln("instance is null");
             return ErrorCode.error;
         }
         instance.hibon = cast(void*) new HiBON;
         instance.magic_byte = MAGIC_HIBON;
+        writefln("created hibon");
     }
     catch (Exception e) {
         last_error = e;
