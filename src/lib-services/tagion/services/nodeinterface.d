@@ -348,7 +348,7 @@ struct PeerMgr {
         }
 
         const hirpcmsg = hirpc.receive(doc);
-        if(hirpcmsg.pubkey != this.net.pubkey) {
+        if(hirpcmsg.pubkey == this.net.pubkey) {
             // "Do you really want to send a message to yourself?");
             return;
         }
@@ -532,7 +532,7 @@ struct NodeInterfaceService_ {
         }
 
         const hirpcmsg = hirpc.receive(doc);
-        if(hirpcmsg.pubkey != this.net.pubkey) {
+        if(hirpcmsg.pubkey == this.net.pubkey) {
             // "Do you really want to send a message to yourself?");
             return;
         }
