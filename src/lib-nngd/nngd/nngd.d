@@ -1460,7 +1460,7 @@ struct WebData {
         json = null;
     }
 
-    string toString() nothrow {
+    string toString() nothrow const {
         try{
         return format(`
         <Webdata>

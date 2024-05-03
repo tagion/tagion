@@ -12,6 +12,7 @@ import std.stdio;
 
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
+import tagion.hibon.HiBONRecord;
 import tagion.tools.Basic;
 import tagion.testbench.testtools;
 import tagion.behaviour.BehaviourException : check;
@@ -210,23 +211,44 @@ class ListFiltering {
 @safe @Scenario("List filtering mixed",
     [])
 class ListFilteringMixed {
+    string input_path;
+    string expected_path;
+    string output_path;
 
     this(string module_path) {
+        mkdirRecurse(module_path);
+
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.expected_path = buildPath(module_path, "exp.hibon");
+        this.output_path = buildPath(module_path, "out.hibon");
     }
 
     @Given("initial hibon file with several records")
     Document records() {
-        return Document();
+        auto hibon1 = new HiBON;
+        hibon1["name"] = 42;
+        auto hibon2 = new HiBON;
+        hibon2["anothername"] = 84;
+        auto hibon3 = new HiBON;
+        hibon3["name"] = 126;
+
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+        writeHiBONs(this.expected_path, [hibon3]);
+        return result_ok;
     }
 
     @When("hirep filter items in list mixed with name specified")
     Document specified() {
-        return Document();
+        string command = tagionTool ~ " " ~ ToolName.hirep ~ " --name name --list 1..3";
+        executeSpawnShell(command, this.input_path, this.output_path);
+
+        return result_ok;
     }
 
     @Then("filtered records should match both filters")
     Document filters() {
-        return Document();
+        check(filesEqual(this.output_path, this.expected_path), "Output should be as expected");
+        return result_ok;
     }
 
 }
@@ -294,47 +316,98 @@ class TestOutputAndStdout {
 @safe @Scenario("Test name",
     [])
 class TestName {
+    string input_path;
+    string expected_path;
+    string output_path;
 
     this(string module_path) {
+        mkdirRecurse(module_path);
+
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.expected_path = buildPath(module_path, "exp.hibon");
+        this.output_path = buildPath(module_path, "out.hibon");
     }
 
     @Given("initial hibon file with several records with name")
     Document withName() {
-        return Document();
+        auto hibon1 = new HiBON;
+        hibon1["name"] = 42;
+        auto hibon2 = new HiBON;
+        hibon2["anothername"] = 84;
+        auto hibon3 = new HiBON;
+        hibon3["name"] = 126;
+
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+        writeHiBONs(this.expected_path, [hibon1, hibon3]);
+        return result_ok;
     }
 
     @When("hirep run with name specified")
     Document nameSpecified() {
-        return Document();
+        string command = tagionTool ~ " " ~ ToolName.hirep ~ " --name name";
+        executeSpawnShell(command, this.input_path, this.output_path);
+
+        return result_ok;
     }
 
     @Then("the output should contain only records with given name")
     Document givenName() {
-        return Document();
+        check(filesEqual(this.output_path, this.expected_path), "Output should be as expected");
+        return result_ok;
     }
-
 }
 
 @safe @Scenario("Test recordtype",
     [])
 class TestRecordtype {
+    string input_path;
+    string expected_path;
+    string output_path;
+
+    enum record_type = "TestRecordType";
 
     this(string module_path) {
+        mkdirRecurse(module_path);
+
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.expected_path = buildPath(module_path, "exp.hibon");
+        this.output_path = buildPath(module_path, "out.hibon");
     }
 
     @Given("initial hibon file with several records with recordtype")
     Document withRecordtype() {
-        return Document();
+        @safe @recordType(record_type) static struct TestDoc {
+            int x;
+            mixin HiBONRecord!(q{
+            this(int x) {
+                this.x=x;
+            }
+        });
+        }
+
+        auto hibon1 = new HiBON;
+        hibon1["a"] = 42;
+        auto hibon2 = new HiBON;
+        hibon2["b"] = 84;
+        auto hibon3 = new TestDoc(168).toHiBON;
+
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+        writeHiBONs(this.expected_path, [hibon3]);
+        return result_ok;
     }
 
     @When("hirep run with recordtype specified")
     Document recordtypeSpecified() {
-        return Document();
+        string command = tagionTool ~ " " ~ ToolName.hirep ~ " --recordtype " ~ record_type;
+        executeSpawnShell(command, this.input_path, this.output_path);
+
+        return result_ok;
     }
 
     @Then("the output should contain only records with given recordtype")
     Document givenRecordtype() {
-        return Document();
+        check(filesEqual(this.output_path, this.expected_path), "Output should be as expected");
+        return result_ok;
     }
 
 }
@@ -348,17 +421,17 @@ class TestType {
 
     @Given("initial hibon file with several records with type")
     Document withType() {
-        return Document();
+        return result_ok;
     }
 
     @When("hirep run with type specified")
     Document typeSpecified() {
-        return Document();
+        return result_ok;
     }
 
     @Then("the output should contain only records with given type")
     Document givenType() {
-        return Document();
+        return result_ok;
     }
 
 }
@@ -372,41 +445,78 @@ class TestNameAndType {
 
     @Given("initial hibon file with several records with name and type")
     Document type() {
-        return Document();
+        return result_ok;
     }
 
     @When("hirep run with name and type specified")
     Document specified() {
-        return Document();
+        return result_ok;
     }
 
     @Then("filtered records should match both filters")
     Document filters() {
-        return Document();
+        return result_ok;
     }
-
 }
 
 @safe @Scenario("Test recursive",
     [])
 class TestRecursive {
+    string input_path;
+    string expected_path;
+    string output_path;
 
     this(string module_path) {
+        mkdirRecurse(module_path);
+
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.expected_path = buildPath(module_path, "exp.hibon");
+        this.output_path = buildPath(module_path, "out.hibon");
     }
 
     @Given("initial hibon file with records with subhibon")
     Document subhibon() {
-        return Document();
+        @safe static struct InnerDoc {
+            int x;
+            mixin HiBONRecord!(q{
+            this(int x) {
+                this.x=x;
+            }
+        });
+        }
+
+        @safe static struct OuterDoc {
+            InnerDoc subhibon;
+            mixin HiBONRecord!(q{
+            this(InnerDoc s) {
+                this.subhibon = s;
+            }
+        });
+        }
+
+        auto hibon1 = new HiBON;
+        hibon1["a"] = 42;
+        auto hibon2 = new HiBON;
+        hibon2["x"] = 84;
+        auto hibon3 = new OuterDoc(InnerDoc(168)).toHiBON;
+
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+        writeHiBONs(this.expected_path, [hibon2, hibon3]);
+        return result_ok;
     }
 
     @When("hirep run with args specified")
     Document specified() {
-        return Document();
+        string command = tagionTool ~ " " ~ ToolName.hirep ~ " --name x -R";
+        executeSpawnShell(command, this.input_path, this.output_path);
+
+        return result_ok;
     }
 
     @Then("the output should contain both records with match in top level and nested levels")
     Document levels() {
-        return Document();
+        check(filesEqual(this.output_path, this.expected_path), "Output should be as expected");
+        return result_ok;
     }
 
 }
@@ -414,25 +524,63 @@ class TestRecursive {
 @safe @Scenario("Test recursive with not",
     [])
 class TestRecursiveWithNot {
+    string input_path;
+    string expected_path;
+    string output_path;
 
     this(string module_path) {
+        mkdirRecurse(module_path);
+
+        this.input_path = buildPath(module_path, "in.hibon");
+        this.expected_path = buildPath(module_path, "exp.hibon");
+        this.output_path = buildPath(module_path, "out.hibon");
     }
 
     @Given("initial hibon file with records with subhibon")
     Document subhibon() {
-        return Document();
+        @safe static struct InnerDoc {
+            int x;
+            mixin HiBONRecord!(q{
+            this(int x) {
+                this.x=x;
+            }
+        });
+        }
+
+        @safe static struct OuterDoc {
+            InnerDoc subhibon;
+            mixin HiBONRecord!(q{
+            this(InnerDoc s) {
+                this.subhibon = s;
+            }
+        });
+        }
+
+        auto hibon1 = new HiBON;
+        hibon1["a"] = 42;
+        auto hibon2 = new HiBON;
+        hibon2["x"] = 84;
+        auto hibon3 = new OuterDoc(InnerDoc(168)).toHiBON;
+
+        writeHiBONs(this.input_path, [hibon1, hibon2, hibon3]);
+        writeHiBONs(this.expected_path, [hibon1]);
+        return result_ok;
     }
 
     @When("hirep run with args specified")
     Document specified() {
-        return Document();
+        string command = tagionTool ~ " " ~ ToolName.hirep ~ " --name x --not -R";
+        executeSpawnShell(command, this.input_path, this.output_path);
+
+        return result_ok;
+
     }
 
     @Then("the output should filter out both records with match in top level and nested levels")
     Document levels() {
-        return Document();
+        check(filesEqual(this.output_path, this.expected_path), "Output should be as expected");
+        return result_ok;
     }
-
 }
 
 @safe @Scenario("Test subhibon",

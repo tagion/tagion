@@ -197,7 +197,7 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
             // Dummy empty
         }
 
-        const(Pubkey) select_channel(ChannelFilter channel_filter) {
+        Pubkey select_channel(ChannelFilter channel_filter) {
             auto send_channels = channel_queues
                 .byKey
                 .filter!(k => online_states[k])
@@ -213,7 +213,7 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
             return Pubkey.init;
         }
 
-        const(Pubkey) gossip(
+        Pubkey gossip(
                 ChannelFilter channel_filter,
                 SenderCallBack sender) {
             const send_channel = select_channel(channel_filter);

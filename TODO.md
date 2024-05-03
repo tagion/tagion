@@ -18,6 +18,8 @@ Description: After very many epochs a consensus bug is incurred where the epochs
 - [] Investigate Youngest Son Ancestor impl.
 - [] profit?
 
+### Wallet 
+Description: simplify the wallet logic so that there is only one way to do everything
 
 ### Hashgraph monitor updates
 Tasks: 
@@ -141,6 +143,14 @@ Implement the interface from D to C of libwasmer.
 Initial TVM cli tool.
 
 Assignee: cbr
+
+### Types filtering in hirep 
+Description: hirep have --types arg, but it's not implemented yet.
+
+- [] - Implement --type filtering in hirep.
+- [] - Write bdd test for this feature
+
+Assignee: ib
 
 ## Template
 ### Task Title

@@ -44,9 +44,9 @@ import tagion.utils.StdTime;
  * Reads are extract optional data for the smart contract
  */
 @recordType("SMC") struct Contract {
-    @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
-    @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
-    @label("$run") Document script; /// the Smart contract to be executed
+    @label(StdNames.inputs) const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
+    @label(StdNames.reads) @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
+    @label(StdNames.script) Document script; /// the Smart contract to be executed
     bool verify() const pure nothrow @nogc {
         return (inputs.length > 0);
     }
@@ -71,8 +71,8 @@ import tagion.utils.StdTime;
  *  Includes the contract to be executed and the signatures of all inputs sorted by the dartIndex of the inputs
  */
 @recordType("SSC") struct SignedContract {
-    @label("$signs") const(Signature)[] signs; /// Signature of all inputs
-    @label("$contract") Contract contract; /// The contract must signed by all inputs
+    @label(StdNames.signs) const(Signature)[] signs; /// Signature of all inputs
+    @label(StdNames.contract) Contract contract; /// The contract must signed by all inputs
     mixin HiBONRecord!(
         q{
                 this(const(Signature)[] signs, Contract contract) pure nothrow {
@@ -260,7 +260,7 @@ struct Epoch {
     @label(StdNames.time) sdt_t time; /// Time stamp
     @label(StdNames.bullseye) Fingerprint bullseye; /// bullseye of the DART at this epoch
     @label(StdNames.previous) Fingerprint previous; /// bullseye of the DART at the previous epoch
-    @label("$signs") const(Signature)[] signs; /// Signature of all inputs
+    @label(StdNames.signs) const(Signature)[] signs; /// Signature of all inputs
     @optional @(filter.Initialized) Pubkey[] active; /// Nodes which became active this epoch
     // Would inactive be more appropriate or activated+deactivated
     @optional @(filter.Initialized) Pubkey[] deactive; /// The nodes which deactivated this epoch
@@ -332,7 +332,7 @@ struct TagionGlobals {
  */
 @recordType("$@Vote")
 struct ConsensusVoting {
-    long epoch; /// The epoch being voted on
+    @label(StdNames.epoch_number) long epoch; /// The epoch being voted on
     @label(StdNames.owner) Pubkey owner; /// The signee
     @label(StdNames.sign) Signature signed_bullseye; /// Signature of the bullseye
 

@@ -292,8 +292,7 @@ struct ActorHandle {
 }
 
 ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
-        if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
-
+if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
@@ -339,6 +338,10 @@ ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe 
 ActorHandle _spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     try {
+        static if(!__traits(compiles, A(args))) {
+            A(args); // error constructor A() cannot be called with Args
+        }
+
         Tid tid;
         tid = concurrency.spawn((string name, Args args) @trusted nothrow{
             thisActor.task_name = name;

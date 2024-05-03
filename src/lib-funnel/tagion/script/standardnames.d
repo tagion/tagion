@@ -16,10 +16,15 @@ enum StdNames {
     nodekey = "#$node",
     active = "#$active",
     sign = "$sign",
+    signs = "$signs",
     archive_type = "$T",
     archive = "$a",
-    contract = "#contract",
+    hash_contract = "#contract",
+    contract = "$contract",
     msg = "$msg",
+    inputs = "$in",
+    reads = "$read",
+    script = "$run",
 }
 
 enum TagionDomain = "tagion";

@@ -31,7 +31,7 @@ struct TRTArchive {
 @safe:
 @recordType(TYPENAME ~ "trt_contract")
 struct TRTContractArchive {
-    @label(StdNames.contract) DARTIndex contract_hash;
+    @label(StdNames.hash_contract) DARTIndex contract_hash;
     Document contract;
     @label(StdNames.epoch_number) long epoch;
 

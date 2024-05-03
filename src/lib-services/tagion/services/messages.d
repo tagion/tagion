@@ -33,7 +33,7 @@ alias NodeSend = Msg!"node_send";
 /// [FROM: Node Interface] HiRPC from other node
 alias NodeRecv = Msg!"node_recv";
 // Basic node aio task completed
-alias NodeAIOTask = Msg!"node_aio_task";
+alias NodeSendDone = Msg!"node_send_complete";
 /// A Dial task was completed
 alias NodeDial = Msg!"node_dial";
 /// An accept task was completed

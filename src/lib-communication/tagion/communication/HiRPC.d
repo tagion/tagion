@@ -246,7 +246,6 @@ struct HiRPC {
                 message = doc[messageName].get!Document;
                 signature = doc.hasMember(signName) ? doc[signName].get!(Signature) : Signature.init;
                 pubkey = doc.hasMember(pubkeyName) ? doc[pubkeyName].get!(Pubkey) : pkey;
-                Pubkey used_pubkey;
                 static SignedState verifySignature(const SecureNet net, const Document doc, const Signature sgn, const Pubkey pkey) {
                     if (sgn.length) {
                         //immutable fingerprint=net.hashOf(msg);
