@@ -348,7 +348,10 @@ struct PeerMgr {
         }
 
         const hirpcmsg = hirpc.receive(doc);
-        assert(hirpcmsg.pubkey != this.net.pubkey, "Do you really want to send a message to yourself?");
+        if(hirpcmsg.pubkey != this.net.pubkey) {
+            // "Do you really want to send a message to yourself?");
+            return;
+        }
         if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
             // error
             return;
@@ -529,12 +532,14 @@ struct NodeInterfaceService_ {
         }
 
         const hirpcmsg = hirpc.receive(doc);
+        if(hirpcmsg.pubkey != this.net.pubkey) {
+            // "Do you really want to send a message to yourself?");
+            return;
+        }
         if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
             // error
             return;
         }
-
-        assert(hirpcmsg.pubkey != this.net.pubkey, "Do you really want to send a message to yourself?");
 
         // Add to the list of known connections
         p2p.peers.require(hirpcmsg.pubkey, p2p.all_peers[id]);
