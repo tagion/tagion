@@ -660,6 +660,7 @@ struct NodeInterfaceService {
 
 void thread_attachThis() @trusted {
     import core.thread : thread_attachThis;
+    pragma(msg, "FIXME(lr): find out why thread_attachThis causes issues");
     /* thread_attachThis(); */
 }
 void fail(string owner_task, Throwable t) nothrow {
