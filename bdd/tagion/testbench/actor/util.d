@@ -60,7 +60,7 @@ T receiveOnlyTimeout(T)(Duration d = 1.seconds)
 }
 
 
-void receiveOnlyTimeout(Args...)(Args handlers, Duration dur = 1.seconds)
+void receiveOnlyTimeout(Args...)(Duration dur = 1.seconds, Args handlers)
 @safe if(allSatisfy!(isCallable, Args) && allSatisfy!(isSafe, Args)) {
     bool received = receiveTimeout(dur, 
             handlers,

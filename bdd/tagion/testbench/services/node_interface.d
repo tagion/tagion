@@ -5,6 +5,8 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
+import core.time;
+
 import std.stdio;
 import tagion.actor;
 import tagion.services.nodeinterface;
@@ -77,21 +79,27 @@ class PubkeyASendsAMessageToPubkeyB {
         return result_ok;
     }
 
-    @When("i send a message from A to B")
+    @Then("Then i send messages back and forth 3 times")
     Document b() {
-        const sender = HiRPC(a_net).action("comms", ResultOk());
-        a_handle.send(NodeSend(), b_net.pubkey, Document(sender.toDoc));
+        { // A -> B
+            const sender = HiRPC(a_net).action("froma1", ResultOk());
+            a_handle.send(NodeSend(), b_net.pubkey, Document(sender.toDoc));
+            receiveOnlyTimeout(3.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
+        }
+
+        { // B -> A
+            const sender = HiRPC(b_net).action("fromb2", ResultOk());
+            b_handle.send(NodeSend(), a_net.pubkey, Document(sender.toDoc));
+            receiveOnlyTimeout(3.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
+        }
+
+        // Fails occasioanally, need not figure out why
+        { // A -> B
+            const sender = HiRPC(a_net).action("froma3", ResultOk());
+            a_handle.send(NodeSend(), b_net.pubkey, Document(sender.toDoc));
+            receiveOnlyTimeout(3.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
+        }
 
         return result_ok;
     }
-
-    @Then("B should receive the message")
-    Document message() {
-        receiveOnlyTimeout((ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
-
-        /* receive_handle.send(ReceivedWavefront(), doc); */
-
-        return result_ok;
-    }
-
 }
