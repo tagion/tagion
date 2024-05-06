@@ -21,6 +21,13 @@ struct HiBONT {
     void* hibon;
 }
 
+
+void* mymalloc(size_t size) {
+    import core.stdc.stdlib;
+    writefln("calling malloc");
+    return malloc(size);
+}
+
 /** 
  * Create new hibon object
  * Params:
@@ -28,7 +35,7 @@ struct HiBONT {
  * Returns: ErrorCode
  */
 int tagion_hibon_create(HiBONT* instance) {
-    // writefln("CALLING hibon");
+    writefln("CALLING hibon");
     try {
         if (instance is null) {
     //         writefln("instance is null");
@@ -36,7 +43,7 @@ int tagion_hibon_create(HiBONT* instance) {
         }
         instance.hibon = cast(void*) new HiBON;
         instance.magic_byte = MAGIC_HIBON;
-    //     writefln("created hibon");
+        writefln("created hibon");
     }
     catch (Exception e) {
         last_error = e;
@@ -499,4 +506,20 @@ unittest {
     testAddFunc!(ulong)(ulong(42), &tagion_hibon_add_uint64);
     testAddFunc!(float)(21.1f, &tagion_hibon_add_float32);
     testAddFunc!(double)(321.312312f, &tagion_hibon_add_float64);
+}
+
+/// malloc test
+unittest {
+    import core.stdc.stdlib;
+
+    void* h = malloc(HiBONT.sizeof);
+
+    int rt = tagion_hibon_create(cast(HiBONT*) h);
+    assert(rt == ErrorCode.none);
+
+    const key = "example_key";
+    const value = "example_value";
+
+    rt = tagion_hibon_add_string(cast(HiBONT*) h, &key[0], key.length, &value[0], value.length); 
+    assert(rt == ErrorCode.none);
 }
