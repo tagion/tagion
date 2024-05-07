@@ -251,6 +251,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         BitMask vote_intermediate;
         vote_intermediate = e.intermediate_seen;
         text.text = (() @trusted => format(vote_fmt ~ ":%d", vote_intermediate, vote_intermediate.count))();
+        text.fill = "lightblue";
         text.pos.y += NODE_CIRCLE_SIZE / 2;
         obuf[20].writefln("%s", text.toString);
         if (e.witness) {
@@ -260,28 +261,6 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             text.pos.y += NODE_CIRCLE_SIZE / 2;
             text.fill = "red";
             obuf[20].writefln("%s", text.toString);
-            version (none) {
-                text.fill = "black";
-                text.text = format("%(%s %)", e.intermediate_event_ids);
-                text.pos = pos;
-                text.pos.x -= NODE_CIRCLE_SIZE * 2;
-                foreach (n, id; e.intermediate_event_ids) {
-                    text.text = format("%2d %d", n, id);
-                    text.pos.y -= NODE_CIRCLE_SIZE / 2;
-                    obuf[20].writefln("%s", text.toString);
-                }
-                //if (e.witness) {
-
-                text.pos.y += NODE_CIRCLE_SIZE / 2;
-                //text.text="Matrix";
-                foreach (i, strong_vector; e.strongly_seen_matrix) {
-                    BitMask bits;
-                    bits = strong_vector;
-                    text.text = (() @trusted => format("%d:" ~ vote_fmt ~ ":%d", i, bits, bits.count))();
-                    text.pos.y += NODE_CIRCLE_SIZE / 2;
-                    obuf[20].writefln("%s", text.toString);
-                }
-            }
         }
         //}
     }
