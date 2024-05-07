@@ -14,9 +14,6 @@ import tagion.communication.HiRPC;
 import tagion.crypto.Types;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
-import tagion.hashgraph._HashGraph;
-
-//import tagion.hashgraph.HashGraph2;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Refinement;
 import tagion.hashgraph.RefinementInterface;
