@@ -7,34 +7,45 @@ export class HiBON {
     console.log("before tagion_hibon_create");
     this.instance.exports.tagion_hibon_create(this.ptr);
   }
-  _allocateEncodedKey(toEncode) {
+  _allocateStr(toEncode) {
     const textEncoder = new TextEncoder();
     const encoded = textEncoder.encode(toEncode);
     console.log("before malloc");
     const ptr = this.instance.exports.mymalloc(encoded.byteLength);
-    return { encoded: encoded, ptr: ptr, len: encoded.byteLength };
-  }
-
-  addString(key, value) {
-    const _key = this._allocateEncodedKey(key);
-    const _value = this._allocateEncodedKey(value);
 
     const memory = new Uint8Array(this.instance.exports.memory.buffer);
-    memory.set(_key.encoded, _key.ptr);
-    memory.set(_value.encoded, _value.ptr);
-
+    memory.set(encoded, ptr);
+    return { encoded: encoded, ptr: ptr, len: encoded.byteLength };
+  }
+  addString(key, value) {
+    const _key = this._allocateStr(key);
+    const _value = this._allocateStr(value);
     const res = this.instance.exports.tagion_hibon_add_string(this.ptr, _key.ptr, _key.len, _value.ptr, _value.len);
-    // TODO: free pointers
-
     console.log("tagion_hibon_add_string returned: ", res);
   }
   addBool(key, value) {
-    const _key = this._allocateEncodedKey(key);
-    const memory = new Uint8Array(this.instance.exports.memory.buffer);
-    memory.set(_key.encoded, _key.ptr);
-
+    const _key = this._allocateStr(key);
     const res = this.instance.exports.tagion_hibon_add_bool(this.ptr, _key.ptr, _key.len, value);
   }
+  addInt32(key, value) {
+    const _key = this._allocateStr(key);
+    const res = this.instance.exports.tagion_hibon_add_int32(this.ptr, _key.ptr, _key.len, value);
+  }
+  // addInt64(key, value) {
+  //   const _key = this._allocateStr(key);
+
+  //   const buffer = new ArrayBuffer(8); // 8 bytes 
+  //   const view = new DataView(buffer);
+  //   view.setBigInt64(0, BigInt(value), true); // TODO: true for little endian what about big endian
+
+  //   // Get the low and high 32-bit parts of the int64_t value
+  //   const lowPart = view.getInt32(0, true); // true for little-endian
+  //   const highPart = view.getInt32(4, true); // true for little-endian
+
+  //   // Call the exported function with the low and high parts
+  //   const res = this.instance.exports.tagion_hibon_add_int64(this.ptr, _key.ptr, _key.len, lowPart, highPart);
+  // }
+
 
   toPretty() {
     const textFormat = 1;

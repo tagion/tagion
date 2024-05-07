@@ -421,6 +421,7 @@ int tagion_hibon_add_bool(const(HiBONT*) h, const char* key, const size_t key_le
 int tagion_hibon_add_int32(const(HiBONT*) h, const char* key, const size_t key_len, int32_t value) {
     return add_T!int32_t(__traits(parameters));
 }
+
 /** 
 * Add int64 to hibon instance
 * Params:
