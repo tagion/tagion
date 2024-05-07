@@ -17,10 +17,11 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : HiBONRecord, isRecord;
 import tagion.hibon.HiBONValid : error_callback;
 import tagion.hibon.HiBONFile : fread, HiBONRange;
-import std.algorithm; 
+import std.algorithm;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
 import tagion.basic.Debug;
+
 static immutable pastel19 = [
     "#fbb4ae", // Light pink
     "#ccebc5", // Light green
@@ -142,7 +143,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         int stroke_width;
 
         string toString() const pure @safe {
-            return format(`<line x1="%s" y1="%s" x2="%s" y2="%s" style="stroke: %s; stroke-width: %s"/>`, 
+            return format(`<line x1="%s" y1="%s" x2="%s" y2="%s" style="stroke: %s; stroke-width: %s"/>`,
                     pos1.x, pos1.y, pos2.x, pos2.y, stroke, stroke_width);
         }
     }
@@ -155,8 +156,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         string text;
 
         string toString() const pure @safe {
-            return format(`<text x="%d" y="%d" text-anchor="%s" dominant-baseline="%s" fill="%s"> %s </text>`, 
-                    pos.x, pos.y,  text_anchor, dominant_baseline, fill, text);
+            return format(`<text x="%d" y="%d" text-anchor="%s" dominant-baseline="%s" fill="%s"> %s </text>`,
+                    pos.x, pos.y, text_anchor, dominant_baseline, fill, text);
 
         }
     }
@@ -165,7 +166,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         return Pos(long(e.node_id) * NODE_INDENT + NODE_INDENT, -(long(e.order * NODE_INDENT) + NODE_INDENT));
     }
 
-    private void drawEdge(ref HeightBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother)  {
+    private void drawEdge(ref HeightBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother) {
 
         // const father_event = events[e.father];
         const ref_pos = getPos(ref_event);
@@ -185,16 +186,18 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
     }
 
     private void node(ref HeightBuffer obuf, ref const EventView e, const bool raw_svg) {
-        const vote_fmt="%"~node_size.to!string~".8s";
+        const vote_fmt = "%" ~ node_size.to!string ~ ".8s";
         const pos = getPos(e);
         max_width = max(pos.x, max_width);
         max_height = max(-pos.y, max_height);
 
         if (e.father !is e.father.init && e.father in events) {
-            drawEdge(obuf, pos, events[e.father], isMother: false);
+            drawEdge(obuf, pos, events[e.father], isMother:
+            false);
         }
         if (e.mother !is e.mother.init && e.mother in events) {
-            drawEdge(obuf, pos, events[e.mother], isMother: true);
+            drawEdge(obuf, pos, events[e.mother], isMother:
+            true);
         }
 
         SVGCircle node_circle;
@@ -220,7 +223,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             node_circle.stroke = "yellow";
             node_circle.stroke_width = 6;
         }
-    
+
         if (!raw_svg) {
             node_circle.classes = "myCircle";
             node_circle.data_info = escapeHtml(e.toPretty);
@@ -233,52 +236,53 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text_anchor = "middle";
         text.dominant_baseline = "middle";
         text.fill = "black";
-        text.text = format("%s:%s", e.round == long.min ? "X" : format("%s", e.round), e.round_received == long.min ? "X" : format("%s", e.round_received));
+        text.text = format("%s:%s", e.round == long.min ? "X" : format("%s", e.round), e.round_received == long.min ? "X" : format(
+                "%s", e.round_received));
         obuf[20].writefln("%s", text.toString);
         //if (e.seen.length) {
-            text.text=format("%d",e.id);
-            text.pos.y+=NODE_CIRCLE_SIZE/2;
-            obuf[20].writefln("%s", text.toString);
-            BitMask vote_mask;
-            vote_mask=e.seen;
-            text.text=(() @trusted => format(vote_fmt~":%d",  vote_mask, vote_mask.count))();
-            text.pos.y+=NODE_CIRCLE_SIZE/2;
-            obuf[20].writefln("%s", text.toString);
-            BitMask vote_intermediate;
-            vote_intermediate=e.intermediate_seen;
-            text.text=(() @trusted => format(vote_fmt~":%d",  vote_intermediate, vote_intermediate.count))();
-            text.pos.y+=NODE_CIRCLE_SIZE/2;
-            obuf[20].writefln("%s", text.toString);
-            if (e.witness) {
+        text.text = format("%d", e.id);
+        text.pos.y += NODE_CIRCLE_SIZE / 2;
+        obuf[20].writefln("%s", text.toString);
+        BitMask vote_mask;
+        vote_mask = e.seen;
+        text.text = (() @trusted => format(vote_fmt ~ ":%d", vote_mask, vote_mask.count))();
+        text.pos.y += NODE_CIRCLE_SIZE / 2;
+        obuf[20].writefln("%s", text.toString);
+        BitMask vote_intermediate;
+        vote_intermediate = e.intermediate_seen;
+        text.text = (() @trusted => format(vote_fmt ~ ":%d", vote_intermediate, vote_intermediate.count))();
+        text.pos.y += NODE_CIRCLE_SIZE / 2;
+        obuf[20].writefln("%s", text.toString);
+        if (e.witness) {
             BitMask seen_strongly;
-            seen_strongly=e.strongly_seen;
-            text.text=(() @trusted => format(vote_fmt~":%d",  seen_strongly, seen_strongly.count))();
-            text.pos.y+=NODE_CIRCLE_SIZE/2;
-            text.fill="red";
+            seen_strongly = e.strongly_seen;
+            text.text = (() @trusted => format(vote_fmt ~ ":%d", seen_strongly, seen_strongly.count))();
+            text.pos.y += NODE_CIRCLE_SIZE / 2;
+            text.fill = "red";
             obuf[20].writefln("%s", text.toString);
-            text.fill="black";
-                text.text=format("%(%s %)", e.intermediate_event_ids);
-                text.pos=pos;
-                text.pos.x-=NODE_CIRCLE_SIZE*2;
-                foreach(n, id; e.intermediate_event_ids) {
-                    text.text=format("%2d %d", n, id);
-                    text.pos.y-=NODE_CIRCLE_SIZE/2;
+            version (none) {
+                text.fill = "black";
+                text.text = format("%(%s %)", e.intermediate_event_ids);
+                text.pos = pos;
+                text.pos.x -= NODE_CIRCLE_SIZE * 2;
+                foreach (n, id; e.intermediate_event_ids) {
+                    text.text = format("%2d %d", n, id);
+                    text.pos.y -= NODE_CIRCLE_SIZE / 2;
                     obuf[20].writefln("%s", text.toString);
                 }
-            }
-            version(none) {
-            //if (e.witness) {
-        
-                text.pos.y+=NODE_CIRCLE_SIZE/2;
+                //if (e.witness) {
+
+                text.pos.y += NODE_CIRCLE_SIZE / 2;
                 //text.text="Matrix";
-                foreach(i, strong_vector; e.strongly_seen_matrix) {
+                foreach (i, strong_vector; e.strongly_seen_matrix) {
                     BitMask bits;
-                    bits=strong_vector;
-                    text.text=(() @trusted => format("%d:"~vote_fmt~":%d", i, bits, bits.count))();
-                    text.pos.y+=NODE_CIRCLE_SIZE/2;
+                    bits = strong_vector;
+                    text.text = (() @trusted => format("%d:" ~ vote_fmt ~ ":%d", i, bits, bits.count))();
+                    text.pos.y += NODE_CIRCLE_SIZE / 2;
                     obuf[20].writefln("%s", text.toString);
                 }
             }
+        }
         //}
     }
 
@@ -306,8 +310,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
 
         scope (success) {
-            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height+NODE_INDENT);
-            start.writefln(`<g transform="translate(0,%s)">`, max_height-NODE_INDENT);
+            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
+            start.writefln(`<g transform="translate(0,%s)">`, max_height - NODE_INDENT);
             end.writefln("</g>");
             end.writefln("</svg>");
         }
@@ -465,39 +469,44 @@ struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
 }
 
 @safe
-     struct HeightBuffer {
-        OutBuffer[int] obufs;
-        OutBuffer opIndex(const int height) {
-            return obufs.require(height, new OutBuffer);
+struct HeightBuffer {
+    OutBuffer[int] obufs;
+    OutBuffer opIndex(const int height) {
+        return obufs.require(height, new OutBuffer);
+    }
+
+    Range opSlice() pure nothrow {
+        return Range(this);
+    }
+
+    struct Range {
+        HeightBuffer owner;
+        int[] height_order;
+        this(ref HeightBuffer owner) pure nothrow {
+            this.owner = owner;
+            height_order = owner.obufs.keys;
+            height_order.sort;
+            __write("height_order %s", height_order);
         }
-        Range opSlice() pure nothrow {
-            return Range(this);
+
+        OutBuffer front() pure nothrow {
+            if (height_order.empty) {
+                return null;
+            }
+            return owner.obufs[height_order[0]];
         }
-        struct Range {
-            HeightBuffer owner;
-            int[] height_order;
-            this(ref HeightBuffer owner) pure nothrow {
-                this.owner=owner;
-                height_order=owner.obufs.keys;
-                height_order.sort;
-                __write("height_order %s", height_order);
-            }
-            OutBuffer front() pure nothrow {
-                if (height_order.empty) {
-                    return null;
-                }
-                return owner.obufs[height_order[0]];
-            }
-            bool empty() const pure nothrow {
-                return height_order.empty;
-            }
-            void popFront() pure nothrow {
-                if (!empty) {
-                    height_order=height_order[1..$];
-                }
+
+        bool empty() const pure nothrow {
+            return height_order.empty;
+        }
+
+        void popFront() pure nothrow {
+            if (!empty) {
+                height_order = height_order[1 .. $];
             }
         }
     }
+}
 
 import tagion.tools.Basic;
 
@@ -534,20 +543,20 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-            "Documentation: https://docs.tagion.org/",
-            "",
-            "",
-            "Example:",
-            "graphview Alice.hibon | neato -Tsvg -o outputfile.svg",
-            "Usage:",
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .hibon format",
-            "",
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "",
+                "Example:",
+                "graphview Alice.hibon | neato -Tsvg -o outputfile.svg",
+                "Usage:",
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .hibon format",
+                "",
 
-            "<option>:",
-        ].join("\n"),
+                "<option>:",
+                ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -557,8 +566,8 @@ int _main(string[] args) {
     // }
 
     import tagion.basic.Types : hasExtension, FileExtension;
-    inputfilenames = args.filter!(arg => arg.hasExtension(FileExtension.hibon)).array; 
 
+    inputfilenames = args.filter!(arg => arg.hasExtension(FileExtension.hibon)).array;
 
     File[] inputfiles;
     if (inputfilenames.empty) {
@@ -576,9 +585,9 @@ int _main(string[] args) {
     else {
         outfile = File(outputfilename, "w");
     }
-    
+
     assert(inputfiles.length != 0);
-    foreach(i, inputfile; inputfiles) {
+    foreach (i, inputfile; inputfiles) {
         HiBONRange hibon_range = HiBONRange(inputfile);
 
         //auto obuf = new OutBuffer;
@@ -598,10 +607,10 @@ int _main(string[] args) {
         }
         else {
             auto dot = Dot!HiBONRange(hibon_range, "G");
-            auto dot_buf=obuf[0];
+            auto dot_buf = obuf[0];
             dot.draw(dot_buf);
         }
-        if (inputfiles.length == i+1 && !svg) {
+        if (inputfiles.length == i + 1 && !svg) {
             endbuf.writefln(EVENT_POPUP);
             endbuf.writefln(HTML_END);
         }

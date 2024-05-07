@@ -78,9 +78,15 @@ class Event {
     package this(
             immutable(EventPackage)* epack,
             HashGraph hashgraph,
+            const uint check_graphtype=0
     )
     in (epack !is null)
     do {
+        if  (hashgraph.graphtype != check_graphtype) {
+            import tagion.basic.Debug;
+            __write("Not and hashgraph 0");
+            assert(0);
+        }
         event_package = epack;
         this.id = hashgraph.next_event_id;
         this.node_id = hashgraph.getNode(channel).node_id;
@@ -193,6 +199,7 @@ class Event {
     void witness_event(HashGraph hashgraph) nothrow
     in {
         assert(!_witness);
+        assert(hashgraph.graphtype == 0);
     }
     do {
         _witness = new Witness(this, hashgraph.node_size);
@@ -216,6 +223,7 @@ class Event {
     void connect(HashGraph hashgraph)
     in {
         assert(hashgraph.areWeInGraph);
+        assert(hashgraph.graphtype == 0);
     }
     out {
         assert(event_package.event_body.mother && _mother || !_mother);
@@ -294,6 +302,7 @@ class Event {
     }
 
     BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+        assert(hashgraph.graphtype == 0);
         auto see_through_matrix = _youngest_son_ancestors
             .filter!(e => e !is null && e.round is round)
             .map!(e => e._youngest_son_ancestors
@@ -320,6 +329,7 @@ class Event {
     }
 
     void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
+        assert(hashgraph.graphtype == 0);
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
         Event voting_event = voting_round._events[vote_node_id];
 
@@ -354,6 +364,7 @@ class Event {
     final package void disconnect(HashGraph hashgraph) nothrow @trusted
     in {
         assert(!_mother, "Event with a mother can not be disconnected");
+        assert(hashgraph.graphtype == 0);
     }
     do {
         hashgraph.eliminate(fingerprint);

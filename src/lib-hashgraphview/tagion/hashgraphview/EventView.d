@@ -31,13 +31,13 @@ struct EventView {
     @label("$rec") long round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
     @label("$i") @optional @(filter.Initialized) bool intermediate;
-    @label("$I") @reserve @optional @(filter.Initialized) uint[] intermediate_event_ids; 
+    //    @label("$I") @reserve @optional @(filter.Initialized) uint[] intermediate_event_ids; 
     @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$error") @optional bool error;
-    @label("$seen")  @optional Buffer seen;
-    @label("$strong")  @optional Buffer strongly_seen; /// Witness seen strongly in previous round
-    @label("$intermediate")  @optional Buffer intermediate_seen;
-    @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
+    @label("$seen") @optional Buffer seen;
+    @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
+    @label("$intermediate") @optional Buffer intermediate_seen;
+    //  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -74,18 +74,10 @@ struct EventView {
                 intermediate_seen=event2._intermediate_seen_mask.bytes;
                 if (event2.isWitness) {
                     auto witness=cast(const(Event2.Witness2))(event._witness);
-                    intermediate_event_ids=witness._intermediate_events
-                    .map!(e => (e)?e.id:0)
-                    .array;
+                    //intermediate_event_ids=witness._intermediate_events
+                    //.map!(e => (e)?e.id:0)
+                    //.array;
                     strongly_seen=witness._previous_strongly_seen_mask.bytes; 
-                    //pragma(msg, "Event2 witness ", typeof(event._witness));
-                   version(none) {
-                    strongly_seen_matrix.length=witness.strongly_seen_matrix.length;
-                    foreach(i, ref strongly_seen_vector; strongly_seen_matrix) {
-                        strongly_seen_vector=witness.strongly_seen_matrix[i].bytes;
-                        
-                    }
-               }
                 }
             }
             
@@ -93,11 +85,9 @@ struct EventView {
     });
 }
 
-
-
-
 import tagion.hashgraph.HashGraph;
-import tagion.crypto.Types : Pubkey; 
+import tagion.crypto.Types : Pubkey;
+
 @safe
 void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node_labels = null) {
     import std.algorithm : sort, filter, each;
@@ -130,8 +120,7 @@ void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node
     })();
 
     graphfile.fwrite(NodeAmount(hashgraph.node_size));
-    foreach(e; events) {
+    foreach (e; events) {
         graphfile.fwrite(e);
     }
 }
-

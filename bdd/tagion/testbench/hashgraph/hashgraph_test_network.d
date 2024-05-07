@@ -15,7 +15,8 @@ import tagion.crypto.Types;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph._HashGraph;
-import tagion.hashgraph.HashGraph2;
+
+//import tagion.hashgraph.HashGraph2;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Refinement;
 import tagion.hashgraph.RefinementInterface;
@@ -54,55 +55,56 @@ class TestRefinement : StdRefinement {
     }
 
 }
+
 class NewTestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
-
-
 
     override void epoch(Event[] event_collection, const Round decided_round) const {
         static bool first_epoch;
         if (!first_epoch) {
             check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
-        } 
+        }
         first_epoch = true;
-        
+
         import std.range : tee;
+
         sdt_t[] times;
         auto events = event_collection
             .tee!((e) => times ~= e.event_body.time)
             .filter!((e) => !e.event_body.payload.empty)
             .array;
 
-        version(OLD_ORDERING) {
-            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        version (OLD_ORDERING) {
+            auto sorted_events = events.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
         }
-        version(NEW_ORDERING) {
+        version (NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
                 .filter!(e => decided_round.famous_mask[e.node_id])
                 .array;
-            auto sorted_events = events.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+            auto sorted_events = events.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round)).array;
         }
         times.sort;
-        
-        version(OLD_ORDERING) {
+
+        version (OLD_ORDERING) {
             const mid = times.length / 2 + (times.length % 1);
             const epoch_time = times[mid];
         }
-        version(NEW_ORDERING) {
+        version (NEW_ORDERING) {
             const epoch_time = times[times.length / 2];
         }
-        version(OLD_ORDERING) {
-            auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        version (OLD_ORDERING) {
+            auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
         }
-        version(NEW_ORDERING) {
+        version (NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
                 .filter!(e => decided_round.famous_mask[e.node_id])
                 .array;
-            auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+            auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
+                .array;
         }
         auto finished_epoch = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
 
@@ -118,7 +120,7 @@ alias TestNetwork = TestNetworkT!TestRefinement;
     This function makes sure that the HashGraph has all the events connected to this event
 +/
 @safe
-static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeList == enum)) {
+static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import core.time;
     import std.datetime.systime : SysTime;
@@ -207,11 +209,10 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
                 .array;
 
             if (!send_channels.empty) {
-                const node_index = random.value(0, send_channels.length); 
+                const node_index = random.value(0, send_channels.length);
                 return send_channels[node_index];
             }
 
-            
             return Pubkey.init;
         }
 
@@ -326,13 +327,14 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
     }
 
     static int testing;
-    void addNode(Refinement refinement, immutable(ulong) N, const(string) name, 
-        const int graphtype, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
+    void addNode(Refinement refinement, immutable(ulong) N, const(string) name,
+            const int graphtype, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
         HashGraph h;
-        switch (graphtype) {
+        h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name, graphtype);
+        version (none) switch (graphtype) {
         case 0:
             h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
             break;
@@ -360,10 +362,10 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
     }
 
     FiberNetwork[Pubkey] networks;
-    this(const(string[]) node_names,  int[] graphtypes, int scrap_depth = 0) {
+    this(const(string[]) node_names, int[] graphtypes, int scrap_depth = 0) {
         authorising = new TestGossipNet;
-        immutable N = node_names.length;//EnumMembers!NodeList.length;
-        foreach(name, graphtype; zip(node_names, graphtypes)) { 
+        immutable N = node_names.length; //EnumMembers!NodeList.length;
+        foreach (name, graphtype; zip(node_names, graphtypes)) {
             addNode(new R, N, name, graphtype, scrap_depth);
         }
     }
@@ -387,7 +389,7 @@ bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @
 }
 
 @safe
-void printStates(R)(TestNetworkT!(R) network) if (is (R:Refinement)) {
+void printStates(R)(TestNetworkT!(R) network) if (is(R : Refinement)) {
     foreach (channel; network.networks) {
         writeln("----------------------");
         foreach (channel_key; network.channels) {
@@ -404,7 +406,6 @@ void printStates(R)(TestNetworkT!(R) network) if (is (R:Refinement)) {
 
 }
 
-
 @safe
 static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs) {
     static int error_count;
@@ -419,17 +420,17 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 // check that all epoch numbers are the same
                 check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
 
-            
-                const(Event)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+                const(Event)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events)
+                    .array;
                 const(Event)[] not_the_same;
-                foreach(i, node_events; all_node_events[0..$-1]) {
-                    foreach(to_compare; all_node_events[i+1..$]) {
-                        foreach(event; node_events) {
+                foreach (i, node_events; all_node_events[0 .. $ - 1]) {
+                    foreach (to_compare; all_node_events[i + 1 .. $]) {
+                        foreach (event; node_events) {
                             if (!to_compare.map!(e => *e.event_package).canFind(*event.event_package)) {
                                 not_the_same ~= event;
                             }
                         }
-                        foreach(event; to_compare) {
+                        foreach (event; to_compare) {
                             if (!node_events.map!(e => *e.event_package).canFind(*event.event_package)) {
                                 not_the_same ~= event;
                                 //do some callback
@@ -437,11 +438,12 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                         }
                     }
                 }
-            
-                auto not_the_same_uniq  = not_the_same
+
+                auto not_the_same_uniq = not_the_same
                     .map!((e) @trusted => cast(Event) e)
-                     .array.sort!((a,b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
-                     .uniq!((a,b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
+                    .array
+                    .sort!((a, b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
+                    .uniq!((a, b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
                 // if (Event.callbacks && !not_the_same_uniq.empty) {
                 //     foreach(event; not_the_same_uniq) {
                 //         writefln("%(%02x%)", net.calcHash(*event.event_package));
@@ -455,11 +457,11 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 string print_events() {
                     string printout;
                     // printout ~= format("EPOCH: %s", epoch.value.epoch);
-                    foreach(i, events; epoch_events) {
+                    foreach (i, events; epoch_events) {
                         uint number_of_empty_events;
                         printout ~= format("\n%s: ", i);
-                        foreach(epack; events) {
-                            printout ~= format("%(%02x%) ", net.calcHash(epack)[0..4]);
+                        foreach (epack; events) {
+                            printout ~= format("%(%02x%) ", net.calcHash(epack)[0 .. 4]);
                             if (epack.event_body.payload.empty) {
                                 number_of_empty_events++;
                             }
@@ -469,16 +471,16 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     return printout;
                 }
 
-                version(none)
-                if (!epoch_events.all!(e => e == epoch_events[0])) {
+                version (none)
+                    if (!epoch_events.all!(e => e == epoch_events[0])) {
                     check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
                 }
 
-                auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 
-                version(none)
-                if (!timestamps.all!(t => t == timestamps[0])) {
+                auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array;
+                version (none)
+                    if (!timestamps.all!(t => t == timestamps[0])) {
                     string text;
-                    foreach(i, t; timestamps) {
+                    foreach (i, t; timestamps) {
                         auto line = format("\n%s: %s", i, t);
                         text ~= line;
                     }
@@ -489,11 +491,12 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 epochs.remove(epoch.key);
             }
         }
-    } catch (BehaviourException e) {
+    }
+    catch (BehaviourException e) {
         // writefln("ANOTHER NODE RECEIVED EPOCH");
         // error_count++;
         // if (error_count == 5) {
-            throw e;
+        throw e;
         // }
     }
 }
