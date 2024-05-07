@@ -589,27 +589,6 @@ unittest {
     testArrayAddFunc!(double)(321.312312f, &tagion_hibon_add_array_float64);
 }
 
-// // array int32 test
-// unittest {
-//     HiBONT h;
-//     int rt = tagion_hibon_create(&h);
-//     assert(rt == ErrorCode.none);
-//     string key = "some_key";
-
-//     ubyte[] buf;
-//     buf.length = int.sizeof;
-//     buf.write!int(42, 0);
-//     writefln("buf %s", buf);
-//     // buf.write!int(some_int);
-    
-//     rt = tagion_hibon_add_array_int32(&h, &key[0], key.length, &buf[0], buf.length);
-//     assert(rt == ErrorCode.none);
-
-//     HiBON result = cast(HiBON) h.hibon;
-//     assert(result[key].get!int == 42);
-    
-// }
-
 /// malloc test
 unittest {
     import core.stdc.stdlib;
