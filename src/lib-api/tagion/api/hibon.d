@@ -28,12 +28,6 @@ void* mymalloc(size_t size) {
     return malloc(size);
 }
 
-
-int hello_world() {
-    writefln("Hello world!");
-    return 0;
-}
-
 /** 
  * Create new hibon object
  * Params:
@@ -71,6 +65,7 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
 
     try {
         const fmt = cast(DocumentTextFormat) text_format;
+        writefln("%s", fmt);
 
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
             return ErrorCode.exception;
@@ -95,6 +90,7 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
     }
     catch(Exception e) {
         last_error = e;
+        writefln("%s", e);
         return ErrorCode.exception;
     }
     return ErrorCode.none;
