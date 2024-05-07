@@ -6,7 +6,8 @@ import core.stdc.stdint;
 import tagion.hibon.Document;
 import tagion.utils.StdTime;
 import tagion.hibon.BigNumber;
-        import std.stdio;
+import std.bitmanip;
+import std.stdio : writefln;
 
 extern (C):
 version (unittest) {
@@ -396,6 +397,34 @@ template add_T(T) {
     }
 }
 
+template add_array_T(T) {
+    int add_array_T(const(HiBONT*) instance,
+                const char* key,
+                const size_t key_len,
+                uint8_t* buf,
+                const size_t buf_len) {
+
+        try {
+            if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+                return ErrorCode.exception;
+            }
+            HiBON h = cast(HiBON) instance.hibon;
+            const _key = key[0 .. key_len].idup;
+            if (buf_len != T.sizeof) {
+                return ErrorCode.exception;
+            }
+            ubyte[] _value_buf = buf[0..buf_len];
+            const _value = read!T(_value_buf);
+            h[_key] = _value;
+        }
+        catch(Exception e) {
+            last_error = e;
+            return ErrorCode.exception;
+        }
+        return ErrorCode.none;
+    }
+}
+
 /** 
 * Add boolean to hibon instance
 * Params:
@@ -407,6 +436,9 @@ template add_T(T) {
 */
 int tagion_hibon_add_bool(const(HiBONT*) h, const char* key, const size_t key_len, bool value) {
     return add_T!bool(__traits(parameters));
+}
+int tagion_hibon_add_array_bool(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
+    return add_array_T!bool(__traits(parameters));
 }
 
 /** 
@@ -422,6 +454,10 @@ int tagion_hibon_add_int32(const(HiBONT*) h, const char* key, const size_t key_l
     return add_T!int32_t(__traits(parameters));
 }
 
+int tagion_hibon_add_array_int32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
+    return add_array_T!int32_t(__traits(parameters));
+}
+
 /** 
 * Add int64 to hibon instance
 * Params:
@@ -433,6 +469,9 @@ int tagion_hibon_add_int32(const(HiBONT*) h, const char* key, const size_t key_l
 */
 int tagion_hibon_add_int64(const(HiBONT*) h, const char* key, const size_t key_len, int64_t value) {
     return add_T!int64_t(__traits(parameters));
+}
+int tagion_hibon_add_array_int64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
+    return add_array_T!int64_t(__traits(parameters));
 }
 
 /** 
@@ -447,6 +486,9 @@ int tagion_hibon_add_int64(const(HiBONT*) h, const char* key, const size_t key_l
 int tagion_hibon_add_uint32(const(HiBONT*) h, const char* key, const size_t key_len, uint32_t value) {
     return add_T!uint32_t(__traits(parameters));
 }
+int tagion_hibon_add_array_uint32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
+    return add_array_T!uint32_t(__traits(parameters));
+}
 /** 
 * Add uint64 to hibon instance
 * Params:
@@ -458,6 +500,9 @@ int tagion_hibon_add_uint32(const(HiBONT*) h, const char* key, const size_t key_
 */
 int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint64_t value) {
     return add_T!uint64_t(__traits(parameters));
+}
+int tagion_hibon_add_array_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
+    return add_array_T!uint64_t(__traits(parameters));
 }
 /** 
 * Add float32 to hibon instance
@@ -471,6 +516,9 @@ int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_
 int tagion_hibon_add_float32(const(HiBONT*) h, const char* key, const size_t key_len, float value) {
     return add_T!float(__traits(parameters));
 }
+int tagion_hibon_add_array_float32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
+    return add_array_T!float(__traits(parameters));
+}
 /** 
 * Add float64 to hibon instance
 * Params:
@@ -482,6 +530,9 @@ int tagion_hibon_add_float32(const(HiBONT*) h, const char* key, const size_t key
 */
 int tagion_hibon_add_float64(const(HiBONT*) h, const char* key, const size_t key_len, double value) {
     return add_T!double(__traits(parameters));
+}
+int tagion_hibon_add_array_float64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
+    return add_array_T!double(__traits(parameters));
 }
 
 void testAddFunc(T)(
@@ -499,6 +550,23 @@ void testAddFunc(T)(
     assert(result[key].get!T == call_value);
 }
 
+void testArrayAddFunc(T)(
+    T call_value,
+    int function(const(HiBONT*), const char*, const size_t, uint8_t*, const size_t) func) {
+
+    HiBONT h;
+    int rt = tagion_hibon_create(&h);
+    assert(rt == ErrorCode.none);
+    string key = "some_key";
+    ubyte[] buf;
+    buf.length = T.sizeof;
+    buf.write!T(call_value, 0);
+    rt = func(&h, &key[0], key.length, &buf[0], buf.length);
+    assert(rt == ErrorCode.none);
+    HiBON result = cast(HiBON) h.hibon;
+    assert(result[key].get!T == call_value);
+}
+
 unittest {
     import std.stdio;
 
@@ -510,6 +578,37 @@ unittest {
     testAddFunc!(float)(21.1f, &tagion_hibon_add_float32);
     testAddFunc!(double)(321.312312f, &tagion_hibon_add_float64);
 }
+
+unittest {
+    testArrayAddFunc!(bool)(true, &tagion_hibon_add_array_bool);
+    testArrayAddFunc!(int)(42, &tagion_hibon_add_array_int32);
+    testArrayAddFunc!(long)(long(42), &tagion_hibon_add_array_int64);
+    testArrayAddFunc!(uint)(uint(42), &tagion_hibon_add_array_uint32);
+    testArrayAddFunc!(ulong)(ulong(42), &tagion_hibon_add_array_uint64);
+    testArrayAddFunc!(float)(21.1f, &tagion_hibon_add_array_float32);
+    testArrayAddFunc!(double)(321.312312f, &tagion_hibon_add_array_float64);
+}
+
+// // array int32 test
+// unittest {
+//     HiBONT h;
+//     int rt = tagion_hibon_create(&h);
+//     assert(rt == ErrorCode.none);
+//     string key = "some_key";
+
+//     ubyte[] buf;
+//     buf.length = int.sizeof;
+//     buf.write!int(42, 0);
+//     writefln("buf %s", buf);
+//     // buf.write!int(some_int);
+    
+//     rt = tagion_hibon_add_array_int32(&h, &key[0], key.length, &buf[0], buf.length);
+//     assert(rt == ErrorCode.none);
+
+//     HiBON result = cast(HiBON) h.hibon;
+//     assert(result[key].get!int == 42);
+    
+// }
 
 /// malloc test
 unittest {
