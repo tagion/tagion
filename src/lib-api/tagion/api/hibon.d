@@ -28,6 +28,12 @@ void* mymalloc(size_t size) {
     return malloc(size);
 }
 
+
+int hello_world() {
+    writefln("Hello world!");
+    return 0;
+}
+
 /** 
  * Create new hibon object
  * Params:
