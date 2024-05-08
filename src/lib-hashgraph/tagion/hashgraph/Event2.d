@@ -210,7 +210,8 @@ class Event2 : current_event.Event {
         bool hasVoted() const pure nothrow {
             return this.outer._round !is null;
         }
-        void vote(HashGraph hashgraph)
+
+        void vote(HashGraph hashgraph) nothrow
         in (!hasVoted, "This witness has already voted")
         do {
             auto witness_event = this.outer;
