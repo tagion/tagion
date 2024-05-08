@@ -58,7 +58,7 @@ class Event {
         // Which can be seen by the next rounds witness
         BitMask _round_seen_mask;
     }
-        Witness _witness;
+    Witness _witness;
 
     @nogc
     static uint count() nothrow {
@@ -78,12 +78,13 @@ class Event {
     package this(
             immutable(EventPackage)* epack,
             HashGraph hashgraph,
-            const uint check_graphtype=0
+            const uint check_graphtype = 0
     )
     in (epack !is null)
     do {
-        if  (hashgraph.graphtype != check_graphtype) {
+        if (hashgraph.graphtype != check_graphtype) {
             import tagion.basic.Debug;
+
             __write("Not and hashgraph 0");
             assert(0);
         }
@@ -127,9 +128,9 @@ class Event {
         }
 
         //private {
-            BitMask _vote_on_earliest_witnesses;
-            BitMask _prev_strongly_seen_witnesses;
-            BitMask _prev_seen_witnesses;
+        BitMask _vote_on_earliest_witnesses;
+        BitMask _prev_strongly_seen_witnesses;
+        BitMask _prev_seen_witnesses;
         //}
 
         /**
@@ -164,7 +165,8 @@ class Event {
     const(BitMask) round_seen_mask() const pure nothrow @nogc {
         return _round_seen_mask;
     }
-        Round _round; /// The where the event has been created
+
+    Round _round; /// The where the event has been created
 
     package {
         BitMask _round_received_mask; /// Voting mask for the received rounds
@@ -176,7 +178,8 @@ class Event {
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
 
-            assert(_round_received.number == _round_received.previous.number + 1, format("Round was not added by 1: current: %s previous %s", _round_received.number, _round_received.previous.number)); 
+            assert(_round_received.number == _round_received.previous.number + 1, format("Round was not added by 1: current: %s previous %s", _round_received
+                    .number, _round_received.previous.number));
         }
     }
 
@@ -433,6 +436,11 @@ class Event {
     void round_received(Round round_received) nothrow {
         _round_received = round_received;
     }
+
+    bool isFamous() const pure nothrow {
+        return isWitness && round.famous_mask[node_id];
+    }
+
     @nogc pure nothrow const final {
         /**
      * The received round for this event
@@ -449,7 +457,6 @@ class Event {
         ref const(EventBody) event_body() {
             return event_package.event_body;
         }
-
 
         /**
      * Channel from which this event has received
@@ -509,7 +516,7 @@ class Event {
             return _witness !is null;
         }
 
-        bool isFamous() {
+        version (none) bool isFamous() {
             return isWitness && round.famous_mask[node_id];
         }
         /**

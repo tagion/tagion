@@ -111,10 +111,10 @@ class Round {
         _events[event.node_id] = event;
         event._round = this;
     }
-    
+
     package void add2(Event event) pure nothrow
     in {
-        assert(event._witness, "The event id "~event.id.to!string~" added to the round should be a witness ");
+        assert(event._witness, "The event id " ~ event.id.to!string ~ " added to the round should be a witness ");
         assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
     }
     do {
@@ -149,7 +149,7 @@ class Round {
     package void remove(const(Event) event) nothrow
     in {
         assert(event.isEva || _events[event.node_id] is event,
-                "This event does not exist in round at the current node so it can not be remove from this round");
+        "This event does not exist in round at the current node so it can not be remove from this round");
         assert(event.isEva || !empty, "No events exists in this round");
     }
     do {
@@ -174,10 +174,10 @@ class Round {
                 count++;
 
                 pragma(msg, "fixme(phr): make event remove work with eventview");
-                version(none)
-                if (Event.callbacks) {
-                    Event.callbacks.remove(e);
-                }
+                version (none)
+                    if (Event.callbacks) {
+                        Event.callbacks.remove(e);
+                    }
                 scrap_events(e._mother);
                 e.disconnect(hashgraph);
                 e.destroy;
@@ -265,7 +265,7 @@ class Round {
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph = hashgraph;
-            last_round = new Round(null, hashgraph.node_size); 
+            last_round = new Round(null, hashgraph.node_size);
             voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
         }
 
@@ -364,7 +364,7 @@ class Round {
                 // }
             }
         }
-       
+
         void set_round(Event e) nothrow
         in {
             assert(!e._round, "Round has allready been added");
@@ -372,36 +372,27 @@ class Round {
             assert(last_decided_round, "Last decided round must exist");
             assert(e, "Event must create before a round can be added");
         }
-        out {
-            assert(e._round !is null);
-        }
         do {
+            if (e._round) {
+                return;
+            }
             scope (exit) {
                 if (e._witness) {
                     e._round.add2(e);
                 }
             }
             import tagion.hashgraph.Event2;
-             e._round=(cast(Event2)e).maxRound;
-            /*
-            if (e._father && higher(e._father.round.number, e._mother.round.number)) {
-                e._round = e._father._round;
-                return; 
-            }
-            e._round = e._mother._round;
-            */
+
+            e._round = (cast(Event2) e).maxRound;
             if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
-                
+
                     e._round = e._round._next;
                     return;
                 }
                 e._round = new Round(last_round, hashgraph.node_size);
                 last_round = e._round;
             }
-                // if (Event.callbacks) {
-                //     Event.callbacks.round_seen(e);
-                // }
         }
 
         bool isEventInLastDecidedRound(const(Event) event) const pure nothrow @nogc {
@@ -481,7 +472,7 @@ class Round {
             last_decided_round = round_to_be_decided;
         }
 
-    /**
+        /**
      * Call to collect and order the epoch
      * Params:
      *   r = decided round to collect events to produce the epoch
@@ -511,8 +502,8 @@ class Round {
                     .filter!(e => e !is null)
                     .filter!(e =>
                             !(e[].retro
-                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                .empty)
+                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                    .empty)
                 )
                     .map!(e =>
                             e[].retro
