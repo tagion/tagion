@@ -67,8 +67,4 @@ export class HiBON {
     console.log(decodedString);
     // TODO: free pointers
   }
-
-
-  
-
 }
