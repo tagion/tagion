@@ -415,6 +415,7 @@ template add_array_T(T) {
             }
             ubyte[] _value_buf = buf[0..buf_len];
             const _value = read!T(_value_buf);
+            writefln("read value %s", _value);
             h[_key] = _value;
         }
         catch(Exception e) {

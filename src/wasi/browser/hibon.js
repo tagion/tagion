@@ -30,23 +30,24 @@ export class HiBON {
   addInt32(key, value) {
     const _key = this._allocateStr(key);
     const res = this.instance.exports.tagion_hibon_add_int32(this.ptr, _key.ptr, _key.len, value);
+    console.log("tagion_hibon_add_int32 returned ", res);
   }
-  // addInt64(key, value) {
-  //   const _key = this._allocateStr(key);
-
-  //   const buffer = new ArrayBuffer(8); // 8 bytes 
-  //   const view = new DataView(buffer);
-  //   view.setBigInt64(0, BigInt(value), true); // TODO: true for little endian what about big endian
-
-  //   // Get the low and high 32-bit parts of the int64_t value
-  //   const lowPart = view.getInt32(0, true); // true for little-endian
-  //   const highPart = view.getInt32(4, true); // true for little-endian
-
-  //   // Call the exported function with the low and high parts
-  //   const res = this.instance.exports.tagion_hibon_add_int64(this.ptr, _key.ptr, _key.len, lowPart, highPart);
-  // }
-
-
+  addInt64(key, value) {
+    const _key = this._allocateStr(key);
+    const valuePtr = this.instance.exports.mymalloc(8);
+    const memory = new DataView(this.instance.exports.memory.buffer);
+    memory.setBigInt64(valuePtr, value, true);
+    const res = this.instance.exports.tagion_hibon_add_array_int64(this.ptr, _key.ptr, _key.len, valuePtr, 8);
+    console.log("tagion_hibon_add_int64 returned ",res);
+  }
+  addUint32(key, value) {
+    const _key = this._allocateStr(key);
+    const valuePtr = this.instance.exports.mymalloc(4);
+    const memory = new DataView(this.instance.exports.memory.buffer);
+    memory.setUint32(valuePtr, value, true);
+    const res = this.instance.exports.tagion_hibon_add_array_uint32(this.ptr, _key.ptr, _key.len, valuePtr, 4);
+    console.log("tagion_hibon_add_uint32 returned: ", res);
+  }
   toPretty() {
     const textFormat = 1;
     const strPtrPtr = this.instance.exports.mymalloc(4); // Pointer to char* (4 bytes)

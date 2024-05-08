@@ -70,7 +70,10 @@ help-tauon:
 
 $(DBIN)/%.wasm: $(DSRC)/wasi/tests/%.d
 	$(PRECMD)
+	echo $@
 	$(DC) $(DFLAGS) $(LIB) $(addprefix $(DVERSION)=,$(DVERSIONS)) $(addprefix -I,$(DINC)) $< $(OUTPUT)$@
+	wasm2wat $@ -o $@.wat
+	# sed -i '/call \$__funcs_on_exit/d' $@.wat
 
 #$(WASMLD) $(LIB) $(DOBJ)/$*.o $(WASI_LDFLAGS) -o $@
 
