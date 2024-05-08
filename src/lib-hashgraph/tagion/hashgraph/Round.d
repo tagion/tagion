@@ -373,9 +373,6 @@ class Round {
             assert(e, "Event must create before a round can be added");
         }
         do {
-            if (e._round) {
-                return;
-            }
             scope (exit) {
                 if (e._witness) {
                     e._round.add2(e);

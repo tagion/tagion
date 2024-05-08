@@ -37,7 +37,9 @@ struct EventView {
     @label("$seen") @optional Buffer seen;
     @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
     @label("$intermediate") @optional Buffer intermediate_seen;
-    //  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
+    @label("$yes") @optional uint yes_votes; /// Famous yes votes    
+    @label("$no") @optional uint no_votes; /// Famous no votes    
+//  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -74,10 +76,9 @@ struct EventView {
                 intermediate_seen=event2._intermediate_seen_mask.bytes;
                 if (event2.isWitness) {
                     auto witness=cast(const(Event2.Witness2))(event._witness);
-                    //intermediate_event_ids=witness._intermediate_events
-                    //.map!(e => (e)?e.id:0)
-                    //.array;
-                    strongly_seen=witness._previous_strongly_seen_mask.bytes; 
+                    strongly_seen=witness._previous_strongly_seen_mask.bytes;
+                    yes_votes = witness._yes_votes;
+                    no_votes = witness._no_votes;
                 }
             }
             

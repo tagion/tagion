@@ -207,8 +207,11 @@ class Event2 : current_event.Event {
             witness_event._witness_seen_mask[witness_event.node_id] = true;
         }
 
+        bool hasVoted() const pure nothrow {
+            return this.outer._round !is null;
+        }
         void vote(HashGraph hashgraph)
-        in (!this.outer._round, "This witness has already voted")
+        in (!hasVoted, "This witness has already voted")
         do {
             auto witness_event = this.outer;
             hashgraph._rounds.set_round(witness_event);
@@ -225,6 +228,7 @@ class Event2 : current_event.Event {
                         else {
                             vote_for_witness.voteNo(hashgraph);
                         }
+                        current_event.Event.callbacks.connect(previous_witness_event);
                     }
                 }
             }
@@ -359,6 +363,11 @@ class Event2 : current_event.Event {
                         ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
             hashgraph.front_seat(this);
+           /*
+            if (_witness && !(cast(Witness2)_witness).hasVoted) {
+                (cast(Witness2)_witness).vote(hashgraph);
+            }
+            */
             current_event.Event.callbacks.connect(this);
             hashgraph.refinement.payload(event_package);
         }
@@ -409,7 +418,7 @@ class Event2 : current_event.Event {
             }
             const strongly_seen = calc_strongly_seen2(hashgraph);
             if (strongly_seen) {
-                auto witness = new Witness2(hashgraph);
+                 auto witness = new Witness2(hashgraph);
                 witness.vote(hashgraph);
                 return;
             }
