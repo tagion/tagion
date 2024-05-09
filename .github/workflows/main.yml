@@ -51,10 +51,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: add logs
+      - name: get logs
         uses: actions/download-artifact@v4
         with:
           name: runlogs
+      - name: add logs    
         run: |
           cat logs/runtest.log >> $GITHUB_STEP_SUMMARY
 
