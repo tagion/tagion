@@ -4,6 +4,7 @@ env:
   DC: dmd
   NNG_WITH_MBEDTLS: OFF
   NNG_DEBUG: OFF
+  ARTIFACT_DIR: /mnt/nfs/artifacts/${{ github.sha }}-${{ github.run_attempt }}
 on:   
   workflow_dispatch:
   push:
@@ -39,7 +40,12 @@ jobs:
           make test
       - name: report test
         run: |
-          cat logs/runtest.log |grep '^#TEST' |grep PASSED >> $GITHUB_STEP_SUMMARY    
+          cat logs/runtest.log |grep '^#TEST' >> $GITHUB_STEP_SUMMARY    
+      - name: post run
+        if: always()
+        run: |
+          mkdir -p ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/* ${{ env.ARTIFACT_DIR }}
   handle_errors:
     if: failure()
     runs-on: ubuntu-latest
@@ -47,5 +53,6 @@ jobs:
     steps:
       - name: add logs
         run: |
-          cat logs/runtest.log >> $GITHUB_STEP_SUMMARY
+          cat ${{ env.ARTIFACT_DIR }}/logs/runtest.log >> $GITHUB_STEP_SUMMARY
+
 
