@@ -55,6 +55,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: runlogs
+      - name: lsit
+        run: ls -alsR logs/
       - name: add logs    
         run: |
           cat logs/runtest.log >> $GITHUB_STEP_SUMMARY
