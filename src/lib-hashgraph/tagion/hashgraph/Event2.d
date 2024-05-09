@@ -173,6 +173,9 @@ class Event2 : current_event.Event {
             _decided |= hashgraph.isMajority(_yes_votes);
         }
 
+        bool decided() const pure nothrow @nogc {
+            return _decided;
+        }
         //bool famous;
         /**
          * Contsruct a witness of an event
@@ -212,10 +215,11 @@ class Event2 : current_event.Event {
         }
 
         void vote(HashGraph hashgraph) nothrow
-        in (!hasVoted, "This witness has already voted")
+        in ((!hasVoted), "This witness has already voted")
         do {
             auto witness_event = this.outer;
             hashgraph._rounds.set_round(witness_event);
+            /// Counting yes/no votes from this witness to witness in the previous round
             if (witness_event.round.previous) {
                 auto previous_witness_events = witness_event._round.previous._events;
                 foreach (n; 0 .. hashgraph.node_size) {
@@ -232,6 +236,19 @@ class Event2 : current_event.Event {
                         current_event.Event.callbacks.connect(previous_witness_event);
                     }
                 }
+            }
+            // Counting no-votes from witness in the next round
+            // which was created before this witness
+            if (witness_event.round.next) {
+                auto next_witness_events = witness_event.round.next.events;
+                _no_votes+= next_witness_events
+                .filter!(vote_from_event => vote_from_event !is null)
+                .map!(vote_from_event => (cast(const(Witness2))vote_from_event._witness))
+                .filter!(vote_from_witness => vote_from_witness._previous_strongly_seen_mask[0])
+                .count;//.each!(vote_from_witness => this.voteNo);
+                _decided |= hashgraph.isMajority(_no_votes);
+                
+                //current_event.Event.callbacks.connect(witness_event);
             }
         }
     }
@@ -255,8 +272,8 @@ class Event2 : current_event.Event {
                 ._events
                 .filter!(e => e !is null)
                 .map!(e => cast(Witness2) e._witness)
-                .map!(w => w._intermediate_event_mask[node_id]) //.map!(event_seeing => event_seeing !is null)
-                .count;
+                .map!(w => w._intermediate_event_mask[node_id]) 
+               .count;
             return isMajority(vote_strongly_seen, hashgraph.node_size);
         }
         return false;
