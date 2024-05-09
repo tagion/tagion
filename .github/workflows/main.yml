@@ -30,13 +30,13 @@ jobs:
           compiler: ${{ matrix.dc }}      
       - name: install make etc
         run:
-          sudo apt-get install build-essential
+          sudo apt-get install build-essential uwsc
       - name: build
         run:
           make 
       - name: run test
         run:
-          make runtest
+          make test
       - name: report test
         run: |
           cat logs/runtest.log |grep '^#TEST' |grep PASSED >> $GITHUB_STEP_SUMMARY    

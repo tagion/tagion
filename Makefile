@@ -10,8 +10,7 @@ DCFLAGS=-O -d -m64 -i -debug -g -gf -gs -gx -dip1000
 DINC=nngd extern/libnng/libnng
 
 DTESTS=$(wildcard tests/test*.d)
-
-RUNTESTS=test_01_pushpull test_02_pushpull test_03_pushpull test_04_pubsub test_05_reqrep test_06_message test_07_aio
+RUNTESTS=$(basename $(DTESTS))
 
 ifeq ($(NNG_WITH_MBEDTLS),ON)
 	DCFLAGS=-O -d -m64 -i -debug -g -version=withtls
@@ -25,7 +24,7 @@ endif
 all: extern lib test
 	@echo "All done!"
 
-test: $(DTESTS)
+buildtest: $(DTESTS)
 
 extern:
 	git submodule update --init --recursive && \
@@ -37,18 +36,26 @@ $(DTESTS):
 lib: 
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
-runtest: $(RUNTESTS)
+test: pretest $(RUNTESTS) posttest
+
+pretest:
+	@echo "It will take about a minute. Be patient."
+	rm -f ./logs/*
+
+posttest:
+	@grep -q ERROR ./logs/runtest.log && echo "There are errors. See runtest.log" || echo "All passed!"
 
 .SILENT: $(RUNTESTS)
 
 $(RUNTESTS):
-	tests/build/tests/$@ >> logs/runtest.log
+	tests/build/$@ >> logs/runtest.log
 
 clean: clean-extern clean-local
 
 proper: proper-extern clean-local
 
 clean-local:
+	rm -f ./logs/* && \
 	rm -rf ./build && \
 	rm -rf ./tests/build
 

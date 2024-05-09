@@ -1460,6 +1460,29 @@ struct WebData {
         json = null;
     }
 
+    JSONValue toJSON(string tag = null) nothrow {
+        try{
+            return JSONValue([
+                 "#TAG": JSONValue(tag)
+                ,"route": JSONValue(route)
+                ,"rawuri": JSONValue(rawuri)
+                ,"uri": JSONValue(uri)
+                ,"path": JSONValue(path)
+                ,"param": JSONValue(param)
+                ,"headers": JSONValue(headers)
+                ,"type": JSONValue(type)
+                ,"length": JSONValue(length)
+                ,"method": JSONValue(method)
+                ,"datasize": JSONValue(rawdata.length)
+                ,"text": JSONValue(text)
+                ,"json": json
+            ]);
+        }catch(Exception e) {
+            perror("WD: toJSON error");
+            return JSONValue.init;
+        }
+    }
+
     string toString() nothrow {
         try{
         return format(`
