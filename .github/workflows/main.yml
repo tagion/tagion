@@ -33,7 +33,7 @@ jobs:
           sudo apt-get install build-essential uwsc
       - name: build
         run:
-          make 
+          make all 
       - name: run test
         run:
           make test

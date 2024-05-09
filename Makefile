@@ -21,7 +21,7 @@ else
 endif
 
 
-all: extern lib test
+all: extern lib buildtest
 	@echo "All done!"
 
 buildtest: $(DTESTS)
