@@ -56,7 +56,7 @@ jobs:
         with:
           name: runlogs
       - name: lsit
-        run: ls -alsR logs/
+        run: ls -alsR /home/runner/work/nng/nng/
       - name: add logs    
         run: |
           cat logs/runtest.log >> $GITHUB_STEP_SUMMARY
