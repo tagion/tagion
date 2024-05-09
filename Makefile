@@ -40,10 +40,10 @@ test: pretest $(RUNTESTS) posttest
 
 pretest:
 	@echo "It will take about a minute. Be patient."
-	rm -f ./logs/*
+	rm -f logs/*
 
 posttest:
-	@grep -q ERROR ./logs/runtest.log && echo "There are errors. See runtest.log" || echo "All passed!"
+	@grep -q ERROR logs/runtest.log && echo "There are errors. See runtest.log" || echo "All passed!"
 
 .SILENT: $(RUNTESTS)
 
