@@ -55,6 +55,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: runlogs
+          path: logs/
       - name: lsit
         run: ls -alsR /home/runner/work/nng/nng/
       - name: add logs    
