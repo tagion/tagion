@@ -1326,6 +1326,45 @@ alias mime_type = nng_mime_type;
 alias nng_http_req = libnng.nng_http_req;
 alias nng_http_res = libnng.nng_http_res;
 
+const string[] nng_http_req_headers = [
+	"A-IM",
+	"Accept",
+	"Accept-Charset",
+	"Accept-Encoding",
+	"Accept-Language",
+	"Accept-Datetime",
+	"Access-Control-Request-Method",
+	"Access-Control-Request-Headers",
+	"Authorization",
+	"Cache-Control",
+	"Connection",
+	"Content-Length",
+	"Content-Type",
+	"Cookie",
+	"Date",
+	"Expect",
+	"Forwarded",
+	"From",
+	"Host",
+	"If-Match",
+	"If-Modified-Since",
+	"If-None-Match",
+	"If-Range",
+	"If-Unmodified-Since",
+	"Max-Forwards",
+	"Origin",
+	"Pragma",
+	"Proxy-Authorization",
+	"Range",
+	"Referer",
+	"TE",
+	"User-Agent",
+	"Upgrade",
+	"Via",
+	"Warning"
+];    
+
+
 version(withtls) {
     
     alias nng_tls_mode = libnng.nng_tls_mode;
@@ -1476,6 +1515,8 @@ struct WebData {
                 ,"datasize": JSONValue(rawdata.length)
                 ,"text": JSONValue(text)
                 ,"json": json
+                ,"status": JSONValue(cast(int)status)
+                ,"msg": JSONValue(msg)
             ]);
         }catch(Exception e) {
             perror("WD: toJSON error");
@@ -1652,6 +1693,7 @@ void webrouter (nng_aio* aio) {
 
     char *sbuf = cast(char*)nng_alloc(4096);
 
+    string[string] headers;
     string errstr = "";
         
         const char* t1 = "NODATA";
@@ -1690,6 +1732,15 @@ void webrouter (nng_aio* aio) {
     if(sreq.type.empty) 
         sreq.type = "text/plain";
 
+    foreach(hname; nng_http_req_headers){
+        sprintf(sbuf, toStringz(hname));
+        auto hval  = cast(immutable)(fromStringz(nng_http_req_get_header(req, sbuf)));
+        if(!hval.empty)
+            headers[hname] = hval.dup;
+    }
+    if(!headers.empty)
+        sreq.headers = headers.dup;
+    
     sreq.uri = cast(immutable)(fromStringz(nng_http_req_get_uri(req)));
     
     sreq.rawdata = cast(ubyte[])(reqbody[0..reqbodylen]);

@@ -9,6 +9,7 @@ import std.file;
 import std.uuid;
 import std.regex;
 import std.json;
+import std.base64;
 import std.exception;
 import std.process;
 
@@ -20,7 +21,7 @@ static void client_handler ( WebData *res, void* ctx ){
     try{
         auto jdata = res.toJSON();
         if(ctx is null){
-            assert(jdata["length"].uinteger == 199);
+            assert(jdata["length"].uinteger == 67);
         }else{
             int c = *(cast(int*)ctx);
             assert(c == 123456);
@@ -35,12 +36,42 @@ static void error_handler ( WebData *res, void* ctx ){
     try{
         log("===> Error handler:");
         auto jdata = res.toJSON();
-        assert(jdata["length"].uinteger == 233);
+        assert(jdata["length"].uinteger == 369);
     } catch(Throwable e) {
         error(dump_exception_recursive(e, "Error handler"));
     }    
 }   
 
+
+static void server_get_handler ( WebData *req, WebData *rep, void* ctx ){
+    try{
+        thread_attachThis();
+        rep.type =  "application/json";
+        rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+        JSONValue jdata = parseJSON("{}");
+        jdata["uri"] = req.rawuri;
+        jdata["headers"] = JSONValue(req.headers);
+        rep.json = jdata;
+    } catch(Throwable e) {
+        error(dump_exception_recursive(e, "GET handler"));
+    }        
+}
+
+static void server_post_handler ( WebData *req, WebData *rep, void* ctx ){
+    try{
+        thread_attachThis();
+        rep.type =  "application/json";
+        rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+        rep.json = parseJSON("{}");
+        rep.json["uri"] = req.rawuri;
+        rep.json["headers"] = JSONValue(req.headers);
+        if(req.type.startsWith("application/json")){
+            rep.json["data"] = JSONValue(cast(string)req.rawdata.dup);
+        }            
+    } catch(Throwable e) {
+        error(dump_exception_recursive(e, "POST handler"));
+    }        
+}
 
 int
 main()
@@ -50,8 +81,6 @@ main()
     
 
     try{
-        
-        
         {
             auto drc = executeShell("dd if=/dev/urandom of="~wd~"/data.bin count=1 bs=4096");
             assert(drc.status == 0);
@@ -59,24 +88,43 @@ main()
             
         ubyte[] data = cast(ubyte[])(wd~"/data.bin").read;
 
+        
+        {
+            auto drc = executeShell("mkdir -p "~wd~"/webapp/static"); 
+            assert(drc.status == 0);
+            WebApp app = WebApp("myapp", "http://localhost:8081", parseJSON(`{"root_path":"`~wd~`/webapp","static_path":"static"}`), null);
+            app.route("/get",&server_get_handler,["GET"]);
+            app.route("/post",&server_post_handler,["POST"]);
+            app.start();
+        }
+
+
         {
             log("TEST1 ---------------------------------------------------  simple http get ");
-            WebData rep = WebClient.get("http://httpbin.org/get", null);
+            WebData rep = WebClient.get("http://localhost:8081/get", null);
             auto jdata = rep.toJSON();
-            assert(jdata["datasize"].uinteger == 199);
-            assert(jdata["length"].uinteger == 199);
+            if(jdata["status"].integer != 200){
+                error("HTTP GET Error: "~jdata["msg"].str);
+            }else{
+                assert(jdata["datasize"].uinteger == 67);
+                assert(jdata["length"].uinteger == 67);
+            }                
         }
         
         {
             log("TEST2 ---------------------------------------------------  simple http post ");    
-            WebData rep = WebClient.post("http://httpbin.org/post", data, ["Content-type": "application/octet-stream"]);
+            WebData rep = WebClient.post("http://localhost:8081/post", data, ["Content-type": "application/octet-stream"]);
             auto jdata = rep.toJSON();
-            assert(jdata["json"]["headers"]["Content-Length"].str == "4096");
+            if(jdata["status"].integer != 200){
+                error("HTTP POST Error: "~jdata["msg"].str);
+            }else{
+                assert(jdata["json"]["headers"]["Content-Length"].str == "4096");
+            }    
         }
 
         {
             log("TEST3 ---------------------------------------------------  async http get ");    
-            NNGAio a = WebClient.get_async("http://httpbin.org/get", null, &client_handler );
+            NNGAio a = WebClient.get_async("http://localhost:8081/get", null, &client_handler );
             a.wait();
             log("Async get finished");
         }
@@ -86,12 +134,12 @@ main()
             
             int context_value = 123456;
             JSONValue jdata = parseJSON(`{"one": 1, "two": 2, "more": { "three": 3 }}`);
-            NNGAio a2 = WebClient.request(
+             NNGAio a2 = WebClient.request(
                 "POST",
-                "http://httpbin.org/post", 
+                "http://localhost:8081/post", 
                 [
                     "Content-type": "application/json; charset=UTF-8"
-                ], 
+                 ], 
                 jdata.toString(),
                 null,
                 &client_handler,
@@ -103,7 +151,7 @@ main()
             log("Async post finished");
             NNGAio a3 = WebClient.request(
                 "POST",
-                "http://httpbin.org/wrong_path", 
+                "http://localhost:8081/wrong_path", 
                 [
                     "Content-type": "application/json; charset=UTF-8"
                 ], 
@@ -117,7 +165,7 @@ main()
             a3.wait();
             log("Async post with error finished");
             
-            log("...passed");        
+             log("...passed");        
         }
     } catch(Throwable e) {
         error(dump_exception_recursive(e, "Main"));
