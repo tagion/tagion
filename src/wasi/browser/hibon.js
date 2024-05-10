@@ -1,9 +1,11 @@
 export class HiBON {
 
-  constructor(_instance, _ptr) {
-    this.instance = _instance;
-    this.ptr = _ptr;
+  static HIBONTSIZE = 4+4;
 
+  constructor(_instance) {
+    this.instance = _instance;
+
+    this.ptr = this.instance.exports.mymalloc(HiBON.HiBONTSIZE);
     console.log("before tagion_hibon_create");
     this.instance.exports.tagion_hibon_create(this.ptr);
   }
@@ -67,4 +69,17 @@ export class HiBON {
     console.log(decodedString);
     // TODO: free pointers
   }
+
+
+  toDoc() {
+    const bufPtrPtr = this.instance.exports.mymalloc(4); // pointer to uint8_t (4 bytes)
+    const bufLenPtr = this.instance.exports.mymalloc(4); // pointer to size_t
+
+    const result = this.instance.exports.tagion_hibon_get_document(this.ptr, bufPtrPtr, bufLenPtr);
+    console.log("tagion_hibon_get_document returned: ", result);
+    const bufPtr = new Uint32Array(this.instance.exports.memory.buffer, bufPtrPtr, 1)[0];
+    const bufLen = new Uint32Array(this.instance.exports.memory.buffer, bufLenPtr, 1)[0];
+    return { ptr: bufPtr, len: bufLen };
+  }
+  
 }

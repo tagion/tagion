@@ -27,7 +27,7 @@
 			});
 			wasi.instance = instance;
 
-			let h = new HiBON(instance, 1);
+			let h = new HiBON(instance);
 			h.addString("wowo", "haha");
 			h.toPretty();
 			h.addBool("wowo2", true);
@@ -38,6 +38,7 @@
 			h.toPretty();
 			h.addUint32("someuint", 123);
 			h.toPretty();
+			console.log(h.toDoc());
 
 			//h.toPretty(); 
 
