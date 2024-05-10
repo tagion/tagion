@@ -97,6 +97,53 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
     return ErrorCode.none;
 }
 
+/** 
+ * Get document from hibon
+ * Params:
+ *   instance = HiBONT instance
+ *   buf = the returned buf ptr
+ *   buf_len = length of the buf
+ * Returns: ErrorCode
+ */
+int tagion_hibon_get_document(const(HiBONT*) instance, uint8_t** buf, size_t* buf_len) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            return ErrorCode.exception;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        const doc = Document(h);
+        const data = doc.data;
+        *buf = cast(uint8_t*) &data[0];
+        *buf_len = doc.full_size;
+    }
+    catch(Exception e) {
+        last_error = e;
+        writefln("%s", e);
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+/// todoc
+unittest {
+    HiBONT h;
+    int rt = tagion_hibon_create(&h);
+    assert(rt == ErrorCode.none, "could not create hibon");
+    string key = "some_key";
+    string value = "some_value";
+    rt = tagion_hibon_add_string(&h, &key[0], key.length, &value[0], value.length);
+
+    HiBON string_hibon = cast(HiBON) h.hibon;
+    const doc = Document(string_hibon);
+
+    uint8_t* buf;
+    size_t buf_len;
+
+    rt = tagion_hibon_get_document(&h, &buf, &buf_len);
+    assert(rt == ErrorCode.none);
+    auto read_data = cast(immutable) buf[0..buf_len];
+    assert(doc == Document(read_data));
+}
 
 /** 
  * Insert string into hibon
