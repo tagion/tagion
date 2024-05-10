@@ -67,12 +67,13 @@ help-tauon:
 	$(call log.help, make clean-tauon, Cleans the tauon library)
 	$(call log.close)
 
-
+FUNC_EXIT_SCRIPT="$(DSRC)/lib-wasm/scripts/func_exit.pl"
 $(DBIN)/%.wasm: $(DSRC)/wasi/tests/%.d
 	$(PRECMD)
 	$(DC) $(DFLAGS) $(LIB) $(addprefix $(DVERSION)=,$(DVERSIONS)) $(addprefix -I,$(DINC)) $< $(OUTPUT)$@
-
-#$(WASMLD) $(LIB) $(DOBJ)/$*.o $(WASI_LDFLAGS) -o $@
+	wasm2wat $@ -o $@.wat
+	perl $(FUNC_EXIT_SCRIPT) $@.wat > $@.replaced.wat
+	wat2wasm $@.replaced.wat -o $@
 
 .PHONY: help-tauon
 
