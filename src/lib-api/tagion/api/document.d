@@ -383,7 +383,9 @@ unittest {
  */
 int tagion_document_get_string(const Document.Element* element, char** value, size_t* str_len) {
     try {
+        writefln("doc elem ptr %s", element);
         auto str = element.get!string;
+        writefln("read string: %s", str);
         *value = cast(char*) &str[0];
         *str_len = str.length;
     } catch (Exception e) {

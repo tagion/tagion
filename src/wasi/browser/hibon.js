@@ -67,9 +67,9 @@ export class HiBON {
     const stringBytes = memory.subarray(strPtr, strPtr + strLen);
     const decodedString = new TextDecoder().decode(stringBytes);
     console.log(decodedString);
+    return decodedString;
     // TODO: free pointers
   }
-
 
   toDoc() {
     const bufPtrPtr = this.instance.exports.mymalloc(4); // pointer to uint8_t (4 bytes)
