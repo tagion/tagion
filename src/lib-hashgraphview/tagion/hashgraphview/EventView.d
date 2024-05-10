@@ -76,9 +76,9 @@ struct EventView {
                 intermediate_seen=event2._intermediate_seen_mask.bytes;
                 if (event2.isWitness) {
                     auto witness=cast(const(Event2.Witness2))(event._witness);
-                    strongly_seen=witness._previous_strongly_seen_mask.bytes;
-                    yes_votes = witness._yes_votes;
-                    no_votes = witness._no_votes;
+                    strongly_seen=witness.previous_strongly_seen_mask.bytes;
+                    yes_votes = witness.yes_votes;
+                    no_votes = witness.no_votes;
                 }
             }
             
