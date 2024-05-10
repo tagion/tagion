@@ -71,6 +71,7 @@
             dstep
             wasmer # wasm-executor
             clang # used for wasm compilation
+            wabt # conversion between wat <-> wasm
           ]
           ++ lib.optionals stdenv.isx86_64 [ dmd ];
         };
