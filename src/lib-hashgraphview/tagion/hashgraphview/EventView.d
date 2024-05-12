@@ -6,7 +6,7 @@ import std.exception;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Types : Buffer;
-
+import tagion.hashgraph.HashGraphBasic : isMajority;
 @recordType("node_amount")
 struct NodeAmount {
     long nodes;
@@ -79,6 +79,7 @@ struct EventView {
                     strongly_seen=witness.previous_strongly_seen_mask.bytes;
                     yes_votes = witness.yes_votes;
                     no_votes = witness.no_votes;
+                    famous = isMajority(yes_votes, event2.round.events.length); 
                 }
             }
             
