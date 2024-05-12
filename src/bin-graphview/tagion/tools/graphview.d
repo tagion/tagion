@@ -21,7 +21,8 @@ import std.algorithm;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
 import tagion.basic.Debug;
-import stdio=std.stdio;
+import stdio = std.stdio;
+
 static immutable pastel19 = [
     "#fbb4ae", // Light pink
     "#ccebc5", // Light green
@@ -261,13 +262,20 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             text.pos.y += NODE_CIRCLE_SIZE / 2;
             text.fill = "red";
             obuf[20].writefln("%s", text.toString);
-            text.pos=pos;
-            text.pos.x-= NODE_CIRCLE_SIZE*2;
-            text.fill = "blue";
-            text.text=format("yes %d", e.yes_votes); //, e.no_votes);
+            BitMask voted_mask;
+            voted_mask = e.voted;
+            text.text = (() @trusted => format(vote_fmt ~ ":%d", voted_mask, voted_mask.count))();
+            text.pos.y += NODE_CIRCLE_SIZE / 2;
+            text.fill = "green";
             obuf[20].writefln("%s", text.toString);
-            text.pos.y+=NODE_CIRCLE_SIZE/2;
-            text.text=format("no  %d", e.no_votes); //, e.no_votes);
+
+            text.pos = pos;
+            text.pos.x -= NODE_CIRCLE_SIZE * 2;
+            text.fill = "blue";
+            text.text = format("yes %d", e.yes_votes); //, e.no_votes);
+            obuf[20].writefln("%s", text.toString);
+            text.pos.y += NODE_CIRCLE_SIZE / 2;
+            text.text = format("no  %d", e.no_votes); //, e.no_votes);
             obuf[20].writefln("%s", text.toString);
             //obuf[20].writefln("%d:%d", e.yes_votes, e.no_votes);
         }

@@ -469,6 +469,14 @@ class Round {
                 assert(0, "HashGraph graphtype invalid");
             }
         }
+
+        package Event[] witness_to_be_decided() pure nothrow @nogc {
+            if (!last_decided_round._next) {
+                return null;
+            }
+            return last_decided_round._next._events;
+        }
+
         void check_decide_round0() {
             auto round_to_be_decided = last_decided_round._next;
             if (!voting_round_per_node.all!(r => r.number > round_to_be_decided.number)) {
@@ -479,18 +487,21 @@ class Round {
             round_to_be_decided._decided = true;
             last_decided_round = round_to_be_decided;
         }
+
         void check_decide_round2() {
             import tagion.hashgraph.Event2;
+
             auto round_to_be_decided = last_decided_round._next;
             auto witness_in_round = round_to_be_decided._events
-            .filter!(e => e !is null)
-            .map!(e => cast(const(Event2.Witness2))e.witness);
+                .filter!(e => e !is null)
+                .map!(e => cast(const(Event2.Witness2)) e.witness);
             if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
                 return;
             }
+            //.each!(w => w.doTheMissignNoVotes); 
             if (!witness_in_round.all!(w => w.decided(hashgraph))) {
                 log("Not decided round");
-                return; 
+                return;
             }
             collect_received_round2(round_to_be_decided);
             round_to_be_decided._decided = true;
@@ -501,15 +512,17 @@ class Round {
             const(Event)* event;
             BitMask seen_by_famous_mask;
         }
-        protected void collect_received_round2(Round r) 
-        in(r._decided, "The round should be decided before the round casn be collect") 
-        do{
+
+        protected void collect_received_round2(Round r)
+        in (r._decided, "The round should be decided before the round casn be collect")
+        do {
             import tagion.hashgraph.Event2;
+
             auto witness_event_in_round = r._events.filter!(e => e !is null);
             const famous_count = witness_event_in_round
-            .map!(e => cast(const(Event2.Witness2))(e.witness))
-            .map!(w => isMajority(w.yes_votes, hashgraph.node_size))
-            .count;
+                .map!(e => cast(const(Event2.Witness2))(e.witness))
+                .map!(w => isMajority(w.yes_votes, hashgraph.node_size))
+                .count;
             if (!isMajority(famous_count, hashgraph.node_size)) {
                 // The number of famous is not in majority 
                 // This means that we have to wait for the next round
@@ -521,16 +534,16 @@ class Round {
                 if (!event || node_visit_mask[event.node_id] || event.round_received) {
                     return;
                 }
-                node_visit_mask[event.node_id]=true;
-                if ((event_front[event.node_id].event !is null) || 
-                     ((higher(event_front[event.node_id].event.altitude, event.altitude) &&
-                     (!isMajority(event_front[event.node_id].seen_by_famous_mask, hashgraph))))) {
+                node_visit_mask[event.node_id] = true;
+                if ((event_front[event.node_id].event !is null) ||
+                    ((higher(event_front[event.node_id].event.altitude, event.altitude) &&
+                    (!isMajority(event_front[event.node_id].seen_by_famous_mask, hashgraph))))) {
                     event_front[event.node_id].event = &event;
                 }
-                event_front[event.node_id].seen_by_famous_mask[event.node_id]=true;
-                find_event_front(event._father, node_visit_mask); 
+                event_front[event.node_id].seen_by_famous_mask[event.node_id] = true;
+                find_event_front(event._father, node_visit_mask);
             }
-            
+
             //auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
 
             pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
@@ -538,54 +551,53 @@ class Round {
 
             Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
 
-            version(none)
-            foreach (son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
-                if (consensus_son_tide[son_ancestor.node_id] is null) {
-                    continue;
+            version (none)
+                foreach (son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
+                    if (consensus_son_tide[son_ancestor.node_id] is null) {
+                        continue;
+                    }
+                    if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
+                        consensus_son_tide[son_ancestor.node_id] = son_ancestor;
+                    }
                 }
-                if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
-                    consensus_son_tide[son_ancestor.node_id] = son_ancestor;
+            version (none) {
+                version (EPOCH_FIX) {
+                    auto consensus_tide = consensus_son_tide
+                        .filter!(e => e !is null)
+                        .filter!(e =>
+                                !(e[].retro
+                        .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                        .empty)
+                    )
+                        .map!(e =>
+                                e[].retro
+                                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                                    .array.back
+                    );
+                }
+                else {
+                    auto consensus_tide = consensus_son_tide
+                        .filter!(e => e !is null)
+                        .map!(e =>
+                                e[].retro
+                                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                                    .array.back
+                    );
+
+                }
+
+                auto event_collection = consensus_tide
+                    .map!(e => e[].until!(e => e.round_received !is null))
+                    .joiner.array;
+
+                event_collection.each!(e => e.round_received = r);
+                if (Event.callbacks) {
+                    event_collection.each!(e => Event.callbacks.connect(e));
                 }
             }
-            version(none) {
-            version (EPOCH_FIX) {
-                auto consensus_tide = consensus_son_tide
-                    .filter!(e => e !is null)
-                    .filter!(e =>
-                            !(e[].retro
-                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                    .empty)
-                )
-                    .map!(e =>
-                            e[].retro
-                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                .array.back
-                );
-            }
-            else {
-                auto consensus_tide = consensus_son_tide
-                    .filter!(e => e !is null)
-                    .map!(e =>
-                            e[].retro
-                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                .array.back
-                );
-
-            }
-
-            auto event_collection = consensus_tide
-                .map!(e => e[].until!(e => e.round_received !is null))
-                .joiner.array;
-
-            event_collection.each!(e => e.round_received = r);
-            if (Event.callbacks) {
-                event_collection.each!(e => Event.callbacks.connect(e));
-            }
-    }
-    //        hashgraph.epoch(event_collection, r);
+            //        hashgraph.epoch(event_collection, r);
         }
 
- 
         /**
      * Call to collect and order the epoch
      * Params:

@@ -162,7 +162,8 @@ class Event2 : current_event.Event {
             BitMask _intermediate_event_mask;
             BitMask _previous_strongly_seen_mask;
             uint _yes_votes;
-            uint _no_votes;
+            BitMask _has_voted_mask; /// Witness in the next round which has voted
+            //uint _no_votes;
         }
 
         final const(BitMask) previous_strongly_seen_mask() const pure nothrow @nogc {
@@ -178,19 +179,28 @@ class Event2 : current_event.Event {
         }
 
         final uint no_votes() const pure nothrow @nogc {
-            return _no_votes;
+            return cast(uint)(_has_voted_mask.count) - _yes_votes;
         }
 
-        private void voteNo(const uint votes=1) pure nothrow @nogc {
-            _no_votes+=votes;
+        final const(BitMask) has_voted_mask() const pure nothrow @nogc {
+            return _has_voted_mask;
         }
 
-        private void voteYes() pure nothrow @nogc {
-            _yes_votes++;
+        private void voteYes(const size_t node_id) pure nothrow {
+            if (!_has_voted_mask[node_id]) {
+                _yes_votes++;
+                _has_voted_mask[node_id] = true;
+            }
+        }
+
+        private void voteNo(const size_t node_id) pure nothrow {
+            if (!_has_voted_mask[node_id]) {
+                _has_voted_mask[node_id] = true;
+            }
         }
 
         bool decided(const HashGraph hashgraph) const pure nothrow @nogc {
-               return isMajority(_yes_votes, hashgraph.node_size) || isMajority(_no_votes, hashgraph.node_size); 
+            return isMajority(_yes_votes, hashgraph.node_size) || isMajority(no_votes, hashgraph.node_size);
         }
         //bool famous;
         /**
@@ -238,16 +248,16 @@ class Event2 : current_event.Event {
             /// Counting yes/no votes from this witness to witness in the previous round
             if (witness_event.round.previous) {
                 auto previous_witness_events = witness_event._round.previous._events;
-                foreach (n; 0 .. hashgraph.node_size) {
-                    auto previous_witness_event = previous_witness_events[n];
+                foreach (n, previous_witness_event; previous_witness_events) {
+                    //auto previous_witness_event = previous_witness_events[n];
                     if (previous_witness_event) {
                         auto vote_for_witness = cast(Witness2)(previous_witness_event._witness);
                         const seen_strongly = _previous_strongly_seen_mask[n];
                         if (seen_strongly) {
-                            vote_for_witness.voteYes();
+                            vote_for_witness.voteYes(witness_event.node_id);
                         }
                         else {
-                            vote_for_witness.voteNo();
+                            vote_for_witness.voteNo(witness_event.node_id);
                         }
                         current_event.Event.callbacks.connect(previous_witness_event);
                     }
@@ -258,15 +268,26 @@ class Event2 : current_event.Event {
             if (witness_event.round.next) {
                 pragma(msg, "fixme(cbr) all witness in the next round should vore no");
                 auto next_witness_events = witness_event.round.next.events;
-                _no_votes+= next_witness_events
-                .filter!(vote_from_event => vote_from_event !is null)
-                .map!(vote_from_event => (cast(const(Witness2))vote_from_event._witness))
-                .filter!(vote_from_witness => vote_from_witness._previous_strongly_seen_mask[witness_event.node_id])
-                .count;
+                next_witness_events
+                    .filter!(vote_from_event => vote_from_event !is null)
+                    .map!(vote_from_event => (cast(const(Witness2)) vote_from_event._witness))
+                    .filter!(vote_from_witness => !vote_from_witness._previous_strongly_seen_mask[witness_event.node_id])
+                    .each!(vote_from_witness => voteNo(vote_from_witness.outer.node_id));
+                //.count;
                 //.each!(vote_from_witness => this.voteNo);
-                
+
                 //current_event.Event.callbacks.connect(witness_event);
             }
+        }
+
+        void doTheMissingNoVotes() pure nothrow {
+            auto witness_event = this.outer;
+            witness_event._round
+                .previous
+                ._events
+                .filter!(e => (e !is null) && !_previous_strongly_seen_mask[e.node_id])
+                .map!(e => cast(Witness2)(e._witness))
+                .each!(vote_for_witness => vote_for_witness.voteNo(witness_event.node_id));
         }
     }
 
@@ -289,8 +310,8 @@ class Event2 : current_event.Event {
                 ._events
                 .filter!(e => e !is null)
                 .map!(e => cast(Witness2) e._witness)
-                .map!(w => w._intermediate_event_mask[node_id]) 
-               .count;
+                .map!(w => w._intermediate_event_mask[node_id])
+                .count;
             return isMajority(vote_strongly_seen, hashgraph.node_size);
         }
         return false;
@@ -398,7 +419,18 @@ class Event2 : current_event.Event {
                         ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
             hashgraph.front_seat(this);
-           /*
+            if (_witness) {
+                //auto witness2=cast(Witness2)_witness;
+                auto witness_to_be_decided = hashgraph._rounds.witness_to_be_decided;
+                if (!witness_to_be_decided) {
+                    witness_to_be_decided
+                        .filter!(e => e !is null)
+                        .map!(e => cast(Witness2)(e._witness))
+                        .filter!(w => !w.decided(hashgraph))
+                        .each!(w => w.doTheMissingNoVotes);
+                }
+            }
+            /*
             if (_witness && !(cast(Witness2)_witness).hasVoted) {
                 (cast(Witness2)_witness).vote(hashgraph);
             }
@@ -453,7 +485,7 @@ class Event2 : current_event.Event {
             }
             const strongly_seen = calc_strongly_seen2(hashgraph);
             if (strongly_seen) {
-                 auto witness = new Witness2(hashgraph);
+                auto witness = new Witness2(hashgraph);
                 witness.vote(hashgraph);
                 return;
             }

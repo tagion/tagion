@@ -7,6 +7,7 @@ import tagion.hashgraph.Event;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Types : Buffer;
 import tagion.hashgraph.HashGraphBasic : isMajority;
+
 @recordType("node_amount")
 struct NodeAmount {
     long nodes;
@@ -39,7 +40,8 @@ struct EventView {
     @label("$intermediate") @optional Buffer intermediate_seen;
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
     @label("$no") @optional uint no_votes; /// Famous no votes    
-//  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
+    @label("$voted") @optional Buffer voted; /// Witness which has voted    
+    //  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -80,6 +82,7 @@ struct EventView {
                     yes_votes = witness.yes_votes;
                     no_votes = witness.no_votes;
                     famous = isMajority(yes_votes, event2.round.events.length); 
+                    voted = witness.has_voted_mask.bytes; 
                 }
             }
             
