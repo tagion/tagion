@@ -261,7 +261,7 @@ class Event2 : current_event.Event {
                 _no_votes+= next_witness_events
                 .filter!(vote_from_event => vote_from_event !is null)
                 .map!(vote_from_event => (cast(const(Witness2))vote_from_event._witness))
-                .filter!(vote_from_witness => vote_from_witness._previous_strongly_seen_mask[0])
+                .filter!(vote_from_witness => vote_from_witness._previous_strongly_seen_mask[witness_event.node_id])
                 .count;
                 //.each!(vote_from_witness => this.voteNo);
                 
