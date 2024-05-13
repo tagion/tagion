@@ -336,6 +336,12 @@ struct HiRPC {
                 }
                 assert(0);
             }
+
+            /// Returns: true if the message has a valid signature
+            bool isSigned() const pure nothrow {
+                return signed is SignedState.VALID;
+            }
+
         }
         else {
             this(T)(const SecureNet net, const T post) if (isHiBONRecord!T || is(T : const Document)) {
