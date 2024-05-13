@@ -47,6 +47,10 @@ enum NodeErrorCode {
     invalid_state,
     nng_err,
     empty_msg,
+    doc_inorder,
+    msg_self,
+    msg_signed,
+    exception,
 }
 
 /**
@@ -134,7 +138,7 @@ struct Peer {
     nng_iov sendiov;
     ubyte[] sendbuf;
 
-    enum bufsize = 256;
+    enum bufsize = 4096;
 
     ///
     this(int id, nng_stream* socket) @trusted {
@@ -157,7 +161,6 @@ struct Peer {
         nng_stream_free(socket);
     }
 
-    // FIXME: sending and receive of partial buffers
     static void callback(void* ctx) @trusted nothrow {
         This* _this = self(ctx);
         try {
@@ -174,19 +177,19 @@ struct Peer {
                     size_t msg_size = nng_aio_count(_this.aio);
                     if(msg_size <= 0) {
                         node_error(_this.owner_task, NodeErrorCode.empty_msg, _this.id);
+                        return;
                     }
-                    Buffer buf = _this.sendbuf[0..msg_size].idup;
+                    Buffer buf = _this.sendbuf[0 .. msg_size].idup;
                     check(buf !is null, "Got invalid buf output");
 
-                    /* _this.state.atomicStore(State.ready); */
                     ActorHandle(_this.owner_task).send(NodeRecv(), _this.id, buf);
                     break;
                 default:
-                    /* _this.state.atomicStore(State.ready); */
                     ActorHandle(_this.owner_task).send(NodeSendDone(), _this.id);
                     break;
             }
-        } catch(Exception e) {
+        }
+        catch(Exception e) {
             fail(_this.owner_task, e);
         }
     }
@@ -196,19 +199,26 @@ struct Peer {
         assert(socket !is null, "This peer is not connected");
         check(state is State.ready, "Can not call send when not ready");
         state = State.send;
-        sendbuf[0..data.length] = data[0..data.length];
+        sendbuf[0 .. data.length] = data[0 .. $];
         sendiov.iov_len = data.length;
 
         int rc = nng_aio_set_iov(aio, 1, &sendiov);
         check(rc == 0, nng_errstr(rc));
+
+        debug(nodeinterface) log("sending %s bytes", sendiov.iov_len);
         nng_stream_send(socket, aio);
     }
 
     /// Receive a buffer from the peer
-    void recv() {
+    void recv() @trusted {
         assert(socket !is null, "This peer is not connected");
         check(state is State.ready, "Can not call recv when not ready");
         state = State.receive;
+
+        sendiov.iov_len = bufsize;
+        int rc = nng_aio_set_iov(aio, 1, &sendiov);
+        check(rc == 0, nng_errstr(rc));
+
         nng_stream_recv(socket, aio);
     }
 
@@ -337,23 +347,26 @@ struct PeerMgr {
     // TODO: use envelope
     void on_recv(NodeRecv, int id, Buffer buf) {
 
-        assert(buf.length > 1);
+        if(buf.length < 1) {
+            node_error(thisActor.task_name, NodeErrorCode.doc_inorder, id, "empty buf");
+        }
 
         Document doc = buf;
         /* imported!"std.stdio".writefln("received %s bytes %s", buf.length, doc.topretty); */
 
         if(!doc.isInorder && !doc.empty) {
-            // error
+            node_error(thisActor.task_name, NodeErrorCode.doc_inorder, id);
             return;
         }
 
         const hirpcmsg = hirpc.receive(doc);
         if(hirpcmsg.pubkey == this.net.pubkey) {
-            // "Do you really want to send a message to yourself?");
+            node_error(thisActor.task_name, NodeErrorCode.msg_self, id);
             return;
         }
-        if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
-            // error
+
+        if(!hirpcmsg.isSigned) {
+            node_error(thisActor.task_name, NodeErrorCode.msg_signed, id);
             return;
         }
 
@@ -525,32 +538,43 @@ struct NodeInterfaceService_ {
 
         debug(nodeinterface) log("received %s bytes", buf.length);
 
-        assert(buf.length >= 1);
+        /* assert(buf.length >= 1); */
+        if(buf.length < 1) {
+            on_error(NodeError(), NodeErrorCode.doc_inorder, id, "empty doc", __LINE__);
+            return;
+        }
+
+        debug(nodeinterface) log("%s", buf);
 
         const(Document) doc = buf;
 
         if(!doc.isInorder && !doc.empty) {
-            // error
+            on_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
             return;
         }
 
-        const hirpcmsg = hirpc.receive(doc);
-        if(hirpcmsg.pubkey == this.net.pubkey) {
-            // "Do you really want to send a message to yourself?");
-            return;
-        }
-        if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
-            // error
-            return;
-        }
+        try {
+            const hirpcmsg = hirpc.receive(doc);
+            if(hirpcmsg.pubkey == this.net.pubkey) {
+                on_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
+                return;
+            }
+            if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
+                on_error(NodeError(), NodeErrorCode.msg_signed, id, "", __LINE__);
+                return;
+            }
 
-        Peer* peer = p2p.all_peers[id];
-        peer.state = Peer.State.ready;
-        // Add to the list of known connections
-        p2p.peers.require(hirpcmsg.pubkey, peer);
+            Peer* peer = p2p.all_peers[id];
+            peer.state = Peer.State.ready;
+            // Add to the list of known connections
+            p2p.peers.require(hirpcmsg.pubkey, peer);
 
-        // Send to hasgraph/epoch_creator
-        receive_handle.send(ReceivedWavefront(), doc);
+            // Send to hasgraph/epoch_creator
+            receive_handle.send(ReceivedWavefront(), doc);
+        }
+        catch(Exception e) {
+            on_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
+        }
     }
 
     void on_send(NodeSendDone m, int id) {
@@ -668,6 +692,7 @@ void thread_attachThis() @trusted {
     pragma(msg, "FIXME(lr): find out why thread_attachThis causes issues");
     /* thread_attachThis(); */
 }
+
 void fail(string owner_task, Throwable t) nothrow {
     try {
         immutable tf = TaskFailure(thisActor.task_name, t);
