@@ -93,7 +93,6 @@ class PubkeyASendsAMessageToPubkeyB {
             receiveOnlyTimeout(3.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
         }
 
-        // Fails occasioanally, need not figure out why
         { // A -> B
             const sender = HiRPC(a_net).action("froma3", ResultOk());
             a_handle.send(NodeSend(), b_net.pubkey, Document(sender.toDoc));

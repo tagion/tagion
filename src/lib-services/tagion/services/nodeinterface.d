@@ -135,8 +135,8 @@ struct Peer {
 
     nng_stream* socket;
     nng_aio* aio;
-    nng_iov sendiov;
-    ubyte[] sendbuf;
+    nng_iov iov;
+    ubyte[] msg_buf;
 
     enum bufsize = 4096;
 
@@ -147,11 +147,11 @@ struct Peer {
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
         owner_task = thisActor.task_name;
         this.socket = socket;
-        sendbuf = new ubyte[](bufsize);
-        sendiov.iov_len = bufsize;
-        sendiov.iov_buf = &sendbuf[0];
+        msg_buf = new ubyte[](bufsize);
+        iov.iov_len = bufsize;
+        iov.iov_buf = &msg_buf[0];
 
-        rc = nng_aio_set_iov(aio, 1, &sendiov);
+        rc = nng_aio_set_iov(aio, 1, &iov);
         check(rc == 0, nng_errstr(rc));
     }
 
@@ -179,7 +179,7 @@ struct Peer {
                         node_error(_this.owner_task, NodeErrorCode.empty_msg, _this.id);
                         return;
                     }
-                    Buffer buf = _this.sendbuf[0 .. msg_size].idup;
+                    Buffer buf = _this.msg_buf[0 .. msg_size].idup;
                     check(buf !is null, "Got invalid buf output");
 
                     ActorHandle(_this.owner_task).send(NodeRecv(), _this.id, buf);
@@ -199,13 +199,13 @@ struct Peer {
         assert(socket !is null, "This peer is not connected");
         check(state is State.ready, "Can not call send when not ready");
         state = State.send;
-        sendbuf[0 .. data.length] = data[0 .. $];
-        sendiov.iov_len = data.length;
+        msg_buf[0 .. data.length] = data[0 .. $];
+        iov.iov_len = data.length;
 
-        int rc = nng_aio_set_iov(aio, 1, &sendiov);
+        int rc = nng_aio_set_iov(aio, 1, &iov);
         check(rc == 0, nng_errstr(rc));
 
-        debug(nodeinterface) log("sending %s bytes", sendiov.iov_len);
+        debug(nodeinterface) log("sending %s bytes", iov.iov_len);
         nng_stream_send(socket, aio);
     }
 
@@ -215,8 +215,8 @@ struct Peer {
         check(state is State.ready, "Can not call recv when not ready");
         state = State.receive;
 
-        sendiov.iov_len = bufsize;
-        int rc = nng_aio_set_iov(aio, 1, &sendiov);
+        iov.iov_len = bufsize;
+        int rc = nng_aio_set_iov(aio, 1, &iov);
         check(rc == 0, nng_errstr(rc));
 
         nng_stream_recv(socket, aio);
@@ -559,7 +559,7 @@ struct NodeInterfaceService_ {
                 on_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
                 return;
             }
-            if(hirpcmsg.signed !is HiRPC.SignedState.VALID) {
+            if(hirpcmsg.isSigned) {
                 on_error(NodeError(), NodeErrorCode.msg_signed, id, "", __LINE__);
                 return;
             }
