@@ -511,7 +511,8 @@ class Round {
             round_to_be_decided._decided = true;
             collect_received_round2(round_to_be_decided);
             last_decided_round = round_to_be_decided;
-        }
+            check_decide_round2;
+    }
 
         struct CollectionEventFront {
             const(Event)* event;
