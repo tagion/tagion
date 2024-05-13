@@ -419,22 +419,6 @@ class Event2 : current_event.Event {
                         ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
             hashgraph.front_seat(this);
-            if (_witness) {
-                //auto witness2=cast(Witness2)_witness;
-                auto witness_to_be_decided = hashgraph._rounds.witness_to_be_decided;
-                if (!witness_to_be_decided) {
-                    witness_to_be_decided
-                        .filter!(e => e !is null)
-                        .map!(e => cast(Witness2)(e._witness))
-                        .filter!(w => !w.decided(hashgraph))
-                        .each!(w => w.doTheMissingNoVotes);
-                }
-            }
-            /*
-            if (_witness && !(cast(Witness2)_witness).hasVoted) {
-                (cast(Witness2)_witness).vote(hashgraph);
-            }
-            */
             current_event.Event.callbacks.connect(this);
             hashgraph.refinement.payload(event_package);
         }
@@ -487,6 +471,15 @@ class Event2 : current_event.Event {
             if (strongly_seen) {
                 auto witness = new Witness2(hashgraph);
                 witness.vote(hashgraph);
+                //auto witness2=cast(Witness2)_witness;
+                auto witness_to_be_decided = hashgraph._rounds.witness_to_be_decided;
+                if (!witness_to_be_decided) {
+                    witness_to_be_decided
+                        .filter!(e => e !is null)
+                        .map!(e => cast(Witness2)(e._witness))
+                        .filter!(w => !w.decided(hashgraph))
+                        .each!(w => w.doTheMissingNoVotes);
+                }
                 return;
             }
         }
