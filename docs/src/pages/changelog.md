@@ -1,6 +1,21 @@
+# Changelog for Epoch 1689534 .. 1861240
+** HiBON/Document API **
+The HiBON and Document API are mostly done and created as classes in javascript which uses the WASM file populated with the functions from the C interface.
+We are also currently exploring using it for our mobile platforms via Flutter.
+
+** Mirror node proposal **
+We've created a proposal for mirror nodes, that will act as relay stations for serving information to clients. They are essentially the excact same node, but without running consensus.
+
+** New witness definition **
+We are still working on the hashgraph and have moved a long way with creating a new algorithm for very fast finding witnesses. 
+
+** Envelope documentation **
+We have documented the protocol for using the envelope for compressing information in the system.
+
+
 # Changelog for Epoch 1569150 .. 1689534
 
-# Tool Testing
+** Tool Testing **
 Implemented multiple CLI tool tests for dartutil, hirep, and hibonutil.
 
 ** HiBON API **
