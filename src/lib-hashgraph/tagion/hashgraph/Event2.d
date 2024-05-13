@@ -481,7 +481,7 @@ class Event2 : current_event.Event {
                             .filter!(w => !w.decided(hashgraph))
                             .each!(w => w.doTheMissingNoVotes);
                     }
-                //hashgraph._rounds.check_decide_round2; 
+                hashgraph._rounds.check_decide_round2; 
                 return;
             }
         }

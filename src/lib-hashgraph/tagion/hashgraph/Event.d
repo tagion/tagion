@@ -450,7 +450,7 @@ class Event {
      * The received round for this event
      * Returns: received round
      */
-        const(Round) round_received() {
+        const(Round) round_received() scope {
             return _round_received;
         }
 
@@ -527,7 +527,7 @@ class Event {
          * Get the altitude of the event
          * Returns: altitude
          */
-        immutable(int) altitude() {
+        immutable(int) altitude() scope {
             return event_package.event_body.altitude;
         }
 
