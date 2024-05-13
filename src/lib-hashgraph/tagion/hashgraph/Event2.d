@@ -473,13 +473,15 @@ class Event2 : current_event.Event {
                 witness.vote(hashgraph);
                 //auto witness2=cast(Witness2)_witness;
                 auto witness_to_be_decided = hashgraph._rounds.witness_to_be_decided;
-                if (!witness_to_be_decided) {
-                    witness_to_be_decided
-                        .filter!(e => e !is null)
-                        .map!(e => cast(Witness2)(e._witness))
-                        .filter!(w => !w.decided(hashgraph))
-                        .each!(w => w.doTheMissingNoVotes);
-                }
+                version (none)
+                    if (!witness_to_be_decided) {
+                        witness_to_be_decided
+                            .filter!(e => e !is null)
+                            .map!(e => cast(Witness2)(e._witness))
+                            .filter!(w => !w.decided(hashgraph))
+                            .each!(w => w.doTheMissingNoVotes);
+                    }
+                //hashgraph._rounds.check_decide_round2; 
                 return;
             }
         }

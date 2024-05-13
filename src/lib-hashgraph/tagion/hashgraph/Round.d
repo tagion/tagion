@@ -484,7 +484,6 @@ class Round {
                 return;
             }
             collect_received_round(round_to_be_decided, hashgraph);
-            round_to_be_decided._decided = true;
             last_decided_round = round_to_be_decided;
         }
 
@@ -492,19 +491,25 @@ class Round {
             import tagion.hashgraph.Event2;
 
             auto round_to_be_decided = last_decided_round._next;
+            if (!last_decided_round._next) {
+                return;
+            }
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
-                .map!(e => cast(const(Event2.Witness2)) e.witness);
+                .map!(e => cast(Event2.Witness2) e.witness);
             if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
                 return;
             }
+            witness_in_round
+                .filter!(w => !w.decided(hashgraph))
+                .each!(w => w.doTheMissingNoVotes);
             //.each!(w => w.doTheMissignNoVotes); 
             if (!witness_in_round.all!(w => w.decided(hashgraph))) {
                 log("Not decided round");
                 return;
             }
-            collect_received_round2(round_to_be_decided);
             round_to_be_decided._decided = true;
+            collect_received_round2(round_to_be_decided);
             last_decided_round = round_to_be_decided;
         }
 
@@ -514,7 +519,7 @@ class Round {
         }
 
         protected void collect_received_round2(Round r)
-        in (r._decided, "The round should be decided before the round casn be collect")
+        in (r._decided, "The round should be decided before the round can be collect")
         do {
             import tagion.hashgraph.Event2;
 

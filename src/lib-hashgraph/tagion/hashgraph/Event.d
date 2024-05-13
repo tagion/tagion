@@ -441,6 +441,10 @@ class Event {
         return isWitness && round.famous_mask[node_id];
     }
 
+    package Witness witness() pure nothrow {
+        return _witness;
+    }
+
     @nogc pure nothrow const final {
         /**
      * The received round for this event
