@@ -101,6 +101,7 @@ jobs:
           git clean -f && git restore .
       - name: Build and clone wasi
         run: |
+          export DC=ldc2
           make PLATFORM=wasm32-unknown-wasi wasi
 
       - name: build tauon
