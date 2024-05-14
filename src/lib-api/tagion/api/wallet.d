@@ -141,6 +141,28 @@ int tagion_wallet_login(const(WalletT*) wallet_instance,
     return ErrorCode.none;
 }
 
+enum PUBKEYSIZE = 33;
+int tagion_wallet_create_bill(const double amount, 
+                    const uint8_t* pubkey, 
+                    const size_t pubkey_len, 
+                    const(int64_t) time) {
+    try {
+        if (pubkey_len != 33) {
+            return ErrorCode.exception;
+        }
+        const _amount = TagionCurrency(amount);
+        const _pubkey = cast(Pubkey) pubkey[0..pubkey_len].idup;
+        const _time = sdt_t(time);
+
+        const bill = requestBill(_amount, _pubkey, _time);
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
 ///
 unittest {
     ApiWallet wallet;
@@ -166,8 +188,6 @@ unittest {
                                 account.data.length);
     assert(rt == ErrorCode.none);
 
-    
-
     ApiWallet* read_wallet = cast(ApiWallet*) w.wallet;
     assert(read_wallet._pin == wallet._pin);
     assert(read_wallet._wallet == wallet._wallet);
@@ -176,4 +196,7 @@ unittest {
     rt = tagion_wallet_login(&w, &pincode[0], pincode.length);
     assert(rt == ErrorCode.none);
 }
+
+
+
 
