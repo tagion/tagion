@@ -105,6 +105,7 @@ jobs:
 
       - name: build tauon
         run: | 
+          export DC=ldc2
           make PLATFORM=wasm32-unknown-wasi tauon-test
 
       - name: run wasmer test
