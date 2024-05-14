@@ -46,7 +46,6 @@ struct NodeInterfaceOptions {
 ///
 enum NodeErrorCode {
     invalid_state,
-    nng_err,
     empty_msg,
     doc_inorder,
     msg_self,
@@ -71,14 +70,16 @@ struct Dialer {
 
     ///
     this(int id, string address_, Pubkey pkey) @trusted {
-        int rc = nng_aio_alloc(&aio, &callback, self);
+        int rc;
+        rc = nng_aio_alloc(&aio, &callback, self);
+        check(rc == nng_errno.NNG_OK, nng_errstr(rc));
+
         this.pkey = pkey;
         this.id = id;
-
         this.address = address_;
-        address_ ~= '\0';
 
-        rc = nng_stream_dialer_alloc(&dialer, &address[0]);
+        address_ ~= '\0';
+        rc = nng_stream_dialer_alloc(&dialer, &address_[0]);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
         owner_task = thisActor.task_name;
     }
@@ -104,12 +105,12 @@ struct Dialer {
         try {
             thread_attachThis();
 
-            int rc = nng_aio_result(_this.aio);
+            nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio);
             if(rc == nng_errno.NNG_OK) {
                 ActorHandle(_this.owner_task).send(NodeDial(), _this.id);
             }
             else {
-                node_error(_this.owner_task, NodeErrorCode.nng_err, _this.id, nng_errstr(rc));
+                node_error(_this.owner_task, rc, _this.id, _this.address);
             }
         } 
         catch(Exception e) {
@@ -142,7 +143,6 @@ struct Peer {
 
     // taskname is used inside the nng callback to know which thread to notify
     string owner_task;
-    string address;
     State state;
 
     nng_stream* socket;
@@ -179,9 +179,9 @@ struct Peer {
         try {
             thread_attachThis();
 
-            int rc = nng_aio_result(_this.aio);
+            nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio);
             if(rc != nng_errno.NNG_OK) {
-                node_error(_this.owner_task, NodeErrorCode.nng_err, _this.id, nng_errstr(rc));
+                node_error(_this.owner_task, rc, _this.id, text(_this.state));
                 return;
             }
 
@@ -301,15 +301,15 @@ struct PeerMgr {
         This* _this = self(ctx);
         try {
             thread_attachThis(); // Attach the current thread to the gc
-            int rc = nng_aio_result(_this.aio_conn);
+            nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio_conn);
 
             int id = generateId!int;
 
-            if(rc == nng_errno.NNG_OK) {
-                ActorHandle(_this.task_name).send(NodeAccept(), id);
+            if(rc != nng_errno.NNG_OK) {
+                node_error(_this.task_name, rc, id);
             }
             else {
-                node_error(_this.task_name, NodeErrorCode.nng_err, id);
+                ActorHandle(_this.task_name).send(NodeAccept(), id);
             }
         }
         catch(Exception e) {
@@ -450,8 +450,8 @@ unittest {
     auto net2 = new StdSecureNet();
     net2.generateKeyPair("me2");
 
-    auto dialer = PeerMgr(net1, "abstract://whomisam" ~ generateId.to!string, 4096);
-    auto listener = PeerMgr(net2, "abstract://whomisam" ~ generateId.to!string, 4096);
+    auto dialer = PeerMgr(net1, "abstract://whomisam" ~ generateId.to!string, 256);
+    auto listener = PeerMgr(net2, "abstract://whomisam" ~ generateId.to!string, 256);
 
     dialer.listen();
     listener.listen();
@@ -570,7 +570,7 @@ struct NodeInterfaceService_ {
 
         /* assert(buf.length >= 1); */
         if(buf.length < 1) {
-            on_error(NodeError(), NodeErrorCode.doc_inorder, id, "empty doc", __LINE__);
+            on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, "empty doc", __LINE__);
             return;
         }
 
@@ -579,18 +579,18 @@ struct NodeInterfaceService_ {
         const(Document) doc = buf;
 
         if(!doc.isInorder && !doc.empty) {
-            on_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
+            on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
             return;
         }
 
         try {
             const hirpcmsg = hirpc.receive(doc);
             if(hirpcmsg.pubkey == this.net.pubkey) {
-                on_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
+                on_node_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
                 return;
             }
             if(!hirpcmsg.isSigned) {
-                on_error(NodeError(), NodeErrorCode.msg_signed, id, text(hirpcmsg.signed), __LINE__);
+                on_node_error(NodeError(), NodeErrorCode.msg_signed, id, text(hirpcmsg.signed), __LINE__);
                 return;
             }
 
@@ -603,7 +603,7 @@ struct NodeInterfaceService_ {
             receive_handle.send(ReceivedWavefront(), doc);
         }
         catch(Exception e) {
-            on_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
+            on_node_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
         }
     }
 
@@ -613,15 +613,21 @@ struct NodeInterfaceService_ {
         p2p.all_peers[id].recv; // Be ready to receive next message
     }
 
-    void on_error(NodeError, NodeErrorCode code, int id, string msg, int _) {
-        log.error("(%s)%s:%s", id, code, msg);
+    void on_node_error(NodeError, NodeErrorCode code, int id, string msg, int line) {
+        log.error("%s(%s): %s %s", id, line, code, msg);
+    }
+
+    void on_nng_error(NNGError, nng_errno code, int id, string msg, int line) {
+        log.error("%s(%s): %s %s", id, line, nng_errstr(code), msg);
     }
 
     void task() {
         p2p.listen();
+        log("listening on %s", opts.node_address);
+
         p2p.accept();
 
-        run(&node_send, &on_accept, &on_recv, &on_send, &on_dial, &on_error);
+        run(&node_send, &on_accept, &on_recv, &on_send, &on_dial, &on_node_error, &on_nng_error);
     }
 }
 
@@ -736,6 +742,10 @@ void fail(string owner_task, Throwable t) nothrow {
 
 void node_error(string owner_task, NodeErrorCode code, int id, string msg = "", int line = __LINE__) {
     ActorHandle(owner_task).send(NodeError(), code, id, msg, line);
+}
+
+void node_error(string owner_task, nng_errno code, int id, string msg = "", int line = __LINE__) {
+    ActorHandle(owner_task).send(NNGError(), code, id, msg, line);
 }
 
 mixin template NodeHelpers() {
