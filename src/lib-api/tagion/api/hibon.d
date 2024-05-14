@@ -7,7 +7,9 @@ import tagion.hibon.Document;
 import tagion.utils.StdTime;
 import tagion.hibon.BigNumber;
 import std.bitmanip;
+version(C_API_DEBUG) {
 import std.stdio : writefln;
+}
 
 extern (C):
 version (unittest) {
@@ -25,7 +27,10 @@ struct HiBONT {
 
 void* mymalloc(size_t size) {
     import core.stdc.stdlib;
+
+    version(C_API_DEBUG) {
     writefln("calling malloc");
+    }
     return malloc(size);
 }
 
@@ -36,7 +41,6 @@ void* mymalloc(size_t size) {
  * Returns: ErrorCode
  */
 int tagion_hibon_create(HiBONT* instance) {
-    writefln("CALLING hibon");
     try {
         if (instance is null) {
     //         writefln("instance is null");
@@ -44,7 +48,9 @@ int tagion_hibon_create(HiBONT* instance) {
         }
         instance.hibon = cast(void*) new HiBON;
         instance.magic_byte = MAGIC_HIBON;
+        version(C_API_DEBUG) {
         writefln("created hibon");
+        }
     }
     catch (Exception e) {
         last_error = e;
@@ -66,7 +72,9 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
 
     try {
         const fmt = cast(DocumentTextFormat) text_format;
+        version(C_API_DEBUG) {
         writefln("%s", fmt);
+        }
 
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
             return ErrorCode.exception;
@@ -91,7 +99,9 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
     }
     catch(Exception e) {
         last_error = e;
+        version(C_API_DEBUG) {
         writefln("%s", e);
+        }
         return ErrorCode.exception;
     }
     return ErrorCode.none;
@@ -118,7 +128,9 @@ int tagion_hibon_get_document(const(HiBONT*) instance, uint8_t** buf, size_t* bu
     }
     catch(Exception e) {
         last_error = e;
+        version(C_API_DEBUG) {
         writefln("%s", e);
+        }
         return ErrorCode.exception;
     }
     return ErrorCode.none;
@@ -462,7 +474,9 @@ template add_array_T(T) {
             }
             ubyte[] _value_buf = buf[0..buf_len];
             const _value = read!T(_value_buf);
+            version(C_API_DEBUG) {
             writefln("read value %s", _value);
+            }
             h[_key] = _value;
         }
         catch(Exception e) {
