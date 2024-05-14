@@ -45,8 +45,8 @@ static TagionBill requestBill(TagionCurrency amount, Pubkey bill_owner, sdt_t bi
 
 @safe
 struct Wallet(Net : SecureNet) {
-    protected RecoverGenerator _wallet; /// Information to recover the seed-generator
-    protected DevicePIN _pin; /// Information to check the Pin code
+    RecoverGenerator _wallet; /// Information to recover the seed-generator
+    DevicePIN _pin; /// Information to check the Pin code
 
     AccountDetails account; /// Account-details holding the bills and generator
 
