@@ -76,7 +76,8 @@ class ContractTypeWithoutCorrectInformation {
     import tagion.script.standardnames;
     import tagion.utils.StdTime;
 
-    @recordType("TGN") struct MaliciousBill {
+    @recordType("TGN")
+    struct MaliciousBill {
         @label(StdNames.value) @optional @(filter.Initialized) TagionCurrency value; /// Tagion bill 
         @label(StdNames.time) @optional @(filter.Initialized) sdt_t time;
         @label(StdNames.owner) @optional @(filter.Initialized) Pubkey owner;

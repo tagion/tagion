@@ -423,7 +423,8 @@ received = the HiRPC received package
     /** 
  * Recorder journal
  */
-    @recordType("Journal") struct Journal {
+    @recordType("Journal")
+    struct Journal {
         Index index;
         RecordFactory.Recorder recorder;
         enum indexName = GetLabel!(index).name;

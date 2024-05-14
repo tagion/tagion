@@ -5,7 +5,6 @@ module tagion.script.namerecords;
 import std.format;
 import std.array;
 
-//import tagion.script.common;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Fingerprint, Pubkey, Signature;
 import tagion.dart.DARTBasic;
@@ -14,7 +13,6 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.standardnames;
 import tagion.utils.StdTime;
 
-@safe:
 @recordType("$@NNC")
 struct NetworkNameCard {
     @label(StdNames.name) string name; /// Tagion domain name (TDN) 

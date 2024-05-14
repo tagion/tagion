@@ -1,6 +1,9 @@
 // TRT database build on the DART
 
 module tagion.trt.TRT;
+
+@safe:
+
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
 import tagion.script.common : TagionBill;
@@ -14,7 +17,6 @@ import tagion.logger.Logger : log;
 import std.digest : toHexString;
 import tagion.hibon.Document : Document;
 
-@safe:
 @recordType(TYPENAME ~ "trt")
 struct TRTArchive {
     @label(TRTLabel) Pubkey owner;
@@ -28,7 +30,6 @@ struct TRTArchive {
     });
 }
 
-@safe:
 @recordType(TYPENAME ~ "trt_contract")
 struct TRTContractArchive {
     @label(StdNames.hash_contract) DARTIndex contract_hash;

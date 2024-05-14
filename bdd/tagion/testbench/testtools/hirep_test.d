@@ -376,7 +376,9 @@ class TestRecordtype {
 
     @Given("initial hibon file with several records with recordtype")
     Document withRecordtype() {
-        @safe @recordType(record_type) static struct TestDoc {
+        @safe 
+        @recordType(record_type)
+        static struct TestDoc {
             int x;
             mixin HiBONRecord!(q{
             this(int x) {
