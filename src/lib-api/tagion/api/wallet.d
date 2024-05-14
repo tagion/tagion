@@ -144,6 +144,44 @@ int tagion_wallet_login(const(WalletT*) wallet_instance,
     return ErrorCode.none;
 }
 
+///
+unittest {
+    ApiWallet wallet;
+    string password = "wowo wowo";
+    string pincode = "1234";
+    wallet.createWallet(password, pincode);
+    auto bill_insert = wallet.addBill(1000.TGN);
+
+    const device_pin = wallet._pin.toDoc;
+    const recover_generator = wallet._wallet.toDoc;
+    const account = wallet.account.toDoc;
+
+    WalletT w;
+    int rt = tagion_wallet_create_instance(&w);
+    assert(rt == ErrorCode.none);
+
+    rt = tagion_wallet_read_wallet(&w, 
+                                &device_pin.data[0], 
+                                device_pin.data.length,
+                                &recover_generator.data[0],
+                                recover_generator.data.length,
+                                &account.data[0],
+                                account.data.length);
+    assert(rt == ErrorCode.none);
+
+    ApiWallet* read_wallet = cast(ApiWallet*) w.wallet;
+    assert(read_wallet._pin == wallet._pin);
+    assert(read_wallet._wallet == wallet._wallet);
+    assert(read_wallet.account == wallet.account);
+
+    rt = tagion_wallet_login(&w, &pincode[0], pincode.length);
+    assert(rt == ErrorCode.none);
+}
+
+
+
+
+
 enum PUBKEYSIZE = 33;
 int tagion_wallet_create_bill(const double amount, 
                     const uint8_t* pubkey, 
@@ -187,41 +225,3 @@ unittest {
     assert(read_bill.time == time);
     assert(read_bill.owner == wallet.getCurrentPubkey);
 }
-
-///
-unittest {
-    ApiWallet wallet;
-    string password = "wowo wowo";
-    string pincode = "1234";
-    wallet.createWallet(password, pincode);
-    auto bill_insert = wallet.addBill(1000.TGN);
-
-    const device_pin = wallet._pin.toDoc;
-    const recover_generator = wallet._wallet.toDoc;
-    const account = wallet.account.toDoc;
-
-    WalletT w;
-    int rt = tagion_wallet_create_instance(&w);
-    assert(rt == ErrorCode.none);
-
-    rt = tagion_wallet_read_wallet(&w, 
-                                &device_pin.data[0], 
-                                device_pin.data.length,
-                                &recover_generator.data[0],
-                                recover_generator.data.length,
-                                &account.data[0],
-                                account.data.length);
-    assert(rt == ErrorCode.none);
-
-    ApiWallet* read_wallet = cast(ApiWallet*) w.wallet;
-    assert(read_wallet._pin == wallet._pin);
-    assert(read_wallet._wallet == wallet._wallet);
-    assert(read_wallet.account == wallet.account);
-
-    rt = tagion_wallet_login(&w, &pincode[0], pincode.length);
-    assert(rt == ErrorCode.none);
-}
-
-
-
-
