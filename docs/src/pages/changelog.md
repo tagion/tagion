@@ -4,7 +4,7 @@ The HiBON and Document API are mostly done and created as classes in javascript 
 We are also currently exploring using it for our mobile platforms via Flutter.
 
 ** Mirror node proposal **
-We've created a proposal for mirror nodes, that will act as relay stations for serving information to clients. They are essentially the excact same node, but without running consensus.
+We've created a proposal for mirror nodes, that will act as relay stations for serving information to clients. They are essentially the exact same node, but without running consensus.
 
 ** New witness definition **
 We are still working on the hashgraph and have moved a long way with creating a new algorithm for very fast finding witnesses. 

@@ -35,6 +35,7 @@ struct NodeInterfaceOptions {
     uint send_timeout = 200; // Milliseconds
     uint recv_timeout = 200; // Milliseconds
     uint send_max_retry = 0;
+    size_t bufsize = 4096;
     string node_address = "tcp://[::1]:10700"; // Address
 
     import tagion.utils.JSONCommon;
@@ -138,11 +139,12 @@ struct Peer {
     nng_iov iov;
     ubyte[] msg_buf;
 
-    enum bufsize = 4096;
+    size_t bufsize = 4096;
 
     ///
-    this(int id, nng_stream* socket) @trusted {
+    this(int id, nng_stream* socket, size_t bufsize) @trusted {
         this.id = id;
+        this.bufsize = bufsize;
         int rc = nng_aio_alloc(&aio, &callback, self);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
         owner_task = thisActor.task_name;
@@ -196,6 +198,7 @@ struct Peer {
 
     /// Send a buffer to the peer
     void send(const(ubyte)[] data) @trusted {
+        assert(data.length <= bufsize, "sent data greater than bufsize");
         assert(socket !is null, "This peer is not connected");
         check(state is State.ready, "Can not call send when not ready");
         state = State.send;
@@ -236,9 +239,10 @@ struct PeerMgr {
     @disable this(this);
 
     ///
-    this(const(SecureNet) net, string address) @trusted {
+    this(const(SecureNet) net, string address, size_t bufsize) @trusted {
         this.net = net;
         this.hirpc = HiRPC(net);
+        this.bufsize = bufsize;
         int rc = nng_aio_alloc(&aio_conn, &callback, self);
         check!ServiceError(rc == 0, nng_errstr(rc));
         this.task_name = thisActor.task_name;
@@ -261,6 +265,7 @@ struct PeerMgr {
     const SecureNet net;
     const HiRPC hirpc;
     string address;
+    size_t bufsize;
 
     Dialer*[int] dialers;
 
@@ -366,7 +371,7 @@ struct PeerMgr {
         }
 
         if(!hirpcmsg.isSigned) {
-            node_error(thisActor.task_name, NodeErrorCode.msg_signed, id);
+            node_error(thisActor.task_name, NodeErrorCode.msg_signed, id, text(hirpcmsg.signed));
             return;
         }
 
@@ -386,7 +391,7 @@ struct PeerMgr {
         }
 
         nng_stream* socket = dialer.get_output;
-        auto peer = new Peer(id, socket);
+        auto peer = new Peer(id, socket, bufsize);
 
         all_peers[id] = peer;
         peers[dialer.pkey] = peer;
@@ -397,7 +402,7 @@ struct PeerMgr {
         nng_stream* socket = cast(nng_stream*)nng_aio_get_output(aio_conn, 0);
         assert(socket !is null, "No connections established?");
 
-        all_peers[id] = new Peer(id, socket);
+        all_peers[id] = new Peer(id, socket, bufsize);
     }
 
     // A send task was completed
@@ -420,8 +425,8 @@ unittest {
     auto net2 = new StdSecureNet();
     net2.generateKeyPair("me2");
 
-    auto dialer = PeerMgr(net1, "abstract://whomisam" ~ generateId.to!string);
-    auto listener = PeerMgr(net2, "abstract://whomisam" ~ generateId.to!string);
+    auto dialer = PeerMgr(net1, "abstract://whomisam" ~ generateId.to!string, 4096);
+    auto listener = PeerMgr(net2, "abstract://whomisam" ~ generateId.to!string, 4096);
 
     dialer.listen();
     listener.listen();
@@ -491,7 +496,7 @@ struct NodeInterfaceService_ {
         this.net = new StdSecureNet(shared_net);
         this.hirpc = HiRPC(this.net);
         this.receive_handle = ActorHandle(message_handler_task);
-        this.p2p = PeerMgr(this.net, opts.node_address);
+        this.p2p = PeerMgr(this.net, opts.node_address, opts.bufsize);
     }
 
     // Messages which are waiting for dial connection
@@ -559,8 +564,8 @@ struct NodeInterfaceService_ {
                 on_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
                 return;
             }
-            if(hirpcmsg.isSigned) {
-                on_error(NodeError(), NodeErrorCode.msg_signed, id, "", __LINE__);
+            if(!hirpcmsg.isSigned) {
+                on_error(NodeError(), NodeErrorCode.msg_signed, id, text(hirpcmsg.signed), __LINE__);
                 return;
             }
 
