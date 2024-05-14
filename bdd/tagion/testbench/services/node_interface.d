@@ -118,4 +118,21 @@ class PubkeyASendsAMessageToPubkeyB {
         }
         return result_ok;
     }
+
+    @Then("I try to send to a node which can't be reached")
+    Document reached() {
+        auto c_net = new StdSecureNet();
+        c_net.generateKeyPair("C");
+
+        immutable nnr = new NetworkNodeRecord(c_net.pubkey,  "abstract://nodeinterface_c");
+        addressbook.set(nnr);
+
+        const sender = HiRPC(a_net).action("froma5", ResultOk());
+        a_handle.send(NodeSend(), c_net.pubkey, Document(sender.toDoc));
+
+        bool received = receiveTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln(doc.toPretty);});
+        check(!received, "Should not receive anything");
+
+        return result_ok;
+    }
 }

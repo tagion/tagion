@@ -103,11 +103,22 @@ struct Dialer {
         This* _this = self(ctx);
         try {
             thread_attachThis();
-            ActorHandle(_this.owner_task).send(NodeDial(), _this.id);
+
+            int rc = nng_aio_result(_this.aio);
+            if(rc == nng_errno.NNG_OK) {
+                ActorHandle(_this.owner_task).send(NodeDial(), _this.id);
+            }
+            else {
+                node_error(_this.owner_task, NodeErrorCode.nng_err, _this.id, nng_errstr(rc));
+            }
         } 
         catch(Exception e) {
             fail(_this.owner_task, e);
         }
+    }
+
+    void abort() {
+        nng_aio_abort(aio, int());
     }
 
     mixin NodeHelpers;
@@ -223,6 +234,10 @@ struct Peer {
         check(rc == 0, nng_errstr(rc));
 
         nng_stream_recv(socket, aio);
+    }
+
+    void abort() {
+        nng_aio_abort(aio, int());
     }
 
     mixin NodeHelpers;
@@ -408,6 +423,16 @@ struct PeerMgr {
     // A send task was completed
     void on_send(NodeSendDone, int id) {
         all_peers[id].state = Peer.State.ready;
+    }
+
+    void abort() {
+        nng_aio_abort(aio_conn, int());
+        foreach(dialer; dialers.byValue) {
+            dialer.abort();
+        }
+        foreach(peer; peers.byValue) {
+            peer.abort();
+        }
     }
 
     mixin NodeHelpers;
