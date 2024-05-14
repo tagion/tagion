@@ -88,6 +88,28 @@ jobs:
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
+  tauon-wasm:
+    runs-on: CI
+    timeout-minutes: 3
+    steps:
+      - run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+      - run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore .
+      - name: Build and clone wasi
+        run: |
+          make PLATFORM=wasm32-unknown-wasi wasi
+
+      - name: build tauon
+        run: | 
+          make PLATFORM=wasm32-unknown-wasi tauon-test
+
+      - name: run wasmer test
+        run: |
+          make PLATFORM=wasm32-unknown-wasi tauon-run
 
   commit_stage_cov:
     if: ${{ vars.ENABLE_COV || false }}
