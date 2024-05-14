@@ -6,6 +6,9 @@ import tagion.crypto.SecureNet;
 import core.stdc.stdint;
 import tagion.hibon.Document;
 import tagion.script.TagionCurrency;
+import tagion.utils.StdTime;
+import tagion.crypto.Types : Pubkey;
+import tagion.script.common : TagionBill;
 
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.wallet.AccountDetails;
@@ -145,22 +148,44 @@ enum PUBKEYSIZE = 33;
 int tagion_wallet_create_bill(const double amount, 
                     const uint8_t* pubkey, 
                     const size_t pubkey_len, 
-                    const(int64_t) time) {
+                    const(int64_t) time,
+                    uint8_t** bill_buf,
+                    size_t* bill_buf_len) {
     try {
-        if (pubkey_len != 33) {
+        if (pubkey_len != PUBKEYSIZE) {
             return ErrorCode.exception;
         }
         const _amount = TagionCurrency(amount);
         const _pubkey = cast(Pubkey) pubkey[0..pubkey_len].idup;
         const _time = sdt_t(time);
-
         const bill = requestBill(_amount, _pubkey, _time);
+        const bill_doc = bill.toDoc;
+        *bill_buf = cast(uint8_t*) &bill_doc.data[0];
+        *bill_buf_len = bill_doc.full_size;
     }
     catch(Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
     return ErrorCode.none;
+}
+
+unittest {
+    ApiWallet wallet;
+    wallet.createWallet("wowo", "1234");
+    const double amount = 213.2f;
+    const pkey = wallet.getCurrentPubkey;
+    const time = currentTime;
+
+    uint8_t* bill_buf;
+    size_t bill_buf_len;
+    int rt = tagion_wallet_create_bill(amount, &pkey[0], pkey.length, cast(const(int64_t)) time, &bill_buf, &bill_buf_len);
+    assert(rt == ErrorCode.none);
+
+    const read_bill = TagionBill(Document(bill_buf[0..bill_buf_len].idup));
+    assert(read_bill.value == TagionCurrency(amount));
+    assert(read_bill.time == time);
+    assert(read_bill.owner == wallet.getCurrentPubkey);
 }
 
 ///
