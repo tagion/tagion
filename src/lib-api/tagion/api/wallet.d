@@ -305,6 +305,24 @@ int tagion_wallet_create_bill(const double amount,
     }
     return ErrorCode.none;
 }
+///
+unittest {
+    ApiWallet wallet;
+    wallet.createWallet("wowo", "1234");
+    const double amount = 213.2f;
+    const pkey = wallet.getCurrentPubkey;
+    const time = currentTime;
+
+    uint8_t* bill_buf;
+    size_t bill_buf_len;
+    int rt = tagion_wallet_create_bill(amount, &pkey[0], pkey.length, cast(const(int64_t)) time, &bill_buf, &bill_buf_len);
+    assert(rt == ErrorCode.none);
+
+    const read_bill = TagionBill(Document(bill_buf[0..bill_buf_len].idup));
+    assert(read_bill.value == TagionCurrency(amount));
+    assert(read_bill.time == time);
+    assert(read_bill.owner == wallet.getCurrentPubkey);
+}
 
 /** 
  * Forces an amount in the wallet. Note. should only be used for testing
@@ -332,24 +350,6 @@ int tagion_wallet_force_bill(const(WalletT*) wallet_instance,
 }
 
 
-///
-unittest {
-    ApiWallet wallet;
-    wallet.createWallet("wowo", "1234");
-    const double amount = 213.2f;
-    const pkey = wallet.getCurrentPubkey;
-    const time = currentTime;
-
-    uint8_t* bill_buf;
-    size_t bill_buf_len;
-    int rt = tagion_wallet_create_bill(amount, &pkey[0], pkey.length, cast(const(int64_t)) time, &bill_buf, &bill_buf_len);
-    assert(rt == ErrorCode.none);
-
-    const read_bill = TagionBill(Document(bill_buf[0..bill_buf_len].idup));
-    assert(read_bill.value == TagionCurrency(amount));
-    assert(read_bill.time == time);
-    assert(read_bill.owner == wallet.getCurrentPubkey);
-}
 
 /** 
  * Pay to a bill
