@@ -11,6 +11,10 @@ TAUON_DINC+=$(DSRC)/lib-hibon
 TAUON_DINC+=$(DSRC)/lib-phobos
 TAUON_DINC+=$(DSRC)/lib-utils
 TAUON_DINC+=$(DSRC)/lib-crypto
+TAUON_DINC+=$(DSRC)/lib-funnel
+TAUON_DINC+=$(DSRC)/lib-dart
+TAUON_DINC+=$(DSRC)/lib-wallet
+TAUON_DINC+=$(DSRC)/lib-communication
 TAUON_DINC+=$(DSRC)/wasi
 
 TAUON_DFILES+=$(DSRC)/wasi/tvm/wasi_main.d
@@ -70,6 +74,10 @@ TAUON_DFILES+=$(DSRC)/lib-funnel/tagion/script/Currency.d
 TAUON_DFILES+=$(DSRC)/lib-dart/tagion/dart/DARTBasic.d
 TAUON_DFILES+=$(DSRC)/lib-dart/tagion/dart/Recorder.d
 TAUON_DFILES+=$(DSRC)/lib-dart/tagion/dart/DARTException.d
+TAUON_DFILES+=$(DSRC)/lib-dart/tagion/dart/DARTcrud.d
+TAUON_DFILES+=$(DSRC)/lib-dart/tagion/dart/DARTRim.d
+
+TAUON_DFILES+=$(DSRC)/lib-trt/tagion/trt/TRT.d
 
 TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/WalletRecords.d
 TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/Basic.d

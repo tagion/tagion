@@ -5,7 +5,6 @@ import std.algorithm.iteration : filter;
 import std.range : ElementType, isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.communication.HiRPC;
-import tagion.dart.DART : DART;
 import tagion.dart.DARTBasic : DARTIndex, Params;
 import tagion.dart.DARTRim;
 import tagion.dart.Recorder;

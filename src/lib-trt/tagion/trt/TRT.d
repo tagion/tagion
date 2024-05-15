@@ -13,7 +13,6 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.script.standardnames;
 import tagion.crypto.Types;
 import std.range;
-import tagion.logger.Logger : log;
 import std.digest : toHexString;
 import tagion.hibon.Document : Document;
 
@@ -77,9 +76,6 @@ void createTRTUpdateRecorder(
             auto to_remove_index = trt_archive.indices.countUntil!(idx => idx == dart_index);
             if (to_remove_index >= 0) {
                 trt_archive.indices = trt_archive.indices.remove(to_remove_index);
-            }
-            else {
-                log.error("Index to remove not exists in DART: %s", dart_index[].toHexString);
             }
         }
 
