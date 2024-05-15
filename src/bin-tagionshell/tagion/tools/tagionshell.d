@@ -28,9 +28,8 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONRecord : isRecord;
-import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex;
+import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex, Params;
 import tagion.dart.Recorder;
-import tagion.dart.DART;
 import crud = tagion.dart.DARTcrud;
 import tagion.services.subscription;
 import tagion.Keywords;
@@ -513,7 +512,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
             auto indices = receiver
                 .method
-                .params[DART.Params.dart_indices]
+                .params[Params.dart_indices]
                 .get!(Document)
                 .range!(DARTIndex[]);
 
