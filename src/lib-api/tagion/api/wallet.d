@@ -271,6 +271,15 @@ unittest {
     assert(read_bill.owner == wallet.getCurrentPubkey);
 }
 
+/** 
+ * Pay to a bill
+ * Params:
+ *   wallet_instance = pointer to the instance of the wallet 
+ *   bill_buf = pointer to the tagionbill buffer
+ *   bill_buf_len = length of the bill buffer
+ *   fees = returned fees
+ * Returns: ErrorCode
+ */
 int tagion_wallet_pay_bill(const(WalletT*) wallet_instance,
     const uint8_t* bill_buf,
     const size_t bill_buf_len,
