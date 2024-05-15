@@ -349,6 +349,36 @@ int tagion_wallet_force_bill(const(WalletT*) wallet_instance,
     return ErrorCode.none;
 }
 
+/** 
+ * Get the AccountDetails
+ * Params:
+ *   wallet_instance = pointer to the wallet instance
+ *   account_buf = pointer to the returned buffer for the account
+ *   account_buf_len = length of the returned buffer
+ * Returns: ErrorCode
+ */
+int tagion_wallet_get_account(const(WalletT*) wallet_instance,
+    uint8_t** account_buf,
+    size_t* account_buf_len) {
+    try {
+        if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
+            return ErrorCode.exception;
+        }
+        ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
+
+        const account_doc = w.account.toDoc;
+        const account_data = account_doc.data;
+        *account_buf = cast(uint8_t*) &account_data[0];
+        *account_buf_len = account_doc.full_size;
+    } 
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+    
+
 
 
 /** 
