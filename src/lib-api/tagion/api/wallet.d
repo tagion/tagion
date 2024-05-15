@@ -377,10 +377,31 @@ int tagion_wallet_get_account(const(WalletT*) wallet_instance,
     }
     return ErrorCode.none;
 }
+///
+unittest {
+    WalletT w;
+    int rt = tagion_wallet_create_instance(&w);
+    assert(rt == ErrorCode.none);
+
+    string passphrase = "some_passphrase";
+    string pincode = "some_pincode";
+
+    rt = tagion_wallet_create_wallet(&w, &passphrase[0], passphrase.length, &pincode[0], pincode.length);
+    assert(rt == ErrorCode.none);
+
+    uint8_t* account_buf;
+    size_t account_len;
+    rt = tagion_wallet_get_account(&w, &account_buf, &account_len); 
+    assert(rt == ErrorCode.none);
+
+    const _account_buf = account_buf[0..account_len].idup;
+    const _account_doc = Document(_account_buf);
+
+    import tagion.wallet.AccountDetails;
+    import tagion.hibon.HiBONRecord;
+    assert(_account_doc.isRecord!AccountDetails == true, "doc was not of type AccountDetails");
+}
     
-
-
-
 /** 
  * Pay to a bill
  * Params:
