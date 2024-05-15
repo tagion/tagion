@@ -6,7 +6,7 @@ import std.range : ElementType, isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.communication.HiRPC;
 import tagion.dart.DART : DART;
-import tagion.dart.DARTBasic : DARTIndex;
+import tagion.dart.DARTBasic : DARTIndex, Params;
 import tagion.dart.DARTRim;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBON : HiBON;
@@ -37,7 +37,7 @@ template _dartIndexCmd(string method) {
         auto params = new HiBON;
         auto params_dart_indices = new HiBON;
         params_dart_indices = dart_indices.filter!(b => b.length !is 0);
-        params[DART.Params.dart_indices] = params_dart_indices;
+        params[Params.dart_indices] = params_dart_indices;
         return hirpc.opDispatch!method(params, id);
     }
 }
@@ -53,7 +53,7 @@ const(HiRPC.Sender) dartIndexCmd(Range)(
     auto params = new HiBON;
     auto params_dart_indices = new HiBON;
     params_dart_indices = dart_indices.filter!(b => b.length !is 0);
-    params[DART.Params.dart_indices] = params_dart_indices;
+    params[Params.dart_indices] = params_dart_indices;
     return hirpc.action(method, params, id);
 }
 

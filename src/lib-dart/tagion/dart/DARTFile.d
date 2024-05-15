@@ -79,13 +79,6 @@ class DARTFile {
         Fingerprint _fingerprint;
     }
 
-    static immutable _params = [
-        "dart_indices",
-        "bullseye",
-    ];
-
-    mixin(EnumText!("Params", _params));
-
     enum flat_marker = "flat";
     enum MIN_BLOCK_SIZE = 0x80;
     static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_size = 0x80_000, const Flag!"flat" flat = default_flat)

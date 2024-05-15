@@ -4,7 +4,7 @@ module tagion.dart.DART;
 import core.exception : RangeError;
 import core.thread : Fiber;
 import std.conv : ConvException;
-import std.range : empty;
+import std.range : empty, zip;
 import std.stdio;
 
 //import std.stdio;
@@ -20,7 +20,7 @@ import tagion.communication.HiRPC : Callers, HiRPC, HiRPCMethod;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.BlockFile : Index;
-import tagion.dart.DARTBasic : DARTIndex, KEY_SPAN;
+import tagion.dart.DARTBasic : DARTIndex, KEY_SPAN, Params, Queries;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTRim;
 import CRUD = tagion.dart.DARTcrud;
@@ -146,7 +146,13 @@ class DART : DARTFile {
         return SectorRange(from_sector, to_sector);
     }
 
-    mixin(EnumText!(q{Queries}, Callers!DART));
+    // mixin(EnumText!("__Queries", Callers!DART));
+	static foreach(a, b; zip(Callers!DART, [EnumMembers!Queries])) {
+    	static assert(a is b, "Values not the same as in Queries");
+	}
+    
+
+
     /**
      * The dartBullseye method is called from opCall function
      * This function return current database bullseye.

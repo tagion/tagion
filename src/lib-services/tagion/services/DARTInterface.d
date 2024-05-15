@@ -21,7 +21,8 @@ import tagion.services.codes;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
-import tagion.dart.DART;
+// import tagion.dart.DART;
+import tagion.dart.DARTBasic;
 import tagion.utils.JSONCommon;
 
 struct DARTInterfaceOptions {
@@ -55,10 +56,10 @@ struct DartWorkerContext {
 
 /// Accepted methods for the DART.
 static immutable(string[]) accepted_dart_methods = [
-    DART.Queries.dartRead, 
-    DART.Queries.dartRim, 
-    DART.Queries.dartBullseye, 
-    DART.Queries.dartCheckRead, 
+    Queries.dartRead, 
+    Queries.dartRim, 
+    Queries.dartBullseye, 
+    Queries.dartCheckRead, 
 ];
 
 pragma(msg, "deprecated search method should be removed from trt");

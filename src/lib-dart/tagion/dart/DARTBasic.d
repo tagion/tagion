@@ -16,6 +16,20 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 
+
+enum Queries {
+    dartBullseye = "dartBullseye",
+    dartRead = "dartRead",
+    dartCheckRead = "dartCheckRead",
+    dartRim = "dartRim",
+    dartModify = "dartModify",
+}
+
+enum Params {
+    dart_indices = "dart_indices",
+    bullseye = "bullseye",
+}
+
 /**
 * This is the raw-hash value of a message and is used when message is signed.
 */
@@ -31,7 +45,6 @@ enum KEY_SPAN = ubyte.max + 1;
  * Returns: 
  *   The DART fingerprint
  */
-
 immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) pure {
     if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
         if (doc.keys.front == STUB) {

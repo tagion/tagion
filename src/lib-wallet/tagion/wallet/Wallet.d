@@ -327,7 +327,6 @@ struct Wallet(Net : SecureNet) {
      * Returns: trt.dartRead hirpc.sender 
      */
     const(HiRPC.Sender) readIndicesByPubkey(HiRPC hirpc = HiRPC(null)) const {
-        import tagion.dart.DART;
         import tagion.script.standardnames;
 
         auto owner_indices = account.derivers.byKey
@@ -336,8 +335,8 @@ struct Wallet(Net : SecureNet) {
         auto params = new HiBON;
         auto params_dart_indices = new HiBON;
         params_dart_indices = owner_indices;
-        params[DART.Params.dart_indices] = params_dart_indices;
-        return hirpc.action("trt." ~ DART.Queries.dartRead, params);
+        params[Params.dart_indices] = params_dart_indices;
+        return hirpc.action("trt." ~ Queries.dartRead, params);
     }
 
     /** 
@@ -351,7 +350,6 @@ struct Wallet(Net : SecureNet) {
      * Returns: trt.dartRead hirpc.sender
      */
     const(HiRPC.Sender) readContractsTRT(const(Document)[] contracts, HiRPC hirpc = HiRPC(null)) const {
-        import tagion.dart.DART;
         import tagion.script.standardnames;
 
         DARTIndex[] contract_indices = contracts.map!(doc => _net.dartIndex(doc))
@@ -361,8 +359,8 @@ struct Wallet(Net : SecureNet) {
         auto params = new HiBON;
         auto params_dart_indices = new HiBON;
         params_dart_indices = contract_indices;
-        params[DART.Params.dart_indices] = params_dart_indices;
-        return hirpc.action("trt." ~ DART.Queries.dartRead, params);
+        params[Params.dart_indices] = params_dart_indices;
+        return hirpc.action("trt." ~ Queries.dartRead, params);
     }
 
     /** 
