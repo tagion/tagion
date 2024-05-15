@@ -377,8 +377,70 @@ int tagion_wallet_get_account(const(WalletT*) wallet_instance,
     }
     return ErrorCode.none;
 }
+
+/** 
+ * Get the DevicePIN
+ * Params:
+ *   wallet_instance = pointer to the wallet instance
+ *   device_pin_buf = pointer to the returned buffer for the devicepin
+ *   device_pin_buf_len = length of the returned buffer
+ * Returns: ErrorCode
+ */
+int tagion_wallet_get_device_pin(const(WalletT*) wallet_instance,
+    uint8_t** device_pin_buf,
+    size_t* device_pin_buf_len) {
+    try {
+        if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
+            return ErrorCode.exception;
+        }
+        ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
+
+        const device_pin_doc = w._pin.toDoc;
+        const device_pin_data = device_pin_doc.data;
+        *device_pin_buf = cast(uint8_t*) &device_pin_data[0];
+        *device_pin_buf_len = device_pin_doc.full_size;
+    } 
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+/** 
+ * Get the recovergenerator
+ * Params:
+ *   wallet_instance = pointer to the wallet instance
+ *   recover_generator_buf = pointer to the returned buffer for the recovergenerator
+ *   recover_generator_buf_len = length of the returned buffer
+ * Returns: ErrorCode
+ */
+int tagion_wallet_get_recover_generator(const(WalletT*) wallet_instance,
+    uint8_t** recover_generator_buf,
+    size_t* recover_generator_buf_len) {
+    try {
+        if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
+            return ErrorCode.exception;
+        }
+        ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
+
+        const recover_generator_doc = w._wallet.toDoc;
+        const recover_generator_data = recover_generator_doc.data;
+        *recover_generator_buf = cast(uint8_t*) &recover_generator_data[0];
+        *recover_generator_buf_len = recover_generator_doc.full_size;
+    } 
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
 ///
 unittest {
+    import tagion.wallet.AccountDetails;
+    import tagion.hibon.HiBONRecord;
+    import tagion.wallet.WalletRecords;
     WalletT w;
     int rt = tagion_wallet_create_instance(&w);
     assert(rt == ErrorCode.none);
@@ -393,13 +455,25 @@ unittest {
     size_t account_len;
     rt = tagion_wallet_get_account(&w, &account_buf, &account_len); 
     assert(rt == ErrorCode.none);
-
     const _account_buf = account_buf[0..account_len].idup;
     const _account_doc = Document(_account_buf);
-
-    import tagion.wallet.AccountDetails;
-    import tagion.hibon.HiBONRecord;
     assert(_account_doc.isRecord!AccountDetails == true, "doc was not of type AccountDetails");
+
+    uint8_t* device_pin_buf;
+    size_t device_pin_len;
+    rt = tagion_wallet_get_device_pin(&w, &device_pin_buf, &device_pin_len); 
+    assert(rt == ErrorCode.none);
+    const _device_pin_buf = device_pin_buf[0..device_pin_len].idup;
+    const _device_pin_doc = Document(_device_pin_buf);
+    assert(_device_pin_doc.isRecord!DevicePIN == true, "doc was not of type DevicePIN");
+
+    uint8_t* recover_generator_buf;
+    size_t recover_generator_len;
+    rt = tagion_wallet_get_recover_generator(&w, &recover_generator_buf, &recover_generator_len); 
+    assert(rt == ErrorCode.none);
+    const _recover_generator_buf = recover_generator_buf[0..recover_generator_len].idup;
+    const _recover_generator_doc = Document(_recover_generator_buf);
+    assert(_recover_generator_doc.isRecord!RecoverGenerator == true, "doc was not of type RecoverGenerator");
 }
     
 /** 
