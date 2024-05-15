@@ -20,6 +20,8 @@ import tagion.basic.Types;
 import tagion.crypto.Types;
 import tagion.gossip.AddressBook;
 import tagion.hibon.Document;
+import tagion.hashgraph.HashGraphBasic;
+import tagion.script.standardnames;
 import tagion.utils.Random;
 import tagion.logger;
 import tagion.services.messages;
@@ -236,6 +238,10 @@ struct Peer {
         nng_stream_recv(socket, aio);
     }
 
+    void close() {
+        nng_stream_close(socket);
+    }
+
     void abort() {
         nng_aio_abort(aio, int());
     }
@@ -340,6 +346,21 @@ struct PeerMgr {
         dialers[id] = dialer;
     }
 
+    void close(int id) {
+        if(isActive(id)) {
+            all_peers[id].close();
+            all_peers.remove(id);
+        }
+    }
+
+    void close(Pubkey pkey) {
+        if(isActive(pkey)) {
+            Peer* peer = peers[pkey];
+            close(peer.id);
+            peers.remove(pkey);
+        }
+    }
+
     /// Receive messages from all the peers that are not doing anything else
     void recv_all_ready() {
         foreach(peer; all_peers) {
@@ -360,6 +381,19 @@ struct PeerMgr {
     /// Check if an active known connection exists with this public key
     bool isActive(const(Pubkey) channel) const pure nothrow {
         return ((channel in peers) !is null);
+    }
+    bool isActive(int id) const pure nothrow {
+        return ((id in all_peers) !is null);
+    }
+
+    void abort() {
+        nng_aio_abort(aio_conn, int());
+        foreach(dialer; dialers.byValue) {
+            dialer.abort();
+        }
+        foreach(peer; peers.byValue) {
+            peer.abort();
+        }
     }
 
     // --- Message handlers --- //
@@ -423,16 +457,6 @@ struct PeerMgr {
     // A send task was completed
     void on_send(NodeSendDone, int id) {
         all_peers[id].state = Peer.State.ready;
-    }
-
-    void abort() {
-        nng_aio_abort(aio_conn, int());
-        foreach(dialer; dialers.byValue) {
-            dialer.abort();
-        }
-        foreach(peer; peers.byValue) {
-            peer.abort();
-        }
     }
 
     mixin NodeHelpers;
@@ -599,6 +623,11 @@ struct NodeInterfaceService_ {
             // Add to the list of known connections
             p2p.peers.require(hirpcmsg.pubkey, peer);
 
+            ExchangeState exchange_state = get_exchange_state(hirpcmsg);
+            if (exchange_state is ExchangeState.BREAKING_WAVE || exchange_state is ExchangeState.SECOND_WAVE) {
+                p2p.close(hirpcmsg.pubkey);
+            }
+            
             // Send to hasgraph/epoch_creator
             receive_handle.send(ReceivedWavefront(), doc);
         }
@@ -610,15 +639,22 @@ struct NodeInterfaceService_ {
     void on_send(NodeSendDone m, int id) {
         debug(nodeinterface) log(__FUNCTION__);
         p2p.on_send(m, id);
+
+        // TODO: if we sent breaking wave, then close
         p2p.all_peers[id].recv; // Be ready to receive next message
     }
 
+    // TODO: close on error
     void on_node_error(NodeError, NodeErrorCode code, int id, string msg, int line) {
+        p2p.close(id);
         log.error("%s(%s): %s %s", id, line, code, msg);
     }
 
     void on_nng_error(NNGError, nng_errno code, int id, string msg, int line) {
-        log.error("%s(%s): %s %s", id, line, nng_errstr(code), msg);
+        p2p.close(id);
+        if (code !is nng_errno.NNG_ECONNSHUT) {
+            log.error("%s(%s): %s %s", id, line, nng_errstr(code), msg);
+        }
     }
 
     void task() {
@@ -746,6 +782,10 @@ void node_error(string owner_task, NodeErrorCode code, int id, string msg = "", 
 
 void node_error(string owner_task, nng_errno code, int id, string msg = "", int line = __LINE__) {
     ActorHandle(owner_task).send(NNGError(), code, id, msg, line);
+}
+
+ExchangeState get_exchange_state(const HiRPC.Receiver receiver) {
+    return receiver.params[StdNames.state].get!ExchangeState;
 }
 
 mixin template NodeHelpers() {

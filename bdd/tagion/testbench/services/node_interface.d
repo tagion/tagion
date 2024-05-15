@@ -12,11 +12,13 @@ import tagion.actor;
 import tagion.services.nodeinterface;
 import tagion.services.messages;
 import tagion.script.namerecords;
+import tagion.script.standardnames;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureNet;
 import tagion.tools.Basic;
 import tagion.gossip.AddressBook;
 import tagion.hibon.HiBON;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.pretend_safe_concurrency;
 
 import tagion.testbench.actor.util;
@@ -83,19 +85,25 @@ class PubkeyASendsAMessageToPubkeyB {
     @Then("i send messages back and forth 3 times")
     Document b() {
         { // A -> B
-            const sender = HiRPC(a_net).action("froma1", ResultOk());
+            Wavefront wave;
+            wave.state = ExchangeState.TIDAL_WAVE;
+            const sender = HiRPC(a_net).action("froma1", wave);
             a_handle.send(NodeSend(), b_net.pubkey, Document(sender.toDoc));
             receiveOnlyTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
         }
 
         { // B -> A
-            const sender = HiRPC(b_net).action("fromb2", ResultOk());
+            Wavefront wave;
+            wave.state = ExchangeState.FIRST_WAVE;
+            const sender = HiRPC(b_net).action("fromb2", wave);
             b_handle.send(NodeSend(), a_net.pubkey, Document(sender.toDoc));
             receiveOnlyTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
         }
 
         { // A -> B
-            const sender = HiRPC(a_net).action("froma3", ResultOk());
+            Wavefront wave;
+            wave.state = ExchangeState.SECOND_WAVE;
+            const sender = HiRPC(a_net).action("froma3", wave);
             a_handle.send(NodeSend(), b_net.pubkey, Document(sender.toDoc));
             receiveOnlyTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
         }
@@ -106,11 +114,15 @@ class PubkeyASendsAMessageToPubkeyB {
     @Then("i send message greater than the max buffer size")
     Document size() {
         { // B -> A
+            // We construct a fake wavefront with a big nonce
+            auto wave = new HiBON;
+            wave["$@"] = "Wavefront";
+            wave[StdNames.state] = ExchangeState.NONE;
+
             // An array larger than A's buffer size and less than B's
-            immutable large_arr = new ubyte[](316);
-            auto hibon = new HiBON;
-            hibon["a"] = large_arr;
-            const sender = HiRPC(b_net).action("fromb4", Document(hibon));
+            wave["nonce"] = new immutable(ubyte[])(316);
+
+            const sender = HiRPC(b_net).action("fromb4", Document(wave));
             b_handle.send(NodeSend(), a_net.pubkey, Document(sender.toDoc));
 
             bool received = receiveTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln(doc.toPretty);});
@@ -127,7 +139,7 @@ class PubkeyASendsAMessageToPubkeyB {
         immutable nnr = new NetworkNodeRecord(c_net.pubkey,  "abstract://nodeinterface_c");
         addressbook.set(nnr);
 
-        const sender = HiRPC(a_net).action("froma5", ResultOk());
+        const sender = HiRPC(a_net).action("froma5", Wavefront());
         a_handle.send(NodeSend(), c_net.pubkey, Document(sender.toDoc));
 
         bool received = receiveTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln(doc.toPretty);});
