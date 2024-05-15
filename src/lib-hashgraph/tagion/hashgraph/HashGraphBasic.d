@@ -1,6 +1,8 @@
 /// HashGraph basic support functions
 module tagion.hashgraph.HashGraphBasic;
 
+@safe:
+
 import std.exception : assumeWontThrow;
 import std.format;
 import std.stdio;
@@ -25,17 +27,16 @@ import tagion.utils.StdTime;
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
 
-@safe @nogc
+@nogc
 T highest(T)(T a, T b) pure nothrow if (isSigned!(T)) {
     return higher(a, b) ? a : b;
 }
 
-@safe @nogc
+@nogc
 bool higher(T)(T a, T b) pure nothrow if (isSigned!(T)) {
     return a - b > 0;
 }
 
-@safe
 unittest { // Test of the altitude measure function
     int x = int.max - 10;
     int y = x + 20;
@@ -54,12 +55,12 @@ unittest { // Test of the altitude measure function
  * Returns:
  *     Returns `true` if the votes are more than 2/3
  */
-@safe @nogc
+@nogc
 bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
-@safe
+///
 unittest {
 
     int[] some_array;
@@ -71,29 +72,25 @@ bool isMajority(T, S)(T voting, S node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
-@safe @nogc
+@nogc
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
     return isMajority(mask.count, hashgraph.node_size);
 }
 
-@safe @nogc
+@nogc
 bool isAllVotes(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
     return mask.count is hashgraph.node_size;
 }
 
+///
 enum int eva_altitude = -77;
-@safe @nogc
+
+@nogc
 int nextAltitude(const Event event) pure nothrow {
     return (event) ? event.altitude + 1 : eva_altitude;
 }
 
-protected enum _params = [
-        "events",
-        "size",
-    ];
-
-mixin(EnumText!("Params", _params));
-
+/// The exchange state used for the wavefront protocol
 enum ExchangeState : uint {
     NONE,
     INIT_TIDE,
@@ -113,7 +110,7 @@ enum ExchangeState : uint {
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 
-@safe
+///
 struct EventBody {
     enum int eva_altitude = -77;
     import tagion.basic.ConsensusExceptions;
@@ -136,7 +133,7 @@ struct EventBody {
                 Document payload,
                 const Event mother,
                 const Event father,
-                lazy const sdt_t time)  inout pure {
+                lazy const sdt_t time) inout pure {
                 this.time      =    time;
                 this.mother    =    (mother is null)?null:mother.fingerprint;
                 this.father    =    (father is null)?null:father.fingerprint;
@@ -190,7 +187,7 @@ struct EventBody {
     }
 }
 
-@safe
+///
 struct EventPackage {
     @exclude Buffer fingerprint;
     @label("$sign") Signature signature;
@@ -243,7 +240,7 @@ struct EventPackage {
 
 alias Tides = int[Pubkey];
 
-@safe
+///
 @recordType("Wavefront")
 struct Wavefront {
     @label("$tides") @optional @filter(q{a.length is 0}) private Tides _tides;
@@ -326,7 +323,7 @@ struct Wavefront {
     }
 }
 
-@safe
+///
 struct EvaPayload {
     @label("$channel") Pubkey channel;
     @label("$nonce") Buffer nonce;

@@ -116,7 +116,7 @@ unittest {
  *   recover_generator_buf = pointer to the RecoverGenerator
  *   recover_generator_buf_length = length of the RecoverGenerator buf
  *   account_buf = pointer to the AccountDetails
- *   account_buf_len = length of the AcccountDetails buffer
+ *   account_buf_len = length of the AccountDetails buffer
  * Returns: ErrorCode
  */
 int tagion_wallet_read_wallet(const(WalletT*) wallet_instance,
