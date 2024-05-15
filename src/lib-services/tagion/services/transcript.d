@@ -384,7 +384,7 @@ struct TranscriptService {
     void task() {
         {
             // start by reading the head
-            immutable tagion_index = net.dartKey(StdNames.name, TagionDomain);
+            immutable tagion_index = net.dartKey(StdNames.domain_name, TagionDomain);
             dart_handle.send(dartReadRR(), [tagion_index]);
             log("SENDING HEAD REQUEST TO DART");
 

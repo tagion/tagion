@@ -300,7 +300,7 @@ alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
  */
 @recordType("$@Tagion")
 struct TagionHead {
-    @label(StdNames.name) string name = TagionDomain; /// Default name should always be "tagion"
+    @label(StdNames.domain_name) string name = TagionDomain; /// Default name should always be "tagion"
     long current_epoch;
     mixin HiBONRecord!(q{
         this(const(string) name, const(long) current_epoch) {

@@ -13,9 +13,10 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.standardnames;
 import tagion.utils.StdTime;
 
+///
 @recordType("$@NNC")
 struct NetworkNameCard {
-    @label(StdNames.name) string name; /// Tagion domain name (TDN) 
+    @label(StdNames.domain_name) string name; /// Tagion domain name (TDN) 
     @label(StdNames.owner) Pubkey owner; /// NNC pubkey
     @label("$lang") string lang; /// Language used for the #name
     @label(StdNames.time) sdt_t time; /// Time-stamp of
@@ -23,15 +24,17 @@ struct NetworkNameCard {
     mixin HiBONRecord;
 }
 
+///
 @recordType("$@NRC")
 struct NetworkNameRecord {
-    @label("$name") string name; /// Hash of the NNC.name
+    @label(StdNames.name) string name; /// Hash of the NNC.name
     @label(StdNames.previous) Fingerprint previous; /// Hash pointer to the previous NRC
     @label("$index") uint index; /// Current index previous.index+1
     @label("$payload") @optional Document payload;
     mixin HiBONRecord;
 }
 
+///
 @recordType("$@NNR")
 struct NetworkNodeRecord {
     enum State {
@@ -43,10 +46,10 @@ struct NetworkNodeRecord {
     }
 
     @label(StdNames.nodekey) Pubkey channel; /// Node public key
-    @label("$name") string name; /// TDN lookup 
+    @label(StdNames.name) string name; /// TDN lookup 
     @label(StdNames.time) sdt_t time; /// Consensus time of the last update
-    @label("$state") State state; /// Node state
-    @label("$addr") string address; /// Network address
+    @label(StdNames.state) State state; /// Node state
+    @label(StdNames.address) string address; /// Network address
 
     /// Tries to convert address from a multiaddr to the nng format
     string toNNGString() const {

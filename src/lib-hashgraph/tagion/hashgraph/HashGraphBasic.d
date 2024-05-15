@@ -21,6 +21,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.HiBONRecord;
+import tagion.script.standardnames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
@@ -82,7 +83,7 @@ bool isAllVotes(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
     return mask.count is hashgraph.node_size;
 }
 
-///
+// Test value used for epoch rollover check
 enum int eva_altitude = -77;
 
 @nogc
@@ -94,10 +95,12 @@ int nextAltitude(const Event event) pure nothrow {
 enum ExchangeState : uint {
     NONE,
     INIT_TIDE,
-    TIDAL_WAVE,
-    FIRST_WAVE,
-    SECOND_WAVE,
-    BREAKING_WAVE,
+
+    TIDAL_WAVE, /// Initial state A
+    FIRST_WAVE, /// Difference between B and initial state A
+    SECOND_WAVE, /// Acknowledgment, difference between state and calculated state B
+    BREAKING_WAVE, /// Communication conflict, wavefront initiated from both peers
+
     SHARP,
     RIPPLE, /// Ripple is used the first time a node connects to the network
 
@@ -122,7 +125,7 @@ struct EventBody {
     @label("$m") @optional @(filter.Initialized) Buffer mother; // Hash of the self-parent
     @label("$f") @optional @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
-    @label("$t") sdt_t time;
+    @label(StdNames.time) sdt_t time;
     bool verify() const pure nothrow @nogc {
         return (father is null) ? true : (mother !is null);
     }
@@ -190,7 +193,8 @@ struct EventBody {
 ///
 struct EventPackage {
     @exclude Buffer fingerprint;
-    @label("$sign") Signature signature;
+    @label(StdNames.sign) Signature signature;
+    pragma(msg, "Should we use the same name as StdNames.owner?");
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
 
@@ -245,7 +249,7 @@ alias Tides = int[Pubkey];
 struct Wavefront {
     @label("$tides") @optional @filter(q{a.length is 0}) private Tides _tides;
     @label("$events") @optional @filter(q{a.length is 0}) const(immutable(EventPackage)*)[] epacks;
-    @label("$state") ExchangeState state;
+    @label(StdNames.state) ExchangeState state;
     enum tidesName = GetLabel!(_tides).name;
     enum epacksName = GetLabel!(epacks).name;
     enum stateName = GetLabel!(state).name;
@@ -326,6 +330,7 @@ struct Wavefront {
 ///
 struct EvaPayload {
     @label("$channel") Pubkey channel;
+    pragma(msg, "Should we use the same name here as StdNames.nonce?");
     @label("$nonce") Buffer nonce;
     mixin HiBONRecord!(
             q{
