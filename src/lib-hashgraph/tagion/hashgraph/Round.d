@@ -550,10 +550,6 @@ class Round {
             }
         }
 
-        struct EventCollectionFront {
-            Event event;
-            BitMask seen_by_famous_mask;
-        }
         protected void collect_received_round2(Round r)
         in (r._decided, "The round should be decided before the round can be collect")
         do {
@@ -573,50 +569,73 @@ class Round {
             }
             __write("After !isMajority");
 
+            //Event[] event_list;
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
+                Event[] event_list;
+                event_list.length = hashgraph.node_size * hashgraph.node_size;
                 auto event_matrix = CollectionEventMatrix(hashgraph.node_size);
-      //  __write("famous_witness_in_round empty %s", famous_witness_in_round.empty);
+                uint index;
                 foreach (famous_witness; famous_witness_in_round) {
-                   ///     __write("famous_witness %d len=%d", famous_witness.node_id, famous_witness[].walkLength);
                     event_matrix[famous_witness.node_id, famous_witness.node_id] = famous_witness;
+                    BitMask father_mask;
                     foreach (e; famous_witness[].until!(e => !e || e.round_received)) {
-                     //   __write("famous_witness %d id=%d", famous_witness.node_id, e.id);
-                        if (e._father && !event_matrix[famous_witness.node_id, e._father.node_id]) {
-                            event_matrix[e._father.node_id, famous_witness.node_id] = e;
+                        if (e._father && !father_mask[e._father.node_id]) {
+                            father_mask[e._father.node_id] = true;
+                            event_list[index++] = e._father;
                         }
                     }
                 }
-                foreach(n; 0..hashgraph.node_size) {
-                    Event[] row;
-                    event_matrix.getRow(n, row);
-                    //__write("%d %(%s %)", n, row.map!(e => (!e)?0:e.altitude));
-                    row=row
-                    .filter!(e => e !is null)
-                    .array;
-                    row.sort!((a,b) => a.altitude < b.altitude);
-            
-                
-                    __write("altitude %d %(%s %)", n, row.map!(e => e.altitude));
-                    __write("node_id  %d %(%s %)", n, row.map!(e => e.node_id));
-                }
-                return null;
+                event_list.length = index;
+                return event_list;
             }
 
-            version(none) {
             auto famous_witness_in_round = witness_event_in_round
-                .filter!(e => (cast(Event2.Witness2)e._witness).isFamous);
-            auto event_collection = majority_seen_from_famous(famous_witness_in_round)
-                .filter!(e => e !is null)
-                .map!(e => e[]
-                .until!(e => e.round_received !is null))
-                .joiner
-                .array;
-            __write("Round collected %d", r.number);
-            event_collection.each!(e => e.round_received = r);
-            if (Event.callbacks) {
-                event_collection.each!(e => Event.callbacks.connect(e));
+                .filter!(e => (cast(Event2.Witness2) e._witness).isFamous);
+            auto event_list = majority_seen_from_famous(famous_witness_in_round);
+            event_list
+                .sort!((a, b) => a.order > b.order);
+            event_list
+                .until!(e => e is null)
+                .each!(e => __write("id=%d son_node_id=%d -> node_id=%d order=%d", e.id, e.son.node_id, e.node_id, e
+                        .order));
+
+            BitMask[] famous_seen_masks;
+            famous_seen_masks.length = hashgraph.node_size;
+            //iota(hashgraph.node_size)
+            //    .each!(n => famous_seen_masks[n][n] = true);
+
+            Event[] event_front;
+            event_front.length = hashgraph.node_size;
+            foreach (e; event_list) {
+                
+                famous_seen_masks[e.node_id] |= famous_seen_masks[e.son.node_id];
+                famous_seen_masks[e.node_id][e.son.node_id]=true;
+                __write("id=%d son_node_id=%d -> node_id=%d order=%d %5s", e.id, e.son.node_id, e.node_id, e.order, famous_seen_masks[e
+                        .node_id]);
+                if (!event_front[e.node_id] && isMajority(famous_seen_masks[e.node_id], hashgraph)) {
+                    event_front[e.node_id] = e;
+                }
             }
-            }
+
+            event_front
+            .filter!(e => e !is null)
+                .each!(e => __write("id=%d son_node_id=%d -> node_id=%d order=%d", e.id, e.son.node_id, e.node_id, e
+                        .order));
+
+            //famous_witness_in_round
+            //.each!(e => event_front[e.node_id]=EventCollectionFront(e));
+
+                auto event_collection = event_front 
+                    .filter!(e => e !is null)
+                    .map!(e => e[]
+                    .until!(e => e.round_received !is null))
+                    .joiner
+                    .array;
+                __write("Round collected %d", r.number);
+                event_collection.each!(e => e.round_received = r);
+                if (Event.callbacks) {
+                    event_collection.each!(e => Event.callbacks.connect(e));
+                }
             //hashgraph.epoch(event_collection, r);
 
         }
@@ -633,7 +652,8 @@ class Round {
             auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
 
             pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
-            auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors).joiner;
+            auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors)
+                .joiner;
 
             Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
 
