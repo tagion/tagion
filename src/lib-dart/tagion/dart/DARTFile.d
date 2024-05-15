@@ -54,7 +54,6 @@ enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
 import std.algorithm;
 
 alias check = Check!DARTException;
-enum KEY_SPAN = ubyte.max + 1;
 
 /++
  + DART File system

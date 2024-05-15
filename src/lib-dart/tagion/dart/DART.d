@@ -20,7 +20,7 @@ import tagion.communication.HiRPC : Callers, HiRPC, HiRPCMethod;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.BlockFile : Index;
-import tagion.dart.DARTBasic : DARTIndex;
+import tagion.dart.DARTBasic : DARTIndex, KEY_SPAN;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTRim;
 import CRUD = tagion.dart.DARTcrud;

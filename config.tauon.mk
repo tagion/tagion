@@ -60,7 +60,37 @@ TAUON_DFILES+=$(DSRC)/lib-phobos/tagion/std/container/rbtree.d
 
 ### C-api
 TAUON_DINC+=$(DSRC)/lib-api
+TAUON_DFILES+=$(DSRC)/lib-funnel/tagion/script/common.d
+TAUON_DFILES+=$(DSRC)/lib-funnel/tagion/script/standardnames.d
+TAUON_DFILES+=$(DSRC)/lib-funnel/tagion/script/execute.d
+TAUON_DFILES+=$(DSRC)/lib-funnel/tagion/script/ScriptException.d
+TAUON_DFILES+=$(DSRC)/lib-funnel/tagion/script/TagionCurrency.d
+TAUON_DFILES+=$(DSRC)/lib-funnel/tagion/script/Currency.d
+
+TAUON_DFILES+=$(DSRC)/lib-dart/tagion/dart/DARTBasic.d
+TAUON_DFILES+=$(DSRC)/lib-dart/tagion/dart/Recorder.d
+TAUON_DFILES+=$(DSRC)/lib-dart/tagion/dart/DARTException.d
+
+TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/WalletRecords.d
+TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/Basic.d
+TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/KeyRecover.d
+TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/WalletException.d
+TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/Wallet.d
+TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/AccountDetails.d
+
+TAUON_DFILES+=$(DSRC)/lib-communication/tagion/communication/HiRPC.d
+
+
+# TAUON_DINC+=$(DSRC)/lib-funnel
+# TAUON_DINC+=$(DSRC)/lib-dart
+# TAUON_DINC+=$(DSRC)/lib-logger
+# TAUON_DINC+=$(DSRC)/lib-wallet
+# TAUON_DINC+=$(DSRC)/lib-communication
+# TAUON_DINC+=$(DSRC)/lib-trt
+
+
 TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/document.d 
 TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/hibon.d
+TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/wallet.d 
 TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/errors.d 
 

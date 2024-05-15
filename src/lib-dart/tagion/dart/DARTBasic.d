@@ -12,7 +12,6 @@ import tagion.basic.Types : Buffer;
 import tagion.basic.basic : isinit;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : BufferType, Fingerprint;
-import tagion.dart.DARTFile : KEY_SPAN;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
@@ -22,6 +21,7 @@ import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 */
 alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
+enum KEY_SPAN = ubyte.max + 1;
 /**
  * Calculates the fingerprint used as an index for the DART
  * Handles the hashkey '#' and stub used in the DART

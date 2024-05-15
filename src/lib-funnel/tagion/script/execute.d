@@ -5,7 +5,6 @@ import std.format;
 import std.range;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : getType, isRecord;
-import tagion.logger.Logger;
 import tagion.script.Currency;
 import tagion.script.ScriptException;
 import tagion.script.TagionCurrency;

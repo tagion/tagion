@@ -18,6 +18,7 @@ import tagion.api.document;
 import tagion.api.hibon;
 import tagion.api.errors;
 import core.stdc.stdlib;
+import tagion.api.wallet;
 
 static this() {
     writefln(" should call this\n");
