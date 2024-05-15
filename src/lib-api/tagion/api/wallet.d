@@ -1,3 +1,4 @@
+/// API for using a wallet
 module tagion.api.wallet;
 import tagion.api.errors;
 import tagion.api.hibon;
@@ -185,7 +186,7 @@ unittest {
     string password = "wowo wowo";
     string pincode = "1234";
     wallet.createWallet(password, pincode);
-    auto bill_insert = wallet.addBill(1000.TGN);
+    auto bill_insert = wallet.forceBill(1000.TGN);
 
     const device_pin = wallet._pin.toDoc;
     const recover_generator = wallet._wallet.toDoc;
@@ -215,6 +216,58 @@ unittest {
 
 
 enum PUBKEYSIZE = 33; /// Size of a public key
+
+/** 
+ * Get the wallets current public key
+ * Params:
+ *   wallet_instance = pointer to the wallet instance
+ *   pubkey = pointer to the returned pubkey
+ *   pubkey_len = length of the returned pubkey
+ * Returns: 
+ */
+int tagion_wallet_get_current_pkey(const(WalletT*) wallet_instance,
+    uint8_t** pubkey,
+    size_t* pubkey_len) {
+    try {
+        if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
+            return ErrorCode.exception;
+        }
+        ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
+        const pkey = w.getCurrentPubkey;
+
+        *pubkey = cast(uint8_t*) &pkey[0];
+        *pubkey_len = pkey.length;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+///
+unittest {
+    WalletT w;
+    int rt = tagion_wallet_create_instance(&w);
+    const passphrase = "some passphrase";
+    const pincode = "1234";
+    rt = tagion_wallet_create_wallet(&w, &passphrase[0], passphrase.length, &pincode[0], pincode.length);
+
+    uint8_t* pubkey_buf;
+    size_t pubkey_len;
+
+    rt = tagion_wallet_get_current_pkey(&w, &pubkey_buf, &pubkey_len);
+    assert(rt == ErrorCode.none);
+    assert(pubkey_len == PUBKEYSIZE);
+    const pkey = cast(Pubkey) pubkey_buf[0..pubkey_len].idup;
+
+    rt = tagion_wallet_get_current_pkey(&w, &pubkey_buf, &pubkey_len);
+    assert(rt == ErrorCode.none);
+    assert(pubkey_len == PUBKEYSIZE);
+    const _pkey = cast(Pubkey) pubkey_buf[0..pubkey_len].idup;
+    assert(pkey == _pkey, "should not have changed");
+}
+
+
 
 /** 
  * Create bill from wallet information
@@ -252,6 +305,33 @@ int tagion_wallet_create_bill(const double amount,
     }
     return ErrorCode.none;
 }
+
+/** 
+ * Forces an amount in the wallet. Note. should only be used for testing
+ * Params:
+ *   wallet_instance = pointer to the wallet instance
+ *   amount = the amount to add
+ * Returns: ErrorCode
+ */
+int tagion_wallet_force_bill(const(WalletT*) wallet_instance,
+                        const double amount) {
+    try {
+        if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
+            return ErrorCode.exception;
+        }
+        ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
+
+        const _amount = TagionCurrency(amount);
+        w.forceBill(_amount);
+    } 
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+
 ///
 unittest {
     ApiWallet wallet;

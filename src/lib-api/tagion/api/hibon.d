@@ -1,4 +1,4 @@
-// API for using hibon
+/// API for using hibon
 module tagion.api.hibon;
 import tagion.api.errors;
 import tagion.hibon.HiBON;

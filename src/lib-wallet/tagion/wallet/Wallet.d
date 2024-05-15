@@ -492,14 +492,18 @@ struct Wallet(Net : SecureNet) {
         return true;
     }
 
-    version(unittest) {
-        TagionBill addBill(TagionCurrency amount) {
-            auto bill_to_add = requestBill(amount, getCurrentPubkey);
-            account.bills ~= bill_to_add;
-            account.remove_requested_by_hash(_net.dartIndex(bill_to_add));
-            account.remove_invoice_by_pkey(bill_to_add.owner);
-            return bill_to_add;
-        }
+    /** 
+     * Adds a bill with the given amount to the wallet. Note should only be used for testing
+     * Params:
+     *   amount = the amount to add
+     * Returns: the created bill
+     */
+    TagionBill forceBill(TagionCurrency amount) {
+        auto bill_to_add = requestBill(amount, getCurrentPubkey);
+        account.bills ~= bill_to_add;
+        account.remove_requested_by_hash(_net.dartIndex(bill_to_add));
+        account.remove_invoice_by_pkey(bill_to_add.owner);
+        return bill_to_add;
     }
 }
 
@@ -541,13 +545,11 @@ unittest {
     wallet1.createWallet("wowo wowo", "1234");
     wallet2.createWallet("wowo loko", "2234");
 
-    auto bill = wallet1.addBill(1000.TGN);
+    auto bill = wallet1.forceBill(1000.TGN);
 
     // wallet 1 pays to wallet2 pkey;
     auto bill_to_pay = requestBill(500.TGN, wallet2.getCurrentPubkey);
 
     TagionCurrency fees;
     const signed_contract = wallet1.createPayment([bill_to_pay], fees);
-
-
 }
