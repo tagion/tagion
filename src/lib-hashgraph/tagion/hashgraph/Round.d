@@ -51,6 +51,7 @@ class Round {
     Event[] _events;
     //package Event[] _events;
     public BitMask famous_mask;
+    BitMask seen_by_famous_mask;
 
     /**
  * Compare the round number 
@@ -506,7 +507,7 @@ class Round {
                 .each!(w => w.doTheMissingNoVotes);
             //.each!(w => w.doTheMissignNoVotes); 
             if (!witness_in_round.all!(w => w.decided(hashgraph))) {
-                
+
                 log("Not decided round");
                 return;
             }
@@ -517,15 +518,46 @@ class Round {
             check_decide_round2;
         }
 
-        struct CollectionEventFront {
+        struct CollectionEventMatrix {
+            Event[] events;
+            const size_t node_size;
+            @disable this();
+            this(const size_t node_size) {
+                this.node_size = node_size;
+                events = new Event[node_size * node_size];
+            }
+
+            Event opIndex(const size_t famous_node_id, const size_t event_node_id) pure nothrow @nogc
+            in (famous_node_id < node_size)
+            in (event_node_id < node_size)
+            do {
+                return events[node_size * event_node_id + famous_node_id];
+            }
+
+            void opIndexAssign(Event e, const size_t famous_node_id, const size_t event_node_id) pure nothrow @nogc
+            in (famous_node_id < node_size)
+            in (event_node_id < node_size)
+            do {
+                events[node_size * event_node_id + famous_node_id] = e;
+            }
+
+            void getRow(const size_t event_node_id, ref Event[] row) nothrow
+            in (event_node_id < node_size)
+            do {
+                const start_index = event_node_id * node_size;
+                row = events[start_index .. start_index + node_size];
+
+            }
+        }
+
+        struct EventCollectionFront {
             Event event;
             BitMask seen_by_famous_mask;
         }
-
         protected void collect_received_round2(Round r)
         in (r._decided, "The round should be decided before the round can be collect")
         do {
-            __write("%s", __FUNCTION__);
+            __write("%s round=%d", __FUNCTION__, r.number);
             import tagion.hashgraph.Event2;
 
             auto witness_event_in_round = r._events.filter!(e => e !is null);
@@ -533,7 +565,6 @@ class Round {
                 .map!(e => cast(Event2.Witness2)(e.witness))
                 .map!(w => isMajority(w.yes_votes, hashgraph.node_size))
                 .count;
-            __write("After witness_event_in_round famous_mask=%d", famous_count);
             if (!isMajority(famous_count, hashgraph.node_size)) {
                 // The number of famous is not in majority 
                 // This means that we have to wait for the next round
@@ -541,34 +572,40 @@ class Round {
                 return;
             }
             __write("After !isMajority");
+
+            Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
+                auto event_matrix = CollectionEventMatrix(hashgraph.node_size);
+      //  __write("famous_witness_in_round empty %s", famous_witness_in_round.empty);
+                foreach (famous_witness; famous_witness_in_round) {
+                   ///     __write("famous_witness %d len=%d", famous_witness.node_id, famous_witness[].walkLength);
+                    event_matrix[famous_witness.node_id, famous_witness.node_id] = famous_witness;
+                    foreach (e; famous_witness[].until!(e => !e || e.round_received)) {
+                     //   __write("famous_witness %d id=%d", famous_witness.node_id, e.id);
+                        if (e._father && !event_matrix[famous_witness.node_id, e._father.node_id]) {
+                            event_matrix[e._father.node_id, famous_witness.node_id] = e;
+                        }
+                    }
+                }
+                foreach(n; 0..hashgraph.node_size) {
+                    Event[] row;
+                    event_matrix.getRow(n, row);
+                    //__write("%d %(%s %)", n, row.map!(e => (!e)?0:e.altitude));
+                    row=row
+                    .filter!(e => e !is null)
+                    .array;
+                    row.sort!((a,b) => a.altitude < b.altitude);
             
-            CollectionEventFront[] event_front;
-            void find_event_front(Event event, ref BitMask node_visit_mask) @safe {
-                if (!event || node_visit_mask[event.node_id] || event.round_received) {
-                    return;
-                }
-                __write("event %s", event !is null);
-                node_visit_mask[event.node_id] = true;
-                if ((event_front[event.node_id].event is null) ||
-                    ((higher(event_front[event.node_id].event.altitude, event.altitude) &&
-                    (!isMajority(event_front[event.node_id].seen_by_famous_mask, hashgraph))))) {
-                    __write("Set event front id=%d", event.id);
-                    event_front[event.node_id].event = event;
-                }
                 
-                event_front[event.node_id].seen_by_famous_mask[event.node_id] = true;
-                find_event_front(event._father, node_visit_mask);
+                    __write("altitude %d %(%s %)", n, row.map!(e => e.altitude));
+                    __write("node_id  %d %(%s %)", n, row.map!(e => e.node_id));
+                }
+                return null;
             }
 
-            event_front.length = hashgraph.node_size;
-            foreach (witness_event; witness_event_in_round) {
-                __write("witness_event %s", witness_event !is null); 
-                BitMask node_visit_mask;
-                find_event_front(witness_event, node_visit_mask);
-            }
-
-            auto event_collection = event_front
-                .map!(f => f.event)
+            version(none) {
+            auto famous_witness_in_round = witness_event_in_round
+                .filter!(e => (cast(Event2.Witness2)e._witness).isFamous);
+            auto event_collection = majority_seen_from_famous(famous_witness_in_round)
                 .filter!(e => e !is null)
                 .map!(e => e[]
                 .until!(e => e.round_received !is null))
@@ -579,7 +616,8 @@ class Round {
             if (Event.callbacks) {
                 event_collection.each!(e => Event.callbacks.connect(e));
             }
-            hashgraph.epoch(event_collection, r);
+            }
+            //hashgraph.epoch(event_collection, r);
 
         }
 

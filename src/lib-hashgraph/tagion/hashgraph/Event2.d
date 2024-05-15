@@ -199,6 +199,10 @@ class Event2 : current_event.Event {
             }
         }
 
+        bool isFamous() const pure nothrow {
+            return isMajority(_yes_votes, this.outer._round.events.length);
+        }
+
         bool decided(const HashGraph hashgraph) const pure nothrow @nogc {
             return isMajority(_yes_votes, hashgraph.node_size) || isMajority(no_votes, hashgraph.node_size);
         }
@@ -455,8 +459,6 @@ class Event2 : current_event.Event {
                 //_intermediate_seen_mask = (cast(Event2) _mother)._intermediate_seen_mask.dup;
                 new_witness_seen = _witness_seen_mask;
             }
-            (() @trusted => writefln("new_witness_seen=%5s  %s", new_witness_seen, new_witness_seen[]))();
-
             if (!new_witness_seen[].empty) {
                 _intermediate_event = true;
                 _intermediate_seen_mask[node_id] = true;
@@ -481,7 +483,7 @@ class Event2 : current_event.Event {
                             .filter!(w => !w.decided(hashgraph))
                             .each!(w => w.doTheMissingNoVotes);
                     }
-                hashgraph._rounds.check_decide_round2; 
+                hashgraph._rounds.check_decide_round2;
                 return;
             }
         }
@@ -708,9 +710,6 @@ class Event2 : current_event.Event {
             return _witness !is null;
         }
 
-        bool isFamous() {
-            return isWitness && round.famous_mask[node_id];
-        }
         /**
          * Get the altitude of the event
          * Returns: altitude
