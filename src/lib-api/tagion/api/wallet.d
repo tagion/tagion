@@ -33,7 +33,12 @@ struct WalletT {
     int magic_byte = MAGIC_WALLET;
     void* wallet;
 }
-
+/** 
+ * Create a new wallet instance
+ * Params:
+ *   wallet_instance = pointer to create the instance at
+ * Returns: ErrorCode
+ */
 int tagion_wallet_create_instance(WalletT* wallet_instance) {
     try {
         if (wallet_instance is null) {
@@ -51,13 +56,23 @@ int tagion_wallet_create_instance(WalletT* wallet_instance) {
     }
     return ErrorCode.none;
 }
-
+///
 unittest {
     WalletT w;
     int rt = tagion_wallet_create_instance(&w);
     assert(rt == ErrorCode.none);
 }
 
+/** 
+ * Create new wallet. Note requires post save of Account, RecoverGenerator and DevicePIN 
+ * Params:
+ *   wallet_instance = instance to the wallet 
+ *   passphrase = pointer to the passphrase
+ *   passphrase_len = length of the passphrase
+ *   pincode = pointer to the pincode
+ *   pincode_len = length of the pincode
+ * Returns: ErrorCode
+ */
 int tagion_wallet_create_wallet(const(WalletT*) wallet_instance, 
                             const char* passphrase, 
                             const size_t passphrase_len,
@@ -92,6 +107,18 @@ unittest {
     assert(rt == ErrorCode.none);
 }
 
+/** 
+ * Read an already existing wallet based on wallet file buffers
+ * Params:
+ *   wallet_instance = instance to the wallet
+ *   device_pin_buf = pointer to the DevicePIN
+ *   device_pin_buf_len = length of the DevicePIN buf
+ *   recover_generator_buf = pointer to the RecoverGenerator
+ *   recover_generator_buf_length = length of the RecoverGenerator buf
+ *   account_buf = pointer to the AccountDetails
+ *   account_buf_len = length of the AcccountDetails buffer
+ * Returns: ErrorCode
+ */
 int tagion_wallet_read_wallet(const(WalletT*) wallet_instance,
                             const uint8_t* device_pin_buf, 
                             const size_t device_pin_buf_len, 
@@ -122,13 +149,21 @@ int tagion_wallet_read_wallet(const(WalletT*) wallet_instance,
     return ErrorCode.none;
 }
 
+/** 
+ * Login to a wallet. Note the wallet must already have been read.
+ * Params:
+ *   wallet_instance = pointer to the wallet instance
+ *   pincode = pointer to the pincode
+ *   pincode_len = length of the pincode
+ * Returns: ErrorCode
+ */
 int tagion_wallet_login(const(WalletT*) wallet_instance, 
                     const char* pincode,
                     const size_t pincode_len) {
 
     try {
-    if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
-            return ErrorCode.exception;
+        if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
+                return ErrorCode.exception;
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
         auto _pincode = pincode[0..pincode_len];
@@ -179,10 +214,20 @@ unittest {
 }
 
 
+enum PUBKEYSIZE = 33; /// Size of a public key
 
-
-
-enum PUBKEYSIZE = 33;
+/** 
+ * Create bill from wallet information
+ * Params:
+ *   amount = the amount for the new bill
+ *   pubkey = pointer to the pubkey
+ *   pubkey_len = length of the public key
+ *   time = timestamp as the number of hnsecs since midnight, January 1st, 1 A.D. for the
+        current time.
+ *   bill_buf = pointer to the bill buffer that is returned
+ *   bill_buf_len = length of the returned bill buffer
+ * Returns: ErrorCode
+ */
 int tagion_wallet_create_bill(const double amount, 
                     const uint8_t* pubkey, 
                     const size_t pubkey_len, 
@@ -207,7 +252,7 @@ int tagion_wallet_create_bill(const double amount,
     }
     return ErrorCode.none;
 }
-
+///
 unittest {
     ApiWallet wallet;
     wallet.createWallet("wowo", "1234");
@@ -225,3 +270,32 @@ unittest {
     assert(read_bill.time == time);
     assert(read_bill.owner == wallet.getCurrentPubkey);
 }
+
+int tagion_wallet_pay_bill(const(WalletT*) wallet_instance,
+    const uint8_t* bill_buf,
+    const size_t bill_buf_len,
+    double* fees) {
+    try {
+        if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
+            return ErrorCode.exception;
+        }
+        ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
+        const _bill_doc_buf = bill_buf[0..bill_buf_len].idup;  
+        const _bill_doc = Document(_bill_doc_buf);
+        const doc_error = _bill_doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int) doc_error;
+        }
+        const bill = TagionBill(_bill_doc);
+
+        TagionCurrency returned_fees;
+        w.createPayment([bill], returned_fees);
+        *fees = returned_fees.value;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+

@@ -252,7 +252,6 @@ struct Wallet(Net : SecureNet) {
                 snavs_byte_fee);
             amount_remainder = total_collected_amount - amount_to_pay - fees;
             previous_bill_count = collected_bills.length;
-
         }
         while (amount_remainder < 0);
 
