@@ -1,5 +1,70 @@
+<!-- <html> -->
+
+<!-- <body> -->
+<!-- <script src="app.js" type="module"></script> -->
+<!-- </body> -->
+
+<!-- </html> -->
 <html>
-	<body>
-		<script src="app.js" type="module"></script>
-	</body>
+
+<body>
+	<script type="module">
+		import {Wasi} from "./wasi.js";
+		import {HiBON} from "./hibon.js";
+		import {Document} from "./document.js";
+		import {Wallet} from "./wallet.js";
+		(async () => {
+
+			const wasi = new Wasi({
+				stdin: "stdio",
+				env: {
+					FOO: "FOO",
+					BAR: "BAR"
+				},
+				args: ["--my-arg"]
+			});
+
+			const {instance} = await WebAssembly.instantiateStreaming(fetch("tauon_test.wasm"), {
+				"wasi_snapshot_preview1": wasi
+			});
+			wasi.instance = instance;
+
+			let w = new Wallet(instance);
+			console.log(instance.exports);
+
+			w.createWallet("some passphrase", "1234");
+			const pkey = w.getPubkey();
+
+			const pkey_base64 = w.encodeBase64URL(pkey.ptr, pkey.len);
+
+			//			let h = new HiBON(instance);
+			//			h.addString("wowo", "haha");
+			//			h.toPretty();
+			//			h.addBool("wowo2", true);
+			//			h.toPretty();
+			//			h.addInt32("wowo3", 42);
+			//			h.toPretty();
+			//			h.addInt64("hehe", BigInt(42));
+			//			h.toPretty();
+			//			h.addUint32("someuint", 123);
+			//			h.toPretty();
+			//
+			//			const res = h.toDoc();
+			//			console.log(res);
+			//
+			//			console.log("before doc ceration");
+			//			let doc = new Document(instance, res.ptr, res.len);
+			//			doc.getString("wowo");
+
+
+			//h.toPretty(); 
+
+
+
+		})();
+
+
+	</script>
+</body>
+
 </html>

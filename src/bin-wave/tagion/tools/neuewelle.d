@@ -1,5 +1,4 @@
 /** 
- *
  * New wave implementation of the tagion node
 **/
 module tagion.tools.neuewelle;
@@ -10,27 +9,30 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.thread;
 import core.time;
-import std.algorithm : countUntil, map, uniq, equal;
+import std.algorithm : filter, countUntil, map, uniq, equal, canFind, all;
 import std.array;
-import std.file : chdir, exists;
+import std.file : chdir, exists, remove;
 import std.format;
 import std.getopt;
 import std.path;
+import std.process : thisProcessID;
 import std.range : iota;
 import std.stdio;
 import std.typecons;
 import std.sumtype;
 
-import tagion.GlobalSignals : segment_fault, stopsignal;
+import tagion.GlobalSignals;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension, hasExtension;
+import tagion.basic.dir;
 import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.logger;
 import tagion.services.logger;
 import tagion.services.options;
 import tagion.services.subscription;
+import tagion.services.messages;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.tools.toolsexception;
@@ -40,7 +42,6 @@ import tagion.script.common;
 import tagion.script.namerecords;
 
 static abort = false;
-import tagion.services.transcript : graceful_shutdown;
 
 private extern (C)
 void signal_handler(int signal) nothrow {
@@ -53,7 +54,7 @@ void signal_handler(int signal) nothrow {
             printf("Terminating\n");
             exit(1);
         }
-        stopsignal.set;
+        stopsignal.setIfInitialized;
         abort = true;
         printf("Received stop signal, telling services to stop\n");
     }
@@ -118,10 +119,10 @@ int _neuewelle(string[] args) {
 
     auto main_args = getopt(args,
             "version", "Print revision information", &version_switch,
+            "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
-            "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
             "m|mode", "Set the node network mode [0,1,2]", &network_mode_switch,
     );
@@ -215,7 +216,7 @@ int _neuewelle(string[] args) {
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
     ActorHandle sub_handle;
-    { // Spawn logger subscription service
+    if(local_options.subscription.enable) { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
         writeln("logsub started: ", waitforChildren(Ctrl.ALIVE));
@@ -260,7 +261,7 @@ int _neuewelle(string[] args) {
                 db.close;
             }
 
-            const head = TagionHead("tagion", 0);
+            const head = TagionHead();
             auto epoch = head.getEpoch(db, __net);
         }
         else {
@@ -366,43 +367,61 @@ int _neuewelle(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
-        log("alive");
-        bool signaled;
-        import tagion.utils.pretend_safe_concurrency : receiveTimeout;
-        import core.atomic;
+    const shutdown_file = buildPath(base_dir.run, format("epoch_shutdown_%d", thisProcessID()));
+    log.trace("Epoch Shutdown file %s", shutdown_file);
 
-        do {
-            signaled = stopsignal.wait(100.msecs);
-            if (!signaled) {
-                if (local_options.wave.fail_fast) {
-                    signaled = receiveTimeout(
-                            Duration.zero,
-                            (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure\n%s", tf); }
-                    );
+    import tagion.utils.pretend_safe_concurrency : receiveTimeout;
+
+    while(!thisActor.stop) {
+        thisActor.stop |= stopsignal.wait(100.msecs);
+
+        receiveTimeout(Duration.zero,
+            (EpochShutdown m, long shutdown_) { //
+                foreach(handle; supervisor_handles) {
+                    handle.send(m, shutdown_);
                 }
-                else {
-                    receiveTimeout(
-                            Duration.zero,
-                            (TaskFailure tf) { log.error("Received an unhandled taskfailure\n%s", tf); }
-                    );
+            },
+            (TaskFailure tf) { 
+                thisActor.stop = true;
+                log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
+            },
+            default_handlers.expand,
+        );
+
+        try {
+            if(shutdown_file.exists) {
+                auto f = File(shutdown_file, "r");
+                scope (exit) {
+                    f.close;
+                    shutdown_file.remove;
+                }
+                import std.conv;
+                check(!f.byLine.empty, "shutdown_file is empty");
+                long shutdown = f.byLine.front.to!long;
+                foreach(handle; supervisor_handles) {
+                    handle.send(EpochShutdown(), shutdown);
                 }
             }
         }
-        while (!signaled && graceful_shutdown.atomicLoad() != local_options.wave.number_of_nodes);
-    }
-    else {
-        log("Program did not start");
-        return 1;
+        catch(Exception e) {
+            error(e);
+        }
+
+        /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
+        // If all supervisors stopped then we stop as well
+        thisActor.stop |= 
+            thisActor.childrenState
+            .byKeyValue
+            .filter!(c => canFind(c.key, local_options.task_names.supervisor)).all!(c => c.value is Ctrl.END);
     }
 
-    sub_handle.send(Sig.STOP);
-    log("Sending stop signal to supervisor");
+    log("Sending stop signal to supervisors");
     foreach (supervisor; supervisor_handles) {
-        supervisor.send(Sig.STOP);
+        supervisor.prioritySend(Sig.STOP);
     }
-    logger_service.send(Sig.STOP);
 
+    sub_handle.prioritySend(Sig.STOP);
+    logger_service.prioritySend(Sig.STOP);
     // supervisor_handle.send(Sig.STOP);
     if (!waitforChildren(Ctrl.END, 5.seconds)) {
         log("Timed out before all services stopped");

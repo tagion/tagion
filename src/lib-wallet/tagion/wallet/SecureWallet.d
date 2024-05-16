@@ -366,7 +366,7 @@ struct SecureWallet(Net : SecureNet) {
      * Params:
      *   label = Name of the invoice
      *   amount = Amount 
-     *   info = Invoce information
+     *   info = Invoice information
      * Returns: The created invoice
      */
     static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) pure {
@@ -500,7 +500,6 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: trt.dartRead hirpc.sender 
      */
     const(HiRPC.Sender) readIndicesByPubkey(HiRPC hirpc = HiRPC(null)) const {
-        import tagion.dart.DART;
         import tagion.script.standardnames;
 
         auto owner_indices = account.derivers.byKey
@@ -509,8 +508,8 @@ struct SecureWallet(Net : SecureNet) {
         auto params = new HiBON;
         auto params_dart_indices = new HiBON;
         params_dart_indices = owner_indices;
-        params[DART.Params.dart_indices] = params_dart_indices;
-        return hirpc.action("trt." ~ DART.Queries.dartRead, params);
+        params[Params.dart_indices] = params_dart_indices;
+        return hirpc.action("trt." ~ Queries.dartRead, params);
     }
 
     /** 
@@ -528,14 +527,14 @@ struct SecureWallet(Net : SecureNet) {
         import tagion.script.standardnames;
 
         DARTIndex[] contract_indices = contracts.map!(doc => net.dartIndex(doc))
-            .map!(idx => net.dartKey(StdNames.contract, idx))
+            .map!(idx => net.dartKey(StdNames.hash_contract, idx))
             .array;
 
         auto params = new HiBON;
         auto params_dart_indices = new HiBON;
         params_dart_indices = contract_indices;
-        params[DART.Params.dart_indices] = params_dart_indices;
-        return hirpc.action("trt." ~ DART.Queries.dartRead, params);
+        params[Params.dart_indices] = params_dart_indices;
+        return hirpc.action("trt." ~ Queries.dartRead, params);
     }
 
     /** 
@@ -740,7 +739,7 @@ struct SecureWallet(Net : SecureNet) {
             return false;
         }
 
-        auto not_in_dart = receiver.response.result[DART.Params.dart_indices].get!Document[].map!(
+        auto not_in_dart = receiver.response.result[Params.dart_indices].get!Document[].map!(
             d => d.get!Buffer);
 
         foreach (not_found; not_in_dart) {
@@ -1734,8 +1733,7 @@ unittest {
 }
 
 // pay same invoice twice
-pragma(msg, "to remove or not to remove?");
-version (none) unittest {
+unittest {
     import std.stdio;
 
     import tagion.dart.DART;

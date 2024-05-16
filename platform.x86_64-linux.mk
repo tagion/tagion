@@ -9,16 +9,11 @@ ifeq ($(PLATFORM),$(LINUX_X86_64))
 
 $(UNITTEST_BIN): $(DFILES)
 
-proto-unittest-build: LIBS+=$(LIBSECP256K1)
-proto-unittest-build: LIBS+=$(LIBNNG)
-
 unittest: proto-unittest-run
 
 build-unittest: proto-unittest-build
 
-ifndef DEBUG_DISABLE
-DFLAGS+=$(DDEBUG)
-endif
+LD_EXPORT_DYN?=-export-dynamic
 
 #
 # Platform dependant setting for secp256k1

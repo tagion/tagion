@@ -1,6 +1,9 @@
 // TRT database build on the DART
 
 module tagion.trt.TRT;
+
+@safe:
+
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
 import tagion.script.common : TagionBill;
@@ -10,11 +13,9 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.script.standardnames;
 import tagion.crypto.Types;
 import std.range;
-import tagion.logger.Logger : log;
 import std.digest : toHexString;
 import tagion.hibon.Document : Document;
 
-@safe:
 @recordType(TYPENAME ~ "trt")
 struct TRTArchive {
     @label(TRTLabel) Pubkey owner;
@@ -28,10 +29,9 @@ struct TRTArchive {
     });
 }
 
-@safe:
 @recordType(TYPENAME ~ "trt_contract")
 struct TRTContractArchive {
-    @label(StdNames.contract) DARTIndex contract_hash;
+    @label(StdNames.hash_contract) DARTIndex contract_hash;
     Document contract;
     @label(StdNames.epoch_number) long epoch;
 
@@ -76,9 +76,6 @@ void createTRTUpdateRecorder(
             auto to_remove_index = trt_archive.indices.countUntil!(idx => idx == dart_index);
             if (to_remove_index >= 0) {
                 trt_archive.indices = trt_archive.indices.remove(to_remove_index);
-            }
-            else {
-                log.error("Index to remove not exists in DART: %s", dart_index[].toHexString);
             }
         }
 

@@ -1,13 +1,14 @@
 /// HashGraph basic support functions
 module tagion.hashgraph.HashGraphBasic;
 
+@safe:
+
 import std.exception : assumeWontThrow;
 import std.format;
 import std.stdio;
-import std.traits; 
-import std.typecons : TypedefType;
+import std.traits : isSigned, isIntegral;
 import std.meta;
-
+import std.typecons : TypedefType;
 import tagion.basic.ConsensusExceptions : ConsensusException, GossipConsensusException, convertEnum;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText;
@@ -21,23 +22,23 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.HiBONRecord;
+import tagion.script.standardnames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
 
-@safe @nogc
+@nogc
 T highest(T)(T a, T b) pure nothrow if (isSigned!(T)) {
     return higher(a, b) ? a : b;
 }
 
-@safe @nogc
+@nogc
 bool higher(T)(T a, T b) pure nothrow if (isSigned!(T)) {
     return a - b > 0;
 }
 
-@safe
 unittest { // Test of the altitude measure function
     int x = int.max - 10;
     int y = x + 20;
@@ -56,13 +57,11 @@ unittest { // Test of the altitude measure function
  * Returns:
  *     Returns `true` if the votes are more than 2/3
  */
-@safe @nogc
-bool isMajority(T, S)(T voting, S node_size) pure nothrow 
-if (allSatisfy!(isIntegral, T, S)) {
+@nogc
+bool isMajority(T, S)(T voting, S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
-@safe
 unittest {
 
     int[] some_array;
@@ -70,36 +69,34 @@ unittest {
 
 }
 
-@safe @nogc
+@nogc
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
     return isMajority(mask.count, hashgraph.node_size);
 }
 
-@safe @nogc
+@nogc
 bool isAllVotes(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
     return mask.count is hashgraph.node_size;
 }
 
+// Test value used for epoch rollover check
 enum int eva_altitude = -77;
-@safe @nogc
+
+@nogc
 int nextAltitude(const Event event) pure nothrow {
     return (event) ? event.altitude + 1 : eva_altitude;
 }
 
-protected enum _params = [
-        "events",
-        "size",
-    ];
-
-mixin(EnumText!("Params", _params));
-
+/// The exchange state used for the wavefront protocol
 enum ExchangeState : uint {
     NONE,
     INIT_TIDE,
-    TIDAL_WAVE,
-    FIRST_WAVE,
-    SECOND_WAVE,
-    BREAKING_WAVE,
+
+    TIDAL_WAVE, /// Initial state A
+    FIRST_WAVE, /// Difference between B and initial state A
+    SECOND_WAVE, /// Acknowledgment, difference between state and calculated state B
+    BREAKING_WAVE, /// Communication conflict, wavefront initiated from both peers
+
     SHARP,
     RIPPLE, /// Ripple is used the first time a node connects to the network
 
@@ -112,7 +109,7 @@ enum ExchangeState : uint {
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 
-@safe
+///
 struct EventBody {
     enum int eva_altitude = -77;
     import tagion.basic.ConsensusExceptions;
@@ -124,7 +121,7 @@ struct EventBody {
     @label("$m") @optional @(filter.Initialized) Buffer mother; // Hash of the self-parent
     @label("$f") @optional @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
-    @label("$t") sdt_t time;
+    @label(StdNames.time) sdt_t time;
     bool verify() const pure nothrow @nogc {
         return (father is null) ? true : (mother !is null);
     }
@@ -135,7 +132,7 @@ struct EventBody {
                 Document payload,
                 const Event mother,
                 const Event father,
-                lazy const sdt_t time)  inout pure {
+                lazy const sdt_t time) inout pure {
                 this.time      =    time;
                 this.mother    =    (mother is null)?null:mother.fingerprint;
                 this.father    =    (father is null)?null:father.fingerprint;
@@ -189,10 +186,11 @@ struct EventBody {
     }
 }
 
-@safe
+///
 struct EventPackage {
     @exclude Buffer fingerprint;
-    @label("$sign") Signature signature;
+    @label(StdNames.sign) Signature signature;
+    pragma(msg, "Should we use the same name as StdNames.owner?");
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
 
@@ -242,11 +240,12 @@ struct EventPackage {
 
 alias Tides = int[Pubkey];
 
-@recordType("Wavefront") @safe
+///
+@recordType("Wavefront")
 struct Wavefront {
     @label("$tides") @optional @filter(q{a.length is 0}) private Tides _tides;
     @label("$events") @optional @filter(q{a.length is 0}) const(immutable(EventPackage)*)[] epacks;
-    @label("$state") ExchangeState state;
+    @label(StdNames.state) ExchangeState state;
     enum tidesName = GetLabel!(_tides).name;
     enum epacksName = GetLabel!(epacks).name;
     enum stateName = GetLabel!(state).name;
@@ -324,9 +323,10 @@ struct Wavefront {
     }
 }
 
-@safe
+///
 struct EvaPayload {
     @label("$channel") Pubkey channel;
+    pragma(msg, "Should we use the same name here as StdNames.nonce?");
     @label("$nonce") Buffer nonce;
     mixin HiBONRecord!(
             q{

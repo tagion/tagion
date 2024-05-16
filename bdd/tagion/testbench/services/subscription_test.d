@@ -56,7 +56,7 @@ class ReceiveSubscribedTopicsOnASocket {
     string address;
 
     this(string address) @trusted {
-        // Onlu the tags passed in subscription service options are enabled
+        // Only the tags passed in subscription service options are enabled
         this.address = address;
         sub_opts = SubscriptionServiceOptions(topic_subscribed.name, address);
         sock = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);

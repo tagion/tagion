@@ -39,8 +39,6 @@ import tagion.basic.tagionexceptions : Check;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.tools.revision;
 
-extern (C) export immutable string TAGION_HASH = revision_info[3];
-
 /// Used for describing the d-runtime status
 enum DrtStatus {
     DEFAULT_STS,
@@ -73,44 +71,9 @@ extern (C) {
         return revision_text.toStringz;
     }
     
-    version(Android)
-    enum android_fdsan_error_level {
-      // No errors.
-      ANDROID_FDSAN_ERROR_LEVEL_DISABLED,
-      // Warn once(ish) on error, and then downgrade to ANDROID_FDSAN_ERROR_LEVEL_DISABLED.
-      ANDROID_FDSAN_ERROR_LEVEL_WARN_ONCE,
-      // Warn always on error.
-      ANDROID_FDSAN_ERROR_LEVEL_WARN_ALWAYS,
-      // Abort on error.
-      ANDROID_FDSAN_ERROR_LEVEL_FATAL,
-    }
-
-    version(Android)
-    void disable_fdsan() {
-        import core.sys.posix.dlfcn;
-        void* lib_handle = dlopen("libc.so", RTLD_LAZY);
-        if (lib_handle is null) {
-            return;
-        }
-        scope(exit) {
-            dlclose(lib_handle);
-        }
-
-        alias func = void function(android_fdsan_error_level); 
-        const set_fdsan_error_level = cast(func) dlsym(lib_handle, "android_fdsan_set_error_level"); 
-
-        if(set_fdsan_error_level is null) {
-            return;
-        }
-        set_fdsan_error_level(android_fdsan_error_level.ANDROID_FDSAN_ERROR_LEVEL_DISABLED);
-    }
-
     // Staritng d-runtime
     export static int64_t start_rt() {
         if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
-            version(Android) {
-                disable_fdsan();
-            }
             __runtimeStatus = DrtStatus.STARTED;
             return rt_init;
         }
@@ -129,10 +92,6 @@ extern (C) {
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
     export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("WalletWrapperSdk wallet_storage_init");
-        } 
         const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
         if (directoryPath.length > 0) {
             // Full path to stored wallet data.
@@ -156,11 +115,6 @@ extern (C) {
             const uint32_t mnemonicLen,
             const uint8_t* saltPtr,
             const uint32_t saltLen) nothrow {
-        // For testing purposes.
-        version(PROVOKE_CRASH) {
-            int* ptr = null; 
-            *ptr = 10;
-        }
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
@@ -714,6 +668,35 @@ extern (C) {
     export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
+        static int check_contract_payment_(const(AccountDetails) account, const(DARTIndex)[] inputs, const(Document[]) outputs) {
+            import std.algorithm : countUntil;
+            import tagion.script.standardnames;
+
+            auto billsHashes = account.bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
+
+            // Look for input matches. Return 0 from func if found.
+            foreach (inputHash; inputs) {
+                const index = countUntil!"a == b"(billsHashes, inputHash);
+                if (index >= 0) {
+                    return 0;
+                }
+            }
+            // Proceed if inputs are not matched.
+            // Look for outputs matches. Return 1 from func if found or 2 if not.
+            foreach (outputPubkey; outputs.map!(output => output[StdNames.owner].get!Pubkey)) {
+                const index = countUntil!"a.owner == b"(account.bills, outputPubkey);
+                if (index >= 0) {
+                    return 1;
+                }
+            }
+
+            if (account.bills.length == 0) {
+                return 1;
+            }
+
+            return 2;
+        }
+
         if (__wallet_storage.wallet.isLoggedin()) {
 
             auto contractDoc = Document(contractBuffer);
@@ -727,8 +710,7 @@ extern (C) {
             auto sContract = SignedContract(paramsDoc);
             const outputs = PayScript(sContract.contract.script).outputs.map!(output => output.toDoc).array;
 
-            int status = __wallet_storage.wallet.account.check_contract_payment(
-                    sContract.contract.inputs, outputs);
+            int status = check_contract_payment_(__wallet_storage.wallet.account, sContract.contract.inputs, outputs);
 
             *statusPtr = cast(uint8_t) status;
             return SUCCESS;
@@ -739,47 +721,22 @@ extern (C) {
     static sdt_t dummy_time;
     // DUMMY FUNCTION
     uint get_history(uint from, uint count, uint32_t* historyId) {
+        assert(__wallet_storage !is null, "The Wallet storage was not initialised");
 
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("GET HISTORY");
-        }
-        version (WALLET_HISTORY_DUMMY) {
-            if (dummy_time == sdt_t.init) {
-                dummy_time = currentTime();
-            }
+        WHistory hist;
 
-            DummyHistGen hist_gen;
-
-            WHistory hist;
-            hist_gen.popFront();
-            if (count == 0) {
-                hist.items = hist_gen.drop(from).array;
-            }
-            else {
-                hist.items = hist_gen.drop(from).take(count).array;
-            }
-
-            *historyId = recyclerDoc.create(hist.toDoc);
+        if (count == 0) {
+            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from)
+                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                .array;
         }
         else {
-            assert(__wallet_storage !is null, "The Wallet storage was not initialised");
-
-            WHistory hist;
-
-            if (count == 0) {
-                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from)
-                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
-                    .array;
-            }
-            else {
-                hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
-                    .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
-                    .array;
-            }
-
-            *historyId = recyclerDoc.create(hist.toDoc);
+            hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
+                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                .array;
         }
+
+        *historyId = recyclerDoc.create(hist.toDoc);
 
         return SUCCESS;
     }
@@ -815,41 +772,6 @@ struct WHistoryItem {
 struct WHistory {
     WHistoryItem[] items;
     mixin HiBONRecord;
-}
-
-pragma(msg, "remove wrapper dummy history");
-struct DummyHistGen {
-    import tagion.utils.Random;
-
-    enum max_length = 37;
-
-    Random!uint rnd = Random!uint(42);
-
-    WHistoryItem genHistItem() {
-        WHistoryItem hist_item;
-        with (hist_item) {
-            amount = rnd.value;
-            balance = rnd.value;
-            fee = rnd.value;
-            status = rnd.value % 2;
-            type = rnd.value % 2;
-            timestamp = dummy_time;
-            pubkey = Pubkey(rnd.take(33).map!(i => cast(ubyte)(i)).array.idup);
-            index = DARTIndex(rnd.take(32).map!(i => cast(ubyte)(i)).array.idup);
-        }
-        return hist_item;
-    }
-
-    int i = 0;
-
-    bool empty() => i > max_length;
-    WHistoryItem _front;
-    void popFront() {
-        _front = genHistItem();
-        i++;
-    }
-
-    WHistoryItem front() => _front;
 }
 
 unittest {
@@ -1151,13 +1073,6 @@ struct WalletStorage {
 
         wallet_data_path = walletDataPath.idup;
         import std.file;
-        debug(android) {
-            import tagion.mobile.mobilelog : log_file;
-            writefln("creating file at %s", wallet_data_path);
-            log_file = buildPath(wallet_data_path, "logfile.txt");
-            import std.file : write;
-            log_file.write("----- LOG START -----\n");
-        }
         if (!wallet_data_path.exists) {
             wallet_data_path.mkdirRecurse;
         }
@@ -1178,14 +1093,9 @@ struct WalletStorage {
 
     void write() const {
         // Create a hibon for wallet data.
-        debug(android){
-           import tagion.mobile.mobilelog : write_log;
-            write_log("write start\n");
-        }
         path(devicefile).fwrite(wallet.pin);
         path(accountfile).fwrite(wallet.account);
         path(walletfile).fwrite(wallet.wallet);
-
     }
 
     void read() {

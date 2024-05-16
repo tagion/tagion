@@ -37,22 +37,29 @@ dartutil [<option>...] file.drt <files>
 
 ```
 
-## Create an empty dart
-```
+## Examples
+
+### Create an empty dart
+
+```sh
 dartutil --initialize database.drt
 ```
+
 The DART can also be created with to use the fake hash with the  `--fake` option.
 
-## Display an inspect the DART file
+**Display an inspect the DART file**
 The .drt file is a block-file so the [blockutil](/docs/tools/blockutil) can also be used to inspect the file.
 
-#### The bullseye of the DART can be display with the `--eye` switch.
-```
+**The bullseye of the DART can be display with the `--eye` switch.**  
+
+```sh
 dartutil genesis.drt --eye
 EYE: 2069c3e00c031294ae45945d45fa20e0f0f09e036ca1153bb66da94d9bc369a8artutil 
 ```
-#### The DART map can be listed with the `--print` switch.
-```
+
+**The DART map can be listed with the `--print` switch.**  
+
+```sh
 dartutil genesis.drt --print
 EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
 | 04 [3]
@@ -87,11 +94,10 @@ The long hexadecimal number is the dart-index of the archive.
 
 The `#` at the end of the dart-index indicates that the archive is a dart-key.
 
-#### If the DART is big the map print out can be limited with the `--angle` and `--depth`.
+**If the DART is big the map print out can be limited with the `--angle` and `--depth`.**
 
 
-
-```
+```sh
 dartutil genesis.drt --angle C034:C670 --print --depth 3
 EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
 | C0 [66]
@@ -102,11 +108,11 @@ EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
 | .. | .. c653fcf92e4bc1ccf4e41acd85876f62a1e2422a1fe7d849b65cd8e75cf298c3 [67]
 ```
 
-## Read an inspect data in the DART.
+### Read and inspect data in the DART.
 
 In the following section it's shown how information can be read out of the DART.
 
-#### Raw data can be read out of the DART with the `--dump`
+*Raw data can be read out of the DART with the `--dump`*
 
 The data read out is stream out as a *HiBON* stream and by default is stream to `stdout`.
 The output can be redirected via the `-o filename.hibon` switch.
@@ -156,7 +162,9 @@ dartutil genesis.drt --angle C034:C670 --dump --depth 3|hibonutil -pc
     ]
 }
 ```
+
 With the `--dump-branches` the branches in the DART are also streamed.
+
 ```
 dartutil genesis.drt --angle 1175:1B2A --dump-branches --depth 3 |hibonutil -pc 
 {
@@ -189,7 +197,7 @@ dartutil genesis.drt --angle 1175:1B2A --dump-branches --depth 3 |hibonutil -pc
 }
 ```
 
-#### The rim-path can be selected via `--rim` switch
+**The rim-path can be selected via `--rim` switch**
 
 By default the `--rim` returns the `HiRPC` response (rim-path as hex-string).
 
@@ -220,18 +228,20 @@ dartutil genesis.drt --rim C034 |hibonutil -pc
     ]
 }
 ```
+
 `Note. Select the same rim-path with decimal rim keys.`
+
 ```
 dartutil genesis.drt --rim 192,52, |hibonutil -pc
 
 ```
 
 The `HiRPC` encapsulation can be stripped with the `--strip` switch.
+
 ```
 dartutil genesis.drt --rim 1175 --strip |hibonutil -pc
 
 ```
-
 
 
 ## DART Crud commands
@@ -239,33 +249,34 @@ You can call only one of the CRUD command at a time
 - [--read](#read)
 - [--rim](#rim)
 - [--modify](#modify)
+- [--eye](#eye)
 - [--rpc](#rpc)
   
-# read
+### read
+
 ```
 --read -r
 ```
+
 Reads records from DART by hash. Can take several hashes at once.  
 DART file must exist before calling.
-
-
-One of the [exclusive functions](#exclusive-functions) 
 
 
 This function requires value. Takes one or several strings which are hashes in DART database.
 Hash should contain only characters allowed for hex numbers (digits [0..9] and letters [a..f] or [A..F]) and separator character '_'. Length of string hash should be even (ignoring separator characters).
 
 Example of using:
+
 ```
 ./dartutil -r 1ef4e838_a9aa1a80_dcc2a3af_4fd57190_f8a91c3b_373c8514_2f294168_7ebf127f
 
 ./dartutil -r 1ef4e838 -r 5d07e4bf -r 7d6c4450
 
-# Read a owner hash key from the trt dart
+#Read a owner hash key from the trt dart
 ./dartutil -r\#\$Y:\*:@AhsxFPQykU33A7TjcBWMZZkql1IqGq0mUoPXjbxrEO6I trt.drt 
 ```
 
-## Parameters
+**Parameters**
 
 [--verbose](#verbose) **optional**
 
@@ -277,13 +288,16 @@ Example of using:
 
 [--passphrase](#passphrase) **optional**
 
-## Use cases:
-### Case: read single record
+
+**Use cases:**  
+*Case: read single record*  
 ```
 ./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127 --verbose
 ```
-#### Success
-**Result**  
+
+**Success**  
+
+*Result*  
 
 Found record with given hash. Written to outputfile and console:
 ```
@@ -317,8 +331,10 @@ Document: {
     }
 }
 ```
-#### Failure
-**Result** (when record not found)  
+
+**Failure**
+
+*Result* (when record not found)  
 
 Empty recorder is written to outputfile and console
 ```
@@ -330,25 +346,25 @@ Document: {
 }
 ```
 
-**Result** (when hash has wrong character)  
+*Result* (when hash has wrong character)  
 
 ```
 Error parsing hash string: Bad char 'G'. Abort
 ```
 
-**Result** (when hash has wrong length)  
+*Result* (when hash has wrong length)  
 
 ```
 Error parsing hash string: Hex string length not even. Abort
 ```
 
-### Case: read several records
+*Case: read several records*  
 ```
 ./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127 5d07e4bfff14a719e0b4e57dc76bfa330ffe173c9da28afa279c337a39e171d9 7d6c44500ae8d95d4287ab56cc15c85c5ddceba715648889c991b1732847ad0f --verbose
 ```
-#### Success
+**Success**  
 
-**Result**  
+*Result*  
 
 Found records with given hashes. Single recorder with all records is written to outputfile and console:
 ```
@@ -423,7 +439,7 @@ Document: {
 ```
 
 
-**Result** (when some but not all hashes found)  
+*Result* (when some but not all hashes found)  
 
 Found some records with some given hashes. Single recorder with all found records is written to outputfile and console:
 ```
@@ -448,9 +464,9 @@ Document: {
 }
 ```
 
-#### Failure
+**Failure**  
 
-**Result** (when record not found)  
+*Result* (when record not found)  
 
 Empty recorder is written to outputfile and console
 ```
@@ -464,13 +480,13 @@ Document: {
 
 See also use cases of parameters, used in this function
 
-# rim
+### rim
 ```
 --rim
 ```
 **Refactor** need to implement
 
-# modify
+### modify
 ```
 --modify -m
 ```
@@ -479,15 +495,11 @@ Executes a DART modify sequency from HiBON file.
 
 DART file must exist before calling, but can be created instantly using [--initialize](#initialize)  
 
-One of the [exclusive functions](#exclusive-functions) 
-
-## Parameters
+**Parameters**
 
 [--inputfile](#inputfile) **required** HiBON file, that contains DART modify sequence
 
 [--outputfile](#outputfile) **optional**
-
-[--dartfilename](#dartfilename) **optional**
 
 [--dump](#dump) **optional**
 
@@ -495,23 +507,24 @@ One of the [exclusive functions](#exclusive-functions)
 
 [--passphrase](#passphrase) **optional**
 
-## Use cases:
-### Case: create new DART with executed sequence from file
+**Use cases:**  
+*Case: create new DART with executed sequence from file*  
+
 ```
 ./dartutil --initialize -m -i="tmp.hibon"
 ```
 
-#### Success
+**Success**  
 
-**Result**  
+*Result*  
 
 Created new DART file. Executed sequence from file. Result is written to outputfile.  
 
 No console output.
 
-#### Failure
+**Failure**
 
-**Result** (input file has wrong format):  
+*Result* (input file has wrong format):  
 
 Created new DART file. No DART sequence executed. Aborted.
 
@@ -519,31 +532,50 @@ Created new DART file. No DART sequence executed. Aborted.
 Error trying to modify: HiBON Document format failed. Abort
 ```
 
-Also see [--dartfilename](#dartfilename) and [--inputfile](#inputfile) for possible failures of this case.
+Also see [--outputfile](#outputfile) and [--inputfile](#inputfile) for possible failures of this case.
 
-### Case: execute sequence on existent DART
+**Case: execute sequence on existent DART**
 
 ```
 ./dartutil -m -i="tmp.hibon"
 ```
 
-#### Success
+**Success**
 
-**Result**  
+*Result*  
 
 Opened DART file. Executed sequence from input file. Result is written to outputfile.  
 No console output.
 
-#### Failure
+**Failure**
 
-See [previous case](#case-create-new-dart-with-executed-sequence-from-file) failures.
-
-Also see [--dartfilename](#dartfilename) and [--inputfile](#inputfile) for possible failures of this case.
-
+Also see [--outputfile](#outputfile[--inputfile](#inputfile) for possible failures of this case.
 
 See also use cases of parameters, used in this function
 
-# rpc
+### eye
+
+```
+--eye
+```
+
+Prints the bullseye of DART.
+Can be used with any function in dartutil
+
+**Use cases**  
+*Case: print bullseye*
+
+```
+./dartutil --eye
+```
+
+**Result**
+
+```
+EYE: 29a444af19221a7ed3dbb6e459a946745feace5a300a5390c2e48b6b27047d3d
+```
+
+### rpc
 
 ```
 --rpc
@@ -554,16 +586,11 @@ Executes a HiPRC on the DART.
 DART file must exist before calling, but can be created instantly using [--initialize](#initialize)  
 
 
-
-One of the [exclusive functions](#exclusive-functions) 
-
-## Parameters
+**Parameters**  
 
 [--inputfile](#inputfile) **required** HiBON file, that contains DART modify sequence
 
 [--outputfile](#outputfile) **optional**
-
-[--dartfilename](#dartfilename) **optional**
 
 [--dump](#dump) **optional**
 
@@ -571,60 +598,19 @@ One of the [exclusive functions](#exclusive-functions)
 
 [--passphrase](#passphrase) **optional**
 
-## Use cases:
-TBD
 
+## Other switches
 
-# version
+### version
+
 ```
 --version -v
 ```
+
 Displays the version of tool
 
-# dartfilename
 
-```
---dartfilename -d
-```
-
-Sets the dartfile.
-
-Default value: `/tmp/default.drt`  
-
-
-
-Can be used with any function in dartutil
-
-## Use cases
-```
-./dartutil <function> [implicit -d=default]
-./dartutil <function> -d="dart.drt"
-```
-### Success
-
-**Result**:  
-
-dartutil opens specified dart file
-
-### Failure
-
-**Result** (when DART file can't be opened):
-
-Tool stops working
-```
-Fail to open DART: Cannot open file `/tmp/default.drt' in mode `r+' (No such file or directory). Abort.
-```
-**Note**: DART file can be created using [--initialize](#initialize)
-
-### Failure
-**Result** (when DART file have wrong format):
-
-Tool stops working
-```
-Fail to open DART: BlockFile should be sized in equal number of blocks of the size of 64 but the size is 578. Abort.
-```
-
-# initialize
+### initialize
 
 ```
 --initialize
@@ -632,11 +618,7 @@ Fail to open DART: BlockFile should be sized in equal number of blocks of the si
 
 Creates a new DART file.
 
-
-
-Can be used as independent function or in combination with [exclusive functions](#exclusive-functions).
-
-# inputfile
+### inputfile
 
 ```
 --inputfile -i
@@ -644,38 +626,36 @@ Can be used as independent function or in combination with [exclusive functions]
 
 Sets the HiBON input file name.  
 
-
-
 Used in:
 - [--rpc](#rpc)
 - [--modify](#modify)
 
-## Use cases
-### Case: simple call
+**Use cases**
+*Case: simple call*
 
 ```
 ./dartutil <function> -i "tmp.txt"
 ```
 
-#### Success
+**Success**
 
-**Result**:
+*Result*:
 
 file at the specified path was opened.
 
 
 No console output
 
-#### Failure
+**Failure**
 
-**Result** (when file not found):
+*Result* (when file not found):
 
 Tool stop working
 ```
 Can't open input file 'tmp.txt'. Abort
 ```
 
-# outputfile
+### outputfile
 
 ```
 --outputfile -o
@@ -695,20 +675,25 @@ Default value: path generated with random seed. Variants of this path:
 
 Can be used with any function in dartutil
 
-# dump
+### dump
+
 ```
 --dump
 ```
+
 Dumps all the archives from DART.
     
 Can be used with any function in dartutil
 
-## Use cases
-### Case: dump DART
+**Use cases**  
+*Case: dump DART*  
+
 ```
 ./dartutil --dump
 ```
+
 **Result**
+
 ```
 EYE: 29a444af19221a7ed3dbb6e459a946745feace5a300a5390c2e48b6b27047d3d
 | 1E [3]
@@ -725,25 +710,9 @@ EYE: 29a444af19221a7ed3dbb6e459a946745feace5a300a5390c2e48b6b27047d3d
 | .. | .. 9de041ad54986f7d82598249e4bb8f1eafa8bfbd14ee31e99b8a0dabe479fe9f [10]
 ...
 ```
-# eye
-```
---eye
-```
-Prints the bullseye of DART
-    
-Can be used with any function in dartutil
 
-## Use cases
-### Case: print bullseye
-```
-./dartutil --eye
-```
-**Result**
-```
-EYE: 29a444af19221a7ed3dbb6e459a946745feace5a300a5390c2e48b6b27047d3d
-```
 
-# passphrase
+### passphrase
 
 ```
 --passphrase -P
@@ -754,10 +723,13 @@ Default value: `"verysecret"`
     
 Can be used with any function in dartutil
 
-# verbose
+
+### verbose
+
 ```
 --verbose
 ```
+
 Boolean flag, that enables more detailed output to console  
 Default value: `False`
 
@@ -766,18 +738,22 @@ Can be used with any function in dartutil
 Example of using this flag:
 
 **Without verbose**
+
 ```
 ./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127
 ```
-**Result**: no output to console
 
-**With verbose**
-```
+*Result:* no output to console  
+*With verbose*
+
+```sh
 ./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127 --verbose
 ```
-**Result**:
-```
-Document: {
+
+*Result:*  
+
+```json
+{
     "result": {
         "$@": "Recorder",
         "0": {

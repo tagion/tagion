@@ -15,7 +15,11 @@ import tagion.crypto.secp256k1.c.secp256k1;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.utils.Miscellaneous : decode;
 import tagion.api.document;
+import tagion.api.hibon;
 import tagion.api.errors;
+import core.stdc.stdlib;
+import tagion.api.wallet;
+import tagion.api.basic;
 
 static this() {
     writefln(" should call this\n");
@@ -24,7 +28,38 @@ static this() {
 static ~this() {
     writefln(" should call ~this\n");
 }
-pragma(msg, "Main ", main.mangleof);
+
+void test_document() {
+    auto h=new HiBON;
+    string key_i32="i32";
+    string key_i64="i64";
+    h["i32"]=42;
+    h["i64"]=-42L;
+    const doc= Document(h);
+
+    Document.Element elm_i32, elm_i64;
+    {
+        const rt=tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
+        writefln("rt=%s", rt);
+        writefln("elm.type %s", elm_i32.type);
+        writefln("elm.data %(%02x %)", elm_i32.data[0..8]);
+    }
+    {
+        const rt=tagion_document(&doc.data[0], doc.data.length, &key_i64[0], key_i64.length, &elm_i64);
+        writefln("rt=%s", rt);
+        writefln("elm.type %s", elm_i64.type);
+        writefln("elm.data %(%02x %)", elm_i64.data);
+
+    }
+    {
+        int value;
+        const rt=tagion_document_get_int32(&elm_i32, &value);
+        writefln("rt=%s", rt);
+        writefln("value=%s", value);
+        
+    }
+}
+
 void main() {
     printf("--- Main\n");
     interface I {
@@ -141,6 +176,10 @@ void main() {
     const pubkey=net.pubkey;
     writefln("pubkey   =%s len=%d", pubkey.base64, pubkey.length);
     const message=hash_net.calcHash(doc);
+
+    char* test;
+    size_t test_len;
+    tagion_basic_encode_base64url(&message[0], message.length, &test, &test_len); 
     writefln("message  =%s", message.base64);
     const signature=net.sign(message);
     writefln("signature=%s len=%d", signature.base64, signature.length);
@@ -148,5 +187,6 @@ void main() {
     const ok=net.verify(message, signature, pubkey);
 
     writefln("verify = %s", ok);
+    test_document();
 }
 

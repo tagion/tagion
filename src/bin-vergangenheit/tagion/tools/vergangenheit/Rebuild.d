@@ -144,7 +144,7 @@ struct Rebuild {
      }
 
     void prepareReplicator(const HashNet hash_net) {
-        const tagion_dartindex=hash_net.dartKey(StdNames.name, TagionDomain);
+        const tagion_dartindex=hash_net.dartKey(StdNames.domain_name, TagionDomain);
         const tagion_recorder=dst.loads([tagion_dartindex]);
         check(!tagion_recorder[].empty, 
     format("Destination DART is missing %s", TagionHead.type_name)); 

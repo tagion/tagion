@@ -10,6 +10,7 @@ import tagion.basic.Types : Buffer;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey, Signature;
+import tagion.script.standardnames;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONException;
@@ -193,9 +194,9 @@ struct HiRPC {
         static assert(Message.response.id.alignof == Message.id.alignof);
         static assert(Message.error.id.alignof == Message.id.alignof);
 
-        @label("$sign") @optional @(filter.Initialized) Signature signature; /// Signature of the message
-        @label("$Y") @optional @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
-        @label("$msg") Document message; /// the HiRPC message
+        @label(StdNames.sign) @optional @(filter.Initialized) Signature signature; /// Signature of the message
+        @label(StdNames.owner) @optional @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
+        @label(StdNames.msg) Document message; /// the HiRPC message
         @exclude immutable Type type;
 
         @nogc const pure nothrow {
@@ -222,13 +223,6 @@ struct HiRPC {
                 Callers!T.canFind(method.name);
         }
 
-        bool verify(const Document doc) {
-            if (pubkey.length) {
-                check(signature.length !is 0, "Message Post has a public key without signature");
-            }
-            return true;
-        }
-
         static if (DIRECTION is Direction.RECEIVE) {
             @exclude protected Message _message;
             @exclude immutable SignedState signed;
@@ -252,7 +246,6 @@ struct HiRPC {
                 message = doc[messageName].get!Document;
                 signature = doc.hasMember(signName) ? doc[signName].get!(Signature) : Signature.init;
                 pubkey = doc.hasMember(pubkeyName) ? doc[pubkeyName].get!(Pubkey) : pkey;
-                Pubkey used_pubkey;
                 static SignedState verifySignature(const SecureNet net, const Document doc, const Signature sgn, const Pubkey pkey) {
                     if (sgn.length) {
                         //immutable fingerprint=net.hashOf(msg);
@@ -343,6 +336,12 @@ struct HiRPC {
                 }
                 assert(0);
             }
+
+            /// Returns: true if the message has a valid signature
+            bool isSigned() const pure nothrow {
+                return signed is SignedState.VALID;
+            }
+
         }
         else {
             this(T)(const SecureNet net, const T post) if (isHiBONRecord!T || is(T : const Document)) {
@@ -391,7 +390,7 @@ struct HiRPC {
              Returns:
              True if the message has been signed
              +/
-            @nogc bool isSigned() const pure nothrow {
+            @nogc bool hasSignature() const pure nothrow {
                 return (signature.length !is 0);
             }
         }
@@ -559,13 +558,6 @@ struct HiRPC {
     }
 }
 
-/// A good HiRPC result with no additional data.
-@safe
-@recordType("OK") @disableSerialize
-struct ResultOk {
-    mixin HiBONRecord!();
-}
-
 ///
 unittest {
     import tagion.crypto.SecureNet : BadSecureNet, StdSecureNet;
@@ -625,7 +617,7 @@ unittest {
             const send_error = hirpc.error(receiver, "Some error", -1);
             assert(send_error.error.message == "Some error");
             assert(send_error.error.code == -1);
-            assert(send_error.isSigned);
+            assert(send_error.hasSignature);
         }
     }
 
@@ -655,7 +647,7 @@ unittest {
             auto test2 = sender.toDoc;
             // writeln(test2.toJSON);
             // writefln("sender.isSigned=%s", sender.isSigned);
-            assert(!sender.isSigned, "This message is un-sigend, which is fine because the HiRPC does not contain a SecureNet");
+            assert(!sender.hasSignature, "This message is un-sigend, which is fine because the HiRPC does not contain a SecureNet");
             {
                 const receiver = hirpc.receive(sender.toDoc);
                 // writefln("receiver=%s", receiver);
@@ -670,4 +662,11 @@ unittest {
         }
         // writefln("recever.verified=%s", recever.verified);
     }
+}
+
+/// A good HiRPC result with no additional data.
+@safe @disableSerialize
+@recordType("OK")
+struct ResultOk {
+    mixin HiBONRecord!();
 }

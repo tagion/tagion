@@ -1,3 +1,64 @@
+# Changelog for Epoch 1689534 .. 1861240
+** HiBON/Document API **
+The HiBON and Document API are mostly done and created as classes in javascript which uses the WASM file populated with the functions from the C interface.
+We are also currently exploring using it for our mobile platforms via Flutter.
+
+** Mirror node proposal **
+We've created a proposal for mirror nodes, that will act as relay stations for serving information to clients. They are essentially the exact same node, but without running consensus.
+
+** New witness definition **
+We are still working on the hashgraph and have moved a long way with creating a new algorithm for very fast finding witnesses. 
+
+** Envelope documentation **
+We have documented the protocol for using the envelope for compressing information in the system.
+
+
+# Changelog for Epoch 1569150 .. 1689534
+
+** Tool Testing **
+Implemented multiple CLI tool tests for dartutil, hirep, and hibonutil.
+
+** HiBON API **
+Introduced a C-API for HiBON, enabling the addition of keyalue pairs to HiBON objects through a `void*` parameter as an extension to what was done last week on the Document API. Documentation for both the HiBON API and Document API can be accessed [here](https://ddoc.tagion.org/tagion.api.html).
+
+** NNG CI Workflows **
+Established CI workflows for the NNG library, automating build processes and test executions directly on the library functions.
+
+** Service Refactoring **
+Removed the `waitForChildren` step in the tagionwave program. Tasks can now send messages without waiting for thread startup completion. This eliminates the "starting" state, simplifying network stopping logic previously affected during the "starting phase."
+
+
+# Changelog for Epoch 1287717 .. 1569150
+
+** Envelope tool **
+We have created a new CLI tool for packaging hibons into an envelope.  
+
+** Tagionshell envelope **
+The shell now accepts envelope packages along normal raw documents.  
+
+** Document API **
+Initial work on the document API has started and most basic functions are supported for getting the native hibon types out. This is one of the interfaces that will be used for WASM.
+
+** Tool tests **
+We have started to implement CLI tool testing in BDD, in order to test that all user-facing switches work as intended
+
+** Fix names of internal records **
+Fixed the name of ConsensusVoting record used in gossip, where it would not used the reserved name.
+Unified name of Signature members, so they always use the same "\$sign" name
+
+** Fixed Crash on some chipsets **
+Our new faster hibon serialization function caused a crash on some chipsets. Specifically the "Snapdragon 8 gen 1" and a few others.
+We've reverted back to the old serialization functions on the affected platforms.
+
+** Node Interface **
+Initial work for the mode1 "node interface" service is done.
+The service' purpose is to facilitate efficient p2p communication for the distributed mode1 network.
+It's implemented using nng's aio & stream functions.
+Right now the basic asynchronous managing of connections and messages have been implemented.
+Next steps are to keeping the state of the connections according to our wavefront protocol. Including dealing with "breaking waves".
+And ofcourse this will also involve writing plenty of tests.
+
+
 # Changelog for Epoch 1287717 .. 1397424
 
 ** Make-flow improvements **
@@ -114,7 +175,7 @@ For years we have had problems with booting the hashgraph in a asynchronous way 
 The initial mode1 network boot succeeded this week. Lots of work have been going into cleaning up the interfaces and making the new `NNGGossipnet`, and together with the above change regarding async booting the mode1, network can now successfully start and produce epochs.
 You are even able to shutdown various nodes and the graph will continue running and produce epochs as long as 2/3 of the nodes are still online.
 
-See more information about different modes [here](/docs/architecture/Network_Modes).
+See more information about different modes [here](/docs/architecture/network_modes).
 
 **TVM standard library (Tauon)**
 We have begun work on the standard library for Tauon ( *named after the elementary particle [tau/tauon](https://en.wikipedia.org/wiki/Tau_(particle))*). The thing that makes the Tauon difficult to do is that is has to be executable from WASM which means most of DRuntime is not supported. We are therefore working on adding / removing features from druntime until that we are able to compile all functionality that we would like. Currently we are as an example able to run the following example in WASM/WASI:

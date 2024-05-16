@@ -107,11 +107,14 @@ string setCursor(immutable uint row, immutable uint column) {
 enum saveCursorPos = "\u001b[s"; /// Saves the current cursor position
 enum restoreCursorPos = "\u001b[u"; /// Restores the cursor to the last saved position
 
-version (MOBILE) {
-}
-else {
+version (Posix) {
     private import core.stdc.stdio;
     private import core.sys.posix.termios;
+
+    version(CRuntime_Bionic) { // Termios is not defined for bionic libc in druntime yet
+    extern (C) int tcsetattr(int, int, const scope termios*);
+    extern (C) int tcgetattr(int, termios*);
+    }
 
     extern (C) void cfmakeraw(termios* termios_p);
 

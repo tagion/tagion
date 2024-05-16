@@ -25,7 +25,6 @@ endif
 
 define DO_COMPILE_FLAGS
 $(DFLAGS)\
-$(DFLAGS_DEBUG)\
 $(addprefix -I,$(DINC))\
 $(addprefix -L,$(LDFLAGS))\
 $(addprefix $(DVERSION)=,$(DVERSIONS))\
@@ -66,7 +65,7 @@ else
 $(DLIB)/%.$(LIBEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(DFILES) $(OUTPUT)$@
+	$(DC) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(DFILES) $(OUTPUT)$@
 endif
 
 #
@@ -77,7 +76,7 @@ $(DOBJ)/bin%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
 	${call log.kvp, compile$(MODE)}
 	echo $(DFILES) > /tmp/$*_dfiles.mk
-	$(DC) $(DCOMPILE_ONLY) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(OUTPUT)$@
+	$(DC) $(DCOMPILE_ONLY) $(DDEBUG_FLAGS) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(OUTPUT)$@
 
 $(DBIN)/%: $(DOBJ)/bin%.$(OBJEXT)
 	$(PRECMD)

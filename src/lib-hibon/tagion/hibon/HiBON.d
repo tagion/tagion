@@ -113,63 +113,23 @@ static size_t size(U)(const(U[]) array) pure {
      The byte stream
      +/
     immutable(ubyte[]) serialize() const pure {
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("serialize start\n");
-        }
         AppendBuffer buffer;
         buffer.reserve(serialize_size);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            import std.string : format;
-            write_log(format("serialize buffer.reserve %d\n", serialize_size));
-        }
         append(buffer);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            import std.string : format;
-            write_log(format("serialize append(buffer) %d\n", buffer.data.length));
-        }
-        auto data = buffer.data;
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            import std.string : format;
-            write_log(format("serialize buffer.data %d\n", data.length));
-        }
-        return data;
+        return buffer.data;
     }
 
     // /++
     //  Helper function to append
     //  +/
     private void append(ref scope AppendBuffer buffer) const pure {
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append begin\n");
-        }
         if (_members[].empty) {
             buffer ~= ubyte(0);
             return;
         }
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append _members[].empty false\n");
-        }
         const size = cast(uint) _members[].map!(a => a.size).sum;
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append size\n");
-        }
         buffer ~= LEB128.encode(size);
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append LEB128.encode(size)\n");
-        }
         _members[].each!(a => a.append(buffer));
-        debug(android){
-            import tagion.mobile.mobilelog : write_log;
-            write_log("append _members[].each!(a => a.append(buffer))\n");
-        }
     }
 
     /++
@@ -286,6 +246,13 @@ static size_t size(U)(const(U[]) array) pure {
             alias BaseType = TypedefType!T;
             const ret = get!BaseType;
             return T(ret);
+        }
+
+        import tagion.utils.StdTime;
+        const(T) get(T)() const if (is(T == sdt_t)) {
+            .check(type is Type.TIME, message("Expected HiBON type %s but apply type %s (%s)",
+                    type, Type.TIME, T.stringof));
+            return value.by!(Type.TIME);
         }
 
         unittest {
@@ -1105,6 +1072,17 @@ static size_t size(U)(const(U[]) array) pure {
         const doc = Document(h);
         assert(doc[time].type is Type.TIME);
         assert(doc[time].get!sdt_t == 1_100_100_101);
+    }
+    unittest { // Test sdt_t
+        import std.typecons : TypedefType;
+        import tagion.utils.StdTime;
+
+        auto h = new HiBON;
+        enum time = "$t";
+        h[time] = sdt_t(1_100_100_101);
+
+        assert(h[time].type is Type.TIME);
+        assert(h[time].get!sdt_t == 1_100_100_101);
     }
 
     unittest { // Test of empty Document

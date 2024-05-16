@@ -52,17 +52,10 @@ int _main(string[] args) {
             "not", "Filter out match", &not_flag,
             "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
             "R|recursive", "Enables recursive search", &recursive_flag,
-            "s|subhibon", "Output only subhibon that match criteria", &subhibon_flag,
+            "s|subhibon", "Output only subhibon that match criteria (not working with --not flag)", &subhibon_flag,
         );
 
-        if (not_flag) {
-            // Can't output subhibon with "not" filtering
-            subhibon_flag = false;
-        }
-
-        bool withNot(bool flag) {
-            return not_flag ? (!flag) : flag;
-        }
+        tools.check(!(not_flag && subhibon_flag), "Can't handle --not and --subhibon simultaneously");
 
         if (version_switch) {
             revision_text.writeln;
@@ -83,22 +76,20 @@ int _main(string[] args) {
             main_args.options);
             return 0;
         }
+
         bool inList(const size_t no) {
-            if (list.empty) {
-                return true;
-            }
             foreach (elm; list.splitter(",")) {
                 const elm_range = elm.split("..");
                 if (elm_range.length == 1 && no == elm_range[0].to!size_t) {
-                    return withNot(true);
+                    return true;
                 }
                 if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1]
                         .to!size_t)) {
-                    return withNot(true);
+                    return true;
                 }
             }
 
-            return withNot(false);
+            return false;
         }
 
         if (name) {
@@ -113,7 +104,9 @@ int _main(string[] args) {
         if (record_type) {
             hibon_regex.record_type = record_type;
         }
+
         tools.check(args.length <= 2, "Only one file argument accepted");
+
         File fin;
         fin = stdin;
         if (args.length == 2) {
@@ -167,8 +160,12 @@ int _main(string[] args) {
             }
         }
 
+        bool withNot(bool flag) {
+            return not_flag ? (!flag) : flag;
+        }
+
         foreach (no, doc; HiBONRange(fin).enumerate) {
-            if (!inList(no)) // Empty list is true
+            if (!list.empty && !withNot(inList(no)))
                 continue;
 
             auto match_docs = getMatchDocs(doc);

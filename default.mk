@@ -8,17 +8,18 @@ export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
 
+# Enable all debug flags
+DEBUG_ENABLE?=1
+
+# ERROR || INFO || undef
+# enable informational 
+WARNINGS?=INFO
+
 # USE_SYSTEM_LIBS=1 # Compile with system libraries (nng & secp256k1-zkp)
 
 # If you are using system libraries nng is most likely be compiled with mbedtls support
 # So mbedtls needs to be linked as well, so this need to be enabled
 # NNG_ENABLE_TLS=1
-
-ifndef DEBUG_DISABLE
-DFLAGS+=$(DDEBUG_SYMBOLS)
-endif
-
-DFLAGS+=$(DWARN)
 
 # Uses a modified version of phobos' redblacktree
 # So it's more compatiblae with @safe code
@@ -26,7 +27,7 @@ DVERSIONS+=REDBLACKTREE_SAFE_PROBLEM
 
 # This fixes an error in the app wallet where it would be logged out after each operation
 # By copying the securenet each time an operation is done
-# DVERSIONS+=NET_HACK
+DVERSIONS+=NET_HACK
 
 # Sets the inputvalidators NNG socket to be blocking
 DVERSIONS+=BLOCKING
@@ -57,6 +58,9 @@ DVERSIONS+=USE_GENESIS_EPOCH
 # DVERSIONS+=NEW_ORDERING 
 DVERSIONS+=OLD_ORDERING
 
+# Flag for enabling printing in C-API
+# DVERIONS+=C_API_DEBUG
+
 # Flag for random delay between messages
 # see GossipNet
 # DVERSIONS+=RANDOM_DELAY
@@ -75,28 +79,16 @@ DVERSIONS+=OLD_ORDERING
 # # This enables a redundant check in dart to see if there are overlaps between segments 
 # DVERSIONS+=DART_RECYCLER_INVARIANT
 
-# # This is used for the wallet wrapper to generate pseudo random history
-# # which is useful for app development
-# DVERSIONS+=WALLET_HISTORY_DUMMY
-
 # # This fixes the names of some reserved archives which were not reserved
 # # $@Vote && @Locked
 # # This is a breaking change so it's not enabled by default
 # DVERSIONS+=RESERVED_ARCHIVES_FIX
 
 # Use to check that toHiBON.serialize is equal to .serialize
-DVERSIONS+=TOHIBON_SERIALIZE_CHECK
+#DVERSIONS+=TOHIBON_SERIALIZE_CHECK
 
-# This is used to intentionally provoke a crash in the app.
-# Needed for GDB testing.
-# DVERSIONS+=PROVOKE_CRASH
-
-# Use to write logs into a file.
-DDEBUG_VERSIONS+=android
-
-# Extra DFLAGS for the testbench 
-BDDDFLAGS+=$(DDEBUG_SYMBOLS)
-BDDDFLAGS+=$(DEXPORT_DYN)
+# Runs a stopwatch on all unittest modules
+# DVERSIONS+=UNIT_STOPWATCH
 
 INSTALL?=$(HOME)/bin
 

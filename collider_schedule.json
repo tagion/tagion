@@ -189,10 +189,7 @@
     "subscription_test": {
       "args": [],
       "envs": {},
-      "stages": [
-        "commit",
-        "subscription"
-      ],
+      "stages": ["commit", "subscription"],
       "timeout": 0.0
     },
     "transaction": {
@@ -232,9 +229,43 @@
     "mode1": {
       "args": [],
       "envs": {},
-      "stages": [
-        "acceptance", "mode1"
-      ],
+      "stages": ["acceptance", "mode1"],
+      "timeout": 0.0
+    },
+    "dartutil_test": {
+      "args": [],
+      "envs": {},
+      "stages": ["tools", "dartutil_test"],
+      "timeout": 0.0
+    },
+    "hirep_test": {
+      "args": [],
+      "envs": {},
+      "stages": ["tools", "hirep_test"],
+      "timeout": 0.0
+    },
+    "hibonutil_test": {
+      "args": [],
+      "envs": {},
+      "stages": ["tools", "hibonutil_test"],
+      "timeout": 0.0
+    },
+    "wallet_test": {
+      "args": [],
+      "envs": {},
+      "stages": ["tools", "wallet_test"],
+      "timeout": 0.0
+    },
+    "epoch_shutdown": {
+      "args": [],
+      "envs": {},
+      "stages": ["epoch_shutdown"],
+      "timeout": 0.0
+    },
+    "node_interface": {
+      "args": [],
+      "envs": {},
+      "stages": ["node_interface", "commit"],
       "timeout": 0.0
     }
   }

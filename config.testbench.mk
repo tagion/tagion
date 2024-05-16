@@ -15,14 +15,13 @@ $(TESTBENCH): DINC+=bdd/
 $(TESTBENCH): DFLAGS+=$(DVERSION)=ONETOOL
 $(TESTBENCH): DFLAGS+=$(DVERSION)=BDD
 $(TESTBENCH): LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
-$(TESTBENCH): DFLAGS+=$(DEBUG_FLAGS)
 $(TESTBENCH): DFILES::=$(BDD)/tagion/testbench/testbench.d
 $(TESTBENCH): $(shell find $(DSRC) -name "*.d")
 $(TESTBENCH): $(shell find $(BDD) -name "*.d")
 $(TESTBENCH): bddfiles
 ifdef ENABLE_WASMER
 $(TESTBENCH): libwasmer
-$(TESTBENCH): LDFLAGS+=$(LIBWASMER)
+$(TESTBENCH): LDFLAGS+=$(LD_WASMER)
 endif
 
 testbench: $(DBIN)/testbench

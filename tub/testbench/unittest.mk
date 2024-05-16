@@ -41,7 +41,7 @@ $(UNITTEST_BIN): LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 $(UNITTEST_BIN): DINC+=$(LIB_DINC)
 ifdef ENABLE_WASMER
 $(UNITTEST_BIN): libwasmer
-$(UNITTEST_BIN): LDFLAGS+=$(LIBWASMER)
+$(UNITTEST_BIN): LDFLAGS+=$(LD_WASMER)
 endif
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
@@ -84,5 +84,3 @@ env-unittest:
 	${call log.close}
 
 env: env-unittest
-
-

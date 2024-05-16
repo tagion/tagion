@@ -366,7 +366,7 @@ struct WalletInterface {
                                 writefln("Pincode:%s", CLEARDOWN);
                                 readln(pincode1);
                                 pincode1.word_strip;
-                                writefln("Repeate:");
+                                writefln("Repeat:");
                                 readln(pincode2);
                                 pincode2.word_strip;
 

@@ -88,32 +88,32 @@ int _main(string[] args) {
     SectorRange sectors;
     try {
         main_args = getopt(args,
-                std.getopt.config.caseSensitive,
-                std.getopt.config.bundling,
-                "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-                "verbose|v", "Prints verbose information to console", &__verbose_switch,
-                "dry", "Dry-run this will not save the wallet", &__dry_switch,
-                "I|initialize", "Create a dart file", &initialize,
-                "o|outputfile", "Sets the output file name", &outputfilename,
-                "r|read", "Executes a DART read sequency", &dartread_args,
-                "rim", "Performs DART rim read", &dartrim,
-                "m|modify", "Executes a DART modify sequency", &dartmodify,
-                "rpc", "Executes a HiPRC on the DART", &dartrpc,
-                "strip", "Strips the dart-recoder dumps archives", &strip,
-                "f|force", "Force erase and create journal and destination DART", &force,
-                "print", "prints all the archives with in the given angle", &print,
-                "dump", "Dumps all the archives with in the given angle", &dump,
-                "dump-branches", "Dumps all the archives and branches with in the given angle", &dump_branches,
-                "eye", "Prints the bullseye", &eye,
-                "sync", "Synchronize src.drt to dest.drt", &sync,
-                "e|exec", "Execute string to be used for remote access", &exec,
-                "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-                "A|angle", "Sets angle range from:to (Default is full range)", &angle_range,
-                "depth", "Set limit on dart rim depth", &depth,
-                "fake", format(
-                    "Use fakenet instead of real hashes : default :%s", fake), &fake,
-                "test", "Generate a test dart with specified number of archives total:bundle", &test_dart,
-                "flat-disable", "Disable flat branch hash", &flat_disable,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+            "verbose|v", "Prints verbose information to console", &__verbose_switch,
+            "dry", "Dry-run this will not save the wallet", &__dry_switch,
+            "I|initialize", "Create a dart file", &initialize,
+            "o|outputfile", "Sets the output file name", &outputfilename,
+            "r|read", "Executes a DART read sequency", &dartread_args,
+            "rim", "Performs DART rim read", &dartrim,
+            "m|modify", "Executes a DART modify sequency", &dartmodify,
+            "rpc", "Executes a HiPRC on the DART", &dartrpc,
+            "strip", "Strips the dart-recoder dumps archives", &strip,
+            "f|force", "Force erase and create journal and destination DART", &force,
+            "print", "prints all the archives with in the given angle", &print,
+            "dump", "Dumps all the archives with in the given angle", &dump,
+            "dump-branches", "Dumps all the archives and branches with in the given angle", &dump_branches,
+            "eye", "Prints the bullseye", &eye,
+            "sync", "Synchronize src.drt to dest.drt", &sync,
+            "e|exec", "Execute string to be used for remote access", &exec,
+            "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
+            "A|angle", "Sets angle range from:to (Default is full range)", &angle_range,
+            "depth", "Set limit on dart rim depth", &depth,
+            "fake", format(
+                "Use fakenet instead of real hashes : default :%s", fake), &fake,
+            "test", "Generate a test dart with specified number of archives total:bundle", &test_dart,
+            "flat-disable", "Disable flat branch hash", &flat_disable,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -127,21 +127,21 @@ int _main(string[] args) {
         if (main_args.helpWanted) {
             writeln(logo);
             defaultGetoptPrinter(
-                    [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] file.drt <files>", program),
-                    "",
-                    "Example synchronizing src.drt on to dst.drt",
-                    format("%s --sync src.drt dst.drt", program),
-                    "",
+                [
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] file.drt <files>", program),
+                "",
+                "Example synchronizing src.drt on to dst.drt",
+                format("%s --sync src.drt dst.drt", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
-                    main_args.options);
+            ].join("\n"),
+            main_args.options);
             return 0;
         }
 
@@ -155,16 +155,16 @@ int _main(string[] args) {
             ushort _from, _to;
             const fields =
                 angle_range.formattedRead("%x:%x", _from, _to)
-                    .ifThrown(0);
+                .ifThrown(0);
             tools.check(fields == 2,
-                    format("Angle range should be ex. --range A0F0:B0F8 not %s", angle_range));
+                format("Angle range should be ex. --range A0F0:B0F8 not %s", angle_range));
             verbose("Angle from %04x to %04x", _from, _to);
             sectors = SectorRange(_from, _to);
         }
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
                 tools.check(inputfilename is null,
-                        format("Input file '%s' has already been declared", inputfilename));
+                    format("Input file '%s' has already been declared", inputfilename));
                 inputfilename = file;
                 continue;
             }
@@ -174,7 +174,7 @@ int _main(string[] args) {
                     continue;
                 }
                 tools.check(destination_dartfilename is null,
-                        format("Source '%s' and destination '%s' DART file has already been define",
+                    format("Source '%s' and destination '%s' DART file has already been define",
                         dartfilename, destination_dartfilename));
                 destination_dartfilename = file;
             }
@@ -203,8 +203,8 @@ int _main(string[] args) {
         if (initialize) {
             const flat = (flat_disable) ? No.flat : Yes.flat;
             DART.create(filename : dartfilename, net:
-                    net, flat:
-                    flat);
+                net, flat:
+                flat);
             return 0;
         }
         if (!test_dart.empty) {
@@ -247,7 +247,8 @@ int _main(string[] args) {
             long prev_dart_time;
             foreach (no; 0 .. (number_of_archives / bundle_size) + 1) {
                 count += bundle_size;
-                const N = (number_of_archives < count) ? number_of_archives % bundle_size : bundle_size;
+                const N = (number_of_archives < count) ? number_of_archives % bundle_size
+                    : bundle_size;
                 auto rec = test_db.recorder;
                 progress(no, RED);
                 rec_time.start;
@@ -266,9 +267,9 @@ int _main(string[] args) {
                     const delta_dart_time = current_dart_time - prev_dart_time;
                     prev_dart_time = current_dart_time;
                     nobose(" dart %.3fmsec per archive %.3fmsec blocks %d",
-                            double(delta_dart_time) / 1000.0,
-                            double(delta_dart_time) / (1000.0 * line_length * bundle_size),
-                            count);
+                        double(delta_dart_time) / 1000.0,
+                        double(delta_dart_time) / (1000.0 * line_length * bundle_size),
+                        count);
                     vout.writeln;
                 }
             }
@@ -297,7 +298,7 @@ int _main(string[] args) {
                 return 1;
             }
             immutable _journal_path = buildPath(journal_path,
-                    destination_dartfilename.baseName.stripExtension);
+                destination_dartfilename.baseName.stripExtension);
 
             verbose("journal path %s", journal_path);
             if (journal_path.exists) {
@@ -324,7 +325,7 @@ int _main(string[] args) {
             db.dump(sectors, Yes.full, depth);
         }
         else if (eye) {
-            writefln("EYE: %(%02x%)", db.fingerprint);
+            writefln("%s%(%02x%)", DARTFile.eye_prefix, db.fingerprint);
         }
         else if (dump || dump_branches) {
             bool dartTraverse(const(Document) doc, const Index index, const uint rim, Buffer rim_path) {
@@ -343,7 +344,7 @@ int _main(string[] args) {
         const onehot = dartrpc + dartread + !dartrim.empty + dartmodify;
 
         tools.check(onehot <= 1,
-                "Only one of the dartrpc, dartread, dartrim, dartmodify switched allowed");
+            "Only one of the dartrpc, dartread, dartrim, dartmodify switched allowed");
 
         if (dartrpc) {
             tools.check(!inputfilename.empty, "Missing input file for DART-rpc");

@@ -27,9 +27,9 @@ interface GossipNet {
     bool isValidChannel(const(Pubkey) channel) const nothrow;
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
-    void send(const Pubkey channel, const(HiRPC.Sender) sender);
-    const(Pubkey) gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
-    const(Pubkey) select_channel(const(ChannelFilter) channel_filter);
+    void send(Pubkey channel, const(HiRPC.Sender) sender);
+    Pubkey gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
+    Pubkey select_channel(const(ChannelFilter) channel_filter);
 }
 
 abstract class StdGossipNet : GossipNet {
@@ -52,7 +52,7 @@ abstract class StdGossipNet : GossipNet {
         _pkeys ~= channel;
         addresses[channel] = address;
 
-        log.trace("Add channel: %s tid: %s", channel.encodeBase64, addresses[channel]);
+        log.trace("Add channel: %s addr: %s", channel.encodeBase64, addresses[channel]);
     }
 
     void remove_channel(const Pubkey channel) {
@@ -72,7 +72,7 @@ abstract class StdGossipNet : GossipNet {
         return (channel in addresses) !is null;
     }
 
-    const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+    Pubkey select_channel(const(ChannelFilter) channel_filter) {
         import std.algorithm : filter;
         import std.array;
 
@@ -85,7 +85,7 @@ abstract class StdGossipNet : GossipNet {
         return choice(keys_to_send.array, random);
     }
 
-    const(Pubkey) gossip(
+    Pubkey gossip(
             const(ChannelFilter) channel_filter,
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
@@ -110,7 +110,7 @@ class EmulatorGossipNet : StdGossipNet {
         super(mypk);
     }
 
-    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+    void send(Pubkey channel, const(HiRPC.Sender) sender) {
 
         import tagion.utils.pretend_safe_concurrency;
         import std.algorithm.searching : countUntil;
@@ -142,7 +142,7 @@ class NNGGossipNet : StdGossipNet {
         this.delay = avrg_delay_msecs;
         super(mypk);
     }
-    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+    void send(Pubkey channel, const(HiRPC.Sender) sender) {
         sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
 
         nodeinterface.send(NodeSend(), channel, cast(Document)sender.toDoc);

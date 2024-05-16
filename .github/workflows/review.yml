@@ -3,7 +3,7 @@ name: Design Review
 on:
   schedule:
     # - cron: '42 15 * * 0' # Every Sunday at 17:42 CEST
-    - cron: '12 8 * * 5' # Every Friday at 8:12
+    - cron: '12 4 * * 5' # Every Friday at 6:12 CEST
   workflow_dispatch:
 
 env:

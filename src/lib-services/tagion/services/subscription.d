@@ -19,6 +19,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.logger;
 import tagion.logger.LogRecords;
 import tagion.services.exception;
+import tagion.services.options : contract_sock_addr;
 
 /// Options for the subscription service
 struct SubscriptionServiceOptions {
@@ -26,11 +27,17 @@ struct SubscriptionServiceOptions {
 
     string tags; /// List of tags that should be enabled separated by a ','
     string address; /// The address which the service should publish events on
+    bool enable = true; /// Should the service be started
+
+    private enum SUBSCRIPTION_PREFIX = "SUBSCRIPTION_";
 
     void setDefault() nothrow {
-        import tagion.services.options : contract_sock_addr;
 
-        address = contract_sock_addr("SUBSCRIPTION_");
+        address = contract_sock_addr(SUBSCRIPTION_PREFIX);
+    }
+
+    void setPrefix(string prefix) nothrow {
+        address = contract_sock_addr(prefix ~ SUBSCRIPTION_PREFIX);
     }
 
     uint sendtimeout = 1000;
@@ -78,7 +85,7 @@ struct SubscriptionService {
         HiRPC hirpc;
 
         int rc = sock.listen(opts.address);
-        check(rc == 0, format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
+        check!ServiceError(rc == 0, format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
 
         log("Publishing on %s", opts.address);
 

@@ -21,7 +21,8 @@ import tagion.services.codes;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
-import tagion.dart.DART;
+// import tagion.dart.DART;
+import tagion.dart.DARTBasic;
 import tagion.utils.JSONCommon;
 
 struct DARTInterfaceOptions {
@@ -55,10 +56,10 @@ struct DartWorkerContext {
 
 /// Accepted methods for the DART.
 static immutable(string[]) accepted_dart_methods = [
-    DART.Queries.dartRead, 
-    DART.Queries.dartRim, 
-    DART.Queries.dartBullseye, 
-    DART.Queries.dartCheckRead, 
+    Queries.dartRead, 
+    Queries.dartRim, 
+    Queries.dartBullseye, 
+    Queries.dartCheckRead, 
 ];
 
 pragma(msg, "deprecated search method should be removed from trt");
@@ -155,14 +156,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 }
 
 import tagion.services.exception;
-
-void checkSocketError(int rc) {
-    if (rc != 0) {
-        import std.format;
-
-        throw new ServiceException(format("Failed to dial %s", nng_errstr(rc)));
-    }
-}
+import tagion.basic.tagionexceptions;
 
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
@@ -190,7 +184,7 @@ struct DARTInterfaceService {
         }
         pool.init();
         auto rc = sock.listen(opts.sock_addr);
-        checkSocketError(rc);
+        check!ServiceError(rc == nng_errno.NNG_OK, format("Failed to dial %s", nng_errstr(rc)));
 
         // Receive actor signals
         run();

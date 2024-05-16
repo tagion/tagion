@@ -29,17 +29,14 @@
       packages = forAllSystems (pkgs:
         let
           secp256k1-zkp = pkgs.callPackage ./tub/secp256k1-zkp.nix { };
-
-          # Disable mbedtls override is broken upstream see if merged
-          # https://github.com/NixOS/nixpkgs/pull/285518
-          nng = pkgs.callPackage ./tub/nng.nix { };
+          nng_no_tls = pkgs.nng.override { mbedtlsSupport = false; };
         in
         {
           default = pkgs.callPackage ./tub/tagion.nix {
             gitRev = gitRev;
             src = self;
             secp256k1-zkp = secp256k1-zkp;
-            nng = nng;
+            nng = nng_no_tls;
           };
 
           dockerImage =
@@ -71,7 +68,11 @@
             dtools
             dfmt-pull.legacyPackages.${pkgs.system}.dlang-dfmt
             graphviz
-          ] 
+            dstep
+            wasmer # wasm-executor
+            clang # used for wasm compilation
+            wabt # conversion between wat <-> wasm
+          ]
           ++ lib.optionals stdenv.isx86_64 [ dmd ];
         };
       });
@@ -79,14 +80,16 @@
       checks = forAllSystems (pkgs: {
         pre-commit-check = pre-commit-hooks.lib.${pkgs.system}.run {
           src = ./.;
-          settings.typos.configPath = ".typos.toml";
           hooks = {
             shellcheck = {
               enable = true;
               types_or = [ "sh" ];
             };
-            typos.enable = true;
-            typos.pass_filenames = false;
+            typos = {
+              enable = true;
+              settings.configPath = ".typos.toml";
+              pass_filenames = false;
+            };
             # actionlint.enable = true;
             dlang-format = {
               # does not work :-( we have to define a proper commit
@@ -103,7 +106,7 @@
             name = "unittest";
             doCheck = true;
 
-            buildInputs = [ self.packages.x86_64-linux.default.buildInputs  dmd];
+            buildInputs = [ self.packages.x86_64-linux.default.buildInputs dmd ];
             nativeBuildInputs = self.packages.x86_64-linux.default.nativeBuildInputs;
 
             src = self;

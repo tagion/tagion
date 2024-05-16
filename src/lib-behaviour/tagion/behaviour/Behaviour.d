@@ -39,14 +39,15 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
             // Info index (i)       %3$d
             // Test scenario        %4$s
             // Test member          %5$s
-            //            $ Given: some scenario scenario descriotion
+            //            $ Given: some scenario scenario description
             debug(bdd) writeln("%2$s: ", %1$s.%2$s.infos[%3$d].property.description);
             try {
                 // Example.
                 // scenario_group.when.info[i].result = scenario.member_function;
                 %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
             }
-            catch (Exception e) {
+            catch (Throwable e) {
+                writeln("Error(%2$s ", %1$s.%2$s.infos[%3$d].property.description, "):\n", e.message);
                 // In case of an exception error the result is set to a BehaviourError
                 // Example.
                 // scemario_group.when.info[i].result = BehaviourError(e).toDoc;

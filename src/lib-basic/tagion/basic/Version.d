@@ -19,9 +19,7 @@ struct ver {
     }
 }
 
-version = SomeVersion;
-
-static if (ver.linux && !ver.not_unittest) {
+static if (ver.linux && !not_unittest) {
     pragma(msg, "This is a unittest in linux");
 }
 

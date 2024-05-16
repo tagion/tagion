@@ -7,7 +7,8 @@ import core.sys.wasi.link;
 import core.attribute : weak;
 
 extern (C) @nogc {
-       // extern(C) int nativeCallback(dl_phdr_info* info, size_t, void* data)
+
+    // extern(C) int nativeCallback(dl_phdr_info* info, size_t, void* data)
     int dl_iterate_phdr(dl_iterate_phdr_cb __callback, void*__data) {
         char[128] __dummy;    
         // printf("%s %p callback=%p\n", &__FUNCTION__[0], __data, &__callback);

@@ -1,5 +1,7 @@
 module tagion.replicator.RecorderBlock;
 
+@safe:
+
 import std.array;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -9,7 +11,7 @@ import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordType;
 
 @recordType("RCB")
-@safe struct RecorderBlock {
+struct RecorderBlock {
     /** Fingerprint of this block */
     @exclude Fingerprint fingerprint;
     /** Bullseye of DART database */

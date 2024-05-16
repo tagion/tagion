@@ -23,6 +23,7 @@ int main(string[] args) {
     import ifiler = tagion.tools.ifiler.ifiler;
     import vergangenheit = tagion.tools.vergangenheit.vergangenheit;
     import tvmutil = tagion.tools.tvmutil.tvmutil;
+    import envelope = tagion.tools.envelope;
 
     alias alltools = AliasSeq!(
             subscriber,
@@ -44,6 +45,7 @@ int main(string[] args) {
             kette,
             vergangenheit,
             tvmutil,
+            envelope,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

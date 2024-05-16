@@ -689,9 +689,6 @@ unittest {
         rec.insert(doc, Archive.Type.ADD);
         rec.insert(doc, Archive.Type.REMOVE);
 
-        import std.stdio;
-
-        writeln(" ------------------------------ ");
         //rec.dump;
 
         const archs = table.map!(t => DARTFakeNet.fake_doc(t)).array;
