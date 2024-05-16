@@ -12,6 +12,7 @@
 		import {Wasi} from "./wasi.js";
 		import {HiBON} from "./hibon.js";
 		import {Document} from "./document.js";
+		import {Wallet} from "./wallet.js";
 		(async () => {
 
 			const wasi = new Wasi({
@@ -28,24 +29,29 @@
 			});
 			wasi.instance = instance;
 
-			let h = new HiBON(instance);
-			h.addString("wowo", "haha");
-			h.toPretty();
-			h.addBool("wowo2", true);
-			h.toPretty();
-			h.addInt32("wowo3", 42);
-			h.toPretty();
-			h.addInt64("hehe", BigInt(42));
-			h.toPretty();
-			h.addUint32("someuint", 123);
-			h.toPretty();
+			let w = new Wallet(instance);
 
-			const res = h.toDoc();
-			console.log(res);
+			w.createWallet("some passphrase", "1234");
+			w.getAccount();
 
-			console.log("before doc ceration");
-			let doc = new Document(instance, res.ptr, res.len);
-			doc.getString("wowo");
+			//			let h = new HiBON(instance);
+			//			h.addString("wowo", "haha");
+			//			h.toPretty();
+			//			h.addBool("wowo2", true);
+			//			h.toPretty();
+			//			h.addInt32("wowo3", 42);
+			//			h.toPretty();
+			//			h.addInt64("hehe", BigInt(42));
+			//			h.toPretty();
+			//			h.addUint32("someuint", 123);
+			//			h.toPretty();
+			//
+			//			const res = h.toDoc();
+			//			console.log(res);
+			//
+			//			console.log("before doc ceration");
+			//			let doc = new Document(instance, res.ptr, res.len);
+			//			doc.getString("wowo");
 
 
 			//h.toPretty(); 
