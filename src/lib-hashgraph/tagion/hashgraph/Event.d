@@ -42,7 +42,7 @@ class Event {
     alias check = Check!EventConsensusException;
     protected static uint _count;
 
-    package Event[] _youngest_son_ancestors;
+    //package Event[] _youngest_son_ancestors;
 
     package int pseudo_time_counter;
 
@@ -200,14 +200,16 @@ class Event {
     *  Makes the event a witness  
     */
     void witness_event(HashGraph hashgraph) nothrow
-    in {
-        assert(!_witness);
-        assert(hashgraph.graphtype == 0);
+    in (!_witness, "Witness has already been set")
+    out {
+        assert(_witness, "Witness should be set");
     }
     do {
-        _witness = new Witness(this, hashgraph.node_size);
-        _youngest_son_ancestors = new Event[hashgraph.node_size];
-        _youngest_son_ancestors[node_id] = this;
+	assert(0);
+        //import tagion.hashgraph.Event2 : Event2;
+        //new Event2.Witness2(hashgraph);
+        //_youngest_son_ancestors = new Event2[hashgraph.node_size];
+        //_youngest_son_ancestors[node_id] = this;
     }
 
     immutable size_t node_id; /// Node number of the event
@@ -233,6 +235,8 @@ class Event {
         assert(event_package.event_body.father && _father || !_father);
     }
     do {
+        assert(0);
+    version(none) {
         if (connected) {
             return;
         }
@@ -303,9 +307,12 @@ class Event {
             calc_vote(hashgraph, i);
         }
     }
+    }
 
     BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+        assert(0);   
         assert(hashgraph.graphtype == 0);
+        version(none) {
         auto see_through_matrix = _youngest_son_ancestors
             .filter!(e => e !is null && e.round is round)
             .map!(e => e._youngest_son_ancestors
@@ -314,9 +321,12 @@ class Event {
         scope strongly_seen_votes = new size_t[hashgraph.node_size];
         see_through_matrix.each!(row => row.enumerate.each!(elm => strongly_seen_votes[elm.index] += elm.value));
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
+	}    
     }
 
     void calc_youngest_son_ancestors(const HashGraph hashgraph) {
+        assert(0);
+        version(none) {
         if (!_father) {
             _youngest_son_ancestors = _mother._youngest_son_ancestors;
             return;
@@ -329,6 +339,7 @@ class Event {
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
             .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
+        }
     }
 
     void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
@@ -387,6 +398,8 @@ class Event {
 
     const bool sees(Event b) pure {
 
+        assert(0);
+        version(none) {
         if (_youngest_son_ancestors[b.node_id] is null) {
             return false;
         }
@@ -411,6 +424,7 @@ class Event {
             }
         }
         return false;
+        }
     }
 
     /**

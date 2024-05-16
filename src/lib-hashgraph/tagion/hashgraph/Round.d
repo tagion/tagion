@@ -656,7 +656,8 @@ class Round {
      */
 
         package void collect_received_round(Round r, HashGraph hashgraph) {
-
+            assert(0);
+            version(none) {
             auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
 
             pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
@@ -709,6 +710,7 @@ class Round {
             }
 
             hashgraph.epoch(event_collection, r);
+            }
         }
 
         package void vote(HashGraph hashgraph, size_t vote_node_id) {

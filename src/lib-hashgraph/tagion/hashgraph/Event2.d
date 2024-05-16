@@ -528,6 +528,7 @@ class Event2 : current_event.Event {
         return _mother._round;
     }
 
+    version(none)
     override BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
         assert(hashgraph.graphtype == 2);
         auto see_through_matrix = _youngest_son_ancestors
@@ -541,6 +542,7 @@ class Event2 : current_event.Event {
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
     }
 
+    version(none)
     override void calc_youngest_son_ancestors(const HashGraph hashgraph) {
         assert(hashgraph.graphtype == 2);
         if (!_father) {
@@ -610,6 +612,7 @@ class Event2 : current_event.Event {
         _daughter = _son = null;
     }
 
+    version(none)
     override const bool sees(current_event.Event b) pure {
 
         if (_youngest_son_ancestors[b.node_id] is null) {
