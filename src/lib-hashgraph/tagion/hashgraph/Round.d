@@ -381,7 +381,7 @@ class Round {
             }
             import tagion.hashgraph.Event2;
 
-            e._round = (cast(Event2) e).maxRound;
+            e._round =  e.maxRound;
             if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
 

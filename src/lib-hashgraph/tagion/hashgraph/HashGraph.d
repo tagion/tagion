@@ -144,13 +144,7 @@ class HashGraph {
         Node[Pubkey] recovered_nodes;
         scope (success) {
             void init_event(immutable(EventPackage*) epack) {
-                Event event;
-                if (graphtype == 2) {
-                    event = new Event2(epack, this);
-                }
-                else {
-                    event = new Event(epack, this);
-                }
+                auto event = new Event(epack, this, graphtype);
                 _event_cache[event.fingerprint] = event;
                 event.witness_event(this);
                 version (EPOCH_LOG) {
@@ -298,13 +292,7 @@ class HashGraph {
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
         immutable eva_epack = eva_pack(time, nonce);
-        Event eva_event;
-        if (graphtype == 2) {
-            eva_event = new Event2(eva_epack, this);
-        }
-        else {
-            eva_event = new Event(eva_epack, this);
-        }
+        auto eva_event = new Event(eva_epack, this, graphtype);
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
         // set_strongly_seen_mask(eva_event);
@@ -355,13 +343,7 @@ class HashGraph {
             event_pack.fingerprint))
     do {
         if (valid_channel(event_pack.pubkey)) {
-            Event event;
-            if (graphtype == 2) {
-                event = new Event2(event_pack, this);
-            }
-            else {
-                event = new Event(event_pack, this);
-            }
+            auto event = new Event(event_pack, this, graphtype);
             _event_cache[event.fingerprint] = event;
             refinement.epack(event_pack);
             event.connect(this);
@@ -396,13 +378,7 @@ class HashGraph {
             if (fingerprint in event_package_cache) {
                 immutable event_pack = event_package_cache[fingerprint];
                 if (valid_channel(event_pack.pubkey)) {
-                    Event event;
-                    if (graphtype == 2) {
-                         event = new Event2(event_pack, this.outer);
-                    }
-                    else {
-                         event = new Event(event_pack, this.outer);
-                    }
+                    auto event = new Event(event_pack, this.outer, graphtype);
                     _event_cache[fingerprint] = event;
                     return event;
                 }
@@ -577,13 +553,7 @@ class HashGraph {
         // delta received from sharp should be added to our own node. 
         foreach (epack; changes) {
             const epack_node = getNode(epack.pubkey);
-            Event first_event;
-            if (graphtype == 2) {
-                 first_event = new Event2(epack, this);
-            }
-            else {
-                 first_event = new Event(epack, this);
-            }
+            auto first_event = new Event(epack, this, graphtype);
             if (epack_node.event is null) {
                 check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
             }
@@ -674,13 +644,7 @@ class HashGraph {
 
                     foreach (epack; changes) {
                         const epack_node = getNode(epack.pubkey);
-                        Event first_event;
-                        if (graphtype == 2) {
-                            first_event = new Event2(epack, this);
-                        }
-                        else {
-                            first_event = new Event(epack, this);
-                        }
+                            auto first_event = new Event(epack, this, graphtype);
                         if (epack_node.event is null) {
                             check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                         }

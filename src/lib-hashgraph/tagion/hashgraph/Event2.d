@@ -35,7 +35,7 @@ import tagion.basic.Debug;
 import current_event = tagion.hashgraph.Event;
 
 /// HashGraph Event
-@safe
+version (none) @safe
 class Event2 : current_event.Event {
     version (none) package static bool scrapping;
 
@@ -387,8 +387,7 @@ class Event2 : current_event.Event {
     /**
     *  Makes the event a witness  
     */
-    version(none)
-    override void witness_event(HashGraph hashgraph) nothrow
+    version (none) override void witness_event(HashGraph hashgraph) nothrow
     in (!_witness, "Witness has already been set")
     out {
         assert(_witness, "Witness should be set");
@@ -500,8 +499,7 @@ class Event2 : current_event.Event {
         hashgraph._rounds.set_round(this);
     }
 
-    version(none)
-    Round maxRound() nothrow {
+    version (none) Round maxRound() nothrow {
         if (_round) {
             return _round;
         }

@@ -71,8 +71,7 @@ struct EventView {
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:long.min;
-            import tagion.hashgraph.Event2;
-            const event2=cast(const(Event2))event;
+            const event2=event;
             if (event2 !is null) {
                 intermediate=event2._intermediate_event;
                 seen=event2._witness_seen_mask.bytes;   

@@ -464,16 +464,14 @@ class Event {
         _witness_seen_mask |= _mother._witness_seen_mask;
         _intermediate_seen_mask |= _mother._intermediate_seen_mask;
         //hashgraph._rounds._round(this);
-        import tagion.hashgraph.Event2 : Event2;
         if (_father) {
-            assert(cast(Event2) _father !is null);
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
             BitMask new_witness_seen;
             if (_father._round.number == _mother._round.number) {
-                _witness_seen_mask |= (cast(Event2) _father)._witness_seen_mask;
-                _intermediate_seen_mask |= (cast(Event2) _father)._intermediate_seen_mask;
-                new_witness_seen = (cast(Event2) _father)._witness_seen_mask - (cast(Event2) _mother)
+                _witness_seen_mask |=  _father._witness_seen_mask;
+                _intermediate_seen_mask |=  _father._intermediate_seen_mask;
+                new_witness_seen =  _father._witness_seen_mask -  _mother
                     ._witness_seen_mask;
             }
             else {
