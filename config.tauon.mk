@@ -101,4 +101,5 @@ TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/document.d
 TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/hibon.d
 TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/wallet.d 
 TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/errors.d 
+TAUON_DFILES+=$(DSRC)/lib-api/tagion/api/basic.d
 

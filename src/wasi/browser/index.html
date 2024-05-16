@@ -30,9 +30,12 @@
 			wasi.instance = instance;
 
 			let w = new Wallet(instance);
+			console.log(instance.exports);
 
 			w.createWallet("some passphrase", "1234");
-			w.getAccount();
+			const pkey = w.getPubkey();
+
+			const pkey_base64 = w.encodeBase64URL(pkey.ptr, pkey.len);
 
 			//			let h = new HiBON(instance);
 			//			h.addString("wowo", "haha");

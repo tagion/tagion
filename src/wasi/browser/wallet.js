@@ -44,6 +44,38 @@ export class Wallet {
     console.log(accountPtr, accountLen);
   }
   
+  getPubkey() {
+
+    const pubkeyPtrPtr = this.instance.exports.mymalloc(4);
+    const pubkeyLenPtr = this.instance.exports.mymalloc(4);
+
+    const result = this.instance.exports.tagion_wallet_get_current_pkey(this.ptr, pubkeyPtrPtr, pubkeyLenPtr);
+    console.log("tagoin_wallet_get_current_pubkey returned ", result);
+
+    const pubkeyPtr = new Uint32Array(this.instance.exports.memory.buffer, pubkeyPtrPtr, 1)[0];
+    const pubkeyLen = new Uint32Array(this.instance.exports.memory.buffer, pubkeyLenPtr, 1)[0];
+
+    console.log(pubkeyPtr, pubkeyLen);
+    return { ptr: pubkeyPtr, len: pubkeyLen };
+  }
+
+  encodeBase64URL(ptr, len) {
+    const strPtrPtr = this.instance.exports.mymalloc(4); // Pointer to char* (4 bytes)
+    const strLenPtr = this.instance.exports.mymalloc(4); // Pointer to size_t (4 bytes)
+    console.log("strPtrPtr ", strPtrPtr);
+    console.log("strLenPtr ", strLenPtr);
+    const result = this.instance.exports.tagion_basic_encode_base64url(ptr, len, strPtrPtr, strLenPtr);
+    console.log("encodebase64 returned: ", result);
+
+    const strPtr = new Uint32Array(this.instance.exports.memory.buffer, strPtrPtr, 1)[0];
+    const strLen = new Uint32Array(this.instance.exports.memory.buffer, strLenPtr, 1)[0];
+
+    const memory = new Uint8Array(this.instance.exports.memory.buffer);
+    const stringBytes = memory.subarray(strPtr, strPtr + strLen);
+    const decodedString = new TextDecoder().decode(stringBytes);
+    console.log(decodedString);
+    return decodedString;
+  }
 
 
 
