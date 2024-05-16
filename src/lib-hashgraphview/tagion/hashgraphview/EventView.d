@@ -41,7 +41,8 @@ struct EventView {
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
     @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
-    //  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
+    @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
+//  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -83,6 +84,7 @@ struct EventView {
                     no_votes = witness.no_votes;
                     famous = isMajority(yes_votes, event2.round.events.length); 
                     voted = witness.has_voted_mask.bytes; 
+                    decided = witness.decided;
                 }
             }
             

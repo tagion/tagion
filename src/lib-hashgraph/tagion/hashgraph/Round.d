@@ -500,16 +500,19 @@ class Round {
                 .filter!(e => e !is null)
                 .map!(e => cast(Event2.Witness2) e.witness);
             witness_in_round
-                .filter!(w => !w.decided(hashgraph))
+                .filter!(w => !w.decided)
                 .each!(w => w.doTheMissingNoVotes);
             //.each!(w => w.doTheMissignNoVotes); 
-            if (!witness_in_round.all!(w => w.decided(hashgraph))) {
+            if (!witness_in_round.all!(w => w.decided)) {
                 __write("Round %d could not all be decided", round_to_be_decided.number);
                 log("Not decided round");
                 return;
             }
-            __write("%(%s %)", witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided(hashgraph))));
-            __write("decided %s", witness_in_round.map!(w => w.decided(hashgraph)));
+            witness_in_round
+            .filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
+            .each!(w => Event.callbacks.connect(w.outer));
+            __write("%(%s %)", witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided)));
+            __write("decided %s", witness_in_round.map!(w => w.decided));
             witness_in_round.each!(w => w.display_decided);
             round_to_be_decided._decided = true;
             __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);

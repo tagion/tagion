@@ -1,4 +1,4 @@
-/// Consensus HashGraph main object 
+//// Consensus HashGraph main object 
 module tagion.testbench.hashgraph.hashgraph_test_network;
 
 import core.memory : pageSize;
@@ -468,13 +468,11 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     return printout;
                 }
 
-                version (none)
                     if (!epoch_events.all!(e => e == epoch_events[0])) {
                     check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
                 }
 
                 auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array;
-                version (none)
                     if (!timestamps.all!(t => t == timestamps[0])) {
                     string text;
                     foreach (i, t; timestamps) {

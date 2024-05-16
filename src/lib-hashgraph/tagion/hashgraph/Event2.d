@@ -203,7 +203,7 @@ class Event2 : current_event.Event {
             return isMajority(_yes_votes, this.outer._round.events.length);
         }
 
-        bool decided(const HashGraph hashgraph) const pure nothrow @nogc {
+        bool decided() const pure nothrow @nogc {
             const voted = _has_voted_mask.count;
             const N = this.outer._round.events.length;
 

@@ -211,10 +211,24 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
 
         // colors
         if (e.witness) {
-            node_circle.fill = e.famous ? nonPastel19.color(e.round) : "blue";
+            if (e.famous || e.decided) {
+                node_circle.fill = nonPastel19.color(e.round);
+                node_circle.stroke = (e.famous)?"green":"red";
+                node_circle.stroke_width = 10;
+            }
+            else {
+                node_circle.fill = "blue";
+            }
         }
         else if (e.intermediate) {
-            node_circle.fill = "lightblue";
+            if (e.round_received == long.min) {
+                node_circle.fill = "lightblue";
+            }
+            else {
+                node_circle.fill = pastel19.color(e.round_received);
+                node_circle.stroke = "lightblue";
+                node_circle.stroke_width = 6;
+            }
         }
         else {
             node_circle.fill = pastel19.color(e.round_received);
