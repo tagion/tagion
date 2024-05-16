@@ -109,7 +109,7 @@ struct Dialer {
 
             nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio);
             if(rc == nng_errno.NNG_OK) {
-                ActorHandle(_this.owner_task).send(NodeDial(), _this.id);
+                ActorHandle(_this.owner_task).send(NodeAction.dialed, _this.id);
             }
             else {
                 node_error(_this.owner_task, rc, _this.id, _this.address);
@@ -197,10 +197,10 @@ struct Peer {
                     Buffer buf = _this.msg_buf[0 .. msg_size].idup;
                     check(buf !is null, "Got invalid buf output");
 
-                    ActorHandle(_this.owner_task).send(NodeRecv(), _this.id, buf);
+                    ActorHandle(_this.owner_task).send(NodeAction.received, _this.id, buf);
                     break;
                 default:
-                    ActorHandle(_this.owner_task).send(NodeSendDone(), _this.id);
+                    ActorHandle(_this.owner_task).send(NodeAction.sent, _this.id);
                     break;
             }
         }
@@ -315,7 +315,7 @@ struct PeerMgr {
                 node_error(_this.task_name, rc, id);
             }
             else {
-                ActorHandle(_this.task_name).send(NodeAccept(), id);
+                ActorHandle(_this.task_name).send(NodeAction.accepted, id);
             }
         }
         catch(Exception e) {
@@ -396,67 +396,48 @@ struct PeerMgr {
         }
     }
 
-    // --- Message handlers --- //
-
-    // TODO: use envelope
-    void on_recv(NodeRecv, int id, Buffer buf) {
-
-        if(buf.length < 1) {
-            node_error(thisActor.task_name, NodeErrorCode.doc_inorder, id, "empty buf");
-        }
-
-        Document doc = buf;
-        /* imported!"std.stdio".writefln("received %s bytes %s", buf.length, doc.topretty); */
-
-        if(!doc.isInorder && !doc.empty) {
-            node_error(thisActor.task_name, NodeErrorCode.doc_inorder, id);
-            return;
-        }
-
-        const hirpcmsg = hirpc.receive(doc);
-        if(hirpcmsg.pubkey == this.net.pubkey) {
-            node_error(thisActor.task_name, NodeErrorCode.msg_self, id);
-            return;
-        }
-
-        if(!hirpcmsg.isSigned) {
-            node_error(thisActor.task_name, NodeErrorCode.msg_signed, id, text(hirpcmsg.signed));
-            return;
-        }
-
-        Peer* peer = all_peers[id];
-        peer.state = Peer.State.ready;
-        // Add to the list of known connections
-        peers.require(hirpcmsg.pubkey, peer);
-    }
-
-    // A connection was established by dial
-    void on_dial(NodeDial, int id) {
-        assert((id in dialers) !is null, "No dialer was allocated for this id");
-        auto dialer = dialers[id];
-        scope(exit) {
-            dialers.remove(id);
-            /* destroy(dialer); */
-        }
-
-        nng_stream* socket = dialer.get_output;
-        auto peer = new Peer(id, socket, bufsize);
-
-        all_peers[id] = peer;
-        peers[dialer.pkey] = peer;
-    }
-
-    // A connections was established by accept
-    void on_accept(NodeAccept, int id) @trusted {
+    private nng_stream* get_listener_output() @trusted {
         nng_stream* socket = cast(nng_stream*)nng_aio_get_output(aio_conn, 0);
         assert(socket !is null, "No connections established?");
-
-        all_peers[id] = new Peer(id, socket, bufsize);
+        return socket;
     }
 
-    // A send task was completed
-    void on_send(NodeSendDone, int id) {
-        all_peers[id].state = Peer.State.ready;
+    /* ---------------------------------- */
+
+    // You should call this functions after each operation
+
+    void update(NodeAction action, int id, const Pubkey channel = Pubkey.init) {
+        final switch(action) {
+        case NodeAction.received:
+            assert(channel !is Pubkey.init, "received should be called with a public key");
+            Peer* peer = all_peers[id];
+            peer.state = Peer.State.ready;
+            // Add to the list of known connections
+            peers.require(channel, peer);
+            break;
+
+        case NodeAction.dialed:
+            assert((id in dialers) !is null, "No dialer was allocated for this id");
+            scope(exit) {
+                dialers.remove(id);
+            }
+
+            auto dialer = dialers[id];
+            nng_stream* socket = dialer.get_output;
+            auto peer = new Peer(id, socket, bufsize);
+            all_peers[id] = peer;
+            peers[dialer.pkey] = peer;
+            break;
+
+        case NodeAction.accepted:
+            nng_stream* socket = get_listener_output();
+            all_peers[id] = new Peer(id, socket, bufsize);
+            break;
+
+        case NodeAction.sent:
+            all_peers[id].state = Peer.State.ready;
+            break;
+        }
     }
 
     mixin NodeHelpers;
@@ -464,6 +445,22 @@ struct PeerMgr {
 
 ///
 unittest {
+    static void unit_handler(ref PeerMgr sender, ref PeerMgr receiver) {
+        receiveOnlyTimeout(1.seconds, 
+                (NodeAction a, int id) {
+                    if(a is NodeAction.accepted) {
+                        receiver.update(a, id);
+                    }
+                    else {
+                        sender.update(a, id);
+                    }
+                },
+                (NodeAction a, int id, Buffer buf) {
+                    receiver.update(a, id, get_public_key(Document(buf)));
+                }
+        );
+    }
+
     thisActor.task_name = "jens";
 
     import std.stdio;
@@ -483,10 +480,8 @@ unittest {
     dialer.dial(listener.address, net2.pubkey);
     listener.accept();
 
-    /* writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length); */
-    receiveOnlyTimeout(2.seconds, &dialer.on_dial, &listener.on_accept);
-    receiveOnlyTimeout(2.seconds, &dialer.on_dial, &listener.on_accept);
-    /* writefln("Connected dialer: %s, listener: %s", dialer.all_peers.length, listener.all_peers.length); */
+    unit_handler(dialer, listener);
+    unit_handler(dialer, listener);
 
     assert(dialer.isActive(listener.net.pubkey));
     assert(!listener.isActive(dialer.net.pubkey));
@@ -502,8 +497,8 @@ unittest {
 
         dialer.send(net2.pubkey, send_payload_p1);
 
-        receiveOnlyTimeout(1.seconds, &dialer.on_send, &listener.on_recv);
-        receiveOnlyTimeout(1.seconds, &dialer.on_send, &listener.on_recv);
+        unit_handler(dialer, listener);
+        unit_handler(dialer, listener);
 
         assert(listener.peers.length == 1);
     }
@@ -513,8 +508,8 @@ unittest {
         Buffer send_payload_p2 = HiRPC(net2).action("manythanks").serialize;
         listener.send(net1.pubkey, send_payload_p2);
 
-        receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_send);
-        receiveOnlyTimeout(1.seconds, &dialer.on_recv, &listener.on_send);
+        unit_handler(listener, dialer);
+        unit_handler(listener, dialer);
     }
 
     {
@@ -523,8 +518,8 @@ unittest {
 
         dialer.send(net2.pubkey, send_payload_p1);
 
-        receiveOnlyTimeout(1.seconds, &dialer.on_send, &listener.on_recv);
-        receiveOnlyTimeout(1.seconds, &dialer.on_send, &listener.on_recv);
+        unit_handler(dialer, listener);
+        unit_handler(dialer, listener);
 
         assert(listener.peers.length == 1);
     }
@@ -566,82 +561,78 @@ struct NodeInterfaceService_ {
         }
     }
 
-    void on_dial(NodeDial m, int id) {
-        debug(nodeinterface) log(__FUNCTION__);
-        Pubkey channel = p2p.dialers[id].pkey;
 
-        Document payload = msg_queue[channel];
-        scope(exit) {
-            msg_queue.remove(channel);
-        }
+    void on_action_complete(NodeAction action, int id, Buffer buf = null) {
+        debug(nodeinterface) log(text(action));
 
-        // Update state of connections
-        p2p.on_dial(m, id);
-        p2p.send(channel, payload.serialize);
-    }
+        final switch(action) {
+        case NodeAction.dialed:
+            Pubkey channel = p2p.dialers[id].pkey;
 
-    void on_accept(NodeAccept m, int id) {
-        debug(nodeinterface) log(__FUNCTION__);
-        p2p.on_accept(m, id);
-        p2p.all_peers[id].recv();
-        p2p.accept(); // Accept a new request
-    }
-
-    void on_recv(NodeRecv, int id, Buffer buf) {
-        debug(nodeinterface) log(__FUNCTION__);
-
-        debug(nodeinterface) log("received %s bytes", buf.length);
-
-        /* assert(buf.length >= 1); */
-        if(buf.length < 1) {
-            on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, "empty doc", __LINE__);
-            return;
-        }
-
-        debug(nodeinterface) log("%s", buf);
-
-        const(Document) doc = buf;
-
-        if(!doc.isInorder && !doc.empty) {
-            on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
-            return;
-        }
-
-        try {
-            const hirpcmsg = hirpc.receive(doc);
-            if(hirpcmsg.pubkey == this.net.pubkey) {
-                on_node_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
-                return;
+            Document payload = msg_queue[channel];
+            scope(exit) {
+                msg_queue.remove(channel);
             }
-            if(!hirpcmsg.isSigned) {
-                on_node_error(NodeError(), NodeErrorCode.msg_signed, id, text(hirpcmsg.signed), __LINE__);
+
+            p2p.update(action, id);
+            p2p.send(channel, payload.serialize);
+            break;
+
+        case NodeAction.accepted:
+            p2p.update(action, id);
+            p2p.all_peers[id].recv(); // Receive from the newly accepted peer
+            p2p.accept(); // Accept a new request
+            break;
+
+        case NodeAction.sent:
+            // TODO: if we sent breaking wave, then close
+            p2p.update(action, id);
+            p2p.all_peers[id].recv; // Be ready to receive next message
+            break;
+
+        case NodeAction.received:
+            assert(buf !is null, "Node action should get a buffer");
+            debug(nodeinterface) log("received %s bytes", buf.length);
+
+            if(buf.length < 1) {
+                on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, "empty doc", __LINE__);
                 return;
             }
 
-            Peer* peer = p2p.all_peers[id];
-            peer.state = Peer.State.ready;
-            // Add to the list of known connections
-            p2p.peers.require(hirpcmsg.pubkey, peer);
+            const(Document) doc = buf;
 
-            ExchangeState exchange_state = get_exchange_state(hirpcmsg);
-            if (exchange_state is ExchangeState.BREAKING_WAVE || exchange_state is ExchangeState.SECOND_WAVE) {
-                p2p.close(hirpcmsg.pubkey);
+            if(!doc.isInorder && !doc.empty) {
+                on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
+                return;
             }
-            
-            // Send to hasgraph/epoch_creator
-            receive_handle.send(ReceivedWavefront(), doc);
-        }
-        catch(Exception e) {
-            on_node_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
-        }
-    }
 
-    void on_send(NodeSendDone m, int id) {
-        debug(nodeinterface) log(__FUNCTION__);
-        p2p.on_send(m, id);
+            try {
+                const hirpcmsg = hirpc.receive(doc);
+                if(hirpcmsg.pubkey == this.net.pubkey) {
+                    on_node_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
+                    return;
+                }
+                if(!hirpcmsg.isSigned) {
+                    on_node_error(NodeError(), NodeErrorCode.msg_signed, id, text(hirpcmsg.signed), __LINE__);
+                    return;
+                }
 
-        // TODO: if we sent breaking wave, then close
-        p2p.all_peers[id].recv; // Be ready to receive next message
+                Pubkey channel = hirpcmsg.pubkey;
+                p2p.update(action, id, channel);
+
+                ExchangeState exchange_state = get_exchange_state(hirpcmsg);
+                if (exchange_state is ExchangeState.BREAKING_WAVE || exchange_state is ExchangeState.SECOND_WAVE) {
+                    p2p.close(channel);
+                }
+                
+                // Send to hasgraph/epoch_creator
+                receive_handle.send(ReceivedWavefront(), doc);
+            }
+            catch(Exception e) {
+                on_node_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
+            }
+            break;
+        }
     }
 
     // TODO: close on error
@@ -660,10 +651,19 @@ struct NodeInterfaceService_ {
     void task() {
         p2p.listen();
         log("listening on %s", opts.node_address);
-
         p2p.accept();
 
-        run(&node_send, &on_accept, &on_recv, &on_send, &on_dial, &on_node_error, &on_nng_error);
+        run(
+                (NodeAction a, int id) {
+                    on_action_complete(a, id);
+                },
+                (NodeAction a, int id, Buffer buf) {
+                    on_action_complete(a, id, buf);
+                },
+                &node_send,
+                &on_node_error,
+                &on_nng_error
+        );
     }
 }
 
@@ -786,6 +786,10 @@ void node_error(string owner_task, nng_errno code, int id, string msg = "", int 
 
 ExchangeState get_exchange_state(const HiRPC.Receiver receiver) {
     return receiver.params[StdNames.state].get!ExchangeState;
+}
+
+Pubkey get_public_key(Document doc) {
+    return doc[StdNames.owner].get!Pubkey;
 }
 
 mixin template NodeHelpers() {
