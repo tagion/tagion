@@ -379,8 +379,6 @@ class Round {
                     e._round.add2(e);
                 }
             }
-            import tagion.hashgraph.Event2;
-
             e._round =  e.maxRound;
             if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
@@ -490,7 +488,6 @@ class Round {
 
         void check_decide_round2() {
             __write("%s", __FUNCTION__);
-            import tagion.hashgraph.Event2;
 
             auto round_to_be_decided = last_decided_round._next;
             if (!last_decided_round._next) {
@@ -566,7 +563,6 @@ class Round {
         protected void collect_received_round2(Round r)
         in (r._decided, "The round should be decided before the round can be collect")
         do {
-            import tagion.hashgraph.Event2;
 
             auto witness_event_in_round = r._events.filter!(e => e !is null);
             const famous_count = witness_event_in_round

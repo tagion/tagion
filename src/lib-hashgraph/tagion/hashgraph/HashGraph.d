@@ -15,7 +15,6 @@ import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.Types : Privkey, Pubkey, Signature;
 import tagion.gossip.GossipNet;
-import tagion.hashgraph.Event2;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.RefinementInterface;
