@@ -387,6 +387,7 @@ class Event2 : current_event.Event {
     /**
     *  Makes the event a witness  
     */
+    version(none)
     override void witness_event(HashGraph hashgraph) nothrow
     in (!_witness, "Witness has already been set")
     out {

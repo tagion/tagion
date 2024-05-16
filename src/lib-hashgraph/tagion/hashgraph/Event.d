@@ -405,9 +405,7 @@ class Event {
         assert(_witness, "Witness should be set");
     }
     do {
-        assert(0);
-        //import tagion.hashgraph.Event2 : Event2;
-        //new Event2.Witness2(hashgraph);
+        new Witness(hashgraph);
         //_youngest_son_ancestors = new Event2[hashgraph.node_size];
         //_youngest_son_ancestors[node_id] = this;
     }
