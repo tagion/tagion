@@ -458,15 +458,7 @@ class Round {
         }
 
         void check_decide_round() {
-            if (hashgraph.graphtype == 0) {
-                check_decide_round0();
-            }
-            else if (hashgraph.graphtype == 2) {
                 check_decide_round2();
-            }
-            else {
-                assert(0, "HashGraph graphtype invalid");
-            }
         }
 
         package Event[] witness_to_be_decided() pure nothrow @nogc {
@@ -474,16 +466,6 @@ class Round {
                 return null;
             }
             return last_decided_round._next._events;
-        }
-
-        void check_decide_round0() {
-            auto round_to_be_decided = last_decided_round._next;
-            if (!voting_round_per_node.all!(r => r.number > round_to_be_decided.number)) {
-                log("Not decided round");
-                return;
-            }
-            collect_received_round(round_to_be_decided, hashgraph);
-            last_decided_round = round_to_be_decided;
         }
 
         void check_decide_round2() {
