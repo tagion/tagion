@@ -499,22 +499,32 @@ class Round {
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
                 .map!(e => cast(Event2.Witness2) e.witness);
-            if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
-                return;
-            }
             witness_in_round
                 .filter!(w => !w.decided(hashgraph))
                 .each!(w => w.doTheMissingNoVotes);
             //.each!(w => w.doTheMissignNoVotes); 
             if (!witness_in_round.all!(w => w.decided(hashgraph))) {
-
+                __write("Round %d could not all be decided", round_to_be_decided.number);
                 log("Not decided round");
                 return;
             }
+            __write("%(%s %)", witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided(hashgraph))));
+            __write("decided %s", witness_in_round.map!(w => w.decided(hashgraph)));
+            witness_in_round.each!(w => w.display_decided);
             round_to_be_decided._decided = true;
-            __write("Round decided %d", round_to_be_decided.number);
-            collect_received_round2(round_to_be_decided);
+            __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);
             last_decided_round = round_to_be_decided;
+            __write("round %d votes yes %(%s %)", round_to_be_decided.number,
+                    witness_in_round.map!(w => isMajority(w.yes_votes, hashgraph.node_size)));
+            const decided_with_yes_votes = witness_in_round
+                .filter!(w => isMajority(w.yes_votes, hashgraph.node_size))
+                .count;
+            __write("decided_with_yes_votes=%d %s", decided_with_yes_votes, isMajority(decided_with_yes_votes, hashgraph
+                    .node_size));
+            if (!isMajority(decided_with_yes_votes, hashgraph.node_size)) {
+                return;
+            }
+            collect_received_round2(round_to_be_decided);
             check_decide_round2;
         }
 
@@ -553,7 +563,6 @@ class Round {
         protected void collect_received_round2(Round r)
         in (r._decided, "The round should be decided before the round can be collect")
         do {
-            __write("%s round=%d", __FUNCTION__, r.number);
             import tagion.hashgraph.Event2;
 
             auto witness_event_in_round = r._events.filter!(e => e !is null);
@@ -567,9 +576,7 @@ class Round {
                 // to collect the events
                 return;
             }
-            __write("After !isMajority");
 
-            //Event[] event_list;
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
                 event_list.length = hashgraph.node_size * hashgraph.node_size;
@@ -601,15 +608,13 @@ class Round {
 
             BitMask[] famous_seen_masks;
             famous_seen_masks.length = hashgraph.node_size;
-            //iota(hashgraph.node_size)
-            //    .each!(n => famous_seen_masks[n][n] = true);
 
             Event[] event_front;
             event_front.length = hashgraph.node_size;
             foreach (e; event_list) {
-                
+
                 famous_seen_masks[e.node_id] |= famous_seen_masks[e.son.node_id];
-                famous_seen_masks[e.node_id][e.son.node_id]=true;
+                famous_seen_masks[e.node_id][e.son.node_id] = true;
                 __write("id=%d son_node_id=%d -> node_id=%d order=%d %5s", e.id, e.son.node_id, e.node_id, e.order, famous_seen_masks[e
                         .node_id]);
                 if (!event_front[e.node_id] && isMajority(famous_seen_masks[e.node_id], hashgraph)) {
@@ -618,24 +623,24 @@ class Round {
             }
 
             event_front
-            .filter!(e => e !is null)
+                .filter!(e => e !is null)
                 .each!(e => __write("id=%d son_node_id=%d -> node_id=%d order=%d", e.id, e.son.node_id, e.node_id, e
                         .order));
 
             //famous_witness_in_round
             //.each!(e => event_front[e.node_id]=EventCollectionFront(e));
 
-                auto event_collection = event_front 
-                    .filter!(e => e !is null)
-                    .map!(e => e[]
-                    .until!(e => e.round_received !is null))
-                    .joiner
-                    .array;
-                __write("Round collected %d", r.number);
-                event_collection.each!(e => e.round_received = r);
-                if (Event.callbacks) {
-                    event_collection.each!(e => Event.callbacks.connect(e));
-                }
+            auto event_collection = event_front
+                .filter!(e => e !is null)
+                .map!(e => e[]
+                .until!(e => e.round_received !is null))
+                .joiner
+                .array;
+            __write("Round collected %d", r.number);
+            event_collection.each!(e => e.round_received = r);
+            if (Event.callbacks) {
+                event_collection.each!(e => Event.callbacks.connect(e));
+            }
             //hashgraph.epoch(event_collection, r);
 
         }

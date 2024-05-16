@@ -204,8 +204,36 @@ class Event2 : current_event.Event {
         }
 
         bool decided(const HashGraph hashgraph) const pure nothrow @nogc {
-            return isMajority(_yes_votes, hashgraph.node_size) || isMajority(no_votes, hashgraph.node_size);
+            const voted = _has_voted_mask.count;
+            const N = this.outer._round.events.length;
+
+            if (isMajority(voted, N)) {
+                if (isMajority(yes_votes, N) || isMajority(no_votes, N)) {
+                    return true;
+                }
+                const votes_left = N - voted;
+                if (yes_votes > no_votes) {
+                    return !isMajority(votes_left + yes_votes, N);
+                }
+                return !isMajority(votes_left + no_votes, N);
+            }
+            return false;
         }
+
+        void display_decided() const pure nothrow @nogc {
+            const voted = _has_voted_mask.count;
+            const N = this.outer._round.events.length;
+            const votes_left = N - voted;
+            __write("votes=%d N=%d votes_left=%d %s %s %s %s %s",
+                    voted, N, votes_left,
+
+                    isMajority(voted, N),
+                    isMajority(yes_votes, N),
+                    isMajority(no_votes, N),
+                    !isMajority(votes_left + yes_votes - no_votes, N),
+                    !isMajority(votes_left + no_votes - yes_votes, N));
+        }
+
         //bool famous;
         /**
          * Contsruct a witness of an event
