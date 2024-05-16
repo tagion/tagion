@@ -500,6 +500,7 @@ class Event2 : current_event.Event {
         hashgraph._rounds.set_round(this);
     }
 
+    version(none)
     Round maxRound() nothrow {
         if (_round) {
             return _round;
