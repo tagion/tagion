@@ -42,7 +42,7 @@ struct EventView {
     @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
-//  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
+    //  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -78,7 +78,7 @@ struct EventView {
                 seen=event2._witness_seen_mask.bytes;   
                 intermediate_seen=event2._intermediate_seen_mask.bytes;
                 if (event2.isWitness) {
-                    auto witness=cast(const(Event2.Witness2))(event._witness);
+                    auto witness=event._witness;
                     strongly_seen=witness.previous_strongly_seen_mask.bytes;
                     yes_votes = witness.yes_votes;
                     no_votes = witness.no_votes;

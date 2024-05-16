@@ -498,7 +498,7 @@ class Round {
             }
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
-                .map!(e => cast(Event2.Witness2) e.witness);
+                .map!(e => e.witness);
             witness_in_round
                 .filter!(w => !w.decided)
                 .each!(w => w.doTheMissingNoVotes);
@@ -509,8 +509,8 @@ class Round {
                 return;
             }
             witness_in_round
-            .filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
-            .each!(w => Event.callbacks.connect(w.outer));
+                .filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
+                .each!(w => Event.callbacks.connect(w.outer));
             __write("%(%s %)", witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided)));
             __write("decided %s", witness_in_round.map!(w => w.decided));
             witness_in_round.each!(w => w.display_decided);
@@ -570,7 +570,7 @@ class Round {
 
             auto witness_event_in_round = r._events.filter!(e => e !is null);
             const famous_count = witness_event_in_round
-                .map!(e => cast(Event2.Witness2)(e.witness))
+                .map!(e => e.witness)
                 .map!(w => isMajority(w.yes_votes, hashgraph.node_size))
                 .count;
             if (!isMajority(famous_count, hashgraph.node_size)) {
@@ -600,7 +600,7 @@ class Round {
             }
 
             auto famous_witness_in_round = witness_event_in_round
-                .filter!(e => (cast(Event2.Witness2) e._witness).isFamous);
+                .filter!(e => e._witness.isFamous);
             auto event_list = majority_seen_from_famous(famous_witness_in_round);
             event_list
                 .sort!((a, b) => a.order > b.order);
@@ -657,79 +657,78 @@ class Round {
 
         package void collect_received_round(Round r, HashGraph hashgraph) {
             assert(0);
-            version(none) {
-            auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
+            version (none) {
+                auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
 
-            pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
-            auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors)
-                .joiner;
+                pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
+                auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors)
+                    .joiner;
 
-            Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
+                Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
 
-            foreach (son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
-                if (consensus_son_tide[son_ancestor.node_id] is null) {
-                    continue;
+                foreach (son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
+                    if (consensus_son_tide[son_ancestor.node_id] is null) {
+                        continue;
+                    }
+                    if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
+                        consensus_son_tide[son_ancestor.node_id] = son_ancestor;
+                    }
                 }
-                if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
-                    consensus_son_tide[son_ancestor.node_id] = son_ancestor;
+
+                version (EPOCH_FIX) {
+                    auto consensus_tide = consensus_son_tide
+                        .filter!(e => e !is null)
+                        .filter!(e =>
+                                !(e[].retro
+                        .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                        .empty)
+                    )
+                        .map!(e =>
+                                e[].retro
+                                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                                    .array.back
+                    );
                 }
-            }
+                else {
+                    auto consensus_tide = consensus_son_tide
+                        .filter!(e => e !is null)
+                        .map!(e =>
+                                e[].retro
+                                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                                    .array.back
+                    );
 
-            version (EPOCH_FIX) {
-                auto consensus_tide = consensus_son_tide
-                    .filter!(e => e !is null)
-                    .filter!(e =>
-                            !(e[].retro
-                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                    .empty)
-                )
-                    .map!(e =>
-                            e[].retro
-                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                .array.back
-                );
-            }
-            else {
-                auto consensus_tide = consensus_son_tide
-                    .filter!(e => e !is null)
-                    .map!(e =>
-                            e[].retro
-                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                .array.back
-                );
+                }
 
-            }
+                auto event_collection = consensus_tide
+                    .map!(e => e[].until!(e => e.round_received !is null))
+                    .joiner.array;
 
-            auto event_collection = consensus_tide
-                .map!(e => e[].until!(e => e.round_received !is null))
-                .joiner.array;
+                event_collection.each!(e => e.round_received = r);
+                if (Event.callbacks) {
+                    event_collection.each!(e => Event.callbacks.connect(e));
+                }
 
-            event_collection.each!(e => e.round_received = r);
-            if (Event.callbacks) {
-                event_collection.each!(e => Event.callbacks.connect(e));
-            }
-
-            hashgraph.epoch(event_collection, r);
+                hashgraph.epoch(event_collection, r);
             }
         }
 
-        
         package void vote(HashGraph hashgraph, size_t vote_node_id) {
             assert(0);
 
-            version(none) {
-            voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
-            Round current_round = voting_round_per_node[vote_node_id];
-            if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) {
-                check_decide_round();
-            }
-
-            while (current_round._next !is null) {
-                current_round = current_round._next;
-                foreach (e; current_round._events.filter!(e => e !is null)) {
-                    e.calc_vote(hashgraph, vote_node_id);
+            version (none) {
+                voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
+                Round current_round = voting_round_per_node[vote_node_id];
+                if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) {
+                    check_decide_round();
                 }
-            }
+
+                while (current_round._next !is null) {
+                    current_round = current_round._next;
+                    foreach (e; current_round._events.filter!(e => e !is null)) {
+                        e.calc_vote(hashgraph, vote_node_id);
+                    }
+                }
             }
         }
 

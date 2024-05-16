@@ -61,9 +61,9 @@ class Event2 : current_event.Event {
         // BitMask _round_seen_mask;
     }
 
-    BitMask _witness_seen_mask; /// Witness seen in privious round
-    BitMask _intermediate_seen_mask;
-    bool _intermediate_event;
+    //BitMask _witness_seen_mask; /// Witness seen in privious round
+    //BitMask _intermediate_seen_mask;
+    //bool _intermediate_event;
     //current_event.Event[] _intermediate_events_seen;
     //    BitMask[] strongly_seen_matrix;
     //    BitMask strongly_seen_mask;
@@ -91,24 +91,6 @@ class Event2 : current_event.Event {
     do {
 
         super(epack, hashgraph, 2);
-        //        if (!_mother) {
-        //            strongly_seen_matrix.length=hashgraph.node_size;
-        //            strongly_seen_matrix[node_id][node_id]=true;
-        //        }
-        //onnect(hashgraph);
-        _witness_seen_mask[node_id] = true;
-        version (none) {
-            if (_mother) {
-                _witness_seen_mask |= (cast(Event2) _mother)._witness_seen_mask;
-            }
-            if (_father) {
-                _witness_seen_mask |= (cast(Event2) _father)._witness_seen_mask;
-            }
-            if (_witness_seen_mask.isMajority(hashgraph)) {
-                _witness = new Witness2(hashgraph);
-            }
-        }
-        //    }
     }
 
     version (none) protected ~this() {
@@ -141,8 +123,7 @@ class Event2 : current_event.Event {
      * The witness event will point to the witness object
      * This object contains information about the voting etc. for the witness event
      */
-    //version(none)
-    @safe
+    version (none) @safe
     class Witness2 : current_event.Event.Witness {
         //protected static uint _count;
         version (none) @nogc static uint count() nothrow {
@@ -323,13 +304,13 @@ class Event2 : current_event.Event {
         }
     }
 
-    bool father_witness_is_leading() const pure nothrow {
+    version (none) bool father_witness_is_leading() const pure nothrow {
         return _father &&
             higher(_father._round.number, _mother._round.number) &&
             _father._round._events[_father.node_id];
     }
 
-    bool calc_strongly_seen2(HashGraph hashgraph) const pure nothrow
+    version (none) bool calc_strongly_seen2(HashGraph hashgraph) const pure nothrow
     in (_father, "Calculation of strongly seen only makes sense if we have a father")
     in (hashgraph.graphtype == 2)
     do {
@@ -341,7 +322,7 @@ class Event2 : current_event.Event {
             const vote_strongly_seen = _mother._round
                 ._events
                 .filter!(e => e !is null)
-                .map!(e => cast(Witness2) e._witness)
+                .map!(e => e._witness)
                 .map!(w => w._intermediate_event_mask[node_id])
                 .count;
             return isMajority(vote_strongly_seen, hashgraph.node_size);
@@ -412,7 +393,7 @@ class Event2 : current_event.Event {
         assert(_witness, "Witness should be set");
     }
     do {
-        new Witness2(hashgraph);
+        new Witness(hashgraph);
         //_youngest_son_ancestors = new Event2[hashgraph.node_size];
         //_youngest_son_ancestors[node_id] = this;
     }
@@ -468,8 +449,8 @@ class Event2 : current_event.Event {
         _mother._daughter = this;
         _father = hashgraph.register(event_package.event_body.father);
         _order = ((_father && higher(_father.order, _mother.order)) ? _father.order : _mother.order) + 1;
-        _witness_seen_mask |= (cast(Event2) _mother)._witness_seen_mask;
-        _intermediate_seen_mask |= (cast(Event2) _mother)._intermediate_seen_mask;
+        _witness_seen_mask |= _mother._witness_seen_mask;
+        _intermediate_seen_mask |= _mother._intermediate_seen_mask;
         //hashgraph._rounds._round(this);
         if (_father) {
             assert(cast(Event2) _father !is null);
@@ -493,13 +474,13 @@ class Event2 : current_event.Event {
                 auto max_round = maxRound;
                 new_witness_seen[]
                     .filter!((n) => max_round._events[n]!is null)
-                    .map!((n) => cast(Witness2)(max_round._events[n]._witness))
+                    .map!((n) => max_round._events[n]._witness)
                     .filter!((witness) => witness._intermediate_event_mask[node_id])
                     .each!((witness) => witness._intermediate_event_mask[node_id] = true);
             }
             const strongly_seen = calc_strongly_seen2(hashgraph);
             if (strongly_seen) {
-                auto witness = new Witness2(hashgraph);
+                auto witness = new Witness(hashgraph);
                 witness.vote(hashgraph);
                 //auto witness2=cast(Witness2)_witness;
                 auto witness_to_be_decided = hashgraph._rounds.witness_to_be_decided;
@@ -528,8 +509,7 @@ class Event2 : current_event.Event {
         return _mother._round;
     }
 
-    version(none)
-    override BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+    version (none) override BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
         assert(hashgraph.graphtype == 2);
         auto see_through_matrix = _youngest_son_ancestors
             .filter!(e => e !is null && e.round is round)
@@ -542,8 +522,7 @@ class Event2 : current_event.Event {
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
     }
 
-    version(none)
-    override void calc_youngest_son_ancestors(const HashGraph hashgraph) {
+    version (none) override void calc_youngest_son_ancestors(const HashGraph hashgraph) {
         assert(hashgraph.graphtype == 2);
         if (!_father) {
             _youngest_son_ancestors = _mother._youngest_son_ancestors;
@@ -558,8 +537,7 @@ class Event2 : current_event.Event {
             .each!(n => _youngest_son_ancestors[n] = _father._youngest_son_ancestors[n]);
     }
 
-    version(none)
-    override void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
+    version (none) override void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
         assert(hashgraph.graphtype == 2);
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
         auto voting_event = voting_round._events[vote_node_id];
@@ -613,8 +591,7 @@ class Event2 : current_event.Event {
         _daughter = _son = null;
     }
 
-    version(none)
-    override const bool sees(current_event.Event b) pure {
+    version (none) override const bool sees(current_event.Event b) pure {
 
         if (_youngest_son_ancestors[b.node_id] is null) {
             return false;
