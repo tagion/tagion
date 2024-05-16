@@ -713,7 +713,11 @@ class Round {
             }
         }
 
+        
         package void vote(HashGraph hashgraph, size_t vote_node_id) {
+            assert(0);
+
+            version(none) {
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
             Round current_round = voting_round_per_node[vote_node_id];
             if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) {
@@ -725,6 +729,7 @@ class Round {
                 foreach (e; current_round._events.filter!(e => e !is null)) {
                     e.calc_vote(hashgraph, vote_node_id);
                 }
+            }
             }
         }
 

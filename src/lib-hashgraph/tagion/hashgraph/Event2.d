@@ -558,6 +558,7 @@ class Event2 : current_event.Event {
             .each!(n => _youngest_son_ancestors[n] = _father._youngest_son_ancestors[n]);
     }
 
+    version(none)
     override void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
         assert(hashgraph.graphtype == 2);
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];

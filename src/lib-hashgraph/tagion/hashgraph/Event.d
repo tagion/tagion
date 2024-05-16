@@ -128,9 +128,9 @@ class Event {
         }
 
         //private {
-        BitMask _vote_on_earliest_witnesses;
-        BitMask _prev_strongly_seen_witnesses;
-        BitMask _prev_seen_witnesses;
+        //BitMask _vote_on_earliest_witnesses;
+        //BitMask _prev_strongly_seen_witnesses;
+        //BitMask _prev_seen_witnesses;
         //}
 
         /**
@@ -341,7 +341,7 @@ class Event {
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
         }
     }
-
+version(none)
     void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
         assert(hashgraph.graphtype == 0);
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
