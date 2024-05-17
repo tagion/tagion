@@ -1,3 +1,17 @@
+# Changelog for Epoch 1861240 .. 1909372
+** Wallet API **
+We have started work on creating an C-API for the wallet. In doing this some dependencies were moved around in order to include fewer files / functions in exported library.
+We have also succesfully called WASM using flutter both on android, ios and macos all using the same wasm file. 
+
+** HiREP tests **
+We've implemented numerous more scenarios for HiREP tests such as testing sub-hibons etc.
+
+** Hashgraph updated to use standardnames **
+The hashgraph archives have been updated to be part of the StdNames enum, so that now all of the protocol variable definitions for HiBONRecord archives are located the same place.
+
+
+
+
 # Changelog for Epoch 1689534 .. 1861240
 ** HiBON/Document API **
 The HiBON and Document API are mostly done and created as classes in javascript which uses the WASM file populated with the functions from the C interface.
