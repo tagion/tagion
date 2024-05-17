@@ -23,7 +23,8 @@ import tagion.utils.StdTime;
 /**
  * Tagion bill
  */
-@recordType("TGN") struct TagionBill {
+@recordType("TGN")
+struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; /// Time stamp
     @label(StdNames.owner) Pubkey owner; /// owner key
@@ -43,7 +44,8 @@ import tagion.utils.StdTime;
  * inputs will be consumed in the execution
  * Reads are extract optional data for the smart contract
  */
-@recordType("SMC") struct Contract {
+@recordType("SMC")
+struct Contract {
     @label(StdNames.inputs) const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label(StdNames.reads) @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label(StdNames.script) Document script; /// the Smart contract to be executed
@@ -70,7 +72,8 @@ import tagion.utils.StdTime;
  *  Tagion SignedContract
  *  Includes the contract to be executed and the signatures of all inputs sorted by the dartIndex of the inputs
  */
-@recordType("SSC") struct SignedContract {
+@recordType("SSC")
+struct SignedContract {
     @label(StdNames.signs) const(Signature)[] signs; /// Signature of all inputs
     @label(StdNames.contract) Contract contract; /// The contract must signed by all inputs
     mixin HiBONRecord!(
@@ -297,7 +300,7 @@ alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
  */
 @recordType("$@Tagion")
 struct TagionHead {
-    @label(StdNames.name) string name = TagionDomain; /// Default name should always be "tagion"
+    @label(StdNames.domain_name) string name = TagionDomain; /// Default name should always be "tagion"
     long current_epoch;
     mixin HiBONRecord!(q{
         this(const(string) name, const(long) current_epoch) {

@@ -52,7 +52,7 @@ abstract class StdGossipNet : GossipNet {
         _pkeys ~= channel;
         addresses[channel] = address;
 
-        log.trace("Add channel: %s tid: %s", channel.encodeBase64, addresses[channel]);
+        log.trace("Add channel: %s addr: %s", channel.encodeBase64, addresses[channel]);
     }
 
     void remove_channel(const Pubkey channel) {

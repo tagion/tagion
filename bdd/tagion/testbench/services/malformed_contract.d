@@ -9,6 +9,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DARTcrud;
+import tagion.dart.DARTBasic;
 import tagion.hibon.Document;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
@@ -76,7 +77,8 @@ class ContractTypeWithoutCorrectInformation {
     import tagion.script.standardnames;
     import tagion.utils.StdTime;
 
-    @recordType("TGN") struct MaliciousBill {
+    @recordType("TGN")
+    struct MaliciousBill {
         @label(StdNames.value) @optional @(filter.Initialized) TagionCurrency value; /// Tagion bill 
         @label(StdNames.time) @optional @(filter.Initialized) sdt_t time;
         @label(StdNames.owner) @optional @(filter.Initialized) Pubkey owner;
@@ -310,13 +312,13 @@ class NegativeAmountAndZeroAmountOnOutputBills {
         import tagion.dart.DART;
         auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
         auto received = sendHiRPC(node1_opts.dart_interface.sock_addr, req, wallet1_hirpc);
-        auto not_in_dart = received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
+        auto not_in_dart = received.response.result[Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
         check(not_in_dart.length == 0, "all the inputs should still be in the dart");
 
 
         auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
         auto output_received = sendHiRPC(node1_opts.dart_interface.sock_addr, output_req, wallet1_hirpc);
-        auto output_not_in_dart = output_received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
+        auto output_not_in_dart = output_received.response.result[Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
 
 
         writefln("wowo OUTPUT %s",output_received.toPretty);

@@ -12,16 +12,30 @@ import tagion.basic.Types : Buffer;
 import tagion.basic.basic : isinit;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : BufferType, Fingerprint;
-import tagion.dart.DARTFile : KEY_SPAN;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
+
+
+enum Queries {
+    dartBullseye = "dartBullseye",
+    dartRead = "dartRead",
+    dartCheckRead = "dartCheckRead",
+    dartRim = "dartRim",
+    dartModify = "dartModify",
+}
+
+enum Params {
+    dart_indices = "dart_indices",
+    bullseye = "bullseye",
+}
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.
 */
 alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
+enum KEY_SPAN = ubyte.max + 1;
 /**
  * Calculates the fingerprint used as an index for the DART
  * Handles the hashkey '#' and stub used in the DART
@@ -31,7 +45,6 @@ alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
  * Returns: 
  *   The DART fingerprint
  */
-
 immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) pure {
     if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
         if (doc.keys.front == STUB) {

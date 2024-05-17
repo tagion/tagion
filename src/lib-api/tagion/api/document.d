@@ -5,7 +5,9 @@ import tagion.api.errors;
 import tagion.hibon.Document;
 import tagion.basic.tagionexceptions;
 import core.stdc.stdint;
+version(C_API_DEBUG) {
 import std.stdio;
+}
 import core.lifetime;
 import tagion.utils.StdTime;
 extern(C):
@@ -383,7 +385,13 @@ unittest {
  */
 int tagion_document_get_string(const Document.Element* element, char** value, size_t* str_len) {
     try {
+        version(C_API_DEBUG) {
+        writefln("doc elem ptr %s", element);
+        }
         auto str = element.get!string;
+        version(C_API_DEBUG) {
+        writefln("read string: %s", str);
+        }
         *value = cast(char*) &str[0];
         *str_len = str.length;
     } catch (Exception e) {

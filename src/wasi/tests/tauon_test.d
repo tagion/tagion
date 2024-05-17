@@ -18,6 +18,8 @@ import tagion.api.document;
 import tagion.api.hibon;
 import tagion.api.errors;
 import core.stdc.stdlib;
+import tagion.api.wallet;
+import tagion.api.basic;
 
 static this() {
     writefln(" should call this\n");
@@ -174,6 +176,10 @@ void main() {
     const pubkey=net.pubkey;
     writefln("pubkey   =%s len=%d", pubkey.base64, pubkey.length);
     const message=hash_net.calcHash(doc);
+
+    char* test;
+    size_t test_len;
+    tagion_basic_encode_base64url(&message[0], message.length, &test, &test_len); 
     writefln("message  =%s", message.base64);
     const signature=net.sign(message);
     writefln("signature=%s len=%d", signature.base64, signature.length);

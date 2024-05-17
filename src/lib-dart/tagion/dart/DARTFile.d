@@ -54,7 +54,6 @@ enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
 import std.algorithm;
 
 alias check = Check!DARTException;
-enum KEY_SPAN = ubyte.max + 1;
 
 /++
  + DART File system
@@ -79,13 +78,6 @@ class DARTFile {
         BlockFile blockfile;
         Fingerprint _fingerprint;
     }
-
-    static immutable _params = [
-        "dart_indices",
-        "bullseye",
-    ];
-
-    mixin(EnumText!("Params", _params));
 
     enum flat_marker = "flat";
     enum MIN_BLOCK_SIZE = 0x80;

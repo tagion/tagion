@@ -45,8 +45,8 @@ static TagionBill requestBill(TagionCurrency amount, Pubkey bill_owner, sdt_t bi
 
 @safe
 struct Wallet(Net : SecureNet) {
-    protected RecoverGenerator _wallet; /// Information to recover the seed-generator
-    protected DevicePIN _pin; /// Information to check the Pin code
+    RecoverGenerator _wallet; /// Information to recover the seed-generator
+    DevicePIN _pin; /// Information to check the Pin code
 
     AccountDetails account; /// Account-details holding the bills and generator
 
@@ -252,7 +252,6 @@ struct Wallet(Net : SecureNet) {
                 snavs_byte_fee);
             amount_remainder = total_collected_amount - amount_to_pay - fees;
             previous_bill_count = collected_bills.length;
-
         }
         while (amount_remainder < 0);
 
@@ -328,17 +327,13 @@ struct Wallet(Net : SecureNet) {
      * Returns: trt.dartRead hirpc.sender 
      */
     const(HiRPC.Sender) readIndicesByPubkey(HiRPC hirpc = HiRPC(null)) const {
-        import tagion.dart.DART;
         import tagion.script.standardnames;
+        import tagion.dart.DARTcrud;
 
         auto owner_indices = account.derivers.byKey
             .map!(owner => _net.dartKey(TRTLabel, owner));
 
-        auto params = new HiBON;
-        auto params_dart_indices = new HiBON;
-        params_dart_indices = owner_indices;
-        params[DART.Params.dart_indices] = params_dart_indices;
-        return hirpc.action("trt." ~ DART.Queries.dartRead, params);
+        return trtdartRead(owner_indices, hirpc);
     }
 
     /** 
@@ -352,18 +347,14 @@ struct Wallet(Net : SecureNet) {
      * Returns: trt.dartRead hirpc.sender
      */
     const(HiRPC.Sender) readContractsTRT(const(Document)[] contracts, HiRPC hirpc = HiRPC(null)) const {
-        import tagion.dart.DART;
         import tagion.script.standardnames;
+        import tagion.dart.DARTcrud;
 
         DARTIndex[] contract_indices = contracts.map!(doc => _net.dartIndex(doc))
             .map!(idx => _net.dartKey(StdNames.contract, idx))
             .array;
 
-        auto params = new HiBON;
-        auto params_dart_indices = new HiBON;
-        params_dart_indices = contract_indices;
-        params[DART.Params.dart_indices] = params_dart_indices;
-        return hirpc.action("trt." ~ DART.Queries.dartRead, params);
+        return trtdartRead(contract_indices, hirpc);
     }
 
     /** 
@@ -493,14 +484,18 @@ struct Wallet(Net : SecureNet) {
         return true;
     }
 
-    version(unittest) {
-        TagionBill addBill(TagionCurrency amount) {
-            auto bill_to_add = requestBill(amount, getCurrentPubkey);
-            account.bills ~= bill_to_add;
-            account.remove_requested_by_hash(_net.dartIndex(bill_to_add));
-            account.remove_invoice_by_pkey(bill_to_add.owner);
-            return bill_to_add;
-        }
+    /** 
+     * Adds a bill with the given amount to the wallet. Note should only be used for testing
+     * Params:
+     *   amount = the amount to add
+     * Returns: the created bill
+     */
+    TagionBill forceBill(TagionCurrency amount) {
+        auto bill_to_add = requestBill(amount, getCurrentPubkey);
+        account.bills ~= bill_to_add;
+        account.remove_requested_by_hash(_net.dartIndex(bill_to_add));
+        account.remove_invoice_by_pkey(bill_to_add.owner);
+        return bill_to_add;
     }
 }
 
@@ -542,13 +537,11 @@ unittest {
     wallet1.createWallet("wowo wowo", "1234");
     wallet2.createWallet("wowo loko", "2234");
 
-    auto bill = wallet1.addBill(1000.TGN);
+    auto bill = wallet1.forceBill(1000.TGN);
 
     // wallet 1 pays to wallet2 pkey;
     auto bill_to_pay = requestBill(500.TGN, wallet2.getCurrentPubkey);
 
     TagionCurrency fees;
     const signed_contract = wallet1.createPayment([bill_to_pay], fees);
-
-
 }

@@ -12,11 +12,14 @@ import tagion.actor;
 import tagion.services.nodeinterface;
 import tagion.services.messages;
 import tagion.script.namerecords;
+import tagion.script.standardnames;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureNet;
 import tagion.tools.Basic;
 import tagion.gossip.AddressBook;
-/* import tagion.utils.pretend_safe_concurrency; */
+import tagion.hibon.HiBON;
+import tagion.hashgraph.HashGraphBasic;
+import tagion.utils.pretend_safe_concurrency;
 
 import tagion.testbench.actor.util;
 
@@ -60,14 +63,14 @@ class PubkeyASendsAMessageToPubkeyB {
         thisActor.task_name = "JumboJet";
 
         { // A
-            immutable opts = NodeInterfaceOptions(node_address: "abstract://nodeinterface_a");
+            immutable opts = NodeInterfaceOptions(node_address: "abstract://nodeinterface_a", bufsize: 256);
             shared _net = cast(shared(StdSecureNet))(a_net.clone());
             immutable nnr = new NetworkNodeRecord(a_net.pubkey, opts.node_address);
             addressbook.set(nnr);
             a_handle = _spawn!NodeInterfaceService_("interface_a", opts, _net, thisActor.task_name);
         }
         { // B
-            immutable opts = NodeInterfaceOptions(node_address: "abstract://nodeinterface_b");
+            immutable opts = NodeInterfaceOptions(node_address: "abstract://nodeinterface_b", bufsize: 512);
             shared _net = cast(shared(StdSecureNet))(b_net.clone());
             immutable nnr = new NetworkNodeRecord(b_net.pubkey, opts.node_address);
             addressbook.set(nnr);
@@ -79,26 +82,68 @@ class PubkeyASendsAMessageToPubkeyB {
         return result_ok;
     }
 
-    @Then("Then i send messages back and forth 3 times")
+    @Then("i send messages back and forth 3 times")
     Document b() {
         { // A -> B
-            const sender = HiRPC(a_net).action("froma1", ResultOk());
+            Wavefront wave;
+            wave.state = ExchangeState.TIDAL_WAVE;
+            const sender = HiRPC(a_net).action("froma1", wave);
             a_handle.send(NodeSend(), b_net.pubkey, Document(sender.toDoc));
-            receiveOnlyTimeout(3.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
+            receiveOnlyTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
         }
 
         { // B -> A
-            const sender = HiRPC(b_net).action("fromb2", ResultOk());
+            Wavefront wave;
+            wave.state = ExchangeState.FIRST_WAVE;
+            const sender = HiRPC(b_net).action("fromb2", wave);
             b_handle.send(NodeSend(), a_net.pubkey, Document(sender.toDoc));
-            receiveOnlyTimeout(3.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
+            receiveOnlyTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
         }
 
-        // Fails occasioanally, need not figure out why
         { // A -> B
-            const sender = HiRPC(a_net).action("froma3", ResultOk());
+            Wavefront wave;
+            wave.state = ExchangeState.SECOND_WAVE;
+            const sender = HiRPC(a_net).action("froma3", wave);
             a_handle.send(NodeSend(), b_net.pubkey, Document(sender.toDoc));
-            receiveOnlyTimeout(3.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
+            receiveOnlyTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln("received ", doc.toPretty);});
         }
+
+        return result_ok;
+    }
+
+    @Then("i send message greater than the max buffer size")
+    Document size() {
+        { // B -> A
+            // We construct a fake wavefront with a big nonce
+            auto wave = new HiBON;
+            wave["$@"] = "Wavefront";
+            wave[StdNames.state] = ExchangeState.NONE;
+
+            // An array larger than A's buffer size and less than B's
+            wave["nonce"] = new immutable(ubyte[])(316);
+
+            const sender = HiRPC(b_net).action("fromb4", Document(wave));
+            b_handle.send(NodeSend(), a_net.pubkey, Document(sender.toDoc));
+
+            bool received = receiveTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln(doc.toPretty);});
+            check(!received, "Should not receive anything");
+        }
+        return result_ok;
+    }
+
+    @Then("I try to send to a node which can't be reached")
+    Document reached() {
+        auto c_net = new StdSecureNet();
+        c_net.generateKeyPair("C");
+
+        immutable nnr = new NetworkNodeRecord(c_net.pubkey,  "abstract://nodeinterface_c");
+        addressbook.set(nnr);
+
+        const sender = HiRPC(a_net).action("froma5", Wavefront());
+        a_handle.send(NodeSend(), c_net.pubkey, Document(sender.toDoc));
+
+        bool received = receiveTimeout(1.seconds, (ReceivedWavefront _, const(Document) doc) { writeln(doc.toPretty);});
+        check(!received, "Should not receive anything");
 
         return result_ok;
     }

@@ -92,6 +92,7 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
         opt.task_names.setPrefix(prefix_f);
         opt.dart_interface.setPrefix(prefix_f);
         opt.inputvalidator.setPrefix(prefix_f);
+        opt.subscription.setPrefix(prefix_f);
         opt.node_interface.node_address = format("tcp://[::1]:%s", base_port+node_n);
 
         all_opts ~= opt;

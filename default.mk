@@ -58,6 +58,9 @@ DVERSIONS+=USE_GENESIS_EPOCH
 # DVERSIONS+=NEW_ORDERING 
 DVERSIONS+=OLD_ORDERING
 
+# Flag for enabling printing in C-API
+# DVERIONS+=C_API_DEBUG
+
 # Flag for random delay between messages
 # see GossipNet
 # DVERSIONS+=RANDOM_DELAY

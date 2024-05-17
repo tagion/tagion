@@ -841,7 +841,8 @@ unittest {
     import std.traits : OriginalType, Unqual;
     import tagion.hibon.HiBONException : HiBONException, HiBONRecordException;
 
-    @recordType("SIMPLE") static struct Simple {
+    @recordType("SIMPLE")
+    static struct Simple {
         int s;
         string text;
         mixin HiBONRecord!(q{
@@ -892,7 +893,9 @@ unittest {
     static assert(Simple.GetTupleIndex!"s" == 0);
     static assert(Simple.GetTupleIndex!"text" == 1);
     static assert(Simple.GetTupleIndex!"not defined" == -1);
-    @recordType("SIMPLELABEL") static struct SimpleLabel {
+
+    @recordType("SIMPLELABEL")
+    static struct SimpleLabel {
         @label("TEXT") string text;
         @label("$S") int s;
         mixin HiBONRecord!(q{
@@ -907,7 +910,9 @@ unittest {
     static assert(SimpleLabel.GetTupleIndex!"$S" == 1);
     static assert(SimpleLabel.GetTupleIndex!"TEXT" == 0);
     static assert(SimpleLabel.GetTupleIndex!"not defined" == -1);
-    @recordType("BASIC") static struct BasicData {
+
+    @recordType("BASIC")
+    static struct BasicData {
         int i32;
         uint u32;
         long i64;
@@ -1053,7 +1058,8 @@ unittest {
 
     { // Check verify member
         template NotBoth(bool FILTER) {
-            @recordType("NotBoth") static struct NotBoth {
+            @recordType("NotBoth")
+            static struct NotBoth {
                 static if (FILTER) {
                     @optional @(filter.Initialized) int x;
                     @optional @(filter.Initialized) @filter(q{a < 42}) int y;

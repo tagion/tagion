@@ -30,16 +30,18 @@ alias ReceivedWavefront = Msg!"ReceivedWavefront";
 
 /// [TO: Node Interface] send HiRPC to another node 
 alias NodeSend = Msg!"node_send";
-/// [FROM: Node Interface] HiRPC from other node
-alias NodeRecv = Msg!"node_recv";
-// Basic node aio task completed
-alias NodeSendDone = Msg!"node_send_complete";
-/// A Dial task was completed
-alias NodeDial = Msg!"node_dial";
-/// An accept task was completed
-alias NodeAccept = Msg!"node_accept";
+
+/// A node action was completed
+enum NodeAction {
+    sent,
+    received,
+    dialed,
+    accepted,
+}
+
 /// An error occurred while doing an aio task
 alias NodeError = Msg!"node_error";
+alias NNGError = Msg!"nng_error";
 
 /// [FROM: DART, TO: Replicator] Send the produced recorder for replication
 alias SendRecorder = Msg!"SendRecorder";

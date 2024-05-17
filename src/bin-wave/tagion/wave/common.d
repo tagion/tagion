@@ -26,7 +26,7 @@ import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 
 TagionHead getHead(DART db, const SecureNet net) {
-    DARTIndex tagion_index = net.dartKey(StdNames.name, TagionDomain);
+    DARTIndex tagion_index = net.dartKey(StdNames.domain_name, TagionDomain);
     auto hirpc = HiRPC(net);
     const sender = CRUD.dartRead([tagion_index], hirpc);
     const receiver = hirpc.receive(sender);
