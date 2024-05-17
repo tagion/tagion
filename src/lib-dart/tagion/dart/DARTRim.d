@@ -1,3 +1,4 @@
+/// Traversal of dartrims
 module tagion.dart.DARTRim;
 
 import std.format;

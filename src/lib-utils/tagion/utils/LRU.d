@@ -1,3 +1,4 @@
+/// Least recently used data structure
 module tagion.utils.LRU;
 
 // EvictCallback is used to get a callback when a cache entry is evicted

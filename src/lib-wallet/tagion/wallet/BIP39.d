@@ -1,3 +1,4 @@
+/// BIP39 native D implementation
 module tagion.wallet.BIP39;
 
 @safe:

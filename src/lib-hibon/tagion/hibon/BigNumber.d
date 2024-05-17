@@ -1,3 +1,4 @@
+/// Bignumber to store in HiBON
 module tagion.hibon.BigNumber;
 
 protected import std.bigint;

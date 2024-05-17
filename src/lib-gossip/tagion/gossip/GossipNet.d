@@ -1,3 +1,4 @@
+/// Gossipnet used for communication between nodes
 module tagion.gossip.GossipNet;
 
 @safe:

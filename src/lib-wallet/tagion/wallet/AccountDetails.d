@@ -1,3 +1,4 @@
+/// Accounting data structure for wallets
 module tagion.wallet.AccountDetails;
 import std.format;
 import std.algorithm;

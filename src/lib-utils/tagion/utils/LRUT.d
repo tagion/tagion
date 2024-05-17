@@ -1,3 +1,4 @@
+/// LRUT is a thread-safe timed successor of tagion.utils.LRU
 module tagion.utils.LRUT;
 
 import core.atomic;
@@ -19,7 +20,6 @@ double timestamp() nothrow
     return ts.tv_sec + ts.tv_nsec/1e9;
 }
 
-// LRUT is a thread-safe timed successor of tagion.utils.LRU
 
 synchronized 
 class LRUT(K,V) {

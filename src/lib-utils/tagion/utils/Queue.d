@@ -1,3 +1,4 @@
+/// Queue data structure
 module tagion.utils.Queue;
 
 @safe class Queue(T) {
