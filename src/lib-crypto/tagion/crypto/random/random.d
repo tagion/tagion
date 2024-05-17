@@ -1,3 +1,4 @@
+/// Cryptographic Random using system functions
 module tagion.crypto.random.random;
 
 import std.format;

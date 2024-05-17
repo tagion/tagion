@@ -1,3 +1,4 @@
+/// Envelope CLI tool
 module tagion.tools.envelope;
 
 import core.time;

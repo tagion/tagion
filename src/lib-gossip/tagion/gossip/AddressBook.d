@@ -1,3 +1,4 @@
+/// Addressbook which keeps node data
 module tagion.gossip.AddressBook;
 
 @safe:

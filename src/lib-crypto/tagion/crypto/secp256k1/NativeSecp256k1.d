@@ -1,3 +1,4 @@
+/// Low-level wrapper on secp256k1
 module tagion.crypto.secp256k1.NativeSecp256k1;
 
 @safe:

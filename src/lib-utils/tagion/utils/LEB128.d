@@ -1,3 +1,4 @@
+/// LEB128 implementation
 module tagion.utils.LEB128;
 
 import std.algorithm.comparison : min;

@@ -1,3 +1,4 @@
+/// JSON Interface for structs
 module tagion.utils.JSONCommon;
 
 import std.meta : AliasSeq;

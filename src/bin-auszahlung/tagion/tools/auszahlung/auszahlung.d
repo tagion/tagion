@@ -1,3 +1,4 @@
+/// Simple multi-sig CLI wallet
 module tagion.tools.auszahlung.auszahlung;
 import core.thread;
 import std.algorithm;

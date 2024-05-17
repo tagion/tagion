@@ -88,29 +88,39 @@ jobs:
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
-  # tauon-wasm:
-  #   runs-on: CI
-  #   steps:
-  #     - run: |
-  #         cd ..
-  #         git clone git@github.com:tagion/tagion.git || echo "repo already exists"
-  #     - run: |
-  #         git fetch
-  #         git checkout ${{ github.sha }}
-  #         git clean -f && git restore .
-  #     - name: Build and clone wasi
-  #       run: |
-  #         export DC=ldc2
-  #         make PLATFORM=wasm32-unknown-wasi wasi
+  tauon-wasm:
+    runs-on: CI
+    steps:
+      - run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+      - run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore .
+      - name: Build and clone wasi
+        run: |
+          export DC=ldc2
+          make PLATFORM=wasm32-unknown-wasi wasi
 
-  #     - name: build tauon
-  #       run: | 
-  #         export DC=ldc2
-  #         make PLATFORM=wasm32-unknown-wasi tauon-test
+      - name: build tauon
+        run: | 
+          ldc2 --version
+          export DC=ldc2
+          make PLATFORM=wasm32-unknown-wasi clean-tauon tauon-test
 
-  #     - name: run wasmer test
-  #       run: |
-  #         make PLATFORM=wasm32-unknown-wasi tauon-run
+      - name: run wasmer test
+        run: |
+          source /home/gitbot/.wasmer/wasmer.sh 
+          export DC=ldc2
+          make PLATFORM=wasm32-unknown-wasi tauon-run
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with: 
+          name: tauon_wasm
+          path: build/wasm32-unknown-wasi/bin/tauon_test.wasm
+          if-no-files-found: error
 
   commit_stage_cov:
     if: ${{ vars.ENABLE_COV || false }}

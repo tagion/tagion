@@ -1,3 +1,4 @@
+/// Basic wallet functions
 module tagion.wallet.Basic;
 
 import tagion.basic.Types : Buffer;

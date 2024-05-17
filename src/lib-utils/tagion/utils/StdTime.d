@@ -1,3 +1,4 @@
+/// time type wrapped on stdtime in phobos
 module tagion.utils.StdTime;
 
 import std.datetime;

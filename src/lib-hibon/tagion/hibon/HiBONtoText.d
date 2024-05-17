@@ -1,5 +1,3 @@
-module tagion.hibon.HiBONtoText;
-@safe:
 /**
  HiBON Base64 with  ':' added in the front of the string as an indetifyer
  is base64 base on the flowing ASCII characters
@@ -12,6 +10,8 @@ module tagion.hibon.HiBONtoText;
 
 
 */
+module tagion.hibon.HiBONtoText;
+@safe:
 
 import std.format;
 import tagion.hibon.HiBONException;

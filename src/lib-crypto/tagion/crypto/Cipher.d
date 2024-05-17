@@ -1,3 +1,4 @@
+/// Encryption of tagion documents
 module tagion.crypto.Cipher;
 
 import std.exception : assumeUnique, ifThrown;

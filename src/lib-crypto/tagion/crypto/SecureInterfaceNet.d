@@ -1,3 +1,4 @@
+/// Interfaces used for secure modules
 module tagion.crypto.SecureInterfaceNet;
 
 import std.typecons : TypedefType;
