@@ -111,6 +111,7 @@ jobs:
 
       - name: run wasmer test
         run: |
+          export DC=ldc2
           make PLATFORM=wasm32-unknown-wasi tauon-run
 
   commit_stage_cov:
