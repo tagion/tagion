@@ -1,3 +1,4 @@
+/// standardnames for archives and communication
 module tagion.script.standardnames;
 
 enum StdNames {

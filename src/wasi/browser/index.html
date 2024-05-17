@@ -29,6 +29,9 @@
 			});
 			wasi.instance = instance;
 
+			//const rt = instance.exports.rt_init();
+			console.log("RT STATUS ", rt);
+
 			let w = new Wallet(instance);
 			console.log(instance.exports);
 
