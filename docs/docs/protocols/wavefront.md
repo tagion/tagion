@@ -2,9 +2,9 @@
 
 The wavefront protocol is an initiate exchange exchange protocol, used for gossip in the tagion hashgraph.
 
-Node Alpha initiates a connections and sends it's initial height.  
-Node Beta sends the difference between height and it's own height.  
-Node Alpha sends the difference between calculated height Beta and it's own height.  
+Node Alpha initiates a connections and sends it's initial known heights.  
+Node Beta sends the difference between heights Alpha and it's own known heights.  
+Node Alpha sends the difference between Betas calculated heights and it's own heights.  
 
 The ideas and goals of the wavefront protocol are better described in the Tagion whitepaper.
 [tagion whitepaper](https://www.tagion.org/resources/tagion-whitepaper.pdf)*
@@ -16,11 +16,13 @@ The different wavefront exchange states are defined here.
 The wavefront record communicated between nodes is defined here.
 [tagion.hashgraph.HashGraphBasic.Wavefront](https://ddoc.tagion.org/tagion.hashgraph.HashGraphBasic.Wavefront.html)
 
+
 **Communication rules between a pair nodes**
 
 *The nodes communicate over a single wire in a half-duplex style.*  
 The priority of the rules are in the order they appear. A prior rule takes precedency over a later rule.  
-The keywords MAY, SHOULD and MUST, indicate the severity of the rule.  
+The keywords MAY, SHOULD and MUST, indicate the requirement levels of the rule.
+In accordance to https://datatracker.ietf.org/doc/html/rfc2119  
 MAY means that the node is free to do this at will.  
 SHOULD means that the node is strongly encouraged to do this, but the rule is NOT violated if not complied with.  
 MUST means that the node is obliged to follow this rule.  
