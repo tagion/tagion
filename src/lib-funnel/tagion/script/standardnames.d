@@ -1,6 +1,7 @@
 /// standardnames for archives and communication
 module tagion.script.standardnames;
 
+///
 enum StdNames {
     owner = "$Y", // Public key
     value = "$V", // Tagion currency
