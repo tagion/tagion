@@ -107,13 +107,20 @@ jobs:
         run: | 
           ldc2 --version
           export DC=ldc2
-          make PLATFORM=wasm32-unknown-wasi tauon-test
+          make PLATFORM=wasm32-unknown-wasi clean-tauon tauon-test
 
       - name: run wasmer test
         run: |
           source /home/gitbot/.wasmer/wasmer.sh 
           export DC=ldc2
           make PLATFORM=wasm32-unknown-wasi tauon-run
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with: 
+          name: tauon_wasm
+          path: build/wasm32-unknown-wasi/bin/tauon_test.wasm
+          if-no-files-found: error
 
   commit_stage_cov:
     if: ${{ vars.ENABLE_COV || false }}
