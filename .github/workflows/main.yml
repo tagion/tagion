@@ -111,6 +111,7 @@ jobs:
 
       - name: run wasmer test
         run: |
+          source /home/gitbot/.wasmer/wasmer.sh 
           export DC=ldc2
           make PLATFORM=wasm32-unknown-wasi tauon-run
 
