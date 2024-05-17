@@ -468,7 +468,7 @@ class Round {
             return last_decided_round._next._events;
         }
 
-        void check_decide_round2() {
+       void check_decide_round2() {
             __write("%s", __FUNCTION__);
 
             auto round_to_be_decided = last_decided_round._next;
