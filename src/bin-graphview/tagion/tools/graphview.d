@@ -213,7 +213,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         if (e.witness) {
             if (e.famous || e.decided) {
                 node_circle.fill = nonPastel19.color(e.round);
-                node_circle.stroke = (e.famous)?"green":"red";
+                node_circle.stroke = (e.famous) ? "green" : "red";
                 node_circle.stroke_width = 10;
             }
             else {
@@ -232,6 +232,10 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
         else {
             node_circle.fill = pastel19.color(e.round_received);
+        }
+        if (e.top) {
+            node_circle.stroke = nonPastel19.color(e.round);
+            node_circle.stroke_width = 12;
         }
         if (e.error) {
             verbose("had error");

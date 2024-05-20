@@ -73,7 +73,7 @@ class Event {
     }
 
     bool error;
-
+    bool top;
     Topic topic = Topic("hashgraph_event");
 
     /**
@@ -469,9 +469,9 @@ class Event {
             _father._son = this;
             BitMask new_witness_seen;
             if (_father._round.number == _mother._round.number) {
-                _witness_seen_mask |=  _father._witness_seen_mask;
-                _intermediate_seen_mask |=  _father._intermediate_seen_mask;
-                new_witness_seen =  _father._witness_seen_mask -  _mother
+                _witness_seen_mask |= _father._witness_seen_mask;
+                _intermediate_seen_mask |= _father._intermediate_seen_mask;
+                new_witness_seen = _father._witness_seen_mask - _mother
                     ._witness_seen_mask;
             }
             else {
@@ -503,7 +503,7 @@ class Event {
                             .filter!(w => !w.decided(hashgraph))
                             .each!(w => w.doTheMissingNoVotes);
                     }
-                hashgraph._rounds.check_decide_round2;
+                hashgraph._rounds.check_decide_round;
                 return;
             }
         }

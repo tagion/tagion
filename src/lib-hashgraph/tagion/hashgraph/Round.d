@@ -341,31 +341,6 @@ class Round {
      * Params:
      *   e = event
      */
-        void next_round(Event e) nothrow
-        in {
-            assert(last_round, "Base round must be created");
-            assert(last_decided_round, "Last decided round must exist");
-            assert(e, "Event must create before a round can be added");
-        }
-        out {
-            assert(e._round !is null);
-        }
-        do {
-            scope (exit) {
-                e._round.add(e);
-            }
-            if (e._round && e._round._next) {
-                e._round = e._round._next;
-            }
-            else {
-                e._round = new Round(last_round, hashgraph.node_size);
-                last_round = e._round;
-                // if (Event.callbacks) {
-                //     Event.callbacks.round_seen(e);
-                // }
-            }
-        }
-
         void set_round(Event e) nothrow
         in {
             assert(!e._round, "Round has allready been added");
@@ -379,7 +354,7 @@ class Round {
                     e._round.add2(e);
                 }
             }
-            e._round =  e.maxRound;
+            e._round = e.maxRound;
             if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
 
@@ -457,10 +432,6 @@ class Round {
             return cached_decided_count > total_limit;
         }
 
-        void check_decide_round() {
-                check_decide_round2();
-        }
-
         package Event[] witness_to_be_decided() pure nothrow @nogc {
             if (!last_decided_round._next) {
                 return null;
@@ -468,9 +439,7 @@ class Round {
             return last_decided_round._next._events;
         }
 
-       void check_decide_round2() {
-            __write("%s", __FUNCTION__);
-
+        void check_decide_round() {
             auto round_to_be_decided = last_decided_round._next;
             if (!last_decided_round._next) {
                 return;
@@ -483,66 +452,48 @@ class Round {
                 .each!(w => w.doTheMissingNoVotes);
             //.each!(w => w.doTheMissignNoVotes); 
             if (!witness_in_round.all!(w => w.decided)) {
-                __write("Round %d could not all be decided", round_to_be_decided.number);
                 log("Not decided round");
                 return;
             }
             witness_in_round
                 .filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
                 .each!(w => Event.callbacks.connect(w.outer));
-            __write("%(%s %)", witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided)));
-            __write("decided %s", witness_in_round.map!(w => w.decided));
-            witness_in_round.each!(w => w.display_decided);
+            version (none)
+                __write("%d %(%s %)", round_to_be_decided.next.events.filter!(e => e !is null).count,
+                        witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided)));
+            version (none)
+                __write("decided %s", witness_in_round.map!(w => w.decided));
+            //witness_in_round.each!(w => w.display_decided);
             round_to_be_decided._decided = true;
             __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);
             last_decided_round = round_to_be_decided;
-            __write("round %d votes yes %(%s %)", round_to_be_decided.number,
-                    witness_in_round.map!(w => isMajority(w.yes_votes, hashgraph.node_size)));
+            version (none)
+                __write("round %d votes yes %(%s %)", round_to_be_decided.number,
+                        witness_in_round.map!(w => isMajority(w.yes_votes, hashgraph.node_size)));
             const decided_with_yes_votes = witness_in_round
                 .filter!(w => isMajority(w.yes_votes, hashgraph.node_size))
                 .count;
-            __write("decided_with_yes_votes=%d %s", decided_with_yes_votes, isMajority(decided_with_yes_votes, hashgraph
-                    .node_size));
+            version (none)
+                __write("decided_with_yes_votes=%d %s", decided_with_yes_votes, isMajority(decided_with_yes_votes, hashgraph
+                        .node_size));
             if (!isMajority(decided_with_yes_votes, hashgraph.node_size)) {
                 return;
             }
-            collect_received_round2(round_to_be_decided);
-            check_decide_round2;
+            collect_received_round(round_to_be_decided);
+            check_decide_round;
         }
 
-        struct CollectionEventMatrix {
-            Event[] events;
-            const size_t node_size;
-            @disable this();
-            this(const size_t node_size) {
-                this.node_size = node_size;
-                events = new Event[node_size * node_size];
+        static bool higher_order(const Event a, const Event b) pure nothrow @nogc {
+            if (a.order > b.order) {
+                return true;
             }
-
-            Event opIndex(const size_t famous_node_id, const size_t event_node_id) pure nothrow @nogc
-            in (famous_node_id < node_size)
-            in (event_node_id < node_size)
-            do {
-                return events[node_size * event_node_id + famous_node_id];
+            if (a.order == b.order) {
+                return higher_order((a._father) ? a._father : a._mother, (b._father) ? b._father : b._mother);
             }
-
-            void opIndexAssign(Event e, const size_t famous_node_id, const size_t event_node_id) pure nothrow @nogc
-            in (famous_node_id < node_size)
-            in (event_node_id < node_size)
-            do {
-                events[node_size * event_node_id + famous_node_id] = e;
-            }
-
-            void getRow(const size_t event_node_id, ref Event[] row) nothrow
-            in (event_node_id < node_size)
-            do {
-                const start_index = event_node_id * node_size;
-                row = events[start_index .. start_index + node_size];
-
-            }
+            return false;
         }
 
-        protected void collect_received_round2(Round r)
+        protected void collect_received_round(Round r)
         in (r._decided, "The round should be decided before the round can be collect")
         do {
 
@@ -561,15 +512,15 @@ class Round {
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
                 event_list.length = hashgraph.node_size * hashgraph.node_size;
-                auto event_matrix = CollectionEventMatrix(hashgraph.node_size);
+                //auto event_matrix = CollectionEventMatrix(hashgraph.node_size);
                 uint index;
                 foreach (famous_witness; famous_witness_in_round) {
-                    event_matrix[famous_witness.node_id, famous_witness.node_id] = famous_witness;
+                    //event_matrix[famous_witness.node_id, famous_witness.node_id] = famous_witness;
                     BitMask father_mask;
                     foreach (e; famous_witness[].until!(e => !e || e.round_received)) {
                         if (e._father && !father_mask[e._father.node_id]) {
                             father_mask[e._father.node_id] = true;
-                            event_list[index++] = e._father;
+                            event_list[index++] = e;
                         }
                     }
                 }
@@ -581,36 +532,64 @@ class Round {
                 .filter!(e => e._witness.isFamous);
             auto event_list = majority_seen_from_famous(famous_witness_in_round);
             event_list
-                .sort!((a, b) => a.order > b.order);
+                .sort!((a, b) => higher_order(a, b));
             event_list
                 .until!(e => e is null)
-                .each!(e => __write("id=%d son_node_id=%d -> node_id=%d order=%d", e.id, e.son.node_id, e.node_id, e
-                        .order));
+                .each!(e => __write("id=%d node_id=%d -> father_id=%d order=%d:%d ", e.id, e.node_id, e._father
+                        .node_id, e
+                        .order, e._father.order));
 
+            __write("Collect votes round %d", r.number);
             BitMask[] famous_seen_masks;
             famous_seen_masks.length = hashgraph.node_size;
 
             Event[] event_front;
             event_front.length = hashgraph.node_size;
+            const mask_fmt = "%" ~ hashgraph.node_size.to!string ~ "s";
             foreach (e; event_list) {
-
-                famous_seen_masks[e.node_id] |= famous_seen_masks[e.son.node_id];
-                famous_seen_masks[e.node_id][e.son.node_id] = true;
-                __write("id=%d son_node_id=%d -> node_id=%d order=%d %5s", e.id, e.son.node_id, e.node_id, e.order, famous_seen_masks[e
-                        .node_id]);
-                if (!event_front[e.node_id] && isMajority(famous_seen_masks[e.node_id], hashgraph)) {
-                    event_front[e.node_id] = e;
+                famous_seen_masks[e.node_id][e.node_id] = true;
+                famous_seen_masks[e._father.node_id] |= famous_seen_masks[e.node_id];
+                const top = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
+                __write("father_id=%d node_id=%d -> father_node_id=%d order=%d:%d " ~ mask_fmt ~ " %s",
+                        e._father.id, e.node_id, e._father.node_id,
+                        e.order, e._father.order, famous_seen_masks[e._father.node_id],
+                        (top) ? format("TOP %d", famous_seen_masks[e._father.node_id].count) : ""
+                );
+                if (!event_front[e._father.node_id] && isMajority(famous_seen_masks[e._father.node_id], hashgraph)) {
+                    event_front[e._father.node_id] = e._father;
                 }
             }
+            __write("Top selection round %d witness_in_round=%d", r.number, witness_event_in_round.walkLength);
+            event_front
+                .filter!(e => e!is null)
+                .each!(e => __write("round=%d id=%d son_node_id=%d -> node_id=%d order=%d", e.round.number, e.id, e.son
+                        .node_id, e.node_id, e
+                        .order));
+            /*
+             foreach(e; event_front.filter!(e => e !is null)) {
+                if (e._father && event_front[e._father.node_id] && e._father.order > event_front[e._father.node_id].order) {
+                    event_front[e._father.node_id] = e._father;
+                }
+            }
+            */
+            foreach(e; event_front.filter!(e => e !is null)) {
+                foreach(e_father; e[].until!(e => !e || e.round_received).filter!(e => e.father).map!(e => e._father)) {
+                    __write("search e_father id=%d node_id=%d", e_father.id, e_father.node_id);
+                    if (!event_front[e_father.node_id] || e_father.order > event_front[e_father.node_id].order) {
+
+                        __write("e_father id=%d", e_father.id);
+                        event_front[e_father.node_id] = e_father;
+                    }
+                }
+            }
+            event_front
+                .filter!(e => e !is null)
+                .each!(e => e.top =true);
 
             event_front
                 .filter!(e => e !is null)
-                .each!(e => __write("id=%d son_node_id=%d -> node_id=%d order=%d", e.id, e.son.node_id, e.node_id, e
-                        .order));
-
-            //famous_witness_in_round
-            //.each!(e => event_front[e.node_id]=EventCollectionFront(e));
-
+                .each!(e => Event.callbacks.connect(e));
+            
             auto event_collection = event_front
                 .filter!(e => e !is null)
                 .map!(e => e[]
@@ -622,7 +601,7 @@ class Round {
             if (Event.callbacks) {
                 event_collection.each!(e => Event.callbacks.connect(e));
             }
-            //hashgraph.epoch(event_collection, r);
+            hashgraph.epoch(event_collection, r);
 
         }
 

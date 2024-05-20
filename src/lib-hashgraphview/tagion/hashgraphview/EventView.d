@@ -42,6 +42,7 @@ struct EventView {
     @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
+    @optional @(filter.Initialized) bool top;
     //  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
@@ -72,6 +73,9 @@ struct EventView {
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:long.min;
             const event2=event;
+            if (event.top) {
+                top=true;
+            }
             if (event2 !is null) {
                 intermediate=event2._intermediate_event;
                 seen=event2._witness_seen_mask.bytes;   
