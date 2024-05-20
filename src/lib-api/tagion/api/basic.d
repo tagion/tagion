@@ -32,3 +32,26 @@ int tagion_basic_encode_base64url(const(uint8_t*) buf,
     }
     return ErrorCode.none;
 }
+
+int tagion_basic_get_dart_index(const(uint8_t*) buf, 
+        const size_t buf_len,
+        uint8_t** dart_index_buf,
+        size_t* dart_index_buf_len) {
+    import tagion.crypto.SecureNet;
+    import tagion.dart.DARTBasic;
+    import tagion.hibon.Document;
+    try {
+        const _buf = buf[0..buf_len].idup;
+        const doc = Document(_buf);
+
+        const dart_index = dartIndex(hash_net, doc);
+
+        *dart_index_buf= cast(uint8_t*) &dart_index[0];
+        *dart_index_buf_len= dart_index.length;
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
