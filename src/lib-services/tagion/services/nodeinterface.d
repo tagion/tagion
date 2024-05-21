@@ -5,7 +5,6 @@ module tagion.services.nodeinterface;
 @safe:
 
 import core.time;
-import core.atomic;
 
 import std.format;
 import std.conv;
@@ -23,6 +22,7 @@ import tagion.hibon.Document;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.script.standardnames;
 import tagion.utils.Random;
+import tagion.utils.Queue;
 import tagion.logger;
 import tagion.services.messages;
 import tagion.services.exception;
@@ -37,7 +37,7 @@ struct NodeInterfaceOptions {
     uint send_timeout = 200; // Milliseconds
     uint recv_timeout = 200; // Milliseconds
     uint send_max_retry = 0;
-    size_t bufsize = 4096;
+    size_t bufsize = 0x8000; // 32kb
     string node_address = "tcp://[::1]:10700"; // Address
 
     import tagion.utils.JSONCommon;
@@ -49,6 +49,7 @@ struct NodeInterfaceOptions {
 enum NodeErrorCode {
     invalid_state,
     empty_msg,
+    buf_empty,
     doc_inorder,
     msg_self,
     msg_signed,
@@ -152,6 +153,8 @@ struct Peer {
     nng_iov iov;
     ubyte[] msg_buf;
 
+    Queue!Buffer send_queue;
+
     size_t bufsize = 4096;
 
     ///
@@ -168,6 +171,8 @@ struct Peer {
 
         rc = nng_aio_set_iov(aio, 1, &iov);
         check(rc == 0, nng_errstr(rc));
+
+        this.send_queue = new Queue!Buffer;
     }
 
     /// free nng memory
@@ -373,7 +378,7 @@ struct PeerMgr {
     }
 
     /// Send to an active connection with a known public key
-    void send(Pubkey pkey, immutable(ubyte)[] buf) {
+    void send(Pubkey pkey, Buffer buf) {
         assert(isActive(pkey), "No established connection");
         peers[pkey].send(buf);
     }
@@ -543,39 +548,72 @@ struct NodeInterfaceService_ {
         this.p2p = PeerMgr(this.net, opts.node_address, opts.bufsize);
     }
 
-    // Messages which are waiting for dial connection
-    // TODO: use LRU?
-    Document[Pubkey] msg_queue;
+    Topic node_action_event = Topic("node_action");
 
-    void node_send(NodeSend, Pubkey channel, Document payload) {
-        debug(nodeinterface) log("%s %s", __FUNCTION__, HiRPC(null).receive(payload).method.name);
-        p2p.isActive(channel);
-        if (p2p.isActive(channel)) {
-            // TODO: check if this peer is already doing something
-            p2p.send(channel, payload.serialize);
+    alias MsgQueue = Queue!Document;
+
+    MsgQueue[Pubkey] msg_queues;
+
+    void queue_write(Pubkey channel, Document data) {
+        msg_queues.require(channel, new MsgQueue);
+        msg_queues[channel].write(data);
+    }
+
+    Document queue_read(Pubkey channel) {
+        if((channel in msg_queues) is null) {
+            return Document.init;
         }
-        else {
-            msg_queue[channel] = payload;
+        MsgQueue queue = msg_queues[channel];
+        Document doc;
+        if(!queue.empty) {
+            doc = queue.read;
+        }
+        if(queue.empty) {
+            /// FIXME, msg queue is not cleaned if the node is never reached.
+            msg_queues.remove(channel);
+        }
+        return doc;
+    }
+
+    void queued_send(NodeSend, Pubkey channel, Document doc = Document.init) {
+        debug(nodeinterface) log("%s: %s", __FUNCTION__, channel.encodeBase64);
+        if(!p2p.isActive(channel)) {
+            queue_write(channel, doc);
             const nnr = addressbook[channel].get;
             p2p.dial(nnr.address, channel);
+
+            debug(nodeinterface) log("%s: not Active", __FUNCTION__);
+            return;
+        }
+
+        if(p2p.peers[channel].state !is Peer.State.ready) {
+            queue_write(channel, doc);
+            debug(nodeinterface) log("%s: not ready", __FUNCTION__);
+            return;
+        }
+
+        Document queued_doc = queue_read(channel);
+        if(queued_doc !is Document.init) {
+            queue_write(channel, doc);
+            p2p.send(channel, queued_doc.serialize);
+            debug(nodeinterface) log("%s: sent from queue", __FUNCTION__);
+        }
+        else if(doc !is Document.init) {
+            p2p.send(channel, doc.serialize);
+            debug(nodeinterface) log("%s: sent direct", __FUNCTION__);
         }
     }
 
-
     void on_action_complete(NodeAction action, int id, Buffer buf = null) {
         debug(nodeinterface) log(text(action));
+        log.event(node_action_event, text(action), Document());
 
         final switch(action) {
         case NodeAction.dialed:
             Pubkey channel = p2p.dialers[id].pkey;
 
-            Document payload = msg_queue[channel];
-            scope(exit) {
-                msg_queue.remove(channel);
-            }
-
             p2p.update(action, id);
-            p2p.send(channel, payload.serialize);
+            queued_send(NodeSend(), channel, Document.init);
             break;
 
         case NodeAction.accepted:
@@ -595,13 +633,13 @@ struct NodeInterfaceService_ {
             debug(nodeinterface) log("received %s bytes", buf.length);
 
             if(buf.length < 1) {
-                on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, "empty doc", __LINE__);
+                on_node_error(NodeError(), NodeErrorCode.buf_empty, id, text(buf.length), __LINE__);
                 return;
             }
 
             const(Document) doc = buf;
 
-            if(!doc.isInorder && !doc.empty) {
+            if(!doc.empty && !doc.isInorder(Document.Reserved.no)) {
                 on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
                 return;
             }
@@ -627,6 +665,7 @@ struct NodeInterfaceService_ {
                 
                 // Send to hasgraph/epoch_creator
                 receive_handle.send(ReceivedWavefront(), doc);
+                // queued_send(NodeSend(), channel, Document.init);
             }
             catch(Exception e) {
                 on_node_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
@@ -660,7 +699,7 @@ struct NodeInterfaceService_ {
                 (NodeAction a, int id, Buffer buf) {
                     on_action_complete(a, id, buf);
                 },
-                &node_send,
+                &queued_send,
                 &on_node_error,
                 &on_nng_error
         );
