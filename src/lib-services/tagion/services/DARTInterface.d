@@ -90,11 +90,6 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     }
 
     void dart_hirpc_response(dartHiRPCRR.Response res, Document doc) @safe {
-        writeln("Interface successful response");
-        send_doc(doc);
-    }
-    void trt_hirpc_response(trtHiRPCRR.Response res, Document doc) @safe {
-        writeln("TRT Interface successful response");
         send_doc(doc);
     }
 
@@ -133,26 +128,30 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         return;
     }
 
-    const is_trt_req = cnt.trt_enable && accepted_trt_methods.canFind(receiver.method.full_name);
-    auto tid = is_trt_req ? locate(cnt.trt_task_name) : locate(cnt.dart_task_name);
+    const is_trt_req = accepted_trt_methods.canFind(receiver.method.full_name);
+    string request_task_name = is_trt_req ? cnt.trt_task_name : cnt.dart_task_name;
+    Tid tid = locate(request_task_name);
 
     if (tid is Tid.init) {
-        send_error(ServiceCode.internal, cnt.trt_task_name);
+        send_error(ServiceCode.internal, "Missing Tid " ~ request_task_name);
         return;
     }
-    bool response;
+
     if (is_trt_req) {
         tid.send(trtHiRPCRR(), doc); 
-        response = receiveTimeout(cnt.worker_timeout.msecs, &trt_hirpc_response);
     } else {
         tid.send(dartHiRPCRR(), doc); 
-        response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
     }
+
+    bool response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
+
     if (!response) {
         send_error(ServiceCode.timeout);
         writeln("Timeout on interface request");
         return;
     }
+
+    writeln("Interface successful response ", receiver.method.full_name);
 }
 
 import tagion.services.exception;
