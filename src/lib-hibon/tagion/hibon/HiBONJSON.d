@@ -1,6 +1,7 @@
 module tagion.hibon.HiBONJSON;
 
 @safe:
+
 import std.conv : to;
 import std.format;
 import std.json;

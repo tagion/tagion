@@ -2,7 +2,7 @@ module tagion.dart.DARTFakeNet;
 
 import std.typecons : Typedef;
 
-import tagion.basic.Types : Buffer, Control;
+import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types : BufferType, Fingerprint;
 import tagion.dart.DART;

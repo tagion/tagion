@@ -18,12 +18,11 @@ import tagion.hibon.HiBONException;
 import misc = tagion.utils.Miscellaneous;
 import std.base64;
 import std.typecons : TypedefType;
-public import tagion.basic.Types;
 import tagion.basic.Types : encodeBase64;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
-//alias toHex = misc.toHexString;
+public import tagion.basic.Types;
 
 enum {
     hex_prefix = "0x",
@@ -48,7 +47,7 @@ if (isHiBONRecord!T) {
 }
 
 @nogc bool isBase64Prefix(const(char[]) str) pure nothrow {
-    return (str.length > 0) && (str[0] is BASE64Indetifyer);
+    return (str.length > 0) && (str[0] is BASE64Identifier);
 }
 
 immutable(ubyte[]) decode(const(char[]) str) pure {
