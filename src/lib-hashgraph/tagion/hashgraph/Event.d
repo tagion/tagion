@@ -198,10 +198,16 @@ class Event {
             }
         }
 
-        bool isFamous() const pure nothrow {
+        
+        bool votedNo() const pure nothrow {
+            return isMajority(no_votes, this.outer._round.events.length);
+        }
+
+        bool votedYes() const pure nothrow {
             return isMajority(_yes_votes, this.outer._round.events.length);
         }
 
+        alias isFamous=votedYes;
         bool decided() const pure nothrow @nogc {
             const voted = _has_voted_mask.count;
             const N = this.outer._round.events.length;
@@ -210,11 +216,11 @@ class Event {
                 if (isMajority(yes_votes, N) || isMajority(no_votes, N)) {
                     return true;
                 }
-                const votes_left = N - voted;
+                const votes_left = long(N) - long(voted);
                 if (yes_votes > no_votes) {
                     return !isMajority(votes_left + yes_votes, N);
                 }
-                return !isMajority(votes_left + no_votes, N);
+                                return !isMajority(votes_left + no_votes, N);
             }
             return false;
         }
@@ -222,15 +228,18 @@ class Event {
         void display_decided() const pure nothrow @nogc {
             const voted = _has_voted_mask.count;
             const N = this.outer._round.events.length;
-            const votes_left = N - voted;
-            __write("votes=%d N=%d votes_left=%d %s %s %s %s %s",
+            const votes_left = long(N) - long(voted);
+            __write("votes=%d N=%d votes_left=%d %s %s %s %s %s yes=%d no=%d not_yes=%d not_no=%d",
                     voted, N, votes_left,
 
                     isMajority(voted, N),
                     isMajority(yes_votes, N),
                     isMajority(no_votes, N),
-                    !isMajority(votes_left + yes_votes - no_votes, N),
-                    !isMajority(votes_left + no_votes - yes_votes, N));
+                    !isMajority(votes_left + yes_votes, N),
+                    !isMajority(votes_left + no_votes, N),
+                    yes_votes, no_votes,
+                    votes_left+yes_votes,
+                    votes_left+no_votes);
         }
 
         //bool famous;

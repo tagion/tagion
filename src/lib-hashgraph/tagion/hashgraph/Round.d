@@ -450,17 +450,27 @@ class Round {
             witness_in_round
                 .filter!(w => !w.decided)
                 .each!(w => w.doTheMissingNoVotes);
-            //.each!(w => w.doTheMissignNoVotes); 
+            //__write("Check decide round %d", round_to_be_decided.number);
+            //__write("decided %s", witness_in_round.map!(w => w.decided));
             if (!witness_in_round.all!(w => w.decided)) {
+             //   __write("Not all decided %d last_round=%d", round_to_be_decided.number, last_round.number);
+                version(none)
+                if (isMajority(witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
+                    witness_in_round.each!(w => w.display_decided);
+                }
                 log("Not decided round");
                 return;
             }
             witness_in_round
                 .filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
                 .each!(w => Event.callbacks.connect(w.outer));
-            version (none)
-                __write("%d %(%s %)", round_to_be_decided.next.events.filter!(e => e !is null).count,
-                        witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided)));
+                //const witness_in_round_display=witness_in_round.array.sort!((a,b) => a.outer.order > b.outer.order);
+                __write("%d %(%s %) yes=%d no=%d decided=%d", round_to_be_decided.next.events.filter!(e => e !is null).count,
+                        witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided, w.outer.order)),
+                        witness_in_round.filter!(w => w.votedYes).count, 
+                        witness_in_round.filter!(w => w.votedNo).count,
+                        witness_in_round.filter!(w => w.decided).count);
+                    witness_in_round.each!(w => w.display_decided);
             version (none)
                 __write("decided %s", witness_in_round.map!(w => w.decided));
             //witness_in_round.each!(w => w.display_decided);
@@ -484,10 +494,24 @@ class Round {
         }
 
         static bool higher_order(const Event a, const Event b) pure nothrow @nogc {
+            if (!a) {
+                return false;
+            }
+            if (!b) {
+                return true;
+            }
             if (a.order > b.order) {
                 return true;
             }
             if (a.order == b.order) {
+               // const a_next=(a._father)?a._father:a._mother;
+               // const b_next = (b._father)?b._father:b._mother;
+                if (a.round_received) {
+                    return false;
+                }
+                if (b.round_received) {
+                    return true;
+                }
                 return higher_order((a._father) ? a._father : a._mother, (b._father) ? b._father : b._mother);
             }
             return false;
@@ -508,7 +532,44 @@ class Round {
                 // to collect the events
                 return;
             }
+            version(none) { 
 
+            Event[] event_front;
+            BitMask[] famous_seen_mask;
+            famous_seen_mask.length=event_front.length=hashgraph.node_size;
+            
+            void find_event_front(Event famous_event, Event current_event) @safe {
+                if (!current_event || current.round_received) {
+                    return;
+                }
+                
+                
+                famous_seen_mask[current_event.node_id]|=famous_seen_mask[famous_event.node_id];
+                if (isMajority(famous_seen_mask[current_event.node_id], hashgraph.node_size)) {
+                    if (!event_front[current_event.node_id] || current_event.order > event_front[current_event.node_id].order) {
+                        event_front[current_event.node_id] =current_event;
+                    }
+                }
+                auto new_famous=r._events[current_event.node_id];
+                if (new_famous && new_famous.order > current_event.order) {
+                   find_event_front(new_famous, new_famous._father);
+                    return;
+                }
+                if (current_event._father && current_event._father.order >= current_event._mother.order) {
+                        find_event_front(famous_event, current_event._father);
+                    
+                }
+                find_event_front(famous_event, curren_event._mother);
+                find_event_front(famous_event, curren_event._father);
+            }
+            auto witness_priority=witness_event_in_round
+            .array
+            .sort((a,b) => a.order > b.order);
+            witness_priority
+            .map!(e => e.node_id)
+            .each(n => father_seen_mask[n][n]=true);
+            witness_priority.each!(e => find_event_front(e, e._father));
+            }
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
                 event_list.length = hashgraph.node_size * hashgraph.node_size;
@@ -533,6 +594,7 @@ class Round {
             auto event_list = majority_seen_from_famous(famous_witness_in_round);
             event_list
                 .sort!((a, b) => higher_order(a, b));
+            version(none)
             event_list
                 .until!(e => e is null)
                 .each!(e => __write("id=%d node_id=%d -> father_id=%d order=%d:%d ", e.id, e.node_id, e._father
@@ -550,6 +612,7 @@ class Round {
                 famous_seen_masks[e.node_id][e.node_id] = true;
                 famous_seen_masks[e._father.node_id] |= famous_seen_masks[e.node_id];
                 const top = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
+                version(none)
                 __write("father_id=%d node_id=%d -> father_node_id=%d order=%d:%d " ~ mask_fmt ~ " %s",
                         e._father.id, e.node_id, e._father.node_id,
                         e.order, e._father.order, famous_seen_masks[e._father.node_id],
@@ -572,16 +635,23 @@ class Round {
                 }
             }
             */
+            bool done;
+            do {
+        done=true;
             foreach(e; event_front.filter!(e => e !is null)) {
-                foreach(e_father; e[].until!(e => !e || e.round_received).filter!(e => e.father).map!(e => e._father)) {
-                    __write("search e_father id=%d node_id=%d", e_father.id, e_father.node_id);
-                    if (!event_front[e_father.node_id] || e_father.order > event_front[e_father.node_id].order) {
-
-                        __write("e_father id=%d", e_father.id);
+                foreach(e_father; e[]
+                    .until!(e => !e || e.round_received)
+                    .filter!(e => e._father)
+                    .map!(e => e._father)
+                    .filter!(e_father => !event_front[e_father.node_id] || 
+                            e_father.order > event_front[e_father.node_id].order)
+                   ) {
+                    done=false;      
                         event_front[e_father.node_id] = e_father;
-                    }
                 }
             }
+    } while (!done);
+    
             event_front
                 .filter!(e => e !is null)
                 .each!(e => e.top =true);
@@ -590,6 +660,8 @@ class Round {
                 .filter!(e => e !is null)
                 .each!(e => Event.callbacks.connect(e));
             
+            auto order_list=event_front.filter!(e => e !is null).map!(e => e.order).array.sort;
+            __write("order_list=%s", order_list);
             auto event_collection = event_front
                 .filter!(e => e !is null)
                 .map!(e => e[]
