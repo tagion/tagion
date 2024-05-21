@@ -11,6 +11,7 @@ import std.array;
 import std.algorithm : map, canFind, startsWith;
 import std.stdio;
 import std.format;
+import std.exception : assumeWontThrow;
 import tagion.actor;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
@@ -69,89 +70,90 @@ static immutable(string[]) accepted_trt_methods = accepted_dart_methods.map!(m =
 static immutable all_dartinterface_methods = accepted_dart_methods ~ accepted_trt_methods;
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
-
-    thread_attachThis();
-
-    HiRPC hirpc = HiRPC(null);
-
-    void send_doc(Document doc) @trusted {
+    void set_response_doc(Document doc) @trusted {
         msg.length = doc.full_size;
         msg.body_prepend(doc.serialize);
     }
 
-    void send_error(ServiceCode err_type, string extra_msg = "") @safe {
+    void set_error_msg(ServiceCode err_type, string extra_msg = "") @safe {
         import tagion.services.codes;
-        hirpc.Error message;
+        HiRPC.Error message;
         message.code = err_type;
         message.message = err_type.toString ~ extra_msg;
-        const sender = hirpc.Sender(null, message);
+        const sender = HiRPC.Sender(null, message);
         log("INTERFACE ERROR: %s, %s", err_type.toString, extra_msg);
-        send_doc(sender.toDoc);
+        set_response_doc(sender.toDoc);
     }
 
-    void dart_hirpc_response(dartHiRPCRR.Response res, Document doc) @safe {
-        send_doc(doc);
+    void dart_hirpc_response(dartHiRPCRR.Response, Document doc) @safe {
+        set_response_doc(doc);
     }
 
-    if (msg is null) {
-        writeln("no message received");
-        return;
+    try {
+        thread_attachThis();
+
+        if (msg is null) {
+            writeln("no message received");
+            return;
+        }
+        if (msg.length < 1) {
+            writeln("received empty msg");
+            return;
+        }
+
+        thisActor.task_name = format("%s", thisTid);
+        auto cnt = cast(DartWorkerContext*) ctx;
+        if (cnt is null) {
+            writeln("the context was nil");
+            return;
+        }
+
+        // we use an empty hirpc only for sending errors.
+        Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
+        msg.clear();
+
+        if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
+            set_error_msg(ServiceCode.hirpc);
+            writeln("Non-valid request received");
+            return;
+        }
+        writeln("Kernel received a document");
+
+        const empty_hirpc = HiRPC(null);
+
+        immutable receiver = empty_hirpc.receive(doc);
+        if (!(receiver.isMethod && all_dartinterface_methods.canFind(receiver.method.full_name))) {
+            set_error_msg(ServiceCode.method, format("%s", all_dartinterface_methods));
+            return;
+        }
+
+        const is_trt_req = accepted_trt_methods.canFind(receiver.method.full_name);
+        string request_task_name = is_trt_req ? cnt.trt_task_name : cnt.dart_task_name;
+        Tid tid = locate(request_task_name);
+
+        if (tid is Tid.init) {
+            set_error_msg(ServiceCode.internal, "Missing Tid " ~ request_task_name);
+            return;
+        }
+
+        if (is_trt_req) {
+            tid.send(trtHiRPCRR(), doc); 
+        } else {
+            tid.send(dartHiRPCRR(), doc); 
+        }
+
+        bool response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
+
+        if (!response) {
+            set_error_msg(ServiceCode.timeout);
+            writeln("Timeout on interface request");
+            return;
+        }
+
+        writeln("Interface successful response ", receiver.method.full_name);
+    } catch(Exception e) {
+        assumeWontThrow(set_error_msg(ServiceCode.internal, e.msg));
     }
-    if (msg.length < 1) {
-        writeln("received empty msg");
-        return;
-    }
-
-    thisActor.task_name = format("%s", thisTid);
-    auto cnt = cast(DartWorkerContext*) ctx;
-    if (cnt is null) {
-        writeln("the context was nil");
-        return;
-    }
-    // we use an empty hirpc only for sending errors.
-
-    Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
-    msg.clear();
-
-    if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        send_error(ServiceCode.hirpc);
-        writeln("Non-valid request received");
-        return;
-    }
-    writeln("Kernel received a document");
-
-    const empty_hirpc = HiRPC(null);
-
-    immutable receiver = empty_hirpc.receive(doc);
-    if (!(receiver.isMethod && all_dartinterface_methods.canFind(receiver.method.full_name))) {
-        send_error(ServiceCode.method, format("%s", all_dartinterface_methods));
-        return;
-    }
-
-    const is_trt_req = accepted_trt_methods.canFind(receiver.method.full_name);
-    string request_task_name = is_trt_req ? cnt.trt_task_name : cnt.dart_task_name;
-    Tid tid = locate(request_task_name);
-
-    if (tid is Tid.init) {
-        send_error(ServiceCode.internal, "Missing Tid " ~ request_task_name);
-        return;
-    }
-
-    if (is_trt_req) {
-        tid.send(trtHiRPCRR(), doc); 
-    } else {
-        tid.send(dartHiRPCRR(), doc); 
-    }
-
-    bool response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
-
-    if (!response) {
-        send_error(ServiceCode.timeout);
-        writeln("Timeout on interface request");
-        return;
-    }
-
-    writeln("Interface successful response ", receiver.method.full_name);
 }
 
 import tagion.services.exception;
