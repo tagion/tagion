@@ -153,9 +153,9 @@ struct NNGMessage {
         return nng_msg_header(msg);
     }
 
-    @property size_t length() { return nng_msg_len(msg); }
-    @property void length( size_t sz ) { auto rc = nng_msg_realloc(msg, sz); enforce(rc == 0); }
-    @property size_t header_length() { return nng_msg_header_len(msg); }
+    @property size_t length() @safe const nothrow { return nng_msg_len(msg); }
+    @property void length( size_t sz ) @safe { auto rc = nng_msg_realloc(msg, sz); enforce(rc == 0); }
+    @property size_t header_length() @safe const nothrow { return nng_msg_header_len(msg); }
     
     void clear() { nng_msg_clear(msg); }
 
