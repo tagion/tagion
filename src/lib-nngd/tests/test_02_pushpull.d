@@ -9,12 +9,15 @@ import std.exception;
 import nngd;
 import nngtestutil;
 
+const NSTEPS = 9;
 
 void sender_worker(string url)
 {
     int k = 0;
     string line;
     int rc;
+    thread_attachThis();
+    rt_moduleTlsCtor();
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
     s.sendtimeout = msecs(1000);
     s.sendbuf = 4096;
@@ -22,7 +25,7 @@ void sender_worker(string url)
         log("SS: to dial...");
         rc = s.dial(url);
         if(rc == 0) break;
-        log("SS: Dial error: %s",rc);
+        error("SS: Dial error: %s",rc);
         if(rc == nng_errno.NNG_ECONNREFUSED){
             nng_sleep(msecs(100));
             continue;
@@ -32,13 +35,13 @@ void sender_worker(string url)
     log(nngtest_socket_properties(s,"sender"));
     while(1){
         line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
-        if(k > 9) line = "END";
+        if(k > NSTEPS) line = "END";
         rc = s.send!string(line);
         enforce(rc == 0);
         log("SS sent: ",k," : ",line);
         k++;
         nng_sleep(msecs(500));
-        if(k > 10) break;
+        if(k > NSTEPS + 1) break;
     }
     log(" SS: bye!");
 }
@@ -47,33 +50,43 @@ void sender_worker(string url)
 void receiver_worker(string url)
 {
     int rc;
+    thread_attachThis();
+    rt_moduleTlsCtor();
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
     s.recvtimeout = msecs(1000);
     rc = s.listen(url);
     log("RR: listening");
     enforce(rc == 0);
     log(nngtest_socket_properties(s,"receiver"));
+    bool _ok = false;
+    int k = 0;
     while(1){
+        if(k++ > NSTEPS + 3) break;
         log("RR to receive");
         log("RR: debug state: ",s.state, " errno: ", s.errno);
         auto str = s.receive!string();
         log("RR: debug state: ",s.state, s.errno);
         if(s.errno == 0){
             log("RR: GOT["~(to!string(str.length))~"]: >"~str~"<");
-            if(str == "END") 
+            if(str == "END"){
+                _ok = true;
                 break;
+            }    
         }else{
-            log("RR: Error string");
+            error("RR: Error string");
         }                
     }
+    if(!_ok){
+        error("Test stopped without normal end.");
+    }    
     log(" RR: bye!");
 }
 
 
 int main()
 {
-    writeln("Hello NNGD!");
-    writeln("Simple push-pull test with byte buffers");
+    log("Hello NNGD!");
+    log("Simple push-pull test with byte buffers");
 
     string uri = "tcp://127.0.0.1:31200";
 
@@ -81,6 +94,6 @@ int main()
     auto tid02 = spawn(&sender_worker, uri);
     thread_joinAll();
 
-    return 0;
+    return populate_state(2, "string-based push-pull socket");
 }
 

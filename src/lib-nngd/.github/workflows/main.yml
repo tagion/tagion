@@ -1,5 +1,15 @@
 name: Main flow  
-on: [push]
+env:
+  TARGET: x86_64-linux
+  DC: dmd
+  NNG_WITH_MBEDTLS: OFF
+  NNG_DEBUG: OFF
+on:   
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs: 
   test:
@@ -9,6 +19,7 @@ jobs:
         dc: [dmd-latest]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v3
         with:
@@ -16,11 +27,39 @@ jobs:
       - name: Install D compiler
         uses: dlang-community/setup-dlang@v1
         with:
-          compiler: ${{ matrix.dc }}
+          compiler: ${{ matrix.dc }}      
       - name: install make etc
         run:
-          sudo apt-get install build-essential
-
-      - name: run the tests
+          sudo apt-get install build-essential uwsc
+      - name: build
         run:
-          make NNG_WITH_MBEDTLS=OFF
+          make all 
+      - name: run test
+        run:
+          make test
+      - name: report test
+        run: |
+          cat logs/runtest.log |grep '^#TEST' >> $GITHUB_STEP_SUMMARY    
+      - name: post run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runlogs
+          path: logs/
+  handle_errors:
+    if: failure()
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: get logs
+        uses: actions/download-artifact@v4
+        with:
+          name: runlogs
+          path: logs/
+      - name: lsit
+        run: ls -alsR /home/runner/work/nng/nng/
+      - name: add logs    
+        run: |
+          cat logs/runtest.log >> $GITHUB_STEP_SUMMARY
+
+
