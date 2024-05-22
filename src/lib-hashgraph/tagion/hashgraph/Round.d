@@ -454,14 +454,27 @@ class Round {
             return last_decided_round._next._events;
         }
 
-        Round find_next_famous_round(Round r) pure nothrow {
-            if (r && r._next && r._next.majority) {
-                return r._next;
-                auto witnesses = r._next
-                    ._events
+        static size_t number_of_witness(const Round r) pure nothrow @nogc {
+            if (r) {
+                return r._events.filter!(e => e !is null).count;
+            }
+            return 0;
+        }
+
+        bool can_round_be_decided(const Round r) pure nothrow @nogc {
+            if (r) {
+                auto witnesses = r._events
                     .filter!(e => e !is null)
                     .map!(e => e._witness);
-                if (witnesses.all!(w => w.decided)) {
+                return isMajority(witnesses.count, hashgraph.node_size) &&
+                    witnesses.all!(w => w.decided);
+            }
+            return false;
+        }
+
+        Round find_next_famous_round(Round r) pure nothrow {
+            if (r && r._next && r._next.majority) {
+                if (can_round_be_decided(r._next)) {
                     __write("Found next famous %d", r._next.number);
                     return r._next;
                 }
@@ -473,6 +486,7 @@ class Round {
         void check_decide_round() {
             check_decide_round(last_decided_round._next);
         }
+
         private void check_decide_round(Round round_to_be_decided) {
             //auto round_to_be_decided = last_decided_round._next;
             if (!round_to_be_decided) {
@@ -488,21 +502,27 @@ class Round {
             //__write("decided %s", witness_in_round.map!(w => w.decided));
             if (!witness_in_round.all!(w => w.decided)) {
                 //   __write("Not all decided %d last_round=%d", round_to_be_decided.number, last_round.number);
-                 round_to_be_decided = find_next_famous_round(round_to_be_decided);
+                round_to_be_decided = find_next_famous_round(round_to_be_decided);
                 if (round_to_be_decided) {
-                    __write("Last decided round %d find_next_famous_round.number=%d", last_decided_round.number,round_to_be_decided.number);
-                    
-            auto _witness_in_round = round_to_be_decided._events
-                .filter!(e => e !is null)
-                .map!(e => e.witness);
+                    __write("Last decided round %d find_next_famous_round.number=%d can-next-round-bedecided=%s", last_decided_round.number, round_to_be_decided
+                            .number, can_round_be_decided(round_to_be_decided._next));
+
+                    auto _witness_in_round = round_to_be_decided._events
+                        .filter!(e => e !is null)
+                        .map!(e => e.witness);
                     if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
                         _witness_in_round.each!(w => w.display_decided);
                     }
                     check_decide_round(round_to_be_decided);
                 }
                 log("Not decided round");
-                    return;
-                
+                return;
+
+            }
+            const number_of_voters=round_to_be_decided._events.filter!(e => e !is null).count;
+            
+            if (!witness_in_round.all!(w => w.votes == number_of_voters)) {
+                return;
             }
             witness_in_round
                 .filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))

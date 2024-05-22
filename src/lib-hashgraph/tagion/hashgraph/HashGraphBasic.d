@@ -58,7 +58,7 @@ unittest { // Test of the altitude measure function
  *     Returns `true` if the votes are more than 2/3
  */
 @nogc
-bool isMajority(T, S)(T voting, S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
+bool isMajority(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
@@ -104,7 +104,7 @@ enum ExchangeState : uint {
         Coherent state is when an the least epoch wavefront has been received or
         if all the nodes isEva notes (This only occurs at genesis).
     */
-    COHERENT, 
+    COHERENT,
 }
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);

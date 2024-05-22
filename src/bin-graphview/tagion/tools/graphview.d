@@ -219,6 +219,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             else {
                 node_circle.fill = "blue";
             }
+            node_circle.radius += NODE_CIRCLE_SIZE / 4;
         }
         else if (e.intermediate) {
             if (e.round_received == long.min) {

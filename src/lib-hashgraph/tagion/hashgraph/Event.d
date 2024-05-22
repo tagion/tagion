@@ -165,6 +165,9 @@ class Event {
         //uint _no_votes;
         //}
 
+        final size_t votes() const pure nothrow @nogc {
+            return _has_voted_mask.count;
+        }
         final const(BitMask) previous_strongly_seen_mask() const pure nothrow @nogc {
             return _previous_strongly_seen_mask;
         }
@@ -596,7 +599,7 @@ class Event {
     final package void disconnect(HashGraph hashgraph) nothrow @trusted
     in {
         assert(!_mother, "Event with a mother can not be disconnected");
-        assert(hashgraph.graphtype == 0);
+       // assert(hashgraph.graphtype == 0);
     }
     do {
         hashgraph.eliminate(fingerprint);
