@@ -28,6 +28,7 @@ import tagion.utils.Miscellaneous : cutHex;
 import tagion.utils.StdTime;
 import tagion.behaviour.BehaviourException : check, BehaviourException;
 
+import tagion.basic.Debug;
 class TestRefinement : StdRefinement {
 
     struct Swap {
@@ -86,6 +87,7 @@ class NewTestRefinement : StdRefinement {
 
         version (OLD_ORDERING) {
             const mid = times.length / 2 + (times.length % 1);
+            __write("round=%d times.length=%d mid=%d", decided_round.number, times.length, mid);
             const epoch_time = times[mid];
         }
         version (NEW_ORDERING) {

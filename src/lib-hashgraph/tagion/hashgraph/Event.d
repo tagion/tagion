@@ -198,16 +198,15 @@ class Event {
             }
         }
 
-        
-        bool votedNo() const pure nothrow {
+        bool votedNo() const pure nothrow @nogc {
             return isMajority(no_votes, this.outer._round.events.length);
         }
 
-        bool votedYes() const pure nothrow {
+        bool votedYes() const pure nothrow @nogc {
             return isMajority(_yes_votes, this.outer._round.events.length);
         }
 
-        alias isFamous=votedYes;
+        alias isFamous = votedYes;
         bool decided() const pure nothrow @nogc {
             const voted = _has_voted_mask.count;
             const N = this.outer._round.events.length;
@@ -217,10 +216,8 @@ class Event {
                     return true;
                 }
                 const votes_left = long(N) - long(voted);
-                if (yes_votes > no_votes) {
-                    return !isMajority(votes_left + yes_votes, N);
-                }
-                                return !isMajority(votes_left + no_votes, N);
+                return (yes_votes > no_votes) ?
+                    !isMajority(votes_left + yes_votes, N) : !isMajority(votes_left + no_votes, N);
             }
             return false;
         }
@@ -238,8 +235,8 @@ class Event {
                     !isMajority(votes_left + yes_votes, N),
                     !isMajority(votes_left + no_votes, N),
                     yes_votes, no_votes,
-                    votes_left+yes_votes,
-                    votes_left+no_votes);
+                    votes_left + yes_votes,
+                    votes_left + no_votes);
         }
 
         //bool famous;
