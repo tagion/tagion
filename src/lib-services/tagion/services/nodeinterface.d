@@ -1,4 +1,4 @@
-/// Interface for the Peer to Peer communicatio
+/// Interface for the Peer to Peer communication
 /// https://docs.tagion.org/docs/architecture/NodeInterface
 module tagion.services.nodeinterface;
 
@@ -355,13 +355,21 @@ struct PeerMgr {
         if(isActive(id)) {
             all_peers[id].close();
             all_peers.remove(id);
+
+            foreach(channel, peer; peers) {
+                if (peer.id == id) {
+                    peers.remove(channel);
+                    break;
+                }
+            }
         }
     }
 
     void close(Pubkey pkey) {
         if(isActive(pkey)) {
             Peer* peer = peers[pkey];
-            close(peer.id);
+            peer.close();
+            all_peers.remove(peer.id);
             peers.remove(pkey);
         }
     }
@@ -588,7 +596,7 @@ struct NodeInterfaceService_ {
 
         if(p2p.peers[channel].state !is Peer.State.ready) {
             queue_write(channel, doc);
-            debug(nodeinterface) log("%s: not ready", __FUNCTION__);
+            debug(nodeinterface) log("%s: not ready %s", __FUNCTION__, p2p.peers[channel].state);
             return;
         }
 
@@ -673,6 +681,8 @@ struct NodeInterfaceService_ {
             break;
         }
     }
+
+    // TODO: timeout
 
     // TODO: close on error
     void on_node_error(NodeError, NodeErrorCode code, int id, string msg, int line) {
