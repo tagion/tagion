@@ -331,21 +331,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
-        HashGraph h;
-        h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name, graphtype);
-        version (none) switch (graphtype) {
-        case 0:
-            h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
-            break;
-        case 1:
-            h = new _HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
-            break;
-        case 2:
-            h = new HashGraph2(N, net, refinement, &authorising.isValidChannel, joining, name);
-            break;
-        default:
-            check(0, format("Invalid graphtype number %d", graphtype));
-        }
+        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
         if (testing < 4) {
             testing++;
             if (testing == 1) {

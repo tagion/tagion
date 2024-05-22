@@ -249,11 +249,8 @@ class Event {
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
-        this(HashGraph hashgraph) nothrow
-        in (hashgraph.graphtype == 2)
-        do {
+        this() nothrow {
             auto witness_event = this.outer;
-            //this(witness_event, hashgraph.node_size);
             _count++;
             witness_event._witness = this;
             if (witness_event.father_witness_is_leading) {
@@ -344,7 +341,6 @@ class Event {
 
     bool calc_strongly_seen2(HashGraph hashgraph) const pure nothrow
     in (_father, "Calculation of strongly seen only makes sense if we have a father")
-    in (hashgraph.graphtype == 2)
     do {
         if (father_witness_is_leading) {
             return true;
@@ -414,7 +410,7 @@ class Event {
         assert(_witness, "Witness should be set");
     }
     do {
-        new Witness(hashgraph);
+        new Witness;
         //_youngest_son_ancestors = new Event2[hashgraph.node_size];
         //_youngest_son_ancestors[node_id] = this;
     }
@@ -435,7 +431,6 @@ class Event {
     void connect(HashGraph hashgraph)
     in {
         assert(hashgraph.areWeInGraph);
-        assert(hashgraph.graphtype == 2);
     }
     out {
         assert(event_package.event_body.mother && _mother || !_mother);
@@ -500,7 +495,7 @@ class Event {
             }
             const strongly_seen = calc_strongly_seen2(hashgraph);
             if (strongly_seen) {
-                auto witness = new Witness(hashgraph);
+                auto witness = new Witness;
                 witness.vote(hashgraph);
                 //auto witness2=cast(Witness2)_witness;
                 auto witness_to_be_decided = hashgraph._rounds.witness_to_be_decided;
@@ -531,7 +526,6 @@ class Event {
 
     BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
         assert(0);
-        assert(hashgraph.graphtype == 0);
         version (none) {
             auto see_through_matrix = _youngest_son_ancestors
                 .filter!(e => e !is null && e.round is round)

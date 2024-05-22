@@ -59,7 +59,6 @@ class HashGraph {
     Statistic!uint live_witness_statistic;
     Statistic!long epoch_delay_statistic;
     BitMask _excluded_nodes_mask;
-    const uint graphtype;
     //private {
     Node[Pubkey] _nodes; // List of participating _nodes T
     uint event_id;
@@ -114,8 +113,7 @@ class HashGraph {
             Refinement refinement,
             const ValidChannel valid_channel,
             const Flag!"joining" joining,
-            string name = null,
-            const uint graphtype = 0)
+            string name = null)
     in (node_size >= 4)
     do {
         hirpc = HiRPC(net);
@@ -124,7 +122,6 @@ class HashGraph {
         this.refinement = refinement;
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
-        this.graphtype = graphtype;
         this._joining = joining;
         this.name = name;
         _rounds = Round.Rounder(this);
@@ -143,7 +140,7 @@ class HashGraph {
         Node[Pubkey] recovered_nodes;
         scope (success) {
             void init_event(immutable(EventPackage*) epack) {
-                auto event = new Event(epack, this, graphtype);
+                auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
                 event.witness_event(this);
                 version (EPOCH_LOG) {
@@ -291,7 +288,7 @@ class HashGraph {
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
         immutable eva_epack = eva_pack(time, nonce);
-        auto eva_event = new Event(eva_epack, this, graphtype);
+        auto eva_event = new Event(eva_epack, this);
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
         // set_strongly_seen_mask(eva_event);
@@ -342,7 +339,7 @@ class HashGraph {
             event_pack.fingerprint))
     do {
         if (valid_channel(event_pack.pubkey)) {
-            auto event = new Event(event_pack, this, graphtype);
+            auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
             refinement.epack(event_pack);
             event.connect(this);
@@ -377,7 +374,7 @@ class HashGraph {
             if (fingerprint in event_package_cache) {
                 immutable event_pack = event_package_cache[fingerprint];
                 if (valid_channel(event_pack.pubkey)) {
-                    auto event = new Event(event_pack, this.outer, graphtype);
+                    auto event = new Event(event_pack, this.outer);
                     _event_cache[fingerprint] = event;
                     return event;
                 }
@@ -552,7 +549,7 @@ class HashGraph {
         // delta received from sharp should be added to our own node. 
         foreach (epack; changes) {
             const epack_node = getNode(epack.pubkey);
-            auto first_event = new Event(epack, this, graphtype);
+            auto first_event = new Event(epack, this);
             if (epack_node.event is null) {
                 check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
             }
@@ -643,7 +640,7 @@ class HashGraph {
 
                     foreach (epack; changes) {
                         const epack_node = getNode(epack.pubkey);
-                            auto first_event = new Event(epack, this, graphtype);
+                            auto first_event = new Event(epack, this);
                         if (epack_node.event is null) {
                             check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                         }
