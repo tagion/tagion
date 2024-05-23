@@ -218,6 +218,10 @@ class Event {
                 if (isMajority(yes_votes, N) || isMajority(no_votes, N)) {
                     return true;
                 }
+                const voters=this.outer._round._events.filter!(e => e !is null).count;
+                if (voters != voted) {
+                    return false;
+                }
                 const votes_left = long(N) - long(voted);
                 return (yes_votes > no_votes) ?
                     !isMajority(votes_left + yes_votes, N) : !isMajority(votes_left + no_votes, N);
