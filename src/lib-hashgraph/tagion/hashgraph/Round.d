@@ -19,7 +19,6 @@ import std.traits : ReturnType, Unqual;
 import std.traits;
 import std.typecons;
 import std.typecons : No;
-import tagion.basic.Debug;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
 import tagion.crypto.Types : Pubkey;
@@ -34,6 +33,7 @@ import tagion.logger.Logger;
 import tagion.utils.BitMask : BitMask;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
+import tagion.basic.Debug;
 
 /// Handles the round information for the events in the Hashgraph
 @safe
@@ -470,7 +470,6 @@ class Round {
         Round find_next_famous_round(Round r) pure nothrow {
             if (r && r._next && r._next.majority) {
                 if (can_round_be_decided(r._next)) {
-                    __write("Found next famous %d", r._next.number);
                     return r._next;
                 }
                 return find_next_famous_round(r._next);
@@ -493,13 +492,10 @@ class Round {
             witness_in_round
                 .filter!(w => !w.decided)
                 .each!(w => w.doTheMissingNoVotes);
-            //__write("Check decide round %d", round_to_be_decided.number);
-            //__write("decided %s", witness_in_round.map!(w => w.decided));
             if (round_to_be_decided.number > 113) {
                     auto _witness_in_round = round_to_be_decided._events
                         .filter!(e => e !is null)
                         .map!(e => e.witness);
-                    __write("Check Round %d", round_to_be_decided.number);
                     if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
                         _witness_in_round.each!(w => w.display_decided);
                     }
@@ -507,17 +503,6 @@ class Round {
             if (!witness_in_round.all!(w => w.decided)) {
                 round_to_be_decided = find_next_famous_round(round_to_be_decided);
                 if (round_to_be_decided) {
-                    version(none)
-                    __write("Last decided round %d find_next_famous_round.number=%d can next round be decided=%s", last_decided_round.number, round_to_be_decided
-                            .number, can_round_be_decided(round_to_be_decided._next));
-
-                    auto _witness_in_round = round_to_be_decided._events
-                        .filter!(e => e !is null)
-                        .map!(e => e.witness);
-                    version(none)
-                    if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
-                        _witness_in_round.each!(w => w.display_decided);
-                    }
                     if (can_round_be_decided(round_to_be_decided._next, 2)) {
                         check_decide_round(round_to_be_decided);
                     }
