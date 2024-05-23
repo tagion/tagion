@@ -452,13 +452,17 @@ class Round {
             return 0;
         }
 
-        bool can_round_be_decided(const Round r) pure nothrow @nogc {
+        bool can_round_be_decided(const Round r, const int iteration=0) pure nothrow @nogc {
             if (r) {
                 auto witnesses = r._events
                     .filter!(e => e !is null)
                     .map!(e => e._witness);
-                return isMajority(witnesses.count, hashgraph.node_size) &&
+                const can_be_decided=isMajority(witnesses.count, hashgraph.node_size) &&
                     witnesses.all!(w => w.decided);
+                if (can_be_decided && iteration <= 1) {
+                    return true;  
+                }
+                    return can_round_be_decided(r._next, iteration-1);
             }
             return false;
         }
@@ -492,29 +496,29 @@ class Round {
             //__write("Check decide round %d", round_to_be_decided.number);
             //__write("decided %s", witness_in_round.map!(w => w.decided));
             if (round_to_be_decided.number > 113) {
-                auto _witness_in_round = round_to_be_decided._events
-                    .filter!(e => e !is null)
-                    .map!(e => e.witness);
-                __write("Check Round %d", round_to_be_decided.number);
-                if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
-                    _witness_in_round.each!(w => w.display_decided);
-                }
+                    auto _witness_in_round = round_to_be_decided._events
+                        .filter!(e => e !is null)
+                        .map!(e => e.witness);
+                    __write("Check Round %d", round_to_be_decided.number);
+                    if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
+                        _witness_in_round.each!(w => w.display_decided);
+                    }
             }
             if (!witness_in_round.all!(w => w.decided)) {
                 round_to_be_decided = find_next_famous_round(round_to_be_decided);
                 if (round_to_be_decided) {
-                    version (none)
-                        __write("Last decided round %d find_next_famous_round.number=%d can next round be decided=%s", last_decided_round.number, round_to_be_decided
-                                .number, can_round_be_decided(round_to_be_decided._next));
+                    version(none)
+                    __write("Last decided round %d find_next_famous_round.number=%d can next round be decided=%s", last_decided_round.number, round_to_be_decided
+                            .number, can_round_be_decided(round_to_be_decided._next));
 
                     auto _witness_in_round = round_to_be_decided._events
                         .filter!(e => e !is null)
                         .map!(e => e.witness);
-                    version (none)
-                        if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
-                            _witness_in_round.each!(w => w.display_decided);
-                        }
-                    if (can_round_be_decided(round_to_be_decided._next)) {
+                    version(none)
+                    if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
+                        _witness_in_round.each!(w => w.display_decided);
+                    }
+                    if (can_round_be_decided(round_to_be_decided._next, 2)) {
                         check_decide_round(round_to_be_decided);
                     }
                 }
@@ -522,25 +526,17 @@ class Round {
                 return;
 
             }
-            const number_of_voters = round_to_be_decided._next._events.filter!(e => e !is null).count;
-
-            if (!witness_in_round.all!(w => w.votes == number_of_voters)) {
-                __write("Round %d voters=%d %s", round_to_be_decided.number, number_of_voters, witness_in_round.map!(w => w
-                        .votes));
-                return;
-            }
             witness_in_round
                 .filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
                 .each!(w => Event.callbacks.connect(w.outer));
-            version (none)
-                __write("Round=%d %d %(%s %) yes=%d no=%d decided=%d",
-                        round_to_be_decided.number,
-                        round_to_be_decided.next.events.filter!(e => e !is null).count,
-                        witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided, w.outer.order)),
-                        witness_in_round.filter!(w => w.votedYes).count,
-                        witness_in_round.filter!(w => w.votedNo)
-                        .count,
-                        witness_in_round.filter!(w => w.decided).count);
+            version(none)
+            __write("Round=%d %d %(%s %) yes=%d no=%d decided=%d",
+                    round_to_be_decided.number,
+                    round_to_be_decided.next.events.filter!(e => e !is null).count,
+                    witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided, w.outer.order)),
+                    witness_in_round.filter!(w => w.votedYes).count,
+                    witness_in_round.filter!(w => w.votedNo).count,
+                    witness_in_round.filter!(w => w.decided).count);
             witness_in_round.each!(w => w.display_decided);
             version (none)
                 __write("decided %s", witness_in_round.map!(w => w.decided));
@@ -576,11 +572,9 @@ class Round {
                 return true;
             }
             if (a.order == b.order) {
-                auto a_father = a[].filter!(e => e._father !is null)
-                    .map!(e => e._father);
-                auto b_father = b[].filter!(e => e._father !is null)
-                    .map!(e => e._father);
-                if (a_father.empty) {
+                auto a_father=a[].filter!(e => e._father !is null).map!(e => e._father);
+                auto b_father=b[].filter!(e => e._father !is null).map!(e => e._father);
+                if( a_father.empty) {
                     if (b_father.empty) {
                         return higher_order(a._mother, b._mother);
                     }
@@ -606,7 +600,7 @@ class Round {
                 // to collect the events
                 return;
             }
-            Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
+           Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
                 event_list.length = hashgraph.node_size * hashgraph.node_size;
                 uint index;
@@ -646,10 +640,10 @@ class Round {
                 famous_seen_masks[e.node_id][e.node_id] = true;
                 famous_seen_masks[e._father.node_id] |= famous_seen_masks[e.node_id];
                 const top = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
-                __write("father_id=%d node_id=%d -> father_node_id=%d order=%d:%d " ~ mask_fmt ~ " %s",
-                        e._father.id, e.node_id, e._father.node_id,
-                        e.order, e._father.order, famous_seen_masks[e._father.node_id],
-                        (top) ? format("TOP %d", famous_seen_masks[e._father.node_id].count) : ""
+                    __write("father_id=%d node_id=%d -> father_node_id=%d order=%d:%d " ~ mask_fmt ~ " %s",
+                            e._father.id, e.node_id, e._father.node_id,
+                            e.order, e._father.order, famous_seen_masks[e._father.node_id],
+                            (top) ? format("TOP %d", famous_seen_masks[e._father.node_id].count) : ""
                 );
                 if (!event_front[e._father.node_id] && isMajority(famous_seen_masks[e._father.node_id], hashgraph)) {
                     event_front[e._father.node_id] = e._father;

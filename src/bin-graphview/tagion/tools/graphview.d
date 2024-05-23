@@ -137,6 +137,28 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
     }
 
+    struct SVGBox {
+        bool raw_svg;
+        Pos pos;
+        int width;
+        int height;
+        string fill;
+        string stroke;
+        int stroke_width;
+
+        // for html
+        string classes;
+        string data_info;
+
+        string toString() const pure @safe {
+            string options = format(`x="%s" y="%s" width="%s" height="%s" fill="%s" stroke="%s" stroke-width="%s" `, pos.x-width, pos.y-height, width*2, height*2, fill, stroke, stroke_width);
+            if (!raw_svg) {
+                options ~= format(`class="%s" data-info="%s"`, classes, data_info);
+            }
+            return format(`<rect %s />`, options);
+        }
+    }
+
     struct SVGLine {
         Pos pos1;
         Pos pos2;
@@ -202,13 +224,18 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
 
         SVGCircle node_circle;
-
+        SVGBox node_box;
         node_circle.raw_svg = raw_svg;
         node_circle.pos = pos;
         node_circle.radius = NODE_CIRCLE_SIZE;
         node_circle.stroke = "black";
         node_circle.stroke_width = 4;
 
+        node_box.raw_svg = raw_svg;
+        node_box.pos=pos;
+        node_box.width = node_box.height = NODE_CIRCLE_SIZE*5/4;
+        
+    
         // colors
         if (e.witness) {
             if (e.famous || e.decided) {
@@ -221,18 +248,16 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             }
             node_circle.radius += NODE_CIRCLE_SIZE / 4;
         }
-        else if (e.intermediate) {
-            if (e.round_received == long.min) {
-                node_circle.fill = "lightblue";
-            }
-            else {
-                node_circle.fill = pastel19.color(e.round_received);
-                node_circle.stroke = "lightblue";
-                node_circle.stroke_width = 6;
-            }
-        }
         else {
             node_circle.fill = pastel19.color(e.round_received);
+        }
+        if (e.intermediate) {
+            node_box.fill = "lightblue";
+            if (e.round_received != long.min) {
+                node_box.stroke = pastel19.color(e.round_received);
+                node_box.stroke_width = 6;
+            }
+            obuf[5].writefln("%s", node_box.toString);
         }
         if (e.top) {
             node_circle.stroke = nonPastel19.color(e.round);
