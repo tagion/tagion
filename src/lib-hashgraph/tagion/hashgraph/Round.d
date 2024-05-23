@@ -198,11 +198,11 @@ class Round {
      * Check if the round has been decided
      * Returns: true if the round has been decided
      */
-    @nogc bool decided() const pure nothrow {
+    bool decided() const pure nothrow @nogc {
         return _decided;
     }
 
-    const(Round) next() const pure nothrow {
+    const(Round) next() const pure nothrow @nogc {
         return _next;
     }
 
@@ -500,34 +500,47 @@ class Round {
                 .each!(w => w.doTheMissingNoVotes);
             //__write("Check decide round %d", round_to_be_decided.number);
             //__write("decided %s", witness_in_round.map!(w => w.decided));
+            if (round_to_be_decided.number > 113) {
+                    auto _witness_in_round = round_to_be_decided._events
+                        .filter!(e => e !is null)
+                        .map!(e => e.witness);
+                    __write("Check Round %d", round_to_be_decided.number);
+                    if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
+                        _witness_in_round.each!(w => w.display_decided);
+                    }
+            }
             if (!witness_in_round.all!(w => w.decided)) {
-                //   __write("Not all decided %d last_round=%d", round_to_be_decided.number, last_round.number);
                 round_to_be_decided = find_next_famous_round(round_to_be_decided);
                 if (round_to_be_decided) {
-                    __write("Last decided round %d find_next_famous_round.number=%d can-next-round-bedecided=%s", last_decided_round.number, round_to_be_decided
+                    version(none)
+                    __write("Last decided round %d find_next_famous_round.number=%d can next round be decided=%s", last_decided_round.number, round_to_be_decided
                             .number, can_round_be_decided(round_to_be_decided._next));
 
                     auto _witness_in_round = round_to_be_decided._events
                         .filter!(e => e !is null)
                         .map!(e => e.witness);
+                    version(none)
                     if (isMajority(_witness_in_round.filter!(w => w.decided).count, hashgraph.node_size)) {
                         _witness_in_round.each!(w => w.display_decided);
                     }
-                    check_decide_round(round_to_be_decided);
+                    if (can_round_be_decided(round_to_be_decided._next)) {
+                        check_decide_round(round_to_be_decided);
+                    }
                 }
                 log("Not decided round");
                 return;
 
             }
-            const number_of_voters=round_to_be_decided._events.filter!(e => e !is null).count;
+            const number_of_voters=round_to_be_decided._next._events.filter!(e => e !is null).count;
             
             if (!witness_in_round.all!(w => w.votes == number_of_voters)) {
+                __write("Round %d voters=%d %s", round_to_be_decided.number, number_of_voters, witness_in_round.map!(w => w.votes));
                 return;
             }
             witness_in_round
                 .filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
                 .each!(w => Event.callbacks.connect(w.outer));
-            //const witness_in_round_display=witness_in_round.array.sort!((a,b) => a.outer.order > b.outer.order);
+            version(none)
             __write("Round=%d %d %(%s %) yes=%d no=%d decided=%d",
                     round_to_be_decided.number,
                     round_to_be_decided.next.events.filter!(e => e !is null).count,
@@ -558,27 +571,51 @@ class Round {
             check_decide_round;
         }
 
-        static bool higher_order(const Event a, const Event b) pure nothrow @nogc {
+        static bool higher_order(const Event a, const Event b, string indent=null) pure nothrow {
+            if (indent is null) {
+                __write("--- --- ---");
+            }
             if (!a) {
                 return false;
             }
             if (!b) {
                 return true;
             }
+
             if (a.order > b.order) {
+                __write("%s%d > %d", indent,a.order, b.order);
                 return true;
             }
             if (a.order == b.order) {
                 // const a_next=(a._father)?a._father:a._mother;
                 // const b_next = (b._father)?b._father:b._mother;
-                if (a.round_received) {
+                //if (a.round_received) {
+                //    return false;
+                //}
+                //if (b.round_received) {
+                //    return true;
+                //}
+                __write("%sA %d -> (%d:%d)", indent,a.order, a._mother.order, (a._father)?a._father.order:-1);
+                __write("%sB %d -> (%d:%d)", indent,b.order, b._mother.order, (b._father)?b._father.order:-1);
+                auto a_father=a[].filter!(e => e._father !is null).map!(e => e._father);
+                auto b_father=b[].filter!(e => e._father !is null).map!(e => e._father);
+                __write("%sA \t%d -> (%s:%d) %(%02x%)", indent,a.order, a_father.empty, (a_father.empty)?-1:a_father.front.order, a.fingerprint[0..8]);
+                __write("%sB \t%d -> (%s:%d) %(%02x%)", indent,b.order, b_father.empty, (b_father.empty)?-1:b_father.front.order, b.fingerprint[0..8]);
+                __write("%sA> %s B> %s", indent,a_father.map!(e => e.order), b_father.map!(e => e.order));
+                //__write("%sA] %s B] %s", indent,a_father[].map!(e => e._father !is  null), b_father[].map!(e => e._father !is null));
+                if( a_father.empty) {
+                    if (b_father.empty) {
+                        return a._mother.order < b._mother.order;
+                    }
                     return false;
                 }
-                if (b.round_received) {
-                    return true;
+                if (a_father.front is b_father.front) {
+                    return higher_order(a._mother, b._mother, indent~"= ");
                 }
-                return higher_order((a._father) ? a._father : a._mother, (b._father) ? b._father : b._mother);
+                return higher_order(a_father.front, b_father.front, indent~"- ");
+                //return higher_order((a._father) ? a._father : a._mother, (b._father) ? b._father : b._mother);
             }
+                __write("%s%d < %d", indent,a.order, b.order);
             return false;
         }
 
@@ -639,10 +676,8 @@ class Round {
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
                 event_list.length = hashgraph.node_size * hashgraph.node_size;
-                //auto event_matrix = CollectionEventMatrix(hashgraph.node_size);
                 uint index;
                 foreach (famous_witness; famous_witness_in_round) {
-                    //event_matrix[famous_witness.node_id, famous_witness.node_id] = famous_witness;
                     BitMask father_mask;
                     foreach (e; famous_witness[].until!(e => !e || e.round_received)) {
                         if (e._father && !father_mask[e._father.node_id]) {
@@ -678,7 +713,6 @@ class Round {
                 famous_seen_masks[e.node_id][e.node_id] = true;
                 famous_seen_masks[e._father.node_id] |= famous_seen_masks[e.node_id];
                 const top = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
-                version (none)
                     __write("father_id=%d node_id=%d -> father_node_id=%d order=%d:%d " ~ mask_fmt ~ " %s",
                             e._father.id, e.node_id, e._father.node_id,
                             e.order, e._father.order, famous_seen_masks[e._father.node_id],
@@ -753,83 +787,6 @@ class Round {
      *   r = decided round to collect events to produce the epoch
      *   hashgraph = hashgraph which owns this round
      */
-
-        package void collect_received_round(Round r, HashGraph hashgraph) {
-            assert(0);
-            version (none) {
-                auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
-
-                pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
-                auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors)
-                    .joiner;
-
-                Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
-
-                foreach (son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
-                    if (consensus_son_tide[son_ancestor.node_id] is null) {
-                        continue;
-                    }
-                    if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
-                        consensus_son_tide[son_ancestor.node_id] = son_ancestor;
-                    }
-                }
-
-                version (EPOCH_FIX) {
-                    auto consensus_tide = consensus_son_tide
-                        .filter!(e => e !is null)
-                        .filter!(e =>
-                                !(e[].retro
-                        .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                        .empty)
-                    )
-                        .map!(e =>
-                                e[].retro
-                                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                    .array.back
-                    );
-                }
-                else {
-                    auto consensus_tide = consensus_son_tide
-                        .filter!(e => e !is null)
-                        .map!(e =>
-                                e[].retro
-                                    .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                    .array.back
-                    );
-
-                }
-
-                auto event_collection = consensus_tide
-                    .map!(e => e[].until!(e => e.round_received !is null))
-                    .joiner.array;
-
-                event_collection.each!(e => e.round_received = r);
-                if (Event.callbacks) {
-                    event_collection.each!(e => Event.callbacks.connect(e));
-                }
-
-                hashgraph.epoch(event_collection, r);
-            }
-        }
-
-        package void vote(HashGraph hashgraph, size_t vote_node_id) {
-            assert(0);
-
-            version (none) {
-                voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
-                Round current_round = voting_round_per_node[vote_node_id];
-                if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) {
-                    check_decide_round();
-                }
-
-                while (current_round._next !is null) {
-                    current_round = current_round._next;
-                    foreach (e; current_round._events.filter!(e => e !is null)) {
-                        e.calc_vote(hashgraph, vote_node_id);
-                    }
-                }
-            }
-        }
 
         /**
          * Range from this round and down

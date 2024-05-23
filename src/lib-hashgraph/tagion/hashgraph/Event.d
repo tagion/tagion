@@ -226,11 +226,12 @@ class Event {
         }
 
         void display_decided() const pure nothrow @nogc {
+            const voters=(this.outer.round.next)? this.outer._round.next.events.filter!(e => e !is null).count:0;
             const voted = _has_voted_mask.count;
             const N = this.outer._round.events.length;
             const votes_left = long(N) - long(voted);
-            __write("votes=%d N=%d votes_left=%d %s %s %s %s %s yes=%d no=%d not_yes=%d not_no=%d",
-                    voted, N, votes_left,
+            __write("votes=%d voters=%d N=%d votes_left=%d %s %s %s %s %s yes=%d no=%d not_yes=%d not_no=%d decided=%s",
+                    voted, voters, N, votes_left,
 
                     isMajority(voted, N),
                     isMajority(yes_votes, N),
@@ -239,7 +240,8 @@ class Event {
                     !isMajority(votes_left + no_votes, N),
                     yes_votes, no_votes,
                     votes_left + yes_votes,
-                    votes_left + no_votes);
+                    votes_left + no_votes,
+                    decided);
         }
 
         //bool famous;
