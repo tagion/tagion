@@ -571,10 +571,7 @@ class Round {
             check_decide_round;
         }
 
-        static bool higher_order(const Event a, const Event b, string indent=null) pure nothrow {
-            if (indent is null) {
-                __write("--- --- ---");
-            }
+        static bool higher_order(const Event a, const Event b) pure nothrow {
             if (!a) {
                 return false;
             }
@@ -583,39 +580,19 @@ class Round {
             }
 
             if (a.order > b.order) {
-                __write("%s%d > %d", indent,a.order, b.order);
                 return true;
             }
             if (a.order == b.order) {
-                // const a_next=(a._father)?a._father:a._mother;
-                // const b_next = (b._father)?b._father:b._mother;
-                //if (a.round_received) {
-                //    return false;
-                //}
-                //if (b.round_received) {
-                //    return true;
-                //}
-                __write("%sA %d -> (%d:%d)", indent,a.order, a._mother.order, (a._father)?a._father.order:-1);
-                __write("%sB %d -> (%d:%d)", indent,b.order, b._mother.order, (b._father)?b._father.order:-1);
                 auto a_father=a[].filter!(e => e._father !is null).map!(e => e._father);
                 auto b_father=b[].filter!(e => e._father !is null).map!(e => e._father);
-                __write("%sA \t%d -> (%s:%d) %(%02x%)", indent,a.order, a_father.empty, (a_father.empty)?-1:a_father.front.order, a.fingerprint[0..8]);
-                __write("%sB \t%d -> (%s:%d) %(%02x%)", indent,b.order, b_father.empty, (b_father.empty)?-1:b_father.front.order, b.fingerprint[0..8]);
-                __write("%sA> %s B> %s", indent,a_father.map!(e => e.order), b_father.map!(e => e.order));
-                //__write("%sA] %s B] %s", indent,a_father[].map!(e => e._father !is  null), b_father[].map!(e => e._father !is null));
                 if( a_father.empty) {
                     if (b_father.empty) {
-                        return a._mother.order < b._mother.order;
+                        return higher_order(a._mother, b._mother);
                     }
                     return false;
                 }
-                if (a_father.front is b_father.front) {
-                    return higher_order(a._mother, b._mother, indent~"= ");
-                }
-                return higher_order(a_father.front, b_father.front, indent~"- ");
-                //return higher_order((a._father) ? a._father : a._mother, (b._father) ? b._father : b._mother);
+                return higher_order(a_father.front, b_father.front);
             }
-                __write("%s%d < %d", indent,a.order, b.order);
             return false;
         }
 
