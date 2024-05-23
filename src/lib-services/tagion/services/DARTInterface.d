@@ -89,6 +89,10 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         set_response_doc(doc);
     }
 
+    void trt_hirpc_response(trtHiRPCRR.Response, Document doc) @safe {
+        set_response_doc(doc);
+    }
+
     try {
         thread_attachThis();
 
@@ -136,13 +140,15 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
             return;
         }
 
+        bool response;
         if (is_trt_req) {
             tid.send(trtHiRPCRR(), doc); 
+            response = receiveTimeout(cnt.worker_timeout.msecs, &trt_hirpc_response);
+
         } else {
             tid.send(dartHiRPCRR(), doc); 
+            response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
         }
-
-        bool response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
 
         if (!response) {
             set_error_msg(ServiceCode.timeout);
