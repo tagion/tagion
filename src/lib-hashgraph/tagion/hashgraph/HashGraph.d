@@ -180,9 +180,6 @@ class HashGraph {
         recovered_nodes = _nodes;
         _nodes = null;
         check(isMajority(cast(uint) epacks.length), ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
-        // consensus(epacks.length)
-        //     .check(epacks.length <= node_size, ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
-        // getNode(channel); // Make sure that node_id == 0 is owner node
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
                 check(!(epack.pubkey in _nodes), ConsensusFailCode.HASHGRAPH_DUPLICATE_WITNESS);

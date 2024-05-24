@@ -267,7 +267,6 @@ class Round {
         Round last_decided_round;
         HashGraph hashgraph;
         Round[] voting_round_per_node;
-
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
@@ -436,13 +435,6 @@ class Round {
         @nogc
         bool check_decided_round_limit() pure const nothrow {
             return cached_decided_count > total_limit;
-        }
-
-        package Event[] witness_to_be_decided() pure nothrow @nogc {
-            if (!last_decided_round._next) {
-                return null;
-            }
-            return last_decided_round._next._events;
         }
 
         static size_t number_of_witness(const Round r) pure nothrow @nogc {

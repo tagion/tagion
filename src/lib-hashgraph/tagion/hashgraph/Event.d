@@ -255,7 +255,7 @@ class Event {
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
-        this() nothrow {
+        private this() nothrow {
             auto witness_event = this.outer;
             _count++;
             witness_event._witness = this;
@@ -417,8 +417,6 @@ class Event {
     }
     do {
         new Witness;
-        //_youngest_son_ancestors = new Event2[hashgraph.node_size];
-        //_youngest_son_ancestors[node_id] = this;
     }
 
     immutable size_t node_id; /// Node number of the event
@@ -485,8 +483,6 @@ class Event {
                     ._witness_seen_mask;
             }
             else {
-                //_witness_seen_mask = (cast(Event2) _mother)._witness_seen_mask.dup;
-                //_intermediate_seen_mask = (cast(Event2) _mother)._intermediate_seen_mask.dup;
                 new_witness_seen = _witness_seen_mask;
             }
             if (!new_witness_seen[].empty) {
@@ -503,16 +499,6 @@ class Event {
             if (strongly_seen) {
                 auto witness = new Witness;
                 witness.vote(hashgraph);
-                //auto witness2=cast(Witness2)_witness;
-                auto witness_to_be_decided = hashgraph._rounds.witness_to_be_decided;
-                version (none)
-                    if (!witness_to_be_decided) {
-                        witness_to_be_decided
-                            .filter!(e => e !is null)
-                            .map!(e => cast(Witness2)(e._witness))
-                            .filter!(w => !w.decided(hashgraph))
-                            .each!(w => w.doTheMissingNoVotes);
-                    }
                 hashgraph._rounds.check_decide_round;
                 return;
             }
