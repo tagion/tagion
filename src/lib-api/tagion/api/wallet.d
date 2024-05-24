@@ -526,3 +526,33 @@ int tagion_wallet_pay_bill(const(WalletT*) wallet_instance,
     return ErrorCode.none;
 }
 
+
+/** 
+ * Make TRT request (serialized, ready to send)
+ * Params:
+ *   wallet_instance = pointer to the instance of the wallet 
+ *   doc_buf = pointer to the request document buffer
+ *   doc_buf_len = length of the request document buffer
+ * Returns: ErrorCode
+ */
+int tagion_wallet_make_trtread(const(WalletT*) wallet_instance,
+    uint8_t** doc_buf,
+    size_t* doc_buf_len) {
+    try {
+        if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
+            return ErrorCode.exception;
+        }
+        ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
+        const sender = w.readIndicesByPubkey();
+        const trtread_doc = cast(ubyte[])sender.toDoc.serialize;
+        *doc_buf = cast(uint8_t*) &trtread_doc[0];
+        *doc_buf_len = trtread_doc.length;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+
