@@ -52,7 +52,7 @@ if (isHiBONRecord!T) {
 
 immutable(ubyte[]) decode(const(char[]) str) pure {
     if (isBase64Prefix(str)) {
-        return Base64URL.decode(str[1 .. $]).idup;
+        return Base64URL.decode(str[1 .. $]);
     }
     else if (isHexPrefix(str)) {
         return misc.decode(str[hex_prefix.length .. $]);
