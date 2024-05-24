@@ -49,18 +49,6 @@ unittest {
     MyBuf mut_buf = buf.mut;
 }
 
-/++
- Genera signal
-+/
-enum Control {
-    LIVE = 1, /// Send to the ownerTid when the task has been started
-    STOP, /// Send when the child task to stop task
-    //    FAIL,   /// This if a something failed other than an exception
-    END /// Send for the child to the ownerTid when the task ends
-}
-
-private import std.range;
-
 enum FileExtension {
     json = ".json", /// JSON File format
     hibon = ".hibon", /// HiBON file format
@@ -109,11 +97,11 @@ static unittest {
     static assert(!isTypedef!int);
 }
 
-enum BASE64Indetifyer = '@';
+enum BASE64Identifier = '@';
 import std.base64;
 
 string encodeBase64(const(ubyte[]) data) pure nothrow {
-    const result = BASE64Indetifyer ~ Base64URL.encode(data);
+    const result = BASE64Identifier ~ Base64URL.encode(data);
     return result.idup;
 }
 

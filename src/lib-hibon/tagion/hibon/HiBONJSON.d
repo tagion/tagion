@@ -1,6 +1,7 @@
 module tagion.hibon.HiBONJSON;
 
 @safe:
+
 import std.conv : to;
 import std.format;
 import std.json;
@@ -422,7 +423,7 @@ HiBON toHiBON(scope const JSONValue json) {
                                 static if (E is BINARY) {
                                     import std.uni : toLower;
 
-                                    sub_result[key] = decode(value.str).idup;
+                                    sub_result[key] = decode(value.str);
                                 }
                                 else {
                                     sub_result[key] = get!T(value);
@@ -445,9 +446,6 @@ HiBON toHiBON(scope const JSONValue json) {
             with (JSONType) {
                 final switch (jvalue.type) {
                 case null_:
-
-                    
-
                         .check(0, "HiBON does not support null");
                     break;
                 case string:
@@ -489,9 +487,6 @@ HiBON toHiBON(scope const JSONValue json) {
         else if (json.type is JSONType.OBJECT) {
             return JSON!string(json);
         }
-
-        
-
         .check(0, format("JSON_TYPE must be of %s or %s not %s",
                 JSONType.OBJECT, JSONType.ARRAY, json.type));
         assert(0);

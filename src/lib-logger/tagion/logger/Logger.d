@@ -6,7 +6,6 @@ import std.format;
 import std.string;
 import std.stdio;
 
-import tagion.basic.Types : Control;
 import tagion.basic.Version : ver;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
@@ -184,9 +183,9 @@ is ready and has been started correctly
                     scope const _level = assumeWontThrow(level.to!string);
                     scope const _text = toStringz(assumeWontThrow(text));
                     stderr.fprintf("%.*s:%.*s: %s\n",
-                            cast(int) _task_name.length, _task_name.ptr,
-                            cast(int) _level.length, _level.ptr,
-                            _text);
+                        cast(int) _task_name.length, _task_name.ptr,
+                        cast(int) _level.length, _level.ptr,
+                        _text);
                 }
 
                 if (!isLoggerServiceRegistered) {
@@ -199,9 +198,9 @@ is ready and has been started correctly
                         //         .ptr);
                     }
                     printf("%.*s:%.*s: %s\n",
-                            cast(int) _task_name.length, _task_name.ptr,
-                            cast(int) _level.length, _level.ptr,
-                            _text);
+                        cast(int) _task_name.length, _task_name.ptr,
+                        cast(int) _level.length, _level.ptr,
+                        _text);
                 }
                 else {
                     try {
@@ -243,7 +242,8 @@ is ready and has been started correctly
         }
     }
 
-    void event(T)(ref Topic topic, lazy string identifier, lazy T data) const nothrow if (isHiBONRecord!T) {
+    void event(T)(ref Topic topic, lazy string identifier, lazy T data) const nothrow
+            if (isHiBONRecord!T) {
         event(topic, identifier, data.toDoc);
     }
 
@@ -309,15 +309,6 @@ logs the fmt text in INFO level
 
     void fatal(Args...)(string fmt, lazy Args args) const nothrow {
         report(LogLevel.FATAL, fmt, args);
-    }
-
-    @trusted
-    void close() const nothrow {
-        if (isLoggerServiceRegistered) {
-            import std.exception : assumeWontThrow;
-
-            assumeWontThrow(logger_tid.send(Control.STOP));
-        }
     }
 }
 
@@ -407,11 +398,13 @@ unittest {
     log.registerSubscriptionTask("log_sub_task");
     auto some_symbol = Document.init;
     log.event(topic, "", some_symbol);
-    assert(false == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Received an unsubscribed topic");
+    assert(false == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {
+        }), "Received an unsubscribed topic");
     submask.subscribe(topic.name);
     assert(topic.subscribed, "Topic wasn't subscribed, it should");
     log.event(topic, "", some_symbol);
-    assert(true == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Didn't receive subscribed topic");
+    assert(true == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {
+        }), "Didn't receive subscribed topic");
 }
 
 version (Posix) {

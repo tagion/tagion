@@ -20,6 +20,9 @@ Ciph = "Ciph"
 # Ignore this because we highlight N in notation
 otation = "otation"
 
+# Name
+Theis = "Theis"
+
 # Actual fixes
 indexes = "indices"
 indexs = "indices"

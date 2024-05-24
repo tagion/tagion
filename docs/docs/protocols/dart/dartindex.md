@@ -8,7 +8,7 @@ A DART index is simply the sha256 hash of the entire serialized Document with th
 The code which implements the function to calculate the DARTIndex is in `tagion.dart.DARTBasic`
 
 ```d reference
-https://github.com/tagion/tagion/blob/master/src/lib-dart/tagion/dart/DARTBasic.d#L35-L45
+https://github.com/tagion/tagion/blob/master/src/lib-dart/tagion/dart/DARTBasic.d#L48-L58
 ```
 
 ## DART Namerecords / hashkeys

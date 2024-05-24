@@ -33,6 +33,7 @@ int _main(string[] args) {
     bool not_flag;
     string output_filename;
     string name;
+    string member_value;
     string record_type;
     string[] types;
     string list;
@@ -47,6 +48,7 @@ int _main(string[] args) {
             "v|verbose", "Prints more debug information", &__verbose_switch,
             "o|output", "Output file name (Default stdout)", &output_filename,
             "n|name", "HiBON member name (name as text or regex as `regex`)", &name,
+            "V|value", "Value of matching HiBON member", &member_value,
             "r|recordtype", "HiBON recordtype (name as text or regex as `regex`)", &record_type,
             "t|type", "HiBON data types", &types,
             "not", "Filter out match", &not_flag,
@@ -83,8 +85,7 @@ int _main(string[] args) {
                 if (elm_range.length == 1 && no == elm_range[0].to!size_t) {
                     return true;
                 }
-                if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1]
-                        .to!size_t)) {
+                if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1].to!size_t)) {
                     return true;
                 }
             }
@@ -97,9 +98,14 @@ int _main(string[] args) {
             verbose("record type: [%s]", record_type);
             verbose("types:       %s", types);
         }
+
         HiBONregex hibon_regex;
         if (name) {
             hibon_regex.name = name;
+        }
+        if (member_value) {
+            tools.check(!name.empty, "Value flag can only be used with the member name flag");
+            hibon_regex.value = member_value;
         }
         if (record_type) {
             hibon_regex.record_type = record_type;

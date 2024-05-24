@@ -34,6 +34,15 @@ void* mymalloc(size_t size) {
     return malloc(size);
 }
 
+void mydealloc(void* ptr) {
+    import core.stdc.stdlib;
+
+    version(C_API_DEBUG) {
+    writefln("calling free");
+    }
+    free(ptr);
+}
+
 /** 
  * Create new hibon object
  * Params:
