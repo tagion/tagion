@@ -1,3 +1,24 @@
+# Changelog for epoch 1909372 .. 1924336
+
+**Transaction Verification TIP**  
+We've talked alot about how someone can prove that they've mad a payment to you on tagion.
+Since Tagion does not store each transaction forever like in a blockchain.
+It can be difficult for someone to prove that they've actually made a transaction to you.
+We've made a TIP for how this can be made possible with a few additions see https://docs.tagion.org/tips/6
+
+**HiRPC Tool**  
+We added the hirpc tool to make it easier to construct common hirpc calls from the command line.
+Currently the dartBullseye, dartRead & dartCheckRead are added to the tool.
+
+**Nodeinterface Queue**  
+Added a message queue to the nodeinterface to prevent messages from being dropped.
+Now we're fixing a bug were both peers end up in the receive state and wait for each other.
+
+**Small Fixes & Improvements**  
+- Add a "value" flag to hirep to filter members by their value
+- Add documentation for epochchain and recorderchain
+- Fixed a case were the dartinterface would give a wrong error message
+
 # Changelog for Epoch 1861240 .. 1909372
 ** Wallet API **  
 We have started work on creating an C-API for the wallet. In doing this some dependencies were moved around in order to include fewer files / functions in exported library.
