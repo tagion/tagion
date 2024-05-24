@@ -11,6 +11,7 @@ import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
 import tagion.tools.dartutil.dartindex;
 import tagion.crypto.SecureNet;
+import tagion.hibon.Document;
 
 import std.path;
 import std.stdio;
@@ -87,30 +88,31 @@ int _main(string[] args) {
 
 
         }
-        
 
+        enum TRT_METHOD = "trt.";
+        bool isTRTreq() {
+            return method_name.startsWith(TRT_METHOD);
+        }
+
+        Document result;
         switch(method_name) {
             case Queries.dartBullseye:
-                fout.rawWrite(dartBullseye().toDoc.serialize);
+                result = dartBullseye().toDoc;
                 break;
-            case Queries.dartRead:
+            case Queries.dartRead, TRT_METHOD ~ Queries.dartRead:
                 tools.check(input !is string.init, format("must supply input for %s", method_name));
                 const dart_indices = get_indices(input);
-                fout.rawWrite(dartRead(dart_indices).toDoc.serialize);
+                result = isTRTreq ? trtdartRead(dart_indices).toDoc : dartRead(dart_indices).toDoc;
                 break;
-            case Queries.dartCheckRead:
+            case Queries.dartCheckRead, TRT_METHOD ~ Queries.dartCheckRead:
                 tools.check(input !is string.init, format("must supply input for %s", method_name));
                 const dart_indices = get_indices(input);
-                fout.rawWrite(dartCheckRead(dart_indices).toDoc.serialize);
+                result = isTRTreq ? trtdartCheckRead(dart_indices).toDoc : dartCheckRead(dart_indices).toDoc;
                 break;
-            // case Queries.dartRim:
-            // case Queries.dartModify:
             default:
                 tools.check(0, format("method %s not currently implemented", method_name));
         }
-
-
-        
+        fout.rawWrite(result.serialize);
     }
     catch (Exception e) {
         error(e);
