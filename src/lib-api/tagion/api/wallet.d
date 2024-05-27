@@ -379,10 +379,9 @@ int tagion_wallet_get_account(const(WalletT*) wallet_instance,
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
 
-        const account_doc = w.account.toDoc;
-        const account_data = account_doc.data;
-        *account_buf = cast(uint8_t*) &account_data[0];
-        *account_buf_len = account_doc.full_size;
+        const _account_buf = w.account.toDoc.serialize;
+        *account_buf = cast(uint8_t*) &_account_buf[0];
+        *account_buf_len = _account_buf.length;
     } 
     catch (Exception e) {
         last_error = e;
@@ -408,10 +407,9 @@ int tagion_wallet_get_device_pin(const(WalletT*) wallet_instance,
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
 
-        const device_pin_doc = w._pin.toDoc;
-        const device_pin_data = device_pin_doc.data;
-        *device_pin_buf = cast(uint8_t*) &device_pin_data[0];
-        *device_pin_buf_len = device_pin_doc.full_size;
+        const _device_pin_buf = w._pin.toDoc.serialize;
+        *device_pin_buf = cast(uint8_t*) &_device_pin_buf[0];
+        *device_pin_buf_len = _device_pin_buf.length;
     } 
     catch (Exception e) {
         last_error = e;
@@ -437,10 +435,9 @@ int tagion_wallet_get_recover_generator(const(WalletT*) wallet_instance,
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
 
-        const recover_generator_doc = w._wallet.toDoc;
-        const recover_generator_data = recover_generator_doc.data;
-        *recover_generator_buf = cast(uint8_t*) &recover_generator_data[0];
-        *recover_generator_buf_len = recover_generator_doc.full_size;
+        const _recover_generator_buf = w._wallet.toDoc.serialize;
+        *recover_generator_buf = cast(uint8_t*) &_recover_generator_buf[0];
+        *recover_generator_buf_len = _recover_generator_buf.length;
     } 
     catch (Exception e) {
         last_error = e;
