@@ -131,9 +131,9 @@ int tagion_hibon_get_document(const(HiBONT*) instance, uint8_t** buf, size_t* bu
         }
         HiBON h = cast(HiBON) instance.hibon;
         const doc = Document(h);
-        const data = doc.data;
+        const data = doc.serialize;
         *buf = cast(uint8_t*) &data[0];
-        *buf_len = doc.full_size;
+        *buf_len = data.length;
     }
     catch(Exception e) {
         last_error = e;
