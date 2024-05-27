@@ -21,7 +21,7 @@ import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
-import tagion.services.subscription : SubscriptionPayload;
+import tagion.logger.subscription;
 import tagion.testbench.tools.Environment : bddenv = env;
 import tagion.wave.mode0 : dummy_nodenets_for_testing;
 import tagion.dart.Recorder;
@@ -29,7 +29,6 @@ import tagion.dart.DART : DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.crypto.SecureNet;
 import tagion.hashgraph.Refinement;
-import tagion.tools.subscriber : Subscription;
 
 void kill_waves(Pid[] pids, Duration grace_time) {
     const begin_time = MonoTime.currTime;
@@ -169,6 +168,7 @@ Pid[] spawn_nodes(string dbin, string[] pins, const(string[]) node_data_paths) {
         auto pin_file = File(pin_path, "r");
 
         Pid pid = spawnProcess(cmd, workDir: node_path, stdin: pin_file);
+        Thread.sleep(300.msecs);
         writefln("Started %s", pid.processID);
         pids ~= pid;
     }
@@ -274,11 +274,11 @@ class Mode1NetworkStart {
 
     @When("all nodes have produced 5 epochs")
     Document epochs() {
-        Subscription[] subs;
+        SubscriptionHandle[] subs;
         long[] epochs;
 
         foreach(opt; node_opts) {
-            auto sub =  Subscription(opt.subscription.address, [StdRefinement.epoch_created.name]);
+            auto sub =  SubscriptionHandle(opt.subscription.address, [StdRefinement.epoch_created.name]);
             sub.dial;
             subs ~= sub;
             epochs ~= -1;

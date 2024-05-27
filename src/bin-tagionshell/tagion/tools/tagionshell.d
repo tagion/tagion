@@ -31,7 +31,7 @@ import tagion.hibon.HiBONRecord : isRecord;
 import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex, Params;
 import tagion.dart.Recorder;
 import crud = tagion.dart.DARTcrud;
-import tagion.services.subscription;
+import tagion.logger.subscription;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
