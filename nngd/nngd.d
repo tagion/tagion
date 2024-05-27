@@ -17,7 +17,9 @@ import std.path;
 import std.exception;
 import std.array;
 import std.utf;
+import std.mmfile;
 
+private import mime;
 private import libnng;
 
 import std.stdio;
@@ -1364,6 +1366,19 @@ const string[] nng_http_req_headers = [
 	"Warning"
 ];    
 
+static string nng_find_mime_type(string fname, string[string] custom_map = null){
+    const default_mime = "application/octet-stream";
+    const ext = extension(baseName(fname));
+    // TODO: add libmagic support to detect mime by magic numbers
+    if(ext in custom_map){
+        return custom_map[ext];
+    }
+    if(ext in nng_mime_map){
+        return nng_mime_map[ext];
+    }
+    return default_mime;
+}
+
 
 version(withtls) {
     
@@ -1463,6 +1478,7 @@ struct WebAppConfig {
     string static_url = "";
     string template_path = "";
     string prefix_url = "";
+    string[] directory_index = ["index.html"];
     this(ref return scope WebAppConfig rhs) {}
 };
 
@@ -1764,6 +1780,147 @@ failure:
 } // router handler
 
 
+// ------------------------------------------
+void webstatichandler (nng_aio* aio) {
+
+    int rc;
+    nng_http_res *res;
+    nng_http_req *req;
+    nng_http_handler *h;
+    
+    void *reqbody;
+    size_t reqbodylen;
+
+    WebApp  *app;
+
+    char *sbuf = cast(char*)nng_alloc(4096);
+    
+    string method, uri;
+    string fname;
+    bool found;
+    string fpath, ppath, mtype;
+    string[] rpath;
+    scope MmFile mmfile;
+    ubyte[] data;
+
+    nng_http_status errstatus = nng_http_status.NNG_HTTP_STATUS_OK;
+    string errstr = "";
+        
+
+    // TODO: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.
+
+    req = cast(nng_http_req*)nng_aio_get_input(aio, 0);
+    if(req is null) {
+        errstr = "WSH: get request";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto failure;
+    }
+    
+    h = cast(nng_http_handler*)nng_aio_get_input(aio, 1);
+    if(req is null) {
+        errstr = "WSH: get handler";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto failure;
+    }
+    
+    app = cast(WebApp*)nng_http_handler_get_data(h);
+    if(app is null) {
+        errstr = "WR: get handler data";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto failure;
+    }
+    
+    method = cast(immutable)(fromStringz(nng_http_req_get_method(req)));
+    if(method != "GET"){
+        errstr = "WSH: method should be GET";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto failure;
+    }
+    
+
+    uri = cast(immutable)(fromStringz(nng_http_req_get_uri(req)));
+    
+
+    rpath = uri.strip("/").split("/");
+    
+    if(rpath.length < 1 || rpath[0] != "static"){
+        errstr = "WSH: path should start with static prefix";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_NOT_FOUND;
+        goto failure;
+    }
+    
+    
+    uri = "/"~rpath.join("/");
+    found = false;
+    foreach( u; app.staticroutes.keys.sort.reverse ){
+        if(uri.startsWith(u)){
+            found = true;
+            ppath = app.staticroutes[u];
+            break;
+        }
+    }        
+    if(!found){
+        errstr = "WSH: url path not found: "~uri;
+        errstatus = nng_http_status.NNG_HTTP_STATUS_NOT_FOUND;
+        goto failure;
+    }        
+
+    fpath = buildPath([ppath] ~ rpath[1..$]);
+    
+    
+    found = false;
+    if(fpath.exists && fpath.isFile){
+        found = true;
+    } else if(fpath.exists && fpath.isDir){
+        foreach(fn; app.config.directory_index){
+            const xpath = buildPath(fpath, fn);
+            if(xpath.exists && xpath.isFile){
+                fpath = xpath;
+                found = true;
+                break;
+            }    
+        }    
+    } 
+    
+
+
+    if(!found){
+        errstr = "WSH: path not found: "~fpath;
+        errstatus = nng_http_status.NNG_HTTP_STATUS_NOT_FOUND;
+        goto failure;
+    }
+    
+    fname = extension(baseName(fpath));
+    
+
+    mtype = nng_find_mime_type(fpath);
+    
+    rc = nng_http_res_alloc(&res);
+    enforce(rc == 0, "WSH: res alloc");
+    rc = nng_http_res_set_status(res, cast(ushort)nng_http_status.NNG_HTTP_STATUS_OK);
+    enforce(rc == 0, "WSH: set res status");
+    rc = nng_http_res_set_header(res, toStringz("Content-Type"), toStringz(mtype));
+    enforce(rc == 0, "WSH: set type header");
+
+    mmfile = new MmFile(fpath);
+    data = cast(ubyte[]) mmfile[];
+    
+    rc = nng_http_res_copy_data(res, data.ptr, data.length);
+    enforce(rc == 0, "WSH: copy file data");
+
+    nng_free(sbuf, 4096);
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+
+    return;
+
+failure:
+    writeln("ERROR: "~errstr);
+    nng_http_res_alloc_error(&res, cast(ushort)errstatus);
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, rc);
+    nng_free(sbuf, 4096);
+} // static dir handler
 
 struct WebApp {
     string name;
@@ -1772,6 +1929,7 @@ struct WebApp {
     nng_aio *aio;
     nng_url *url;
     webhandler[string] routes;
+    string[string] staticroutes;
     void* context;
     
     @disable this();
@@ -1791,11 +1949,18 @@ struct WebApp {
         context = icontext;
         auto rc = nng_url_parse(&url, iurl.toStringz());
         enforce(rc==0, "server url parse");
-        if("root_path" in iconfig )     config.root_path = iconfig["root_path"].str;
-        if("static_path" in iconfig )   config.static_path = iconfig["static_path"].str;
-        if("static_url" in iconfig )    config.static_url = iconfig["static_url"].str;
-        if("template_path" in iconfig ) config.template_path = iconfig["template_path"].str;
-        if("prefix_url" in iconfig )    config.prefix_url = iconfig["prefix_url"].str;
+        if("root_path" in iconfig )      config.root_path = iconfig["root_path"].str;
+        if("static_path" in iconfig )    config.static_path = iconfig["static_path"].str;
+        if("static_url" in iconfig )     config.static_url = iconfig["static_url"].str;
+        if("template_path" in iconfig )  config.template_path = iconfig["template_path"].str;
+        if("prefix_url" in iconfig )     config.prefix_url = iconfig["prefix_url"].str;
+        if("directory_index" in iconfig) {
+            if(iconfig["directory_index"].type == JSONType.array){
+                config.directory_index = iconfig["directory_index"].array.map!(a => a.str).array;
+            }else{
+                config.directory_index = [iconfig["directory_index"].str];
+            }
+        }
         init();
     }
     
@@ -1804,6 +1969,34 @@ struct WebApp {
             auto rc = nng_http_server_set_tls(server, tls.tls);
             enforce(rc==0, "server set tls");
         }
+    }
+
+    void staticroute( string urlpath, string path, string[string] content_map = null ) { // path is relative to root_dir
+        int rc;
+        bool isdir = false; 
+        if(urlpath.endsWith("/*")){
+            urlpath = urlpath[0..$-2];
+            isdir = true;
+        }
+        while(urlpath.endsWith("/")){
+            urlpath = urlpath[0..$-1];
+            isdir = true;
+        }
+        enforce(urlpath !in staticroutes, "staticroute path already registered");
+        nng_http_handler *hr;
+        rc = nng_http_handler_alloc(&hr, toStringz(config.prefix_url~urlpath), &webstatichandler);
+        enforce(rc==0,"staticroute handler alloc");
+        rc = nng_http_handler_set_method(hr, toStringz("GET"));
+        enforce(rc==0,"staticroute method");
+        rc = nng_http_handler_set_data(hr, &this, null);
+        enforce(rc==0,"staticroute data");
+        if(isdir) {
+            rc = nng_http_handler_set_tree(hr);
+            enforce(rc==0, "staticroute handler tree");
+        }
+        rc = nng_http_server_add_handler(server, hr);
+        enforce(rc==0, "route handler add");
+        staticroutes[urlpath] = path;
     }
 
     void route (string path, webhandler handler, string[] methods = ["GET"]) {
@@ -1836,7 +2029,7 @@ struct WebApp {
 
     void start() {
         auto rc = nng_http_server_start(server);
-        enforce(rc==0, "server start");
+        enforce(rc==0, "server start = " ~ rc.toString());
     }
 
     void stop() {
@@ -1910,12 +2103,16 @@ struct WebApp {
         rc = nng_http_server_hold(&server, url);
         enforce(rc==0, "server hold");
         
+
+        staticroute(config.prefix_url~"/"~config.static_url~"/", buildPath(config.root_path, config.static_path));
+        /*
         nng_http_handler *hs;
         rc = nng_http_handler_alloc_directory(&hs, toStringz(config.prefix_url~"/"~config.static_path), buildPath(config.root_path, config.static_url).toStringz());
         enforce(rc==0, "static handler alloc");
         rc = nng_http_server_add_handler(server, hs);
         enforce(rc==0, "static handler add");
-        
+        */
+
         rc = nng_aio_alloc(&aio, null, null);                    
         enforce(rc==0, "aio alloc");
 

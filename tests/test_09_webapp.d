@@ -90,7 +90,7 @@ main()
    
     try {
 
-        WebApp app = WebApp("myapp", "http://localhost:8081", parseJSON(`{"root_path":"`~getcwd()~`/webapp","static_path":"static"}`), null);
+        WebApp app = WebApp("myapp", "http://localhost:8087", parseJSON(`{"root_path":"`~getcwd()~`/webapp","static_path":"static"}`), null);
         
         app.route("/api/v1/test2/*",&api_handler2,["POST","GET"]);
         app.route("/api/v1/test1/*",&api_handler1,["GET"]);
@@ -105,19 +105,22 @@ main()
     log(`
         Consider tests:
 
-        curl http://localhost:8081/api/v1/test1
-        curl http://localhost:8081/api/v1/test2/a/b/c?x=y
-        curl -X POST -H "Content-Type: application/octet-stream" -d @file.bin http://localhost:8081/api/v1/test2
+        curl http://localhost:8087/static
+        curl http://localhost:8087/api/v1/test1
+        curl http://localhost:8087/api/v1/test2/a/b/c?x=y
+        curl -X POST -H "Content-Type: application/octet-stream" -d @file.bin http://localhost:8087/api/v1/test2
 
     `);
-
-    nng_sleep(500.msecs);    
     
     try {
 
+        {
+            auto res = executeShell("curl -k -s http://localhost:8087/static | grep -q 'NNG HTTP TEST'");
+            assert(res.status == 0, "on static file");
+        }
         
         {
-            auto res = executeShell("curl -k -s http://localhost:8081/api/v1/test1/a/b/c/?x=y");
+            auto res = executeShell("curl -k -s http://localhost:8087/api/v1/test1/a/b/c/?x=y");
             assert(res.status == 0);
             auto jres = parseJSON(res.output);
             assert(jres["#TAG"].str == "handler1");
@@ -126,7 +129,7 @@ main()
         }
 
         {
-            auto res = executeShell("curl -k -s http://localhost:8081/api/v1/test2/a/b/c/?x=y");
+            auto res = executeShell("curl -k -s http://localhost:8087/api/v1/test2/a/b/c/?x=y");
             assert(res.status == 0);
             auto jres = parseJSON(res.output);
             assert(jres["replyto"]["#TAG"].str == "handler2");
@@ -137,7 +140,7 @@ main()
         {
             auto drc = executeShell("dd if=/dev/urandom of=file.bin count=1 bs=1048576");
             assert(drc.status == 0);
-            auto res = executeShell("curl -k -s -X POST -H \"Content-Type: application/octet-stream\" --data-bin @file.bin http://localhost:8081/api/v1/test2");
+            auto res = executeShell("curl -k -s -X POST -H \"Content-Type: application/octet-stream\" --data-bin @file.bin http://localhost:8087/api/v1/test2");
             assert(res.status == 0);
             auto jres = parseJSON(res.output);
             assert(jres["datalength"].integer == 1048576);
