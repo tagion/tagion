@@ -44,7 +44,12 @@ int _main(string[] args) {
     int[] weights = args[2].ifThrown("100,5,100,100,100")
         .split(",").map!(n => n.to!int).array;
     uint number_of_nodes = cast(uint) weights.length;
-    
+
+    if (args.length == 4) {
+        weights.length=args[3].to!uint;
+        weights.filter!(w => w == 0)
+        .each!((ref w) => w=100);
+    }
     // uint number_of_nodes = args[2].to!uint.ifThrown(5);
 
     import tagion.utils.pretend_safe_concurrency : register, thisTid;

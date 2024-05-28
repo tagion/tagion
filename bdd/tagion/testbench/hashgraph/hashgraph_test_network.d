@@ -29,6 +29,7 @@ import tagion.utils.StdTime;
 import tagion.behaviour.BehaviourException : check, BehaviourException;
 
 import tagion.basic.Debug;
+
 class TestRefinement : StdRefinement {
 
     struct Swap {
@@ -327,7 +328,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
     static int testing;
     void addNode(Refinement refinement, immutable(ulong) N, const(string) name,
-             int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
+            int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
@@ -351,7 +352,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
         foreach (name; node_names) {
-            addNode(new R, N, name,  scrap_depth);
+            addNode(new R, N, name, scrap_depth);
         }
     }
 }
@@ -424,7 +425,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     }
                 }
 
-                auto not_the_same_uniq = not_the_same
+                version (none) auto not_the_same_uniq = not_the_same
                     .map!((e) @trusted => cast(Event) e)
                     .array
                     .sort!((a, b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
@@ -445,8 +446,14 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     foreach (i, events; epoch_events) {
                         uint number_of_empty_events;
                         printout ~= format("\n%s: ", i);
-                        foreach (epack; events) {
-                            printout ~= format("%(%02x%) ", net.calcHash(epack)[0 .. 4]);
+                        foreach (j, epack; events) {
+                            const go_hash = net.calcHash(epack);
+                            const equal = (i < epoch_events.length) && (net.calcHash(epoch_events[0][j]) == go_hash);
+                            //const go_hash=net.calcHash(epack);
+                            import tagion.utils.Term;
+
+                            const mark = (equal) ? GREEN : RED;
+                            printout ~= format("%s%(%02x%):%03d ", mark, go_hash[0 .. 4], j);
                             if (epack.event_body.payload.empty) {
                                 number_of_empty_events++;
                             }
@@ -456,12 +463,12 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     return printout;
                 }
 
-                    if (!epoch_events.all!(e => e == epoch_events[0])) {
+                if (!epoch_events.all!(e => e == epoch_events[0])) {
                     check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
                 }
 
                 auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array;
-                    if (!timestamps.all!(t => t == timestamps[0])) {
+                if (!timestamps.all!(t => t == timestamps[0])) {
                     string text;
                     foreach (i, t; timestamps) {
                         auto line = format("\n%s: %s", i, t);
