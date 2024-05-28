@@ -1,4 +1,42 @@
-# Changelog for Epoch 1689534 .. 1861240
+# Changelog for epoch 1909372 .. 1924336
+
+**Transaction Verification TIP**  
+We've talked a lot about how someone can prove that they've made a payment to you on Tagion since transaction are not stored forever compared to a traditional blockchain.
+It can be difficult for someone to prove that they've actually made a transaction to you.
+We've made a TIP for how this can be made possible with a few additions see https://docs.tagion.org/tips/6
+
+**HiRPC Tool**  
+We added the hirpc tool to make it easier to construct common hirpc calls from the command line.
+Currently the dartBullseye, dartRead & dartCheckRead are added to the tool.
+
+**Nodeinterface Queue**  
+Added a message queue to the nodeinterface to prevent messages from being dropped.
+Now we're fixing a bug were both peers end up in the receive state and wait for each other.
+
+**Small Fixes & Improvements**  
+- Add a "value" flag to hirep to filter members by their value.
+- Add documentation for epochchain and recorderchain.
+- Fixed a case were the dartinterface would give a wrong error message.
+
+# Changelog for Epoch 1861240 .. 1909372
+** Wallet API **  
+We have started work on creating an C-API for the wallet. In doing this some dependencies were moved around in order to include fewer files / functions in exported library.
+We have also successfully called WASM using flutter both on android, ios and macos all using the same wasm file. 
+
+** HiREP tests **  
+We've implemented numerous more scenarios for HiREP tests such as testing sub-hibons etc.
+
+** Hashgraph updated to use standardnames **  
+The hashgraph archives have been updated to be part of the StdNames enum, so that now all of the protocol variable definitions for HiBONRecord archives are located the same place.
+
+** Node Interface **  
+Made a small refactor, NNG callback actions now send back an NodeAction enum instead of sending different Msg!"" types for each action.
+This way handling the action can be done in one place and makes it easier to read.  
+Connections are now properly closed on second and breaking waves and errors.  
+Added test cases for when the buffer sizes that are greater than the max allowed buffer size and for node which are not reachable.  
+Added documentation for the wavefront communication rules.  
+
+# Changelog for Epoch 1689534 .. 186124
 ** HiBON/Document API **
 The HiBON and Document API are mostly done and created as classes in javascript which uses the WASM file populated with the functions from the C interface.
 We are also currently exploring using it for our mobile platforms via Flutter.

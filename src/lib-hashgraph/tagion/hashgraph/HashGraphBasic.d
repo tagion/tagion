@@ -194,8 +194,7 @@ struct EventBody {
 struct EventPackage {
     @exclude Buffer fingerprint;
     @label(StdNames.sign) Signature signature;
-    pragma(msg, "Should we use the same name as StdNames.owner?");
-    @label("$pkey") Pubkey pubkey;
+    @label(StdNames.owner) Pubkey pubkey;
     @label("$body") EventBody event_body;
 
     import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
@@ -330,8 +329,7 @@ struct Wavefront {
 ///
 struct EvaPayload {
     @label("$channel") Pubkey channel;
-    pragma(msg, "Should we use the same name here as StdNames.nonce?");
-    @label("$nonce") Buffer nonce;
+    @label(StdNames.nonce) Buffer nonce;
     mixin HiBONRecord!(
             q{
             this(const Pubkey channel, const Buffer nonce) pure {

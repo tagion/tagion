@@ -1,11 +1,11 @@
+/// Terminal utility functions and definitions
 module tagion.utils.Term;
 
 import std.format;
 
 import std.meta : AliasSeq, staticSort;
 
-//import std.algorithm : sort;
-
+///
 enum {
     BLACK = Color.Black.code,
     RED = Color.Red.code,

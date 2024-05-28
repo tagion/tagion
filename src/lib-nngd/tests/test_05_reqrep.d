@@ -11,10 +11,13 @@ import std.exception;
 import nngd;
 import nngtestutil;
 
+const NSTEPS = 4;
 
 // REP
 void server_worker(string url)
 {
+    thread_attachThis();
+    rt_moduleTlsCtor();
     int k = 0, p = 0;
     const int MAXREQ = 1000;
     string line;
@@ -28,10 +31,10 @@ void server_worker(string url)
     rc = s.listen(url);
     enforce(rc == 0);
     log(nngtest_socket_properties(s,"REP"));
-    while( p < 4 ){
+    while( p < NSTEPS ){
         auto ss = s.receive!string();
         if(s.errno != 0){
-            log("REP: RECV ERROR: " ~ toString(s.errno));
+            error("REP: RECV ERROR: " ~ toString(s.errno));
             continue;
         }
         line = ss;
@@ -48,7 +51,7 @@ void server_worker(string url)
         }
         rc = s.send!string(line);
         if(rc != 0){
-            log("REP: SEND ERROR: " ~ toString(rc));
+            error("REP: SEND ERROR: " ~ toString(rc));
         }else{
             log("REP: SENT: " ~ line);
         }
@@ -60,20 +63,23 @@ void server_worker(string url)
 // REQ
 void client_worker(string url, string tag)
 {
+    thread_attachThis();
+    rt_moduleTlsCtor();
     int rc;
     string line;
     int k = 0;
+    bool _ok = false;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(1000);
     while(1){
         log("REQ("~tag~"): to dial...");
         rc = s.dial(url);
         if(rc == 0) break;
-        log("REQ("~tag~"): Dial error: ",toString(rc));
         if(rc == nng_errno.NNG_ECONNREFUSED){
             nng_sleep(msecs(100));
             continue;
         }
+        error("REQ("~tag~"): Dial error: ",toString(rc));
         enforce(rc == 0);
     }
     log(nngtest_socket_properties(s,"REQ("~tag~")"));
@@ -87,19 +93,24 @@ void client_worker(string url, string tag)
         if(s.errno == 0){
             log(format("REQ("~tag~") RECV [%03d]: %s", str.length, str));
         }else{
-            log("REQ("~tag~"): Error string: " ~ toString(s.errno));
+            error("REQ("~tag~"): Error string: " ~ toString(s.errno));
         }    
-        if(str == "END")
+        if(str == "END"){
+            _ok = true;
             break;
+        }            
     }
+    if(!_ok){
+        error("Test stopped without normal end.");
+    }        
     log("REQ("~tag~"): bye!");
 }
 
 
 int main()
 {
-    writeln("Hello NNGD!");
-    writeln("Simple req-rep test in sync mode");
+    log("Hello NNGD!");
+    log("Simple req-rep test in sync mode");
 
     string uri = "tcp://127.0.0.1:31200";
     immutable string[] tags = ["TAG0", "TAG1", "TAG2", "TAG3"];
@@ -111,6 +122,7 @@ int main()
     auto tid05 = spawn(&client_worker, uri, tags[3]);
     thread_joinAll();
 
-    return 0;
+    return populate_state(5, "req-rep test in sync mode");
 }
+
 

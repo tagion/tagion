@@ -1,3 +1,4 @@
+/// Bitmasks with simple interface
 module tagion.utils.BitMask;
 
 enum WORD_SIZE = size_t(size_t.sizeof * 8);

@@ -1,5 +1,3 @@
-module tagion.hibon.HiBONtoText;
-@safe:
 /**
  HiBON Base64 with  ':' added in the front of the string as an indetifyer
  is base64 base on the flowing ASCII characters
@@ -12,18 +10,19 @@ module tagion.hibon.HiBONtoText;
 
 
 */
+module tagion.hibon.HiBONtoText;
+@safe:
 
 import std.format;
 import tagion.hibon.HiBONException;
 import misc = tagion.utils.Miscellaneous;
 import std.base64;
 import std.typecons : TypedefType;
-public import tagion.basic.Types;
 import tagion.basic.Types : encodeBase64;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
-//alias toHex = misc.toHexString;
+public import tagion.basic.Types;
 
 enum {
     hex_prefix = "0x",
@@ -48,12 +47,12 @@ if (isHiBONRecord!T) {
 }
 
 @nogc bool isBase64Prefix(const(char[]) str) pure nothrow {
-    return (str.length > 0) && (str[0] is BASE64Indetifyer);
+    return (str.length > 0) && (str[0] is BASE64Identifier);
 }
 
 immutable(ubyte[]) decode(const(char[]) str) pure {
     if (isBase64Prefix(str)) {
-        return Base64URL.decode(str[1 .. $]).idup;
+        return Base64URL.decode(str[1 .. $]);
     }
     else if (isHexPrefix(str)) {
         return misc.decode(str[hex_prefix.length .. $]);

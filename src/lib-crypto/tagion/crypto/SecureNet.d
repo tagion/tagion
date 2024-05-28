@@ -1,3 +1,4 @@
+/// Secure object for doing cryptographic operations
 module tagion.crypto.SecureNet;
 
 import std.range;

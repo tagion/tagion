@@ -19,8 +19,20 @@ export class Wallet {
 
     const memory = new Uint8Array(this.instance.exports.memory.buffer);
     memory.set(encoded, ptr);
-    return { encoded: encoded, ptr: ptr, len: encoded.byteLength };
+    const result = { encoded: encoded, ptr: ptr, len: encoded.byteLength };
+    console.log(result);
+    return result;
   }
+
+  allocateUintArray(uintArray) {
+    // Log before malloc call
+    console.log("before malloc");
+    const ptr = this.instance.exports.mymalloc(uintArray.byteLength);
+    const memory = new Uint8Array(this.instance.exports.memory.buffer);
+    memory.set(uintArray, ptr);
+    return { ptr: ptr, len: uintArray.byteLength };
+  }
+
 
   createWallet(passphrase, pincode) {
     const _passphrase = this._allocateStr(passphrase);
@@ -42,6 +54,38 @@ export class Wallet {
     const accountLen = new Uint32Array(this.instance.exports.memory.buffer, accountLenPtr, 1)[0];
 
     console.log(accountPtr, accountLen);
+    return { ptr: accountPtr, len: accountLen };
+  }
+  getDevice() {
+    const devicePinPtrPtr = this.instance.exports.mymalloc(4);
+    const devicePinLenPtr = this.instance.exports.mymalloc(4);
+
+    const result = this.instance.exports.tagion_wallet_get_device_pin(this.ptr, devicePinPtrPtr, devicePinLenPtr);
+    console.log("tagoin_wallet_get_devicePin returned ", result);
+
+    const devicePinPtr = new Uint32Array(this.instance.exports.memory.buffer, devicePinPtrPtr, 1)[0];
+    const devicePinLen = new Uint32Array(this.instance.exports.memory.buffer, devicePinLenPtr, 1)[0];
+
+    console.log(devicePinPtr, devicePinLen);
+    return { ptr: devicePinPtr, len: devicePinLen };
+  }
+  getRecoverGenerator() {
+    const recoverGeneratorPtrPtr = this.instance.exports.mymalloc(4);
+    const recoverGeneratorLenPtr = this.instance.exports.mymalloc(4);
+
+    const result = this.instance.exports.tagion_wallet_get_recover_generator(this.ptr, recoverGeneratorPtrPtr, recoverGeneratorLenPtr);
+    console.log("tagoin_wallet_get_recoverGenerator returned ", result);
+
+    const recoverGeneratorPtr = new Uint32Array(this.instance.exports.memory.buffer, recoverGeneratorPtrPtr, 1)[0];
+    const recoverGeneratorLen = new Uint32Array(this.instance.exports.memory.buffer, recoverGeneratorLenPtr, 1)[0];
+
+    console.log(recoverGeneratorPtr, recoverGeneratorLen);
+    return { ptr: recoverGeneratorPtr, len: recoverGeneratorLen };
+  }
+
+  readWallet(devicePinPtr, devicePinLen, recoverGeneratorPtr, recoverGeneratorLen, accountPtr, accountLen) {
+    const result = this.instance.exports.tagion_wallet_read_wallet(this.ptr, devicePinPtr, devicePinLen, recoverGeneratorPtr, recoverGeneratorLen, accountPtr, accountLen);
+    console.log("tagion_wallet_read_wallet returned ", result);
   }
   
   getPubkey() {
@@ -76,8 +120,6 @@ export class Wallet {
     console.log(decodedString);
     return decodedString;
   }
-
-
 
 
 }

@@ -11,6 +11,7 @@ int main(string[] args) {
     import dartutil = tagion.tools.dartutil.dartutil;
     import graphview = tagion.tools.graphview;
     import hibonutil = tagion.tools.hibonutil;
+    import hirpc = tagion.tools.hirpc;
     import hirep = tagion.tools.hirep.hirep;
     import neuewelle = tagion.tools.neuewelle;
     import signs = tagion.tools.signs;
@@ -30,6 +31,7 @@ int main(string[] args) {
             neuewelle,
             dartutil,
             hibonutil,
+            hirpc,
             blockutil,
             tprofview,
             graphview,

@@ -107,6 +107,15 @@ $(DBIN)/hibonutil: DFILES::=$(DSRC)/bin-hibonutil/tagion/tools/hibonutil.d
 $(call DO_BIN,hibonutil)
 
 #
+# HiRPC utility
+#
+$(DBIN)/hirpc: secp256k1
+$(DBIN)/hirpc: LDFLAGS+=$(LD_SECP256K1)
+$(DBIN)/hirpc: DINC+=$(SRC_DINC)
+$(DBIN)/hirpc: DFILES::=$(DSRC)/bin-hirpc/tagion/tools/hirpc.d
+$(call DO_BIN,hirpc)
+
+#
 # DART utility
 #
 $(DBIN)/dartutil: secp256k1

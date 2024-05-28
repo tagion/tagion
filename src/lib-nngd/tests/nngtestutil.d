@@ -1,7 +1,8 @@
 import std.stdio;
 import std.format;
+import std.array;
 import std.datetime.systime;
-
+import std.process: environment;
 import nngd;
 
 
@@ -59,7 +60,41 @@ static double timestamp()
 }
 
 static void log(A...)(string fmt, A a){
+    auto _debug = environment.get("NNG_DEBUG");
+    if(_debug is null || _debug != "TRUE") return;
     writefln("%.6f "~fmt,timestamp,a);
     stdout.flush();
 }
 
+shared string[] _errors;
+
+static void error(A...)(string fmt, A a){
+    _errors ~= format(fmt, a);
+    auto _debug = environment.get("NNG_DEBUG");
+    if(_debug is null || _debug != "TRUE") return;
+    writefln("%.6f "~fmt,timestamp,a);
+    stdout.flush();
+}
+
+static int populate_state( int testno, string tag ){
+    auto _res = format("\n#TEST%02d - %s - ",testno,tag);
+    auto _err = 0;
+    if(_errors.empty()){
+        _res ~= "PASSED\n";
+    }else{
+        _res ~= "ERROR\n" ~ _errors.join("\n");
+        _err = 1;
+    }
+    writefln(_res);
+    writefln("\n");
+    return _err;
+}
+
+static string dump_exception_recursive(Throwable ex, string tag = "") {
+    string[] res; 
+    res ~= format("\r\nException caught %s : %s\r\n", Clock.currTime().toSimpleString(), tag);
+    foreach (t; ex) {
+        res ~= format("%s [%d]: %s \r\n%s\r\n", t.file, t.line, t.message(), t.info);
+    }
+    return join(res, "\r\n");
+}    

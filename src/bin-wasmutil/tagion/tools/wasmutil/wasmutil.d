@@ -1,3 +1,4 @@
+/// Utility for using wasm
 module tagion.tools.wasmutil.wasmutil;
 
 import std.exception : assumeUnique;

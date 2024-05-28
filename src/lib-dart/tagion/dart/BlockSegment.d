@@ -1,3 +1,4 @@
+/// Segments stored in BlockFile
 module tagion.dart.BlockSegment;
 
 import std.stdio : File;

@@ -1,6 +1,4 @@
-/** 
-* Exception used in the wallet
-*/
+/// Exception used in the wallet
 module tagion.wallet.WalletException;
 
 import tagion.basic.tagionexceptions;
