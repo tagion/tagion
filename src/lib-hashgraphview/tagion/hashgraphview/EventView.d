@@ -5,6 +5,8 @@ import std.exception;
 
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBONRecord;
+import tagion.basic.Types : Buffer;
+import tagion.hashgraph.HashGraphBasic : isMajority;
 
 @recordType("node_amount")
 struct NodeAmount {
@@ -29,9 +31,19 @@ struct EventView {
     @label("$r") long round;
     @label("$rec") long round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
+    @label("$i") @optional @(filter.Initialized) bool intermediate;
+    //    @label("$I") @reserve @optional @(filter.Initialized) uint[] intermediate_event_ids; 
     @label("$famous") @optional @(filter.Initialized) bool famous;
-    @label("$received") uint[] round_received_mask;
     @label("$error") @optional bool error;
+    @label("$seen") @optional Buffer seen;
+    @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
+    @label("$intermediate") @optional Buffer intermediate_seen;
+    @label("$yes") @optional uint yes_votes; /// Famous yes votes    
+    @label("$no") @optional uint no_votes; /// Famous no votes    
+    @label("$voted") @optional Buffer voted; /// Witness which has voted    
+    @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
+    @optional @(filter.Initialized) bool top;
+    //  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -57,13 +69,68 @@ struct EventView {
             if (witness) {
                 famous = event.isFamous;
             }
-
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
-            if (!event.round_received_mask[].empty) {
-                event.round_received_mask[].each!((n) => round_received_mask~=cast(uint)(n));
-            }
             round_received=(event.round_received)?event.round_received.number:long.min;
+            const event2=event;
+            if (event.top) {
+                top=true;
+            }
+            if (event2 !is null) {
+                intermediate=event2._intermediate_event;
+                seen=event2._witness_seen_mask.bytes;   
+                intermediate_seen=event2._intermediate_seen_mask.bytes;
+                if (event2.isWitness) {
+                    auto witness=event._witness;
+                    strongly_seen=witness.previous_strongly_seen_mask.bytes;
+                    yes_votes = witness.yes_votes;
+                    no_votes = witness.no_votes;
+                    famous = isMajority(yes_votes, event2.round.events.length); 
+                    voted = witness.has_voted_mask.bytes; 
+                    decided = witness.decided;
+                }
+            }
+            
         }
     });
+}
+
+import tagion.hashgraph.HashGraph;
+import tagion.crypto.Types : Pubkey;
+
+@safe
+void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node_labels = null) {
+    import std.algorithm : sort, filter, each;
+    import std.stdio;
+    import tagion.hashgraphview.EventView;
+    import tagion.hibon.HiBONFile : fwrite;
+
+    File graphfile = File(filename, "w");
+
+    size_t[Pubkey] node_id_relocation;
+    if (node_labels.length) {
+        // assert(node_labels.length is _nodes.length);
+        auto names = node_labels.keys;
+        names.sort;
+        foreach (i, name; names) {
+            node_id_relocation[node_labels[name]] = i;
+        }
+
+    }
+
+    EventView[size_t] events;
+    /* auto events = new HiBON; */
+    (() @trusted {
+        foreach (n; hashgraph.nodes) {
+            const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
+            n[]
+                .filter!((e) => !e.isGrounded)
+                .each!((e) => events[e.id] = EventView(e, node_id));
+        }
+    })();
+
+    graphfile.fwrite(NodeAmount(hashgraph.node_size));
+    foreach (e; events) {
+        graphfile.fwrite(e);
+    }
 }

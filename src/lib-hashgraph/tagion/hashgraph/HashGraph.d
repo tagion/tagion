@@ -59,12 +59,12 @@ class HashGraph {
     Statistic!uint live_witness_statistic;
     Statistic!long epoch_delay_statistic;
     BitMask _excluded_nodes_mask;
-    private {
-        Node[Pubkey] _nodes; // List of participating _nodes T
-        uint event_id;
-        sdt_t last_epoch_time;
-        Flag!"joining" _joining;
-    }
+    //private {
+    Node[Pubkey] _nodes; // List of participating _nodes T
+    uint event_id;
+    sdt_t last_epoch_time;
+    Flag!"joining" _joining;
+    //}
     Refinement refinement;
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
@@ -122,7 +122,6 @@ class HashGraph {
         this.refinement = refinement;
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
-
         this._joining = joining;
         this.name = name;
         _rounds = Round.Rounder(this);
@@ -143,7 +142,7 @@ class HashGraph {
             void init_event(immutable(EventPackage*) epack) {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
-                event.witness_event(node_size);
+                event.witness_event(this);
                 version (EPOCH_LOG) {
                     log("init_event time %s", event.event_body.time);
                 }
@@ -181,9 +180,6 @@ class HashGraph {
         recovered_nodes = _nodes;
         _nodes = null;
         check(isMajority(cast(uint) epacks.length), ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
-        // consensus(epacks.length)
-        //     .check(epacks.length <= node_size, ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
-        // getNode(channel); // Make sure that node_id == 0 is owner node
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
                 check(!(epack.pubkey in _nodes), ConsensusFailCode.HASHGRAPH_DUPLICATE_WITNESS);
@@ -201,7 +197,7 @@ class HashGraph {
         return _rounds.last_decided_round !is null;
     }
 
-    final Pubkey channel() const pure nothrow {
+    Pubkey channel() const pure nothrow {
         return hirpc.net.pubkey;
     }
 
@@ -214,7 +210,7 @@ class HashGraph {
             return false;
         }
         const node = _nodes.get(selected_channel, null);
-        version(SEND_ALWAYS) {
+        version (SEND_ALWAYS) {
             if (node) {
                 return node.state is ExchangeState.NONE;
             }
@@ -290,7 +286,6 @@ class HashGraph {
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
         immutable eva_epack = eva_pack(time, nonce);
         auto eva_event = new Event(eva_epack, this);
-
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
         // set_strongly_seen_mask(eva_event);
@@ -351,7 +346,7 @@ class HashGraph {
     }
 
     class Register {
-        private EventPackageCache event_package_cache;
+        EventPackageCache event_package_cache;
 
         this(const Wavefront received_wave) pure nothrow {
             uint count_events;
@@ -367,7 +362,8 @@ class HashGraph {
             }
         }
 
-        final Event lookup(const(Buffer) fingerprint) {
+        //final 
+        Event lookup(const(Buffer) fingerprint) {
             if (fingerprint in _event_cache) {
                 return _event_cache[fingerprint];
             }
@@ -388,7 +384,7 @@ class HashGraph {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        final Event register(const(Buffer) fingerprint) {
+        Event register(const(Buffer) fingerprint) {
             Event event;
 
             if (!fingerprint) {
@@ -629,7 +625,7 @@ class HashGraph {
                         .epacks
                         .map!((e) => cast(immutable(EventPackage)*) e)
                         .array
-                        .sort!((a,b) => a.fingerprint < b.fingerprint);
+                        .sort!((a, b) => a.fingerprint < b.fingerprint);
                     auto _own_epacks = _nodes.byValue
                         .map!((n) => n[])
                         .joiner
@@ -641,7 +637,7 @@ class HashGraph {
 
                     foreach (epack; changes) {
                         const epack_node = getNode(epack.pubkey);
-                        auto first_event = new Event(epack, this);
+                            auto first_event = new Event(epack, this);
                         if (epack_node.event is null) {
                             check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                         }
@@ -792,7 +788,7 @@ class HashGraph {
             }
         }
 
-        private Event _event; /// This is the last event in this Node
+        protected Event _event; /// This is the last event in this Node
 
         @nogc
         const(Event) event() const pure nothrow {
@@ -913,51 +909,4 @@ class HashGraph {
             .each!((n) { used_nodes[n] = true; });
         return (~used_nodes)[].front;
     }
-
-    //bool disable_scrapping;
-
-    enum max_package_size = 0x1000;
-    enum round_clean_limit = 10;
-
-    /++
-     Dumps all events in the Hashgraph to a file
-     +/
-    void fwrite(string filename, Pubkey[string] node_labels = null) {
-        import tagion.hashgraphview.EventView;
-        import tagion.hibon.HiBONFile : fwrite;
-
-        File graphfile = File(filename, "w");
-
-        size_t[Pubkey] node_id_relocation;
-        if (node_labels.length) {
-            // assert(node_labels.length is _nodes.length);
-            auto names = node_labels.keys;
-            names.sort;
-            foreach (i, name; names) {
-                node_id_relocation[node_labels[name]] = i;
-            }
-
-        }
-
-        EventView[size_t] events;
-        /* auto events = new HiBON; */
-        (() @trusted {
-            foreach (n; _nodes) {
-                const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
-                n[]
-                    .filter!((e) => !e.isGrounded)
-                    .each!((e) => events[e.id] = EventView(e, node_id));
-            }
-        })();
-
-        graphfile.fwrite(NodeAmount(node_size));
-        foreach(e; events) {
-            graphfile.fwrite(e);
-        }
-        /* auto h = new HiBON; */
-        /* h[Params.size] = node_size; */
-        /* h[Params.events] = events; */
-        /* graphfile.fwrite(h); */
-    }
-
 }

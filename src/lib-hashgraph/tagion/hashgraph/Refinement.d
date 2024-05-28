@@ -81,8 +81,8 @@ class StdRefinement : Refinement {
 
     void finishedEpoch(
             const(Event[]) events,
-            const sdt_t epoch_time,
-            const Round decided_round) const {
+    const sdt_t epoch_time,
+    const Round decided_round) const {
         auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
 
         log.event(epoch_created, "epoch_successful", event_payload);
@@ -109,8 +109,7 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    version (NEW_ORDERING) 
-    static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
+    version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
         import std.bigint;
         import std.numeric : gcd;
         import std.range : back, retro, tee;
@@ -143,21 +142,23 @@ class StdRefinement : Refinement {
                         time + other.time);
             }
         }
+
         PseudoTime calc_pseudo_time(Event event) pure const {
             auto receivers = famous_witnesses
                 .map!(e => e[].until!(e => !e.sees(event))
-                        .array.back);
+                .array.back);
 
             return receivers.map!(e => PseudoTime(e.pseudo_time_counter,
                     (e[].retro.filter!(e => e._witness)
-                    .front._mother.pseudo_time_counter + 1),
-                    e.order,
-                    e.event_body.time,
-                    e.round.number,
-                    decided_round.famous_mask.count))
+                .front._mother.pseudo_time_counter + 1),
+            e.order,
+            e.event_body.time,
+            e.round.number,
+            decided_round.famous_mask.count))
                 .array
                 .reduce!((a, b) => a + b);
         }
+
         PseudoTime at = calc_pseudo_time(a);
         PseudoTime bt = calc_pseudo_time(b);
 
@@ -172,7 +173,7 @@ class StdRefinement : Refinement {
         }
         return at.num * bt.denom < at.denom * bt.num;
     }
-    
+
     version (OLD_ORDERING) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
     @safe static bool order_less(const Event a, const Event b, const(int) order_count) pure {
         bool rare_less(Buffer a_print, Buffer b_print) {
@@ -181,9 +182,9 @@ class StdRefinement : Refinement {
             return a_print < b_print;
         }
 
-        if (order_count < 0) {
-            return rare_less(a.fingerprint, b.fingerprint);
-        }
+        //        if (order_count < 0) {
+        return rare_less(a.fingerprint, b.fingerprint);
+        //        }
         if (a.order is b.order) {
             if (a.father && b.father) {
                 return order_less(a.father, b.father, order_count - 1);
@@ -207,46 +208,45 @@ class StdRefinement : Refinement {
     void epoch(Event[] event_collection, const(Round) decided_round) {
         import std.range : tee;
 
-
         sdt_t[] times;
         auto events = event_collection
             .tee!((e) => times ~= e.event_body.time)
             .filter!((e) => !e.event_body.payload.empty)
             .array;
 
-
-        version(OLD_ORDERING) {
-            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        version (OLD_ORDERING) {
+            auto sorted_events = events.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
         }
-        version(NEW_ORDERING) {
+        version (NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
                 .filter!(e => decided_round.famous_mask[e.node_id])
                 .array;
-            auto sorted_events = events.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+            auto sorted_events = events.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round)).array;
         }
         times.sort;
-        
-        version(OLD_ORDERING) {
+
+        version (OLD_ORDERING) {
             const mid = times.length / 2 + (times.length % 1);
             const epoch_time = times[mid];
         }
-        version(NEW_ORDERING) {
+        version (NEW_ORDERING) {
             const epoch_time = times[times.length / 2];
         }
-        version(BDD) {
+        version (BDD) {
             // raw event_collection subscription
-            version(OLD_ORDERING) {
-                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+            version (OLD_ORDERING) {
+                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
             }
-            version(NEW_ORDERING) {
+            version (NEW_ORDERING) {
                 const famous_witnesses = decided_round
                     ._events
                     .filter!(e => e !is null)
                     .filter!(e => decided_round.famous_mask[e.node_id])
                     .array;
-                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
+                    .array;
             }
             auto event_payload = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
             log.event(raw_epoch_events, "raw_epoch", event_payload);
