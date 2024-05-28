@@ -27,10 +27,6 @@ struct HiBONT {
 
 void* mymalloc(size_t size) {
     import core.stdc.stdlib;
-
-    version(C_API_DEBUG) {
-    writefln("calling malloc");
-    }
     return malloc(size);
 }
 
