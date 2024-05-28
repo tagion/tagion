@@ -448,7 +448,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                         printout ~= format("\n%s: ", i);
                         foreach (j, epack; events) {
                             const go_hash = net.calcHash(epack);
-                            const equal = (i < epoch_events.length) && (net.calcHash(epoch_events[0][j]) == go_hash);
+                            const equal = (j < epoch_events[0].length) && (net.calcHash(epoch_events[0][j]) == go_hash);
                             //const go_hash=net.calcHash(epack);
                             import tagion.utils.Term;
 

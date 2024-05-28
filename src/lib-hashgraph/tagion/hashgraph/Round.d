@@ -503,12 +503,13 @@ class Round {
             return null;
         }
 
+        version(none)
         void check_decide_round() {
             check_decide_round(last_decided_round._next);
         }
 
-        private void check_decide_round(Round round_to_be_decided) {
-            //auto round_to_be_decided = last_decided_round._next;
+        void check_decide_round() {
+            auto round_to_be_decided = last_decided_round._next;
             if (!round_to_be_decided) {
                 return;
             }
@@ -540,7 +541,7 @@ class Round {
                 round_to_be_decided.count_feature_famous_rounds);
                 
         }
-            if (!witness_in_round.all!(w => w.decided) && round_to_be_decided.count_feature_famous_rounds < 3) {
+            if (!witness_in_round.all!(w => w.decided) && round_to_be_decided.count_feature_famous_rounds < 6) {
                 
                 //version (none) {
 //                    round_to_be_decided = find_next_famous_round(round_to_be_decided);
@@ -600,6 +601,9 @@ class Round {
                         return higher_order(a._mother, b._mother);
                     }
                     return false;
+                }
+                if (b_father.empty) {
+                    return true;
                 }
                 return higher_order(a_father.front, b_father.front);
             }
