@@ -30,15 +30,29 @@
 			wasi.instance = instance;
 
 			//const rt = instance.exports.rt_init();
-			console.log("RT STATUS ", rt);
+			//instance.exports._start();
+			instance.exports.gc_collect();
+			//instance.exports.gc_disable();
+			//console.log("RT STATUS ", rt);
 
 			let w = new Wallet(instance);
+			console.log("EXPORTS");
 			console.log(instance.exports);
 
 			w.createWallet("some passphrase", "1234");
 			const pkey = w.getPubkey();
 
 			const pkey_base64 = w.encodeBase64URL(pkey.ptr, pkey.len);
+			let h = new Wallet(instance);
+
+			const account = w.getAccount();
+			const device = w.getDevice();
+			const recover = w.getRecoverGenerator();
+
+			h.readWallet(device.ptr, device.len, recover.ptr, recover.len, account.ptr, account.len);
+
+
+
 
 			//			let h = new HiBON(instance);
 			//			h.addString("wowo", "haha");
