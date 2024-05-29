@@ -556,33 +556,6 @@ class Event {
         }
     }
 
-    version (none) void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
-        assert(hashgraph.graphtype == 0);
-        Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
-        Event voting_event = voting_round._events[vote_node_id];
-
-        if (!higher(round.number, voting_round.number)) {
-            return;
-        }
-        if (voting_round.number + 1 == round.number) {
-            _witness._vote_on_earliest_witnesses[vote_node_id] = _witness._prev_seen_witnesses[vote_node_id];
-            return;
-        }
-        if (voting_event is null) {
-            hashgraph._rounds.vote(hashgraph, vote_node_id);
-            return;
-        }
-        auto votes = _witness._prev_strongly_seen_witnesses[].map!(
-                i => round.previous.events[i]._witness._vote_on_earliest_witnesses[vote_node_id]);
-        const yes_votes = votes.count;
-        const no_votes = votes.walkLength - yes_votes;
-        _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
-        if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
-            voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
-            hashgraph._rounds.vote(hashgraph, vote_node_id);
-        }
-    }
-
     /**
      * Disconnect this event from hashgraph
      * Used to remove events which are no longer needed 
@@ -748,9 +721,6 @@ class Event {
             return _witness !is null;
         }
 
-        version (none) bool isFamous() {
-            return isWitness && round.famous_mask[node_id];
-        }
         /**
          * Get the altitude of the event
          * Returns: altitude
