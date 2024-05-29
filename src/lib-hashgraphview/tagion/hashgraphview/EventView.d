@@ -72,24 +72,21 @@ struct EventView {
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:long.min;
-            const event2=event;
             if (event.top) {
                 top=true;
             }
-            if (event2 !is null) {
-                intermediate=event2._intermediate_event;
-                seen=event2._witness_seen_mask.bytes;   
-                intermediate_seen=event2._intermediate_seen_mask.bytes;
-                if (event2.isWitness) {
+                intermediate=event._intermediate_event;
+                seen=event._witness_seen_mask.bytes;   
+                intermediate_seen=event._intermediate_seen_mask.bytes;
+                if (event.isWitness) {
                     auto witness=event._witness;
                     strongly_seen=witness.previous_strongly_seen_mask.bytes;
                     yes_votes = witness.yes_votes;
                     no_votes = witness.no_votes;
-                    famous = isMajority(yes_votes, event2.round.events.length); 
+                    famous = isMajority(yes_votes, event.round.events.length); 
                     voted = witness.has_voted_mask.bytes; 
                     decided = witness.decided;
                 }
-            }
             
         }
     });

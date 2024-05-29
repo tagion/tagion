@@ -144,6 +144,7 @@ class Event {
         final size_t votes() const pure nothrow @nogc {
             return _has_voted_mask.count;
         }
+
         final const(BitMask) previous_strongly_seen_mask() const pure nothrow @nogc {
             return _previous_strongly_seen_mask;
         }
@@ -197,26 +198,27 @@ class Event {
                 const voters = this.outer._round.next.voters; //_events.filter!(e => e !is null).count;
                 if (voters == voted) {
                     //const can=this.outer._round.next.has_feature_famous_round;
-                    
+
                     //if (can) {
                     //    return false;
-                    
+
                     const votes_left = long(N) - long(voted);
                     return !isMajority(votes_left + yes_votes, N);
                     //return (yes_votes > no_votes) ?
                     //    !isMajority(votes_left + yes_votes, N) : !isMajority(votes_left + no_votes, N);
-                //}
-        }
+                    //}
+                }
             }
             return false;
         }
 
         void display_decided() const pure nothrow @nogc {
-            const voters=(this.outer.round.next)? this.outer._round.next.events.filter!(e => e !is null).count:0;
+            const voters = (this.outer.round.next) ? this.outer._round.next.events.filter!(e => e !is null).count : 0;
             const voted = _has_voted_mask.count;
             const N = this.outer._round.events.length;
             const votes_left = long(N) - long(voted);
-            __write("votes=%d voters=%d N=%d votes_left=%d %s %s %s %s %s yes=%d no=%d not_yes=%d not_no=%d decided=%s",
+            __write(
+                    "votes=%d voters=%d N=%d votes_left=%d %s %s %s %s %s yes=%d no=%d not_yes=%d not_no=%d decided=%s",
                     voted, voters, N, votes_left,
 
                     isMajority(voted, N),
@@ -356,8 +358,9 @@ class Event {
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
 
-            assert(_round_received.number == _round_received.previous.number + 1, format("Round was not added by 1: current: %s previous %s", _round_received
-                    .number, _round_received.previous.number));
+            assert(_round_received.number == _round_received.previous.number + 1,
+                    format("Round was not added by 1: current: %s previous %s",
+                    _round_received.number, _round_received.previous.number));
         }
     }
 
@@ -472,7 +475,7 @@ class Event {
         hashgraph._rounds.set_round(this);
     }
 
-    Round maxRound() nothrow {
+    Round maxRound() nothrow pure @nogc {
         if (_round) {
             return _round;
         }
@@ -491,7 +494,6 @@ class Event {
     final package void disconnect(HashGraph hashgraph) nothrow @trusted
     in {
         assert(!_mother, "Event with a mother can not be disconnected");
-       // assert(hashgraph.graphtype == 0);
     }
     do {
         hashgraph.eliminate(fingerprint);
@@ -529,21 +531,22 @@ class Event {
         return _father;
     }
 
-    final void round_received(Round r) nothrow pure 
-    in(!_round_received, "Received round has been set")
-    do {
-        _round_received = r;
-    }
+    @nogc pure nothrow final {
+        void round_received(Round r)
+        in (!_round_received, "Received round has been set")
+        do {
+            _round_received = r;
+        }
 
-    bool isFamous() const pure nothrow {
-        return isWitness && round.famous_mask[node_id];
+        package Witness witness() {
+            return _witness;
+        }
     }
-
-    package Witness witness() pure nothrow {
-        return _witness;
-    }
-
     @nogc pure nothrow const final {
+        bool isFamous() {
+            return isWitness && round.famous_mask[node_id];
+        }
+
         /**
      * The received round for this event
      * Returns: received round
