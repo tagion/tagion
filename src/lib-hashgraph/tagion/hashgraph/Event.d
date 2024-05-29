@@ -291,29 +291,13 @@ class Event {
             // Counting no-votes from witness in the next round
             // which was created before this witness
             if (witness_event.round.next) {
-                pragma(msg, "fixme(cbr) all witness in the next round should vore no");
                 auto next_witness_events = witness_event.round.next.events;
                 next_witness_events
                     .filter!(vote_from_event => vote_from_event !is null)
                     .map!(vote_from_event => vote_from_event._witness)
                     .filter!(vote_from_witness => !vote_from_witness._previous_strongly_seen_mask[witness_event.node_id])
                     .each!(vote_from_witness => voteNo(vote_from_witness.outer.node_id));
-                //.count;
-                //.each!(vote_from_witness => this.voteNo);
-
-                //current_event.Event.callbacks.connect(witness_event);
             }
-        }
-
-        version(none)
-        void doTheMissingNoVotes() pure nothrow {
-            auto witness_event = this.outer;
-            witness_event._round
-                .previous
-                ._events
-                .filter!(e => (e !is null) && !_previous_strongly_seen_mask[e.node_id])
-                .map!(e => e._witness)
-                .each!(vote_for_witness => vote_for_witness.voteNo(witness_event.node_id));
         }
 
         ~this() {
