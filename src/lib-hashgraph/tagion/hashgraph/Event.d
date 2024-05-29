@@ -349,7 +349,7 @@ class Event {
     Round _round; /// The where the event has been created
 
     package {
-        BitMask _round_received_mask; /// Voting mask for the received rounds
+        //BitMask _round_received_mask; /// Voting mask for the received rounds
     }
     protected {
         Round _round_received; /// The round in which the event has been voted to be received
@@ -575,6 +575,7 @@ class Event {
      * Get the mask of the received rounds
      * Returns: received round mask 
      */
+    version(none)
         const(BitMask) round_received_mask() {
             return _round_received_mask;
         }
