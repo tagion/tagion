@@ -13,3 +13,5 @@ docs/
 *.lst
 # C deps files
 *.o.d 
+log
+file.bin
