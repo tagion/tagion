@@ -19,7 +19,7 @@ import std.array;
 import std.utf;
 import std.mmfile;
 
-private import mime;
+private import nngd.mime;
 private import libnng;
 
 import std.stdio;
