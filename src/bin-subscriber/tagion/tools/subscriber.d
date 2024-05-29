@@ -29,12 +29,6 @@ import tagion.hibon.HiBONRecord : isRecord;
 
 mixin tools.Main!_main;
 
-enum SubFormat {
-    pretty, // still json but formatted
-    json,
-    hibon,
-}
-
 int _main(string[] args) {
     try {
         return __main(args);
@@ -54,16 +48,12 @@ int __main(string[] args) {
     bool version_switch;
     string tagsRaw;
     string outputfilename;
-    SubFormat output_format;
     string contract;
 
     auto main_args = getopt(args,
         "version", "Print revision information", &version_switch,
         "v|verbose", "Enable verbose print-out", &tools.__verbose_switch,
         "o|output", "Output filename; if empty stdout is used", &outputfilename,
-        "f|format", format("Set the output format default: %s, available %s", SubFormat.init, [
-                EnumMembers!SubFormat
-            ]), &output_format,
         "address", "Specify the address to subscribe to", &address,
         "tag", "Specify tags to subscribe to", &tagsRaw,
         "contract", "Subscribe to status of a specific contract (base64url hash)", &contract,
@@ -132,20 +122,10 @@ int __main(string[] args) {
 
     void outputResult(ref Result!Document result) {
         if (result.error) {
-            fout.writeln(result.e);
+            tools.error(result.e);
         }
         else {
-            final switch (output_format) {
-            case SubFormat.pretty:
-                fout.writeln(result.get.toPretty);
-                break;
-            case SubFormat.json:
-                fout.writeln(result.get.toJSON);
-                break;
-            case SubFormat.hibon:
-                fout.rawWrite(result.get.serialize);
-                break;
-            }
+            fout.rawWrite(result.get.serialize);
         }
     }
 
