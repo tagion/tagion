@@ -17,6 +17,7 @@ import tagion.tools.Basic;
 import tagion.tools.wallet.WalletOptions;
 import tagion.tools.wallet.WalletInterface;
 import tagion.services.options;
+import tagion.services.nodeinterface;
 import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.hibon.Document;
@@ -79,7 +80,11 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     local_options.trt.enable = false;
     local_options.wave.network_mode = NetworkMode.LOCAL;
     local_options.epoch_creator.timeout = 300; //msecs
-    local_options.subscription.tags = StdRefinement.epoch_created.name;
+    local_options.subscription.tags = 
+        [
+            StdRefinement.epoch_created.name, 
+            NodeInterfaceService_.node_action_event.name,
+        ].join(",") ;
 
     enum base_port = 10_700;
 
