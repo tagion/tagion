@@ -306,6 +306,31 @@ class Event {
 
     }
 
+    bool father_witness_is_leading() const pure nothrow {
+        return _father &&
+            higher(_father._round.number, _mother._round.number) &&
+            _father._round._events[_father.node_id];
+    }
+
+    bool calc_strongly_seen(HashGraph hashgraph) const pure nothrow
+    in (_father, "Calculation of strongly seen only makes sense if we have a father")
+    do {
+        if (father_witness_is_leading) {
+            return true;
+        }
+        const majority_intermediate_seen = isMajority(_intermediate_seen_mask, hashgraph);
+        if (majority_intermediate_seen) {
+            const vote_strongly_seen = _mother._round
+                ._events
+                .filter!(e => e !is null)
+                .map!(e => e._witness)
+                .map!(w => w._intermediate_event_mask[node_id])
+                .count;
+            return isMajority(vote_strongly_seen, hashgraph.node_size);
+        }
+        return false;
+    }
+
     static EventMonitorCallbacks callbacks;
 
     // The altitude increases by one from mother to daughter
@@ -403,7 +428,6 @@ class Event {
             if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this)) {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
-            //   calc_strongly_seen(hashgraph);
             return;
         }
 
@@ -437,7 +461,7 @@ class Event {
                     .filter!((witness) => witness._intermediate_event_mask[node_id])
                     .each!((witness) => witness._intermediate_event_mask[node_id] = true);
             }
-            const strongly_seen = calc_strongly_seen2(hashgraph);
+            const strongly_seen = calc_strongly_seen(hashgraph);
             if (strongly_seen) {
                 auto witness = new Witness;
                 witness.vote(hashgraph);
