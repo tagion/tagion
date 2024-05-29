@@ -281,8 +281,7 @@ class Round {
     uint count_feature_famous_rounds() const pure nothrow {
         return cast(uint) this[]
             .retro
-            .until!(r => !isMajority(r.voters, node_size) ||
-                    !isMajority(r.decisions, node_size))
+            .until!(r => !isMajority(r.voters, node_size))
             .filter!(r => r.isFamous)
             .count;
     }
@@ -511,7 +510,7 @@ class Round {
                 if (last_witness_event) {
                     return last_witness_event._round.number > r.number; 
                 }
-                return false;
+                return (last_round.number - r.number) >= 10;
             }
             if (r) {
                 auto witness_in_round = r._events.filter!(e => e !is null);
@@ -548,7 +547,9 @@ class Round {
                         (round_to_be_decided._next) ? round_to_be_decided._next._events.filter!(e => e !is null).count
                         : 0,
                         round_to_be_decided.number,
-                        witness_in_round.map!(w => only(w.yes_votes, w.no_votes, w.decided,
+                        witness_in_round
+                            .filter!(w => !w.decided)
+                            .map!(w => only(w.yes_votes, w.no_votes, w.decided,
                             (last_witness_events[w.outer.node_id]!is null) ? last_witness_events[w.outer.node_id].round
                     .number : -1
                 )),
@@ -592,6 +593,7 @@ class Round {
             version (none)
                 __write("round %d votes yes %(%s %)", round_to_be_decided.number,
                         witness_in_round.map!(w => isMajority(w.yes_votes, hashgraph.node_size)));
+            version(none)
             const decided_with_yes_votes = witness_in_round
                 .filter!(w => w.votedYes)
                 .count;
