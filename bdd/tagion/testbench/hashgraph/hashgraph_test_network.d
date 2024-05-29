@@ -64,7 +64,11 @@ class NewTestRefinement : StdRefinement {
             check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
         }
         first_epoch = true;
-
+        __write("Round %d event_collection=%d", decided_round.number, event_collection.length);
+        if (event_collection.length == 0) {
+            __write("!!!!!!!!! Round %d empty", decided_round.number);
+            return;
+        }
         import std.range : tee;
 
         sdt_t[] times;
@@ -88,7 +92,8 @@ class NewTestRefinement : StdRefinement {
 
         version (OLD_ORDERING) {
             const mid = times.length / 2 + (times.length % 1);
-            __write("round=%d times.length=%d mid=%d", decided_round.number, times.length, mid);
+            __write("round=%d times.length=%d mid=%d event_collection=%d", decided_round.number, times.length, mid, event_collection
+                    .length);
             const epoch_time = times[mid];
         }
         version (NEW_ORDERING) {
