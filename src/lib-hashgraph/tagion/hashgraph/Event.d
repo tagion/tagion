@@ -43,8 +43,6 @@ class Event {
     alias check = Check!EventConsensusException;
     protected static uint _count;
 
-    //package Event[] _youngest_son_ancestors;
-
     package int pseudo_time_counter;
 
     package {
@@ -64,9 +62,6 @@ class Event {
     BitMask _witness_seen_mask; /// Witness seen in privious round
     BitMask _intermediate_seen_mask;
     bool _intermediate_event;
-    //current_event.Event[] _intermediate_events_seen;
-    //    BitMask[] strongly_seen_matrix;
-    //    BitMask strongly_seen_mask;
     @nogc
     static uint count() nothrow {
         return _count;
@@ -93,26 +88,7 @@ class Event {
         this.id = hashgraph.next_event_id;
         this.node_id = hashgraph.getNode(channel).node_id;
         _count++;
-        //super(epack, hashgraph, 2);
-
-        //        if (!_mother) {
-        //            strongly_seen_matrix.length=hashgraph.node_size;
-        //            strongly_seen_matrix[node_id][node_id]=true;
-        //        }
-        //onnect(hashgraph);
         _witness_seen_mask[node_id] = true;
-        version (none) {
-            if (_mother) {
-                _witness_seen_mask |= (cast(Event2) _mother)._witness_seen_mask;
-            }
-            if (_father) {
-                _witness_seen_mask |= (cast(Event2) _father)._witness_seen_mask;
-            }
-            if (_witness_seen_mask.isMajority(hashgraph)) {
-                _witness = new Witness2(hashgraph);
-            }
-        }
-        //    }
     }
 
     protected ~this() {
@@ -521,39 +497,6 @@ class Event {
             return _father._round;
         }
         return _mother._round;
-    }
-
-    BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
-        assert(0);
-        version (none) {
-            auto see_through_matrix = _youngest_son_ancestors
-                .filter!(e => e !is null && e.round is round)
-                .map!(e => e._youngest_son_ancestors
-                        .map!(e => e !is null && e.round is round));
-
-            scope strongly_seen_votes = new size_t[hashgraph.node_size];
-            see_through_matrix.each!(row => row.enumerate.each!(elm => strongly_seen_votes[elm.index] += elm.value));
-            return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
-        }
-    }
-
-    void calc_youngest_son_ancestors(const HashGraph hashgraph) {
-        assert(0);
-        version (none) {
-            if (!_father) {
-                _youngest_son_ancestors = _mother._youngest_son_ancestors;
-                return;
-            }
-
-            _youngest_son_ancestors = _mother._youngest_son_ancestors.dup();
-            _youngest_son_ancestors[node_id] = this;
-            iota(hashgraph.node_size)
-                .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
-                .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father
-                ._youngest_son_ancestors[node_id]
-                .order > _youngest_son_ancestors[node_id].order)
-                .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
-        }
     }
 
     /**
