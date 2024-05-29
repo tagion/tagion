@@ -68,7 +68,8 @@ class Round {
      * as the number of nodes in the hashgraph
      * Returns: number of nodes in the round 
      */
-    const(uint) node_size() pure const nothrow @nogc {
+    version(none)
+    const(uint) node_size() const pure nothrow @nogc {
         return cast(uint) _events.length;
     }
 
@@ -94,8 +95,7 @@ class Round {
      * All the events in the first ooccurrences of this round
      * Returns: all events in a round
      */
-    @nogc
-    const(Event[]) events() const pure nothrow {
+    const(Event[]) events() const pure nothrow @nogc {
         return _events;
     }
 
@@ -104,7 +104,7 @@ class Round {
      * Params:
      *   event = the event to be added
      */
-    package void add(Event event) pure nothrow
+    package void add(Event event) pure nothrow 
     in {
         assert(event._witness, "The event id " ~ event.id.to!string ~ " added to the round should be a witness ");
         assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
@@ -248,7 +248,7 @@ class Round {
                 .filter!(e => e !is null)
                 .filter!(e => e.witness.votedYes)
                 .count,
-                node_size);
+                _events.length);
 
     }
 
@@ -256,7 +256,7 @@ class Round {
         return isMajority(_events
                 .filter!(e => e !is null)
                 .count,
-                node_size);
+                _events.length);
     }
 
     uint decisions() const pure nothrow @nogc {
@@ -281,7 +281,7 @@ class Round {
     uint count_feature_famous_rounds() const pure nothrow {
         return cast(uint) this[]
             .retro
-            .until!(r => !isMajority(r.voters, node_size))
+            .until!(r => !isMajority(r.voters, _events.length))
             .filter!(r => r.isFamous)
             .count;
     }
@@ -358,19 +358,6 @@ class Round {
         }
 
         /**
-     * Number of the same as hashgraph
-     * Returns: number of nodes
-     */
-        uint node_size() const pure nothrow
-        in {
-            assert(last_round, "Last round must be initialized before this function is called");
-        }
-        do {
-            return cast(uint)(last_round._events.length);
-
-        }
-
-        /**
      * Sets the round for an event and creates an new round if needed
      * Params:
      *   e = event
@@ -419,7 +406,7 @@ class Round {
      * Returns: 
      */
         @nogc
-        bool decided(const Round test_round) pure const nothrow {
+        bool decided(const Round test_round) const pure nothrow {
             bool _decided(const Round r) pure nothrow {
                 if (r) {
                     if (test_round is r) {
@@ -474,33 +461,6 @@ class Round {
             return 0;
         }
 
-        version (none) bool can_round_be_decided(const Round r, const int iteration = 0) pure nothrow @nogc {
-            if (r) {
-                auto witnesses = r._events
-                    .filter!(e => e !is null)
-                    .map!(e => e._witness);
-                if (isMajority(witnesses.count, hashgraph.node_size)) {
-                    const can_be_decided =
-                        witnesses.all!(w => w.decided);
-                    if (can_be_decided && iteration <= 1) {
-                        return true;
-                    }
-                }
-                //return can_round_be_decided(r._next, iteration - 1);
-            }
-            return false;
-        }
-
-        version (none) Round find_next_famous_round(Round r) pure nothrow {
-            if (r && r._next && r._next.majority) {
-                if (can_round_be_decided(r._next)) {
-                    return r._next;
-                }
-                return find_next_famous_round(r._next);
-            }
-            return null;
-        }
-
         bool can_round_be_decided(const Round r) const pure nothrow @nogc {
             bool _decided(T)(const T item) @nogc {
                 if (item.value) {
@@ -510,20 +470,16 @@ class Round {
                 if (last_witness_event) {
                     return last_witness_event._round.number > r.number; 
                 }
-                return (last_round.number - r.number) >= 10;
+                return (last_round.number - r.number) >= hashgraph.last_witness_height_limit;
             }
             if (r) {
                 auto witness_in_round = r._events.filter!(e => e !is null);
-                if (isMajority(witness_in_round.count, r.node_size)) {
+                if (isMajority(witness_in_round.count, hashgraph.node_size)) {
                     return r._events.enumerate
                     .all!(item => _decided(item));
                 }
             }
             return false;
-        }
-
-        version (none) void check_decide_round() {
-            check_decide_round(last_decided_round._next);
         }
 
         void check_decide_round() {
@@ -534,14 +490,14 @@ class Round {
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
                 .map!(e => e.witness);
-            if (!isMajority(witness_in_round.count, node_size)) {
+            if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
                 return;
             }
             version (none)
                 witness_in_round
                     .filter!(w => !w.decided)
                     .each!(w => w.doTheMissingNoVotes);
-            if (isMajority(witness_in_round.count, node_size)) {
+            if (isMajority(witness_in_round.count, hashgraph.node_size)) {
                 __write("%s voters=%d Round=%d %(%s %) yes=%d no=%d decided=%d",
                         hashgraph.name,
                         (round_to_be_decided._next) ? round_to_be_decided._next._events.filter!(e => e !is null).count

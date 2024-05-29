@@ -331,19 +331,12 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             .all!(s => s);
     }
 
-    static int testing;
     void addNode(Refinement refinement, immutable(ulong) N, const(string) name,
             int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
-        if (testing < 4) {
-            testing++;
-            if (testing == 1) {
-                h.__debug_print = true;
-            }
-        }
         h.scrap_depth = scrap_depth;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
