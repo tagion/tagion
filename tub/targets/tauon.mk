@@ -34,7 +34,7 @@ tauon-test: DFLAGS+=-L--allow-undefined
 tauon-test: DFLAGS+=-L--lto-O2
 tauon-test: DFLAGS+=--O2
 tauon-test: DFLAGS+=-L--initial-memory=134217728
-tauon-test: DFLAGS+=-L--initial-heap=65536
+# tauon-test: DFLAGS+=-L--initial-heap=65536
 # tauon-test: DFLAGS+=-L--gc-sections
 tauon-test: DFLAGS+=--linker=$(WASMLD)
 
