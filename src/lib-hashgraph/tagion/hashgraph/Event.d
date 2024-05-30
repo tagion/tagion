@@ -61,14 +61,14 @@ class Event {
 
     BitMask _witness_seen_mask; /// Witness seen in privious round
     BitMask _intermediate_seen_mask;
+    Topic topic = Topic("hashgraph_event");
+    bool top;
     bool _intermediate_event;
     @nogc
     static uint count() nothrow {
         return _count;
     }
 
-    bool top;
-    Topic topic = Topic("hashgraph_event");
 
     /**
      * Builds an event from an eventpackage
@@ -123,70 +123,48 @@ class Event {
             return _count;
         }
 
-        //private {
-        //BitMask _vote_on_earliest_witnesses;
-        //BitMask _prev_strongly_seen_witnesses;
-        //BitMask _prev_seen_witnesses;
-        //}
-
-        // BitMask[] strongly_seen_matrix;
-        // BitMask strongly_seen_mask;
-        //current_event.Event[] _intermediate_events;
-        //private {
+        private {
         BitMask _intermediate_event_mask;
         BitMask _previous_strongly_seen_mask;
         uint _yes_votes;
         BitMask _has_voted_mask; /// Witness in the next round which has voted
-        //uint _no_votes;
-        //}
+        }
 
-        final size_t votes() const pure nothrow @nogc {
+        @nogc final const pure nothrow {
+        final size_t votes() {
             return _has_voted_mask.count;
         }
 
-        final const(BitMask) previous_strongly_seen_mask() const pure nothrow @nogc {
+        final const(BitMask) previous_strongly_seen_mask() {
             return _previous_strongly_seen_mask;
         }
 
-        final const(BitMask) intermediate_event_mask() const pure nothrow @nogc {
+        final const(BitMask) intermediate_event_mask() {
             return _intermediate_event_mask;
         }
 
-        final uint yes_votes() const pure nothrow @nogc {
+        final uint yes_votes() {
             return _yes_votes;
         }
 
-        final uint no_votes() const pure nothrow @nogc {
+        final uint no_votes() {
+
             return cast(uint)(_has_voted_mask.count) - _yes_votes;
         }
 
-        final const(BitMask) has_voted_mask() const pure nothrow @nogc {
+        final const(BitMask) has_voted_mask() {
             return _has_voted_mask;
         }
 
-        private void voteYes(const size_t node_id) pure nothrow {
-            if (!_has_voted_mask[node_id]) {
-                _yes_votes++;
-                _has_voted_mask[node_id] = true;
-            }
-        }
-
-        private void voteNo(const size_t node_id) pure nothrow {
-            if (!_has_voted_mask[node_id]) {
-                _has_voted_mask[node_id] = true;
-            }
-        }
-
-        bool votedNo() const pure nothrow @nogc {
+        bool votedNo() {
             return isMajority(no_votes, this.outer._round.events.length);
         }
 
-        bool votedYes() const pure nothrow @nogc {
+        bool votedYes() {
             return isMajority(_yes_votes, this.outer._round.events.length);
         }
 
-        alias isFamous = votedYes;
-        bool decided() const pure nothrow @nogc {
+        bool decided() {
             const voted = _has_voted_mask.count;
             const N = this.outer._round.events.length;
 
@@ -210,7 +188,23 @@ class Event {
             }
             return false;
         }
+       } 
+        alias isFamous = votedYes;
 
+        private void voteYes(const size_t node_id) pure nothrow {
+            if (!_has_voted_mask[node_id]) {
+                _yes_votes++;
+                _has_voted_mask[node_id] = true;
+            }
+        }
+
+        private void voteNo(const size_t node_id) pure nothrow {
+            if (!_has_voted_mask[node_id]) {
+                _has_voted_mask[node_id] = true;
+            }
+        }
+
+        version(none)
         void display_decided() const pure nothrow @nogc {
             const voters = (this.outer.round.next) ? this.outer._round.next.events.filter!(e => e !is null).count : 0;
             const voted = _has_voted_mask.count;
