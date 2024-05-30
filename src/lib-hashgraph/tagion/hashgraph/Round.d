@@ -51,16 +51,6 @@ class Round {
     BitMask seen_by_famous_mask;
 
     /**
- * Compare the round number 
- * Params:
- *   rhs = round to be checked
- * Returns: true if equal or less than
- */
-    @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
-        return (number - rhs.number) <= 0;
-    }
-
-    /**
      * Construct a round from the previous round
      * Params:
      *   previous = previous round
@@ -99,24 +89,6 @@ class Round {
     do {
         _events[event.node_id] = event;
         event._round = this;
-    }
-
-    /**
-     * Check of the round has no events
-     * Returns: true of the round is empty
-     */
-    @nogc
-    final bool empty() const pure nothrow {
-        return !_events.any!((e) => e !is null);
-    }
-
-    /**
-     * Counts the number of events which has been set in this round
-     * Returns: number of events set
-     */
-    @nogc
-    final size_t event_count() const pure nothrow {
-        return _events.count!((e) => e !is null);
     }
 
     /**
@@ -171,7 +143,6 @@ class Round {
             _next = null;
         }
     }
-
     /**
      * Previous round from this round
      * Returns: previous round
@@ -181,63 +152,78 @@ class Round {
         return _previous;
     }
 
-    @nogc
-    const(Round) previous() const pure nothrow {
-        return _previous;
-    }
+    final const pure nothrow @nogc {
+        /**
+     * Check of the round has no events
+     * Returns: true of the round is empty
+     */
+        bool empty() {
+            return !_events.any!((e) => e !is null);
+        }
 
-    const(Round) next() const pure nothrow @nogc {
-        return _next;
-    }
+        /**
+     * Counts the number of events which has been set in this round
+     * Returns: number of events set
+     */
+        size_t event_count() {
+            return _events.count!((e) => e !is null);
+        }
 
-    /**
+        const(Round) previous() {
+            return _previous;
+        }
+
+        const(Round) next() {
+            return _next;
+        }
+
+        /**
      * Get the event a the node_id 
      * Params:
      *   node_id = node id number
      * Returns: 
      *   Event at the node_id
      */
-    @nogc
-    const(Event) event(const size_t node_id) const pure nothrow {
-        return _events[node_id];
-    }
+        const(Event) event(const size_t node_id) {
+            return _events[node_id];
+        }
 
-    bool isFamous() const pure nothrow @nogc {
-        return isMajority(_events
+        bool isFamous() {
+            return isMajority(_events
+                    .filter!(e => e !is null)
+                    .filter!(e => e.witness.votedYes)
+                    .count,
+                    _events.length);
+
+        }
+
+        bool majority() {
+            return isMajority(_events
+                    .filter!(e => e !is null)
+                    .count,
+                    _events.length);
+        }
+
+        uint decisions() {
+            return cast(uint) _events
+                .filter!(e => e !is null)
+                .map!(e => e.witness)
+                .filter!(w => w.decided)
+                .count;
+        }
+
+        uint famous() {
+            return cast(uint) _events
                 .filter!(e => e !is null)
                 .filter!(e => e.witness.votedYes)
-                .count,
-                _events.length);
+                .count;
+        }
 
+        uint voters() {
+            return cast(uint)(_events.filter!(e => e !is null).count);
+        }
     }
-
-    bool majority() const pure nothrow @nogc {
-        return isMajority(_events
-                .filter!(e => e !is null)
-                .count,
-                _events.length);
-    }
-
-    uint decisions() const pure nothrow @nogc {
-        return cast(uint) _events
-            .filter!(e => e !is null)
-            .map!(e => e.witness)
-            .filter!(w => w.decided)
-            .count;
-    }
-
-    uint famous() const pure nothrow @nogc {
-        return cast(uint) _events
-            .filter!(e => e !is null)
-            .filter!(e => e.witness.votedYes)
-            .count;
-    }
-
-    uint voters() const pure nothrow @nogc {
-        return cast(uint)(_events.filter!(e => e !is null).count);
-    }
-
-    uint count_feature_famous_rounds() const pure nothrow {
+    final uint count_feature_famous_rounds() const pure nothrow {
         return cast(uint) this[]
             .retro
             .until!(r => !isMajority(r.voters, _events.length))
@@ -445,12 +431,6 @@ class Round {
                 return false;
             }
         }
-        static size_t number_of_witness(const Round r) pure nothrow @nogc {
-            if (r) {
-                return r._events.filter!(e => e !is null).count;
-            }
-            return 0;
-        }
 
         void check_decide_round() {
             auto round_to_be_decided = last_decided_round._next;
@@ -488,7 +468,8 @@ class Round {
                         round_to_be_decided.count_feature_famous_rounds);
 
             }
-            if (!can_round_be_decided(round_to_be_decided) && round_to_be_decided.count_feature_famous_rounds < hashgraph.threshold_for_none_decided_famous_rounds) {
+            if (!can_round_be_decided(round_to_be_decided) && round_to_be_decided.count_feature_famous_rounds < hashgraph
+                    .threshold_for_none_decided_famous_rounds) {
 
                 log("Not decided round");
                 return;
