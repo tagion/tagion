@@ -532,6 +532,10 @@ class Event {
     }
 
     @nogc pure nothrow const final {
+        bool isFamous() {
+            return isWitness && round.famous_mask[node_id];
+        }
+
         /**
      * The received round for this event
      * Returns: received round

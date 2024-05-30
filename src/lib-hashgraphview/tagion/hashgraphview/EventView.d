@@ -61,6 +61,10 @@ struct EventView {
             node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
             altitude=event.altitude;
             order=event.order;
+            witness=event.isWitness;
+            if (witness) {
+                famous = event.isFamous;
+            }
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:int.min;
@@ -77,6 +81,7 @@ struct EventView {
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
                yes_votes = witness.yes_votes;
                no_votes = witness.no_votes;
+               famous = isMajority(yes_votes, event.round.events.length); 
                voted = witness.has_voted_mask.bytes; 
                decided = witness.decided;
             }
