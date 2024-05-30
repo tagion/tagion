@@ -1479,6 +1479,11 @@ struct WebAppConfig {
     string template_path = "";
     string prefix_url = "";
     string[] directory_index = ["index.html"];
+    string[string] static_map = [
+        ".wasm": "application/wasm",
+        ".hibon": "application/hibon",
+        ".js": "text/javascript"
+    ];    
     this(ref return scope WebAppConfig rhs) {}
 };
 
@@ -1796,10 +1801,10 @@ void webstatichandler (nng_aio* aio) {
     char *sbuf = cast(char*)nng_alloc(4096);
     
     string method, uri;
-    string fname;
     bool found;
     string fpath, ppath, mtype;
     string[] rpath;
+    string[string] pmap;
     scope MmFile mmfile;
     ubyte[] data;
 
@@ -1856,6 +1861,7 @@ void webstatichandler (nng_aio* aio) {
         if(uri.startsWith(u)){
             found = true;
             ppath = app.staticroutes[u];
+            pmap = app.staticmime[u];
             break;
         }
     }        
@@ -1890,10 +1896,7 @@ void webstatichandler (nng_aio* aio) {
         goto failure;
     }
     
-    fname = extension(baseName(fpath));
-    
-
-    mtype = nng_find_mime_type(fpath);
+    mtype = nng_find_mime_type(fpath, pmap);
     
     rc = nng_http_res_alloc(&res);
     enforce(rc == 0, "WSH: res alloc");
@@ -1930,7 +1933,7 @@ struct WebApp {
     nng_url *url;
     webhandler[string] routes;
     string[string] staticroutes;
-    string[string] staticmime;
+    string[string][string] staticmime;
     void* context;
     
     @disable this();
@@ -1950,9 +1953,6 @@ struct WebApp {
         context = icontext;
         auto rc = nng_url_parse(&url, iurl.toStringz());
         enforce(rc==0, "server url parse");
-        staticmime[".wasm"] = "application/wasm";
-        staticmime[".hibon"] = "application/hibon";
-        staticmime[".js"] = "text/javascript";
         if("root_path" in iconfig )      config.root_path = iconfig["root_path"].str;
         if("static_path" in iconfig )    config.static_path = iconfig["static_path"].str;
         if("static_url" in iconfig )     config.static_url = iconfig["static_url"].str;
@@ -1967,7 +1967,7 @@ struct WebApp {
         }
         if("mime_map" in iconfig) {
             foreach( string key, val; iconfig["mime_map"])
-                staticmime[key] = val.str;
+                config.static_map[key] = val.str;
         }    
         init();
     }
@@ -2005,6 +2005,7 @@ struct WebApp {
         rc = nng_http_server_add_handler(server, hr);
         enforce(rc==0, "route handler add");
         staticroutes[urlpath] = path;
+        staticmime[urlpath] = content_map;
     }
 
     void route (string path, webhandler handler, string[] methods = ["GET"]) {
@@ -2112,7 +2113,7 @@ struct WebApp {
         enforce(rc==0, "server hold");
         
 
-        staticroute(config.prefix_url~"/"~config.static_url~"/", buildPath(config.root_path, config.static_path), staticmime);
+        staticroute(config.prefix_url~"/"~config.static_url~"/", buildPath(config.root_path, config.static_path), config.static_map);
         /*
         nng_http_handler *hs;
         rc = nng_http_handler_alloc_directory(&hs, toStringz(config.prefix_url~"/"~config.static_path), buildPath(config.root_path, config.static_url).toStringz());
