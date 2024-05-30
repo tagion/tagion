@@ -1,5 +1,5 @@
 export class Wallet {
-  static WALLETSIZE = 4+4;
+  static WALLETSIZE = 16;
 
   constructor(_instance) {
     this.instance = _instance;

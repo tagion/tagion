@@ -213,6 +213,21 @@ $(DBIN)/subscriber: DINC+=$(SRC_DINC)
 $(DBIN)/subscriber: DFILES::=$(DSRC)/bin-subscriber/tagion/tools/subscriber.d
 $(call DO_BIN,subscriber)
 
+ifdef ENABLE_NODEINTERFACEUTIL
+DVERSIONS+=nodeinterfaceutil
+LD_RAYLIB:=$(shell pkg-config --libs raylib)
+CPP_RAYLIB:=$(shell pkg-config --cflags raylib)
+
+$(DBIN)/nodeinterfaceutil: nng secp256k1
+$(DBIN)/nodeinterfaceutil: LDFLAGS+=$(LD_NNG) $(LD_SECP256K1) $(LD_RAYLIB)
+$(DBIN)/nodeinterfaceutil: DINC+=$(SRC_DINC)
+$(DBIN)/nodeinterfaceutil: DFLAGS+=$(CPP_FLAG)$(CPP_RAYLIB)
+$(DBIN)/nodeinterfaceutil: DFILES::=$(DSRC)/src/bin-nodeinterfaceutil/tagion/tools/nodeinterfaceutil/package.d
+
+$(DBIN)/tagion: LDFLAGS+=$(LD_RAYLIB)
+$(DBIN)/tagion: DFLAGS+=$(CPP_FLAG)$(CPP_RAYLIB)
+endif
+
 #
 # ONETOOL
 #
@@ -226,6 +241,7 @@ $(DBIN)/tagion: DFILES::=$(DSRC)/bin-tools/tagion/tools/tools.d
 $(DBIN)/tagion: DINC+=$(SRC_DINC)
 $(DBIN)/tagion: DVERSIONS+=ONETOOL
 $(call DO_BIN,tagion)
+
 
 #
 # Binary of BBD generator tool

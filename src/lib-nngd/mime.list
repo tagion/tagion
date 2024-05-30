@@ -1,0 +1,7 @@
+url = "https://www.iana.org/assignments/media-types/application.csv"
+url = "https://www.iana.org/assignments/media-types/audio.csv"
+url = "https://www.iana.org/assignments/media-types/font.csv"
+url = "https://www.iana.org/assignments/media-types/image.csv"
+url = "https://www.iana.org/assignments/media-types/model.csv"
+url = "https://www.iana.org/assignments/media-types/text.csv"
+url = "https://www.iana.org/assignments/media-types/video.csv"

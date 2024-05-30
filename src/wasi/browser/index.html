@@ -30,10 +30,10 @@
 			wasi.instance = instance;
 
 			//const rt = instance.exports.rt_init();
-			//instance.exports._start();
-			instance.exports.gc_collect();
-			//instance.exports.gc_disable();
 			//console.log("RT STATUS ", rt);
+			//instance.exports._start();
+			//instance.exports.gc_collect();
+			//instance.exports.gc_disable();
 
 			let w = new Wallet(instance);
 			console.log("EXPORTS");

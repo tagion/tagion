@@ -15,7 +15,7 @@ import tagion.basic.Types;
 import tagion.basic.Version;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.services.subscription : SubscriptionServiceOptions, SubscriptionPayload;
+import tagion.services.subscription : SubscriptionServiceOptions;
 import tools = tagion.tools.Basic;
 import tagion.tools.revision;
 
@@ -24,81 +24,8 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.communication.HiRPC;
 import tagion.utils.Result;
 import tagion.logger.ContractTracker : ContractStatus;
+import tagion.logger.subscription;
 import tagion.hibon.HiBONRecord : isRecord;
-
-struct Subscription {
-    string address;
-    string[] tags;
-    uint max_attempts = 5;
-
-    private NNGSocket sock;
-    this(string _address, string[] _tags) @trusted nothrow {
-        address = _address;
-        tags = _tags;
-        sock = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-        sock.recvtimeout = 100.seconds;
-        foreach (tag; tags) {
-            sock.subscribe(tag);
-        }
-    }
-
-    private bool _isDial;
-
-    Result!bool dial() @trusted nothrow {
-        int rc;
-        foreach (_; 0 .. max_attempts) {
-            rc = sock.dial(address);
-            switch (rc) with (nng_errno) {
-            case NNG_OK:
-                _isDial = true;
-                return result(true);
-            case NNG_ECONNREFUSED:
-                nng_sleep(msecs(100));
-                continue;
-            default:
-                return Result!bool(false, nng_errstr(rc));
-            }
-        }
-        return Result!bool(false, nng_errstr(rc));
-    }
-
-    Result!Document receive() @trusted nothrow {
-        alias _Result = Result!Document;
-        if (!_isDial) {
-            auto d = dial;
-            if (d.error) {
-                return _Result(d.e);
-            }
-        }
-
-        Buffer data;
-        foreach (_; 0 .. max_attempts) {
-            data = sock.receive!Buffer;
-            if (sock.errno != nng_errno.NNG_OK && sock.errno != nng_errno.NNG_ETIMEDOUT) {
-                break;
-            }
-        }
-
-        if (sock.errno != 0) {
-            return _Result(nng_errstr(sock.errno));
-        }
-
-        if (data.length == 0) {
-            return _Result("Received empty data");
-        }
-
-        long index = data.countUntil(cast(ubyte) '\0');
-        if (index == -1) {
-            return _Result("Received data does not begin with a tag");
-        }
-
-        if (data.length <= index + 1) {
-            return _Result("Received data does not contain a document");
-        }
-
-        return _Result(Document(data[index + 1 .. $]));
-    }
-}
 
 mixin tools.Main!_main;
 
@@ -175,7 +102,7 @@ int __main(string[] args) {
     }
 
     writefln("Starting subscriber with tags [%s]", tagsRaw);
-    auto sub = Subscription(address, tags);
+    auto sub = SubscriptionHandle(address, tags);
     auto dialed = sub.dial;
     if (dialed.error) {
         stderr.writefln("Dial error: %s (%s)", dialed.e.message, address);

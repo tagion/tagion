@@ -752,6 +752,7 @@ enum nng_mime_type: string {
     JSON         =  "application/json",
     XML          =  "application/xml",
     HIBON        =  "application/hibon",
+    WASM         =  "application/wasm",
     JPEG         =  "image/jpeg",
     GIF          =  "image/gif",
     PNG          =  "image/png",
