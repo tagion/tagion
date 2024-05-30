@@ -390,7 +390,7 @@ jobs:
 
       - name: Build
         run: |
-          make DC=tools/ldc2-1.35.0-linux-x86_64/bin/ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
+          make DC=tools/ldc2-1.38.0-linux-x86_64/bin/ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
           file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
       - uses: actions/upload-artifact@v4
