@@ -101,7 +101,7 @@ jobs:
       - name: Build and clone wasi
         run: |
           export DC=ldc2
-          make PLATFORM=wasm32-unknown-wasi wasi
+          make PLATFORM=wasm32-unknown-wasi proper wasi
 
       - name: build tauon
         run: | 
