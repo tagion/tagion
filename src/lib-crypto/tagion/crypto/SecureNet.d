@@ -90,7 +90,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     final Buffer hmacPubkey() const {
-        return HMAC(cast(Buffer) _pubkey);
+        return HMAC(cast(const(Buffer)) _pubkey);
     }
 
     final Pubkey derivePubkey(string tweak_word) const {
@@ -111,7 +111,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         consensusCheck!(SecurityConsensusException)(
                 signature.length == NativeSecp256k1.SIGNATURE_SIZE,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
+        return crypt.verify(cast(const(Buffer)) message, cast(const(Buffer)) signature, cast(const(Buffer)) pubkey);
     }
 
     Signature sign(const Fingerprint message) const pure
@@ -120,7 +120,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     in (_secret !is null,
         format("Signature function has not been initialized. Use the %s function", fullyQualifiedName!generateKeyPair))
     do {
-        return Signature(_secret.sign(cast(Buffer) message));
+        return Signature(_secret.sign(cast(const(Buffer)) message));
     }
 
     final void derive(string tweak_word, ref ubyte[] tweak_privkey) {
@@ -219,7 +219,8 @@ class StdSecureNet : StdHashNet, SecureNet {
                         seckey[] = 0;
                     }
                     crypt.getSecretKey(keypair, seckey);
-                    result = crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
+                    const pkey=(() @trusted => cast(const(Buffer)) pubkey)(); 
+                    result = crypt.createECDHSecret(seckey, pkey);
                 });
                 return result;
             }
@@ -273,7 +274,8 @@ class StdSecureNet : StdHashNet, SecureNet {
     immutable(ubyte[]) ECDHSecret(
             scope const(ubyte[]) seckey,
     scope const(Pubkey) pubkey) const {
-        return crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
+        const pkey=(() @trusted => cast(const(Buffer)) pubkey)();
+        return crypt.createECDHSecret(seckey, pkey);
     }
 
     immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {

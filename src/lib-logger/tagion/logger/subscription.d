@@ -32,6 +32,21 @@ struct SubscriptionPayload {
     });
 }
 
+unittest {
+    import tagion.communication.HiRPC;
+    import tagion.logger.Logger : Topic;
+    static struct MyRecord {
+        int a = 5;
+        mixin HiBONRecord;
+    }
+
+    SubscriptionPayload sub = SubscriptionPayload(LogInfo(Topic("a"), "b", "c"), MyRecord().toDoc);
+    const sender = HiRPC(null).action("sub", sub);
+    const received_doc = sender.toDoc;
+    const received_data = received_doc["$msg"]["params"]["data"].get!MyRecord;
+
+}
+
 struct SubscriptionHandle {
     string address;
     string[] tags;

@@ -63,6 +63,7 @@ HiRPC.Receiver sendKernelHiRPC(string address, HiRPC.Sender contract, HiRPC hirp
 }
 
 HiRPC.Receiver sendShellHiRPC(string address, Document doc, HiRPC hirpc) @trusted {
+    pragma(msg, "fixme(cbr): casting from immutable to mutable. Is this ok?! type=", typeof(doc.serialize));
     WebData rep = WebClient.post(address, cast(ubyte[]) doc.serialize, [
         "Content-type": "application/octet-stream"
     ]);
