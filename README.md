@@ -30,17 +30,17 @@ apt-get install git autoconf build-essential libtool dub cmake
 ```
 Download a D compiler ldc or dmd
 
-- LLVM D compiler - ldc2 (v1.38.0)
+- LLVM D compiler - ldc2 (v1.37.0)
 ```bash
-wget https://github.com/ldc-developers/ldc/releases/download/v1.38.0/ldc2-1.38.0-linux-x86_64.tar.xz
-tar xf ldc2-1.38.0-linux-x86_64.tar.xz
-export PATH="path-to-ldc2/ldc2-1.38.0-linux-x86_64/bin:$PATH"
+wget https://github.com/ldc-developers/ldc/releases/download/v1.37.0/ldc2-1.37.0-linux-x86_64.tar.xz
+tar xf ldc2-1.37.0-linux-x86_64.tar.xz
+export PATH="path-to-ldc2/ldc2-1.37.0-linux-x86_64/bin:$PATH"
 ```
         
-- Reference D compiler - dmd (v2.108.1)
+- Reference D compiler - dmd (v2.107.1)
 ```bash
-wget https://downloads.dlang.org/releases/2.x/2.108.1/dmd.2.108.1.linux.tar.xz
-tar xf dmd.2.108.1.linux.tar.xz
+wget https://downloads.dlang.org/releases/2.x/2.107.1/dmd.2.107.1.linux.tar.xz
+tar xf dmd.2.107.1.linux.tar.xz
 export PATH="path-to-dmd2/dmd2/linux/bin64:$PATH"
 ```
 
@@ -59,8 +59,8 @@ nix develop
 2. Verify that the binaries are available and check their version (comments showing versions used as of writing)
     
 ```bash
-ldc2 --version # LDC - the LLVM D compiler (1.38.0): ...
-dmd --version # v2.108.1
+ldc2 --version # LDC - the LLVM D compiler (1.37.0): ...
+dmd --version # v2.107.1
 ```
 
 3. Cloning tagion repo
