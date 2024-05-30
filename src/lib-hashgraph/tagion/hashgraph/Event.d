@@ -18,7 +18,7 @@ import std.traits : ReturnType, Unqual;
 import std.traits;
 import std.typecons;
 import tagion.basic.Types : Buffer;
-import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
+import tagion.basic.basic :  buf_idup, this_dot, isinit;
 import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
@@ -389,8 +389,8 @@ class Event {
         new Witness;
     }
 
-    void initializeOrder() pure nothrow @nogc {
-        if (order is long.init) {
+    final void initializeOrder() pure nothrow @nogc {
+        if (order.isinit) {
             _order = -1;
         }
     }
@@ -400,7 +400,7 @@ class Event {
       * Params:
       *   hashgraph = event owner 
       */
-    void connect(HashGraph hashgraph)
+    final void connect(HashGraph hashgraph) 
     in {
         assert(hashgraph.areWeInGraph);
     }
