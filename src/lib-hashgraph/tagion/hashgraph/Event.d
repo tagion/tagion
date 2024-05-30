@@ -371,7 +371,7 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    void witness_event(HashGraph hashgraph) nothrow
+    void witness_event(HashGraph hashgraph) nothrow pure
     in (!_witness, "Witness has already been set")
     out {
         assert(_witness, "Witness should be set");
