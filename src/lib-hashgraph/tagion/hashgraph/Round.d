@@ -44,7 +44,7 @@ class Round {
     protected {
         Round _previous;
         Round _next;
-        bool _decided;
+        //bool _decided;
     }
     immutable int number;
 
@@ -61,15 +61,6 @@ class Round {
  */
     @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
-    }
-
-    /**
-     * Number of events in a round should be the same 
-     * as the number of nodes in the hashgraph
-     * Returns: number of nodes in the round 
-     */
-    version (none) const(uint) node_size() const pure nothrow @nogc {
-        return cast(uint) _events.length;
     }
 
     /**
@@ -118,7 +109,7 @@ class Round {
      * Returns: true of the round is empty
      */
     @nogc
-    bool empty() const pure nothrow {
+    final bool empty() const pure nothrow {
         return !_events.any!((e) => e !is null);
     }
 
@@ -127,7 +118,7 @@ class Round {
      * Returns: number of events set
      */
     @nogc
-    size_t event_count() const pure nothrow {
+    final size_t event_count() const pure nothrow {
         return _events.count!((e) => e !is null);
     }
 
@@ -188,24 +179,8 @@ class Round {
      * Check if the round has been decided
      * Returns: true if the round has been decided
      */
-    bool decided() const pure nothrow @nogc {
+    version (none) bool decided() const pure nothrow @nogc {
         return _decided;
-    }
-
-    const(Round) next() const pure nothrow @nogc {
-        return _next;
-    }
-
-    /**
-     * Get the event a the node_id 
-     * Params:
-     *   node_id = node id number
-     * Returns: 
-     *   Event at the node_id
-     */
-    @nogc
-    inout(Event) event(const size_t node_id) pure inout {
-        return _events[node_id];
     }
 
     /**
@@ -222,24 +197,20 @@ class Round {
         return _previous;
     }
 
+    const(Round) next() const pure nothrow @nogc {
+        return _next;
+    }
+
     /**
- * Range from this round and down
- * Returns: range of rounds 
- */
+     * Get the event a the node_id 
+     * Params:
+     *   node_id = node id number
+     * Returns: 
+     *   Event at the node_id
+     */
     @nogc
-    package Rounder.Range!false opSlice() pure nothrow {
-        return Rounder.Range!false(this);
-    }
-
-    /// Ditto
-    @nogc
-    Rounder.Range!true opSlice() const pure nothrow {
-        return Rounder.Range!true(this);
-    }
-
-    invariant {
-        assert(!_previous || (_previous.number + 1 is number));
-        assert(!_next || (_next.number - 1 is number));
+    const(Event) event(const size_t node_id) const pure nothrow {
+        return _events[node_id];
     }
 
     bool isFamous() const pure nothrow @nogc {
@@ -284,6 +255,27 @@ class Round {
             .filter!(r => r.isFamous)
             .count;
     }
+
+    invariant {
+        assert(!_previous || (_previous.number + 1 is number));
+        assert(!_next || (_next.number - 1 is number));
+    }
+
+    /**
+ * Range from this round and down
+ * Returns: range of rounds 
+ */
+    @nogc
+    package Rounder.Range!false opSlice() pure nothrow {
+        return Rounder.Range!false(this);
+    }
+
+    /// Ditto
+    @nogc
+    Rounder.Range!true opSlice() const pure nothrow {
+        return Rounder.Range!true(this);
+    }
+
     /**
      * The rounder takes care of cleaning up old round 
      * and keeps track of if an round has been decided or can be decided
@@ -320,42 +312,6 @@ class Round {
             local_erase(last_round);
         }
 
-        //Cleans up old round and events if they are no-longer needed
-
-        package
-        void dustman() {
-            void local_dustman(Round r) {
-                if (r !is null) {
-                    local_dustman(r._previous);
-                    r.scrap(hashgraph);
-                }
-            }
-
-            Event.scrapping = true;
-            scope (exit) {
-                Event.scrapping = false;
-            }
-            if (hashgraph.scrap_depth != 0) {
-                int depth = hashgraph.scrap_depth;
-                for (Round r = last_decided_round; r !is null; r = r._previous) {
-                    depth--;
-                    if (depth < 0) {
-                        local_dustman(r);
-                        break;
-                    }
-                }
-            }
-        }
-
-        /**
-  * Number of round epoch in the rounder queue
-  * Returns: size of the queue
-   */
-        @nogc
-        size_t length() const pure nothrow {
-            return this[].walkLength;
-        }
-
         /**
      * Sets the round for an event and creates an new round if needed
      * Params:
@@ -387,99 +343,124 @@ class Round {
             }
         }
 
-        bool isEventInLastDecidedRound(const(Event) event) const pure nothrow @nogc {
-            if (!last_decided_round) {
-                return false;
+        //Cleans up old round and events if they are no-longer needed
+
+        package
+        void dustman() {
+            void local_dustman(Round r) {
+                if (r !is null) {
+                    local_dustman(r._previous);
+                    r.scrap(hashgraph);
+                }
             }
 
-            return last_decided_round.events
-                .filter!((e) => e !is null)
-                .map!(e => e.event_package.fingerprint)
-                .canFind(event.event_package.fingerprint);
+            Event.scrapping = true;
+            scope (exit) {
+                Event.scrapping = false;
+            }
+            if (hashgraph.scrap_depth != 0) {
+                int depth = hashgraph.scrap_depth;
+                for (Round r = last_decided_round; r !is null; r = r._previous) {
+                    depth--;
+                    if (depth < 0) {
+                        local_dustman(r);
+                        break;
+                    }
+                }
+            }
         }
 
-        /**
+        @nogc final const pure nothrow {
+            /**
+  * Number of round epoch in the rounder queue
+  * Returns: size of the queue
+   */
+            size_t length() {
+                return this[].walkLength;
+            }
+
+            bool isEventInLastDecidedRound(const(Event) event) {
+                if (!last_decided_round) {
+                    return false;
+                }
+
+                return last_decided_round.events
+                    .filter!((e) => e !is null)
+                    .map!(e => e.event_package.fingerprint)
+                    .canFind(event.event_package.fingerprint);
+            }
+
+            /**
      * Check of a round has been decided
      * Params:
      *   test_round = round to be tested
      * Returns: 
      */
-        @nogc
-        bool decided(const Round test_round) const pure nothrow {
-            bool _decided(const Round r) pure nothrow {
+            bool decided(const Round r) {
                 if (r) {
-                    if (test_round is r) {
-                        return true;
-                    }
-                    return _decided(r._next);
+                    return (r.number - last_decided_round.number) <= 0;
                 }
                 return false;
             }
 
-            return _decided(last_decided_round);
-        }
-
-        /**
+            /**
      * Calculates the number of rounds since the last decided round
      * Returns: number of undecided roundes 
      */
-        @nogc
-        long coin_round_distance() pure const nothrow {
-            return last_round.number - last_decided_round.number;
-        }
+            long coin_round_distance() {
+                return last_round.number - last_decided_round.number;
+            }
 
-        /**
+            /**
      * Number of decided round in cached in memory
      * Returns: Number of cached decided rounds
      */
-        @nogc
-        uint cached_decided_count() pure const nothrow {
-            uint _cached_decided_count(const Round r, const uint i = 0) pure nothrow {
-                if (r) {
-                    return _cached_decided_count(r._previous, i + 1);
+            uint cached_decided_count() {
+                uint _cached_decided_count(const Round r, const uint i = 0) pure nothrow {
+                    if (r) {
+                        return _cached_decided_count(r._previous, i + 1);
+                    }
+                    return i;
                 }
-                return i;
+
+                return _cached_decided_count(last_round);
             }
 
-            return _cached_decided_count(last_round);
-        }
-
-        /**
+            /**
      * Check the coin round limit
      * Returns: true if the coin round has been exceeded 
      */
-        @nogc
-        bool check_decided_round_limit() pure const nothrow {
-            return cached_decided_count > total_limit;
-        }
+            bool check_decided_round_limit() {
+                return cached_decided_count > total_limit;
+            }
 
+            bool can_round_be_decided(const Round r) {
+                bool _decided(T)(const T item) @nogc {
+                    if (item.value) {
+                        return item.value.witness.decided;
+                    }
+                    const last_witness_event = last_witness_events[item.index];
+                    if (last_witness_event) {
+                        return last_witness_event._round.number > r.number;
+                    }
+                    return (last_round.number - r.number) >= hashgraph.last_witness_height_limit;
+                }
+
+                if (r) {
+                    auto witness_in_round = r._events.filter!(e => e !is null);
+                    if (isMajority(witness_in_round.count, hashgraph.node_size)) {
+                        return r._events.enumerate
+                            .all!(item => _decided(item));
+                    }
+                }
+                return false;
+            }
+        }
         static size_t number_of_witness(const Round r) pure nothrow @nogc {
             if (r) {
                 return r._events.filter!(e => e !is null).count;
             }
             return 0;
-        }
-
-        bool can_round_be_decided(const Round r) const pure nothrow @nogc {
-            bool _decided(T)(const T item) @nogc {
-                if (item.value) {
-                    return item.value.witness.decided;
-                }
-                const last_witness_event = last_witness_events[item.index];
-                if (last_witness_event) {
-                    return last_witness_event._round.number > r.number;
-                }
-                return (last_round.number - r.number) >= hashgraph.last_witness_height_limit;
-            }
-
-            if (r) {
-                auto witness_in_round = r._events.filter!(e => e !is null);
-                if (isMajority(witness_in_round.count, hashgraph.node_size)) {
-                    return r._events.enumerate
-                        .all!(item => _decided(item));
-                }
-            }
-            return false;
         }
 
         void check_decide_round() {
@@ -544,7 +525,7 @@ class Round {
             version (none)
                 __write("decided %s", witness_in_round.map!(w => w.decided));
             //witness_in_round.each!(w => w.display_decided);
-            round_to_be_decided._decided = true;
+            //round_to_be_decided._decided = true;
             __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);
             last_decided_round = round_to_be_decided;
             version (none)
@@ -565,7 +546,7 @@ class Round {
         }
 
         protected void collect_received_round(Round r)
-        in (r._decided, "The round should be decided before the round can be collect")
+        in (decided(r), "The round should be decided before the round can be collect")
         do {
 
             auto witness_event_in_round = r._events.filter!(e => e !is null);

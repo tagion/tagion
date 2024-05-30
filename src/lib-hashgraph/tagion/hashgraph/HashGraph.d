@@ -37,7 +37,8 @@ class HashGraph {
     //bool print_flag;
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
-    uint last_witness_height_limit=10; /// Limit to when a withness should produced from a node
+
+    uint last_witness_height_limit = 10; /// Limit to when a withness should produced from a node
     uint threshold_for_none_decided_famous_rounds = 7; /** 
         Limit to when a round is decided 
         if feature famous round can be decided 
@@ -146,7 +147,7 @@ class HashGraph {
             void init_event(immutable(EventPackage*) epack) {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
-                event.witness_event(this);
+                event.witness_event();
                 version (EPOCH_LOG) {
                     log("init_event time %s", event.event_body.time);
                 }
@@ -641,7 +642,7 @@ class HashGraph {
 
                     foreach (epack; changes) {
                         const epack_node = getNode(epack.pubkey);
-                            auto first_event = new Event(epack, this);
+                        auto first_event = new Event(epack, this);
                         if (epack_node.event is null) {
                             check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                         }
@@ -755,7 +756,7 @@ class HashGraph {
         immutable(Pubkey) channel;
         private bool _offline;
         private this(const Pubkey channel, const size_t node_id) pure nothrow {
-            this.node_id = cast(uint)node_id;
+            this.node_id = cast(uint) node_id;
             this.channel = channel;
         }
 

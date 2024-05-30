@@ -58,8 +58,8 @@ class Event {
     package Event _mother; /// Points to the self-parent
     package Event _father; /// Points to other-parrent
     protected {
-    Event _daughter; /// Points to the direct self-ancestor
-    Event _son; /// Points to the direct other-ancestor
+        Event _daughter; /// Points to the direct self-ancestor
+        Event _son; /// Points to the direct other-ancestor
         int _order; /// Event order higher value means after
         Round _round_received; /// The round in which the event has been voted to be received
     }
@@ -371,7 +371,7 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    void witness_event(HashGraph hashgraph) nothrow
+    void witness_event() nothrow
     in (!_witness, "Witness has already been set")
     out {
         assert(_witness, "Witness should be set");
