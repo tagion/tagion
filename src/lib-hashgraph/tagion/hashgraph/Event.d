@@ -52,7 +52,7 @@ class Event {
         Event _daughter;
         Event _son;
 
-        long _order;
+        int _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         BitMask _round_seen_mask;
@@ -377,7 +377,6 @@ class Event {
         }
     }
 
-
     /**
     *  Makes the event a witness  
     */
@@ -389,7 +388,6 @@ class Event {
     do {
         new Witness;
     }
-
 
     void initializeOrder() pure nothrow @nogc {
         if (order is long.init) {
@@ -542,6 +540,7 @@ class Event {
             return _witness;
         }
     }
+
     @nogc pure nothrow const final {
         bool isFamous() {
             return isWitness && round.famous_mask[node_id];
@@ -569,15 +568,6 @@ class Event {
      */
         immutable(Pubkey) channel() {
             return event_package.pubkey;
-        }
-
-        /**
-     * Get the mask of the received rounds
-     * Returns: received round mask 
-     */
-    version(none)
-        const(BitMask) round_received_mask() {
-            return _round_received_mask;
         }
 
         /**
@@ -642,7 +632,7 @@ class Event {
          * Gets the event order number 
          * Returns: order
          */
-        long order() const pure nothrow @nogc {
+        int order() const pure nothrow @nogc {
             return _order;
         }
 
