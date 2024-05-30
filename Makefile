@@ -38,7 +38,7 @@ mime:
 	awk -f mime.awk > nngd/mime.new && wc -l nngd/mime.new |\
 	cut -d " " -f 1 |\
 	awk '{if($$1 > 5) print "mv nngd/mime.new nngd/mime.d";}' |\
-	sh && rm -f nngd/mime.new
+	sh && rm -f nngd/mime.new || true
 lib: 
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
