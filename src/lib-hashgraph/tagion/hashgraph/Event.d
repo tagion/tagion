@@ -57,9 +57,9 @@ class Event {
     // This is the internal pointer to the connected Event's
     package Event _mother; /// Points to the self-parent
     package Event _father; /// Points to other-parrent
-    protected Event _daughter; /// Points to the direct self-ancestor
-    protected Event _son; /// Points to the direct other-ancestor
     protected {
+    Event _daughter; /// Points to the direct self-ancestor
+    Event _son; /// Points to the direct other-ancestor
         int _order; /// Event order higher value means after
         Round _round_received; /// The round in which the event has been voted to be received
     }
