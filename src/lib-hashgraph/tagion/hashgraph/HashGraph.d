@@ -751,11 +751,11 @@ class HashGraph {
     @safe
     class Node {
         ExchangeState state;
-        immutable size_t node_id;
+        immutable uint node_id;
         immutable(Pubkey) channel;
         private bool _offline;
         private this(const Pubkey channel, const size_t node_id) pure nothrow {
-            this.node_id = node_id;
+            this.node_id = cast(uint)node_id;
             this.channel = channel;
         }
 

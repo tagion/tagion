@@ -57,6 +57,8 @@ class Event {
         // Which can be seen by the next rounds witness
         BitMask _round_seen_mask;
     }
+    immutable uint node_id; /// Node number of the event
+    immutable uint id;
     Witness _witness;
 
     BitMask _witness_seen_mask; /// Witness seen in privious round
@@ -375,7 +377,6 @@ class Event {
         }
     }
 
-    immutable uint id;
 
     /**
     *  Makes the event a witness  
@@ -389,7 +390,6 @@ class Event {
         new Witness;
     }
 
-    immutable size_t node_id; /// Node number of the event
 
     void initializeOrder() pure nothrow @nogc {
         if (order is long.init) {

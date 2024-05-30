@@ -46,7 +46,7 @@ class Round {
         Round _next;
         bool _decided;
     }
-    immutable long number;
+    immutable int number;
 
     Event[] _events;
     //package Event[] _events;

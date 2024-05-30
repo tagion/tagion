@@ -75,19 +75,19 @@ struct EventView {
             if (event.top) {
                 top=true;
             }
-                intermediate=event._intermediate_event;
-                seen=event._witness_seen_mask.bytes;   
-                intermediate_seen=event._intermediate_seen_mask.bytes;
-                if (event.isWitness) {
-                    auto witness=event._witness;
-                    strongly_seen=witness.previous_strongly_seen_mask.bytes;
-                    yes_votes = witness.yes_votes;
-                    no_votes = witness.no_votes;
-                    famous = isMajority(yes_votes, event.round.events.length); 
-                    voted = witness.has_voted_mask.bytes; 
-                    decided = witness.decided;
-                }
-            
+
+            intermediate=event._intermediate_event;
+            seen=event._witness_seen_mask.bytes;   
+            intermediate_seen=event._intermediate_seen_mask.bytes;
+            if (event.isWitness) {
+               auto witness=event._witness;
+               strongly_seen=witness.previous_strongly_seen_mask.bytes;
+               yes_votes = witness.yes_votes;
+               no_votes = witness.no_votes;
+               famous = isMajority(yes_votes, event.round.events.length); 
+               voted = witness.has_voted_mask.bytes; 
+               decided = witness.decided;
+            }
         }
     });
 }
@@ -116,7 +116,6 @@ void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node
     }
 
     EventView[size_t] events;
-    /* auto events = new HiBON; */
     (() @trusted {
         foreach (n; hashgraph.nodes) {
             const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
