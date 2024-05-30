@@ -264,12 +264,6 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             node_circle.stroke_width += 6;
             //node_circle.radius += NODE_CIRCLE_SIZE / 4;
         }
-        if (e.error) {
-            verbose("had error");
-            node_circle.stroke = "yellow";
-            node_circle.stroke_width = 6;
-        }
-
         if (!raw_svg) {
             node_circle.classes = "myCircle";
             node_circle.data_info = escapeHtml(e.toPretty);
@@ -429,10 +423,7 @@ struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
         else {
             obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, pastel19.color(e.round_received));
         }
-        if (e.error) {
-            obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "star");
-        }
-        else if (e.father_less) {
+        if (e.father_less) {
             obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "egg");
         }
         string round_text = (e.round is long.min) ? "\u2693" : e.round.to!string;

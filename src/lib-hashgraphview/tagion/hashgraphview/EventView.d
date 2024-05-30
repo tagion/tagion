@@ -34,7 +34,6 @@ struct EventView {
     @label("$i") @optional @(filter.Initialized) bool intermediate;
     //    @label("$I") @reserve @optional @(filter.Initialized) uint[] intermediate_event_ids; 
     @label("$famous") @optional @(filter.Initialized) bool famous;
-    @label("$error") @optional bool error;
     @label("$seen") @optional Buffer seen;
     @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
     @label("$intermediate") @optional Buffer intermediate_seen;
@@ -61,7 +60,6 @@ struct EventView {
                     father=assumeWontThrow(event.father).id;
                 }
             }
-            error=event.error;
             node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
             altitude=event.altitude;
             order=event.order;

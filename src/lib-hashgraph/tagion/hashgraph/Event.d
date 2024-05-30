@@ -11,14 +11,12 @@ import std.array : array;
 import std.conv;
 import std.format;
 import std.range;
-import std.range : enumerate, tee;
 import std.range.primitives : isBidirectionalRange, isForwardRange, isInputRange, walkLength;
 import std.stdio;
-import std.traits : ReturnType, Unqual;
 import std.traits;
 import std.typecons;
 import tagion.basic.Types : Buffer;
-import tagion.basic.basic :  buf_idup, this_dot, isinit;
+import tagion.basic.basic :   isinit;
 import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
@@ -69,7 +67,6 @@ class Event {
         return _count;
     }
 
-    bool error;
     bool top;
     Topic topic = Topic("hashgraph_event");
 
