@@ -214,7 +214,7 @@ class DARTFile {
         mixin HiBONRecord!(q{
             this(const Index index, const(Fingerprint) fingerprint, const(DARTIndex) dart_index) {
                 this.index = index;
-                this.fingerprint = cast(Buffer)fingerprint;
+                this.fingerprint = (() @trusted => cast(Buffer)fingerprint)();
                 this.dart_index = dart_index;
 
             }
@@ -767,7 +767,7 @@ class DARTFile {
 
         auto sorted_dart_indices = dart_indices
             .filter!(a => a.length !is 0)
-            .map!(a => DARTIndex(cast(Buffer) a))
+            .map!(a => DARTIndex(cast(const(Buffer)) a))
             .array
             .dup;
         sorted_dart_indices.sort;
