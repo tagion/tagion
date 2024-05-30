@@ -474,10 +474,6 @@ class Round {
             if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
                 return;
             }
-            version (none)
-                witness_in_round
-                    .filter!(w => !w.decided)
-                    .each!(w => w.doTheMissingNoVotes);
             if (isMajority(witness_in_round.count, hashgraph.node_size)) {
                 __write("%s voters=%d Round=%d %(%s %) yes=%d no=%d decided=%d",
                         hashgraph.name,
@@ -503,18 +499,8 @@ class Round {
                         round_to_be_decided.count_feature_famous_rounds);
 
             }
-            //const threshold_or_none_decided = (witness_in_round.all!(w => w.decided)) ? 3 : 7;
-            const threshold_or_none_decided = 7; // (can_round_be_decided(round_to_be_decided)) ? 3 : 7;
-            if (!can_round_be_decided(round_to_be_decided) && round_to_be_decided.count_feature_famous_rounds < threshold_or_none_decided) {
+            if (!can_round_be_decided(round_to_be_decided) && round_to_be_decided.count_feature_famous_rounds < hashgraph.threshold_for_none_decided_famous_rounds) {
 
-                //version (none) {
-                //                    round_to_be_decided = find_next_famous_round(round_to_be_decided);
-                //                    if (round_to_be_decided) {
-                //                        if (can_round_be_decided(round_to_be_decided._next, 4)) {
-                //                            check_decide_round(round_to_be_decided);
-                //                        }
-                // }
-                //}
                 log("Not decided round");
                 return;
 
@@ -587,29 +573,14 @@ class Round {
 
             Event[] event_front;
             event_front.length = hashgraph.node_size;
-            const mask_fmt = "%" ~ hashgraph.node_size.to!string ~ "s";
             foreach (e; event_list) {
                 famous_seen_masks[e.node_id][e.node_id] = true;
                 famous_seen_masks[e._father.node_id] |= famous_seen_masks[e.node_id];
                 const top = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
-                version (none)
-                    __write("father_id=%d node_id=%d -> father_node_id=%d order=%d:%d " ~ mask_fmt ~ " %s",
-                            e._father.id, e.node_id, e._father.node_id,
-                            e.order, e._father.order, famous_seen_masks[e._father.node_id],
-                            (top) ? format("TOP %d", famous_seen_masks[e._father.node_id].count) : ""
-                );
                 if (!event_front[e._father.node_id] && isMajority(famous_seen_masks[e._father.node_id], hashgraph)) {
                     event_front[e._father.node_id] = e._father;
                 }
             }
-            __write("Top selection round %d witness_in_round=%d", r.number, witness_event_in_round.walkLength);
-            version (none)
-                event_front
-                    .filter!(e => e !is null)
-                    .each!(e => __write("round=%d id=%d son_node_id=%d -> node_id=%d order=%d", e.round.number, e.id, e
-                            .son
-                            .node_id, e.node_id, e
-                            .order));
             bool done;
             do {
                 done = true;
@@ -635,13 +606,6 @@ class Round {
             event_front
                 .filter!(e => e !is null)
                 .each!(e => Event.callbacks.connect(e));
-            version (none) {
-                auto order_list = event_front.filter!(e => e !is null)
-                    .map!(e => e.order)
-                    .array
-                    .sort;
-                __write("order_list=%s", order_list);
-            }
             auto event_collection = event_front
                 .filter!(e => e !is null)
                 .map!(e => e[]
