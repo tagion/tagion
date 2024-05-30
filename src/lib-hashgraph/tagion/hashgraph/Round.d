@@ -68,8 +68,7 @@ class Round {
      * as the number of nodes in the hashgraph
      * Returns: number of nodes in the round 
      */
-    version(none)
-    const(uint) node_size() const pure nothrow @nogc {
+    version (none) const(uint) node_size() const pure nothrow @nogc {
         return cast(uint) _events.length;
     }
 
@@ -104,7 +103,7 @@ class Round {
      * Params:
      *   event = the event to be added
      */
-    package void add(Event event) pure nothrow 
+    package void add(Event event) pure nothrow
     in {
         assert(event._witness, "The event id " ~ event.id.to!string ~ " added to the round should be a witness ");
         assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
@@ -466,17 +465,18 @@ class Round {
                 if (item.value) {
                     return item.value.witness.decided;
                 }
-                const last_witness_event= last_witness_events[item.index];
+                const last_witness_event = last_witness_events[item.index];
                 if (last_witness_event) {
-                    return last_witness_event._round.number > r.number; 
+                    return last_witness_event._round.number > r.number;
                 }
                 return (last_round.number - r.number) >= hashgraph.last_witness_height_limit;
             }
+
             if (r) {
                 auto witness_in_round = r._events.filter!(e => e !is null);
                 if (isMajority(witness_in_round.count, hashgraph.node_size)) {
                     return r._events.enumerate
-                    .all!(item => _decided(item));
+                        .all!(item => _decided(item));
                 }
             }
             return false;
@@ -506,7 +506,8 @@ class Round {
                         witness_in_round
                             .filter!(w => !w.decided)
                             .map!(w => only(w.yes_votes, w.no_votes, w.decided,
-                            (last_witness_events[w.outer.node_id]!is null) ? last_witness_events[w.outer.node_id].round
+                                (last_witness_events[w.outer.node_id]!is null) ? last_witness_events[w.outer.node_id]
+                    .round
                     .number : -1
                 )),
                 witness_in_round.filter!(w => w.votedYes).count,
@@ -549,8 +550,7 @@ class Round {
             version (none)
                 __write("round %d votes yes %(%s %)", round_to_be_decided.number,
                         witness_in_round.map!(w => isMajority(w.yes_votes, hashgraph.node_size)));
-            version(none)
-            const decided_with_yes_votes = witness_in_round
+            version (none) const decided_with_yes_votes = witness_in_round
                 .filter!(w => w.votedYes)
                 .count;
             version (none)
@@ -562,36 +562,6 @@ class Round {
             }
             collect_received_round(round_to_be_decided);
             check_decide_round;
-        }
-
-        static bool higher_order(const Event a, const Event b) pure nothrow {
-            if (!a) {
-                return false;
-            }
-            if (!b) {
-                return true;
-            }
-
-            if (a.order > b.order) {
-                return true;
-            }
-            if (a.order == b.order) {
-                auto a_father = a[].filter!(e => e._father !is null)
-                    .map!(e => e._father);
-                auto b_father = b[].filter!(e => e._father !is null)
-                    .map!(e => e._father);
-                if (a_father.empty) {
-                    if (b_father.empty) {
-                        return higher_order(a._mother, b._mother);
-                    }
-                    return false;
-                }
-                if (b_father.empty) {
-                    return true;
-                }
-                return higher_order(a_father.front, b_father.front);
-            }
-            return false;
         }
 
         protected void collect_received_round(Round r)
@@ -630,7 +600,7 @@ class Round {
                 .filter!(e => e._witness.isFamous);
             auto event_list = majority_seen_from_famous(famous_witness_in_round);
             event_list
-                .sort!((a, b) => higher_order(a, b));
+                .sort!((a, b) => Event.higher_order(a, b));
             BitMask[] famous_seen_masks;
             famous_seen_masks.length = hashgraph.node_size;
 

@@ -16,7 +16,7 @@ import std.stdio;
 import std.traits;
 import std.typecons;
 import tagion.basic.Types : Buffer;
-import tagion.basic.basic :   isinit;
+import tagion.basic.basic : isinit;
 import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
@@ -44,27 +44,23 @@ class Event {
     package int pseudo_time_counter;
 
     package {
-        // This is the internal pointer to the connected Event's
-        Event _mother;
-        Event _father;
-        Event _daughter;
-        Event _son;
 
-        int _order;
-        // The withness mask contains the mask of the nodes
-        // Which can be seen by the next rounds witness
-        BitMask _round_seen_mask;
         Round _round; /// The where the event has been created
-    Witness _witness; /// Contains information for the witness events
+        Witness _witness; /// Contains information for the witness events
     }
     immutable uint node_id; /// Node number of the event
     immutable uint id; /// Event id
     immutable(EventPackage*) event_package; /// Then exchanged event information
 
-
     BitMask _witness_seen_mask; /// Witness seen in privious round
     BitMask _intermediate_seen_mask;
+    // This is the internal pointer to the connected Event's
+    package Event _mother; /// Points to the self-parent
+    package Event _father; /// Points to other-parrent
+    protected Event _daughter; /// Points to the direct self-ancestor
+    protected Event _son; /// Points to the direct other-ancestor
     protected {
+        int _order; /// Event order higher value means after
         Round _round_received; /// The round in which the event has been voted to be received
     }
     Topic topic = Topic("hashgraph_event");
@@ -76,6 +72,35 @@ class Event {
         return _count;
     }
 
+    static bool higher_order(const Event a, const Event b) pure nothrow {
+        if (!a) {
+            return false;
+        }
+        if (!b) {
+            return true;
+        }
+
+        if (a.order > b.order) {
+            return true;
+        }
+        if (a.order == b.order) {
+            auto a_father = a[].filter!(e => e._father !is null)
+                .map!(e => e._father);
+            auto b_father = b[].filter!(e => e._father !is null)
+                .map!(e => e._father);
+            if (a_father.empty) {
+                if (b_father.empty) {
+                    return higher_order(a._mother, b._mother);
+                }
+                return false;
+            }
+            if (b_father.empty) {
+                return true;
+            }
+            return higher_order(a_father.front, b_father.front);
+        }
+        return false;
+    }
 
     /**
      * Builds an event from an eventpackage
@@ -131,71 +156,71 @@ class Event {
         }
 
         private {
-        BitMask _intermediate_event_mask;
-        BitMask _previous_strongly_seen_mask;
-        uint _yes_votes;
-        BitMask _has_voted_mask; /// Witness in the next round which has voted
+            BitMask _intermediate_event_mask;
+            BitMask _previous_strongly_seen_mask;
+            uint _yes_votes;
+            BitMask _has_voted_mask; /// Witness in the next round which has voted
         }
 
         @nogc final const pure nothrow {
-        final size_t votes() {
-            return _has_voted_mask.count;
-        }
-
-        final const(BitMask) previous_strongly_seen_mask() {
-            return _previous_strongly_seen_mask;
-        }
-
-        final const(BitMask) intermediate_event_mask() {
-            return _intermediate_event_mask;
-        }
-
-        final uint yes_votes() {
-            return _yes_votes;
-        }
-
-        final uint no_votes() {
-
-            return cast(uint)(_has_voted_mask.count) - _yes_votes;
-        }
-
-        final const(BitMask) has_voted_mask() {
-            return _has_voted_mask;
-        }
-
-        bool votedNo() {
-            return isMajority(no_votes, this.outer._round.events.length);
-        }
-
-        bool votedYes() {
-            return isMajority(_yes_votes, this.outer._round.events.length);
-        }
-
-        bool decided() {
-            const voted = _has_voted_mask.count;
-            const N = this.outer._round.events.length;
-
-            if (isMajority(voted, N)) {
-                if (isMajority(yes_votes, N) || isMajority(no_votes, N)) {
-                    return true;
-                }
-                const voters = this.outer._round.next.voters; //_events.filter!(e => e !is null).count;
-                if (voters == voted) {
-                    //const can=this.outer._round.next.has_feature_famous_round;
-
-                    //if (can) {
-                    //    return false;
-
-                    const votes_left = long(N) - long(voted);
-                    return !isMajority(votes_left + yes_votes, N);
-                    //return (yes_votes > no_votes) ?
-                    //    !isMajority(votes_left + yes_votes, N) : !isMajority(votes_left + no_votes, N);
-                    //}
-                }
+            final size_t votes() {
+                return _has_voted_mask.count;
             }
-            return false;
+
+            final const(BitMask) previous_strongly_seen_mask() {
+                return _previous_strongly_seen_mask;
+            }
+
+            final const(BitMask) intermediate_event_mask() {
+                return _intermediate_event_mask;
+            }
+
+            final uint yes_votes() {
+                return _yes_votes;
+            }
+
+            final uint no_votes() {
+
+                return cast(uint)(_has_voted_mask.count) - _yes_votes;
+            }
+
+            final const(BitMask) has_voted_mask() {
+                return _has_voted_mask;
+            }
+
+            bool votedNo() {
+                return isMajority(no_votes, this.outer._round.events.length);
+            }
+
+            bool votedYes() {
+                return isMajority(_yes_votes, this.outer._round.events.length);
+            }
+
+            bool decided() {
+                const voted = _has_voted_mask.count;
+                const N = this.outer._round.events.length;
+
+                if (isMajority(voted, N)) {
+                    if (isMajority(yes_votes, N) || isMajority(no_votes, N)) {
+                        return true;
+                    }
+                    const voters = this.outer._round.next.voters; //_events.filter!(e => e !is null).count;
+                    if (voters == voted) {
+                        //const can=this.outer._round.next.has_feature_famous_round;
+
+                        //if (can) {
+                        //    return false;
+
+                        const votes_left = long(N) - long(voted);
+                        return !isMajority(votes_left + yes_votes, N);
+                        //return (yes_votes > no_votes) ?
+                        //    !isMajority(votes_left + yes_votes, N) : !isMajority(votes_left + no_votes, N);
+                        //}
+                    }
+                }
+                return false;
+            }
         }
-       } 
         alias isFamous = votedYes;
 
         private void voteYes(const size_t node_id) pure nothrow {
@@ -211,8 +236,7 @@ class Event {
             }
         }
 
-        version(none)
-        void display_decided() const pure nothrow @nogc {
+        version (none) void display_decided() const pure nothrow @nogc {
             const voters = (this.outer.round.next) ? this.outer._round.next.events.filter!(e => e !is null).count : 0;
             const voted = _has_voted_mask.count;
             const N = this.outer._round.events.length;
@@ -335,15 +359,6 @@ class Event {
 
     static EventMonitorCallbacks callbacks;
 
-    /**
-  * The rounds see forward from this event
-  * Returns:  round seen mask
-  */
-    const(BitMask) round_seen_mask() const pure nothrow @nogc {
-        return _round_seen_mask;
-    }
-
-
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
 
@@ -367,7 +382,7 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    void witness_event(HashGraph hashgraph) nothrow 
+    void witness_event(HashGraph hashgraph) nothrow
     in (!_witness, "Witness has already been set")
     out {
         assert(_witness, "Witness should be set");
@@ -387,7 +402,7 @@ class Event {
       * Params:
       *   hashgraph = event owner 
       */
-    final void connect(HashGraph hashgraph) 
+    final void connect(HashGraph hashgraph)
     in {
         assert(hashgraph.areWeInGraph);
     }
