@@ -44,12 +44,10 @@ class Round {
     protected {
         Round _previous;
         Round _next;
-        //bool _decided;
     }
     immutable int number;
 
     Event[] _events;
-    //package Event[] _events;
     public BitMask famous_mask;
     BitMask seen_by_famous_mask;
 
@@ -173,14 +171,6 @@ class Round {
             _next._previous = null;
             _next = null;
         }
-    }
-
-    /**
-     * Check if the round has been decided
-     * Returns: true if the round has been decided
-     */
-    version (none) bool decided() const pure nothrow @nogc {
-        return _decided;
     }
 
     /**
