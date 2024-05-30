@@ -369,17 +369,6 @@ class Event {
     }
 
     /**
-     * Attach the mother round to this event
-     * Params:
-     *   hashgraph = the graph which produces this event
-     */
-    package void attach_round(HashGraph hashgraph) pure nothrow {
-        if (!_round) {
-            _round = _mother._round;
-        }
-    }
-
-    /**
     *  Makes the event a witness  
     */
     void witness_event(HashGraph hashgraph) nothrow
