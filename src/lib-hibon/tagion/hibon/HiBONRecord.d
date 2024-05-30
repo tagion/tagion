@@ -423,7 +423,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         format("Label for %s can not be empty", default_name));
                 static if (!exclude_flag) {
                     static if (HiBON.Value.hasType!UnqualT) {
-                        hibon[name] = cast(BaseT) m;
+                        hibon[name] = ((x) @trusted => cast(BaseT) x)(m);
                     }
                     else static if (isHiBON!BaseT) {
                         hibon[name] = m.toHiBON;

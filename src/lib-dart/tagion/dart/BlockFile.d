@@ -441,7 +441,7 @@ class BlockFile {
      +      the file pointer in byte counts
      +/
     ulong index_to_seek(const Index index) const pure nothrow {
-        return BLOCK_SIZE * cast(ulong) index;
+        return BLOCK_SIZE * cast(const(ulong)) index;
     }
 
     protected void writeStatistic() {

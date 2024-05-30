@@ -119,7 +119,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
             case E:
                     static if (isHiBONBaseType(E)) {
                         static if (only(INT32, INT64, UINT32, UINT64).canFind(type)) {
-                            return type_key_size + LEB128.calc_size(cast(BaseU) x);
+                            return type_key_size + LEB128.calc_size(cast(const BaseU) x);
                         }
                         else static if (type == TIME) {
                             return type_key_size + LEB128.calc_size(cast(ulong) x);

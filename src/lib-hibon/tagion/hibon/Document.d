@@ -547,7 +547,7 @@ static assert(uint.sizeof == 4);
         else {
             alias BaseT = TypedefType!T;
             static if (isIntegral!BaseT) {
-                size += LEB128.calc_size(cast(BaseT) x);
+                size += LEB128.calc_size(cast(const(BaseT)) x);
             }
             else {
                 size += BaseT.sizeof;
