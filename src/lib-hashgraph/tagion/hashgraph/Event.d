@@ -371,7 +371,7 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    void witness_event() nothrow
+    final void witness_event() nothrow
     in (!_witness, "Witness has already been set")
     out {
         assert(_witness, "Witness should be set");
@@ -429,7 +429,6 @@ class Event {
         _order = ((_father && higher(_father.order, _mother.order)) ? _father.order : _mother.order) + 1;
         _witness_seen_mask |= _mother._witness_seen_mask;
         _intermediate_seen_mask |= _mother._intermediate_seen_mask;
-        //hashgraph._rounds._round(this);
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
@@ -533,10 +532,6 @@ class Event {
     }
 
     @nogc pure nothrow const final {
-        bool isFamous() {
-            return isWitness && round.famous_mask[node_id];
-        }
-
         /**
      * The received round for this event
      * Returns: received round

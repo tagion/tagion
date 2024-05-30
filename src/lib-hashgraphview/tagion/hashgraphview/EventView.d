@@ -27,12 +27,11 @@ struct EventView {
     @label("$f") @optional @(filter.Initialized) uint father;
     @label("$n") size_t node_id;
     @label("$a") int altitude;
-    @label("$o") long order;
-    @label("$r") long round;
-    @label("$rec") long round_received;
+    @label("$o") int order;
+    @label("$r") int round;
+    @label("$R") int round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
     @label("$i") @optional @(filter.Initialized) bool intermediate;
-    //    @label("$I") @reserve @optional @(filter.Initialized) uint[] intermediate_event_ids; 
     @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$seen") @optional Buffer seen;
     @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
@@ -42,7 +41,6 @@ struct EventView {
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
     @optional @(filter.Initialized) bool top;
-    //  @label("$strongx") @reserve @optional Buffer[] strongly_seen_matrix;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -63,13 +61,9 @@ struct EventView {
             node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
             altitude=event.altitude;
             order=event.order;
-            witness=event.isWitness;
-            if (witness) {
-                famous = event.isFamous;
-            }
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
-            round_received=(event.round_received)?event.round_received.number:long.min;
+            round_received=(event.round_received)?event.round_received.number:int.min;
             if (event.top) {
                 top=true;
             }
@@ -79,10 +73,10 @@ struct EventView {
             intermediate_seen=event._intermediate_seen_mask.bytes;
             if (event.isWitness) {
                auto witness=event.witness;
+               famous=witness.isFamous;
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
                yes_votes = witness.yes_votes;
                no_votes = witness.no_votes;
-               famous = isMajority(yes_votes, event.round.events.length); 
                voted = witness.has_voted_mask.bytes; 
                decided = witness.decided;
             }

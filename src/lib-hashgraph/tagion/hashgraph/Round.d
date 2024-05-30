@@ -48,7 +48,6 @@ class Round {
     immutable int number;
 
     Event[] _events;
-    public BitMask famous_mask;
     BitMask seen_by_famous_mask;
 
     /**
