@@ -104,14 +104,11 @@ int __main(string[] args) {
     if(!contract.empty) {
         filter_func = (Document hirpc_doc) nothrow {
                 try {
-                const payload = hirpc_doc["$msg"].get!Document["params"].get!SubscriptionPayload;
-                auto doc = payload.data;
-                if (doc.isRecord!ContractStatus) {
+                    const contract_status = hirpc_doc["$msg"]["params"]["data"].get!ContractStatus;
                     // Drop contact status if it has different hash
-                    if (ContractStatus(doc).contract_hash.encodeBase64 != contract) {
+                    if (contract_status.contract_hash.encodeBase64 == contract) {
                         return true;
                     }
-                }
                 } catch(Exception) {}
                 return false;
         };
