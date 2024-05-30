@@ -1068,6 +1068,27 @@ static assert(uint.sizeof == 4);
             }
 
             /++
+             Assumes that the element is a document
+             Returns:
+               The element with the key
+             Throws:
+               If the element with the key is not found then a HiBONException is thrown
+               If the element is not a Document then a HiBONException is thrown
+
+
+             Example:
+               If getting a chain of document you can do this
+               ---
+               doc["$msg"]["params"]["data"].get!MyRecord
+               ---
+             
+             +/
+            Element opIndex(in string key) pure {
+                const doc = get!Document;
+                return doc[key];
+            }
+
+            /++
              Returns:
              the index of the key
              throws:
