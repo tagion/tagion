@@ -54,16 +54,23 @@ class Event {
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         BitMask _round_seen_mask;
+        Round _round; /// The where the event has been created
+    Witness _witness; /// Contains information for the witness events
     }
     immutable uint node_id; /// Node number of the event
-    immutable uint id;
-    Witness _witness;
+    immutable uint id; /// Event id
+    immutable(EventPackage*) event_package; /// Then exchanged event information
+
 
     BitMask _witness_seen_mask; /// Witness seen in privious round
     BitMask _intermediate_seen_mask;
+    protected {
+        Round _round_received; /// The round in which the event has been voted to be received
+    }
     Topic topic = Topic("hashgraph_event");
     bool top;
     bool _intermediate_event;
+
     @nogc
     static uint count() nothrow {
         return _count;
@@ -328,9 +335,6 @@ class Event {
 
     static EventMonitorCallbacks callbacks;
 
-    // The altitude increases by one from mother to daughter
-    immutable(EventPackage*) event_package;
-
     /**
   * The rounds see forward from this event
   * Returns:  round seen mask
@@ -339,14 +343,6 @@ class Event {
         return _round_seen_mask;
     }
 
-    Round _round; /// The where the event has been created
-
-    package {
-        //BitMask _round_received_mask; /// Voting mask for the received rounds
-    }
-    protected {
-        Round _round_received; /// The round in which the event has been voted to be received
-    }
 
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
@@ -371,7 +367,7 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    void witness_event(HashGraph hashgraph) nothrow pure
+    void witness_event(HashGraph hashgraph) nothrow 
     in (!_witness, "Witness has already been set")
     out {
         assert(_witness, "Witness should be set");
@@ -615,7 +611,7 @@ class Event {
           * Is this event owner but this node 
           * Returns: true if the event is owned
           */
-        bool nodeOwner() const pure nothrow @nogc {
+        bool nodeOwner() {
             return node_id is 0;
         }
 
@@ -623,7 +619,7 @@ class Event {
          * Gets the event order number 
          * Returns: order
          */
-        int order() const pure nothrow @nogc {
+        int order() {
             return _order;
         }
 
@@ -631,7 +627,7 @@ class Event {
        * Checks if the event is connected in the graph 
        * Returns: true if the event is corrected 
        */
-        bool connected() const pure @nogc {
+        bool connected() {
             return (_mother !is null);
         }
 
