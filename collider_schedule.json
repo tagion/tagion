@@ -222,7 +222,7 @@
       ],
       "envs": {},
       "stages": [
-        "fiber", "acceptance"
+        "fiber"
       ],
       "timeout": 0.0
     },

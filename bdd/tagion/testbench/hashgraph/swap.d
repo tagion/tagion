@@ -122,7 +122,6 @@ class NodeSwap {
 
     @Then("stop the network.")
     Document _network() {
-        import tagion.hashgraphview.EventView;
         Pubkey[string] node_labels;
         foreach (channel, _net; network.networks) {
             node_labels[_net._hashgraph.name] = channel;

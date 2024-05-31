@@ -61,11 +61,7 @@ class StartNetworkWithNAmountOfNodes {
         (() @trusted { getrlimit(RLIMIT_STACK, &limit); })();
         writefln("RESOURCE LIMIT = %s", limit);
 
-        int[] node_graphs;
-        foreach(n; node_names){
-            node_graphs ~= 0;
-        }
-        network = new TestNetwork(node_names,  0);
+        network = new TestNetwork(node_names);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
         writeln(network.random);
@@ -208,7 +204,6 @@ class StartNetworkWithNAmountOfNodes {
     @Then("stop the network")
     Document _network() {
         Pubkey[string] node_labels;
-        import tagion.hashgraphview.EventView;
         foreach (channel, _net; network.networks) {
             node_labels[_net._hashgraph.name] = channel;
         }

@@ -8,7 +8,6 @@ import tagion.tools.Basic;
 import std.file : mkdirRecurse, rmdirRecurse, exists;
 import std.path : buildPath;
 import std.stdio;
-import std.algorithm;
 import tagion.testbench.hashgraph;
 import tagion.testbench.hashgraph.hashgraph_test_network;
 import std.range;
@@ -41,22 +40,17 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
 
     uint MAX_CALLS = args[1].ifThrown("10000").to!uint.ifThrown(10000);
-    int[] weights = args[2].ifThrown("100,5,100,100,100")
-        .split(",").map!(n => n.to!int).array;
-
-    if (args.length == 4) {
-        weights.length=args[3].to!uint;
-        weights.filter!(w => w == 0)
-        .each!((ref w) => w=100);
-    }
+    int[] weights = args[2].ifThrown("100,5,100,100,100").split(",").map!(n => n.to!int).array;
+    writefln("%s", weights);
     uint number_of_nodes = cast(uint) weights.length;
+    
     // uint number_of_nodes = args[2].to!uint.ifThrown(5);
 
     import tagion.utils.pretend_safe_concurrency : register, thisTid;
     register("run_fiber_epoch", thisTid);
 
     auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
-    hashgraph_fiber_feature.RunPassiveFastHashgraph(number_of_nodes, weights,  MAX_CALLS, module_path);
+    hashgraph_fiber_feature.RunPassiveFastHashgraph(number_of_nodes, weights, MAX_CALLS, module_path);
     hashgraph_fiber_feature.run;
 
     return 0;
@@ -72,7 +66,7 @@ class RunPassiveFastHashgraph {
     uint number_of_nodes = 5;
     int[] weights;
 
-    this(uint number_of_nodes, int[] weights,  uint MAX_CALLS, string module_path) {
+    this(uint number_of_nodes, int[] weights, uint MAX_CALLS, string module_path) {
         this.number_of_nodes = number_of_nodes;
         this.module_path = module_path;
         this.node_names = number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
@@ -111,7 +105,7 @@ class RunPassiveFastHashgraph {
             } else {
                 channel_number = network.random.value(0, network.channels.length);
             }
-            // writefln("channel_number: %s", channel_number);
+            writefln("channel_number: %s", channel_number);
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
             Event.callbacks = node_callbacks[network.current];

@@ -6,8 +6,7 @@ module tagion.hashgraph.HashGraphBasic;
 import std.exception : assumeWontThrow;
 import std.format;
 import std.stdio;
-import std.traits : isSigned, isIntegral;
-import std.meta;
+import std.traits : isSigned;
 import std.typecons : TypedefType;
 import tagion.basic.ConsensusExceptions : ConsensusException, GossipConsensusException, convertEnum;
 import tagion.basic.Types : Buffer;
@@ -58,15 +57,20 @@ unittest { // Test of the altitude measure function
  *     Returns `true` if the votes are more than 2/3
  */
 @nogc
-bool isMajority(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
+bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
+///
 unittest {
 
     int[] some_array;
     assert(!isMajority(some_array.length, ulong(5)));
 
+}
+
+bool isMajority(T, S)(T voting, S node_size) pure nothrow {
+    return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
 @nogc
@@ -104,7 +108,7 @@ enum ExchangeState : uint {
         Coherent state is when an the least epoch wavefront has been received or
         if all the nodes isEva notes (This only occurs at genesis).
     */
-    COHERENT,
+    COHERENT, 
 }
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);

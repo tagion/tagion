@@ -26,6 +26,11 @@ import tagion.logger.Logger;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
+// debug
+import tagion.basic.Debug;
+import tagion.hibon.HiBONJSON;
+import tagion.utils.Miscellaneous : cutHex;
+
 @safe
 class HashGraph {
     enum default_scrap_depth = 10;
@@ -33,12 +38,7 @@ class HashGraph {
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
 
-    uint last_witness_height_limit = 10; /// Limit to when a withness should produced from a node
-    uint threshold_for_none_decided_famous_rounds = 9; /** 
-        Limit to when a round is decided 
-        if feature famous round can be decided 
-    */
-    //bool __debug_print;
+    bool __debug_print;
 
     protected alias check = Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
@@ -70,6 +70,7 @@ class HashGraph {
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
     }
+
     Flag!"joining" joining() const pure nothrow @nogc {
         return _joining;
     }
@@ -121,6 +122,7 @@ class HashGraph {
         this.refinement = refinement;
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
+
         this._joining = joining;
         this.name = name;
         _rounds = Round.Rounder(this);
@@ -130,6 +132,7 @@ class HashGraph {
     in {
         assert(_nodes.length > 0 && (channel in _nodes),
                 "Owen Eva event needs to be create before witness can be initialized");
+        assert(_owner_node !is null);
     }
     do {
         version (EPOCH_LOG) {
@@ -140,7 +143,7 @@ class HashGraph {
             void init_event(immutable(EventPackage*) epack) {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
-                event.witness_event();
+                event.witness_event(node_size);
                 version (EPOCH_LOG) {
                     log("init_event time %s", event.event_body.time);
                 }
@@ -178,6 +181,9 @@ class HashGraph {
         recovered_nodes = _nodes;
         _nodes = null;
         check(isMajority(cast(uint) epacks.length), ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
+        // consensus(epacks.length)
+        //     .check(epacks.length <= node_size, ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
+        // getNode(channel); // Make sure that node_id == 0 is owner node
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
                 check(!(epack.pubkey in _nodes), ConsensusFailCode.HASHGRAPH_DUPLICATE_WITNESS);
@@ -186,19 +192,20 @@ class HashGraph {
         }
     }
 
-    const(Round.Rounder) rounds() const pure nothrow @nogc {
+    @nogc
+    const(Round.Rounder) rounds() const pure nothrow {
         return _rounds;
     }
 
-    bool areWeInGraph() const pure nothrow @nogc {
+    bool areWeInGraph() const pure nothrow {
         return _rounds.last_decided_round !is null;
     }
 
-    final Pubkey channel() const pure nothrow @nogc {
+    final Pubkey channel() const pure nothrow {
         return hirpc.net.pubkey;
     }
 
-    final const(Pubkey[]) channels() const pure nothrow {
+    const(Pubkey[]) channels() const pure nothrow {
         return _nodes.keys;
     }
 
@@ -207,7 +214,7 @@ class HashGraph {
             return false;
         }
         const node = _nodes.get(selected_channel, null);
-        version (SEND_ALWAYS) {
+        version(SEND_ALWAYS) {
             if (node) {
                 return node.state is ExchangeState.NONE;
             }
@@ -283,6 +290,7 @@ class HashGraph {
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
         immutable eva_epack = eva_pack(time, nonce);
         auto eva_event = new Event(eva_epack, this);
+
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
         // set_strongly_seen_mask(eva_event);
@@ -343,7 +351,7 @@ class HashGraph {
     }
 
     class Register {
-        EventPackageCache event_package_cache;
+        private EventPackageCache event_package_cache;
 
         this(const Wavefront received_wave) pure nothrow {
             uint count_events;
@@ -359,8 +367,7 @@ class HashGraph {
             }
         }
 
-        //final 
-        Event lookup(const(Buffer) fingerprint) {
+        final Event lookup(const(Buffer) fingerprint) {
             if (fingerprint in _event_cache) {
                 return _event_cache[fingerprint];
             }
@@ -381,7 +388,7 @@ class HashGraph {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        Event register(const(Buffer) fingerprint) {
+        final Event register(const(Buffer) fingerprint) {
             Event event;
 
             if (!fingerprint) {
@@ -622,7 +629,7 @@ class HashGraph {
                         .epacks
                         .map!((e) => cast(immutable(EventPackage)*) e)
                         .array
-                        .sort!((a, b) => a.fingerprint < b.fingerprint);
+                        .sort!((a,b) => a.fingerprint < b.fingerprint);
                     auto _own_epacks = _nodes.byValue
                         .map!((n) => n[])
                         .joiner
@@ -744,11 +751,11 @@ class HashGraph {
     @safe
     class Node {
         ExchangeState state;
-        immutable uint node_id;
+        immutable size_t node_id;
         immutable(Pubkey) channel;
         private bool _offline;
         private this(const Pubkey channel, const size_t node_id) pure nothrow {
-            this.node_id = cast(uint) node_id;
+            this.node_id = node_id;
             this.channel = channel;
         }
 
@@ -785,7 +792,7 @@ class HashGraph {
             }
         }
 
-        protected Event _event; /// This is the last event in this Node
+        private Event _event; /// This is the last event in this Node
 
         @nogc
         const(Event) event() const pure nothrow {
@@ -906,4 +913,51 @@ class HashGraph {
             .each!((n) { used_nodes[n] = true; });
         return (~used_nodes)[].front;
     }
+
+    //bool disable_scrapping;
+
+    enum max_package_size = 0x1000;
+    enum round_clean_limit = 10;
+
+    /++
+     Dumps all events in the Hashgraph to a file
+     +/
+    void fwrite(string filename, Pubkey[string] node_labels = null) {
+        import tagion.hashgraphview.EventView;
+        import tagion.hibon.HiBONFile : fwrite;
+
+        File graphfile = File(filename, "w");
+
+        size_t[Pubkey] node_id_relocation;
+        if (node_labels.length) {
+            // assert(node_labels.length is _nodes.length);
+            auto names = node_labels.keys;
+            names.sort;
+            foreach (i, name; names) {
+                node_id_relocation[node_labels[name]] = i;
+            }
+
+        }
+
+        EventView[size_t] events;
+        /* auto events = new HiBON; */
+        (() @trusted {
+            foreach (n; _nodes) {
+                const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
+                n[]
+                    .filter!((e) => !e.isGrounded)
+                    .each!((e) => events[e.id] = EventView(e, node_id));
+            }
+        })();
+
+        graphfile.fwrite(NodeAmount(node_size));
+        foreach(e; events) {
+            graphfile.fwrite(e);
+        }
+        /* auto h = new HiBON; */
+        /* h[Params.size] = node_size; */
+        /* h[Params.events] = events; */
+        /* graphfile.fwrite(h); */
+    }
+
 }
