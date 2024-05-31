@@ -646,8 +646,8 @@ int _main(string[] args) {
         }
 
         outfile.write(startbuf);
-        foreach(n, buf; obuf[].enumerate) {
-            verbose("Write buffer %d", n);
+        foreach(buf; obuf[]) {
+            verbose("Write %s", inputfiles);
             outfile.write(buf);
         }
 
