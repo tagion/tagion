@@ -412,10 +412,12 @@ jobs:
         with:
           compiler: dmd-beta
       - run: |
-          make tagion 2>&1 | grep Deprecation > build.log
+          make tagion 2&> build.log
+          cat build.log 
+          grep Deprecation build.log > deprecations.log
           while read line; do
             echo "::warning:: $line"
-          done < build.log
+          done < deprecations.log
 
   ios_libmobile:
     needs: commit_stage
