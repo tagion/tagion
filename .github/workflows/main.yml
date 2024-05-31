@@ -403,6 +403,20 @@ jobs:
       - name: Cleanup
         run: make PLATFORM=${{ matrix.arch }}-linux-android clean
 
+  # Check for deperecations in pre-release compiler
+  check_deprecations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dlang-community/setup-dlang@v2
+        with:
+          compiler: dmd-beta
+      - run: |
+          make tagion 2>&1 | grep Deprecation > build.log
+          while read line; do
+            echo "::warning:: $line"
+          done < build.log
+
   ios_libmobile:
     needs: commit_stage
     strategy:
