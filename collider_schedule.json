@@ -219,11 +219,10 @@
         "10000",
         "100,5",
         "7"
-
       ],
       "envs": {},
       "stages": [
-        "fiber"
+        "fiber", "acceptance"
       ],
       "timeout": 0.0
     },
