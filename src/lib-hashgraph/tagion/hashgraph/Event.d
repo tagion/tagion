@@ -61,7 +61,7 @@ class Event {
     }
     Witness _witness;
 
-    BitMask _witness_seen_mask; /// Witness seen in privious round
+    BitMask _witness_seen_mask; /// Witness seen in previous round
     BitMask _intermediate_seen_mask;
     bool _intermediate_event;
     //current_event.Event[] _intermediate_events_seen;
