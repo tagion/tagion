@@ -403,7 +403,7 @@ jobs:
       - name: Cleanup
         run: make PLATFORM=${{ matrix.arch }}-linux-android clean
 
-  # Check for deperecations in pre-release compiler
+  # Check for deprecations in pre-release compiler
   check_deprecations:
     runs-on: ubuntu-latest
     steps:
@@ -412,7 +412,7 @@ jobs:
         with:
           compiler: dmd-beta
       - run: |
-          make tagion 2&> build.log
+          make tagion &> build.log
           cat build.log 
           grep Deprecation build.log > deprecations.log
           while read line; do
