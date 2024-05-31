@@ -25,7 +25,7 @@ struct EventView {
     uint id;
     @label("$m") @optional @(filter.Initialized) uint mother;
     @label("$f") @optional @(filter.Initialized) uint father;
-    @label("$n") size_t node_id;
+    @label("$n") uint node_id;
     @label("$a") int altitude;
     @label("$o") int order;
     @label("$r") int round;
@@ -44,7 +44,7 @@ struct EventView {
     bool father_less;
 
     mixin HiBONRecord!(q{
-        this(const Event event, const size_t relocate_node_id=size_t.max) @safe pure nothrow {
+        this(const Event event, const uint relocate_node_id=uint.max) @safe pure nothrow {
             import std.algorithm : each;
             id=event.id;
             if (event.isGrounded) {
@@ -101,21 +101,21 @@ void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node
 
     File graphfile = File(filename, "w");
 
-    size_t[Pubkey] node_id_relocation;
+    uint[Pubkey] node_id_relocation;
     if (node_labels.length) {
         // assert(node_labels.length is _nodes.length);
         auto names = node_labels.keys;
         names.sort;
         foreach (i, name; names) {
-            node_id_relocation[node_labels[name]] = i;
+            node_id_relocation[node_labels[name]] = cast(uint)i;
         }
 
     }
 
-    EventView[size_t] events;
+    EventView[uint] events;
     (() @trusted {
         foreach (n; hashgraph.nodes) {
-            const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
+            const node_id = (node_id_relocation.length is 0) ? uint.max : node_id_relocation[n.channel];
             n[]
                 .filter!((e) => !e.isGrounded)
                 .each!((e) => events[e.id] = EventView(e, node_id));

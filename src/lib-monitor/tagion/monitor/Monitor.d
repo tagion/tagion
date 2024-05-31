@@ -63,7 +63,7 @@ class LogMonitorCallbacks : BaseMonitorCallbacks {
 
 class FileMonitorCallbacks : BaseMonitorCallbacks {
     File out_file;
-    size_t[Pubkey] node_id_relocation;
+    uint[Pubkey] node_id_relocation;
     this(string file_name, uint nodes, Pubkey[] node_keys) {
         // the "a" creates the file as well
         out_file = File(file_name, "a");
@@ -71,7 +71,7 @@ class FileMonitorCallbacks : BaseMonitorCallbacks {
 
         import std.algorithm : sort;
         import std.range : enumerate;
-        foreach(i, k; node_keys.sort.enumerate) {
+        foreach(i, k; node_keys.sort.enumerate!uint) {
             this.node_id_relocation[k] = i;
         }
     }

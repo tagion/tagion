@@ -104,17 +104,17 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
     Range doc_range;
     size_t node_size = 5;
     EventView[uint] events;
-    long NODE_INDENT = 110;
+    int NODE_INDENT = 110;
     const NODE_CIRCLE_SIZE = 40;
 
     this(Range doc_range) {
         this.doc_range = doc_range;
     }
 
-    long max_height = long.min;
-    long max_width = long.min;
+    int max_height = int.min;
+    int max_width = int.min;
 
-    alias Pos = Tuple!(long, "x", long, "y");
+    alias Pos = Tuple!(int, "x", int, "y");
 
     struct SVGCircle {
         bool raw_svg;
@@ -186,7 +186,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
     }
 
     private const(Pos) getPos(ref const EventView e) pure nothrow {
-        return Pos(long(e.node_id) * NODE_INDENT + NODE_INDENT, -(long(e.order * NODE_INDENT) + NODE_INDENT));
+        return Pos(int(e.node_id) * NODE_INDENT + NODE_INDENT, -(int(e.order * NODE_INDENT) + NODE_INDENT));
     }
 
     private void drawEdge(ref HeightBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother) {
@@ -253,7 +253,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
         if (e.intermediate) {
             node_box.fill = "lightblue";
-            if (e.round_received != long.min) {
+            if (e.round_received != int.min) {
                 node_box.stroke = pastel19.color(e.round_received);
                 node_box.stroke_width = 6;
             }
@@ -276,7 +276,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text_anchor = "middle";
         text.dominant_baseline = "middle";
         text.fill = "black";
-        text.text = format("%s:%s", e.round == long.min ? "X" : format("%s", e.round), e.round_received == long.min ? "X" : format(
+        text.text = format("%s:%s", e.round == int.min ? "X" : format("%s", e.round), e.round_received == int.min ? "X" : format(
                 "%s", e.round_received));
         obuf[20].writefln("%s", text.toString);
         //if (e.seen.length) {
@@ -426,8 +426,8 @@ struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
         if (e.father_less) {
             obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "egg");
         }
-        string round_text = (e.round is long.min) ? "\u2693" : e.round.to!string;
-        if (e.round_received !is long.min) {
+        string round_text = (e.round is int.min) ? "\u2693" : e.round.to!string;
+        if (e.round_received !is int.min) {
             round_text ~= format(":%s", e.round_received);
         }
         // if (e.erased) {
