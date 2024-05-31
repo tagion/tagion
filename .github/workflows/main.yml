@@ -412,7 +412,7 @@ jobs:
         with:
           compiler: dmd-beta
       - run: |
-          make tagion &| tee build.log
+          make tagion 2>&1 >/dev/null | tee build.log
           grep Deprecation build.log > deprecations.log
           while read line; do
             echo "::warning:: $line"
