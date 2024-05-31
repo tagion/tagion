@@ -64,19 +64,18 @@ class HashGraph {
     Statistic!uint live_witness_statistic;
     Statistic!long epoch_delay_statistic;
     BitMask _excluded_nodes_mask;
-    //private {
-    Node[Pubkey] _nodes; // List of participating _nodes T
-    uint event_id;
-    sdt_t last_epoch_time;
-    Flag!"joining" _joining;
-    //}
+    private {
+        Node[Pubkey] _nodes; // List of participating _nodes T
+        uint event_id;
+        sdt_t last_epoch_time;
+        Flag!"joining" _joining;
+    }
     Refinement refinement;
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
     }
-
-    Flag!"joining" joining() const pure nothrow @nogc {
+  Flag!"joining" joining() const pure nothrow @nogc {
         return _joining;
     }
 
@@ -136,7 +135,6 @@ class HashGraph {
     in {
         assert(_nodes.length > 0 && (channel in _nodes),
                 "Owen Eva event needs to be create before witness can be initialized");
-        assert(_owner_node !is null);
     }
     do {
         version (EPOCH_LOG) {
@@ -193,20 +191,19 @@ class HashGraph {
         }
     }
 
-    @nogc
-    const(Round.Rounder) rounds() const pure nothrow {
+    const(Round.Rounder) rounds() const pure nothrow @nogc {
         return _rounds;
     }
 
-    bool areWeInGraph() const pure nothrow {
+    bool areWeInGraph() const pure nothrow @nogc {
         return _rounds.last_decided_round !is null;
     }
 
-    Pubkey channel() const pure nothrow {
+    final Pubkey channel() const pure nothrow @nogc {
         return hirpc.net.pubkey;
     }
 
-    const(Pubkey[]) channels() const pure nothrow {
+    final const(Pubkey[]) channels() const pure nothrow {
         return _nodes.keys;
     }
 
