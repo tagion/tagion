@@ -52,7 +52,7 @@ class Event {
     immutable uint id; /// Event id
     immutable(EventPackage*) event_package; /// Then exchanged event information
 
-    BitMask _witness_seen_mask; /// Witness seen in privious round
+    BitMask _witness_seen_mask; /// Witness seen in previous round
     BitMask _intermediate_seen_mask;
     // This is the internal pointer to the connected Event's
     package Event _mother; /// Points to the self-parent
@@ -532,6 +532,10 @@ class Event {
     }
 
     @nogc pure nothrow const final {
+        bool isFamous() {
+            return isWitness && round.famous_mask[node_id];
+        }
+
         /**
      * The received round for this event
      * Returns: received round

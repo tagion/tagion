@@ -121,5 +121,20 @@ export class Wallet {
     return decodedString;
   }
 
+  makeTRTRead() {
+    const docPtrPtr = this.instance.exports.mymalloc(4);
+    const docLenPtr = this.instance.exports.mymalloc(4);
+
+    const result = this.instance.exports.tagion_wallet_make_trtread(this.ptr, docPtrPtr, docLenPtr);
+    console.log("tagion_wallet_make_trtread ", result);
+
+    const docPtr = new Uint32Array(this.instance.exports.memory.buffer, docPtrPtr, 1)[0];
+    const docLen = new Uint32Array(this.instance.exports.memory.buffer, docLenPtr, 1)[0];
+
+    console.log(docPtr, docLen);
+
+    return { ptr: docPtr, len: docLen };
+  }
+
 
 }
