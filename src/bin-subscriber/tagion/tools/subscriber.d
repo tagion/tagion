@@ -172,6 +172,7 @@ void subscription_handle_worker(string address, immutable(string[]) tags) {
             }
             catch(Exception e) {
                 sock.close();
+                stderr.writefln("Closed %s", address);
                 tools.error(e);
             }
         }

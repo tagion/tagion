@@ -25,9 +25,10 @@ import tagion.services.nodeinterface;
 import tagion.services.messages;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.utils.LRUT;
-import tagion.utils.Random;
+import tagion.utils.Random : generateId;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
+import tagion.hibon.HiBONFile;
 
 import nngd;
 
@@ -77,15 +78,10 @@ void draw_gradient_line(const Vector2 pos1, const Vector2 pos2, const Color colo
     dir.x /= len;
     dir.y /= len;
 
-    // Calculate step size
     float stepSize = len / cast(float)steps;
 
-    // Loop through each step
     foreach(i; 0 .. steps) {
-        // Calculate current position
         Vector2 currPos = {pos1.x + dir.x * stepSize * i, pos1.y + dir.y * stepSize * i};
-
-        // Calculate next position
         Vector2 nextPos = {currPos.x + dir.x * stepSize, currPos.y + dir.y * stepSize};
 
         // Interpolate color
@@ -95,6 +91,7 @@ void draw_gradient_line(const Vector2 pos1, const Vector2 pos2, const Color colo
         DrawLineEx(currPos, nextPos, 5, currColor);
     }
 }
+
 
 void draw_color_map() {
     int x = 15;
@@ -149,28 +146,32 @@ int __main(string[] args) {
         return 0;
     }
 
+    version(none)
     if(addresses.empty) {
         throw new Exception("Missing subscription address");
     }
 
+    Tid[] tids;
+    if(args.length >= 2) {
+        string event_filename = args[1];
+        tids ~= spawn(&file_handle_worker, event_filename);
+    }
+
     int screenWidth = 800;
     int screenHeight = 800;
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    /* SetConfigFlags(FLAG_WINDOW_RESIZABLE); */
     InitWindow(screenWidth, screenHeight, "Tagion Nodeinterface debugger");
     scope(exit) {
         CloseWindow();
     }
     SetTargetFPS(60);
 
-    Tid[] tids;
     foreach(address; addresses) {
         tids ~= spawn(&subscription_handle_worker, address);
     }
 
     static struct Node {
         Vector2 pos;
-        /* int posX; */
-        /* int posY; */
     }
 
     auto all_nodes = new RedBlackTree!(Pubkey);
@@ -178,30 +179,36 @@ int __main(string[] args) {
     Node[Pubkey] nodes_by;
 
     size_t last_node_length;
-    NodeInterfaceSub last_event;
     auto event_queue = new shared(LRUT!(int, NodeInterfaceSub))(null, 8, 300);
+
+    bool paused;
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         scope(exit) EndDrawing();
 
-        screenWidth = GetScreenWidth(); screenHeight = GetScreenHeight();
-        int cx = screenWidth/2; int cy = screenHeight/2;
+        screenWidth = GetScreenWidth();
+        screenHeight = GetScreenHeight();
+        int cx = screenWidth/2;
+        int cy = screenHeight/2;
 
         ClearBackground(Colors.RAYWHITE);
 
-        receiveTimeout(Duration.zero,
-                (NodeInterfaceSub sub) { 
-                    /* display_text = sub.channel.encodeBase64; */
-                    /* node_color = pubkey_to_color(sub.channel);  */
-                    last_event = sub;
-                    all_nodes.stableInsert(sub.owner);
-                    if(!sub.channel.empty) {
-                        event_queue[generateId] = sub;
-                        all_nodes.stableInsert(sub.channel);
+        if(IsKeyPressed(KEY_SPACE)) {
+            paused = !paused;
+        }
+
+        if(!paused) {
+            receiveTimeout(Duration.zero,
+                    (NodeInterfaceSub sub) { 
+                        all_nodes.stableInsert(sub.owner);
+                        if(!sub.channel.empty) {
+                            event_queue[generateId] = sub;
+                            all_nodes.stableInsert(sub.channel);
+                        }
                     }
-                }
-        );
+            );
+        }
 
         int RADIUS = (screenWidth <= screenHeight)? cx - 50 : cy - 50;
         // DrawCircle(cx, cy, RADIUS, Colors.BLACK);
@@ -235,12 +242,6 @@ int __main(string[] args) {
             color_end.a = 0;
             draw_gradient_line(sender.pos, receiver.pos, color_begin, color_end, 30);
         }
-        /* if(last_event !is NodeInterfaceSub.init && !last_event.channel.empty) { */
-        /*         const sender = nodes_by[last_event.owner]; */
-        /*         const receiver = nodes_by[last_event.channel]; */
-        /*         DrawLine(sender.posX, receiver.posX, receiver.posX, receiver.posY, Colors.DARKPURPLE); */
-        /*     } */
-        /* } */
 
         /* DrawCircle(200, 200, 35, node_color); */
         /* DrawText(display_text, 400, 400, 28, Colors.BLACK); */
@@ -254,6 +255,35 @@ int __main(string[] args) {
 }
 
 enum Stop { _ }
+
+void file_handle_worker(string file) {
+    try {
+        HiBONRange event_range = File(file);
+
+        bool stop;
+        while(!stop) {
+            try {
+                receiveTimeout(Duration.zero, (Stop _) { stop = true; } );
+                Thread.sleep(50.msecs);
+
+                if(event_range.empty) {
+                    continue;
+                }
+                Document hirpc_doc = event_range.front;
+                event_range.popFront();
+                NodeInterfaceSub sub = hirpc_doc["$msg"]["params"]["data"].get!NodeInterfaceSub;
+                ownerTid.send(sub);
+            }
+            catch(Exception e) {
+                error(e);
+            }
+        }
+    }
+    catch(Throwable e) {
+        error(e);
+    }
+    stderr.writeln("Stopping");
+}
 
 void subscription_handle_worker(string address) {
     try {
@@ -289,8 +319,8 @@ void subscription_handle_worker(string address) {
                 check(index > 0, "Message did not begin with a tag");
 
                 Document doc = data[index + 1 .. $];
-                SubscriptionPayload payload = HiRPC(null).receive(doc).params;
-                ownerTid.send(NodeInterfaceSub(payload.data));
+                NodeInterfaceSub sub = doc["$msg"]["params"]["data"].get!NodeInterfaceSub;
+                ownerTid.send(sub);
             }
             catch(Exception e) {
                 sock.close();
