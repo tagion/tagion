@@ -20,7 +20,6 @@ import tagion.hibon.HiBONFile : fread, HiBONRange;
 import std.algorithm;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
-import tagion.basic.Debug;
 import stdio = std.stdio;
 
 static immutable pastel19 = [
@@ -518,7 +517,6 @@ struct HeightBuffer {
             this.owner = owner;
             height_order = owner.obufs.keys;
             height_order.sort;
-            __write("height_order %s", height_order);
         }
 
         OutBuffer front() pure nothrow {
@@ -648,7 +646,10 @@ int _main(string[] args) {
         }
 
         outfile.write(startbuf);
-        obuf[].each!(buf => outfile.write(buf));
+        foreach(n, buf; obuf[].enumerate) {
+            verbose("Write buffer %d", n);
+            outfile.write(buf);
+        }
 
         //outfile.write(obuf);
         outfile.write(endbuf);

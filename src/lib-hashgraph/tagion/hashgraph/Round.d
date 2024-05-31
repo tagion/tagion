@@ -1,7 +1,6 @@
 /// HashGraph Event
 module tagion.hashgraph.Round;
 
-//import std.stdio;
 
 import std.datetime; // Date, DateTime
 import std.algorithm.iteration : cache, each, filter, fold, joiner, map, reduce;
@@ -14,7 +13,6 @@ import std.format;
 import std.range;
 import std.range : enumerate, tee;
 import std.range.primitives : isBidirectionalRange, isForwardRange, isInputRange, walkLength;
-import std.stdio;
 import std.traits : ReturnType, Unqual;
 import std.traits;
 import std.typecons;
@@ -33,7 +31,6 @@ import tagion.logger.Logger;
 import tagion.utils.BitMask : BitMask;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
-import tagion.basic.Debug;
 
 /// Handles the round information for the events in the Hashgraph
 @safe
@@ -444,31 +441,6 @@ class Round {
             if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
                 return;
             }
-            if (isMajority(witness_in_round.count, hashgraph.node_size)) {
-                __write("%s voters=%d Round=%d %(%s %) yes=%d no=%d decided=%d",
-                        hashgraph.name,
-                        (round_to_be_decided._next) ? round_to_be_decided._next._events.filter!(e => e !is null).count
-                        : 0,
-                        round_to_be_decided.number,
-                        witness_in_round
-                            .filter!(w => !w.decided)
-                            .map!(w => only(w.yes_votes, w.no_votes, w.decided,
-                                (last_witness_events[w.outer.node_id]!is null) ? last_witness_events[w.outer.node_id]
-                    .round
-                    .number : -1
-                )),
-                witness_in_round.filter!(w => w.votedYes).count,
-                witness_in_round.filter!(w => w.votedNo)
-                    .count,
-                    witness_in_round.filter!(w => w.decided).count);
-                __write("%s round=%d next_votes=%s famous=%d:%d", hashgraph.name, round_to_be_decided.number,
-                        round_to_be_decided[].retro
-                        .until!(r => !isMajority(r.decisions, hashgraph.node_size))
-                        .map!(r => only(r.voters, r.decisions, r.famous)),
-                        round_to_be_decided[].retro.filter!(r => isMajority(r.famous, hashgraph.node_size)).count,
-                        round_to_be_decided.count_feature_famous_rounds);
-
-            }
             if (!can_round_be_decided(round_to_be_decided) && round_to_be_decided.count_feature_famous_rounds < hashgraph
                     .threshold_for_none_decided_famous_rounds) {
 
@@ -478,24 +450,8 @@ class Round {
             }
             witness_in_round //.filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
                 .each!(w => Event.callbacks.connect(w.outer));
-            //witness_in_round.each!(w => w.display_decided);
-            version (none)
-                __write("decided %s", witness_in_round.map!(w => w.decided));
-            //witness_in_round.each!(w => w.display_decided);
-            //round_to_be_decided._decided = true;
-            __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);
             last_decided_round = round_to_be_decided;
-            version (none)
-                __write("round %d votes yes %(%s %)", round_to_be_decided.number,
-                        witness_in_round.map!(w => isMajority(w.yes_votes, hashgraph.node_size)));
-            version (none) const decided_with_yes_votes = witness_in_round
-                .filter!(w => w.votedYes)
-                .count;
-            version (none)
-                __write("decided_with_yes_votes=%d %s", decided_with_yes_votes, isMajority(decided_with_yes_votes, hashgraph
-                        .node_size));
-            //if (!isMajority(decided_with_yes_votes, hashgraph.node_size)) {
-            if (!round_to_be_decided.isFamous) {
+           if (!round_to_be_decided.isFamous) {
                 return;
             }
             collect_received_round(round_to_be_decided);
@@ -587,7 +543,6 @@ class Round {
             if (Event.callbacks) {
                 event_collection.each!(e => Event.callbacks.connect(e));
             }
-            __write("EPOCH Round collected %d event_collection=%d", r.number, event_collection.length);
             hashgraph.epoch(event_collection, r);
 
         }

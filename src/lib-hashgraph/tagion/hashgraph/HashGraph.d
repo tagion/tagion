@@ -26,11 +26,6 @@ import tagion.logger.Logger;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
-// debug
-import tagion.basic.Debug;
-import tagion.hibon.HiBONJSON;
-import tagion.utils.Miscellaneous : cutHex;
-
 @safe
 class HashGraph {
     enum default_scrap_depth = 10;
@@ -75,7 +70,7 @@ class HashGraph {
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
     }
-  Flag!"joining" joining() const pure nothrow @nogc {
+    Flag!"joining" joining() const pure nothrow @nogc {
         return _joining;
     }
 
