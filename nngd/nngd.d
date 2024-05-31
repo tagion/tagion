@@ -560,7 +560,7 @@ struct NNGSocket {
 
     @disable this();
     
-    this(nng_socket_type itype, bool iraw = false) nothrow {
+    this(nng_socket_type itype, bool iraw = false) @trusted nothrow {
         int rc;
         m_type = itype;
         m_raw = iraw;
@@ -629,7 +629,7 @@ struct NNGSocket {
 
     } // this
 
-    int close() nothrow {
+    int close() @safe nothrow {
         int rc;
         m_errno = cast(nng_errno)0;
         foreach(ctx; m_ctx) {
@@ -653,7 +653,7 @@ struct NNGSocket {
     int listener_create(const(string) url) {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED) {
-            auto rc = nng_listener_create( &m_listener, m_socket, toStringz(url) );
+            auto rc = nng_listener_create(&m_listener, m_socket, toStringz(url));
             if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
@@ -665,7 +665,7 @@ struct NNGSocket {
         }
     }        
 
-    int listener_start( const bool nonblock = false ) {
+    int listener_start( const bool nonblock = false ) @safe {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED) {
             auto rc =  nng_listener_start(m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -697,16 +697,16 @@ struct NNGSocket {
 
     // setup subscriber
 
-    int subscribe ( string tag ) nothrow {
+    int subscribe ( string tag ) @safe nothrow {
         if(m_subscriptions.canFind(tag))
             return 0;
-        setopt_buf(NNG_OPT_SUB_SUBSCRIBE, cast(ubyte[])(tag.dup));
+        setopt_buf(NNG_OPT_SUB_SUBSCRIBE, tag.representation);
         if(m_errno == 0)
             m_subscriptions ~= tag;
         return m_errno;    
     }
 
-    int unsubscribe ( string tag ) nothrow {
+    int unsubscribe ( string tag ) @safe nothrow {
         long i = m_subscriptions.countUntil(tag);
         if(i < 0)
             return 0;
@@ -716,12 +716,12 @@ struct NNGSocket {
         return m_errno;    
     }
 
-    int clearsubscribe () nothrow {
+    int clearsubscribe () @safe nothrow {
         long i;
         foreach(tag; m_subscriptions) {
             i = m_subscriptions.countUntil(tag);
             if(i < 0) continue;
-            setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE, cast(ubyte[])(tag.dup));
+            setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE, tag.representation);
             if(m_errno != 0)
                 return m_errno;
             m_subscriptions = m_subscriptions[0..i]~m_subscriptions[i+1..$];
@@ -729,7 +729,7 @@ struct NNGSocket {
         return 0;
     }
 
-    string[] subscriptions() nothrow {
+    string[] subscriptions() @safe nothrow {
         return m_subscriptions;
     }
 
@@ -750,7 +750,7 @@ struct NNGSocket {
         }
     }        
 
-    int dialer_start( const bool nonblock = false ) nothrow {
+    int dialer_start( const bool nonblock = false ) @safe nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED) {
             auto rc =  nng_dialer_start(m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -783,10 +783,10 @@ struct NNGSocket {
     // send & receive TODO: Serialization for objects and structures - see protobuf or hibon?
     
 
-    int sendmsg ( ref NNGMessage msg, bool nonblock = false ) {
+    int sendmsg ( ref NNGMessage msg, bool nonblock = false ) @safe {
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
-            m_errno = (() @trusted => cast(nng_errno) nng_sendmsg( m_socket, msg.pointer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0))();
+            m_errno = cast(nng_errno)nng_sendmsg( m_socket, msg.pointer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
             if (m_errno !is nng_errno.init) {
                 return -1;
             }
@@ -795,12 +795,12 @@ struct NNGSocket {
         return -1;
     }
 
-    int send (T)( const(T) data , bool nonblock = false ) if(isArray!T) {
+    int send (T)(const(T) data , bool nonblock = false ) if(isArray!T) {
         alias U=ForeachType!T;
         static assert(U.sizeof == 1, "None byte size array element are not supported");
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
-            auto rc = nng_send(m_socket, ptr(cast(ubyte[])data), data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
+            auto rc = nng_send(m_socket, &(cast(ubyte[])data)[0], data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
             if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
@@ -810,7 +810,7 @@ struct NNGSocket {
         return -1;
     }
     
-    int sendaio ( ref NNGAio aio ) {
+    int sendaio ( ref NNGAio aio ) @safe {
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             if(aio.pointer) {
@@ -891,7 +891,7 @@ struct NNGSocket {
         return T.init;
     }
     
-    int receiveaio ( ref NNGAio aio ) {
+    int receiveaio ( ref NNGAio aio ) @safe {
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             if(aio.pointer) {
@@ -924,7 +924,7 @@ struct NNGSocket {
     */    
         void name(string val) { m_name = val; }
 
-        @property bool raw() const { return m_raw; }
+        @property bool raw() @safe const { return m_raw; }
 
     } // nogc nothrow pure
 
@@ -1046,7 +1046,7 @@ private:
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }                
         }
         
-        void setopt_buf(string opt, ubyte[] val) {
+        void setopt_buf(string opt, const ubyte[] val) @safe {
             m_errno = cast(nng_errno)0;
             auto rc = nng_socket_set(m_socket, toStringz(opt), ptr(val), val.length);
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }                
@@ -1366,7 +1366,7 @@ const string[] nng_http_req_headers = [
 	"Warning"
 ];    
 
-static string nng_find_mime_type(string fname, string[string] custom_map = null){
+string nng_find_mime_type(string fname, const string[string] custom_map = null) {
     const default_mime = "application/octet-stream";
     const ext = extension(baseName(fname));
     // TODO: add libmagic support to detect mime by magic numbers
@@ -1545,7 +1545,7 @@ struct WebData {
         }
     }
 
-    string toString() nothrow {
+    string toString() const nothrow {
         try{
         return format(`
         <Webdata>
@@ -2265,7 +2265,7 @@ struct WebClient {
     }
 
     // static sync post
-    static WebData post ( string uri, ubyte[] data, string[string] headers, Duration timeout = 30000.msecs ) {
+    static WebData post ( string uri, const ubyte[] data, const string[string] headers, Duration timeout = 30000.msecs ) {
         int rc;
         nng_http_client *cli;
         nng_url *url;
@@ -2313,7 +2313,7 @@ struct WebClient {
     }
 
     // static async get
-    static NNGAio get_async ( string uri, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
+    static NNGAio get_async ( string uri, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
         int rc;
         nng_aio *aio;
         nng_http_client *cli;
@@ -2351,7 +2351,7 @@ struct WebClient {
     }
 
     // static async post
-    static NNGAio post_async ( string uri, ubyte[] data, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
+    static NNGAio post_async ( string uri, const ubyte[] data, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
         int rc;
         nng_aio *aio;
         nng_http_client *cli;
@@ -2571,7 +2571,7 @@ struct WebSocket {
         }    
     }
 
-    void send(ubyte[] data){
+    void send(const ubyte[] data){
         int rc;
         if(closed)
             return;
