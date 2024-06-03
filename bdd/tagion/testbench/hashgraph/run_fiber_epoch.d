@@ -164,7 +164,9 @@ class RunPassiveFastHashgraph {
             // writefln("channel_number: %s", channel_number);
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
-            Event.callbacks = node_callbacks[network.current];
+            if (!node_callbacks.empty) { 
+                Event.callbacks = node_callbacks[network.current];
+            }
             (() @trusted { current.call; })();
             i++;
         }
