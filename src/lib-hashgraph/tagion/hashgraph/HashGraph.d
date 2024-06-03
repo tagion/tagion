@@ -34,7 +34,6 @@ import tagion.utils.Miscellaneous : cutHex;
 @safe
 class HashGraph {
     enum default_scrap_depth = 10;
-    //bool print_flag;
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
 
@@ -43,10 +42,8 @@ class HashGraph {
         Limit to when a round is decided 
         if feature famous round can be decided 
     */
-    //bool __debug_print;
 
     protected alias check = Check!HashGraphConsensusException;
-    //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.logger.Statistic;
 
     immutable size_t node_size; /// Number of active nodes in the graph
@@ -75,7 +72,8 @@ class HashGraph {
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
     }
-  Flag!"joining" joining() const pure nothrow @nogc {
+
+    Flag!"joining" joining() const pure nothrow @nogc {
         return _joining;
     }
 
@@ -186,7 +184,7 @@ class HashGraph {
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
                 check(!(epack.pubkey in _nodes), ConsensusFailCode.HASHGRAPH_DUPLICATE_WITNESS);
-                auto node = getNode(epack.pubkey);
+                getNode(epack.pubkey);
             }
         }
     }
@@ -364,8 +362,7 @@ class HashGraph {
             }
         }
 
-        //final 
-        Event lookup(const(Buffer) fingerprint) {
+        final Event lookup(const(Buffer) fingerprint) {
             if (fingerprint in _event_cache) {
                 return _event_cache[fingerprint];
             }
@@ -386,7 +383,7 @@ class HashGraph {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        Event register(const(Buffer) fingerprint) {
+        final Event register(const(Buffer) fingerprint) {
             Event event;
 
             if (!fingerprint) {
@@ -738,7 +735,7 @@ class HashGraph {
         }
     }
 
-    void front_seat(Event event)
+    void front_seat(Event event) pure
     in {
         assert(event, "event must be defined");
     }
@@ -759,24 +756,10 @@ class HashGraph {
 
         protected ExchangeState _sticky_state = ExchangeState.RIPPLE;
 
-        void sticky_state(const(ExchangeState) state) pure nothrow @nogc {
-
-            if (state > _sticky_state) {
-                _sticky_state = state;
-            }
-        }
-
-        final bool offline() const pure nothrow @nogc {
-            return _offline;
-        }
-
-        const(ExchangeState) sticky_state() const pure nothrow @nogc {
-            return _sticky_state;
-        }
         /++
          Register first event
          +/
-        private void front_seat(Event event)
+        private void front_seat(Event event) pure nothrow @nogc
         in {
             assert(event.channel == channel, "Wrong channel");
         }
@@ -785,7 +768,6 @@ class HashGraph {
                 _event = event;
             }
             else if (higher(event.altitude, _event.altitude)) {
-                // Event.check(event.mother !is null, ConsensusFailCode.EVENT_MOTHER_LESS);
                 _event = event;
             }
         }
@@ -797,7 +779,7 @@ class HashGraph {
             return _event;
         }
 
-        @nogc pure nothrow {
+        @nogc final pure nothrow {
             package final Event event() {
                 return _event;
             }
@@ -830,6 +812,21 @@ class HashGraph {
                 }
                 return Event.Range!true(null);
             }
+
+            void sticky_state(const(ExchangeState) state) {
+
+                if (state > _sticky_state) {
+                    _sticky_state = state;
+                }
+            }
+
+            final bool offline() {
+                return _offline;
+            }
+
+            const(ExchangeState) sticky_state() {
+                return _sticky_state;
+            }
         }
     }
 
@@ -837,29 +834,27 @@ class HashGraph {
 
     alias NodeRange = typeof((cast(const) _nodes).byValue);
 
-    @nogc
-    NodeRange opSlice() const pure nothrow {
-        return _nodes.byValue;
-    }
+    @nogc final const pure nothrow {
+        NodeRange opSlice() {
+            return _nodes.byValue;
+        }
 
-    @nogc
-    size_t active_nodes() const pure nothrow {
-        return _nodes.length;
-    }
+        size_t active_nodes() {
+            return _nodes.length;
+        }
 
-    @nogc
-    const(SecureNet) net() const pure nothrow {
-        return hirpc.net;
+        const(SecureNet) net() {
+            return hirpc.net;
+        }
+
+        bool isMajority(const size_t voting) {
+            return .isMajority(voting, node_size);
+        }
     }
 
     package Node getNode(Pubkey channel) pure {
         const next_id = next_node_id;
         return _nodes.require(channel, new Node(channel, next_id));
-    }
-
-    @nogc
-    bool isMajority(const size_t voting) const pure nothrow {
-        return .isMajority(voting, node_size);
     }
 
     private void remove_node(Node n) nothrow

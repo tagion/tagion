@@ -151,7 +151,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         string data_info;
 
         string toString() const pure @safe {
-            string options = format(`x="%s" y="%s" width="%s" height="%s" fill="%s" stroke="%s" stroke-width="%s" `, pos.x-width, pos.y-height, width*2, height*2, fill, stroke, stroke_width);
+            string options = format(`x="%s" y="%s" width="%s" height="%s" fill="%s" stroke="%s" stroke-width="%s" `, pos
+                    .x - width, pos.y - height, width * 2, height * 2, fill, stroke, stroke_width);
             if (!raw_svg) {
                 options ~= format(`class="%s" data-info="%s"`, classes, data_info);
             }
@@ -232,10 +233,9 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         node_circle.stroke_width = 4;
 
         node_box.raw_svg = raw_svg;
-        node_box.pos=pos;
-        node_box.width = node_box.height = NODE_CIRCLE_SIZE*5/4;
-        
-    
+        node_box.pos = pos;
+        node_box.width = node_box.height = NODE_CIRCLE_SIZE * 5 / 4;
+
         // colors
         if (e.witness) {
             if (e.famous || e.decided) {
@@ -592,10 +592,6 @@ int _main(string[] args) {
                 main_args.options);
         return 0;
     }
-
-    // if (args.length > 1) {
-    //     inputfilename = args[1];
-    // }
 
     import tagion.basic.Types : hasExtension, FileExtension;
 

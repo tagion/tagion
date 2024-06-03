@@ -48,43 +48,28 @@ int _main(string[] args) {
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "N", "Number of nodes in the test", &opts.number_of_nodes,
                 "iter", "Number of iteration calls", &opts.max_calls,
-        //                "c|stdout", "Print to standard output", &standard_output,
-                //                "s|stream", "Parse .hibon file to stdout", &stream_output,
-                //                "o|output", "Output filename only for stdin data", &outputfilename,
-                //                "r|reserved", "Check reserved keys and types enabled", &reserved,
-                //                "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
-                //                "J", "Input stream format json", &input_json,
-                //                "t|base64url", "Convert to base64url output", &output_base64,
-                //                "x|hex", "Convert to hex output", &output_hex,
-                //                "T|text", "Input stream base64url or hex-string", &input_text,
-                //                "sample", "Produce a sample HiBON", &sample,
-                //                "check", "Check the hibon format", &hibon_check,
-                //                "H|hash", "Prints the hash value", &output_hash,
-                //                "D|dartindex", "Prints the DART index", &output_dartindex,
-                //                "ignore", "Ignore document valid check", &ignore,
-        
+                "seed", "Random seed value", &opts.seed,
         );
         if (version_switch) {
             revision_text.writeln;
             return 0;
         }
-    if (main_args.helpWanted) {
-        defaultGetoptPrinter(
-                [
-                "Documentation: https://docs.tagion.org/",
-                "",
-                "",
-                "Usage:",
-                format("%s [<option>...] ", program),
-                "Example:",
-                format("%s --iter=10000 -N5 100,2", program),
-                "",
-                "<option>:",
-                ].join("\n"),
-                main_args.options);
-        return 0;
-    }
-
+        if (main_args.helpWanted) {
+            defaultGetoptPrinter(
+                    [
+                    "Documentation: https://docs.tagion.org/",
+                    "",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] ", program),
+                    "Example:",
+                    format("%s --iter=10000 -N5 100,2", program),
+                    "",
+                    "<option>:",
+                    ].join("\n"),
+                    main_args.options);
+            return 0;
+        }
 
         if (module_path.exists) {
             rmdirRecurse(module_path);
@@ -100,7 +85,6 @@ int _main(string[] args) {
                 .each!((ref w) => w = 100);
         }
         opts.number_of_nodes = cast(uint) weights.length;
-        // uint number_of_nodes = args[2].to!uint.ifThrown(5);
 
         import tagion.utils.pretend_safe_concurrency : register, thisTid;
 

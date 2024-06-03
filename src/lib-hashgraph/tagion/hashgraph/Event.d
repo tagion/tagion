@@ -129,17 +129,15 @@ class Event {
     invariant {
         if (!scrapping && this !is null) {
             if (_mother) {
-                // assert(!_witness_mask[].empty);
                 assert(_mother._daughter is this);
                 assert(
                         event_package.event_body.altitude - _mother
                         .event_package.event_body.altitude is 1);
-                assert(_order is long.init || (_order - _mother._order > 0));
+                assert(_order is int.init || (_order - _mother._order > 0));
             }
             if (_father) {
                 pragma(msg, "fixme(bbh) this test should be reimplemented once new witness def works");
-                // assert(_father._son is this, "fathers is not me");
-                assert(_order is long.init || (_order - _father._order > 0));
+                assert(_order is int.init || (_order - _father._order > 0));
             }
         }
     }
@@ -204,18 +202,10 @@ class Event {
                     if (isMajority(yes_votes, N) || isMajority(no_votes, N)) {
                         return true;
                     }
-                    const voters = this.outer._round.next.voters; //_events.filter!(e => e !is null).count;
+                    const voters = this.outer._round.next.voters;
                     if (voters == voted) {
-                        //const can=this.outer._round.next.has_feature_famous_round;
-
-                        //if (can) {
-                        //    return false;
-
                         const votes_left = long(N) - long(voted);
                         return !isMajority(votes_left + yes_votes, N);
-                        //return (yes_votes > no_votes) ?
-                        //    !isMajority(votes_left + yes_votes, N) : !isMajority(votes_left + no_votes, N);
-                        //}
                     }
                 }
                 return false;
@@ -236,27 +226,6 @@ class Event {
             }
         }
 
-        version (none) void display_decided() const pure nothrow @nogc {
-            const voters = (this.outer.round.next) ? this.outer._round.next.events.filter!(e => e !is null).count : 0;
-            const voted = _has_voted_mask.count;
-            const N = this.outer._round.events.length;
-            const votes_left = long(N) - long(voted);
-            __write(
-                    "votes=%d voters=%d N=%d votes_left=%d %s %s %s %s %s yes=%d no=%d not_yes=%d not_no=%d decided=%s",
-                    voted, voters, N, votes_left,
-
-                    isMajority(voted, N),
-                    isMajority(yes_votes, N),
-                    isMajority(no_votes, N),
-                    !isMajority(votes_left + yes_votes, N),
-                    !isMajority(votes_left + no_votes, N),
-                    yes_votes, no_votes,
-                    votes_left + yes_votes,
-                    votes_left + no_votes,
-                    decided);
-        }
-
-        //bool famous;
         /**
          * Contsruct a witness of an event
          * Params:
@@ -275,10 +244,8 @@ class Event {
 
             }
             else {
-                //if (_mother) {
                 _previous_strongly_seen_mask = witness_event._intermediate_seen_mask.dup;
             }
-            //_intermediate_events.length = hashgraph.node_size;
             _intermediate_event_mask[node_id] = true;
 
             witness_event._intermediate_seen_mask.clear;
@@ -368,7 +335,7 @@ class Event {
     static void view(R)(R range) nothrow if (isInputRange!R && is(ElementType!R : const(Event))) {
         if (callbacks) {
             range
-            .each!(e => view(e));
+                .each!(e => view(e));
         }
     }
 
