@@ -472,18 +472,17 @@ class Round {
             if (!can_round_be_decided(round_to_be_decided) && round_to_be_decided.count_feature_famous_rounds < hashgraph
                     .threshold_for_none_decided_famous_rounds) {
 
-                log("Not decided round");
                 return;
 
             }
-            witness_in_round //.filter!(w => !isMajority(w.yes_votes, hashgraph.node_size))
-                .each!(w => Event.callbacks.connect(w.outer));
+            Event.view(witness_in_round.map!(w => w.outer));
             //witness_in_round.each!(w => w.display_decided);
             version (none)
                 __write("decided %s", witness_in_round.map!(w => w.decided));
             //witness_in_round.each!(w => w.display_decided);
             //round_to_be_decided._decided = true;
             __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);
+            log("Round %d decided", round_to_be_decided.number);
             last_decided_round = round_to_be_decided;
             version (none)
                 __write("round %d votes yes %(%s %)", round_to_be_decided.number,
@@ -499,6 +498,7 @@ class Round {
                 return;
             }
             collect_received_round(round_to_be_decided);
+            log("Round %d collected", round_to_be_decided.number);
             check_decide_round;
         }
 
@@ -574,9 +574,6 @@ class Round {
                 .filter!(e => e !is null)
                 .each!(e => e.top = true);
 
-            event_front
-                .filter!(e => e !is null)
-                .each!(e => Event.callbacks.connect(e));
             auto event_collection = event_front
                 .filter!(e => e !is null)
                 .map!(e => e[]
@@ -584,9 +581,7 @@ class Round {
                 .joiner
                 .array;
             event_collection.each!(e => e.round_received = r);
-            if (Event.callbacks) {
-                event_collection.each!(e => Event.callbacks.connect(e));
-            }
+            Event.view(event_collection);
             __write("EPOCH Round collected %d event_collection=%d", r.number, event_collection.length);
             hashgraph.epoch(event_collection, r);
 

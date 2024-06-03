@@ -3,6 +3,7 @@ module tagion.testbench.hashgraph.run_fiber_epoch;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
+import tagion.basic.basic;
 import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
 import std.file : mkdirRecurse, rmdirRecurse, exists;
@@ -20,6 +21,9 @@ import std.format;
 import std.conv : to;
 import std.exception : ifThrown;
 import tagion.monitor.Monitor;
+import tagion.tools.Basic;
+import tagion.tools.revision;
+import std.getopt;
 
 enum feature = Feature(
             "Check hashgraph stability when runninng many epochs",
@@ -33,8 +37,38 @@ alias FeatureContext = Tuple!(
 
 mixin Main!(_main);
 int _main(string[] args) {
+    HashGraphOptions opts;
+    immutable program = args[0];
+    bool version_switch;
     auto module_path = env.bdd_log.buildPath(__MODULE__);
+    try {
+        auto main_args = getopt(args,
+                std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "version", "display the version", &version_switch,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
+                "N", "Number of nodes in the test", &opts.number_of_nodes,
+//                "c|stdout", "Print to standard output", &standard_output,
+//                "s|stream", "Parse .hibon file to stdout", &stream_output,
+//                "o|output", "Output filename only for stdin data", &outputfilename,
+//                "r|reserved", "Check reserved keys and types enabled", &reserved,
+//                "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
+//                "J", "Input stream format json", &input_json,
+//                "t|base64url", "Convert to base64url output", &output_base64,
+//                "x|hex", "Convert to hex output", &output_hex,
+//                "T|text", "Input stream base64url or hex-string", &input_text,
+//                "sample", "Produce a sample HiBON", &sample,
+//                "check", "Check the hibon format", &hibon_check,
+//                "H|hash", "Prints the hash value", &output_hash,
+//                "D|dartindex", "Prints the DART index", &output_dartindex,
+//                "ignore", "Ignore document valid check", &ignore,
+        );
+        if (version_switch) {
+            revision_text.writeln;
+            return 0;
+        }
 
+ 
     if (module_path.exists) {
         rmdirRecurse(module_path);
     }
@@ -44,21 +78,26 @@ int _main(string[] args) {
     int[] weights = args[2].ifThrown("100,5,100,100,100")
         .split(",").map!(n => n.to!int).array;
 
-    if (args.length == 4) {
-        weights.length=args[3].to!uint;
+    if (!opts.number_of_nodes.isinit) {
+        weights.length=opts.number_of_nodes;
         weights.filter!(w => w == 0)
         .each!((ref w) => w=100);
     }
-    uint number_of_nodes = cast(uint) weights.length;
+    opts.number_of_nodes = cast(uint) weights.length;
     // uint number_of_nodes = args[2].to!uint.ifThrown(5);
 
     import tagion.utils.pretend_safe_concurrency : register, thisTid;
     register("run_fiber_epoch", thisTid);
 
     auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
-    hashgraph_fiber_feature.RunPassiveFastHashgraph(number_of_nodes, weights,  MAX_CALLS, module_path);
+    hashgraph_fiber_feature.RunPassiveFastHashgraph(opts, weights,  MAX_CALLS, module_path);
     hashgraph_fiber_feature.run;
+    }
+    catch (Exception e) {
+        error(e);
 
+        return 1;
+    }
     return 0;
 }
 
@@ -69,13 +108,15 @@ class RunPassiveFastHashgraph {
     string module_path;
     TestNetworkT!NewTestRefinement network;
     uint MAX_CALLS;
-    uint number_of_nodes = 5;
+    //uint number_of_nodes = 5;
+    const HashGraphOptions opts;
     int[] weights;
 
-    this(uint number_of_nodes, int[] weights,  uint MAX_CALLS, string module_path) {
-        this.number_of_nodes = number_of_nodes;
+    this(const HashGraphOptions opts, int[] weights,  uint MAX_CALLS, string module_path) {
+        this.opts = opts;
+        //this.number_of_nodes = opts.number_of_nodes;
         this.module_path = module_path;
-        this.node_names = number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
+        this.node_names = opts.number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
         this.MAX_CALLS = MAX_CALLS;
         this.weights = weights;
 
@@ -101,7 +142,7 @@ class RunPassiveFastHashgraph {
         FileMonitorCallbacks[Pubkey] node_callbacks;
 
         foreach(pkey; network.channels) {
-            node_callbacks[pkey] = new FileMonitorCallbacks(buildPath(module_path, format("%(%02x%)_graph.hibon", pkey)), number_of_nodes, cast(Pubkey[]) network.channels);
+            node_callbacks[pkey] = new FileMonitorCallbacks(buildPath(module_path, format("%(%02x%)_graph.hibon", pkey)), opts.number_of_nodes, cast(Pubkey[]) network.channels);
         }
 
         while (i < MAX_CALLS) {

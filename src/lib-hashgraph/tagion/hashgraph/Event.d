@@ -310,7 +310,7 @@ class Event {
                         else {
                             vote_for_witness.voteNo(witness_event.node_id);
                         }
-                        Event.callbacks.connect(previous_witness_event);
+                        view(previous_witness_event);
                     }
                 }
             }
@@ -358,6 +358,19 @@ class Event {
     }
 
     static EventMonitorCallbacks callbacks;
+
+    static void view(const(Event) e) nothrow {
+        if (callbacks && e) {
+            callbacks.connect(e);
+        }
+    }
+
+    static void view(R)(R range) nothrow if (isInputRange!R && is(ElementType!R : const(Event))) {
+        if (callbacks) {
+            range
+            .each!(e => view(e));
+        }
+    }
 
     invariant {
         if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
@@ -411,7 +424,7 @@ class Event {
                         ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
             hashgraph.front_seat(this);
-            Event.callbacks.connect(this);
+            view(this);
             hashgraph.refinement.payload(event_package);
         }
 
