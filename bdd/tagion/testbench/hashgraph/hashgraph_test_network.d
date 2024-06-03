@@ -34,6 +34,8 @@ struct HashGraphOptions {
     uint number_of_nodes;
     uint max_calls = 10_000;
     size_t seed = 123_456_689;
+    string path;
+    bool disable_graphfile; /// Disable graph file
 }
 
 class TestRefinement : StdRefinement {

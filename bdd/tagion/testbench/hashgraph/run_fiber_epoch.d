@@ -7,7 +7,7 @@ import tagion.basic.basic;
 import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
 import std.file : mkdirRecurse, rmdirRecurse, exists;
-import std.path : buildPath;
+import std.path : buildPath, setExtension;
 import std.stdio;
 import std.algorithm;
 import tagion.testbench.hashgraph;
@@ -39,7 +39,7 @@ int _main(string[] args) {
     HashGraphOptions opts;
     immutable program = args[0];
     bool version_switch;
-    auto module_path = env.bdd_log.buildPath(__MODULE__);
+    opts.path = env.bdd_log.buildPath(__MODULE__);
     try {
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
@@ -49,6 +49,8 @@ int _main(string[] args) {
                 "N", "Number of nodes in the test", &opts.number_of_nodes,
                 "iter", "Number of iteration calls", &opts.max_calls,
                 "seed", "Random seed value", &opts.seed,
+                "P|path", "File path for the generated files", &opts.path,
+                "d", "Disable graph files", &opts.disable_graphfile,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -71,10 +73,10 @@ int _main(string[] args) {
             return 0;
         }
 
-        if (module_path.exists) {
-            rmdirRecurse(module_path);
+        if (exists(opts.path)) {
+            rmdirRecurse(opts.path);
         }
-        mkdirRecurse(module_path);
+        mkdirRecurse(opts.path);
 
         int[] weights = args[1].ifThrown("100,5,100,100,100")
             .split(",").map!(n => n.to!int).array;
@@ -91,7 +93,7 @@ int _main(string[] args) {
         register("run_fiber_epoch", thisTid);
 
         auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
-        hashgraph_fiber_feature.RunPassiveFastHashgraph(opts, weights, module_path);
+        hashgraph_fiber_feature.RunPassiveFastHashgraph(opts, weights);
         hashgraph_fiber_feature.run;
     }
     catch (Exception e) {
@@ -106,17 +108,16 @@ int _main(string[] args) {
         [])
 class RunPassiveFastHashgraph {
     string[] node_names;
-    string module_path;
+    //string module_path;
     TestNetworkT!NewTestRefinement network;
     //uint MAX_CALLS;
     //uint number_of_nodes = 5;
     const HashGraphOptions opts;
     int[] weights;
 
-    this(const HashGraphOptions opts, int[] weights, string module_path) {
+    this(const HashGraphOptions opts, int[] weights) {
         this.opts = opts;
         //this.number_of_nodes = opts.number_of_nodes;
-        this.module_path = module_path;
         this.node_names = opts.number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
         //this.MAX_CALLS = MAX_CALLS;
         this.weights = weights;
@@ -143,11 +144,15 @@ class RunPassiveFastHashgraph {
 
         FileMonitorCallbacks[Pubkey] node_callbacks;
 
-        foreach (pkey; network.channels) {
-            node_callbacks[pkey] = new FileMonitorCallbacks(buildPath(module_path, format("%(%02x%)_graph.hibon", pkey)), opts
-                    .number_of_nodes, cast(Pubkey[]) network.channels);
+        if (!opts.disable_graphfile) {
+            foreach (pkey; network.channels) {
+                const graph_file = buildPath(opts.path, format("%(%02x%)_graph", pkey)).setExtension("hibon");
+                node_callbacks[pkey] = new FileMonitorCallbacks(
+                        graph_file,
+                        opts.number_of_nodes,
+                        cast(Pubkey[]) network.channels);
+            }
         }
-
         while (i < opts.max_calls) {
             size_t channel_number;
             if (NewTestRefinement.epochs.length > 0) {
