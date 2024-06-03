@@ -68,13 +68,29 @@ int _main(string[] args) {
             revision_text.writeln;
             return 0;
         }
+    if (main_args.helpWanted) {
+        defaultGetoptPrinter(
+                [
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "",
+                "Usage:",
+                format("%s [<option>...] ", program),
+                "Example:",
+                format("%s --iter=10000 -N5 100,2", program),
+                "",
+                "<option>:",
+                ].join("\n"),
+                main_args.options);
+        return 0;
+    }
+
 
         if (module_path.exists) {
             rmdirRecurse(module_path);
         }
         mkdirRecurse(module_path);
 
-//        opts.max_calls = args[1].ifThrown("10000").to!uint.ifThrown(10000);
         int[] weights = args[1].ifThrown("100,5,100,100,100")
             .split(",").map!(n => n.to!int).array;
 
