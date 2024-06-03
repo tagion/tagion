@@ -31,10 +31,11 @@ import tagion.behaviour.BehaviourException : check, BehaviourException;
 import tagion.basic.Debug;
 
 struct HashGraphOptions {
-   uint number_of_nodes;
-    uint max_class; 
-   size_t seed = 123_456_689; 
+    uint number_of_nodes;
+    uint max_calls = 10_000;
+    size_t seed = 123_456_689;
 }
+
 class TestRefinement : StdRefinement {
 
     struct Swap {

@@ -34,7 +34,6 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-
 mixin Main!(_main);
 int _main(string[] args) {
     HashGraphOptions opts;
@@ -48,50 +47,52 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "N", "Number of nodes in the test", &opts.number_of_nodes,
-//                "c|stdout", "Print to standard output", &standard_output,
-//                "s|stream", "Parse .hibon file to stdout", &stream_output,
-//                "o|output", "Output filename only for stdin data", &outputfilename,
-//                "r|reserved", "Check reserved keys and types enabled", &reserved,
-//                "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
-//                "J", "Input stream format json", &input_json,
-//                "t|base64url", "Convert to base64url output", &output_base64,
-//                "x|hex", "Convert to hex output", &output_hex,
-//                "T|text", "Input stream base64url or hex-string", &input_text,
-//                "sample", "Produce a sample HiBON", &sample,
-//                "check", "Check the hibon format", &hibon_check,
-//                "H|hash", "Prints the hash value", &output_hash,
-//                "D|dartindex", "Prints the DART index", &output_dartindex,
-//                "ignore", "Ignore document valid check", &ignore,
+                "iter", "Number of iteration calls", &opts.max_calls,
+        //                "c|stdout", "Print to standard output", &standard_output,
+                //                "s|stream", "Parse .hibon file to stdout", &stream_output,
+                //                "o|output", "Output filename only for stdin data", &outputfilename,
+                //                "r|reserved", "Check reserved keys and types enabled", &reserved,
+                //                "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
+                //                "J", "Input stream format json", &input_json,
+                //                "t|base64url", "Convert to base64url output", &output_base64,
+                //                "x|hex", "Convert to hex output", &output_hex,
+                //                "T|text", "Input stream base64url or hex-string", &input_text,
+                //                "sample", "Produce a sample HiBON", &sample,
+                //                "check", "Check the hibon format", &hibon_check,
+                //                "H|hash", "Prints the hash value", &output_hash,
+                //                "D|dartindex", "Prints the DART index", &output_dartindex,
+                //                "ignore", "Ignore document valid check", &ignore,
+        
         );
         if (version_switch) {
             revision_text.writeln;
             return 0;
         }
 
- 
-    if (module_path.exists) {
-        rmdirRecurse(module_path);
-    }
-    mkdirRecurse(module_path);
+        if (module_path.exists) {
+            rmdirRecurse(module_path);
+        }
+        mkdirRecurse(module_path);
 
-    uint MAX_CALLS = args[1].ifThrown("10000").to!uint.ifThrown(10000);
-    int[] weights = args[2].ifThrown("100,5,100,100,100")
-        .split(",").map!(n => n.to!int).array;
+//        opts.max_calls = args[1].ifThrown("10000").to!uint.ifThrown(10000);
+        int[] weights = args[1].ifThrown("100,5,100,100,100")
+            .split(",").map!(n => n.to!int).array;
 
-    if (!opts.number_of_nodes.isinit) {
-        weights.length=opts.number_of_nodes;
-        weights.filter!(w => w == 0)
-        .each!((ref w) => w=100);
-    }
-    opts.number_of_nodes = cast(uint) weights.length;
-    // uint number_of_nodes = args[2].to!uint.ifThrown(5);
+        if (!opts.number_of_nodes.isinit) {
+            weights.length = opts.number_of_nodes;
+            weights.filter!(w => w == 0)
+                .each!((ref w) => w = 100);
+        }
+        opts.number_of_nodes = cast(uint) weights.length;
+        // uint number_of_nodes = args[2].to!uint.ifThrown(5);
 
-    import tagion.utils.pretend_safe_concurrency : register, thisTid;
-    register("run_fiber_epoch", thisTid);
+        import tagion.utils.pretend_safe_concurrency : register, thisTid;
 
-    auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
-    hashgraph_fiber_feature.RunPassiveFastHashgraph(opts, weights,  MAX_CALLS, module_path);
-    hashgraph_fiber_feature.run;
+        register("run_fiber_epoch", thisTid);
+
+        auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
+        hashgraph_fiber_feature.RunPassiveFastHashgraph(opts, weights, module_path);
+        hashgraph_fiber_feature.run;
     }
     catch (Exception e) {
         error(e);
@@ -107,22 +108,22 @@ class RunPassiveFastHashgraph {
     string[] node_names;
     string module_path;
     TestNetworkT!NewTestRefinement network;
-    uint MAX_CALLS;
+    //uint MAX_CALLS;
     //uint number_of_nodes = 5;
     const HashGraphOptions opts;
     int[] weights;
 
-    this(const HashGraphOptions opts, int[] weights,  uint MAX_CALLS, string module_path) {
+    this(const HashGraphOptions opts, int[] weights, string module_path) {
         this.opts = opts;
         //this.number_of_nodes = opts.number_of_nodes;
         this.module_path = module_path;
         this.node_names = opts.number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
-        this.MAX_CALLS = MAX_CALLS;
+        //this.MAX_CALLS = MAX_CALLS;
         this.weights = weights;
 
         network = new TestNetworkT!(NewTestRefinement)(node_names);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 100);
-        network.random.seed(123456789);
+        network.random.seed(opts.seed);
         writeln(network.random);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
     }
@@ -133,23 +134,26 @@ class RunPassiveFastHashgraph {
 
         import std.datetime.stopwatch;
         import std.datetime;
+
         auto sw = StopWatch(AutoStart.yes);
 
-        
         import std.random : MinstdRand0, dice;
+
         auto rnd = MinstdRand0(42);
 
         FileMonitorCallbacks[Pubkey] node_callbacks;
 
-        foreach(pkey; network.channels) {
-            node_callbacks[pkey] = new FileMonitorCallbacks(buildPath(module_path, format("%(%02x%)_graph.hibon", pkey)), opts.number_of_nodes, cast(Pubkey[]) network.channels);
+        foreach (pkey; network.channels) {
+            node_callbacks[pkey] = new FileMonitorCallbacks(buildPath(module_path, format("%(%02x%)_graph.hibon", pkey)), opts
+                    .number_of_nodes, cast(Pubkey[]) network.channels);
         }
 
-        while (i < MAX_CALLS) {
+        while (i < opts.max_calls) {
             size_t channel_number;
             if (NewTestRefinement.epochs.length > 0) {
                 channel_number = rnd.dice(weights);
-            } else {
+            }
+            else {
                 channel_number = network.random.value(0, network.channels.length);
             }
             // writefln("channel_number: %s", channel_number);
