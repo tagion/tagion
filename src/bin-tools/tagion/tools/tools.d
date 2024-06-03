@@ -26,6 +26,7 @@ int main(string[] args) {
     import tvmutil = tagion.tools.tvmutil.tvmutil;
     import envelope = tagion.tools.envelope;
     import nodeinterfaceutil = tagion.tools.nodeinterfaceutil;
+    import hipatch = tagion.tools.hipatch;
 
     alias alltools = AliasSeq!(
             subscriber,
@@ -50,6 +51,7 @@ int main(string[] args) {
             tvmutil,
             envelope,
             nodeinterfaceutil,
+            hipatch,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

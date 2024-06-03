@@ -439,8 +439,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
                 mixin(member_code);
                 enum MemberType = getUDAs!(member, Type)[0];
                 alias MemberT = typeof(member);
-                enum valid_value = !((MemberType is Type.NONE) || (!NATIVE
-                            && isOneOf!(MemberT, NativeValueDataTypes)));
+                enum valid_value = !((MemberType is Type.NONE) || (!NATIVE && isOneOf!(MemberT, NativeValueDataTypes)));
 
                 static if (type is MemberType) {
                     static assert(valid_value, format("The type %s named ValueT.%s is not valid value", type, name));

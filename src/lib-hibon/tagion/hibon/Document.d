@@ -146,7 +146,7 @@ static assert(uint.sizeof == 4);
     }
 
     unittest { // Empty doc
-        {
+    {
             const doc = Document();
             assert(doc._data.length is 0);
             assert(doc.data.length is 1);
@@ -220,10 +220,10 @@ static assert(uint.sizeof == 4);
      The deligate used by the valid function to report errors
      +/
     alias ErrorCallback = bool delegate(
-            const Document main_doc,
-            const Element.ErrorCode error_code,
-            const(Element) current,
-            const(Element) previous) nothrow @safe;
+        const Document main_doc,
+        const Element.ErrorCode error_code,
+        const(Element) current,
+        const(Element) previous) nothrow @safe;
 
     alias Reserved = Flag!"Reserved";
     /++
@@ -234,10 +234,10 @@ static assert(uint.sizeof == 4);
      Error code of the validation
      +/
     Element.ErrorCode valid(ErrorCallback error_callback = null,
-            const Reserved reserved = Yes.Reserved,
-            const bool ignore_boundary_check = IGNORE_BOUNDARY_CHECK) const nothrow {
+        const Reserved reserved = Yes.Reserved,
+        const bool ignore_boundary_check = IGNORE_BOUNDARY_CHECK) const nothrow {
         Element.ErrorCode inner_valid(const Document doc,
-                ErrorCallback error_callback = null) const nothrow {
+            ErrorCallback error_callback = null) const nothrow {
             import tagion.basic.tagionexceptions : TagionException;
 
             //const doc_full_size = doc.full_size; //LEB128.decode!uint(_data);
@@ -272,7 +272,7 @@ static assert(uint.sizeof == 4);
                             error_callback(this, error_code, e, previous.front);
                             error_code = Element.ErrorCode.DOCUMENT_ITERATION;
                             error_callback(this, error_code,
-                                    Document.Element(), Document.Element());
+                                Document.Element(), Document.Element());
                         }
                         return error_code;
                     }
@@ -674,8 +674,8 @@ static assert(uint.sizeof == 4);
         test_table.TIME = 1001;
 
         alias tableArray = Tuple!(
-                immutable(ubyte)[], Type.BINARY.stringof,
-                string, Type.STRING.stringof,
+            immutable(ubyte)[], Type.BINARY.stringof,
+            string, Type.STRING.stringof,
         );
 
         tableArray test_table_array;
@@ -789,7 +789,7 @@ static assert(uint.sizeof == 4);
                     assert(under_e.key == doc_name);
                     assert(under_e.type == Type.DOCUMENT);
                     assert(
-                            under_e.size == data_sub_doc.length + Type.sizeof
+                        under_e.size == data_sub_doc.length + Type.sizeof
                             + ubyte.sizeof + doc_name.length);
 
                     const under_doc = doc[doc_name].get!Document;
@@ -921,7 +921,7 @@ static assert(uint.sizeof == 4);
                                 }
                                 static if (isIntegral!T) {
                                     auto result = new Value(LEB128.decode!T(data[value_pos .. $])
-                                        .value);
+                                            .value);
                                     return result;
                                 }
                                 else {
@@ -951,16 +951,11 @@ static assert(uint.sizeof == 4);
              if the element does not contain the type E and HiBONException is thrown
              +/
             auto by(Type E)() pure {
-
-                
-
-                    .check(type is E,
-                            message("Type expected is %s but the actual type is %s", E, type));
-
-                
+                .check(type is E,
+                    message("Type expected is %s but the actual type is %s", E, type));
 
                 .check(E !is Type.NONE,
-                        message("Type is not supported %s the actual type is %s", E, type));
+                    message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
             }
 
@@ -1014,7 +1009,7 @@ static assert(uint.sizeof == 4);
                 const x = get!EnumBaseT;
                 static if (EnumContinuousSequency!T) {
                     check((x >= T.min) && (x <= T.max),
-                            message("The value %s is out side the range for %s enum type",
+                        message("The value %s is out side the range for %s enum type",
                             x, T.stringof));
                 }
                 else {
@@ -1033,7 +1028,6 @@ static assert(uint.sizeof == 4);
             }
 
             T get(T)() const
-
             if (!isHiBONRecord!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T) {
                 enum E = Value.asType!T;
                 import std.format;
@@ -1099,7 +1093,7 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                    "Key '", key.to!string, "' is not an index", key
+                        "Key '", key.to!string, "' is not an index", key
                 ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
@@ -1343,7 +1337,7 @@ static assert(uint.sizeof == 4);
                     else if (data[0]!is 0) {
                         return INVALID_NULL;
                     }
-                else if (!LEB128.isInvariant!(uint)(data)) {
+                    else if (!LEB128.isInvariant!(uint)(data)) {
                         return ELEMENT_SIZE_INVALID_LEB128;
                     }
                 }
@@ -1398,7 +1392,7 @@ static assert(uint.sizeof == 4);
                         const type_name = data[valuePos + len.size .. valuePos + len.size + len
                                 .value];
                         if (reserved && type_name.length >= TYPENAME.length &&
-                                type_name[0 .. TYPENAME.length] == TYPENAME) {
+                            type_name[0 .. TYPENAME.length] == TYPENAME) {
                             return RESERVED_HIBON_TYPE;
                         }
                     }

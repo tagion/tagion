@@ -768,8 +768,7 @@ static size_t size(U)(const(U[]) array) pure {
             immutable size = hibon.serialize_size;
 
             // This size of a HiBON with as single element of the type FLOAT32
-            enum hibon_size = LEB128.calc_size(
-                        14) // Size of the object in ubytes (uint(14))
+            enum hibon_size = LEB128.calc_size(14) // Size of the object in ubytes (uint(14))
                 + Type.sizeof // The HiBON Type  (Type.FLOAT32)  1
                 + ubyte.sizeof // Length of the key (ubyte(7))    2
                 + Type.FLOAT32.stringof.length // The key text string ("FLOAT32") 9
