@@ -419,6 +419,57 @@ struct Active {
     }
 }
 
+// Test that the recore types changed
+unittest {
+    import std.path;
+    import std.file;
+    import std.string;
+    import std.stdio;
+    import tagion.basic.basic;
+    import tagion.hibon.HiBONFile;
+    import tagion.crypto.SecureNet;
+    import tagion.hibon.HiBON;
+
+    string records_file = unitfile("common_records.hibon");
+    if(records_file.exists) {
+        records_file.remove;
+    }
+    mkdirRecurse(records_file.dirName);
+    File fout = File(records_file, "a");
+
+    SecureNet net = new StdSecureNet();
+    net.generateKeyPair("common_records_test");
+
+    sdt_t time = sdt_t(638_402_115_766_852_971);
+    TagionBill tagion_bill = TagionBill( 123.TGN, time, net.pubkey, []);
+    PayScript payscript = PayScript([tagion_bill]);
+    Contract contract = Contract([dartIndex(net, tagion_bill)], [], payscript.toDoc);
+    // We use a hardcorded signature because we dont want the signature to affect the different
+    Signature signature = new ubyte[](64);
+    SignedContract s_contract = SignedContract([signature], contract);
+    fwrite(fout, s_contract);
+
+    HiBON testamony_h = new HiBON;
+    testamony_h["text"] = "Hi Tagion";
+    Document testamony = Document(testamony_h);
+
+    TagionGlobals globals = TagionGlobals(BigNumber(100_000), BigNumber(100_000), 10, 10);
+    GenesisEpoch genesis_epoch = GenesisEpoch(0, [net.pubkey], testamony, time, globals);
+    fwrite(fout, genesis_epoch);
+
+    Fingerprint bullseye = net.calcHash(testamony);
+    Epoch epoch = Epoch(long(10), time, bullseye, bullseye, s_contract.signs, [net.pubkey], [net.pubkey], globals);
+    fwrite(fout, epoch);
+
+    TagionHead head = TagionHead(TagionDomain, long(1));
+    fwrite(fout, head);
+
+    ConsensusVoting c_voting = ConsensusVoting(long(2), net.pubkey, s_contract.signs[0]);
+    fwrite(fout, c_voting);
+
+    LockedArchives locked_archives = LockedArchives(long(3), [dartIndex(net, testamony)]);
+    fwrite(fout, locked_archives);
+}
 version (WITHOUT_PAYMENT) {
     struct HashString {
         string name;
