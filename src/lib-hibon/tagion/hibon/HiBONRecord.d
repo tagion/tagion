@@ -371,6 +371,9 @@ mixin template HiBONRecord(string CTOR = "") {
                             set(index, e.toHiBON);
                         }
                     }
+                    else static if (isPointer!ElementT) {
+                        pragma(msg, "ElementT ", ElementT);
+                    }   
                     else static if (isInputRange!ElementT) {
                         set(index, toList(e));
                     }
@@ -457,7 +460,8 @@ mixin template HiBONRecord(string CTOR = "") {
 
                     else static if (isPointer!BaseT) {
                         pragma(msg, "Pointer ", BaseT, " : ", isPointer!BaseT);
-                        //hibon[name] = (*BaseT).init;
+                        hibon[name] = m.toDoc;    
+                    //hibon[name] = (*BaseT).init;
                     }
                     else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
                         alias BaseU = TypedefBase!(ForeachType!(UnqualT));
@@ -543,7 +547,15 @@ mixin template HiBONRecord(string CTOR = "") {
                     MemberU[] result;
                     if (doc.isArray) {
                         //result.length = doc.length;
-                        result = doc[].map!(e => e.get!MemberU).array;
+                        static if (isPointer!MemberU) {
+                            auto _x = doc[].front;
+                            //auto _x = doc[].front.get!MemberU;   
+                    /// auto _x = doc[].map!(e => e.get!MemberU).array;
+                            pragma(msg, "MemberU ", MemberU, " _x ", typeof(_x));
+                        }
+                        else {
+                            result = doc[].map!(e => e.get!MemberU).array;
+                        }
                     }
                     else {
                         uint index;
@@ -552,8 +564,17 @@ mixin template HiBONRecord(string CTOR = "") {
                         result.length = index + 1;
                         foreach (e; doc[]) {
                             is_index(e.key, index);
+                            static if (isPointer!MemberU) {
+                            auto _x = e.get!MemberU;
+                            //auto _x = doc[].front.get!MemberU;   
+                    /// auto _x = doc[].map!(e => e.get!MemberU).array;
+                            pragma(msg, "== MemberU ", MemberU, " _x ", typeof(_e));
+                            //auto _x=e.get!MemberU;
+                            }
+                            else {
                             MemberU elm = e.get!MemberU;
                             (() @trusted => copyEmplace(elm, result[index]))();
+                            } 
                         }
                     }
                     enum do_foreach = false;
@@ -1785,7 +1806,7 @@ unittest {
     @recordType("RefS") @defaultCTOR
     static struct RefS {
         string text;
-        int qnum;
+        int zoom;
         mixin HiBONRecord;
     }
 
@@ -1794,6 +1815,7 @@ unittest {
         mixin HiBONRecord;
     }
 
+    {
     IS s;
     s.refs = new RefS("text", 10);
     __write("%s", s.refs);
@@ -1815,8 +1837,28 @@ unittest {
     __write("s=%s", s.toPretty);
     pragma(msg, "SupportingFullSizeFunction!IS ", SupportingFullSizeFunction!IS);
     //__write("s.serialize=%s", s.serialize);
-    //auto h = s.toHiBON;
-    //__write("h=%s", h.toPretty);
+    auto h = s.toHiBON;
+    __write("h.serialize=%s", h.serialize);
+    __write("h=%s", h.toPretty);
+        const s_doc=s.toDoc;
+        const s_expected=IS(s_doc);
+        //assert(s == s_expected);
+        assert(s.serialize == s_expected.serialize);
+        assert(s.serialize == h.serialize);
+        assert(s.toJSON == s_expected.toJSON);
+    }
+    static struct AS {
+        immutable(RefS)*[] refs;
+        mixin HiBONRecord;
+    }
+version(none) {
+    {
+        AS s;
+        const i=3;
+        //auto x=new immutable(RefS)(format("text_%d", i), i); 
+        //immutable refs=3.iota!(i => new immutable(RefS)(format("text_%d", i), i)).array;
+    }
+    }
     //__write("h=%s", h.toPretty);
     //__write("%(%02x %)", s.serialize);
 }

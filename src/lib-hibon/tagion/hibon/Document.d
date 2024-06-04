@@ -5,8 +5,7 @@
 module tagion.hibon.Document;
 
 import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isNumeric, EnumMembers, Unqual, ForeachType,
-    isIntegral, hasMember, isArrayT = isArray, isAssociativeArray, OriginalType, isCallable;
+import std.traits;
 import core.exception : RangeError;
 import std.algorithm;
 import std.array : join;
@@ -1030,6 +1029,11 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 return cast(T) x;
+            }
+
+            T get(T)() const if (isPointer!T) {
+                pragma(msg, __FUNCTION__, " T ", T);
+                return null;
             }
 
             T get(T)() const
