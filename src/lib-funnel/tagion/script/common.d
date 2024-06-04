@@ -309,9 +309,11 @@ struct LockedArchives {
     });
 }
 
+// Test that the recore types changed
 unittest {
     import std.path;
     import std.file;
+    import std.string;
     import std.stdio;
     import tagion.basic.basic;
     import tagion.hibon.HiBONFile;
@@ -326,17 +328,21 @@ unittest {
     File fout = File(records_file, "a");
 
     SecureNet net = new StdSecureNet();
-    net.generateKeyPair("a");
+    net.generateKeyPair("common_records_test");
 
     sdt_t time = sdt_t(638_402_115_766_852_971);
     TagionBill tagion_bill = TagionBill( 123.TGN, time, net.pubkey, []);
     PayScript payscript = PayScript([tagion_bill]);
-    SignedContract s_contract = sign([net], [dartIndex(net, tagion_bill)], [], payscript.toDoc);
+    Contract contract = Contract([dartIndex(net, tagion_bill)], [], payscript.toDoc);
+    // We use a hardcorded signature because we dont want the signature to affect the different
+    Signature signature = new ubyte[](64);
+    SignedContract s_contract = SignedContract([signature], contract);
     fwrite(fout, s_contract);
 
     HiBON testamony_h = new HiBON;
     testamony_h["text"] = "Hi Tagion";
     Document testamony = Document(testamony_h);
+
     TagionGlobals globals = TagionGlobals(BigNumber(100_000), BigNumber(100_000), 10, 10);
     GenesisEpoch genesis_epoch = GenesisEpoch(0, [net.pubkey], testamony, time, globals);
     fwrite(fout, genesis_epoch);
