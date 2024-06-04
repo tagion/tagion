@@ -116,8 +116,7 @@ Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
         .array;
 }
 
-const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Document[]) reads, const(
-        Document) script) {
+const(SignedContract) sign(const(SecureNet[]) nets, DARTIndex[] inputs, const(Document[]) reads, const(Document) script) {
     import std.algorithm : map, sort;
     import tagion.hibon.HiBONException;
 
@@ -308,6 +307,52 @@ struct LockedArchives {
 
 
     });
+}
+
+unittest {
+    import std.path;
+    import std.file;
+    import std.stdio;
+    import tagion.basic.basic;
+    import tagion.hibon.HiBONFile;
+    import tagion.crypto.SecureNet;
+    import tagion.hibon.HiBON;
+
+    string records_file = unitfile("common_records.hibon");
+    if(records_file.exists) {
+        records_file.remove;
+    }
+    mkdirRecurse(records_file.dirName);
+    File fout = File(records_file, "a");
+
+    SecureNet net = new StdSecureNet();
+    net.generateKeyPair("a");
+
+    sdt_t time = sdt_t(638_402_115_766_852_971);
+    TagionBill tagion_bill = TagionBill( 123.TGN, time, net.pubkey, []);
+    PayScript payscript = PayScript([tagion_bill]);
+    SignedContract s_contract = sign([net], [dartIndex(net, tagion_bill)], [], payscript.toDoc);
+    fwrite(fout, s_contract);
+
+    HiBON testamony_h = new HiBON;
+    testamony_h["text"] = "Hi Tagion";
+    Document testamony = Document(testamony_h);
+    TagionGlobals globals = TagionGlobals(BigNumber(100_000), BigNumber(100_000), 10, 10);
+    GenesisEpoch genesis_epoch = GenesisEpoch(0, [net.pubkey], testamony, time, globals);
+    fwrite(fout, genesis_epoch);
+
+    Fingerprint bullseye = net.calcHash(testamony);
+    Epoch epoch = Epoch(long(10), time, bullseye, bullseye, s_contract.signs, [net.pubkey], [net.pubkey], globals);
+    fwrite(fout, epoch);
+
+    TagionHead head = TagionHead(TagionDomain, long(1));
+    fwrite(fout, head);
+
+    ConsensusVoting c_voting = ConsensusVoting(long(2), net.pubkey, s_contract.signs[0]);
+    fwrite(fout, c_voting);
+
+    LockedArchives locked_archives = LockedArchives(long(3), [dartIndex(net, testamony)]);
+    fwrite(fout, locked_archives);
 }
 
 version (WITHOUT_PAYMENT) {
