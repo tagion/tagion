@@ -55,3 +55,40 @@ int tagion_basic_get_dart_index(const(uint8_t*) buf,
     }
     return ErrorCode.none;
 }
+
+
+/// Variable, which represents the d-runtime status
+__gshared DrtStatus __runtimeStatus = DrtStatus.DEFAULT_STS;
+
+enum DrtStatus {
+    DEFAULT_STS,
+    STARTED,
+    TERMINATED
+}
+// Staritng d-runtime
+static int start_rt() {
+    import core.runtime : rt_init;
+    if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
+        __runtimeStatus = DrtStatus.STARTED;
+        return rt_init;
+    }
+    return -1;
+}
+
+// Terminating d-runtime
+static int stop_rt() {
+    import core.runtime : rt_term;
+    if (__runtimeStatus is DrtStatus.STARTED) {
+        __runtimeStatus = DrtStatus.TERMINATED;
+        return rt_term;
+    }
+    return -1;
+}
+
+
+int tagion_revision(char** value, size_t* str_len) {
+    import tagion.tools.revision;
+    *value = cast(char*) &revision_text[0];
+    *str_len = revision_text.length;
+    return ErrorCode.none;
+}

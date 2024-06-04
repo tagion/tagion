@@ -160,7 +160,7 @@ class NativeSecp256k1 {
     @trusted
     final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
-    const(ubyte[]) pubkey) const pure
+            scope const(ubyte[]) pubkey) const pure
     in (seckey.length == SECKEY_SIZE)
     in (pubkey.length == PUBKEY_SIZE)
     do {

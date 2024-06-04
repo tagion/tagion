@@ -9,6 +9,9 @@ import std.getopt;
 import std.path : baseName, buildPath, dirName, setExtension, stripExtension;
 import std.stdio;
 import std.typecons;
+import std.range;
+import std.exception;
+
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTBasic : DARTIndex;
@@ -30,9 +33,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.tools.dartutil.synchronize;
 
-//import tagion.utils.Miscellaneous;
-import std.exception;
-import std.uni : toLower;
 import tagion.Keywords;
 import tagion.dart.DARTFakeNet;
 import tagion.dart.DARTRim;
@@ -42,7 +42,6 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile : Index;
 import tagion.utils.Term;
-import std.range;
 import tagion.basic.range;
 
 /**
@@ -51,77 +50,93 @@ import tagion.basic.range;
 
 mixin Main!_main;
 
+private struct Operation {
+    bool initialize;
+    bool sync;
+    bool flat_disable;
+    bool strip;
+    SectorRange sectors;
+    string inputfilename;
+    string outputfilename;
+
+    bool print;
+    bool eye;
+    bool dump;
+    bool dump_branches;
+    uint depth;
+
+    bool oneread() => print + eye + dump + dump_branches <= 1;
+    bool anyread() => print || eye || dump || dump_branches;
+
+    bool dartrpc;
+    string[] dartread_args;
+    string dartrim_arg;
+    bool dartmodify;
+
+    bool dartrim() => !dartrim_arg.empty;
+    bool dartread() => dartread_args.length > 0;
+    bool onecrud() => dartrpc + dartread + dartrim + dartmodify <= 1;
+    bool anycrud() => dartrpc || dartread || dartrim || dartmodify;
+
+    bool any() => anycrud || anyread;
+
+    void checkCompatible() {
+        tools.check(sync ^ any, "The sync operation is not compatible any read or crud operation");
+        tools.check(onecrud, "Only one crud operation is possible at a time");
+        tools.check(oneread, "Only one read operation is possible at a time");
+    }
+}
+
 int _main(string[] args) {
     immutable program = args[0];
 
-    string dartfilename;
-    string inputfilename;
-    string destination_dartfilename;
-    string outputfilename;
+    Operation op;
+    string[] dart_filenames;
     string journal_path = buildPath(tempDir, "dart_journals");
     bool version_switch;
     const logo = import("logo.txt");
 
-    bool print;
-
-    bool standard_output;
     string test_dart;
-    string[] dartread_args;
     string angle_range;
     string exec;
-    uint depth;
-    bool strip;
-    bool dartmodify;
-    string dartrim;
-    bool dartrpc;
-    bool sync;
-    bool eye;
     bool fake;
-    bool force;
-    bool dump;
-    bool dump_branches;
-    bool initialize;
-    bool flat_disable;
     string passphrase = "verysecret";
 
     GetoptResult main_args;
-    SectorRange sectors;
     try {
         main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
-            "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+            "version", "display the version", &version_switch,
             "verbose|v", "Prints verbose information to console", &__verbose_switch,
             "dry", "Dry-run this will not save the wallet", &__dry_switch,
-            "I|initialize", "Create a dart file", &initialize,
-            "o|outputfile", "Sets the output file name", &outputfilename,
-            "r|read", "Executes a DART read sequency", &dartread_args,
-            "rim", "Performs DART rim read", &dartrim,
-            "m|modify", "Executes a DART modify sequency", &dartmodify,
-            "rpc", "Executes a HiPRC on the DART", &dartrpc,
-            "strip", "Strips the dart-recoder dumps archives", &strip,
-            "f|force", "Force erase and create journal and destination DART", &force,
-            "print", "prints all the archives with in the given angle", &print,
-            "dump", "Dumps all the archives with in the given angle", &dump,
-            "dump-branches", "Dumps all the archives and branches with in the given angle", &dump_branches,
-            "eye", "Prints the bullseye", &eye,
-            "sync", "Synchronize src.drt to dest.drt", &sync,
+            "I|initialize", "Create a dart file", &op.initialize,
+            "o|outputfile", "Sets the output file name", &op.outputfilename,
+            "r|read", "Executes a DART read sequency", &op.dartread_args,
+            "rim", "Performs DART rim read", &op.dartrim_arg,
+            "m|modify", "Executes a DART modify sequency", &op.dartmodify,
+            "rpc", "Executes a HiPRC on the DART", &op.dartrpc,
+            "strip", "Strips the dart-recoder dumps archives", &op.strip,
+            "print", "prints all the archives with in the given angle", &op.print,
+            "dump", "Dumps all the archives with in the given angle", &op.dump,
+            "dump-branches", "Dumps all the archives and branches with in the given angle", &op.dump_branches,
+            "eye", "Prints the bullseye", &op.eye,
+            "sync", "Synchronize src.drt to dest.drt", &op.sync,
             "e|exec", "Execute string to be used for remote access", &exec,
             "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
             "A|angle", "Sets angle range from:to (Default is full range)", &angle_range,
-            "depth", "Set limit on dart rim depth", &depth,
+            "depth", "Set limit on dart rim depth", &op.depth,
             "fake", format(
                 "Use fakenet instead of real hashes : default :%s", fake), &fake,
             "test", "Generate a test dart with specified number of archives total:bundle", &test_dart,
-            "flat-disable", "Disable flat branch hash", &flat_disable,
+            "flat-disable", "Disable flat branch hash", &op.flat_disable,
         );
         if (version_switch) {
             revision_text.writeln;
             return 0;
         }
 
-        standard_output = (outputfilename.empty);
-        if (standard_output) {
+        if (op.outputfilename.empty) {
             vout = stderr;
         }
         if (main_args.helpWanted) {
@@ -159,32 +174,26 @@ int _main(string[] args) {
             tools.check(fields == 2,
                 format("Angle range should be ex. --range A0F0:B0F8 not %s", angle_range));
             verbose("Angle from %04x to %04x", _from, _to);
-            sectors = SectorRange(_from, _to);
+            op.sectors = SectorRange(_from, _to);
         }
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
-                tools.check(inputfilename is null,
-                    format("Input file '%s' has already been declared", inputfilename));
-                inputfilename = file;
+                tools.check(op.inputfilename is null,
+                    format("Input file '%s' has already been declared", op.inputfilename));
+                op.inputfilename = file;
                 continue;
             }
             if (file.hasExtension(FileExtension.dart)) {
-                if (dartfilename is null) {
-                    dartfilename = file;
-                    continue;
-                }
-                tools.check(destination_dartfilename is null,
-                    format("Source '%s' and destination '%s' DART file has already been define",
-                        dartfilename, destination_dartfilename));
-                destination_dartfilename = file;
+                dart_filenames ~= file;
             }
         }
+
         SecureNet net;
 
-        tools.check(!dartfilename.empty, "Missing dart file");
+        tools.check(!dart_filenames.empty, "No dart files were specified");
 
-        if (dartfilename.exists) {
-            auto blockfile = BlockFile(dartfilename, Yes.read_only);
+        if (dart_filenames[0].exists) {
+            auto blockfile = BlockFile(dart_filenames[0], Yes.read_only);
             scope (exit) {
                 blockfile.close;
             }
@@ -198,15 +207,6 @@ int _main(string[] args) {
             net.generateKeyPair(passphrase);
         }
 
-        const hirpc = HiRPC(net);
-
-        if (initialize) {
-            const flat = (flat_disable) ? No.flat : Yes.flat;
-            DART.create(filename : dartfilename, net:
-                net, flat:
-                flat);
-            return 0;
-        }
         if (!test_dart.empty) {
             import std.random;
             import std.datetime.stopwatch;
@@ -214,7 +214,7 @@ int _main(string[] args) {
             auto test_params = test_dart.split(':').map!(param => param.to!ulong);
             const number_of_archives = test_params.eatOne;
             const bundle_size = test_params.eatOne(ulong(1000));
-            auto test_db = new DART(net, dartfilename);
+            auto test_db = new DART(net, dart_filenames[0]);
             scope (exit) {
                 test_db.close;
             }
@@ -276,6 +276,80 @@ int _main(string[] args) {
             return 0;
         }
 
+        op.checkCompatible();
+
+        File fout;
+        if (!op.outputfilename.empty) {
+            fout = File(op.outputfilename, "w");
+            verbose("Output file %s", op.outputfilename);
+        }
+        else {
+            fout = stdout;
+        }
+        scope (exit) {
+            if (fout !is stdout) {
+                fout.close;
+            }
+        }
+
+        Exception dart_exception;
+        if (op.sync) {
+            tools.check(dart_filenames.length == 2,
+                    "A source and a destination dart file is required for the sync operation");
+            string src_dart_filename = dart_filenames[0];
+            string dst_dart_filename = dart_filenames[1];
+
+            if (!dst_dart_filename.exists) {
+                DART.create(dst_dart_filename, net);
+                writefln("DART %s created", dst_dart_filename);
+            }
+            auto dest_db = new DART(net, dst_dart_filename, dart_exception);
+            writefln("Open destination %s", dst_dart_filename);
+            if (dart_exception !is null) {
+                writefln("Fail to open destination DART: %s. Abort.", dst_dart_filename);
+                error(dart_exception);
+                return 1;
+            }
+            auto src_db = new DART(net, src_dart_filename, dart_exception, Yes.read_only);
+            if (dart_exception !is null) {
+                error("Fail to open DART: %s. Abort.", src_dart_filename);
+                error(dart_exception);
+                return 1;
+            }
+
+            immutable _journal_path = buildPath(journal_path, dst_dart_filename.baseName.stripExtension);
+
+            verbose("journal path %s", journal_path);
+            if (journal_path.exists) {
+                journal_path.rmdirRecurse;
+            }
+            journal_path.mkdirRecurse;
+            writefln("Synchronize journals %s", _journal_path);
+            synchronize(dest_db, src_db, _journal_path);
+            return 0;
+        }
+        else {
+            foreach(filename; dart_filenames) {
+                verbose("%s:", filename);
+                dartutil_operation(op, filename, net, fout);
+            }
+        }
+    }
+    catch (Exception e) {
+        error(e);
+        return 1;
+    }
+
+    return 0;
+}
+
+int dartutil_operation(Operation op, string dartfilename, const SecureNet net, ref File fout) {
+    with(op) {
+        if (initialize) {
+            const flat = (flat_disable) ? No.flat : Yes.flat;
+            DART.create(filename : dartfilename, net: net, flat: flat);
+        }
+
         Exception dart_exception;
         auto db = new DART(net, dartfilename, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
@@ -284,43 +358,6 @@ int _main(string[] args) {
             return 1;
         }
 
-        if (sync) {
-            if (!destination_dartfilename.exists) {
-
-                DART.create(destination_dartfilename, net);
-                writefln("DART %s created", destination_dartfilename);
-            }
-            auto dest_db = new DART(net, destination_dartfilename, dart_exception);
-            writefln("Open destination %s", destination_dartfilename);
-            if (dart_exception !is null) {
-                writefln("Fail to open destination DART: %s. Abort.", destination_dartfilename);
-                error(dart_exception);
-                return 1;
-            }
-            immutable _journal_path = buildPath(journal_path,
-                destination_dartfilename.baseName.stripExtension);
-
-            verbose("journal path %s", journal_path);
-            if (journal_path.exists) {
-                journal_path.rmdirRecurse;
-            }
-            journal_path.mkdirRecurse;
-            writefln("Synchronize journals %s", _journal_path);
-            synchronize(dest_db, db, _journal_path);
-            return 0;
-        }
-
-        File fout;
-        fout = stdout;
-        if (!outputfilename.empty) {
-            fout = File(outputfilename, "w");
-            verbose("Output file %s", outputfilename);
-        }
-        scope (exit) {
-            if (fout !is stdout) {
-                fout.close;
-            }
-        }
         if (print) {
             db.dump(sectors, Yes.full, depth);
         }
@@ -337,22 +374,17 @@ int _main(string[] args) {
             }
 
             db.traverse(&dartTraverse, sectors, depth);
-            return 0;
         }
 
-        const dartread = dartread_args.length > 0;
-        const onehot = dartrpc + dartread + !dartrim.empty + dartmodify;
-
-        tools.check(onehot <= 1,
-            "Only one of the dartrpc, dartread, dartrim, dartmodify switched allowed");
+        const hirpc = HiRPC(net);
 
         if (dartrpc) {
             tools.check(!inputfilename.empty, "Missing input file for DART-rpc");
             const doc = inputfilename.fread;
-            auto received = hirpc.receive(doc);
-            auto result = db(received);
+            const received = hirpc.receive(doc);
+            const result = db(received);
             const tosendResult = result.response.result[Keywords.result].get!Document;
-            outputfilename.fwrite(tosendResult);
+            op.outputfilename.fwrite(tosendResult);
             return 0;
         }
         if (dartread) {
@@ -373,7 +405,6 @@ int _main(string[] args) {
             auto response = db(receiver, false);
 
             if (strip) {
-
                 auto recorder = db.recorder(response.result);
                 foreach (archive; recorder[]) {
                     fout.rawWrite(archive.filed.serialize);
@@ -383,10 +414,10 @@ int _main(string[] args) {
             fout.rawWrite(response.toDoc.serialize);
             return 0;
         }
-        if (!dartrim.empty) {
+        if (dartrim) {
             Rims rims;
-            if (dartrim != "root") {
-                auto rim_and_keys = dartrim.split(":");
+            if (dartrim_arg != "root") {
+                auto rim_and_keys = dartrim_arg.split(":");
                 auto rim_path = rim_and_keys.front;
                 rim_and_keys.popFront;
                 auto rim_decimals = rim_path.split(",");
@@ -445,10 +476,5 @@ int _main(string[] args) {
             return 0;
         }
     }
-    catch (Exception e) {
-        error(e);
-        return 1;
-    }
-
     return 0;
 }
