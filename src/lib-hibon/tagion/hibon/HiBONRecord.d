@@ -373,7 +373,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                     else static if (isPointer!ElementT) {
                         set(index, e.toDoc);
-                    }   
+                    }
                     else static if (isInputRange!ElementT) {
                         set(index, toList(e));
                     }
@@ -460,8 +460,8 @@ mixin template HiBONRecord(string CTOR = "") {
 
                     else static if (isPointer!BaseT) {
                         pragma(msg, "Pointer ", BaseT, " : ", isPointer!BaseT);
-                        hibon[name] = m.toDoc;    
-                    //hibon[name] = (*BaseT).init;
+                        hibon[name] = m.toDoc;
+                        //hibon[name] = (*BaseT).init;
                     }
                     else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
                         alias BaseU = TypedefBase!(ForeachType!(UnqualT));
@@ -546,7 +546,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     alias UnqualU = Unqual!MemberU;
                     MemberU[] result;
                     if (doc.isArray) {
-                            result = doc[].map!(e => e.get!MemberU).array;
+                        result = doc[].map!(e => e.get!MemberU).array;
                     }
                     else {
                         uint index;
@@ -1783,9 +1783,9 @@ unittest {
 
 unittest {
     import std.typecons;
-    import tagion.basic.Debug;
-import std.format;
+    import std.format;
     import std.range;
+
     @recordType("RefS") @defaultCTOR
     static struct RefS {
         string text;
@@ -1799,33 +1799,12 @@ import std.format;
     }
 
     {
-    IS s;
-    s.refs = new RefS("text", 10);
-    __write("%s", s.refs);
-    __write("refs.text=%s", s.refs.text);
-    //__write("%s", s.toPretty);
-    //__write("s.refs=%s", s.refs.toPretty);
-    const x = RefS("text2", 42);
-    __write("x.text=%s", x.text);
-    __write("x=%J", x);
-    __write("*s=%s", toPretty(*(s.refs)));
-    const doc = s.refs.toDoc;
-    __write("doc=%s", doc.toPretty);
-    const doc2 = s.toDoc;
-    __write("s.full_size=%s", full_size(s));
-    __write("doc2=%s size=%d", doc2.serialize, doc2.serialize.length);
-    __write("s.refs.serialize=%s size=%d", s.refs.serialize, s.refs.serialize.length);
-    __write("--s.refs=%s", toPretty(s.refs));
-    __write("doc2=%s", s.toHiBON.serialize);
-    __write("s=%s", s.toPretty);
-    pragma(msg, "SupportingFullSizeFunction!IS ", SupportingFullSizeFunction!IS);
-    //__write("s.serialize=%s", s.serialize);
-    auto h = s.toHiBON;
-    __write("h.serialize=%s", h.serialize);
-    __write("h=%s", h.toPretty);
-        const s_doc=s.toDoc;
-        const s_expected=IS(s_doc);
-        //assert(s == s_expected);
+        IS s;
+        s.refs = new RefS("text", 10);
+        pragma(msg, "SupportingFullSizeFunction!IS ", SupportingFullSizeFunction!IS);
+        auto h = s.toHiBON;
+        const s_doc = s.toDoc;
+        const s_expected = IS(s_doc);
         assert(s.serialize == s_expected.serialize);
         assert(s.serialize == h.serialize);
         assert(s.toJSON == s_expected.toJSON);
@@ -1834,25 +1813,17 @@ import std.format;
         immutable(RefS)*[] refs;
         mixin HiBONRecord;
     }
+
     {
         AS s;
-        const i=3;
-        auto x=new RefS(format("text_%d", i), i); 
-        s.refs=3.iota.map!(i => new immutable(RefS)(format("text_%d", i), i)).array;
-        __write("%J", s);
-        __write("%s", s);
-        auto h=s.toHiBON;
-        __write("h=%s",h.toPretty);
-        __write("h.serialize=%s",h.serialize);
-        const s_doc=s.toDoc;
-        const s_expected=AS(s_doc);
-        //assert(s == s_expected);
+        const i = 3;
+        s.refs = 3.iota.map!(i => new immutable(RefS)(format("text_%d", i), i)).array;
+        auto h = s.toHiBON;
+        const s_doc = s.toDoc;
+        const s_expected = AS(s_doc);
         assert(s.serialize == s_expected.serialize);
         assert(s.serialize == h.serialize);
         assert(s.toJSON == s_expected.toJSON);
 
-
     }
-    //__write("h=%s", h.toPretty);
-    //__write("%(%02x %)", s.serialize);
 }
