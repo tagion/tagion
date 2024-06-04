@@ -14,7 +14,7 @@ import tagion.script.standardnames;
 import tagion.utils.StdTime;
 
 ///
-@recordType("$@NNC") @defaultCTOR
+@recordType("$@NNC") 
 struct NetworkNameCard {
     @label(StdNames.domain_name) string name; /// Tagion domain name (TDN) 
     @label(StdNames.owner) Pubkey owner; /// NNC pubkey
@@ -25,7 +25,7 @@ struct NetworkNameCard {
 }
 
 ///
-@recordType("$@NRC") @defaultCTOR
+@recordType("$@NRC") 
 struct NetworkNameRecord {
     @label(StdNames.name) string name; /// Hash of the NNC.name
     @label(StdNames.previous) Fingerprint previous; /// Hash pointer to the previous NRC

@@ -24,7 +24,7 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.StdTime;
 
-@recordType("DeliveryOrder") @defaultCTOR
+@recordType("DeliveryOrder") 
 struct DeliveryOrder {
 
     string vaccineType;
@@ -40,7 +40,7 @@ struct DeliveryOrder {
     mixin HiBONRecord;
 }
 
-@recordType("DeliveryEvent") @defaultCTOR
+@recordType("DeliveryEvent")
 struct DeliveryEvent {
     Signature newSignature; // signature ex. from receiver or from sender when receiver has already signed
     DARTIndex deliveryEvent;

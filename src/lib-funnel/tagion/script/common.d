@@ -23,7 +23,7 @@ import tagion.utils.StdTime;
 /**
  * Tagion bill
  */
-@recordType("TGN") @defaultCTOR
+@recordType("TGN") 
 struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; /// Time stamp
@@ -93,7 +93,7 @@ struct SignedContract {
  * Included in a contract to eventually be outputs in the DART
  * The sum of the value of the outputs should be less than the sum of inputs + fees
  */
-@recordType("pay") @defaultCTOR
+@recordType("pay") 
 struct PayScript {
     @label(StdNames.values) const(TagionBill)[] outputs; /// Outputs of the contract to be Stored in DART
     mixin HiBONRecord;
@@ -224,7 +224,7 @@ unittest {
 /**
  * The very first epoch
  */
-@recordType("$@G") @defaultCTOR
+@recordType("$@G") 
 struct GenesisEpoch {
     @label(StdNames.epoch) long epoch_number; /// should always be zero
     Pubkey[] nodes; /// Initial nodes
@@ -237,7 +237,7 @@ struct GenesisEpoch {
 /**
  * Epoch
  */
-@recordType("$@E") @defaultCTOR
+@recordType("$@E") 
 struct Epoch {
     @label(StdNames.epoch) long epoch_number; /// The epoch number
     @label(StdNames.time) sdt_t time; /// Time stamp
@@ -258,7 +258,7 @@ alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
  * Name record to get the current epoch
  * The record is updated on each epoch
  */
-@recordType("$@Tagion") @defaultCTOR 
+@recordType("$@Tagion")  
 struct TagionHead {
     @label(StdNames.domain_name) string name = TagionDomain; /// Default name should always be "tagion"
     long current_epoch;
@@ -268,7 +268,7 @@ struct TagionHead {
 /**
  * Global tagion statistics
  */
-@defaultCTOR
+
 struct TagionGlobals {
     @label("total") BigNumber total; /// The sum of value at the epoch
     @label("total_burned") BigNumber total_burned; /// Burned this epoch
@@ -308,7 +308,7 @@ version(RESERVED_ARCHIVES_FIX) {
 /**
  * Output which did not reach consensus at this epoch
  */
-@recordType("$@Locked") @defaultCTOR
+@recordType("$@Locked") 
 struct LockedArchives {
     @label(StdNames.locked_epoch) long epoch_number; ///
     @label("outputs") const(DARTIndex)[] locked_outputs; ///
@@ -317,7 +317,7 @@ struct LockedArchives {
 } else {
 pragma(msg, "Why is Locked not reserved?");
 ///
-@recordType("@Locked") @defaultCTOR
+@recordType("@Locked") 
 struct LockedArchives {
     @label(StdNames.locked_epoch) long epoch_number;
     @label("outputs") const(DARTIndex)[] locked_outputs;

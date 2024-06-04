@@ -27,7 +27,7 @@ private {
     import tagion.dart.Recorder;
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBON : HiBON;
-    import tagion.hibon.HiBONRecord : GetLabel, exclude, record_filter = filter, label, recordType, defaultCTOR;
+    import tagion.hibon.HiBONRecord : GetLabel, exclude, record_filter = filter, label, recordType;
 
     //import tagion.basic.basic;
     //    import std.stdio : writefln, writeln;
@@ -2328,7 +2328,7 @@ unittest {
 
         }
         { // name record unittests
-            @recordType("name") @defaultCTOR
+            @recordType("name") 
             static struct NameRecord {
                 @label("#name") string name;
                 string data;
@@ -2526,7 +2526,7 @@ unittest {
         auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (
                 () @trusted => cast(immutable) _net)());
     }
-    @defaultCTOR
+    
     static struct HashDoc {
         @label("#name") string name;
         int number;

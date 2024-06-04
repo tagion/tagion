@@ -8,7 +8,7 @@ import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
 import tagion.script.common : TagionBill;
 import std.algorithm;
-import tagion.hibon.HiBONRecord : HiBONRecord, isRecord, label, recordType, TYPENAME, defaultCTOR;
+import tagion.hibon.HiBONRecord : HiBONRecord, isRecord, label, recordType, TYPENAME;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.script.standardnames;
 import tagion.crypto.Types;
@@ -28,7 +28,7 @@ struct TRTArchive {
     });
 }
 
-@recordType(TYPENAME ~ "trt_contract") @defaultCTOR
+@recordType(TYPENAME ~ "trt_contract") 
 struct TRTContractArchive {
     @label(StdNames.hash_contract) DARTIndex contract_hash;
     Document contract;

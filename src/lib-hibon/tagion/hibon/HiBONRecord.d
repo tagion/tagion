@@ -137,7 +137,6 @@ struct recordType {
     string code; /// This is mixed after the Document constructor
 }
 
-struct defaultCTOR;
 struct disableCTOR;
 
 struct disableSerialize;
@@ -290,7 +289,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, HiBONKeys, isSpecialKeyType,
-        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled, defaultCTOR, disableCTOR;
+        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled,  disableCTOR;
     import tagion.hibon.HiBONBase : isKey, TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONSerialize;
@@ -1789,7 +1788,7 @@ unittest {
     import std.format;
     import std.range;
 
-    @recordType("RefS") @defaultCTOR
+    @recordType("RefS") 
     static struct RefS {
         string text;
         int zoom;

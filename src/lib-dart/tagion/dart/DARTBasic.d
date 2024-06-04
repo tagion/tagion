@@ -121,11 +121,11 @@ unittest {
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.hibon.BigNumber;
     import tagion.hibon.HiBONBase : Type;
-    import tagion.hibon.HiBONRecord : HiBONRecord, label, defaultCTOR;
+    import tagion.hibon.HiBONRecord : HiBONRecord, label;
     import tagion.utils.StdTime;
 
     const net = new StdHashNet;
-    @defaultCTOR
+    
     static struct DARTKey(T) {
         @label("#key") T key;
         int x;

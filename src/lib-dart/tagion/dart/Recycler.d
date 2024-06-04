@@ -747,7 +747,7 @@ unittest {
 }
 
 version (unittest) {
-    @safe @recordType("D") @defaultCTOR
+    @safe @recordType("D") 
     static struct Data {
         string text;
         mixin HiBONRecord;

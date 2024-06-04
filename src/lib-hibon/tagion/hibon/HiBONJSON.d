@@ -695,7 +695,6 @@ unittest {
     import std.stdio;
     import tagion.hibon.HiBONRecord;
 
-    @defaultCTOR
     static struct S {
         int[] a;
         mixin HiBONRecord;
