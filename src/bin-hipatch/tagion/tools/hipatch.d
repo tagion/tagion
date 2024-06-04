@@ -66,7 +66,7 @@ int __main(string[] args) {
     check(pubkey.length == 33, "Public key should be 33 bytes");
 
     File fin = (args.length >= 2)? File(args[1]) : stdin();
-    File fout = (out_filename)? File(out_filename) : stdout();
+    File fout = (out_filename)? File(out_filename, "a") : stdout();
 
     HiBONRange range = HiBONRange(fin);
 
