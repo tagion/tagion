@@ -461,9 +461,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
 
                     else static if (isPointer!BaseT) {
-                        pragma(msg, "Pointer ", BaseT, " : ", isPointer!BaseT);
                         hibon[name] = m.toDoc;
-                        //hibon[name] = (*BaseT).init;
                     }
                     else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
                         alias BaseU = TypedefBase!(ForeachType!(UnqualT));
@@ -478,7 +476,6 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                     }
                     else {
-                        pragma(msg, "Is pointer ", BaseT);
                         static assert(0, format(
                                 "converting for member '%s' of type" ~
                                 " %s is not supported by default",
@@ -512,10 +509,7 @@ mixin template HiBONRecord(string CTOR = "") {
         }
 
         static if (CTOR.length is 0 && !hasUDA!(This, disableCTOR)) {
-           // pragma(msg, "HiBON ", This, " has default CTOR");
-           // pragma(msg, "Tuple ", Fields!This, " names ", FieldNameTuple!This, " types ", FieldTypeTuple!This);
             this(inout Fields!This args) pure nothrow inout {
-                pragma(msg, "Args ", typeof(args), " args ", Fields!This);
 
                 this.tupleof = args;
             }
@@ -656,7 +650,6 @@ mixin template HiBONRecord(string CTOR = "") {
             enum do_verify = hasMember!(This, "verify") && isCallable!(verify); // && __traits(compiles, this.verify());
 
             static if (do_verify) {
-                //pragma(msg, "do_verify ", (functionAttributes!(this.verify) & FunctionAttribute.const_) == FunctionAttribute.const_, " Attribute ", functionAttributes!(this.verify), " pure_ ",FunctionAttribute.pure_);
                 static assert(__traits(compiles, this.verify()),
                         format("%s.verify() should be const pure nothrow", This.stringof));
                 scope (exit) {
@@ -753,7 +746,6 @@ mixin template HiBONRecord(string CTOR = "") {
                             m = new BaseT(sub_doc);
                         }
                         else static if (isPointer!BaseT) {
-                            pragma(msg, "isPointer ", BaseT, " : ", PointerTarget!BaseT);
                             const sub_doc = Document(doc[name].get!Document);
                             m = new PointerTarget!BaseT(sub_doc);
                         }
@@ -1803,7 +1795,6 @@ unittest {
     { // Single pointer element
         IS s;
         s.refs = new RefS("text", 10);
-        pragma(msg, "SupportingFullSizeFunction!IS ", SupportingFullSizeFunction!IS);
         const s_doc = s.toDoc;
         const s_expected = IS(s_doc);
         assert(s.serialize == s_expected.serialize);
