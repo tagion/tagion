@@ -138,6 +138,7 @@ struct recordType {
 }
 
 struct defaultCTOR;
+struct disableCTOR;
 
 struct disableSerialize;
 enum isSerializeDisabled(T) = hasUDA!(T, disableSerialize);
@@ -289,7 +290,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, HiBONKeys, isSpecialKeyType,
-        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled, defaultCTOR;
+        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled, defaultCTOR, disableCTOR;
     import tagion.hibon.HiBONBase : isKey, TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONSerialize;
@@ -511,15 +512,15 @@ mixin template HiBONRecord(string CTOR = "") {
             this(Document(hibon.serialize));
         }
 
-        static if (hasUDA!(This, defaultCTOR)) {
-            pragma(msg, "HiBON ", This, " has default CTOR");
-            pragma(msg, "Tuple ", Fields!This, " names ", FieldNameTuple!This, " types ", FieldTypeTuple!This);
+        static if (CTOR.length is 0 && !hasUDA!(This, disableCTOR)) {
+           // pragma(msg, "HiBON ", This, " has default CTOR");
+           // pragma(msg, "Tuple ", Fields!This, " names ", FieldNameTuple!This, " types ", FieldTypeTuple!This);
             this(inout Fields!This args) pure nothrow inout {
                 pragma(msg, "Args ", typeof(args), " args ", Fields!This);
 
                 this.tupleof = args;
             }
-         }
+        }
         @safe this(const Document doc) pure {
             static if (HAS_TYPE) {
                 Check!HiBONRecordTypeException(doc.hasMember(TYPENAME), "Missing HiBON type");
