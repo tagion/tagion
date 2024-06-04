@@ -98,8 +98,11 @@ void fwrite(T)(ref File file, const T rec) if (isHiBONRecord!T) {
 unittest {
     import std.file : deleteme, remove;
 
+    @defaultCTOR
     static struct Simple {
         int x;
+        mixin HiBONRecord;
+        version(none)
         mixin HiBONRecord!(q{
             this(int _x) {
                 x = _x;

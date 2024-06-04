@@ -27,7 +27,7 @@ private {
     import tagion.dart.Recorder;
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBON : HiBON;
-    import tagion.hibon.HiBONRecord : GetLabel, exclude, record_filter = filter, label, recordType;
+    import tagion.hibon.HiBONRecord : GetLabel, exclude, record_filter = filter, label, recordType, defaultCTOR;
 
     //import tagion.basic.basic;
     //    import std.stdio : writefln, writeln;
@@ -237,9 +237,6 @@ class DARTFile {
         enum dart_indicesName = GetLabel!(_dart_indices).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-
-            
-
                 .check(isRecord(doc), format("Document is not a %s", This.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new Index[KEY_SPAN];
@@ -2331,17 +2328,11 @@ unittest {
 
         }
         { // name record unittests
-            @recordType("name")
+            @recordType("name") @defaultCTOR
             static struct NameRecord {
                 @label("#name") string name;
                 string data;
-
-                mixin HiBONRecord!(q{
-                    this(const string name, const string data) {
-                        this.name = name;
-                        this.data = data;
-                    }
-                });
+                mixin HiBONRecord;
             }
 
             {
@@ -2535,15 +2526,11 @@ unittest {
         auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (
                 () @trusted => cast(immutable) _net)());
     }
+    @defaultCTOR
     static struct HashDoc {
         @label("#name") string name;
         int number;
-        mixin HiBONRecord!(q{
-            this(string name, int n) {
-                this.name=name;
-                number=n;
-            }
-    });
+        mixin HiBONRecord;
     }
 
     { // Check the #name archives 

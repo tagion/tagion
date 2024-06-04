@@ -514,12 +514,12 @@ mixin template HiBONRecord(string CTOR = "") {
         static if (hasUDA!(This, defaultCTOR)) {
             pragma(msg, "HiBON ", This, " has default CTOR");
             pragma(msg, "Tuple ", Fields!This, " names ", FieldNameTuple!This, " types ", FieldTypeTuple!This);
-            this(Fields!This args) pure inout {
+            this(inout Fields!This args) pure nothrow inout {
                 pragma(msg, "Args ", typeof(args), " args ", Fields!This);
 
                 this.tupleof = args;
             }
-        }
+         }
         @safe this(const Document doc) pure {
             static if (HAS_TYPE) {
                 Check!HiBONRecordTypeException(doc.hasMember(TYPENAME), "Missing HiBON type");
@@ -1800,14 +1800,14 @@ unittest {
         mixin HiBONRecord;
     }
 
-    {
+    { // Single pointer element
         IS s;
         s.refs = new RefS("text", 10);
         pragma(msg, "SupportingFullSizeFunction!IS ", SupportingFullSizeFunction!IS);
-        auto h = s.toHiBON;
         const s_doc = s.toDoc;
         const s_expected = IS(s_doc);
         assert(s.serialize == s_expected.serialize);
+        auto h = s.toHiBON;
         assert(s.serialize == h.serialize);
         assert(s.toJSON == s_expected.toJSON);
     }
@@ -1816,7 +1816,7 @@ unittest {
         mixin HiBONRecord;
     }
 
-    {
+    { // Array of pointers
         AS s;
         const i = 3;
         s.refs = 3.iota.map!(i => new immutable(RefS)(format("text_%d", i), i)).array;
@@ -1829,7 +1829,7 @@ unittest {
 
     }
 
-    {
+    { // Sparsed array of pointers
         AS s;
         const i = 3;
         static immutable(RefS)* create(const int i) {

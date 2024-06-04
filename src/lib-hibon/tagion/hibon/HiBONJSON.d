@@ -695,13 +695,10 @@ unittest {
     import std.stdio;
     import tagion.hibon.HiBONRecord;
 
+    @defaultCTOR
     static struct S {
         int[] a;
-        mixin HiBONRecord!(q{
-            this(int[] a) {
-                this.a=a;
-            }
-         });
+        mixin HiBONRecord;
     }
 
     { /// Checks that an array of two elements is converted correctly

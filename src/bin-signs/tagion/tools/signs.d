@@ -24,7 +24,7 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.StdTime;
 
-@recordType("DeliveryOrder")
+@recordType("DeliveryOrder") @defaultCTOR
 struct DeliveryOrder {
 
     string vaccineType;
@@ -37,58 +37,17 @@ struct DeliveryOrder {
     int payment;
     @label(StdNames.owner) Pubkey owner; // new token owner       
     Pubkey finalReceiver;
-
-    mixin HiBONRecord!(q{
-        this(
-            string vaccineType, 
-            string packageID, 
-            int numberOfVaccines, 
-            string destination, 
-            string pickuppoint,
-            string startTime,
-            string endTime,
-            int payment,
-             Pubkey owner, // new token owner       
-            Pubkey finalReceiver,
-        ) {
-            this.vaccineType = vaccineType;
-            this.packageID = packageID;
-            this.numberOfVaccines = numberOfVaccines;
-            this.destination = destination;
-            this.pickuppoint = pickuppoint;
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.payment = payment;
-            this.owner = owner;
-            this.finalReceiver = finalReceiver;
-        }
-    });
+    mixin HiBONRecord;
 }
 
-@recordType("DeliveryEvent")
+@recordType("DeliveryEvent") @defaultCTOR
 struct DeliveryEvent {
     Signature newSignature; // signature ex. from receiver or from sender when receiver has already signed
     DARTIndex deliveryEvent;
     string temp;
     string timeStamp;
     @label(StdNames.owner) Pubkey owner; // new token owner
-
-    mixin HiBONRecord!(q{
-        this(
-            Signature newSignature, 
-            DARTIndex deliveryEvent,
-            string temp,
-            string timeStamp,
-            Pubkey owner,
-    ) 
-        {    
-            this.newSignature = newSignature;
-            this.deliveryEvent = deliveryEvent;
-            this.temp = temp;
-            this.timeStamp = timeStamp;
-            this.owner = owner;
-        }   
-    });
+    mixin HiBONRecord;
 }
 
 mixin Main!_main;

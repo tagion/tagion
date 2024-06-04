@@ -2,7 +2,7 @@ module tagion.logger.ContractTracker;
 
 import tagion.services.codes : toString;
 import tagion.basic.Types : Buffer;
-import tagion.hibon.HiBONRecord : HiBONRecord, isHiBONRecord, recordType;
+import tagion.hibon.HiBONRecord : HiBONRecord, isHiBONRecord, recordType, defaultCTOR;
 import tagion.logger.Logger;
 import tagion.crypto.Types : Fingerprint;
 import tagion.crypto.SecureNet : StdHashNet;
@@ -21,12 +21,13 @@ string toString(ContractStatusCode code) pure nothrow {
 }
 
 @safe
-@recordType("ContractStatus")
+@recordType("ContractStatus") @defaultCTOR
 struct ContractStatus {
     Buffer contract_hash;
     ContractStatusCode status_code;
     string message;
-
+    mixin HiBONRecord;
+    version(none)
     mixin HiBONRecord!(q{
         this(const(Buffer) contract_hash, ContractStatusCode status_code, string message) {
             this.contract_hash = contract_hash;
