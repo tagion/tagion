@@ -54,3 +54,28 @@ clean-libbetterc:
 
 .PHONY: clean-libbetterc
 clean: clean-libbetterc
+
+
+LIBTAUONAPI:=$(DLIB)/libtauonapi.$(LIBEXT)
+libtauonapi: DFLAGS+=-i
+libtauonapi: DINC+=$(LIB_DINC)
+libtauonapi: DFILES:=${shell find $(DSRC)/lib-api -name "*.d"}
+
+$(LIBTAUONAPI): revision
+$(LIBTAUONAPI): secp256k1
+libtauonapi: $(LIBTAUONAPI) $(DFILES)
+	
+ifeq ($(PLATFORM),$(IOS_ARM64))
+modify_rpath: $(LIBTAUONAPI)
+	install_name_tool -id "@rpath/libtauonapi.dylib" $<
+
+
+.PHONY: modify_rpath
+
+libtauonapi: modify_rpath
+endif
+
+clean-libtauonapi:
+	$(RM) $(LIBTAUONAPI)
+.PHONY: clean-libtauonapi
+clean: clean-libtauonapi

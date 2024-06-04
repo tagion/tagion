@@ -15,6 +15,7 @@ $(DLIB)/libtauon.a: DFLAGS+=--od=$(DOBJ)
 $(DLIB)/libtauon.a: DINC+=$(TAUON_DINC)
 $(DLIB)/libtauon.a: DFLAGS+=-d-debug
 $(DLIB)/libtauon.a: $(DLIB)/.way 
+$(DLIB)/libtauon.a: revision
 
 $(TAUON_BINS): $(DBIN)/.way
 

@@ -87,6 +87,7 @@ TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/Wallet.d
 TAUON_DFILES+=$(DSRC)/lib-wallet/tagion/wallet/AccountDetails.d
 
 TAUON_DFILES+=$(DSRC)/lib-communication/tagion/communication/HiRPC.d
+TAUON_DFILES+=$(DSRC)/lib-tools/tagion/tools/revision.d
 
 
 # TAUON_DINC+=$(DSRC)/lib-funnel
