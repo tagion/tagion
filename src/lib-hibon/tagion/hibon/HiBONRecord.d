@@ -546,16 +546,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     alias UnqualU = Unqual!MemberU;
                     MemberU[] result;
                     if (doc.isArray) {
-                        //result.length = doc.length;
-                        static if (isPointer!MemberU) {
-                            auto _x = doc[].front;
-                            //auto _x = doc[].front.get!MemberU;   
-                    /// auto _x = doc[].map!(e => e.get!MemberU).array;
-                            pragma(msg, "MemberU ", MemberU, " _x ", typeof(_x));
-                        }
-                        else {
                             result = doc[].map!(e => e.get!MemberU).array;
-                        }
                     }
                     else {
                         uint index;
@@ -564,17 +555,8 @@ mixin template HiBONRecord(string CTOR = "") {
                         result.length = index + 1;
                         foreach (e; doc[]) {
                             is_index(e.key, index);
-                            static if (isPointer!MemberU) {
-                            auto _x = e.get!MemberU;
-                            //auto _x = doc[].front.get!MemberU;   
-                    /// auto _x = doc[].map!(e => e.get!MemberU).array;
-                            pragma(msg, "== MemberU ", MemberU, " _x ", typeof(_e));
-                            //auto _x=e.get!MemberU;
-                            }
-                            else {
                             MemberU elm = e.get!MemberU;
                             (() @trusted => copyEmplace(elm, result[index]))();
-                            } 
                         }
                     }
                     enum do_foreach = false;

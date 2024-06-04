@@ -1008,7 +1008,7 @@ static assert(uint.sizeof == 4);
                 return cast(T) result;
             }
 
-            T get(T)() const if (is(T == enum)) {
+            T get(T)() if (is(T == enum)) {
                 alias EnumBaseT = OriginalType!T;
                 const x = get!EnumBaseT;
                 static if (EnumContinuousSequency!T) {
@@ -1031,14 +1031,14 @@ static assert(uint.sizeof == 4);
                 return cast(T) x;
             }
 
-            T get(T)() const if (isPointer!T) {
-                pragma(msg, __FUNCTION__, " T ", T);
-                return null;
+            T get(T)() if (isPointer!T) {
+                const doc = get!Document;
+                alias Target=PointerTarget!T;
+                return new Target(doc);
             }
 
-            T get(T)() const
-
-            if (!isHiBONRecord!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T) {
+            T get(T)() 
+            if (!isHiBONRecord!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T && !isPointer!T) {
                 enum E = Value.asType!T;
                 import std.format;
 
