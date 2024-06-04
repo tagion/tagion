@@ -51,7 +51,7 @@ template isHiBONArray(T) {
     }
 }
 
-template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
+template SupportingFullSizeFunction(T, size_t i = 0) {
     import tagion.hibon.HiBONRecord : exclude, optional, isHiBONRecord;
     import std.traits;
 
@@ -73,6 +73,10 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
             enum InnerSupportFullSize = Ok;
 
         }
+        else static if (isPointer!U) {
+            pragma(msg, "InnerSupportFullSize ", U, " ", PointerTarget!U);
+            enum InnerSupportFullSize = SupportingFullSizeFunction!(PointerTarget!U);
+        }
         else {
             enum InnerSupportFullSize = isHiBONArray!BaseU ||
                 isIntegral!BaseU;
@@ -87,11 +91,11 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
         //enum optional_flag = hasUDA!(T.tupleof[i], optional);
         enum exclude_flag = hasUDA!(T.tupleof[i], exclude);
         static if (exclude_flag) {
-            enum SupportingFullSizeFunction = SupportingFullSizeFunction!(T, i + 1, _print);
+            enum SupportingFullSizeFunction = SupportingFullSizeFunction!(T, i + 1);
         }
         else {
-            enum SupportingFullSizeFunction = InnerSupportFullSize!(Fields!T[i]) && SupportingFullSizeFunction!(T, i + 1, _print);
-
+            enum SupportingFullSizeFunction = InnerSupportFullSize!(Fields!T[i]) && 
+                SupportingFullSizeFunction!(T, i + 1);
         }
     }
 }
@@ -107,7 +111,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     import std.functional : unaryFun;
     import tagion.hibon.HiBONRecord : exclude, optional, filter, isHiBONRecord, GetLabel, recordType, isSpecialKeyType;
     import tagion.hibon.HiBONBase : HiBONType = Type;
-
     static size_t calcSize(U)(U x, const size_t key_size) {
         enum error_text = format("%s not supported", T.stringof);
         alias BaseU = TypedefBase!U;
@@ -166,6 +169,9 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                             return type_key_size + array_size + LEB128.calc_size(array_size);
                         }
                     }
+                    else static if (isPointer!U) {
+                        return type_key_size + full_size(*x);
+                    }
                     else static if (isHiBONRecord!BaseU) {
                         return type_key_size + x.full_size;
                     }
@@ -191,8 +197,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                     }
                 }
                 else {
-                    assert(0, format("%s HiBONType=%s not supported by %s Type=%s", T.stringof, type, __FUNCTION__, isHiBONBaseType(
-                            type)));
+                    assert(0, format("%s HiBONType=%s not supported by %s Type=%s", 
+                            T.stringof, type, __FUNCTION__, isHiBONBaseType(type)));
                 }
             }
         }
@@ -208,7 +214,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     }
     static foreach (i; 0 .. T.tupleof.length) {
         {
-
             enum exclude_flag = hasUDA!(T.tupleof[i], exclude);
             enum filter_flag = hasUDA!(T.tupleof[i], filter);
             static if (!exclude_flag) {

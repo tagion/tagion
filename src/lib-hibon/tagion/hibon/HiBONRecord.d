@@ -104,6 +104,7 @@ struct label {
 struct optional; /// This flag is set to true if this parameter is optional
 
 struct exclude; // Exclude the member from the HiBONRecord
+
 /++
  filter attribute for toHiBON
  +/
@@ -135,6 +136,8 @@ struct recordType {
     string name; /// Name of the HiBON record-type 
     string code; /// This is mixed after the Document constructor
 }
+
+struct defaultCTOR;
 
 struct disableSerialize;
 enum isSerializeDisabled(T) = hasUDA!(T, disableSerialize);
@@ -286,7 +289,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, HiBONKeys, isSpecialKeyType,
-        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled;
+        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled, defaultCTOR;
     import tagion.hibon.HiBONBase : isKey, TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONSerialize;
@@ -451,6 +454,11 @@ mixin template HiBONRecord(string CTOR = "") {
                             hibon[name] = cast(BaseT) m;
                         }
                     }
+
+                    else static if (isPointer!BaseT) {
+                        pragma(msg, "Pointer ", BaseT, " : ", isPointer!BaseT);
+                        //hibon[name] = (*BaseT).init;
+                    }
                     else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
                         alias BaseU = TypedefBase!(ForeachType!(UnqualT));
                         hibon[name] = toList!preserve_flag(m);
@@ -464,6 +472,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                     }
                     else {
+                        pragma(msg, "Is pointer ", BaseT);
                         static assert(0, format(
                                 "converting for member '%s' of type" ~
                                 " %s is not supported by default",
@@ -490,56 +499,21 @@ mixin template HiBONRecord(string CTOR = "") {
         mixin(CTOR);
     }
 
-    version (none) {
-        template GetKeyName(uint i) {
-            static if (hasUDA!(this.tupleof[i], label)) {
-                alias label = GetLabel!(this.tupleof[i]);
-                enum GetKeyName = label.name;
-            }
-            else {
-                enum GetKeyName = FieldNameTuple!This[i];
-            }
-        }
-
-        template GetTupleIndex(string name, size_t index = 0) {
-            static if (index == This.tupleof.length) {
-                enum GetTupleIndex = -1;
-            }
-            else static if (name == GetKeyName!index) {
-                enum GetTupleIndex = index;
-            }
-            else {
-                enum GetTupleIndex = GetTupleIndex!(name, index + 1);
-            }
-        }
-        /++
-     Returns:
-     A sorted list of Record keys
-     +/
-        protected static string[] _keys() pure nothrow {
-            import std.algorithm;
-            import tagion.hibon.HiBONBase : less_than;
-
-            string[] result;
-            static if (hasUDA!(This, recordType) && (getUDAs!(This, recordType)[0].name.length > 0)) {
-                result ~= TYPENAME;
-            }
-            static foreach (i; 0 .. Fields!(This).length) {
-                result ~= GetKeyName!i;
-            }
-            result.sort!((a, b) => less_than(a, b));
-
-            return result;
-        }
-
-        enum keys = _keys;
-    }
     mixin HiBONKeys;
     static if (!NO_DEFAULT_CTOR) {
         @safe this(const HiBON hibon) pure {
             this(Document(hibon.serialize));
         }
 
+        static if (hasUDA!(This, defaultCTOR)) {
+            pragma(msg, "HiBON ", This, " has default CTOR");
+            pragma(msg, "Tuple ", Fields!This, " names ", FieldNameTuple!This, " types ", FieldTypeTuple!This);
+            this(Fields!This args) {
+                pragma(msg, "Args ", typeof(args), " args ", Fields!This);
+
+                this.tupleof = args;
+            }
+        }
         @safe this(const Document doc) pure {
             static if (HAS_TYPE) {
                 Check!HiBONRecordTypeException(doc.hasMember(TYPENAME), "Missing HiBON type");
@@ -709,7 +683,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                    else {
+                else {
                         enum name = default_name;
                     }
                     static assert(name.length > 0,
@@ -772,6 +746,11 @@ mixin template HiBONRecord(string CTOR = "") {
                         else static if (is(BaseT == class)) {
                             const sub_doc = Document(doc[name].get!Document);
                             m = new BaseT(sub_doc);
+                        }
+                        else static if (isPointer!BaseT) {
+                            pragma(msg, "isPointer ", BaseT, " : ", PointerTarget!BaseT);
+                            const sub_doc = Document(doc[name].get!Document);
+                            m = new PointerTarget!BaseT(sub_doc);
                         }
                         else static if (isInputRange!BaseT || isAssociativeArray!BaseT) {
                             Document sub_doc;
@@ -1797,4 +1776,47 @@ unittest {
     const hibon_serialize = s.toHiBON.serialize;
     assert(s_serialize == hibon_serialize);
 
+}
+
+unittest {
+    import std.typecons;
+    import tagion.basic.Debug;
+
+    @recordType("RefS") @defaultCTOR
+    static struct RefS {
+        string text;
+        int num;
+        mixin HiBONRecord;
+    }
+
+    static struct IS {
+        immutable(RefS)* refs;
+        mixin HiBONRecord;
+    }
+
+    IS s;
+    s.refs = new RefS("text", 10);
+    __write("%s", s.refs);
+    __write("refs.text=%s", s.refs.text);
+    //__write("%s", s.toPretty);
+    //__write("s.refs=%s", s.refs.toPretty);
+    const x = RefS("text2", 42);
+    __write("x.text=%s", x.text);
+    __write("x=%J", x);
+    __write("*s=%s", toPretty(*(s.refs)));
+    const doc = s.refs.toDoc;
+    __write("doc=%s", doc.toPretty);
+    const doc2 = s.toDoc;
+    __write("s.full_size=%s", full_size(s));
+    __write("doc2=%s size=%d", doc2.serialize, doc2.serialize.length);
+    __write("s.refs.serialize=%s size=%d", s.refs.serialize, s.refs.serialize.length);
+    __write("--s.refs=%s", toPretty(s.refs));
+    __write("doc2=%s", s.toHiBON.serialize);
+    __write("s=%s", s.toPretty);
+    pragma(msg, "SupportingFullSizeFunction!IS ", SupportingFullSizeFunction!IS);
+    //__write("s.serialize=%s", s.serialize);
+    //auto h = s.toHiBON;
+    //__write("h=%s", h.toPretty);
+    //__write("h=%s", h.toPretty);
+    //__write("%(%02x %)", s.serialize);
 }

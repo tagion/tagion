@@ -36,6 +36,7 @@ struct HashGraphOptions {
     size_t seed = 123_456_689;
     string path;
     bool disable_graphfile; /// Disable graph file
+    int max_rounds;
 }
 
 class TestRefinement : StdRefinement {
@@ -74,7 +75,6 @@ class NewTestRefinement : StdRefinement {
         first_epoch = true;
         __write("Round %d event_collection=%d", decided_round.number, event_collection.length);
         if (event_collection.length == 0) {
-            __write("!!!!!!!!! Round %d empty", decided_round.number);
             return;
         }
         import std.range : tee;
@@ -386,7 +386,6 @@ void printStates(R)(TestNetworkT!(R) network) if (is(R : Refinement)) {
         writeln("----------------------");
         foreach (channel_key; network.channels) {
             const current_hashgraph = network.networks[channel_key]._hashgraph;
-            // writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
             foreach (receiver_key; network.channels) {
                 const node = current_hashgraph.nodes.get(receiver_key, null);
                 const state = (node is null) ? ExchangeState.NONE : node.state;
@@ -430,19 +429,6 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                         }
                     }
                 }
-
-                version (none) auto not_the_same_uniq = not_the_same
-                    .map!((e) @trusted => cast(Event) e)
-                    .array
-                    .sort!((a, b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
-                    .uniq!((a, b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
-                // if (Event.callbacks && !not_the_same_uniq.empty) {
-                //     foreach(event; not_the_same_uniq) {
-                //         writefln("%(%02x%)", net.calcHash(*event.event_package));
-                //         event.error = true;
-                //         Event.callbacks.connect(event);
-                //     }
-                // }
 
                 // check all events are the same
                 auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
@@ -489,10 +475,6 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
         }
     }
     catch (BehaviourException e) {
-        // writefln("ANOTHER NODE RECEIVED EPOCH");
-        // error_count++;
-        // if (error_count == 5) {
         throw e;
-        // }
     }
 }

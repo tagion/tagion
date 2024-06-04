@@ -469,11 +469,13 @@ class Round {
                         round_to_be_decided.count_feature_famous_rounds);
 
             }
-            if (!can_round_be_decided(round_to_be_decided) && round_to_be_decided.count_feature_famous_rounds < hashgraph
-                    .threshold_for_none_decided_famous_rounds) {
-
+            if (!can_round_be_decided(round_to_be_decided)) {
                 return;
 
+            }
+            const count_of_famous_rounds = round_to_be_decided.count_feature_famous_rounds;
+            if (count_of_famous_rounds < hashgraph.threshold_for_none_decided_famous_rounds) {
+                return;
             }
             Event.view(witness_in_round.map!(w => w.outer));
             //witness_in_round.each!(w => w.display_decided);
@@ -583,6 +585,8 @@ class Round {
             event_collection.each!(e => e.round_received = r);
             Event.view(event_collection);
             __write("EPOCH Round collected %d event_collection=%d", r.number, event_collection.length);
+            hashgraph.epoch_events_statistic(event_collection.length);
+            log.event(Event.topic, hashgraph.epoch_events_statistic.stringof, hashgraph.epoch_events_statistic);
             hashgraph.epoch(event_collection, r);
 
         }

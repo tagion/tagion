@@ -63,7 +63,7 @@ class Event {
         int _order; /// Event order higher value means after
         Round _round_received; /// The round in which the event has been voted to be received
     }
-    Topic topic = Topic("hashgraph_event");
+    static Topic topic = Topic("hashgraph_event");
     bool top;
     bool _intermediate_event;
 
