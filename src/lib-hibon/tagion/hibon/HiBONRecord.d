@@ -1785,7 +1785,7 @@ unittest {
     @recordType("RefS") @defaultCTOR
     static struct RefS {
         string text;
-        int num;
+        int qnum;
         mixin HiBONRecord;
     }
 
