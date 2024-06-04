@@ -372,7 +372,9 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                     }
                     else static if (isPointer!ElementT) {
-                        set(index, e.toDoc);
+                        if (e !is null) {
+                            set(index, e.toDoc);
+                        }
                     }
                     else static if (isInputRange!ElementT) {
                         set(index, toList(e));
@@ -1818,10 +1820,30 @@ unittest {
         AS s;
         const i = 3;
         s.refs = 3.iota.map!(i => new immutable(RefS)(format("text_%d", i), i)).array;
-        auto h = s.toHiBON;
         const s_doc = s.toDoc;
         const s_expected = AS(s_doc);
         assert(s.serialize == s_expected.serialize);
+        auto h = s.toHiBON;
+        assert(s.serialize == h.serialize);
+        assert(s.toJSON == s_expected.toJSON);
+
+    }
+
+    {
+        AS s;
+        const i = 3;
+        static immutable(RefS)* create(const int i) {
+            if ((i % 2) == 0) {
+                return new immutable(RefS)(format("text_%d", i), i);
+            }
+            return null;
+        }
+
+        s.refs = 3.iota.map!create.array;
+        const s_doc = s.toDoc;
+        const s_expected = AS(s_doc);
+        assert(s.serialize == s_expected.serialize);
+        auto h = s.toHiBON;
         assert(s.serialize == h.serialize);
         assert(s.toJSON == s_expected.toJSON);
 

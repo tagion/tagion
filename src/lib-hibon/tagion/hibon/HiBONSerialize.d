@@ -94,7 +94,7 @@ template SupportingFullSizeFunction(T, size_t i = 0) {
             enum SupportingFullSizeFunction = SupportingFullSizeFunction!(T, i + 1);
         }
         else {
-            enum SupportingFullSizeFunction = InnerSupportFullSize!(Fields!T[i]) && 
+            enum SupportingFullSizeFunction = InnerSupportFullSize!(Fields!T[i]) &&
                 SupportingFullSizeFunction!(T, i + 1);
         }
     }
@@ -111,6 +111,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     import std.functional : unaryFun;
     import tagion.hibon.HiBONRecord : exclude, optional, filter, isHiBONRecord, GetLabel, recordType, isSpecialKeyType;
     import tagion.hibon.HiBONBase : HiBONType = Type;
+
     static size_t calcSize(U)(U x, const size_t key_size) {
         enum error_text = format("%s not supported", T.stringof);
         alias BaseU = TypedefBase!U;
@@ -170,6 +171,9 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                         }
                     }
                     else static if (isPointer!U) {
+                        if (x is null) {
+                            return type_key_size + ubyte.sizeof;
+                        }
                         return type_key_size + full_size(*x);
                     }
                     else static if (isHiBONRecord!BaseU) {
@@ -197,7 +201,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                     }
                 }
                 else {
-                    assert(0, format("%s HiBONType=%s not supported by %s Type=%s", 
+                    assert(0, format("%s HiBONType=%s not supported by %s Type=%s",
                             T.stringof, type, __FUNCTION__, isHiBONBaseType(type)));
                 }
             }
@@ -306,14 +310,13 @@ mixin template Serialize() {
             }
         }
 
-
         /// version flag added because new serialization causes crash on snapdragon gen 8 1
         /// Do not remove
-        version(Android) {
+        version (Android) {
             Buffer serialize() const pure @safe {
                 return this.toHiBON.serialize;
             }
-        } 
+        }
         else {
             Buffer serialize() const pure @safe
             out (ret) {
@@ -325,6 +328,9 @@ mixin template Serialize() {
             do {
                 Appender!(ubyte[]) buf;
                 static if (SupportingFullSizeFunction!(This)) {
+                    static if (isPointer!This) {
+                        __write("isPointer %s %s", This.stringof, this !is null);
+                    }
                     const reserve_size = full_size(this);
                     buf.reserve(reserve_size);
                 }
