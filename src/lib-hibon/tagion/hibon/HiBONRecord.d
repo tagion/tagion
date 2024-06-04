@@ -372,7 +372,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                     }
                     else static if (isPointer!ElementT) {
-                        pragma(msg, "ElementT ", ElementT);
+                        set(index, e.toDoc);
                     }   
                     else static if (isInputRange!ElementT) {
                         set(index, toList(e));
@@ -512,7 +512,7 @@ mixin template HiBONRecord(string CTOR = "") {
         static if (hasUDA!(This, defaultCTOR)) {
             pragma(msg, "HiBON ", This, " has default CTOR");
             pragma(msg, "Tuple ", Fields!This, " names ", FieldNameTuple!This, " types ", FieldTypeTuple!This);
-            this(Fields!This args) {
+            this(Fields!This args) pure inout {
                 pragma(msg, "Args ", typeof(args), " args ", Fields!This);
 
                 this.tupleof = args;
@@ -1784,7 +1784,8 @@ unittest {
 unittest {
     import std.typecons;
     import tagion.basic.Debug;
-
+import std.format;
+    import std.range;
     @recordType("RefS") @defaultCTOR
     static struct RefS {
         string text;
@@ -1833,13 +1834,24 @@ unittest {
         immutable(RefS)*[] refs;
         mixin HiBONRecord;
     }
-version(none) {
     {
         AS s;
         const i=3;
-        //auto x=new immutable(RefS)(format("text_%d", i), i); 
-        //immutable refs=3.iota!(i => new immutable(RefS)(format("text_%d", i), i)).array;
-    }
+        auto x=new RefS(format("text_%d", i), i); 
+        s.refs=3.iota.map!(i => new immutable(RefS)(format("text_%d", i), i)).array;
+        __write("%J", s);
+        __write("%s", s);
+        auto h=s.toHiBON;
+        __write("h=%s",h.toPretty);
+        __write("h.serialize=%s",h.serialize);
+        const s_doc=s.toDoc;
+        const s_expected=AS(s_doc);
+        //assert(s == s_expected);
+        assert(s.serialize == s_expected.serialize);
+        assert(s.serialize == h.serialize);
+        assert(s.toJSON == s_expected.toJSON);
+
+
     }
     //__write("h=%s", h.toPretty);
     //__write("%(%02x %)", s.serialize);
