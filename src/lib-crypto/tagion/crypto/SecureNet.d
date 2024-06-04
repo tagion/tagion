@@ -219,7 +219,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                         seckey[] = 0;
                     }
                     crypt.getSecretKey(keypair, seckey);
-                    const pkey=(() @trusted => cast(const(Buffer)) pubkey)(); 
+                    scope const pkey = cast(const(Buffer))pubkey; 
                     result = crypt.createECDHSecret(seckey, pkey);
                 });
                 return result;
@@ -273,8 +273,9 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     immutable(ubyte[]) ECDHSecret(
             scope const(ubyte[]) seckey,
-    scope const(Pubkey) pubkey) const {
-        const pkey=(() @trusted => cast(const(Buffer)) pubkey)();
+            scope const(Pubkey) pubkey)
+        const {
+        scope const pkey=cast(const(Buffer))pubkey;
         return crypt.createECDHSecret(seckey, pkey);
     }
 

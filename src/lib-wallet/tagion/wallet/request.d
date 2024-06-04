@@ -52,7 +52,7 @@ HiRPC.Receiver sendKernelHiRPC(string address, HiRPC.Sender contract, HiRPC hirp
     }
 
     rc = sock.send(contract.toDoc.serialize);
-    check(sock.m_errno == nng_errno.NNG_OK, format("NNG_ERRNO %d", cast(int) sock.m_errno));
+    check(sock.m_errno == nng_errno.NNG_OK, format("NNG_ERRNO %d", sock.m_errno));
     check(rc == 0, format("Could not send bill to network %s", nng_errstr(rc)));
 
     auto response_data = sock.receive!Buffer;
@@ -63,8 +63,7 @@ HiRPC.Receiver sendKernelHiRPC(string address, HiRPC.Sender contract, HiRPC hirp
 }
 
 HiRPC.Receiver sendShellHiRPC(string address, Document doc, HiRPC hirpc) @trusted {
-    pragma(msg, "fixme(cbr): casting from immutable to mutable. Is this ok?! type=", typeof(doc.serialize));
-    WebData rep = WebClient.post(address, cast(ubyte[]) doc.serialize, [
+    WebData rep = WebClient.post(address, doc.serialize, [
         "Content-type": "application/octet-stream"
     ]);
 
