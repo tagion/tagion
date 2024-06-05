@@ -16,11 +16,10 @@ import std.range;
 import std.digest : toHexString;
 import tagion.hibon.Document : Document;
 
-@recordType(TYPENAME ~ "trt")
+@recordType(TYPENAME ~ "trt") 
 struct TRTArchive {
     @label(TRTLabel) Pubkey owner;
     DARTIndex[] indices;
-
     mixin HiBONRecord!(q{
         this(Pubkey owner, DARTIndex[] indices) {
             this.owner = owner;
@@ -29,19 +28,12 @@ struct TRTArchive {
     });
 }
 
-@recordType(TYPENAME ~ "trt_contract")
+@recordType(TYPENAME ~ "trt_contract") 
 struct TRTContractArchive {
     @label(StdNames.hash_contract) DARTIndex contract_hash;
     Document contract;
     @label(StdNames.epoch_number) long epoch;
-
-    mixin HiBONRecord!(q{
-        this(DARTIndex contract_hash, Document contract, long epoch) {
-            this.contract_hash = contract_hash;
-            this.contract = contract;
-            this.epoch = epoch;
-        }
-    });
+    mixin HiBONRecord;
 }
 
 void createTRTUpdateRecorder(

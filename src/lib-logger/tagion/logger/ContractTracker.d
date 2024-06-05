@@ -21,12 +21,13 @@ string toString(ContractStatusCode code) pure nothrow {
 }
 
 @safe
-@recordType("ContractStatus")
+@recordType("ContractStatus") 
 struct ContractStatus {
     Buffer contract_hash;
     ContractStatusCode status_code;
     string message;
-
+    mixin HiBONRecord;
+    version(none)
     mixin HiBONRecord!(q{
         this(const(Buffer) contract_hash, ContractStatusCode status_code, string message) {
             this.contract_hash = contract_hash;
