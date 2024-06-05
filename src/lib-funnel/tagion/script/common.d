@@ -248,7 +248,27 @@ struct Epoch {
     // Would inactive be more appropriate or activated+deactivated
     @optional @(filter.Initialized) Pubkey[] deactive; /// The nodes which deactivated this epoch
     @optional @(filter.Initialized) TagionGlobals globals; /// Global statistics
-    mixin HiBONRecord;
+
+    mixin HiBONRecord!(q{
+        this(long epoch_number,
+            sdt_t time, 
+            Fingerprint bullseye,
+            Fingerprint previous,
+            const(Signature)[] signs,
+            Pubkey[] active,
+            Pubkey[] deactive,
+            const(TagionGlobals) globals) pure nothrow 
+        {
+            this.epoch_number = epoch_number;
+            this.time = time;
+            this.bullseye = bullseye;
+            this.previous = previous;
+            this.signs = signs;
+            this.active = active;
+            this.deactive = deactive;
+            this.globals = globals;
+        }
+    });
 }
 
 /// A genesis epoch or a standard epoch
