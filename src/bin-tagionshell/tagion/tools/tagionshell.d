@@ -7,7 +7,7 @@ import std.array;
 import std.concurrency;
 import std.conv;
 import std.exception;
-import std.path : setExtension;
+import std.path : setExtension, buildPath;
 import std.file : exists;
 import std.format;
 import std.getopt;
@@ -213,7 +213,12 @@ webhandler handler_helper(alias cb)() {
             ShellOptions* opt = cast(ShellOptions*) ctx;
             cb(req, rep, opt);
         } catch(Throwable e) {
-            dump_exception_recursive(e, fullyQualifiedName!cb);
+            import tagion.utils.Random;
+            uint error_id = generateId!uint();
+            rep.status = nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+            rep.type = mime_type.HTML;
+            rep.text = format!"<!DOCTYPE html>\n<html>\n<body>\nInternal Error<br>\nerror_id %s: %s\n</html>\n</body>"(error_id, e.msg);
+            stderr.writefln!"error_id %s\n%s"(error_id, dump_exception_recursive(e, fullyQualifiedName!cb, ExceptionFormat.PLAIN));
         }
     };
 }
