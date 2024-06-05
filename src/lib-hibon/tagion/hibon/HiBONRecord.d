@@ -104,7 +104,6 @@ struct label {
 struct optional; /// This flag is set to true if this parameter is optional
 
 struct exclude; // Exclude the member from the HiBONRecord
-
 /++
  filter attribute for toHiBON
  +/
@@ -459,7 +458,6 @@ mixin template HiBONRecord(string CTOR = "") {
                             hibon[name] = cast(BaseT) m;
                         }
                     }
-
                     else static if (isPointer!BaseT) {
                         hibon[name] = m.toDoc;
                     }
@@ -681,7 +679,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                else {
+                    else {
                         enum name = default_name;
                     }
                     static assert(name.length > 0,
