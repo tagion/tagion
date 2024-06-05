@@ -455,7 +455,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     return printout;
                 }
 
-                if (!epoch_events.all!(e => e == epoch_events[0])) {
+                if (!epoch_events.all!(e => equal(e.map!(e => *e), epoch_events[0].map!(e => *e)))) {
                     check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
                 }
 
