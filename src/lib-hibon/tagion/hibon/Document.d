@@ -1031,9 +1031,9 @@ static assert(uint.sizeof == 4);
                 return cast(T) x;
             }
 
-            T get(T)() if (isPointer!T) {
+            @trusted T get(T)() if (isPointer!T) {
                 const doc = get!Document;
-                alias Target=PointerTarget!T;
+                alias Target=Unqual!(PointerTarget!T);
                 return new Target(doc);
             }
 

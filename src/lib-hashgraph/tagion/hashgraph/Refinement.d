@@ -29,7 +29,7 @@ import tagion.utils.pretend_safe_concurrency;
 @safe
 @recordType("finishedEpoch")
 struct FinishedEpoch {
-    @label("event_packages") const(EventPackage)[] event_packages;
+    @label("event_packages") immutable(EventPackage)*[] event_packages;
     @exclude const(Event)[] events;
     @label(StdNames.time) sdt_t time;
     @label("epoch") long epoch;
@@ -37,9 +37,8 @@ struct FinishedEpoch {
         this(const(Event)[] events, sdt_t time, long epoch) pure nothrow {
             this.events = events; // not serialized
             this.event_packages = events
-                .map!((e) => *(e.event_package))
+                .map!((e) => cast(immutable(EventPackage)*)e.event_package)
                 .array;
-
             this.time = time;
             this.epoch = epoch;
         }

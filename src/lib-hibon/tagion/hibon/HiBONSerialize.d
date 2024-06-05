@@ -74,7 +74,6 @@ template SupportingFullSizeFunction(T, size_t i = 0) {
 
         }
         else static if (isPointer!U) {
-            pragma(msg, "InnerSupportFullSize ", U, " ", PointerTarget!U);
             enum InnerSupportFullSize = SupportingFullSizeFunction!(PointerTarget!U);
         }
         else {
