@@ -665,7 +665,8 @@ unittest {
 }
 
 /// A good HiRPC result with no additional data.
-@safe @disableSerialize
+@safe @disableSerialize 
+@disableCTOR
 @recordType("OK")
 struct ResultOk {
     mixin HiBONRecord!();

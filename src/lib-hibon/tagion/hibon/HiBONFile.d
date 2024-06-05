@@ -100,11 +100,7 @@ unittest {
 
     static struct Simple {
         int x;
-        mixin HiBONRecord!(q{
-            this(int _x) {
-                x = _x;
-            }
-        });
+        mixin HiBONRecord;
     }
 
     auto fout = File(deleteme, "w");
