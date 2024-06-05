@@ -11,7 +11,7 @@ import std.typecons : tuple;
 import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile, Index, check;
 import tagion.hibon.HiBONFile : fread, fwrite;
-import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
+import tagion.hibon.HiBONRecord;
 
 /** 
  * The segments used for the recycler.
@@ -747,16 +747,10 @@ unittest {
 }
 
 version (unittest) {
-    @safe @recordType("D")
+    @safe @recordType("D") 
     static struct Data {
-
         string text;
-
-        mixin HiBONRecord!(q{
-            this(string text) {
-                this.text = text;
-            }
-        });
+        mixin HiBONRecord;
     }
 
 }
