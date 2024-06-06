@@ -37,8 +37,8 @@ class HashGraph {
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
 
-    uint last_witness_height_limit = 10; /// Limit to when a withness should produced from a node
-    uint threshold_for_none_decided_famous_rounds = 9; /** 
+    uint last_witness_height_limit = 3; /// Limit to when a withness should produced from a node
+    uint threshold_for_none_decided_famous_rounds = 3; /** 
         Limit to when a round is decided 
         if feature famous round can be decided 
     */

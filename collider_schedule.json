@@ -170,7 +170,9 @@
     },
     "genesis_test": {
       "args": [],
-      "envs": {},
+      "envs": {
+            "EPOCH_TIMEOUT" : "100" 
+      },
       "stages": ["acceptance", "genesis"],
       "timeout": 0.0
     },
@@ -216,10 +218,9 @@
     },
     "run_fiber_epoch": {
       "args": [
-        "--iter=10000",
+        "--iter=100000",
         "-N5",
-        "100,5",
-        "-d"
+        "100,5"
       ],
       "envs": {},
       "stages": [

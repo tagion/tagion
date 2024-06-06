@@ -156,8 +156,10 @@ class Event {
         private {
             BitMask _intermediate_event_mask;
             BitMask _previous_strongly_seen_mask;
-            uint _yes_votes;
+            //uint _yes_votes;
             BitMask _has_voted_mask; /// Witness in the next round which has voted
+            BitMask _voted_yes_mask; /// Witness in the next round which has voted
+
         }
 
         @nogc final const pure nothrow {
@@ -174,12 +176,13 @@ class Event {
             }
 
             final uint yes_votes() {
-                return _yes_votes;
+                return cast(uint)(_voted_yes_mask.count);
             }
 
             final uint no_votes() {
-
-                return cast(uint)(_has_voted_mask.count) - _yes_votes;
+                return cast(uint)(_has_voted_mask.count - _voted_yes_mask.count);
+                //return 0;
+                //return cast(uint)(_has_voted_mask.count) - _yes_votes;
             }
 
             final const(BitMask) has_voted_mask() {
@@ -191,7 +194,7 @@ class Event {
             }
 
             bool votedYes() {
-                return isMajority(_yes_votes, this.outer._round.events.length);
+                return isMajority(yes_votes, this.outer._round.events.length);
             }
 
             bool decided() {
@@ -213,15 +216,28 @@ class Event {
         }
         alias isFamous = votedYes;
 
-        private void voteYes(const size_t node_id) pure nothrow {
-            if (!_has_voted_mask[node_id]) {
-                _yes_votes++;
-                _has_voted_mask[node_id] = true;
+        private void voteYes(const size_t voting_node_id) pure nothrow {
+            if (!_voted_yes_mask[voting_node_id]) {
+                //_yes_votes++;
+                _voted_yes_mask[voting_node_id] = _has_voted_mask[voting_node_id] = true;
+                if (_round.previous) {
+                    auto _previous_witness = _round.previous[]
+                        .map!(r => r._events[node_id])
+                        .filter!(e => e !is null)
+                        .map!(e => e._witness);
+                    if (!_previous_witness.empty) {
+                        auto w = _previous_witness.front;
+                        w.voteYes(voting_node_id);
+                        debug Event.view(w.outer);
+
+                    }
+                }
             }
         }
 
         private void voteNo(const size_t node_id) pure nothrow {
-            if (!_has_voted_mask[node_id]) {
+            version (none)
+                if (!_has_voted_mask[node_id]) {
                 _has_voted_mask[node_id] = true;
             }
         }

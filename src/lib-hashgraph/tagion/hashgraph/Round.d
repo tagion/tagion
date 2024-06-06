@@ -50,7 +50,7 @@ class Round {
     Event[] _events;
     public BitMask famous_mask;
     BitMask seen_by_famous_mask;
-
+    protected bool _decided;
     /**
      * Construct a round from the previous round
      * Params:
@@ -237,6 +237,15 @@ class Round {
         assert(!_next || (_next.number - 1 is number));
     }
 
+    final void decide() pure nothrow @nogc
+    in (!_decided)
+    do {
+        _decided = true;
+    }
+
+    final bool decided() const pure nothrow @nogc {
+        return _decided;
+    }
     /**
  * Range from this round and down
  * Returns: range of rounds 
@@ -410,27 +419,27 @@ class Round {
                 return cached_decided_count > total_limit;
             }
 
-            bool can_round_be_decided(const Round r) {
-                bool _decided(T)(const T item) @nogc {
-                    if (item.value) {
-                        return item.value.witness.decided;
-                    }
-                    const last_witness_event = last_witness_events[item.index];
-                    if (last_witness_event) {
-                        return last_witness_event._round.number > r.number;
-                    }
-                    return (last_round.number - r.number) >= hashgraph.last_witness_height_limit;
+        }
+        final bool can_round_be_decided(const Round r) const pure nothrow {
+            bool _decided(T)(const T item) @nogc {
+                if (item.value && item.value.witness.decided) {
+                    return true;
                 }
-
-                if (r) {
-                    auto witness_in_round = r._events.filter!(e => e !is null);
-                    if (isMajority(witness_in_round.count, hashgraph.node_size)) {
-                        return r._events.enumerate
-                            .all!(item => _decided(item));
-                    }
+                const last_witness_event = last_witness_events[item.index];
+                if (last_witness_event &&
+                        (last_witness_event._round.number - r.number) > 0) {
+                    return true;
                 }
-                return false;
+                return (last_round.number - r.number) >= hashgraph.last_witness_height_limit;
             }
+
+            if (r) {
+                return r._events
+                    .enumerate
+                    .map!(item => _decided(item))
+                    .all;
+            }
+            return false;
         }
 
         void check_decide_round() {
@@ -485,6 +494,7 @@ class Round {
             //round_to_be_decided._decided = true;
             __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);
             log("Round %d decided", round_to_be_decided.number);
+            round_to_be_decided.decide;
             last_decided_round = round_to_be_decided;
             version (none)
                 __write("round %d votes yes %(%s %)", round_to_be_decided.number,
