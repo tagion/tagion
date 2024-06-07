@@ -276,6 +276,11 @@ Example of using:
 ./dartutil -r\#\$Y:\*:@AhsxFPQykU33A7TjcBWMZZkql1IqGq0mUoPXjbxrEO6I trt.drt 
 ```
 
+Read the tagion head record
+```
+dartutil -r\#name:tagion Node_0_dart.drt
+```
+
 **Parameters**
 
 [--verbose](#verbose) **optional**

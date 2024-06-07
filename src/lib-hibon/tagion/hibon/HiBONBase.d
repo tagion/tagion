@@ -26,13 +26,17 @@ alias AppendBuffer = Appender!(ubyte[]);
 +/
 void binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
     import std.typecons : TypedefType;
+    import std.bitmanip : append;
 
     alias BaseT = TypedefType!(T);
     static if (T.sizeof == ubyte.sizeof) {
         buffer ~= value;
     }
+    else static if (isPointer!BaseT) {
+
+        //append!(BaseT, Endian.littleEndian)(buffer, *(cast(BaseT) value));
+    }
     else {
-        import std.bitmanip : append;
 
         append!(BaseT, Endian.littleEndian)(buffer, cast(BaseT) value);
     }
@@ -236,6 +240,13 @@ void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Ke
             }
         }
         emplace_buffer(buffer, start_index);
+    }
+    else static if (isPointer!BaseT) {
+        //const start_index = buffer.data.length;
+        //auto x_target = (() @trusted => cast(PointerTarget!BaseT) *x)();
+        //buffer.binwrite(x_target);
+        buffer~= x.serialize;
+        //emplace_buffer(buffer, start_index);
     }
     else {
         buffer.binwrite(x);

@@ -23,8 +23,11 @@ import std.format;
 import std.array;
 import std.algorithm;
 
-
-
+static immutable IMPLEMENTED_METHODS = [
+    Queries.dartRead,
+    Queries.dartCheckRead,
+    Queries.dartBullseye,
+];
 
 mixin Main!_main;
 int _main(string[] args) {
@@ -81,8 +84,6 @@ int _main(string[] args) {
 
         tools.check(all_dartinterface_methods.canFind(method_name), format("method name not valid must be one of %s", all_dartinterface_methods));
 
-        writeln(method_name);
-
         DARTIndex[] get_indices(string _input) {
             return _input
                 .split(",")
@@ -106,8 +107,8 @@ int _main(string[] args) {
 
         Document result;
         switch(method_name) {
-            case Queries.dartBullseye:
-                result = dartBullseye().toDoc;
+            case Queries.dartBullseye, TRT_METHOD ~ Queries.dartBullseye:
+                result = isTRTreq ? trtdartBullseye().toDoc : dartBullseye().toDoc;
                 break;
             case Queries.dartRead, TRT_METHOD ~ Queries.dartRead:
                 tools.check(input !is string.init || pkeys !is string.init, "must supply pkeys or dartindices"); 
@@ -124,7 +125,7 @@ int _main(string[] args) {
                 result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
                 break;
             default:
-                tools.check(0, format("method %s not currently implemented", method_name));
+                tools.check(0, format("method %s not implemented use one of %s", method_name, IMPLEMENTED_METHODS));
         }
         fout.rawWrite(result.serialize);
     }
