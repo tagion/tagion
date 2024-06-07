@@ -62,9 +62,6 @@ struct EventView {
             altitude=event.altitude;
             order=event.order;
             witness=event.isWitness;
-            if (witness) {
-                famous = event.isFamous;
-            }
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:int.min;

@@ -528,6 +528,7 @@ class Event {
     }
 
     @nogc pure nothrow const final {
+        version(none)
         bool isFamous() {
             return isWitness && round.famous_mask[node_id];
         }

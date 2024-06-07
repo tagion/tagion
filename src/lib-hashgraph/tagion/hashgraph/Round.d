@@ -44,12 +44,11 @@ class Round {
     protected {
         Round _previous;
         Round _next;
+        BitMask _voter_exists_mask; /// Marks if a voter exists
     }
     immutable int number;
 
     Event[] _events;
-    public BitMask famous_mask;
-    BitMask seen_by_famous_mask;
     protected bool _decided;
     /**
      * Construct a round from the previous round
@@ -430,29 +429,47 @@ class Round {
                         (last_witness_event._round.number - r.number) > 0) {
                     return true;
                 }
-                return (last_round.number - r.number) >= hashgraph.last_witness_height_limit;
+                return false;
+                //return (last_round.number - r.number) >= hashgraph.last_witness_height_limit;
             }
 
             if (r) {
-                return r._events
+                auto not_decided= r._events
                     .enumerate
-                    .map!(item => _decided(item))
-                    .all;
+                    .filter!(item => !_decided(item));
+                if (not_decided.empty) {
+                    return true;    
+                 }
+                
             }
             return false;
         }
 
+        private void update_ballot_list(Round r) pure nothrow {
+            bool voter_exists(const size_t node_id) pure nothrow {
+                if (last_witness_events[node_id]) {
+                    return !r.events[node_id] && 
+                        (last_witness_events[node_id].round.number - r.events[node_id].round.number) > 0; 
+                }
+                return false;
+            }
+            r._voter_exists_mask|=BitMask(r._voter_exists_mask.invert(r.events.length)[]
+            .filter!(voting_node_id => voter_exists(voting_node_id)));
+        }
+        
         void check_decide_round() {
             auto round_to_be_decided = last_decided_round._next;
             if (!round_to_be_decided) {
                 return;
             }
+           
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
                 .map!(e => e.witness);
             if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
                 return;
             }
+            update_ballot_list(round_to_be_decided);
             if (isMajority(witness_in_round.count, hashgraph.node_size)) {
                 __write("%s voters=%d Round=%d %(%s %) yes=%d no=%d decided=%d",
                         hashgraph.name,
@@ -477,6 +494,7 @@ class Round {
                         round_to_be_decided[].retro.filter!(r => isMajority(r.famous, hashgraph.node_size)).count,
                         round_to_be_decided.count_feature_famous_rounds);
 
+                __write("voter_exists=%5s", round_to_be_decided._voter_exists_mask);
             }
             if (!can_round_be_decided(round_to_be_decided)) {
                 return;
