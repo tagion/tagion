@@ -5,9 +5,9 @@ HiBONRecord now automatically creates a constructor instead of having to explici
 
 **Dartutil**
 The dartutil can now take multiple dart files as an argument.
-Make i easier to eg. check the bullseye of multiple dart files.  
+eg. making it easier to check the bullseye for multiple dart files.  
 
-To get the bul bullseye of all dart in you directory you can do
+To get the bullseye of all dart files in you directory you can do
 ```
 dartutil --eye *.drt
 ```
@@ -25,7 +25,7 @@ The default MIME type file handler for NNG's HTTP module did not work with the W
 The subscriber tool can now subscribe to multiple addresses and output all events to a single stream.
 
 **Extended Document Element Index Handler**
-When indexing multiple nested serialized Hibon documents, the expression can be simplified.  
+When indexing multiple nested serialized HiBON documents, the expression can now be simplified.  
 What would previously be written as:
 ```
 doc["$msg"].getDocument["params"].getDocument["data"].getMyRecord
