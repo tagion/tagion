@@ -106,3 +106,9 @@ const(HiRPC.Sender) dartBullseye(
         uint id = 0) {
     return hirpc.dartBullseye(null, id);
 }
+
+const(HiRPC.Sender) trtdartBullseye(
+        HiRPC hirpc = HiRPC(null),
+        uint id = 0) {
+    return hirpc.opDispatch!"trt.dartBullseye"(null, id);
+}
