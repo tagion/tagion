@@ -1,9 +1,9 @@
 # Changelog for Epoch 2010300 .. 2094264
 
-**Simplified HiBON Record Constructors**
+**Simplified HiBON Record Constructors**  
 HiBONRecord now automatically creates a constructor instead of having to explicitly create on for each struct.
 
-**Dartutil**
+**Dartutil**  
 The dartutil can now take multiple dart files as an argument.
 eg. making it easier to check the bullseye for multiple dart files.  
 
@@ -12,19 +12,19 @@ To get the bullseye of all dart files in you directory you can do
 dartutil --eye *.drt
 ```
 
-**HiRPC tool**
+**HiRPC tool**  
 We added documentation for the hirpc command line tool.
 This tool has proven to be really handy, so we're keeping it :D
 
 # Changelog for Epoch 1924336.. 2010300
 
-**NNG MIME Map**
+**NNG MIME Map**  
 The default MIME type file handler for NNG's HTTP module did not work with the WebAssembly (.wasm) file extension, so we extended it with all content types from the official IANA list.
 
-**Subscriber Tool**
+**Subscriber Tool**  
 The subscriber tool can now subscribe to multiple addresses and output all events to a single stream.
 
-**Extended Document Element Index Handler**
+**Extended Document Element Index Handler**  
 When indexing multiple nested serialized HiBON documents, the expression can now be simplified.  
 What would previously be written as:
 ```
@@ -36,10 +36,10 @@ Can now be written as:
 doc["$msg"]["params"]["data"].getMyRecord
 ```
 
-**Node Interface Utility**
+**Node Interface Utility**  
 We created a visualization tool for P2P communication, which will help with debugging and optimizing network communication.
 
-**Fixed Deprecations for Upcoming Compiler Versions**
+**Fixed Deprecations for Upcoming Compiler Versions**  
 In DMD pre-release 2.109.0, multiple fixes were made to casts that were not correctly marked as unsafe in `@safe` code.
 We've updated our code, and it should now be compatible with these fixes.  
 The officially targeted compiler is 2.107.1, but everything should still work with newer and older compilers.
