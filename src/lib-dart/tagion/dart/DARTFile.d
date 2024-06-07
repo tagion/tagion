@@ -54,17 +54,16 @@ enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
 import std.algorithm;
 
 alias check = Check!DARTException;
-enum KEY_SPAN = ubyte.max + 1;
 
 /++
  + DART File system
- + Distribute Achive of Random Transction
- + This class handels the CRUD Database
+ + Distributed Archive of Random Transaction
+ + This class handles the CRUD Database
  +
  + The archive is hashed and store in structure similar to merkle trees datastruct.
  + Which here is called at sparsed merkle tree the sparse merkle is section in to rims
  + in  hierarchy which is where each rim contains a sub-tree called Branches. If a rim
- + Doens't branche out it contais a Leave which contains a Archive
+ + Doesn't branches out it contains a Leave which contains a Archive
  +
  +/
 class DARTFile {
@@ -80,19 +79,12 @@ class DARTFile {
         Fingerprint _fingerprint;
     }
 
-    static immutable _params = [
-        "dart_indices",
-        "bullseye",
-    ];
-
-    mixin(EnumText!("Params", _params));
-
     enum flat_marker = "flat";
     enum MIN_BLOCK_SIZE = 0x80;
     static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_size = 0x80_000, const Flag!"flat" flat = default_flat)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
-                format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
+            format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
     }
     do {
         auto id_name = net.multihash;
@@ -127,7 +119,7 @@ class DARTFile {
         
 
         .check(blockfile.headerBlock.checkLabel(DARTFile.stringof),
-                format("Wrong label %s expected %s for %s",
+            format("Wrong label %s expected %s for %s",
                 blockfile.headerBlock.Label,
                 DARTFile.stringof, filename));
 
@@ -143,7 +135,7 @@ class DARTFile {
             
 
             .check(false,
-                    format("Wrong hash type %s expected %s for %s",
+                format("Wrong hash type %s expected %s for %s",
                     net.multihash, blockfile.headerBlock.Id, filename));
 
             assert(0);
@@ -201,7 +193,7 @@ class DARTFile {
     /**
  * Ditto
  * Params:
- *   archives = Archive data which contails an ordred list of archives 
+ *   archives = Archive data which contains an ordred list of archives 
  * Returns: 
  * recorder of the list of archives
  */
@@ -387,7 +379,7 @@ class DARTFile {
          * Returns: HiBON of the branches
          */
         // version(none)
-        HiBON toHiBON(const bool exclude_indices = false) const
+        HiBON toHiBON(const bool exclude_indices = false) const pure
         in {
             assert(merkleroot.isinit, "Fingerprint must be calcuted before toHiBON is called");
         }
@@ -404,7 +396,7 @@ class DARTFile {
                         
 
                         .check(!_fingerprints[key].isinit,
-                        format("Fingerprint key=%02X at index=%d is not defined", key, index));
+                            format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
@@ -540,9 +532,10 @@ class DARTFile {
          * Returns: fingerprint
          */
         private Fingerprint fingerprint(
-                DARTFile dartfile) {
+            DARTFile dartfile) {
             if (merkleroot.isinit) {
-                merkleroot = Fingerprint(sparsed_merkletree(dartfile.manufactor.net, _fingerprints, dartfile.flat));
+                merkleroot = Fingerprint(sparsed_merkletree(dartfile.manufactor.net, _fingerprints, dartfile
+                        .flat));
             }
             return merkleroot;
         }
@@ -632,8 +625,8 @@ class DARTFile {
 
         final private void run() {
             void traverse(
-                    immutable Index index,
-                    immutable uint rim = 0) @safe {
+                immutable Index index,
+                immutable uint rim = 0) @safe {
                 if (index !is Index.init) {
                     doc = this.outer.blockfile.load(index);
                     assert(!doc.empty, "Loaded document should not be empty");
@@ -731,16 +724,17 @@ class DARTFile {
 *   recorder of the read archives
  */
     RecordFactory.Recorder loads(Range)(
-            Range dart_indices,
-            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
+        Range dart_indices,
+        Archive.Type type = Archive.Type.REMOVE)
+        if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
 
         import std.algorithm.comparison : min;
 
         auto result = recorder;
         void traverse_dart(
-                const Index branch_index,
-                DARTIndex[] ordered_dart_indices,
-                immutable uint rim = 0) @safe {
+            const Index branch_index,
+            DARTIndex[] ordered_dart_indices,
+            immutable uint rim = 0) @safe {
             if ((ordered_dart_indices) && (branch_index !is Index.init)) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
@@ -750,7 +744,7 @@ class DARTFile {
                     foreach (rim_key, index; branches._indices) {
                         uint pos;
                         while ((pos < selected_dart_indices.length) &&
-                                (rim_key is selected_dart_indices[pos].rim_key(rim))) {
+                            (rim_key is selected_dart_indices[pos].rim_key(rim))) {
                             pos++;
                         }
                         if (pos > 0) {
@@ -781,7 +775,8 @@ class DARTFile {
         return result;
     }
 
-    DARTIndex[] checkload(Range)(Range dart_indices) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
+    DARTIndex[] checkload(Range)(Range dart_indices)
+        if (isInputRange!Range && isBufferType!(ElementType!Range)) {
         import std.algorithm : canFind;
 
         auto result = loads(dart_indices)[]
@@ -798,7 +793,8 @@ class DARTFile {
     enum RIMS_IN_SECTOR = 2;
 
     /// Wrapper function for the modify function.
-    Fingerprint modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
+    Fingerprint modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No
+            .undo) {
         if (undo) {
             return modify!(Yes.undo)(modifyrecords);
         }
@@ -817,13 +813,13 @@ class DARTFile {
      * |      |key[0]|key[1]|key[2]|key[3]|key[4]|
      * |  rim |  00  |  01  |  02  |  03  |  04  | ....
      * |------|------|------|------|------|------|-----
-     * |      |  20  |  A3  |  33  |  B1  |  17  | -> arcive fingerprint=20_A3_33_B1_17....
-     * |      |  **  |  **  |  **  |  **  |  42  | -> arcive fingerprint=20_A3_33_B1_42....
-     * |      |  **  |  **  |  57  |  B1  |  17  | -> arcive fingerprint=20_A3_57_B1_17....
-     * |      |  **  |  **  |  **  |  **  |  42  | -> arcive fingerprint=20_A3_57_B1_42....
-     * |      |  **  |  **  |  C2  |      |      | -> arcive fingerprint=20_A3_C3....
-     * |      |  **  |  **  |  CA  |  48  |      | -> arcive fingerprint=20_A3_CA_48....
-     * |      |  **  |  **  |  **  |  68  |      | -> arcive fingerprint=20_A3_CA_48....
+     * |      |  20  |  A3  |  33  |  B1  |  17  | -> archive fingerprint=20_A3_33_B1_17....
+     * |      |  **  |  **  |  **  |  **  |  42  | -> archive fingerprint=20_A3_33_B1_42....
+     * |      |  **  |  **  |  57  |  B1  |  17  | -> archive fingerprint=20_A3_57_B1_17....
+     * |      |  **  |  **  |  **  |  **  |  42  | -> archive fingerprint=20_A3_57_B1_42....
+     * |      |  **  |  **  |  C2  |      |      | -> archive fingerprint=20_A3_C3....
+     * |      |  **  |  **  |  CA  |  48  |      | -> archive fingerprint=20_A3_CA_48....
+     * |      |  **  |  **  |  **  |  68  |      | -> archive fingerprint=20_A3_CA_48....
      * )
      * $(B Sector=[key[0],key[1]]) <br>
      * ### Note ** means the same value as above
@@ -831,7 +827,7 @@ class DARTFile {
      * represents the key index into the Branches incices
      * The modifyrecords contains the archives which is going to be added or deleted
      * The type of archive tells which actions are going to be performed by the modifier
-     * If the function executes succesfully then the DART is updated or else it does not affect the DART
+     * If the function executes successfully then the DART is updated or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
     Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords)
@@ -843,15 +839,16 @@ class DARTFile {
          * Note that this function is recursive and called from itself. 
          * Can be broken up into 3 sections. The first is for going through the branches
          * In the sectors. Next section is for going through branches deeper than the sectors.
-         * The last section is responsible for acutally doing the work with the archives.
+         * The last section is responsible for actually doing the work with the archives.
          * Params:
          *   range = RimKeyRange to traverse with.
          *   branch_index = The branch index to modify.
          * Returns: 
          */
-            .check(!blockfile.read_only, format("Can not call a %s on a read-only DART", __FUNCTION__));
-        Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
-        out {
+        .check(!blockfile.read_only, format("Can not call a %s on a read-only DART", __FUNCTION__));
+        Leave traverse_dart(Range)(Range range, const Index branch_index) @safe
+            if (isInputRange!Range)
+            out {
             assert(range.empty, "Must have been through the whole range and therefore empty on return");
         }
         do {
@@ -873,7 +870,7 @@ class DARTFile {
                     
 
                     .check(branches.hasIndices,
-                            "DART failure within the sector rims the DART should contain a branch");
+                        "DART failure within the sector rims the DART should contain a branch");
                 }
 
                 while (!range.empty) {
@@ -888,7 +885,7 @@ class DARTFile {
                 }
 
                 return Leave(blockfile.save(branches).index,
-                        branches.fingerprint(this), DARTIndex.init);
+                    branches.fingerprint(this), DARTIndex.init);
 
             }
             // Section for going through branches that are not in the sectors.
@@ -917,7 +914,8 @@ class DARTFile {
                             }
 
                         }
-                        return Leave(blockfile.save(branches).index, branches.fingerprint(this), DARTIndex.init);
+                        return Leave(blockfile.save(branches).index, branches.fingerprint(this), DARTIndex
+                                .init);
                     }
                     else {
                         // This is a standalone archive ("single").
@@ -931,7 +929,8 @@ class DARTFile {
                             blockfile.dispose(branch_index);
 
                         }
-                        auto sub_range = range.save.filter!(a => a.dart_index == current_archive.dart_index);
+                        auto sub_range = range.save.filter!(
+                            a => a.dart_index == current_archive.dart_index);
 
                         if (sub_range.empty) {
                             range.add(current_archive);
@@ -947,8 +946,8 @@ class DARTFile {
                     }
                     if (range.type == Archive.Type.ADD) {
                         return Leave(
-                                blockfile.save(range.front.store).index,
-                                range.front.fingerprint, range.front.dart_index);
+                            blockfile.save(range.front.store).index,
+                            range.front.fingerprint, range.front.dart_index);
                     }
                     return Leave.init;
                 }
@@ -976,8 +975,8 @@ class DARTFile {
 
                 }
                 return Leave(
-                        blockfile.save(branches).index,
-                        branches.fingerprint(this), DARTIndex.init);
+                    blockfile.save(branches).index,
+                    branches.fingerprint(this), DARTIndex.init);
             }
 
         }
@@ -991,10 +990,10 @@ class DARTFile {
         // same archive in the same recorder.
         .check(modifyrecords.length <= 1 ||
                     !modifyrecords[]
-                        .slide(2)
-                        .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
-                        .any,
-                        "cannot have multiple operations on same dart-index in one modify");
+                    .slide(2)
+                    .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
+                    .any,
+                    "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1058,29 +1057,30 @@ class DARTFile {
     }
 
     enum indent_tab = "| .. ";
+    enum eye_prefix = "EYE: ";
     /** 
      * Dumps the dart as rim-path
      * Params:
      *   full = true for full DART
      */
     void dump(
-            const SectorRange sectors = SectorRange.init,
-            const Flag!"full" full = No.full,
-            const uint depth = 0
+        const SectorRange sectors = SectorRange.init,
+        const Flag!"full" full = No.full,
+        const uint depth = 0
     ) {
         import std.stdio;
 
-        writefln("EYE: %(%02X%)", _fingerprint);
+        writefln("%s%(%02X%)", eye_prefix, _fingerprint);
         const from_rim = sectors.from_sector.nativeToBigEndian;
         const to_rim = sectors.to_sector.nativeToBigEndian;
 
         void local_dump(const Index branch_index,
-                const ubyte rim_key = 0,
-                const uint rim = 0,
-                Buffer rim_path = null,
-                string indent = null) @safe {
+            const ubyte rim_key = 0,
+            const uint rim = 0,
+            Buffer rim_path = null,
+            string indent = null) @safe {
             if (!branch_index.isinit &&
-                    ((depth == 0) || (rim <= depth))) {
+                ((depth == 0) || (rim <= depth))) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
@@ -1103,7 +1103,7 @@ class DARTFile {
                     auto lastRing = full ? dart_index.length : rim + 1;
                     const hash_marker = doc.hasHashKey ? " #" : "";
                     writefln("%s%(%02x%) [%d]%s",
-                            indent, dart_index[0 .. lastRing], branch_index, hash_marker);
+                        indent, dart_index[0 .. lastRing], branch_index, hash_marker);
                 }
             }
         }
@@ -1119,23 +1119,23 @@ class DARTFile {
     }
 
     alias TraverseCallback = bool delegate(
-            const(Document) doc,
-            const Index branch_index,
-            const uint rim,
-            Buffer rim_path);
+        const(Document) doc,
+        const Index branch_index,
+        const uint rim,
+        Buffer rim_path);
 
     void traverse(
-            const TraverseCallback dg,
-            const SectorRange sectors = SectorRange.init,
-            const uint depth = 0,
-            const bool branches = true) {
+        const TraverseCallback dg,
+        const SectorRange sectors = SectorRange.init,
+        const uint depth = 0,
+        const bool branches = true) {
         void local_traverse(
-                const Index branch_index,
-                const ubyte rim_key = 0,
-                const uint rim = 0,
-                Buffer rim_path = null) @safe {
+            const Index branch_index,
+            const ubyte rim_key = 0,
+            const uint rim = 0,
+            Buffer rim_path = null) @safe {
             if (!branch_index.isinit &&
-                    ((depth == 0) || (rim <= depth))) {
+                ((depth == 0) || (rim <= depth))) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (dg(doc, branch_index, rim, rim_path)) {
@@ -1177,9 +1177,9 @@ class DARTFile {
         TagionBill[] bills;
 
         void local_load(
-                const Index branch_index,
-                const ubyte rim_key = 0,
-                const uint rim = 0) @safe {
+            const Index branch_index,
+            const ubyte rim_key = 0,
+            const uint rim = 0) @safe {
             if (branch_index !is Index.init) {
                 const doc = blockfile.load(branch_index);
                 if (Branches.isRecord(doc)) {
@@ -1230,7 +1230,7 @@ class DARTFile {
             }
 
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory
-                .Recorder recorder) {
+                    .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
                 auto find_recorder = dart.loads(_dart_indices);
@@ -1338,17 +1338,17 @@ unittest {
     { // Test RimKeyRange
         auto recorder = manufactor.recorder;
 
-        auto test_tabel = table[0 .. 8].dup;
-        foreach (t; test_tabel) {
+        auto test_table = table[0 .. 8].dup;
+        foreach (t; test_table) {
             const doc = DARTFakeNet.fake_doc(t);
             recorder.add(doc);
         }
 
-        test_tabel.sort;
+        test_table.sort;
 
         uint i;
         foreach (a; recorder.archives) {
-            assert(a.filed.data == net.fake_doc(test_tabel[i]).data);
+            assert(a.filed.data == net.fake_doc(test_table[i]).data);
             i++;
         }
 
@@ -1360,7 +1360,7 @@ unittest {
             i = 0;
             immutable key = rim_range.front.dart_index.rim_key(rim);
             foreach (a; rim_range) {
-                while (net.dartIndex(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
+                while (net.dartIndex(DARTFakeNet.fake_doc(test_table[i])).rim_key(rim) !is key) {
                     i++;
                 }
                 i++;
@@ -2390,7 +2390,7 @@ unittest {
                 // new_blockfile.dump;
                 // new_blockfile.close;
                 assert(new_read_name == new_name,
-                        "Should not be updated, since the previous name record was not removed");
+                    "Should not be updated, since the previous name record was not removed");
 
             }
             {
@@ -2452,7 +2452,7 @@ unittest {
             const new_bullseye = dart_A.bullseye;
             dart_A.modify(recorder, Yes.undo);
             assert(dart_A.bullseye != new_bullseye,
-                    "Should not be the same as the new bullseye after undo");
+                "Should not be the same as the new bullseye after undo");
             assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
         }
 
@@ -2465,12 +2465,12 @@ unittest {
         auto dart_A = new DARTFile(net, filename_A);
         RecordFactory.Recorder recorder;
 
-        const ulong[] datas = [
+        const ulong[] data = [
             0xABB9_130b_11ef_0923,
             0x1234_5678_9120_1234,
             0xABCD_1234_0000_0000,
         ];
-        auto docs = datas.map!(a => DARTFakeNet.fake_doc(a));
+        auto docs = data.map!(a => DARTFakeNet.fake_doc(a));
 
         recorder = dart_A.recorder();
 
@@ -2498,7 +2498,7 @@ unittest {
     }
 
     {
-        pragma(msg, "fixme(cbr): This unittest does not see to be relavant to DARTFile maybe this should be moved");
+        pragma(msg, "fixme(cbr): This unittest does not see to be relevant to DARTFile maybe this should be moved");
         // At least it should not be dependent on tagion.script
         // Just make a d Document with $Y owner key
         filename_A.forceRemove;
@@ -2532,7 +2532,8 @@ unittest {
         import tagion.crypto.SecureNet : StdSecureNet;
 
         _net.generateKeyPair("wowo");
-        auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (() @trusted => cast(immutable) _net)());
+        auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (
+                () @trusted => cast(immutable) _net)());
     }
     static struct HashDoc {
         @label("#name") string name;
@@ -2554,13 +2555,13 @@ unittest {
         const hashdoc = HashDoc("hugo", 42);
         recorder_add.add(hashdoc);
         assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
-        "The dart_index and the fingerprint of a archive should not be the same for a # archive");
+            "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
         // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
         assert(bullseye == recorder_add[].front.fingerprint,
-        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+            "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         const hashdoc_change = HashDoc("hugo", 17);
         auto recorder_B = dart_A.recorder;
         recorder_B.remove(hashdoc_change);
@@ -2575,7 +2576,7 @@ unittest {
         // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
         assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
         assert(bullseye == recorder_change[].front.fingerprint,
-        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+            "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         { // read the dart_index from the dart and check the dart_index 
             auto load_recorder = dart_A.loads(recorder_change[].map!(a => a.dart_index));
             //writefln("load_recorder=%(%02x%)", load_recorder[].front.dart_index);

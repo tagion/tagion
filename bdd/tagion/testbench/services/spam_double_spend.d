@@ -23,6 +23,7 @@ import tagion.testbench.services.helper_functions;
 import tagion.testbench.tools.Environment;
 import tagion.tools.wallet.WalletInterface;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
+import tagion.wallet.request;
 import tagion.wallet.SecureWallet : SecureWallet;
 
 import core.thread;
@@ -41,14 +42,14 @@ enum feature = Feature(
             []);
 
 alias FeatureContext = Tuple!(
-        SpamOneNodeUntil10EpochsHaveOccured, "SpamOneNodeUntil10EpochsHaveOccured",
-        SpamMultipleNodesUntil10EpochsHaveOccured, "SpamMultipleNodesUntil10EpochsHaveOccured",
+        SpamOneNodeUntil10EpochsHaveOccurred, "SpamOneNodeUntil10EpochsHaveOccurred",
+        SpamMultipleNodesUntil10EpochsHaveOccurred, "SpamMultipleNodesUntil10EpochsHaveOccurred",
         FeatureGroup*, "result"
 );
 
-@safe @Scenario("Spam one node until 10 epochs have occured.",
+@safe @Scenario("Spam one node until 10 epochs have occurred.",
         [])
-class SpamOneNodeUntil10EpochsHaveOccured {
+class SpamOneNodeUntil10EpochsHaveOccurred {
 
     Options node1_opts;
     const(Options)[] opts;
@@ -100,7 +101,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         long current_epoch_number;
 
         while (current_epoch_number < epoch_number + 10) {
-            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+            sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
@@ -187,7 +188,7 @@ struct SpamWorker {
 
         long current_epoch_number;
         while (!thisActor.stop && current_epoch_number < epoch_number + 10) {
-            sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), hirpc);
+            sendHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
@@ -202,9 +203,9 @@ struct SpamWorker {
 
 }
 
-@safe @Scenario("Spam multiple nodes until 10 epochs have occured.",
+@safe @Scenario("Spam multiple nodes until 10 epochs have occurred.",
         [])
-class SpamMultipleNodesUntil10EpochsHaveOccured {
+class SpamMultipleNodesUntil10EpochsHaveOccurred {
     const(Options)[] opts;
     StdSecureWallet wallet1;
     StdSecureWallet wallet2;

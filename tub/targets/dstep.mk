@@ -49,7 +49,7 @@ $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(LN) $$(@F) $$(basename $$(@F)).d 
 	fi
 
-#endif # End dstep tool is avaliable
+#endif # End dstep tool is available
 
 $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@

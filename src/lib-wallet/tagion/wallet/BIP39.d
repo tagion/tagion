@@ -1,4 +1,7 @@
+/// BIP39 native D implementation
 module tagion.wallet.BIP39;
+
+@safe:
 
 import std.string : representation;
 import tagion.basic.Debug;
@@ -11,7 +14,6 @@ import std.uni;
 /**
  * Exception type used in the BIP39 functions
  */
-@safe
 class BIP39Exception : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
@@ -31,7 +33,6 @@ import tagion.basic.Debug;
 /**
  * BIP39 function collection 
  */
-@safe
 struct BIP39 {
     import tagion.crypto.pbkdf2;
     import std.digest.sha : SHA512, SHA256;
@@ -51,52 +52,16 @@ struct BIP39 {
 
     }
 
-    deprecated("Should be removed when the passphrase function has been removed")
-    private const(ushort[]) mnemonicNumbers(const(string[]) mnemonics) const pure {
-        return mnemonics
-            .map!(m => table.get(m, ushort.max))
-            .array;
-    }
-
-    deprecated("Should use mnemonicToSeed instead")
-    ubyte[] opCall(scope const(ushort[]) mnemonic_indices, scope const(char[]) password) const nothrow {
-        scope word_list = mnemonic_indices[]
-            .map!(mnemonic_code => words[mnemonic_code]);
-        return opCall(word_list, password);
-    }
-
-    deprecated("Use the generateMnemonic instead")
-    char[] passphrase(const uint number_of_words) const pure {
-        return generateMnemonic(number_of_words).dup;
-}
-
     enum count = 2048;
     enum dk_length = 64;
-    deprecated("This should be update to use generateMnemonic and mnemonicToEntropy instead")
-    ubyte[] opCall(R)(scope R mnemonics, scope const(char[]) passphrase) const nothrow if (isInputRange!R) {
-        scope char[] salt = presalt ~ passphrase;
-        const password_size = mnemonics.map!(m => m.length).sum + mnemonics.length - 1;
-        scope password = new char[password_size];
-        scope (exit) {
-            password[] = 0;
-            salt[] = 0;
-        }
-        password[] = ' ';
-        uint index;
-        foreach (mnemonic; mnemonics) {
-            password[index .. index + mnemonic.length] = mnemonic;
-            index += mnemonic.length + char.sizeof;
-        }
-        return pbkdf2_sha512(password.representation, salt.representation, count, dk_length);
-    }
-
     enum MAX_WORDS = 24; /// Max number of mnemonic word in a string
     enum MNEMONIC_BITS = 11; /// Bit size of the word number 2^11=2048
     enum TOTAL_WORDS = 1 << MNEMONIC_BITS;
     enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
+
     /**
      * Calculates the entropy of a list of mnemonic-indices without the checksum
-     * This function should alo be used analize a mnemonic-indices list 
+     * This function should also be used analyze a mnemonic-indices list 
      * To produces a entropy the function mnemonicToEntropy should be used instead
      * Params:
      *   mnemonic_indices = list of mnemonic-indices
@@ -138,7 +103,7 @@ struct BIP39 {
 
     /**
      * Reverse function of entropy
-     * This function should only be used to analize an entropy buffer
+     * This function should only be used to analyze an entropy buffer
      * Params:
      *   entropy_buf = byte array of an entropy buffer 
      * Returns: 
@@ -235,7 +200,7 @@ struct BIP39 {
      * Params:
      *   mnemonic_sentence = mnemonic sentence as a text string 
      * Returns: 
-     *   entropy buffer in encluding the checksum
+     *   entropy buffer in including the checksum
      * 
      */
     const(ubyte[]) mnemonicToEntropy(string mnemonic_sentence) const pure {
@@ -601,4 +566,11 @@ unittest {
                 "Word list should be correct");
 
     }
+}
+
+version(unittest)
+private const(ushort[]) mnemonicNumbers(const(BIP39) bip39, const(string[]) mnemonics) pure {
+    return mnemonics
+        .map!(m => bip39.table.get(m, ushort.max))
+        .array;
 }

@@ -1,5 +1,4 @@
 /** 
- *
  * New wave implementation of the tagion node
 **/
 module tagion.tools.neuewelle;
@@ -10,28 +9,30 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.thread;
 import core.time;
-import std.algorithm : countUntil, map, uniq, equal;
+import std.algorithm : filter, countUntil, map, uniq, equal, canFind, all;
 import std.array;
-import std.file : chdir, exists;
+import std.file : chdir, exists, remove;
 import std.format;
 import std.getopt;
 import std.path;
+import std.process : thisProcessID;
 import std.range : iota;
 import std.stdio;
 import std.typecons;
 import std.sumtype;
 
-import tagion.GlobalSignals : segment_fault, stopsignal;
+import tagion.GlobalSignals;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension, hasExtension;
+import tagion.basic.dir;
 import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.logger;
-import tagion.services.locator;
 import tagion.services.logger;
 import tagion.services.options;
 import tagion.services.subscription;
+import tagion.services.messages;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.tools.toolsexception;
@@ -41,7 +42,6 @@ import tagion.script.common;
 import tagion.script.namerecords;
 
 static abort = false;
-import tagion.services.transcript : graceful_shutdown;
 
 private extern (C)
 void signal_handler(int signal) nothrow {
@@ -54,7 +54,7 @@ void signal_handler(int signal) nothrow {
             printf("Terminating\n");
             exit(1);
         }
-        stopsignal.set;
+        stopsignal.setIfInitialized;
         abort = true;
         printf("Received stop signal, telling services to stop\n");
     }
@@ -113,20 +113,18 @@ int _neuewelle(string[] args) {
 
     bool version_switch;
     bool override_switch;
-    bool monitor;
 
     string[] override_options;
     string network_mode_switch;
 
     auto main_args = getopt(args,
             "version", "Print revision information", &version_switch,
+            "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
-            "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
             "m|mode", "Set the node network mode [0,1,2]", &network_mode_switch,
-            "monitor", "Enable the monitor", &monitor,
     );
 
     if (main_args.helpWanted) {
@@ -166,28 +164,7 @@ int _neuewelle(string[] args) {
 
     // Experimental!!
     if (!override_options.empty) {
-        import std.json;
-        import tagion.utils.JSONCommon;
-
-        JSONValue json = local_options.toJSON;
-
-        void set_val(JSONValue j, string[] _key, string val) {
-            if (_key.length == 1) {
-                j[_key[0]] = val.toJSONType(j[_key[0]].type);
-                return;
-            }
-            set_val(j[_key[0]], _key[1 .. $], val);
-        }
-
-        foreach (option; override_options) {
-            const index = option.countUntil(":");
-            assert(index > 0, format("Option '%s' invalid, missing key:value", option));
-            string[] key = option[0 .. index].split(".");
-            string value = option[index + 1 .. $];
-            set_val(json, key, value);
-        }
-        // If options does not parse as a string then some types will not be interpreted correctly
-        local_options.parseJSON(json.toString);
+        local_options.set_override_options(override_options);
     }
 
      // Set the network mode
@@ -239,7 +216,7 @@ int _neuewelle(string[] args) {
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
     ActorHandle sub_handle;
-    { // Spawn logger subscription service
+    if(local_options.subscription.enable) { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
         writeln("logsub started: ", waitforChildren(Ctrl.ALIVE));
@@ -248,15 +225,16 @@ int _neuewelle(string[] args) {
 
     log.task_name = baseName(program);
 
-    locator_options = new immutable(LocatorOptions)(20, 5);
     ActorHandle[] supervisor_handles;
+
+    log("Starting network in %s mode", local_options.wave.network_mode);
 
     final switch (local_options.wave.network_mode) {
     case NetworkMode.INTERNAL:
         import tagion.wave.mode0;
         import tagion.gossip.AddressBook;
 
-        const node_options = getMode0Options(local_options, monitor);
+        const node_options = getMode0Options(local_options);
 
         auto __net = new StdSecureNet();
         __net.generateKeyPair("dart_read_pin");
@@ -283,7 +261,7 @@ int _neuewelle(string[] args) {
                 db.close;
             }
 
-            const head = TagionHead("tagion", 0);
+            const head = TagionHead();
             auto epoch = head.getEpoch(db, __net);
         }
         else {
@@ -301,20 +279,19 @@ int _neuewelle(string[] args) {
             );
 
         if (!local_options.wave.address_file.empty) {
-            // Read from text file. Will probably be removed
-            addressbook.set(readAddressFile(local_options.wave.address_file));
+            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
         }
         else {
             // New version reads the addresses properly from dart
-            // However is incompatble with older darts were not set properly
+            // However is incompatible with older darts were not set properly
             version (MODE0_ADDRESS_DART) {
-                addressbook.set(readNNRFromDart(node_options[0].dart.dart_path, keys, __net));
+                addressbook = readNNRFromDart(node_options[0].dart.dart_path, keys, __net);
             }
             else { // Old methods sets, address via task name from config file
                 import std.range;
                 foreach (key, opt; zip(keys, node_options)) {
                     verbose("adding Address ", key);
-                    addressbook[key] = new NetworkNodeRecord(key, opt.task_names.epoch_creator);
+                    addressbook.set(new NetworkNodeRecord(key, opt.task_names.epoch_creator));
                 }
             }
         }
@@ -357,6 +334,7 @@ int _neuewelle(string[] args) {
             error("Could not log in");
             break;
         }
+        local_options.task_names.setPrefix(wallet_interface.secure_wallet.account.name);
 
         good("Logged in");
         StdSecureNet __net;
@@ -370,10 +348,10 @@ int _neuewelle(string[] args) {
 
         if (!local_options.wave.address_file.empty) {
             // Read from text file. Will probably be removed
-            addressbook.set(readAddressFile(local_options.wave.address_file));
+            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
         }
         else {
-            addressbook.set(readNNRFromDart(local_options.dart.dart_path, keys, __net));
+            addressbook = readNNRFromDart(local_options.dart.dart_path, keys, __net);
         }
 
         foreach (key; keys) {
@@ -389,43 +367,61 @@ int _neuewelle(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
-        log("alive");
-        bool signaled;
-        import tagion.utils.pretend_safe_concurrency : receiveTimeout;
-        import core.atomic;
+    const shutdown_file = buildPath(base_dir.run, format("epoch_shutdown_%d", thisProcessID()));
+    log.trace("Epoch Shutdown file %s", shutdown_file);
 
-        do {
-            signaled = stopsignal.wait(100.msecs);
-            if (!signaled) {
-                if (local_options.wave.fail_fast) {
-                    signaled = receiveTimeout(
-                            Duration.zero,
-                            (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure\n%s", tf); }
-                    );
+    import tagion.utils.pretend_safe_concurrency : receiveTimeout;
+
+    while(!thisActor.stop) {
+        thisActor.stop |= stopsignal.wait(100.msecs);
+
+        receiveTimeout(Duration.zero,
+            (EpochShutdown m, long shutdown_) { //
+                foreach(handle; supervisor_handles) {
+                    handle.send(m, shutdown_);
                 }
-                else {
-                    receiveTimeout(
-                            Duration.zero,
-                            (TaskFailure tf) { log.error("Received an unhandled taskfailure\n%s", tf); }
-                    );
+            },
+            (TaskFailure tf) { 
+                thisActor.stop = true;
+                log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
+            },
+            default_handlers.expand,
+        );
+
+        try {
+            if(shutdown_file.exists) {
+                auto f = File(shutdown_file, "r");
+                scope (exit) {
+                    f.close;
+                    shutdown_file.remove;
+                }
+                import std.conv;
+                check(!f.byLine.empty, "shutdown_file is empty");
+                long shutdown = f.byLine.front.to!long;
+                foreach(handle; supervisor_handles) {
+                    handle.send(EpochShutdown(), shutdown);
                 }
             }
         }
-        while (!signaled && graceful_shutdown.atomicLoad() != local_options.wave.number_of_nodes);
-    }
-    else {
-        log("Program did not start");
-        return 1;
+        catch(Exception e) {
+            error(e);
+        }
+
+        /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
+        // If all supervisors stopped then we stop as well
+        thisActor.stop |= 
+            thisActor.childrenState
+            .byKeyValue
+            .filter!(c => canFind(c.key, local_options.task_names.supervisor)).all!(c => c.value is Ctrl.END);
     }
 
-    sub_handle.send(Sig.STOP);
-    log("Sending stop signal to supervisor");
+    log("Sending stop signal to supervisors");
     foreach (supervisor; supervisor_handles) {
-        supervisor.send(Sig.STOP);
+        supervisor.prioritySend(Sig.STOP);
     }
-    logger_service.send(Sig.STOP);
 
+    sub_handle.prioritySend(Sig.STOP);
+    logger_service.prioritySend(Sig.STOP);
     // supervisor_handle.send(Sig.STOP);
     if (!waitforChildren(Ctrl.END, 5.seconds)) {
         log("Timed out before all services stopped");
@@ -511,6 +507,6 @@ StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
         throw new ToolsException(format("%1$sWrong pincode bootkey node %3$s%2$s", RED, RESET, args[0]));
     }
 
-    verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
+    verbose("%1$sNode %3$s successful%2$s", GREEN, RESET, args[0]);
     return cast(StdSecureNet)wallet_interface.secure_wallet.net.clone;
 }

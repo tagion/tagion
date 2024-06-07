@@ -1,6 +1,6 @@
 module tagion.tools.graphview;
-import std.algorithm : min;
 import std.array : join;
+import std.range;
 import std.conv : to;
 import std.file : exists, fwrite = write;
 import std.format;
@@ -11,93 +11,296 @@ import std.path : extension;
 import std.traits : EnumMembers;
 import std.traits : isIntegral;
 import tagion.basic.basic : EnumText;
-import tagion.hashgraphview.EventView : EventView;
+import tagion.hashgraphview.EventView;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONValid : error_callback;
-import tagion.hibon.HiBONFile : fread;
+import tagion.hibon.HiBONFile : fread, HiBONRange;
+import std.algorithm : min, map, each, filter;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
 
-protected enum _params = [
-    "events",
-    "size",
+static immutable pastel19 = [
+    "#fbb4ae", // Light pink
+    "#ccebc5", // Light green
+    "#decde4", // Light lavender
+    "#fed9a6", // Light peach
+    "#ffffcc", // Light yellow
+    "#e5d8bd", // Light beige
+    "#fddaec", // Light lavender pink
+    "#f2f2f2", // Light gray
+    "#ffcccc", // Light coral pink
+    "#b9f6ca", // Light mint
+    "#ffd8b1", // Light apricot
+    "#d9d9d9", // Light grayish
+    "#c2f0c2", // Light pastel green
+    "#ffcc99", // Light peachy
+    "#ffd1dc", // Light pinkish lavender
+    "#d9f2d9", // Light pale green
+    "#ffccff" // Light lavender pink
+];
+static immutable nonPastel19 = [
+    "#f06292", // Pink
+    "#4caf50", // Green
+    "#9c27b0", // Lavender
+    "#ff9800", // Peach
+    "#ffeb3b", // Yellow
+    "#795548", // Brown
+    "#e91e63", // Lavender pink
+    "#9e9e9e", // Gray
+    "#f44336", // Coral pink
+    "#00e676", // Mint
+    "#ff5722", // Apricot
+    "#616161", // Grayish
+    "#4caf50", // Pastel green
+    "#ff9800", // Peachy
+    "#e91e63", // Pinkish lavender
+    "#8bc34a", // Pale green
+    "#9c27b0" // Lavender pink
 ];
 
-mixin(EnumText!("Params", _params));
-
-//
-
-enum pastel19 = [
-    "#fbb4ae",
-    "#b3cde3",
-    "#ccebc5",
-    "#decde4",
-    "#fed9a6",
-    "#ffffcc",
-    "#e5d8bd",
-    "#fddaec",
-    "#f2f2f2"
-];
-
-string color(T)(string[] colors, T index) if (isIntegral!T) {
+@safe
+const(string) color(T)(const(string[]) colors, T index) pure nothrow @nogc if (isIntegral!T) {
     import std.math : abs;
 
     const i = abs(index) % colors.length;
     return colors[i];
 }
 
-enum fileextensions {
-    HIBON = ".hibon" //    JSON  = ".json"
+@safe
+static string escapeHtml(string input) pure nothrow {
+    string result;
+    foreach (char c; input) {
+        switch (c) {
+        case '&':
+            result ~= "&amp;";
+            break;
+        case '<':
+            result ~= "&lt;";
+            break;
+        case '>':
+            result ~= "&gt;";
+            break;
+        case '"':
+            result ~= "&quot;";
+            break;
+        default:
+            result ~= c;
+            break;
+        }
+    }
+    return result;
 }
 
-enum dot_fileextension {
-    CMAPX = "cmapx", /// Produces HTML map files for client-side image maps.
-    PDF = "pdf", /++ Adobe PDF via the Cairo library. We have seen problems when embedding
-                       into, other documents. Instead, use -Tps2 as described below. +/
-    PLAIN = "txt", /++ Simple, line-based ASCII format. Appendix E describes this output. An
-                     alternate format is plain-ext, which provides port names on the head and
-                     tail nodes of edges. +/
-    PNG = "png", /// PNG (Portable Network Graphics) output.
-    PS = "ps", /// PostScript (EPSF) output.
-    PS2 = "ps2", /++
-                   PostScript (EPSF) output with PDF annotations.
-                   This output should be distilled into PDF,
-                   such as for pdflatex, before being included in a document.
-                   (Use ps2pdf; epstopdf doesn’t handle %%BoundingBox: (atend).)
-                   +/
-    SVG = "svg", /// SVG output. The alternate form svgz produces compressed SVG.
-    VRML = "vrml", /// VRML output.
-    WBMP = "wbmp", ///Wireless BitMap (WBMP) format.
+@safe
+struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
+    import std.format;
+    import std.algorithm.comparison : max;
+    import std.typecons;
+
+    Range doc_range;
+    size_t node_size = 5;
+    EventView[uint] events;
+    long NODE_INDENT = 110;
+    const NODE_CIRCLE_SIZE = 40;
+
+    this(Range doc_range) {
+        this.doc_range = doc_range;
+    }
+
+    long max_height = long.min;
+    long max_width = long.min;
+
+    alias Pos = Tuple!(long, "x", long, "y");
+
+    struct SVGCircle {
+        bool raw_svg;
+        Pos pos;
+        int radius;
+        string fill;
+        string stroke;
+        int stroke_width;
+
+        // for html
+        string classes;
+        string data_info;
+
+        string toString() const pure @safe {
+            string options = format(`cx="%s" cy="%s" r="%s" fill="%s" stroke="%s" stroke-width="%s" `, pos.x, pos.y, radius, fill, stroke, stroke_width);
+            if (!raw_svg) {
+                options ~= format(`class="%s" data-info="%s"`, classes, data_info);
+            }
+            return format(`<circle %s />`, options);
+        }
+    }
+
+    struct SVGLine {
+        Pos pos1;
+        Pos pos2;
+        string stroke;
+        int stroke_width;
+
+        string toString() const pure @safe {
+            return format(`<line x1="%s" y1="%s" x2="%s" y2="%s" style="stroke: %s; stroke-width: %s"/>`, pos1.x, pos1
+                    .y, pos2.x, pos2.y, stroke, stroke_width);
+        }
+    }
+
+    struct SVGText {
+        Pos pos;
+        string fill;
+        string text_anchor;
+        string dominant_baseline;
+        string text;
+
+        string toString() const pure @safe {
+            return format(`<text x="%s" y="%s" text-anchor="%s" dominant-baseline="%s" fill="%s"> %s </text>`, pos.x, pos
+                    .y, text_anchor, dominant_baseline, fill, text);
+
+        }
+    }
+
+    private const(Pos) getPos(ref const EventView e) pure nothrow {
+        return Pos(long(e.node_id) * NODE_INDENT + NODE_INDENT, -(long(e.order * NODE_INDENT) + NODE_INDENT));
+    }
+
+    private const(Pos) edgePos(const Pos p1, const Pos p2, const long radius, bool isMother) pure nothrow {
+        if (isMother) {
+            return Pos(p2.x, p2.y - radius);
+        }
+        import std.math;
+
+        double angle = atan2(float(abs(p2.y) - abs(p1.y)), float(p2.x - p1.x));
+
+        double ex = p2.x + radius * cos(angle);
+        double ey = p2.y + radius * sin(angle);
+
+        import std.exception : assumeWontThrow;
+
+        // only throws ConvException if it is NaN. So safe to assume
+        return assumeWontThrow(Pos(ex.to!long, ey.to!long));
+    }
+
+    private void drawEdge(ref OutBuffer obuf, const Pos event_pos, ref const EventView ref_event, bool isMother) pure {
+
+        // const father_event = events[e.father];
+        const ref_pos = getPos(ref_event);
+
+        const ref_edge = edgePos(event_pos, ref_pos, NODE_CIRCLE_SIZE, isMother);
+
+        SVGLine line;
+        line.pos1 = event_pos;
+        line.pos2 = ref_edge;
+        line.stroke_width = 4;
+
+        // colors
+        if (isMother) {
+            line.stroke = ref_event.witness ? "red" : "black";
+        }
+        else {
+            line.stroke = pastel19.color(ref_event.id);
+        }
+        obuf.writefln("%s", line.toString);
+    }
+
+    private void node(ref OutBuffer obuf, ref const EventView e, const bool raw_svg) {
+        const pos = getPos(e);
+        max_width = max(pos.x, max_width);
+        max_height = max(-pos.y, max_height);
+
+        if (e.father !is e.father.init && e.father in events) {
+            drawEdge(obuf, pos, events[e.father], isMother: false);
+        }
+        if (e.mother !is e.mother.init && e.mother in events) {
+            drawEdge(obuf, pos, events[e.mother], isMother: true);
+        }
+
+        SVGCircle node_circle;
+
+        node_circle.raw_svg = raw_svg;
+        node_circle.pos = pos;
+        node_circle.radius = NODE_CIRCLE_SIZE;
+        node_circle.stroke = "black";
+        node_circle.stroke_width = 4;
+
+        // colors
+        if (e.witness) {
+            node_circle.fill = e.famous ? nonPastel19.color(e.round_received) : "blue";
+        }
+        else {
+            node_circle.fill = pastel19.color(e.round_received);
+        }
+        if (e.error) {
+            verbose("had error");
+            node_circle.stroke = "yellow";
+            node_circle.stroke_width = 6;
+        }
+    
+        if (!raw_svg) {
+            node_circle.classes = "myCircle";
+            node_circle.data_info = escapeHtml(e.toPretty);
+        }
+
+        obuf.writefln("%s", node_circle.toString);
+
+        SVGText text;
+        text.pos = pos;
+        text.text_anchor = "middle";
+        text.dominant_baseline = "middle";
+        text.fill = "black";
+        text.text = format("%s:%s", e.round == long.min ? "NaN" : format("%s", e.round), e.round_received == long.min ? "NaN" : format("%s", e.round_received));
+        obuf.writefln("%s", text.toString);
+    }
+
+    void draw(ref OutBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
+        // If the first document is a node amount record we set amount of nodes...
+        // Maybe this should be always be possible to set.
+        // Or even better it's a part of the EventView package
+        const nodes_doc = doc_range.front;
+        if (nodes_doc.isRecord!NodeAmount) {
+            node_size = NodeAmount(nodes_doc).nodes;
+            doc_range.popFront;
+        }
+
+        foreach (e; doc_range) {
+            if (e.isRecord!EventView) {
+                auto event = EventView(e);
+                events[event.id] = event;
+            }
+            else {
+                throw new Exception("Unknown element in graphview doc_range %s", e.toPretty);
+            }
+        }
+        foreach (e; events) {
+            node(obuf, e, raw_svg);
+        }
+
+        scope (success) {
+            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height + NODE_INDENT);
+            start.writefln(`<g transform="translate(0,%s)">`, max_height);
+            end.writefln("</g>");
+            end.writefln("</svg>");
+        }
+    }
 }
 
-// dot -Tsvg test.dot -o test1.svg
-
-struct Dot {
+@safe
+struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
+@safe:
     import std.format;
 
-    static string INDENT;
-    static this() {
-        INDENT = "  ";
-    }
-    // OutputBuf obuf;
-    string name;
-    const size_t node_size;
-    //    string indet;
-    EventView[uint] events;
-    // this(string name, string indent="  ") {
-    //     this.obuf = obuf;
-    //     this.name = name;
-    //     this.indent=indent;
-    // }
+    enum INDENT = "  ";
 
-    this(const Document doc, string name) {
-        node_size = doc[Params.size].get!ulong;
-        const events_doc = doc[Params.events].get!Document;
-        foreach (e; events_doc[]) {
-            auto event = EventView(e.get!Document);
-            events[event.id] = event;
-        }
+    string name;
+    Range doc_range;
+    // default node_size 
+    // if the eventview range does not begin with a NodeAmount record 
+    size_t node_size = 5;
+    EventView[uint] events;
+
+    this(Range doc_range, string name) {
+        this.doc_range = doc_range;
         this.name = name;
     }
 
@@ -112,7 +315,7 @@ struct Dot {
         }
 
         string mask2text(const(uint[]) mask) {
-            const mask_text = format("%s", BitMask(mask));
+            const mask_text = (() @trusted => format("%s", BitMask(mask)))();
             return mask_text[0 .. min(node_size, mask_text.length)];
         }
 
@@ -128,32 +331,11 @@ struct Dot {
             string[] options;
             // const witness_mask_text=mask2text(mother_event.witness_mask);
             //texts~=mask2text(mother_event.witness_mask);
-            const round_received_mask = mask2text(mother_event.round_received_mask);
-            if (round_received_mask) {
-                texts ~= format("%s:e", round_received_mask);
-            }
             if (mother_event.witness) {
                 options ~= format(`color="%s"`, "red");
                 options ~= format(`fontcolor="%s"`, "blue");
                 options ~= format(`shape="%s"`, "plane");
-
-                // const strongly_seening_mask = mask2text(
-                //     // mother_event.strongly_seeing_mask);
-                // if (strongly_seening_mask) {
-                //     texts ~= format("%s:s", strongly_seening_mask);
-                // }
-                // const round_seen_mask = mask2text(mother_event.round_seen_mask);
-                // if (round_seen_mask) {
-                // texts ~= format("%s:r", round_seen_mask); //mask2text(mother_event.round_seen_mask));
-                // }
             }
-            // texts ~= format("%s:w", witness_mask_text);
-
-            //     //       texts~=mask2text(mother_event.strongly_seeing_mask);
-            // }
-            // else {
-            //     texts~=witness_mask_text;
-            // }
             local_edge(texts, e.mother, options);
         }
     }
@@ -179,8 +361,8 @@ struct Dot {
         else if (e.father_less) {
             obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "egg");
         }
-        string round_text = (e.round is int.min) ? "\u2693" : e.round.to!string;
-        if (e.round_received !is int.min) {
+        string round_text = (e.round is long.min) ? "\u2693" : e.round.to!string;
+        if (e.round_received !is long.min) {
             round_text ~= format(":%s", e.round_received);
         }
         // if (e.erased) {
@@ -190,6 +372,25 @@ struct Dot {
     }
 
     void draw(ref OutBuffer obuf, const(string) indent = null) {
+        // If the first document is a node amount record we set amount of nodes...
+        // Maybe this should be always be possible to set.
+        // Or even better it's a part of the EventView package
+        const nodes_doc = doc_range.front;
+        if (nodes_doc.isRecord!NodeAmount) {
+            node_size = NodeAmount(nodes_doc).nodes;
+            doc_range.popFront;
+        }
+
+        foreach (e; doc_range) {
+            if (e.isRecord!EventView) {
+                auto event = EventView(e);
+                events[event.id] = event;
+            }
+            else {
+                throw new Exception("Unknown element in graphview doc_range %s", e.toPretty);
+            }
+        }
+
         import stdio = std.stdio;
 
         obuf.writefln("%sdigraph %s {", indent, name);
@@ -211,7 +412,7 @@ struct Dot {
 
                 }
             }
-            const sub_indent = indent ~ INDENT;
+
             foreach (e; events) {
                 OutBuffer subgraph_header(ref const EventView e) {
                     auto sbuf = new OutBuffer;
@@ -230,23 +431,6 @@ struct Dot {
         subgraphs(indent ~ INDENT);
         foreach (e; events) {
             node(obuf, indent ~ INDENT, e);
-            // if (e.father !is e.father.init) {
-            //     //obuf.writefln("%s%s -> %s;", indent~INDENT, e.id, e.father);
-            //     edge(obuf, indent~INDENT, true, e);
-
-            // }
-            // obuf.writefln(`%s%s [pos="%s, %s!"];`, indent~INDENT, e.id, e.node_id*2, e.order);
-            // if (e.witness) {
-            //     obuf.writefln(`%s%s [fillcolor="%s"];`, indent~INDENT, e.id, "red");
-            // }
-            // if (e.father_less) {
-            //     obuf.writefln(`%s%s [shape="%s"];`, indent~INDENT, e.id, "egg");
-            // }
-            // if (e.witness_mask.length) {
-            //     BitArray witness_mask;
-            //     obuf.writefln(`%s%s [fillcolor="%s"];`, indent~INDENT, e.id, "red");
-
-            // }
         }
     }
 }
@@ -262,22 +446,20 @@ int _main(string[] args) {
 
     bool version_switch;
 
-    string inputfilename;
+    string[] inputfilenames;
     string outputfilename;
 
-    auto logo = import("logo.txt");
+    bool html;
+    bool svg;
+
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
-            "inputfile|i", "Sets the HiBON input file name", &inputfilename, // "outputfile|o", "Sets the output file name",  &outputfilename,
-            // "bin|b", "Use HiBON or else use JSON", &binary,
-            // "value|V", format("Bill value : default: %d", value), &value,
-            // "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
-            //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-
-            
-
+            "v|verbose", "Prints more debug information", &__verbose_switch,
+            "o|output", "output graphviz file", &outputfilename,
+            "html", "Generate html page", &html,
+            "svg", "generate raw svg", &svg,
     );
 
     if (version_switch) {
@@ -288,19 +470,16 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-            "Documentation: https://tagion.org/",
+            "Documentation: https://docs.tagion.org/",
             "",
             "",
             "Example:",
             "graphview Alice.hibon | neato -Tsvg -o outputfile.svg",
             "Usage:",
-            // format("%s [<option>...] <in-file> <out-file>", program),
             format("%s [<option>...] <in-file>", program),
             "",
             "Where:",
             "<in-file>           Is an input file in .hibon format",
-            // "<out-file>          Is an output file in .json or .hibon format",
-            // "                    stdout is used of the output is not specifed the",
             "",
 
             "<option>:",
@@ -309,33 +488,128 @@ int _main(string[] args) {
         return 0;
     }
 
-    if (args.length > 1) {
-        inputfilename = args[1];
+    // if (args.length > 1) {
+    //     inputfilename = args[1];
+    // }
+
+    import tagion.basic.Types : hasExtension, FileExtension;
+    inputfilenames = args.filter!(arg => arg.hasExtension(FileExtension.hibon)).array; 
+
+
+    File[] inputfiles;
+    if (inputfilenames.empty) {
+        inputfiles ~= stdin;
+        verbose("Reading graph data from stdin");
     }
     else {
-        stderr.writefln("Input file missing");
-        return 1;
+        inputfilenames.each!(inputfilename => inputfiles ~= File(inputfilename, "r"));
     }
 
-    const input_extension = inputfilename.extension;
-    switch (input_extension) {
-    case fileextensions.HIBON:
-        Document doc = fread(inputfilename);
-        const error_code = doc.valid(toDelegate(&error_callback));
-        if (error_code !is Document.Element.ErrorCode.NONE) {
-            writeln("Document format error");
-            writefln("For the file %s", inputfilename);
-            return 1;
-        }
-        auto dot = Dot(doc, "G");
+    File outfile;
+    if (outputfilename.empty) {
+        outfile = stdout();
+    }
+    else {
+        outfile = File(outputfilename, "w");
+    }
+    
+    assert(inputfiles.length != 0);
+    foreach(i, inputfile; inputfiles) {
+        HiBONRange hibon_range = HiBONRange(inputfile);
+
         auto obuf = new OutBuffer;
-        dot.draw(obuf);
-        writefln("%s", obuf);
-        break;
-    default:
-        stderr.writefln("File extensions %s not valid (only %s)",
-                input_extension, [EnumMembers!fileextensions]);
+        obuf.reserve(inputfile.size * 2);
+        verbose("inputfile size=%s", inputfile.size);
+        auto startbuf = new OutBuffer;
+        auto endbuf = new OutBuffer;
+        if (i == 0 && !svg) {
+            startbuf.writefln(HTML_BEGIN);
+        }
+
+        if (html || svg) {
+            assert(!(html && svg), "cannot set both html and svg");
+            auto dot = SVGDot!HiBONRange(hibon_range);
+            dot.draw(obuf, startbuf, endbuf, svg);
+        }
+        else {
+            auto dot = Dot!HiBONRange(hibon_range, "G");
+            dot.draw(obuf);
+        }
+        if (inputfiles.length == i+1 && !svg) {
+            endbuf.writefln(EVENT_POPUP);
+            endbuf.writefln(HTML_END);
+        }
+
+        outfile.write(startbuf);
+        outfile.write(obuf);
+        outfile.write(endbuf);
+        verbose("outfile size=%s", outfile.size);
     }
 
     return 0;
 }
+
+static immutable HTML_BEGIN = q"EX
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive SVG</title>
+  <style>
+    #popup {
+      display: none;
+      position: absolute;
+      background-color: #ffffff;
+      border: 1px solid #000000;
+      padding: 10px;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+EX";
+
+static immutable HTML_END = q"EX
+</body>
+</html>
+EX";
+
+static immutable EVENT_POPUP = q"EX
+<!-- The pop-up box -->
+<div id="popup"></div>
+<script>
+// Get the SVG element
+const svg = document.querySelector('svg');
+
+// Get all circle elements with the class 'myCircle'
+const circles = document.querySelectorAll('.myCircle');
+
+// Add click event listener to each circle
+circles.forEach(circle => {
+  circle.addEventListener('click', function() {
+      console.log("circle pressed!");
+    // Get the information from the circle's data-info attribute
+    const information = circle.getAttribute('data-info');
+
+    // Show the pop-up box with the information
+    const popup = document.getElementById('popup');
+    popup.innerHTML = information;
+    popup.style.display = 'block';
+
+    // Position the pop-up box near the circle
+    const circleBounds = circle.getBoundingClientRect();
+    popup.style.top = `${circleBounds.top}px`;
+    popup.style.left = `${circleBounds.right}px`;
+  });
+});
+
+// Close the pop-up box when clicking outside of it
+svg.addEventListener('click', function(event) {
+  const popup = document.getElementById('popup');
+  if (!event.target.classList.contains('myCircle') && event.target !== popup) {
+    popup.style.display = 'none';
+  }
+});
+</script>            
+EX";

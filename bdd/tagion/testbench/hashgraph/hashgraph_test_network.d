@@ -16,6 +16,7 @@ import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Refinement;
+import tagion.hashgraph.RefinementInterface;
 import tagion.hashgraph.Round;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
@@ -25,17 +26,9 @@ import tagion.services.options;
 import tagion.utils.BitMask;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.utils.StdTime;
+import tagion.behaviour.BehaviourException : check, BehaviourException;
 
 class TestRefinement : StdRefinement {
-
-    struct ExcludedNodesHistory {
-        Pubkey pubkey;
-        bool state;
-        int round;
-        bool stop_communication;
-    }
-
-    static ExcludedNodesHistory[] excluded_nodes_history;
 
     struct Swap {
         Pubkey swap_out;
@@ -52,47 +45,84 @@ class TestRefinement : StdRefinement {
     }
 
     static Epoch[][Pubkey] epoch_events;
-    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
+    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) const {
 
         auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time, cast(Round) decided_round))();
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 
-    // override void excludedNodes(ref BitMask excluded_mask) {
-    //     import tagion.basic.Debug;
-    //     import std.algorithm : filter;
+}
+class NewTestRefinement : StdRefinement {
+    static FinishedEpoch[string][long] epochs;
 
-    //     if (excluded_nodes_history is null) {
-    //         return;
-    //     }
 
-    //     const last_decided_round = hashgraph.rounds.last_decided_round.number;
 
-    //     auto histories = excluded_nodes_history.filter!(h => h.round == last_decided_round);
-    //     foreach (history; histories) {
-    //         const node = hashgraph.nodes.get(history.pubkey, HashGraph.Node.init);
-    //         if (node !is HashGraph.Node.init) {
-    //             excluded_mask[node.node_id] = history.state;
-    //             __write("setting exclude mask");
-    //         }
-    //     }
-    //     __write("callback<%s>", excluded_mask);
+    override void epoch(Event[] event_collection, const Round decided_round) const {
+        static bool first_epoch;
+        if (!first_epoch) {
+            check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
+        } 
+        first_epoch = true;
+        
+        import std.range : tee;
+        sdt_t[] times;
+        auto events = event_collection
+            .tee!((e) => times ~= e.event_body.time)
+            .filter!((e) => !e.event_body.payload.empty)
+            .array;
 
-    // }
+        version(OLD_ORDERING) {
+            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        }
+        version(NEW_ORDERING) {
+            const famous_witnesses = decided_round
+                ._events
+                .filter!(e => e !is null)
+                .filter!(e => decided_round.famous_mask[e.node_id])
+                .array;
+            auto sorted_events = events.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+        }
+        times.sort;
+        
+        version(OLD_ORDERING) {
+            const mid = times.length / 2 + (times.length % 1);
+            const epoch_time = times[mid];
+        }
+        version(NEW_ORDERING) {
+            const epoch_time = times[times.length / 2];
+        }
+        version(OLD_ORDERING) {
+            auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        }
+        version(NEW_ORDERING) {
+            const famous_witnesses = decided_round
+                ._events
+                .filter!(e => e !is null)
+                .filter!(e => decided_round.famous_mask[e.node_id])
+                .array;
+            auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+        }
+        auto finished_epoch = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
+
+        epochs[finished_epoch.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = finished_epoch;
+
+        checkepoch(hashgraph.nodes.length.to!uint, epochs);
+    }
 
 }
 
+alias TestNetwork = TestNetworkT!TestRefinement;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
 @safe
-static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
+static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import core.time;
     import std.datetime.systime : SysTime;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.crypto.SecureNet : StdSecureNet;
-    import tagion.gossip.InterfaceNet : GossipNet;
+    import tagion.gossip.GossipNet;
     import tagion.hibon.HiBONJSON;
     import tagion.utils.Queue;
     import tagion.utils.Random;
@@ -167,28 +197,27 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             // Dummy empty
         }
 
-        const(Pubkey) select_channel(ChannelFilter channel_filter) {
-            foreach (count; 0 .. channel_queues.length / 2) {
+        Pubkey select_channel(ChannelFilter channel_filter) {
+            auto send_channels = channel_queues
+                .byKey
+                .filter!(k => online_states[k])
+                .filter!(k => channel_filter(k))
+                .array;
 
-                const node_index = random.value(0, channel_queues.length);
-
-                auto send_channels = channel_queues
-                    .byKey
-                    .dropExactly(node_index)
-                    .filter!((k) => online_states[k]);
-
-                if (!send_channels.empty && channel_filter(send_channels.front)) {
-                    return send_channels.front;
-                }
+            if (!send_channels.empty) {
+                const node_index = random.value(0, send_channels.length); 
+                return send_channels[node_index];
             }
-            return Pubkey();
+
+            
+            return Pubkey.init;
         }
 
-        const(Pubkey) gossip(
+        Pubkey gossip(
                 ChannelFilter channel_filter,
                 SenderCallBack sender) {
             const send_channel = select_channel(channel_filter);
-            if (send_channel.length) {
+            if (send_channel !is Pubkey.init) {
                 send(send_channel, sender());
             }
             return send_channel;
@@ -236,6 +265,9 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
                 writefln("NODE SIZE OF TEST HASHGRAPH %s", _hashgraph.node_size);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
+                if (Event.callbacks) {
+                    Event.callbacks.connect(eva_event);
+                }
 
             }
             uint count;
@@ -292,11 +324,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     static int testing;
-    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
+    void addNode(Refinement refinement, immutable(ulong) N, const(string) name, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
-        auto refinement = new TestRefinement;
 
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
         if (testing < 4) {
@@ -305,7 +336,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 h.__debug_print = true;
             }
         }
-        h.scrap_depth = 0;
+        h.scrap_depth = scrap_depth;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
 
@@ -314,10 +345,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     FiberNetwork[Pubkey] networks;
-    this(const(string[]) node_names) {
+    this(const(string[]) node_names, int scrap_depth = 0) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
-        node_names.each!(name => addNode(N, name));
+        node_names.each!(name => addNode(new R, N, name, scrap_depth));
     }
 }
 
@@ -339,7 +370,7 @@ bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @
 }
 
 @safe
-void printStates(TestNetwork network) {
+void printStates(R)(TestNetworkT!(R) network) if (is (R:Refinement)) {
     foreach (channel; network.networks) {
         writeln("----------------------");
         foreach (channel_key; network.channels) {
@@ -354,4 +385,96 @@ void printStates(TestNetwork network) {
         }
     }
 
+}
+
+
+@safe
+static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs) {
+    static int error_count;
+    import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
+    import tagion.crypto.SecureInterfaceNet;
+
+    try {
+        writefln("unfinished epochs %s", epochs.length);
+        foreach (epoch; epochs.byKeyValue) {
+            if (epoch.value.length == number_of_nodes) {
+                HashNet net = new StdHashNet;
+                // check that all epoch numbers are the same
+                check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
+
+            
+                const(Event)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events).array;
+                const(Event)[] not_the_same;
+                foreach(i, node_events; all_node_events[0..$-1]) {
+                    foreach(to_compare; all_node_events[i+1..$]) {
+                        foreach(event; node_events) {
+                            if (!to_compare.map!(e => *e.event_package).canFind(*event.event_package)) {
+                                not_the_same ~= event;
+                            }
+                        }
+                        foreach(event; to_compare) {
+                            if (!node_events.map!(e => *e.event_package).canFind(*event.event_package)) {
+                                not_the_same ~= event;
+                                //do some callback
+                            }
+                        }
+                    }
+                }
+            
+                auto not_the_same_uniq  = not_the_same
+                    .map!((e) @trusted => cast(Event) e)
+                     .array.sort!((a,b) => net.calcHash(*a.event_package) < net.calcHash(*b.event_package))
+                     .uniq!((a,b) => net.calcHash(*a.event_package) == net.calcHash(*b.event_package));
+                if (Event.callbacks && !not_the_same_uniq.empty) {
+                    foreach(event; not_the_same_uniq) {
+                        writefln("%(%02x%)", net.calcHash(*event.event_package));
+                        event.error = true;
+                        Event.callbacks.connect(event);
+                    }
+                }
+
+                // check all events are the same
+                auto epoch_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.event_packages).array;
+                string print_events() {
+                    string printout;
+                    // printout ~= format("EPOCH: %s", epoch.value.epoch);
+                    foreach(i, events; epoch_events) {
+                        uint number_of_empty_events;
+                        printout ~= format("\n%s: ", i);
+                        foreach(epack; events) {
+                            printout ~= format("%(%02x%) ", net.calcHash(epack)[0..4]);
+                            if (epack.event_body.payload.empty) {
+                                number_of_empty_events++;
+                            }
+                        }
+                        printout ~= format("TOTAL: %s EMPTY: %s", events.length, number_of_empty_events);
+                    }
+                    return printout;
+                }
+
+                if (!epoch_events.all!(e => e == epoch_events[0])) {
+                    check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
+                }
+
+                auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array; 
+                if (!timestamps.all!(t => t == timestamps[0])) {
+                    string text;
+                    foreach(i, t; timestamps) {
+                        auto line = format("\n%s: %s", i, t);
+                        text ~= line;
+                    }
+                    check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
+                }
+
+                writefln("FINISHED ENTIRE EPOCH %s", epoch.key);
+                epochs.remove(epoch.key);
+            }
+        }
+    } catch (BehaviourException e) {
+        // writefln("ANOTHER NODE RECEIVED EPOCH");
+        // error_count++;
+        // if (error_count == 5) {
+            throw e;
+        // }
+    }
 }

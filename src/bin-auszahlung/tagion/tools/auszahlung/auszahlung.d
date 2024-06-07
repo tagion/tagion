@@ -1,3 +1,4 @@
+/// Simple multi-sig CLI wallet
 module tagion.tools.auszahlung.auszahlung;
 import core.thread;
 import std.algorithm;
@@ -22,7 +23,6 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions;
-import tagion.utils.Term;
 import tagion.utils.Term;
 import tagion.wallet.AccountDetails;
 import tagion.wallet.KeyRecover;
@@ -55,7 +55,7 @@ import Wallet = tagion.wallet.SecureWallet;
 /**
  * @brief build file path if needed file with folder long path
  * @param file - input/output parameter with filename
- * @param path - forlders destination to file
+ * @param path - folders destination to file
  */
 @safe
 static void set_path(ref string file, string path) {
@@ -118,8 +118,7 @@ int _main(string[] args) {
             //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
+                "Documentation: https://docs.tagion.org/",
                 "",
                 "Usage:",
                 format("%s [<option>...] <wallet.json> [<bill.hibon>] ", program),
@@ -153,9 +152,9 @@ int _main(string[] args) {
             new_account.requested_invoices = prior_account.requested_invoices.dup;
             new_account.hirpcs = prior_account.hirpcs;
             new_account.name = prior_account.name;
-            prior_account.requested.byValue.each!(bill => new_account.requested[net.dartIndex(bill)] = bill);
+            prior_account.requested.byValue.each!(bill => new_account.requested[hash_net.dartIndex(bill)] = bill);
             prior_account.activated.byKeyValue.each!(
-                    pair => new_account.activated[net.dartIndex(prior_account.requested[pair.key])] = pair.value
+                    pair => new_account.activated[hash_net.dartIndex(prior_account.requested[pair.key])] = pair.value
             );
 
             verbose("new account\n%s", new_account.toPretty);

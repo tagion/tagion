@@ -9,14 +9,15 @@ import tagion.basic.dir;
 
 /// This function should be renamed
 /// Initially there it was only intended to be used for the contract address for the inputvalidator
-immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow pure {
+immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
     version (linux) {
         return "abstract://" ~ prefix ~ "NEUEWELLE";
     }
     else version (Posix) {
         import std.path;
+        import std.exception;
 
-        return "ipc://" ~ buildPath(base_dir.run, prefix ~ "tagionwave_contract.sock");
+        return "ipc://" ~ buildPath(assumeWontThrow(base_dir.run), prefix ~ "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");
@@ -35,7 +36,7 @@ struct WaveOptions {
     import tagion.utils.JSONCommon;
 
     /** Read node addresses from this files if it's defined
-     *  Usesfull for development
+     *  Useful for development
      *  Formatted likes this. With 1 entry per line.
      *  <Base64 encoded public key> <address>
     */
@@ -43,7 +44,9 @@ struct WaveOptions {
     NetworkMode network_mode = NetworkMode.INTERNAL;
     uint number_of_nodes = 5;
     string prefix_format = "Node_%s_";
-    bool fail_fast = false;
+
+    // The program stops if an actor taskfailure reaches the top thread
+    bool fail_fast = true;
 
     mixin JSONCommon;
 }
@@ -95,12 +98,11 @@ public import tagion.services.collector : CollectorOptions;
 public import tagion.services.epoch_creator : EpochCreatorOptions;
 public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
 public import tagion.services.inputvalidator : InputValidatorOptions;
-public import tagion.services.monitor : MonitorOptions;
 public import tagion.services.replicator : ReplicatorOptions;
 public import tagion.services.subscription : SubscriptionServiceOptions;
 public import tagion.services.transcript : TranscriptOptions;
 public import tagion.services.TRTService : TRTOptions;
-public import tagion.services.nodeInterface : NodeInterfaceOptions;
+public import tagion.services.nodeinterface : NodeInterfaceOptions;
 
 /// All options for neuewelle
 @safe
@@ -113,7 +115,6 @@ struct Options {
     HiRPCVerifierOptions hirpc_verifier;
     DARTOptions dart;
     EpochCreatorOptions epoch_creator;
-    MonitorOptions monitor;
     ReplicatorOptions replicator;
     DARTInterfaceOptions dart_interface;
     SubscriptionServiceOptions subscription;
@@ -171,7 +172,7 @@ unittest {
     assert(opt.task_names.program[0 .. prefix.length] != prefix);
     assert(opt.task_names.transcript[0 .. prefix.length] != prefix);
 
-    opt.task_names.setPrefix(prefix);
+    opt.setPrefix(prefix);
     immutable sub_opt = Options(opt);
     assert(sub_opt.task_names.program[0 .. prefix.length] == prefix);
     assert(sub_opt.task_names.transcript[0 .. prefix.length] == prefix);

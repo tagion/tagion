@@ -13,7 +13,6 @@ TRIPLET:=$(MTRIPLE)-android
 
 
 #UNITTEST_FLAGS:=$(DDEBUG) $(DDEBUG_SYMBOLS)
-DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 ifdef BETTERC
 DFLAGS+=$(DBETTERC)
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
@@ -35,9 +34,6 @@ target-android: CPP=$(ANDROID_CPP)
 target-android: DFLAGS+=$(ANDROID_DFLAGS)
 target-android: LIBS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libdruntime-ldc.a
 target-android: LIBS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libphobos2-ldc.a
-
-
-target-android: LDFLAGS+=/home/carsten/Android//toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot
 target-android: LDFLAGS+=-fno-weak
 
 endif

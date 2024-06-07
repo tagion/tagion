@@ -65,11 +65,12 @@ do
   # Step 3: Generate a node name and insert into all infos
   name="node_$i"
   $bdir/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
-  address=$($bdir/geldbeutel "$wallet_config" --info) 
-  pkey="$($bdir/geldbeutel "$wallet_config" --pubkey)"
-  ipaddr=$((10700+i))
-  echo "$pkey tcp://0.0.0.0:$ipaddr" >> "$ndir/address_book.txt"
-  all_infos+=" -p $address,$name"
+  node_info=$("$bdir/geldbeutel" "$wallet_config" --info) 
+  # pkey="$("$bdir/geldbeutel" "$wallet_config" --pubkey)"
+  port=$((10700+i))
+  # echo "$pkey tcp://0.0.0.0:$port" >> "$ndir/address_book.txt"
+  printf 'tcp://0.0.0.0:%s' $port
+  all_infos+=" -p $node_info,$(printf 'tcp://0.0.0.0:%s' $port)"
 
   # Create bills for the wallet
   for (( b=1; b <= bills; b++)); 
@@ -132,13 +133,14 @@ do
         # Configure the network with the neuewelle binary
         "$bdir/neuewelle" -O \
            --option=wave.network_mode:LOCAL \
-           --option=subscription.tags:taskfailure \
+           --option=epoch_creator.timeout:500 \
+           --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
            --option=inputvalidator.sock_addr:abstract://CONTRACT_NEUEWELLE_$i \
            --option=dart_interface.sock_addr:abstract://DART_NEUEWELLE_$i \
            --option=subscription.address:abstract://SUBSCRIPTION_NEUEWELLE_$i \
            --option=node_interface.node_address:"tcp://0.0.0.0:$((10700+i))" 2&> /dev/null
     )
 
-    echo 'echo' "$(printf "%04d" $i)" '|' "$bdir/neuewelle" "$node_dir/tagionwave.json" '&'
+    echo 'echo' "$(printf "%04d" $i)" '|' "$bdir/neuewelle" "--monitor" "$node_dir/tagionwave.json" '&'
 
 done

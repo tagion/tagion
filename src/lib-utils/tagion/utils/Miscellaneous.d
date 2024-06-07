@@ -1,3 +1,4 @@
+/// Miscellaneous functions
 module tagion.utils.Miscellaneous;
 
 import std.algorithm;

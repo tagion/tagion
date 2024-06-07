@@ -9,7 +9,6 @@ import std.range;
 import std.stdio;
 import std.typecons : Tuple;
 import tagion.Keywords;
-import tagion.basic.basic : tempfile;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;

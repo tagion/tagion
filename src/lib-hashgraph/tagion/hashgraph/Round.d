@@ -26,7 +26,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
-import tagion.hashgraphview.EventMonitorCallbacks;
+import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord;
@@ -161,6 +161,9 @@ class Round {
         void scrap_events(Event e) {
             if (e !is null) {
                 count++;
+
+                pragma(msg, "fixme(phr): make event remove work with eventview");
+                version(none)
                 if (Event.callbacks) {
                     Event.callbacks.remove(e);
                 }
@@ -251,7 +254,7 @@ class Round {
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph = hashgraph;
-            last_round = new Round(null, hashgraph.node_size);
+            last_round = new Round(null, hashgraph.node_size); 
             voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
         }
 
@@ -394,7 +397,7 @@ class Round {
 
         /**
      * Number of decided round in cached in memory
-     * Returns: Number of cached dicided rounds
+     * Returns: Number of cached decided rounds
      */
         @nogc
         uint cached_decided_count() pure const nothrow {
@@ -410,7 +413,7 @@ class Round {
 
         /**
      * Check the coin round limit
-     * Returns: true if the coin round has beed exceeded 
+     * Returns: true if the coin round has been exceeded 
      */
         @nogc
         bool check_decided_round_limit() pure const nothrow {
@@ -420,22 +423,19 @@ class Round {
         void check_decide_round() {
             auto round_to_be_decided = last_decided_round._next;
             if (!voting_round_per_node.all!(r => r.number > round_to_be_decided.number)) {
+                log("Not decided round");
                 return;
             }
             collect_received_round(round_to_be_decided, hashgraph);
             round_to_be_decided._decided = true;
             last_decided_round = round_to_be_decided;
-            // if (hashgraph._rounds.voting_round_per_node.all!(r => r.number > round_to_be_decided.number)
-            // {
-            //     check_decided_round(hashgraph);        
-            // } 
         }
 
-        /**
+    /**
      * Call to collect and order the epoch
      * Params:
      *   r = decided round to collect events to produce the epoch
-     *   hashgraph = hashgraph which ownes this rounds
+     *   hashgraph = hashgraph which owns this round
      */
 
         package void collect_received_round(Round r, HashGraph hashgraph) {
@@ -482,10 +482,13 @@ class Round {
             }
 
             auto event_collection = consensus_tide
-                .map!(e => e[].until!(e => e._round_received !is null))
+                .map!(e => e[].until!(e => e.round_received !is null))
                 .joiner.array;
 
-            event_collection.each!(e => e._round_received = r);
+            event_collection.each!(e => e.round_received = r);
+            if (Event.callbacks) {
+                event_collection.each!(e => Event.callbacks.connect(e));
+            }
 
             hashgraph.epoch(event_collection, r);
         }
@@ -506,9 +509,9 @@ class Round {
         }
 
         /**
-     * Range from this round and down
-     * Returns: range of rounds 
-     */
+         * Range from this round and down
+         * Returns: range of rounds 
+         */
         @nogc
         package Range!false opSlice() pure nothrow {
             return Range!false(last_round);

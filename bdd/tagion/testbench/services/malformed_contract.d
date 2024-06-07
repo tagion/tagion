@@ -9,6 +9,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DARTcrud;
+import tagion.dart.DARTBasic;
 import tagion.hibon.Document;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
@@ -26,7 +27,7 @@ import tagion.testbench.tools.Environment;
 import tagion.tools.wallet.WalletInterface;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
 import tagion.wallet.SecureWallet : SecureWallet;
-
+import tagion.wallet.request;
 
 import core.thread;
 import core.time;
@@ -76,7 +77,8 @@ class ContractTypeWithoutCorrectInformation {
     import tagion.script.standardnames;
     import tagion.utils.StdTime;
 
-    @recordType("TGN") struct MaliciousBill {
+    @recordType("TGN")
+    struct MaliciousBill {
         @label(StdNames.value) @optional @(filter.Initialized) TagionCurrency value; /// Tagion bill 
         @label(StdNames.time) @optional @(filter.Initialized) sdt_t time;
         @label(StdNames.owner) @optional @(filter.Initialized) Pubkey owner;
@@ -139,7 +141,7 @@ class ContractTypeWithoutCorrectInformation {
         check(epoch_on_startup, "No epoch on startup");
         submask.subscribe("error/tvm");
 
-        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 
@@ -198,7 +200,7 @@ class InputsAreNotBillsInDart {
 
     @When("i send the contract to the network.")
     Document network() {
-        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 
@@ -298,10 +300,7 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     Document network() {
         submask.subscribe("error/tvm");
         foreach(contract; [zero_contract, negative_contract, combined_contract]) {
-            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1_hirpc);
-
-            // auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
-            pragma(msg, "fixme(pr): consider adding log for exception");
+            sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1_hirpc);
         }
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
        
@@ -312,14 +311,14 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     Document rejected() {
         import tagion.dart.DART;
         auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
-        auto received = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req, wallet1_hirpc);
-        auto not_in_dart = received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
+        auto received = sendHiRPC(node1_opts.dart_interface.sock_addr, req, wallet1_hirpc);
+        auto not_in_dart = received.response.result[Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
         check(not_in_dart.length == 0, "all the inputs should still be in the dart");
 
 
         auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
-        auto output_received = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req, wallet1_hirpc);
-        auto output_not_in_dart = output_received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
+        auto output_received = sendHiRPC(node1_opts.dart_interface.sock_addr, output_req, wallet1_hirpc);
+        auto output_not_in_dart = output_received.response.result[Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
 
 
         writefln("wowo OUTPUT %s",output_received.toPretty);
@@ -368,7 +367,7 @@ class ContractWhereInputIsSmallerThanOutput {
 
     @When("i send the contract to the network.")
     Document network() {
-        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 

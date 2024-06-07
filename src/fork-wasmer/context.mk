@@ -1,0 +1,23 @@
+
+WASMER_DIR=$(DSRC)/fork-wasmer/wasmer
+
+WASMER_CSRC=$(WASMER_DIR)/lib/c-api
+ifdef ENABLE_WASMER
+
+ifeq ($(PLATFORM),$(LINUX_X86_64))
+	WASMER_TARGET:=x86_64-unknown-linux-gnu
+endif
+
+ifdef WASMER_TARGET
+LIBWASMER:=$(WASMER_DIR)/target/$(WASMER_TARGET)/release/libwasmer.a
+ifdef USE_SYSTEM_LIBS
+LD_WASMER_LIB:=-lwasmer
+LD_WASMER+=$(LD_WASMER_LIB)
+LD_WASMER+=-L$(LD_WASMER_PATH)
+else
+LD_WASMER+=$(LIBWASMER)
+endif # USE_SYSTEM_LIBS
+
+endif # WASMER_TARGET
+
+endif # ENABLE_WASMER

@@ -1,3 +1,4 @@
+/// Secure object for doing cryptographic operations
 module tagion.crypto.SecureNet;
 
 import std.range;
@@ -13,6 +14,9 @@ import tagion.crypto.random.random;
 import tagion.hibon.Document : Document;
 
 package alias check = Check!SecurityConsensusException;
+
+///
+const hash_net = new StdHashNet;
 
 @safe
 class StdHashNet : HashNet {
@@ -72,7 +76,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     interface SecretMethods {
         const pure {
             immutable(ubyte[]) sign(const(ubyte[]) message);
-            void tweak(const(ubyte[]) tweek_code, out ubyte[] tweak_privkey);
+            void tweak(const(ubyte[]) tweak_code, out ubyte[] tweak_privkey);
             immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey);
             void clone(StdSecureNet net);
             void __expose(out scope ubyte[] _privkey);
@@ -112,9 +116,9 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     Signature sign(const Fingerprint message) const pure
     in (_secret !is null,
-        format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey))
+        format("Signature function has not been initialized. Use the %s function", basename!generatePrivKey))
     in (_secret !is null,
-        format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair))
+        format("Signature function has not been initialized. Use the %s function", fullyQualifiedName!generateKeyPair))
     do {
         return Signature(_secret.sign(cast(Buffer) message));
     }

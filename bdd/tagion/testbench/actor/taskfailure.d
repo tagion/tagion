@@ -64,7 +64,7 @@ class SendATaskFailureToAnActor {
         bool received = receiveTimeout(
                 1.seconds,
                 (TaskFailure tf) @safe {
-            writefln("Task failed succesfully with: %s, %s", typeid(tf.throwable), tf.throwable.msg);
+            writefln("Task failed successfully with: %s, %s", typeid(tf.throwable), tf.throwable.msg);
         },
                 (Variant val) @trusted { check(0, format("Unexpected value: %s", val)); }
         );

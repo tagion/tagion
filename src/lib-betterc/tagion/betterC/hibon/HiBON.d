@@ -785,7 +785,7 @@ struct HiBONT {
     //     table.UINT64 = 0x0123_3456_789A_BCDF;
     //     table.BOOLEAN = true;
     //     auto test_table = table.tupleof;
-    //     //test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+    //     //test_table.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
 
     //     { // empty
     //         auto hibon = HiBON();
@@ -974,7 +974,7 @@ struct HiBONT {
     //     }
     // }
 
-    // unittest { // HIBON test containg an child HiBON
+    // unittest { // HIBON test containing an child HiBON
     //     auto hibon = HiBON();
     //     auto hibon_child = HiBON();
     //     enum child_name = "child";
@@ -1035,18 +1035,18 @@ struct HiBONT {
     //     import std.typecons : Tuple, isTuple;
 
     //     auto hibon_array = HiBON();
-    //     alias TabelDocArray = Tuple!(
+    //     alias TableDocArray = Tuple!(
     //             int, "a",
     //             bool, "b",
     //             float, "c"
     //     );
-    //     TabelDocArray tabel_doc_array;
-    //     tabel_doc_array.a = 42;
-    //     tabel_doc_array.b = true;
-    //     tabel_doc_array.c = 42.42;
+    //     TableDocArray table_doc_array;
+    //     table_doc_array.a = 42;
+    //     table_doc_array.b = true;
+    //     table_doc_array.c = 42.42;
 
-    //     foreach (i, t; tabel_doc_array) {
-    //         enum name = tabel_doc_array.fieldNames[i];
+    //     foreach (i, t; table_doc_array) {
+    //         enum name = table_doc_array.fieldNames[i];
     //         auto local_hibon = HiBON();
     //         local_hibon[name] = t;
     //         if (i < 1) {

@@ -1,4 +1,5 @@
 /// Service which exposes dart reads over a socket
+/// https://docs.tagion.org/docs/architecture/DartInterface
 module tagion.services.DARTInterface;
  
 @safe:
@@ -6,9 +7,11 @@ module tagion.services.DARTInterface;
 import core.time;
 import core.thread;
 import nngd;
-import std.algorithm : canFind, startsWith;
+import std.array;
+import std.algorithm : map, canFind, startsWith;
 import std.stdio;
 import std.format;
+import std.exception : assumeWontThrow;
 import tagion.actor;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
@@ -19,7 +22,8 @@ import tagion.services.codes;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
-import tagion.dart.DART;
+// import tagion.dart.DART;
+import tagion.dart.DARTBasic;
 import tagion.utils.JSONCommon;
 
 struct DARTInterfaceOptions {
@@ -52,112 +56,114 @@ struct DartWorkerContext {
 }
 
 /// Accepted methods for the DART.
-static immutable accepted_dart_methods = [
-    DART.Queries.dartRead, 
-    DART.Queries.dartRim, 
-    DART.Queries.dartBullseye, 
-    DART.Queries.dartCheckRead, 
-    "search"
+static immutable(string[]) accepted_dart_methods = [
+    Queries.dartRead, 
+    Queries.dartRim, 
+    Queries.dartBullseye, 
+    Queries.dartCheckRead, 
 ];
 
-
+pragma(msg, "deprecated search method should be removed from trt");
+/// All methods allowed for the TRT
+static immutable(string[]) accepted_trt_methods = accepted_dart_methods.map!(m => "trt." ~ m).array ~ "search";
+/// All allowed methods for the DARTInterface
+static immutable all_dartinterface_methods = accepted_dart_methods ~ accepted_trt_methods;
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
-
-    thread_attachThis();
-
-    HiRPC hirpc = HiRPC(null);
-
-    void send_doc(Document doc) @trusted {
+    void set_response_doc(Document doc) @trusted {
         msg.length = doc.full_size;
         msg.body_prepend(doc.serialize);
     }
 
-    void send_error(ServiceCode err_type, string extra_msg = "") @safe {
+    void set_error_msg(ServiceCode err_type, string extra_msg = "") @safe {
         import tagion.services.codes;
-        hirpc.Error message;
+        HiRPC.Error message;
         message.code = err_type;
         message.message = err_type.toString ~ extra_msg;
-        const sender = hirpc.Sender(null, message);
+        const sender = HiRPC.Sender(null, message);
         log("INTERFACE ERROR: %s, %s", err_type.toString, extra_msg);
-        send_doc(sender.toDoc);
+        set_response_doc(sender.toDoc);
     }
 
-    void dart_hirpc_response(dartHiRPCRR.Response res, Document doc) @safe {
-        writeln("Interface successful response");
-        send_doc(doc);
-    }
-    void trt_hirpc_response(trtHiRPCRR.Response res, Document doc) @safe {
-        writeln("TRT Interface successful response");
-        send_doc(doc);
+    void dart_hirpc_response(dartHiRPCRR.Response, Document doc) @safe {
+        set_response_doc(doc);
     }
 
-    if (msg is null) {
-        writeln("no message received");
-        return;
-    }
-    if (msg.length < 1) {
-        writeln("received empty msg");
-        return;
+    void trt_hirpc_response(trtHiRPCRR.Response, Document doc) @safe {
+        set_response_doc(doc);
     }
 
-    thisActor.task_name = format("%s", thisTid);
-    auto cnt = cast(DartWorkerContext*) ctx;
-    if (cnt is null) {
-        writeln("the context was nil");
-        return;
-    }
-    // we use an empty hirpc only for sending errors.
+    try {
+        thread_attachThis();
 
-    Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
-    msg.clear();
+        if (msg is null) {
+            writeln("no message received");
+            return;
+        }
+        if (msg.length < 1) {
+            writeln("received empty msg");
+            return;
+        }
 
-    if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        send_error(ServiceCode.hirpc);
-        writeln("Non-valid request received");
-        return;
-    }
-    writeln("Kernel received a document");
+        thisActor.task_name = format("%s", thisTid);
+        auto cnt = cast(DartWorkerContext*) ctx;
+        if (cnt is null) {
+            writeln("the context was nil");
+            return;
+        }
 
-    const empty_hirpc = HiRPC(null);
+        // we use an empty hirpc only for sending errors.
+        Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
+        msg.clear();
 
-    immutable receiver = empty_hirpc.receive(doc);
-    if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
-        send_error(ServiceCode.method);
-        return;
-    }
+        if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
+            set_error_msg(ServiceCode.hirpc);
+            writeln("Non-valid request received");
+            return;
+        }
+        writeln("Kernel received a document");
 
-    const is_trt_req = cnt.trt_enable && (receiver.method.full_name.startsWith("trt.") || receiver.method.name =="search");
-    auto tid = is_trt_req ? locate(cnt.trt_task_name) : locate(cnt.dart_task_name);
+        const empty_hirpc = HiRPC(null);
 
-    if (tid is Tid.init) {
-        send_error(ServiceCode.internal, cnt.trt_task_name);
-        return;
-    }
-    bool response;
-    if (is_trt_req) {
-        tid.send(trtHiRPCRR(), doc); 
-        response = receiveTimeout(cnt.worker_timeout.msecs, &trt_hirpc_response);
-    } else {
-        tid.send(dartHiRPCRR(), doc); 
-        response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
-    }
-    if (!response) {
-        send_error(ServiceCode.timeout);
-        writeln("Timeout on interface request");
-        return;
+        immutable receiver = empty_hirpc.receive(doc);
+        if (!(receiver.isMethod && all_dartinterface_methods.canFind(receiver.method.full_name))) {
+            set_error_msg(ServiceCode.method, format("%s", all_dartinterface_methods));
+            return;
+        }
+
+        const is_trt_req = accepted_trt_methods.canFind(receiver.method.full_name);
+        string request_task_name = is_trt_req ? cnt.trt_task_name : cnt.dart_task_name;
+        Tid tid = locate(request_task_name);
+
+        if (tid is Tid.init) {
+            set_error_msg(ServiceCode.internal, "Missing Tid " ~ request_task_name);
+            return;
+        }
+
+        bool response;
+        if (is_trt_req) {
+            tid.send(trtHiRPCRR(), doc); 
+            response = receiveTimeout(cnt.worker_timeout.msecs, &trt_hirpc_response);
+
+        } else {
+            tid.send(dartHiRPCRR(), doc); 
+            response = receiveTimeout(cnt.worker_timeout.msecs, &dart_hirpc_response);
+        }
+
+        if (!response) {
+            set_error_msg(ServiceCode.timeout);
+            writeln("Timeout on interface request");
+            return;
+        }
+
+        writeln("Interface successful response ", receiver.method.full_name);
+    } catch(Exception e) {
+        assumeWontThrow(set_error_msg(ServiceCode.internal, e.msg));
     }
 }
 
 import tagion.services.exception;
-
-void checkSocketError(int rc) {
-    if (rc != 0) {
-        import std.format;
-
-        throw new ServiceException(format("Failed to dial %s", nng_errstr(rc)));
-    }
-}
+import tagion.basic.tagionexceptions;
 
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
@@ -185,7 +191,7 @@ struct DARTInterfaceService {
         }
         pool.init();
         auto rc = sock.listen(opts.sock_addr);
-        checkSocketError(rc);
+        check!ServiceError(rc == nng_errno.NNG_OK, format("Failed to dial %s", nng_errstr(rc)));
 
         // Receive actor signals
         run();

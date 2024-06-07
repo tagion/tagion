@@ -1,3 +1,4 @@
+/// Least recently used data structure
 module tagion.utils.LRU;
 
 // EvictCallback is used to get a callback when a cache entry is evicted
@@ -77,7 +78,7 @@ class LRU(K, V) {
                 return evict;
             }
 
-            // updates the value if exists or inserts if flag pecified
+            // updates the value if it exists or inserts if flag specified
             bool update(const(K) key, ref V value, bool upsert = false){
                 auto ent = key in items;
                 if (ent !is null) {

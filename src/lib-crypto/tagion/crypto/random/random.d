@@ -1,3 +1,4 @@
+/// Cryptographic Random using system functions
 module tagion.crypto.random.random;
 
 import std.format;
@@ -9,7 +10,7 @@ static if (ver.iOS || ver.OSX || ver.BSD || ver.Android) {
     enum is_getrandom = false;
     extern (C) void arc4random_buf(void* buf, size_t buflen) pure nothrow;
 }
-else static if (ver.linux) {
+else static if (ver.linux || ver.WASI) {
     enum is_getrandom = true;
     extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) pure nothrow;
 }

@@ -8,6 +8,6 @@ struct LoggerOptions {
     bool flush; /// Will automatic flush the logger file when a message has been received
     bool to_console; /// Will duplicate logger information to the console
     uint mask; /// Logger mask
-    uint trunc_size; /// Truct size in bytes (if zero the logger file is not truncated)
+    uint trunc_size; /// Struct size in bytes (if zero the logger file is not truncated)
     mixin JSONCommon;
 }

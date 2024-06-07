@@ -1,3 +1,4 @@
+/// Bitmasks with simple interface
 module tagion.utils.BitMask;
 
 enum WORD_SIZE = size_t(size_t.sizeof * 8);
@@ -282,7 +283,7 @@ struct BitMask {
 
         BitMask bits_a, bits_b;
         enum op_list = ["|", "&", "^", "-"];
-        //enum righ
+        //enum right
         static struct Expected {
             BitMask Y, A, B; /// y = a OP b
         }

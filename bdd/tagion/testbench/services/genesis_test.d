@@ -30,6 +30,7 @@ import tagion.script.TagionCurrency;
 import tagion.tools.wallet.WalletInterface;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.wallet.SecureWallet : SecureWallet;
+import tagion.wallet.request;
 import tagion.basic.Types : Buffer;
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
@@ -101,7 +102,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
         int start = 0;
         while(start < max) {
             if (start == 20) {
-                sendSubmitHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+                sendHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
             }
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             log("received something");
@@ -127,10 +128,11 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
             histories[task_name].epochs ~= epochs;
             writefln("EPOCH NUMBERS %s", epochs.map!(e => format("%(%02x%)", e.previous)).array);
 
-
             start++;
         }
-        // (() @trusted => writefln("%s", histories))();
+
+        const epoch_lengths = histories.byValue.map!(h => h.epochs.length).array;
+        check(epoch_lengths.all!(e_len => e_len > 2), format("all nodes did not create at least two epochs got %s", epoch_lengths)); 
 
         return result_ok;
     }

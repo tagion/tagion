@@ -2,12 +2,13 @@ module tagion.actor.exceptions;
 
 import std.traits;
 import std.exception;
-import tagion.basic.tagionexceptions : TagionException;
+import std.format;
+import std.conv;
 
+import tagion.basic.tagionexceptions : TagionException;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
-import std.conv;
 
 // Fake Throwable hibon record constructor
 @recordType("throwable")
@@ -30,26 +31,21 @@ immutable struct TaskFailure {
     string task_name;
     Throwable throwable;
 
+    this(string task_name, const(Throwable) e) @trusted pure nothrow {
+        this.task_name = task_name;
+        this.throwable = cast(immutable) e;
+    }
+
     const(Document) toDoc() @safe const {
         auto hibon = new HiBON;
         hibon[(GetLabel!task_name).name] = task_name;
         hibon[(GetLabel!throwable).name] = _Throwable(throwable).toDoc;
         return Document(hibon);
     }
-}
 
-/++
- This function set the taskname set by the logger
- The version LOGGER must be enabled for this to work
- The function is used to send the exception to the task owner ownerTid
- Returns:
- The immutable version of the Exception
- +/
-@trusted
-static immutable(TaskFailure) taskException(const(Throwable) e) nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
-    import tagion.logger.Logger;
-
-    return immutable(TaskFailure)(log.task_name, cast(immutable) e);
+    string toString() const nothrow {
+        return assumeWontThrow(format!"FROM(%s): %s"(task_name, throwable));
+    }
 }
 
 /**
@@ -73,4 +69,11 @@ static immutable(TaskFailure) taskException(const(Throwable) e) nothrow { //if (
     this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
+}
+
+unittest {
+    auto e = new RunFailure("this is a unittest");
+    immutable tf = TaskFailure("some_task", e);
+    tf.toDoc;
+    tf.toString;
 }

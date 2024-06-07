@@ -13,7 +13,7 @@ help-release:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make release", "Compiles and links"}
-	${call log.help, "make release-<targer>", "Call the make <target> in release mode"}
+	${call log.help, "make release-<target>", "Call the make <target> in release mode"}
 	${call log.close}
 
 .PHONY: help-release

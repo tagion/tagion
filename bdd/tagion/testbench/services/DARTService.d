@@ -9,7 +9,7 @@ import std.stdio;
 import std.typecons : Tuple;
 import tagion.actor;
 import tagion.behaviour;
-import tagion.dart.DARTBasic : DARTIndex;
+import tagion.dart.DARTBasic : DARTIndex, Params;
 import tagion.dart.Recorder;
 import tagion.hibon.Document;
 import tagion.services.DART;
@@ -227,7 +227,7 @@ class WriteAndReadFromDartDb {
 
             auto hirpc_bullseye_receiver = hirpc.receive(hirpc_bullseye_res[1]);
             auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
-            auto hirpc_bullseye = hirpc_message[DARTFile.Params.bullseye].get!DARTIndex;
+            auto hirpc_bullseye = hirpc_message[Params.bullseye].get!DARTIndex;
             check(bullseye_res[1] == hirpc_bullseye, "hirpc bullseye not the same");
 
             /// read the archives
@@ -259,7 +259,7 @@ class WriteAndReadFromDartDb {
             auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
             auto read_check = hirpc.receive(read_check_tuple[1]);
 
-            auto check_dart_indices = read_check.response.result[DART.Params.dart_indices].get!Document[].map!(
+            auto check_dart_indices = read_check.response.result[Params.dart_indices].get!Document[].map!(
                     d => d.get!DARTIndex).array;
 
             check(check_dart_indices.length == 0, "should be empty");
@@ -267,17 +267,17 @@ class WriteAndReadFromDartDb {
         }
         submask.unsubscribe(modify_log);
 
-        auto dummy_indexes = [DARTIndex([1, 2, 3, 4]), DARTIndex([2, 3, 4, 5])];
-        Document check_read_sender = dartCheckRead(dummy_indexes, hirpc).toDoc;
+        auto dummy_indices = [DARTIndex([1, 2, 3, 4]), DARTIndex([2, 3, 4, 5])];
+        Document check_read_sender = dartCheckRead(dummy_indices, hirpc).toDoc;
         writefln("read_sender %s", check_read_sender.toPretty);
         handle.send(dartHiRPCRR(), check_read_sender);
         auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
         auto read_check = hirpc.receive(read_check_tuple[1]);
 
-        auto check_dart_indices = read_check.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!DARTIndex)
+        auto check_dart_indices = read_check.response.result[Params.dart_indices].get!Document[].map!(d => d.get!DARTIndex)
             .array;
 
-        check(equal(check_dart_indices, dummy_indexes), "error in hirpc checkread");
+        check(equal(check_dart_indices, dummy_indices), "error in hirpc checkread");
 
         auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender, false);
         auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender, false);

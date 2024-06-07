@@ -7,3 +7,6 @@
 [submodule "bdd/tagion/testbench/tvm/testsuite"]
     path = bdd/tagion/testbench/tvm/testsuite
     url = https://github.com/WebAssembly/testsuite.git
+[submodule "src/fork-wasmer/wasmer"]
+	path = src/fork-wasmer/wasmer
+	url = https://github.com/wasmerio/wasmer.git

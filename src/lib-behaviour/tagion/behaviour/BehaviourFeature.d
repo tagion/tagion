@@ -1,5 +1,5 @@
 /**
- * Handels all BDD information concerning the Feature
+ * Handles all BDD information concerning the Feature
  *    Comments, description, function-names, scenarios and actions
  */
 module tagion.behaviour.BehaviourFeature;
@@ -107,13 +107,13 @@ struct ScenarioGroup {
 }
 
 /** 
- * Contains all the sceanrio groups and information of the Feature
+ * Contains all the scenario groups and information of the Feature
  */
 @safe
 struct FeatureGroup {
     @optional string alternative;
     Info!Feature info; /// Information of the Feature
-    ScenarioGroup[] scenarios; /// This all the information of each Sceanrio
+    ScenarioGroup[] scenarios; /// This all the information of each Scenario
     mixin HiBONRecord!();
 }
 
@@ -235,7 +235,7 @@ unittest {
 }
 
 /**
-* Get the action propery of the alias T
+* Get the action property of the alias T
 * Returns: The behaviour property of T and void if T does not have a behaviour property
 */
 template getProperty(alias T) {

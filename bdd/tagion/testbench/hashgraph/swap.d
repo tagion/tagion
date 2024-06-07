@@ -96,7 +96,7 @@ class NodeSwap {
         }
 
         writefln("ADDING NEW NODE");
-        network.addNode(node_names.length, new_node, Yes.joining);
+        network.addNode(new TestRefinement, node_names.length, new_node, Yes.joining);
 
         foreach (i; 0 .. MAX_CALLS) {
             const channel_number = network.random.value(0, network.channels.length);

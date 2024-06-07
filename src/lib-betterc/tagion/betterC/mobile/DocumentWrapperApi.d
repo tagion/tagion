@@ -325,7 +325,7 @@ extern (C) {
     //         assert(!recyclerDoc.exists(0));
     //         assert(!recyclerDoc.exists(1));
 
-    //         // Append two docs and check whether they exists by indicies
+    //         // Append two docs and check whether they exists by indices
     //         const data = hib.serialize;
     //         create_doc(data.ptr, cast(uint) data.length);
     //         assert(recyclerDoc.exists(1));
@@ -333,7 +333,7 @@ extern (C) {
     //         create_doc(data.ptr, cast(uint) data.length);
     //         assert(recyclerDoc.exists(0));
     //     }
-    //     // Range of Document' indexes in RecyclerDoc [0 .. 3]
+    //     // Range of Document' indices in RecyclerDoc [0 .. 3]
 
     //     // Tests for doc_get_int_by_key()
     //     {
@@ -342,7 +342,7 @@ extern (C) {
     //         assert(doc_get_int_by_key(2, "doc1", 4) is 100);
     //         assert(doc_get_int_by_key(3, "doc1", 4) is 100);
 
-    //         // Testing an absense of the key
+    //         // Testing an absence of the key
     //         assert(doc_get_int_by_key(0, "doc", 3) is BAD_RESULT);
     //         assert(doc_get_int_by_key(1, "doc", 3) is BAD_RESULT);
     //         assert(doc_get_int_by_key(2, "doc", 3) is BAD_RESULT);
@@ -368,7 +368,7 @@ extern (C) {
     //         assert(doc_get_int_by_id(2, 1) is 101);
     //         assert(doc_get_int_by_id(3, 1) is 101);
 
-    //         // Testing an absense of the key
+    //         // Testing an absence of the key
     //         assert(doc_get_int_by_id(0, 3) is BAD_RESULT);
     //         assert(doc_get_int_by_id(1, 3) is BAD_RESULT);
     //         assert(doc_get_int_by_id(2, 3) is BAD_RESULT);
@@ -400,7 +400,7 @@ extern (C) {
     //         assert(fromStringz(doc_get_str_by_key(2, "doc2", 4)) == expected_str);
     //         assert(fromStringz(doc_get_str_by_key(3, "doc2", 4)) == expected_str);
 
-    //         // Testing an absense of the key
+    //         // Testing an absence of the key
     //         assert(doc_get_str_by_key(0, "doc", 3) is null);
     //         assert(doc_get_str_by_key(1, "doc", 3) is null);
     //         assert(doc_get_str_by_key(2, "doc", 3) is null);

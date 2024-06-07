@@ -23,7 +23,6 @@ import tagion.logger.LogRecords : LogInfo;
 import tagion.logger.Logger;
 import tagion.services.epoch_creator;
 import tagion.services.messages;
-import tagion.services.monitor;
 import tagion.services.options;
 import tagion.services.options : NetworkMode;
 import tagion.script.namerecords : NetworkNodeRecord;
@@ -35,7 +34,7 @@ import tagion.utils.pretend_safe_concurrency;
 enum feature = Feature(
             "EpochCreator service",
             [
-        "This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
+        "This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
 ]);
 
 alias FeatureContext = Tuple!(
@@ -50,16 +49,15 @@ class SendPayloadAndCreateEpoch {
         shared(StdSecureNet) node_net;
         string name;
         EpochCreatorOptions opts;
-        MonitorOptions monitor_opts;
     }
 
-    immutable(size_t) number_of_nodes;
+    uint number_of_nodes;
 
     Node[] nodes;
     ActorHandle[] handles;
     Document send_payload;
 
-    this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts, immutable size_t number_of_nodes) {
+    this(EpochCreatorOptions epoch_creator_options, uint number_of_nodes) {
         import tagion.services.options;
 
         this.number_of_nodes = number_of_nodes;
@@ -74,9 +72,8 @@ class SendPayloadAndCreateEpoch {
                 net = null;
             }
             writefln("node task name %s", task_names.epoch_creator);
-            auto monitor_local_options = monitor_opts;
-            nodes ~= Node(shared_net, task_names.epoch_creator, epoch_creator_options, monitor_local_options);
-            addressbook[net.pubkey] = new NetworkNodeRecord(net.pubkey, task_names.epoch_creator);
+            nodes ~= Node(shared_net, task_names.epoch_creator, epoch_creator_options);
+            addressbook.set(new NetworkNodeRecord(net.pubkey, task_names.epoch_creator));
         }
 
     }
@@ -92,7 +89,6 @@ class SendPayloadAndCreateEpoch {
                     NetworkMode.INTERNAL,
                     number_of_nodes,
                     n.node_net,
-                    cast(immutable) n.monitor_opts,
                     TaskNames(),
             );
         }
@@ -129,14 +125,14 @@ class SendPayloadAndCreateEpoch {
         uint counter;
         do {
             const received = receiveOnlyTimeout!(LogInfo, const(Document))(27.seconds);
-            check(received[0].symbol_name.canFind("epoch_succesful"), "Event should have been epoch_succesful");
+            check(received[0].symbol_name.canFind("epoch_successful"), "Event should have been epoch_successful");
             const epoch = received[1];
 
             import tagion.hashgraph.Refinement : FinishedEpoch;
             import tagion.hibon.HiBONRecord;
 
             check(epoch.isRecord!FinishedEpoch, "received event should be an FinishedEpoch record");
-            const events = FinishedEpoch(epoch).events;
+            const events = FinishedEpoch(epoch).event_packages;
             writefln("Received epoch %s \n event_length %s", epoch.toPretty, events.length);
 
             if (events.length == 1) {

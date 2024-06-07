@@ -119,7 +119,7 @@ static assert(uint.sizeof == 4);
 
     @property @nogc const pure nothrow {
         @safe bool empty() {
-            return _data.length <= ubyte.sizeof;
+            return _data.length == 0 || _data[0] == 0;
         }
 
         uint size() {
@@ -146,7 +146,7 @@ static assert(uint.sizeof == 4);
     }
 
     unittest { // Empty doc
-    {
+        {
             const doc = Document();
             assert(doc._data.length is 0);
             assert(doc.data.length is 1);
@@ -163,6 +163,18 @@ static assert(uint.sizeof == 4);
         {
             immutable(ubyte[]) _data = [0];
             assert(_data.length is 1);
+            const doc = Document(_data);
+            assert(doc.data.length is 1);
+            assert(doc.empty);
+            assert(doc.size is 0);
+            assert(doc.length is 0);
+            assert(doc[].empty);
+            assert(doc.isInorder);
+        }
+
+        {
+            immutable(ubyte[]) _data = [0, 0, 0, 0];
+            assert(_data.length is 4);
             const doc = Document(_data);
             assert(doc.data.length is 1);
             assert(doc.empty);
@@ -217,7 +229,7 @@ static assert(uint.sizeof == 4);
     /++
      This function check's if the Document is a valid HiBON format
      Params:
-     If the delegate error_callback is the this function is call when a error occures
+     If the delegate error_callback is the this function is call when a error occurs
      Returns:
      Error code of the validation
      +/
@@ -398,7 +410,7 @@ static assert(uint.sizeof == 4);
     }
 
     /++
-     Check if the Document can be clasified as an Array
+     Check if the Document can be classified as an Array
      Returns:
      Is true if all the keys in ordred numbers
      +/
@@ -487,7 +499,7 @@ static assert(uint.sizeof == 4);
     alias serialize = data;
 
     /++
-     Retruns:
+     Returns:
      The number of bytes taken up by the key in the HiBON serialized stream
      +/
     @nogc static size_t sizeKey(const(char[]) key) pure nothrow {
@@ -1031,7 +1043,7 @@ static assert(uint.sizeof == 4);
             }
 
             /++
-             Tryes to convert the value to the type T.
+             Tries to convert the value to the type T.
              Returns:
              true if the function succeeds
              +/
@@ -1075,8 +1087,8 @@ static assert(uint.sizeof == 4);
 
         @property @nogc const pure nothrow {
             /++
-             Retruns:
-             true if the elemnt is of T
+             Returns:
+             true if the element is of T
              +/
             bool isType(T)() {
                 enum E = Value.asType!T;
@@ -1171,7 +1183,7 @@ static assert(uint.sizeof == 4);
 
             /++
              Check if the type match That template.
-             That template must have one parameter T as followes
+             That template must have one parameter T as follows
              Returns:
              true if the element is the type That
              +/
@@ -1263,31 +1275,31 @@ static assert(uint.sizeof == 4);
                 //DOCUMENT_TYPE,  /// Warning document type
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION, /// Document can not be iterated because of a Document format fail
-                DOCUMENT_SIZE_INVALID_LEB128, /// The size of the document is not leb128 minimum invarinat
+                DOCUMENT_SIZE_INVALID_LEB128, /// The size of the document is not leb128 minimum invariant
                 CHILD_DOCUMENT_OUT_OF_BOUNDARY, /// Child document exceeds the parent document size
                 ELEMENT_OUT_OF_DOCUMENT_BOUNDARY, /// Element size exceeds the document size
                 VALUE_POS_OVERFLOW, /// Start position of the a value extends the length of the buffer
                 TOO_SMALL, /// Data stream is too small to contain valid data
                 ILLEGAL_TYPE, /// Use of internal types is illegal
                 INVALID_TYPE, /// Type is not defined
-                OVERFLOW, /// The specifed data does not fit into the data stream
+                OVERFLOW, /// The specified data does not fit into the data stream
                 ARRAY_SIZE_BAD, /// The binary-array size in bytes is not a multipla of element size in the array
                 KEY_ORDER, /// Error in the key order
                 KEY_NOT_DEFINED, /// Key in the target was not defined
                 KEY_INVALID, /// Key is not a valid string
                 //                KEY_SIZE_OVERFLOW, /// Key size overflow (Key size extents beyond the data buffer
                 KEY_POS_OVERFLOW, /// The start
-                BAD_SUB_DOCUMENT, /// Error convering sub document
+                BAD_SUB_DOCUMENT, /// Error converting sub document
                 NOT_AN_ARRAY, /// Not an Document array
                 KEY_ZERO_SIZE, /// Invalid zero key size
                 KEY_INVALID_LEB128, /// Key size is not leb128 minimum invariant
-                KEY_INDEX_INVALID_LEB128, /// The key index is not leb128 minimum invarinat
+                KEY_INDEX_INVALID_LEB128, /// The key index is not leb128 minimum invariant
                 ELEMENT_SIZE_INVALID_LEB128, /// Size of Element is not leb128 minimum invariant  
-                VALUE_SIZE_INVALID_LEB128, /// The size of the value element is not leb128 minimun invarinat
+                VALUE_SIZE_INVALID_LEB128, /// The size of the value element is not leb128 minimum invariant
                 RESERVED_KEY, /// Name of the key is reserved 
                 RESERVED_HIBON_TYPE, /// HiBON type name is reserved for internal use
-                UNKNOW_TAGION, /// Unknow error (used when some underlaying function thows an TagionException
-                UNKNOW /// Unknow error (used when some underlaying function thows an Exception
+                UNKNOW_TAGION, /// Unknow error (used when some underlying function throws an TagionException
+                UNKNOW /// Unknow error (used when some underlying function throws an Exception
 
             }
 

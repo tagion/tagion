@@ -1,3 +1,4 @@
+/// AES crypto implementation
 module tagion.crypto.aes.AESCrypto;
 
 import tagion.basic.Debug : __format;

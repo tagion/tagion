@@ -8,7 +8,7 @@ env-crypto:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
 	$(call log.env, CRYPTO_DFILES,$(CRYPTO_DFILES))
-	$(call log.kvp, LCRYPTO_DIROOT,$(LCRYPTO_DIROOT))
+	$(call log.kvp, LCRYPTO_ROOT,$(LCRYPTO_ROOT))
 	$(call log.kvp, LCRYPTO_PACKAGE,$(LCRYPTO_PACKAGE))
 	$(call log.close)
 

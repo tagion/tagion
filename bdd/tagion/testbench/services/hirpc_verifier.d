@@ -46,7 +46,7 @@ class TheDocumentIsNotAHiRPC {
     string hirpc_verifier_reject;
     this(ActorHandle _hirpc_verifier_handle, string _success, string _reject) {
         hirpc_verifier_handle = _hirpc_verifier_handle;
-        hirpc_verifier_success = _success; // The name of the service which successfull documents are sent to
+        hirpc_verifier_success = _success; // The name of the service which successful documents are sent to
         hirpc_verifier_reject = _reject; // The name of the service which rejected documents are sent to
     }
 
@@ -113,7 +113,7 @@ class CorrectHiRPCFormatAndPermission {
     HiRPC hirpc;
     this(ActorHandle _hirpc_verifier_handle, string _success, string _reject) {
         hirpc_verifier_handle = _hirpc_verifier_handle;
-        contract_success = _success; // The name of the service which successfull documents are sent to
+        contract_success = _success; // The name of the service which successful documents are sent to
         contract_reject = _reject; // The name of the service which rejected documents are sent to
         hirpc = HiRPC(new HiRPCNet("someObscurePassphrase"));
     }
@@ -185,7 +185,7 @@ class CorrectHiRPCWithPermissionDenied {
     HiRPC bad_hirpc;
     this(ActorHandle _hirpc_verifier_handle, string _success, string _reject) {
         hirpc_verifier_handle = _hirpc_verifier_handle;
-        hirpc_verifier_success = _success; // The name of the service which successfull documents are sent to
+        hirpc_verifier_success = _success; // The name of the service which successful documents are sent to
         hirpc_verifier_reject = _reject; // The name of the service which rejected documents are sent to
         bad_hirpc = HiRPC(null);
     }
@@ -207,7 +207,7 @@ class CorrectHiRPCWithPermissionDenied {
     @When("do scenario \'#permission\'")
     Document scenarioPermission() {
         const receiveTuple = receiveOnlyTimeout!(ServiceCode, Document);
-        check(receiveTuple[0] == ServiceCode.sign, "The docuemnt was not rejected for the expected reason : " ~ receiveTuple[0]
+        check(receiveTuple[0] == ServiceCode.sign, "The document was not rejected for the expected reason : " ~ receiveTuple[0]
                 .toString);
         check(receiveTuple[1] == invalid_doc, "The rejected doc was not the same as was sent");
 
@@ -235,7 +235,7 @@ class HIRPCWithIllegalMethod {
     SecureNet net;
     this(ActorHandle _hirpc_verifier_handle, string _success, string _reject) {
         hirpc_verifier_handle = _hirpc_verifier_handle;
-        contract_success = _success; // The name of the service which successfull documents are sent to
+        contract_success = _success; // The name of the service which successful documents are sent to
         contract_reject = _reject; // The name of the service which rejected documents are sent to
 
         net = new HiRPCNet("someObscurePassphrase");
@@ -288,7 +288,7 @@ class HIRPCWithIllegalMethod {
         );
 
         const receiveTuple = receiveOnlyTimeout!(ServiceCode, Document);
-        check(receiveTuple[0] == ServiceCode.params, "The docuemnt was not rejected for the expected reason : " ~ receiveTuple[0]
+        check(receiveTuple[0] == ServiceCode.params, "The document was not rejected for the expected reason : " ~ receiveTuple[0]
                 .toString);
         check(receiveTuple[1] == invalid_doc, "The rejected doc was not the same as was sent");
 

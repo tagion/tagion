@@ -1,3 +1,4 @@
+/// Low-level wrapper on secp256k1
 module tagion.crypto.secp256k1.NativeSecp256k1;
 
 @safe:
@@ -203,7 +204,7 @@ class NativeSecp256k1 {
         keypair.length = secp256k1_keypair.data.length;
         auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
         const rt = secp256k1_keypair_create(_ctx, _keypair, &seckey[0]);
-        check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_CREATE_KEYPAIR);
+        check(rt == 1, ConsensusFailCode.SECURITY_FAILED_TO_CREATE_KEYPAIR);
     }
 
     @trusted
@@ -256,13 +257,13 @@ class NativeSecp256k1 {
         secp256k1_pubkey xy_pubkey;
         {
             const rt = secp256k1_keypair_pub(_ctx, &xy_pubkey, &keypair);
-            check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
+            check(rt == 1, ConsensusFailCode.SECURITY_FAILED_PUBKEY_FROM_KEYPAIR);
         }
         ubyte[PUBKEY_SIZE] pubkey;
         {
             size_t len = PUBKEY_SIZE;
             const rt = secp256k1_ec_pubkey_serialize(_ctx, &pubkey[0], &len, &xy_pubkey, SECP256K1.EC_COMPRESSED);
-            check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
+            check(rt == 1, ConsensusFailCode.SECURITY_FAILED_PUBKEY_FROM_KEYPAIR);
         }
         return pubkey.idup;
 
@@ -290,7 +291,7 @@ class NativeSecp256k1 {
         const _keypair = cast(secp256k1_keypair*)(&keypair[0]);
         ubyte[SIGNATURE_SIZE] signature;
         const rt = secp256k1_schnorrsig_sign32(_ctx, &signature[0], &msg[0], _keypair, &aux_random[0]);
-        check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_SIGN_MESSAGE);
+        check(rt == 1, ConsensusFailCode.SECURITY_FAILED_TO_SIGN_MESSAGE);
         return signature.idup;
     }
 
@@ -337,7 +338,6 @@ class NativeSecp256k1 {
     do {
         secp256k1_xonly_pubkey xonly_pubkey;
         int ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
-
         if (ret != 0) {
             ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
         }
@@ -376,7 +376,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     const pubkey = crypt.getPubkey(keypair);
     assert(pubkey == expected_pubkey);
     const signature_ok = crypt.verify(msg_hash, signature, pubkey);
-    assert(signature_ok, "Schnorr signing failded");
+    assert(signature_ok, "Schnorr signing failed");
 
 }
 

@@ -80,7 +80,7 @@ struct KeyRecover {
      * Params:
      *   questions = List of questions 
      *   answers = List for answers
-     * Returns: List of common hashs of question and answers
+     * Returns: List of common hashes of question and answers
      */
     immutable(ubyte)[][] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
     in {
@@ -103,7 +103,7 @@ struct KeyRecover {
      * Params:
      *   M = number of question 
      *   N = confidence
-     * Returns: totol number of combinations
+     * Returns: total number of combinations
      */
     @nogc
     static uint numberOfSeeds(const uint M, const uint N) pure nothrow
@@ -198,9 +198,9 @@ struct KeyRecover {
         }
         check(A.length > 1, message("Number of questions must be more than one"));
         check(confidence <= A.length, message(
-                "Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
+                "Number of questions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, confidence));
-        check(A.length <= MAX_QUESTION, message("Mumber of question is %d but it should not exceed %d",
+        check(A.length <= MAX_QUESTION, message("Number of question is %d but it should not exceed %d",
                 A.length, MAX_QUESTION));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
@@ -246,7 +246,7 @@ struct KeyRecover {
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
         check(A.length > 1, message("Number of questions must be more than one"));
         check(generator.confidence <= A.length,
-                message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
+                message("Number of questions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, generator.confidence));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);

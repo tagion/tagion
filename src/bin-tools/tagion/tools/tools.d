@@ -11,24 +11,27 @@ int main(string[] args) {
     import dartutil = tagion.tools.dartutil.dartutil;
     import graphview = tagion.tools.graphview;
     import hibonutil = tagion.tools.hibonutil;
+    import hirpc = tagion.tools.hirpc;
     import hirep = tagion.tools.hirep.hirep;
     import neuewelle = tagion.tools.neuewelle;
     import signs = tagion.tools.signs;
-    import subscribe = tagion.tools.subscribe;
+    import subscriber = tagion.tools.subscriber;
     import tagionshell = tagion.tools.tagionshell;
     import tprofview = tagion.tools.tprofview;
     import geldbeutel = tagion.tools.wallet.geldbeutel;
     import wasmutil = tagion.tools.wasmutil.wasmutil;
     import kette = tagion.tools.kette;
     import ifiler = tagion.tools.ifiler.ifiler;
-    import devutils = tagion.tools.devutils;
     import vergangenheit = tagion.tools.vergangenheit.vergangenheit;
+    import tvmutil = tagion.tools.tvmutil.tvmutil;
+    import envelope = tagion.tools.envelope;
 
     alias alltools = AliasSeq!(
-            subscribe,
+            subscriber,
             neuewelle,
             dartutil,
             hibonutil,
+            hirpc,
             blockutil,
             tprofview,
             graphview,
@@ -42,8 +45,9 @@ int main(string[] args) {
             callstack,
             ifiler,
             kette,
-            devutils,
             vergangenheit,
+            tvmutil,
+            envelope,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

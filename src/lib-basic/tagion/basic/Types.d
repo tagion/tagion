@@ -1,14 +1,10 @@
+/// Basic Types ontop of Buffer
 module tagion.basic.Types;
 
 import std.traits : Unqual;
 import std.typecons : Typedef, TypedefType;
 
 @safe:
-enum BillType {
-    NON_USABLE,
-    TAGIONS,
-    CONTRACTS
-}
 
 alias Buffer = immutable(ubyte)[]; /// General buffer
 /+
@@ -52,18 +48,6 @@ unittest {
     const(MyBuf) buf = [1, 2, 3, 4];
     MyBuf mut_buf = buf.mut;
 }
-
-/++
- Genera signal
-+/
-enum Control {
-    LIVE = 1, /// Send to the ownerTid when the task has been started
-    STOP, /// Send when the child task to stop task
-    //    FAIL,   /// This if a something failed other than an exception
-    END /// Send for the child to the ownerTid when the task ends
-}
-
-private import std.range;
 
 enum FileExtension {
     json = ".json", /// JSON File format
@@ -113,11 +97,11 @@ static unittest {
     static assert(!isTypedef!int);
 }
 
-enum BASE64Indetifyer = '@';
+enum BASE64Identifier = '@';
 import std.base64;
 
 string encodeBase64(const(ubyte[]) data) pure nothrow {
-    const result = BASE64Indetifyer ~ Base64URL.encode(data);
+    const result = BASE64Identifier ~ Base64URL.encode(data);
     return result.idup;
 }
 

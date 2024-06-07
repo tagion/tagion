@@ -25,7 +25,7 @@ struct Compare {
     alias ErrorCallback = bool delegate(const Event e1, const Event e2, const ErrorCode code) nothrow @safe;
     const HashGraph h1, h2;
     const ErrorCallback error_callback;
-    int order_offset;
+    long order_offset;
     long round_offset;
     uint count;
     this(const HashGraph h1, const HashGraph h2, const ErrorCallback error_callback) {

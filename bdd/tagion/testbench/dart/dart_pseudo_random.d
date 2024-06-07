@@ -77,7 +77,7 @@ class AddPseudoRandomData {
 
     @When("I randomly add all the data stored in the table to the two darts.")
     Document darts() {
-        // shufflerandom seems to be modifying and saving the state. Research tommorow.
+        // shufflerandom seems to be modifying and saving the state. Research tomorrow.
 
         // writefln("%s", typeof(info.states));
 

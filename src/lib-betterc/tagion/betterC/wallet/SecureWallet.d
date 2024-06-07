@@ -376,7 +376,7 @@ struct SecureWallet(Net) {
     //         assert(!secure_wallet.isLoggedin);
     //     }
 
-    //     { // Key Recover faild
+    //     { // Key Recover failed
     //         auto test_answers = dummey_amswers.dup;
     //         test_answers[0] = "Bad answer 0";
     //         test_answers[3] = "Bad answer 1";

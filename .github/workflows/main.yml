@@ -20,21 +20,6 @@ permissions:
   id-token: write
 
 jobs:
-  dscanner-check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    continue-on-error: true
-    steps:
-      - uses: dlang-community/setup-dlang@v1
-        with:
-          compiler: dmd-latest
-      - uses: actions/checkout@v4
-      - run: |
-          for i in `find src/* -maxdepth 0 -type d | grep -v "lib-nngd"`; do
-            echo "Checking $i"
-            dub run dscanner -- $i --styleCheck -f "github" | grep --extended-regexp -v "undocumented|style_check|long_line_check" || echo false
-          done
-
   build:
     runs-on: CI
     timeout-minutes: 5
@@ -51,7 +36,7 @@ jobs:
       - name: Build tagion
         run: |
           export DC=${{ env.DC }}
-          make tagion release -j || make proper tagion release
+          make tagion release || make proper tagion release
 
       - name: Post run
         if: always()
@@ -78,7 +63,7 @@ jobs:
       - name: Run unittest
         run: |
           export DC=${{ env.DC }}
-          make unittest-cov -j || make proper unittest-cov
+          make unittest-cov || make proper unittest-cov
 
       - name: Report unittest
         run: |
@@ -103,6 +88,39 @@ jobs:
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
+  tauon-wasm:
+    runs-on: CI
+    steps:
+      - run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+      - run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore .
+      - name: Build and clone wasi
+        run: |
+          export DC=ldc2
+          make PLATFORM=wasm32-unknown-wasi wasi
+
+      - name: build tauon
+        run: | 
+          ldc2 --version
+          export DC=ldc2
+          make PLATFORM=wasm32-unknown-wasi clean-tauon tauon-test
+
+      - name: run wasmer test
+        run: |
+          source /home/gitbot/.wasmer/wasmer.sh 
+          export DC=ldc2
+          make PLATFORM=wasm32-unknown-wasi tauon-run
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with: 
+          name: tauon_wasm
+          path: build/wasm32-unknown-wasi/bin/tauon_test.wasm
+          if-no-files-found: error
 
   commit_stage_cov:
     if: ${{ vars.ENABLE_COV || false }}
@@ -167,6 +185,7 @@ jobs:
           export DC=${{ env.DC }}
           export TEST_STAGE=commit
           export TESTBENCH_FLAGS=--silent 
+          export UNSHARE_NET=1
           make bddtest -j || make proper bddtest
 
       - name: Report commit stage tests
@@ -192,7 +211,10 @@ jobs:
     runs-on: CD
     timeout-minutes: 12
     needs: [commit_stage, unittest, build]
-
+    strategy: 
+      fail-fast: false
+      matrix:
+        stage: [acceptance, tools]
     steps:
       - name: Copy Artifact to local machine
         run: |
@@ -205,21 +227,21 @@ jobs:
           pwd
           hostname
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
+          export UNSHARE_NET=1
           export DBIN=$PWD/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j${{ env.ACCEPTANCE_STAGE_CORES }} -b build/${{ env.TARGET }}/bin/testbench
+          ./build/${{ env.TARGET }}/bin/collider --silent -r ${{ matrix.stage }} -j${{ env.ACCEPTANCE_STAGE_CORES }} -b build/${{ env.TARGET }}/bin/testbench
 
       - name: Generate reports
         if: always()
         run: |
           sleep 5
-          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results
-          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/results
-          $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/acceptance/results
-          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results | grep "Test result success!"
-
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ matrix.stage }}/results
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/${{ matrix.stage }}/results
+          $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/${{ matrix.stage }}/results
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ matrix.stage }}/results | grep "Test result success!"
       - name: Post run
         if: always()
         run: |
@@ -248,17 +270,22 @@ jobs:
           if-no-files-found: error
 
   add_logs:
-    runs-on: CI
     if: failure()
+    runs-on: CI
     needs: acceptance_stage
     steps:
       - name: Add logs
         run: |
           cd ${{ env.ARTIFACT_DIR }}
+          add_log_file() {
+              file="$1"
+              url=$(gh gist create $file) || echo could not create gist
+              echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+          }
+
           log_files=$(find logs -name "*.log")
           for file in $log_files; do
-            url=$(gh gist create $file) || echo could not create gist
-            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+            add_log_file $file &
           done
 
       - name: Add callstacks
@@ -270,7 +297,24 @@ jobs:
             url=$(gh gist create $file.unstack) || echo could not create gist
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
+      - name: Generate graph svgs
+        run: |
+          cd ${{ env.ARTIFACT_DIR }}
+          graph_files=$(find logs -name "*_graph.hibon")
 
+          # Define a function to process each file
+          process_file() {
+              file="$1"
+              ./build/${{ env.TARGET }}/bin/tagion graphview --svg "$file" > "$file.svg" || echo could not create graph
+              url=$(gh gist create "$file.svg") || echo could not create gist
+              echo "[$(basename "$file").svg]($url)" >> $GITHUB_STEP_SUMMARY
+          }
+
+          # Export the function so that it's available to GNU Parallel
+          export -f process_file
+
+          # Use GNU Parallel to run the function in parallel
+          echo "$graph_files" | parallel -j 20 process_file >> $GITHUB_STEP_SUMMARY
   ddoc:
     if: ${{ github.ref == 'refs/heads/current' }}
     runs-on: ubuntu-latest
@@ -310,8 +354,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: successful_artifact
-          path: ${{ env.ARTIFACT_DIR }}.tar.gz
+          name: ${{ env.TARGET }}
+          path: ${{ env.ARTIFACT_DIR }}
           if-no-files-found: error
 
       - name: Post run
@@ -342,12 +386,11 @@ jobs:
 
       - name: Install android tools
         run: |
-          make -f tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
+          make PLATFORM=${{ matrix.arch }}-linux-android install-android-toolchain
 
       - name: Build
         run: |
-          export PATH="tools/ldc2-1.35.0-linux-x86_64/bin:$PATH"
-          make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
+          make DC=tools/ldc2-1.35.0-linux-x86_64/bin/ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
           file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
       - uses: actions/upload-artifact@v4
@@ -365,28 +408,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [arm64]
-        target: [apple-ios, apple-ios-simulator]
+        # arch: [arm64]
+        target: [arm64-apple-ios, arm64-apple-ios-simulator, x86_64-apple-ios-simulator]
     runs-on: macOS
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/ios
         with:
-          platform: ${{ matrix.arch }}-${{ matrix.target }}
-
-  docs_build:
-    if: ${{ github.ref == 'refs/heads/current' }}
-    environment:
-      name: github-pages
-      url: https://docs.tagion.org
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v4
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: "."
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          platform: ${{ matrix.target }}

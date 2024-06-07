@@ -1,3 +1,4 @@
+/// Bignumber to store in HiBON
 module tagion.hibon.BigNumber;
 
 protected import std.bigint;
@@ -239,7 +240,7 @@ import tagion.hibon.HiBONException;
         
 
         .check((x >= T.min) && (x <= T.max),
-                format("Coversion range violation for type %s, value %s is outside the [%d..%d]",
+                format("Conversion range violation for type %s, value %s is outside the [%d..%d]",
                 T.stringof, x, T.min, T.max));
         return x.to!T;
     }

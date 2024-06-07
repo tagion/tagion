@@ -101,7 +101,7 @@ struct label {
     string name; /// Name of the HiBON member
 }
 
-struct optional; /// This flag is set to true if this paramer is optional
+struct optional; /// This flag is set to true if this parameter is optional
 
 struct exclude; // Exclude the member from the HiBONRecord
 /++
@@ -446,7 +446,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         else {
                             static assert(is(BaseT == HiBON) || is(BaseT : const(Document)),
                                     format(`A sub class/struct '%s' of type %s must have"~
-                            " a toHiBON or must be ingnored with @exclude UDA tag`,
+                            " a toHiBON or must be ignored with @exclude UDA tag`,
                                     name, BaseT.stringof));
                             hibon[name] = cast(BaseT) m;
                         }
@@ -465,7 +465,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                     else {
                         static assert(0, format(
-                                "Convering for member '%s' of type" ~
+                                "converting for member '%s' of type" ~
                                 " %s is not supported by default",
                                 name, MemberT.stringof));
                     }
@@ -670,7 +670,7 @@ mixin template HiBONRecord(string CTOR = "") {
                 && isCallable!(valid) && __traits(compiles, valid(doc));
             static if (do_valid) {
                 check(valid(doc),
-                        format("Document verification faild for HiBONRecord %s",
+                        format("Document verification failed for HiBONRecord %s",
                         This.stringof));
             }
 
@@ -682,7 +682,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         format("%s.verify() should be const pure nothrow", This.stringof));
                 scope (exit) {
                     check(this.verify(),
-                            format("Document verification faild for HiBONRecord %s",
+                            format("Document verification failed for HiBONRecord %s",
                             This.stringof));
                 }
             }
@@ -703,7 +703,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
-                                    format("Fixed %s is already definded to %s" ~
+                                    format("Fixed %s is already defined to %s" ~
                                     " but is redefined for %s.%s",
                                     TYPENAME, TYPE, This.stringof,
                                     basename!(this.tupleof[i])));
@@ -790,7 +790,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         else {
                             static assert(0,
-                                    format("Convering for member '%s' of type %s" ~
+                                    format("Converting for member '%s' of type %s" ~
                                     " is not supported by default",
                                     name, MemberT.stringof));
 
@@ -841,7 +841,8 @@ unittest {
     import std.traits : OriginalType, Unqual;
     import tagion.hibon.HiBONException : HiBONException, HiBONRecordException;
 
-    @recordType("SIMPLE") static struct Simple {
+    @recordType("SIMPLE")
+    static struct Simple {
         int s;
         string text;
         mixin HiBONRecord!(q{
@@ -892,7 +893,9 @@ unittest {
     static assert(Simple.GetTupleIndex!"s" == 0);
     static assert(Simple.GetTupleIndex!"text" == 1);
     static assert(Simple.GetTupleIndex!"not defined" == -1);
-    @recordType("SIMPLELABEL") static struct SimpleLabel {
+
+    @recordType("SIMPLELABEL")
+    static struct SimpleLabel {
         @label("TEXT") string text;
         @label("$S") int s;
         mixin HiBONRecord!(q{
@@ -907,7 +910,9 @@ unittest {
     static assert(SimpleLabel.GetTupleIndex!"$S" == 1);
     static assert(SimpleLabel.GetTupleIndex!"TEXT" == 0);
     static assert(SimpleLabel.GetTupleIndex!"not defined" == -1);
-    @recordType("BASIC") static struct BasicData {
+
+    @recordType("BASIC")
+    static struct BasicData {
         int i32;
         uint u32;
         long i64;
@@ -1053,7 +1058,8 @@ unittest {
 
     { // Check verify member
         template NotBoth(bool FILTER) {
-            @recordType("NotBoth") static struct NotBoth {
+            @recordType("NotBoth")
+            static struct NotBoth {
                 static if (FILTER) {
                     @optional @(filter.Initialized) int x;
                     @optional @(filter.Initialized) @filter(q{a < 42}) int y;
@@ -1537,26 +1543,26 @@ unittest {
 
         { // Typedef on HiBON.type is used as key in an associative-array
             alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
-            alias Tabel = int[Bytes];
+            alias Table = int[Bytes];
             static struct StructBytes {
-                Tabel tabel;
+                Table table;
                 mixin HiBONRecord;
             }
 
-            static assert(isSpecialKeyType!Tabel);
+            static assert(isSpecialKeyType!Table);
 
             import std.outbuffer;
 
-            Tabel tabel;
+            Table table;
             auto list = [-17, 117, 3, 17, 42];
             auto buffer = new ubyte[int.sizeof];
             foreach (i; list) {
                 binwrite(buffer, i, 0);
-                tabel[Bytes(buffer.idup)] = i;
+                table[Bytes(buffer.idup)] = i;
             }
 
             StructBytes s;
-            s.tabel = tabel;
+            s.table = table;
             const s_doc = s.toDoc;
             const result = StructBytes(s_doc);
             assert(s_doc == result.toDoc);
@@ -1576,25 +1582,25 @@ unittest {
 
             alias Key = Typedef!(KeyStruct, KeyStruct.init, "Key");
 
-            alias Tabel = int[Key];
+            alias Table = int[Key];
 
             static struct StructKeys {
-                Tabel tabel;
+                Table table;
                 mixin HiBONRecord;
             }
 
-            Tabel list = [
+            Table list = [
                 Key(KeyStruct(2, "two")): 2, Key(KeyStruct(4, "four")): 4,
                 Key(KeyStruct(1, "one")): 1, Key(KeyStruct(3, "three")): 3
             ];
 
             StructKeys s;
-            s.tabel = list;
+            s.table = list;
 
             const s_doc = s.toDoc;
 
-            // Checks that the key is ordered in the tabel
-            assert(s_doc["tabel"].get!Document[].map!(
+            // Checks that the key is ordered in the table
+            assert(s_doc["table"].get!Document[].map!(
                     a => a.get!Document[0].get!Document.serialize).array.isStrictlyMonotonic);
 
             const result = StructKeys(s_doc);
@@ -1737,8 +1743,8 @@ unittest {
 }
 
 ///
-unittest { /// Reseved keys and types
-{ /// Check for reseved HiBON types
+unittest { /// Reserved keys and types
+{ /// Check for reserved HiBON types
         @recordType("$@")
         static struct S {
             int x;
@@ -1749,7 +1755,7 @@ unittest { /// Reseved keys and types
         const doc = s.toDoc;
         assert(doc.valid is Document.Element.ErrorCode.RESERVED_HIBON_TYPE);
     }
-    { /// Check for reseved keys 
+    { /// Check for reserved keys 
         static struct S {
             @label("$@x") int x;
             mixin HiBONRecord;

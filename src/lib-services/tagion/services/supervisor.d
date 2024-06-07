@@ -24,12 +24,24 @@ import tagion.services.options;
 import tagion.services.replicator;
 import tagion.services.transcript;
 import tagion.services.TRTService;
-import tagion.services.nodeInterface;
-import core.memory;
+import tagion.services.nodeinterface;
+import tagion.services.messages;
+import tagion.services.exception;
 
 @safe
 struct Supervisor {
-    // auto failHandler = (TaskFailure tf) @trusted { log("Stoping program because Supervisor caught exception: \n%s", tf); };
+    enum failHandler_ = (TaskFailure tf) @safe nothrow {
+        log.error("%s", tf);
+
+        if(cast(immutable(ServiceError))tf.throwable !is null) {
+            thisActor.stop = true;
+        }
+        else {
+            sendOwner(tf);
+        }
+    };
+
+    static assert(isFailHandler!(typeof(failHandler_)));
 
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         immutable tn = opts.task_names;
@@ -51,7 +63,8 @@ struct Supervisor {
         case INTERNAL:
             break;
         case LOCAL:
-            handles ~= _spawn!NodeInterfaceService(tn.node_interface, opts.node_interface, tn.epoch_creator);
+            handles ~= _spawn!NodeInterfaceService(tn.node_interface, opts.node_interface, tn
+                    .epoch_creator);
             break;
         case PUB:
             assert(0, "NetworkMode not supported");
@@ -60,7 +73,7 @@ struct Supervisor {
 
         // signs data
         handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
-                .network_mode, opts.wave.number_of_nodes, shared_net, opts.monitor, tn);
+                .network_mode, opts.wave.number_of_nodes, shared_net, tn);
 
         // verifies signature
         handles ~= _spawn!CollectorService(tn.collector, tn);
@@ -68,24 +81,31 @@ struct Supervisor {
         handles ~= _spawn!TVMService(tn.tvm, tn);
 
         // signs data
-        handles ~= spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
+        auto transcript_handle = _spawn!TranscriptService(
+                tn.transcript,
+                TranscriptOptions(),
+                opts.wave.number_of_nodes,
+                shared_net,
+                tn,
+                opts.trt.enable
+        );
+        handles ~= transcript_handle;
 
-        handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn
-                .dart_interface);
+        handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn.dart_interface);
 
-        if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
-            run();
-        }
-        else {
-            log.error("Not all children became Alive");
-        }
+        run(
+            (EpochShutdown m, long shutdown_) { //
+                transcript_handle.send(m, shutdown_);
+            },
+            failHandler_,
+        );
 
         log("Supervisor stopping services");
         foreach (handle; handles) {
-            handle.send(Sig.STOP);
+            handle.prioritySend(Sig.STOP);
         }
 
-        (() @trusted { // NNG shoould be safe
+        (() @trusted { // NNG should be safe
             import core.time;
             import nngd;
 

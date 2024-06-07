@@ -23,6 +23,7 @@ import tagion.script.common;
 import tagion.communication.HiRPC;
 import tagion.testbench.services.sendcontract;
 import tagion.wallet.SecureWallet;
+import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
@@ -104,7 +105,7 @@ int _main(string[] args) {
     import tagion.hibon.BigNumber;
     import tagion.wave.mode0;
 
-    const node_opts = getMode0Options(local_options, monitor: false);
+    const node_opts = getMode0Options(local_options);
 
     NodeSettings[] node_settings;
     auto nodenets = dummy_nodenets_for_testing(node_opts);
@@ -167,7 +168,7 @@ int _main(string[] args) {
 
     feature.run;
 
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     Thread.sleep(6.seconds);
 
     return 0;
@@ -232,8 +233,8 @@ class SendAInoiceUsingTheTRT {
         (() @trusted => Thread.sleep(1.seconds))();
         wallet1.payment([invoice_to_pay], signed_contract2, fee2);
 
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1_hirpc);
+        sendHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
+        sendHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1_hirpc);
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }

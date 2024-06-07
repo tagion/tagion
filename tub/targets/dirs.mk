@@ -13,8 +13,10 @@ export DOBJ := $(DBUILD)/obj
 export DLIB := $(DBUILD)/lib
 export DLOGCOV := $(DLOG)/cov
 export BUILDDOC := $(BUILD)/ddoc
+export DOCUSAURUS := ${abspath $(REPOROOT)/docs}
+export BUILDDOCUSAURUS := $(DOCUSAURUS)/build
 export TESTLOG := $(DLOG)/testlog
-export FUND := $(REPOROOT)/fundamental
+export FUND := $(abspath $(REPOROOT)/fundamental)
 export SCRIPTS := $(DTUB)/scripts
 
 # directories for integration and dart project
@@ -31,6 +33,8 @@ env-dirs:
 	$(call log.kvp, DLIB, $(DLIB))
 	$(call log.kvp, DLOG, $(DLOG))
 	$(call log.kvp, BUILDDOC, $(BUILDDOC))
+	$(call log.kvp, DOCUSAURUS, $(DOCUSAURUS))
+	$(call log.kvp, BUILDDOCUSAURUS, $(BUILDDOCUSAURUS))
 	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.kvp, DTUB, $(DTUB))
 	$(call log.kvp, TARGETS, $(TARGETS))

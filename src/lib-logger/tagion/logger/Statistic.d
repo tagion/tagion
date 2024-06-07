@@ -1,12 +1,14 @@
 module tagion.logger.Statistic;
 
+@safe:
+
 import std.exception : assumeWontThrow;
 import std.format;
 import std.meta : AliasSeq;
 import std.typecons : Flag, No, Tuple, Yes;
 import tagion.hibon.HiBONRecord;
 
-@safe @recordType("S")
+@recordType("S")
 struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     protected {
         double sum2 = 0.0;

@@ -29,6 +29,7 @@ import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
 import std.format;
 import tagion.wallet.SecureWallet;
+import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 
 mixin Main!(_main);
@@ -108,7 +109,7 @@ int _main(string[] args) {
     import tagion.hibon.BigNumber;
     import tagion.wave.mode0;
 
-    const node_opts = getMode0Options(local_options, monitor: false);
+    const node_opts = getMode0Options(local_options);
 
     NodeSettings[] node_settings;
     auto nodenets = dummy_nodenets_for_testing(node_opts);
@@ -170,7 +171,7 @@ int _main(string[] args) {
     feature.SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs(
         node_opts[0], wallets[0], wallets[1]);
     feature.run;
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     Thread.sleep(6.seconds);
     return 0;
 
@@ -243,7 +244,7 @@ class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
         writefln("contract: %s", contract.toPretty);
         writefln("contract: %(%02x%)", contract.toDoc.serialize);
         writefln("CONTRACT size %d", contract.toDoc.full_size);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, contract, wallet1_hirpc);
+        sendHiRPC(opts1.inputvalidator.sock_addr, contract, wallet1_hirpc);
         return result_ok;
     }
 
@@ -251,8 +252,8 @@ class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
     Document through() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 1: %s, WALLET 2: %s", wallet1_amount, wallet2_amount);
         const wallet1_expected = start_amount1 - wallet1.calcTotal(bills) - fee;
         check(wallet1_amount == wallet1_expected, format("Wallet1 should have %s had %s", wallet1_expected, wallet1_amount));

@@ -24,7 +24,7 @@ struct BehaviourOptions {
     string regex_exc;
     /** Extension for the generated BDD-files */
     string bdd_gen_ext;
-    /** D source formater (default dfmt) */
+    /** D source formatter (default dfmt) */
     string dfmt;
     /** Command line flags for the dfmt */
     string[] dfmt_flags;

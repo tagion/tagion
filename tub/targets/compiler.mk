@@ -1,30 +1,22 @@
 # If compiler is not defined, try to find it
 ifndef DC
-ifneq ($(strip $(shell which ldc2 2>/dev/null)),)
-DC=ldc2
-else ifneq ($(strip $(shell which ldc 2>/dev/null)),)
-DC=ldc
-else ifneq ($(strip $(shell which dmd 2>/dev/null)),)
-DC=dmd
-else
-DC=gdc
-endif
+DC!=which ldc2||which dmd||which gdc
 endif
 
 # Define a compiler family for other conditionals
-ifeq ($(DC),gdc)
+ifeq ($(notdir $(DC)),gdc)
 COMPILER=gdc
-else ifeq ($(DC),gdmd)
+else ifeq ($(notdir $(DC)),gdmd)
 COMPILER=dmd
-else ifeq ($(DC),ldc)
+else ifeq ($(notdir $(DC)),ldc)
 COMPILER=ldc
-else ifeq ($(DC),ldc2)
+else ifeq ($(notdir $(DC)),ldc2)
 COMPILER=ldc
-else ifeq ($(DC),ldmd)
+else ifeq ($(notdir $(DC)),ldmd)
 COMPILER=ldc
-else ifeq ($(DC),dmd)
+else ifeq ($(notdir $(DC)),dmd)
 COMPILER=dmd
-else ifeq ($(DC),dmd2)
+else ifeq ($(notdir $(DC)),dmd2)
 COMPILER=dmd
 endif
 
@@ -63,15 +55,17 @@ DCOMPILE_ONLY := -c
 DPREVIEW :=--preview
 NO_OBJ ?= --o-
 DJSON ?= --Xf
-DEXPORT_DYN?=-L-export-dynamic
 DCOV=--cov
 DIMPORTFILE=-J
 DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
+DINCIMPORT=-i
 DSTATICLIB=--lib
 DSHAREDLIB=--shared
 OUTPUTDIR = --od
-DWARN:=--wi
-DWARNERROR:=-w
+FULLY_QUALIFIED = -oq
+DDEBUG_DEFAULTLIB::=--link-defaultlib-debug
+DWARNERROR::=-w
+DWARNINFO::=--wi
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -86,6 +80,7 @@ DCOMPILE_ONLY := -c
 DPREVIEW :=-preview
 NO_OBJ ?= -o-
 DCOV ?=-cov
+DINCIMPORT=-i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
 OUTPUTDIR = -od
@@ -105,13 +100,13 @@ NO_OBJ ?= -o-
 DJSON ?= -Xf
 DCOV ?=-cov
 DIMPORTFILE=-J
-DINCIMPORT= -i
+DINCIMPORT=-i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
 OUTPUTDIR = -od
 VERRORS=-verrors=context
-DWARN:=-wi
-DWARNERROR:=-w
+DWARNERROR::=-w
+DWARNINFO::=-wi
 endif
 
 DIP1000 := $(DIP)1000
@@ -123,36 +118,26 @@ else
 # FPIC = -fPIC
 endif
 
-# Add -ldl flag for linux
-ifeq ($(OS),"linux")
-LDCFLAGS += $(LINKERFLAG)-ldl
-endif
-
-# Define model if not defined
-ifndef MODEL
-ifeq ($(ARCH), $(filter $(ARCH), x86_64 arm64))
-MODEL = 64
-else
-MODEL = 32
-endif
-endif
-
-# -m32 and -m64 switches cannot be used together with -march and -mtriple switches
-ifndef CROSS_OS
-ifeq ($(MODEL), 64)
-DFLAGS  += -m64
-LDCFLAGS += -m64
-else
-DFLAGS  += -m32
-LDCFLAGS += -m32
-endif
-endif
-
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
-DEBUG_FLAGS+=$(DDEBUG)
-DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
-DEBUG_FLAGS+=$(DEXPORT_DYN)
+DDEBUG_FLAGS+=$(DDEBUG)
+DDEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
+DDEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
+
+ifdef DEBUG_ENABLE
+DFLAGS+=$(DDEBUG_FLAGS)
+LDFLAGS+=$(LD_EXPORT_DYN)
+endif
+
+ifdef WARNINGS
+ifeq ($(WARNINGS),ERROR)
+DFLAGS+=$(DWARNERROR)
+else ifeq ($(WARNINGS),INFO)
+DFLAGS+=$(DWARNINFO)
+else # ifeq INFO
+DFLAGS+=$(DWARNINFO)
+endif
+endif # ifdef WARNINGS
 
 COVOPT=--DRT-covopt=\"dstpath:$(DLOG)\"
 
@@ -182,6 +167,7 @@ env-compiler:
 	${call log.kvp, DIP, $(DIP)}
 	${call log.kvp, DIP1000, $(DIP1000)}
 	${call log.kvp, DPREVIEW, $(DPREVIEW)}
+	${call log.kvp, DINCIMPORT, $(DINCIMPORT)}
 	${call log.kvp, DFPIC, $(DFPIC)}
 	${call log.kvp, DCOMPILE_ONLY, $(DCOMPILE_ONLY)}
 	${call log.kvp, DBETTERC, $(DBETTERC)}
@@ -189,9 +175,8 @@ env-compiler:
 	${call log.kvp, DEXPORT_DYN, $(DEXPORT_DYN)}
 	${call log.kvp, DCOV, $(DCOV)}
 	${call log.kvp, DIMPORTFILE, $(DIMPORTFILE)}
-	${call log.kvp, DEBUG_FLAGS, "$(DEBUG_FLAGS)"}
+	${call log.kvp, DDEBUG_FLAGS, "$(DDEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
-	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
 	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
 	${call log.close}
 

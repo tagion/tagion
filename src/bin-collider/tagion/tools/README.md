@@ -1,5 +1,5 @@
 # BDD documentation
-The following md file contains documentation on how to develop with bdds. For a general understanding of what BDD's are please see: [Continous_Delivery_What_is_BDD](https://www.youtube.com/watch?v=zYj70EsD7uI).
+The following md file contains documentation on how to develop with bdds. For a general understanding of what BDD's are please see: [Continuous_Delivery_What_is_BDD](https://www.youtube.com/watch?v=zYj70EsD7uI).
 
 # List of BDDs
 For a complete list of BDD's that have been created see: [BDDs](../../../../bdd/BDDS.md)
@@ -29,9 +29,9 @@ To get a list of all created BDD's use the following command:
 ### BDDfiles
 `make bddfiles`
 
-Generate all the bddfiles. If you for an example have created a `.md` file this will genrate the `.gen.md & .d` files associated. It also compiles the bddtool
+Generate all the bddfiles. If you for an example have created a `.md` file this will generate the `.gen.md & .d` files associated. It also compiles the bddtool
 
-### Enviroment
+### Environment
 `make bddenv`
 
 Generates a environment test script in build called `bddenv.sh`. This script can be used for manually running a single bdd with environment using ex. `./bddenv.sh <target>`. Remember you can configure the script to run with a different stage like: 
@@ -95,7 +95,7 @@ Will stop the reporter and screen.
 ## Creating a new BDD
 The following describes how to create a new BDD.
 ### Create a .md file for the feature
-*Start by creating* a `.md` file in `bdd/tagion/testbench/<folder>`. Here you describe your scenarios. For examples check out [BDDs](../../../../bdd/BDDS.md). The text you write can just be "unformatted" text since the tool willl automatically add formatting. 
+*Start by creating* a `.md` file in `bdd/tagion/testbench/<folder>`. Here you describe your scenarios. For examples check out [BDDs](../../../../bdd/BDDS.md). The text you write can just be "unformatted" text since the tool will automatically add formatting. 
 
 ### Main file for the feature
 

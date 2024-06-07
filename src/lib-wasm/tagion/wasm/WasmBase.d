@@ -84,10 +84,10 @@ enum VerboseMode {
 
 }
 
-static Verbose verbose;
+static Verbose wasm_verbose;
 
 static this() {
-    verbose.fout = stdout;
+    wasm_verbose.fout = stdout;
 }
 
 enum Section : ubyte {
@@ -134,7 +134,7 @@ struct Instr {
     uint cost;
     IRType irtype;
     uint pops; // Number of pops from the stack
-    uint push; // Number of valus pushed
+    uint push; // Number of values pushed
     bool extend; // Extended
 }
 
@@ -660,7 +660,7 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
         return result;
     }
 
-    void opAssign(T)(T x) nothrow {
+    void opAssign(T)(T x) pure nothrow {
         alias BaseT = Unqual!T;
         static if (is(BaseT == int) || is(BaseT == uint)) {
             _type = Types.I32;
@@ -750,6 +750,21 @@ static assert(isInputRange!ExprRange);
             return _types;
         }
 
+        IRElement dup() const pure scope nothrow{
+            IRElement result;
+            result.code=code;
+            result.level=level;
+            result._warg=_warg;
+            result._wargs=_wargs.dup;
+            result._types=_types.dup;
+            return result;        
+        }
+
+        version(none)
+        string toString() const pure {
+        
+        }
+
     }
 
     this(immutable(ubyte[]) data) pure {
@@ -776,7 +791,7 @@ static assert(isInputRange!ExprRange);
                 default:
                     assumeWontThrow({
                         wasm_exception = new WasmException(format(
-                            "Assembler argument type not vaild as an argument %s", type));
+                            "Assembler argument type not valid as an argument %s", type));
                     });
                 }
             }
@@ -792,7 +807,7 @@ static assert(isInputRange!ExprRange);
                 case CODE:
                     break;
                 case PREFIX:
-                    elm._warg = int(data[index]); // Extened insruction
+                    elm._warg = int(data[index]); // Extended insructions
                     index += ubyte.sizeof;
                     break;
                 case BLOCK:
@@ -858,7 +873,8 @@ static assert(isInputRange!ExprRange);
                             set(elm._warg, Types.F64);
                             break;
                         default:
-                            throw new WasmException(format("Instruction %s is not a const", elm.code));
+                            throw new WasmExprException(format("Instruction %s is not a const", 
+                            elm.code), elm);
                         }
                     }
                     break;
@@ -867,10 +883,11 @@ static assert(isInputRange!ExprRange);
                     break;
                 case ILLEGAL:
 
-                    throw new WasmException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code));
+                    throw new WasmExprException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code), elm);
                     break;
                 case SYMBOL:
-                    assert(0, "Is a symbol and it does not have an equivalent opcode");
+                    throw new WasmExprException(format("Is a symbol and it does not have an equivalent opcode %02x", elm.code), elm);
+                    break;
                 }
 
             }

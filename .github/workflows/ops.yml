@@ -1,0 +1,30 @@
+name: Run operational test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 17 * * *' # Everyday at 17:17
+
+
+jobs:
+  create_pull_request:
+    runs-on: qa
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref || current }}
+      
+      - name: Run script
+        run: nix develop -c ./scripts/run_ops.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: ./logs
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: net_data
+          path: $HOME/.local/share/tagion
+          if-no-files-found: error

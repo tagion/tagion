@@ -41,7 +41,7 @@ import Wallet = tagion.wallet.SecureWallet;
 /**
  * @brief build file path if needed file with folder long path
  * @param file - input/output parameter with filename
- * @param path - forlders destination to file
+ * @param path - folders destination to file
  */
 @safe
 static void set_path(ref string file, string path) {
@@ -109,7 +109,7 @@ int _main(string[] args) {
                 "P|passphrase", "Set the wallet passphrase", &_passphrase,
                 "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch
                 .invoice,
-                "x|pin", "Pincode", &pincode,
+                "x|pin", "Specify pincode (Do not use for real wallets)", &pincode,
                 "amount", "Create an payment request in tagion", &wallet_switch.amount,
                 "force", "Force input bill", &wallet_switch.force,
                 "pay", "Creates a payment contract", &wallet_switch.pay,
@@ -140,7 +140,7 @@ int _main(string[] args) {
             defaultGetoptPrinter(
                     [
                 // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
+                "Documentation: https://docs.tagion.org/",
                 "",
                 "Usage:",
                 format("%s [<option>...] <config.json> <files>", program),
@@ -236,7 +236,7 @@ int _main(string[] args) {
             }
             if (!bip39_recover) {
                 const wordlist = BIP39(words);
-                passphrase = wordlist.passphrase(bip39);
+                passphrase = wordlist.generateMnemonic(bip39).dup;
 
                 good("This is the recovery words");
                 printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]);

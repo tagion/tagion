@@ -1,4 +1,4 @@
-/// This module handels the rim selector used in the DART modify function
+/// This module handles the rim selector used in the DART modify function
 module tagion.dart.RimKeyRange;
 
 import std.algorithm;

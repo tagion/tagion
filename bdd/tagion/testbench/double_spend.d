@@ -101,7 +101,7 @@ int _main(string[] args) {
     import tagion.hibon.Document;
     import tagion.hibon.BigNumber;
 
-    const node_opts = getMode0Options(local_options, monitor: false);
+    const node_opts = getMode0Options(local_options);
 
     NodeSettings[] node_settings;
     auto nodenets = dummy_nodenets_for_testing(node_opts);
@@ -171,6 +171,6 @@ int _main(string[] args) {
     feature.BillAge(node_opts[3], wallets[13], wallets[14]);
     feature.run();
 
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     return 0;
 }

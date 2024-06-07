@@ -45,7 +45,7 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter([
             revision_text,
-            "Documentation: https://tagion.org/",
+            "Documentation: https://docs.tagion.org/",
             "",
             "Usage:",
             format("%s [<option>...]", program),
@@ -155,8 +155,12 @@ MdString toMd(FeatureGroup fg) {
             successful += 1;
         }
     }
-    const summary = format("<summary> %s (%s/%s) %s </summary>\n\n", result_type, successful, fg.scenarios.length, fg
-            .info.name);
+    const summary = format("<summary> %s (%s/%s) %s (%s)</summary>\n\n",
+        result_type,
+        successful,
+        fg.scenarios.length,
+        fg.info.property.description,
+        fg.info.name.split(".")[$-1]);
 
     // result_md.put(format("%s\n\n", result_type));
 

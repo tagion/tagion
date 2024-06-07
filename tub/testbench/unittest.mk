@@ -19,7 +19,8 @@ proto-unittest-run: proto-unittest-build
 	$(PRECMD)
 	$(CHEXE) $(TMP_UNITTEST)
 	echo $(PRETOOL) $(PRETOOL_FLAGS) $(UNITTEST_BIN) $(DRT_FLAGS) > $(TMP_UNITTEST) 
-	$(SCRIPT_LOG) $(TMP_UNITTEST) $(UNITTEST_LOG)
+	$(TMP_UNITTEST) 2>&1 | tee $(UNITTEST_LOG)
+	echo $(UNITTEST_LOG)
 	$(RM) $(TMP_UNITTEST)
 	echo $(INFO)
 
@@ -37,16 +38,18 @@ $(UNITTEST_BIN): DFLAGS+=$(DIP1000)
 $(UNITTEST_BIN): $(COVWAY) 
 $(UNITTEST_BIN): revision $(REPOROOT)/default.mk
 $(UNITTEST_BIN): LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
+$(UNITTEST_BIN): DINC+=$(LIB_DINC)
+ifdef ENABLE_WASMER
+$(UNITTEST_BIN): libwasmer
+$(UNITTEST_BIN): LDFLAGS+=$(LD_WASMER)
+endif
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
-	echo deps $?
-	${call log.env, UNITTEST_DFILES,${filter %.d,$^}}
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} ${addprefix -L,$(LDFLAGS)} $(OUTPUT)$@
-
+	$(DC) $(UNITTEST_FLAGS) $(DRTFLAGS) $(call DO_COMPILE_FLAGS) ${sort ${filter %.d,$^}} $(OUTPUT)$@
 
 .PHONY: unittest
 
-unitmain: DFLAGS+=$(DVERSION)=unitmain
+unitmain: DVERSIONS+=unitmain
 unitmain: UNITTEST_FLAGS:=$(DDEBUG) $(DDBUG_SYMBOLS)
 unitmain: unittest
 
@@ -77,8 +80,7 @@ env-unittest:
 	${call log.env, UNITTEST_DOBJ, $(UNITTEST_DOBJ)}
 	${call log.env, UNITTEST_FLAGS, $(UNITTEST_FLAGS)}
 	${call log.env, UNITTEST_BIN, $(UNITTEST_BIN)}
+	${call log.env, UNITTEST_DFILES, $(UNITTEST_DFILES)}
 	${call log.close}
 
 env: env-unittest
-
-

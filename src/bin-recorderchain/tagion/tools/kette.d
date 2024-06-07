@@ -69,7 +69,7 @@ int _main(string[] args) {
             defaultGetoptPrinter(
                     [
                     // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
+                    "Documentation: https://docs.tagion.org/",
                     "",
                     "Usage:",
                     "",
@@ -150,7 +150,7 @@ int _main(string[] args) {
                             new_bullseye));
                         return 1;
                     }
-                    verbose("succesfully added block");
+                    verbose("successfully added block");
                     prev_block = _block;
                 }
 
@@ -216,7 +216,7 @@ int _main(string[] args) {
                             new_bullseye));
                         return 1;
                     }
-                    verbose("succesfully added block");
+                    verbose("successfully added block");
                 }
 
             } 

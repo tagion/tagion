@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage() { echo "Usage: $0 <version tage>" 1>&2; exit 1;}
+usage() { echo "Usage: $0 <version tag>" 1>&2; exit 1;}
 
 prompt() {
     text=$1
@@ -18,7 +18,7 @@ prompt() {
 }
 
 version=$1
-artifact_name="successful_artifact.zip"
+artifact_name="x86_64-linux.zip"
 release_url="https://github.com/tagion/tagion/releases/download/$version/$artifact_name"
 
 if [[ -z "$version" ]]; then
@@ -36,9 +36,8 @@ mkdir -p "$version"
 cd "$version"
 
 echo "Downloading $release_url to $PWD/$artifact_name"
-# wget "$release_url"
-# unzip "$artifact_name"
-# tar xzf *.tar.gz
+wget "$release_url"
+unzip "$artifact_name"
 
 echo
 echo "old: $(tagion --version | head -1)"
@@ -48,16 +47,20 @@ prompt "Confirm upgrade from old version to new?"
 
 loginctl enable-linger
 
-cd ./build/x86_64-linux/bin
-export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
-export XDG_RUNTIME_DIR=/run/user/1001
+export INSTALL=~/.local/bin
+(cd ./build/x86_64-linux/bin
+    mkdir -p "$INSTALL"
+    make install
+)
 
-cp run_network.sh ~/.local/share/tagion/wave/
-cp failed.sh ~/.local/share/tagion/wave/
-cp tagion ~/.local/bin/
-~/.local/bin/tagion -s
-cp tagionshell.service neuewelle.service ~/.config/systemd/user
 echo "Deploying revision" 
-~/.local/bin/tagion --version
+"$INSTALL/tagion" --version
 
 systemctl --user daemon-reload
+
+cd ~/.local/share/tagion/
+
+dbs=$(ls wave/Node_*_dart.drt)
+for db in $dbs; do
+    dartutil --eye $db
+done

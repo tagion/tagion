@@ -56,7 +56,7 @@ import tagion.utils.LEB128;
             size_t _line_pos; /// Position of the current line
             uint _current_line; /// Line number of the current token
             size_t _current_pos; /// Position of the token in the current line
-            bool _eos; /// Markes end of stream
+            bool _eos; /// Marks end of stream
             Token.Type type;
         }
         this(string source) pure nothrow {

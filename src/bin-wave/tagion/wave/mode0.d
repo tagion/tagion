@@ -3,6 +3,8 @@
 **/
 module tagion.wave.mode0;
 
+@safe:
+
 import std.array;
 import std.file;
 import std.algorithm;
@@ -55,7 +57,7 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
 }
 
 // Return: A range of options prefixed with the node number
-const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
+const(Options)[] getMode0Options(const(Options) options) {
     const number_of_nodes = options.wave.number_of_nodes;
     const prefix_f = options.wave.prefix_format;
     Options[] all_opts;
@@ -63,10 +65,6 @@ const(Options)[] getMode0Options(const(Options) options, bool monitor = false) {
         auto opt = Options(options);
         opt.setPrefix(format(prefix_f, node_n));
         all_opts ~= opt;
-    }
-
-    if (monitor) {
-        all_opts[0].monitor.enable = true;
     }
 
     return all_opts;
@@ -110,7 +108,7 @@ void spawnMode0(
         Node[] nodes) {
 
     /// spawn the nodes
-    foreach (n; nodes) {
+    foreach (ref n; nodes) {
         verbose("spawning supervisor ", n.opts.task_names.supervisor);
         supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
     }

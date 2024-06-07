@@ -93,7 +93,7 @@ class AddPseudoRandomData {
             recorders ~= recorder;
 
             recorder.insert(docs, Archive.Type.ADD);
-            auto dart_indexs = recorder[]
+            auto dart_indices = recorder[]
                 .map!(a => a.dart_index);
 
             ulong[] insert_add_single_time;
@@ -102,7 +102,7 @@ class AddPseudoRandomData {
             insert_watch.stop();
             insert_add_single_time ~= insert_watch.peek.total!"msecs";
             read_watch.start();
-            auto sender = dartRead(dart_indexs, info.hirpc);
+            auto sender = dartRead(dart_indices, info.hirpc);
             auto receiver = info.hirpc.receive(sender.toDoc);
             auto result = db1(receiver, false);
             const doc = result.message[Keywords.result].get!Document;

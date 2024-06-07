@@ -1,3 +1,4 @@
+/// time type wrapped on stdtime in phobos
 module tagion.utils.StdTime;
 
 import std.datetime;
@@ -9,7 +10,7 @@ alias sdt_t = Typedef!(long, long.init, SDT);
 
 @safe
 sdt_t currentTime() {
-    // This function throws on some platforms only apparantly
+    // This function throws on some platforms only apparently
     return sdt_t(Clock.currStdTime);
 }
 

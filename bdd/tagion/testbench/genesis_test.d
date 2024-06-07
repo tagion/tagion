@@ -118,7 +118,7 @@ int _main(string[] args) {
     import tagion.hibon.Document;
     import tagion.hibon.BigNumber;
 
-    const(Options)[] node_opts = getMode0Options(local_options, monitor: false);
+    const(Options)[] node_opts = getMode0Options(local_options);
     auto nets = dummy_nodenets_for_testing(node_opts);
     Pubkey[] keys = nets.map!(net => net.pubkey).array;
     NodeSettings[] node_settings;
@@ -141,7 +141,7 @@ int _main(string[] args) {
     /* recorder.add(tagion_head); */
     /* recorder.add(genesis_epoch); */
 
-    /// FIXME: Duplicate genrate genesis_epoch
+    /// FIXME: Duplicate generate genesis_epoch
     const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
     const genesis = createGenesis(
         node_settings,
@@ -192,6 +192,6 @@ int _main(string[] args) {
     feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch);
     feature.run;
 
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     return 0;
 }

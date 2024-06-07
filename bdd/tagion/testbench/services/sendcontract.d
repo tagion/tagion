@@ -30,6 +30,7 @@ import tagion.testbench.tools.Environment;
 import tagion.tools.wallet.WalletInterface;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.wallet.SecureWallet : SecureWallet;
+import tagion.wallet.request;
 
 enum CONTRACT_TIMEOUT = 40;
 
@@ -114,7 +115,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
-        auto result = sendSubmitHiRPC(inputvalidator_sock_addr, hirpc_submit, wallet1_hirpc);
+        auto result = sendHiRPC(inputvalidator_sock_addr, hirpc_submit, wallet1_hirpc);
         writefln("SUBMIT hirpc result: %s", result.toDoc.toPretty);
 
         return result_ok;

@@ -145,9 +145,9 @@ void dispose(bool OWNS = true, T)(ref T die, string file = __FILE__, size_t line
 }
 
 @trusted
-void memcpy_wrapper(T)(ref T desination, T source) {
-    if (desination.length == source.length) {
-        memcpy(desination, source, source.length);
+void memcpy_wrapper(T)(ref T destination, T source) {
+    if (destination.length == source.length) {
+        memcpy(destination, source, source.length);
     }
 }
 

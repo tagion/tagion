@@ -28,4 +28,10 @@ interface Refinement {
 
     void payload(immutable(EventPackage*) epack);
 
+    version(NEW_ORDERING)
+    static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure;
+
+    version(OLD_ORDERING)
+    static bool order_less(const Event a, const Event b, const(int) order_count) pure;
+    
 }

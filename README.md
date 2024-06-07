@@ -34,7 +34,7 @@ Download a D compiler ldc or dmd
 ```bash
 wget https://github.com/ldc-developers/ldc/releases/download/v1.36.0/ldc2-1.36.0-linux-x86_64.tar.xz
 tar xf ldc2-1.36.0-linux-x86_64.tar.xz
-export PATH="path-to-ldc2/ldc2-1.34.0-linux-x86_64/bin:$PATH"
+export PATH="path-to-ldc2/ldc2-1.36.0-linux-x86_64/bin:$PATH"
 ```
         
 - Reference D compiler - dmd (v2.106.1)

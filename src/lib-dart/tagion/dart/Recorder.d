@@ -61,7 +61,7 @@ class RecordFactory {
     /**
      * Creates an Recorder from a document
      * Params:
-     *   doc = Documemt formated as recorder
+     *   doc = Document formatted as recorder
      * Returns:
      *   new recorder created from doc
      */
@@ -451,7 +451,7 @@ class Archive {
     }
     /**
      * Convert archive to a Document 
-     * Returns: documnet of the archive
+     * Returns: document of the archive
      */
     const(Document) toDoc() const pure {
         auto hibon = new HiBON;
@@ -689,9 +689,6 @@ unittest {
         rec.insert(doc, Archive.Type.ADD);
         rec.insert(doc, Archive.Type.REMOVE);
 
-        import std.stdio;
-
-        writeln(" ------------------------------ ");
         //rec.dump;
 
         const archs = table.map!(t => DARTFakeNet.fake_doc(t)).array;

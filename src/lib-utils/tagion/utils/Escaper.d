@@ -19,7 +19,7 @@ mixin(code_esc_special_chars);
 
 /** 
     Range which takes a range of chars and converts to a range with added esc '\\' 
-infront of a list fo special chars.
+infront of a list of special chars.
 */
 @safe
 struct Escaper(S) if (isInputRange!S && is(ForeachType!S : const(char))) {

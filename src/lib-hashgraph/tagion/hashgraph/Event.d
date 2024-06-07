@@ -23,7 +23,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
 import tagion.hashgraph.Round;
-import tagion.hashgraphview.EventMonitorCallbacks;
+import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord;
@@ -53,7 +53,7 @@ class Event {
         Event _daughter;
         Event _son;
 
-        int _order;
+        long _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -99,19 +99,19 @@ class Event {
                 assert(
                         event_package.event_body.altitude - _mother
                         .event_package.event_body.altitude is 1);
-                assert(_order is int.init || (_order - _mother._order > 0));
+                assert(_order is long.init || (_order - _mother._order > 0));
             }
             if (_father) {
                 pragma(msg, "fixme(bbh) this test should be reimplemented once new witness def works");
                 // assert(_father._son is this, "fathers is not me");
-                assert(_order is int.init || (_order - _father._order > 0));
+                assert(_order is long.init || (_order - _father._order > 0));
             }
         }
     }
 
     /**
      * The witness event will point to the witness object
-     * This object contains infomation about the voting etc. for the witness event
+     * This object contains information about the voting etc. for the witness event
      */
     @safe
     class Witness {
@@ -130,7 +130,7 @@ class Event {
          * Contsruct a witness of an event
          * Params:
          *   owner_event = the event which is voted to be a witness
-         *   seeing_witness_in_previous_round_mask = The witness seen from this event to the privious witness.
+         *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
         this(Event owner_event, ulong node_size) nothrow
         in {
@@ -161,8 +161,17 @@ class Event {
 
     package {
         Round _round; /// The where the event has been created
-        Round _round_received; /// The round in which the event has been voted to be received
         BitMask _round_received_mask; /// Voting mask for the received rounds
+    }
+    protected {
+        Round _round_received; /// The round in which the event has been voted to be received
+    }
+
+    invariant {
+        if (_round_received !is null && _round_received.number > 1 && _round_received.previous !is null) {
+
+            assert(_round_received.number == _round_received.previous.number + 1, format("Round was not added by 1: current: %s previous %s", _round_received.number, _round_received.previous.number)); 
+        }
     }
 
     /**
@@ -194,7 +203,7 @@ class Event {
     immutable size_t node_id; /// Node number of the event
 
     void initializeOrder() pure nothrow @nogc {
-        if (order is int.init) {
+        if (order is long.init) {
             _order = -1;
         }
     }
@@ -247,9 +256,6 @@ class Event {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
         }
-        if (callbacks) {
-            callbacks.round(this);
-        }
         _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
 
         // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
@@ -282,9 +288,6 @@ class Event {
         with (hashgraph) {
             log.event(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
         }
-        if (callbacks) {
-            callbacks.witness(this);
-        }
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
         }
@@ -312,7 +315,7 @@ class Event {
         iota(hashgraph.node_size)
             .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
-                    .order > _youngest_son_ancestors[node_id].order)
+            .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
@@ -416,22 +419,26 @@ class Event {
         return _father;
     }
 
+    void round_received(Round round_received) nothrow {
+        _round_received = round_received;
+    }
     @nogc pure nothrow const final {
         /**
-  * The event-body from this event 
-  * Returns: event-body
-  */
-        ref const(EventBody) event_body() {
-            return event_package.event_body;
-        }
-
-        /**
-     * The recived round for this event
+     * The received round for this event
      * Returns: received round
      */
         const(Round) round_received() {
             return _round_received;
         }
+
+        /**
+      * The event-body from this event 
+      * Returns: event-body
+      */
+        ref const(EventBody) event_body() {
+            return event_package.event_body;
+        }
+
 
         /**
      * Channel from which this event has received
@@ -458,7 +465,7 @@ class Event {
         }
 
         /**
-     * Check if an evnet has around 
+     * Check if an event has around 
      * Returns: true if an round exist for this event
      */
 
@@ -504,7 +511,7 @@ class Event {
 
         /**
           * Is this event owner but this node 
-          * Returns: true if the evnet is owned
+          * Returns: true if the event is owned
           */
         bool nodeOwner() const pure nothrow @nogc {
             return node_id is 0;
@@ -514,7 +521,7 @@ class Event {
          * Gets the event order number 
          * Returns: order
          */
-        int order() const pure nothrow @nogc {
+        long order() const pure nothrow @nogc {
             return _order;
         }
 

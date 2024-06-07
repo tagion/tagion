@@ -258,7 +258,7 @@ enum Type : ubyte {
     INT64 = 0x12, /// 64-bit integer,
     // INT128 = 0x13, /// 128-bit integer,
 
-    UINT32 = 0x14, /// 32 bit unsigend integer
+    UINT32 = 0x14, /// 32 bit unsigned integer
     UINT64 = 0x15, /// 64 bit unsigned integer
     // UINT128 = 0x16, /// 128-bit unsigned integer,
 
@@ -270,7 +270,7 @@ enum Type : ubyte {
     VER = 0x1F, /// Version field
     /// The following is only used internal (by HiBON) and should to be use in a stream Document
     DEFINED_NATIVE = 0x40, /// Reserved as a definition tag it's for Native types
-    NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
+    NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal representation (Document type)
 
     DEFINED_ARRAY = 0x80, /// Indicated an Intrinsic array types
     /// Native types is only used inside the BSON object
@@ -633,14 +633,14 @@ unittest {
     }
 
     { // Simple data type
-        auto test_tabel = tuple(float(-1.23), double(2.34), "Text", true,
+        auto test_table = tuple(float(-1.23), double(2.34), "Text", true,
                 ulong(0x1234_5678_9ABC_DEF0), int(-42), uint(42), long(-0x1234_5678_9ABC_DEF0));
-        foreach (i, t; test_tabel) {
+        foreach (i, t; test_table) {
             Value v;
-            v = test_tabel[i];
-            alias U = test_tabel.Types[i];
+            v = test_table[i];
+            alias U = test_table.Types[i];
             enum E = Value.asType!U;
-            assert(test_tabel[i] == v.by!E);
+            assert(test_table[i] == v.by!E);
         }
     }
 
@@ -796,7 +796,7 @@ do {
 /++
  Checks if the keys in the range is ordred
  Returns:
- ture if all keys in the range is ordered
+ true if all keys in the range is ordered
 +/
 bool is_key_ordered(R)(R range) if (isInputRange!R) {
     string prev_key;
@@ -856,6 +856,11 @@ bool is_key_valid(const(char[]) a) pure nothrow {
     return false;
 }
 
+shared static this() @system {
+    uint little_endian=0x0000_0001;
+    uint* x=&little_endian;
+    assert(x[0] == 1, "Only supports little endian for now!");
+}
 ///
 unittest { // Check is_key_valid
     import std.algorithm.iteration : each, map;
@@ -869,7 +874,7 @@ unittest { // Check is_key_valid
     assert(!is_key_valid(text));
     text = [char(34)]; // Double quote
     assert(!is_key_valid(text));
-    text = "'"; // Sigle quote
+    text = "'"; // Single quote
     assert(!is_key_valid(text));
     text = "`"; // Back quote
     assert(!is_key_valid(text));

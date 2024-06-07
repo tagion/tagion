@@ -37,7 +37,7 @@ enum TokenType {
         }
     }
 
-    bool isInvisiable(const char ch) {
+    bool isInvisible(const char ch) {
         with (Chars) {
             return (ch <= SPACE) || (ch == DEL);
         }
@@ -229,9 +229,9 @@ struct WastTokenizer {
         }
 
         void trim() {
-            nextUntil!q{a.isInvisiable};
+            nextUntil!q{a.isInvisible};
             version (none)
-                while (!empty && text[pos].isInvisiable) {
+                while (!empty && text[pos].isInvisible) {
                 if (text[pos] == Chars.NEWLINE) {
                     start_line_pos = pos + 1;
                     line++;

@@ -57,7 +57,7 @@ struct RecycleSegment {
     });
 
     /// We never want to create a segment with a size smaller than zero.
-    version (DART_RECYCLER_INVARINAT) {
+    version (DART_RECYCLER_INVARIANT) {
         invariant {
             assert(size > 0);
         }
@@ -82,12 +82,12 @@ struct Recycler {
     /** 
      * Checks if the recycler has overlapping segments.
      */
-    version (DART_RECYCLER_INVARINAT) {
+    version (DART_RECYCLER_INVARIANT) {
         invariant {
             assert(noOverlaps, "Recycle segments has overlaps");
         }
         /** 
-     * Checks if the indicies and segments are the same length;
+     * Checks if the indices and segments are the same length;
      */
         invariant {
             assert(indices.length == segments.length);
@@ -190,7 +190,7 @@ struct Recycler {
      * The same step is used for the upperbound using the front of the elements.
      * We go over all the new segments that needs to be recycled.
      * First we get `lowerBound` in the `indices`. The `indices` are sorted by
-     * index meaning we get all sgements by indexes as a range
+     * index meaning we get all sgements by indices as a range
      * that are smaller or equal to our segment. If the segments connext
      * we add remove it and create a new one. The same procedure is used for
      * the upperrange.
@@ -775,14 +775,14 @@ unittest {
         }
         // add some segments
 
-        Data[] datas = [
+        Data[] multiple_data= [
             Data("abc"),
             Data("1234"),
             Data("wowo"),
             Data("hugo"),
         ];
 
-        foreach (data; datas) {
+        foreach (data; multiple_data) {
             const index = blockfile.save(data).index;
             // writefln("block index = %s", index);
         }
@@ -836,14 +836,14 @@ unittest {
         blockfile.close;
     }
 
-    Data[] datas = [
+    Data[] multiple_data= [
         Data("abc"),
         Data("1234"),
         Data("wowo"),
         Data("hugo"),
     ];
 
-    foreach (data; datas) {
+    foreach (data; multiple_data) {
         blockfile.save(data);
     }
 
@@ -947,23 +947,23 @@ unittest {
     const to_be_removed = 90;
     bool[Index] used;
 
-    Data[] datas;
+    Data[] multiple_data;
     foreach (i; 0 .. number_of_elems) {
         const number_of_chars = uniform(2, 1000, rnd);
-        datas ~= Data(repeat('x', number_of_chars).array);
+        multiple_data~= Data(repeat('x', number_of_chars).array);
     }
 
-    Index[] data_indexes;
-    foreach (data; datas) {
+    Index[] data_indices;
+    foreach (data; multiple_data) {
         const data_idx = blockfile.save(data).index;
         assert(!(data_idx in used), "segment already recycled");
         used[data_idx] = true;
-        data_indexes ~= data_idx;
+        data_indices ~= data_idx;
 
     }
     blockfile.store;
 
-    auto sample = randomSample(data_indexes[], to_be_removed).array;
+    auto sample = randomSample(data_indices[], to_be_removed).array;
 
     foreach (remove_index; sample) {
         blockfile.dispose(remove_index);
@@ -989,14 +989,14 @@ unittest {
         blockfile.close;
     }
 
-    Data[] datas = [
+    Data[] multiple_data= [
         Data("abc"),
         Data("1234"),
         Data("wowo"),
         Data("hugo"),
     ];
 
-    foreach (data; datas) {
+    foreach (data; multiple_data) {
         blockfile.save(data);
     }
     blockfile.store;
@@ -1018,7 +1018,7 @@ unittest {
     auto block_segment_range = blockfile.opSlice();
     assert(block_segment_range.walkLength == 7, "should contain 2 statistic, 1 master and 4 archives");
 
-    foreach (i; 0 .. datas.length) {
+    foreach (i; 0 .. multiple_data.length) {
         assert(block_segment_range.front.type == "D");
         block_segment_range.popFront;
     }

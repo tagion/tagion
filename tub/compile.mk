@@ -16,6 +16,22 @@ endif
 
 DFLAGS+=-J$(DTUB)/logos/
 
+ifdef SPLIT_LINKER
+# dmd already sets this when it invokes the linker
+LDFLAGS+=-lphobos2
+# Assume that phobos is located in lib directory 1 up from compiler
+LDFLAGS+=-L$(dir $(shell which $(DC)))/../lib
+endif
+
+define DO_COMPILE_FLAGS
+$(DFLAGS)\
+$(addprefix -I,$(DINC))\
+$(addprefix -L,$(LDFLAGS))\
+$(addprefix $(DVERSION)=,$(DVERSIONS))\
+$(addprefix $(DDEBUG)=,$(DDEBUG_VERSIONS))\
+$(LIBS) $(OBJS)
+endef
+
 #
 # Change extend of the LIB
 #
@@ -23,11 +39,12 @@ LIBEXT=${if $(SHARED),$(DLLEXT),$(STAEXT)}
 
 #
 # D compiler
-#/
+#
 $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
+	$(call log.header, $*.$(OBJEXT) :: compile)
 	${call log.kvp, compile, $(MODE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $<  $(OUTPUT)$@
 
 #
 # Compile and link or split link
@@ -39,7 +56,7 @@ $(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	echo ${DFILES}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(DCOMPILE_ONLY)  $(OUTPUT)$@
 
-$(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
+$(DLIB)/lib%.$(LIBEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
 	${call log.kvp, split-link$(MODE)}
 	echo ${filter %.$(OBJEXT),$?}
@@ -48,22 +65,34 @@ else
 $(DLIB)/%.$(LIBEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${addprefix -L,$(LDFLAGS)} $(LIBS) $(OBJS) $(DLIBTYPE) $(OUTPUT)$@
+	$(DC) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(DFILES) $(OUTPUT)$@
 endif
 
 #
 # proto targets for binaries
 #
+ifdef SPLIT_LINKER
+$(DOBJ)/bin%.$(OBJEXT): $(DOBJ)/.way
+	$(PRECMD)
+	${call log.kvp, compile$(MODE)}
+	echo $(DFILES) > /tmp/$*_dfiles.mk
+	$(DC) $(DCOMPILE_ONLY) $(DDEBUG_FLAGS) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(OUTPUT)$@
 
+$(DBIN)/%: $(DOBJ)/bin%.$(OBJEXT)
+	$(PRECMD)
+	${call log.kvp, split-link$(MODE)}
+	echo ${filter %.$(OBJEXT),$?}
+	$(LD) ${LDFLAGS} ${filter %.$(OBJEXT),$?} $(LIBS) $(OBJS) -o$@
+else
+ifndef DBIN_EXCLUDE
 $(DBIN)/%:
 	$(PRECMD)
-	${call log.kvp, bin$(MOD), $*}
-	echo ${filter %.d,$^} > /tmp/$*_dfiles_q.mk
-	echo $(DFILES) > /tmp/$*_dfiles.mk
-	echo $(DFLAGS) $(DFLAGS_DEBUG) > /tmp/$*_dflags.mk
-	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(LIBS) $(OBJS) $(OUTPUT)$@
-
-
+	$(call log.header, $* :: bin)
+	$(call log.env, DFILES, $(DFILES))
+	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(DFILES) $(OUTPUT)$@
+endif
+endif
+	
 # Object Clear"
 clean-obj:
 	$(PRECMD)
@@ -83,7 +112,7 @@ env: env-build
 help-cov:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${call log.help, "make <target> COV=1", "Enable <target> with code covarage"}
+	${call log.help, "make <target> COV=1", "Enable <target> with code coverage"}
 	${call log.close}
 
 help: help-cov

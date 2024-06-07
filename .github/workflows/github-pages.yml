@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - current
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+defaults:
+  run:
+    working-directory: "docs/"
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: 'docs/'
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: build doc
+        run: |
+          cd ..
+          make doc
+          make doc-sitemap
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "docs/build/"
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

@@ -41,9 +41,8 @@ if $_init; then
 systemctl stop --user neuewelle.service || echo "No wave service was running"
 systemctl stop --user tagionshell.service || echo "No shell service was running"
 
-
+make tagion testbench trunk || echo "Not in source dir"
 "$bdir"/tagion -s || echo "Soft links already exists";
-make trunk || echo "Not in source dir"
 
 mkdir -p "$wdir" "$net_dir"
 

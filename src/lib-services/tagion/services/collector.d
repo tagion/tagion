@@ -1,4 +1,5 @@
-/// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/Collector)
+/// The collector collects & verifies the inputs in a contract
+/// https://docs.tagion.org/docs/architecture/Collector
 module tagion.services.collector;
 @safe:
 
@@ -24,6 +25,7 @@ import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.hibon.HiBONJSON;
+import tagion.logger.ContractTracker;
 
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
@@ -66,6 +68,7 @@ struct CollectorService {
     void read_indices(dartReadRR req, immutable(SignedContract)* s_contract) {
         if (s_contract.signs.length != s_contract.contract.inputs.length) {
             log.event(reject, "contract_mismatch_signature_length", Document.init);
+            logContractStatus(s_contract.contract, ContractStatusCode.rejected, "Rejected contract mismatch signature length");
             return;
         }
 
@@ -133,6 +136,12 @@ struct CollectorService {
 
         immutable s_contract = contracts[res.id];
         auto fingerprints = recorder[].map!(a => a.dart_index).array;
+
+        // The collector can be in 1 of 2 states when receiving the recorder from the dart
+        // First if we requested any read documents and they all exist. Then we'll add it to out collected contract.
+        // When a request for the input archives is received, the inputs for each signature is checked.
+        // before it's sent to the tvm.
+        // if any archive is missing in inputs/reads or any of the signatures are incorrect. then the contract will be rejected.
         if (s_contract.contract.reads !is null && fingerprints == contracts[res.id].contract.reads) {
             reads[res.id] = recorder[].map!(a => a.filed).array;
             return;
@@ -148,6 +157,7 @@ struct CollectorService {
 
             if (!verify(net, s_contract, inputs)) {
                 log.event(reject, "contract_no_verify", recorder);
+                logContractStatus(s_contract.contract, ContractStatusCode.rejected, "Rejected contract no verify");
                 return;
             }
 
@@ -155,7 +165,7 @@ struct CollectorService {
             immutable collection =
                 ((res.id in reads) !is null)
                 ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                        CollectedSignedContract)(s_contract, inputs);
+                    CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {

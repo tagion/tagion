@@ -13,13 +13,11 @@ struct HiBONregex {
     alias RegexT = Regex!char;
     uint[] types;
     string name;
+    string value; // value of matching member
     string record_type;
     RegexT regex_name;
     RegexT regex_record_type;
     this(Name, HType, Types)(Name name, HType record_type, Types types) pure
-
-    
-
             if ((is(Name == string) || is(Name == RegexT)) &&
                 (is(HType == string) || is(HType == RegexT)) &&
                 (is(Types
@@ -56,7 +54,6 @@ struct HiBONregex {
     }
 
     bool match(const Document doc) const {
-        bool result;
         if (!record_type.empty) {
             if (record_type == "!") {
                 return doc.getType.isinit;
@@ -74,6 +71,13 @@ struct HiBONregex {
             if (!name.empty) {
                 if (elm.key != name) {
                     return false;
+                }
+                if (!value.empty) {
+                    const val = elm.value;
+                    // FIXME: Value key only works with string for now
+                    if (val.by!(Type.STRING) != value) {
+                        return false;
+                    }
                 }
             }
             else if (!regex_name.isinit) {

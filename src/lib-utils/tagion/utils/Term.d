@@ -1,11 +1,11 @@
+/// Terminal utility functions and definitions
 module tagion.utils.Term;
 
 import std.format;
 
 import std.meta : AliasSeq, staticSort;
 
-//import std.algorithm : sort;
-
+///
 enum {
     BLACK = Color.Black.code,
     RED = Color.Red.code,
@@ -18,15 +18,15 @@ enum {
 
     BOLD = Mode.Bold.code,
 
-    BACKGOUND_BLACK = Color.Black.code(true),
-    BACKGOUND_RED = Color.Red.code(true),
-    BACKGOUND_GREEN = Color.Green.code(true),
-    BACKGOUND_YELLOW = Color.Yellow.code(true),
-    BACKGOUND_BLUE = Color.Blue.code(true),
-    BACKGOUND_MAGENTA = Color.Magenta.code(true),
-    BACKGOUND_CYAN = Color.Cyan.code(true),
-    BACKGOUND_WHITE = Color.White.code(true),
-    BACKGOUND_RESET = Color.Reset.code(true),
+    BACKGROUND_BLACK = Color.Black.code(true),
+    BACKGROUND_RED = Color.Red.code(true),
+    BACKGROUND_GREEN = Color.Green.code(true),
+    BACKGROUND_YELLOW = Color.Yellow.code(true),
+    BACKGROUND_BLUE = Color.Blue.code(true),
+    BACKGROUND_MAGENTA = Color.Magenta.code(true),
+    BACKGROUND_CYAN = Color.Cyan.code(true),
+    BACKGROUND_WHITE = Color.White.code(true),
+    BACKGROUND_RESET = Color.Reset.code(true),
 
     RESET = Color.Reset.code,
     CLEARSCREEN = Cursor.ClearScreen.code(2),
@@ -107,11 +107,14 @@ string setCursor(immutable uint row, immutable uint column) {
 enum saveCursorPos = "\u001b[s"; /// Saves the current cursor position
 enum restoreCursorPos = "\u001b[u"; /// Restores the cursor to the last saved position
 
-version (MOBILE) {
-}
-else {
+version (Posix) {
     private import core.stdc.stdio;
     private import core.sys.posix.termios;
+
+    version(CRuntime_Bionic) { // Termios is not defined for bionic libc in druntime yet
+    extern (C) int tcsetattr(int, int, const scope termios*);
+    extern (C) int tcgetattr(int, termios*);
+    }
 
     extern (C) void cfmakeraw(termios* termios_p);
 

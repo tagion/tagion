@@ -40,4 +40,4 @@ The correct pass-phase is and it present to the tagionwallet command line.
 `is_stopped`
  *Then*  check that the program return fail.
 
-`faild`
+`failed`

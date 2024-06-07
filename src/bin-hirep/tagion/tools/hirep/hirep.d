@@ -30,27 +30,34 @@ mixin Main!(_main);
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
-    //    bool standard_output;
-    //    bool standard_input;
     bool not_flag;
     string output_filename;
     string name;
+    string member_value;
     string record_type;
     string[] types;
     string list;
+    bool recursive_flag;
+    bool subhibon_flag;
+
     try {
         auto main_args = getopt(args,
-                std.getopt.config.caseSensitive,
-                std.getopt.config.bundling,
-                "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
-                "v|verbose", "Prints more debug information", &__verbose_switch, //                "c|stdout", "Print to standard output", &standard_output,
-                "o|output", "Output file name (Default stdout)", &output_filename,
-                "n|name", "HiBON member name (name as text or regex as `regex`)", &name,
-                "r|recordtype", "HiBON recordtype (name as text or regex as `regex`)", &record_type,
-                "t|type", "HiBON data types", &types,
-                "not", "Filter out match", &not_flag,
-                "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch,
+            "v|verbose", "Prints more debug information", &__verbose_switch,
+            "o|output", "Output file name (Default stdout)", &output_filename,
+            "n|name", "HiBON member name (name as text or regex as `regex`)", &name,
+            "V|value", "Value of matching HiBON member", &member_value,
+            "r|recordtype", "HiBON recordtype (name as text or regex as `regex`)", &record_type,
+            "t|type", "HiBON data types", &types,
+            "not", "Filter out match", &not_flag,
+            "l|list", "List of indices in a hibon stream (ex. 1,10,20..23)", &list,
+            "R|recursive", "Enables recursive search", &recursive_flag,
+            "s|subhibon", "Output only subhibon that match criteria (not working with --not flag)", &subhibon_flag,
         );
+
+        tools.check(!(not_flag && subhibon_flag), "Can't handle --not and --subhibon simultaneously");
 
         if (version_switch) {
             revision_text.writeln;
@@ -58,65 +65,60 @@ int _main(string[] args) {
         }
 
         if (main_args.helpWanted) {
-            //       writeln(logo);
             defaultGetoptPrinter(
-                    [
-                    //                format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] [<hibon-files>...]", program),
-                    "",
-                    "<option>:",
+                [
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] [<hibon-files>...]", program),
+                "",
+                "<option>:",
 
-                    ].join("\n"),
-                    main_args.options);
+            ].join("\n"),
+            main_args.options);
             return 0;
         }
-        bool inList(const size_t no) {
-            if (list.empty) {
-                return true;
-            }
-            //writefln("list=%s", list.splitter(","));
-            foreach (elm; list.splitter(",")) {
-                //writefln("elm=%s", elm);
-                const elm_range = elm.split("..");
-                //writefln("elm_range=%s", elm_range);
-                if (elm_range.length == 1) {
-                    if (no == elm_range[0].to!size_t) {
-                        return true;
-                    }
-                }
-                else if (elm_range.length == 2) {
-                    if ((elm_range[0].to!size_t <= no) && (no < elm_range[1].to!size_t)) {
-                        return true;
-                    }
-                }
 
+        bool inList(const size_t no) {
+            foreach (elm; list.splitter(",")) {
+                const elm_range = elm.split("..");
+                if (elm_range.length == 1 && no == elm_range[0].to!size_t) {
+                    return true;
+                }
+                if (elm_range.length == 2 && (elm_range[0].to!size_t <= no) && (elm_range[1] == "-1" || no < elm_range[1].to!size_t)) {
+                    return true;
+                }
             }
+
             return false;
         }
 
         if (name) {
-            verbose("%s", name);
-            verbose("%s", record_type);
-            verbose("%s", types);
+            verbose("name:        [%s]", name);
+            verbose("record type: [%s]", record_type);
+            verbose("types:       %s", types);
         }
+
         HiBONregex hibon_regex;
         if (name) {
             hibon_regex.name = name;
         }
+        if (member_value) {
+            tools.check(!name.empty, "Value flag can only be used with the member name flag");
+            hibon_regex.value = member_value;
+        }
         if (record_type) {
             hibon_regex.record_type = record_type;
         }
+
         tools.check(args.length <= 2, "Only one file argument accepted");
-        // if (args.length == 1) {
+
         File fin;
         fin = stdin;
         if (args.length == 2) {
             const file_name = args[1];
             tools.check(file_name.hasExtension(FileExtension.hibon),
-                    format("Input %s should be a .%s file", file_name, FileExtension.hibon));
+                format("Input %s should be a .%s file", file_name, FileExtension.hibon));
             fin = File(file_name, "r");
         }
         else {
@@ -129,7 +131,7 @@ int _main(string[] args) {
         }
         else {
             tools.check(output_filename.hasExtension(FileExtension.hibon),
-                    format("Output %s should be a .%s file", output_filename, FileExtension.hibon));
+                format("Output %s should be a .%s file", output_filename, FileExtension.hibon));
             fout = File(output_filename, "w");
         }
         scope (exit) {
@@ -137,11 +139,49 @@ int _main(string[] args) {
                 fout.close;
             }
         }
-        foreach (no, doc; HiBONRange(fin).enumerate) {
-            if (inList(no) && hibon_regex.match(doc)) {
-                verbose("%d\n%s", no, doc.toPretty);
+
+        Document[] getMatchDocs(Document doc) {
+            if (hibon_regex.match(doc))
+                return [doc];
+
+            if (!recursive_flag)
+                return [];
+
+            // Going recursive
+            Document[] docs;
+            foreach (elem; doc[]) {
+                if (!(elem.isType!Document))
+                    continue; // Skip non-Document records
+
+                docs ~= getMatchDocs(elem.get!Document);
+            }
+
+            return docs;
+        }
+
+        void output(Document[] docs) {
+            foreach (doc; docs) {
+                verbose("%s", doc.toPretty);
                 fout.rawWrite(doc.serialize);
             }
+        }
+
+        bool withNot(bool flag) {
+            return not_flag ? (!flag) : flag;
+        }
+
+        foreach (no, doc; HiBONRange(fin).enumerate) {
+            if (!list.empty && !withNot(inList(no)))
+                continue;
+
+            auto match_docs = getMatchDocs(doc);
+            if (withNot(match_docs.empty))
+                continue;
+
+            if (subhibon_flag)
+                output(match_docs);
+            else
+                output([doc]);
         }
     }
     catch (Exception e) {

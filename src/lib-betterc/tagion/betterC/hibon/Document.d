@@ -201,7 +201,7 @@ struct Document {
 
     /**
      * Function check's if the Document is a valid HiBON format
-     * @param error_callback - if the delegate error_callback is the this function is call when a error occures
+     * @param error_callback - if the delegate error_callback is the this function is call when a error occurs
      * @return error code of the validation
      */
     Element.ErrorCode valid(ErrorCallback error_callback = null) const {
@@ -413,7 +413,7 @@ struct Document {
     }
 
     /**
-     * Check if the Document can be clasified as an Array
+     * Check if the Document can be classified as an Array
      * @return true if all the keys in ordred numbers
      */
     bool isArray() const {
@@ -779,7 +779,7 @@ struct Document {
 
         @property const {
             /**
-             * @return true if the elemnt is of T
+             * @return true if the element is of T
              */
             bool isType(T)() {
                 enum E = Value.asType!T;
@@ -866,7 +866,7 @@ struct Document {
             }
 
             /**
-             * Tryes to convert the value to the type T.
+             * Tries to convert the value to the type T.
              * @return true if the function succeeds
              */
             bool as(T)(ref T result) {
@@ -1029,7 +1029,7 @@ struct Document {
                 TOO_SMALL, // Data stream is too small to contain valid data
                 ILLEGAL_TYPE, // Use of internal types is illegal
                 INVALID_TYPE, // Type is not defined
-                OVERFLOW, // The specifed data does not fit into the data stream
+                OVERFLOW, // The specified data does not fit into the data stream
                 ARRAY_SIZE_BAD // The binary-array size in bytes is not a multipla of element size in the array
             }
 
@@ -1082,7 +1082,7 @@ struct Document {
         @property const pure {
             /**
              * Check if the type match That template.
-             * That template must have one parameter T as followes
+             * That template must have one parameter T as follows
              * @return true if the element is the type That
             */
             bool isThat(alias That)() {

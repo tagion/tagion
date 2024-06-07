@@ -56,6 +56,7 @@ class StartNetworkWithNAmountOfNodes {
 
     @Given("i have a HashGraph TestNetwork with n number of nodes")
     Document nodes() {
+        writefln("getting rlimit");
         rlimit limit;
         (() @trusted { getrlimit(RLIMIT_STACK, &limit); })();
         writefln("RESOURCE LIMIT = %s", limit);
@@ -116,6 +117,9 @@ class StartNetworkWithNAmountOfNodes {
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
 
+                if (i % 1000 == 0) {
+                    writefln("call %s", i);
+                }
                 // if (network.epoch_events.length == node_names.length) {
                 //     // all nodes have created at least one epoch
                 //     break;
@@ -157,6 +161,7 @@ class StartNetworkWithNAmountOfNodes {
                 .events
                 .map!(e => cast(Buffer) e.event_package.fingerprint)
                 .array;
+            writefln("comparing epoch %s", i);
             auto compare_round_fingerprint = hashLastDecidedRound(compare_epoch.decided_round);
 
             // compare_events.sort!((a,b) => a < b);

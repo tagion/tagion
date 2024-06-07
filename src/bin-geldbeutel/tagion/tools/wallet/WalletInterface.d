@@ -24,6 +24,7 @@ import tagion.wallet.AccountDetails;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
+import tagion.wallet.request;
 
 //import tagion.basic.tagionexceptions : check;
 import std.range;
@@ -47,7 +48,7 @@ import tagion.tools.secretinput;
 /**
  * @brief strip white spaces in begin/end of text
  * @param word - input parameter with out
- * return dublicate out parameter
+ * return duplicate out parameter
  */
 const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc {
     import std.ascii : isWhite;
@@ -86,100 +87,6 @@ void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc {
 
 enum MAX_PINCODE_SIZE = 128;
 enum LINE = "------------------------------------------------------";
-
-pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, HiRPC hirpc = HiRPC(null)) @trusted {
-    import nngd;
-    import std.exception;
-    import tagion.hibon.Document;
-    import tagion.hibon.HiBONtoText;
-
-    int rc;
-    NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    sock.sendtimeout = 1000.msecs;
-    sock.sendbuf = 0x4000;
-    sock.recvtimeout = 3000.msecs;
-
-    rc = sock.dial(address);
-    if (rc != 0) {
-        throw new WalletException(format("Could not dial address %s: %s", address, nng_errstr(rc)));
-    }
-
-    rc = sock.send(contract.toDoc.serialize);
-    check(sock.m_errno == nng_errno.NNG_OK, format("NNG_ERRNO %d", cast(int) sock.m_errno));
-    check(rc == 0, format("Could not send bill to network %s", nng_errstr(rc)));
-
-    auto response_data = sock.receive!Buffer;
-    auto response_doc = Document(response_data);
-    // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
-    check(response_doc.isRecord!(HiRPC.Receiver), format("Error in response when sending bill %s", response_doc.toPretty));
-
-    return hirpc.receive(response_doc);
-}
-
-HiRPC.Receiver sendShellHiRPC(string address, Document doc, HiRPC hirpc) {
-    import nngd;
-
-    WebData rep = WebClient.post(address, cast(ubyte[]) doc.serialize, [
-        "Content-type": "application/octet-stream"
-    ]);
-
-    if (rep.status != http_status.NNG_HTTP_STATUS_OK || rep.type != "application/octet-stream") {
-        throw new WalletException(format("send shell submit, received: %s code(%d): %s", rep.type, rep.status, rep.msg));
-    }
-
-    Document response_doc = Document(cast(immutable) rep.rawdata);
-    return hirpc.receive(response_doc);
-}
-
-HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender req, HiRPC hirpc) {
-    return sendShellHiRPC(address, req.toDoc, hirpc);
-}
-
-pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc, Duration recv_duration = 15_000.msecs) @trusted {
-    import nngd;
-    import std.exception;
-    import tagion.hibon.HiBONException;
-
-    int rc;
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    scope (exit) {
-        s.close();
-    }
-    s.recvtimeout = recv_duration;
-
-    while (1) {
-        writefln("REQ to dial... %s", address);
-        rc = s.dial(address);
-        if (rc == 0) {
-            break;
-        }
-        if (rc == nng_errno.NNG_ECONNREFUSED) {
-            nng_sleep(100.msecs);
-        }
-        if (rc != 0) {
-            throw new WalletException(format("Could not dial kernel %s, %s", address, nng_errstr(rc)));
-        }
-    }
-    rc = s.send(dart_req.toDoc.serialize);
-    if (s.errno != 0) {
-        throw new WalletException(format("error in send of darthirpc: %s", s.errno));
-    }
-    Document received_doc = s.receive!Buffer;
-    if (s.errno != 0) {
-        throw new WalletException(format("REQ Socket error after receive: %s", s.errno));
-    }
-
-    try {
-        hirpc.receive(received_doc);
-    }
-    catch (HiBONException e) {
-        writefln("::error::ERROR in hirpc receive: %s %s", e, received_doc.toPretty);
-    }
-
-    return hirpc.receive(received_doc);
-}
 
 struct WalletInterface {
     const(WalletOptions) options;
@@ -361,7 +268,7 @@ struct WalletInterface {
                 string select_code;
                 string chosen_code;
                 if (select_index == i) {
-                    select_code = BLUE ~ BACKGOUND_WHITE;
+                    select_code = BLUE ~ BACKGROUND_WHITE;
                 }
                 if (answer.length) {
                     chosen_code = GREEN;
@@ -459,7 +366,7 @@ struct WalletInterface {
                                 writefln("Pincode:%s", CLEARDOWN);
                                 readln(pincode1);
                                 pincode1.word_strip;
-                                writefln("Repeate:");
+                                writefln("Repeat:");
                                 readln(pincode2);
                                 pincode2.word_strip;
 
@@ -709,39 +616,31 @@ struct WalletInterface {
                         output_filename.fwrite(req);
                     }
                     if (send || sendkernel) {
-                        HiRPC.Receiver received = sendkernel ?
-                            sendDARTHiRPC(options.dart_address, req, hirpc) : sendShellHiRPC(
-                                    options.addr ~ options.dart_shell_endpoint, req, hirpc);
+                        HiRPC.Receiver received = sendHiRPC(sendkernel ? options.dart_address : options.addr ~ options.hirpc_shell_endpoint, req, hirpc);
 
                         verbose("Received response", received.toPretty);
 
-                        version (TRT_READ_REQ) {
-                            bool setRequest(const(HiRPC.Receiver) receiver) {
-                                if (trt_update) {
-                                    return secure_wallet.setResponseUpdateWallet(receiver);
-                                }
-                                else if (update) {
-                                    return secure_wallet.setResponseCheckRead(receiver);
-                                }
-                                else {
-                                    const difference_req = secure_wallet.differenceInIndices(receiver);
-                                    if (difference_req is HiRPC.Sender.init) {
-                                        return true;
-                                    }
-                                    HiRPC.Receiver dart_received = sendkernel ?
-                                        sendDARTHiRPC(options.dart_address, difference_req, hirpc) : sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, difference_req, hirpc);
-
-                                    return secure_wallet.updateFromRead(dart_received);
-                                }
+                        bool setRequest(const(HiRPC.Receiver) receiver) {
+                            if (trt_update) {
+                                return secure_wallet.setResponseUpdateWallet(receiver);
                             }
+                            else if (update) {
+                                return secure_wallet.setResponseCheckRead(receiver);
+                            }
+                            else {
+                                const difference_req = secure_wallet.differenceInIndices(receiver);
+                                if (difference_req is HiRPC.Sender.init) {
+                                    return true;
+                                }
+                                HiRPC.Receiver dart_received = 
+                                    sendHiRPC(sendkernel ? options.dart_address : options.addr ~ options.hirpc_shell_endpoint, difference_req, hirpc);
 
-                            bool res = setRequest(received);
+                                return secure_wallet.updateFromRead(dart_received);
+                            }
                         }
-                        else {
-                            bool res = trt_update ? secure_wallet.setResponseUpdateWallet(
-                                    received) : secure_wallet.setResponseCheckRead(received);
-                        }
-                        writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
+
+                        bool res = setRequest(received);
+                        writeln(res ? "wallet updated successfully" : "wallet not updated successfully");
                         save_wallet = true;
                     }
 
@@ -788,10 +687,10 @@ struct WalletInterface {
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
                     if (send) {
-                        sendShellHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, hirpc);
+                        sendHiRPC(options.addr ~ options.hirpc_shell_endpoint, hirpc_submit, hirpc);
                     }
                     else if (sendkernel) {
-                        sendSubmitHiRPC(options.contract_address, hirpc_submit, hirpc);
+                        sendHiRPC(options.contract_address, hirpc_submit, hirpc);
                     }
                 }
             }

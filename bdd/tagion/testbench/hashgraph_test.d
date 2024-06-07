@@ -15,14 +15,15 @@ mixin Main!(_main);
 int _main(string[] args) {
     const module_path = env.bdd_log.buildPath(__MODULE__);
     mkdirRecurse(module_path);
-    writeln(args);
-    stdout.flush;
+    writefln("%s", args);
     const node_amount = args[1].to!uint;
+    writefln("%s", node_amount);
     const calls = args[2].to!uint;
     string[] node_names;
     foreach (i; 0 .. node_amount) {
         node_names ~= format("Node%d", i);
     }
+    writefln("%s",node_names);
 
     auto hashgraph_sync_network_feature = automation!(synchron_network);
     hashgraph_sync_network_feature.StartNetworkWithNAmountOfNodes(node_names, calls, module_path);

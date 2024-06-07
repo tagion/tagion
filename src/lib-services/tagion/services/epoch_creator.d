@@ -1,5 +1,5 @@
-// Service for creating epochs
-/// [Documentation](https://docs.tagion.org/#/documents/architecture/EpochCreator)
+/// Service for creating epochs
+/// https://docs.tagion.org/docs/architecture/EpochCreator
 module tagion.services.epoch_creator;
 
 // tagion
@@ -12,10 +12,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.random.random;
 import tagion.gossip.AddressBook;
-import tagion.gossip.EmulatorGossipNet;
-import tagion.gossip.NNGGossipNet;
 import tagion.gossip.GossipNet;
-import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Refinement;
 import tagion.hibon.Document;
@@ -23,13 +20,13 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONJSON;
 import tagion.logger.Logger;
 import tagion.services.messages;
-import tagion.services.monitor;
 import tagion.services.options : NetworkMode, TaskNames;
 import tagion.utils.JSONCommon;
 import tagion.utils.Queue;
 import tagion.utils.Random;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.monitor.Monitor;
 
 // core
 import core.time;
@@ -45,7 +42,7 @@ alias PayloadQueue = Queue!Document;
 @safe
 struct EpochCreatorOptions {
     uint timeout = 250; // timeout in msecs 
-    uint scrap_depth = 10;
+    uint scrap_depth = 100;
     mixin JSONCommon;
 }
 
@@ -54,42 +51,34 @@ struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts,
             immutable(NetworkMode) network_mode,
-            immutable(size_t) number_of_nodes,
+            uint number_of_nodes,
             shared(StdSecureNet) shared_net,
-            immutable(MonitorOptions) monitor_opts,
             immutable(TaskNames) task_names) {
 
         const net = new StdSecureNet(shared_net);
 
-        assert(network_mode != NetworkMode.PUB, "Unsupported network mode");
+        assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
 
-        if (monitor_opts.enable) {
-            import tagion.hashgraph.Event : Event;
-            import tagion.monitor.Monitor : MonitorCallBacks;
-
-            auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
-            Event.callbacks = new MonitorCallBacks(
-                    monitor_socket_tid, monitor_opts.dataformat);
-
-            if (!waitforChildren(Ctrl.ALIVE)) {
-                log.warn("Monitor never started, continuing anyway");
-            }
+        import tagion.hashgraph.Event : Event;
+        Event.callbacks = new LogMonitorCallbacks();
+        version(BDD) {
+            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook.keys);
         }
 
         GossipNet gossip_net;
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL:
-            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, ActorHandle(task_names.node_interface));
+            gossip_net = new NNGGossipNet(net.pubkey, opts.timeout, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
         }
 
-        Pubkey[] channels = addressbook.activeNodeChannels;
+        Pubkey[] channels = addressbook.keys;
         Random!size_t random;
         const _seed = getRandom!size_t;
         random.seed(_seed);
@@ -127,12 +116,6 @@ struct EpochCreatorService {
         void receivePayload(Payload, const(Document) pload) {
             payload_queue.write(pload);
             counter++;
-        }
-
-        /// Receive external payloads from the nodeinterface
-        void node_receive(NodeRecv, const(Document) doc) {
-            // TODOr: Check that it's valid Receiver
-            receivePayload(Payload(), doc);
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
@@ -187,7 +170,6 @@ struct EpochCreatorService {
                     opts.timeout.msecs,
                     &signal,
                     &ownerTerminated,
-                    &node_receive,
                     &receiveWavefront,
                     &unknown
             );
@@ -197,10 +179,16 @@ struct EpochCreatorService {
             timeout();
         }
 
+        if (hashgraph.areWeInGraph) {
+            log("NODE CAME INTO GRAPH");
+        }
+
         if (thisActor.stop) {
             return;
         }
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &node_receive, &receiveWavefront);
+        Topic inGraph = Topic("in_graph");
+        log.event(inGraph, __FUNCTION__, Document());
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
     }
 
 }

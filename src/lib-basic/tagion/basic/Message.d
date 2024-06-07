@@ -11,7 +11,7 @@ enum name_list = [
         "TAGION_LANG", /// Tagion language
         "language", /// Language
         "languages", /// Path for the translation language files 
-        "tabel", /// Translation table
+        "table", /// Translation table
         "tagion", /// Name of the product
         "en", /// Default language
         "new_en", /// Just a new language name used when the default exists
@@ -52,7 +52,7 @@ import std.stdio;
 static if (not_unittest) {
     /++
  This generates the message translation table
- If the version flag UPDATE_MESSAGE_TABEL is set then the default translation tabel
+ If the version flag UPDATE_MESSAGE_TABLE is set then the default translation table
  is generated and a json file is written, which then can be edited for other language support
 +/
 
@@ -78,10 +78,10 @@ static if (not_unittest) {
         shared static ~this() {
             JSONValue result;
             result[Names.language] = Names.en;
-            JSONValue tabel;
+            JSONValue table;
             message.translation.byKey
-                .each!(fmt => tabel[fmt] = fmt);
-            result[Names.tabel] = tabel;
+                .each!(fmt => table[fmt] = fmt);
+            result[Names.table] = table;
             immutable text = result.toPrettyString;
             immutable lang_path = get_lang_path;
             auto lang_file = buildPath(lang_path, Names.en).setExtension(FileExtension.json);

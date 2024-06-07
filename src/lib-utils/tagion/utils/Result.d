@@ -1,3 +1,4 @@
+/// Result type that includes an exception
 module tagion.utils.Result;
 
 @safe

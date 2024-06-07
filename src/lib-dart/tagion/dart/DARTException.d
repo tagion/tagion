@@ -14,7 +14,7 @@ class BlockFileException : TagionException {
 }
 
 /**
- * Excection used in the DART
+ * Exception used in the DART
  */
 @safe
 class DARTException : BlockFileException {
@@ -24,7 +24,7 @@ class DARTException : BlockFileException {
 }
 
 /**
- * Excection used in the Recorder RecordFactory
+ * Exception used in the Recorder RecordFactory
  */
 @safe
 class DARTRecorderException : DARTException {

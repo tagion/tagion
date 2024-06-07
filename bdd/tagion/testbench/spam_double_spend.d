@@ -98,7 +98,7 @@ int _main(string[] args) {
     import tagion.hibon.Document;
     import tagion.hibon.BigNumber;
 
-    const(Options)[] node_opts = getMode0Options(local_options, false);
+    const(Options)[] node_opts = getMode0Options(local_options);
 
     NodeSettings[] node_settings;
     auto nodenets = dummy_nodenets_for_testing(node_opts);
@@ -156,12 +156,12 @@ int _main(string[] args) {
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     auto feature = automation!(spam_double_spend);
-    feature.SpamOneNodeUntil10EpochsHaveOccured(node_opts, wallets[0], wallets[1]);
-    feature.SpamMultipleNodesUntil10EpochsHaveOccured(node_opts, wallets[2], wallets[3]);
+    feature.SpamOneNodeUntil10EpochsHaveOccurred(node_opts, wallets[0], wallets[1]);
+    feature.SpamMultipleNodesUntil10EpochsHaveOccurred(node_opts, wallets[2], wallets[3]);
 
     feature.run();
 
-    stopsignal.set;
+    stopsignal.setIfInitialized;
     Thread.sleep(6.seconds);
     return 0;
 }

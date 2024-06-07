@@ -67,7 +67,7 @@ int _main(string[] args) {
             defaultGetoptPrinter(
                     [
                     //                format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
+                    "Documentation: https://docs.tagion.org/",
                     "",
                     "Usage:",
                     format("%s [<option>...] <hibon-files> ...", program),
@@ -117,10 +117,6 @@ int _main(string[] args) {
             }
             auto genesis_list = createGenesis(nodekeys, testamony, genesis_globals);
             recorder.insert(genesis_list, Archive.Type.ADD);
-            TagionHead tagion_head;
-            tagion_head.name = TagionDomain;
-            tagion_head.current_epoch = 0;
-            recorder.add(tagion_head);
         }
         else if (standard_input) {
             auto fin = stdin;
