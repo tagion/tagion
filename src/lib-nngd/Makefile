@@ -21,7 +21,7 @@ else
 endif
 
 
-all: extern lib buildtest
+all: extern mime lib buildtest
 	@echo "All done!"
 
 buildtest: $(DTESTS)
@@ -33,6 +33,12 @@ extern:
 $(DTESTS):
 	$(DC) $(DCFLAGS) -od=tests/build -of=tests/build/$(basename $@) ${addprefix -I,$(DINC)} -Itests ${addprefix -L,$(DLFLAGS)} $@
 
+mime:
+	@curl -s -K mime.list  |\
+	awk -f mime.awk > nngd/mime.new && wc -l nngd/mime.new |\
+	cut -d " " -f 1 |\
+	awk '{if($$1 > 5) print "mv nngd/mime.new nngd/mime.d";}' |\
+	sh && rm -f nngd/mime.new || true
 lib: 
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
@@ -55,6 +61,7 @@ clean: clean-extern clean-local
 proper: proper-extern clean-local
 
 clean-local:
+	rm -f ./nngd/mime.d && \
 	rm -f ./logs/* && \
 	rm -rf ./build && \
 	rm -rf ./tests/build
@@ -65,4 +72,4 @@ clean-extern:
 proper-extern:
 	$(MAKE) proper -C extern/
 
-.PHONY: all extern lib clean $(DTESTS) $(RUNTESTS)
+.PHONY: all extern mime lib clean $(DTESTS) $(RUNTESTS)

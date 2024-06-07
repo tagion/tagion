@@ -88,8 +88,8 @@ void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Ke
     import tagion.basic.Debug;
 
     alias BaseT = TypedefBase!T;
-    static if (!is(BaseT == T) && __traits(compiles, { auto x = cast(BaseT) val; })) {
-        auto x = cast(BaseT) val;
+    static if (!is(BaseT == T) && __traits(compiles, { auto x = cast(const(BaseT)) val; })) {
+        auto x = (() @trusted => cast(BaseT) val)();
     }
     else {
         alias x = val;
@@ -137,7 +137,7 @@ void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Ke
         buffer ~= LEB128.encode(cast(BaseT) x);
     }
     else static if (is(BaseT : const(sdt_t))) {
-        buffer ~= LEB128.encode(cast(TypedefType!sdt_t) x);
+        buffer ~= LEB128.encode(cast(const(TypedefType!sdt_t)) x);
     }
     else static if (isHiBONRecord!BaseT) {
         const start_index = buffer.data.length;

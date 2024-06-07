@@ -20,6 +20,7 @@ import tagion.logger;
 import tagion.logger.LogRecords;
 import tagion.services.exception;
 import tagion.services.options : contract_sock_addr;
+import tagion.logger.subscription;
 
 /// Options for the subscription service
 struct SubscriptionServiceOptions {
@@ -43,24 +44,6 @@ struct SubscriptionServiceOptions {
     uint sendtimeout = 1000;
     uint sendbufsize = 4096;
     mixin JSONCommon;
-}
-
-/// The package which is published over the subscription socket
-@recordType("sub_payload")
-struct SubscriptionPayload {
-    @label("topic") string topic_name;
-    @label("task") string task_name;
-    @label("symbol") string symbol_name;
-    @label("data") Document data;
-
-    mixin HiBONRecord!(q{
-            this(LogInfo info, const(Document) data) {
-                this.topic_name = info.topic_name;
-                this.task_name = info.task_name;
-                this.symbol_name = info.symbol_name;
-                this.data = data;
-            }
-    });
 }
 
 ///

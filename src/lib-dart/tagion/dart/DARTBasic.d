@@ -209,7 +209,7 @@ do {
 
 Fingerprint binaryHash(const(HashNet) net, scope const(Fingerprint) h1, scope const(
         Fingerprint) h2) {
-    return Fingerprint(binaryHash(net, cast(Buffer) h1, cast(Buffer) h2));
+    return Fingerprint(binaryHash(net, cast(const(Buffer)) h1, cast(const(Buffer)) h2));
 }
 /**
 

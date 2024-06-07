@@ -66,6 +66,7 @@ FULLY_QUALIFIED = -oq
 DDEBUG_DEFAULTLIB::=--link-defaultlib-debug
 DWARNERROR::=-w
 DWARNINFO::=--wi
+CPP_FLAG := -P
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -84,6 +85,7 @@ DINCIMPORT=-i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
 OUTPUTDIR = -od
+CPP_FLAG := -P
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname

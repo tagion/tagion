@@ -15,6 +15,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.logger;
+import tagion.logger.subscription;
 import tagion.tools.Basic;
 import tagion.basic.Types;
 import tagion.services.subscription;

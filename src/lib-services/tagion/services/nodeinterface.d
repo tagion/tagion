@@ -69,15 +69,15 @@ struct Dialer {
     nng_stream_dialer* dialer;
     nng_aio* aio;
     string owner_task;
-    Pubkey pkey;
+    Pubkey channel;
 
     ///
-    this(int id, string address_, Pubkey pkey) @trusted {
+    this(int id, string address_, Pubkey channel) @trusted {
         int rc;
         rc = nng_aio_alloc(&aio, &callback, self);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
 
-        this.pkey = pkey;
+        this.channel = channel;
         this.id = id;
         this.address = address_;
 
@@ -98,9 +98,10 @@ struct Dialer {
         nng_stream_dialer_dial(dialer, aio);
     }
 
-    // TODO: Use nullable?
     nng_stream* get_output() @trusted {
-        return cast(nng_stream*)nng_aio_get_output(aio, 0);
+        nng_stream* sock = cast(nng_stream*)nng_aio_get_output(aio, 0);
+        assert(sock !is null, "Dialed socket was null");
+        return sock;
     }
 
     static callback(void* ctx) nothrow {
@@ -110,7 +111,7 @@ struct Dialer {
 
             nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio);
             if(rc == nng_errno.NNG_OK) {
-                ActorHandle(_this.owner_task).send(NodeAction.dialed, _this.id);
+                ActorHandle(_this.owner_task).send(NodeAction.dialed, _this.id, _this.channel);
             }
             else {
                 node_error(_this.owner_task, rc, _this.id, _this.address);
@@ -143,6 +144,7 @@ struct Peer {
     @disable this(this);
 
     int id;
+    Pubkey channel;
 
     // taskname is used inside the nng callback to know which thread to notify
     string owner_task;
@@ -202,10 +204,10 @@ struct Peer {
                     Buffer buf = _this.msg_buf[0 .. msg_size].idup;
                     check(buf !is null, "Got invalid buf output");
 
-                    ActorHandle(_this.owner_task).send(NodeAction.received, _this.id, buf);
+                    ActorHandle(_this.owner_task).send(NodeAction.received, _this.id, _this.channel, buf);
                     break;
                 default:
-                    ActorHandle(_this.owner_task).send(NodeAction.sent, _this.id);
+                    ActorHandle(_this.owner_task).send(NodeAction.sent, _this.id, _this.channel);
                     break;
             }
         }
@@ -320,7 +322,7 @@ struct PeerMgr {
                 node_error(_this.task_name, rc, id);
             }
             else {
-                ActorHandle(_this.task_name).send(NodeAction.accepted, id);
+                ActorHandle(_this.task_name).send(NodeAction.accepted, id, Pubkey.init);
             }
         }
         catch(Exception e) {
@@ -358,19 +360,22 @@ struct PeerMgr {
 
             foreach(channel, peer; peers) {
                 if (peer.id == id) {
+                    debug(nodeinterface) log("Closed (%s) %s", id, channel.encodeBase64);
                     peers.remove(channel);
-                    break;
+                    return;
                 }
             }
+            debug(nodeinterface) log("Closed (%s)", id);
         }
     }
 
-    void close(Pubkey pkey) {
-        if(isActive(pkey)) {
-            Peer* peer = peers[pkey];
+    void close(Pubkey channel) {
+        if(isActive(channel)) {
+            Peer* peer = peers[channel];
+            debug(nodeinterface) log("Closed (%s) %s", peer.id, channel.encodeBase64);
             peer.close();
             all_peers.remove(peer.id);
-            peers.remove(pkey);
+            peers.remove(channel);
         }
     }
 
@@ -419,11 +424,12 @@ struct PeerMgr {
 
     // You should call this functions after each operation
 
-    void update(NodeAction action, int id, const Pubkey channel = Pubkey.init) {
+    void update(NodeAction action, int id, Pubkey channel = Pubkey.init) {
         final switch(action) {
         case NodeAction.received:
             assert(channel !is Pubkey.init, "received should be called with a public key");
             Peer* peer = all_peers[id];
+            peer.channel = channel;
             peer.state = Peer.State.ready;
             // Add to the list of known connections
             peers.require(channel, peer);
@@ -438,8 +444,9 @@ struct PeerMgr {
             auto dialer = dialers[id];
             nng_stream* socket = dialer.get_output;
             auto peer = new Peer(id, socket, bufsize);
+            peer.channel = dialer.channel;
             all_peers[id] = peer;
-            peers[dialer.pkey] = peer;
+            peers[dialer.channel] = peer;
             break;
 
         case NodeAction.accepted:
@@ -460,7 +467,7 @@ struct PeerMgr {
 unittest {
     static void unit_handler(ref PeerMgr sender, ref PeerMgr receiver) {
         receiveOnlyTimeout(1.seconds, 
-                (NodeAction a, int id) {
+                (NodeAction a, int id, Pubkey channel) {
                     if(a is NodeAction.accepted) {
                         receiver.update(a, id);
                     }
@@ -468,7 +475,7 @@ unittest {
                         sender.update(a, id);
                     }
                 },
-                (NodeAction a, int id, Buffer buf) {
+                (NodeAction a, int id, Pubkey channel, Buffer buf) {
                     receiver.update(a, id, get_public_key(Document(buf)));
                 }
         );
@@ -556,11 +563,20 @@ struct NodeInterfaceService_ {
         this.p2p = PeerMgr(this.net, opts.node_address, opts.bufsize);
     }
 
-    Topic node_action_event = Topic("node_action");
+    static Topic node_action_event = Topic("node_action");
 
     alias MsgQueue = Queue!Document;
 
     MsgQueue[Pubkey] msg_queues;
+
+    version(none)
+    size_t queue_length(Pubkey channel) {
+        MsgQueue* queue = (channel in msg_queues);
+        if(queue is null) {
+            return 0;
+        }
+        return queue.length;
+    }
 
     void queue_write(Pubkey channel, Document data) {
         msg_queues.require(channel, new MsgQueue);
@@ -584,6 +600,16 @@ struct NodeInterfaceService_ {
     }
 
     void queued_send(NodeSend, Pubkey channel, Document doc = Document.init) {
+        NodeInterfaceSub sub;
+        sub.channel = channel;
+        sub.owner = net.pubkey;
+        sub.action_state = NodeAction.sent;
+        /* sub.id = id; */
+        /* if (node_action_event.subscribed) { */
+        /*     sub.exchange_state = ExchangeState; */
+        /* } */
+
+
         debug(nodeinterface) log("%s: %s", __FUNCTION__, channel.encodeBase64);
         if(!p2p.isActive(channel)) {
             queue_write(channel, doc);
@@ -597,6 +623,16 @@ struct NodeInterfaceService_ {
         if(p2p.peers[channel].state !is Peer.State.ready) {
             queue_write(channel, doc);
             debug(nodeinterface) log("%s: not ready %s", __FUNCTION__, p2p.peers[channel].state);
+
+            sub.event_state = NodeInterfaceSub.EventState.send_queued;
+            log.event(node_action_event, __FUNCTION__, sub);
+
+            // // Some timeout idk
+            // if(queue_length(channel) >= 3) {
+            //     p2p.close(channel);
+            //     p2p.dial(nnr.address, channel);
+            // }
+
             return;
         }
 
@@ -604,24 +640,37 @@ struct NodeInterfaceService_ {
         if(queued_doc !is Document.init) {
             queue_write(channel, doc);
             p2p.send(channel, queued_doc.serialize);
-            debug(nodeinterface) log("%s: sent from queue", __FUNCTION__);
+            debug(nodeinterface) log("%s: sent from queue %s", __FUNCTION__, get_exchange_state(queued_doc));
+
+            sub.event_state = NodeInterfaceSub.EventState.send_from_queue;
+            log.event(node_action_event, __FUNCTION__, sub);
         }
         else if(doc !is Document.init) {
             p2p.send(channel, doc.serialize);
-            debug(nodeinterface) log("%s: sent direct", __FUNCTION__);
+            debug(nodeinterface) log("%s: sent direct %s", __FUNCTION__, get_exchange_state(doc));
+            sub.event_state = NodeInterfaceSub.EventState.send;
+            log.event(node_action_event, __FUNCTION__, sub);
         }
     }
 
-    void on_action_complete(NodeAction action, int id, Buffer buf = null) {
-        debug(nodeinterface) log(text(action));
-        log.event(node_action_event, text(action), Document());
+    void on_action_complete(NodeAction action, int id, Pubkey channel, Buffer buf = null) {
+        debug(nodeinterface) log("%s(%s) %s", channel.encodeBase64, id, action);
+        if (node_action_event.subscribed) {
+            NodeInterfaceSub sub;
+            sub.channel = channel;
+            sub.owner = net.pubkey;
+            sub.id = id;
+            sub.event_state = cast(NodeInterfaceSub.EventState)action;
+            /* sub.exchange_state = ExchangeState; */
+            log.event(node_action_event, text(action), sub);
+        }
 
         final switch(action) {
         case NodeAction.dialed:
-            Pubkey channel = p2p.dialers[id].pkey;
+            Pubkey dialer_channel = p2p.dialers[id].channel;
 
             p2p.update(action, id);
-            queued_send(NodeSend(), channel, Document.init);
+            queued_send(NodeSend(), dialer_channel, Document.init);
             break;
 
         case NodeAction.accepted:
@@ -645,7 +694,7 @@ struct NodeInterfaceService_ {
                 return;
             }
 
-            const(Document) doc = buf;
+            const doc = Document(buf);
 
             if(!doc.empty && !doc.isInorder(Document.Reserved.no)) {
                 on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
@@ -663,17 +712,18 @@ struct NodeInterfaceService_ {
                     return;
                 }
 
-                Pubkey channel = hirpcmsg.pubkey;
-                p2p.update(action, id, channel);
+                Pubkey received_channel = hirpcmsg.pubkey;
+                p2p.update(action, id, received_channel);
 
                 ExchangeState exchange_state = get_exchange_state(hirpcmsg);
                 if (exchange_state is ExchangeState.BREAKING_WAVE || exchange_state is ExchangeState.SECOND_WAVE) {
-                    p2p.close(channel);
+                    debug(nodeinterface) log("RECEIVED WAVE %s", exchange_state);
+                    p2p.close(received_channel);
                 }
                 
                 // Send to hasgraph/epoch_creator
                 receive_handle.send(ReceivedWavefront(), doc);
-                // queued_send(NodeSend(), channel, Document.init);
+                queued_send(NodeSend(), received_channel, Document.init);
             }
             catch(Exception e) {
                 on_node_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
@@ -703,11 +753,11 @@ struct NodeInterfaceService_ {
         p2p.accept();
 
         run(
-                (NodeAction a, int id) {
-                    on_action_complete(a, id);
+                (NodeAction a, int id, Pubkey channel) {
+                    on_action_complete(a, id, channel);
                 },
-                (NodeAction a, int id, Buffer buf) {
-                    on_action_complete(a, id, buf);
+                (NodeAction a, int id, Pubkey channel, Buffer buf) {
+                    on_action_complete(a, id, channel, buf);
                 },
                 &queued_send,
                 &on_node_error,
@@ -825,12 +875,54 @@ void fail(string owner_task, Throwable t) nothrow {
     }
 }
 
+import tagion.hibon.HiBONRecord;
+
+// This record is used for internal subscription events
+struct NodeInterfaceSub {
+    enum EventState {
+        receive = 10,
+        received = NodeAction.received,
+        dial = 11,
+        dialed = NodeAction.dialed,
+        accept = 12,
+        accepted = NodeAction.accepted,
+        send = 13,
+        send_from_queue,
+        send_queued,
+        sent = NodeAction.sent,
+    }
+
+    @label(StdNames.owner) Pubkey owner;
+    // The channel which was interacted with
+    Pubkey channel;
+    /* long queued; */
+    int id;
+    EventState event_state;
+    /* ExchangeState exchange_state; */
+    NodeAction action_state;
+
+    mixin HiBONRecord;
+}
+
 void node_error(string owner_task, NodeErrorCode code, int id, string msg = "", int line = __LINE__) {
     ActorHandle(owner_task).send(NodeError(), code, id, msg, line);
 }
 
 void node_error(string owner_task, nng_errno code, int id, string msg = "", int line = __LINE__) {
     ActorHandle(owner_task).send(NNGError(), code, id, msg, line);
+}
+
+debug(nodeinterface) {
+// Sender
+ExchangeState get_exchange_state(const Document doc) {
+    return HiRPC.Receiver(doc).params[StdNames.state].get!ExchangeState;
+}
+
+unittest {
+    Wavefront wavefront;
+    const sender =  HiRPC(null).action("wavefrnt", wavefront);
+    assert(get_exchange_state(sender.toDoc) == ExchangeState.NONE);
+}
 }
 
 ExchangeState get_exchange_state(const HiRPC.Receiver receiver) {

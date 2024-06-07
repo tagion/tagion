@@ -1,5 +1,5 @@
 /** 
-* HiBON Remote Pprocedure Call
+* HiBON Remote Procedure Call
 */
 module tagion.communication.HiRPC;
 

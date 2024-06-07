@@ -31,7 +31,7 @@ import tagion.hibon.HiBONRecord : isRecord;
 import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex, Params;
 import tagion.dart.Recorder;
 import crud = tagion.dart.DARTcrud;
-import tagion.services.subscription;
+import tagion.logger.subscription;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
@@ -236,7 +236,6 @@ void dart_worker(ShellOptions opt) {
         "$rec": "round_received",
         "$w": "witness",
         "$famous": "famous",
-        "$received": "round_received_mask",
         "$error": "error",
         "father_less": "father_less"
     ]);

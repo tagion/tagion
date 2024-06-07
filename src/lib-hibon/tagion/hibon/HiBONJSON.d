@@ -289,7 +289,7 @@ struct toJSONT(bool HASHSAFE) {
                     else static if (E is TIME) {
                         import std.datetime;
 
-                        SysTime sys_time = SysTime(cast(long) e.by!E);
+                        SysTime sys_time = SysTime(cast(const long) e.by!E);
 
                         pragma(msg, "FIXME: Hacky LocalTime override crashes on iOS");
                         // Suggested solution, just implement the toISOExtString function without the localtime check
