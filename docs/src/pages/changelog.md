@@ -1,3 +1,21 @@
+# Changelog for Epoch 2010300 .. 2094264
+
+**Simplified HiBON Record Constructors**
+HiBONRecord now automatically creates a constructor instead of having to explicitly create on for each struct.
+
+**Dartutil**
+The dartutil can now take multiple dart files as an argument.
+Make i easier to eg. check the bullseye of multiple dart files.  
+
+To get the bul bullseye of all dart in you directory you can do
+```
+dartutil --eye *.drt
+```
+
+**HiRPC tool**
+We added documentation for the hirpc command line tool.
+This tool has proven to be really handy, so we're keeping it :D
+
 # Changelog for Epoch 1924336.. 2010300
 
 **NNG MIME Map**
