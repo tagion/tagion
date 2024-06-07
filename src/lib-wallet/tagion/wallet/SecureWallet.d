@@ -1036,7 +1036,7 @@ struct SecureWallet(Net : SecureNet) {
         import std.typecons;
 
         const pkey = _net.pubkey;
-        return cast(TypedefType!Pubkey)(pkey);
+        return cast(const(TypedefType!Pubkey))(pkey);
     }
 
     struct DeriverState {

@@ -16,6 +16,6 @@ sdt_t currentTime() {
 
 @safe
 string toText(const sdt_t time) {
-    SysTime sys_time = SysTime(cast(long) time);
+    SysTime sys_time = SysTime(cast(const long) time);
     return sys_time.toISOExtString;
 }

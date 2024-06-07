@@ -11,7 +11,10 @@ import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
 import tagion.tools.dartutil.dartindex;
 import tagion.crypto.SecureNet;
+import tagion.crypto.Types;
 import tagion.hibon.Document;
+import tagion.script.standardnames;
+import tagion.hibon.HiBONtoText : decode;
 
 import std.path;
 import std.stdio;
@@ -30,6 +33,7 @@ int _main(string[] args) {
     string output_filename;
     string method_name;
     string input;
+    string pkeys;
 
     try {
         auto main_args = getopt(args,
@@ -39,7 +43,8 @@ int _main(string[] args) {
             "v|verbose", "Prints more debug information", &__verbose_switch,
             "o|output", "Output filename (Default stdout)", &output_filename,
             "m|method", "method name for the hirpc to generate", &method_name,
-            "i|input", "inputs sep. by comma for multiples generated differently for each cmd", &input,
+            "d|dartinput", "dart inputs sep. by comma for multiples generated differently for each cmd", &input,
+            "p|pkeys", "pkeys sep. by comma for multiple entries", &pkeys,
         );
 
         if (version_switch) {
@@ -84,9 +89,14 @@ int _main(string[] args) {
                 .array
                 .map!(d => hash_net.dartIndexDecode(d))
                 .array;
+        }
 
-
-
+        DARTIndex[] get_pkey_indices(string _input) {
+            return _input
+                .split(",")
+                .array
+                .map!(p => hash_net.dartKey(TRTLabel, Pubkey(p.decode)))
+                .array;
         }
 
         enum TRT_METHOD = "trt.";
@@ -100,14 +110,18 @@ int _main(string[] args) {
                 result = dartBullseye().toDoc;
                 break;
             case Queries.dartRead, TRT_METHOD ~ Queries.dartRead:
-                tools.check(input !is string.init, format("must supply input for %s", method_name));
+                tools.check(input !is string.init || pkeys !is string.init, "must supply pkeys or dartindices"); 
                 const dart_indices = get_indices(input);
-                result = isTRTreq ? trtdartRead(dart_indices).toDoc : dartRead(dart_indices).toDoc;
+                const pkey_indices = get_pkey_indices(pkeys);
+                const res = dart_indices ~ pkey_indices;
+                result = isTRTreq ? trtdartRead(res).toDoc : dartRead(res).toDoc;
                 break;
             case Queries.dartCheckRead, TRT_METHOD ~ Queries.dartCheckRead:
-                tools.check(input !is string.init, format("must supply input for %s", method_name));
+                tools.check(input !is string.init || pkeys !is string.init, "must supply pkeys or dartindices"); 
                 const dart_indices = get_indices(input);
-                result = isTRTreq ? trtdartCheckRead(dart_indices).toDoc : dartCheckRead(dart_indices).toDoc;
+                const pkey_indices = get_pkey_indices(pkeys);
+                const res = dart_indices ~ pkey_indices;
+                result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
                 break;
             default:
                 tools.check(0, format("method %s not currently implemented", method_name));

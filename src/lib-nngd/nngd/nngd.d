@@ -17,7 +17,9 @@ import std.path;
 import std.exception;
 import std.array;
 import std.utf;
+import std.mmfile;
 
+private import nngd.mime;
 private import libnng;
 
 import std.stdio;
@@ -558,7 +560,7 @@ struct NNGSocket {
 
     @disable this();
     
-    this(nng_socket_type itype, bool iraw = false) nothrow {
+    this(nng_socket_type itype, bool iraw = false) @trusted nothrow {
         int rc;
         m_type = itype;
         m_raw = iraw;
@@ -627,7 +629,7 @@ struct NNGSocket {
 
     } // this
 
-    int close() nothrow {
+    int close() @safe nothrow {
         int rc;
         m_errno = cast(nng_errno)0;
         foreach(ctx; m_ctx) {
@@ -651,7 +653,7 @@ struct NNGSocket {
     int listener_create(const(string) url) {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED) {
-            auto rc = nng_listener_create( &m_listener, m_socket, toStringz(url) );
+            auto rc = nng_listener_create(&m_listener, m_socket, toStringz(url));
             if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
@@ -663,7 +665,7 @@ struct NNGSocket {
         }
     }        
 
-    int listener_start( const bool nonblock = false ) {
+    int listener_start( const bool nonblock = false ) @safe {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED) {
             auto rc =  nng_listener_start(m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -695,16 +697,16 @@ struct NNGSocket {
 
     // setup subscriber
 
-    int subscribe ( string tag ) nothrow {
+    int subscribe ( string tag ) @safe nothrow {
         if(m_subscriptions.canFind(tag))
             return 0;
-        setopt_buf(NNG_OPT_SUB_SUBSCRIBE, cast(ubyte[])(tag.dup));
+        setopt_buf(NNG_OPT_SUB_SUBSCRIBE, tag.representation);
         if(m_errno == 0)
             m_subscriptions ~= tag;
         return m_errno;    
     }
 
-    int unsubscribe ( string tag ) nothrow {
+    int unsubscribe ( string tag ) @safe nothrow {
         long i = m_subscriptions.countUntil(tag);
         if(i < 0)
             return 0;
@@ -714,12 +716,12 @@ struct NNGSocket {
         return m_errno;    
     }
 
-    int clearsubscribe () nothrow {
+    int clearsubscribe () @safe nothrow {
         long i;
         foreach(tag; m_subscriptions) {
             i = m_subscriptions.countUntil(tag);
             if(i < 0) continue;
-            setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE, cast(ubyte[])(tag.dup));
+            setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE, tag.representation);
             if(m_errno != 0)
                 return m_errno;
             m_subscriptions = m_subscriptions[0..i]~m_subscriptions[i+1..$];
@@ -727,7 +729,7 @@ struct NNGSocket {
         return 0;
     }
 
-    string[] subscriptions() nothrow {
+    string[] subscriptions() @safe nothrow {
         return m_subscriptions;
     }
 
@@ -748,7 +750,7 @@ struct NNGSocket {
         }
     }        
 
-    int dialer_start( const bool nonblock = false ) nothrow {
+    int dialer_start( const bool nonblock = false ) @safe nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED) {
             auto rc =  nng_dialer_start(m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -781,10 +783,10 @@ struct NNGSocket {
     // send & receive TODO: Serialization for objects and structures - see protobuf or hibon?
     
 
-    int sendmsg ( ref NNGMessage msg, bool nonblock = false ) {
+    int sendmsg ( ref NNGMessage msg, bool nonblock = false ) @safe {
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
-            m_errno = (() @trusted => cast(nng_errno) nng_sendmsg( m_socket, msg.pointer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0))();
+            m_errno = cast(nng_errno)nng_sendmsg( m_socket, msg.pointer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
             if (m_errno !is nng_errno.init) {
                 return -1;
             }
@@ -793,12 +795,12 @@ struct NNGSocket {
         return -1;
     }
 
-    int send (T)( const(T) data , bool nonblock = false ) if(isArray!T) {
+    int send (T)(const(T) data , bool nonblock = false ) if(isArray!T) {
         alias U=ForeachType!T;
         static assert(U.sizeof == 1, "None byte size array element are not supported");
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
-            auto rc = nng_send(m_socket, ptr(cast(ubyte[])data), data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
+            auto rc = nng_send(m_socket, &(cast(ubyte[])data)[0], data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
             if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
@@ -808,7 +810,7 @@ struct NNGSocket {
         return -1;
     }
     
-    int sendaio ( ref NNGAio aio ) {
+    int sendaio ( ref NNGAio aio ) @safe {
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             if(aio.pointer) {
@@ -889,7 +891,7 @@ struct NNGSocket {
         return T.init;
     }
     
-    int receiveaio ( ref NNGAio aio ) {
+    int receiveaio ( ref NNGAio aio ) @safe {
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             if(aio.pointer) {
@@ -922,7 +924,7 @@ struct NNGSocket {
     */    
         void name(string val) { m_name = val; }
 
-        @property bool raw() const { return m_raw; }
+        @property bool raw() @safe const { return m_raw; }
 
     } // nogc nothrow pure
 
@@ -1044,7 +1046,7 @@ private:
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }                
         }
         
-        void setopt_buf(string opt, ubyte[] val) {
+        void setopt_buf(string opt, const ubyte[] val) @safe {
             m_errno = cast(nng_errno)0;
             auto rc = nng_socket_set(m_socket, toStringz(opt), ptr(val), val.length);
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }                
@@ -1326,6 +1328,58 @@ alias mime_type = nng_mime_type;
 alias nng_http_req = libnng.nng_http_req;
 alias nng_http_res = libnng.nng_http_res;
 
+const string[] nng_http_req_headers = [
+	"A-IM",
+	"Accept",
+	"Accept-Charset",
+	"Accept-Encoding",
+	"Accept-Language",
+	"Accept-Datetime",
+	"Access-Control-Request-Method",
+	"Access-Control-Request-Headers",
+	"Authorization",
+	"Cache-Control",
+	"Connection",
+	"Content-Length",
+	"Content-Type",
+	"Cookie",
+	"Date",
+	"Expect",
+	"Forwarded",
+	"From",
+	"Host",
+	"If-Match",
+	"If-Modified-Since",
+	"If-None-Match",
+	"If-Range",
+	"If-Unmodified-Since",
+	"Max-Forwards",
+	"Origin",
+	"Pragma",
+	"Proxy-Authorization",
+	"Range",
+	"Referer",
+	"TE",
+	"User-Agent",
+	"Upgrade",
+	"Via",
+	"Warning"
+];    
+
+string nng_find_mime_type(string fname, const string[string] custom_map = null) {
+    const default_mime = "application/octet-stream";
+    const ext = extension(baseName(fname));
+    // TODO: add libmagic support to detect mime by magic numbers
+    if(ext in custom_map){
+        return custom_map[ext];
+    }
+    if(ext in nng_mime_map){
+        return nng_mime_map[ext];
+    }
+    return default_mime;
+}
+
+
 version(withtls) {
     
     alias nng_tls_mode = libnng.nng_tls_mode;
@@ -1424,6 +1478,12 @@ struct WebAppConfig {
     string static_url = "";
     string template_path = "";
     string prefix_url = "";
+    string[] directory_index = ["index.html"];
+    string[string] static_map = [
+        ".wasm": "application/wasm",
+        ".hibon": "application/hibon",
+        ".js": "text/javascript"
+    ];    
     this(ref return scope WebAppConfig rhs) {}
 };
 
@@ -1460,7 +1520,32 @@ struct WebData {
         json = null;
     }
 
-    string toString() nothrow {
+    JSONValue toJSON(string tag = null) nothrow {
+        try{
+            return JSONValue([
+                 "#TAG": JSONValue(tag)
+                ,"route": JSONValue(route)
+                ,"rawuri": JSONValue(rawuri)
+                ,"uri": JSONValue(uri)
+                ,"path": JSONValue(path)
+                ,"param": JSONValue(param)
+                ,"headers": JSONValue(headers)
+                ,"type": JSONValue(type)
+                ,"length": JSONValue(length)
+                ,"method": JSONValue(method)
+                ,"datasize": JSONValue(rawdata.length)
+                ,"text": JSONValue(text)
+                ,"json": json
+                ,"status": JSONValue(cast(int)status)
+                ,"msg": JSONValue(msg)
+            ]);
+        }catch(Exception e) {
+            perror("WD: toJSON error");
+            return JSONValue.init;
+        }
+    }
+
+    string toString() const nothrow {
         try{
         return format(`
         <Webdata>
@@ -1629,6 +1714,7 @@ void webrouter (nng_aio* aio) {
 
     char *sbuf = cast(char*)nng_alloc(4096);
 
+    string[string] headers;
     string errstr = "";
         
         const char* t1 = "NODATA";
@@ -1667,6 +1753,15 @@ void webrouter (nng_aio* aio) {
     if(sreq.type.empty) 
         sreq.type = "text/plain";
 
+    foreach(hname; nng_http_req_headers){
+        sprintf(sbuf, toStringz(hname));
+        auto hval  = cast(immutable)(fromStringz(nng_http_req_get_header(req, sbuf)));
+        if(!hval.empty)
+            headers[hname] = hval.dup;
+    }
+    if(!headers.empty)
+        sreq.headers = headers.dup;
+    
     sreq.uri = cast(immutable)(fromStringz(nng_http_req_get_uri(req)));
     
     sreq.rawdata = cast(ubyte[])(reqbody[0..reqbodylen]);
@@ -1690,6 +1785,145 @@ failure:
 } // router handler
 
 
+// ------------------------------------------
+void webstatichandler (nng_aio* aio) {
+
+    int rc;
+    nng_http_res *res;
+    nng_http_req *req;
+    nng_http_handler *h;
+    
+    void *reqbody;
+    size_t reqbodylen;
+
+    WebApp  *app;
+
+    char *sbuf = cast(char*)nng_alloc(4096);
+    
+    string method, uri;
+    bool found;
+    string fpath, ppath, mtype;
+    string[] rpath;
+    string[string] pmap;
+    scope MmFile mmfile;
+    ubyte[] data;
+
+    nng_http_status errstatus = nng_http_status.NNG_HTTP_STATUS_OK;
+    string errstr = "";
+        
+
+    // TODO: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.
+
+    req = cast(nng_http_req*)nng_aio_get_input(aio, 0);
+    if(req is null) {
+        errstr = "WSH: get request";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto failure;
+    }
+    
+    h = cast(nng_http_handler*)nng_aio_get_input(aio, 1);
+    if(req is null) {
+        errstr = "WSH: get handler";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto failure;
+    }
+    
+    app = cast(WebApp*)nng_http_handler_get_data(h);
+    if(app is null) {
+        errstr = "WR: get handler data";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto failure;
+    }
+    
+    method = cast(immutable)(fromStringz(nng_http_req_get_method(req)));
+    if(method != "GET"){
+        errstr = "WSH: method should be GET";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto failure;
+    }
+    
+
+    uri = cast(immutable)(fromStringz(nng_http_req_get_uri(req)));
+    
+
+    rpath = uri.strip("/").split("/");
+    
+    if(rpath.length < 1 || rpath[0] != "static"){
+        errstr = "WSH: path should start with static prefix";
+        errstatus = nng_http_status.NNG_HTTP_STATUS_NOT_FOUND;
+        goto failure;
+    }
+    
+    
+    uri = "/"~rpath.join("/");
+    found = false;
+    foreach( u; app.staticroutes.keys.sort.reverse ){
+        if(uri.startsWith(u)){
+            found = true;
+            ppath = app.staticroutes[u];
+            pmap = app.staticmime[u];
+            break;
+        }
+    }        
+    if(!found){
+        errstr = "WSH: url path not found: "~uri;
+        errstatus = nng_http_status.NNG_HTTP_STATUS_NOT_FOUND;
+        goto failure;
+    }        
+
+    fpath = buildPath([ppath] ~ rpath[1..$]);
+    
+    
+    found = false;
+    if(fpath.exists && fpath.isFile){
+        found = true;
+    } else if(fpath.exists && fpath.isDir){
+        foreach(fn; app.config.directory_index){
+            const xpath = buildPath(fpath, fn);
+            if(xpath.exists && xpath.isFile){
+                fpath = xpath;
+                found = true;
+                break;
+            }    
+        }    
+    } 
+    
+
+
+    if(!found){
+        errstr = "WSH: path not found: "~fpath;
+        errstatus = nng_http_status.NNG_HTTP_STATUS_NOT_FOUND;
+        goto failure;
+    }
+    
+    mtype = nng_find_mime_type(fpath, pmap);
+    
+    rc = nng_http_res_alloc(&res);
+    enforce(rc == 0, "WSH: res alloc");
+    rc = nng_http_res_set_status(res, cast(ushort)nng_http_status.NNG_HTTP_STATUS_OK);
+    enforce(rc == 0, "WSH: set res status");
+    rc = nng_http_res_set_header(res, toStringz("Content-Type"), toStringz(mtype));
+    enforce(rc == 0, "WSH: set type header");
+
+    mmfile = new MmFile(fpath);
+    data = cast(ubyte[]) mmfile[];
+    
+    rc = nng_http_res_copy_data(res, data.ptr, data.length);
+    enforce(rc == 0, "WSH: copy file data");
+
+    nng_free(sbuf, 4096);
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+
+    return;
+
+failure:
+    writeln("ERROR: "~errstr);
+    nng_http_res_alloc_error(&res, cast(ushort)errstatus);
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, rc);
+    nng_free(sbuf, 4096);
+} // static dir handler
 
 struct WebApp {
     string name;
@@ -1698,6 +1932,8 @@ struct WebApp {
     nng_aio *aio;
     nng_url *url;
     webhandler[string] routes;
+    string[string] staticroutes;
+    string[string][string] staticmime;
     void* context;
     
     @disable this();
@@ -1717,11 +1953,22 @@ struct WebApp {
         context = icontext;
         auto rc = nng_url_parse(&url, iurl.toStringz());
         enforce(rc==0, "server url parse");
-        if("root_path" in iconfig )     config.root_path = iconfig["root_path"].str;
-        if("static_path" in iconfig )   config.static_path = iconfig["static_path"].str;
-        if("static_url" in iconfig )    config.static_url = iconfig["static_url"].str;
-        if("template_path" in iconfig ) config.template_path = iconfig["template_path"].str;
-        if("prefix_url" in iconfig )    config.prefix_url = iconfig["prefix_url"].str;
+        if("root_path" in iconfig )      config.root_path = iconfig["root_path"].str;
+        if("static_path" in iconfig )    config.static_path = iconfig["static_path"].str;
+        if("static_url" in iconfig )     config.static_url = iconfig["static_url"].str;
+        if("template_path" in iconfig )  config.template_path = iconfig["template_path"].str;
+        if("prefix_url" in iconfig )     config.prefix_url = iconfig["prefix_url"].str;
+        if("directory_index" in iconfig) {
+            if(iconfig["directory_index"].type == JSONType.array){
+                config.directory_index = iconfig["directory_index"].array.map!(a => a.str).array;
+            }else{
+                config.directory_index = [iconfig["directory_index"].str];
+            }
+        }
+        if("mime_map" in iconfig) {
+            foreach( string key, val; iconfig["mime_map"])
+                config.static_map[key] = val.str;
+        }    
         init();
     }
     
@@ -1730,6 +1977,35 @@ struct WebApp {
             auto rc = nng_http_server_set_tls(server, tls.tls);
             enforce(rc==0, "server set tls");
         }
+    }
+
+    void staticroute( string urlpath, string path, string[string] content_map = null ) { // path is relative to root_dir
+        int rc;
+        bool isdir = false; 
+        if(urlpath.endsWith("/*")){
+            urlpath = urlpath[0..$-2];
+            isdir = true;
+        }
+        while(urlpath.endsWith("/")){
+            urlpath = urlpath[0..$-1];
+            isdir = true;
+        }
+        enforce(urlpath !in staticroutes, "staticroute path already registered");
+        nng_http_handler *hr;
+        rc = nng_http_handler_alloc(&hr, toStringz(config.prefix_url~urlpath), &webstatichandler);
+        enforce(rc==0,"staticroute handler alloc");
+        rc = nng_http_handler_set_method(hr, toStringz("GET"));
+        enforce(rc==0,"staticroute method");
+        rc = nng_http_handler_set_data(hr, &this, null);
+        enforce(rc==0,"staticroute data");
+        if(isdir) {
+            rc = nng_http_handler_set_tree(hr);
+            enforce(rc==0, "staticroute handler tree");
+        }
+        rc = nng_http_server_add_handler(server, hr);
+        enforce(rc==0, "route handler add");
+        staticroutes[urlpath] = path;
+        staticmime[urlpath] = content_map;
     }
 
     void route (string path, webhandler handler, string[] methods = ["GET"]) {
@@ -1762,7 +2038,7 @@ struct WebApp {
 
     void start() {
         auto rc = nng_http_server_start(server);
-        enforce(rc==0, "server start");
+        enforce(rc==0, "server start = " ~ rc.toString());
     }
 
     void stop() {
@@ -1836,12 +2112,16 @@ struct WebApp {
         rc = nng_http_server_hold(&server, url);
         enforce(rc==0, "server hold");
         
+
+        staticroute(config.prefix_url~"/"~config.static_url~"/", buildPath(config.root_path, config.static_path), config.static_map);
+        /*
         nng_http_handler *hs;
         rc = nng_http_handler_alloc_directory(&hs, toStringz(config.prefix_url~"/"~config.static_path), buildPath(config.root_path, config.static_url).toStringz());
         enforce(rc==0, "static handler alloc");
         rc = nng_http_server_add_handler(server, hs);
         enforce(rc==0, "static handler add");
-        
+        */
+
         rc = nng_aio_alloc(&aio, null, null);                    
         enforce(rc==0, "aio alloc");
 
@@ -1985,7 +2265,7 @@ struct WebClient {
     }
 
     // static sync post
-    static WebData post ( string uri, ubyte[] data, string[string] headers, Duration timeout = 30000.msecs ) {
+    static WebData post ( string uri, const ubyte[] data, const string[string] headers, Duration timeout = 30000.msecs ) {
         int rc;
         nng_http_client *cli;
         nng_url *url;
@@ -2033,7 +2313,7 @@ struct WebClient {
     }
 
     // static async get
-    static NNGAio get_async ( string uri, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
+    static NNGAio get_async ( string uri, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
         int rc;
         nng_aio *aio;
         nng_http_client *cli;
@@ -2071,7 +2351,7 @@ struct WebClient {
     }
 
     // static async post
-    static NNGAio post_async ( string uri, ubyte[] data, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
+    static NNGAio post_async ( string uri, const ubyte[] data, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
         int rc;
         nng_aio *aio;
         nng_http_client *cli;
@@ -2291,7 +2571,7 @@ struct WebSocket {
         }    
     }
 
-    void send(ubyte[] data){
+    void send(const ubyte[] data){
         int rc;
         if(closed)
             return;
