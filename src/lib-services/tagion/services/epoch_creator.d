@@ -42,7 +42,7 @@ alias PayloadQueue = Queue!Document;
 @safe
 struct EpochCreatorOptions {
     uint timeout = 250; // timeout in msecs 
-    uint scrap_depth = 100;
+    uint scrap_depth = 10;
     mixin JSONCommon;
 }
 
