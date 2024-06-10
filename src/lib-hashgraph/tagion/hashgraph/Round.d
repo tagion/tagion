@@ -225,7 +225,8 @@ class Round {
         }
     }
 
-    final uint count_feature_famous_rounds() const pure nothrow {
+    final uint _count_feature_famous_rounds() pure nothrow {
+         
         return cast(uint) this[]
             .retro
             .until!(r => !isMajority(r.voters, node_size))
@@ -233,9 +234,10 @@ class Round {
             .count;
     }
 
-    final uint _count_feature_famous_rounds() const pure nothrow {
+    version(none)
+    final uint count_feature_famous_rounds() const pure nothrow {
         return cast(uint) this[]
-            .retro //.until!(r => !isMajority(r.voters, node_size))
+            .retro 
             .filter!(r => r.isFamous)
             .count;
     }
@@ -267,8 +269,10 @@ class Round {
     struct Rounder {
         Round last_round;
         Round last_decided_round;
+        Round latest_famous_round;
         HashGraph hashgraph;
         Event[] last_witness_events;
+        
         //Round[] voting_round_per_node;
         @disable this();
 
@@ -277,6 +281,24 @@ class Round {
             last_round = new Round(null, hashgraph.node_size);
             last_witness_events.length = hashgraph.node_size;
             //voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
+        }
+
+        private void update_latest_famous_round() pure nothrow {
+            Round inner_latest_famous_round(Round r) {
+                if (r && r.isFamous) {
+                    return inner_latest_famous_round(r._next);
+                }
+                if (!r) {
+                    return inner_latest_famous_round(last_decided_round);
+                }
+                return r;
+            }
+            latest_famous_round=inner_latest_famous_round(latest_famous_round); 
+        }
+
+        uint count_feature_famous_rounds(const Round r) pure nothrow {
+            update_latest_famous_round;
+            return cast(uint)(latest_famous_round.number - r.number);
         }
 
         package void erase() {
@@ -313,6 +335,7 @@ class Round {
                 if (e._witness) {
                     e._round.add(e);
                     last_witness_events[e.node_id] = e;
+                    update_latest_famous_round;
                 }
             }
             e._round = e.maxRound;
@@ -468,7 +491,7 @@ class Round {
                         round_to_be_decided.number,
                         witness_in_round.filter!(w => w.votedYes).count,
                         witness_in_round.filter!(w => w.decided).count);
-                const count_feature_famous_rounds = round_to_be_decided.count_feature_famous_rounds;
+                const count_feature_famous_rounds = count_feature_famous_rounds(round_to_be_decided);
                 const _count_feature_famous_rounds = round_to_be_decided._count_feature_famous_rounds;
                 __write("%s round=%d next_votes=%s famous=%s%d:%d%s", hashgraph.name, round_to_be_decided.number,
                         round_to_be_decided[].retro
