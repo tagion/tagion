@@ -172,7 +172,7 @@ class Event {
             final uint yes_votes() {
                 return cast(uint)(_voted_yes_mask.count);
             }
-            
+
             final const(BitMask) voted_yes_mask() {
                 return _voted_yes_mask;
             }
@@ -202,7 +202,7 @@ class Event {
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
             if (!_voted_yes_mask[voting_node_id]) {
-                _voted_yes_mask[voting_node_id] =  true;
+                _voted_yes_mask[voting_node_id] = true;
                 if (_round.previous) {
                     auto _previous_witness = _round.previous[]
                         .map!(r => r._events[node_id])
@@ -215,13 +215,6 @@ class Event {
 
                     }
                 }
-            }
-        }
-
-        private void voteNo(const size_t node_id) pure nothrow {
-            version (none)
-                if (!_has_voted_mask[node_id]) {
-                _has_voted_mask[node_id] = true;
             }
         }
 
@@ -273,22 +266,9 @@ class Event {
                         if (seen_strongly) {
                             vote_for_witness.voteYes(witness_event.node_id);
                         }
-                        else {
-                            vote_for_witness.voteNo(witness_event.node_id);
-                        }
                         view(previous_witness_event);
                     }
                 }
-            }
-            // Counting no-votes from witness in the next round
-            // which was created before this witness
-            if (witness_event.round.next) {
-                auto next_witness_events = witness_event.round.next.events;
-                next_witness_events
-                    .filter!(vote_from_event => vote_from_event !is null)
-                    .map!(vote_from_event => vote_from_event._witness)
-                    .filter!(vote_from_witness => !vote_from_witness._previous_strongly_seen_mask[witness_event.node_id])
-                    .each!(vote_from_witness => voteNo(vote_from_witness.outer.node_id));
             }
         }
 
@@ -511,8 +491,7 @@ class Event {
     }
 
     @nogc pure nothrow const final {
-        version(none)
-        bool isFamous() {
+        version (none) bool isFamous() {
             return isWitness && round.famous_mask[node_id];
         }
 

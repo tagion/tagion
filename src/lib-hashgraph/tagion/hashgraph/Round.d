@@ -224,11 +224,18 @@ class Round {
             return cast(uint)(_events.filter!(e => e !is null).count);
         }
     }
-    
+
     final uint count_feature_famous_rounds() const pure nothrow {
         return cast(uint) this[]
             .retro
             .until!(r => !isMajority(r.voters, node_size))
+            .filter!(r => r.isFamous)
+            .count;
+    }
+
+    final uint _count_feature_famous_rounds() const pure nothrow {
+        return cast(uint) this[]
+            .retro //.until!(r => !isMajority(r.voters, node_size))
             .filter!(r => r.isFamous)
             .count;
     }
@@ -420,7 +427,7 @@ class Round {
                 }
                 const last_witness_event = last_witness_events[item.index];
                 return last_witness_event &&
-                        (last_witness_event._round.number - r.number) > 0; 
+                    (last_witness_event._round.number - r.number) > 0;
             }
 
             if (r) {
@@ -432,7 +439,7 @@ class Round {
                     return true;
                 }
                 if (isMajority(decided_votes, r.node_size)) {
-                    const last_round_beyond=(last_round.number-r.number) > rounds_beyond_limit;
+                    const last_round_beyond = (last_round.number - r.number) > rounds_beyond_limit;
                     return r.node_size
                         .iota
                         .map!(w_node_id => last_witness_events[w_node_id])
@@ -445,6 +452,7 @@ class Round {
         }
 
         void check_decide_round() {
+            import tagion.utils.Term;
             auto round_to_be_decided = last_decided_round._next;
             if (!round_to_be_decided) {
                 return;
@@ -458,15 +466,17 @@ class Round {
                         (round_to_be_decided._next) ? round_to_be_decided._next._events.filter!(e => e !is null).count
                         : 0,
                         round_to_be_decided.number,
-                witness_in_round.filter!(w => w.votedYes).count,
-    //            witness_in_round.filter!(w => w.votedNo)
-    //                .count,
-                    witness_in_round.filter!(w => w.decided).count);
-                __write("%s round=%d next_votes=%s famous=%d", hashgraph.name, round_to_be_decided.number,
+                        witness_in_round.filter!(w => w.votedYes).count,
+                        witness_in_round.filter!(w => w.decided).count);
+                const count_feature_famous_rounds = round_to_be_decided.count_feature_famous_rounds;
+                const _count_feature_famous_rounds = round_to_be_decided._count_feature_famous_rounds;
+                __write("%s round=%d next_votes=%s famous=%s%d:%d%s", hashgraph.name, round_to_be_decided.number,
                         round_to_be_decided[].retro
                         .until!(r => !isMajority(r.decisions, hashgraph.node_size))
-                        .map!(r => only(r.voters, r.decisions, r.famous)),//round_to_be_decided[].retro.filter!(r => isMajority(r.famous, hashgraph.node_size)).count,
-                        round_to_be_decided.count_feature_famous_rounds);
+                        .map!(r => only(r.voters, r.decisions, r.famous)),
+                        (count_feature_famous_rounds == _count_feature_famous_rounds) ? GREEN : RED,
+                        count_feature_famous_rounds, _count_feature_famous_rounds, RESET
+                );
             }
             if (!can_round_be_decided(round_to_be_decided)) {
                 return;
@@ -496,6 +506,7 @@ class Round {
 
         protected void collect_received_round(Round r)
         in (decided(r), "The round should be decided before the round can be collect")
+
         do {
 
             auto witness_event_in_round = r._events.filter!(e => e !is null);
