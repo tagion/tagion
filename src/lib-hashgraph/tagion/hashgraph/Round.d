@@ -44,12 +44,10 @@ class Round {
     protected {
         Round _previous;
         Round _next;
-        //        BitMask _voter_exists_mask; /// Marks if a voter exists
     }
     immutable int number;
 
-    Event[] _events;
-    //protected bool _decided;
+    package Event[] _events;
     /**
      * Construct a round from the previous round
      * Params:
@@ -72,7 +70,7 @@ class Round {
      * All the events in the first ooccurrences of this round
      * Returns: all events in a round
      */
-    const(Event[]) events() const pure nothrow @nogc {
+    final const(Event[]) events() const pure nothrow @nogc {
         return _events;
     }
 
@@ -84,7 +82,7 @@ class Round {
      * Params:
      *   event = the event to be added
      */
-    package void add(Event event) pure nothrow
+    package final void add(Event event) pure nothrow
     in {
         assert(event._witness, "The event id " ~ event.id.to!string ~ " added to the round should be a witness ");
         assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
@@ -226,10 +224,11 @@ class Round {
             return cast(uint)(_events.filter!(e => e !is null).count);
         }
     }
+    
     final uint count_feature_famous_rounds() const pure nothrow {
         return cast(uint) this[]
             .retro
-            .until!(r => !isMajority(r.voters, _events.length))
+            .until!(r => !isMajority(r.voters, node_size))
             .filter!(r => r.isFamous)
             .count;
     }
@@ -239,29 +238,18 @@ class Round {
         assert(!_next || (_next.number - 1 is number));
     }
 
-    version(none) {
-    final void decide() pure nothrow @nogc
-    in (!_decided)
-    do {
-        _decided = true;
-    }
-
-    final bool decided() const pure nothrow @nogc {
-        return _decided;
-    }
-        }
     /**
  * Range from this round and down
  * Returns: range of rounds 
  */
     @nogc
-    package Rounder.Range!false opSlice() pure nothrow {
+    package final Rounder.Range!false opSlice() pure nothrow {
         return Rounder.Range!false(this);
     }
 
     /// Ditto
     @nogc
-    Rounder.Range!true opSlice() const pure nothrow {
+    final Rounder.Range!true opSlice() const pure nothrow {
         return Rounder.Range!true(this);
     }
 
@@ -424,17 +412,15 @@ class Round {
             }
 
         }
-        final bool can_round_be_decided(const Round r) const pure nothrow {
+        enum rounds_beyond_limit = 2;
+        bool can_round_be_decided(const Round r) const pure nothrow {
             bool _decided(T)(const T item) @nogc {
                 if (item.value && item.value.witness.decided) {
                     return true;
                 }
                 const last_witness_event = last_witness_events[item.index];
-                if (last_witness_event &&
-                        (last_witness_event._round.number - r.number) > 0) {
-                    return true;
-                }
-                return false;
+                return last_witness_event &&
+                        (last_witness_event._round.number - r.number) > 0; 
             }
 
             if (r) {
@@ -446,7 +432,7 @@ class Round {
                     return true;
                 }
                 if (isMajority(decided_votes, r.node_size)) {
-                    const last_round_beyond=(last_round.number-r.number) > 2;
+                    const last_round_beyond=(last_round.number-r.number) > rounds_beyond_limit;
                     return r.node_size
                         .iota
                         .map!(w_node_id => last_witness_events[w_node_id])
@@ -467,14 +453,14 @@ class Round {
                 .filter!(e => e !is null)
                 .map!(e => e.witness);
             if (isMajority(witness_in_round.count, hashgraph.node_size)) {
-                __write("%s voters=%d Round=%d  yes=%d no=%d decided=%d",
+                __write("%s voters=%d Round=%d  yes=%d decided=%d",
                         hashgraph.name,
                         (round_to_be_decided._next) ? round_to_be_decided._next._events.filter!(e => e !is null).count
                         : 0,
                         round_to_be_decided.number,
                 witness_in_round.filter!(w => w.votedYes).count,
-                witness_in_round.filter!(w => w.votedNo)
-                    .count,
+    //            witness_in_round.filter!(w => w.votedNo)
+    //                .count,
                     witness_in_round.filter!(w => w.decided).count);
                 __write("%s round=%d next_votes=%s famous=%d", hashgraph.name, round_to_be_decided.number,
                         round_to_be_decided[].retro
@@ -493,7 +479,6 @@ class Round {
             }
             __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);
             log("Round %d decided", round_to_be_decided.number);
-            //round_to_be_decided.decide;
             last_decided_round = round_to_be_decided;
             __write("Collect %d decided=%d witness=%d next_witness=%d",
                     round_to_be_decided.number,

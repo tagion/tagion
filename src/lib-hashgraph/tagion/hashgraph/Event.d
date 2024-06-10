@@ -189,6 +189,7 @@ class Event {
                 return _has_voted_mask;
             }
 
+            version(none)
             bool votedNo() {
                 return isMajority(no_votes, this.outer._round.events.length);
             }
