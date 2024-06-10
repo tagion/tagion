@@ -79,7 +79,7 @@ struct EventView {
                yes_votes = witness.yes_votes;
     //               no_votes = witness.no_votes;
                famous = isMajority(yes_votes, event.round.events.length); 
-               voted = witness.has_voted_mask.bytes; 
+               voted = witness.voted_yes_mask.bytes; 
                decided = witness.decided;
             }
         }
