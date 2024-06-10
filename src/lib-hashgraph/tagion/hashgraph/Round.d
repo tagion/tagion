@@ -76,6 +76,9 @@ class Round {
         return _events;
     }
 
+    final uint node_size() const pure nothrow @nogc {
+        return cast(uint)_events.length;
+    }
     /**
      * Adds the even to round
      * Params:
@@ -434,13 +437,21 @@ class Round {
             }
 
             if (r) {
-                auto not_decided= r._events
+                const decided_votes=r._events
                     .enumerate
-                    .filter!(item => !_decided(item));
-                if (not_decided.empty) {
-                    return true;    
-                 }
-                
+                    .filter!(item => _decided(item))
+                    .count;
+                if (decided_votes == r.node_size) {
+                    return true;
+                }
+                if (isMajority(decided_votes, r.node_size)) {
+                    const last_round_beyond=(last_round.number-r.number) > 2;
+                    return r.node_size.iota
+                    .map!(w_node_id => last_witness_events[w_node_id])
+                    .filter!(e => (e)?(e.round.number - r.number) > 0:last_round_beyond)
+                    .all;
+                }
+                                
             }
             return false;
         }
@@ -505,6 +516,15 @@ class Round {
                 return;
             }
             Event.view(witness_in_round.map!(w => w.outer));
+            
+	    if (!witness_in_round.map!(w => w.votedYes).all) {
+                return;
+            }
+            /* 
+            if (!round_to_be_decided.isFamous) {
+                return;
+            }
+            */
             //witness_in_round.each!(w => w.display_decided);
             version (none)
                 __write("decided %s", witness_in_round.map!(w => w.decided));
@@ -524,9 +544,17 @@ class Round {
                 __write("decided_with_yes_votes=%d %s", decided_with_yes_votes, isMajority(decided_with_yes_votes, hashgraph
                         .node_size));
             //if (!isMajority(decided_with_yes_votes, hashgraph.node_size)) {
+            version(none)
             if (!round_to_be_decided.isFamous) {
                 return;
             }
+            __write("Collect %d decided=%d witness=%d next_witness=%d %s", 
+                round_to_be_decided.number, 
+                round_to_be_decided.events.filter!(e => e !is null).filter!(e => e.witness.votedYes).count,
+                round_to_be_decided.events.filter!(e => e !is null).count,
+                round_to_be_decided.next.events.filter!(e => e !is null).count,
+                round_to_be_decided.events.filter!(e => e !is null).map!(e => e.id)
+                );
             collect_received_round(round_to_be_decided);
             log("Round %d collected", round_to_be_decided.number);
             check_decide_round;
