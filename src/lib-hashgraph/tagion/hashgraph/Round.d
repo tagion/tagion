@@ -477,10 +477,11 @@ class Round {
             if (!round_to_be_decided) {
                 return;
             }
-           
+            //version(none) 
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
                 .map!(e => e.witness);
+            version(none)
             if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
                 return;
             }
