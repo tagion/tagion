@@ -25,8 +25,8 @@ static if (ver.Posix && not_unittest) {
 
 __gshared Event stopsignal;
 
-// Event.set renamed to setIfInitialized in 2.108
-static if (version_minor < 108) {
+// Event.set renamed to setIfInitialized in 2.107
+static if (version_minor < 107) {
     void setIfInitialized(ref Event e) nothrow {
         e.set();
     }
