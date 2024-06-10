@@ -178,7 +178,7 @@ class Event {
             final uint yes_votes() {
                 return cast(uint)(_voted_yes_mask.count);
             }
-
+            version(none)
             final uint no_votes() {
                 return cast(uint)(_has_voted_mask.count - _voted_yes_mask.count);
                 //return 0;
@@ -203,7 +203,7 @@ class Event {
                 const N = this.outer._round.events.length;
 
                 if (isMajority(voted, N)) {
-                    if (isMajority(yes_votes, N) || isMajority(no_votes, N)) {
+                    if (isMajority(yes_votes, N)) {
                         return true;
                     }
                     const voters = this.outer._round.next.voters;

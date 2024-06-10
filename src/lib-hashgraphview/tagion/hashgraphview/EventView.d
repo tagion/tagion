@@ -37,7 +37,7 @@ struct EventView {
     @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
     @label("$intermediate") @optional Buffer intermediate_seen;
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
-    @label("$no") @optional uint no_votes; /// Famous no votes    
+//    @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
     @optional @(filter.Initialized) bool top;
@@ -77,7 +77,7 @@ struct EventView {
                famous=witness.isFamous;
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
                yes_votes = witness.yes_votes;
-               no_votes = witness.no_votes;
+    //               no_votes = witness.no_votes;
                famous = isMajority(yes_votes, event.round.events.length); 
                voted = witness.has_voted_mask.bytes; 
                decided = witness.decided;
