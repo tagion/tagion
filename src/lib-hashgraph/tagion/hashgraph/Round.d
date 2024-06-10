@@ -445,11 +445,14 @@ class Round {
                     return true;
                 }
                 if (isMajority(decided_votes, r.node_size)) {
-                    const last_round_beyond=(last_round.number-r.number) > 2;
-                    return r.node_size.iota
+                   //const last_round_beond=(last_round.number-r.number) > 2;
+                    const number_of_sealed_witness=r.node_size.iota
                     .map!(w_node_id => last_witness_events[w_node_id])
-                    .filter!(e => (e)?(e.round.number - r.number) > 0:last_round_beyond)
-                    .all;
+                    .filter!(e => (e)?(e.round.number - r.number) > 0:(last_round.number-r.number) > 2)
+                    .count;
+                    if (number_of_sealed_witness == r.node_size) {
+                        return true;
+                    }
                 }
                                 
             }
