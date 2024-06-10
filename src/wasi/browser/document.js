@@ -51,8 +51,23 @@ export class Document {
     const stringBytes = memory.subarray(strPtr, strPtr + strLen);
     const decodedString = new TextDecoder().decode(stringBytes);
     console.log(decodedString);
-
+    return decodedString;
   }
+
+  getText(format=1) {
+    const strPtrPtr = this.instance.exports.mymalloc(4); // Pointer to char* (4 bytes)
+    const strLenPtr = this.instance.exports.mymalloc(4); // Pointer to size_t (4 bytes)
+    const res = this.instance.exports.tagion_document_get_text(this.ptr, this.len, format, strPtrPtr, strLenPtr);
+
+    console.log("tagion_document_get_text returned: ", res);
+    const strPtr = new Uint32Array(this.instance.exports.memory.buffer, strPtrPtr, 1)[0];
+    const strLen = new Uint32Array(this.instance.exports.memory.buffer, strLenPtr, 1)[0];
+    const memory = new Uint8Array(this.instance.exports.memory.buffer);
+    const stringBytes = memory.subarray(strPtr, strPtr + strLen);
+    const decodedString = new TextDecoder().decode(stringBytes);
+    console.log(decodedString);
+    return decodedString;
+  }    
 
   // addString(key, value) {
   //   const _key = this._allocateStr(key);

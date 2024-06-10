@@ -81,7 +81,9 @@ private struct Operation {
     bool any() => anycrud || anyread;
 
     void checkCompatible() {
-        tools.check(sync ^ any, "The sync operation is not compatible any read or crud operation");
+        if(sync) {
+            tools.check(!any, "The sync operation is not compatible with any read or crud operation");
+        }
         tools.check(onecrud, "Only one crud operation is possible at a time");
         tools.check(oneread, "Only one read operation is possible at a time");
     }
