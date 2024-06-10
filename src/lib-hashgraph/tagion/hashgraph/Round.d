@@ -515,9 +515,11 @@ class Round {
                 return;
 
             }
+            version(none) {
             const count_of_famous_rounds = round_to_be_decided.count_feature_famous_rounds;
             if (count_of_famous_rounds < hashgraph.threshold_for_none_decided_famous_rounds) {
                 return;
+            }
             }
             Event.view(witness_in_round.map!(w => w.outer));
             
