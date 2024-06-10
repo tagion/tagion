@@ -32,7 +32,6 @@ import tagion.basic.Debug;
 
 struct HashGraphOptions {
     uint number_of_nodes;
-    uint max_calls = 10_000;
     size_t seed = 123_456_689;
     string path;
     bool disable_graphfile; /// Disable graph file
@@ -66,7 +65,7 @@ class TestRefinement : StdRefinement {
 
 class NewTestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
-
+    static long last_epoch;
     override void epoch(Event[] event_collection, const Round decided_round) const {
         static bool first_epoch;
         if (!first_epoch) {
@@ -123,7 +122,7 @@ class NewTestRefinement : StdRefinement {
 
         epochs[finished_epoch.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = finished_epoch;
 
-        checkepoch(hashgraph.nodes.length.to!uint, epochs);
+        checkepoch(hashgraph.nodes.length.to!uint, epochs, last_epoch);
     }
 
 }
@@ -398,7 +397,7 @@ void printStates(R)(TestNetworkT!(R) network) if (is(R : Refinement)) {
 }
 
 @safe
-static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs) {
+static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs, ref long last_epoch) {
     static int error_count;
     import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
     import tagion.crypto.SecureInterfaceNet;
@@ -470,6 +469,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 }
 
                 writefln("FINISHED ENTIRE EPOCH %s", epoch.key);
+                last_epoch=max(last_epoch, epoch.key); 
                 epochs.remove(epoch.key);
             }
         }

@@ -47,7 +47,7 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "N", "Number of nodes in the test", &opts.number_of_nodes,
-                "iter", "Number of iteration calls", &opts.max_calls,
+                "R|rounds", "Number of rounds", &opts.max_rounds,
                 "seed", "Random seed value", &opts.seed,
                 "P|path", "File path for the generated files", &opts.path,
                 "d", "Disable graph files", &opts.disable_graphfile,
@@ -153,7 +153,7 @@ class RunPassiveFastHashgraph {
                         cast(Pubkey[]) network.channels);
             }
         }
-        while (i < opts.max_calls) {
+        while (NewTestRefinement.last_epoch < opts.max_rounds) {
             size_t channel_number;
             if (NewTestRefinement.epochs.length > 0) {
                 channel_number = rnd.dice(weights);
