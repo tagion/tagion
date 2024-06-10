@@ -77,7 +77,6 @@ struct EventView {
                famous=witness.isFamous;
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
                yes_votes = witness.yes_votes;
-    //               no_votes = witness.no_votes;
                famous = isMajority(yes_votes, event.round.events.length); 
                voted = witness.voted_yes_mask.bytes; 
                decided = witness.decided;

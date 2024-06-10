@@ -156,18 +156,11 @@ class Event {
         private {
             BitMask _intermediate_event_mask;
             BitMask _previous_strongly_seen_mask;
-            //uint _yes_votes;
-            //BitMask _has_voted_mask; /// Witness in the next round which has voted
             BitMask _voted_yes_mask; /// Witness in the next round which has voted
 
         }
 
         @nogc final const pure nothrow {
-            version(none)
-            final size_t votes() {
-                return _has_voted_mask.count;
-            }
-
             final const(BitMask) previous_strongly_seen_mask() {
                 return _previous_strongly_seen_mask;
             }
@@ -179,25 +172,9 @@ class Event {
             final uint yes_votes() {
                 return cast(uint)(_voted_yes_mask.count);
             }
-            version(none)
-            final uint no_votes() {
-                return cast(uint)(_has_voted_mask.count - _voted_yes_mask.count);
-                //return 0;
-                //return cast(uint)(_has_voted_mask.count) - _yes_votes;
-            }
             
             final const(BitMask) voted_yes_mask() {
                 return _voted_yes_mask;
-            }
-
-            version(none)
-            final const(BitMask) has_voted_mask() {
-                return _has_voted_mask;
-            }
-
-            version(none)
-            bool votedNo() {
-                return isMajority(no_votes, this.outer._round.events.length);
             }
 
             bool votedYes() {
@@ -225,7 +202,6 @@ class Event {
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
             if (!_voted_yes_mask[voting_node_id]) {
-                //_yes_votes++;
                 _voted_yes_mask[voting_node_id] =  true;
                 if (_round.previous) {
                     auto _previous_witness = _round.previous[]
