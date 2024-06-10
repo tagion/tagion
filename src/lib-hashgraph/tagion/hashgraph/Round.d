@@ -44,7 +44,7 @@ class Round {
     protected {
         Round _previous;
         Round _next;
-        BitMask _voter_exists_mask; /// Marks if a voter exists
+//        BitMask _voter_exists_mask; /// Marks if a voter exists
     }
     immutable int number;
 
@@ -459,6 +459,7 @@ class Round {
             return false;
         }
 
+        version(none)
         private void update_ballot_list(Round r) pure nothrow {
             bool voter_exists(const size_t node_id) pure nothrow {
                 if (last_witness_events[node_id]) {
@@ -483,7 +484,7 @@ class Round {
             if (!isMajority(witness_in_round.count, hashgraph.node_size)) {
                 return;
             }
-            update_ballot_list(round_to_be_decided);
+            //update_ballot_list(round_to_be_decided);
             if (isMajority(witness_in_round.count, hashgraph.node_size)) {
                 __write("%s voters=%d Round=%d %(%s %) yes=%d no=%d decided=%d",
                         hashgraph.name,
@@ -508,7 +509,7 @@ class Round {
                         round_to_be_decided[].retro.filter!(r => isMajority(r.famous, hashgraph.node_size)).count,
                         round_to_be_decided.count_feature_famous_rounds);
 
-                __write("voter_exists=%5s", round_to_be_decided._voter_exists_mask);
+                //__write("voter_exists=%5s", round_to_be_decided._voter_exists_mask);
             }
             if (!can_round_be_decided(round_to_be_decided)) {
                 return;
