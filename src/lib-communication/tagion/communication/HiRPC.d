@@ -414,7 +414,7 @@ struct HiRPC {
 
         const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
             check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
-            return T(response.result, args);
+            return T(args, response.result);
         }
 
         Document result() const {
