@@ -149,7 +149,7 @@ class Round {
      * Returns: previous round
      */
     @nogc
-    package Round previous() pure nothrow {
+    package final Round previous() pure nothrow {
         return _previous;
     }
 
@@ -223,23 +223,6 @@ class Round {
         uint voters() {
             return cast(uint)(_events.filter!(e => e !is null).count);
         }
-    }
-
-    final uint _count_feature_famous_rounds() pure nothrow {
-         
-        return cast(uint) this[]
-            .retro
-            .until!(r => !isMajority(r.voters, node_size))
-            .filter!(r => r.isFamous)
-            .count;
-    }
-
-    version(none)
-    final uint count_feature_famous_rounds() const pure nothrow {
-        return cast(uint) this[]
-            .retro 
-            .filter!(r => r.isFamous)
-            .count;
     }
 
     invariant {
@@ -484,21 +467,10 @@ class Round {
                 .filter!(e => e !is null)
                 .map!(e => e.witness);
             if (isMajority(witness_in_round.count, hashgraph.node_size)) {
-                __write("%s voters=%d Round=%d  yes=%d decided=%d",
-                        hashgraph.name,
-                        (round_to_be_decided._next) ? round_to_be_decided._next._events.filter!(e => e !is null).count
-                        : 0,
-                        round_to_be_decided.number,
-                        witness_in_round.filter!(w => w.votedYes).count,
-                        witness_in_round.filter!(w => w.decided).count);
                 const count_feature_famous_rounds = count_feature_famous_rounds(round_to_be_decided);
-                const _count_feature_famous_rounds = round_to_be_decided._count_feature_famous_rounds;
-                __write("%s round=%d next_votes=%s famous=%s%d:%d%s", hashgraph.name, round_to_be_decided.number,
-                        round_to_be_decided[].retro
-                        .until!(r => !isMajority(r.decisions, hashgraph.node_size))
-                        .map!(r => only(r.voters, r.decisions, r.famous)),
-                        (count_feature_famous_rounds == _count_feature_famous_rounds) ? GREEN : RED,
-                        count_feature_famous_rounds, _count_feature_famous_rounds, RESET
+                __write("%12s round=%4d %-(%s%) famous=%2d", hashgraph.name, round_to_be_decided.number,
+                        "-!".repeat(round_to_be_decided[].retro.walkLength),
+                        count_feature_famous_rounds 
                 );
             }
             if (!can_round_be_decided(round_to_be_decided)) {
@@ -510,20 +482,9 @@ class Round {
             if (!witness_in_round.map!(w => w.votedYes).all) {
                 return;
             }
-            __write("Round decided %d count=%d", round_to_be_decided.number, witness_in_round.count);
             log("Round %d decided", round_to_be_decided.number);
             last_decided_round = round_to_be_decided;
-            __write("Collect %d decided=%d witness=%d next_witness=%d",
-                    round_to_be_decided.number,
-                    round_to_be_decided.events
-                    .filter!(e => e !is null)
-                    .filter!(e => e.witness.votedYes)
-                    .count,
-                    round_to_be_decided.events.filter!(e => e !is null).count,
-                    round_to_be_decided.next.events.filter!(e => e !is null).count
-            );
             collect_received_round(round_to_be_decided);
-            log("Round %d collected", round_to_be_decided.number);
             check_decide_round;
         }
 
@@ -608,7 +569,6 @@ class Round {
                 .array;
             event_collection.each!(e => e.round_received = r);
             Event.view(event_collection);
-            __write("EPOCH Round collected %d event_collection=%d", r.number, event_collection.length);
             hashgraph.epoch_events_statistic(event_collection.length);
             log.event(Event.topic, hashgraph.epoch_events_statistic.stringof, hashgraph.epoch_events_statistic);
             hashgraph.epoch(event_collection, r);

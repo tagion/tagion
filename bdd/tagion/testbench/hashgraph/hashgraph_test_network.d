@@ -72,7 +72,7 @@ class NewTestRefinement : StdRefinement {
             check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
         }
         first_epoch = true;
-        __write("Round %d event_collection=%d", decided_round.number, event_collection.length);
+        __write("%12s Round %d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
         if (event_collection.length == 0) {
             return;
         }

@@ -214,7 +214,7 @@ class StdRefinement : Refinement {
             .array;
 
         version (OLD_ORDERING) {
-            auto sorted_events = events.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+            auto sorted_events = events.sort!((a, b) => !Event.higher_order(a, b)).array;
         }
         version (NEW_ORDERING) {
             const famous_witnesses = decided_round
@@ -226,17 +226,13 @@ class StdRefinement : Refinement {
         }
         times.sort;
 
-        version (OLD_ORDERING) {
-            const mid = times.length / 2 + (times.length % 1);
-            const epoch_time = times[mid];
-        }
-        version (NEW_ORDERING) {
-            const epoch_time = times[times.length / 2];
-        }
+        const mid = times.length / 2 + (times.length % 1);
+        const epoch_time = times[mid];
+        
         version (BDD) {
             // raw event_collection subscription
             version (OLD_ORDERING) {
-                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+                auto __sorted_raw_events = event_collection.sort!((a, b) => Event.higher_order(a, b)).array;
             }
             version (NEW_ORDERING) {
                 const famous_witnesses = decided_round
