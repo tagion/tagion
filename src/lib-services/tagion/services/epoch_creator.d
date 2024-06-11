@@ -130,6 +130,10 @@ struct EpochCreatorService {
 
             const receiver = HiRPC.Receiver(wave_doc);
 
+            if (receiver.isError) {
+                return;
+            }
+
             const received_wave = (receiver.isMethod)
                     ? receiver.params!Wavefront(net)
                     : receiver.result!Wavefront(net);
@@ -137,7 +141,8 @@ struct EpochCreatorService {
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
-                .filter!(p => p.isRecord!SignedContract) // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+                .filter!(p => p.isRecord!SignedContract)
+                // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
                 .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
                 .handle!(HiBONException, RangePrimitive.front,
                         (e, r) { log("invalid SignedContract from hashgraph"); return null; }
@@ -150,19 +155,20 @@ struct EpochCreatorService {
                 locate(task_names.collector).send(consensusContract(), received_signed_contracts);
             }
 
-            hashgraph.wavefront(
-                    receiver,
-                    currentTime,
-                    (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
-                    &payload);
+            // This adds the events to the graph and creates a response hirpc
+            const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
+            // We only responde if it was a method request
+            if(receiver.isMethod) {
+                gossip_net.send(receiver.pubkey, return_wavefront);
+            }
         }
 
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
-            if (!init_tide) {
-                return;
+            if (init_tide) {
+                auto sender = () => hashgraph.create_init_tide(payload, currentTime);
+                gossip_net.gossip(&hashgraph.not_used_channels, sender);
             }
-            hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
         while (!thisActor.stop && !hashgraph.areWeInGraph) {

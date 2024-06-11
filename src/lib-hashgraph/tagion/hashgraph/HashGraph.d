@@ -222,46 +222,30 @@ class HashGraph {
         return true;
     }
 
+    const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
+        if(areWeInGraph) {
+            immutable epack = event_pack(time, null, payload);
+            const registered = registerEventPackage(epack);
+            assert(registered, "Could not register init tide");
+            return hirpc.wavefront(tidalWave());
+        }
+        else {
+            return hirpc.wavefront(sharpWave());
+        }
+    }
+
     alias GraphResponse = const(Pubkey) delegate(
             GossipNet.ChannelFilter channel_filter,
             GossipNet.SenderCallBack sender) @safe;
     alias GraphPayload = const(Document) delegate() @safe;
 
+    version(BDD)
     void init_tide(
             const(GraphResponse) respond,
             const(GraphPayload) payload,
             lazy const sdt_t time) {
-        const(HiRPC.Sender) payload_sender() @safe {
-            const doc = payload();
-            immutable epack = event_pack(time, null, doc);
 
-            const registered = registerEventPackage(epack);
-
-            assert(registered, "Should not fail here");
-            const sender = hirpc.wavefront(tidalWave);
-            return sender;
-        }
-
-        const(HiRPC.Sender) sharp_sender() @safe {
-            version (EPOCH_LOG) {
-                log("SENDING sharp sender: %s", owner_node.channel.cutHex);
-            }
-
-            const sharp_wavefront = sharpWave();
-            const sender = hirpc.wavefront(sharp_wavefront);
-            return sender;
-        }
-
-        if (areWeInGraph) {
-            const send_channel = respond(
-                    &not_used_channels,
-                    &payload_sender);
-        }
-        else {
-            const send_channel = respond(
-                    &not_used_channels,
-                    &sharp_sender);
-        }
+        const _ = respond(&not_used_channels, () => create_init_tide(payload(), time));
     }
 
     immutable(EventPackage)* event_pack(
@@ -576,6 +560,7 @@ class HashGraph {
         return Wavefront(result, null, ExchangeState.SHARP);
     }
 
+    version(BDD)
     void wavefront(
             const HiRPC.Receiver received,
             lazy const(sdt_t) time,
