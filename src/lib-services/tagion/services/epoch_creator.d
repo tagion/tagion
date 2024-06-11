@@ -130,7 +130,9 @@ struct EpochCreatorService {
 
             const receiver = HiRPC.Receiver(wave_doc);
 
-            const received_wave = receiver.params!(Wavefront)(net);
+            const received_wave = (receiver.isMethod)
+                    ? receiver.params!Wavefront(net)
+                    : receiver.result!Wavefront(net);
 
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
@@ -147,9 +149,7 @@ struct EpochCreatorService {
                 // log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
                 locate(task_names.collector).send(consensusContract(), received_signed_contracts);
             }
-            scope (failure) {
-                log.fatal("WAVEFRONT\n%s\n", receiver.toPretty);
-            }
+
             hashgraph.wavefront(
                     receiver,
                     currentTime,
