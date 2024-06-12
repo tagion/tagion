@@ -425,7 +425,7 @@ class Round {
             }
 
         }
-        enum rounds_beyond_limit = 2;
+        enum rounds_beyond_limit = 3;
         bool can_round_be_decided(const Round r) const pure nothrow {
             bool _decided(T)(const T item) @nogc {
                 if (item.value && item.value.witness.decided) {
@@ -449,6 +449,7 @@ class Round {
                     return r.node_size
                         .iota
                         .map!(w_node_id => last_witness_events[w_node_id])
+                        //.map!(e => (e)&&((e.round.number - r.number) > 0) || last_round_beyond)
                         .map!(e => (e) ? (e.round.number - r.number) > 0 : last_round_beyond)
                         .all;
                 }
@@ -468,8 +469,8 @@ class Round {
                 .map!(e => e.witness);
             if (isMajority(witness_in_round.count, hashgraph.node_size)) {
                 const count_feature_famous_rounds = count_feature_famous_rounds(round_to_be_decided);
-                __write("%12s round=%4d %-(%s%) famous=%2d", hashgraph.name, round_to_be_decided.number,
-                        "-!".repeat(round_to_be_decided[].retro.walkLength),
+                __write("%12s round=%4d %(%2d %) famous=%2d", hashgraph.name, round_to_be_decided.number,
+                        round_to_be_decided[].retro.map!(r => r.events.filter!(e => e !is null).filter!(e => e.witness.votedYes).count),
                         count_feature_famous_rounds 
                 );
             }
@@ -477,6 +478,10 @@ class Round {
                 return;
 
             }
+            const all_voted_yes=witness_in_round.map!(w => w.votedYes).all;
+            __write("%12s Round %d can be decided (all %s%s) witness=%d", 
+    hashgraph.name, round_to_be_decided.number, (all_voted_yes)?GREEN~"yes":RED~"no", RESET, 
+            witness_in_round.walkLength); 
             Event.view(witness_in_round.map!(w => w.outer));
 
             if (!witness_in_round.map!(w => w.votedYes).all) {
