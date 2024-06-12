@@ -151,7 +151,7 @@ int _main(string[] args) {
 
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    Thread.sleep(5.seconds);
+    Thread.sleep(15.seconds);
     writeln("going to run test");
 
     const task_name = "send_contract_tester";
