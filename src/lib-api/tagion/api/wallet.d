@@ -15,17 +15,8 @@ import tagion.script.common : TagionBill;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.wallet.AccountDetails;
 
-version(C_API_DEBUG) {
-import std.stdio;
-
-}
-
 extern (C):
-version (unittest) {
-}
-else {
 nothrow:
-}
 
 struct securenet_t {
     int magic_byte = MAGIC.SECURENET;
@@ -93,23 +84,14 @@ struct WalletT {
  */
 int tagion_wallet_create_instance(WalletT* wallet_instance) {
     try {
-        version(C_API_DEBUG) {
-            writefln("inside tagion_wallet_create_instance");
-        }
         if (wallet_instance is null) {
             return ErrorCode.error;
         }
 
         wallet_instance.wallet = cast(void*) new ApiWallet;
         wallet_instance.magic_byte = MAGIC_WALLET;
-        version(C_API_DEBUG) {
-            writefln("created wallet");
-        }
     }
     catch(Exception e) {
-        version(C_API_DEBUG) {
-        writefln("%s", e);
-        }
         last_error = e;
         return ErrorCode.exception;
     }
@@ -140,9 +122,6 @@ int tagion_wallet_create_wallet(const(WalletT*) wallet_instance,
     try {
     
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
-            version(C_API_DEBUG) {
-                writefln("wallet instance is null or magic byte incorrect");
-            }
             return ErrorCode.exception;
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
@@ -151,9 +130,6 @@ int tagion_wallet_create_wallet(const(WalletT*) wallet_instance,
         w.createWallet(_passphrase, _pincode);
     } 
     catch(Exception e) {
-        version(C_API_DEBUG) {
-        writefln("%s", e);
-        }
         last_error = e;
         return ErrorCode.exception;
     }

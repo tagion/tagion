@@ -7,6 +7,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 
 extern(C):
+nothrow:
 
 int tagion_hirpc_create_sender(
         const char* method,
@@ -29,6 +30,3 @@ int tagion_hirpc_create_sender(
         return ErrorCode.exception;
     }
 }
-
-version(none)
-int tagion_hirpc_create_sender_signed(const char*, );

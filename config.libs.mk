@@ -58,6 +58,7 @@ clean: clean-libbetterc
 
 LIBTAUONAPI:=$(DLIB)/libtauonapi.$(LIBEXT)
 libtauonapi: DFLAGS+=-i
+libtauonapi: DFLAGS+=$(GEN_CPP_HEADER_FILE)=$(DLIB)/libtauonapi.hpp
 libtauonapi: DINC+=$(LIB_DINC)
 libtauonapi: DFILES:=${shell find $(DSRC)/lib-api -name "*.d"}
 

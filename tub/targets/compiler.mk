@@ -67,6 +67,7 @@ DDEBUG_DEFAULTLIB::=--link-defaultlib-debug
 DWARNERROR::=-w
 DWARNINFO::=--wi
 CPP_FLAG := -P
+GEN_CPP_HEADER_FILE::=--HCf
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -109,6 +110,7 @@ OUTPUTDIR = -od
 VERRORS=-verrors=context
 DWARNERROR::=-w
 DWARNINFO::=-wi
+GEN_CPP_HEADER_FILE::=-HCf
 endif
 
 DIP1000 := $(DIP)1000
