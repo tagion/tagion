@@ -63,16 +63,11 @@ class HashGraph {
         Node[Pubkey] _nodes; // List of participating _nodes T
         uint event_id;
         sdt_t last_epoch_time;
-        Flag!"joining" _joining;
     }
     Refinement refinement;
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
-    }
-
-    Flag!"joining" joining() const pure nothrow @nogc {
-        return _joining;
     }
 
     /**
@@ -112,7 +107,6 @@ class HashGraph {
             const SecureNet net,
             Refinement refinement,
             const ValidChannel valid_channel,
-            const Flag!"joining" joining,
             string name = null)
     in (node_size >= 4)
     do {
@@ -123,7 +117,6 @@ class HashGraph {
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
 
-        this._joining = joining;
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -378,7 +371,7 @@ class HashGraph {
 
             // event either from event_package_cache or event_cache.
             event = lookup(fingerprint);
-            Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+            Event.check(event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
             if (event !is null) {
                 event.connect(this.outer);
             }
@@ -641,7 +634,6 @@ class HashGraph {
                 if (!areWeInGraph) {
                     try {
                         initialize_witness(received_wave.epacks);
-                        _joining = No.joining;
                     }
                     catch (ConsensusException e) {
                         // initialized witness not correct
@@ -650,7 +642,7 @@ class HashGraph {
                 break;
 
             case TIDAL_WAVE: 
-                if (!areWeInGraph || joining) {
+                if (!areWeInGraph) {
                     break;
                 }
                 check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);

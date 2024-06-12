@@ -91,7 +91,7 @@ struct EpochCreatorService {
         auto refinement = new StdRefinement;
         refinement.setTasknames(task_names);
 
-        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
+        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         PayloadQueue payload_queue = new PayloadQueue();

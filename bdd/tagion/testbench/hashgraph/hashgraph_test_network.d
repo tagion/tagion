@@ -324,12 +324,12 @@ static class TestNetworkT(R) if(is (R:Refinement)) { //(NodeList) if (is(NodeLis
     }
 
     static int testing;
-    void addNode(Refinement refinement, immutable(ulong) N, const(string) name, int scrap_depth = 0, const Flag!"joining" joining = No.joining) {
+    void addNode(Refinement refinement, immutable(ulong) N, const(string) name, int scrap_depth = 0) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
 
-        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
         if (testing < 4) {
             testing++;
             if (testing == 1) {
