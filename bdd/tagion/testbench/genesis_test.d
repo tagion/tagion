@@ -195,8 +195,7 @@ int _main(string[] args) {
     log.registerSubscriptionTask(name);
 
     auto feature = automation!(genesis_test);
-    const epoch_timeout = environment.get("EPOCH_TIMEOUT", "15").to!uint;
-    feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch, epoch_timeout);
+    feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch);
     feature.run;
 
     stopsignal.setIfInitialized;

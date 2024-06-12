@@ -181,9 +181,9 @@ class StdRefinement : Refinement {
             return a_print < b_print;
         }
 
-        //        if (order_count < 0) {
-        return rare_less(a.fingerprint, b.fingerprint);
-        //        }
+        //if (order_count < 0) {
+        //    return rare_less(a.fingerprint, b.fingerprint);
+        //}
         if (a.order is b.order) {
             if (a.father && b.father) {
                 return order_less(a.father, b.father, order_count - 1);
@@ -213,8 +213,9 @@ class StdRefinement : Refinement {
             .filter!((e) => !e.event_body.payload.empty)
             .array;
 
-        version (OLD_ORDERING) {
-            auto sorted_events = events.sort!((a, b) => !Event.higher_order(a, b)).array;
+
+        version(OLD_ORDERING) {
+            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
         }
         version (NEW_ORDERING) {
             const famous_witnesses = decided_round
@@ -231,8 +232,8 @@ class StdRefinement : Refinement {
         
         version (BDD) {
             // raw event_collection subscription
-            version (OLD_ORDERING) {
-                auto __sorted_raw_events = event_collection.sort!((a, b) => Event.higher_order(a, b)).array;
+            version(OLD_ORDERING) {
+                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
             }
             version (NEW_ORDERING) {
                 const famous_witnesses = decided_round

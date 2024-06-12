@@ -36,7 +36,7 @@ import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBONtoText;
 
-//enum EPOCH_TIMEOUT = 100;
+//enum env.EPOCH_TIMEOUT!uint = 100;
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 enum feature = Feature(
@@ -60,7 +60,6 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
     StdSecureWallet wallet1;
     TagionCurrency amount;
     TagionCurrency fee;
-    const uint EPOCH_TIMEOUT;
     const(GenesisEpoch) genesis_epoch;
     SignedContract signed_contract;
 
@@ -71,12 +70,11 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
 
     History[string] histories;
 
-    this(const(Options)[] opts, ref StdSecureWallet wallet1, const(GenesisEpoch) genesis_epoch, const uint EPOCH_TIMEOUT) {
+    this(const(Options)[] opts, ref StdSecureWallet wallet1, const(GenesisEpoch) genesis_epoch) {
         this.opts = opts;
         record_factory = RecordFactory(net);
         this.wallet1 = wallet1;
         this.genesis_epoch = genesis_epoch;
-        this.EPOCH_TIMEOUT = EPOCH_TIMEOUT;
     }
 
     @Given("i have a network booted with a genesis block")
@@ -105,8 +103,8 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
             if (start == 20) {
                 sendHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
             }
-            log("EPOCH_TIMEOUT=%s", EPOCH_TIMEOUT);
-            auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
+            log("EPOCH_TIMEOUT=%s", env.EPOCH_TIMEOUT!uint);
+            auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
             log("received something");
 
             check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");

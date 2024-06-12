@@ -72,6 +72,36 @@ class Event {
         return _count;
     }
 
+    static bool lower_order(const Event a, const Event b) pure nothrow {
+        if (!a) {
+            return false;
+        }
+        if (!b) {
+            return true;
+        }
+
+        if (a.order < b.order) {
+            return false;
+        }
+        if (a.order == b.order) {
+            auto a_father = a[].filter!(e => e._father !is null)
+                .map!(e => e._father);
+            auto b_father = b[].filter!(e => e._father !is null)
+                .map!(e => e._father);
+            if (a_father.empty) {
+                if (b_father.empty) {
+                    return lower_order(a._mother, b._mother);
+                }
+                return true;
+            }
+            if (b_father.empty) {
+                return false;
+            }
+            return higher_order(a_father.front, b_father.front);
+        }
+        return false;
+    }
+
     static bool higher_order(const Event a, const Event b) pure nothrow {
         if (!a) {
             return false;
