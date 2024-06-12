@@ -4,6 +4,7 @@ import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.basic.basic;
+import tagion.basic.Types;
 import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
 import std.file : mkdirRecurse, rmdirRecurse, exists;
@@ -24,6 +25,7 @@ import tagion.monitor.Monitor;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import std.getopt;
+import tagion.hibon.HiBONFile : fwrite;
 
 enum feature = Feature(
             "Check hashgraph stability when runninng many epochs",
@@ -145,9 +147,10 @@ class RunPassiveFastHashgraph {
         FileMonitorCallbacks[Pubkey] node_callbacks;
 
         if (!opts.disable_graphfile) {
-            foreach (pkey; network.channels) {
-                const graph_file = buildPath(opts.path, format("%(%02x%)_graph", pkey)).setExtension("hibon");
-                node_callbacks[pkey] = new FileMonitorCallbacks(
+            foreach (channel, network_fiber; network.networks) {
+                const graph_file = buildPath(opts.path, format("%s_graph", network_fiber._hashgraph.name))
+                .setExtension(FileExtension.hibon);
+                node_callbacks[channel] = new FileMonitorCallbacks(
                         graph_file,
                         opts.number_of_nodes,
                         cast(Pubkey[]) network.channels);
@@ -161,7 +164,6 @@ class RunPassiveFastHashgraph {
             else {
                 channel_number = network.random.value(0, network.channels.length);
             }
-            // writefln("channel_number: %s", channel_number);
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
             if (!node_callbacks.empty) { 
@@ -171,6 +173,11 @@ class RunPassiveFastHashgraph {
             i++;
         }
         sw.stop;
+        foreach(channel, network_fiber; network.networks) {
+            const statistic_file=buildPath(opts.path, format("%s_statistic", network_fiber._hashgraph.name))
+        .setExtension(FileExtension.hibon);
+            statistic_file.fwrite(network_fiber._hashgraph.statistics);
+        }
         writefln("test took: %s", sw.peek);
         return result_ok;
     }

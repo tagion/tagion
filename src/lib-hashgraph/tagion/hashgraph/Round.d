@@ -484,6 +484,8 @@ class Round {
             }
             log("Round %d decided", round_to_be_decided.number);
             last_decided_round = round_to_be_decided;
+            hashgraph.statistics.feature_famous_rounds(count_feature_famous_rounds(round_to_be_decided));
+            log.event(Event.topic, hashgraph.statistics.feature_famous_rounds.stringof, hashgraph.statistics.feature_famous_rounds); 
             collect_received_round(round_to_be_decided);
             check_decide_round;
         }
@@ -569,8 +571,8 @@ class Round {
                 .array;
             event_collection.each!(e => e.round_received = r);
             Event.view(event_collection);
-            hashgraph.epoch_events_statistic(event_collection.length);
-            log.event(Event.topic, hashgraph.epoch_events_statistic.stringof, hashgraph.epoch_events_statistic);
+            hashgraph.statistics.epoch_events(event_collection.length);
+            log.event(Event.topic, hashgraph.statistics.epoch_events.stringof, hashgraph.statistics.epoch_events);
             hashgraph.epoch(event_collection, r);
 
         }

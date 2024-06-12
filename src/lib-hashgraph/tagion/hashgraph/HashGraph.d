@@ -21,7 +21,7 @@ import tagion.hashgraph.RefinementInterface;
 import tagion.hashgraph.Round;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONRecord;
 import tagion.logger.Logger;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
@@ -42,11 +42,16 @@ class HashGraph {
 
     immutable size_t node_size; /// Number of active nodes in the graph
     immutable(string) name; // Only used for debugging
-    Statistic!ulong epoch_events_statistic;
-    Statistic!uint wavefront_event_package_statistic;
-    Statistic!uint wavefront_event_package_used_statistic;
-    Statistic!uint live_events_statistic;
-    Statistic!uint live_witness_statistic;
+    struct HashGraphStatistics {
+    Statistic!ulong epoch_events;
+    Statistic!uint wavefront_event_package;
+    Statistic!uint wavefront_event_package_used;
+    Statistic!uint live_events;
+    Statistic!uint live_witness;
+    Statistic!(uint, Yes.histogram) feature_famous_rounds; 
+        mixin HiBONRecord;
+    }
+    HashGraphStatistics statistics;
     //Statistic!long epoch_delay_statistic;
     BitMask _excluded_nodes_mask;
     private {
@@ -113,7 +118,7 @@ class HashGraph {
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
         this._joining = joining;
-        this.name = name;
+        this.name = (name)?name:format("%(%02x%)",hirpc.net.pubkey[0..8]);
         _rounds = Round.Rounder(this);
     }
 
@@ -306,10 +311,10 @@ class HashGraph {
     package void epoch(Event[] event_collection, const Round decided_round) {
         refinement.epoch(event_collection, decided_round);
         if (scrap_depth > 0) {
-            live_events_statistic(Event.count);
-            log.event(topic, live_events_statistic.stringof, live_events_statistic);
-            live_witness_statistic(Event.Witness.count);
-            log.event(topic, live_witness_statistic.stringof, live_witness_statistic);
+            statistics.live_events(Event.count);
+            log.event(topic, statistics.live_events.stringof, statistics.live_events);
+            statistics.live_witness(Event.Witness.count);
+            log.event(topic, statistics.live_witness.stringof, statistics.live_witness);
             _rounds.dustman;
         }
     }
@@ -339,8 +344,8 @@ class HashGraph {
         this(const Wavefront received_wave) pure nothrow {
             uint count_events;
             scope (exit) {
-                wavefront_event_package_statistic(count_events);
-                wavefront_event_package_used_statistic(cast(uint) event_package_cache.length);
+                statistics.wavefront_event_package(count_events);
+                statistics.wavefront_event_package_used(cast(uint) event_package_cache.length);
             }
             foreach (e; received_wave.epacks) {
                 count_events++;
@@ -406,8 +411,8 @@ class HashGraph {
         _register = new Register(received_wave);
 
         scope (exit) {
-            log.event(topic, wavefront_event_package_statistic.stringof, wavefront_event_package_statistic);
-            log.event(topic, wavefront_event_package_used_statistic.stringof, wavefront_event_package_statistic);
+            log.event(topic, statistics.wavefront_event_package.stringof, statistics.wavefront_event_package);
+            log.event(topic, statistics.wavefront_event_package_used.stringof, statistics.wavefront_event_package);
             _register = null;
         }
 
