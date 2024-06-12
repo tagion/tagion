@@ -42,7 +42,7 @@ int tagion_basic_encode_base64url(
 
         const encoded = _buf.encodeBase64;
 
-        *str = cast(char*) &encoded[0];
+        *str_ptr = cast(char*) &encoded[0];
         *str_len = encoded.length;
     }
     catch(Exception e) {
