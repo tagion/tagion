@@ -18,12 +18,27 @@ else {
 nothrow:
 }
 
-int tagion_basic_encode_base64url(const(uint8_t*) buf, 
+/**
+
+  Encode a buffer into a base64url string
+
+  Params: 
+      buf_ptr = a ptr to the buffer to encode
+      buf_len = the length of the buffer
+
+      str_ptr = the resulting base64url string
+      str_len = the length of the result string
+  Returns: 
+      [tagion.api.errors.ErrorCode]
+
+ */
+int tagion_basic_encode_base64url(
+        const(uint8_t*) buf_ptr,
         const size_t buf_len,
-        char** str,
+        char** str_ptr,
         size_t* str_len) {
     try {
-        const _buf = buf[0..buf_len].idup;
+        const _buf = buf_ptr[0..buf_len].idup;
 
         const encoded = _buf.encodeBase64;
 
@@ -37,16 +52,32 @@ int tagion_basic_encode_base64url(const(uint8_t*) buf,
     return ErrorCode.none;
 }
 
-int tagion_basic_get_dart_index(
-        const(uint8_t*) buf, 
-        const size_t buf_len,
+/**
+
+  Calculate the [dartindex](https://docs.tagion.org/docs/protocols/dart/dartindex) for a Document
+  The dartindex is what is used to reference the document in the DART database
+  
+  Params:
+    doc_ptr = The pointer to the serialized document
+    doc_len = The length of the document
+
+    dart_index_buf = The resulting dartindex
+    dart_index_buf_len = The length of the resulting dartindex (should always be 32 bytes)
+
+  Returns: 
+      [tagion.api.errors.ErrorCode]
+
+ */
+int tagion_create_dartindex(
+        const(uint8_t*) doc_ptr, 
+        const size_t doc_len,
         uint8_t** dart_index_buf,
         size_t* dart_index_buf_len) {
     import tagion.crypto.SecureNet;
     import tagion.dart.DARTBasic;
     import tagion.hibon.Document;
     try {
-        const _buf = buf[0..buf_len].idup;
+        const _buf = doc_ptr[0..doc_len].idup;
         const doc = Document(_buf);
 
         const dart_index = dartIndex(hash_net, doc);
@@ -70,8 +101,13 @@ enum DrtStatus {
     STARTED,
     TERMINATED
 }
-// Staritng d-runtime
-static int start_rt() {
+
+/**
+  starts druntime
+  
+  The druntime should be started before any other functions are called
+*/
+int start_rt() {
     import core.runtime : rt_init;
     if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
         __runtimeStatus = DrtStatus.STARTED;
@@ -80,8 +116,8 @@ static int start_rt() {
     return -1;
 }
 
-// Terminating d-runtime
-static int stop_rt() {
+/// Terminating d-runtime
+int stop_rt() {
     import core.runtime : rt_term;
     if (__runtimeStatus is DrtStatus.STARTED) {
         __runtimeStatus = DrtStatus.TERMINATED;
@@ -91,9 +127,18 @@ static int stop_rt() {
 }
 
 
-int tagion_revision(char** value, size_t* str_len) {
+/**
+
+  Get the tagion revision info
+
+  Params:
+    str_ptr = The resulting revision string
+    str_len = The length of the resulting string
+  Returns: 
+ */
+int tagion_revision(char** str_ptr, size_t* str_len) {
     import tagion.tools.revision;
-    *value = cast(char*) &revision_text[0];
+    *str_ptr = cast(char*) &revision_text[0];
     *str_len = revision_text.length;
     return ErrorCode.none;
 }
