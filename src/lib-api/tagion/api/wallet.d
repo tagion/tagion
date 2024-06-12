@@ -1,6 +1,7 @@
 /// API for using a wallet
 module tagion.api.wallet;
 import tagion.api.errors;
+import tagion.api.basic;
 import tagion.api.hibon;
 import tagion.wallet.Wallet;
 import tagion.crypto.SecureNet;
@@ -26,6 +27,56 @@ else {
 nothrow:
 }
 
+struct securenet_t {
+    int magic_byte = MAGIC.SECURENET;
+    void* securenet;
+}
+
+int tagion_generate_keypair
+(
+    const(char*) passphrase_ptr,
+    const(size_t) passphrase_len,
+    const(char*) salt_ptr,
+    const(size_t) salt_len,
+    securenet_t* out_securenet
+)
+{
+    return 0;
+}
+
+int tagion_create_devicepin
+(
+    const(securenet_t) root_net,
+    const(char*) pin_ptr,
+    const(size_t) pin_len,
+    uint8_t** out_device_doc_ptr,
+    size_t* out_device_doc_len,
+)
+{
+    return 0;
+}
+
+int tagion_devicepin_unlock
+(
+    const(char*) pin_ptr,
+    const(size_t) pin_len,
+    uint8_t* devicepin_ptr,
+    size_t devicepin_len,
+    securenet_t* out_net,
+)
+{
+    return 0;
+}
+
+int tagion_sign_message
+(
+    const(securenet_t) root_net,
+    const(uint8_t*) fingerprint_ptr, 
+    const size_t fingerprint_len,
+)
+{
+    return 0;
+}
 
 alias ApiWallet = Wallet!StdSecureNet;
 

@@ -4,9 +4,13 @@ import tagion.basic.Types;
 import tagion.api.errors;
 import core.stdc.stdint;
 
+enum MAGIC : uint {
+    WALLET = 0xA000_0001,
+    HIBON = 0xB000_0001,
+    SECURENET = 0xC000_0001,
+}
+
 extern (C):
-
-
 
 version (unittest) {
 }
@@ -33,7 +37,8 @@ int tagion_basic_encode_base64url(const(uint8_t*) buf,
     return ErrorCode.none;
 }
 
-int tagion_basic_get_dart_index(const(uint8_t*) buf, 
+int tagion_basic_get_dart_index(
+        const(uint8_t*) buf, 
         const size_t buf_len,
         uint8_t** dart_index_buf,
         size_t* dart_index_buf_len) {
@@ -47,7 +52,7 @@ int tagion_basic_get_dart_index(const(uint8_t*) buf,
         const dart_index = dartIndex(hash_net, doc);
 
         *dart_index_buf= cast(uint8_t*) &dart_index[0];
-        *dart_index_buf_len= dart_index.length;
+        *dart_index_buf_len = dart_index.length;
     }
     catch(Exception e) {
         last_error = e;
