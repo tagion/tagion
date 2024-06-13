@@ -424,6 +424,8 @@ unittest {
     assert(result[key].get!(BigNumber) == big_number);
 }
 
+extern(D)
+private
 template add_T(T) {
     int add_T(const(HiBONT*) instance,
             const char* key,
@@ -446,6 +448,8 @@ template add_T(T) {
     }
 }
 
+extern(D)
+private
 template add_array_T(T) {
     int add_array_T(const(HiBONT*) instance,
                 const char* key,
@@ -584,6 +588,8 @@ int tagion_hibon_add_array_float64(const(HiBONT*) h, const char* key, const size
     return add_array_T!double(__traits(parameters));
 }
 
+version(unittest)
+private
 void testAddFunc(T)(
         T call_value,
         int function(const(HiBONT*), const char*, const size_t, T) func) {
@@ -599,6 +605,8 @@ void testAddFunc(T)(
     assert(result[key].get!T == call_value);
 }
 
+version(unittest)
+private
 void testArrayAddFunc(T)(
     T call_value,
     int function(const(HiBONT*), const char*, const size_t, uint8_t*, const size_t) func) {
