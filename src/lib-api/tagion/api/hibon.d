@@ -10,7 +10,11 @@ import tagion.hibon.BigNumber;
 import std.bitmanip;
 
 extern (C):
+
+version(unittest) {
+} else {
 nothrow:
+}
 
 enum MAGIC_HIBON = MAGIC.HIBON;
 struct HiBONT {

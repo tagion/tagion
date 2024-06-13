@@ -16,7 +16,9 @@ import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.wallet.AccountDetails;
 
 extern (C):
+version(unittest) {
 nothrow:
+}
 
 struct securenet_t {
     int magic_byte = MAGIC.SECURENET;
