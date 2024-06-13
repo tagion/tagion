@@ -10,66 +10,76 @@ import tagion.hibon.Document;
 import tagion.script.TagionCurrency;
 import tagion.utils.StdTime;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.common : TagionBill;
+import tagion.script.common : TagionBill, SignedContract;
 
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.wallet.AccountDetails;
 
 extern (C):
-version(unittest) {
 nothrow:
-}
 
+/// Pointer to securenet
 struct securenet_t {
     int magic_byte = MAGIC.SECURENET;
     void* securenet;
 }
 
-int tagion_generate_keypair
-(
+/// Generate a keypair used from a password or menmonic
+int tagion_generate_keypair (
     const(char*) passphrase_ptr,
     const(size_t) passphrase_len,
     const(char*) salt_ptr,
     const(size_t) salt_len,
     securenet_t* out_securenet
-)
-{
-    return 0;
+) {
+    assert(0, "TODO");
 }
 
-int tagion_create_devicepin
-(
+/// Create an encrypted document keypair
+int tagion_create_devicepin (
     const(securenet_t) root_net,
     const(char*) pin_ptr,
     const(size_t) pin_len,
     uint8_t** out_device_doc_ptr,
     size_t* out_device_doc_len,
-)
-{
-    return 0;
+) {
+    assert(0, "TODO");
 }
 
-int tagion_devicepin_unlock
-(
+/// Decrypt a devicepin
+int tagion_devicepin_unlock (
     const(char*) pin_ptr,
     const(size_t) pin_len,
     uint8_t* devicepin_ptr,
     size_t devicepin_len,
     securenet_t* out_net,
-)
-{
-    return 0;
+) {
+    assert(0, "TODO");
 }
 
-int tagion_sign_message
-(
+/// Sign a message
+int tagion_sign_message (
     const(securenet_t) root_net,
     const(uint8_t*) fingerprint_ptr, 
     const size_t fingerprint_len,
-)
-{
-    return 0;
+) {
+    assert(0, "TODO");
 }
+
+/// Create a signed contract
+int tagion_create_signed_contract(
+    const(SecureNet) root_net, 
+    const(TagionBill[]) to_pay,
+    const(TagionBill[]) available,
+    const(ubyte[][]) derivers,
+    const(Pubkey) change,
+    TagionBill[] used,
+    SignedContract* produced_contract
+) {
+    assert(0, "TODO");
+}
+
+version(none):
 
 alias ApiWallet = Wallet!StdSecureNet;
 
@@ -99,6 +109,7 @@ int tagion_wallet_create_instance(WalletT* wallet_instance) {
     }
     return ErrorCode.none;
 }
+
 ///
 unittest {
     WalletT w;
@@ -116,11 +127,13 @@ unittest {
  *   pincode_len = length of the pincode
  * Returns: ErrorCode
  */
-int tagion_wallet_create_wallet(const(WalletT*) wallet_instance, 
-                            const char* passphrase, 
-                            const size_t passphrase_len,
-                            const char* pincode,
-                            const size_t pincode_len) {
+int tagion_wallet_create_wallet(
+        const(WalletT*) wallet_instance, 
+        const char* passphrase, 
+        const size_t passphrase_len,
+        const char* pincode,
+        const size_t pincode_len
+) {
     try {
     
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
@@ -162,13 +175,15 @@ unittest {
  *   account_buf_len = length of the AccountDetails buffer
  * Returns: ErrorCode
  */
-int tagion_wallet_read_wallet(const(WalletT*) wallet_instance,
-                            const uint8_t* device_pin_buf, 
-                            const size_t device_pin_buf_len, 
-                            const uint8_t* recover_generator_buf,
-                            const size_t recover_generator_buf_length,
-                            const uint8_t* account_buf,
-                            const size_t account_buf_len) {
+int tagion_wallet_read_wallet(
+        const(WalletT*) wallet_instance,
+        const uint8_t* device_pin_buf, 
+        const size_t device_pin_buf_len, 
+        const uint8_t* recover_generator_buf,
+        const size_t recover_generator_buf_length,
+        const uint8_t* account_buf,
+        const size_t account_buf_len
+) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
@@ -267,9 +282,11 @@ enum PUBKEYSIZE = 33; /// Size of a public key
  *   pubkey_len = length of the returned pubkey
  * Returns: 
  */
-int tagion_wallet_get_current_pkey(const(WalletT*) wallet_instance,
+int tagion_wallet_get_current_pkey(
+    const(WalletT*) wallet_instance,
     uint8_t** pubkey,
-    size_t* pubkey_len) {
+    size_t* pubkey_len
+) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
@@ -286,6 +303,7 @@ int tagion_wallet_get_current_pkey(const(WalletT*) wallet_instance,
     }
     return ErrorCode.none;
 }
+
 ///
 unittest {
     WalletT w;
