@@ -25,7 +25,7 @@ runs:
       if: success()
       with:
         name: ${{ inputs.platform }}
-        path: build/${{ inputs.platform }}/lib/libmobile.dylib
+        path: build/${{ inputs.platform }}/lib/libmobile.dylib build/${{ inputs.platform }}/lib/libmobile.h 
         if-no-files-found: error
 
     - name: Cleanup
