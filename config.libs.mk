@@ -61,6 +61,7 @@ LIBTAUONAPI:=$(DLIB)/libtauonapi.$(LIBEXT)
 libtauonapi: DFLAGS+=-i
 libtauonapi: DFLAGS+=$(GEN_CPP_HEADER_FILE)=$(DLIB)/libtauonapi.h
 libtauonapi: DINC+=$(LIB_DINC)
+libtauonapi: LIBS+=$(LIBSECP256K1_STATIC)
 libtauonapi: DFILES:=${shell find $(DSRC)/lib-api -name "*.d"}
 
 $(LIBTAUONAPI): revision
