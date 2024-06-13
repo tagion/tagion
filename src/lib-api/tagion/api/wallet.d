@@ -24,15 +24,36 @@ struct securenet_t {
     void* securenet;
 }
 
-/// Generate a keypair used from a password or menmonic
+/**
+  Generate a keypair used from a password / menmonic
+  The function does **NOT** validate the menmonic
+ 
+  Params:
+    passphrase_ptr = Pointer to passphrase
+    passphrase_len = Length of the passphrase
+    salt_ptr = Optional salt for the menmonic phrase
+    salt_len = Lenght of the optional salt
+    out_securenet = The allocated securenet used for cryptographic operations
+  Returns: 
+    [tagion.api.errors.ErrorCode]
+ */
 int tagion_generate_keypair (
-    const(char*) passphrase_ptr,
+    const(char)* passphrase_ptr,
     const(size_t) passphrase_len,
-    const(char*) salt_ptr,
+    const(char)* salt_ptr,
     const(size_t) salt_len,
     securenet_t* out_securenet
 ) {
-    assert(0, "TODO");
+    return ErrorCode.error;
+}
+
+///
+unittest {
+    securenet_t my_keypair;
+
+    string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+
+    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair);
 }
 
 /// Create an encrypted document keypair
@@ -47,7 +68,7 @@ int tagion_create_devicepin (
 }
 
 /// Decrypt a devicepin
-int tagion_devicepin_unlock (
+int tagion_unlock_devicepin (
     const(char*) pin_ptr,
     const(size_t) pin_len,
     uint8_t* devicepin_ptr,
@@ -60,8 +81,10 @@ int tagion_devicepin_unlock (
 /// Sign a message
 int tagion_sign_message (
     const(securenet_t) root_net,
-    const(uint8_t*) fingerprint_ptr, 
+    const(uint8_t*) fingerprint_ptr,
     const size_t fingerprint_len,
+    uint8_t** signature_ptr, 
+    size_t* signature_len,
 ) {
     assert(0, "TODO");
 }
@@ -84,6 +107,8 @@ version(none):
 alias ApiWallet = Wallet!StdSecureNet;
 
 enum MAGIC_WALLET = 0xA000_0001;
+
+/// Wallet Type
 struct WalletT {
     int magic_byte = MAGIC_WALLET;
     void* wallet;

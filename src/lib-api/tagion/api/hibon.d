@@ -17,6 +17,8 @@ nothrow:
 }
 
 enum MAGIC_HIBON = MAGIC.HIBON;
+
+/// HiBON Type
 struct HiBONT {
     int magic_byte = MAGIC.HIBON;
     void* hibon;
