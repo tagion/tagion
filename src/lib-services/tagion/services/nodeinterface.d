@@ -69,15 +69,13 @@ struct Dialer {
     nng_stream_dialer* dialer;
     nng_aio* aio;
     string owner_task;
-    Pubkey channel;
 
     ///
-    this(uint id, string address_, Pubkey channel) @trusted {
+    this(uint id, string address_,) @trusted {
         int rc;
         rc = nng_aio_alloc(&aio, &callback, self);
         check(rc == nng_errno.NNG_OK, nng_errstr(rc));
 
-        this.channel = channel;
         this.id = id;
         this.address = address_;
 
@@ -111,7 +109,7 @@ struct Dialer {
 
             nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio);
             if(rc == nng_errno.NNG_OK) {
-                ActorHandle(_this.owner_task).send(NodeAction.dialed, _this.id, _this.channel);
+                ActorHandle(_this.owner_task).send(NodeAction.dialed, _this.id);
             }
             else {
                 node_error(_this.owner_task, rc, _this.id, _this.address);
@@ -144,7 +142,6 @@ struct Peer {
     @disable this(this);
 
     uint id;
-    Pubkey channel;
 
     // taskname is used inside the nng callback to know which thread to notify
     string owner_task;
@@ -204,10 +201,10 @@ struct Peer {
                     Buffer buf = _this.msg_buf[0 .. msg_size].idup;
                     check(buf !is null, "Got invalid buf output");
 
-                    ActorHandle(_this.owner_task).send(NodeAction.received, _this.id, _this.channel, buf);
+                    ActorHandle(_this.owner_task).send(NodeAction.received, _this.id, buf);
                     break;
                 default:
-                    ActorHandle(_this.owner_task).send(NodeAction.sent, _this.id, _this.channel);
+                    ActorHandle(_this.owner_task).send(NodeAction.sent, _this.id);
                     break;
             }
         }
@@ -267,9 +264,7 @@ struct PeerMgr {
     @disable this(this);
 
     ///
-    this(const(SecureNet) net, string address, size_t bufsize) @trusted {
-        this.net = net;
-        this.hirpc = HiRPC(net);
+    this(string address, size_t bufsize) @trusted {
         this.bufsize = bufsize;
         int rc = nng_aio_alloc(&aio_conn, &callback, self);
         check!ServiceError(rc == 0, nng_errstr(rc));
@@ -290,15 +285,10 @@ struct PeerMgr {
 
     nng_stream_listener* listener;
 
-    const SecureNet net;
-    const HiRPC hirpc;
     string address;
     size_t bufsize;
 
     Dialer*[uint] dialers;
-
-    // All the peers who we know the public key off
-    Peer*[Pubkey] peers;
 
     // We store all peers with an id
     // Since we don't know their public key if we are receing from them for the first time
@@ -322,7 +312,7 @@ struct PeerMgr {
                 node_error(_this.task_name, rc, id);
             }
             else {
-                ActorHandle(_this.task_name).send(NodeAction.accepted, id, Pubkey.init);
+                ActorHandle(_this.task_name).send(NodeAction.accepted, id);
             }
         }
         catch(Exception e) {
@@ -346,9 +336,8 @@ struct PeerMgr {
     }
 
     /// Connect to an address an associate it with a public key
-    void dial(string address, Pubkey pkey) {
-        uint id = generateId!uint;
-        auto dialer = new Dialer(id, address, pkey);
+    void dial(string address, uint id) {
+        auto dialer = new Dialer(id, address);
         dialer.dial();
         dialers[id] = dialer;
     }
@@ -358,24 +347,7 @@ struct PeerMgr {
             all_peers[id].close();
             all_peers.remove(id);
 
-            foreach(channel, peer; peers) {
-                if (peer.id == id) {
-                    debug(nodeinterface) log("Closed (%s) %s", id, channel.encodeBase64);
-                    peers.remove(channel);
-                    return;
-                }
-            }
             debug(nodeinterface) log("Closed (%s)", id);
-        }
-    }
-
-    void close(Pubkey channel) {
-        if(isActive(channel)) {
-            Peer* peer = peers[channel];
-            debug(nodeinterface) log("Closed (%s) %s", peer.id, channel.encodeBase64);
-            peer.close();
-            all_peers.remove(peer.id);
-            peers.remove(channel);
         }
     }
 
@@ -391,15 +363,10 @@ struct PeerMgr {
     }
 
     /// Send to an active connection with a known public key
-    void send(Pubkey pkey, Buffer buf) {
-        assert(isActive(pkey), "No established connection");
-        peers[pkey].send(buf);
+    void send(uint id, Buffer buf) {
+        all_peers[id].send(buf);
     }
 
-    /// Check if an active known connection exists with this public key
-    bool isActive(const(Pubkey) channel) const pure nothrow {
-        return ((channel in peers) !is null);
-    }
     bool isActive(uint id) const pure nothrow {
         return ((id in all_peers) !is null);
     }
@@ -409,7 +376,7 @@ struct PeerMgr {
         foreach(dialer; dialers.byValue) {
             dialer.abort();
         }
-        foreach(peer; peers.byValue) {
+        foreach(peer; all_peers.byValue) {
             peer.abort();
         }
     }
@@ -424,15 +391,12 @@ struct PeerMgr {
 
     // You should call this functions after each operation
 
-    void update(NodeAction action, uint id, Pubkey channel = Pubkey.init) {
+    void update(NodeAction action, uint id) {
         final switch(action) {
         case NodeAction.received:
-            assert(channel !is Pubkey.init, "received should be called with a public key");
             Peer* peer = all_peers[id];
-            peer.channel = channel;
             peer.state = Peer.State.ready;
             // Add to the list of known connections
-            peers.require(channel, peer);
             break;
 
         case NodeAction.dialed:
@@ -444,9 +408,7 @@ struct PeerMgr {
             auto dialer = dialers[id];
             nng_stream* socket = dialer.get_output;
             auto peer = new Peer(id, socket, bufsize);
-            peer.channel = dialer.channel;
             all_peers[id] = peer;
-            peers[dialer.channel] = peer;
             break;
 
         case NodeAction.accepted:
@@ -467,7 +429,7 @@ struct PeerMgr {
 unittest {
     static void unit_handler(ref PeerMgr sender, ref PeerMgr receiver) {
         receiveOnlyTimeout(1.seconds, 
-                (NodeAction a, uint id, Pubkey channel) {
+                (NodeAction a, uint id) {
                     if(a is NodeAction.accepted) {
                         receiver.update(a, id);
                     }
@@ -475,8 +437,8 @@ unittest {
                         sender.update(a, id);
                     }
                 },
-                (NodeAction a, uint id, Pubkey channel, Buffer buf) {
-                    receiver.update(a, id, get_public_key(Document(buf)));
+                (NodeAction a, uint id, Buffer buf) {
+                    receiver.update(a, id);
                 }
         );
     }
@@ -560,110 +522,38 @@ struct NodeInterfaceService_ {
         this.net = new StdSecureNet(shared_net);
         this.hirpc = HiRPC(this.net);
         this.receive_handle = ActorHandle(message_handler_task);
-        this.p2p = PeerMgr(this.net, opts.node_address, opts.bufsize);
+        this.p2p = PeerMgr(opts.node_address, opts.bufsize);
     }
 
     static Topic node_action_event = Topic("node_action");
 
-    alias MsgQueue = Queue!Document;
+    Document[uint] queued_sends;
 
-    MsgQueue[Pubkey] msg_queues;
-
-    size_t queue_length(Pubkey channel) {
-        MsgQueue* queue = (channel in msg_queues);
-        if(queue is null) {
-            return 0;
-        }
-        return queue.length;
+    void node_send(WavefrontReq req, Pubkey channel, Document doc) {
+        const nnr = addressbook[channel].get;
+        queued_sends[req.id] = doc;
+        p2p.dial(nnr.address, req.id);
     }
 
-    void queue_write(Pubkey channel, Document data) {
-        msg_queues.require(channel, new MsgQueue);
-        msg_queues[channel].write(data);
+    void node_respond(WavefrontReq.Response res, Document doc) {
+        p2p.send(res.id, doc.serialize);
     }
 
-    Document queue_read(Pubkey channel) {
-        if((channel in msg_queues) is null) {
-            return Document.init;
-        }
-        MsgQueue queue = msg_queues[channel];
-        Document doc;
-        if(!queue.empty) {
-            doc = queue.read;
-        }
-        if(queue.empty) {
-            /// FIXME, msg queue is not cleaned if the node is never reached.
-            msg_queues.remove(channel);
-        }
-        return doc;
-    }
-
-    void queued_send(NodeSend, Pubkey channel, Document doc = Document.init) {
-        NodeInterfaceSub sub;
-        sub.channel = channel;
-        sub.owner = net.pubkey;
-        sub.action_state = NodeAction.sent;
-        /* sub.id = id; */
-        /* if (node_action_event.subscribed) { */
-        /*     sub.exchange_state = ExchangeState; */
-        /* } */
-
-
-        debug(nodeinterface) log("%s: %s queue_lenght %s", __FUNCTION__, channel.encodeBase64, queue_length(channel));
-        if(!p2p.isActive(channel)) {
-            queue_write(channel, doc);
-            const nnr = addressbook[channel].get;
-            p2p.dial(nnr.address, channel);
-
-            debug(nodeinterface) log("%s: not Active", __FUNCTION__);
-            return;
-        }
-
-        if(p2p.peers[channel].state !is Peer.State.ready) {
-            queue_write(channel, doc);
-            debug(nodeinterface) log("%s: not ready %s", __FUNCTION__, p2p.peers[channel].state);
-
-            sub.event_state = NodeInterfaceSub.EventState.send_queued;
-            log.event(node_action_event, __FUNCTION__, sub);
-
-            return;
-        }
-
-        Document queued_doc = queue_read(channel);
-        if(queued_doc !is Document.init) {
-            queue_write(channel, doc);
-            p2p.send(channel, queued_doc.serialize);
-            /* debug(nodeinterface) log("%s: sent from queue %s", __FUNCTION__, get_exchange_state(queued_doc)); */
-
-            sub.event_state = NodeInterfaceSub.EventState.send_from_queue;
-            log.event(node_action_event, __FUNCTION__, sub);
-        }
-        else if(doc !is Document.init) {
-            p2p.send(channel, doc.serialize);
-            /* debug(nodeinterface) log("%s: sent direct %s", __FUNCTION__, get_exchange_state(doc)); */
-            sub.event_state = NodeInterfaceSub.EventState.send;
-            log.event(node_action_event, __FUNCTION__, sub);
-        }
-    }
-
-    void on_action_complete(NodeAction action, uint id, Pubkey channel, Buffer buf = null) {
-        debug(nodeinterface) log("%s(%s) %s", channel.encodeBase64, id, action);
+    void on_action_complete(NodeAction action, uint id, Buffer buf = null) {
+        debug(nodeinterface) log("%s %s, connected %s", id, action, p2p.all_peers.length);
         if (node_action_event.subscribed) {
             NodeInterfaceSub sub;
-            sub.channel = channel;
             sub.owner = net.pubkey;
             sub.id = id;
             sub.event_state = cast(NodeInterfaceSub.EventState)action;
-            /* sub.exchange_state = ExchangeState; */
             log.event(node_action_event, text(action), sub);
         }
 
         final switch(action) {
         case NodeAction.dialed:
-            Pubkey dialer_channel = p2p.dialers[id].channel;
-
             p2p.update(action, id);
-            queued_send(NodeSend(), dialer_channel, Document.init);
+            const doc = queued_sends[id];
+            p2p.send(id, doc.serialize);
             break;
 
         case NodeAction.accepted:
@@ -703,11 +593,10 @@ struct NodeInterfaceService_ {
                     on_node_error(NodeError(), NodeErrorCode.msg_signed, id, text(hirpcmsg.signed), __LINE__);
                     return;
                 }
-
-                /* ExchangeState exchange_state = get_exchange_state(hirpcmsg); */
-                /* debug(nodeinterface) log("RECEIVED WAVE %s", exchange_state); */
                 
-                receive_handle.send(ReceivedWavefront(), doc);
+                WavefrontReq.Response res;
+                res.id = id;
+                receive_handle.send(res, doc);
                 p2p.close(id);
             }
             catch(Exception e) {
@@ -739,13 +628,14 @@ struct NodeInterfaceService_ {
         p2p.accept();
 
         run(
-                (NodeAction a, uint id, Pubkey channel) {
-                    on_action_complete(a, id, channel);
+                (NodeAction a, uint id) {
+                    on_action_complete(a, id);
                 },
-                (NodeAction a, uint id, Pubkey channel, Buffer buf) {
-                    on_action_complete(a, id, channel, buf);
+                (NodeAction a, uint id, Buffer buf) {
+                    on_action_complete(a, id, buf);
                 },
-                &queued_send,
+                &node_send,
+                &node_respond,
                 &on_node_error,
                 &on_nng_error
         );
@@ -804,27 +694,6 @@ void node_error(string owner_task, NodeErrorCode code, uint id, string msg = "",
 
 void node_error(string owner_task, nng_errno code, uint id, string msg = "", int line = __LINE__) {
     ActorHandle(owner_task).send(NNGError(), code, id, msg, line);
-}
-
-debug(nodeinterface) {
-// Sender
-ExchangeState get_exchange_state(const Document doc) {
-    const receiver = HiRPC.Receiver(doc);
-    return get_exchange_state(receiver);
-}
-
-unittest {
-    Wavefront wavefront;
-    const sender =  HiRPC(null).action("wavefrnt", wavefront);
-    assert(get_exchange_state(sender.toDoc) == ExchangeState.NONE);
-}
-}
-
-ExchangeState get_exchange_state(const HiRPC.Receiver receiver) {
-    const data = (receiver.isMethod)
-            ? receiver.params
-            : receiver.result;
-    return data[StdNames.state].get!ExchangeState;
 }
 
 Pubkey get_public_key(Document doc) {
