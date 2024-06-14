@@ -18,6 +18,7 @@ import tagion.hashgraph.Refinement;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONJSON;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options : NetworkMode, TaskNames;
@@ -56,6 +57,7 @@ struct EpochCreatorService {
             immutable(TaskNames) task_names) {
 
         const net = new StdSecureNet(shared_net);
+        ActorHandle collector_handle = ActorHandle(task_names.collector);
 
         assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
 
@@ -118,26 +120,10 @@ struct EpochCreatorService {
             counter++;
         }
 
-        void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
+        static void add_signed_contracts(const Wavefront received_wave, ActorHandle collector_handle) {
             import std.array;
-            import tagion.hashgraph.HashGraphBasic;
             import tagion.hibon.HiBONRecord : isRecord;
             import tagion.script.common : SignedContract;
-
-            version (EPOCH_LOG) {
-                log.trace("Received wavefront");
-            }
-
-            const receiver = HiRPC.Receiver(wave_doc);
-
-            if (receiver.isError) {
-                return;
-            }
-
-            const received_wave = (receiver.isMethod)
-                    ? receiver.params!Wavefront(net)
-                    : receiver.result!Wavefront(net);
-
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
@@ -146,21 +132,35 @@ struct EpochCreatorService {
                 .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
                 .handle!(HiBONException, RangePrimitive.front,
                         (e, r) { log("invalid SignedContract from hashgraph"); return null; }
-            )
+                )
                 .filter!(s => !s.isinit)
                 .array;
 
             if (received_signed_contracts.length != 0) {
                 // log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
-                locate(task_names.collector).send(consensusContract(), received_signed_contracts);
+                collector_handle.send(consensusContract(), received_signed_contracts);
             }
+        }
 
-            // This adds the events to the graph and creates a response hirpc
-            const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
-            // We only responde if it was a method request
-            if(receiver.isMethod) {
-                gossip_net.send(receiver.pubkey, return_wavefront);
+        void receiveWavefront_req(WavefrontReq req, const(Document) wave_doc) {
+            const receiver = HiRPC.Receiver(wave_doc);
+            if (receiver.isError || !receiver.isMethod) {
+                return;
             }
+            const received_wave = receiver.params!Wavefront(net);
+            add_signed_contracts(received_wave, collector_handle);
+            const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
+            req.respond(return_wavefront);
+        }
+
+        void receiveWavefront_res(WavefrontReq.Response, const(Document) wave_doc) {
+            const receiver = HiRPC.Receiver(wave_doc);
+            if (receiver.isError || !receiver.isResponse) {
+                return;
+            }
+            const received_wave = receiver.result!Wavefront(net);
+            add_signed_contracts(received_wave, collector_handle);
+            const _ = hashgraph.wavefront_response(receiver, currentTime, payload);
         }
 
         void timeout() {
@@ -176,7 +176,8 @@ struct EpochCreatorService {
                     opts.timeout.msecs,
                     &signal,
                     &ownerTerminated,
-                    &receiveWavefront,
+                    &receiveWavefront_req,
+                    &receiveWavefront_res,
                     &unknown
             );
             if (received) {

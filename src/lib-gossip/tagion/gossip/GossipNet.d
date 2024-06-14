@@ -128,7 +128,7 @@ class EmulatorGossipNet : StdGossipNet {
             return;
         }
 
-        node_tid.send(ReceivedWavefront(), sender.toDoc);
+        node_tid.send(WavefrontReq(), sender.toDoc);
         version (EPOCH_LOG) {
             log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender.toDoc.serialize.length);
         }
@@ -146,6 +146,6 @@ class NNGGossipNet : StdGossipNet {
     void send(Pubkey channel, const(HiRPC.Sender) sender) {
         sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
 
-        nodeinterface.send(NodeSend(), channel, cast(Document)sender.toDoc);
+        nodeinterface.send(WavefrontReq(), channel, cast(Document)sender.toDoc);
     }
 }

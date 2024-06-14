@@ -754,29 +754,15 @@ struct NodeInterfaceService_ {
 
 ///
 struct NodeInterfaceService {
-
     Topic event_send = Topic("node_send");
     Topic event_recv = Topic("node_recv");
 
     immutable NodeInterfaceOptions opts;
     ActorHandle receive_handle;
 
-    bool retry(bool delegate() send_) @trusted {
-        import conc = tagion.utils.pretend_safe_concurrency;
+    NNGSocket sock_send;
+    NNGPool pool = NNGPool(&sock, &nodeinterfaceCallback, opts.pool_size, &ctx);
 
-        int attempts;
-        while(attempts <= opts.send_max_retry && !thisActor.stop) {
-            attempts++;
-            if(send_()) {
-                return true;
-            }
-            nng_sleep(100.msecs);
-            conc.receiveTimeout(Duration.zero, &signal);
-        }
-        return false;
-    }
-
-    NNGSocket sock_recv;
     this(immutable(NodeInterfaceOptions) opts, string message_handler_task) @trusted {
         this.opts = opts;
         this.sock_recv = NNGSocket(nng_socket_type.NNG_SOCKET_PAIR);
@@ -784,6 +770,9 @@ struct NodeInterfaceService {
         this.sock_recv.recvtimeout = opts.recv_timeout.msecs;
         this.sock_recv.sendtimeout = opts.send_timeout.msecs;
         this.receive_handle = ActorHandle(message_handler_task);
+    }
+
+    void node_send(WavefrontReq req, Pubkey channel, HiRPC.Sender sender) {
     }
 
     void node_send(NodeSend, Pubkey channel, Document payload) @trusted {
