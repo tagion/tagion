@@ -765,10 +765,10 @@ struct NNGSocket {
         }
     }
 
-    int dial ( const(string) url, const bool nonblock = false ) nothrow {
-        m_errno = cast(nng_errno)0;
+    int dial ( const(string) url, const bool nonblock = false ) @trusted nothrow {
+        m_errno = nng_errno.NNG_OK;
         if(m_state == nng_socket_state.NNG_STATE_CREATED) {
-            auto rc = nng_dial(m_socket, toStringz(url), &m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
+            int rc = nng_dial(m_socket, toStringz(url), &m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
             if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
@@ -784,7 +784,7 @@ struct NNGSocket {
     
 
     int sendmsg ( ref NNGMessage msg, bool nonblock = false ) @safe {
-        m_errno = nng_errno.init;
+        m_errno = nng_errno.NNG_OK;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             m_errno = cast(nng_errno)nng_sendmsg( m_socket, msg.pointer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
             if (m_errno !is nng_errno.init) {
@@ -795,12 +795,13 @@ struct NNGSocket {
         return -1;
     }
 
+    @trusted
     int send (T)(const(T) data , bool nonblock = false ) if(isArray!T) {
         alias U=ForeachType!T;
         static assert(U.sizeof == 1, "None byte size array element are not supported");
         m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
-            auto rc = nng_send(m_socket, &(cast(ubyte[])data)[0], data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
+            int rc = nng_send(m_socket, &(cast(ubyte[])data)[0], data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
             if( rc != 0) {
                 m_errno = cast(nng_errno)rc;
                 return rc;
@@ -873,6 +874,7 @@ struct NNGSocket {
         Params:
             nonblock = set the non blocking mode
     */
+    @trusted
     T receive(T)( bool nonblock = false ) if (isArray!T) {
         m_errno = nng_errno.init;
         alias U=ForeachType!T;
@@ -880,7 +882,7 @@ struct NNGSocket {
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED) {
             void* buf;
             size_t sz;
-            auto rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC );
+            int rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC );
             if (rc != 0) { 
                 m_errno = cast(nng_errno)rc;
                 return T.init;
@@ -929,30 +931,38 @@ struct NNGSocket {
     } // nogc nothrow pure
 
     nothrow {
-        @property int proto() { return getopt_int(NNG_OPT_PROTO); }
+        @safe @property int proto() { return getopt_int(NNG_OPT_PROTO); }
         @property string protoname() { return getopt_string(NNG_OPT_PROTONAME); }
         
-        @property int peer() { return getopt_int(NNG_OPT_PEER); }
+        @safe @property int peer() { return getopt_int(NNG_OPT_PEER); }
         @property string peername() { return getopt_string(NNG_OPT_PEERNAME); } 
         
-        @property int recvbuf() { return getopt_int(NNG_OPT_RECVBUF); }
-        @property void recvbuf(int val) { setopt_int(NNG_OPT_RECVBUF, val); }
+        @safe @property int recvbuf() { return getopt_int(NNG_OPT_RECVBUF); }
+        @safe @property void recvbuf(int val) { setopt_int(NNG_OPT_RECVBUF, val); }
 
-        @property int sendbuf() { return getopt_int(NNG_OPT_SENDBUF); } 
-        @property void sendbuf(int val) { setopt_int(NNG_OPT_SENDBUF, val); }
+        @safe @property int sendbuf() { return getopt_int(NNG_OPT_SENDBUF); } 
+        @safe @property void sendbuf(int val) { setopt_int(NNG_OPT_SENDBUF, val); }
 
-        @property int recvfd() { return (m_may_recv) ? getopt_int(NNG_OPT_RECVFD) : -1; } 
-        @property int sendfd() { return (m_may_send) ? getopt_int(NNG_OPT_SENDFD) : -1; } 
+        @safe @property int recvfd() { return (m_may_recv) ? getopt_int(NNG_OPT_RECVFD) : -1; } 
+        @safe @property int sendfd() { return (m_may_send) ? getopt_int(NNG_OPT_SENDFD) : -1; } 
 
-        @property Duration recvtimeout() { return getopt_duration(NNG_OPT_RECVTIMEO); } 
-        @property void recvtimeout(Duration val) { setopt_duration(NNG_OPT_RECVTIMEO, val); }
+        @safe @property Duration recvtimeout() { return getopt_duration(NNG_OPT_RECVTIMEO); } 
+        @safe @property void recvtimeout(Duration val) { setopt_duration(NNG_OPT_RECVTIMEO, val); }
 
-        @property Duration sendtimeout() { return getopt_duration(NNG_OPT_SENDTIMEO); } 
-        @property void sendtimeout(Duration val) { setopt_duration(NNG_OPT_SENDTIMEO, val); }
+        @safe @property Duration sendtimeout() { return getopt_duration(NNG_OPT_SENDTIMEO); } 
+        @safe @property void sendtimeout(Duration val) { setopt_duration(NNG_OPT_SENDTIMEO, val); }
 
-        @property nng_sockaddr locaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_DIALER) : getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_LISTENER); } 
-        @property nng_sockaddr remaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_REMADDR, nng_property_base.NNG_BASE_DIALER) : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE); } 
-    } // nothrow
+        @property nng_sockaddr locaddr() { 
+            return (m_may_send)
+                ? getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_DIALER) 
+                : getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_LISTENER); 
+        } 
+        @property nng_sockaddr remaddr() { 
+            return (m_may_send)
+                ? getopt_addr(NNG_OPT_REMADDR, nng_property_base.NNG_BASE_DIALER)
+                : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE);
+        } 
+    } // @safe nothrow
     
     @property string url() { 
         if(m_may_send)
@@ -983,48 +993,54 @@ struct NNGSocket {
     // TODO: NNG_OPT_IPC_*, NNG_OPT_TLS_*, NNG_OPT_WS_*  
 private:
     nothrow {
+        @safe
         void setopt_int(string opt, int val) {
-            m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_int(m_socket, toStringz(opt), val);
+            m_errno = nng_errno.NNG_OK;
+            int rc = nng_socket_set_int(m_socket, toStringz(opt), val);
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; } 
         }
 
+        @trusted
         int getopt_int(string opt) {
             m_errno = cast(nng_errno)0;
             int p;
-            auto rc = nng_socket_get_int(m_socket, toStringz(opt), &p);
+            int rc = nng_socket_get_int(m_socket, toStringz(opt), &p);
             if(rc == 0) { return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
         }
         
+        @safe
         void setopt_ulong(string opt, ulong val) {
-            m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_uint64(m_socket, toStringz(opt), val);
+            m_errno = nng_errno.NNG_OK;
+            int rc = nng_socket_set_uint64(m_socket, toStringz(opt), val);
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; } 
         }
 
+        @trusted
         ulong getopt_ulong(string opt) {
-            m_errno = cast(nng_errno)0;
+            m_errno = nng_errno.NNG_OK;
             ulong p;
-            auto rc = nng_socket_get_uint64(m_socket, toStringz(opt), &p);
+            int rc = nng_socket_get_uint64(m_socket, toStringz(opt), &p);
             if(rc == 0) { return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
         }
         
+        @safe
         void setopt_size(string opt, size_t val) {
-            m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_size(m_socket, toStringz(opt), val);
+            m_errno = nng_errno.NNG_OK;
+            int rc = nng_socket_set_size(m_socket, toStringz(opt), val);
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; } 
         }
         
+        @trusted
         size_t getopt_size(string opt) {
-            m_errno = cast(nng_errno)0;
+            m_errno = nng_errno.NNG_OK;
             size_t p;
-            auto rc = nng_socket_get_size(m_socket, toStringz(opt), &p);
+            int rc = nng_socket_get_size(m_socket, toStringz(opt), &p);
             if(rc == 0) { return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
         }
         
         string getopt_string(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET ) { 
-            m_errno = cast(nng_errno)0;
-            char *ptr;
+            m_errno = nng_errno.NNG_OK;
+            char* ptr;
             int rc;
             switch(base) {
                 case nng_property_base.NNG_BASE_DIALER:
@@ -1040,22 +1056,25 @@ private:
             if(rc == 0) { return to!string(ptr); }else{ m_errno = cast(nng_errno)rc; return "<none>"; }            
         }
 
+        @safe
         void setopt_string(string opt, string val) {
-            m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_string(m_socket, toStringz(opt), toStringz(val));
+            m_errno = nng_errno.NNG_OK;
+            int rc = nng_socket_set_string(m_socket, toStringz(opt), toStringz(val));
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }                
         }
         
-        void setopt_buf(string opt, const ubyte[] val) @safe {
-            m_errno = cast(nng_errno)0;
+        @safe
+        void setopt_buf(string opt, const ubyte[] val) {
+            m_errno = nng_errno.NNG_OK;
             auto rc = nng_socket_set(m_socket, toStringz(opt), ptr(val), val.length);
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }                
         }
 
+        @trusted
         Duration getopt_duration(string opt) {
-            m_errno = cast(nng_errno)0;
+            m_errno = nng_errno.NNG_OK;
             nng_duration p;
-            auto rc = nng_socket_get_ms(m_socket, toStringz(opt), &p);
+            int rc = nng_socket_get_ms(m_socket, toStringz(opt), &p);
             if(rc == 0) {
                 return msecs(p);
             }else{
@@ -1064,6 +1083,7 @@ private:
             }
         }
         
+        @safe
         void setopt_duration(string opt, Duration val) {
             m_errno = cast(nng_errno)0;
             auto rc = nng_socket_set_ms(m_socket, cast(const char*)toStringz(opt), cast(int)val.total!"msecs"); 
@@ -1071,7 +1091,7 @@ private:
         }
 
         nng_sockaddr getopt_addr(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET ) {
-            m_errno = cast(nng_errno)0;
+            m_errno = nng_errno.NNG_OK;
             nng_sockaddr addr;
             int rc;
             switch(base) {
@@ -1088,14 +1108,16 @@ private:
             if(rc == 0) { return addr; } else { m_errno = cast(nng_errno)rc; addr.s_family = nng_sockaddr_family.NNG_AF_NONE; return addr; }
         }
         
+        @trusted
         void setopt_addr(string opt, nng_sockaddr val) {
-            m_errno = cast(nng_errno)0;
-            auto rc = nng_socket_set_addr(m_socket, cast(const char*)toStringz(opt), &val);
+            m_errno = nng_errno.NNG_OK;
+            int rc = nng_socket_set_addr(m_socket, cast(const char*)toStringz(opt), &val);
             if(rc == 0) { return; }else{ m_errno = cast(nng_errno)rc; }
         }
     } // nothrow
 }   // struct Socket
 
+@safe
 struct NNGURL {
     string rawurl;
     string scheme;

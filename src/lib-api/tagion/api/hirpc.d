@@ -7,7 +7,9 @@ import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 
 extern(C):
+nothrow:
 
+/// Create a hirpc from a document
 int tagion_hirpc_create_sender(
         const char* method,
         const size_t method_len,
@@ -30,5 +32,7 @@ int tagion_hirpc_create_sender(
     }
 }
 
-version(none)
-int tagion_hirpc_create_sender_signed(const char*, );
+/// TODO
+int tagion_hirpc_create_signed_sender() {
+    assert(0, "TODO!");
+}
