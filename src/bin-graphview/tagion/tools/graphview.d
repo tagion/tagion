@@ -283,9 +283,9 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text = format("%d", e.id);
         text.pos.y += NODE_CIRCLE_SIZE / 2;
         obuf[20].writefln("%s", text.toString);
-        BitMask vote_mask;
-        vote_mask = e.seen;
-        text.text = (() @trusted => format(vote_fmt ~ ":%d", vote_mask, vote_mask.count))();
+        BitMask seen_mask;
+        seen_mask = e.seen;
+        text.text = (() @trusted => format(vote_fmt ~ ":%d", seen_mask, seen_mask.count))();
         text.pos.y += NODE_CIRCLE_SIZE / 2;
         obuf[20].writefln("%s", text.toString);
         BitMask vote_intermediate;
@@ -301,6 +301,14 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             text.pos.y += NODE_CIRCLE_SIZE / 2;
             text.fill = "red";
             obuf[20].writefln("%s", text.toString);
+
+            BitMask seen_witness;
+            seen_witness = e.witness_seen;
+            text.text = (() @trusted => format(vote_fmt ~ ":%d", seen_witness, seen_witness.count))();
+            text.pos.y += NODE_CIRCLE_SIZE / 2;
+            text.fill = "blue";
+            obuf[20].writefln("%s", text.toString);
+
             BitMask voted_mask;
             voted_mask = e.voted;
             text.text = (() @trusted => format(vote_fmt ~ ":%d", voted_mask, voted_mask.count))();

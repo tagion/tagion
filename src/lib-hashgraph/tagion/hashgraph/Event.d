@@ -189,24 +189,14 @@ class Event {
             BitMask _voted_yes_mask; /// Witness in the next round which has voted
 
         }
-
-            final const(BitMask) previous_witness_seen_mask() const pure nothrow {
-                BitMask result;
-                if (_mother) {
-                    result = _mother._witness_seen_mask;
-                    if (_father) {
-                        result |= _father._witness_seen_mask;
-                    }
-                }
-                return result;
-            }
+        const BitMask previous_witness_seen_mask;
 
         @nogc final const pure nothrow {
-             const(BitMask) previous_strongly_seen_mask() {
+            const(BitMask) previous_strongly_seen_mask() {
                 return _previous_strongly_seen_mask;
             }
 
-             const(BitMask) intermediate_event_mask() {
+            const(BitMask) intermediate_event_mask() {
                 return _intermediate_event_mask;
             }
 
@@ -214,7 +204,7 @@ class Event {
                 return cast(uint)(_voted_yes_mask.count);
             }
 
-             const(BitMask) voted_yes_mask() {
+            const(BitMask) voted_yes_mask() {
                 return _voted_yes_mask;
             }
 
@@ -224,13 +214,13 @@ class Event {
 
             bool decided() {
                 const voted = _voted_yes_mask.count;
-                const N = this.outer._round.events.length;
+                const N = _round.events.length;
 
                 if (isMajority(voted, N)) {
                     if (isMajority(yes_votes, N)) {
                         return true;
                     }
-                    const voters = this.outer._round.next.voters;
+                    const voters = _round.next.voters;
                     if (voters == voted) {
                         const votes_left = long(N) - long(voted);
                         return !isMajority(votes_left + yes_votes, N);
@@ -254,17 +244,17 @@ class Event {
                         w.voteYes(voting_node_id);
                         debug Event.view(w.outer);
                         if (_round.previous.previous) {
-                            const missing_votes=w.previous_witness_seen_mask - w.voted_yes_mask;
+                            const missing_votes = w.previous_witness_seen_mask - w.voted_yes_mask;
                             __write("Missing votes round %d missing_votes=%d", _round.number, missing_votes.count);
                             missing_votes[]
-                            .map!(vote_on_node_id => _round.previous.previous._events[vote_on_node_id])
-                            .filter!(e => e !is null)
-                            .map!(e => e._witness)
-                            .each!(w => w.voteYes(voting_node_id));
+                                .map!(vote_on_node_id => _round.previous.previous._events[vote_on_node_id])
+                                .filter!(e => e !is null)
+                                .map!(e => e._witness)
+                                .each!(w => w.voteYes(voting_node_id));
                             //.each!((ref w) => w.voteYes(voting_node_id));
                         }
                     }
-                    
+
                 }
             }
         }
@@ -284,15 +274,19 @@ class Event {
                     _father._round._events[_father.node_id]._witness
                         ._previous_strongly_seen_mask;
 
+                previous_witness_seen_mask = _witness_seen_mask |
+                    _father._round._events[_father.node_id]._witness
+                        .previous_witness_seen_mask;
             }
             else {
                 _previous_strongly_seen_mask = _intermediate_seen_mask.dup;
+                previous_witness_seen_mask = _witness_seen_mask;
             }
             _intermediate_event_mask[node_id] = true;
 
             _intermediate_seen_mask.clear;
             _intermediate_event = false;
-            _witness_seen_mask.clear;
+            _witness_seen_mask.erase;
             _witness_seen_mask[node_id] = true;
         }
 

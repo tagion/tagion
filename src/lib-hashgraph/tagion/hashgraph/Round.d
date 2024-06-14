@@ -44,10 +44,23 @@ class Round {
     protected {
         Round _previous;
         Round _next;
+
     }
     immutable int number;
 
     package Event[] _events;
+    protected bool _decided;
+
+    private void decide() pure nothrow @nogc
+    in (!_decided)
+    do {
+        _decided = true;
+    }
+
+    final bool decided() const pure nothrow @nogc {
+        return _decided;
+    }
+
     /**
      * Construct a round from the previous round
      * Params:
@@ -255,7 +268,7 @@ class Round {
         Round latest_famous_round;
         HashGraph hashgraph;
         Event[] last_witness_events;
-        
+
         //Round[] voting_round_per_node;
         @disable this();
 
@@ -276,7 +289,8 @@ class Round {
                 }
                 return r;
             }
-            latest_famous_round=inner_latest_famous_round(latest_famous_round); 
+
+            latest_famous_round = inner_latest_famous_round(latest_famous_round);
         }
 
         uint count_feature_famous_rounds(const Round r) pure nothrow {
@@ -386,7 +400,7 @@ class Round {
      *   test_round = round to be tested
      * Returns: 
      */
-            bool decided(const Round r) {
+            version (none) bool decided(const Round r) {
                 if (r) {
                     return (r.number - last_decided_round.number) <= 0;
                 }
@@ -405,6 +419,7 @@ class Round {
      * Number of decided round in cached in memory
      * Returns: Number of cached decided rounds
      */
+
             uint cached_decided_count() {
                 uint _cached_decided_count(const Round r, const uint i = 0) pure nothrow {
                     if (r) {
@@ -428,7 +443,7 @@ class Round {
         enum rounds_beyond_limit = 3;
         bool can_round_be_decided(const Round r) const pure nothrow {
             bool _decided(T)(const T item) @nogc {
-                if (item.value && item.value.witness.decided) {
+                if (item.value && item.value.witness.votedYes) {
                     return true;
                 }
                 const last_witness_event = last_witness_events[item.index];
@@ -441,15 +456,24 @@ class Round {
                     .enumerate
                     .filter!(item => _decided(item))
                     .count;
+                __write("%12s Round %d decided_votes=%d vote-yes=%d - - -",
+                        hashgraph.name,
+                        r.number,
+                        decided_votes,
+                        r._events
+                        .filter!(e => e !is null)
+                        .filter!(e => e._witness.votedYes)
+                        .count);
                 if (decided_votes == r.node_size) {
                     return true;
                 }
                 if (isMajority(decided_votes, r.node_size)) {
+                    __write("%12s Round %d witness=%d votes=%d can be decided?", hashgraph.name, r.number,
+                            r._events.filter!(e => e !is null).count, decided_votes);
                     const last_round_beyond = (last_round.number - r.number) > rounds_beyond_limit;
                     return r.node_size
                         .iota
-                        .map!(w_node_id => last_witness_events[w_node_id])
-                        //.map!(e => (e)&&((e.round.number - r.number) > 0) || last_round_beyond)
+                        .map!(w_node_id => last_witness_events[w_node_id]) //.map!(e => (e)&&((e.round.number - r.number) > 0) || last_round_beyond)
                         .map!(e => (e) ? (e.round.number - r.number) > 0 : last_round_beyond)
                         .all;
                 }
@@ -460,6 +484,7 @@ class Round {
 
         void check_decide_round() {
             import tagion.utils.Term;
+
             auto round_to_be_decided = last_decided_round._next;
             if (!round_to_be_decided) {
                 return;
@@ -467,21 +492,35 @@ class Round {
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
                 .map!(e => e.witness);
+            //witness_in_round
+            //            .filter!(w => !w.votedYes)
+            //.each!(w => w.update_votes);
+
             if (isMajority(witness_in_round.count, hashgraph.node_size)) {
                 const count_feature_famous_rounds = count_feature_famous_rounds(round_to_be_decided);
-                __write("%12s round=%4d %(%2d %) famous=%2d", hashgraph.name, round_to_be_decided.number,
-                        round_to_be_decided[].retro.map!(r => r.events.filter!(e => e !is null).filter!(e => e.witness.votedYes).count),
-                        count_feature_famous_rounds 
+                __write("%12s round=%4d | %(%(%s:%) %) famous=%2d witness=%2d", hashgraph.name, round_to_be_decided
+                        .number,
+                        round_to_be_decided[].retro
+                        .map!(r => r.events)
+                        .map!(es => only(es.filter!(e => e !is null).count,
+                            es.filter!(e => e !is null)
+                            .filter!(e => e.witness.votedYes)
+                            .count)),
+                        count_feature_famous_rounds,
+                        witness_in_round.count
                 );
             }
             if (!can_round_be_decided(round_to_be_decided)) {
                 return;
 
             }
-            const all_voted_yes=witness_in_round.map!(w => w.votedYes).all;
-            __write("%12s Round %d can be decided (all %s%s) witness=%d", 
-    hashgraph.name, round_to_be_decided.number, (all_voted_yes)?GREEN~"yes":RED~"no", RESET, 
-            witness_in_round.walkLength); 
+            const all_voted_yes = witness_in_round.map!(w => w.votedYes).all;
+            __write("%12s Round %d can be decided (all %s%s) witness=%d %(%7s %)",
+                    hashgraph.name, round_to_be_decided.number, (all_voted_yes) ? GREEN ~ "yes" : RED ~ "no", RESET,
+                    witness_in_round.walkLength,
+                    witness_in_round.filter!(w => !w.votedYes)
+                    .map!(w => w.voted_yes_mask)
+            );
             Event.view(witness_in_round.map!(w => w.outer));
 
             if (!witness_in_round.map!(w => w.votedYes).all) {
@@ -489,14 +528,16 @@ class Round {
             }
             log("Round %d decided", round_to_be_decided.number);
             last_decided_round = round_to_be_decided;
+            round_to_be_decided.decide;
             hashgraph.statistics.feature_famous_rounds(count_feature_famous_rounds(round_to_be_decided));
-            log.event(Event.topic, hashgraph.statistics.feature_famous_rounds.stringof, hashgraph.statistics.feature_famous_rounds); 
+            log.event(Event.topic, hashgraph.statistics.feature_famous_rounds.stringof, hashgraph.statistics
+                    .feature_famous_rounds);
             collect_received_round(round_to_be_decided);
             check_decide_round;
         }
 
         protected void collect_received_round(Round r)
-        in (decided(r), "The round should be decided before the round can be collect")
+        in (r.decided, "The round should be decided before the round can be collect")
 
         do {
 
