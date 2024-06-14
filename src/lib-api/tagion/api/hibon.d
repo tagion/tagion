@@ -1,13 +1,18 @@
 /// API for using hibon
+
 module tagion.api.hibon;
+
+import core.stdc.stdint;
+import core.memory;
+
+import std.bitmanip;
+
 import tagion.api.errors;
 import tagion.api.basic;
 import tagion.hibon.HiBON;
-import core.stdc.stdint;
 import tagion.hibon.Document;
 import tagion.utils.StdTime;
 import tagion.hibon.BigNumber;
-import std.bitmanip;
 
 extern (C):
 
@@ -62,6 +67,13 @@ unittest {
     HiBONT h;
     int rt = tagion_hibon_create(&h);
     assert(rt == ErrorCode.none, "could not create hibon");
+}
+
+/// Free a HiBON object
+void tagion_hibon_free(HiBONT* instance) {
+    auto hibon = cast(HiBON)instance.hibon;
+    destroy(hibon);
+    GC.free(instance);
 }
 
 int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, size_t* str_len) {
