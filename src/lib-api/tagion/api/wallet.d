@@ -68,7 +68,7 @@ int tagion_create_devicepin (
 }
 
 /// Decrypt a devicepin
-int tagion_unlock_devicepin (
+int tagion_decrypt_devicepin (
     const(char*) pin_ptr,
     const(size_t) pin_len,
     uint8_t* devicepin_ptr,
@@ -81,8 +81,8 @@ int tagion_unlock_devicepin (
 /// Sign a message
 int tagion_sign_message (
     const(securenet_t) root_net,
-    const(uint8_t*) fingerprint_ptr,
-    const size_t fingerprint_len,
+    const(uint8_t*) message_ptr,
+    const size_t message_len,
     uint8_t** signature_ptr, 
     size_t* signature_len,
 ) {

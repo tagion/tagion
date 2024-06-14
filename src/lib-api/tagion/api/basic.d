@@ -53,12 +53,13 @@ nothrow:
 
  */
 int tagion_basic_encode_base64url(
-        const(uint8_t*) buf_ptr,
-        const size_t buf_len,
-        char** str_ptr,
-        size_t* str_len) {
+    const(uint8_t*) buf_ptr,
+    const size_t buf_len,
+    char** str_ptr,
+    size_t* str_len
+) {
     try {
-        const _buf = buf_ptr[0..buf_len].idup;
+        const _buf = buf_ptr[0..buf_len];
 
         const encoded = _buf.encodeBase64;
 
