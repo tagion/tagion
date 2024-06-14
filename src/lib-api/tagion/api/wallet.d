@@ -32,7 +32,7 @@ struct securenet_t {
     passphrase_ptr = Pointer to passphrase
     passphrase_len = Length of the passphrase
     salt_ptr = Optional salt for the menmonic phrase
-    salt_len = Lenght of the optional salt
+    salt_len = Length of the optional salt
     out_securenet = The allocated securenet used for cryptographic operations
   Returns: 
     [tagion.api.errors.ErrorCode]
