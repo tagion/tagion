@@ -150,7 +150,7 @@ struct EpochCreatorService {
             const received_wave = receiver.params!Wavefront(net);
             add_signed_contracts(received_wave, collector_handle);
             const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
-            req.respond(return_wavefront);
+            req.respond(return_wavefront.toDoc);
         }
 
         void receiveWavefront_res(WavefrontReq.Response, const(Document) wave_doc) {
@@ -195,7 +195,7 @@ struct EpochCreatorService {
         }
         Topic inGraph = Topic("in_graph");
         log.event(inGraph, __FUNCTION__, Document());
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req, &receiveWavefront_res,);
     }
 
 }
