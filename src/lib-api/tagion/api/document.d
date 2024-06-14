@@ -545,7 +545,8 @@ int tagion_document_get_bigint(const Document.Element* element, uint8_t** bigint
     return ErrorCode.none;
 }
 
-
+extern(D)
+private
 template get_T(T) {
     int get_T(const Document.Element* element, T* value) {
         try {
@@ -635,6 +636,8 @@ int tagion_document_get_float64(const Document.Element* element, double* value) 
     return get_T!double(__traits(parameters));
 }
 
+version(unittest)
+private
 void testGetFunc(T)(
     T h_value,
     int function(const Document.Element*, T* value) func)
