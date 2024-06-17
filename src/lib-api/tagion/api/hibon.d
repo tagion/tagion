@@ -352,6 +352,7 @@ unittest {
     assert(result[key].get!(immutable(ubyte[])) == binary_data);
 }
 
+///
 int tagion_hibon_add_time(const(HiBONT*) instance,
         const char* key,
         const size_t key_len,
@@ -502,6 +503,8 @@ template add_array_T(T) {
 int tagion_hibon_add_bool(const(HiBONT*) h, const char* key, const size_t key_len, bool value) {
     return add_T!bool(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_bool(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!bool(__traits(parameters));
 }
@@ -519,6 +522,7 @@ int tagion_hibon_add_int32(const(HiBONT*) h, const char* key, const size_t key_l
     return add_T!int32_t(__traits(parameters));
 }
 
+///
 int tagion_hibon_add_array_int32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!int32_t(__traits(parameters));
 }
@@ -551,6 +555,8 @@ int tagion_hibon_add_array_int64(const(HiBONT*) h, const char* key, const size_t
 int tagion_hibon_add_uint32(const(HiBONT*) h, const char* key, const size_t key_len, uint32_t value) {
     return add_T!uint32_t(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_uint32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!uint32_t(__traits(parameters));
 }
@@ -566,6 +572,8 @@ int tagion_hibon_add_array_uint32(const(HiBONT*) h, const char* key, const size_
 int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint64_t value) {
     return add_T!uint64_t(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!uint64_t(__traits(parameters));
 }
@@ -581,9 +589,12 @@ int tagion_hibon_add_array_uint64(const(HiBONT*) h, const char* key, const size_
 int tagion_hibon_add_float32(const(HiBONT*) h, const char* key, const size_t key_len, float value) {
     return add_T!float(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_float32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!float(__traits(parameters));
 }
+
 /** 
 * Add float64 to hibon instance
 * Params:
@@ -596,6 +607,8 @@ int tagion_hibon_add_array_float32(const(HiBONT*) h, const char* key, const size
 int tagion_hibon_add_float64(const(HiBONT*) h, const char* key, const size_t key_len, double value) {
     return add_T!double(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_float64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!double(__traits(parameters));
 }
