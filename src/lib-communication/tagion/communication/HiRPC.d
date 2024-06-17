@@ -407,16 +407,19 @@ struct HiRPC {
             return T(args, method.params);
         }
 
+        ///
         Document params() const {
             check(type is Type.method, format("Message type %s expected not %s", Type.method, type));
             return method.params;
         }
 
+        ///
         const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
             check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
             return T(args, response.result);
         }
 
+        ///
         Document result() const {
             check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
 

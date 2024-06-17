@@ -144,13 +144,20 @@ struct EpochCreatorService {
 
         void receiveWavefront_req(WavefrontReq req, const(Document) wave_doc) {
             const receiver = HiRPC.Receiver(wave_doc);
-            if (receiver.isError || !receiver.isMethod) {
+            if (receiver.isError) {
                 return;
             }
-            const received_wave = receiver.params!Wavefront(net);
+            const received_wave = (receiver.isMethod)
+                ? receiver.params!Wavefront(net)
+                : receiver.result!Wavefront(net);
+
+            debug(epoch_creator) log("-> %s", received_wave.state);
             add_signed_contracts(received_wave, collector_handle);
             const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
-            req.respond(return_wavefront.toDoc);
+
+            if(!return_wavefront.isError) {
+                locate(req.task_name).send(WavefrontReq(req.id), return_wavefront.toDoc);
+            }
         }
 
         void receiveWavefront_res(WavefrontReq.Response, const(Document) wave_doc) {
@@ -167,7 +174,7 @@ struct EpochCreatorService {
             const init_tide = random.value(0, 2) is 1;
             if (init_tide) {
                 auto sender = () => hashgraph.create_init_tide(payload, currentTime);
-                gossip_net.gossip(&hashgraph.not_used_channels, sender);
+                const _ = gossip_net.gossip(&hashgraph.not_used_channels, sender);
             }
         }
 
@@ -177,7 +184,6 @@ struct EpochCreatorService {
                     &signal,
                     &ownerTerminated,
                     &receiveWavefront_req,
-                    &receiveWavefront_res,
                     &unknown
             );
             if (received) {
@@ -195,7 +201,7 @@ struct EpochCreatorService {
         }
         Topic inGraph = Topic("in_graph");
         log.event(inGraph, __FUNCTION__, Document());
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req, &receiveWavefront_res,);
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
     }
 
 }

@@ -23,6 +23,7 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.script.standardnames;
 import tagion.utils.Random;
 import tagion.utils.Queue;
+import tagion.utils.LRU;
 import tagion.logger;
 import tagion.services.messages;
 import tagion.services.exception;
@@ -146,6 +147,7 @@ struct Peer {
     // taskname is used inside the nng callback to know which thread to notify
     string owner_task;
     State state;
+    bool initiater;
 
     nng_stream* socket;
     nng_aio* aio;
@@ -242,7 +244,7 @@ struct Peer {
         nng_stream_recv(socket, aio);
     }
 
-    void close() {
+    void close() nothrow {
         nng_stream_close(socket);
     }
 
@@ -263,8 +265,9 @@ struct PeerMgr {
     /// copy/postblit disabled
     @disable this(this);
 
+    alias PeerLRU = LRU!(uint, Peer*);
     ///
-    this(string address, size_t bufsize) @trusted {
+    this(string address, size_t bufsize, ) @trusted {
         this.bufsize = bufsize;
         int rc = nng_aio_alloc(&aio_conn, &callback, self);
         check!ServiceError(rc == 0, nng_errstr(rc));
@@ -275,6 +278,11 @@ struct PeerMgr {
         assert(this.address.length < address.length);
         rc = cast(nng_errno)nng_stream_listener_alloc(&listener, &address[0]);
         check!ServiceError(rc == nng_errno.NNG_OK, nng_errstr(rc));
+
+        all_peers = new PeerLRU((scope const uint k, PeerLRU.Element* v) @safe nothrow { 
+                v.entry.value.close(); 
+                debug(nodeinterface) log("Closed (%s)", k);
+        }, 12);
     }
 
     /// free nng memory
@@ -290,9 +298,8 @@ struct PeerMgr {
 
     Dialer*[uint] dialers;
 
-    // We store all peers with an id
-    // Since we don't know their public key if we are receing from them for the first time
-    Peer*[uint] all_peers;
+    /* Peer*[uint] all_peers; */
+    LRU!(uint, Peer*) all_peers;
 
     nng_aio* aio_conn;
 
@@ -343,23 +350,8 @@ struct PeerMgr {
     }
 
     void close(uint id) {
-        if(isActive(id)) {
-            all_peers[id].close();
-            all_peers.remove(id);
+        all_peers.remove(id);
 
-            debug(nodeinterface) log("Closed (%s)", id);
-        }
-    }
-
-    /// Receive messages from all the peers that are not doing anything else
-    void recv_all_ready() {
-        foreach(peer; all_peers) {
-            if(peer.state !is Peer.State.ready) {
-                continue;
-            }
-
-            peer.recv();
-        }
     }
 
     /// Send to an active connection with a known public key
@@ -368,7 +360,7 @@ struct PeerMgr {
     }
 
     bool isActive(uint id) const pure nothrow {
-        return ((id in all_peers) !is null);
+        return all_peers.contains(id);
     }
 
     void abort() {
@@ -376,8 +368,8 @@ struct PeerMgr {
         foreach(dialer; dialers.byValue) {
             dialer.abort();
         }
-        foreach(peer; all_peers.byValue) {
-            peer.abort();
+        foreach(peer; all_peers) {
+            peer.value.abort();
         }
     }
 
@@ -413,7 +405,8 @@ struct PeerMgr {
 
         case NodeAction.accepted:
             nng_stream* socket = get_listener_output();
-            all_peers[id] = new Peer(id, socket, bufsize);
+            auto peer = new Peer(id, socket, bufsize);
+            all_peers[id] = peer;
             break;
 
         case NodeAction.sent:
@@ -427,9 +420,11 @@ struct PeerMgr {
 
 ///
 unittest {
-    static void unit_handler(ref PeerMgr sender, ref PeerMgr receiver) {
+    static uint unit_handler(ref PeerMgr sender, ref PeerMgr receiver) {
+        uint r_id;
         receiveOnlyTimeout(1.seconds, 
                 (NodeAction a, uint id) {
+                    r_id = id;
                     if(a is NodeAction.accepted) {
                         receiver.update(a, id);
                     }
@@ -438,9 +433,11 @@ unittest {
                     }
                 },
                 (NodeAction a, uint id, Buffer buf) {
+                    r_id = id;
                     receiver.update(a, id);
                 }
         );
+        return r_id;
     }
 
     thisActor.task_name = "jens";
@@ -453,20 +450,19 @@ unittest {
     auto net2 = new StdSecureNet();
     net2.generateKeyPair("me2");
 
-    auto dialer = PeerMgr(net1, "abstract://whomisam" ~ generateId.to!string, 256);
-    auto listener = PeerMgr(net2, "abstract://whomisam" ~ generateId.to!string, 256);
+    auto dialer = PeerMgr("abstract://whomisam" ~ generateId.to!string, 256);
+    auto listener = PeerMgr("abstract://whomisam" ~ generateId.to!string, 256);
 
     dialer.listen();
     listener.listen();
 
-    dialer.dial(listener.address, net2.pubkey);
+    dialer.dial(listener.address, 0);
     listener.accept();
 
     unit_handler(dialer, listener);
     unit_handler(dialer, listener);
 
-    assert(dialer.isActive(listener.net.pubkey));
-    assert(!listener.isActive(dialer.net.pubkey));
+    assert(dialer.isActive(0));
 
     assert(dialer.all_peers.length == 1);
     assert(listener.all_peers.length == 1);
@@ -477,18 +473,18 @@ unittest {
         listener.recv_all_ready();
         Buffer send_payload_p1 = HiRPC(net1).action("manythanks").serialize;
 
-        dialer.send(net2.pubkey, send_payload_p1);
+        dialer.send(0, send_payload_p1);
 
         unit_handler(dialer, listener);
         unit_handler(dialer, listener);
 
-        assert(listener.peers.length == 1);
+        assert(listener.all_peers.length == 1);
     }
 
     {
         dialer.recv_all_ready;
         Buffer send_payload_p2 = HiRPC(net2).action("manythanks").serialize;
-        listener.send(net1.pubkey, send_payload_p2);
+        listener.send(0, send_payload_p2);
 
         unit_handler(listener, dialer);
         unit_handler(listener, dialer);
@@ -498,12 +494,12 @@ unittest {
         listener.recv_all_ready();
         Buffer send_payload_p1 = HiRPC(net1).action("manythanks").serialize;
 
-        dialer.send(net2.pubkey, send_payload_p1);
+        dialer.send(0, send_payload_p1);
 
         unit_handler(dialer, listener);
         unit_handler(dialer, listener);
 
-        assert(listener.peers.length == 1);
+        assert(listener.all_peers.length == 1);
     }
 }
 
@@ -535,8 +531,12 @@ struct NodeInterfaceService_ {
         p2p.dial(nnr.address, req.id);
     }
 
-    void node_respond(WavefrontReq.Response res, Document doc) {
-        p2p.send(res.id, doc.serialize);
+    void node_respond(WavefrontReq req, const(Document) doc) {
+        log("responde to %s", req.id);
+        if(p2p.isActive(req.id)) {
+            // check is ready
+            p2p.send(req.id, doc.serialize);
+        }
     }
 
     void on_action_complete(NodeAction action, uint id, Buffer buf = null) {
@@ -594,10 +594,9 @@ struct NodeInterfaceService_ {
                     return;
                 }
                 
-                WavefrontReq.Response res;
-                res.id = id;
-                receive_handle.send(res, doc);
-                p2p.close(id);
+                p2p.update(action, id);
+                receive_handle.send(WavefrontReq(id), doc);
+                /* p2p.close(id); */
             }
             catch(Exception e) {
                 on_node_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
