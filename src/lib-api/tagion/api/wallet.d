@@ -15,8 +15,14 @@ import tagion.script.common : TagionBill, SignedContract;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.wallet.AccountDetails;
 
+import tagion.crypto.SecureNet;
+
 extern (C):
+version(unittest) {
+
+} else {
 nothrow:
+}
 
 /// Pointer to securenet
 struct securenet_t {
@@ -42,30 +48,102 @@ int tagion_generate_keypair (
     const(size_t) passphrase_len,
     const(char)* salt_ptr,
     const(size_t) salt_len,
-    securenet_t* out_securenet
-) {
-    return ErrorCode.error;
-}
-
-///
-unittest {
-    securenet_t my_keypair;
-
-    string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
-
-    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair);
-}
-
-/// Create an encrypted document keypair
-int tagion_create_devicepin (
-    const(securenet_t) root_net,
+    securenet_t* out_securenet,
     const(char*) pin_ptr,
     const(size_t) pin_len,
     uint8_t** out_device_doc_ptr,
     size_t* out_device_doc_len,
 ) {
-    assert(0, "TODO");
+
+    import tagion.crypto.random.random;
+    import std.string : representation;
+
+    try {
+        if (out_securenet.magic_byte != MAGIC.SECURENET) {
+            return ErrorCode.error; // TODO: better message
+        }
+        const _passphrase = passphrase_ptr[0..passphrase_len];
+        const _salt = salt_ptr[0..salt_len];
+
+        SecureNet _net = new StdSecureNet;
+
+        if (pin_ptr !is null) {
+            DevicePIN _pin;
+            const _pincode = pin_ptr[0..pin_len];
+
+            void set_pincode(
+                scope const(ubyte[]) R,
+                scope const(char[]) pincode) scope
+            in (_net !is null)
+            do {
+                auto seed = new ubyte[_net.hashSize];
+                getRandom(seed);
+                _pin.setPin(_net, R, pincode.representation, seed.idup);
+            }
+
+            ubyte[] R;
+            enum size_of_privkey = 32;
+            scope(exit) {
+                set_pincode(R, _pincode);
+                R[] = 0;
+                auto device_doc = _pin.toDoc.serialize;
+                *out_device_doc_ptr = cast(uint8_t*) &device_doc[0];
+                *out_device_doc_len = device_doc.length;
+            }
+            _net.generateKeyPair(_passphrase, _salt,
+                    (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
+
+
+        } else {
+            _net.generateKeyPair(_passphrase, _salt); 
+        }
+
+        out_securenet.securenet = cast(void*) _net;
+    } catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
 }
+
+unittest {
+    /// Create minimal key-pair
+    {
+        securenet_t my_keypair;
+        string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+
+        int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, null, 0, null, null);
+        assert(error_code == ErrorCode.none);
+    }
+    /// Create key-pair with salt 
+    {
+        securenet_t my_keypair;
+        string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+        string salt = "somesalt";
+
+        int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, &salt[0], salt.length, &my_keypair, null, 0, null, null);
+        assert(error_code == ErrorCode.none);
+    }
+    /// create key-pair with devicepin
+    {
+        import tagion.hibon.HiBONRecord;
+        import std.format;
+        securenet_t my_keypair;
+        string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+        string pincode = "1234";
+
+        uint8_t* device_buf;
+        size_t device_len;
+        int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, &pincode[0], pincode.length, &device_buf, &device_len);
+        assert(error_code == ErrorCode.none);
+
+        const _device_buf = device_buf[0..device_len].idup;
+        const device_doc = Document(_device_buf);
+        assert(device_doc.isRecord!DevicePIN, format("the doc was not of type %s", DevicePIN.stringof));
+    }
+}
+
+/// Create
 
 /// Decrypt a devicepin
 int tagion_decrypt_devicepin (
