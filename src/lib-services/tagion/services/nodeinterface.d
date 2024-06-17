@@ -279,10 +279,13 @@ struct PeerMgr {
         rc = cast(nng_errno)nng_stream_listener_alloc(&listener, &address[0]);
         check!ServiceError(rc == nng_errno.NNG_OK, nng_errstr(rc));
 
-        all_peers = new PeerLRU((scope const uint k, PeerLRU.Element* v) @safe nothrow { 
-                v.entry.value.close(); 
-                debug(nodeinterface) log("Closed (%s)", k);
-        }, 12);
+        all_peers = new PeerLRU(
+                (scope const uint k, PeerLRU.Element* v) @safe nothrow { 
+                    v.entry.value.close(); 
+                    debug(nodeinterface) log("Closed (%s)", k);
+                },
+                12
+        );
     }
 
     /// free nng memory
@@ -355,7 +358,6 @@ struct PeerMgr {
 
     void close(uint id) {
         all_peers.remove(id);
-
     }
 
     /// Send to an active connection with a known public key
@@ -393,6 +395,7 @@ struct PeerMgr {
         final switch(action) {
         case NodeAction.received:
             Peer* peer = all_peers[id];
+            check!ServiceException(peer !is null, format!"peer is not active %s"(id));
             peer.state = Peer.State.ready;
             // Add to the list of known connections
             break;
@@ -590,6 +593,7 @@ struct NodeInterfaceService_ {
 
             if(!doc.empty && !doc.isInorder(Document.Reserved.no)) {
                 on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
+                return;
             }
 
             try {
@@ -605,7 +609,6 @@ struct NodeInterfaceService_ {
                 
                 p2p.update(action, id);
                 receive_handle.send(WavefrontReq(id), doc);
-                /* p2p.close(id); */
             }
             catch(Exception e) {
                 on_node_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
@@ -619,15 +622,15 @@ struct NodeInterfaceService_ {
 
     // TODO: close on error
     void on_node_error(NodeError, NodeErrorCode code, uint id, string msg, int line) {
-        p2p.close(id);
         log.error("%s(%s): %s %s", id, line, code, msg);
+        p2p.close(id);
     }
 
     void on_nng_error(NNGError, nng_errno code, uint id, string msg, int line) {
-        p2p.close(id);
         if (code !is nng_errno.NNG_ECONNSHUT) {
             log.error("%s(%s): %s %s", id, line, nng_errstr(code), msg);
         }
+        p2p.close(id);
     }
 
     void task() {
