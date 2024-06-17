@@ -610,6 +610,7 @@ int tagion_document_get_uint32(const Document.Element* element, uint32_t* value)
  *   value = pointer to the returned uint64
  * Returns: ErrorCode
  */
+version(none) // temporarily disabled in ios
 int tagion_document_get_uint64(const Document.Element* element, uint64_t* value) {
     return get_T!uint64_t(__traits(parameters));
 }
