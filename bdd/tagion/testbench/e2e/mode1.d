@@ -80,6 +80,7 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     local_options.trt.enable = false;
     local_options.wave.network_mode = NetworkMode.LOCAL;
     local_options.epoch_creator.timeout = 300; //msecs
+    local_options.wave.prefix_format = "Mode1_%s_";
     local_options.subscription.tags = 
         [
             StdRefinement.epoch_created.name, 
@@ -173,7 +174,7 @@ Pid[] spawn_nodes(string dbin, string[] pins, const(string[]) node_data_paths) {
         auto pin_file = File(pin_path, "r");
 
         Pid pid = spawnProcess(cmd, workDir: node_path, stdin: pin_file);
-        Thread.sleep(300.msecs);
+        /* Thread.sleep(300.msecs); */
         writefln("Started %s", pid.processID);
         pids ~= pid;
     }
