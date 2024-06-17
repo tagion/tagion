@@ -9,13 +9,14 @@ import core.stdc.stdint;
 import tagion.hibon.Document;
 import tagion.script.TagionCurrency;
 import tagion.utils.StdTime;
-import tagion.crypto.Types : Pubkey;
+import tagion.crypto.Types : Pubkey, Fingerprint;
 import tagion.script.common : TagionBill, SignedContract;
 import tagion.crypto.random.random;
 import std.string : representation;
 
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.wallet.AccountDetails;
+import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.crypto.SecureNet;
 
@@ -217,16 +218,59 @@ unittest {
     assert(false_securenet.securenet is null, "should not have created a securenet");
 }
 
-
 /// Sign a message
+version(none)
 int tagion_sign_message (
     const(securenet_t) root_net,
     const(uint8_t*) message_ptr,
-    const size_t message_len,
+    const(size_t) message_len,
     uint8_t** signature_ptr, 
     size_t* signature_len,
 ) {
-    assert(0, "TODO");
+    try {
+        if (root_net.magic_byte != MAGIC.SECURENET) {
+            return ErrorCode.error; // TODO: better message
+        }
+        const message = message_ptr[0..message_len].idup;
+        if (message.length != NativeSecp256k1.MESSAGE_SIZE) {
+            return ErrorCode.error; // TODO: add better message
+        }
+        const message_fingerprint = Fingerprint(message);
+
+        SecureNet* _net = cast(SecureNet*) root_net.securenet;
+        const signature = _net.sign(message_fingerprint);
+        *signature_ptr = cast(uint8_t*) &signature[0];
+        *signature_len = signature.length;
+    } catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+/// sign a message hash
+version(none)
+unittest {
+    securenet_t my_keypair;
+    string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+
+    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, null, 0, null, null);
+    assert(error_code == ErrorCode.none);
+
+    // const message_to_sign = "wowowowowo\0".representation;
+    const rawdata = "the quick brown fox jumps over the dog".representation;
+    const buf = hash_net.calcHash(rawdata);
+    assert(buf.length == NativeSecp256k1.MESSAGE_SIZE);
+    uint8_t* signature_buf;
+    size_t signature_len;
+    error_code = tagion_sign_message(my_keypair, &buf[0], buf.length, &signature_buf, &signature_len);
+    assert(error_code == ErrorCode.none);
+    assert(signature_buf !is null);
+    assert(signature_len == NativeSecp256k1.SIGNATURE_SIZE);
+
+    // sign invalid buf with wrong len
+    error_code = tagion_sign_message(my_keypair, &buf[0], buf.length-5, &signature_buf, &signature_len);
+    assert(error_code == ErrorCode.error, "should throw error if the message length is not correct");
 }
 
 /// Create a signed contract
