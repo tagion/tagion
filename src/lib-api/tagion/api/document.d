@@ -610,9 +610,8 @@ int tagion_document_get_uint32(const Document.Element* element, uint32_t* value)
  *   value = pointer to the returned uint64
  * Returns: ErrorCode
  */
-version(none) // temporarily disabled in ios
 int tagion_document_get_uint64(const Document.Element* element, uint64_t* value) {
-    return get_T!uint64_t(__traits(parameters));
+    return get_T!ulong(__traits(parameters));
 }
 
 /** 
@@ -663,7 +662,7 @@ unittest {
     testGetFunc!(int)(42, &tagion_document_get_int32);
     testGetFunc!(long)(long(42), &tagion_document_get_int64);
     testGetFunc!(uint)(uint(42), &tagion_document_get_uint32);
-    /* testGetFunc!(ulong)(ulong(42), &tagion_document_get_uint64); */
+    testGetFunc!(ulong)(ulong(42), &tagion_document_get_uint64);
     testGetFunc!(float)(21.1f, &tagion_document_get_float32); 
     testGetFunc!(double)(321.312312f, &tagion_document_get_float64);
 }
