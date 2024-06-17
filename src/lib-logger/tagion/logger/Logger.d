@@ -212,7 +212,7 @@ is ready and has been started correctly
                         import std.stdio;
 
                         assumeWontThrow({
-                            stderr.writefln("\t%s:%s: %s", task_name, level, text);
+                            stderr.writefln("\t%s:%s: Format expression did throw", task_name, level);
                             stderr.writefln("%s", e);
                         }());
                     }
