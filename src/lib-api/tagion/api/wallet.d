@@ -32,7 +32,15 @@ struct securenet_t {
 
 /**
   Generate a keypair used from a password / menmonic
-  The function does **NOT** validate the menmonic
+  The function does **NOT** validate the menmonic and 
+  should therefore be validated by another function.
+
+  The function may be used in a minimal fashion without 
+  DevicePIN and salt. If null arguments are supplied for the pin,
+  then no DevicePIN is returned. 
+  Likewise if null is supplied for the salt then the salt will not
+  be used.
+
  
   Params:
     passphrase_ptr = Pointer to passphrase
@@ -40,6 +48,10 @@ struct securenet_t {
     salt_ptr = Optional salt for the menmonic phrase
     salt_len = Length of the optional salt
     out_securenet = The allocated securenet used for cryptographic operations
+    pin_ptr = Pointer to the pin
+    pin_len = Length of the pin
+    out_device_doc_ptr = Returned device doc ptr
+    out_device_doc_len = Length of the returned device doc
   Returns: 
     [tagion.api.errors.ErrorCode]
  */
@@ -142,8 +154,6 @@ unittest {
         assert(device_doc.isRecord!DevicePIN, format("the doc was not of type %s", DevicePIN.stringof));
     }
 }
-
-/// Create
 
 /// Decrypt a devicepin
 int tagion_decrypt_devicepin (
