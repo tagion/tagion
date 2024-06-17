@@ -342,6 +342,10 @@ struct PeerMgr {
         nng_stream_listener_accept(listener, aio_conn);
     }
 
+    void recv(uint id) {
+        all_peers[id].recv;
+    }
+
     /// Connect to an address an associate it with a public key
     void dial(string address, uint id) {
         auto dialer = new Dialer(id, address);
@@ -356,7 +360,9 @@ struct PeerMgr {
 
     /// Send to an active connection with a known public key
     void send(uint id, Buffer buf) {
-        all_peers[id].send(buf);
+        auto peer = all_peers[id]; 
+        check!ServiceException(peer !is null, format!"No active connections for this id %s"(id));
+        peer.send(buf);
     }
 
     bool isActive(uint id) const pure nothrow {
@@ -420,24 +426,27 @@ struct PeerMgr {
 
 ///
 unittest {
-    static uint unit_handler(ref PeerMgr sender, ref PeerMgr receiver) {
-        uint r_id;
+    uint last_id;
+    void unit_handler(ref PeerMgr sender, ref PeerMgr receiver) {
         receiveOnlyTimeout(1.seconds, 
                 (NodeAction a, uint id) {
-                    r_id = id;
                     if(a is NodeAction.accepted) {
                         receiver.update(a, id);
+                        receiver.recv(id);
+                    }
+                    else if(a is NodeAction.sent) {
+                        sender.update(a, id);
+                        sender.recv(id);
                     }
                     else {
                         sender.update(a, id);
                     }
                 },
                 (NodeAction a, uint id, Buffer buf) {
-                    r_id = id;
+                    last_id = id;
                     receiver.update(a, id);
                 }
         );
-        return r_id;
     }
 
     thisActor.task_name = "jens";
@@ -456,24 +465,24 @@ unittest {
     dialer.listen();
     listener.listen();
 
-    dialer.dial(listener.address, 0);
+    dialer.dial(listener.address, 1);
     listener.accept();
 
     unit_handler(dialer, listener);
     unit_handler(dialer, listener);
 
-    assert(dialer.isActive(0));
+    assert(dialer.isActive(1));
 
     assert(dialer.all_peers.length == 1);
     assert(listener.all_peers.length == 1);
-    assert(dialer.all_peers.byValue.all!(p => p.state is Peer.State.ready));
-    assert(listener.all_peers.byValue.all!(p => p.state is Peer.State.ready));
+    assert(dialer.all_peers[].all!(e => e.value.state is Peer.State.ready));
+    assert(listener.all_peers[].all!(e => e.value.state is Peer.State.receive));
 
     {
-        listener.recv_all_ready();
+        // listener.recv
         Buffer send_payload_p1 = HiRPC(net1).action("manythanks").serialize;
 
-        dialer.send(0, send_payload_p1);
+        dialer.send(1, send_payload_p1);
 
         unit_handler(dialer, listener);
         unit_handler(dialer, listener);
@@ -482,19 +491,19 @@ unittest {
     }
 
     {
-        dialer.recv_all_ready;
+        // dialer.recv
         Buffer send_payload_p2 = HiRPC(net2).action("manythanks").serialize;
-        listener.send(0, send_payload_p2);
+        listener.send(last_id, send_payload_p2);
 
         unit_handler(listener, dialer);
         unit_handler(listener, dialer);
     }
 
     {
-        listener.recv_all_ready();
+        // listener.recv
         Buffer send_payload_p1 = HiRPC(net1).action("manythanks").serialize;
 
-        dialer.send(0, send_payload_p1);
+        dialer.send(1, send_payload_p1);
 
         unit_handler(dialer, listener);
         unit_handler(dialer, listener);
