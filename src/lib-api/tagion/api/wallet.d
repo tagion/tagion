@@ -78,7 +78,7 @@ int tagion_generate_keypair (
         const _passphrase = passphrase_ptr[0..passphrase_len];
         const _salt = salt_ptr[0..salt_len];
 
-        SecureNet _net = new StdSecureNet;
+        StdSecureNet _net = new StdSecureNet;
 
         if (pin_ptr !is null) {
             DevicePIN _pin;
@@ -166,7 +166,7 @@ int tagion_decrypt_devicepin (
 
         DevicePIN _pin = DevicePIN(Document(_device_doc_buf));
 
-        SecureNet _net = new StdSecureNet;
+        StdSecureNet _net = new StdSecureNet;
         auto R = new ubyte[_net.hashSize];
         scope (exit) {
             R[] = 0;
@@ -219,7 +219,6 @@ unittest {
 }
 
 /// Sign a message
-version(none)
 int tagion_sign_message (
     const(securenet_t) root_net,
     const(uint8_t*) message_ptr,
@@ -236,8 +235,7 @@ int tagion_sign_message (
             return ErrorCode.error; // TODO: add better message
         }
         const message_fingerprint = Fingerprint(message);
-
-        SecureNet* _net = cast(SecureNet*) root_net.securenet;
+        StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
         const signature = _net.sign(message_fingerprint);
         *signature_ptr = cast(uint8_t*) &signature[0];
         *signature_len = signature.length;
@@ -249,7 +247,6 @@ int tagion_sign_message (
 }
 
 /// sign a message hash
-version(none)
 unittest {
     securenet_t my_keypair;
     string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
@@ -258,7 +255,7 @@ unittest {
     assert(error_code == ErrorCode.none);
 
     // const message_to_sign = "wowowowowo\0".representation;
-    const rawdata = "the quick brown fox jumps over the dog".representation;
+    const rawdata = "ntorisantionrseiontoiarsnstienarsietnaioensiteornstioenthe quick brown fox jumps over the dog".representation;
     const buf = hash_net.calcHash(rawdata);
     assert(buf.length == NativeSecp256k1.MESSAGE_SIZE);
     uint8_t* signature_buf;
