@@ -38,6 +38,7 @@ struct NodeInterfaceOptions {
     uint send_timeout = 200; // Milliseconds
     uint recv_timeout = 200; // Milliseconds
     uint send_max_retry = 0;
+    uint pool_size = 12;
     size_t bufsize = 0x8000; // 32kb
     string node_address = "tcp://[::1]:10700"; // Address
 
@@ -267,7 +268,7 @@ struct PeerMgr {
 
     alias PeerLRU = LRU!(uint, Peer*);
     ///
-    this(string address, size_t bufsize, ) @trusted {
+    this(string address, size_t bufsize, uint pool_size) @trusted {
         this.bufsize = bufsize;
         int rc = nng_aio_alloc(&aio_conn, &callback, self);
         check!ServiceError(rc == 0, nng_errstr(rc));
@@ -286,7 +287,7 @@ struct PeerMgr {
                     destroy(peer);
                     debug(nodeinterface) log("Closed (%s)", k);
                 },
-                12
+                pool_size,
         );
     }
 
@@ -466,8 +467,8 @@ unittest {
     auto net2 = new StdSecureNet();
     net2.generateKeyPair("me2");
 
-    auto dialer = PeerMgr("abstract://whomisam" ~ generateId.to!string, 256);
-    auto listener = PeerMgr("abstract://whomisam" ~ generateId.to!string, 256);
+    auto dialer = PeerMgr("abstract://whomisam" ~ generateId.to!string, 256, 2);
+    auto listener = PeerMgr("abstract://whomisam" ~ generateId.to!string, 256, 2);
 
     dialer.listen();
     listener.listen();
@@ -534,7 +535,7 @@ struct NodeInterfaceService_ {
         this.net = new StdSecureNet(shared_net);
         this.hirpc = HiRPC(this.net);
         this.receive_handle = ActorHandle(message_handler_task);
-        this.p2p = PeerMgr(opts.node_address, opts.bufsize);
+        this.p2p = PeerMgr(opts.node_address, opts.bufsize, opts.pool_size);
     }
 
     static Topic node_action_event = Topic("node_action");
@@ -549,8 +550,6 @@ struct NodeInterfaceService_ {
     }
 
     void node_respond(WavefrontReq req, const(Document) doc) {
-        log("responde to %s", req.id);
-        // todo assert is ready
         if(p2p.isActive(req.id)) {
             if(!(HiRPC(null).receive(doc).isMethod)) {
                 should_close[req.id] = true;
@@ -565,7 +564,7 @@ struct NodeInterfaceService_ {
             NodeInterfaceSub sub;
             sub.owner = net.pubkey;
             sub.id = id;
-            sub.event_state = cast(NodeInterfaceSub.EventState)action;
+            sub.action = action;
             log.event(node_action_event, text(action), sub);
         }
 
@@ -638,16 +637,13 @@ struct NodeInterfaceService_ {
         }
     }
 
-    // TODO: timeout
-
-    // TODO: close on error
     void on_node_error(NodeError, NodeErrorCode code, uint id, string msg, int line) {
         log.error("%s(%s): %s %s", id, line, code, msg);
         p2p.close(id);
     }
 
     void on_nng_error(NNGError, nng_errno code, uint id, string msg, int line) {
-        if (code !is nng_errno.NNG_ECONNSHUT || msg == "receive" /*fixme hardcoded message*/) {
+        if (code !is nng_errno.NNG_ECONNSHUT) {
             log.error("%s(%s): %s %s", id, line, nng_errstr(code), msg);
         }
         p2p.close(id);
@@ -694,27 +690,10 @@ import tagion.hibon.HiBONRecord;
 
 // This record is used for internal subscription events
 struct NodeInterfaceSub {
-    enum EventState {
-        receive = 10,
-        received = NodeAction.received,
-        dial = 11,
-        dialed = NodeAction.dialed,
-        accept = 12,
-        accepted = NodeAction.accepted,
-        send = 13,
-        send_from_queue,
-        send_queued,
-        sent = NodeAction.sent,
-    }
-
     @label(StdNames.owner) Pubkey owner;
-    // The channel which was interacted with
-    Pubkey channel;
-    /* long queued; */
+    Document payload;
     uint id;
-    EventState event_state;
-    /* ExchangeState exchange_state; */
-    NodeAction action_state;
+    NodeAction action;
 
     mixin HiBONRecord;
 }
