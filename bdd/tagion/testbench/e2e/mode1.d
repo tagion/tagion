@@ -187,10 +187,12 @@ int _main(string[] args) {
     immutable program = args[0];
     uint number_of_nodes = 5;
     uint timeout_secs = 100;
+    long target_epoch = 5;
 
     auto main_args = getopt(args,
         "n|nodes", format("Amount of nodes to spawn (%s)", number_of_nodes), &number_of_nodes,
         "t|timeout", format("How long to run the test for in seconds (%s)", timeout_secs), &timeout_secs,
+        "e|epoch", format("The target epoch for all nodes (%s)", target_epoch), &target_epoch,
         "v|verbose", "Vebose switch", &__verbose_switch,
     );
 
@@ -214,7 +216,7 @@ int _main(string[] args) {
     auto node_opts = getMode1Options(number_of_nodes);
 
     auto feature = automation!(mixin(__MODULE__));
-    feature.Mode1NetworkStart(node_opts, timeout_secs.seconds);
+    feature.Mode1NetworkStart(node_opts, timeout_secs.seconds, target_epoch);
     feature.run;
 
     return 0;
@@ -241,11 +243,12 @@ class Mode1NetworkStart {
     const(Options)[] node_opts;
     Duration timeout;
 
-    enum expected_epoch = 5;
+    const long expected_epoch;
     
-    this(const(Options)[] node_opts, Duration timeout) {
+    this(const(Options)[] node_opts, Duration timeout, long target_epoch) {
         this.node_opts = node_opts;
         this.timeout = timeout;
+        this.expected_epoch = target_epoch;
     }
 
     Pid[] pids;
@@ -295,6 +298,7 @@ class Mode1NetworkStart {
         const begin_time = MonoTime.currTime;
         HiRPC hirpc = HiRPC(null);
 
+        writeln("Will wait for epoch ", expected_epoch);
         while(!epochs.all!(i => i >= expected_epoch) && MonoTime.currTime - begin_time <= timeout) {
             foreach(i, sub; subs) {
                 auto doc = sub.receive();
