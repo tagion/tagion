@@ -561,13 +561,7 @@ struct NodeInterfaceService_ {
 
     void on_action_complete(NodeAction action, uint id, Buffer buf = null) {
         debug(nodeinterface) log("%s %s, connected %s", id, action, p2p.all_peers.length);
-        if (node_action_event.subscribed) {
-            NodeInterfaceSub sub;
-            sub.owner = net.pubkey;
-            sub.id = id;
-            sub.action = action;
-            log.event(node_action_event, text(action), sub);
-        }
+        log.event(node_action_event, text(action), NodeInterfaceSub(net.pubkey, id, action));
 
         final switch(action) {
         case NodeAction.dialed:
@@ -692,7 +686,6 @@ import tagion.hibon.HiBONRecord;
 // This record is used for internal subscription events
 struct NodeInterfaceSub {
     @label(StdNames.owner) Pubkey owner;
-    Document payload;
     uint id;
     NodeAction action;
 

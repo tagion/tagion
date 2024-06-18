@@ -45,28 +45,16 @@ Color pubkey_to_color(Pubkey pubkey) @safe {
     return Color(r, g, b, a);
 }
 
-Color action_color(NodeInterfaceSub.EventState action) {
+Color action_color(NodeAction action) {
     final switch(action) with(NodeInterfaceSub) {
-        case EventState.receive:
+        case NodeAction.received:
             return Colors.DARKBLUE;
-        case EventState.received:
-            return Colors.SKYBLUE;
-        case EventState.dial:
-            return Colors.BEIGE;
-        case EventState.dialed:
-            return Colors.BROWN;
-        case EventState.accept:
-            return Colors.GREEN;
-        case EventState.accepted:
-            return Colors.LIME;
-        case EventState.sent:
-            return Colors.RED;
-        case EventState.send:
-            return Colors.DARKPURPLE;
-        case EventState.send_from_queue:
-            return Colors.PINK;
-        case EventState.send_queued:
-            return Colors.ORANGE;
+        case NodeAction.dialed:
+            return Colors.DARKGRAY;
+        case NodeAction.accepted:
+            return Colors.DARKGRAY;
+        case NodeAction.sent:
+            return Colors.MAROON;
     }
 }
 
@@ -96,7 +84,7 @@ void draw_gradient_line(const Vector2 pos1, const Vector2 pos2, const Color colo
 void draw_color_map() {
     int x = 15;
     int y = 15;
-    static immutable event_members = [EnumMembers!(NodeInterfaceSub.EventState)];
+    static immutable event_members = [EnumMembers!(NodeAction)];
     foreach(state; event_members) {
             DrawRectangle(x, y, 20, 20, action_color(state));
             DrawText(text(state), x + 25, y, 20, Colors.BLACK);
@@ -159,7 +147,7 @@ int __main(string[] args) {
 
     int screenWidth = 800;
     int screenHeight = 800;
-    /* SetConfigFlags(FLAG_WINDOW_RESIZABLE); */
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "Tagion Nodeinterface debugger");
     scope(exit) {
         CloseWindow();
@@ -202,6 +190,8 @@ int __main(string[] args) {
             receiveTimeout(Duration.zero,
                     (NodeInterfaceSub sub) { 
                         all_nodes.stableInsert(sub.owner);
+
+                        version(none)
                         if(!sub.channel.empty) {
                             event_queue[generateId] = sub;
                             all_nodes.stableInsert(sub.channel);
@@ -233,6 +223,7 @@ int __main(string[] args) {
             DrawCircle(node.pos.x.to!int, node.pos.y.to!int, 35, pubkey_to_color(pubkey));
         }
 
+        version(none)
         foreach(event; event_queue[]) {
             const sender = nodes_by[event.value.owner];
             const receiver = nodes_by[event.value.channel];
