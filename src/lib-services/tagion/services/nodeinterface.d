@@ -281,7 +281,9 @@ struct PeerMgr {
 
         all_peers = new PeerLRU(
                 (scope const uint k, PeerLRU.Element* v) @safe nothrow { 
-                    v.entry.value.close(); 
+                    Peer* peer = v.entry.value; 
+                    peer.close();
+                    destroy(peer);
                     debug(nodeinterface) log("Closed (%s)", k);
                 },
                 12
@@ -407,6 +409,9 @@ struct PeerMgr {
             }
 
             auto dialer = dialers[id];
+            scope(exit) { 
+                destroy(dialer);
+            }
             nng_stream* socket = dialer.get_output;
             auto peer = new Peer(id, socket, bufsize);
             all_peers[id] = peer;
@@ -565,6 +570,7 @@ struct NodeInterfaceService_ {
         case NodeAction.dialed:
             p2p.update(action, id);
             const doc = queued_sends[id];
+            queued_sends.remove(id);
             p2p.send(id, doc.serialize);
             break;
 
@@ -627,7 +633,7 @@ struct NodeInterfaceService_ {
     }
 
     void on_nng_error(NNGError, nng_errno code, uint id, string msg, int line) {
-        if (code !is nng_errno.NNG_ECONNSHUT) {
+        if (code !is nng_errno.NNG_ECONNSHUT || msg == "receive" /*fixme hardcoded message*/) {
             log.error("%s(%s): %s %s", id, line, nng_errstr(code), msg);
         }
         p2p.close(id);
