@@ -322,6 +322,21 @@ struct HiRPC {
                 return _message.method;
             }
 
+            ///
+            @trusted
+            uint getId() nothrow pure const {
+                final switch(type) {
+                    case Type.method:
+                        return _message.method.id;
+                    case Type.result:
+                        return _message.response.id;
+                    case Type.error:
+                        return _message.error.id;
+                    case Type.none:
+                        return uint.init;
+                }
+            }
+
             @trusted
             bool isRecord(T)() const {
                 with (Type) {

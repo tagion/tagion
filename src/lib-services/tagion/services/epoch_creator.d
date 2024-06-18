@@ -2,7 +2,14 @@
 /// https://docs.tagion.org/docs/architecture/EpochCreator
 module tagion.services.epoch_creator;
 
-// tagion
+import core.time;
+
+import std.array;
+import std.algorithm;
+import std.exception : RangePrimitive, handle;
+import std.stdio;
+import std.typecons : No;
+
 import tagion.actor;
 import tagion.basic.Types;
 import tagion.basic.basic : isinit;
@@ -28,15 +35,8 @@ import tagion.utils.Random;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.monitor.Monitor;
-
-// core
-import core.time;
-
-// std
-import std.algorithm;
-import std.exception : RangePrimitive, handle;
-import std.stdio;
-import std.typecons : No;
+import tagion.hibon.HiBONRecord : isRecord;
+import tagion.script.common : SignedContract;
 
 alias PayloadQueue = Queue!Document;
 
@@ -120,10 +120,19 @@ struct EpochCreatorService {
             counter++;
         }
 
-        static void add_signed_contracts(const Wavefront received_wave, ActorHandle collector_handle) {
-            import std.array;
-            import tagion.hibon.HiBONRecord : isRecord;
-            import tagion.script.common : SignedContract;
+        void receiveWavefront_req(WavefrontReq req, const(Document) wave_doc) {
+            const receiver = HiRPC.Receiver(wave_doc);
+            if (receiver.isError) {
+                return;
+            }
+
+            const received_wave = (receiver.isMethod)
+                ? receiver.params!Wavefront(net)
+                : receiver.result!Wavefront(net);
+
+            debug(epoch_creator) log("<- %s", received_wave.state);
+
+            // Filter out all signed contracts from the payload
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
@@ -137,37 +146,14 @@ struct EpochCreatorService {
                 .array;
 
             if (received_signed_contracts.length != 0) {
-                // log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
                 collector_handle.send(consensusContract(), received_signed_contracts);
             }
-        }
 
-        void receiveWavefront_req(WavefrontReq req, const(Document) wave_doc) {
-            const receiver = HiRPC.Receiver(wave_doc);
-            if (receiver.isError) {
-                return;
-            }
-            const received_wave = (receiver.isMethod)
-                ? receiver.params!Wavefront(net)
-                : receiver.result!Wavefront(net);
-
-            debug(epoch_creator) log("<- %s", received_wave.state);
-            add_signed_contracts(received_wave, collector_handle);
             const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
 
-            if(!return_wavefront.isError) {
+            if(receiver.isMethod) {
                 locate(req.task_name).send(WavefrontReq(req.id), return_wavefront.toDoc);
             }
-        }
-
-        void receiveWavefront_res(WavefrontReq.Response, const(Document) wave_doc) {
-            const receiver = HiRPC.Receiver(wave_doc);
-            if (receiver.isError || !receiver.isResponse) {
-                return;
-            }
-            const received_wave = receiver.result!Wavefront(net);
-            add_signed_contracts(received_wave, collector_handle);
-            const _ = hashgraph.wavefront_response(receiver, currentTime, payload);
         }
 
         void timeout() {

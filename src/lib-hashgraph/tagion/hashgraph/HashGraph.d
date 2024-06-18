@@ -571,12 +571,12 @@ class HashGraph {
             lazy const(sdt_t) time,
             lazy const(Document) payload) {
         immutable from_channel = received.pubkey;
+        check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
+        const _ = getNode(from_channel);
+
         const received_wave = (received.isMethod)
                 ? received.params!Wavefront(hirpc.net)
                 : received.result!Wavefront(hirpc.net);
-
-        check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
-        const _ = getNode(from_channel);
 
         with(ExchangeState) 
         switch (received_wave.state) {
@@ -672,7 +672,7 @@ class HashGraph {
             default:
                 break;
         }
-        return hirpc.error(HiRPC.getId(received.toDoc), "nomsg");
+        return hirpc.error(received.getId, "wavefront_error");
     }
 
     void front_seat(Event event)

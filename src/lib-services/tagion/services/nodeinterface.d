@@ -399,7 +399,6 @@ struct PeerMgr {
             Peer* peer = all_peers[id];
             check!ServiceException(peer !is null, format!"peer is not active %s"(id));
             peer.state = Peer.State.ready;
-            // Add to the list of known connections
             break;
 
         case NodeAction.dialed:
@@ -541,6 +540,7 @@ struct NodeInterfaceService_ {
     static Topic node_action_event = Topic("node_action");
 
     Document[uint] queued_sends;
+    bool[uint] should_close;
 
     void node_send(WavefrontReq req, Pubkey channel, Document doc) {
         const nnr = addressbook[channel].get;
@@ -550,8 +550,11 @@ struct NodeInterfaceService_ {
 
     void node_respond(WavefrontReq req, const(Document) doc) {
         log("responde to %s", req.id);
+        // todo assert is ready
         if(p2p.isActive(req.id)) {
-            // check is ready
+            if(!(HiRPC(null).receive(doc).isMethod)) {
+                should_close[req.id] = true;
+            }
             p2p.send(req.id, doc.serialize);
         }
     }
@@ -581,9 +584,14 @@ struct NodeInterfaceService_ {
             break;
 
         case NodeAction.sent:
-            // TODO: if we sent breaking wave, then close
-            p2p.update(action, id);
-            p2p.all_peers[id].recv; // Be ready to receive next message
+            if((id in should_close) !is null) {
+                p2p.close(id);
+                should_close.remove(id);
+            }
+            else {
+                p2p.update(action, id);
+                p2p.all_peers[id].recv; // Be ready to receive next message
+            }
             break;
 
         case NodeAction.received:
@@ -613,7 +621,13 @@ struct NodeInterfaceService_ {
                     return;
                 }
                 
-                p2p.update(action, id);
+                if(hirpcmsg.isMethod) {
+                    p2p.update(action, id);
+                }
+                else {
+                    p2p.close(id);
+                }
+
                 receive_handle.send(WavefrontReq(id), doc);
             }
             catch(Exception e) {
