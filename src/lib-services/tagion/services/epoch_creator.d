@@ -151,7 +151,7 @@ struct EpochCreatorService {
                 ? receiver.params!Wavefront(net)
                 : receiver.result!Wavefront(net);
 
-            debug(epoch_creator) log("-> %s", received_wave.state);
+            debug(epoch_creator) log("<- %s", received_wave.state);
             add_signed_contracts(received_wave, collector_handle);
             const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
 
