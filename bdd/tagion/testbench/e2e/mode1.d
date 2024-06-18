@@ -281,7 +281,7 @@ class Mode1NetworkStart {
         return result_ok;
     }
 
-    @When("all nodes have produced 5 epochs")
+    @When("all nodes have produced x epochs")
     Document epochs() {
         SubscriptionHandle[] subs;
         long[] epochs;
@@ -316,7 +316,8 @@ class Mode1NetworkStart {
             }
         }
 
-        check(epochs.all!(i => i >= expected_epoch), format("%s", epochs));
+        check(MonoTime.currTime - begin_time <= timeout, format("Timed out at %s after %s", epochs, timeout));
+        check(epochs.all!(i => i >= expected_epoch), format("%s wanted %s", epochs, expected_epoch));
 
         writefln("Nodes ended at epochs %s", epochs);
 
