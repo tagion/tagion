@@ -650,7 +650,7 @@ class HashGraph {
                 const registered = registerEventPackage(epack);
                 assert(registered);
 
-                return hirpc.result(received, buildWavefront(FIRST_WAVE, received_wave.tides));
+                return wavefront(buildWavefront(FIRST_WAVE, received_wave.tides), received.getId);
 
             case FIRST_WAVE:
                 if (!areWeInGraph) {
@@ -660,7 +660,7 @@ class HashGraph {
                 immutable epack = event_pack(time, from_front_seat, payload());
                 const registered = registerEventPackage(epack);
                 assert(registered, "The event package has not been registered correct (The wave should be dumped)");
-                return wavefront(buildWavefront(SECOND_WAVE, received_wave.tides));
+                return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides));
 
             case SECOND_WAVE:
                 const from_front_seat = register_wavefront(received_wave, from_channel);

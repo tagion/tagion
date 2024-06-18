@@ -551,6 +551,7 @@ struct NodeInterfaceService_ {
 
     void node_respond(WavefrontReq req, const(Document) doc) {
         if(p2p.isActive(req.id)) {
+            // We could close immediately if the message is an error and not a result?
             if(!(HiRPC(null).receive(doc).isMethod)) {
                 should_close[req.id] = true;
             }
