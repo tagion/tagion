@@ -46,7 +46,7 @@ $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$${foreach post_correct, $$(DSTEP_POSTCORRECT), $$(post_correct) $$@}
 	if [ -n "$$(DSTEP_DLINK)" ]; then
 	cd $$(@D)
-	$$(LN) $$(@F) $$(basename $$(@F)).d 
+	$$(LN) $$(@F) $$(basename $$(@F)).d || true
 	fi
 
 #endif # End dstep tool is available

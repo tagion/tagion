@@ -49,6 +49,7 @@ import tagion.wallet.SecureWallet;
 import tagion.utils.LRUT;
 import tagion.hashgraphview.EventView;
 import tagion.communication.Envelope;
+import tagion.tools.dartutil.dartindex;
 
 import core.thread;
 import nngd.nngd;
@@ -927,9 +928,52 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     }
 }
 
+const view_dart_handler = handler_helper!view_dart_handler_impl;
+void view_dart_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
+    string dartindex_str = req.path[$ - 1];
+    DARTIndex drtindex = hash_net.dartIndexDecode(dartindex_str);
+
+    int attempts = 0;
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    int rc;
+    while (true) {
+        rc = s.dial(opt.node_dart_addr);
+        if (rc == 0)
+            break;
+        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
+    }
+    scope (exit) {
+        s.close();
+    }
+
+    rc = s.send(crud.dartRead([drtindex]).toDoc.serialize);
+    ubyte[192] buf;
+    size_t len = s.receivebuf(buf, buf.length);
+    if (len == size_t.max && s.errno != 0) {
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+        rep.msg = "socket error";
+        return;
+    }
+
+    const receiver = HiRPC(null).receive(Document(buf.idup));
+
+    Appender!string html_result;
+    html_result ~= "<!DOCTYPE <html> <body>";
+    html_result ~= "<h2>";
+    html_result ~= dartindex_str;
+    html_result ~= "</h2>";
+    html_result ~= "<pre>";
+    html_result ~= receiver.result.toPretty;
+
+    html_result ~= "</pre>";
+    html_result ~= "</body> </html>";
+    
+    rep.type = mime_type.HTML;
+    rep.text = html_result[];
+}
+
 void versioninfo_handler(WebData* req, WebData* rep, void* _) nothrow {
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
-    rep.type = mime_type.TEXT;
     rep.text = imported!"tagion.tools.revision".revision_text;
 }
 
@@ -1053,6 +1097,8 @@ appoint:
         "/bullseye": "test bullseye endpoint",
         "/dart": "test dart request endpoint",
     ]);
+
+    app.route("/dart/*", view_dart_handler);
 
     writeit(help_text.data);
     app.start();

@@ -1,26 +1,31 @@
 /// API for using hibon
+
 module tagion.api.hibon;
-import tagion.api.errors;
-import tagion.hibon.HiBON;
+
 import core.stdc.stdint;
+import core.memory;
+
+import std.bitmanip;
+
+import tagion.api.errors;
+import tagion.api.basic;
+import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.utils.StdTime;
 import tagion.hibon.BigNumber;
-import std.bitmanip;
-version(C_API_DEBUG) {
-import std.stdio : writefln;
-}
 
 extern (C):
-version (unittest) {
-}
-else {
+
+version(unittest) {
+} else {
 nothrow:
 }
 
-enum MAGIC_HIBON = 0xB000_0001;
+enum MAGIC_HIBON = MAGIC.HIBON;
+
+/// HiBON Type
 struct HiBONT {
-    int magic_byte = MAGIC_HIBON;
+    int magic_byte = MAGIC.HIBON;
     void* hibon;
 }
 
@@ -33,9 +38,6 @@ void* mymalloc(size_t size) {
 void mydealloc(void* ptr) {
     import core.stdc.stdlib;
 
-    version(C_API_DEBUG) {
-    writefln("calling free");
-    }
     free(ptr);
 }
 
@@ -53,9 +55,6 @@ int tagion_hibon_create(HiBONT* instance) {
         }
         instance.hibon = cast(void*) new HiBON;
         instance.magic_byte = MAGIC_HIBON;
-        version(C_API_DEBUG) {
-        writefln("created hibon");
-        }
     }
     catch (Exception e) {
         last_error = e;
@@ -70,6 +69,13 @@ unittest {
     assert(rt == ErrorCode.none, "could not create hibon");
 }
 
+/// Free a HiBON object
+void tagion_hibon_free(HiBONT* instance) {
+    auto hibon = cast(HiBON)instance.hibon;
+    destroy(hibon);
+    GC.free(instance);
+}
+
 int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, size_t* str_len) {
     import tagion.hibon.HiBONJSON;
     import tagion.hibon.HiBONtoText;
@@ -77,9 +83,6 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
 
     try {
         const fmt = cast(DocumentTextFormat) text_format;
-        version(C_API_DEBUG) {
-        writefln("%s", fmt);
-        }
 
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
             return ErrorCode.exception;
@@ -104,9 +107,6 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
     }
     catch(Exception e) {
         last_error = e;
-        version(C_API_DEBUG) {
-        writefln("%s", e);
-        }
         return ErrorCode.exception;
     }
     return ErrorCode.none;
@@ -133,9 +133,6 @@ int tagion_hibon_get_document(const(HiBONT*) instance, uint8_t** buf, size_t* bu
     }
     catch(Exception e) {
         last_error = e;
-        version(C_API_DEBUG) {
-        writefln("%s", e);
-        }
         return ErrorCode.exception;
     }
     return ErrorCode.none;
@@ -355,6 +352,7 @@ unittest {
     assert(result[key].get!(immutable(ubyte[])) == binary_data);
 }
 
+///
 int tagion_hibon_add_time(const(HiBONT*) instance,
         const char* key,
         const size_t key_len,
@@ -439,6 +437,8 @@ unittest {
     assert(result[key].get!(BigNumber) == big_number);
 }
 
+extern(D)
+private
 template add_T(T) {
     int add_T(const(HiBONT*) instance,
             const char* key,
@@ -461,6 +461,8 @@ template add_T(T) {
     }
 }
 
+extern(D)
+private
 template add_array_T(T) {
     int add_array_T(const(HiBONT*) instance,
                 const char* key,
@@ -479,9 +481,6 @@ template add_array_T(T) {
             }
             ubyte[] _value_buf = buf[0..buf_len];
             const _value = read!T(_value_buf);
-            version(C_API_DEBUG) {
-            writefln("read value %s", _value);
-            }
             h[_key] = _value;
         }
         catch(Exception e) {
@@ -504,6 +503,8 @@ template add_array_T(T) {
 int tagion_hibon_add_bool(const(HiBONT*) h, const char* key, const size_t key_len, bool value) {
     return add_T!bool(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_bool(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!bool(__traits(parameters));
 }
@@ -521,6 +522,7 @@ int tagion_hibon_add_int32(const(HiBONT*) h, const char* key, const size_t key_l
     return add_T!int32_t(__traits(parameters));
 }
 
+///
 int tagion_hibon_add_array_int32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!int32_t(__traits(parameters));
 }
@@ -553,6 +555,8 @@ int tagion_hibon_add_array_int64(const(HiBONT*) h, const char* key, const size_t
 int tagion_hibon_add_uint32(const(HiBONT*) h, const char* key, const size_t key_len, uint32_t value) {
     return add_T!uint32_t(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_uint32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!uint32_t(__traits(parameters));
 }
@@ -568,6 +572,8 @@ int tagion_hibon_add_array_uint32(const(HiBONT*) h, const char* key, const size_
 int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint64_t value) {
     return add_T!uint64_t(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!uint64_t(__traits(parameters));
 }
@@ -583,9 +589,12 @@ int tagion_hibon_add_array_uint64(const(HiBONT*) h, const char* key, const size_
 int tagion_hibon_add_float32(const(HiBONT*) h, const char* key, const size_t key_len, float value) {
     return add_T!float(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_float32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!float(__traits(parameters));
 }
+
 /** 
 * Add float64 to hibon instance
 * Params:
@@ -598,10 +607,14 @@ int tagion_hibon_add_array_float32(const(HiBONT*) h, const char* key, const size
 int tagion_hibon_add_float64(const(HiBONT*) h, const char* key, const size_t key_len, double value) {
     return add_T!double(__traits(parameters));
 }
+
+///
 int tagion_hibon_add_array_float64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
     return add_array_T!double(__traits(parameters));
 }
 
+version(unittest)
+private
 void testAddFunc(T)(
         T call_value,
         int function(const(HiBONT*), const char*, const size_t, T) func) {
@@ -617,6 +630,8 @@ void testAddFunc(T)(
     assert(result[key].get!T == call_value);
 }
 
+version(unittest)
+private
 void testArrayAddFunc(T)(
     T call_value,
     int function(const(HiBONT*), const char*, const size_t, uint8_t*, const size_t) func) {

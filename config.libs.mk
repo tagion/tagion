@@ -16,6 +16,7 @@ clean: clean-libtagion
 
 LIBMOBILE:=$(DLIB)/libmobile.$(LIBEXT)
 libmobile: DFLAGS+=-i
+libmobile: DFLAGS+=$(GEN_CPP_HEADER_FILE)=$(DLIB)/libmobile.h
 libmobile: DINC+=$(LIB_DINC)
 libmobile: LIBS+=$(LIBSECP256K1_STATIC)
 libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
@@ -58,7 +59,9 @@ clean: clean-libbetterc
 
 LIBTAUONAPI:=$(DLIB)/libtauonapi.$(LIBEXT)
 libtauonapi: DFLAGS+=-i
+libtauonapi: DFLAGS+=$(GEN_CPP_HEADER_FILE)=$(DLIB)/libtauonapi.h
 libtauonapi: DINC+=$(LIB_DINC)
+libtauonapi: LIBS+=$(LIBSECP256K1_STATIC)
 libtauonapi: DFILES:=${shell find $(DSRC)/lib-api -name "*.d"}
 
 $(LIBTAUONAPI): revision

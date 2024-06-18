@@ -545,7 +545,8 @@ int tagion_document_get_bigint(const Document.Element* element, uint8_t** bigint
     return ErrorCode.none;
 }
 
-
+extern(D)
+private
 template get_T(T) {
     int get_T(const Document.Element* element, T* value) {
         try {
@@ -588,8 +589,8 @@ int tagion_document_get_int32(const Document.Element* element, int32_t* value) {
  *   value = pointer to the returned i64
  * Returns: ErrorCode
  */
-int tagion_document_get_int64(const Document.Element* element, int64_t* value) {
-    return get_T!int64_t(__traits(parameters));
+int tagion_document_get_int64(const Document.Element* element, long* value) {
+    return get_T!long(__traits(parameters));
 }
 /** 
  * Get an uint32 from a document element
@@ -609,8 +610,8 @@ int tagion_document_get_uint32(const Document.Element* element, uint32_t* value)
  *   value = pointer to the returned uint64
  * Returns: ErrorCode
  */
-int tagion_document_get_uint64(const Document.Element* element, uint64_t* value) {
-    return get_T!uint64_t(__traits(parameters));
+int tagion_document_get_uint64(const Document.Element* element, ulong* value) {
+    return get_T!ulong(__traits(parameters));
 }
 
 /** 
@@ -635,6 +636,8 @@ int tagion_document_get_float64(const Document.Element* element, double* value) 
     return get_T!double(__traits(parameters));
 }
 
+version(unittest)
+private
 void testGetFunc(T)(
     T h_value,
     int function(const Document.Element*, T* value) func)
