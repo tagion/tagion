@@ -359,8 +359,10 @@ struct PeerMgr {
         dialers[id] = dialer;
     }
 
-    void close(uint id) {
+    void remove(uint id) {
+        abort(id);
         all_peers.remove(id);
+        dialers.remove(id);
     }
 
     /// Send to an active connection with a known public key
@@ -374,7 +376,17 @@ struct PeerMgr {
         return all_peers.contains(id);
     }
 
-    void abort() {
+    void abort(uint id) {
+        if((id in dialers) !is null) {
+            dialers[id].abort();
+        }
+        auto peer = all_peers[id];
+        if(peer !is null) {
+            peer.abort();
+        }
+    }
+
+    void abort_all() {
         nng_aio_abort(aio_conn, int());
         foreach(dialer; dialers.byValue) {
             dialer.abort();
@@ -562,6 +574,9 @@ struct NodeInterfaceService_ {
     void on_action_complete(NodeAction action, uint id, Buffer buf = null) {
         debug(nodeinterface) log("%s %s, connected %s", id, action, p2p.all_peers.length);
         log.event(node_action_event, text(action), NodeInterfaceSub(net.pubkey, id, action));
+        scope(failure) {
+            cleanup(id);
+        }
 
         final switch(action) {
         case NodeAction.dialed:
@@ -579,8 +594,7 @@ struct NodeInterfaceService_ {
 
         case NodeAction.sent:
             if((id in should_close) !is null) {
-                p2p.close(id);
-                should_close.remove(id);
+                cleanup(id);
             }
             else {
                 p2p.update(action, id);
@@ -619,7 +633,7 @@ struct NodeInterfaceService_ {
                     p2p.update(action, id);
                 }
                 else {
-                    p2p.close(id);
+                    cleanup(id);
                 }
 
                 receive_handle.send(WavefrontReq(id), doc);
@@ -632,22 +646,31 @@ struct NodeInterfaceService_ {
         }
     }
 
+    void cleanup(uint id) {
+        p2p.remove(id);
+        queued_sends.remove(id);
+        should_close.remove(id);
+    }
+
     void on_node_error(NodeError, NodeErrorCode code, uint id, string msg, int line) {
         log.error("%s(%s): %s %s", id, line, code, msg);
-        p2p.close(id);
+        cleanup(id);
     }
 
     void on_nng_error(NNGError, nng_errno code, uint id, string msg, int line) {
         if (code !is nng_errno.NNG_ECONNSHUT) {
             log.error("%s(%s): %s %s", id, line, nng_errstr(code), msg);
         }
-        p2p.close(id);
+        cleanup(id);
     }
 
     void task() {
         p2p.listen();
         log("listening on %s", opts.node_address);
         p2p.accept();
+        scope(exit) {
+            p2p.abort_all();
+        }
 
         run(
                 (NodeAction a, uint id) {
