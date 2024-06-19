@@ -322,6 +322,21 @@ struct HiRPC {
                 return _message.method;
             }
 
+            ///
+            @trusted
+            uint getId() nothrow pure const {
+                final switch(type) {
+                    case Type.method:
+                        return _message.method.id;
+                    case Type.result:
+                        return _message.response.id;
+                    case Type.error:
+                        return _message.error.id;
+                    case Type.none:
+                        return uint.init;
+                }
+            }
+
             @trusted
             bool isRecord(T)() const {
                 with (Type) {
@@ -407,16 +422,19 @@ struct HiRPC {
             return T(args, method.params);
         }
 
+        ///
         Document params() const {
             check(type is Type.method, format("Message type %s expected not %s", Type.method, type));
             return method.params;
         }
 
+        ///
         const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
             check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
-            return T(response.result, args);
+            return T(args, response.result);
         }
 
+        ///
         Document result() const {
             check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
 
