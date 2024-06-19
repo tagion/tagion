@@ -1695,8 +1695,7 @@ struct WebData {
         }
         if(type.startsWith("application/json")) {
             scope string sbuf = json.toString();
-            memcpy(buf, sbuf.ptr, sbuf.length);
-            rc = nng_http_res_copy_data(res, buf, sbuf.length);
+            rc = nng_http_res_copy_data(res, sbuf.ptr, sbuf.length);
             length = sbuf.length;
             enforce(rc==0, "webdata: copy json rep");
         }
