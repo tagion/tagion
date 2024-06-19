@@ -7,7 +7,7 @@ sidebar_position: 4
 The tagion sdk is actively being worked on
 :::
 
-We provide C-ABI compatible library called libtauonapi. Which provides most important functions for building client funtionality for tagion. 
+We provide C-ABI compatible library called libtauonapi. Which provides most important functions for building client functionality for tagion. 
 The documentation for all of the functions are here https://ddoc.tagion.org/tagion.api.html  
 
 Currently we don't have any officially supported language bindings.  

@@ -54,7 +54,7 @@ or
 ## Read methods (DART(ro) + friends)
 
 :::info
-Since these methods all take what we call a DARTIndex as parameter, it is usefull to know what exactly the [dartindex protocol](/docs/protocols/dart/dartindex) is.
+Since these methods all take what we call a DARTIndex as parameter, it is useful to know what exactly the [dartindex protocol](/docs/protocols/dart/dartindex) is.
 :::
 
 ### dartCheckRead
