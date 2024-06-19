@@ -928,14 +928,13 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     }
 }
 
-const view_dart_handler = handler_helper!view_dart_handler_impl;
-void view_dart_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
-    string dartindex_str = req.path[$ - 1];
-    DARTIndex drtindex = hash_net.dartIndexDecode(dartindex_str);
-
-    int attempts = 0;
+const lookup_handler = handler_helper!lookup_handler_impl;
+void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
+    string query_subject = req.path[$ - 2];
+    string query_str = req.path[$ - 1];
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     int rc;
+    int attempts = 0;
     while (true) {
         rc = s.dial(opt.node_dart_addr);
         if (rc == 0)
@@ -945,31 +944,37 @@ void view_dart_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     scope (exit) {
         s.close();
     }
-
-    rc = s.send(crud.dartRead([drtindex]).toDoc.serialize);
-    ubyte[192] buf;
-    size_t len = s.receivebuf(buf, buf.length);
-    if (len == size_t.max && s.errno != 0) {
-        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "socket error";
-        return;
+    switch(query_subject){
+        case "dartindex":
+            DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
+            rc = s.send(crud.dartRead([drtindex]).toDoc.serialize);
+            ubyte[4096] buf;
+            size_t len = s.receivebuf(buf, buf.length);
+            if (len == size_t.max && s.errno != 0) {
+                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                rep.msg = "socket error";
+                return;
+            }
+            const receiver = HiRPC(null).receive(Document(buf.idup[0..len]));
+            const jresult = receiver.result.toJSON;
+            writeit("DD");
+            rep.type = mime_type.JSON;
+            rep.json = jresult;
+            break;
+        case "transaction":
+            rep.type = mime_type.JSON;
+            rep.json = JSONValue(["error": "not implemented yet"]);
+            break;
+        case "record":
+            rep.type = mime_type.JSON;
+            rep.json = JSONValue(["error": "not implemented yet"]);
+            break;
+        default:
+            rep.type = mime_type.JSON;
+            rep.json = JSONValue(["error": "unknown subject"]);
+            break;
     }
-
-    const receiver = HiRPC(null).receive(Document(buf.idup));
-
-    Appender!string html_result;
-    html_result ~= "<!DOCTYPE <html> <body>";
-    html_result ~= "<h2>";
-    html_result ~= dartindex_str;
-    html_result ~= "</h2>";
-    html_result ~= "<pre>";
-    html_result ~= receiver.result.toPretty;
-
-    html_result ~= "</pre>";
-    html_result ~= "</body> </html>";
-    
-    rep.type = mime_type.HTML;
-    rep.text = html_result[];
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
 }
 
 void versioninfo_handler(WebData* req, WebData* rep, void* _) nothrow {
@@ -1097,8 +1102,7 @@ appoint:
         "/bullseye": "test bullseye endpoint",
         "/dart": "test dart request endpoint",
     ]);
-
-    app.route("/dart/*", view_dart_handler);
+    add_v1_route(app, options.lookup_endpoint~"/*", lookup_handler, [HTTPMethod.GET], "lookup by ID");
 
     writeit(help_text.data);
     app.start();
