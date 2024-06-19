@@ -14,7 +14,6 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.StdTime;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONJSON : toPretty;
 import tagion.communication.Envelope;
 
 
