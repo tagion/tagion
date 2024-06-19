@@ -218,8 +218,12 @@ struct Envelope {
         }
     }
 
-    const(ubyte)[] toData() {
+    const(ubyte)[] toData() @trusted const {
         return (this.errorstate) ? [] : (this.header.compression > 0) ? cast(const(ubyte)[])uncompress(this.data[0..$]) : this.data[0..$];
+    }
+
+    immutable(ubyte)[] toData() @trusted immutable {
+        return (this.errorstate) ? [] : (this.header.compression > 0) ? cast(immutable(ubyte)[])uncompress(this.data[0..$]) : this.data[0..$];
     }    
 }
 
