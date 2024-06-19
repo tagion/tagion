@@ -684,6 +684,8 @@ struct NodeInterfaceService_ {
                 &on_node_error,
                 &on_nng_error
         );
+
+        p2p.abort_all();
     }
 }
 
