@@ -26,7 +26,7 @@ The socket address, and thereby the vissibillity can be changed in the tagionwav
 These are the hirpc methods exposed by the tagion kernel.
 
 :::info
-The example requests and responses are shown in the [HiBONJSON](https://www.hibon.org/posts/hibonjson) exchange format.
+The example requests and responses are shown in the [HiBONJSON](https://www.hibon.org/posts/hibonjson) interchange format.
 But in reality you'll always be sending the raw hibon over the wire.  
 :::
 
