@@ -530,6 +530,9 @@ unittest {
 
         assert(listener.all_peers.length == 1);
     }
+
+    dialer.abort_all();
+    listener.abort_all();
 }
 
 ///
@@ -668,9 +671,6 @@ struct NodeInterfaceService_ {
         p2p.listen();
         log("listening on %s", opts.node_address);
         p2p.accept();
-        scope(exit) {
-            p2p.abort_all();
-        }
 
         run(
                 (NodeAction a, uint id) {
@@ -689,8 +689,7 @@ struct NodeInterfaceService_ {
 
 void thread_attachThis() @trusted {
     import core.thread : thread_attachThis;
-    pragma(msg, "FIXME(lr): find out why thread_attachThis causes issues");
-    /* thread_attachThis(); */
+    thread_attachThis();
 }
 
 void fail(string owner_task, Throwable t) nothrow {
