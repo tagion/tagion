@@ -12,6 +12,7 @@ import std.exception;
 import std.algorithm;
 import std.typecons;
 import std.traits;
+import std.array;
 
 import tagion.actor;
 import tagion.actor.exceptions;
@@ -29,6 +30,7 @@ import tagion.services.messages;
 import tagion.services.exception;
 import tagion.crypto.SecureNet;
 import tagion.communication.HiRPC;
+import tagion.communication.Envelope;
 
 import nngd;
 import libnng;
@@ -123,10 +125,22 @@ struct Dialer {
     }
 
     void abort() {
+        assert(aio !is null, "Tried to abort non allocated dialer");
         nng_aio_abort(aio, int());
     }
 
+    void stop() {
+        nng_aio_stop(aio);
+    }
+
     mixin NodeHelpers;
+}
+
+unittest {
+    auto dialer = new Dialer(0, "abstract://aaa");
+    dialer.dial();
+    dialer.abort();
+    receiveOnlyTimeout(1.seconds, (NNGError _, nng_errno code, uint id, string msg, int line) {});
 }
 
 /**
@@ -219,6 +233,7 @@ struct Peer {
     /// Send a buffer to the peer
     void send(const(ubyte)[] data) @trusted {
         assert(data.length <= bufsize, "sent data greater than bufsize");
+        assert(!data.empty, "trying to send empty data");
         assert(socket !is null, "This peer is not connected");
         check(state is State.ready, "Can not call send when not ready");
         state = State.send;
@@ -250,7 +265,12 @@ struct Peer {
     }
 
     void abort() {
+        assert(aio !is null, "Tried to abort non allocated dialer");
         nng_aio_abort(aio, int());
+    }
+
+    void stop() {
+        nng_aio_stop(aio);
     }
 
     mixin NodeHelpers;
@@ -284,7 +304,6 @@ struct PeerMgr {
                 (scope const uint k, PeerLRU.Element* v) @safe nothrow { 
                     Peer* peer = v.entry.value; 
                     peer.close();
-                    destroy(peer);
                     debug(nodeinterface) log("Closed (%s)", k);
                 },
                 pool_size,
@@ -360,7 +379,6 @@ struct PeerMgr {
     }
 
     void remove(uint id) {
-        abort(id);
         all_peers.remove(id);
         dialers.remove(id);
     }
@@ -369,7 +387,12 @@ struct PeerMgr {
     void send(uint id, Buffer buf) {
         auto peer = all_peers[id]; 
         check!ServiceException(peer !is null, format!"No active connections for this id %s"(id));
-        peer.send(buf);
+
+        Envelope envelope = Envelope(0, 0, buf);
+        check!ServiceException(!envelope.errorstate, envelope.errors.join("\n"));
+        const env_buf = envelope.toBuffer();
+        check!ServiceException(!env_buf.empty, "envelope buffer empty");
+        peer.send(env_buf);
     }
 
     bool isActive(uint id) const pure nothrow {
@@ -386,13 +409,23 @@ struct PeerMgr {
         }
     }
 
-    void abort_all() {
+    void abort() {
         nng_aio_abort(aio_conn, int());
         foreach(dialer; dialers.byValue) {
             dialer.abort();
         }
         foreach(peer; all_peers) {
             peer.value.abort();
+        }
+    }
+
+    void stop() {
+        nng_aio_stop(aio_conn);
+        foreach(dialer; dialers.byValue) {
+            dialer.stop();
+        }
+        foreach(peer; all_peers) {
+            peer.value.stop();
         }
     }
 
@@ -421,10 +454,8 @@ struct PeerMgr {
             }
 
             auto dialer = dialers[id];
-            scope(exit) { 
-                destroy(dialer);
-            }
             nng_stream* socket = dialer.get_output;
+            dialers.remove(id);
             auto peer = new Peer(id, socket, bufsize);
             all_peers[id] = peer;
             break;
@@ -531,8 +562,8 @@ unittest {
         assert(listener.all_peers.length == 1);
     }
 
-    dialer.abort_all();
-    listener.abort_all();
+    dialer.abort();
+    listener.abort();
 }
 
 ///
@@ -614,14 +645,17 @@ struct NodeInterfaceService_ {
                 return;
             }
 
-            const doc = Document(buf);
-
-            if(!doc.empty && !doc.isInorder(Document.Reserved.no)) {
-                on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
-                return;
-            }
-
             try {
+                immutable envelope = immutable(Envelope)(buf);
+                check!ServiceException(!envelope.errorstate, envelope.errors.join("\n"));
+
+                const doc = Document(envelope.toData);
+
+                if(!doc.empty && !doc.isInorder(Document.Reserved.no)) {
+                    on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
+                    return;
+                }
+
                 const hirpcmsg = hirpc.receive(doc);
                 if(hirpcmsg.pubkey == this.net.pubkey) {
                     on_node_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
@@ -685,7 +719,7 @@ struct NodeInterfaceService_ {
                 &on_nng_error
         );
 
-        p2p.abort_all();
+        p2p.stop();
     }
 }
 
