@@ -415,7 +415,7 @@ void ws_on_message(WebSocket *ws, ubyte[] data, void *ctx){
 /*
 * query REQ/REP socket once and close it 
 */
-int query_socket_once(string addr, uint timeout, uint delay, uint retries,  ubyte[] request, out immutable(ubyte)[] reply) {
+int query_socket_once(string addr, uint timeout, uint delay, uint retries,  const ubyte[] request, out immutable(ubyte)[] reply) {
     int rc;
     size_t len = 0, doclen = 0, attempts = 0;
     const stime = timestamp();

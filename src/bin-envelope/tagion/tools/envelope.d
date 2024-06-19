@@ -32,7 +32,7 @@ int _main(string[] args) {
     int schema = 0;
     uint level = 5;
 
-    ubyte[] buf;
+    const(ubyte)[] buf;
     const bufsz = 8192;
     long totalsz  = 0;
     
