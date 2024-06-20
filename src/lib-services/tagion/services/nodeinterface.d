@@ -23,7 +23,6 @@ import tagion.hibon.Document;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.script.standardnames;
 import tagion.utils.Random;
-import tagion.utils.Queue;
 import tagion.utils.LRU;
 import tagion.logger;
 import tagion.services.messages;
@@ -52,7 +51,7 @@ struct NodeInterfaceOptions {
 
 ///
 enum NodeErrorCode {
-    invalid_state,
+    /* invalid_state, */
     empty_msg,
     buf_empty,
     doc_inorder,
@@ -132,13 +131,6 @@ struct Dialer {
     mixin NodeHelpers;
 }
 
-unittest {
-    auto dialer = new Dialer(0, "abstract://aaa");
-    dialer.dial();
-    dialer.stop();
-    receiveOnlyTimeout(1.seconds, (NNGError _, nng_errno code, uint id, string msg, int line) {});
-}
-
 /**
  * A Single active socket connection
  * All aio tasks notify the calling thread by sending a message
@@ -163,11 +155,10 @@ struct Peer {
     nng_stream* socket;
     nng_aio* aio;
     nng_iov iov;
+    // TODO: it would be nice if we could reclaim this buffer instead of reallocating this for new connections.
+    // But maybe the gc already does a good job at this?
     ubyte[] msg_buf;
-
-    Queue!Buffer send_queue;
-
-    size_t bufsize = 8182;
+    size_t bufsize;
 
     ///
     this(uint id, nng_stream* socket, size_t bufsize) @trusted {
@@ -183,8 +174,6 @@ struct Peer {
 
         rc = nng_aio_set_iov(aio, 1, &iov);
         check(rc == 0, nng_errstr(rc));
-
-        this.send_queue = new Queue!Buffer;
     }
 
     /// free nng memory
@@ -318,7 +307,9 @@ struct PeerMgr {
 
     Dialer*[uint] dialers;
 
-    /* Peer*[uint] all_peers; */
+    // FIXME: Currently it is very easy to deny any communication with other nodes
+    // Simply by opening a bunch of connections and pushing other nodes out of the lru
+    // Maybe we should limit how often we accept new request or maybe use something different than an lru.
     LRU!(uint, Peer*) all_peers;
 
     nng_aio* aio_conn;
@@ -731,10 +722,6 @@ void node_error(string owner_task, NodeErrorCode code, uint id, string msg = "",
 
 void node_error(string owner_task, nng_errno code, uint id, string msg = "", int line = __LINE__) {
     ActorHandle(owner_task).send(NNGError(), code, id, msg, line);
-}
-
-Pubkey get_public_key(Document doc) {
-    return doc[StdNames.owner].get!Pubkey;
 }
 
 mixin template NodeHelpers() {
