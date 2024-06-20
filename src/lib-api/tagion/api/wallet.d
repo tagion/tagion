@@ -270,34 +270,84 @@ unittest {
     assert(error_code == ErrorCode.error, "should throw error if the message length is not correct");
 }
 
-struct serialized_doc {
+struct buf_t {
     immutable(uint8_t*) data;
     size_t data_len;
 }
 
-int tagion_create_signed_contract(serialized_doc** docs, size_t count) {
-    import std.stdio;
-    for (size_t i = 0; i < count; i++) {
-        const doc_ptr = docs[i];
+Document[] get_docs(buf_t** docs_array, size_t count) {
+    Document[] docs;
+    for (size_t i=0; i<count; i++) {
+        const doc_ptr = docs_array[i];
         const buf = doc_ptr.data[0..doc_ptr.data_len].idup;
         const doc = Document(buf);
-        writefln("%s", doc.toPretty);
+        docs ~= doc;
     }
-    return 0;
+    return docs;
+}
+
+ubyte[][] get_derivers(buf_t** buf_array, size_t count) {
+    ubyte[][] derivers;
+    for (size_t i=0; i<count; i++) {
+        const buf_ptr = buf_array[i];
+
+        auto buf = buf_ptr.data[0..buf_ptr.data_len].dup;
+        derivers ~= buf;
+    }
+    return derivers;
+}
+
+int tagion_create_signed_contract(
+    const(securenet_t) root_net,
+    buf_t** bills_to_pay_ptr, 
+    const(size_t) bills_to_pay_count,
+    buf_t** available_bills_ptr,
+    const(size_t) available_bills_count,
+    buf_t** derivers_ptr,
+    const(size_t) derivers_count,
+    const(uint8_t*) pkey_change_ptr,
+    const(size_t) pkey_len,
+    buf_t** out_used_bills_ptr,
+    size_t* out_used_bills_count,
+    uint8_t** out_produced_contract_ptr,
+    size_t* out_prouced_contract_len,
+) {
+    import std.stdio;
+    import std.algorithm;
+    const to_pay = get_docs(bills_to_pay_ptr, bills_to_pay_count).map!(d => TagionBill(d));
+    const available_bills = get_docs(available_bills_ptr, available_bills_count).map!(d => TagionBill(d));
+    const pkey_change = Pubkey(pkey_change_ptr[0..pkey_len].idup);
+    const derivers = get_derivers(derivers_ptr, derivers_count);
+
+    // for (size_t i = 0; i < count; i++) {
+    //     const doc_ptr = docs[i];
+    //     const buf = doc_ptr.data[0..doc_ptr.data_len].idup;
+    //     const doc = Document(buf);
+    //     writefln("%s", doc.toPretty);
+    // }
+    return ErrorCode.none;
 }
 
 unittest {
+    securenet_t my_keypair;
+    string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+
+    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, null, 0, null, null);
+    assert(error_code == ErrorCode.none);
    
-    TagionBill bill = TagionBill(100.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
-    TagionBill bill2 = TagionBill(200.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
-    const doc = bill.toDoc.serialize;
-    const doc2 = bill2.toDoc.serialize;
+    TagionBill to_pay_bill1 = TagionBill(100.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
+    TagionBill to_pay_bill2 = TagionBill(200.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
+    const to_pay_doc = to_pay_bill1.toDoc.serialize;
+    const to_pay_doc2 = to_pay_bill2.toDoc.serialize;
 
-    serialized_doc s_doc = serialized_doc(&doc[0], doc.length);
-    serialized_doc s_doc2 = serialized_doc(&doc2[0], doc2.length);
+    buf_t s_to_pay_doc = buf_t(&to_pay_doc[0], to_pay_doc.length);
+    buf_t s_to_pay_doc2 = buf_t(&to_pay_doc2[0], to_pay_doc2.length);
 
-    serialized_doc*[] s_docs = [&s_doc, &s_doc2];
-    int error_code = tagion_create_signed_contract(s_docs.ptr, 2);
+    buf_t*[] to_pay_docs = [&s_to_pay_doc, &s_to_pay_doc2];
+    auto change_pkey = Pubkey([1,2,3,4]);
+    error_code = tagion_create_signed_contract(my_keypair, to_pay_docs.ptr, 2, to_pay_docs.ptr, 2, null, 0, &change_pkey[0], change_pkey.length, null, null, null, null);
+    assert(error_code == ErrorCode.none);
+
 }
 
 
