@@ -14,6 +14,7 @@ import std.getopt;
 import std.json;
 import std.typecons;
 import std.range;
+import std.base64;
 import std.string : representation;
 import std.stdio : File, toFile, stderr, stdout, writefln, writeln;
 import std.datetime.systime : Clock;
@@ -931,7 +932,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 const lookup_handler = handler_helper!lookup_handler_impl;
 void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     string query_subject = req.path[$ - 2];
-    string query_str = req.path[$ - 1];
+    string query_str = cast(immutable(char)[])(Base64URL.decode(req.path[$ - 1]));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     int rc;
     int attempts = 0;
@@ -945,7 +946,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         s.close();
     }
     switch(query_subject){
-        case "dartindex":
+        case "dart":
             DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
             rc = s.send(crud.dartRead([drtindex]).toDoc.serialize);
             ubyte[4096] buf;
@@ -957,7 +958,21 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             }
             const receiver = HiRPC(null).receive(Document(buf.idup[0..len]));
             const jresult = receiver.result.toJSON;
-            writeit("DD");
+            rep.type = mime_type.JSON;
+            rep.json = jresult;
+            break;
+        case "trt":    
+            DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
+            rc = s.send(crud.trtdartRead([drtindex]).toDoc.serialize);
+            ubyte[4096] buf;
+            size_t len = s.receivebuf(buf, buf.length);
+            if (len == size_t.max && s.errno != 0) {
+                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                rep.msg = "socket error";
+                return;
+            }
+            const receiver = HiRPC(null).receive(Document(buf.idup[0..len]));
+            const jresult = receiver.result.toJSON;
             rep.type = mime_type.JSON;
             rep.json = jresult;
             break;
