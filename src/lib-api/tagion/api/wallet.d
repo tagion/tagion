@@ -270,18 +270,49 @@ unittest {
     assert(error_code == ErrorCode.error, "should throw error if the message length is not correct");
 }
 
-/// Create a signed contract
-int tagion_create_signed_contract(
-    const(SecureNet) root_net, 
-    const(TagionBill[]) to_pay,
-    const(TagionBill[]) available,
-    const(ubyte[][]) derivers,
-    const(Pubkey) change,
-    TagionBill[] used,
-    SignedContract* produced_contract
-) {
-    assert(0, "TODO");
+struct serialized_doc {
+    immutable(uint8_t*) data;
+    size_t data_len;
 }
+
+int tagion_create_signed_contract(serialized_doc** docs, size_t count) {
+    import std.stdio;
+    for (size_t i = 0; i < count; i++) {
+        const doc_ptr = docs[i];
+        const buf = doc_ptr.data[0..doc_ptr.data_len].idup;
+        const doc = Document(buf);
+        writefln("%s", doc.toPretty);
+    }
+    return 0;
+}
+
+unittest {
+   
+    TagionBill bill = TagionBill(100.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
+    TagionBill bill2 = TagionBill(200.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
+    const doc = bill.toDoc.serialize;
+    const doc2 = bill2.toDoc.serialize;
+
+    serialized_doc s_doc = serialized_doc(&doc[0], doc.length);
+    serialized_doc s_doc2 = serialized_doc(&doc2[0], doc2.length);
+
+    serialized_doc*[] s_docs = [&s_doc, &s_doc2];
+    int error_code = tagion_create_signed_contract(s_docs.ptr, 2);
+}
+
+
+// /// Create a signed contract
+// int tagion_create_signed_contract(
+//     const(SecureNet) root_net, 
+//     const(TagionBill[]) to_pay,
+//     const(TagionBill[]) available,
+//     const(ubyte[][]) derivers,
+//     const(Pubkey) change,
+//     TagionBill[] used,
+//     SignedContract* produced_contract
+// ) {
+//     assert(0, "TODO");
+// }
 
 version(none):
 
