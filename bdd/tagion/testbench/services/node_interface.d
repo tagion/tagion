@@ -8,6 +8,8 @@ import tagion.testbench.tools.Environment;
 import core.time;
 
 import std.stdio;
+import std.range;
+
 import tagion.actor;
 import tagion.services.nodeinterface;
 import tagion.services.messages;
@@ -118,7 +120,7 @@ class PubkeyASendsAMessageToPubkeyB {
     }
 
     @Then("i send message greater than the max buffer size")
-    Document size() {
+    Document size() @trusted {
         { // B -> A
             // We construct a fake wavefront with a big nonce
             auto wave = new HiBON;
@@ -126,7 +128,9 @@ class PubkeyASendsAMessageToPubkeyB {
             wave[StdNames.state] = ExchangeState.NONE;
 
             // An array larger than A's buffer size and less than B's
-            wave["nonce"] = new immutable(ubyte[])(opts_a.bufsize + 12);
+            import std.random;
+            auto rnd = Random(42);
+            wave["nonce"] = cast(immutable(ubyte)[])rnd.take((opts_a.bufsize + 12) / uint.sizeof).array;
 
             const sender = HiRPC(b_net).action("fromb4", Document(wave));
             b_handle.send(WavefrontReq(), a_net.pubkey, Document(sender.toDoc));

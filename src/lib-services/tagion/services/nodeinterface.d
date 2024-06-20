@@ -43,6 +43,7 @@ struct NodeInterfaceOptions {
     uint pool_size = 12;
     size_t bufsize = 0x8000; // 32kb
     string node_address = "tcp://[::1]:10700"; // Address
+    uint compression_level = 6;
 
     import tagion.utils.JSONCommon;
 
@@ -277,16 +278,19 @@ struct PeerMgr {
     @disable this(this);
 
     alias PeerLRU = LRU!(uint, Peer*);
+
     ///
-    this(string address, size_t bufsize, uint pool_size) @trusted {
-        this.bufsize = bufsize;
+    this(immutable(NodeInterfaceOptions) opts) @trusted {
+        this.bufsize = opts.bufsize;
         int rc = nng_aio_alloc(&aio_conn, &callback, self);
         check!ServiceError(rc == 0, nng_errstr(rc));
         this.task_name = thisActor.task_name;
+        this.compression_level = opts.compression_level;
 
-        this.address = address;
-        address ~= '\0';
-        assert(this.address.length < address.length);
+        this.address = opts.node_address;
+        string addr = opts.node_address;
+        addr ~= '\0';
+        assert(this.address.length < addr.length);
         rc = cast(nng_errno)nng_stream_listener_alloc(&listener, &address[0]);
         check!ServiceError(rc == nng_errno.NNG_OK, nng_errstr(rc));
 
@@ -296,7 +300,7 @@ struct PeerMgr {
                     peer.close();
                     debug(nodeinterface) log("Closed (%s)", k);
                 },
-                pool_size,
+                opts.pool_size,
         );
     }
 
@@ -310,6 +314,7 @@ struct PeerMgr {
 
     string address;
     size_t bufsize;
+    uint compression_level;
 
     Dialer*[uint] dialers;
 
@@ -378,7 +383,7 @@ struct PeerMgr {
         auto peer = all_peers[id]; 
         check!ServiceException(peer !is null, format!"No active connections for this id %s"(id));
 
-        Envelope envelope = Envelope(0, 0, buf);
+        Envelope envelope = Envelope(0, compression_level, buf);
         check!ServiceException(!envelope.errorstate, envelope.errors.join("\n"));
         const env_buf = envelope.toBuffer();
         check!ServiceException(!env_buf.empty, "envelope buffer empty");
@@ -480,8 +485,8 @@ unittest {
     auto net2 = new StdSecureNet();
     net2.generateKeyPair("me2");
 
-    auto dialer = PeerMgr("abstract://whomisam" ~ generateId.to!string, 256, 2);
-    auto listener = PeerMgr("abstract://whomisam" ~ generateId.to!string, 256, 2);
+    auto dialer = PeerMgr(NodeInterfaceOptions(node_address: "abstract://whomisam" ~ generateId.to!string, bufsize: 256, pool_size: 2));
+    auto listener = PeerMgr(NodeInterfaceOptions(node_address: "abstract://whomisam" ~ generateId.to!string, bufsize: 256, pool_size: 2));
 
     dialer.listen();
     listener.listen();
@@ -551,7 +556,7 @@ struct NodeInterfaceService_ {
         this.net = new StdSecureNet(shared_net);
         this.hirpc = HiRPC(this.net);
         this.receive_handle = ActorHandle(message_handler_task);
-        this.p2p = PeerMgr(opts.node_address, opts.bufsize, opts.pool_size);
+        this.p2p = PeerMgr(opts);
     }
 
     static Topic node_action_event = Topic("node_action");
