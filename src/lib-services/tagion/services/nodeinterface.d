@@ -124,11 +124,6 @@ struct Dialer {
         }
     }
 
-    void abort() {
-        assert(aio !is null, "Tried to abort non allocated dialer");
-        nng_aio_abort(aio, int());
-    }
-
     void stop() {
         nng_aio_stop(aio);
     }
@@ -139,7 +134,7 @@ struct Dialer {
 unittest {
     auto dialer = new Dialer(0, "abstract://aaa");
     dialer.dial();
-    dialer.abort();
+    dialer.stop();
     receiveOnlyTimeout(1.seconds, (NNGError _, nng_errno code, uint id, string msg, int line) {});
 }
 
@@ -262,11 +257,6 @@ struct Peer {
 
     void close() nothrow {
         nng_stream_close(socket);
-    }
-
-    void abort() {
-        assert(aio !is null, "Tried to abort non allocated dialer");
-        nng_aio_abort(aio, int());
     }
 
     void stop() {
@@ -397,26 +387,6 @@ struct PeerMgr {
 
     bool isActive(uint id) const pure nothrow {
         return all_peers.contains(id);
-    }
-
-    void abort(uint id) {
-        if((id in dialers) !is null) {
-            dialers[id].abort();
-        }
-        auto peer = all_peers[id];
-        if(peer !is null) {
-            peer.abort();
-        }
-    }
-
-    void abort() {
-        nng_aio_abort(aio_conn, int());
-        foreach(dialer; dialers.byValue) {
-            dialer.abort();
-        }
-        foreach(peer; all_peers) {
-            peer.value.abort();
-        }
     }
 
     void stop() {
@@ -562,8 +532,8 @@ unittest {
         assert(listener.all_peers.length == 1);
     }
 
-    dialer.abort();
-    listener.abort();
+    dialer.stop();
+    listener.stop();
 }
 
 ///
