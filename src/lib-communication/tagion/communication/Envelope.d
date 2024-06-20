@@ -10,6 +10,8 @@ import std.format;
 import std.algorithm.searching: find, boyerMooreFinder;
 
 import tagion.crypto.Cipher;
+import tagion.crypto.SecureNet;
+import tagion.crypto.Types;
 
 auto i2a(T)(const ref T val, bool asis = false) scope pure
 {
@@ -36,27 +38,32 @@ T fromBigEndian(T)(T val) pure {
 
 // TODO: Add sequence number to handle chunked envelopes
 
+static assert(ushort.sizeof + ushort.sizeof == uint.sizeof);
+
+
+pragma(msg, "How should this schema be defined");
 enum Schema : uint {
     none = 0,
     secp256k1_ECDH_AES256 = 2256,
 }
 
+@safe
 struct Envelope {
     EnvelopeHeader header;
-    const(ubyte)[] data;
-    const(ubyte)[] tail;
+    immutable(ubyte)[] data;
+    immutable(ubyte)[] tail;
     bool errorstate = false;
     string[] errors;
     
     static align(1) struct EnvelopeHeader {
-        bool isValid() @safe pure const {
+        bool isValid()  pure const {
             if(magic != MagicBytes)
                 return false;
             if(hdrsum != getsum())
                 return false;
             return true;                    
         }
-        uint compression() @safe pure const {
+        uint compression()  pure const {
             return level;
         }
     
@@ -76,19 +83,21 @@ struct Envelope {
             zlib9 = 9,
         }
         
-        ubyte[4] magic = MagicBytes;
+        immutable ubyte[4] magic = MagicBytes;
         uint schema;
         CompressionLevel level;
         ulong datsize;
         ubyte[8] datsum;
         ubyte[4] hdrsum;
 
-        ubyte[32] toBuffer() @safe pure const scope {
+        static assert(this.sizeof == 32);
+
+        ubyte[32] toBuffer() pure const scope {
             scope ubyte[32] b = magic ~ nativeToLittleEndian(schema) ~ nativeToLittleEndian(level) ~ nativeToLittleEndian(datsize) ~ datsum ~ hdrsum;
             return b;
         }
 
-        ubyte[4] getsum() @safe pure const scope {
+        ubyte[4] getsum() pure const scope {
             return crc32Of( magic ~ nativeToLittleEndian(schema) ~ nativeToLittleEndian(level) ~ nativeToLittleEndian(datsize) ~ datsum );
         }
         
@@ -96,8 +105,8 @@ struct Envelope {
             if(raw.length >= this.sizeof){
                 scope ubyte[this.sizeof] head_buf = (raw[0..this.sizeof]).dup;
                 EnvelopeHeader hdr = cast(EnvelopeHeader)head_buf;
-                makeFromLittleEndian(hdr.level);
                 makeFromLittleEndian(hdr.schema);
+                makeFromLittleEndian(hdr.level);
                 makeFromLittleEndian(hdr.datsize);
                 return hdr;
             } else {
@@ -105,12 +114,13 @@ struct Envelope {
             }
         }
         
-        this(uint schema, uint level) @safe pure {
+        this(uint schema, uint level) pure {
             this.schema = schema;
+            static assert(level.sizeof == CompressionLevel.sizeof);
             this.level = cast(CompressionLevel)level;
         }
 
-        string toString() @safe pure const {
+        string toString() pure const {
             return format("valid:\t%s\nschema:\t%d\nlevel:\t%d\nsize:\t%d\n"
                 ,this.isValid()
                 ,this.schema
@@ -121,18 +131,18 @@ struct Envelope {
         
     }   
 
-    void error(string msg) @safe pure {
+    void error(string msg) pure {
         this.errorstate = true;
         this.errors ~= msg;
     }
 
-    this(uint schema, uint level, const(ubyte)[] data) @safe pure {
+    this(uint schema, uint level, immutable(ubyte)[] data)  pure {
         this.header = EnvelopeHeader(schema, level);
         this.data = data;
         this.errorstate = false;
     }
-    
-    ubyte[] toBuffer() @safe {
+
+    ubyte[] toBuffer()  {
         ubyte[] compressed;
         if(this.errorstate)
             return [];
@@ -152,12 +162,12 @@ struct Envelope {
         }            
     }
 
-    this( const(ubyte)[] raw ) @safe pure {
+    this( immutable(ubyte)[] raw ) pure {
         if(raw.length < EnvelopeHeader.sizeof){
             this.error("Buffer too short");
             return;
         }    
-        auto buf = find(raw,boyerMooreFinder(cast(const(ubyte)[])EnvelopeHeader.MagicBytes));
+        auto buf = find(raw,boyerMooreFinder(cast(immutable(ubyte)[])this.header.magic));
         if(buf.empty()){
             this.error("Header not found");
             return;
@@ -173,7 +183,7 @@ struct Envelope {
             return;
         }    
         this.data = buf[EnvelopeHeader.sizeof .. EnvelopeHeader.sizeof+dsize];
-        this.tail = buf[EnvelopeHeader.sizeof+dsize..$];
+        this.tail = buf[EnvelopeHeader.sizeof+dsize .. $];
         auto dsum = crc64ECMAOf(this.data[0..this.data.length]);
         if(this.header.datsum != dsum){ 
             this.error("Envelope data checksum invalid");
@@ -181,48 +191,25 @@ struct Envelope {
         }
     }
 
-    this( immutable(ubyte)[] raw ) @safe pure immutable {
-        immutable(string)[] errs;
-        scope(exit) {
-            if(!errs.empty) {
-                this.errors = errs;
-                this.errorstate = true;
-            }
-        }
-
-        if(raw.length < EnvelopeHeader.sizeof){
-            errs ~= "Buffer too short";
-            return;
-        }    
-        auto buf = find(raw,boyerMooreFinder(this.header.magic[0..4]));
-        if(buf.empty()){
-            errs  ~= "Header not found";
-            return;
-        }    
-        this.header = EnvelopeHeader.fromBuffer(buf);
-        if(!this.header.isValid){
-            errs  ~= "Envelope header invalid";
-            return;
-        }    
-        const dsize = this.header.datsize;
-        if(buf.length - EnvelopeHeader.sizeof < dsize){
-            errs ~= "Envelope data length invalid";
-            return;
-        }    
-        this.data = buf[EnvelopeHeader.sizeof .. EnvelopeHeader.sizeof+dsize];
-        this.tail = buf[EnvelopeHeader.sizeof+dsize..$];
-        auto dsum = crc64ECMAOf(this.data[0..this.data.length]);
-        if(this.header.datsum != dsum){ 
-            errs ~= "Envelope data checksum invalid";
-            return;
+    void encrypt(SecureNet net, Pubkey receiver) {
+        if(header.schema == Schema.none) {
+            const cipher_doc = Cipher.encrypt(net, receiver, this.data);
+            this.data = cipher_doc.serialize;
+            this.header.schema = Schema.secp256k1_ECDH_AES256;
         }
     }
 
-    const(ubyte)[] toData() @trusted const {
-        return (this.errorstate) ? [] : (this.header.compression > 0) ? cast(const(ubyte)[])uncompress(this.data[0..$]) : this.data[0..$];
+    void decrypt(SecureNet net) {
+        if(header.schema == Schema.secp256k1_ECDH_AES256) {
+            import tagion.hibon.Document;
+            const doc = Cipher.decrypt(net, Cipher.CipherDocument(Document(this.data)));
+            this.data = doc.data;
+            this.header.schema = Schema.none;
+        }
     }
 
-    immutable(ubyte)[] toData() @trusted immutable {
+    immutable(ubyte)[] toData() @trusted const {
+        enforce(header.schema != Schema.secp256k1_ECDH_AES256, "the package is encrypted");
         return (this.errorstate) ? [] : (this.header.compression > 0) ? cast(immutable(ubyte)[])uncompress(this.data[0..$]) : this.data[0..$];
     }    
 }
@@ -282,14 +269,14 @@ unittest {
     assert(x1 == x3);
     assert(x4 == x1);
 
-    ubyte[] rawdata = cast(ubyte[])(
+    immutable rawdata = cast(immutable(ubyte)[])(
         "the quick brown fox jumps over the lazy dog\r
          the quick brown fox jumps over the lazy dog\r");
     
     Envelope e1 = Envelope(1,0,rawdata);
-    ubyte[] b1 = e1.toBuffer();
+    immutable b1 = cast(immutable)e1.toBuffer();
     Envelope e2 = Envelope(b1);
-    assert(!e2.errorstate);
+    assert(!e2.errorstate, e2.errors[0]);
     assert(e2.header.isValid);
     assert(e2.header.datsize == rawdata.length);
     assert(e2.header.schema == 1);
@@ -297,13 +284,10 @@ unittest {
     assert(b2 == rawdata);
     
     Envelope e3 = Envelope(1,9,rawdata);
-    ubyte[] b3 = e3.toBuffer();
+    immutable b3 = cast(immutable)e3.toBuffer();
     Envelope e4 = Envelope(b3);
     assert(e4.header.isValid());
     const b4 = e4.toData();
     assert(b4 == rawdata);
     
 }
-    
-
-

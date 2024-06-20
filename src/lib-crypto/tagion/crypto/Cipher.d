@@ -30,7 +30,7 @@ struct Cipher {
         mixin HiBONRecord;
     }
 
-    static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
+    static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, Buffer msg) {
 
         scope ubyte[32] secret_key_alloc;
         scope ubyte[] secret_key = secret_key_alloc;
@@ -45,14 +45,14 @@ struct Cipher {
         getRandom(nonce);
         result.nonce = nonce.idup;
         // Appand CRC
-        auto ciphermsg = new ubyte[AES.enclength(msg.data.length + CRC_SIZE)];
+        auto ciphermsg = new ubyte[AES.enclength(msg.length + CRC_SIZE)];
 
         // Put random padding to in the last block
         auto last_block = ciphermsg[$ - AES.BLOCK_SIZE + CRC_SIZE .. $];
         getRandom(last_block);
-        const crc = msg.data.crc64ECMAOf;
-        ciphermsg[0 .. msg.data.length] = msg.data;
-        ciphermsg[msg.data.length .. msg.data.length + CRC_SIZE] = crc;
+        const crc = msg.crc64ECMAOf;
+        ciphermsg[0 .. msg.length] = msg;
+        ciphermsg[msg.length .. msg.length + CRC_SIZE] = crc;
 
         scope sharedECCKey = net.ECDHSecret(secret_key, pubkey);
         AES.encrypt(sharedECCKey, result.nonce, ciphermsg, ciphermsg);
@@ -64,8 +64,12 @@ struct Cipher {
         return result;
     }
 
+    static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
+        return encrypt(net, pubkey, msg.data);
+    }
+
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Document) msg) {
-        return encrypt(net, net.pubkey, msg);
+        return encrypt(net, net.pubkey, msg.data);
     }
 
     static const(Document) decrypt(const(SecureNet) net, const(CipherDocument) cipher_doc) {
@@ -102,10 +106,10 @@ struct Cipher {
         hibon["text"] = some_secret_message;
         const secret_doc = Document(hibon);
 
-        { // Encrypt and Decrypt secrte message
+        { // Encrypt and Decrypt secret message
             auto dummy_net = new StdSecureNet;
-            const secret_cipher_doc = Cipher.encrypt(dummy_net, net.pubkey, secret_doc);
-            const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
+            auto secret_cipher_doc = Cipher.encrypt(dummy_net, net.pubkey, secret_doc).serialize;
+            const encrypted_doc = Cipher.decrypt(net, CipherDocument(Document(secret_cipher_doc)));
             assert(encrypted_doc["text"].get!string == some_secret_message);
             assert(secret_doc.data == encrypted_doc.data);
         }

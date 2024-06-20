@@ -480,8 +480,8 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         return;
     }
     
-    auto epack = Envelope(req.rawdata);
-    auto rawbuf = (!epack.errorstate && epack.header.isValid()) ? epack.toData() : req.rawdata;
+    const epack = Envelope(cast(immutable)req.rawdata);
+    const rawbuf = (!epack.errorstate && epack.header.isValid()) ? epack.toData() : req.rawdata;
     Document doc = Document(cast(immutable(ubyte[]))rawbuf);
     save_rpc(opt, doc);
 

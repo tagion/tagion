@@ -646,7 +646,7 @@ struct NodeInterfaceService_ {
             }
 
             try {
-                immutable envelope = immutable(Envelope)(buf);
+                Envelope envelope = Envelope(buf);
                 check!ServiceException(!envelope.errorstate, envelope.errors.join("\n"));
 
                 const doc = Document(envelope.toData);
