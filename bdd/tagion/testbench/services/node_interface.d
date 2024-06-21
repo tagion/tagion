@@ -112,7 +112,10 @@ class PubkeyASendsAMessageToPubkeyB {
         { // A -> B
             Wavefront wave;
             wave.state = ExchangeState.SECOND_WAVE;
-            const sender = HiRPC(a_net).action("froma3", wave);
+            const hirpc = HiRPC(a_net);
+            // End communication by a result
+            const tmp_receiver = hirpc.receive(hirpc.action("froma3", wave));
+            const sender = hirpc.result(tmp_receiver, Document());
             a_handle.send(WavefrontReq(reqb.id), cast(Pubkey)b_net.pubkey, sender.toDoc);
             receiveOnlyTimeout(1.seconds, (WavefrontReq _, const(Document) doc) { writeln("received ", doc.toPretty);});
         }
