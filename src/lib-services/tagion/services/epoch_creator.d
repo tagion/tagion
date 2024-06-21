@@ -67,7 +67,7 @@ struct EpochCreatorService {
             Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook.keys);
         }
 
-        GossipNet gossip_net;
+        StdGossipNet gossip_net;
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL:
@@ -152,7 +152,8 @@ struct EpochCreatorService {
             const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
 
             if(receiver.isMethod) {
-                locate(req.task_name).send(WavefrontReq(req.id), return_wavefront.toDoc);
+                gossip_net.send(req, cast(Pubkey)receiver.pubkey, return_wavefront);
+                /* locate(req.task_name).send(WavefrontReq(req.id), cast(Pubkey)receiver.pubkey, return_wavefront.toDoc); */
             }
         }
 

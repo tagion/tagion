@@ -555,19 +555,23 @@ struct NodeInterfaceService_ {
     Document[uint] queued_sends;
     bool[uint] should_close;
 
-    void node_send(WavefrontReq req, Pubkey channel, Document doc) {
-        const nnr = addressbook[channel].get;
-        queued_sends[req.id] = doc;
-        p2p.dial(nnr.address, req.id);
-    }
-
-    void node_respond(WavefrontReq req, const(Document) doc) {
+    void node_send(WavefrontReq req, Pubkey channel, const(Document) doc) {
+        const hirpc = HiRPC(null).receive(doc);
         if(p2p.isActive(req.id)) {
             // We could close immediately if the message is an error and not a result?
-            if(!(HiRPC(null).receive(doc).isMethod)) {
+            if(!(hirpc.isMethod)) {
                 should_close[req.id] = true;
             }
             p2p.send(req.id, doc.serialize);
+        }
+        else {
+            // If there is no active connection and the message is just and error then we ignore it.
+            if(hirpc.isError) {
+                return;
+            }
+            const nnr = addressbook[channel].get;
+            queued_sends[req.id] = doc;
+            p2p.dial(nnr.address, req.id);
         }
     }
 
@@ -680,7 +684,6 @@ struct NodeInterfaceService_ {
                     on_action_complete(a, id, buf);
                 },
                 &node_send,
-                &node_respond,
                 &on_node_error,
                 &on_nng_error
         );

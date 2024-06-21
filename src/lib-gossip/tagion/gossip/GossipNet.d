@@ -94,9 +94,15 @@ abstract class StdGossipNet : GossipNet {
             log.trace("Selected channel: %s", send_channel.encodeBase64);
         }
         if (send_channel.length) {
-            send(send_channel, sender());
+            send(WavefrontReq(), send_channel, sender());
         }
         return send_channel;
+    }
+
+    void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender);
+
+    void send(Pubkey channel, const(HiRPC.Sender) sender) {
+        send(WavefrontReq(), channel, sender);
     }
 }
 
@@ -111,8 +117,7 @@ class EmulatorGossipNet : StdGossipNet {
         super(mypk);
     }
 
-    void send(Pubkey channel, const(HiRPC.Sender) sender) {
-
+    override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
         import tagion.utils.pretend_safe_concurrency;
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
@@ -128,7 +133,7 @@ class EmulatorGossipNet : StdGossipNet {
             return;
         }
 
-        node_tid.send(WavefrontReq(), sender.toDoc);
+        node_tid.send(WavefrontReq(req.id), sender.toDoc);
         version (EPOCH_LOG) {
             log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender.toDoc.serialize.length);
         }
@@ -143,9 +148,9 @@ class NNGGossipNet : StdGossipNet {
         this.delay = avrg_delay_msecs;
         super(mypk);
     }
-    void send(Pubkey channel, const(HiRPC.Sender) sender) {
+    override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
         sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
 
-        nodeinterface.send(WavefrontReq(), channel, cast(Document)sender.toDoc);
+        nodeinterface.send(WavefrontReq(req.id), channel, sender.toDoc);
     }
 }
