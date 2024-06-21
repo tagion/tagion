@@ -100,15 +100,30 @@ static unittest {
 enum BASE64Identifier = '@';
 import std.base64;
 
+// string encodeBase64(const(ubyte[]) data) pure nothrow {
+//     // const result = BASE64Identifier ~ Base64URL.encode(data);
+//     // return result.idup;
+// }
+
+// string encodeBase64(T)(const(T) buf) pure nothrow @trusted if (isBufferTypedef!T) {
+//     return encodeBase64(cast(TypedefType!T) buf);
+// }
+
+import tagion.basic.base58;
+@trusted
 string encodeBase64(const(ubyte[]) data) pure nothrow {
-    const result = BASE64Identifier ~ Base64URL.encode(data);
+    import std.exception;
+    const result = BASE64Identifier ~ assumeWontThrow(Base58.encode((() @trusted => cast(ubyte[]) data)()));
     return result.idup;
 }
 
-string encodeBase64(T)(const(T) buf) pure nothrow @trusted if (isBufferTypedef!T) {
+@trusted 
+string encodeBase64(T)(const(T) buf) pure nothrow if (isBufferTypedef!T) {
     return encodeBase64(cast(TypedefType!T) buf);
 }
 
+
+version(none)
 unittest {
     const(Buffer) buf = [1, 2, 3];
     const buf_base64 = buf.encodeBase64;

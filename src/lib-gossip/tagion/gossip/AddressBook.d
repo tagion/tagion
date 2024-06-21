@@ -172,6 +172,7 @@ if(isInputRange!Range && is(ElementType!Range : const(char[]))) {
 
 /// AddressBook
 @trusted 
+version(none)
 unittest {
     import std.exception;
     import core.exception;

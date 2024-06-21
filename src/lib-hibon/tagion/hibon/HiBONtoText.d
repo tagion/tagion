@@ -16,13 +16,13 @@ module tagion.hibon.HiBONtoText;
 import std.format;
 import tagion.hibon.HiBONException;
 import misc = tagion.utils.Miscellaneous;
-import std.base64;
 import std.typecons : TypedefType;
 import tagion.basic.Types : encodeBase64;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
 public import tagion.basic.Types;
+import tagion.basic.base58;
 
 enum {
     hex_prefix = "0x",
@@ -50,9 +50,10 @@ if (isHiBONRecord!T) {
     return (str.length > 0) && (str[0] is BASE64Identifier);
 }
 
+@trusted
 immutable(ubyte[]) decode(const(char[]) str) pure {
     if (isBase64Prefix(str)) {
-        return Base64URL.decode(str[1 .. $]);
+        return Base58.decode(str[1 .. $]);
     }
     else if (isHexPrefix(str)) {
         return misc.decode(str[hex_prefix.length .. $]);
