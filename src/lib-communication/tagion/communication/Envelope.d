@@ -9,6 +9,7 @@ import std.zlib;
 import std.format;
 import std.algorithm.searching: find, boyerMooreFinder;
 
+import tagion.hibon.Document;
 import tagion.crypto.Cipher;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
@@ -41,12 +42,7 @@ T fromBigEndian(T)(T val) pure {
 static assert(ushort.sizeof + ushort.sizeof == uint.sizeof);
 
 
-pragma(msg, "How should this schema be defined");
-enum Schema : uint {
-    none = 0,
-    secp256k1_ECDH_AES256 = 2256,
-}
-
+///
 @safe
 struct Envelope {
     EnvelopeHeader header;
@@ -142,24 +138,18 @@ struct Envelope {
         this.errorstate = false;
     }
 
-    ubyte[] toBuffer()  {
-        ubyte[] compressed;
+    immutable(ubyte)[] toBuffer()  {
+        immutable(ubyte)[] result_data = this.data;
         if(this.errorstate)
             return [];
-        this.header.datsize = this.data.length;
         if(this.header.compression > 0){
-            compressed = (() @trusted => compress(this.data[0..$], this.header.compression))();
-            this.header.datsize = compressed.length;
-            this.header.datsum = crc64ECMAOf(compressed);
-        }else{
-            this.header.datsum = crc64ECMAOf(this.data[0..$]);
+            result_data = (() @trusted => cast(immutable)compress(result_data, this.header.compression))();
         }
+        this.header.datsize = result_data.length;
+        this.header.datsum = crc64ECMAOf(result_data);
         this.header.hdrsum = this.header.getsum();
-        if(this.header.compression > 0){
-            return this.header.toBuffer() ~ compressed;
-        } else {
-            return this.header.toBuffer() ~ this.data[0..$];
-        }            
+        immutable buf_header = this.header.toBuffer();
+        return buf_header ~ result_data;
     }
 
     this( immutable(ubyte)[] raw ) pure {
@@ -191,58 +181,12 @@ struct Envelope {
         }
     }
 
-    void encrypt(SecureNet net, Pubkey receiver) {
-        if(header.schema == Schema.none) {
-            const cipher_doc = Cipher.encrypt(net, receiver, this.data);
-            this.data = cipher_doc.serialize;
-            this.header.schema = Schema.secp256k1_ECDH_AES256;
-        }
-    }
-
-    void decrypt(SecureNet net) {
-        if(header.schema == Schema.secp256k1_ECDH_AES256) {
-            import tagion.hibon.Document;
-            const doc = Cipher.decrypt(net, Cipher.CipherDocument(Document(this.data)));
-            this.data = doc.data;
-            this.header.schema = Schema.none;
-        }
-    }
-
     immutable(ubyte)[] toData() @trusted const {
-        enforce(header.schema != Schema.secp256k1_ECDH_AES256, "the package is encrypted");
-        return (this.errorstate) ? [] : (this.header.compression > 0) ? cast(immutable(ubyte)[])uncompress(this.data[0..$]) : this.data[0..$];
+        return (this.errorstate)? [] : (this.header.compression > 0) ? cast(immutable(ubyte)[])uncompress(this.data[0..$]) : this.data[0..$];
     }    
 }
 
-version(unittest) {
-    T littleEndian(T)(T val) pure {
-        return (endian == Endian.bigEndian) ? *cast(T*)nativeToLittleEndian(val).ptr : val;  
-    }
-
-    void makeBigEndian(T)(ref T value) {
-        if (endian == Endian.littleEndian) {
-            value = *cast(T*)nativeToBigEndian(value).ptr;
-        }
-    }
-
-    void makeLittleEndian(T)(ref T value) {
-        if (endian == Endian.bigEndian) {
-            value = *cast(T*)nativeToLittleEndian(value).ptr;
-        }
-    }
-
-    void makeFromBigEndian(T)(ref T value) {
-        if (endian == Endian.littleEndian) {
-            value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(value));
-        }
-    }
-
-    T bigEndian(T)(T val) pure {
-        return (endian == Endian.littleEndian) ? *cast(T*)nativeToBigEndian(val).ptr : val;  
-    }
-
-}
-
+///
 unittest {
  
     pragma(msg, "Envelope: TODO: make test for endian change case ");
@@ -274,7 +218,7 @@ unittest {
          the quick brown fox jumps over the lazy dog\r");
     
     Envelope e1 = Envelope(1,0,rawdata);
-    immutable b1 = cast(immutable)e1.toBuffer();
+    immutable b1 = e1.toBuffer();
     Envelope e2 = Envelope(b1);
     assert(!e2.errorstate, e2.errors[0]);
     assert(e2.header.isValid);
@@ -284,10 +228,38 @@ unittest {
     assert(b2 == rawdata);
     
     Envelope e3 = Envelope(1,9,rawdata);
-    immutable b3 = cast(immutable)e3.toBuffer();
+    immutable b3 = e3.toBuffer();
     Envelope e4 = Envelope(b3);
     assert(e4.header.isValid());
     const b4 = e4.toData();
     assert(b4 == rawdata);
-    
+}
+
+version(unittest) {
+    T littleEndian(T)(T val) pure {
+        return (endian == Endian.bigEndian) ? *cast(T*)nativeToLittleEndian(val).ptr : val;  
+    }
+
+    void makeBigEndian(T)(ref T value) {
+        if (endian == Endian.littleEndian) {
+            value = *cast(T*)nativeToBigEndian(value).ptr;
+        }
+    }
+
+    void makeLittleEndian(T)(ref T value) {
+        if (endian == Endian.bigEndian) {
+            value = *cast(T*)nativeToLittleEndian(value).ptr;
+        }
+    }
+
+    void makeFromBigEndian(T)(ref T value) {
+        if (endian == Endian.littleEndian) {
+            value = bigEndianToNative!T(cast(ubyte[T.sizeof])i2a!T(value));
+        }
+    }
+
+    T bigEndian(T)(T val) pure {
+        return (endian == Endian.littleEndian) ? *cast(T*)nativeToBigEndian(val).ptr : val;  
+    }
+
 }
