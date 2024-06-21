@@ -97,38 +97,37 @@ static unittest {
     static assert(!isTypedef!int);
 }
 
-enum BASE64Identifier = '@';
-import std.base64;
+enum BASE58Identifier = '@';
 
-// string encodeBase64(const(ubyte[]) data) pure nothrow {
-//     // const result = BASE64Identifier ~ Base64URL.encode(data);
+// string encodeBase58(const(ubyte[]) data) pure nothrow {
+//     // const result = BASE58Identifier ~ Base64URL.encode(data);
 //     // return result.idup;
 // }
 
-// string encodeBase64(T)(const(T) buf) pure nothrow @trusted if (isBufferTypedef!T) {
-//     return encodeBase64(cast(TypedefType!T) buf);
+// string encodeBase58(T)(const(T) buf) pure nothrow @trusted if (isBufferTypedef!T) {
+//     return encodeBase58(cast(TypedefType!T) buf);
 // }
 
 import tagion.basic.base58;
 @trusted
-string encodeBase64(const(ubyte[]) data) pure nothrow {
+string encodeBase58(const(ubyte[]) data) pure nothrow {
     import std.exception;
-    const result = BASE64Identifier ~ assumeWontThrow(Base58.encode((() @trusted => cast(ubyte[]) data)()));
+    const result = BASE58Identifier ~ assumeWontThrow(Base58.encode((() @trusted => cast(ubyte[]) data)()));
     return result.idup;
 }
 
 @trusted 
-string encodeBase64(T)(const(T) buf) pure nothrow if (isBufferTypedef!T) {
-    return encodeBase64(cast(TypedefType!T) buf);
+string encodeBase58(T)(const(T) buf) pure nothrow if (isBufferTypedef!T) {
+    return encodeBase58(cast(TypedefType!T) buf);
 }
 
 
 version(none)
 unittest {
     const(Buffer) buf = [1, 2, 3];
-    const buf_base64 = buf.encodeBase64;
+    const buf_base58 = buf.encodeBase58;
     const(MyBuf) my_buf = [1, 2, 3];
-    const my_buf_base64 = my_buf.encodeBase64;
-    assert(buf_base64 == "@AQID");
-    assert(buf_base64 == my_buf_base64);
+    const my_buf_base58 = my_buf.encodeBase58;
+    assert(buf_base58 == "@AQID");
+    assert(buf_base58 == my_buf_base58);
 }

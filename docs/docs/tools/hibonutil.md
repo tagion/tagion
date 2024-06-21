@@ -16,7 +16,7 @@ Where:
    --version display the version
 -c  --stdout Print to standard output
 -p  --pretty JSON Pretty print: Default: false
--b  --base64 Convert to base64 string
+-b  --base58 Convert to base58 string
 -v --verbose Print more debug information
 -o  --output outputfilename only for stdin
     --sample Produce a sample HiBON
@@ -54,13 +54,13 @@ By default `hibonutil` will convert a `.json` file to a `.json` file.
 ```
 Will produces a `sample.hibon` file.
 
-## Convert to base64.
-By adding the `-b` switch the file will be converted to a base64 and this will produces a `.txt` file.
+## Convert to base58.
+By adding the `-b` switch the file will be converted to a base58 and this will produces a `.txt` file.
 
 ```
 > hibonutil -b sample.hibon
 ```
-Convert to base64 to `.hibon`
+Convert to base58 to `.hibon`
 
 ```
 > hibonutil sample.txt

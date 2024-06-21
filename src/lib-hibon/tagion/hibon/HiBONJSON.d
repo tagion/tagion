@@ -7,7 +7,6 @@ import std.format;
 import std.json;
 import std.range.primitives : isInputRange;
 import std.traits;
-import std.base64;
 import std.typecons : No;
 
 //import std.stdio;
@@ -184,7 +183,7 @@ mixin template JSONString() {
             sink(doc.serialize.to!string);
             break;
         case '@':
-            sink(doc.serialize.encodeBase64);
+            sink(doc.serialize.encodeBase58);
             break;
         case 'x':
             sink(format("%(%02x%)", doc.serialize));
@@ -276,10 +275,10 @@ struct toJSONT(bool HASHSAFE) {
                         doc_element[VALUE] = format("0x%x", e.by!(E));
                     }
                     else static if (E is BIGINT) {
-                        doc_element[VALUE] = encodeBase64(e.by!(E).serialize);
+                        doc_element[VALUE] = encodeBase58(e.by!(E).serialize);
                     }
                     else static if (E is BINARY) {
-                        doc_element[VALUE] = encodeBase64(e.by!(E));
+                        doc_element[VALUE] = encodeBase58(e.by!(E));
                     }
                     else static if (E is FLOAT32 || E is FLOAT64) {
                         static if (HASHSAFE) {
@@ -371,7 +370,7 @@ HiBON toHiBON(scope const JSONValue json) {
         }
         else static if (is(T : const BigNumber)) {
             const text = jvalue.str;
-            if (isBase64Prefix(text) || isHexPrefix(text)) {
+            if (isBase58Prefix(text) || isHexPrefix(text)) {
                 const data = decode(text);
                 return BigNumber(data);
             }

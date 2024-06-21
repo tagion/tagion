@@ -57,7 +57,7 @@
             w.createWallet("some passphrase", "1234");
             const pkey = w.getPubkey();
 
-            const pkey_base64 = w.encodeBase64URL(pkey.ptr, pkey.len);
+            const pkey_base58 = w.encodeBase58URL(pkey.ptr, pkey.len);
             let h = new Wallet(instance);
 
             const account = w.getAccount();
@@ -124,9 +124,9 @@
         function login(pin, pwd){
 			wallet.createWallet(pwd, pin);
 			const _pkey = wallet.getPubkey();
-			const _pkey_base64 = wallet.encodeBase64URL(_pkey.ptr, _pkey.len);
+			const _pkey_base58 = wallet.encodeBase58URL(_pkey.ptr, _pkey.len);
             pkey = _pkey;
-            pkey_encoded = _pkey_base64;
+            pkey_encoded = _pkey_base58;
         }
 
         // res is expected to be ArrayBuffer

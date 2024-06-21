@@ -10,7 +10,7 @@ import std.exception;
 import std.algorithm;
 import std.random;
 import std.file;
-import std.base64;
+import std.base58;
 import std.exception;
 import nngd;
 import nngtestutil;

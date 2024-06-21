@@ -63,7 +63,7 @@ int __main(string[] args) {
         "o|output", "Output filename; if empty stdout is used", &outputfilename,
         "address", "Specify the address to subscribe to", &addresses,
         "tag", "Specify tags to subscribe to", &tags,
-        "contract", "Subscribe to status of a specific contract (base64url hash)", &contract,
+        "contract", "Subscribe to status of a specific contract (base58url hash)", &contract,
     );
 
     if (main_args.helpWanted) {
@@ -106,7 +106,7 @@ int __main(string[] args) {
                 try {
                     const contract_status = hirpc_doc["$msg"]["params"]["data"].get!ContractStatus;
                     // Drop contact status if it has different hash
-                    if (contract_status.contract_hash.encodeBase64 == contract) {
+                    if (contract_status.contract_hash.encodeBase58 == contract) {
                         return true;
                     }
                 } catch(Exception) {}

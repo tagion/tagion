@@ -355,7 +355,7 @@ int _neuewelle(string[] args) {
         }
 
         foreach (key; keys) {
-            check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
+            check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase58));
         }
 
         immutable opts = Options(local_options);

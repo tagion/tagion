@@ -40,19 +40,19 @@ nothrow:
 
 /**
 
-  Encode a buffer into a base64url string
+  Encode a buffer into a base58url string
 
   Params: 
       buf_ptr = a ptr to the buffer to encode
       buf_len = the length of the buffer
 
-      str_ptr = the resulting base64url string
+      str_ptr = the resulting base58url string
       str_len = the length of the result string
   Returns: 
       [tagion.api.errors.ErrorCode]
 
  */
-int tagion_basic_encode_base64url(
+int tagion_basic_encode_base58url(
     const(uint8_t*) buf_ptr,
     const size_t buf_len,
     char** str_ptr,
@@ -61,7 +61,7 @@ int tagion_basic_encode_base64url(
     try {
         const _buf = buf_ptr[0..buf_len];
 
-        const encoded = _buf.encodeBase64;
+        const encoded = _buf.encodeBase58;
 
         *str_ptr = cast(char*) &encoded[0];
         *str_len = encoded.length;

@@ -9,7 +9,7 @@ import std.file;
 import std.uuid;
 import std.regex;
 import std.json;
-import std.base64;
+import std.base58;
 import std.exception;
 import std.process;
 

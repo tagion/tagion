@@ -59,7 +59,7 @@ synchronized class AddressBook {
         if (addr !is null) {
             return NNRResult(*addr);
         }
-        return NNRResult(assumeWontThrow(format!("Channel %s not found")(pkey.encodeBase64)));
+        return NNRResult(assumeWontThrow(format!("Channel %s not found")(pkey.encodeBase58)));
     }
 
     /* 
@@ -144,7 +144,7 @@ shared static this() {
  * This function is used in dev mode when reading from an address file instead of the dart.
  *
  * Params: 
- *   address_file_content = A range of strings formatted like <base64url pubkey> <address>
+ *   address_file_content = A range of strings formatted like <base58url pubkey> <address>
 */
 immutable(NetworkNodeRecord)*[] parseAddressFile(Range)(Range address_file_content) @trusted
 if(isInputRange!Range && is(ElementType!Range : const(char[]))) {

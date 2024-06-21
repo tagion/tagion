@@ -53,7 +53,7 @@ abstract class StdGossipNet : GossipNet {
         _pkeys ~= channel;
         addresses[channel] = address;
 
-        log.trace("Add channel: %s addr: %s", channel.encodeBase64, addresses[channel]);
+        log.trace("Add channel: %s addr: %s", channel.encodeBase58, addresses[channel]);
     }
 
     void remove_channel(const Pubkey channel) {
@@ -91,7 +91,7 @@ abstract class StdGossipNet : GossipNet {
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
         version (EPOCH_LOG) {
-            log.trace("Selected channel: %s", send_channel.encodeBase64);
+            log.trace("Selected channel: %s", send_channel.encodeBase58);
         }
         if (send_channel.length) {
             send(send_channel, sender());
@@ -130,7 +130,7 @@ class EmulatorGossipNet : StdGossipNet {
 
         node_tid.send(WavefrontReq(), sender.toDoc);
         version (EPOCH_LOG) {
-            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender.toDoc.serialize.length);
+            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase58, _pkeys.countUntil(channel), sender.toDoc.serialize.length);
         }
     }
 }
