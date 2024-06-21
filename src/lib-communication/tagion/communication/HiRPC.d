@@ -599,6 +599,7 @@ unittest {
         params["test"] = 42;
         // Create a send method name func_name and argument params
         const sender = hirpc.action(func_name, params);
+        assert(sender.params == Document(params));
         // Sender with bad credentials
         const invalid_sender = bad_hirpc.action(func_name, params, sender.method.id);
 
@@ -627,6 +628,7 @@ unittest {
             auto hibon = new HiBON;
             hibon["x"] = 42;
             const send_back = hirpc.result(receiver, hibon);
+            assert(send_back.result == Document(hibon));
             const result = ResultStruct(send_back.response.result);
             assert(result.x is 42);
         }
@@ -679,7 +681,24 @@ unittest {
             }
         }
         // writefln("recever.verified=%s", recever.verified);
+        {
+            const method = hirpc.action("id", Document(), 8);
+            const re_method = hirpc.receive(method);
+            assert(re_method.getId == 8);
+
+            const res = hirpc.result(re_method, Document());
+            const re_res = hirpc.receive(res);
+            assert(re_res.getId == 8);
+
+            const err = hirpc.error(3, "bad");
+            const re_err = hirpc.receive(err);
+            assert(re_err.getId == 3);
+
+            HiRPC.Receiver empty;
+            assert(empty.getId == 0);
+        }
     }
+
 }
 
 /// A good HiRPC result with no additional data.
