@@ -44,7 +44,7 @@ import std.conv;
  * numbers), and finally represent the resulting base-58 digits as alphanumeric ASCII characters.
  */
 enum ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-static immutable INDICES = generateindices();
+enum INDICES = generateindices();
 
 int[128] generateindices() {
     int[128] indices;
