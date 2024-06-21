@@ -40,7 +40,7 @@ nothrow:
 
 /**
 
-  Encode a buffer into a base58url string
+  Encode a buffer into a base58 string
 
   Params: 
       buf_ptr = a ptr to the buffer to encode
@@ -52,7 +52,7 @@ nothrow:
       [tagion.api.errors.ErrorCode]
 
  */
-int tagion_basic_encode_base58url(
+int tagion_basic_encode_base58(
     const(uint8_t*) buf_ptr,
     const size_t buf_len,
     char** str_ptr,
