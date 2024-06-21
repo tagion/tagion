@@ -663,6 +663,9 @@ class HashGraph {
                 return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides));
 
             case SECOND_WAVE:
+                if (!areWeInGraph) {
+                    break;
+                }
                 const from_front_seat = register_wavefront(received_wave, from_channel);
                 immutable epack = event_pack(time, from_front_seat, payload());
                 const registered = registerEventPackage(epack);

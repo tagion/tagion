@@ -16,6 +16,9 @@ The different wavefront exchange states are defined here.
 The wavefront record communicated between nodes is defined here.
 [tagion.hashgraph.HashGraphBasic.Wavefront](https://ddoc.tagion.org/tagion.hashgraph.HashGraphBasic.Wavefront.html)
 
+The hirpc protocol is described here https://hibon.org/posts/hirpc
+
+Each hirpc package is put in an [Envelope](/docs/protocols/envelope) which takes care of compression and encryption.
 
 **Communication rules between a pair nodes**
 
@@ -27,16 +30,23 @@ MAY means that the node is free to do this at will.
 SHOULD means that the node is strongly encouraged to do this, but the rule is NOT violated if not complied with.  
 MUST means that the node is obliged to follow this rule.  
 
-IF a node notices two simultaneous wavefront exchanges it MUST send a BREAKING WAVE.  
-IF a BREAKING WAVE is exchanged the wavefront is reset.  
-IF a BREAKING WAVE is exchanged the connection MUST be closed.  
+```
 IF a communication error or rule violation occurs the connection MUST be closed.  
+A node SHOULD keep the connection open until a hirpc result or an hirpc error is exchanged,
+then the connection MUST be closed.  
 
 A node MAY initiate a connection with any node.
 A node which initiates a connection MUST send a message and it MUST sent the first message.  
-A node MAY initiate a wavefront with any node which it does NOT already have an active wavefront exchange with  
-The wavefront MUST be initiated by sending a TIDAL WAVE.  
-The TIDAL WAVE MUST be responded with a FIRST WAVE.  
-The FIRST WAVE MUST be responded with a SECOND WAVE.  
-When a SECOND WAVE is exchanged the connection MUST be closed
-A node SHOULD keep the connection open until a SECOND WAVE is exchanged.  
+The first message MUST be a hirpc method.  
+Any hirpc method MUST be answered with another hirpc method OR a hirpc result OR a hirpc error.
+```
+
+
+**Wavefront response patterns**
+
+```
+method SHARP -> result COHERRENT | result RIPPLE
+method TIDAL WAVE -> error | method FIRST WAVE
+method FIRST WAVE -> error | result SECOND WAVE
+* -> error  
+```
