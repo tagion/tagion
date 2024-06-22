@@ -1,12 +1,29 @@
 module tagion.tools.tvmutil.tvmutil;
+
+import core.stdc.string;
+
 import std.getopt;
 import std.format;
 import std.stdio;
 import std.array;
+import std.algorithm;
+
+import tagion.actor;
+import tagion.basic.Types;
+import tagion.crypto.SecureNet;
 import tagion.tools.Basic;
 import tagion.tools.revision;
+import tagion.utils.pretend_safe_concurrency;
+import tagion.script.execute;
+import tagion.script.common;
+import tagion.services.DART;
+import tagion.services.collector;
+import tagion.services.options;
+import tagion.services.messages;
+import tagion.hibon.HiBONFile;
+import tagion.hibon.HiBONRecord;
 import tagion.wasmer.c;
-import core.stdc.string;
+import tagion.tools.toolsexception;
 
 mixin Main!(_main);
 
@@ -153,7 +170,83 @@ int _main(string[] args) {
         return 0;
     }
     else {
-        error("%s is not supported in this build", program);
-        return 1;
+        bool version_switch;
+        string dart_filename;
+        string output_filename;
+        GetoptResult main_args;
+        try {
+
+            main_args = getopt(args, std.getopt.config.caseSensitive,
+                    std.getopt.config.bundling,
+                    "version", "display the version", &version_switch,
+                    "v|verbose", "Enable verbose print-out", &__verbose_switch,
+                    "d|dart", "Dart file to execute the script against", &dart_filename,
+                    "o|output", "The file to output the resulting recorder to", &output_filename,
+            );
+
+            if (version_switch) {
+                revision_text.writeln;
+                return 0;
+            }
+            if (main_args.helpWanted) {
+                defaultGetoptPrinter(
+                        [
+                        "Documentation: https://docs.tagion.org/",
+                        "",
+                        "Usage:",
+                        format("%s [<option>...] contract.hibon [file.hibon ...] ", program),
+                        "",
+
+                        "<option>:",
+
+                        ].join("\n"),
+                        main_args.options);
+                return 0;
+            }
+
+            TaskNames tn;
+            check(!dart_filename.empty, "Need a dart file to execute the script against");
+            register(tn.tvm, thisTid);
+            auto shared_net = cast(shared)(new StdSecureNet());
+            immutable dart_opts = DARTOptions(dart_filename: dart_filename);
+            auto dart_handle = spawn!DARTService(tn.dart, dart_opts, tn, shared_net, false);
+            auto collector_handle = _spawn!CollectorService(tn.collector, tn);
+            
+            string[] contract_filenames;
+            foreach(arg; args) {
+                if(arg.endsWith(FileExtension.hibon)) {
+                    contract_filenames ~= arg;
+                }
+            }
+
+            File[] contract_files;
+            foreach(filename; contract_filenames) {
+                contract_files ~= File(filename, "r");
+            }
+            if(contract_filenames.empty) {
+                contract_files ~= stdin();
+            }
+
+            immutable(SignedContract)*[] s_contracts;
+            foreach(file; contract_files) {
+                auto hibonrange = HiBONRange(file);
+                foreach(doc; hibonrange) {
+                    if(doc.isRecord!SignedContract) {
+                        s_contracts ~= new immutable(SignedContract)(doc);
+                    }
+                    // read hirpcs with signed contracts, collected contracts as well...
+                }
+            }
+
+            ContractExecution engine;
+            foreach(contract; s_contracts) {
+                collector_handle.send(inputContract(), contract);
+            }
+        }
+        catch(Exception e) {
+            error(e);
+            return 1;
+        }
+        return 0;
     }
 }
