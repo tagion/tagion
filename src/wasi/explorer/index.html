@@ -17,19 +17,31 @@
 <body>
 	<script type="module" defer>
         
+        import {WTagUtil} from "./explorer/wtag.js"
+
         $( document ).ready(function() {
             $("#go").click(doit);    
         });
         
         function doit(e){
-            let query = $("#ilookup").val();
-            lookup(query);
+            let query = $("#ilookup").val().trim();
+            let opt = {
+                rawdh: $("#irawdh").prop('checked'),
+                table: $("#itable").prop('checked')
+            };
+            lookup(query, opt);
         }
             
-        function lookup(query) {
-            console.log("lookup start with ", query);
-            $("#out").html("");
+        function lookup(query, opt) {
+            console.log("lookup start with ", query, " opt: ", opt);
+            $("#tbl").html("<table class=\"table table-sm w-50\" align=\"center\"><tbody></tbody></table>");
+            $("#raw").html("");
             $("#msg").html("");
+            const srcs = {
+                index: "dartIndex",
+                epoch: "Epoch number",
+                name: "#Name"
+            }
             var id = "";
             if ( query.match(/^@/) ) {
                 id = "index";
@@ -41,6 +53,7 @@
                 query = "\#name:"+query
             } else {
                 console.log("Invalid query string: ", query);
+                $("#msg").html("Invalid query string");
                 return;
             }
             console.log("Consider: ", id);
@@ -54,8 +67,11 @@
                         console.log(data);
                         if ( data["0"] ) {
                             $("#msg").html("Result for <b>TRTRead</b> on <i>pubKey</i>");
-                            $("#out").html(JSON.stringify(data,null, 2));
-                        }                            
+                            if(opt.table){ rendertable(WTagUtil.dehibonize(data)); }
+                            $("#raw").html(JSON.stringify( ((opt.rawdh)?WTagUtil.dehibonize(data):data), null, 2));
+                        } else {
+                            $("#msg").html("Empty result.");
+                        }
                     },
                     error: function(data) {
                         console.log("Error: ", data);
@@ -72,19 +88,12 @@
                     console.log("lookup "+id+" done");
                     console.log(data);
                     if ( data["0"] ) {
-                        switch(id){
-                            case "index":
-                                $("#msg").html("Result for <b>dartRead</b> on <i>dartIndex</i>");
-                                break;
-                            case "epoch":
-                                $("#msg").html("Result for <b>dartRead</b> on <i>Epoch number</i>");
-                                break;
-                            case "name":
-                                $("#msg").html("Result for <b>dartRead</b> on <i>#Name</i>");
-                                break;
-                        }
-                        $("#out").html(JSON.stringify(data,null, 2));
-                    }                            
+                        $("#msg").html("Result for <b>dartRead</b> on <i>"+srcs[id]+"</i>");
+                        if(opt.table){ rendertable(WTagUtil.dehibonize(data)); }
+                        $("#raw").html(JSON.stringify(((opt.rawdh)?WTagUtil.dehibonize(data):data),null, 2));
+                    } else {                           
+                        $("#msg").html("Empty result.");
+                    }
                 },
                 error: function(data) {
                     console.log("Error: ", data);
@@ -94,14 +103,93 @@
                 }
             });
         }
+        
+        function rendertable(d){
+            var t = $("#tbl table > tbody:last");
+            console.log(d);
+            var p = null, pp = null;
+            var a = {};
+            if("$@" in d && d["$@"] == "Recorder"){                
+                if("0" in d) {
+                    p = d["0"];
+                    if("$a" in p){
+                        pp = p["$a"];
+                        if("$@" in pp)
+                            a["class"] = pp["$@"];
+                        if("$t" in pp)
+                            a["time"] = pp["$t"].toISOString();
+                        if("#$epoch" in pp)
+                            a["epoch"] = pp["#$epoch"];
+                        if("$eye" in pp)
+                            a["bullseye"] = pp["$eye"];
+                        if("globals" in pp){
+                            if("number_of_bills" in pp.globals)
+                                a["number_of_bills"] = pp.globals["number_of_bills"];
+                            if("brunt_bills" in pp.globals)
+                                a["brunt_bills"] = pp.globals["brunt_bills"];
+                        }
+                        if(a["class"] == "TGN")
+                            a["TGN"] = 1.0*pp["$V"]["$"] / 1e9;
+                        if("#name" in pp)
+                            a["#name"] = pp["#name"];
+                        if("current_epoch" in pp)
+                            a["current_epoch"] = pp["current_epoch"];
+                    }
+                }    
+            }else{
+                
+            }
+            for (const [key, value] of Object.entries(a)) {
+                t.append("<tr><td align='left' width='33%'>"+key+"</td><td align='left'>"+value+"</td></tr>");
+            }
+        }
 
 	</script>
 
+    <div class="modal fade" id="modalHelp" tabindex="-1" aria-labelledby="modatHelpTitle" style="display: none;" aria-hidden="true">
+    <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header">
+    <h1 class="modal-title fs-5" id="modalHelpTitle">Tagion explorer draft</h1>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <p>Enter the following query strings for test: </p>
+        <ul>
+            <li> "tagion" - for #name lookup
+            <li> any number i.e. "12" - for epoch lookup
+            <li> "@...." base64 buffer for Dart read on dartIndex or TRT read on pubKey (by context)
+            <br/>valid indices: 
+            <pre>
+@cgzaohRsTznrJbQLXWJDJlwZsPOkuoGmYIpEtY3P6Fw=
+@D56QJvRKv5dlNGQ6uTrMywlDWhS5vIYjRuMn4CWz0vE=
+@DRSG_9bOYzKcYaBZsR525gpigyS4hY_M4vhh0ReuLuU=
+@Y0ZeKHQSk-1e8Rw-8Sn3GbW6qZ4chwqb5LTpOOvy3qU=
+@rAK7S9MuLo2rmGVHi1EDKtzEPl0Y9AynDlJSYk0XTlw=
+</pre>
+            valid wallet pkey:
+            <pre>
+@Ajamo1PW0Ux3GiPPOZHkwXC0Cbq6nX3bOVNXW-vBa5kF
+</pre>
+        </ul>
+    </div>
+    <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    </div> </div> </div> </div>
 
     <div class="d-flex flex-column p-2 w-75 vh-100 align-middle mx-auto mt-2">
         <div class="mb-auto p-2 d-flex flex-row flex-nowrap justify-content-center">
-            <input id="ilookup" type="text" class="w-50 form-control" placeholder="@dartindex, @pubkey, epoch or #name" aria-label="Lookup query"> 
+            <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#modalHelp"> ? </button>
+            <input id="ilookup" type="text" class="w-50 form-control" placeholder="@dartindex, @pubkey, epoch number or name string" aria-label="Lookup query"> 
             <button id="go" type="button" class="mx-2 btn btn-primary">Search</button>
+        </div>
+        <div class="mb-auto p-2 d-flex flex-row flex-nowrap justify-content-center">
+            <div class="form-check form-switch form-check-inline">
+                <input class="form-check-input" type="checkbox" role="switch" id="irawdh" checked>
+                <label class="form-check-label" for="irawdh">Dehibonize raw result</label>
+            </div>    
+            <div class="form-check form-switch form-check-inline">
+                <input class="form-check-input" type="checkbox" role="switch" id="itable" checked>
+                <label class="form-check-label" for="itable">Render result table</label>
+            </div>    
         </div>
         <div class="text-center loading">
             <div class="spinner-border" role="status">
@@ -110,9 +198,12 @@
         </div>
         <div class="text-center" id="msg">
         </div>
+        <div class="text-center my-2" id="tbl">
+            <table class="table table-sm w-50 mt-4"  align="center"><tbody></tbody></table>
+        </div>
         <div class="flex-grow-1 p-3">
             <code >
-            <pre id="out">
+            <pre id="raw">
                  
             </pre>
             </code>
@@ -121,3 +212,7 @@
 </body>
 
 </html>
+
+
+
+
