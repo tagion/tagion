@@ -32,6 +32,8 @@ struct ShellOptions {
     string lookup_endpoint = "/lookup";
     string default_i2p_wallet = "./wallets/wallet1.json";
     string default_i2p_wallet_pin = "0001";
+    string webroot="/tmp/webapp";
+    string webstaticdir="static";
     uint number_of_nodes = 5;
     uint sock_recvtimeout = 10000;
     uint sock_recvdelay = 10;

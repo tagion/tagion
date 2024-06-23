@@ -1095,7 +1095,7 @@ int _main(string[] args) {
 
 appoint:
 
-    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"/tmp/webapp","static_path":"static"}`), &options);
+    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"`~options.webroot~`","static_path":"`~options.webstaticdir~`"}`), &options);
 
     help_text ~= ("TagionShell web service\n");
     help_text ~= ("Listening at " ~ options.shell_uri ~ "\n\n");
