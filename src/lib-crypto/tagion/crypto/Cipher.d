@@ -8,6 +8,7 @@ import tagion.crypto.random.random;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
+///
 @safe
 struct Cipher {
     import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -30,6 +31,7 @@ struct Cipher {
         mixin HiBONRecord;
     }
 
+    ///
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, Document msg) {
 
         scope ubyte[32] secret_key_alloc;
@@ -68,6 +70,7 @@ struct Cipher {
         return encrypt(net, net.pubkey, msg);
     }
 
+    ///
     static const(Document) decrypt(const(SecureNet) net, const(CipherDocument) cipher_doc) {
         scope sharedECCKey = net.ECDHSecret(cipher_doc.cipherPubkey);
         auto clearmsg = new ubyte[cipher_doc.ciphermsg.length];
@@ -83,6 +86,7 @@ struct Cipher {
         return result;
     }
 
+    ///
     unittest {
         import std.algorithm.searching : all, any;
         import tagion.basic.Types : FileExtension;
