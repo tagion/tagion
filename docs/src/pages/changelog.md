@@ -1,14 +1,19 @@
 # Changelog for Epoch 2094264 .. 2278693
 
 **Node interface**
-wavefront stateless
+We refactered the nodeinterface and made the communication simpler by only keeping connections open until a HiRPC result or error is exchanged.
+This way we don't have to associate a connections with a public key, we know when to close the connection and the protocol is extensible for uses such as DART synchronization.
+We also removed the breaking waves. The state is now in the communication and not internal.
+The response patterns now look like this.
+
 ```
 method SHARP -> result COHERRENT | result RIPPLE
 method TIDAL WAVE -> error | method FIRST WAVE
 method FIRST WAVE -> error | result SECOND WAVE
 * -> error  
 ```
-LRU
+
+All of the connections are now stored in an LRU cache, so if too many connections are opened at once they'll be pushed out of the queue and closed.
 
 **Envelope refactoring**
 The envelope implementation has been cleaned up and some unnecessary allocations have been removed. The nodeinterface also now uses the envelope format for transportation.
