@@ -17,7 +17,7 @@
 <body>
 	<script type="module" defer>
         
-        import {WTagUtil} from "./explorer/wtag.js"
+        import {WTagUtil} from "/shell/static/explorer/wtag.js"
 
         $( document ).ready(function() {
             $("#go").click(doit);    
@@ -60,7 +60,7 @@
             $('body').addClass('busy');
             if ( id == "index" ) {
                 $.ajax({
-                    url: "/shell/api/v1/lookup/trt/"+btoa("\#\$Y:"+query),
+                    url: "/shell/api/v1/lookup/trt/"+btoa("\#\$Y:\*:"+query),
                     type: "get",
                     success: function(data, status, xhr) {
                         console.log("lookup trtindex done");
@@ -70,7 +70,8 @@
                             if(opt.table){ rendertable(WTagUtil.dehibonize(data)); }
                             $("#raw").html(JSON.stringify( ((opt.rawdh)?WTagUtil.dehibonize(data):data), null, 2));
                         } else {
-                            $("#msg").html("Empty result.");
+                            if($("#msg").html() == "")
+                                $("#msg").html("Empty result.");
                         }
                     },
                     error: function(data) {
@@ -92,7 +93,8 @@
                         if(opt.table){ rendertable(WTagUtil.dehibonize(data)); }
                         $("#raw").html(JSON.stringify(((opt.rawdh)?WTagUtil.dehibonize(data):data),null, 2));
                     } else {                           
-                        $("#msg").html("Empty result.");
+                        if($("#msg").html() == "")
+                            $("#msg").html("Empty result.");
                     }
                 },
                 error: function(data) {
@@ -134,6 +136,8 @@
                             a["#name"] = pp["#name"];
                         if("current_epoch" in pp)
                             a["current_epoch"] = pp["current_epoch"];
+                        if("indices" in pp)
+                            a["indices"] = pp["indices"].join("<br/>");
                     }
                 }    
             }else{
@@ -167,7 +171,7 @@
 </pre>
             valid wallet pkey:
             <pre>
-@Ajamo1PW0Ux3GiPPOZHkwXC0Cbq6nX3bOVNXW-vBa5kF
+@A9bVIut4seaNAu16AC5MLx2rgUBzL5tKW0TBk_G_rPVY
 </pre>
         </ul>
     </div>
