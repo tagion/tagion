@@ -66,5 +66,5 @@ hirpc -m dartCheckRead -d \#\$epoch:i64:13,\#\$epoch:i64:27
 Read a trt archive to get all of the archives associated with a public key.  
 The trt archives aren't stored in the main consensus database so they have to be redirected to the `trt.` entity
 ```sh
-hirpc -m trt.dartRead -d \#\$Y:@AoL9_T3JJ09fnPKo7Y1in9mpKkjgxSQ_sD0t0CPCcLKk
+hirpc -m trt.dartRead -d \#\$Y:\*:@AoL9_T3JJ09fnPKo7Y1in9mpKkjgxSQ_sD0t0CPCcLKk
 ```

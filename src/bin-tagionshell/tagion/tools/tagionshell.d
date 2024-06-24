@@ -14,6 +14,7 @@ import std.getopt;
 import std.json;
 import std.typecons;
 import std.range;
+import std.base64;
 import std.string : representation;
 import std.stdio : File, toFile, stderr, stdout, writefln, writeln;
 import std.datetime.systime : Clock;
@@ -415,7 +416,7 @@ void ws_on_message(WebSocket *ws, ubyte[] data, void *ctx){
 /*
 * query REQ/REP socket once and close it 
 */
-int query_socket_once(string addr, uint timeout, uint delay, uint retries,  ubyte[] request, out immutable(ubyte)[] reply) {
+int query_socket_once(string addr, uint timeout, uint delay, uint retries,  const ubyte[] request, out immutable(ubyte)[] reply) {
     int rc;
     size_t len = 0, doclen = 0, attempts = 0;
     const stime = timestamp();
@@ -480,8 +481,8 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         return;
     }
     
-    auto epack = Envelope(req.rawdata);
-    auto rawbuf = (!epack.errorstate && epack.header.isValid()) ? epack.toData() : req.rawdata;
+    const epack = Envelope(cast(immutable)req.rawdata);
+    const rawbuf = (!epack.errorstate && epack.header.isValid()) ? epack.toData() : req.rawdata;
     Document doc = Document(cast(immutable(ubyte[]))rawbuf);
     save_rpc(opt, doc);
 
@@ -928,14 +929,13 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     }
 }
 
-const view_dart_handler = handler_helper!view_dart_handler_impl;
-void view_dart_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
-    string dartindex_str = req.path[$ - 1];
-    DARTIndex drtindex = hash_net.dartIndexDecode(dartindex_str);
-
-    int attempts = 0;
+const lookup_handler = handler_helper!lookup_handler_impl;
+void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
+    string query_subject = req.path[$ - 2];
+    string query_str = cast(immutable(char)[])(Base64.decode(req.path[$ - 1]));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     int rc;
+    int attempts = 0;
     while (true) {
         rc = s.dial(opt.node_dart_addr);
         if (rc == 0)
@@ -945,31 +945,51 @@ void view_dart_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     scope (exit) {
         s.close();
     }
-
-    rc = s.send(crud.dartRead([drtindex]).toDoc.serialize);
-    ubyte[192] buf;
-    size_t len = s.receivebuf(buf, buf.length);
-    if (len == size_t.max && s.errno != 0) {
-        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "socket error";
-        return;
+    switch(query_subject){
+        case "dart":
+            DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
+            rc = s.send(crud.dartRead([drtindex]).toDoc.serialize);
+            ubyte[4096] buf;
+            size_t len = s.receivebuf(buf, buf.length);
+            if (len == size_t.max && s.errno != 0) {
+                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                rep.msg = "socket error";
+                return;
+            }
+            const receiver = HiRPC(null).receive(Document(buf.idup[0..len]));
+            const jresult = receiver.result.toJSON;
+            rep.type = mime_type.JSON;
+            rep.json = jresult;
+            break;
+        case "trt":    
+            DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
+            rc = s.send(crud.trtdartRead([drtindex]).toDoc.serialize);
+            ubyte[4096] buf;
+            size_t len = s.receivebuf(buf, buf.length);
+            if (len == size_t.max && s.errno != 0) {
+                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                rep.msg = "socket error";
+                return;
+            }
+            const receiver = HiRPC(null).receive(Document(buf.idup[0..len]));
+            const jresult = receiver.result.toJSON;
+            rep.type = mime_type.JSON;
+            rep.json = jresult;
+            break;
+        case "transaction":
+            rep.type = mime_type.JSON;
+            rep.json = JSONValue(["error": "not implemented yet"]);
+            break;
+        case "record":
+            rep.type = mime_type.JSON;
+            rep.json = JSONValue(["error": "not implemented yet"]);
+            break;
+        default:
+            rep.type = mime_type.JSON;
+            rep.json = JSONValue(["error": "unknown subject"]);
+            break;
     }
-
-    const receiver = HiRPC(null).receive(Document(buf.idup));
-
-    Appender!string html_result;
-    html_result ~= "<!DOCTYPE <html> <body>";
-    html_result ~= "<h2>";
-    html_result ~= dartindex_str;
-    html_result ~= "</h2>";
-    html_result ~= "<pre>";
-    html_result ~= receiver.result.toPretty;
-
-    html_result ~= "</pre>";
-    html_result ~= "</body> </html>";
-    
-    rep.type = mime_type.HTML;
-    rep.text = html_result[];
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
 }
 
 void versioninfo_handler(WebData* req, WebData* rep, void* _) nothrow {
@@ -1075,7 +1095,7 @@ int _main(string[] args) {
 
 appoint:
 
-    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"/tmp/webapp","static_path":"static"}`), &options);
+    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"`~options.webroot~`","static_path":"`~options.webstaticdir~`"}`), &options);
 
     help_text ~= ("TagionShell web service\n");
     help_text ~= ("Listening at " ~ options.shell_uri ~ "\n\n");
@@ -1097,8 +1117,7 @@ appoint:
         "/bullseye": "test bullseye endpoint",
         "/dart": "test dart request endpoint",
     ]);
-
-    app.route("/dart/*", view_dart_handler);
+    add_v1_route(app, options.lookup_endpoint~"/*", lookup_handler, [HTTPMethod.GET], "lookup by ID");
 
     writeit(help_text.data);
     app.start();

@@ -26,7 +26,7 @@ alias Payload = Msg!"Payload";
 alias consensusEpoch = Msg!"consensus_epoch";
 
 /// [FROM: NodeInterface, TO: Epoch Creator] Receive wavefront from NodeInterface
-alias ReceivedWavefront = Msg!"ReceivedWavefront";
+alias WavefrontReq = Request!"ReceivedWavefront";
 
 /// [TO: Node Interface] send HiRPC to another node 
 alias NodeSend = Msg!"node_send";

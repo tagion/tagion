@@ -7,9 +7,9 @@ nothrow:
 
 /// Tagion c-api error codes
 enum ErrorCode {
-    none = 0, // The operation completed successfully
-    exception = -1, // An exception occurred, get the exception message with tagion_error_text()
-    error = -2, // Other error
+    none = 0, /// The operation completed successfully
+    exception = -1, /// An exception occurred, get the exception message with tagion_error_text()
+    error = -2, /// Other error
 }
 
 static Exception last_error;
