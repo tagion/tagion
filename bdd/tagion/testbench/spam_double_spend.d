@@ -5,6 +5,8 @@ import core.time;
 import std.file;
 import std.path : buildPath, setExtension;
 import std.stdio;
+import std.process : environment;
+import std.conv : to;
 import tagion.GlobalSignals;
 import tagion.basic.Types : FileExtension;
 import tagion.behaviour.Behaviour;
@@ -154,7 +156,6 @@ int _main(string[] args) {
     Thread.sleep(15.seconds);
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
-
     auto feature = automation!(spam_double_spend);
     feature.SpamOneNodeUntil10EpochsHaveOccurred(node_opts, wallets[0], wallets[1]);
     feature.SpamMultipleNodesUntil10EpochsHaveOccurred(node_opts, wallets[2], wallets[3]);

@@ -29,17 +29,16 @@ struct BitMask {
         mask = rhs.mask.dup;
     }
 
-
     void opAssign(const(ubyte)[] buf) pure nothrow @trusted {
         if (buf.length == 0) {
-            mask=null;
+            mask = null;
             return;
         }
-        const size=(buf.length / size_t.sizeof) + (buf.length % size_t.sizeof !=0);
-        buf.length=size * size_t.sizeof;
-        mask=(cast(size_t*)&buf[0])[0..size].dup;
+        const size = (buf.length / size_t.sizeof) + (buf.length % size_t.sizeof != 0);
+        buf.length = size * size_t.sizeof;
+        mask = (cast(size_t*)&buf[0])[0 .. size].dup;
     }
-    
+
     /++
      This set the mask as bit stream with LSB first
      +/
@@ -52,13 +51,16 @@ struct BitMask {
         }
     }
 
-    this(R)(scope R range) pure nothrow if ((isInputRange!R) && is(ElementType!R : bool) && !is(Uqual!(Element!R) == ubyte)) {
+    this(R)(scope R range) pure nothrow
+    if ((isInputRange!R) && is(ElementType!R : bool) && !is(Uqual!(Element!R) == ubyte)) {
         this(range.enumerate
                 .filter!(b => b.value)
                 .map!(b => b.index));
     }
 
-    this(R)(scope R range) pure nothrow if ((isInputRange!R) && isIntegral!(ElementType!R) && !is(ElementType!R : bool) && !is(Uqual!(ElementType!R) == ubyte)) {
+    this(R)(scope R range) pure nothrow
+    
+            if ((isInputRange!R) && isIntegral!(ElementType!R) && !is(ElementType!R : bool) && !is(Uqual!(ElementType!R) == ubyte)) {
         range.each!((n) => this[n] = true);
     }
 
@@ -66,14 +68,14 @@ struct BitMask {
         if (mask.length == 0) {
             return null;
         }
-        return (cast(ubyte*)&mask[0])[0..mask.length*size_t.sizeof];
+        return (cast(ubyte*)&mask[0])[0 .. mask.length * size_t.sizeof];
     }
 
     unittest {
-        const(ubyte[]) buf = [0x10,0x01, 0x80];
-        BitMask bits;    
-        bits=buf;
-        assert(equal(bits[], [4,8,23]));
+        const(ubyte[]) buf = [0x10, 0x01, 0x80];
+        BitMask bits;
+        bits = buf;
+        assert(equal(bits[], [4, 8, 23]));
         assert(equal(bits.bytes, [16, 1, 128, 0, 0, 0, 0, 0]));
     }
 
@@ -83,8 +85,66 @@ struct BitMask {
         return result;
     }
 
+    BitMask invert(const size_t size = 0) const pure nothrow {
+        BitMask result;
+        if (mask.length) {
+            result.mask.length = mask.length;
+            result.mask[] = ~mask[];
+            if (size) {
+                if (size.wordindex + 1 < result.mask.length) {
+                    result.mask.length = size.wordindex + 1;
+                }
+                else if (size.wordindex + 1 > result.mask.length) {
+                    result.mask.length = size.wordindex + 1;
+                    if (mask.length < result.mask.length) {
+                        result.mask[mask.length .. $] = size_t.max;
+                    }
+                }
+                result.mask[size.wordindex] &= ((size_t(1) << size.word_bitindex) - 1);
+            }
+        }
+        return result;
+    }
+
+    unittest {
+        import std.range;
+        import std.array;
+
+        BitMask bits = BitMask([1, 0x75, 0x10, 19]);
+        import tagion.basic.Debug;
+
+        { /// mask with size_t element
+            const bit_length = size_t.sizeof * 8 / 2 - 5;
+            const bits_invert = bits.invert(bit_length);
+            assert(bits_invert[].array.retro.front + 1 == bit_length, "Last bit should be one");
+            assert(bits_invert.count == bit_length - 3, "Number of bits does not match");
+        }
+        { /// mask with two elements
+            const bit_length = size_t.sizeof * 8 + 5;
+            const bits_invert = bits.invert(bit_length);
+            assert(bits_invert[].array.retro.front + 1 == bit_length, "Last bit should be one");
+            assert(bits_invert.count == bit_length - 3, "Number of bits does not match");
+        }
+        { /// mask with two elements
+            const bit_length = size_t.sizeof * 8 * 2 - 3;
+            const bits_invert = bits.invert(bit_length);
+            assert(bits_invert[].array.retro.front + 1 == bit_length, "Last bit should be one");
+            assert(bits_invert.count == bit_length - 4, "Number of bits does not match");
+        }
+        { /// The size of the inverted mask is greater than the size of the mask
+            const bit_length = size_t.sizeof * 8 * 3 - 3;
+            const bits_invert = bits.invert(bit_length);
+            assert(bits_invert[].array.retro.front + 1 == bit_length, "Last bit should be one");
+            assert(bits_invert.count == bit_length - 4, "Number of bits does not match");
+        }
+    }
+
     void clear() pure nothrow {
         mask[] = 0;
+    }
+
+    void erase() pure nothrow {
+        mask = null;
     }
 
     @nogc
@@ -104,6 +164,7 @@ struct BitMask {
 
     unittest {
         import std.algorithm;
+
         BitMask bits_a, bits_b;
         assert(bits_a == bits_b);
         bits_b.mask.length = 1;

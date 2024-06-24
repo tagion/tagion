@@ -19,7 +19,6 @@ import std.traits : ReturnType, Unqual;
 import std.traits;
 import std.typecons;
 import std.typecons : No;
-import tagion.basic.Debug;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
 import tagion.crypto.Types : Pubkey;
@@ -34,6 +33,7 @@ import tagion.logger.Logger;
 import tagion.utils.BitMask : BitMask;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
+import tagion.basic.Debug;
 
 /// Handles the round information for the events in the Hashgraph
 @safe
@@ -44,30 +44,21 @@ class Round {
     protected {
         Round _previous;
         Round _next;
-        bool _decided;
+
     }
-    immutable long number;
+    immutable int number;
 
     package Event[] _events;
-    public BitMask famous_mask;
+    protected bool _decided;
 
-    /**
- * Compare the round number 
- * Params:
- *   rhs = round to be checked
- * Returns: true if equal or less than
- */
-    @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
-        return (number - rhs.number) <= 0;
+    private void decide() pure nothrow @nogc
+    in (!_decided)
+    do {
+        _decided = true;
     }
 
-    /**
-     * Number of events in a round should be the same 
-     * as the number of nodes in the hashgraph
-     * Returns: number of nodes in the round 
-     */
-    @nogc const(uint) node_size() pure const nothrow {
-        return cast(uint) _events.length;
+    final bool decided() const pure nothrow @nogc {
+        return _decided;
     }
 
     /**
@@ -92,41 +83,26 @@ class Round {
      * All the events in the first ooccurrences of this round
      * Returns: all events in a round
      */
-    @nogc
-    const(Event[]) events() const pure nothrow {
+    final const(Event[]) events() const pure nothrow @nogc {
         return _events;
     }
 
+    final uint node_size() const pure nothrow @nogc {
+        return cast(uint) _events.length;
+    }
     /**
      * Adds the even to round
      * Params:
      *   event = the event to be added
      */
-    package void add(Event event) pure nothrow
+    package final void add(Event event) pure nothrow
     in {
+        assert(event._witness, "The event id " ~ event.id.to!string ~ " added to the round should be a witness ");
         assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
     }
     do {
         _events[event.node_id] = event;
         event._round = this;
-    }
-
-    /**
-     * Check of the round has no events
-     * Returns: true of the round is empty
-     */
-    @nogc
-    bool empty() const pure nothrow {
-        return !_events.any!((e) => e !is null);
-    }
-
-    /**
-     * Counts the number of events which has been set in this round
-     * Returns: number of events set
-     */
-    @nogc
-    size_t event_count() const pure nothrow {
-        return _events.count!((e) => e !is null);
     }
 
     /**
@@ -138,7 +114,7 @@ class Round {
     package void remove(const(Event) event) nothrow
     in {
         assert(event.isEva || _events[event.node_id] is event,
-                "This event does not exist in round at the current node so it can not be remove from this round");
+        "This event does not exist in round at the current node so it can not be remove from this round");
         assert(event.isEva || !empty, "No events exists in this round");
     }
     do {
@@ -163,10 +139,10 @@ class Round {
                 count++;
 
                 pragma(msg, "fixme(phr): make event remove work with eventview");
-                version(none)
-                if (Event.callbacks) {
-                    Event.callbacks.remove(e);
-                }
+                version (none)
+                    if (Event.callbacks) {
+                        Event.callbacks.remove(e);
+                    }
                 scrap_events(e._mother);
                 e.disconnect(hashgraph);
                 e.destroy;
@@ -181,43 +157,90 @@ class Round {
             _next = null;
         }
     }
-
     /**
-     * Check if the round has been decided
-     * Returns: true if the round has been decided
+     * Previous round from this round
+     * Returns: previous round
      */
-    @nogc bool decided() const pure nothrow {
-        return _decided;
+    @nogc
+    package final Round previous() pure nothrow {
+        return _previous;
     }
 
-    const(Round) next() const pure nothrow {
-        return _next;
-    }
+    final const pure nothrow @nogc {
+        /**
+     * Check of the round has no events
+     * Returns: true of the round is empty
+     */
+        bool empty() {
+            return !_events.any!((e) => e !is null);
+        }
 
-    /**
+        /**
+     * Counts the number of events which has been set in this round
+     * Returns: number of events set
+     */
+        size_t event_count() {
+            return _events.count!((e) => e !is null);
+        }
+
+        const(Round) previous() {
+            return _previous;
+        }
+
+        const(Round) next() {
+            return _next;
+        }
+
+        /**
      * Get the event a the node_id 
      * Params:
      *   node_id = node id number
      * Returns: 
      *   Event at the node_id
      */
-    @nogc
-    inout(Event) event(const size_t node_id) pure inout {
-        return _events[node_id];
+        const(Event) event(const size_t node_id) {
+            return _events[node_id];
+        }
+
+        bool isFamous() {
+            return isMajority(_events
+                    .filter!(e => e !is null)
+                    .filter!(e => e.witness.votedYes)
+                    .count,
+                    _events.length);
+
+        }
+
+        bool majority() {
+            return isMajority(_events
+                    .filter!(e => e !is null)
+                    .count,
+                    _events.length);
+        }
+
+        uint decisions() {
+            return cast(uint) _events
+                .filter!(e => e !is null)
+                .map!(e => e.witness)
+                .filter!(w => w.decided)
+                .count;
+        }
+
+        uint famous() {
+            return cast(uint) _events
+                .filter!(e => e !is null)
+                .filter!(e => e.witness.votedYes)
+                .count;
+        }
+
+        uint voters() {
+            return cast(uint)(_events.filter!(e => e !is null).count);
+        }
     }
 
-    /**
-     * Previous round from this round
-     * Returns: previous round
-     */
-    @nogc
-    package Round previous() pure nothrow {
-        return _previous;
-    }
-
-    @nogc
-    const(Round) previous() const pure nothrow {
-        return _previous;
+    invariant {
+        assert(!_previous || (_previous.number + 1 is number));
+        assert(!_next || (_next.number - 1 is number));
     }
 
     /**
@@ -225,19 +248,14 @@ class Round {
  * Returns: range of rounds 
  */
     @nogc
-    package Rounder.Range!false opSlice() pure nothrow {
+    package final Rounder.Range!false opSlice() pure nothrow {
         return Rounder.Range!false(this);
     }
 
     /// Ditto
     @nogc
-    Rounder.Range!true opSlice() const pure nothrow {
+    final Rounder.Range!true opSlice() const pure nothrow {
         return Rounder.Range!true(this);
-    }
-
-    invariant {
-        assert(!_previous || (_previous.number + 1 is number));
-        assert(!_next || (_next.number - 1 is number));
     }
 
     /**
@@ -247,15 +265,37 @@ class Round {
     struct Rounder {
         Round last_round;
         Round last_decided_round;
+        Round latest_famous_round;
         HashGraph hashgraph;
-        Round[] voting_round_per_node;
+        Event[] last_witness_events;
 
+        //Round[] voting_round_per_node;
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph = hashgraph;
-            last_round = new Round(null, hashgraph.node_size); 
-            voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
+            last_round = new Round(null, hashgraph.node_size);
+            last_witness_events.length = hashgraph.node_size;
+            //voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
+        }
+
+        private void update_latest_famous_round() pure nothrow {
+            Round inner_latest_famous_round(Round r) {
+                if (r && r.isFamous) {
+                    return inner_latest_famous_round(r._next);
+                }
+                if (!r) {
+                    return inner_latest_famous_round(last_decided_round);
+                }
+                return r;
+            }
+
+            latest_famous_round = inner_latest_famous_round(latest_famous_round);
+        }
+
+        uint count_feature_famous_rounds(const Round r) pure nothrow {
+            update_latest_famous_round;
+            return cast(uint)(latest_famous_round.number - r.number);
         }
 
         package void erase() {
@@ -273,6 +313,38 @@ class Round {
             }
             last_decided_round = null;
             local_erase(last_round);
+        }
+
+        /**
+     * Sets the round for an event and creates an new round if needed
+     * Params:
+     *   e = event
+     */
+        void set_round(Event e) nothrow
+        in {
+            assert(!e._round, "Round has allready been added");
+            assert(last_round, "Base round must be created");
+            assert(last_decided_round, "Last decided round must exist");
+            assert(e, "Event must create before a round can be added");
+        }
+        do {
+            scope (exit) {
+                if (e._witness) {
+                    e._round.add(e);
+                    last_witness_events[e.node_id] = e;
+                    update_latest_famous_round;
+                }
+            }
+            e._round = e.maxRound;
+            if (e._witness && e._round._events[e.node_id]) {
+                if (e._round._next) {
+
+                    e._round = e._round._next;
+                    return;
+                }
+                e._round = new Round(last_round, hashgraph.node_size);
+                last_round = e._round;
+            }
         }
 
         //Cleans up old round and events if they are no-longer needed
@@ -302,211 +374,261 @@ class Round {
             }
         }
 
-        /**
+        @nogc final const pure nothrow {
+            /**
   * Number of round epoch in the rounder queue
   * Returns: size of the queue
    */
-        @nogc
-        size_t length() const pure nothrow {
-            return this[].walkLength;
-        }
-
-        /**
-     * Number of the same as hashgraph
-     * Returns: number of nodes
-     */
-        uint node_size() const pure nothrow
-        in {
-            assert(last_round, "Last round must be initialized before this function is called");
-        }
-        do {
-            return cast(uint)(last_round._events.length);
-
-        }
-
-        /**
-     * Sets the round for an event and creates an new round if needed
-     * Params:
-     *   e = event
-     */
-        void next_round(Event e) nothrow
-        in {
-            assert(last_round, "Base round must be created");
-            assert(last_decided_round, "Last decided round must exist");
-            assert(e, "Event must create before a round can be added");
-        }
-        out {
-            assert(e._round !is null);
-        }
-        do {
-            scope (exit) {
-                e._round.add(e);
-            }
-            if (e._round && e._round._next) {
-                e._round = e._round._next;
-            }
-            else {
-                e._round = new Round(last_round, hashgraph.node_size);
-                last_round = e._round;
-                // if (Event.callbacks) {
-                //     Event.callbacks.round_seen(e);
-                // }
-            }
-        }
-
-        bool isEventInLastDecidedRound(const(Event) event) const pure nothrow @nogc {
-            if (!last_decided_round) {
-                return false;
+            size_t length() {
+                return this[].walkLength;
             }
 
-            return last_decided_round.events
-                .filter!((e) => e !is null)
-                .map!(e => e.event_package.fingerprint)
-                .canFind(event.event_package.fingerprint);
-        }
+            bool isEventInLastDecidedRound(const(Event) event) {
+                if (!last_decided_round) {
+                    return false;
+                }
 
-        /**
+                return last_decided_round.events
+                    .filter!((e) => e !is null)
+                    .map!(e => e.event_package.fingerprint)
+                    .canFind(event.event_package.fingerprint);
+            }
+
+            /**
      * Check of a round has been decided
      * Params:
      *   test_round = round to be tested
      * Returns: 
      */
-        @nogc
-        bool decided(const Round test_round) pure const nothrow {
-            bool _decided(const Round r) pure nothrow {
+            version (none) bool decided(const Round r) {
                 if (r) {
-                    if (test_round is r) {
-                        return true;
-                    }
-                    return _decided(r._next);
+                    return (r.number - last_decided_round.number) <= 0;
                 }
                 return false;
             }
 
-            return _decided(last_decided_round);
-        }
-
-        /**
+            /**
      * Calculates the number of rounds since the last decided round
      * Returns: number of undecided roundes 
      */
-        @nogc
-        long coin_round_distance() pure const nothrow {
-            return last_round.number - last_decided_round.number;
-        }
+            long coin_round_distance() {
+                return last_round.number - last_decided_round.number;
+            }
 
-        /**
+            /**
      * Number of decided round in cached in memory
      * Returns: Number of cached decided rounds
      */
-        @nogc
-        uint cached_decided_count() pure const nothrow {
-            uint _cached_decided_count(const Round r, const uint i = 0) pure nothrow {
-                if (r) {
-                    return _cached_decided_count(r._previous, i + 1);
+
+            uint cached_decided_count() {
+                uint _cached_decided_count(const Round r, const uint i = 0) pure nothrow {
+                    if (r) {
+                        return _cached_decided_count(r._previous, i + 1);
+                    }
+                    return i;
                 }
-                return i;
+
+                return _cached_decided_count(last_round);
             }
 
-            return _cached_decided_count(last_round);
-        }
-
-        /**
+            /**
      * Check the coin round limit
      * Returns: true if the coin round has been exceeded 
      */
-        @nogc
-        bool check_decided_round_limit() pure const nothrow {
-            return cached_decided_count > total_limit;
+            bool check_decided_round_limit() {
+                return cached_decided_count > total_limit;
+            }
+
+        }
+        enum rounds_beyond_limit = 3;
+        bool can_round_be_decided(const Round r) const pure nothrow {
+            bool _decided(T)(const T item) @nogc {
+                if (item.value && item.value.witness.votedYes) {
+                    return true;
+                }
+                const last_witness_event = last_witness_events[item.index];
+                return last_witness_event &&
+                    (last_witness_event._round.number - r.number) > 0;
+            }
+
+            if (r) {
+                const decided_votes = r._events
+                    .enumerate
+                    .filter!(item => _decided(item))
+                    .count;
+                __write("%12s Round %d decided_votes=%d vote-yes=%d - - -",
+                        hashgraph.name,
+                        r.number,
+                        decided_votes,
+                        r._events
+                        .filter!(e => e !is null)
+                        .filter!(e => e._witness.votedYes)
+                        .count);
+                if (decided_votes == r.node_size) {
+                    return true;
+                }
+                if (isMajority(decided_votes, r.node_size)) {
+                    __write("%12s Round %d witness=%d votes=%d can be decided?", hashgraph.name, r.number,
+                            r._events.filter!(e => e !is null).count, decided_votes);
+                    const last_round_beyond = (last_round.number - r.number) > rounds_beyond_limit;
+                    return r.node_size
+                        .iota
+                        .map!(w_node_id => last_witness_events[w_node_id]) //.map!(e => (e)&&((e.round.number - r.number) > 0) || last_round_beyond)
+                        .map!(e => (e) ? (e.round.number - r.number) > 0 : last_round_beyond)
+                        .all;
+                }
+
+            }
+            return false;
         }
 
         void check_decide_round() {
+            import tagion.utils.Term;
+
             auto round_to_be_decided = last_decided_round._next;
-            if (!voting_round_per_node.all!(r => r.number > round_to_be_decided.number)) {
-                log("Not decided round");
+            if (!round_to_be_decided) {
                 return;
             }
-            collect_received_round(round_to_be_decided, hashgraph);
-            round_to_be_decided._decided = true;
+            auto witness_in_round = round_to_be_decided._events
+                .filter!(e => e !is null)
+                .map!(e => e.witness);
+            //witness_in_round
+            //            .filter!(w => !w.votedYes)
+            //.each!(w => w.update_votes);
+
+            if (isMajority(witness_in_round.count, hashgraph.node_size)) {
+                const count_feature_famous_rounds = count_feature_famous_rounds(round_to_be_decided);
+                __write("%12s round=%4d | %(%(%s:%) %) famous=%2d witness=%2d", hashgraph.name, round_to_be_decided
+                        .number,
+                        round_to_be_decided[].retro
+                        .map!(r => r.events)
+                        .map!(es => only(es.filter!(e => e !is null).count,
+                            es.filter!(e => e !is null)
+                            .filter!(e => e.witness.votedYes)
+                            .count)),
+                        count_feature_famous_rounds,
+                        witness_in_round.count
+                );
+            }
+            if (!can_round_be_decided(round_to_be_decided)) {
+                return;
+
+            }
+            const all_voted_yes = witness_in_round.map!(w => w.votedYes).all;
+            __write("%12s Round %d can be decided (all %s%s) witness=%d %(%7s %)",
+                    hashgraph.name, round_to_be_decided.number, (all_voted_yes) ? GREEN ~ "yes" : RED ~ "no", RESET,
+                    witness_in_round.walkLength,
+                    witness_in_round.filter!(w => !w.votedYes)
+                    .map!(w => w.voted_yes_mask)
+            );
+            Event.view(witness_in_round.map!(w => w.outer));
+
+            if (!witness_in_round.map!(w => w.votedYes).all) {
+                return;
+            }
+            log("Round %d decided", round_to_be_decided.number);
             last_decided_round = round_to_be_decided;
+            round_to_be_decided.decide;
+            hashgraph.statistics.feature_famous_rounds(count_feature_famous_rounds(round_to_be_decided));
+            log.event(Event.topic, hashgraph.statistics.feature_famous_rounds.stringof, hashgraph.statistics
+                    .feature_famous_rounds);
+            collect_received_round(round_to_be_decided);
+            check_decide_round;
         }
 
-    /**
+        protected void collect_received_round(Round r)
+        in (r.decided, "The round should be decided before the round can be collect")
+
+        do {
+
+            auto witness_event_in_round = r._events.filter!(e => e !is null);
+            const famous_count = witness_event_in_round
+                .map!(e => e.witness)
+                .map!(w => w.votedYes)
+                .count;
+            if (!isMajority(famous_count, hashgraph.node_size)) {
+                // The number of famous is not in majority 
+                // This means that we have to wait for the next round
+                // to collect the events
+                return;
+            }
+            Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
+                Event[] event_list;
+                event_list.length = hashgraph.node_size * hashgraph.node_size;
+                uint index;
+                foreach (famous_witness; famous_witness_in_round) {
+                    BitMask father_mask;
+                    foreach (e; famous_witness[].until!(e => !e || e.round_received)) {
+                        if (e._father && !father_mask[e._father.node_id]) {
+                            father_mask[e._father.node_id] = true;
+                            event_list[index++] = e;
+                        }
+                    }
+                }
+                event_list.length = index;
+                return event_list;
+            }
+
+            auto famous_witness_in_round = witness_event_in_round
+                .filter!(e => e._witness.isFamous);
+            auto event_list = majority_seen_from_famous(famous_witness_in_round);
+            event_list
+                .sort!((a, b) => Event.higher_order(a, b));
+            BitMask[] famous_seen_masks;
+            famous_seen_masks.length = hashgraph.node_size;
+
+            Event[] event_front;
+            event_front.length = hashgraph.node_size;
+            foreach (e; event_list) {
+                famous_seen_masks[e.node_id][e.node_id] = true;
+                famous_seen_masks[e._father.node_id] |= famous_seen_masks[e.node_id];
+                const top = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
+                if (!event_front[e._father.node_id] && isMajority(famous_seen_masks[e._father.node_id], hashgraph)) {
+                    event_front[e._father.node_id] = e._father;
+                }
+            }
+            bool done;
+            do {
+                done = true;
+                foreach (e; event_front.filter!(e => e !is null)) {
+                    foreach (e_father; e[]
+                        .until!(e => !e || e.round_received)
+                        .filter!(e => e._father)
+                        .map!(e => e._father)
+                        .filter!(e_father => !event_front[e_father.node_id] ||
+                        e_father.order > event_front[e_father.node_id].order)
+                    ) {
+                        done = false;
+                        event_front[e_father.node_id] = e_father;
+                    }
+                }
+            }
+            while (!done);
+
+            event_front
+                .filter!(e => e !is null)
+                .each!(e => e.top = true);
+
+            auto event_collection = event_front
+                .filter!(e => e !is null)
+                .map!(e => e[]
+                .until!(e => e.round_received !is null))
+                .joiner
+                .array;
+            event_collection.each!(e => e.round_received = r);
+            Event.view(event_collection);
+            hashgraph.statistics.epoch_events(event_collection.length);
+            log.event(Event.topic, hashgraph.statistics.epoch_events.stringof, hashgraph.statistics.epoch_events);
+            hashgraph.epoch(event_collection, r);
+
+        }
+
+        /**
      * Call to collect and order the epoch
      * Params:
      *   r = decided round to collect events to produce the epoch
      *   hashgraph = hashgraph which owns this round
      */
-
-        package void collect_received_round(Round r, HashGraph hashgraph) {
-
-            auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
-
-            pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
-            auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors).joiner;
-
-            Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
-
-            foreach (son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
-                if (consensus_son_tide[son_ancestor.node_id] is null) {
-                    continue;
-                }
-                if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
-                    consensus_son_tide[son_ancestor.node_id] = son_ancestor;
-                }
-            }
-
-            version (EPOCH_FIX) {
-                auto consensus_tide = consensus_son_tide
-                    .filter!(e => e !is null)
-                    .filter!(e =>
-                            !(e[].retro
-                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                .empty)
-                )
-                    .map!(e =>
-                            e[].retro
-                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                .array.back
-                );
-            }
-            else {
-                auto consensus_tide = consensus_son_tide
-                    .filter!(e => e !is null)
-                    .map!(e =>
-                            e[].retro
-                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                                .array.back
-                );
-
-            }
-
-            auto event_collection = consensus_tide
-                .map!(e => e[].until!(e => e.round_received !is null))
-                .joiner.array;
-
-            event_collection.each!(e => e.round_received = r);
-            if (Event.callbacks) {
-                event_collection.each!(e => Event.callbacks.connect(e));
-            }
-
-            hashgraph.epoch(event_collection, r);
-        }
-
-        package void vote(HashGraph hashgraph, size_t vote_node_id) {
-            voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
-            Round current_round = voting_round_per_node[vote_node_id];
-            if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) {
-                check_decide_round();
-            }
-
-            while (current_round._next !is null) {
-                current_round = current_round._next;
-                foreach (e; current_round._events.filter!(e => e !is null)) {
-                    e.calc_vote(hashgraph, vote_node_id);
-                }
-            }
-        }
 
         /**
          * Range from this round and down
