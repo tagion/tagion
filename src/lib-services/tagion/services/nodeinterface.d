@@ -533,7 +533,7 @@ unittest {
 }
 
 ///
-struct NodeInterfaceService_ {
+struct NodeInterfaceService {
     NodeInterfaceOptions opts;
     const(SecureNet) net;
     const(HiRPC) hirpc;

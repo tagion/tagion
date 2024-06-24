@@ -63,9 +63,7 @@ struct Supervisor {
         case NetworkMode.INTERNAL:
             break;
         case NetworkMode.LOCAL:
-            // handles ~= _spawn!NodeInterfaceService(tn.node_interface, opts.node_interface, tn
-            //         .epoch_creator);
-            handles ~= _spawn!NodeInterfaceService_(
+            handles ~= _spawn!NodeInterfaceService(
                             tn.node_interface,
                             opts.node_interface,
                             shared_net,

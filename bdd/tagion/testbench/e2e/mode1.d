@@ -84,7 +84,7 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     local_options.subscription.tags = 
         [
             StdRefinement.epoch_created.name, 
-            NodeInterfaceService_.node_action_event.name,
+            NodeInterfaceService.node_action_event.name,
         ].join(",") ;
 
     enum base_port = 10_700;
