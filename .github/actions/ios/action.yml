@@ -13,7 +13,7 @@ runs:
       run: |
         export PATH="/Users/piss/tools/ldc2-1.37.0-osx-universal/bin/:$PATH"
         which ldc2
-        make DC=ldc2 SHARED=1 PLATFORM=${{ inputs.platform }} libtauonapi
+        make DC=ldc2 SHARED=1 PLATFORM=${{ inputs.platform }} libtauonapi libmobile
         file ./build/${{ inputs.platform }}/lib/libtauonapi.dylib
 
     - name: Check output binaries
@@ -25,7 +25,10 @@ runs:
       if: success()
       with:
         name: ${{ inputs.platform }}
-        path: build/${{ inputs.platform }}/lib/libtauonapi.*
+        path: |
+          build/${{ inputs.platform }}/lib/libtauonapi.*
+          build/${{ inputs.platform }}/lib/libmobile.*
+
         if-no-files-found: error
 
     - name: Cleanup

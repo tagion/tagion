@@ -390,14 +390,17 @@ jobs:
 
       - name: Build
         run: |
-          make DC=tools/ldc2-1.37.0-linux-x86_64/bin/ldc2 PLATFORM=${{ matrix.arch }}-linux-android libtauonapi
+          make DC=tools/ldc2-1.37.0-linux-x86_64/bin/ldc2 PLATFORM=${{ matrix.arch }}-linux-android libtauonapi libmobile
           file ./build/${{ matrix.arch }}-linux-android/lib/libtauonapi.so
 
       - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: ${{ matrix.arch }}-linux-android
-          path: build/*/lib/libtauonapi.*
+          path: | 
+            build/${{matrix.arch}}-linux-android/lib/libtauonapi.*
+            build/${{matrix.arch}}-linux-android/lib/libmobile.*
+
           if-no-files-found: error
 
       - name: Cleanup

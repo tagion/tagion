@@ -150,7 +150,6 @@ struct Peer {
     // taskname is used inside the nng callback to know which thread to notify
     string owner_task;
     State state;
-    bool initiater;
 
     nng_stream* socket;
     nng_aio* aio;
