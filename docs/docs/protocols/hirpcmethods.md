@@ -25,7 +25,12 @@ The socket address, and thereby the vissibillity can be changed in the tagionwav
 
 These are the hirpc methods exposed by the tagion kernel.
 
-!> Missing documentation for error values
+:::info
+The example requests and responses are shown in the [HiBONJSON](https://www.hibon.org/posts/hibonjson) interchange format.
+But in reality you'll always be sending the raw hibon over the wire.  
+:::
+
+The http methods expect a content-type of 'application/octet-stream' 
 
 ## Write methods
 
@@ -47,6 +52,10 @@ or
 \$msg.error
 
 ## Read methods (DART(ro) + friends)
+
+:::info
+Since these methods all take what we call a DARTIndex as parameter, it is useful to know what exactly the [dartindex protocol](/docs/protocols/dart/dartindex) is.
+:::
 
 ### dartCheckRead
 

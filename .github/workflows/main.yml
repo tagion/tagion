@@ -390,14 +390,17 @@ jobs:
 
       - name: Build
         run: |
-          make DC=tools/ldc2-1.37.0-linux-x86_64/bin/ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
-          file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
+          make DC=tools/ldc2-1.37.0-linux-x86_64/bin/ldc2 PLATFORM=${{ matrix.arch }}-linux-android libtauonapi libmobile
+          file ./build/${{ matrix.arch }}-linux-android/lib/libtauonapi.so
 
       - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: ${{ matrix.arch }}-linux-android
-          path: build/*/lib/libmobile.so
+          path: | 
+            build/${{matrix.arch}}-linux-android/lib/libtauonapi.*
+            build/${{matrix.arch}}-linux-android/lib/libmobile.*
+
           if-no-files-found: error
 
       - name: Cleanup
@@ -409,7 +412,7 @@ jobs:
       fail-fast: false
       matrix:
         # arch: [arm64]
-        target: [arm64-apple-ios, arm64-apple-ios-simulator, x86_64-apple-ios-simulator]
+        target: [arm64-apple-ios, arm64-apple-ios-simulator, x86_64-apple-ios-simulator, arm64-darwin]
     runs-on: macOS
     steps:
       - uses: actions/checkout@v4

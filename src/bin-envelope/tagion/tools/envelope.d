@@ -14,7 +14,6 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.StdTime;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONJSON : toPretty;
 import tagion.communication.Envelope;
 
 
@@ -32,7 +31,7 @@ int _main(string[] args) {
     int schema = 0;
     uint level = 5;
 
-    ubyte[] buf;
+    immutable(ubyte)[] buf;
     const bufsz = 8192;
     long totalsz  = 0;
     

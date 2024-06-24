@@ -1,3 +1,30 @@
+# Changelog for Epoch 2094264 .. 2278693
+
+**Node interface**
+We refactered the nodeinterface and made the communication simpler by only keeping connections open until a HiRPC result or error is exchanged.
+This way we don't have to associate a connections with a public key, we know when to close the connection and the protocol is extensible for uses such as DART synchronization.
+We also removed the breaking waves. The state is now in the communication and not internal.
+The response patterns now look like this.
+
+```
+method SHARP -> result COHERRENT | result RIPPLE
+method TIDAL WAVE -> error | method FIRST WAVE
+method FIRST WAVE -> error | result SECOND WAVE
+* -> error  
+```
+
+All of the connections are now stored in an LRU cache, so if too many connections are opened at once they'll be pushed out of the queue and closed.
+
+**Envelope refactoring**
+The envelope implementation has been cleaned up and some unnecessary allocations have been removed. The nodeinterface also now uses the envelope format for transportation.
+
+**Shell explorer**
+A basic shell explorer has been created, which is able to lookup different types of archives in the database, as well as public keys from the TRT.
+
+**C-API updates**
+The C-API has been updated and new more low-level functions have been specified / created. 
+Generally we are moving in a direction where we are striving to keep the least amount of state in the API. Therefore the only state held now is for the SecureNet which contains the key-pair. For all other information such as accounting it is up to the one using the API to handle.
+
 # Changelog for Epoch 2010300 .. 2094264
 
 **Simplified HiBON Record Constructors**  

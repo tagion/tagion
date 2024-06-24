@@ -1,6 +1,7 @@
 /// API for using a wallet
 module tagion.api.wallet;
 import tagion.api.errors;
+import tagion.api.basic;
 import tagion.api.hibon;
 import tagion.wallet.Wallet;
 import tagion.crypto.SecureNet;
@@ -8,28 +9,368 @@ import core.stdc.stdint;
 import tagion.hibon.Document;
 import tagion.script.TagionCurrency;
 import tagion.utils.StdTime;
-import tagion.crypto.Types : Pubkey;
-import tagion.script.common : TagionBill;
+import tagion.crypto.Types : Pubkey, Fingerprint;
+import tagion.script.common : TagionBill, SignedContract;
+import tagion.crypto.random.random;
+import std.string : representation;
 
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.wallet.AccountDetails;
+import tagion.crypto.secp256k1.NativeSecp256k1;
 
-version(C_API_DEBUG) {
-import std.stdio;
-
-}
+import tagion.crypto.SecureNet;
 
 extern (C):
-version (unittest) {
-}
-else {
+version(unittest) {
+
+} else {
 nothrow:
 }
 
+/// Pointer to securenet
+struct securenet_t {
+    int magic_byte = MAGIC.SECURENET;
+    void* securenet;
+}
+
+/**
+  Generate a keypair used from a password / menmonic
+  The function does **NOT** validate the menmonic and 
+  should therefore be validated by another function.
+
+  The function may be used in a minimal fashion without 
+  DevicePIN and salt. If null arguments are supplied for the pin,
+  then no DevicePIN is returned. 
+  Likewise if null is supplied for the salt then the salt will not
+  be used.
+
+ 
+  Params:
+    passphrase_ptr = Pointer to passphrase
+    passphrase_len = Length of the passphrase
+    salt_ptr = Optional salt for the menmonic phrase
+    salt_len = Length of the optional salt
+    out_securenet = The allocated securenet used for cryptographic operations
+    pin_ptr = Pointer to the pin
+    pin_len = Length of the pin
+    out_device_doc_ptr = Returned device doc ptr
+    out_device_doc_len = Length of the returned device doc
+  Returns: 
+    [tagion.api.errors.ErrorCode]
+ */
+int tagion_generate_keypair (
+    const(char)* passphrase_ptr,
+    const(size_t) passphrase_len,
+    const(char)* salt_ptr,
+    const(size_t) salt_len,
+    securenet_t* out_securenet,
+    const(char*) pin_ptr,
+    const(size_t) pin_len,
+    uint8_t** out_device_doc_ptr,
+    size_t* out_device_doc_len,
+) {
+
+
+    try {
+        if (out_securenet.magic_byte != MAGIC.SECURENET) {
+            return ErrorCode.error; // TODO: better message
+        }
+        const _passphrase = passphrase_ptr[0..passphrase_len];
+        const _salt = salt_ptr[0..salt_len];
+
+        StdSecureNet _net = new StdSecureNet;
+
+        if (pin_ptr !is null) {
+            DevicePIN _pin;
+            const _pincode = pin_ptr[0..pin_len];
+
+            void set_pincode(
+                scope const(ubyte[]) R,
+                scope const(char[]) pincode) scope
+            in (_net !is null)
+            do {
+                auto seed = new ubyte[_net.hashSize];
+                getRandom(seed);
+                _pin.setPin(_net, R, pincode.representation, seed.idup);
+            }
+
+            ubyte[] R;
+            enum size_of_privkey = 32;
+            scope(exit) {
+                set_pincode(R, _pincode);
+                R[] = 0;
+                auto device_doc = _pin.toDoc.serialize;
+                *out_device_doc_ptr = cast(uint8_t*) &device_doc[0];
+                *out_device_doc_len = device_doc.length;
+            }
+            _net.generateKeyPair(_passphrase, _salt,
+                    (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
+
+
+        } else {
+            _net.generateKeyPair(_passphrase, _salt); 
+        }
+
+        out_securenet.securenet = cast(void*) _net;
+    } catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+unittest {
+    /// Create minimal key-pair
+    {
+        securenet_t my_keypair;
+        string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+
+        int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, null, 0, null, null);
+        assert(error_code == ErrorCode.none);
+    }
+    /// Create key-pair with salt 
+    {
+        securenet_t my_keypair;
+        string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+        string salt = "somesalt";
+
+        int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, &salt[0], salt.length, &my_keypair, null, 0, null, null);
+        assert(error_code == ErrorCode.none);
+    }
+}
+
+/** 
+ * Decrypt and create a securenet from a devicepin and pincode
+   Params:
+     pin_ptr = Pointer to the pincode
+     pin_len = Length of the pincode
+     devicepin_ptr = Pointer to the device pin document
+     devicepin_len = Length of the device pin document
+     out_securenet = The allocated securenet
+   Returns: 
+     [tagion.api.errors.ErrorCode]
+ */
+int tagion_decrypt_devicepin (
+    const(char*) pin_ptr,
+    const(size_t) pin_len,
+    uint8_t* devicepin_ptr,
+    size_t devicepin_len,
+    securenet_t* out_securenet,
+) {
+    try {
+        if (out_securenet.magic_byte != MAGIC.SECURENET) {
+            return ErrorCode.error; // TODO: better message
+        }
+        const _pincode = pin_ptr[0..pin_len];
+        const _device_doc_buf = cast(immutable) devicepin_ptr[0..devicepin_len];
+
+        DevicePIN _pin = DevicePIN(Document(_device_doc_buf));
+
+        StdSecureNet _net = new StdSecureNet;
+        auto R = new ubyte[_net.hashSize];
+        scope (exit) {
+            R[] = 0;
+        }
+
+        const recovered = _pin.recover(_net, R, _pincode.representation);
+        if (!recovered) {
+            return ErrorCode.exception; // TODO: better error message
+        }
+        _net.createKeyPair(R);
+
+        out_securenet.securenet = cast(void*) _net;
+    } catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+/// Decrypt a devicepin
+unittest {
+    /// create key-pair with devicepin
+    import tagion.hibon.HiBONRecord;
+    import std.format;
+    securenet_t my_keypair;
+    string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+    string pincode = "1234";
+
+    uint8_t* device_buf;
+    size_t device_len;
+    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, &pincode[0], pincode.length, &device_buf, &device_len);
+    assert(error_code == ErrorCode.none);
+
+    const _device_buf = device_buf[0..device_len].idup;
+    const device_doc = Document(_device_buf);
+    assert(device_doc.isRecord!DevicePIN, format("the doc was not of type %s", DevicePIN.stringof));
+
+    /// decrypt the devicepin
+    securenet_t other_securenet;
+    error_code = tagion_decrypt_devicepin(&pincode[0], pincode.length, device_buf, device_len, &other_securenet);
+    assert(error_code == ErrorCode.none);
+
+    /// try to login with wrong pin
+    string wrong_pincode = "4321";
+    securenet_t false_securenet;
+
+    error_code = tagion_decrypt_devicepin(&wrong_pincode[0], wrong_pincode.length, device_buf, device_len, &false_securenet);
+    assert(error_code == ErrorCode.exception, "should give exception with wrong pin");
+    assert(false_securenet.securenet is null, "should not have created a securenet");
+}
+
+/// Sign a message
+int tagion_sign_message (
+    const(securenet_t) root_net,
+    const(uint8_t*) message_ptr,
+    const(size_t) message_len,
+    uint8_t** signature_ptr, 
+    size_t* signature_len,
+) {
+    try {
+        if (root_net.magic_byte != MAGIC.SECURENET) {
+            return ErrorCode.error; // TODO: better message
+        }
+        const message = message_ptr[0..message_len].idup;
+        if (message.length != NativeSecp256k1.MESSAGE_SIZE) {
+            return ErrorCode.error; // TODO: add better message
+        }
+        const message_fingerprint = Fingerprint(message);
+        StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
+        const signature = _net.sign(message_fingerprint);
+        *signature_ptr = cast(uint8_t*) &signature[0];
+        *signature_len = signature.length;
+    } catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+/// sign a message hash
+unittest {
+    securenet_t my_keypair;
+    string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+
+    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, null, 0, null, null);
+    assert(error_code == ErrorCode.none);
+
+    // const message_to_sign = "wowowowowo\0".representation;
+    const rawdata = "ntorisantionrseiontoiarsnstienarsietnaioensiteornstioenthe quick brown fox jumps over the dog".representation;
+    const buf = hash_net.calcHash(rawdata);
+    assert(buf.length == NativeSecp256k1.MESSAGE_SIZE);
+    uint8_t* signature_buf;
+    size_t signature_len;
+    error_code = tagion_sign_message(my_keypair, &buf[0], buf.length, &signature_buf, &signature_len);
+    assert(error_code == ErrorCode.none);
+    assert(signature_buf !is null);
+    assert(signature_len == NativeSecp256k1.SIGNATURE_SIZE);
+
+    // sign invalid buf with wrong len
+    error_code = tagion_sign_message(my_keypair, &buf[0], buf.length-5, &signature_buf, &signature_len);
+    assert(error_code == ErrorCode.error, "should throw error if the message length is not correct");
+}
+
+struct buf_t {
+    immutable(uint8_t*) data;
+    size_t data_len;
+}
+
+Document[] get_docs(buf_t** docs_array, size_t count) {
+    Document[] docs;
+    for (size_t i=0; i<count; i++) {
+        const doc_ptr = docs_array[i];
+        const buf = doc_ptr.data[0..doc_ptr.data_len].idup;
+        const doc = Document(buf);
+        docs ~= doc;
+    }
+    return docs;
+}
+
+ubyte[][] get_derivers(buf_t** buf_array, size_t count) {
+    ubyte[][] derivers;
+    for (size_t i=0; i<count; i++) {
+        const buf_ptr = buf_array[i];
+
+        auto buf = buf_ptr.data[0..buf_ptr.data_len].dup;
+        derivers ~= buf;
+    }
+    return derivers;
+}
+
+int tagion_create_signed_contract(
+    const(securenet_t) root_net,
+    buf_t** bills_to_pay_ptr, 
+    const(size_t) bills_to_pay_count,
+    buf_t** available_bills_ptr,
+    const(size_t) available_bills_count,
+    buf_t** derivers_ptr,
+    const(size_t) derivers_count,
+    const(uint8_t*) pkey_change_ptr,
+    const(size_t) pkey_len,
+    buf_t** out_used_bills_ptr,
+    size_t* out_used_bills_count,
+    uint8_t** out_produced_contract_ptr,
+    size_t* out_prouced_contract_len,
+) {
+    import std.stdio;
+    import std.algorithm;
+    const to_pay = get_docs(bills_to_pay_ptr, bills_to_pay_count).map!(d => TagionBill(d));
+    const available_bills = get_docs(available_bills_ptr, available_bills_count).map!(d => TagionBill(d));
+    const pkey_change = Pubkey(pkey_change_ptr[0..pkey_len].idup);
+    const derivers = get_derivers(derivers_ptr, derivers_count);
+
+    // for (size_t i = 0; i < count; i++) {
+    //     const doc_ptr = docs[i];
+    //     const buf = doc_ptr.data[0..doc_ptr.data_len].idup;
+    //     const doc = Document(buf);
+    //     writefln("%s", doc.toPretty);
+    // }
+    return ErrorCode.none;
+}
+
+unittest {
+    securenet_t my_keypair;
+    string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+
+    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, null, 0, null, null);
+    assert(error_code == ErrorCode.none);
+   
+    TagionBill to_pay_bill1 = TagionBill(100.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
+    TagionBill to_pay_bill2 = TagionBill(200.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
+    const to_pay_doc = to_pay_bill1.toDoc.serialize;
+    const to_pay_doc2 = to_pay_bill2.toDoc.serialize;
+
+    buf_t s_to_pay_doc = buf_t(&to_pay_doc[0], to_pay_doc.length);
+    buf_t s_to_pay_doc2 = buf_t(&to_pay_doc2[0], to_pay_doc2.length);
+
+    buf_t*[] to_pay_docs = [&s_to_pay_doc, &s_to_pay_doc2];
+    auto change_pkey = Pubkey([1,2,3,4]);
+    error_code = tagion_create_signed_contract(my_keypair, to_pay_docs.ptr, 2, to_pay_docs.ptr, 2, null, 0, &change_pkey[0], change_pkey.length, null, null, null, null);
+    assert(error_code == ErrorCode.none);
+
+}
+
+
+// /// Create a signed contract
+// int tagion_create_signed_contract(
+//     const(SecureNet) root_net, 
+//     const(TagionBill[]) to_pay,
+//     const(TagionBill[]) available,
+//     const(ubyte[][]) derivers,
+//     const(Pubkey) change,
+//     TagionBill[] used,
+//     SignedContract* produced_contract
+// ) {
+//     assert(0, "TODO");
+// }
+
+version(none):
 
 alias ApiWallet = Wallet!StdSecureNet;
 
 enum MAGIC_WALLET = 0xA000_0001;
+
+/// Wallet Type
 struct WalletT {
     int magic_byte = MAGIC_WALLET;
     void* wallet;
@@ -42,28 +383,20 @@ struct WalletT {
  */
 int tagion_wallet_create_instance(WalletT* wallet_instance) {
     try {
-        version(C_API_DEBUG) {
-            writefln("inside tagion_wallet_create_instance");
-        }
         if (wallet_instance is null) {
             return ErrorCode.error;
         }
 
         wallet_instance.wallet = cast(void*) new ApiWallet;
         wallet_instance.magic_byte = MAGIC_WALLET;
-        version(C_API_DEBUG) {
-            writefln("created wallet");
-        }
     }
     catch(Exception e) {
-        version(C_API_DEBUG) {
-        writefln("%s", e);
-        }
         last_error = e;
         return ErrorCode.exception;
     }
     return ErrorCode.none;
 }
+
 ///
 unittest {
     WalletT w;
@@ -81,17 +414,16 @@ unittest {
  *   pincode_len = length of the pincode
  * Returns: ErrorCode
  */
-int tagion_wallet_create_wallet(const(WalletT*) wallet_instance, 
-                            const char* passphrase, 
-                            const size_t passphrase_len,
-                            const char* pincode,
-                            const size_t pincode_len) {
+int tagion_wallet_create_wallet(
+        const(WalletT*) wallet_instance, 
+        const char* passphrase, 
+        const size_t passphrase_len,
+        const char* pincode,
+        const size_t pincode_len
+) {
     try {
     
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
-            version(C_API_DEBUG) {
-                writefln("wallet instance is null or magic byte incorrect");
-            }
             return ErrorCode.exception;
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
@@ -100,9 +432,6 @@ int tagion_wallet_create_wallet(const(WalletT*) wallet_instance,
         w.createWallet(_passphrase, _pincode);
     } 
     catch(Exception e) {
-        version(C_API_DEBUG) {
-        writefln("%s", e);
-        }
         last_error = e;
         return ErrorCode.exception;
     }
@@ -133,13 +462,15 @@ unittest {
  *   account_buf_len = length of the AccountDetails buffer
  * Returns: ErrorCode
  */
-int tagion_wallet_read_wallet(const(WalletT*) wallet_instance,
-                            const uint8_t* device_pin_buf, 
-                            const size_t device_pin_buf_len, 
-                            const uint8_t* recover_generator_buf,
-                            const size_t recover_generator_buf_length,
-                            const uint8_t* account_buf,
-                            const size_t account_buf_len) {
+int tagion_wallet_read_wallet(
+        const(WalletT*) wallet_instance,
+        const uint8_t* device_pin_buf, 
+        const size_t device_pin_buf_len, 
+        const uint8_t* recover_generator_buf,
+        const size_t recover_generator_buf_length,
+        const uint8_t* account_buf,
+        const size_t account_buf_len
+) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
@@ -238,9 +569,11 @@ enum PUBKEYSIZE = 33; /// Size of a public key
  *   pubkey_len = length of the returned pubkey
  * Returns: 
  */
-int tagion_wallet_get_current_pkey(const(WalletT*) wallet_instance,
+int tagion_wallet_get_current_pkey(
+    const(WalletT*) wallet_instance,
     uint8_t** pubkey,
-    size_t* pubkey_len) {
+    size_t* pubkey_len
+) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
@@ -257,6 +590,7 @@ int tagion_wallet_get_current_pkey(const(WalletT*) wallet_instance,
     }
     return ErrorCode.none;
 }
+
 ///
 unittest {
     WalletT w;
