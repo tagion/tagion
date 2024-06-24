@@ -51,8 +51,9 @@
         });
 
       devShells = forAllSystems (pkgs: {
-        # inherit (self.checks.${pkgs.system}.pre-commit-check) shellHook;
+
         default = pkgs.mkShell {
+          inherit (self.checks.${pkgs.system}.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
             self.packages.${pkgs.system}.default.buildInputs
             self.packages.${pkgs.system}.default.nativeBuildInputs

@@ -145,36 +145,10 @@ Note. The result from the `callgrind` viewed with [Kcachegrind](https://kcachegr
 ./src/
      /lib-* # Library source code
      /bin-* # Executable source code
-     /fork-* # Vendor library compilation scripts
+     /fork-* # Vendor library compilation scripts and submodules
 ./bdd/ # behaviour driven tests
 ./tub/ # Build flow scripts
 ```
-
-## Generating Docs
-### Installation
-You have to install docsify globally.
-```
-npm i docsify-cli -g
-```
-### Building the docs
-To build the docs use the command:
-
-```
-make ddoc
-```
-
-### Running the document servers
-
-```
-make servedocs
-```
-
-This will start two servers ( default 3000 and 3001 ), with each of them running the different servers.
-### Tools 
-[See tools](src/bin-tools/tagion/tools/README.md)
-
-### Tagion Node Architecture
-The [Tagion Node Architecture](https://docs.tagion.org)
 
 ### BDD-test tools
 [BDD-tool](src/bin-collider/tagion/tools/README.md)

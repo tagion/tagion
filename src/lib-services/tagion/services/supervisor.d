@@ -59,14 +59,18 @@ struct Supervisor {
 
         handles ~= spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
 
-        with (NetworkMode) final switch (opts.wave.network_mode) {
-        case INTERNAL:
+        final switch (opts.wave.network_mode) {
+        case NetworkMode.INTERNAL:
             break;
-        case LOCAL:
-            handles ~= _spawn!NodeInterfaceService(tn.node_interface, opts.node_interface, tn
-                    .epoch_creator);
+        case NetworkMode.LOCAL:
+            handles ~= _spawn!NodeInterfaceService(
+                            tn.node_interface,
+                            opts.node_interface,
+                            shared_net,
+                            tn.epoch_creator
+                        );
             break;
-        case PUB:
+        case NetworkMode.PUB:
             assert(0, "NetworkMode not supported");
             break;
         }

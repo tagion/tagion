@@ -396,14 +396,17 @@ int _neuewelle(string[] args) {
                     shutdown_file.remove;
                 }
                 import std.conv;
-                check(!f.byLine.empty, "shutdown_file is empty");
-                long shutdown = f.byLine.front.to!long;
+                long shutdown;
+                foreach(line; f.byLine) {
+                    shutdown = line.to!long;
+                }
                 foreach(handle; supervisor_handles) {
                     handle.send(EpochShutdown(), shutdown);
                 }
             }
         }
         catch(Exception e) {
+            error("Error when reading epoch shutdown file");
             error(e);
         }
 

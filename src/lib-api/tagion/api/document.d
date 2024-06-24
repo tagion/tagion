@@ -589,8 +589,8 @@ int tagion_document_get_int32(const Document.Element* element, int32_t* value) {
  *   value = pointer to the returned i64
  * Returns: ErrorCode
  */
-int tagion_document_get_int64(const Document.Element* element, int64_t* value) {
-    return get_T!int64_t(__traits(parameters));
+int tagion_document_get_int64(const Document.Element* element, long* value) {
+    return get_T!long(__traits(parameters));
 }
 /** 
  * Get an uint32 from a document element
@@ -610,8 +610,8 @@ int tagion_document_get_uint32(const Document.Element* element, uint32_t* value)
  *   value = pointer to the returned uint64
  * Returns: ErrorCode
  */
-int tagion_document_get_uint64(const Document.Element* element, uint64_t* value) {
-    return get_T!uint64_t(__traits(parameters));
+int tagion_document_get_uint64(const Document.Element* element, ulong* value) {
+    return get_T!ulong(__traits(parameters));
 }
 
 /** 

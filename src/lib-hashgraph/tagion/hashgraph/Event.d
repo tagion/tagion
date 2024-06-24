@@ -242,7 +242,7 @@ class Event {
 
         _mother = hashgraph.register(event_package.event_body.mother);
         if (!_mother) {
-            if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this)) {
+            if (!isEva && !hashgraph.rounds.isEventInLastDecidedRound(this)) {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
             return;
