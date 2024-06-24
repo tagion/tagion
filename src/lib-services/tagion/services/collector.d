@@ -164,8 +164,7 @@ struct CollectorService {
             assert(inputs !is Document[].init, "Recorder should've contained inputs at this point");
             immutable collection =
                 ((res.id in reads) !is null)
-                ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                    CollectedSignedContract)(s_contract, inputs);
+                ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {

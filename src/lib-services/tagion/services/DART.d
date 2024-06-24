@@ -23,7 +23,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
 import tagion.services.messages;
-import tagion.services.options : TaskNames;
+import tagion.services.tasknames;
 import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
