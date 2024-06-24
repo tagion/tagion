@@ -46,7 +46,9 @@ struct Envelope {
     bool errorstate = false;
     string[] errors;
     
-    static align(1) struct EnvelopeHeader {
+    ///
+    static align(1)
+    struct EnvelopeHeader {
         bool isValid()  pure const {
             if(magic != MagicBytes)
                 return false;
@@ -60,7 +62,9 @@ struct Envelope {
     
     align(4):
         
+        ///
         enum ubyte[4] MagicBytes = [0xDE, 0xAD, 0xBE, 0xEF];
+        ///
         enum CompressionLevel : uint {
             none  = 0,
             zlib1 = 1,
@@ -74,12 +78,12 @@ struct Envelope {
             zlib9 = 9,
         }
         
-        immutable ubyte[4] magic = MagicBytes;
-        uint schema;
-        CompressionLevel level;
-        ulong datsize;
-        ubyte[8] datsum;
-        ubyte[4] hdrsum;
+        immutable ubyte[4] magic = MagicBytes;  /// 4 byte magic
+        uint schema;                            /// 4 byte schema/version
+        CompressionLevel level;                 /// 4 byte CompressionLevel
+        ulong datsize;                          /// 8 byte payload size
+        ubyte[8] datsum;                        /// crc64 data checksum
+        ubyte[4] hdrsum;                        /// crc32 header checksum
 
         static assert(this.sizeof == 32);
 
