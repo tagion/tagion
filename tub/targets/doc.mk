@@ -44,18 +44,11 @@ ddoc: $(BUILDDOC)/.way
 
 .PHONY: ddoc
 
-doc: ddoc $(BUILDDOCUSAURUS)/.way
+doc: $(BUILDDOCUSAURUS)/.way
 	$(PRECMD)
 	echo "making docusaurus"
 	npm run build --prefix $(DOCUSAURUS)
-	$(CP) -r $(BUILDDOC) $(BUILDDOCUSAURUS)
-	$(RM) $(BUILDDOCUSAURUS)/ddoc/index.html
 	echo run 'make servedocs' to start the documentation server
-
-doc-sitemap: 
-	$(PRECMD)
-	echo "making sitemap"
-	python3 $(DOCUSAURUS)/create_sitemap.py $(BUILDDOCUSAURUS)/sitemap.xml $(BUILDDOCUSAURUS)/ddoc
 
 .PHONY: doc
 
