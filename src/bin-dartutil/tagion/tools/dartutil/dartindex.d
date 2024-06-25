@@ -7,7 +7,7 @@ import tagion.dart.DARTBasic : DARTIndex, dartKey;
 import tagion.hibon.Document;
 import tagion.tools.Basic;
 import tagion.tools.toolsexception;
-import tagion.basic.base58;
+import Base58 = tagion.basic.base58;
 
 DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONtoText;
