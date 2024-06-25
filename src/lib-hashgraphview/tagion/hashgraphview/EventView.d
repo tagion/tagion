@@ -39,6 +39,7 @@ struct EventView {
     @label("$prevwitness") @optional Buffer witness_seen;
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
+    @label("$type") @optional Event.Witness.DecisionType type; /// Famous yes votes    
     //    @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
     @optional @(filter.Initialized) bool top;
@@ -82,6 +83,7 @@ struct EventView {
                voted = witness.voted_yes_mask.bytes; 
                decided = witness.decided;
                 witness_seen = witness.previous_witness_seen_mask.bytes;
+                type = witness.decision;
             }
         }
     });

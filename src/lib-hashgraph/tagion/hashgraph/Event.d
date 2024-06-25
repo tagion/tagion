@@ -178,6 +178,12 @@ class Event {
      */
     @safe
     class Witness {
+        enum DecisionType {
+            undecided,
+            weak,
+            No,
+            Yes,
+        }
         protected static uint _count;
         @nogc static uint count() nothrow {
             return _count;
@@ -229,6 +235,18 @@ class Event {
                 return false;
             }
         }
+            final DecisionType decision() const pure nothrow {
+                auto feature_rounds=_round[].retro.drop(1);
+                if (!feature_rounds.empty) {
+                    if (feature_rounds.take(2).map!(r => r.events[node_id] !is null).any) {
+                        return (votedYes)?DecisionType.Yes:DecisionType.No;
+                    }
+                    if (feature_rounds.take(2).map!(r => r.majority).all) {
+                        return DecisionType.weak;
+                    }
+                }
+                return DecisionType.undecided;
+            }
         alias isFamous = votedYes;
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
@@ -456,8 +474,9 @@ class Event {
             }
             const strongly_seen = calc_strongly_seen(hashgraph);
             if (strongly_seen) {
-                auto witness = new Witness;
-                witness.vote(hashgraph);
+                new Witness;
+                _witness.vote(hashgraph);
+                _round.accumulate_previous_seen_witness_mask(_witness);
                 hashgraph._rounds.check_decide_round;
                 return;
             }
@@ -528,7 +547,9 @@ class Event {
             _round_received = r;
         }
 
-        package Witness witness() {
+        package Witness witness() 
+        in(_witness, "Event is not a witness") 
+        do {
             return _witness;
         }
     }

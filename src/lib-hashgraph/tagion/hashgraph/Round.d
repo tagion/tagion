@@ -44,7 +44,7 @@ class Round {
     protected {
         Round _previous;
         Round _next;
-
+        BitMask _common_previous_seen_witness_mask;
     }
     immutable int number;
 
@@ -84,6 +84,10 @@ class Round {
      * Returns: all events in a round
      */
     final const(Event[]) events() const pure nothrow @nogc {
+        return _events;
+    }
+
+    package final inout(Event[]) events() inout pure nothrow @nogc {
         return _events;
     }
 
@@ -165,6 +169,9 @@ class Round {
     package final Round previous() pure nothrow {
         return _previous;
     }
+    package final void accumulate_previous_seen_witness_mask(const(Event.Witness) w) nothrow {
+        _common_previous_seen_witness_mask |= w.previous_witness_seen_mask;
+    }
 
     final const pure nothrow @nogc {
         /**
@@ -175,6 +182,9 @@ class Round {
             return !_events.any!((e) => e !is null);
         }
 
+        const(BitMask) common_previous_seen_witness_mask() @nogc {
+            return _common_previous_seen_witness_mask;
+        }
         /**
      * Counts the number of events which has been set in this round
      * Returns: number of events set

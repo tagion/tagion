@@ -238,14 +238,29 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
 
         // colors
         if (e.witness) {
-            if (e.famous || e.decided) {
+          //  if (e.famous || e.decided) {
                 node_circle.fill = nonPastel19.color(e.round);
-                node_circle.stroke = (e.famous) ? "green" : "red";
-                node_circle.stroke_width = 10;
-            }
-            else {
+                import tagion.hashgraph.Event;
+                with(Event.Witness.DecisionType) final switch (e.type) {
+                case undecided:
+                    node_circle.stroke="lightblue";
                 node_circle.fill = "blue";
-            }
+                    break;
+                case weak:
+                    node_circle.stroke="blue";
+                    break;
+                case No:
+                    node_circle.stroke="red";
+                    break;
+                case Yes:
+                    node_circle.stroke="green";
+
+                }
+                //node_circle.stroke = (e.famous) ? "green" : "red";
+                node_circle.stroke_width = 10;
+           // }
+           // else {
+           // }
             node_circle.radius += NODE_CIRCLE_SIZE / 4;
         }
         else {
@@ -322,6 +337,11 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             text.text = format("yes %d", e.yes_votes); //, e.no_votes);
             obuf[20].writefln("%s", text.toString);
             text.pos.y += NODE_CIRCLE_SIZE / 2;
+            text.fill = "red";
+            text.text = format("%s", e.type); 
+            obuf[20].writefln("%s", text.toString);
+            text.pos.y += NODE_CIRCLE_SIZE / 2;
+             
             //text.text = format("no  %d", e.no_votes); //, e.no_votes);
             //obuf[20].writefln("%s", text.toString);
             //obuf[20].writefln("%d:%d", e.yes_votes, e.no_votes);
