@@ -99,16 +99,8 @@ static unittest {
 
 enum BASE58Identifier = '@';
 
-// string encodeBase58(const(ubyte[]) data) pure nothrow {
-//     // const result = BASE58Identifier ~ Base64URL.encode(data);
-//     // return result.idup;
-// }
 
-// string encodeBase58(T)(const(T) buf) pure nothrow @trusted if (isBufferTypedef!T) {
-//     return encodeBase58(cast(TypedefType!T) buf);
-// }
-
-import tagion.basic.base58;
+import Base58 = tagion.basic.base58;
 @trusted
 string encodeBase58(const(ubyte[]) data) pure nothrow {
     import std.exception;

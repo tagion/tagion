@@ -16,7 +16,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
 public import tagion.basic.Types;
-import tagion.basic.base58;
+import Base58 = tagion.basic.base58;
 
 enum {
     hex_prefix = "0x",
