@@ -51,7 +51,7 @@ endif
 env-commands:
 	$(PRECMD)
 	$(call log.header, $@ :: commands ($(OS)))
-	${call log.kvp, "Those macros list came be change from the command line make"}
+	${call log.kvp, "These macros can be changed from the command line make"}
 	$(call log.kvp, CD, "$(CD)")
 	$(call log.kvp, CP, "$(CP)")
 	$(call log.kvp, MV, $(MV))

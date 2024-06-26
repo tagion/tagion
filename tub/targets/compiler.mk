@@ -179,9 +179,12 @@ env-compiler:
 	${call log.kvp, DEXPORT_DYN, $(DEXPORT_DYN)}
 	${call log.kvp, DCOV, $(DCOV)}
 	${call log.kvp, DIMPORTFILE, $(DIMPORTFILE)}
+	${call log.line}
+	${call log.kvp, DEBUG_ENABLE, $(DEBUG_ENABLE)}
 	${call log.kvp, DDEBUG_FLAGS, "$(DDEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
-	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
+	${call log.kvp, DVERSIONS, "$(DVERSIONS)"}
+	${call log.kvp, DDEBUG_VERSIONS, "$(DDEBUG_VERSIONS)"}
 	${call log.close}
 
 env: env-compiler

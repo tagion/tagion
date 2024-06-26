@@ -63,11 +63,8 @@ env-dstep-$1:
 	$${call log.kvp, PACKAGE,$1}
 	$${call log.kvp, SRCDIR,$2}
 	$${call log.kvp, DESTDIR,$3}
-	$${call log.env, HFILES.$1, $$(HFILES.$1)}
 	$${call log.kvp, HPATH.$1, $$(HPATH.$1)}
 	$${call log.kvp, DESTROOT.$1, $$(DESTROOT.$1)}
-	$${call log.env, DFILES, $4}
-	$${call log.env, DIFILES.$1, $$(DIFILES.$1)}
 	$${call log.env, DSTEP_ATTRIBUTES, $$(DSTEP_ATTRIBUTES)}
 	$${call log.env, DSTEPFLAGS.$1, $$(DSTEPFLAGS.$1)}
 	$${call log.close}
@@ -75,6 +72,17 @@ env-dstep-$1:
 env-dstep: env-dstep-$1
 
 env: env-dstep
+
+files-dstep-$1:
+	$$(PRECMD)
+	$${call log.header, $$@ :: env}
+	$${call log.env, HFILES.$1, $$(HFILES.$1)}
+	$${call log.env, DFILES, $4}
+	$${call log.env, DIFILES.$1, $$(DIFILES.$1)}
+	$${call log.close}
+
+.PHONY: files-dstep-$1
+env-files: files-dstep-$1
 
 # clean: clean-dstep-$1
 
@@ -103,7 +111,7 @@ help-dstep:
 env-dstep:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
-	${call log.env, DIFILES, $(DIFILES)}
+	# ${call log.env, DIFILES, $(DIFILES)}
 	${call log.close}
 
 help: help-dstep

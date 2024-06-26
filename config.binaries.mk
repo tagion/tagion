@@ -10,7 +10,7 @@ env-dinc:
 	$(call log.close)
 
 .PHONY: env-dinc
-env: env-dinc
+files: env-dinc
 
 env-dfiles:
 	$(PRECMD)
@@ -20,7 +20,7 @@ env-dfiles:
 
 .PHONY: env-dfiles
 
-env: env-dfiles
+# env-files: env-dfiles
 
 env-tools:
 	$(PRECMD)

@@ -49,15 +49,24 @@ env-tauon:
 	$(call log.kvp, TAUON_TEST_ROOT, $(TAUON_TEST_ROOT))
 	$(call log.kvp, LIBEXT, $(LIBEXT))
 	$(call log.kvp, WASI_SYSROOT, $(WASI_SYSROOT))
+	$(call log.close)
+
+.PHONY: env-tauon
+
+env: env-tauon
+
+files-tauon:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
 	$(call log.env, TAUON_TESTS, $(TAUON_TESTS))
 	$(call log.env, TAUON_BINS, $(TAUON_BINS))
 	$(call log.env, TAUON_DINC, $(TAUON_DINC))
 	$(call log.env, TAUON_DFILES, $(TAUON_DFILES))
 	$(call log.close)
 
-.PHONY: env-tauon
+.PHONY: files-tauon
 
-env: env-tauon
+env-files: files-tauon
 
 
 tauon-run: tauon-test
