@@ -72,9 +72,6 @@ int tagion_generate_keypair (
 
 
     try {
-        if (out_securenet.magic_byte != MAGIC.SECURENET) {
-            return ErrorCode.error; // TODO: better message
-        }
         const _passphrase = passphrase_ptr[0..passphrase_len];
         const _salt = salt_ptr[0..salt_len];
 
@@ -112,6 +109,7 @@ int tagion_generate_keypair (
         }
 
         out_securenet.securenet = cast(void*) _net;
+        out_securenet.magic_byte = MAGIC.SECURENET;
     } catch(Exception e) {
         last_error = e;
         return ErrorCode.exception;
