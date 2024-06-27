@@ -72,6 +72,8 @@ CROSS_SYSROOT=$(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$
 endif
 
 CONFIGUREFLAGS_SECP256K1 += CMAKE_TOOLCHAIN_FILE=$(DTUB)/ios.toolchain.cmake
+
+# I don't know if this is still necessary. It should be set by the cmake toolchain
 BUILDENV_SECP256K1+=CFLAGS="-arch $(CROSS_ARCH) -fpic -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"
 
 endif
