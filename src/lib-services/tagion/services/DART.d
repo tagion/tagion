@@ -155,6 +155,13 @@ struct DARTService {
             req.respond(eye);
         }
 
+
+        version(none)
+        void branchQuery(BranchQueryRR req, immutable(Rims) params) {
+            auto branches = db.branches(params.path);
+            req.respond(branches);
+        }
+
         run(&modify, &read, &checkRead, &bullseye, &dartHiRPC);
 
     }

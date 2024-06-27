@@ -60,4 +60,7 @@ alias dartBullseyeRR = Request!"dartBullseye"; // dartBullseye Request
 alias dartModifyRR = Request!("dartModify", immutable(long)); // dartModify Request
 alias dartHiRPCRR = Request!"dartHiRPCRequest"; // dartCRUD HiRPC commands: [dartRead, dartCheckRead, dartRim]
 
+alias BranchQueryRR = Request!"dartBranchQuery"; // used for getting a branch from the dart
+alias SyncQueryRR = Request!"dartSyncRequest";
+
 alias EpochShutdown = Msg!"epoch_shutdown"; // Tell the transcript to stop at a specific epoch
