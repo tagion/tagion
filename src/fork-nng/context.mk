@@ -3,7 +3,10 @@ DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
 
 LIBNNG := $(DTMP_NNG)/libnng.a
-CMAKE := cmake
+
+ifdef CMAKE_TOOLCHAIN_FILE
+NNG_CMAKE_FLAGS+=-D$(CMAKE_TOOLCHAIN_FILE)
+endif
 
 ifdef USE_SYSTEM_LIBS
 # NNG Does not provide a .pc file,
@@ -33,8 +36,8 @@ $(NNG_HEAD): $(NNG_GIT_MODULE)
 
 $(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD)
 	cd $(DTMP_NNG)
-	$(CMAKE) $(NNG_CMAKE_FLAGS) $(DSRC_NNG)
-	$(MAKE)
+	$(CMAKE) $(DSRC_NNG) $(NNG_CMAKE_FLAGS)
+	$(CMAKE) --build .
 
 ifdef USE_SYSTEM_LIBS
 nng: # NOTHING TO BUILD

@@ -2,4 +2,4 @@
 # Note. The asm part does not compile for aarch64
 # So it is not enabled.
 #--with-asm=arm
-CONFIGUREFLAGS_SECP256K1 += --disable-benchmark
+CONFIGUREFLAGS_SECP256K1 += SECP256K1_BUILD_BENCHMARK=OFF

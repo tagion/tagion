@@ -41,6 +41,8 @@ OBJEXT ?= o
 
 CD ?= cd
 
+CMAKE := cmake
+
 # Only define dstep if not already defined or it's available in your path
 ifdef DSTEP
 

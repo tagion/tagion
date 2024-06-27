@@ -18,6 +18,7 @@ LIBMOBILE:=$(DLIB)/libmobile.$(LIBEXT)
 libmobile: DFLAGS+=-i
 libmobile: DFLAGS+=$(GEN_CPP_HEADER_FILE)=$(DLIB)/libmobile.h
 libmobile: DINC+=$(LIB_DINC)
+libmobile: LIBSECP256K1_SHARED=
 libmobile: LIBS+=$(LIBSECP256K1_STATIC)
 libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
 
