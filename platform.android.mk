@@ -70,7 +70,7 @@ export CXX:=$(ANDROID_TOOLCHAIN)/bin/$(ANDROID_ABI)$(ANDROID_API)-clang++
 export LD:=$(ANDROID_TOOLCHAIN)/bin/ld.ldd
 export RANLIB:=$(ANDROID_TOOLCHAIN)/bin/llvm-ranlib
 export STRIP:=$(ANDROID_TOOLCHAIN)/bin/llvm-strip
-export CMAKE:=$(REPOROOT)/tools/cmake-android/bin/cmake
+export CMAKE:=$(REPOROOT)/tools/android-cmake/bin/cmake
 
 CONFIGUREFLAGS_SECP256K1 += CMAKE_C_COMPILER_TARGET=$(PLATFORM)
 CONFIGUREFLAGS_SECP256K1 += CMAKE_CXX_COMPILER_TARGET=$(PLATFORM)
