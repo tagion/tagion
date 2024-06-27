@@ -47,7 +47,7 @@ CMAKE := cmake
 ifdef DSTEP
 
 else ifneq ($(strip $(shell which dstep 2>/dev/null)),)
-	DSTEP?=dstep
+DSTEP?=dstep
 endif
 
 env-commands:

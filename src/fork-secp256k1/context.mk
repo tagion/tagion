@@ -48,8 +48,6 @@ ifdef CMAKE_GENERATOR
 CMAKE_GENERATOR_FLAG:=-G$(CMAKE_GENERATOR)
 endif
 
-include ${call dir.resolve, cross.mk}
-
 ifdef USE_SYSTEM_LIBS
 secp256k1: # NOTHING TO BUILD
 .PHONY: secp256k1
