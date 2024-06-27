@@ -44,6 +44,10 @@ endif
 SECP256K1_HEAD := $(REPOROOT)/.git/modules/src/wrap-secp256k1/secp256k1/HEAD 
 SECP256K1_GIT_MODULE := $(DSRC_SECP256K1)/.git
 
+ifdef CMAKE_GENERATOR
+CMAKE_GENERATOR_FLAG:=-G$(CMAKE_GENERATOR)
+endif
+
 include ${call dir.resolve, cross.mk}
 
 ifdef USE_SYSTEM_LIBS
@@ -73,7 +77,7 @@ $(LIBSECP256K1): $(DTMP_SECP256K1)/.way $(DLIB)/.way $(SECP256K1_HEAD)
 	$(PRECMD)
 	${call log.kvp, $@}
 	$(CD) $(DTMP_SECP256K1)
-	$(CMAKE) $(addprefix, -G,$(CMAKE_GENERATOR)) $(DSRC_SECP256K1) $(addprefix -D,$(CONFIGUREFLAGS_SECP256K1))
+	$(CMAKE) $(DSRC_SECP256K1) $(CMAKE_GENERATOR_FLAG) $(addprefix -D,$(CONFIGUREFLAGS_SECP256K1))
 	$(BUILDENV_SECP256K1) $(CMAKE) --build . $(BUILDFLAGS_SECP256K1)
 
 env-secp256k1:
