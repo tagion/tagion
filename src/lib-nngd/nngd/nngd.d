@@ -18,6 +18,7 @@ import std.exception;
 import std.array;
 import std.utf;
 import std.mmfile;
+import std.uuid;
 
 private import nngd.mime;
 private import libnng;
@@ -2486,6 +2487,7 @@ alias nng_ws_onmessage = void function ( WebSocket*, ubyte[], void* );
  *      send(ubyte[])    
  */
 struct WebSocket {
+    string sid;
     WebSocketApp *app;
     void* context;
     nng_aio *rxaio;
@@ -2521,6 +2523,7 @@ struct WebSocket {
         nng_duration _conntm = 100 )
     {
         int rc;
+        sid = randomUUID().toString();
         app = _app;
         s = _s;
         onconnect = _onconnect;
