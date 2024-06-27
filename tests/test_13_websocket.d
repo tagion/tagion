@@ -41,6 +41,13 @@ void onmessage_handler ( WebSocket *ws, ubyte[] data, void *ctx ){
     }        
 }   
 
+void onclose_handler( WebSocket *ws, void *ctx ){
+    log("===> ONCLOSE handler:");
+}
+
+void onerror_handler(WebSocket *ws, int err, void *ctx ){
+    log("===> ONERROR handler: " ~ to!string(err));
+}
 
 int
 main()
@@ -53,7 +60,7 @@ main()
 
     try{
         std.file.write("data.txt", "12345");
-        WebSocketApp wsa = WebSocketApp(uri, &onaccept_handler, &onmessage_handler, null );
+        WebSocketApp wsa = WebSocketApp(uri, &onaccept_handler, &onclose_handler, &onerror_handler, &onmessage_handler, null );
         wsa.start();
         nng_sleep(300.msecs);
         auto res = executeShell("timeout 2 uwsc -i -s -t data.txt ws://127.0.0.1:8034 2>&1");
@@ -61,7 +68,6 @@ main()
         assert(indexOf(res.output,"Websocket connected") == 0);
         assert(indexOf(res.output,`"request":"12345"`) == 136);
         nng_sleep(2000.msecs);
-
     } catch(Throwable e) {
         error(dump_exception_recursive(e, "Main"));
     }        
