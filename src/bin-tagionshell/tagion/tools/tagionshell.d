@@ -1074,8 +1074,10 @@ int _main(string[] args) {
 
     if(!options.ws_pub_uri.empty){
         //auto ws_tid = spawn(&ws_worker, options);
-        WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_message, cast(void*)&options );
-        wsa.start();
+
+        assert(0, "FIXME websocket constructor");
+        /* WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_message, cast(void*)&options ); */
+        /* wsa.start(); */
     }
     
 
