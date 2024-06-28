@@ -48,6 +48,8 @@
                 config.Cmd = "${package}/bin/tagion";
               };
 
+          wasi-sdk = pkgs.callPackage ./tub/wasi-sdk.nix { };
+
         });
 
       devShells = forAllSystems (pkgs: {
@@ -72,6 +74,7 @@
             wasmer # wasm-executor
             clang # used for wasm compilation
             wabt # conversion between wat <-> wasm
+            cargo
           ]
           ++ lib.optionals stdenv.isLinux [ dstep ]
           ++ lib.optionals stdenv.isx86_64 [ dmd ];
