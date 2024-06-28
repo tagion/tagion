@@ -26,7 +26,7 @@ You can run the following commands, if you are using arch, nix or ubuntu
 - **Ubuntu**
 
 ```bash
-apt-get install git autoconf build-essential libtool dub cmake
+apt-get install git build-essential dub cmake
 ```
 Download a D compiler ldc or dmd
 
