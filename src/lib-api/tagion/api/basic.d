@@ -12,30 +12,6 @@ enum MAGIC : uint {
 
 extern (C):
 
-/**
-  starts druntime
-  
-  The druntime should be started before any other functions are called
-*/
-int start_rt() {
-    import core.runtime : rt_init;
-    if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
-        __runtimeStatus = DrtStatus.STARTED;
-        return rt_init;
-    }
-    return -1;
-}
-
-/// Terminating d-runtime
-int stop_rt() {
-    import core.runtime : rt_term;
-    if (__runtimeStatus is DrtStatus.STARTED) {
-        __runtimeStatus = DrtStatus.TERMINATED;
-        return rt_term;
-    }
-    return -1;
-}
-
 nothrow:
 
 /**
