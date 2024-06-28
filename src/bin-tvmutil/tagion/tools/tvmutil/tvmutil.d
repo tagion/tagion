@@ -1,18 +1,46 @@
 module tagion.tools.tvmutil.tvmutil;
+
+import core.time;
+
 import std.getopt;
 import std.format;
 import std.stdio;
 import std.array;
+import std.exception;
+
+import tagion.actor;
+import tagion.basic.Types;
+import tagion.crypto.SecureNet;
+import tagion.dart.DARTBasic;
 import tagion.tools.Basic;
 import tagion.tools.revision;
+import tagion.utils.pretend_safe_concurrency;
+import tagion.utils.StdTime;
+import tagion.script.execute;
+import tagion.script.common;
+import tagion.script.TagionCurrency;
+import tagion.hibon.HiBONFile;
+import tagion.hibon.HiBONRecord;
+import tagion.hibon.Document;
 import tagion.wasmer.c;
-import core.stdc.string;
+import tagion.tools.toolsexception;
 
 mixin Main!(_main);
 
 int _main(string[] args) {
+    try {
+        return __main(args);
+    }
+    catch(Exception e) {
+        error(e);
+        return 1;
+    }
+}
+
+int __main(string[] args) {
     immutable program = args[0];
     version (ENABLE_WASMER) {
+        import core.stdc.string;
 
         bool version_switch;
         GetoptResult main_args;
@@ -153,7 +181,142 @@ int _main(string[] args) {
         return 0;
     }
     else {
-        error("%s is not supported in this build", program);
-        return 1;
+        bool version_switch;
+        string dart_filename;
+        string output_filename;
+        string[] contract_inputs;
+        string[] contract_reads;
+        bool sample_contract;
+        GetoptResult main_args;
+
+        main_args = getopt(args, std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "version", "display the version", &version_switch,
+                "v|verbose", "Enable verbose print-out", &__verbose_switch,
+                "d|dart", "Dart file to execute the script against", &dart_filename,
+                "i|inputs", "Inputs to the contract", &contract_inputs,
+                "r|reads", "Reads to the contract", &contract_reads,
+                "o|output", "The file to output the resulting recorder to", &output_filename,
+                "sample", "create sample contract", &sample_contract,
+        );
+
+        if (version_switch) {
+            revision_text.writeln;
+            return 0;
+        }
+        if (main_args.helpWanted) {
+            defaultGetoptPrinter(
+                    [
+                    "Documentation: https://docs.tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] contract.hibon [file.hibon ...] ", program),
+                    "",
+
+                    "<option>:",
+
+                    ].join("\n"),
+                    main_args.options);
+            return 0;
+        }
+
+        if(sample_contract) {
+            auto neta = new StdSecureNet;
+            neta.generateKeyPair("a");
+            auto netb = new StdSecureNet;
+            netb.generateKeyPair("b");
+
+            const output_bill = TagionBill(800.TGN, currentTime, netb.pubkey, []);
+            const payscript = PayScript([output_bill]);
+
+            const input_bill = TagionBill(1000.TGN, currentTime, neta.pubkey, []);
+            const s_contract = sign([neta], [neta.dartIndex(input_bill)], [], payscript.toDoc);
+            fwrite("sample_signed_contract.hibon", s_contract);
+            stderr.writeln("saved sample_signed_contract.hibon");
+            fwrite("sample_input_bill.hibon", input_bill);
+            stderr.writeln("saved sample_input_bill.hibon");
+            
+            return 0;
+        }
+
+        check(!dart_filename.empty || contract_inputs, "Need a dart file or an input to execute the script against");
+
+        immutable(CollectedSignedContract)*[] collected_contracts;
+
+        string[] contract_filenames;
+
+        foreach(arg; args) {
+            if(arg.hasExtension(FileExtension.hibon)) {
+                contract_filenames ~= arg;
+            }
+        }
+
+        File[] contract_files;
+        foreach(filename; contract_filenames) {
+            contract_files ~= File(filename, "r");
+        }
+        if(contract_filenames.empty) {
+            contract_files ~= stdin();
+        }
+
+        immutable(SignedContract)*[] s_contracts;
+        foreach(file; contract_files) {
+            auto hibonrange = HiBONRange(file);
+            foreach(doc; hibonrange) {
+                if(doc.isRecord!SignedContract) {
+                    s_contracts ~= new immutable(SignedContract)(doc);
+                }
+                // read hirpcs with signed contracts, collected contracts as well...
+            }
+        }
+
+        if(!dart_filename.empty) {
+            assert(0, "No work yet, read dartfile");
+            /* import tagion.services.DART; */
+            /* import tagion.services.collector; */
+            /* import tagion.services.tasknames; */
+            /* import tagion.services.messages; */
+            /* TaskNames tn; */
+            /* register(tn.tvm, thisTid); */
+            /* auto shared_net = cast(shared)(new StdSecureNet()); */
+            /* immutable dart_opts = DARTOptions(dart_filename: dart_filename); */
+            /* auto dart_handle = spawn!DARTService(tn.dart, dart_opts, tn, shared_net, false); */
+            /* auto collector_handle = _spawn!CollectorService(tn.collector, tn); */
+            /*  */
+            /**/
+            /* foreach(contract; s_contracts) { */
+            /*     collector_handle.send(inputContract(), contract); */
+            /* } */
+            /**/
+            /* bool timeout; */
+            /* while(!timeout || collected_contracts.length == s_contracts.length) { */
+            /*     timeout = !receiveTimeout(1.seconds, */
+            /*             (signedContract _, immutable(CollectedSignedContract)* c_contract) { */
+            /*                 collected_contracts ~= c_contract; */
+            /*             } */
+            /*     ); */
+            /* } */
+        }
+        else {
+            Document[] inputs;
+            Document[] reads;
+            foreach(input; contract_inputs) {
+                inputs ~= fread(input);
+            }
+            foreach(read; contract_reads) {
+                inputs ~= fread(read);
+            }
+            foreach(contract; s_contracts) {
+                collected_contracts ~= new immutable(CollectedSignedContract)(contract, inputs.assumeUnique, reads.assumeUnique);
+            }
+        }
+
+        ContractExecution engine;
+        foreach(c_contract; collected_contracts) {
+            const executed = engine(c_contract).get;
+            foreach(output; executed.outputs)
+                writeln(output.toPretty);
+        }
+        return 0;
     }
 }

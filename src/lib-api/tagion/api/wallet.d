@@ -72,9 +72,6 @@ int tagion_generate_keypair (
 
 
     try {
-        if (out_securenet.magic_byte != MAGIC.SECURENET) {
-            return ErrorCode.error; // TODO: better message
-        }
         const _passphrase = passphrase_ptr[0..passphrase_len];
         const _salt = salt_ptr[0..salt_len];
 
@@ -112,6 +109,7 @@ int tagion_generate_keypair (
         }
 
         out_securenet.securenet = cast(void*) _net;
+        out_securenet.magic_byte = MAGIC.SECURENET;
     } catch(Exception e) {
         last_error = e;
         return ErrorCode.exception;
@@ -220,7 +218,7 @@ unittest {
 
 /// Sign a message
 int tagion_sign_message (
-    const(securenet_t) root_net,
+    const(securenet_t*) root_net,
     const(uint8_t*) message_ptr,
     const(size_t) message_len,
     uint8_t** signature_ptr, 
@@ -260,13 +258,13 @@ unittest {
     assert(buf.length == NativeSecp256k1.MESSAGE_SIZE);
     uint8_t* signature_buf;
     size_t signature_len;
-    error_code = tagion_sign_message(my_keypair, &buf[0], buf.length, &signature_buf, &signature_len);
+    error_code = tagion_sign_message(&my_keypair, &buf[0], buf.length, &signature_buf, &signature_len);
     assert(error_code == ErrorCode.none);
     assert(signature_buf !is null);
     assert(signature_len == NativeSecp256k1.SIGNATURE_SIZE);
 
     // sign invalid buf with wrong len
-    error_code = tagion_sign_message(my_keypair, &buf[0], buf.length-5, &signature_buf, &signature_len);
+    error_code = tagion_sign_message(&my_keypair, &buf[0], buf.length-5, &signature_buf, &signature_len);
     assert(error_code == ErrorCode.error, "should throw error if the message length is not correct");
 }
 
@@ -298,7 +296,7 @@ ubyte[][] get_derivers(buf_t** buf_array, size_t count) {
 }
 
 int tagion_create_signed_contract(
-    const(securenet_t) root_net,
+    const(securenet_t*) root_net,
     buf_t** bills_to_pay_ptr, 
     const(size_t) bills_to_pay_count,
     buf_t** available_bills_ptr,
@@ -345,7 +343,7 @@ unittest {
 
     buf_t*[] to_pay_docs = [&s_to_pay_doc, &s_to_pay_doc2];
     auto change_pkey = Pubkey([1,2,3,4]);
-    error_code = tagion_create_signed_contract(my_keypair, to_pay_docs.ptr, 2, to_pay_docs.ptr, 2, null, 0, &change_pkey[0], change_pkey.length, null, null, null, null);
+    error_code = tagion_create_signed_contract(&my_keypair, to_pay_docs.ptr, 2, to_pay_docs.ptr, 2, null, 0, &change_pkey[0], change_pkey.length, null, null, null, null);
     assert(error_code == ErrorCode.none);
 
 }

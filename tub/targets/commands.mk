@@ -41,15 +41,17 @@ OBJEXT ?= o
 
 CD ?= cd
 
-# Only define dstep if it's available in your path
-ifneq ($(strip $(shell which dstep 2>/dev/null)),)
+# Only define dstep if not already defined or it's available in your path
+ifdef DSTEP
+
+else ifneq ($(strip $(shell which dstep 2>/dev/null)),)
 	DSTEP?=dstep
 endif
 
 env-commands:
 	$(PRECMD)
 	$(call log.header, $@ :: commands ($(OS)))
-	${call log.kvp, "Those macros list came be change from the command line make"}
+	${call log.kvp, "These macros can be changed from the command line make"}
 	$(call log.kvp, CD, "$(CD)")
 	$(call log.kvp, CP, "$(CP)")
 	$(call log.kvp, MV, $(MV))

@@ -1,6 +1,6 @@
 # dartutil
 
-> Dartutil is tool read/inspect and manimulate the data store in a DART file (.drt)
+> Dartutil is tool read/inspect and manipulate the data stored in a DART file (.drt)
 
 ## Options
 ```

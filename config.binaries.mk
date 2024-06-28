@@ -10,7 +10,7 @@ env-dinc:
 	$(call log.close)
 
 .PHONY: env-dinc
-env: env-dinc
+files: env-dinc
 
 env-dfiles:
 	$(PRECMD)
@@ -20,7 +20,7 @@ env-dfiles:
 
 .PHONY: env-dfiles
 
-env: env-dfiles
+# env-files: env-dfiles
 
 env-tools:
 	$(PRECMD)
@@ -168,8 +168,13 @@ $(call DO_BIN,vergangenheit)
 #
 # Tagion virtual machine utility
 #
-$(DBIN)/tvmutil: libwasmer
+ifdef ENABLE_WASMER
 $(DBIN)/tvmutil: LDFLAGS+=$(LD_WASMER) 
+$(DBIN)/tvmutil: libwasmer
+else
+$(DBIN)/tvmutil: secp256k1
+$(DBIN)/tvmutil: LDFLAGS+=$(LD_SECP256K1) 
+endif
 $(DBIN)/tvmutil: DINC+=$(SRC_DINC)
 $(DBIN)/tvmutil: DFILES::=$(DSRC)/bin-tvmutil/tagion/tools/tvmutil/tvmutil.d
 $(call DO_BIN,tvmutil)

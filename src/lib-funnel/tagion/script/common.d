@@ -377,7 +377,12 @@ struct Active {
     }
 }
 
-// Test that the recore types changed
+@recordType("wasm")
+struct WasmScript {
+    Buffer code;
+}
+
+// Test that the record types didn't change
 unittest {
     import std.path;
     import std.file;
