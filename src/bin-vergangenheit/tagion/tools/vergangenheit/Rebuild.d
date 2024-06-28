@@ -73,9 +73,9 @@ struct Rebuild {
                     error("Replicator epoch-number %d block %d in %s does previous fingerprint",
                     block.epoch_number,item.index, file);
                     verbose("Previous fingerprint");
-                    verbose("expected    %s", previous.encodeBase64);
-                    //verbose("read        %s", net.calcHash(item.value).encodeBase64);
-                    verbose("hibonrecord %s", block.previous.encodeBase64);
+                    verbose("expected    %s", previous.encodeBase58);
+                    //verbose("read        %s", net.calcHash(item.value).encodeBase58);
+                    verbose("hibonrecord %s", block.previous.encodeBase58);
 
                 }
             }

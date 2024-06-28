@@ -253,7 +253,7 @@ This should be simpler to use and fits better with the rpc pattern.
 
 **Contract tracing**
 We have added the the initial events for the contract states.
-And added `--contract` flag to the subscribe tool, this flag takes to the base64url hash of a contract as a parameter.
+And added `--contract` flag to the subscribe tool, this flag takes to the base58url hash of a contract as a parameter.
 The tool will then continuously give you updates about the contracts state.
 This flag is quite specific and we are still dissussing how it should be used.
 It's possible that the flag will be removed again in favour of something more general purpose.
@@ -314,7 +314,7 @@ void main() {
     writefln("h=%s", h.serialize);
     writefln("h=%s", h.toPretty);
     writefln("h=%(%02x%)", h.serialize);
-    writefln("h=%s", h.serialize.encodeBase64);
+    writefln("h=%s", h.serialize.encodeBase58);
 }
 
 ```

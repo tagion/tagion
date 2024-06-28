@@ -136,7 +136,7 @@ int _main(string[] args) {
                     if (prev_block !is RecorderBlock.init) {
                         const hash_of_prev = hash_net.calcHash(prev_block.toDoc);
                         if (hash_of_prev != _block.previous) {
-                            error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev.encodeBase64, _block.epoch_number, _block.previous.encodeBase64); 
+                            error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev.encodeBase58, _block.epoch_number, _block.previous.encodeBase58); 
 
                         }
                     }
@@ -189,7 +189,7 @@ int _main(string[] args) {
                     if (prev_block !is RecorderBlock.init) {
                         const hash_of_prev = hash_net.calcHash(prev_block.toDoc);
                         if (hash_of_prev != _block.previous) {
-                            error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev.encodeBase64, _block.epoch_number, _block.previous.encodeBase64); 
+                            error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev.encodeBase58, _block.epoch_number, _block.previous.encodeBase58); 
 
                         }
                     }

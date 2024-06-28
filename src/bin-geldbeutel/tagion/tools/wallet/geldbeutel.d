@@ -30,7 +30,7 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
 import tagion.wallet.BIP39;
-import tagion.basic.Types : encodeBase64;
+import tagion.basic.Types : encodeBase58;
 import tagion.hibon.HiBONException;
 
 mixin Main!(_main, "wallet");
@@ -272,7 +272,7 @@ int _main(string[] args) {
             }
             writefln("%s,%s",
                     wallet_interface.secure_wallet.account.name,
-                    wallet_interface.secure_wallet.account.owner.encodeBase64);
+                    wallet_interface.secure_wallet.account.owner.encodeBase58);
             info_only = true;
         }
         if (pubkey_info) {
@@ -281,7 +281,7 @@ int _main(string[] args) {
                 return 0;
             }
             writefln("%s",
-                    wallet_interface.secure_wallet.account.owner.encodeBase64);
+                    wallet_interface.secure_wallet.account.owner.encodeBase58);
             info_only = true;
         }
         if (list) {
@@ -344,7 +344,7 @@ int _main(string[] args) {
                     const BALANCE_COLOR = (item.status is ContractStatus.succeeded) ? RED : YELLOW;
                     writefln("(%s) %s%8s%s (fee: %s) to %s\n", item.balance, BALANCE_COLOR, item.bill.value, RESET, item
                             .fee, item.bill
-                            .owner.encodeBase64);
+                            .owner.encodeBase58);
                     break;
                 }
             }

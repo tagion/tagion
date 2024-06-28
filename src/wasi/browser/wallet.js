@@ -103,13 +103,13 @@ export class Wallet {
     return { ptr: pubkeyPtr, len: pubkeyLen };
   }
 
-  encodeBase64URL(ptr, len) {
+  encodeBase58URL(ptr, len) {
     const strPtrPtr = this.instance.exports.mymalloc(4); // Pointer to char* (4 bytes)
     const strLenPtr = this.instance.exports.mymalloc(4); // Pointer to size_t (4 bytes)
     console.log("strPtrPtr ", strPtrPtr);
     console.log("strLenPtr ", strLenPtr);
-    const result = this.instance.exports.tagion_basic_encode_base64url(ptr, len, strPtrPtr, strLenPtr);
-    console.log("encodebase64 returned: ", result);
+    const result = this.instance.exports.tagion_basic_encode_base58url(ptr, len, strPtrPtr, strLenPtr);
+    console.log("encodeBase58 returned: ", result);
 
     const strPtr = new Uint32Array(this.instance.exports.memory.buffer, strPtrPtr, 1)[0];
     const strLen = new Uint32Array(this.instance.exports.memory.buffer, strLenPtr, 1)[0];

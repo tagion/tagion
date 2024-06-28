@@ -38,7 +38,7 @@ struct WaveOptions {
     /** Read node addresses from this files if it's defined
      *  Useful for development
      *  Formatted likes this. With 1 entry per line.
-     *  <Base64 encoded public key> <address>
+     *  <Base58 encoded public key> <address>
     */
     string address_file;
     NetworkMode network_mode = NetworkMode.INTERNAL;

@@ -12,7 +12,6 @@ import std.range.primitives;
 import std.system : Endian;
 import std.traits;
 import std.typecons : Tuple;
-import std.base64;
 
 //import std.stdio;
 

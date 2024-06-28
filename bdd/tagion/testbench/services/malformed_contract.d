@@ -245,8 +245,8 @@ class NegativeAmountAndZeroAmountOnOutputBills {
         const zero_bill = TagionBill(0.TGN,currentTime, Pubkey([1,2,3,4]), null);
         const negative_bill = TagionBill(-1000.TGN, currentTime, Pubkey([4,3,2,1]), null);
 
-        writefln("zero_bill = %s", zero_bill.toDoc.encodeBase64);
-        writefln("negative_bill = %s", negative_bill.toDoc.encodeBase64);
+        writefln("zero_bill = %s", zero_bill.toDoc.encodeBase58);
+        writefln("negative_bill = %s", negative_bill.toDoc.encodeBase58);
 
         PayScript zero_script;
         PayScript negative_script;

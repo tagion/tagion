@@ -222,8 +222,8 @@ class DARTFile {
     }
 
     /**
- * Data struct which contains the branches in sub-tree
- */
+     * Data struct which contains the branches in sub-tree
+     */
     @recordType("$@B") struct Branches {
         import std.stdio;
         import tagion.hibon.HiBONJSON;

@@ -17,7 +17,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONFile : fread;
-import tagion.hibon.HiBONtoText : decode, encodeBase64;
+import tagion.hibon.HiBONtoText : decode, encodeBase58;
 import tagion.script.TagionCurrency;
 import tagion.script.standardnames;
 import tagion.tools.Basic;
@@ -120,7 +120,7 @@ int _main(string[] args) {
 
     if (generate_pubkey) {
         auto buf = cast(Buffer) net.pubkey;
-        writefln("%s", buf.encodeBase64);
+        writefln("%s", buf.encodeBase58);
         return 0;
     }
 

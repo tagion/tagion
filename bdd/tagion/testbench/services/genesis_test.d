@@ -168,10 +168,10 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
 
 
             
-            writefln("prev epoch: %s \n hash_of_prev: %s\n new epoch: %s", prev_epoch.toPretty, net.calcHash(prev_epoch).encodeBase64, ref_epoch.toPretty);
+            writefln("prev epoch: %s \n hash_of_prev: %s\n new epoch: %s", prev_epoch.toPretty, net.calcHash(prev_epoch).encodeBase58, ref_epoch.toPretty);
             check(ref_epoch.epoch_number == prev_epoch.epoch_number +1, "The epoch number was not correctly incremented");
             auto previous = net.calcHash(prev_epoch);
-            check(previous == ref_epoch.previous, format("The fingerprint was not correct. should be %s was %s", previous.encodeBase64, ref_epoch.previous.encodeBase64));
+            check(previous == ref_epoch.previous, format("The fingerprint was not correct. should be %s was %s", previous.encodeBase58, ref_epoch.previous.encodeBase58));
 
             if (ref_epoch.globals != prev_epoch.globals) {
                 writefln("NEW DIF EPOCH %s\n PREV EPOCH %s", ref_epoch.globals.toPretty, prev_epoch.globals.toPretty);

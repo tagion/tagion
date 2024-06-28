@@ -26,7 +26,7 @@ struct RPCSaver {
 
     void save_rpc(SaveRPC, Document doc) {
         rpcs_file.fwrite(doc);
-        log.trace("Saved %s", dartIndex(net, doc).encodeBase64);
+        log.trace("Saved %s", dartIndex(net, doc).encodeBase58);
     }
 
     void task() {

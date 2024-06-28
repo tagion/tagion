@@ -8,7 +8,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONtoText;
 import tagion.hibon.Document;
-import tagion.basic.Types : base64=encodeBase64, Buffer;
+import tagion.basic.Types : base58=encodeBase58, Buffer;
 import tagion.crypto.SecureNet;
 import tagion.crypto.random.random;
 import tagion.crypto.secp256k1.c.secp256k1;
@@ -94,10 +94,10 @@ void main() {
     writefln("h=%s", h.serialize);
     writefln("h=%s", h.toPretty);
     writefln("h=%(%02x%)", h.serialize);
-    writefln("h=%s", h.serialize.base64);
+    writefln("h=%s", h.serialize.base58);
     const doc=Document(h);
     writefln("doc=%s", doc.toPretty);
-    writefln("doc=%s", doc.encodeBase64);
+    writefln("doc=%s", doc.encodeBase58);
     writefln("doc.serialize=%s", doc.serialize);
 
     const c=new C(10);
@@ -130,7 +130,7 @@ void main() {
    buf = hash_net.rawCalcHash(buf);
    
     writefln("%(%02x %)", buf);
-    writefln("%s", buf.base64);
+    writefln("%s", buf.base58);
         auto _ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
     //const secp256k1=new NativeSecp256k1;
     //writefln("############## _func.ptr=%x", cast(size_t)(_func.ptr));
@@ -174,15 +174,15 @@ void main() {
     auto net=new StdSecureNet;
     net.generateKeyPair("Very secret");
     const pubkey=net.pubkey;
-    writefln("pubkey   =%s len=%d", pubkey.base64, pubkey.length);
+    writefln("pubkey   =%s len=%d", pubkey.base58, pubkey.length);
     const message=hash_net.calcHash(doc);
 
     char* test;
     size_t test_len;
-    tagion_basic_encode_base64url(&message[0], message.length, &test, &test_len); 
-    writefln("message  =%s", message.base64);
+    tagion_basic_encode_base58url(&message[0], message.length, &test, &test_len); 
+    writefln("message  =%s", message.base58);
     const signature=net.sign(message);
-    writefln("signature=%s len=%d", signature.base64, signature.length);
+    writefln("signature=%s len=%d", signature.base58, signature.length);
     writefln("Before verify"); 
     const ok=net.verify(message, signature, pubkey);
 

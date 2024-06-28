@@ -7,11 +7,11 @@ import tagion.dart.DARTBasic : DARTIndex, dartKey;
 import tagion.hibon.Document;
 import tagion.tools.Basic;
 import tagion.tools.toolsexception;
+import Base58 = tagion.basic.base58;
 
 DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONtoText;
     import misc = tagion.utils.Miscellaneous;
-    import std.base64;
     import std.algorithm;
     import std.array : split;
     import std.traits;
@@ -22,8 +22,8 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
 
     verbose("dart-index %s", str);
 
-    if (isBase64Prefix(str)) {
-        return DARTIndex(Base64URL.decode(str[1 .. $]).idup);
+    if (isBase58Prefix(str)) {
+        return DARTIndex(Base58.decode(str[1 .. $]).idup);
     }
     else if (isHexPrefix(str)) {
         return DARTIndex(misc.decode(str[hex_prefix.length .. $]));

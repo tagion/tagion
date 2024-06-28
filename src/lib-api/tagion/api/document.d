@@ -219,7 +219,7 @@ int tagion_document_array(
 enum DocumentTextFormat {
     JSON, 
     PRETTYJSON, 
-    BASE64, 
+    BASE58, 
     HEX,
 }
 
@@ -262,8 +262,8 @@ int tagion_document_get_text(
                 case PRETTYJSON:
                     text = doc.toPretty;
                     break;
-                case BASE64:
-                    text = doc.encodeBase64;
+                case BASE58:
+                    text = doc.encodeBase58;
                     break;
                 case HEX:
                     text = format("%(%02x%)", doc.serialize);
@@ -314,11 +314,11 @@ unittest {
     str = str_value[0..str_len];
     assert(str == doc.toPretty);
 
-    // base64
-    rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.BASE64, &str_value, &str_len); 
+    // base58
+    rt = tagion_document_get_text(&doc.data[0], doc.data.length, DocumentTextFormat.BASE58, &str_value, &str_len); 
     assert(rt == ErrorCode.none);
     str = str_value[0..str_len];
-    assert(str == doc.encodeBase64);
+    assert(str == doc.encodeBase58);
 
     // none existing format
     rt = tagion_document_get_text(&doc.data[0], doc.data.length, 100, &str_value, &str_len); 
