@@ -62,6 +62,13 @@ alias IndexCache = LRUT!(DARTIndex, Document);
 shared IndexCache tcache;
 shared IndexCache icache;
 
+struct ws_device {
+    WebSocket *ws;
+    void  *ctx;
+    string[] topics;
+}
+shared ws_device[string] ws_devices;
+
 shared static bool abort = false;
 
 enum HTTPMethod {
@@ -121,69 +128,80 @@ string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat k
 
 JSONValue json_dehibonize(JSONValue obj)
 {
-    foreach( string key, val; obj)
-    {
-        if(val.type() == JSONType.array)
+    if(obj.type() == JSONType.object){
+        foreach( string key, val; obj)
         {
-            auto t = (val.array[0]).str;
-            auto x = val.array[1];
-            if(x.type() == JSONType.integer)
+            if(val.type() == JSONType.array)
             {
-                obj[key] = x.integer;
-            }
-            else if(x.type() == JSONType.uinteger)
-            {
-                obj[key] = x.uinteger;
-            }
-            else if (x.type() == JSONType.float_)
-            {
-                obj[key] = x.floating;    
-            }
-            else
-            {
-                auto y = x.str;
-                switch(t){
-                    case "i32":
-                        obj[key] = y.startsWith("0x") ? to!int(y[2..$],16) : to!int(y,10);
-                        break;
-                    case "u32":
-                        obj[key] = y.startsWith("0x") ? to!uint(y[2..$],16) : to!uint(y,10);
-                        break;
-                    case "i64":
-                        if(y == "0x8000000000000000"){
-                            obj[key] = long.max;
-                        } else {    
-                            obj[key] = y.startsWith("0x") ? to!long(y[2..$],16) : to!long(y,10);
-                        }    
-                        break;
-                    case "u64":
-                        obj[key] = y.startsWith("0x") ? to!ulong(y[2..$],16) : to!ulong(y,10);
-                        break;
-                    case "f32":
-                        if(y.startsWith("0x")){
-                            auto z = to!uint(y[2..$],16);
-                            obj[key] = *cast(float*)&z;
-                        }else{
-                            obj[key] = to!float(y);
+                if(val.array.length == 2 && val.array[0].type() == JSONType.string){
+                    auto t = (val.array[0]).str;
+                    auto x = val.array[1];
+                    if(x.type() == JSONType.integer)
+                    {
+                        obj[key] = x.integer;
+                    }
+                    else if(x.type() == JSONType.uinteger)
+                    {
+                        obj[key] = x.uinteger;
+                    }
+                    else if (x.type() == JSONType.float_)
+                    {
+                        obj[key] = x.floating;    
+                    }
+                    else
+                    {
+                        if(x.type() != JSONType.string){
+                            writeit("##### JERR: ",val);
                         }
-                        break;
-                    case "f64":
-                        if(y.startsWith("0x")){
-                            auto z = to!ulong(y[2..$],16);
-                            obj[key] = *cast(double*)&z;
-                        }else{
-                            obj[key] = to!double(y);
+                        auto y = x.str;
+                        switch(t){
+                            case "i32":
+                                obj[key] = y.startsWith("0x") ? to!int(y[2..$],16) : to!int(y,10);
+                                break;
+                            case "u32":
+                                obj[key] = y.startsWith("0x") ? to!uint(y[2..$],16) : to!uint(y,10);
+                                break;
+                            case "i64":
+                                if(y == "0x8000000000000000"){
+                                    obj[key] = long.max;
+                                } else {    
+                                    obj[key] = y.startsWith("0x") ? to!long(y[2..$],16) : to!long(y,10);
+                                }    
+                                break;
+                            case "u64":
+                                obj[key] = y.startsWith("0x") ? to!ulong(y[2..$],16) : to!ulong(y,10);
+                                break;
+                            case "f32":
+                                if(y.startsWith("0x")){
+                                    auto z = to!uint(y[2..$],16);
+                                    obj[key] = *cast(float*)&z;
+                                }else{
+                                    obj[key] = to!float(y);
+                                }
+                                break;
+                            case "f64":
+                                if(y.startsWith("0x")){
+                                    auto z = to!ulong(y[2..$],16);
+                                    obj[key] = *cast(double*)&z;
+                                }else{
+                                    obj[key] = to!double(y);
+                                }
+                                break;
+                            default:
+                                break;
                         }
-                        break;
-                    default:
-                        break;
+                    }
+                } else {
+                    obj[key] = json_dehibonize(val);;
                 }
             }
+            if(val.type() == JSONType.object)
+            {
+                obj[key] = json_dehibonize(val);
+            }
         }
-        if(val.type() == JSONType.object)
-        {
-            obj[key] = json_dehibonize(val);
-        }
+    } else if (obj.type() == JSONType.array) {
+        obj = obj.array.map!( x => json_dehibonize(x) ).array();
     }
     return obj;
 }
@@ -241,9 +259,7 @@ void dart_worker(ShellOptions opt) {
         "$error": "error",
         "father_less": "father_less"
     ]);
-
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-    NNGSocket m = NNGSocket(nng_socket_type.NNG_SOCKET_PUB);
     const net = new StdHashNet();
     auto record_factory = RecordFactory(net);
     const hirpc = HiRPC(null);
@@ -251,8 +267,6 @@ void dart_worker(ShellOptions opt) {
     s.subscribe(opt.recorder_subscription_tag);
     s.subscribe(opt.trt_subscription_tag);
     s.subscribe(opt.monitor_subscription_tag);
-    m.sendtimeout = msecs(opt.sock_recvtimeout);
-    m.sendbuf = 8192;
     writeit("DS: subscribed");
     while (true) {
         rc = s.dial(opt.tagion_subscription_addr);
@@ -260,11 +274,8 @@ void dart_worker(ShellOptions opt) {
             break;
         enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");
     }
-    rc = m.listen(opt.monitor_pub_uri);
-    enforce(rc == 0, "Couldnt setup the monitor socket");
     scope (exit) {
         s.close();
-        m.close();
     }
     writeit("DS: connected");
     while (true) {
@@ -280,6 +291,7 @@ void dart_worker(ShellOptions opt) {
                 continue;
             }
             //writeit(format("RR: %d  %s  %d\n",received.length,topic,doc.length));
+            JSONValue jdoc;
             auto receiver = hirpc.receive(doc);
             if (!receiver.isMethod) {
                 writeit("DS: Invalid method in document received");
@@ -309,6 +321,7 @@ void dart_worker(ShellOptions opt) {
                         }
                     }
                 }
+                jdoc = json_dehibonize(recorder.toJSON);
             } else 
             if(topic.startsWith("trt_created")){
                 auto recorder = record_factory.recorder(payload.data);
@@ -324,13 +337,18 @@ void dart_worker(ShellOptions opt) {
                         k++;
                     }
                 }
+                jdoc = json_dehibonize(recorder.toJSON);
             }else
             if(topic.startsWith("monitor")){
                 auto adoc = EventView(payload.data);
-                auto jdoc = adoc.toJSON;
-                auto jres = json_dehibonize(json_remap(jdoc, monitor_map));
-                m.send(jres.toString);
+                jdoc = adoc.toJSON;
+                jdoc = json_dehibonize(json_remap(jdoc, monitor_map));
+            }else{
+                writeit("DS: unknown topic: "~topic);
+                return;
             }
+            // websocket sends json serializations prepended with channel token separated with zero byte
+            ws_propagate(topic,jdoc.toString);
             if (k > 0)
                 writeit(format("DS: Cache updated in %d objects", k));
         }
@@ -341,76 +359,72 @@ void dart_worker(ShellOptions opt) {
     }
 }
 
-// deprecated: TODO: clarify how to separate recorders and monitor
-void ws_worker(ShellOptions options) {
-        writeit("WSW: begin");
-        import libnng;
-        int rc;
-        
-        if(options.ws_pub_uri == ""){
-            writeit("No ws uri");
-            return;
-        }
 
-        NNGSocket sub_kernel = NNGSocket(nng_socket_type.NNG_SOCKET_SUB, true); // make it raw
-        sub_kernel.recvtimeout = msecs(options.sock_recvtimeout);
-        sub_kernel.subscribe(options.recorder_subscription_tag);
-        sub_kernel.subscribe(options.trt_subscription_tag);
-        rc = sub_kernel.dialer_create(options.tagion_subscription_addr);
-        assert(rc == 0);
-
-        NNGSocket pub_shell = NNGSocket(nng_socket_type.NNG_SOCKET_PUB, true); // make it raw too
-        pub_shell.sendtimeout = msecs(1000);
-        pub_shell.sendbuf = 4096;
-        rc = pub_shell.listener_create(options.ws_pub_uri);
-        assert(rc == 0);
-       
-        writeit("WSW: to start 1");
-        rc = pub_shell.listener_start();
-        assert(rc == 0);
-        writeit("WSW: to start 2");
-        rc = sub_kernel.dialer_start();
-        assert(rc == 0);
-        
-        writeit("WSW: device");
-        rc = nng_device(sub_kernel.m_socket, pub_shell.m_socket);
-        assert(rc == 0);
-        writeit("WSW: end");
+void ws_propagate(string topic, string msg){
+   synchronized {
+       foreach(sid, dev; ws_devices){
+            foreach(t; dev.topics)
+                if(topic.startsWith(t)){
+                    WebSocket *ws = cast(WebSocket*)dev.ws;
+                    if(ws)
+                        ws.send(cast(ubyte[])(topic~"\0"~msg));
+                }    
+       }
+   }
 }
 
 void ws_on_connect(WebSocket *ws, void *ctx){
-    int rc;
-    int attempts = 0;
-    writeit("WS: connected");
-    ShellOptions* opt = cast(ShellOptions*)ctx;   
-    NNGSocket sub_monitor = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-    sub_monitor.recvtimeout = msecs(opt.sock_recvtimeout);
-    sub_monitor.subscribe("");
-    while (true) {
-        rc = sub_monitor.dial(opt.monitor_pub_uri);
-        if (rc == 0)
-            break;
-        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the monitor socket");
+    writeit("ws: connect");
+    Thread.sleep(500.msecs);
+    auto sid = ws.sid;
+    writeit("WS: ONCONNECT: ", sid);
+    if(sid in ws_devices){
+        writeit("Already cached socket: ", sid);
+        return;
     }
-    writeit("WS: subscribed");
-    while (!ws.closed) {
-        try {
-            auto received = sub_monitor.receive!(ubyte[])();
-            if (received.empty) {
-                continue;
-            }
-            ws.send(received);
-        }
-        catch (Throwable e) {
-            writeit(dump_exception_recursive(e, "ws on_connect: ", ExceptionFormat.PLAIN));
-            continue;
-        }
+    ws_device d = {
+        ws: ws,
+        ctx: ctx,
+        topics: []
+    };    
+    synchronized {    
+        ws_devices[sid] = cast(shared ws_device)d;
+    }
+    writeit("WS: D0");
+}
+
+void ws_on_close(WebSocket *ws, void *ctx){
+    auto sid = ws.sid;
+    writeit("WS: ONCLOSE: ", sid);
+    if(sid in ws_devices){
+        ws_devices.remove(sid);
     }
 }
 
+void ws_on_error(WebSocket *ws, int err, void *ctx){
+    writeit("WS: ONERROR: ", err);
+}
+
 void ws_on_message(WebSocket *ws, ubyte[] data, void *ctx){
-    ShellOptions* opt = cast(ShellOptions*)ctx;    
-    // TODO: add wemsocket-based subscription management
+   auto sid = ws.sid;
+   string msg = cast(immutable(char[]))data;
+   writeit("WS MSG: ",sid," : ",msg);
+   if(sid in ws_devices){
+        auto sa = msg.split("\0");
+        if(sa[0] == "subscribe"){
+            synchronized{
+                if(!ws_devices[sid].topics.canFind(sa[1]))
+                    ws_devices[sid].topics ~= sa[1];
+            }
+        }else if(sa[0] == "unsubscribe"){
+            synchronized{
+                if(ws_devices[sid].topics.canFind(sa[1]))
+                    ws_devices[sid].topics = ws_devices[sid].topics.remove!(x => x == sa[1]);
+            }    
+        }else{
+            writeit("WS: MSG: Invalid topic: ", sa);
+        }
+   }
 }
 
 /*
@@ -932,6 +946,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 const lookup_handler = handler_helper!lookup_handler_impl;
 void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     string query_subject = req.path[$ - 2];
+    writeit("2B64: ",req.path[$ - 1]);
     string query_str = cast(immutable(char)[])(Base64.decode(req.path[$ - 1]));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     int rc;
@@ -1069,15 +1084,13 @@ int _main(string[] args) {
                 .dartcache_ttl_msec);
         icache = new shared(IndexCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
                 .dartcache_ttl_msec);
-        auto ds_tid = spawn(&dart_worker, options);
     }
+    auto ds_tid = spawn(&dart_worker, options);
 
     if(!options.ws_pub_uri.empty){
         //auto ws_tid = spawn(&ws_worker, options);
-
-        assert(0, "FIXME websocket constructor");
-        /* WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_message, cast(void*)&options ); */
-        /* wsa.start(); */
+        WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_close, &ws_on_error, &ws_on_message, cast(void*)&options );
+        wsa.start();
     }
     
 
