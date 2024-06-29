@@ -12,6 +12,8 @@
     <style>
         .loading { visibility:hidden; } 
         body.busy .loading { visibility:visible !important; }
+        #mlist { font-family: monospace; font-size: 8pt; color: green; }
+        #mlist p { margin-bottom: 4px; word-break: break-all; line-height: 110%; }
     </style>
 </head>
 <body>
@@ -19,10 +21,94 @@
         
         import {WTagUtil} from "/shell/static/explorer/wtag.js"
 
+        var subm = {
+            monitor: false,
+            recorder: false,
+            trt: false
+        };
+
+        var ws = null;
+
+        var mlistsz = 0;
+        const MLISTMAX = 100;
+
         $( document ).ready(function() {
+            
+            console.log("Websocket to setup on ", location.origin.replace(/^http/, 'ws'));
+            wsinit();
             $("#go").click(doit);    
+            $("#isubmonitor").change(submonitor);
+            $("#isubrecorder").change(submonitor);
+            $("#isubtrt").change(submonitor);
+            $("#iclearmon").click((e) => { $("#mlist").html(""); mlistsz = 0; });
         });
         
+        function wswait() {  
+            if(ws){
+                if( ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.CLOSING ){
+                    window.setTimeout(wswait, 100);      
+                }
+            }
+        }
+
+        function wsinit(){
+            if(ws){
+                wswait();
+                if(ws.readyState == WebSocket.OPEN){
+                    ws.close();
+                }
+            }
+            ws = new WebSocket(location.origin.replace(/^http/, 'ws') + "/hgtest/wsmonitor");
+            ws.onerror = console.error;
+            ws.onopen = () => {
+                console.log("[ON] Socket connected: ");
+            };
+            ws.onclose = () => {
+                console.log("[OFF] Socket disconnected: ");
+            };
+            ws.onmessage = wsmessage;
+        }
+        
+        function wsmessage(msg){
+            let a = msg.data.split("\0");
+            let jd = JSON.parse(a[1]);
+            $("#mlist").prepend("<p class='text-wrap text-break'>"+JSON.stringify(jd).replace(/,/g,", ")+"</p>");
+            mlistsz += 1;
+            if(mlistsz >= MLISTMAX){
+                $("#mlist").find('p:last').remove();
+                mlistsz -= 1;
+            }
+        }
+
+        function submonitor(e){
+            let csub = {
+                monitor: $("#isubmonitor").prop('checked'),
+                recorder: $("#isubrecorder").prop('checked'),
+                trt: $("#isubtrt").prop('checked')
+            };
+            let msg = [];
+            if(csub.monitor != subm.monitor){
+                console.log("ws sub: ", (csub.monitor?"subscribe":"unsubscribe")+"\0monitor")
+                msg.push((csub.monitor?"subscribe":"unsubscribe")+"\0monitor");
+            }
+            if(csub.recorder != subm.recorder){
+                console.log("ws sub: ",(csub.recorder?"subscribe":"unsubscribe")+"\0recorder");
+                msg.push((csub.recorder?"subscribe":"unsubscribe")+"\0recorder");
+            }
+            if(csub.trt != subm.trt){
+                console.log("ws sub: ",(csub.trt?"subscribe":"unsubscribe")+"\0trt_created");
+                msg.push((csub.trt?"subscribe":"unsubscribe")+"\0trt_created");
+            }
+            if(msg.length > 0){
+                if(ws.readyState != WebSocket.OPEN){
+                    wswait();
+                    wsinit();
+                }
+                msg.forEach( (x) => ws.send(x) );
+            }
+            subm = csub;
+        }
+
         function doit(e){
             let query = $("#ilookup").val().trim();
             let opt = {
@@ -48,7 +134,7 @@
             } else if ( query.match(/^[0-9]+$/) ) {
                 id = "epoch";
                 query = "\#\$epoch:i64:"+query;
-            } else if ( !query.match(/[@#]/) ) {
+            } else if ( !query.match(/[@#:]/) ) {
                 id="name";
                 query = "\#name:"+query
             } else {
@@ -59,6 +145,7 @@
             console.log("Consider: ", id);
             $('body').addClass('busy');
             if ( id == "index" ) {
+                console.log("B64:  ", btoa("\#\$Y:\*:"+query));
                 $.ajax({
                     url: "/shell/api/v1/lookup/trt/"+btoa("\#\$Y:\*:"+query),
                     type: "get",
@@ -82,6 +169,7 @@
                     }
                 });
             }    
+            console.log("B64:   ", btoa(query));
             $.ajax({
                 url: "/shell/api/v1/lookup/dart/"+btoa(query),
                 type: "get",
@@ -179,39 +267,82 @@
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     </div> </div> </div> </div>
 
-    <div class="d-flex flex-column p-2 w-75 vh-100 align-middle mx-auto mt-2">
-        <div class="mb-auto p-2 d-flex flex-row flex-nowrap justify-content-center">
-            <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#modalHelp"> ? </button>
-            <input id="ilookup" type="text" class="w-50 form-control" placeholder="@dartindex, @pubkey, epoch number or name string" aria-label="Lookup query"> 
-            <button id="go" type="button" class="mx-2 btn btn-primary">Search</button>
-        </div>
-        <div class="mb-auto p-2 d-flex flex-row flex-nowrap justify-content-center">
-            <div class="form-check form-switch form-check-inline">
-                <input class="form-check-input" type="checkbox" role="switch" id="irawdh" checked>
-                <label class="form-check-label" for="irawdh">Dehibonize raw result</label>
-            </div>    
-            <div class="form-check form-switch form-check-inline">
-                <input class="form-check-input" type="checkbox" role="switch" id="itable" checked>
-                <label class="form-check-label" for="itable">Render result table</label>
-            </div>    
-        </div>
-        <div class="text-center loading">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
+    <div class="d-flex flex-column w-75 vh-100 align-middle mx-auto pt-2">
+        <div>
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="lookup-tab" data-bs-toggle="tab" data-bs-target="#lookup-tab-pane" type="button" role="tab" aria-controls="lookup-tab-pane" aria-selected="true">Lookup</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monitor-tab" data-bs-toggle="tab" data-bs-target="#monitor-tab-pane" type="button" role="tab" aria-controls="monitor-tab-pane" aria-selected="false">Monitor</button>
+                </li>
+            </ul>        
+        </div>        
+        <div class="tab-content flex-grow-1" id="myTabContent">
+            <div class="tab-pane h-100 fade show active" id="lookup-tab-pane" role="tabpanel" aria-labelledby="lookup-tab" tabindex="0">
+            <div class=" d-flex flex-column h-100">
+                    <div class="mb-auto p-2 d-flex flex-row flex-nowrap justify-content-center">
+                        <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#modalHelp"> ? </button>
+                        <input id="ilookup" type="text" class="w-50 form-control" placeholder="@dartindex, @pubkey, epoch number or name string" aria-label="Lookup query"> 
+                        <button id="go" type="button" class="mx-2 btn btn-primary">Search</button>
+                    </div>
+                    <div class="mb-auto p-2 d-flex flex-row flex-nowrap justify-content-center">
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="irawdh" checked>
+                            <label class="form-check-label" for="irawdh">Dehibonize raw result</label>
+                        </div>    
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="itable" checked>
+                            <label class="form-check-label" for="itable">Render result table</label>
+                        </div>    
+                    </div>
+                    <div class="text-center loading">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="text-center" id="msg">
+                    </div>
+                    <div class="text-center my-2" id="tbl">
+                        <table class="table table-sm w-50 mt-4"  align="center"><tbody></tbody></table>
+                    </div>
+                    <div class="flex-grow-1 p-3 overflow-y-auto">
+                        <code >
+                        <pre id="raw">
+                             
+                        </pre>
+                        </code>
+                    </div>
             </div>
-        </div>
-        <div class="text-center" id="msg">
-        </div>
-        <div class="text-center my-2" id="tbl">
-            <table class="table table-sm w-50 mt-4"  align="center"><tbody></tbody></table>
-        </div>
-        <div class="flex-grow-1 p-3">
-            <code >
-            <pre id="raw">
-                 
-            </pre>
-            </code>
-        </div>
+            </div>
+            <div class="tab-pane h-100 fade overflow-hidden" id="monitor-tab-pane" role="tabpanel" aria-labelledby="monitor-tab" tabindex="0">
+            <div class="h-100 container-fluid">
+                <div class="row">
+                <div class="col-12 p-2 d-flex flex-row flex-nowrap justify-content-center align-middle align-items-center">
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="isubmonitor">
+                            <label class="form-check-label" for="isubmonitor">Subscribe to monitor</label>
+                        </div>    
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="isubrecorder">
+                            <label class="form-check-label" for="isubrecorder">Subscribe to recorder</label>
+                        </div>    
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="isubtrt">
+                            <label class="form-check-label" for="isubtrt">Subscribe to TRT</label>
+                        </div>    
+                        <button type="button" class="btn btn-primary" id="iclearmon"> Clear </button>
+                </div>
+                </div>
+                <div class="row h-100">
+                <div class="col-12 h-100 scrollable overflow-y-scroll position-relative">
+                    <div id="mlist" class="position-absolute position-absolute top-0 start-0">
+                    </div>
+                </div>
+                </div>
+            </div>    
+            </div>
+        </div>        
     </div>
 </body>
 
