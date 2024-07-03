@@ -66,7 +66,13 @@ struct ws_device {
     WebSocket *ws;
     void  *ctx;
     string[] topics;
+    this ( WebSocket* _w, void* _c, string[] _t ) shared {
+        ws = cast (shared WebSocket*) _w;
+        ctx = cast (shared void* )_c;
+        topics = cast ( shared string[] )_t;
+    };
 }
+
 shared ws_device[string] ws_devices;
 
 shared static bool abort = false;
@@ -366,7 +372,7 @@ void ws_propagate(string topic, string msg){
             foreach(t; dev.topics)
                 if(topic.startsWith(t)){
                     WebSocket *ws = cast(WebSocket*)dev.ws;
-                    if(ws)
+                    if(ws != null && ! ws.closed)
                         ws.send(cast(ubyte[])(topic~"\0"~msg));
                 }    
        }
@@ -382,13 +388,8 @@ void ws_on_connect(WebSocket *ws, void *ctx){
         writeit("Already cached socket: ", sid);
         return;
     }
-    ws_device d = {
-        ws: ws,
-        ctx: ctx,
-        topics: []
-    };    
     synchronized {    
-        ws_devices[sid] = cast(shared ws_device)d;
+        ws_devices[sid] = shared ws_device ( ws, ctx, [] );
     }
     writeit("WS: D0");
 }
