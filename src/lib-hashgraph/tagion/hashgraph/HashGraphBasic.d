@@ -70,8 +70,13 @@ unittest {
 }
 
 @nogc
+bool isMajority(const(BitMask) mask, const size_t size) pure nothrow {
+    return isMajority(mask.count, size);
+}
+
+@nogc
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
-    return isMajority(mask.count, hashgraph.node_size);
+    return isMajority(mask, hashgraph.node_size);
 }
 
 @nogc

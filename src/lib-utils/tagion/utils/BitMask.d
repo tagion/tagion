@@ -26,7 +26,8 @@ struct BitMask {
     private size_t[] mask;
 
     void opAssign(const BitMask rhs) pure nothrow {
-        mask = rhs.mask.dup;
+        mask.length = rhs.mask.length;
+        mask[0 .. $] = rhs.mask[0 .. $];
     }
 
     void opAssign(const(ubyte)[] buf) pure nothrow @trusted {
@@ -59,7 +60,9 @@ struct BitMask {
     }
 
     this(R)(scope R range) pure nothrow
+
     
+
             if ((isInputRange!R) && isIntegral!(ElementType!R) && !is(ElementType!R : bool) && !is(Uqual!(ElementType!R) == ubyte)) {
         range.each!((n) => this[n] = true);
     }
@@ -145,6 +148,19 @@ struct BitMask {
 
     void erase() pure nothrow {
         mask = null;
+    }
+
+    bool empty() const pure nothrow @nogc {
+        return mask.map!(a => a == 0).all;
+    }
+
+    unittest {
+        BitMask bits;
+        assert(bits.empty);
+        bits.mask.length = 2;
+        assert(bits.empty);
+        bits.mask = [17];
+        assert(!bits.empty);
     }
 
     @nogc

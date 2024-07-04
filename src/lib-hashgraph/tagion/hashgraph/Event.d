@@ -180,10 +180,11 @@ class Event {
     class Witness {
         enum DecisionType {
             undecided,
-            weak,
+            Weak,
             No,
             Yes,
         }
+
         protected static uint _count;
         @nogc static uint count() nothrow {
             return _count;
@@ -195,6 +196,7 @@ class Event {
             BitMask _voted_yes_mask; /// Witness in the next round which has voted
 
         }
+        BitMask decided_yes_mask;
         const BitMask previous_witness_seen_mask;
 
         @nogc final const pure nothrow {
@@ -234,46 +236,93 @@ class Event {
                 }
                 return false;
             }
-        }
-            final DecisionType decision() const pure nothrow {
-                auto feature_rounds=_round[].retro.drop(1);
-                if (!feature_rounds.empty) {
-                    if (feature_rounds.take(2).map!(r => r.events[node_id] !is null).any) {
-                        return (votedYes)?DecisionType.Yes:DecisionType.No;
-                    }
-                    if (feature_rounds.take(2).map!(r => r.majority).all) {
-                        return DecisionType.weak;
-                    }
-                }
-                return DecisionType.undecided;
+
+            bool decided(const size_t voters) {
+                const N = _round.events.length;
+                const votes = decided_yes_mask.count;
+                //assert(votes <= voters, "Voters >= the the votes");
+                return isMajority(votes, N) || (votes <= voters) && isMajority(voters - votes, N);
             }
+
+            bool newDecision() {
+                if (_round.voting) {
+                    return decided(_round.voting._events.filter!(e => e !is null).count);
+                }
+                return false;
+            }
+
+            bool newDecidedYes() {
+                return isMajority(decided_yes_mask, _round.events.length);
+            }
+        }
+
+        version (none) final void update_decision_mask() pure nothrow {
+            decided_yes_mask |= _voted_yes_mask;
+        }
+
+        final const(BitMask) _decidedYes(const Round r) const pure nothrow {
+            BitMask result;
+            return _round[].retro
+                .map!(r => r._events[node_id])
+                .filter!(e => e !is null)
+                .until!(e => (e.round.number - r.number) >= 0)
+                .map!(e => e.witness.voted_yes_mask)
+                .fold!((a, b) => a | b)(result);
+        }
+
+        bool _decidedYes() const pure nothrow @nogc {
+            return isMajority(decided_yes_mask.count, _round.node_size);
+        }
+
+        bool decidedYes() const pure nothrow {
+            return decision == DecisionType.Yes;
+        }
+
+        final DecisionType decision() const pure nothrow {
+            auto feature_rounds = _round[].retro.drop(1);
+            if ((feature_rounds.take(2).walkLength == 2) && feature_rounds.take(2).map!(r => r.majority).all) {
+                if (feature_rounds.take(2).map!(r => r.events[node_id]!is null).any) {
+                    return (votedYes) ? DecisionType.Yes : DecisionType.No;
+                }
+                if (feature_rounds.take(3).map!(r => r.majority).all) {
+                    return DecisionType.Weak;
+                }
+            }
+            return DecisionType.undecided;
+        }
+
         alias isFamous = votedYes;
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
             if (!_voted_yes_mask[voting_node_id]) {
                 _voted_yes_mask[voting_node_id] = true;
-                if (_round.previous) {
-                    auto _previous_witness = _round.previous[]
-                        .map!(r => r._events[node_id])
-                        .filter!(e => e !is null)
-                        .map!(e => e._witness);
-                    if (!_previous_witness.empty) {
-                        auto w = _previous_witness.front;
-                        w.voteYes(voting_node_id);
-                        debug Event.view(w.outer);
-                        if (_round.previous.previous) {
-                            const missing_votes = w.previous_witness_seen_mask - w.voted_yes_mask;
-                            __write("Missing votes round %d missing_votes=%d", _round.number, missing_votes.count);
-                            missing_votes[]
-                                .map!(vote_on_node_id => _round.previous.previous._events[vote_on_node_id])
-                                .filter!(e => e !is null)
-                                .map!(e => e._witness)
-                                .each!(w => w.voteYes(voting_node_id));
-                            //.each!((ref w) => w.voteYes(voting_node_id));
+                //if (isMajority(_voted_yes_mask, _round.node_size)) {
+                decided_yes_mask[voting_node_id] = true;
+                //}
+                version (none)
+                    if (_round.previous) {
+                        auto _previous_witness = _round.previous[]
+                            .map!(r => r._events[node_id])
+                            .filter!(e => e !is null)
+                            .map!(e => e._witness);
+                        if (!_previous_witness.empty) {
+                            auto w = _previous_witness.front;
+                            w.voteYes(voting_node_id);
+                            debug Event.view(w.outer);
+                            version (none)
+                                if (_round.previous.previous) {
+                                    const missing_votes = w.previous_witness_seen_mask - w.voted_yes_mask;
+                                    __write("Missing votes round %d missing_votes=%d", _round.number, missing_votes.count);
+                                    missing_votes[]
+                                        .map!(vote_on_node_id => _round.previous.previous._events[vote_on_node_id])
+                                        .filter!(e => e !is null)
+                                        .map!(e => e._witness)
+                                        .each!(w => w.voteYes(voting_node_id));
+                                    //.each!((ref w) => w.voteYes(voting_node_id));
+                                }
                         }
-                    }
 
-                }
+                    }
             }
         }
 
@@ -308,7 +357,7 @@ class Event {
             _witness_seen_mask[node_id] = true;
         }
 
-        bool hasVoted() const pure nothrow {
+        bool hasVoted() const pure nothrow @nogc {
             return _round !is null;
         }
 
@@ -323,7 +372,8 @@ class Event {
                     //auto previous_witness_event = previous_witness_events[n];
                     if (previous_witness_event) {
                         auto vote_for_witness = previous_witness_event._witness;
-                        const seen_strongly = _previous_strongly_seen_mask[n];
+                        //const seen_strongly = _previous_strongly_seen_mask[n];
+                        const seen_strongly = previous_witness_seen_mask[n];
                         if (seen_strongly) {
                             vote_for_witness.voteYes(node_id);
                         }
@@ -374,8 +424,7 @@ class Event {
 
     static void view(R)(R range) nothrow if (isInputRange!R && is(ElementType!R : const(Event))) {
         if (callbacks) {
-            range
-                .each!(e => view(e));
+            range.each!(e => view(e));
         }
     }
 
@@ -391,7 +440,7 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    final void witness_event() nothrow
+    package final void witness_event() nothrow
     in (!_witness, "Witness has already been set")
     out {
         assert(_witness, "Witness should be set");
@@ -501,9 +550,7 @@ class Event {
      *   hashgraph = event owner
      */
     final package void disconnect(HashGraph hashgraph) nothrow @trusted
-    in {
-        assert(!_mother, "Event with a mother can not be disconnected");
-    }
+    in (!_mother, "Event with a mother can not be disconnected")
     do {
         hashgraph.eliminate(fingerprint);
         if (_witness) {
@@ -547,8 +594,8 @@ class Event {
             _round_received = r;
         }
 
-        package Witness witness() 
-        in(_witness, "Event is not a witness") 
+        package Witness witness()
+        in (_witness, "Event is not a witness")
         do {
             return _witness;
         }
@@ -705,12 +752,13 @@ class Event {
         /// An Eva is is also defined as han father less event
         /// This also means that the event has not valid order and must not be included in the epoch order.
         bool isFatherLess() {
-            return isEva || !isGrounded && (event_package.event_body.father is null) && _mother
-                .isFatherLess;
+            return isEva || !isGrounded &&
+                (event_package.event_body.father is null) && _mother.isFatherLess;
         }
 
         bool isGrounded() {
-            return (_mother is null) && (event_package.event_body.mother !is null) ||
+            return (_mother is null) &&
+                (event_package.event_body.mother !is null) ||
                 (_father is null) && (event_package.event_body.father !is null);
         }
 

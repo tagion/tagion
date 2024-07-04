@@ -238,29 +238,30 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
 
         // colors
         if (e.witness) {
-          //  if (e.famous || e.decided) {
-                node_circle.fill = nonPastel19.color(e.round);
-                import tagion.hashgraph.Event;
-                with(Event.Witness.DecisionType) final switch (e.type) {
-                case undecided:
-                    node_circle.stroke="lightblue";
-                node_circle.fill = "blue";
-                    break;
-                case weak:
-                    node_circle.stroke="blue";
-                    break;
-                case No:
-                    node_circle.stroke="red";
-                    break;
-                case Yes:
-                    node_circle.stroke="green";
+            //  if (e.famous || e.decided) {
+            node_circle.fill = nonPastel19.color(e.round);
+            import tagion.hashgraph.Event;
 
-                }
-                //node_circle.stroke = (e.famous) ? "green" : "red";
-                node_circle.stroke_width = 10;
-           // }
-           // else {
-           // }
+            with (Event.Witness.DecisionType) final switch (e.type) {
+            case undecided:
+                node_circle.stroke = "lightblue";
+                node_circle.fill = "blue";
+                break;
+            case Weak:
+                node_circle.stroke = "blue";
+                break;
+            case No:
+                node_circle.stroke = "red";
+                break;
+            case Yes:
+                node_circle.stroke = "green";
+
+            }
+            //node_circle.stroke = (e.famous) ? "green" : "red";
+            node_circle.stroke_width = 10;
+            // }
+            // else {
+            // }
             node_circle.radius += NODE_CIRCLE_SIZE / 4;
         }
         else {
@@ -328,6 +329,12 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             voted_mask = e.voted;
             text.text = (() @trusted => format(vote_fmt ~ ":%d", voted_mask, voted_mask.count))();
             text.pos.y += NODE_CIRCLE_SIZE / 2;
+            text.fill = "blue";
+            obuf[20].writefln("%s", text.toString);
+            BitMask dec_mask;
+            dec_mask = e.dec_voted;
+            text.text = (() @trusted => format(vote_fmt ~ ":%d", dec_mask, dec_mask.count))();
+            text.pos.y += NODE_CIRCLE_SIZE / 2;
             text.fill = "green";
             obuf[20].writefln("%s", text.toString);
 
@@ -338,10 +345,10 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             obuf[20].writefln("%s", text.toString);
             text.pos.y += NODE_CIRCLE_SIZE / 2;
             text.fill = "red";
-            text.text = format("%s", e.type); 
+            text.text = format("%s", e.type);
             obuf[20].writefln("%s", text.toString);
             text.pos.y += NODE_CIRCLE_SIZE / 2;
-             
+
             //text.text = format("no  %d", e.no_votes); //, e.no_votes);
             //obuf[20].writefln("%s", text.toString);
             //obuf[20].writefln("%d:%d", e.yes_votes, e.no_votes);
