@@ -365,7 +365,7 @@ struct BitMask {
     }
 
     BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
-    if (op == "-" || op == "&" || op == "|" || op == "^") {
+    if (only("-", "&", "|", "^").canFind(op)) {
         import std.algorithm.comparison : max, min;
 
         BitMask result;
@@ -437,7 +437,7 @@ struct BitMask {
     }
 
     BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
-    if (op == "-" || op == "&" || op == "|" || op == "^") {
+    if (only("-", "&", "|", "^").canFind(op)) {
         if (mask.length > rhs.mask.length) {
             switch (op) {
             case "&":
@@ -460,8 +460,25 @@ struct BitMask {
         return this;
     }
 
+    BitMask opOpAssign(string op, R)(const R range) pure
+    if (only("-", "+").canFind(op) && isInputRange!R && isIntegral!(ElementType!R)) {
+        foreach (bit_number; range) {
+            this[bit_number] = (op == "+");
+        }
+        return this;
+    }
+
+    unittest {
+        BitMask bits = BitMask([1, 4, 5]);
+        bits += [8, 17];
+        assert(bits == BitMask("01001100_10000000_01000000"));
+        bits -= [4, 15, 5];
+
+        assert(bits == BitMask("01000000_10000000_01000000"));
+    }
+
     BitMask opBinary(string op, Index)(const Index index) const pure nothrow
-    if ((op == "-" || op == "+") && isIntegral!Index) {
+    if (only("-", "+").canFind(op) && isIntegral!Index) {
         BitMask result = dup;
         result[index] = (op == "+");
         return result;

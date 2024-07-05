@@ -256,8 +256,8 @@ class Event {
             }
         }
 
-        version (none) final void update_decision_mask() pure nothrow {
-            decided_yes_mask |= _voted_yes_mask;
+        final void update_decision_mask() pure nothrow {
+            decided_yes_mask = _voted_yes_mask;
         }
 
         final const(BitMask) _decidedYes(const Round r) const pure nothrow {
