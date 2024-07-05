@@ -66,14 +66,18 @@ struct ws_device {
     WebSocket *ws;
     void  *ctx;
     string[] topics;
-    this ( WebSocket* _w, void* _c, string[] _t ) shared {
-        ws = cast (shared WebSocket*) _w;
+/*    
+    this ( WebSocket* _w, void* _c, string[] _t ) {
+        ws = ast (shared WebSocket*) _w;
         ctx = cast (shared void* )_c;
         topics = cast ( shared string[] )_t;
     };
+*/    
 }
 
-shared ws_device[string] ws_devices;
+alias WSCache = LRUT!(string, ws_device);
+
+shared WSCache ws_devices;
 
 shared static bool abort = false;
 
@@ -367,16 +371,16 @@ void dart_worker(ShellOptions opt) {
 
 
 void ws_propagate(string topic, string msg){
-   synchronized {
-       foreach(sid, dev; ws_devices){
-            foreach(t; dev.topics)
-                if(topic.startsWith(t)){
-                    WebSocket *ws = cast(WebSocket*)dev.ws;
+    ws_device d;
+    foreach(sid; ws_devices.keys()){
+        if(ws_devices.get(sid,d)){
+            if(count!"b.startsWith(a)"(d.topics, topic) > 0){
+                WebSocket *ws = cast(WebSocket*)d.ws;
                     if(ws != null && ! ws.closed)
                         ws.send(cast(ubyte[])(topic~"\0"~msg));
-                }    
-       }
-   }
+            }
+        }
+    }        
 }
 
 void ws_on_connect(WebSocket *ws, void *ctx){
@@ -384,20 +388,19 @@ void ws_on_connect(WebSocket *ws, void *ctx){
     Thread.sleep(500.msecs);
     auto sid = ws.sid;
     writeit("WS: ONCONNECT: ", sid);
-    if(sid in ws_devices){
+    if(ws_devices.contains(sid)){
         writeit("Already cached socket: ", sid);
         return;
     }
-    synchronized {    
-        ws_devices[sid] = shared ws_device ( ws, ctx, [] );
-    }
+    auto d = ws_device(ws, ctx, []);
+    ws_devices.add(sid,d);
     writeit("WS: D0");
 }
 
 void ws_on_close(WebSocket *ws, void *ctx){
     auto sid = ws.sid;
     writeit("WS: ONCLOSE: ", sid);
-    if(sid in ws_devices){
+    if( ws_devices.contains(sid)){
         ws_devices.remove(sid);
     }
 }
@@ -407,21 +410,22 @@ void ws_on_error(WebSocket *ws, int err, void *ctx){
 }
 
 void ws_on_message(WebSocket *ws, ubyte[] data, void *ctx){
-   auto sid = ws.sid;
-   string msg = cast(immutable(char[]))data;
-   writeit("WS MSG: ",sid," : ",msg);
-   if(sid in ws_devices){
+    auto sid = ws.sid;
+    string msg = cast(immutable(char[]))data;
+    writeit("WS MSG: ",sid," : ",msg);
+    ws_device d;
+    if(ws_devices.get(sid,d)){
         auto sa = msg.split("\0");
         if(sa[0] == "subscribe"){
-            synchronized{
-                if(!ws_devices[sid].topics.canFind(sa[1]))
-                    ws_devices[sid].topics ~= sa[1];
-            }
-        }else if(sa[0] == "unsubscribe"){
-            synchronized{
-                if(ws_devices[sid].topics.canFind(sa[1]))
-                    ws_devices[sid].topics = ws_devices[sid].topics.remove!(x => x == sa[1]);
+            if(!d.topics.canFind(sa[1])){
+                d.topics ~= sa[1];
+                ws_devices.update(sid,d);
             }    
+        }else if(sa[0] == "unsubscribe"){
+            if(d.topics.canFind(sa[1])){
+                d.topics = d.topics.remove!(x => x == sa[1]);
+                ws_devices.update(sid,d);
+            }                
         }else{
             writeit("WS: MSG: Invalid topic: ", sa);
         }
@@ -1090,6 +1094,7 @@ int _main(string[] args) {
 
     if(!options.ws_pub_uri.empty){
         //auto ws_tid = spawn(&ws_worker, options);
+        ws_devices = new shared(WSCache)(null, 512, 0); // TODO: hardcoded session cache size -> options
         WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_close, &ws_on_error, &ws_on_message, cast(void*)&options );
         wsa.start();
     }
