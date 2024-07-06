@@ -99,7 +99,7 @@ class NewTestRefinement : StdRefinement {
 
         version (OLD_ORDERING) {
             const mid = times.length / 2 + (times.length % 1);
-            __write("round=%d times.length=%d mid=%d event_collection=%d", decided_round.number, times.length, mid, event_collection
+            __write("%12s Round %d times.length=%d mid=%d event_collection=%d", hashgraph.name, decided_round.number, times.length, mid, event_collection
                     .length);
             const epoch_time = times[mid];
         }

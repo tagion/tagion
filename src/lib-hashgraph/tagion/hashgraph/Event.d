@@ -240,10 +240,13 @@ class Event {
             bool decided(const size_t voters) {
                 const N = _round.events.length;
                 const votes = decided_yes_mask.count;
+                assert(votes <= voters, "Number of votes greater than then number of voters");
+                const votedNo = voters-votes;
                 //assert(votes <= voters, "Voters >= the the votes");
-                return isMajority(votes, N) || (votes <= voters) && isMajority(voters - votes, N);
+                return isMajority(votes, N) ||  isMajority( votedNo, N);
             }
 
+            version(none)
             bool newDecision() {
                 if (_round.voting) {
                     return decided(_round.voting._events.filter!(e => e !is null).count);
@@ -251,7 +254,7 @@ class Event {
                 return false;
             }
 
-            bool newDecidedYes() {
+            bool decidedYes() {
                 return isMajority(decided_yes_mask, _round.events.length);
             }
         }
@@ -260,6 +263,7 @@ class Event {
             decided_yes_mask = _voted_yes_mask;
         }
 
+        version(none)
         final const(BitMask) _decidedYes(const Round r) const pure nothrow {
             BitMask result;
             return _round[].retro
@@ -270,10 +274,12 @@ class Event {
                 .fold!((a, b) => a | b)(result);
         }
 
+        version(none)
         bool _decidedYes() const pure nothrow @nogc {
             return isMajority(decided_yes_mask.count, _round.node_size);
         }
 
+        version(none)
         bool decidedYes() const pure nothrow {
             return decision == DecisionType.Yes;
         }

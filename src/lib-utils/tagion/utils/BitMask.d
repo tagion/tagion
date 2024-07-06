@@ -60,10 +60,8 @@ struct BitMask {
     }
 
     this(R)(scope R range) pure nothrow
-
-    
-
-            if ((isInputRange!R) && isIntegral!(ElementType!R) && !is(ElementType!R : bool) && !is(Uqual!(ElementType!R) == ubyte)) {
+    if ((isInputRange!R) && isIntegral!(ElementType!R) && 
+        !is(ElementType!R : bool) && !is(Uqual!(ElementType!R) == ubyte)) {
         range.each!((n) => this[n] = true);
     }
 
@@ -460,7 +458,7 @@ struct BitMask {
         return this;
     }
 
-    BitMask opOpAssign(string op, R)(const R range) pure
+    BitMask opOpAssign(string op, R)(R range) pure
     if (only("-", "+").canFind(op) && isInputRange!R && isIntegral!(ElementType!R)) {
         foreach (bit_number; range) {
             this[bit_number] = (op == "+");
