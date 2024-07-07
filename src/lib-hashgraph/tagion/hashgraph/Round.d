@@ -882,10 +882,9 @@ class Round {
             hashgraph.statistics.feature_famous_rounds(count_feature_famous_rounds(round_to_be_decided));
             log.event(Event.topic, hashgraph.statistics.feature_famous_rounds.stringof, hashgraph.statistics
                     .feature_famous_rounds);
-            version (none)
                 if (!isMajority(round_to_be_decided.events
                         .filter!(e => e !is null)
-                        .map!(e => e.witness.decidedYes)
+                        .map!(e => e.witness.votedYes)
                         .count, hashgraph.node_size)) {
                     __write("%12s Round %d %sNot collected%s", hashgraph.name, round_to_be_decided.number, RED, RESET);
                     return;
@@ -980,7 +979,7 @@ import tagion.utils.Term;
             RESET,
             r.number,
             r._events.map!(e => show(e)), event_collection.length,
-            r._events.map!(e => (e is null)?-1:e.witness.separation),
+            r._next._events.map!(e => (e is null)?-1:e.witness.separation),
             r._events.map!(e => (e is null)?BitMask.init:e.witness.voted_yes_mask),
             r._events.filter!(e => e !is null).filter!(e => e.witness.votedYes).count,
             r._events.map!(e => ((e is null) || !e.witness.votedYes)?null:e)
