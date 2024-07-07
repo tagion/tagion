@@ -219,7 +219,10 @@ class Event {
             bool votedYes() {
                 return isMajority(yes_votes, _round.events.length);
             }
-
+           
+            bool weak() {
+                return (separation >=3);
+            }
             bool decided() {
                 const voted = _voted_yes_mask.count;
                 const N = _round.events.length;
@@ -300,35 +303,10 @@ class Event {
         alias isFamous = votedYes;
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
-            if (!_voted_yes_mask[voting_node_id]) {
+            if (!_voted_yes_mask[voting_node_id] ) {
                 _voted_yes_mask[voting_node_id] = true;
                 //if (isMajority(_voted_yes_mask, _round.node_size)) {
                 decided_yes_mask[voting_node_id] = true;
-                //}
-                version (none)
-                    if (_round.previous) {
-                        auto _previous_witness = _round.previous[]
-                            .map!(r => r._events[node_id])
-                            .filter!(e => e !is null)
-                            .map!(e => e._witness);
-                        if (!_previous_witness.empty) {
-                            auto w = _previous_witness.front;
-                            w.voteYes(voting_node_id);
-                            debug Event.view(w.outer);
-                            version (none)
-                                if (_round.previous.previous) {
-                                    const missing_votes = w.previous_witness_seen_mask - w.voted_yes_mask;
-                                    __write("Missing votes round %d missing_votes=%d", _round.number, missing_votes.count);
-                                    missing_votes[]
-                                        .map!(vote_on_node_id => _round.previous.previous._events[vote_on_node_id])
-                                        .filter!(e => e !is null)
-                                        .map!(e => e._witness)
-                                        .each!(w => w.voteYes(voting_node_id));
-                                    //.each!((ref w) => w.voteYes(voting_node_id));
-                                }
-                        }
-
-                    }
             }
         }
 
@@ -371,11 +349,11 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
         do {
             hashgraph._rounds.set_round(this.outer);
-            if (separation >= 3) {
+            if (weak) {
                 return;
             }
             /// Counting yes/no votes from this witness to witness in the previous round
-            if (round.previous) {
+            if (round.previous && (round.previous.events[node_id] !is null) && !round.previous.events[node_id].witness.weak) {
                 auto previous_witness_events = _round.previous._events;
                 foreach (n, previous_witness_event; previous_witness_events) {
                     //auto previous_witness_event = previous_witness_events[n];
@@ -385,8 +363,8 @@ class Event {
                         const seen_strongly = previous_witness_seen_mask[n];
                         if (seen_strongly) {
                             vote_for_witness.voteYes(node_id);
+                            view(previous_witness_event);
                         }
-                        view(previous_witness_event);
                     }
                 }
             }

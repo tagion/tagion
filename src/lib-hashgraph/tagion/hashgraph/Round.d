@@ -975,14 +975,17 @@ import tagion.utils.Term;
                 }
                 return format("%sX %s", RED, RESET);
             }
-            __write("%12s %sRound %d%s %d witness %-(%s %) collected=%d separation=%(%d %) votes=%(%7s %) yes=%d voting=%-(%s %)", 
+            __write("%12s %sRound %d%s %d witness %-(%s %) collected=%d separation=%(%(%d:%) %) votes=%(%7s %) yes=%d voting=%-(%s %)", 
+
             hashgraph.name, 
             CYAN,
             r.number,
             RESET,
             r.number,
             r._events.map!(e => show(e)), event_collection.length,
-            r._next._events.map!(e => (e is null)?-1:e.witness.separation),
+            zip(
+            r._events.map!(e => (e is null)?-1:e.witness.separation),
+            r._next._events.map!(e => (e is null)?-1:e.witness.separation)).map!(t => only(t[0],t[1])),
             r._events.map!(e => (e is null)?BitMask.init:e.witness.voted_yes_mask),
             r._events.filter!(e => e !is null).filter!(e => e.witness.votedYes).count,
             r._events.map!(e => ((e is null) || !e.witness.votedYes)?null:e)
