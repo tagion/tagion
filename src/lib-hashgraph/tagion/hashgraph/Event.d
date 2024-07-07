@@ -198,7 +198,7 @@ class Event {
         }
         BitMask decided_yes_mask;
         const BitMask previous_witness_seen_mask;
-
+        int separation;
         @nogc final const pure nothrow {
             const(BitMask) previous_strongly_seen_mask() {
                 return _previous_strongly_seen_mask;

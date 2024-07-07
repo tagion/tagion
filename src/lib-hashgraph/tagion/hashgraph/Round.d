@@ -72,10 +72,10 @@ class Round {
 
     enum Completed {
         none,
-        undecided,
-        all_witness,
         majority_none,
         too_few,
+        undecided,
+        all_witness,
         next_witness,
         higher,
         missing,
@@ -92,6 +92,9 @@ class Round {
                 this[].retro
                     .drop(1)
                     .until!(r => !r.majority);
+            if (list_majority_rounds.empty) {
+                return Completed.none;
+            }
             scope (exit) {
                 __write("%12s Round %d completed=%s  missing %7s -> %(%(%d%) %)", 
                 hashgraph.name, 
@@ -101,8 +104,10 @@ class Round {
                 list_majority_rounds
                         .map!(r => r._events.map!(e => e !is null)));
             }
-            missing_witness = BitMask(node_size.iota.filter!(n => _events[n] is null));
+            const next_round=list_majority_rounds.front;
+            missing_witness = BitMask(node_size.iota.filter!(n => next_round._events[n] is null));
             if (missing_witness.empty) {
+                
                 return ret = Completed.all_witness;
             }
             if (list_majority_rounds.empty) {
@@ -121,12 +126,11 @@ class Round {
                     return ret = Completed.next_witness;
                 }
             }
-            auto last_majority_round = list_majority_rounds.tail(1).front;
-            missing_witness[]
+            const last_majority_round = list_majority_rounds.tail(1).front;
+            missing_witness-=missing_witness[]
                 .filter!(n => hashgraph.rounds.last_witness_events[n]!is null)
                 .filter!(n => last_majority_round._events[n]!is null)
-                .filter!(n => (last_majority_round.number - hashgraph.rounds.last_witness_events[n].round.number) >= 3)
-                .each!(n => missing_witness[n] = false);
+                .filter!(n => (last_majority_round.number - hashgraph.rounds.last_witness_events[n].round.number) >= 3);
             if (missing_witness.empty) {
                 return ret = Completed.higher;
             }
@@ -663,6 +667,10 @@ class Round {
             scope (exit) {
                 if (e._witness) {
                     e._round.add(e);
+                    const last_witness_event=last_witness_events[e.node_id];
+                    if (last_witness_event) {
+                        e._witness.separation=e.round.number-last_witness_event.round.number;
+                    }
                     last_witness_events[e.node_id] = e;
                     update_latest_famous_round;
 
@@ -783,48 +791,6 @@ class Round {
 
         }
         enum rounds_beyond_limit = 3;
-        version (none) bool can_round_be_decided(const Round r) const pure nothrow {
-            bool _decided(T)(const T item) @nogc {
-                if (item.value && item.value.witness.votedYes) {
-                    return true;
-                }
-                const last_witness_event = last_witness_events[item.index];
-                return last_witness_event &&
-                    (last_witness_event._round.number - r.number) > 0;
-            }
-
-            if (r) {
-                const decided_votes = r._events
-                    .enumerate
-                    .filter!(item => _decided(item))
-                    .count;
-                __write("%12s Round %d decided_votes=%d vote-yes=%d - - -",
-                        hashgraph.name,
-                        r.number,
-                        decided_votes,
-                        r._events
-                        .filter!(e => e !is null)
-                        .filter!(e => e._witness.decidedYes(_voting))
-                        .count);
-                if (decided_votes == r.node_size) {
-                    return true;
-                }
-                if (isMajority(decided_votes, r.node_size)) {
-                    __write("%12s Round %d witness=%d votes=%d can be decided? %s", hashgraph.name, r.number,
-                            r._events.filter!(e => e !is null).count, decided_votes,
-                            r._can_round_be_decided);
-                    const last_round_beyond = (last_round.number - r.number) > rounds_beyond_limit;
-                    return r.node_size
-                        .iota
-                        .map!(w_node_id => last_witness_events[w_node_id]) //.map!(e => (e)&&((e.round.number - r.number) > 0) || last_round_beyond)
-                        .map!(e => (e) ? (e.round.number - r.number) > 0 : last_round_beyond)
-                        .all;
-                }
-
-            }
-            return false;
-        }
-
         void check_decide_round() {
             import tagion.utils.Term;
 
@@ -861,10 +827,12 @@ class Round {
                         round_to_be_decided[].retro.drop(1).take(2)
                             .map!(r => r.witness_mask),
                 );
-                __write("%s #2 Round %d voted_yes_mask    = %(%7s %) witness=%d", _name,
+                __write("%s #2 Round %d voted_yes_mask    = %(%7s %) witness=%d separation=%(%d %)", _name,
                         round_to_be_decided.number,
                         round_to_be_decided._events.map!(e => (e is null) ? BitMask.init : e.witness.voted_yes_mask),
-                        round_to_be_decided._events.filter!(e => e !is null).count);
+                        round_to_be_decided._events.filter!(e => e !is null).count,
+                        round_to_be_decided._events.map!(e => (e is null)?-1:e.witness.separation)
+                        );
                 __write(
                         "%s #2 Round %d decision_yes_mask = %(%7s %) voting round %d newYes=%(%d%)  %s completed=%s",
                         _name,
@@ -891,14 +859,16 @@ class Round {
             if (!new_decided) {
                 return;
             }
-            const all_voted_yes = witness_in_round.map!(w => w.votedYes).all;
             __write(
-                    "%s Round %d can be decided (all %s%s) witness=%d %(%d%) votes=%(%7s %) w_masks=%(%7s %)",
-                    _name, round_to_be_decided.number, (all_voted_yes) ? GREEN ~ "yes" : RED ~ "no", RESET,
+                    "%s %s%sRound %d%s can be decided  witness=%d", // yes=%(%d%) ", //votes=%(%7s %) w_masks=%(%7s %)",
+                    _name, 
+                    BOLD, GREEN,
+                    round_to_be_decided.number, 
+                    RESET,
                     witness_in_round.walkLength,
-                    round_to_be_decided._events.map!(e => (e !is null) && (e.witness.votedYes)),
-                    witness_in_round.map!(w => w.voted_yes_mask),
-                    round_to_be_decided[].retro.take(3).map!(r => r.witness_mask)
+                    //round_to_be_decided._events.map!(e => (e !is null) && (e.witness.votedYes)),
+                    //witness_in_round.map!(w => w.voted_yes_mask),
+                    //round_to_be_decided[].retro.take(3).map!(r => r.witness_mask)
 
             );
             Event.view(witness_in_round.map!(w => w.outer));
@@ -928,19 +898,8 @@ class Round {
         in (r.decided, "The round should be decided before the round can be collected")
 
         do {
-
+import tagion.utils.Term;
             auto witness_event_in_round = r._events.filter!(e => e !is null);
-            version (none) const famous_count = witness_event_in_round
-                .map!(e => e.witness)
-                .map!(w => w.newDecidedYes)
-                .count;
-            version (none)
-                if (!isMajority(famous_count, hashgraph.node_size)) {
-                    // The number of famous is not in majority 
-                    // This means that we have to wait for the next round
-                    // to collect the events
-                    return;
-                }
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
                 event_list.length = hashgraph.node_size * hashgraph.node_size;
@@ -959,9 +918,7 @@ class Round {
             }
 
             auto famous_witness_in_round = witness_event_in_round
-                .filter!(e => e._witness.decidedYes);
-            version (none) auto famous_witness_in_round = witness_event_in_round
-                .filter!(e => e.round.decidedYes(e.node_id));
+                .filter!(e => e._witness.votedYes);
             auto event_list = majority_seen_from_famous(famous_witness_in_round);
             event_list
                 .sort!((a, b) => Event.higher_order(a, b));
@@ -1010,6 +967,24 @@ class Round {
             Event.view(event_collection);
             hashgraph.statistics.epoch_events(event_collection.length);
             log.event(Event.topic, hashgraph.statistics.epoch_events.stringof, hashgraph.statistics.epoch_events);
+            string show(const Event e) {
+                if (e) {
+                    return format("%s%d%s", (e._witness.decidedYes)?GREEN:YELLOW, e.altitude, RESET);
+                }
+                return format("%sX %s", RED, RESET);
+            }
+            __write("%12s %sRound %d%s %d witness %-(%s %) collected=%d separation=%(%d %) votes=%(%7s %) yes=%d voting=%-(%s %)", 
+            hashgraph.name, 
+            CYAN,
+            r.number,
+            RESET,
+            r.number,
+            r._events.map!(e => show(e)), event_collection.length,
+            r._events.map!(e => (e is null)?-1:e.witness.separation),
+            r._events.map!(e => (e is null)?BitMask.init:e.witness.voted_yes_mask),
+            r._events.filter!(e => e !is null).filter!(e => e.witness.votedYes).count,
+            r._events.map!(e => ((e is null) || !e.witness.votedYes)?null:e)
+            .map!(e => show(e)));
             hashgraph.epoch(event_collection, r);
 
         }
