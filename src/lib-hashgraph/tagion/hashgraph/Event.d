@@ -254,7 +254,7 @@ class Event {
                 return false;
             }
 
-            bool decidedYes() {
+            bool _decidedYes() {
                 return isMajority(decided_yes_mask, _round.events.length);
             }
         }
@@ -371,15 +371,6 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
         do {
             hashgraph._rounds.set_round(this.outer);
-            /*
-            auto previous_witness = _round[]
-            .drop(1)
-            .take(3)
-            .map!(r => r._events[node_id]);
-            if (previous_witness.map!(e => e is null).all && previous_witness.walkLength == 3) {
-                return;
-            }
-    */  
             if (separation >= 3) {
                 return;
             }

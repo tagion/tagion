@@ -134,7 +134,8 @@ class Round {
             if (missing_witness.empty) {
                 return ret = Completed.higher;
             }
-            if (list_majority_rounds.take(2).walkLength < 2) {
+            const number_of_feature_round=list_majority_rounds.take(3).walkLength;
+            if (number_of_feature_round < 3) {
                 return ret = Completed.too_few;
             }
             {
@@ -819,18 +820,20 @@ class Round {
                         .map!(r => r.events)
                         .map!(es => only(es.filter!(e => e !is null).count,
                             es.filter!(e => e !is null)
-                            .filter!(e => e.witness.decidedYes)
+                            .filter!(e => e.witness.votedYes)
                             .count)), //count_feature_famous_rounds,
                         witness_in_round.count,
                         format("%s%s", new_decided? GREEN ~ "yes" : RED ~ "no", RESET),
-                        witness_in_round.filter!(w => w.decidedYes).count,
+                        witness_in_round.filter!(w => w.votedYes).count,
                         round_to_be_decided[].retro.drop(1).take(2)
                             .map!(r => r.witness_mask),
                 );
-                __write("%s #2 Round %d voted_yes_mask    = %(%7s %) witness=%d separation=%(%d %)", _name,
+                __write("%s #2 Round %d voted_yes_mask    = %(%7s %) witness=%d yes=%d separation=%(%d %)", _name,
                         round_to_be_decided.number,
                         round_to_be_decided._events.map!(e => (e is null) ? BitMask.init : e.witness.voted_yes_mask),
                         round_to_be_decided._events.filter!(e => e !is null).count,
+                        round_to_be_decided._events.filter!(e => e !is null)
+                        .filter!(e => e.witness.votedYes).count,
                         round_to_be_decided._events.map!(e => (e is null)?-1:e.witness.separation)
                         );
                 __write(
@@ -839,7 +842,7 @@ class Round {
                         round_to_be_decided.number,
                         round_to_be_decided._events.map!(e => (e is null) ? BitMask.init : e.witness.decided_yes_mask),
                         round_to_be_decided.voting_number,
-                        round_to_be_decided._events.map!(e => (e !is null) && e.witness.decidedYes),
+                        round_to_be_decided._events.map!(e => (e !is null) && e.witness._decidedYes),
                         format("%s%s", new_decided ? GREEN ~ "yes" : RED ~ "no", RESET),
                         new_completed
                 );
@@ -855,7 +858,7 @@ class Round {
             if (new_completed <= Completed.undecided) {
                 return;
             }
-        
+            version(none) 
             if (!new_decided) {
                 return;
             }
@@ -968,7 +971,7 @@ import tagion.utils.Term;
             log.event(Event.topic, hashgraph.statistics.epoch_events.stringof, hashgraph.statistics.epoch_events);
             string show(const Event e) {
                 if (e) {
-                    return format("%s%d%s", (e._witness.decidedYes)?GREEN:YELLOW, e.altitude, RESET);
+                    return format("%s%d%s", (e._witness.votedYes)?GREEN:YELLOW, e.altitude, RESET);
                 }
                 return format("%sX %s", RED, RESET);
             }
