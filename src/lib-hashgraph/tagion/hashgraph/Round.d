@@ -134,8 +134,8 @@ class Round {
             if (missing_witness.empty) {
                 return ret = Completed.higher;
             }
-            const number_of_feature_round=list_majority_rounds.take(3).walkLength;
-            if (number_of_feature_round < 3) {
+            const number_of_feature_round=list_majority_rounds.take(4).walkLength;
+            if (number_of_feature_round < 4) {
                 return ret = Completed.too_few;
             }
             {

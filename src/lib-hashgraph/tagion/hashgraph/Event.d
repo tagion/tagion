@@ -359,8 +359,8 @@ class Event {
                     //auto previous_witness_event = previous_witness_events[n];
                     if (previous_witness_event) {
                         auto vote_for_witness = previous_witness_event._witness;
-                        //const seen_strongly = _previous_strongly_seen_mask[n];
-                        const seen_strongly = previous_witness_seen_mask[n];
+                        const seen_strongly = _previous_strongly_seen_mask[n];
+                        //const seen_strongly = previous_witness_seen_mask[n];
                         if (seen_strongly) {
                             vote_for_witness.voteYes(node_id);
                             view(previous_witness_event);
