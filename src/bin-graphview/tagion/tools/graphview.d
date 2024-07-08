@@ -331,12 +331,6 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             text.pos.y += NODE_CIRCLE_SIZE / 2;
             text.fill = "blue";
             obuf[20].writefln("%s", text.toString);
-            BitMask dec_mask;
-            dec_mask = e.dec_voted;
-            text.text = (() @trusted => format(vote_fmt ~ ":%d", dec_mask, dec_mask.count))();
-            text.pos.y += NODE_CIRCLE_SIZE / 2;
-            text.fill = "green";
-            obuf[20].writefln("%s", text.toString);
 
             text.pos = pos;
             text.pos.x -= NODE_CIRCLE_SIZE * 2;

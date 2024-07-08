@@ -196,7 +196,6 @@ class Event {
             BitMask _voted_yes_mask; /// Witness in the next round which has voted
 
         }
-        BitMask decided_yes_mask;
         const BitMask previous_witness_seen_mask;
         int separation;
         @nogc final const pure nothrow {
@@ -239,7 +238,7 @@ class Event {
                 }
                 return false;
             }
-
+            version(none)
             bool decided(const size_t voters) {
                 const N = _round.events.length;
                 const votes = decided_yes_mask.count;
@@ -257,11 +256,13 @@ class Event {
                 return false;
             }
 
+            version(none)
             bool _decidedYes() {
                 return isMajority(decided_yes_mask, _round.events.length);
             }
         }
 
+        version(none)
         final void update_decision_mask() pure nothrow {
             decided_yes_mask = _voted_yes_mask;
         }
@@ -306,7 +307,7 @@ class Event {
             if (!_voted_yes_mask[voting_node_id] ) {
                 _voted_yes_mask[voting_node_id] = true;
                 //if (isMajority(_voted_yes_mask, _round.node_size)) {
-                decided_yes_mask[voting_node_id] = true;
+                //decided_yes_mask[voting_node_id] = true;
             }
         }
 
