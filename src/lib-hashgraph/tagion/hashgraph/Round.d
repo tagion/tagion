@@ -59,7 +59,7 @@ class Round {
 
     package Event[] _events;
     protected bool _decided;
-
+    BitMask _valid_witness;
     private void decide() pure nothrow @nogc
     in (!_decided)
     do {
@@ -79,10 +79,14 @@ class Round {
         next_witness,
         higher,
         missing,
-        last_witness
+        last_witness,
+        valid_witness,
+        double_witness,
+        tripple_none_witness,
+        witness_gap,
     }
 
-    final Completed completed(const HashGraph hashgraph) const pure nothrow {
+    final Completed completed(const HashGraph hashgraph, ref BitMask __valid_witness) const pure nothrow {
         import tagion.utils.Term;
 
         if (majority) {
@@ -95,6 +99,55 @@ class Round {
             if (list_majority_rounds.empty) {
                 return Completed.none;
             }
+            const number_of_feature_round=list_majority_rounds.take(4).walkLength;
+            if (number_of_feature_round < 2) {
+                return ret = Completed.undecided;
+            }
+            __valid_witness= BitMask(node_size.iota.filter!(n => _events[n] !is null && !_events[n].witness.weak));
+            BitMask completed_mask;
+            BitMask included_mask;
+            scope(exit) {
+                __write("%12s Round %d completed=%7s included_mask=%7s %s", 
+                hashgraph.name, number, completed_mask, included_mask, ret);
+            }
+            completed_mask=__valid_witness.invert(node_size);
+            auto feature_witness_masks=list_majority_rounds
+            .map!(r => BitMask(r.node_size.iota.filter!(n => r.events[n] !is null)));
+            const w1=feature_witness_masks.front;
+            feature_witness_masks.popFront;
+            const w2=feature_witness_masks.front;
+            const double_witness = w1 & w1;
+            completed_mask|=double_witness;
+            included_mask|=included_mask; 
+            if (completed_mask.count == node_size) {
+                __valid_witness&=included_mask;
+                return ret = Completed.double_witness;
+            }
+            if (number_of_feature_round < 3) {
+                return ret =Completed.undecided;
+            }
+            feature_witness_masks.popFront;
+            const w3=feature_witness_masks.front;
+            const tripple_none_witness=(w1 | w2 | w3).invert(node_size); // y=!w1 * !w2 * !w3
+            const witness_gap=w1 & (~w2) & w3; // y=w1 * !w2 * w3
+            completed_mask|=tripple_none_witness | witness_gap;
+            included_mask|=tripple_none_witness; 
+            if (completed_mask.count == node_size) {
+                __valid_witness&=included_mask;
+                return ret = Completed.tripple_none_witness;
+            }
+            if (number_of_feature_round < 4) {
+                return ret = Completed.undecided;
+            }
+            feature_witness_masks.popFront;
+            const w4=feature_witness_masks.front;
+            const witness_gap_b = ((~w1) | w2 | w3 | w4).invert(node_size); // y = w1 * !w2 * !w3 *!w4
+            if (completed_mask.count == node_size) {
+                __valid_witness&=included_mask;
+                return ret = Completed.tripple_none_witness;
+            }
+            return ret = Completed.witness_gap;
+            version(none)
             scope (exit) {
                 __write("%12s Round %d completed=%s  missing %7s -> %(%(%d%) %)", 
                 hashgraph.name, 
@@ -102,12 +155,35 @@ class Round {
                 ret, 
                 missing_witness, 
                 list_majority_rounds
+                        .drop(1)
                         .map!(r => r._events.map!(e => e !is null)));
             }
+            version(none) {
+            const number_of_feature_round=list_majority_rounds.take(4).walkLength;
+            if (number_of_feature_round < 4) {
+                return ret = Completed.undecided;
+            }
+            BitMask tmp_mask_1;
+            auto feature_witness_masks=list_majority_rounds
+            .map!(r => BitMask(r.node_size.iota.filter!(n => r._events[n] !is null)));
+            __valid_witness=feature_witness_masks.front;
+            __valid_witness&=feature_witness_masks.drop(1)
+            .fold!((a,b) => a | b)(tmp_mask_1);
+        
+            //.fold!((a,b) => a | b)(tmp_mask_1);
+            //pragma(msg, "BitMask ", typeof(feature_witness_mask));
+            __valid_witness&= BitMask(node_size.iota.filter!(n => _events[n] !is null && !_events[n].witness.weak));
+            if (isMajority(__valid_witness.count, node_size)) {
+                return Completed.valid_witness;     
+            }
+        }
+           version(none) { 
             const next_round=list_majority_rounds.front;
             missing_witness = BitMask(node_size.iota.filter!(n => next_round._events[n] is null));
             if (missing_witness.empty) {
-                
+                if (number_of_feature_round < 2) {
+                    return ret = Completed.undecided;
+                }
                 return ret = Completed.all_witness;
             }
             if (list_majority_rounds.empty) {
@@ -134,7 +210,6 @@ class Round {
             if (missing_witness.empty) {
                 return ret = Completed.higher;
             }
-            const number_of_feature_round=list_majority_rounds.take(4).walkLength;
             if (number_of_feature_round < 4) {
                 return ret = Completed.too_few;
             }
@@ -157,6 +232,7 @@ class Round {
                 return ret = Completed.last_witness;
             }
             return ret = Completed.undecided;
+        }
             //return ret = missing_witness.empty;
         }
         return Completed.none;
@@ -799,7 +875,7 @@ class Round {
             if (!round_to_be_decided) {
                 return;
             }
-            const new_completed = round_to_be_decided.completed(hashgraph);
+            const new_completed = round_to_be_decided.completed(hashgraph, round_to_be_decided._valid_witness);
             const new_decided = round_to_be_decided.update_round_decided(hashgraph);
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
@@ -885,10 +961,8 @@ class Round {
             hashgraph.statistics.feature_famous_rounds(count_feature_famous_rounds(round_to_be_decided));
             log.event(Event.topic, hashgraph.statistics.feature_famous_rounds.stringof, hashgraph.statistics
                     .feature_famous_rounds);
-                if (!isMajority(round_to_be_decided.events
-                        .filter!(e => e !is null)
-                        .map!(e => e.witness.votedYes)
-                        .count, hashgraph.node_size)) {
+                if (!isMajority(round_to_be_decided._valid_witness.count,
+                        hashgraph.node_size)) {
                     __write("%12s Round %d %sNot collected%s", hashgraph.name, round_to_be_decided.number, RED, RESET);
                     return;
                 }
@@ -920,7 +994,7 @@ import tagion.utils.Term;
             }
 
             auto famous_witness_in_round = witness_event_in_round
-                .filter!(e => e._witness.votedYes);
+                .filter!(e => r._valid_witness[e.node_id]);
             auto event_list = majority_seen_from_famous(famous_witness_in_round);
             event_list
                 .sort!((a, b) => Event.higher_order(a, b));
@@ -971,11 +1045,11 @@ import tagion.utils.Term;
             log.event(Event.topic, hashgraph.statistics.epoch_events.stringof, hashgraph.statistics.epoch_events);
             string show(const Event e) {
                 if (e) {
-                    return format("%s%d%s", (e._witness.votedYes)?GREEN:YELLOW, e.altitude, RESET);
+                    return format("%s%d%s", (r._valid_witness[e.node_id])?GREEN:YELLOW, e.altitude, RESET);
                 }
                 return format("%sX %s", RED, RESET);
             }
-            __write("%12s %sRound %d%s %d witness %-(%s %) collected=%d separation=%(%(%d:%) %) votes=%(%7s %) yes=%d voting=%-(%s %)", 
+            __write("%12s %sRound %d%s %d witness %-(%s %) collected=%d separation=%(%(%d:%) %) votes=%7s yes=%d  witness=%(%(%d%) %)", 
 
             hashgraph.name, 
             CYAN,
@@ -986,10 +1060,9 @@ import tagion.utils.Term;
             zip(
             r._events.map!(e => (e is null)?-1:e.witness.separation),
             r._next._events.map!(e => (e is null)?-1:e.witness.separation)).map!(t => only(t[0],t[1])),
-            r._events.map!(e => (e is null)?BitMask.init:e.witness.voted_yes_mask),
-            r._events.filter!(e => e !is null).filter!(e => e.witness.votedYes).count,
-            r._events.map!(e => ((e is null) || !e.witness.votedYes)?null:e)
-            .map!(e => show(e)));
+            r._valid_witness,
+            r._valid_witness.count,
+            r[].retro.drop(1).map!(rx => rx.events.map!(e => (e !is null))) );
             hashgraph.epoch(event_collection, r);
 
         }

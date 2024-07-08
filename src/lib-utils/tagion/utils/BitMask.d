@@ -25,7 +25,7 @@ struct BitMask {
     enum absolute_mask = 0x1000;
     private size_t[] mask;
 
-    void opAssign(const BitMask rhs) pure nothrow {
+    void opAssign(const(BitMask) rhs)  pure nothrow {
         mask.length = rhs.mask.length;
         mask[0 .. $] = rhs.mask[0 .. $];
     }
@@ -112,7 +112,6 @@ struct BitMask {
         import std.array;
 
         BitMask bits = BitMask([1, 0x75, 0x10, 19]);
-        import tagion.basic.Debug;
 
         { /// mask with size_t element
             const bit_length = size_t.sizeof * 8 / 2 - 5;
@@ -490,13 +489,21 @@ struct BitMask {
         assert(bits - 17 == BitMask([42]));
     }
 
-    void chunk(size_t bit_len) pure nothrow {
+    BitMask chunk(size_t bit_len) pure nothrow {
         const new_size = bit_len.wordindex + 1;
         if (new_size < mask.length) {
             mask.length = new_size;
         }
         const chunk_mask = ((size_t(1) << (bit_len.word_bitindex)) - 1);
         mask[$ - 1] &= chunk_mask;
+        return this;
+    }
+
+    BitMask chunk(const size_t bit_len) const pure nothrow {
+        BitMask result;
+        result.mask=mask.dup;
+        result.chunk(bit_len);
+        return result;
     }
 
     unittest {

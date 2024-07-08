@@ -221,7 +221,7 @@ class Event {
             }
            
             bool weak() {
-                return (separation >=3);
+                return (separation >=2);
             }
             bool decided() {
                 const voted = _voted_yes_mask.count;
