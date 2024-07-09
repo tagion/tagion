@@ -90,149 +90,215 @@ class Round {
         import tagion.utils.Term;
 
         if (majority) {
-            BitMask missing_witness;
             Completed ret;
+            BitMask null_mask;
+            BitMask all_mask=BitMask.init.invert(node_size);
+            BitMask completed_mask;
+            BitMask included_mask;
+
+            completed_mask =
+                this[]
+                    .drop(1)
+                    .take(2)
+                    .map!(r => BitMask(r.node_size.iota.filter!(n => r.events[n] is null)))
+                .fold!((a, b) => a & b)(all_mask);
+            
             auto list_majority_rounds =
                 this[].retro
                     .drop(1)
                     .until!(r => !r.majority);
+            auto future_witness_masks = list_majority_rounds
+                .map!(r => BitMask(r.node_size.iota.filter!(n => r.events[n]!is null)));
+            __valid_witness = BitMask(node_size.iota.filter!(n => (_events[n]!is null) && !completed_mask[n]));
+            if (!completed_mask.empty) {
+                __write("%12s Round %d completed=%7s",
+                        hashgraph.name,
+                        number,
+                        completed_mask
+                );
+            }
+            auto show_witness_masks = future_witness_masks;
+            scope (exit) {
+                __write("%12s Round %d completed=%7s included_mask=%7s witness=%7s| %(%7s %) ret=%s%s%s",
+                        hashgraph.name, number, completed_mask, included_mask,
+                        __valid_witness,
+                        show_witness_masks.take(10),
+                        (ret <= Completed.undecided) ? RED : GREEN, ret, RESET
+                );
+            }
             if (list_majority_rounds.empty) {
                 return Completed.none;
             }
-            const number_of_feature_round=list_majority_rounds.take(4).walkLength;
-            if (number_of_feature_round < 2) {
-                return ret = Completed.undecided;
-            }
-            __valid_witness= BitMask(node_size.iota.filter!(n => _events[n] !is null && !_events[n].witness.weak));
-            BitMask completed_mask;
-            BitMask included_mask;
-            scope(exit) {
-                __write("%12s Round %d completed=%7s included_mask=%7s %s", 
-                hashgraph.name, number, completed_mask, included_mask, ret);
-            }
-            completed_mask=__valid_witness.invert(node_size);
-            auto feature_witness_masks=list_majority_rounds
-            .map!(r => BitMask(r.node_size.iota.filter!(n => r.events[n] !is null)));
-            const w1=feature_witness_masks.front;
-            feature_witness_masks.popFront;
-            const w2=feature_witness_masks.front;
-            const double_witness = w1 & w1;
-            completed_mask|=double_witness;
-            included_mask|=included_mask; 
-            if (completed_mask.count == node_size) {
-                __valid_witness&=included_mask;
-                return ret = Completed.double_witness;
-            }
-            if (number_of_feature_round < 3) {
-                return ret =Completed.undecided;
-            }
-            feature_witness_masks.popFront;
-            const w3=feature_witness_masks.front;
-            const tripple_none_witness=(w1 | w2 | w3).invert(node_size); // y=!w1 * !w2 * !w3
-            const witness_gap=w1 & (~w2) & w3; // y=w1 * !w2 * w3
-            completed_mask|=tripple_none_witness | witness_gap;
-            included_mask|=tripple_none_witness; 
-            if (completed_mask.count == node_size) {
-                __valid_witness&=included_mask;
-                return ret = Completed.tripple_none_witness;
-            }
-            if (number_of_feature_round < 4) {
-                return ret = Completed.undecided;
-            }
-            feature_witness_masks.popFront;
-            const w4=feature_witness_masks.front;
-            const witness_gap_b = ((~w1) | w2 | w3 | w4).invert(node_size); // y = w1 * !w2 * !w3 *!w4
-            if (completed_mask.count == node_size) {
-                __valid_witness&=included_mask;
-                return ret = Completed.tripple_none_witness;
-            }
-            return ret = Completed.witness_gap;
-            version(none)
-            scope (exit) {
-                __write("%12s Round %d completed=%s  missing %7s -> %(%(%d%) %)", 
-                hashgraph.name, 
-                number, 
-                ret, 
-                missing_witness, 
-                list_majority_rounds
-                        .drop(1)
-                        .map!(r => r._events.map!(e => e !is null)));
-            }
-            version(none) {
-            const number_of_feature_round=list_majority_rounds.take(4).walkLength;
-            if (number_of_feature_round < 4) {
-                return ret = Completed.undecided;
-            }
-            BitMask tmp_mask_1;
-            auto feature_witness_masks=list_majority_rounds
-            .map!(r => BitMask(r.node_size.iota.filter!(n => r._events[n] !is null)));
-            __valid_witness=feature_witness_masks.front;
-            __valid_witness&=feature_witness_masks.drop(1)
-            .fold!((a,b) => a | b)(tmp_mask_1);
-        
-            //.fold!((a,b) => a | b)(tmp_mask_1);
-            //pragma(msg, "BitMask ", typeof(feature_witness_mask));
-            __valid_witness&= BitMask(node_size.iota.filter!(n => _events[n] !is null && !_events[n].witness.weak));
-            if (isMajority(__valid_witness.count, node_size)) {
-                return Completed.valid_witness;     
-            }
-        }
-           version(none) { 
-            const next_round=list_majority_rounds.front;
-            missing_witness = BitMask(node_size.iota.filter!(n => next_round._events[n] is null));
-            if (missing_witness.empty) {
-                if (number_of_feature_round < 2) {
-                    return ret = Completed.undecided;
-                }
-                return ret = Completed.all_witness;
-            }
-            if (list_majority_rounds.empty) {
-                return ret = Completed.majority_none;
-            }
-            { /// Marks witness not missing, if they exsists in the following majority rounds 
-                auto _range = list_majority_rounds
-                    .map!(r => missing_witness[].filter!(n => r._events[n]!is null))
-                    .joiner
-                    .until!(n => missing_witness.empty);
-                foreach (n; _range) {
-                    missing_witness[n] = false;
-                }
-                __write("%12s Round %d missing %7s list=%s", hashgraph.name, number, missing_witness, _range.take(10));
-                if (missing_witness.empty) {
-                    return ret = Completed.next_witness;
-                }
-            }
-            const last_majority_round = list_majority_rounds.tail(1).front;
-            missing_witness-=missing_witness[]
-                .filter!(n => hashgraph.rounds.last_witness_events[n]!is null)
-                .filter!(n => last_majority_round._events[n]!is null)
-                .filter!(n => (last_majority_round.number - hashgraph.rounds.last_witness_events[n].round.number) >= 3);
-            if (missing_witness.empty) {
-                return ret = Completed.higher;
-            }
-            if (number_of_feature_round < 4) {
+            auto number_of_future_round = cast(int) list_majority_rounds.walkLength;
+            if (number_of_future_round < 3) {
                 return ret = Completed.too_few;
             }
-            {
-                BitMask tmp_mask;
-                const none_witness = list_majority_rounds
+            foreach (i; 3 .. number_of_future_round) {
+                const no_witness_gap = future_witness_masks
                     .take(2)
-                    .map!(r => BitMask(r.node_size.iota.map!(n => r._events[n] is null)))
-                    .fold!((a, b) => a | b)(tmp_mask);
-                missing_witness -= none_witness;
-                if (missing_witness.empty) {
-                    return ret = Completed.missing;
+                    .fold!((a, b) => a & b )(all_mask);
+                __write("--- %7s  %7s", future_witness_masks.front & future_witness_masks.drop(1).front, no_witness_gap);
+                const some_witnesses = future_witness_masks
+                    .take(3)
+                    .fold!((a, b) => a | b)(null_mask);
+                const no_witnesses = some_witnesses.invert(node_size);
+                auto tripple_witnesses = no_witness_gap & some_witnesses;
+                completed_mask |= no_witnesses | tripple_witnesses;
+                included_mask |= no_witnesses | tripple_witnesses;
+                __write("%12s Round %d completed=%7s included_mask=%7s none=%7s tripple=%7s no_gaps=%7s future= %(%7s %) i=%d",
+                hashgraph.name,
+                number,
+                completed_mask,
+                included_mask,
+                no_witnesses,
+                tripple_witnesses,
+                no_witness_gap,
+                future_witness_masks.take(10),
+                i);
+                future_witness_masks.popFront;
+                
+                if (completed_mask.count == node_size) {
+                    __valid_witness &= included_mask;
+                    return ret = Completed. valid_witness;
                 }
-                __write("%12s Round %d %sMissing%s missing %7s none_witness=%7s", hashgraph.name, number, YELLOW, RESET, missing_witness, none_witness);
+
             }
-            missing_witness[]
-                .filter!(n => hashgraph.rounds.last_witness_events[n] is null)
-                .each!(n => missing_witness[n] = false);
-            if (missing_witness.empty) {
-                return ret = Completed.last_witness;
+                    return ret = Completed.undecided;
+
+            version (none) {
+                //completed_mask=__valid_witness.invert(node_size);
+                const w1 = future_witness_masks.front;
+                future_witness_masks.popFront;
+                const w2 = future_witness_masks.front;
+                const double_witness = w1 & w2;
+                const one_gap_witness = (~w1) & w2;
+                __write("%12s Round %d # double_witness=%7s one_gap_witness=%7s w1=%7s w2=%7s", hashgraph.name, number, double_witness, one_gap_witness, w1, w2);
+                completed_mask |= double_witness | one_gap_witness;
+                included_mask = double_witness;
+                if (completed_mask.count == node_size) {
+                    __valid_witness &= included_mask;
+                    return ret = Completed.double_witness;
+                }
+                if (number_of_future_round < 3) {
+                    return ret = Completed.undecided;
+                }
+                future_witness_masks.popFront;
+                const w3 = future_witness_masks.front;
+                const tripple_none_witness = (w1 | w2 | w3).invert(node_size); // y=!w1 * !w2 * !w3
+                const witness_gap = w1 & (~w2) & w3; // y=w1 * !w2 * w3
+                const witness_two_gaps = (~w1) & (~w2) & w3;
+                __write(
+                        "%12s Round %d # triple_none_witness=%7s witness_gap=%7s witness_two_gaps=%7s w1=%7s w2=%7s w3=%7s", hashgraph
+                        .name, number, tripple_none_witness, witness_gap, witness_two_gaps, w1, w2, w3);
+                completed_mask |= tripple_none_witness | witness_gap | witness_two_gaps;
+                included_mask -= tripple_none_witness;
+                included_mask -= witness_gap;
+                if (completed_mask.count == node_size) {
+                    __valid_witness &= included_mask;
+                    return ret = Completed.tripple_none_witness;
+                }
+                if (number_of_future_round < 4) {
+                    return ret = Completed.undecided;
+                }
+                future_witness_masks.popFront;
+                const w4 = future_witness_masks.front;
+                const witness_gap_b = ((~w1) | w2 | w3 | w4).invert(node_size); // y = w1 * !w2 * !w3 *!w4
+                const witness_two_gaps_b = (w1 & ~w2 & ~w3 & w4);
+                __write("%12s Round %d # witness_gap_b=%7s w1=%7s w2=%7s w3=%7s w4=%7s", hashgraph.name, number, witness_gap_b, w1, w2, w3, w4);
+                completed_mask |= witness_gap_b | witness_two_gaps_b;
+                included_mask -= witness_gap_b;
+                if (completed_mask.count == node_size) {
+                    __valid_witness &= included_mask;
+                    return ret = Completed.witness_gap;
+                }
             }
             return ret = Completed.undecided;
-        }
+            version (none)
+                scope (exit) {
+                    __write("%12s Round %d completed=%s  missing %7s -> %(%(%d%) %)",
+                            hashgraph.name,
+                            number,
+                            ret,
+                            missing_witness,
+                            list_majority_rounds
+                            .drop(1)
+                            .map!(r => r._events.map!(e => e !is null)));
+                }
+            version (none) {
+                const number_of_future_round = list_majority_rounds.take(4).walkLength;
+                if (number_of_future_round < 4) {
+                    return ret = Completed.undecided;
+                }
+                BitMask tmp_mask_1;
+                auto future_witness_masks = list_majority_rounds
+                    .map!(r => BitMask(r.node_size.iota.filter!(n => r._events[n]!is null)));
+                __valid_witness = future_witness_masks.front;
+                __valid_witness &= future_witness_masks.drop(1)
+                    .fold!((a, b) => a | b)(tmp_mask_1);
+
+                //.fold!((a,b) => a | b)(tmp_mask_1);
+                //pragma(msg, "BitMask ", typeof(future_witness_mask));
+                __valid_witness &= BitMask(node_size.iota.filter!(n => _events[n]!is null && !_events[n].witness.weak));
+                if (isMajority(__valid_witness.count, node_size)) {
+                    return Completed.valid_witness;
+                }
+            }
+            version (none) {
+                const next_round = list_majority_rounds.front;
+                missing_witness = BitMask(node_size.iota.filter!(n => next_round._events[n] is null));
+                if (missing_witness.empty) {
+                    if (number_of_future_round < 2) {
+                        return ret = Completed.undecided;
+                    }
+                    return ret = Completed.all_witness;
+                }
+                if (list_majority_rounds.empty) {
+                    return ret = Completed.majority_none;
+                }
+                { /// Marks witness not missing, if they exsists in the following majority rounds 
+                    auto _range = list_majority_rounds
+                        .map!(r => missing_witness[].filter!(n => r._events[n]!is null))
+                        .joiner
+                        .until!(n => missing_witness.empty);
+                    foreach (n; _range) {
+                        missing_witness[n] = false;
+                    }
+                    __write("%12s Round %d missing %7s list=%s", hashgraph.name, number, missing_witness, _range.take(10));
+                    if (missing_witness.empty) {
+                        return ret = Completed.next_witness;
+                    }
+                }
+                const last_majority_round = list_majority_rounds.tail(1).front;
+                missing_witness -= missing_witness[]
+                    .filter!(n => hashgraph.rounds.last_witness_events[n]!is null)
+                    .filter!(n => last_majority_round._events[n]!is null)
+                    .filter!(n => (last_majority_round.number - hashgraph.rounds.last_witness_events[n].round.number) >= 3);
+                if (missing_witness.empty) {
+                    return ret = Completed.higher;
+                }
+                if (number_of_future_round < 4) {
+                    return ret = Completed.too_few;
+                }
+                {
+                    BitMask tmp_mask;
+                    const none_witness = list_majority_rounds
+                        .take(2)
+                        .map!(r => BitMask(r.node_size.iota.map!(n => r._events[n] is null)))
+                        .fold!((a, b) => a | b)(tmp_mask);
+                    missing_witness -= none_witness;
+                    if (missing_witness.empty) {
+                        return ret = Completed.missing;
+                    }
+                    __write("%12s Round %d %sMissing%s missing %7s none_witness=%7s", hashgraph.name, number, YELLOW, RESET, missing_witness, none_witness);
+                }
+                missing_witness[]
+                    .filter!(n => hashgraph.rounds.last_witness_events[n] is null)
+                    .each!(n => missing_witness[n] = false);
+                if (missing_witness.empty) {
+                    return ret = Completed.last_witness;
+                }
+                return ret = Completed.undecided;
+            }
             //return ret = missing_witness.empty;
         }
         return Completed.none;
@@ -243,15 +309,14 @@ class Round {
                 .map!(e => e.node_id));
     }
 
-    version(none)
-    final const(BitMask) enclosed_witness_mask() const pure nothrow {
+    version (none) final const(BitMask) enclosed_witness_mask() const pure nothrow {
         BitMask result;
         auto feature_rounds = this[].retro.drop(1).take(2);
         return feature_rounds.map!(r => r.witness_mask)
             .fold!((a, b) => a | b)(result);
     }
-    version(none)
-    final const(BitMask) __decision_mask() const pure nothrow {
+
+    version (none) final const(BitMask) __decision_mask() const pure nothrow {
         const _witness_mask = witness_mask;
         const _enclosed_witness_mask = enclosed_witness_mask;
         const result = _enclosed_witness_mask | (_witness_mask & _enclosed_witness_mask.invert(_events.length)) | (
@@ -328,8 +393,7 @@ class Round {
         return _events.enumerate.map!(item => decided_inner(item)).all;
     }
 
-        version(none)
-    private bool _decided_round_yes() const pure nothrow {
+    version (none) private bool _decided_round_yes() const pure nothrow {
         return majority && _events
             .filter!(e => e !is null)
             .map!(e => e.witness._decidedYes)
@@ -409,18 +473,18 @@ class Round {
         return false;
     }
 
-    version(none)
-    final bool update_round_decided(const HashGraph hashgraph) pure nothrow {
-            import tagion.utils.Term;
+    version (none) final bool update_round_decided(const HashGraph hashgraph) pure nothrow {
+        import tagion.utils.Term;
+
         auto list_majority_rounds =
             this[].retro
                 .drop(1)
                 .until!(r => !r.majority);
-            const _name = __format("%s%s%12s%s",
-                BOLD,    
+        const _name = __format("%s%s%12s%s",
+                BOLD,
                 (this[].retro.drop(1).until!(r => !r.majority).count > 4) ? BLUE : WHITE,
-            hashgraph.name,
-            RESET);
+        hashgraph.name,
+        RESET);
         __write("%s Round %d update %d", _name, number, list_majority_rounds.walkLength);
         if (!list_majority_rounds.empty) {
             auto undecided_witnesses_mask = BitMask(
@@ -437,64 +501,65 @@ class Round {
             //const _name = 
             //auto missing_witness = BitMask(node_size.iota.filter!(n => _events[n] is null));
             BitMask voting_witness_mask;
-       size_t _n_voters; 
-            foreach ( r; list_majority_rounds) {
-                const round_increment=r.number-number; 
-                __write("%s Round %d->%d undecided=%7s %-(%s%)", _name, number, r.number, undecided_witnesses_mask, "->".repeat(round_increment)); 
+            size_t _n_voters;
+            foreach (r; list_majority_rounds) {
+                const round_increment = r.number - number;
+                __write("%s Round %d->%d undecided=%7s %-(%s%)", _name, number, r.number, undecided_witnesses_mask, "->"
+                        .repeat(round_increment));
                 if (round_increment == 1) {
                     voting_witness_mask = BitMask(
                             r.node_size.iota
                             .filter!(n => r._events[n]!is null));
-                    __write("%s %sRound %d%s voting witness %7s", _name, 
-                    CYAN,    
-                number, 
-                    RESET,
-                voting_witness_mask);
+                    __write("%s %sRound %d%s voting witness %7s", _name,
+                            CYAN,
+                            number,
+                            RESET,
+                            voting_witness_mask);
                 }
                 else {
-                    voting_witness_mask+=voting_witness_mask.invert(r.node_size)[]
+                    voting_witness_mask += voting_witness_mask.invert(r.node_size)[]
                         .filter!(n => r._events[n]!is null);
                 }
-                
+
                 if (round_increment > 2) {
-                    undecided_witnesses_mask-=undecided_witnesses_mask[]
+                    undecided_witnesses_mask -= undecided_witnesses_mask[]
                         .filter!(n => !voting_witness_mask[n] || _events[n] is null);
-                    __write("%s %sRound %d%s voting witness %7s undecided=%7s", _name, 
-                        MAGENTA,
-                        number, 
-                        RESET,
-                        voting_witness_mask,
-                        undecided_witnesses_mask);
+                    __write("%s %sRound %d%s voting witness %7s undecided=%7s", _name,
+                            MAGENTA,
+                            number,
+                            RESET,
+                            voting_witness_mask,
+                            undecided_witnesses_mask);
                 }
 
-                const number_of_voters=voting_witness_mask.count;
+                const number_of_voters = voting_witness_mask.count;
                 assert(_n_voters <= number_of_voters, "number of votes should not decrease");
                 _n_voters = number_of_voters;
-                undecided_witnesses_mask-=undecided_witnesses_mask[]
+                undecided_witnesses_mask -= undecided_witnesses_mask[]
                     .filter!(n => (_events[n]!is null) && _events[n].witness.decided(number_of_voters));
                 undecided_witnesses_mask[]
-                .filter!(n => _events[n] !is null)
-                .filter!(n => r._events[n] !is null)
-                .each!(n => _events[n].witness.decided_yes_mask |= r._events[n].witness.voted_yes_mask);
+                    .filter!(n => _events[n]!is null)
+                    .filter!(n => r._events[n]!is null)
+                    .each!(n => _events[n].witness.decided_yes_mask |= r._events[n].witness.voted_yes_mask);
                 if (undecided_witnesses_mask.empty) {
                     const all_decided = _events
-                    .filter!(e => e !is null)
-                    .map!(e => e.witness)
-                    .map!(w => w.decided(number_of_voters))
-                    .all;
+                        .filter!(e => e !is null)
+                        .map!(e => e.witness)
+                        .map!(w => w.decided(number_of_voters))
+                        .all;
                     if (all_decided) {
                         _voting = r;
-                        __write("%s %sRound %d decided round %d%s yes=%(%d%)", 
-                            _name, GREEN, number,  _voting.number, RESET,
-                        _events.map!(e => (e !is null) && e.witness.votedYes));
+                        __write("%s %sRound %d decided round %d%s yes=%(%d%)",
+                                _name, GREEN, number, _voting.number, RESET,
+                                _events.map!(e => (e !is null) && e.witness.votedYes));
                         return true;
                     }
-                        __write("%s %sRound %d%s  votes=%d yes=%(%d %) decided=%(%d%)", 
-                            _name, RED, number,  RESET,
-                        number_of_voters,
-                        _events.map!(e => (e is null)?0: e.witness.decided_yes_mask.count),
-                        _events.map!(e => (e is null) || e.witness.decided(number_of_voters))
-                        );
+                    __write("%s %sRound %d%s  votes=%d yes=%(%d %) decided=%(%d%)",
+                            _name, RED, number, RESET,
+                            number_of_voters,
+                            _events.map!(e => (e is null) ? 0 : e.witness.decided_yes_mask.count),
+                            _events.map!(e => (e is null) || e.witness.decided(number_of_voters))
+                    );
 
                 }
             }
@@ -745,9 +810,9 @@ class Round {
             scope (exit) {
                 if (e._witness) {
                     e._round.add(e);
-                    const last_witness_event=last_witness_events[e.node_id];
+                    const last_witness_event = last_witness_events[e.node_id];
                     if (last_witness_event) {
-                        e._witness.separation=e.round.number-last_witness_event.round.number;
+                        e._witness.separation = e.round.number - last_witness_event.round.number;
                     }
                     last_witness_events[e.node_id] = e;
                     update_latest_famous_round;
@@ -898,7 +963,8 @@ class Round {
                         .map!(es => only(es.filter!(e => e !is null).count,
                             es.filter!(e => e !is null)
                             .filter!(e => e.witness.votedYes)
-                            .count)), //count_feature_famous_rounds,
+                            .count))
+                        .take(10), //count_feature_famous_rounds,
                         witness_in_round.count,
                         witness_in_round.filter!(w => w.votedYes).count,
                         round_to_be_decided[].retro.drop(1).take(2)
@@ -906,12 +972,15 @@ class Round {
                 );
                 __write("%s #2 Round %d voted_yes_mask    = %(%7s %) witness=%d yes=%d separation=%(%d %)", _name,
                         round_to_be_decided.number,
-                        round_to_be_decided._events.map!(e => (e is null) ? BitMask.init : e.witness.voted_yes_mask),
+                        round_to_be_decided._events.map!(e => (e is null) ? BitMask.init : e.witness.voted_yes_mask)
+                        .take(10),
                         round_to_be_decided._events.filter!(e => e !is null).count,
-                        round_to_be_decided._events.filter!(e => e !is null)
-                        .filter!(e => e.witness.votedYes).count,
-                        round_to_be_decided._events.map!(e => (e is null)?-1:e.witness.separation)
-                        );
+                        round_to_be_decided._events
+                        .filter!(e => e !is null)
+                        .filter!(e => e.witness.votedYes)
+                        .count,
+                        round_to_be_decided._events.map!(e => (e is null) ? -1 : e.witness.separation)
+                );
             }
             version (none)
                 if (!can_round_be_decided(round_to_be_decided)) {
@@ -924,20 +993,21 @@ class Round {
             if (new_completed <= Completed.undecided) {
                 return;
             }
-            version(none) 
-            if (!new_decided) {
-                return;
-            }
+            version (none)
+                if (!new_decided) {
+                    return;
+                }
             __write(
                     "%s %s%sRound %d%s can be decided  witness=%d", // yes=%(%d%) ", //votes=%(%7s %) w_masks=%(%7s %)",
-                    _name, 
+                    _name,
                     BOLD, GREEN,
-                    round_to_be_decided.number, 
+                    round_to_be_decided.number,
                     RESET,
-                    witness_in_round.walkLength,
-                    //round_to_be_decided._events.map!(e => (e !is null) && (e.witness.votedYes)),
+                    witness_in_round.walkLength, //round_to_be_decided._events.map!(e => (e !is null) && (e.witness.votedYes)),
                     //witness_in_round.map!(w => w.voted_yes_mask),
                     //round_to_be_decided[].retro.take(3).map!(r => r.witness_mask)
+
+                    
 
             );
             Event.view(witness_in_round.map!(w => w.outer));
@@ -951,11 +1021,11 @@ class Round {
             hashgraph.statistics.feature_famous_rounds(count_feature_famous_rounds(round_to_be_decided));
             log.event(Event.topic, hashgraph.statistics.feature_famous_rounds.stringof, hashgraph.statistics
                     .feature_famous_rounds);
-                if (!isMajority(round_to_be_decided._valid_witness.count,
-                        hashgraph.node_size)) {
-                    __write("%12s Round %d %sNot collected%s", hashgraph.name, round_to_be_decided.number, RED, RESET);
-                    return;
-                }
+            if (!isMajority(round_to_be_decided._valid_witness.count,
+                    hashgraph.node_size)) {
+                __write("%12s Round %d %sNot collected%s", hashgraph.name, round_to_be_decided.number, RED, RESET);
+                return;
+            }
             collect_received_round(round_to_be_decided);
             check_decide_round;
         }
@@ -964,7 +1034,8 @@ class Round {
         in (r.decided, "The round should be decided before the round can be collected")
 
         do {
-import tagion.utils.Term;
+            import tagion.utils.Term;
+
             auto witness_event_in_round = r._events.filter!(e => e !is null);
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
@@ -1035,24 +1106,25 @@ import tagion.utils.Term;
             log.event(Event.topic, hashgraph.statistics.epoch_events.stringof, hashgraph.statistics.epoch_events);
             string show(const Event e) {
                 if (e) {
-                    return format("%s%d%s", (r._valid_witness[e.node_id])?GREEN:YELLOW, e.altitude, RESET);
+                    return format("%s%d%s", (r._valid_witness[e.node_id]) ? GREEN : YELLOW, e.altitude, RESET);
                 }
                 return format("%sX %s", RED, RESET);
             }
-            __write("%12s %sRound %d%s %d witness %-(%s %) collected=%d separation=%(%(%d:%) %) votes=%7s yes=%d  witness=%(%(%d%) %)", 
 
-            hashgraph.name, 
-            CYAN,
-            r.number,
-            RESET,
-            r.number,
-            r._events.map!(e => show(e)), event_collection.length,
-            zip(
-            r._events.map!(e => (e is null)?-1:e.witness.separation),
-            r._next._events.map!(e => (e is null)?-1:e.witness.separation)).map!(t => only(t[0],t[1])),
+            __write("%12s %sRound %d%s %d witness %-(%s %) collected=%d separation=%(%(%d:%) %) votes=%7s yes=%d  witness=%(%(%d%) %)",
+
+                    hashgraph.name,
+                    CYAN,
+                    r.number,
+                    RESET,
+                    r.number,
+                    r._events.map!(e => show(e)), event_collection.length,
+                    zip(
+                    r._events.map!(e => (e is null) ? -1 : e.witness.separation),
+                    r._next._events.map!(e => (e is null) ? -1 : e.witness.separation)).map!(t => only(t[0], t[1])),
             r._valid_witness,
             r._valid_witness.count,
-            r[].retro.drop(1).map!(rx => rx.events.map!(e => (e !is null))) );
+            r[].retro.drop(1).map!(rx => rx.events.map!(e => (e !is null))));
             hashgraph.epoch(event_collection, r);
 
         }

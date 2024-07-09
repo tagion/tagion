@@ -25,9 +25,8 @@ struct BitMask {
     enum absolute_mask = 0x1000;
     private size_t[] mask;
 
-    void opAssign(const(BitMask) rhs)  pure nothrow {
-        mask.length = rhs.mask.length;
-        mask[0 .. $] = rhs.mask[0 .. $];
+    void opAssign(scope const(BitMask) rhs)  pure nothrow {
+        mask=rhs.mask.dup;
     }
 
     void opAssign(const(ubyte)[] buf) pure nothrow @trusted {
@@ -40,6 +39,23 @@ struct BitMask {
         mask = (cast(size_t*)&buf[0])[0 .. size].dup;
     }
 
+    /**
+        Make an reference with out a copy
+    */
+    void refer(BitMask rhs) pure nothrow {
+        mask=rhs.mask;
+    }
+
+    unittest {
+        BitMask a,b;
+        a.mask=[0x17];
+        b.refer=a;
+        assert(a.count == 4);
+        assert(a == b);
+        b[0]=false;
+        assert(b.count == 3);
+        assert(a == b);
+    }
     /++
      This set the mask as bit stream with LSB first
      +/
@@ -88,7 +104,7 @@ struct BitMask {
 
     BitMask invert(const size_t size = 0) const pure nothrow {
         BitMask result;
-        if (mask.length) {
+        if (mask.length || size > 0) {
             result.mask.length = mask.length;
             result.mask[] = ~mask[];
             if (size) {
@@ -111,6 +127,10 @@ struct BitMask {
         import std.range;
         import std.array;
 
+        {
+            BitMask set_all=BitMask.init.invert(7);
+            assert(set_all.count == 7);
+        }
         BitMask bits = BitMask([1, 0x75, 0x10, 19]);
 
         { /// mask with size_t element
@@ -363,8 +383,6 @@ struct BitMask {
 
     BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
     if (only("-", "&", "|", "^").canFind(op)) {
-        import std.algorithm.comparison : max, min;
-
         BitMask result;
         result.mask = mask.dup;
         result.opOpAssign!op(rhs);
@@ -893,5 +911,18 @@ struct BitMask {
             assert(equal(y[], [3]));
         }
 
+        { // Fold on a lazy range
+            import std.algorithm;
+            import std.range;
+            auto masks =only(BitMask([1,4]),BitMask([4,8]),BitMask([7,4]));
+            BitMask null_mask;
+            const or_mask=masks
+            .fold!((a,b) => a|b)(null_mask);
+            assert(or_mask.count == 4);
+            BitMask all_mask=BitMask.init.invert(16);
+            const and_mask=masks
+            .fold!((a,b) => a&b)(all_mask);
+            assert(and_mask.count == 1);
+        }
     }
 }
