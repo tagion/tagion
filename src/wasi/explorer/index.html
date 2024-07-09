@@ -9,6 +9,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>    
+    <script>
+        let p = window.location.pathname.slice(1);
+        if(!(p.includes(".") || p.endsWith("/"))){
+            window.location = window.location.href + "/";
+        }
+    </script>
     <style>
         .loading { visibility:hidden; } 
         body.busy .loading { visibility:visible !important; }
@@ -18,8 +24,8 @@
 </head>
 <body>
 	<script type="module" defer>
-        
-        import {WTagUtil} from "/shell/static/explorer/wtag.js"
+        import { WTagUtil } from "./wtag.js";
+        import config from "./wconfig.js";
 
         var subm = {
             monitor: false,
@@ -33,7 +39,6 @@
         const MLISTMAX = 100;
 
         $( document ).ready(function() {
-            
             console.log("Websocket to setup on ", location.origin.replace(/^http/, 'ws'));
             wsinit();
             $("#go").click(doit);    
@@ -41,6 +46,8 @@
             $("#isubrecorder").change(submonitor);
             $("#isubtrt").change(submonitor);
             $("#iclearmon").click((e) => { $("#mlist").html(""); mlistsz = 0; });
+            $("#helpdoc > ul:eq(0) > li:eq(2) > pre:eq(0)").html(config.help_valid_indices);
+            $("#helpdoc > ul:eq(0) > li:eq(2) > pre:eq(1)").html(config.help_valid_pkeys);
         });
         
         function wswait() {  
@@ -58,7 +65,7 @@
                     ws.close();
                 }
             }
-            ws = new WebSocket(location.origin.replace(/^http/, 'ws') + "/hgtest/wsmonitor");
+            ws = new WebSocket(location.origin.replace(/^http/, 'ws') + config.ws_endpoint);
             ws.onerror = console.error;
             ws.onopen = () => {
                 console.log("[ON] Socket connected: ");
@@ -147,7 +154,7 @@
             if ( id == "index" ) {
                 console.log("B64:  ", btoa("\#\$Y:\*:"+query));
                 $.ajax({
-                    url: "/shell/api/v1/lookup/trt/"+btoa("\#\$Y:\*:"+query),
+                    url: config.api_lookup_endpount_trt+btoa("\#\$Y:\*:"+query),
                     type: "get",
                     success: function(data, status, xhr) {
                         console.log("lookup trtindex done");
@@ -171,7 +178,7 @@
             }    
             console.log("B64:   ", btoa(query));
             $.ajax({
-                url: "/shell/api/v1/lookup/dart/"+btoa(query),
+                url: config.api_lookup_endpoint_dart+btoa(query),
                 type: "get",
                 success: function(data, status, xhr) {
                     console.log("lookup "+id+" done");
@@ -243,7 +250,7 @@
     <h1 class="modal-title fs-5" id="modalHelpTitle">Tagion explorer draft</h1>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" id="helpdoc">
         <p>Enter the following query strings for test: </p>
         <ul>
             <li> "tagion" - for #name lookup
@@ -251,16 +258,10 @@
             <li> "@...." base64 buffer for Dart read on dartIndex or TRT read on pubKey (by context)
             <br/>valid indices: 
             <pre>
-@cgzaohRsTznrJbQLXWJDJlwZsPOkuoGmYIpEtY3P6Fw=
-@D56QJvRKv5dlNGQ6uTrMywlDWhS5vIYjRuMn4CWz0vE=
-@DRSG_9bOYzKcYaBZsR525gpigyS4hY_M4vhh0ReuLuU=
-@Y0ZeKHQSk-1e8Rw-8Sn3GbW6qZ4chwqb5LTpOOvy3qU=
-@rAK7S9MuLo2rmGVHi1EDKtzEPl0Y9AynDlJSYk0XTlw=
-</pre>
+            </pre>
             valid wallet pkey:
             <pre>
-@A9bVIut4seaNAu16AC5MLx2rgUBzL5tKW0TBk_G_rPVY
-</pre>
+            </pre>
         </ul>
     </div>
     <div class="modal-footer">

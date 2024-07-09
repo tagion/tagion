@@ -300,7 +300,6 @@ void dart_worker(ShellOptions opt) {
             if (!doc.isInorder(No.Reserved)) {
                 continue;
             }
-            //writeit(format("RR: %d  %s  %d\n",received.length,topic,doc.length));
             JSONValue jdoc;
             auto receiver = hirpc.receive(doc);
             if (!receiver.isMethod) {
@@ -384,22 +383,18 @@ void ws_propagate(string topic, string msg){
 }
 
 void ws_on_connect(WebSocket *ws, void *ctx){
-    writeit("ws: connect");
     Thread.sleep(500.msecs);
     auto sid = ws.sid;
-    writeit("WS: ONCONNECT: ", sid);
     if(ws_devices.contains(sid)){
         writeit("Already cached socket: ", sid);
         return;
     }
     auto d = ws_device(ws, ctx, []);
     ws_devices.add(sid,d);
-    writeit("WS: D0");
 }
 
 void ws_on_close(WebSocket *ws, void *ctx){
     auto sid = ws.sid;
-    writeit("WS: ONCLOSE: ", sid);
     if( ws_devices.contains(sid)){
         ws_devices.remove(sid);
     }
@@ -412,7 +407,6 @@ void ws_on_error(WebSocket *ws, int err, void *ctx){
 void ws_on_message(WebSocket *ws, ubyte[] data, void *ctx){
     auto sid = ws.sid;
     string msg = cast(immutable(char[]))data;
-    writeit("WS MSG: ",sid," : ",msg);
     ws_device d;
     if(ws_devices.get(sid,d)){
         auto sa = msg.split("\0");
