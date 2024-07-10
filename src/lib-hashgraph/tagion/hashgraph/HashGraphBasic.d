@@ -59,7 +59,7 @@ unittest { // Test of the altitude measure function
  */
 @nogc
 bool isMajority(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
-    return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
+    return  (3 * voting > 2 * node_size);
 }
 
 unittest {
