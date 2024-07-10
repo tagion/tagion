@@ -146,7 +146,7 @@ class Round {
                             .fold!((a, b) => a | b)(null_mask))
                 );
                 if (ret > Completed.undecided) {
-                    auto _color = (completed_mask == completed_mask_1) ? "good " ~ GREEN : "bad  " ~ RED;
+                    auto _color = (completed_mask == completed_mask_1) ? "good " ~ GREEN : "badc  " ~ RED;
                     __write("%12s Round %d %scompleted=%7s completed_1=%7s%s ret=%s",
                             hashgraph.name,
                             number,
@@ -155,7 +155,7 @@ class Round {
                             completed_mask_1,
                             RESET,
                             ret);
-                    _color = (included_mask == included_mask_1) ? "good " ~ GREEN : "bad  " ~ RED;
+                    _color = (included_mask == included_mask_1) ? "good " ~ GREEN : "badi " ~ RED;
                     __write("%12s Round %d %sincluded=%7s included_1=%7s%s ret=%s",
                             hashgraph.name,
                             number,
@@ -221,13 +221,45 @@ class Round {
             if (number_of_future_round >= 4) {
                 const witness_mask=future_witness_masks.drop(3).front;
                 completed_mask_1 |= witness_mask; 
+                const included_mask_before=included_mask_1;
                 included_mask_1 |= witness_mask;
-                __write("%12s %sRound %d%s completed_1=%7s included=%7s witness=%7s Future 4",
+                __write("%12s %sRound %d%s completed_1=%7s included=%7s->%7s witness=%7s Future 4",
                         hashgraph.name,
                         CYAN,
                         number,
                         RESET,
                         completed_mask_1,
+                        included_mask_before,
+                        included_mask_1,
+                        witness_mask);
+             } 
+            if (number_of_future_round >= 5) {
+                const witness_mask=future_witness_masks.drop(4).front;
+                completed_mask_1 |= witness_mask; 
+                const included_mask_before=included_mask_1;
+                included_mask_1 |= witness_mask;
+                __write("%12s %sRound %d%s completed_1=%7s included=%7s->%7s witness=%7s Future 5",
+                        hashgraph.name,
+                        CYAN,
+                        number,
+                        RESET,
+                        completed_mask_1,
+                        included_mask_before,
+                        included_mask_1,
+                        witness_mask);
+             } 
+            if (number_of_future_round >= 6) {
+                const witness_mask=future_witness_masks.drop(5).front;
+                completed_mask_1 |= witness_mask; 
+                const included_mask_before=included_mask_1;
+                included_mask_1 |= witness_mask;
+                __write("%12s %sRound %d%s completed_1=%7s included=%7s->%7s witness=%7s Future 6",
+                        hashgraph.name,
+                        CYAN,
+                        number,
+                        RESET,
+                        completed_mask_1,
+                        included_mask_before,
                         included_mask_1,
                         witness_mask);
              } 
@@ -243,31 +275,21 @@ class Round {
                 const some_witnesses_a = some_witnesses_1();
                 const no_witness_a = some_witnesses_a.invert(node_size);
                 completed_mask_1 |= no_witness_a;
+                const included_mask_before=included_mask_1;
                 included_mask_1 |= no_witness_a;
-                __write("%12s %sRound %d%s completed_1=%7s no_gaps=%7s some=%7s no_witness=%7s",
+                __write("%12s %sRound %d%s completed_1=%7s included=%7s->%7s no_gaps=%7s some=%7s no_witness=%7s",
                         hashgraph.name,
                         CYAN,
                         number,
                         RESET,
                         completed_mask_1,
+                        included_mask_before,
+                        included_mask,
                         no_witness_gap_a,
                         some_witnesses_a,
                         no_witness_a);
             }
-            if (number_of_future_round >= 5) {
-                const witness_mask=future_witness_masks.drop(4).front;
-                completed_mask_1 |= witness_mask; 
-                included_mask_1 |= witness_mask;
-                __write("%12s %sRound %d%s completed_1=%7s included=%7s witness=%7s Future 5",
-                        hashgraph.name,
-                        CYAN,
-                        number,
-                        RESET,
-                        completed_mask_1,
-                        included_mask_1,
-                        witness_mask);
-             } 
-            if (number_of_future_round >= 6) {
+            if ((completed_mask_1.count != node_size) && (number_of_future_round >= 6)) {
                 // return ret = Completed.too_few;
 
                 auto future_witness_masks_1 = future_witness_masks;
@@ -279,42 +301,34 @@ class Round {
                 const some_witnesses_a = some_witnesses_1();
                 const no_witness_a = some_witnesses_a.invert(node_size);
                 completed_mask_1 |= no_witness_a;
+                const included_mask_before=included_mask_1;
                 included_mask_1 |= no_witness_a;
-                __write("%12s %sRound %d%s completed_1=%7s no_gaps=%7s some=%7s no_witness=%7s",
+                __write("%12s %sRound %d%s completed_1=%7s included=%7s->%7s no_gaps=%7s some=%7s no_witness=%7s",
                         hashgraph.name,
                         CYAN,
                         number,
                         RESET,
                         completed_mask_1,
+                        included_mask_before,
+                        included_mask,
                         no_witness_gap_a,
                         some_witnesses_a,
                         no_witness_a);
             }
-            if (number_of_future_round >= 6) {
-                const witness_mask=future_witness_masks.drop(5).front;
-                completed_mask_1 |= witness_mask; 
-                included_mask_1 |= witness_mask;
-                __write("%12s %sRound %d%s completed_1=%7s included=%7s witness=%7s Future 6",
-                        hashgraph.name,
-                        CYAN,
-                        number,
-                        RESET,
-                        completed_mask_1,
-                        included_mask_1,
-                        witness_mask);
-             } 
               foreach (witness_mask; future_witness_masks.drop(3)) {
                 const some_witnesses_b = some_witnesses_1();
                 no_witnesses &= witness_mask.invert(node_size);
                 completed_mask |= witness_mask;
+                const included_mask_before=included_mask_1;
                 included_mask |= witness_mask;
-                __write("%12s %sRound %d%s complete=%7s no_witness=%7s included=%7s witness=%7s count=%d",
+                __write("%12s %sRound %d%s complete=%7s no_witness=%7s included=%7s->%7s witness=%7s count=%d",
                         hashgraph.name,
                         MAGENTA,
                         number,
                         RESET,
                         completed_mask,
                         no_witnesses,
+                        included_mask_before,
                         included_mask,
                         witness_mask,
                         count);
