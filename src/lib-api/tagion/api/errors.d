@@ -21,11 +21,9 @@ static Exception last_error;
     msg = The allocated message
     msg_len = The length of the allocated message
  */
-void tagion_error_text(const(char)* msg, size_t* msg_len) {
-    msg=null;
-    *msg_len=0;
+void tagion_error_text(char** msg, size_t* msg_len) {
     if (last_error) {
-        msg=&last_error.msg[0];
+        *msg=cast(char*) &last_error.msg[0];
         *msg_len=last_error.msg.length;
     }
 }
