@@ -4,10 +4,7 @@ module tagion.hashgraph.Round;
 //import std.stdio;
 
 import std.datetime; // Date, DateTime
-import std.algorithm.iteration : cache, each, filter, fold, joiner, map, reduce;
-import std.algorithm.searching;
-import std.algorithm.searching : all, any, canFind, count, until;
-import std.algorithm.sorting : sort;
+import std.algorithm;
 import std.array : array;
 import std.conv;
 import std.format;
@@ -28,7 +25,7 @@ import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Ti
 import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONRecord : HiBONRecord;
 import tagion.logger.Logger;
 import tagion.utils.BitMask : BitMask;
 import tagion.utils.Miscellaneous;
@@ -101,20 +98,22 @@ class Round {
             BitMask all_mask = BitMask.init.invert(node_size);
             BitMask completed_mask;
             BitMask included_mask;
-            BitMask completed_mask_1;
-            BitMask included_mask_1;
+            BitMask completed_mask_2;
+            BitMask included_mask_2;
+            version(none)
             completed_mask = BitMask(node_size.iota
-                    .filter!(n => (_events[n]!is null) && (_events[n].witness.separation >= 3)));
+                    .filter!(n => (_events[n]!is null) && (_events[n].witness.separation < 3)));
 
-            completed_mask_1 = completed_mask;
+            completed_mask_2 = BitMask(node_size.iota
+                    .filter!(n => (_events[n] is null) || (_events[n].witness.weak)));
             auto list_majority_rounds =
                 this[].retro
-                    .drop(1)
                     .until!(r => !r.majority);
             auto future_witness_masks = list_majority_rounds
                 .map!(r => BitMask(r.node_size.iota.filter!(n => r.events[n]!is null)));
+            auto future_witness_masks_2 = future_witness_masks;
             __valid_witness = BitMask(node_size.iota
-                    .filter!(n => (_events[n]!is null) && (!_events[n].witness.weak)));
+                    .filter!(n => (_events[n]!is null) && (_events[n].witness.separation < 3)));
 
             if (!completed_mask.empty) {
                 __write("%12s Round %d completed=%#s separation=%(%d %)".replace("#", node_size.to!string),
@@ -124,17 +123,11 @@ class Round {
                         _events.map!(e => ((e is null) ? -1 : e.witness.separation))
                 );
             }
-            auto _future_witness_masks =
-                list_majority_rounds
-                    .map!(r => r._events
-                            .filter!(e => e !is null)
-                            .map!(e => e.witness.previous_witness_seen_mask)
-                            .fold!((a, b) => a | b)(null_mask));
             uint count;
             auto show_witness_masks = future_witness_masks;
             scope (exit) {
                 __write(
-                        "%12s Round %d completed=%7s included_mask=%7s witness=%7s| %(%7s %) count=%d ret=%s%s%s".replace(
+                        "%12s Round %d completed=%#s included_mask=%#s witness=%#s| %(%#s %) count=%d ret=%s%s%s".replace(
                         "#", node_size.to!string),
                         hashgraph.name, number, completed_mask, included_mask,
                         __valid_witness,
@@ -153,35 +146,38 @@ class Round {
                             .fold!((a, b) => a | b)(null_mask))
                 );
                 if (ret > Completed.undecided) {
-                    auto _color = (completed_mask == completed_mask_1) ? "good " ~ GREEN : "badc  " ~ RED;
+                    auto _color = (completed_mask == completed_mask_2) ? "good " ~ GREEN : "badc  " ~ RED;
                     __write("%12s Round %d %scompleted=%#s completed_1=%#s%s ret=%s".replace("#", node_size.to!string),
                             hashgraph.name,
                             number,
                             _color,
                             completed_mask,
-                            completed_mask_1,
+                            completed_mask_2,
                             RESET,
                             ret);
-                    _color = (included_mask == included_mask_1) ? "good " ~ GREEN : "badi " ~ RED;
+                    _color = (included_mask == included_mask_2) ? "good " ~ GREEN : "badi " ~ RED;
                     __write("%12s Round %d %sincluded=%#s included_1=%#s%s ret=%s".replace("#", node_size.to!string),
                             hashgraph.name,
                             number,
                             _color,
                             included_mask,
-                            included_mask_1,
+                            included_mask_2,
                             RESET,
                             ret);
 
                 }
             }
             scope (exit) {
-                __valid_witness &= included_mask;
+                included_mask_2 -= _events
+                .filter!(e => (e !is null) && e.witness.weak)
+                .map!(e => e.node_id);
+                __valid_witness &= included_mask_2;
             }
             if (list_majority_rounds.empty) {
                 return Completed.none;
             }
-            const number_of_future_round = cast(int) list_majority_rounds.walkLength;
-            if (number_of_future_round < 3) {
+            const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
+            if (number_of_future_rounds < 3) {
                 return ret = Completed.too_few;
             }
             const no_witness_gap_1 = (() => future_witness_masks
@@ -195,13 +191,9 @@ class Round {
             const some_witnesses = some_witnesses_1();
             completed_mask |= no_witness_gap;
             included_mask |= no_witness_gap;
-            completed_mask_1 |= no_witness_gap;
-            included_mask_1 |= no_witness_gap;
+            //completed_mask_2 |= no_witness_gap;
+            //included_mask_2 |= no_witness_gap;
 
-            if (completed_mask.count == node_size) {
-                return ret = Completed.all_witness;
-
-            }
 
             BitMask no_witnesses = some_witnesses.invert(node_size);
             __write("%12s %s%sRound %d%s complete=%#s  included=%#s no_gap=%#s some=%#s no_witness=%#s".replace("#", node_size.to!string),
@@ -226,148 +218,112 @@ class Round {
                     no_witnesses,
                     future_witness_masks.take(6)
             );
+            version(none)
+            const no_witness_gap_2 = (() => future_witness_masks_2
+                    .takeExactly(3)
+                    .fold!((a, b) => a & b)(all_mask));
+            version(none)
+            const some_witnesses_2 = (() => future_witness_masks_2
+                    .takeExactly(3)
+                    .fold!((a, b) => a | b)(null_mask));
 
-            if (number_of_future_round >= 4) {
-                const witness_mask = future_witness_masks.drop(3).front;
-                completed_mask_1 |= witness_mask;
-                const included_mask_before = included_mask_1;
-                included_mask_1 |= witness_mask;
-                __write("%12s %sRound %d%s completed_1=%#s included=%#s->%#s witness=%#s Future 4".replace("#", node_size.to!string),
+            const len=
+                    max(number_of_future_rounds - 2, 0);
+            __write("%12s %sRound %d%s n=%d len=%d %(%#s %)".replace("#", node_size.to!string),
+                    hashgraph.name,
+                    CYAN,
+                    number,
+                    RESET,
+                    number_of_future_rounds,
+                    len,
+                    future_witness_masks
+            );
+            
+          
+            int[] vote_count;
+            vote_count.length=node_size;
+            future_witness_masks_2
+            .map!(mask => mask[])
+            .joiner
+            .each!(n => vote_count[n]++);
+
+            //included_mask_2 = BitMask(node_size.iota.filter!(n => vote_count[n] >= 3));
+            included_mask_2 = BitMask(_events
+            .filter!(e => (e !is null) && !e.witness.weak)
+            .map!(e => e.node_id));
+            
+           // completed_mask_2 |= BitMask(node_size.iota.filter!(n => vote_count[n] <= number_of_future_rounds-3));
+            const min_span=vote_count.filter!(v => v <= 3).maxElement(0);
+            const max_span=vote_count.filter!(v => v > 3).minElement(number_of_future_rounds);
+        
+            __write("%12s %sRound %d%s votes=%(%2d %) [%d:%d] %s %#s | %(%#s %)".replace("#", node_size.to!string),
                         hashgraph.name,
                         CYAN,
                         number,
                         RESET,
-                        completed_mask_1,
-                        included_mask_before,
-                        included_mask_1,
-                        witness_mask);
-            }
-            if (number_of_future_round >= 5) {
-                const witness_mask = future_witness_masks.drop(4).front;
-                completed_mask_1 |= witness_mask;
-                const included_mask_before = included_mask_1;
-                included_mask_1 |= witness_mask;
-                __write("%12s %sRound %d%s completed_1=%#s included=%#s->%#s witness=%#s Future 5".replace("#", node_size.to!string),
-                        hashgraph.name,
-                        CYAN,
-                        number,
-                        RESET,
-                        completed_mask_1,
-                        included_mask_before,
-                        included_mask_1,
-                        witness_mask);
-            }
-            if (number_of_future_round >= 6) {
-                const witness_mask = future_witness_masks.drop(5).front;
-                completed_mask_1 |= witness_mask;
-                const included_mask_before = included_mask_1;
-                included_mask_1 |= witness_mask;
-                __write("%12s %sRound %d%s completed_1=%#s included=%#s->%#s witness=%#s Future 6".replace("#", node_size.to!string),
-                        hashgraph.name,
-                        CYAN,
-                        number,
-                        RESET,
-                        completed_mask_1,
-                        included_mask_before,
-                        included_mask_1,
-                        witness_mask);
-            }
-            if (number_of_future_round >= 4) {
-                // return ret = Completed.too_few;
+                        vote_count,
+                        min_span,
+                        max_span,
+                        ((max_span-min_span >= 3)?GREEN~"ok":RED~"not")~RESET,
+                        
+                        _valid_witness,
+                        show_witness_masks.drop(1).take(6));
+          
+           
+        version(none) {
+            if ((max_span-min_span) >3 || vote_count.all!(v => v > 3)) {
+                return ret = Completed.all_witness;
 
-                auto future_witness_masks_1 = future_witness_masks;
-                future_witness_masks = future_witness_masks.drop(1);
-                scope (exit) {
-                    future_witness_masks = future_witness_masks_1;
-                }
-                const no_witness_gap_a = no_witness_gap_1();
-                const some_witnesses_a = some_witnesses_1();
-                const no_witness_a = some_witnesses_a.invert(node_size);
-                completed_mask_1 |= no_witness_a;
-                const included_mask_before = included_mask_1;
-                included_mask_1 -= no_witness_a;
-                //included_mask_1 |= some_witnesses_a;
-                //included_mask_1 |= future_witness_masks_1.drop(4).front; 
-                const last_witness = future_witness_masks_1.drop(3).front;
-                included_mask_1 |= last_witness;
+            }
+            return ret = Completed.undecided;
+        }
+            future_witness_masks_2.popFront;
+            BitMask more_some_witnesses; 
+            foreach (i; 0 .. len-1) {
 
-                __write("%12s %sRound %d%s completed_1=%#s included=%#s->%#s no_gaps=%#s some=%#s no_witness=%#s last=%#s-> 4"
+                const _no_witness_gap = future_witness_masks_2
+                .takeExactly(3)
+                .fold!((a,b) => a & b)(all_mask);
+                const _some_witnesses = future_witness_masks_2
+                .takeExactly(3)
+                .fold!((a,b) => a | b)(null_mask);
+                completed_mask_2 |= _no_witness_gap;
+       //         included_mask_2 |= _no_witness_gap;
+                
+                //completed_mask_2 |= _no_witness_gap;
+                
+                //included_mask_2 |= _no_witness_gap;
+                __write(
+                        "%12s %sRound %d%s %d]:%d complete=%#s  included=%#s no_gap=%#s some=%#s more=%#s %#s | %(%#s %)"
                         .replace("#", node_size.to!string),
                         hashgraph.name,
                         CYAN,
                         number,
                         RESET,
-                        completed_mask_1,
-                        included_mask_before,
-                        included_mask_1,
-                        no_witness_gap_a,
-                        some_witnesses_a,
-                        no_witness_a,
-                        last_witness);
-            }
-            if ((number_of_future_round >= 5)) {
-                // return ret = Completed.too_few;
-
-                auto future_witness_masks_1 = future_witness_masks;
-                future_witness_masks = future_witness_masks.drop(2);
-                scope (exit) {
-                    future_witness_masks = future_witness_masks_1;
-                }
-                const no_witness_gap_a = no_witness_gap_1();
-                const some_witnesses_a = some_witnesses_1();
-                const no_witness_a = some_witnesses_a.invert(node_size);
-                completed_mask_1 |= no_witness_a;
-                const included_mask_before = included_mask_1;
-                included_mask_1 -= no_witness_a;
-                //included_mask_1 |= some_witnesses_a;
-                //included_mask_1 |= future_witness_masks_1.drop(4).front; 
-                const last_witness = future_witness_masks_1.drop(4).front;
-                included_mask_1 |= last_witness;
-
-                __write("%12s %sRound %d%s completed_1=%#s included=%#s->%#s no_gaps=%#s some=%#s no_witness=%#s last=%#s-> 5"
-                        .replace("#", node_size.to!string),
-                        hashgraph.name,
-                        CYAN,
+                        i,
                         number,
-                        RESET,
-                        completed_mask_1,
-                        included_mask_before,
-                        included_mask_1,
-                        no_witness_gap_a,
-                        some_witnesses_a,
-                        no_witness_a,
-                        last_witness);
-            }
-            if ((number_of_future_round >= 6)) {
-                // return ret = Completed.too_few;
-
-                auto future_witness_masks_1 = future_witness_masks;
-                future_witness_masks = future_witness_masks.drop(3);
-                scope (exit) {
-                    future_witness_masks = future_witness_masks_1;
+                        completed_mask_2,
+                        included_mask_2,
+                        _no_witness_gap,
+                        _some_witnesses,
+                        more_some_witnesses,
+                        _valid_witness,
+                        show_witness_masks.drop(1).take(6));
+                if (completed_mask_2.count == node_size) {
+                    break;
                 }
-                const no_witness_gap_a = no_witness_gap_1();
-                const some_witnesses_a = some_witnesses_1();
-                const no_witness_a = some_witnesses_a.invert(node_size);
-                completed_mask_1 |= no_witness_a;
-                const included_mask_before = included_mask_1;
-                //included_mask_1 |= some_witnesses_a;
-                included_mask_1 -= no_witness_a;
-                const last_witness = future_witness_masks_1.drop(5).front;
-                included_mask_1 |= last_witness;
-                __write("%12s %sRound %d%s completed_1=%#s included=%#s->%#s no_gaps=%#s some=%#s no_witness=%#s last=%#s-> 6"
-                        .replace("#", node_size.to!string),
-                        hashgraph.name,
-                        CYAN,
-                        number,
-                        RESET,
-                        completed_mask_1,
-                        included_mask_before,
-                        included_mask_1,
-                        no_witness_gap_a,
-                        some_witnesses_a,
-                        no_witness_a,
-                        last_witness);
+                more_some_witnesses |= _some_witnesses;
+                if (i > 0) {
+                    completed_mask_2 |= _some_witnesses.invert(node_size);
+                }
+                future_witness_masks_2.popFront;
+            }
+            version(none) {
+            if (completed_mask_2.count == node_size) {
+                return ret = Completed.all_witness;
+
+            }
+            return ret = Completed.undecided;
             }
             foreach (witness_mask; future_witness_masks.drop(3)) {
                 const some_witnesses_b = some_witnesses_1();
@@ -419,7 +375,7 @@ class Round {
 
             }
             return ret = Completed.undecided;
-       }
+        }
         return Completed.none;
     }
 
@@ -491,6 +447,7 @@ class Round {
         event._round = this;
     }
 
+    version(none)
     final bool _can_round_be_decided() const pure nothrow {
         auto feature_rounds = opSlice.retro.drop(1).take(2);
         if (feature_rounds.walkLength < 2) {
@@ -623,13 +580,13 @@ class Round {
             size_t _n_voters;
             foreach (r; list_majority_rounds) {
                 const round_increment = r.number - number;
-                __write("%s Round %d->%d undecided=%7s %-(%s%)", _name, number, r.number, undecided_witnesses_mask, "->"
+                __write("%s Round %d->%d undecided=%#s %-(%s%)".replace("#", node_size.to!string), _name, number, r.number, undecided_witnesses_mask, "->"
                         .repeat(round_increment));
                 if (round_increment == 1) {
                     voting_witness_mask = BitMask(
                             r.node_size.iota
                             .filter!(n => r._events[n]!is null));
-                    __write("%s %sRound %d%s voting witness %7s", _name,
+                    __write("%s %sRound %d%s voting witness %#s".replace("#", node_size.to!string), _name,
                             CYAN,
                             number,
                             RESET,

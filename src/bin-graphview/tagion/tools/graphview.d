@@ -242,6 +242,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             node_circle.fill = nonPastel19.color(e.round);
             import tagion.hashgraph.Event;
 
+            version(none)
             with (Event.Witness.DecisionType) final switch (e.type) {
             case undecided:
                 node_circle.stroke = "lightblue";
@@ -257,7 +258,18 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
                 node_circle.stroke = "green";
 
             }
-            //node_circle.stroke = (e.famous) ? "green" : "red";
+            node_circle.stroke = "red";
+            if (e.decided) {
+                node_circle.stroke = "blue";
+            }
+            if (e.famous) {
+                node_circle.stroke = "green";
+            }
+            if (e.weak) {
+                node_circle.stroke = "yellow";
+                
+            }
+               //node_circle.stroke = (e.famous) ? "green" : "red";
             node_circle.stroke_width = 10;
             // }
             // else {
@@ -336,10 +348,6 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             text.pos.x -= NODE_CIRCLE_SIZE * 2;
             text.fill = "blue";
             text.text = format("yes %d", e.yes_votes); //, e.no_votes);
-            obuf[20].writefln("%s", text.toString);
-            text.pos.y += NODE_CIRCLE_SIZE / 2;
-            text.fill = "red";
-            text.text = format("%s", e.type);
             obuf[20].writefln("%s", text.toString);
             text.pos.y += NODE_CIRCLE_SIZE / 2;
 

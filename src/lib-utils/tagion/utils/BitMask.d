@@ -25,18 +25,20 @@ struct BitMask {
     enum absolute_mask = 0x1000;
     private size_t[] mask;
 
-    void opAssign(scope const(BitMask) rhs)  pure nothrow {
+    BitMask opAssign(scope const(BitMask) rhs)  pure nothrow {
         mask=rhs.mask.dup;
+        return this;
     }
 
-    void opAssign(const(ubyte)[] buf) pure nothrow @trusted {
+    BitMask opAssign(const(ubyte)[] buf) pure nothrow @trusted {
         if (buf.length == 0) {
             mask = null;
-            return;
+            return this;
         }
         const size = (buf.length / size_t.sizeof) + (buf.length % size_t.sizeof != 0);
         buf.length = size * size_t.sizeof;
         mask = (cast(size_t*)&buf[0])[0 .. size].dup;
+        return this;
     }
 
     /**

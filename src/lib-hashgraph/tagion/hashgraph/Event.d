@@ -198,6 +198,7 @@ class Event {
         }
         const BitMask previous_witness_seen_mask;
         int separation;
+        bool weak;
         @nogc final const pure nothrow {
             const(BitMask) previous_strongly_seen_mask() {
                 return _previous_strongly_seen_mask;
@@ -219,7 +220,7 @@ class Event {
                 return isMajority(yes_votes, _round.events.length);
             }
            
-            bool weak() {
+            bool _weak() {
                 return (separation >=2);
             }
             bool decided() {
@@ -288,6 +289,7 @@ class Event {
             return decision == DecisionType.Yes;
         }
 
+        version(none)
         final DecisionType decision() const pure nothrow {
             auto feature_rounds = _round[].retro.drop(1);
             if ((feature_rounds.take(2).walkLength == 2) && feature_rounds.take(2).map!(r => r.majority).all) {
@@ -350,7 +352,8 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
         do {
             hashgraph._rounds.set_round(this.outer);
-            if (weak) {
+            weak =_mother && _mother._intermediate_seen_mask.count == 1;
+            if (_weak) {
                 return;
             }
             /// Counting yes/no votes from this witness to witness in the previous round
@@ -360,8 +363,8 @@ class Event {
                     //auto previous_witness_event = previous_witness_events[n];
                     if (previous_witness_event) {
                         auto vote_for_witness = previous_witness_event._witness;
-                        const seen_strongly = _previous_strongly_seen_mask[n];
-                        //const seen_strongly = previous_witness_seen_mask[n];
+                        //const seen_strongly = _previous_strongly_seen_mask[n];
+                        const seen_strongly = previous_witness_seen_mask[n];
                         if (seen_strongly) {
                             vote_for_witness.voteYes(node_id);
                             view(previous_witness_event);
