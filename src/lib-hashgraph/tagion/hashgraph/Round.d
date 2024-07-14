@@ -314,7 +314,7 @@ class Round {
                     no_witness_void_2 |= witness_mask;
                 }
                 if (i == 4) {
-                    included_mask_2 -= some_witnesses_2;
+                    included_mask_2 -= some_witnesses_2.invert(node_size);
                     completed_mask_2 |= some_witnesses_2.invert(node_size);
                 }
                 //some_witnesses_2 &= witness_mask;
