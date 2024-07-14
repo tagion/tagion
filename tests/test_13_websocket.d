@@ -68,6 +68,7 @@ main()
         assert(indexOf(res.output,"Websocket connected") == 0);
         assert(indexOf(res.output,`"request":"12345"`) == 136);
         nng_sleep(2000.msecs);
+        wsa.stop;
     } catch(Throwable e) {
         error(dump_exception_recursive(e, "Main"));
     }        

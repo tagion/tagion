@@ -2721,7 +2721,6 @@ struct WebSocketApp {
         void delegate(void*) d = &(this.accb);
         rc = nng_aio_alloc( &accio, d.funcptr, self() );
         enforce(rc==0,"Accept aio init");
-        
     }
 
     void start()
@@ -2735,6 +2734,14 @@ struct WebSocketApp {
         }
         starts++;
         nng_mtx_unlock(mtx);        
+    }
+    
+    void stop()
+    {
+        foreach(c; conns)
+            c.close;
+        nng_stream_listener_close(sl);      
+        nng_aio_stop(accio);            
     }
 
     void* self () {
