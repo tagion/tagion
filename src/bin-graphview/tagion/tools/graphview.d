@@ -242,22 +242,6 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             node_circle.fill = nonPastel19.color(e.round);
             import tagion.hashgraph.Event;
 
-            version(none)
-            with (Event.Witness.DecisionType) final switch (e.type) {
-            case undecided:
-                node_circle.stroke = "lightblue";
-                node_circle.fill = "blue";
-                break;
-            case Weak:
-                node_circle.stroke = "blue";
-                break;
-            case No:
-                node_circle.stroke = "red";
-                break;
-            case Yes:
-                node_circle.stroke = "green";
-
-            }
             node_circle.stroke = "red";
             if (e.decided) {
                 node_circle.stroke = "blue";

@@ -352,10 +352,7 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
         do {
             hashgraph._rounds.set_round(this.outer);
-            weak =_mother && _mother._intermediate_seen_mask.count == 1;
-            if (_weak) {
-                return;
-            }
+            weak =_mother &&  (_round.previous.events[node_id] is null);
             /// Counting yes/no votes from this witness to witness in the previous round
             if (round.previous && (round.previous.events[node_id] !is null) && !round.previous.events[node_id].witness.weak) {
                 auto previous_witness_events = _round.previous._events;
