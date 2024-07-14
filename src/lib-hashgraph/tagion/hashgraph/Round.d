@@ -321,13 +321,6 @@ class Round {
                 if ( i > 2) {
                     completed_mask_2 |= witness_mask;
                 }
-                if (i == 1) {
-                    //included_mask_2 |= witness_mask;
-                    first_gap = witness_mask & ~included_mask_2;
-                }
-                if (i == 5) {
-                    completed_mask_2 |= some_witnesses_2.invert(node_size);
-                }
                 //included_mask_2 = ones_mask;
             //    completed_mask_2 = zeros_mask | ones_mask;
                 __write(
