@@ -29,6 +29,7 @@ import tagion.utils.StdTime;
 import tagion.behaviour.BehaviourException : check, BehaviourException;
 
 import tagion.basic.Debug;
+import tagion.basic.Version;
 
 struct HashGraphOptions {
     uint number_of_nodes;
@@ -76,48 +77,48 @@ class NewTestRefinement : StdRefinement {
         if (event_collection.length == 0) {
             return;
         }
-        import std.range : tee;
 
-        sdt_t[] times;
-        auto events = event_collection
-            .tee!((e) => times ~= e.event_body.time)
+        auto times=event_collection.map!(e => cast(sdt_t)e.event_body.time).array;
+
+         static if (ver.HASH_ORDERING) {
+            auto sorted_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint)
+            .filter!((e) => !e.event_body.payload.empty)
+            .array; 
+        }
+        else static if (ver.OLD_ORDERING) {
+            auto sorted_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT))
             .filter!((e) => !e.event_body.payload.empty)
             .array;
-
-        version (OLD_ORDERING) {
-            auto sorted_events = events.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
         }
-        version (NEW_ORDERING) {
+        else static if  (ver.NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
                 .filter!(e => decided_round.famous_mask[e.node_id])
                 .array;
-            auto sorted_events = events.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round)).array;
+            auto sorted_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
+            .filter!((e) => !e.event_body.payload.empty)
+            .array;
         }
         times.sort;
+        const mid = times.length / 2 + (times.length % 1);
+        const epoch_time = times[mid];
 
-        version (OLD_ORDERING) {
-            const mid = times.length / 2 + (times.length % 1);
-            __write("%12s Round %d times.length=%d mid=%d event_collection=%d", hashgraph.name, decided_round.number, times.length, mid, event_collection
-                    .length);
-            const epoch_time = times[mid];
-        }
-        version (NEW_ORDERING) {
-            const epoch_time = times[times.length / 2];
-        }
-        version (OLD_ORDERING) {
-            auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
-        }
-        version (NEW_ORDERING) {
-            const famous_witnesses = decided_round
-                ._events
-                .filter!(e => e !is null)
-                .filter!(e => decided_round.famous_mask[e.node_id])
-                .array;
-            auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
-                .array;
-        }
+        static if (ver.HASH_ORDERING) {
+            auto __sorted_raw_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint).array;
+            }
+            else static if (ver.OLD_ORDERING) {
+                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+            }
+            else static if (ver.NEW_ORDERING) {
+                const famous_witnesses = decided_round
+                    ._events
+                    .filter!(e => e !is null)
+                    .filter!(e => decided_round.famous_mask[e.node_id])
+                    .array;
+                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
+                    .array;
+            }
         auto finished_epoch = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
 
         epochs[finished_epoch.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = finished_epoch;

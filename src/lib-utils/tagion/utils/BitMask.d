@@ -636,6 +636,22 @@ struct BitMask {
         {
             const a = BitMask("1000_1100_1100");
             const b = BitMask("0010_1001_0101");
+            const null_mask=BitMask.init;
+            { // bit or with null_mask
+                const y = a | null_mask;
+                assert(y == a);
+            }
+            
+            { // bit and with null_mask
+                const y = a & null_mask;
+                assert(y == null_mask);
+            }
+            
+            { // bit xor with null_mask
+                const y = a ^ null_mask;
+                assert(y == a);
+            }
+
             { // bit or
                 const y = a | b;
                 assert(format("%16.4s", y) == "1010_1101_1101_0000");
@@ -660,6 +676,7 @@ struct BitMask {
                 assert(y.count is 3);
             }
 
+            
             version (BITMASK) {
                 BitMask null_mask;
                 const y = a - null_mask;

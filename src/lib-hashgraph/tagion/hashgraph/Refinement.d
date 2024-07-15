@@ -25,7 +25,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.standardnames;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
-
+import tagion.basic.Version;
 @safe
 @recordType("finishedEpoch")
 struct FinishedEpoch {
@@ -205,19 +205,19 @@ class StdRefinement : Refinement {
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
-        import std.range : tee;
+        auto times=event_collection.map!(e => cast(sdt_t)e.event_body.time).array;
 
-        sdt_t[] times;
-        auto events = event_collection
-            .tee!((e) => times ~= e.event_body.time)
+        static if (ver.HASH_ORDERING) {
+            auto sorted_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint)
+            .filter!((e) => !e.event_body.payload.empty)
+            .array; 
+        }
+        else static if (ver.OLD_ORDERING) {
+            auto sorted_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT))
             .filter!((e) => !e.event_body.payload.empty)
             .array;
-
-
-        version(OLD_ORDERING) {
-            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
         }
-        version (NEW_ORDERING) {
+        else static if  (ver.NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
@@ -232,10 +232,13 @@ class StdRefinement : Refinement {
         
         version (BDD) {
             // raw event_collection subscription
-            version(OLD_ORDERING) {
+            static if (ver.HASH_ORDERING) {
+                auto __sorted_raw_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint).array;
+            }
+            else static if (ver.OLD_ORDERING) {
                 auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
             }
-            version (NEW_ORDERING) {
+            else static if (ver.NEW_ORDERING) {
                 const famous_witnesses = decided_round
                     ._events
                     .filter!(e => e !is null)
@@ -254,8 +257,7 @@ class StdRefinement : Refinement {
                     Event.count, Event.Witness.count, events.length, epoch_time);
         }
 
-        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, events
-                .length);
+        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, event_collection.length);
 
         finishedEpoch(sorted_events, epoch_time, decided_round);
         excludedNodes(hashgraph._excluded_nodes_mask);

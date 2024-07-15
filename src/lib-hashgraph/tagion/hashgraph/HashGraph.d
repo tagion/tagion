@@ -36,21 +36,23 @@ class HashGraph {
     enum default_scrap_depth = 10;
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
- 
+
     protected alias check = Check!HashGraphConsensusException;
     import tagion.logger.Statistic;
 
+    BitMask[] last_witnesses;
     immutable size_t node_size; /// Number of active nodes in the graph
     immutable(string) name; // Only used for debugging
     struct HashGraphStatistics {
-    Statistic!ulong epoch_events;
-    Statistic!uint wavefront_event_package;
-    Statistic!uint wavefront_event_package_used;
-    Statistic!uint live_events;
-    Statistic!uint live_witness;
-    Statistic!(uint, Yes.histogram) feature_famous_rounds; 
+        Statistic!ulong epoch_events;
+        Statistic!uint wavefront_event_package;
+        Statistic!uint wavefront_event_package_used;
+        Statistic!uint live_events;
+        Statistic!uint live_witness;
+        Statistic!(uint, Yes.histogram) feature_famous_rounds;
         mixin HiBONRecord;
     }
+
     HashGraphStatistics statistics;
     //Statistic!long epoch_delay_statistic;
     BitMask _excluded_nodes_mask;
@@ -118,7 +120,7 @@ class HashGraph {
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
         this._joining = joining;
-        this.name = (name)?name:format("%(%02x%)",hirpc.net.pubkey[0..8]);
+        this.name = (name) ? name : format("%(%02x%)", hirpc.net.pubkey[0 .. 8]);
         _rounds = Round.Rounder(this);
     }
 
