@@ -248,7 +248,7 @@ class Round {
             completed_mask = BitMask(node_size.iota.filter!(n => (_events[n] !is null) && (_events[n].witness.separation >= 2)));
             foreach (i, witness_mask; future_witness_masks.drop(1).enumerate) {
                 some_witnesses_2 |= witness_mask;
-                if (i == 3) {
+                if (i == 2) {
                     included_mask_2 -= some_witnesses_2.invert(node_size);
                     completed_mask |= some_witnesses_2.invert(node_size);
                 }
