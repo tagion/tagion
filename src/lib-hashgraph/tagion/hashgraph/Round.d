@@ -230,7 +230,8 @@ class Round {
                 }
             }
             scope (exit) {
-                __valid_witness &= included_mask;
+                //__valid_witness &= included_mask;
+                __valid_witness &= included_mask_2;
             }
             if (list_majority_rounds.empty) {
                 return Completed.none;
@@ -244,30 +245,16 @@ class Round {
             BitMask no_witness_void_2;
             included_mask = __valid_witness;
             included_mask_2 = __valid_witness;
+            completed_mask = BitMask(node_size.iota.filter!(n => (_events[n] !is null) && (_events[n].witness.separation >= 2)));
             foreach (i, witness_mask; future_witness_masks.drop(1).enumerate) {
                 some_witnesses_2 |= witness_mask;
-                if (i == 0) {
-                    no_witness_void_2 = witness_mask;
-                    //completed_mask |= witness_mask;
-                    //                    included_mask = witness_mask;
-
-                }
-                else {
-                    no_witness_void_2 |= witness_mask;
-                }
                 if (i == 3) {
                     included_mask_2 -= some_witnesses_2.invert(node_size);
-                }
-                if (i == 4) {
-                    included_mask -= some_witnesses_2.invert(node_size);
                     completed_mask |= some_witnesses_2.invert(node_size);
                 }
-                //some_witnesses_2 &= witness_mask;
-                if (i > 2) {
+                if (i > 1) {
                     completed_mask |= witness_mask;
                 }
-                //included_mask = ones_mask;
-                //    completed_mask = zeros_mask | ones_mask;
                 __write(
                         "%12s %sRound %d%s %2d]:%d complete=%#s included=%#s  some=%#s %#s | %(%#s %) "
                         .replace("#", node_size.to!string),
@@ -809,33 +796,12 @@ class Round {
                 //                const __decision_mask = round_to_be_decided.enclosed_witness_mask | (round_to_be_decided.witness_mask & round_to_be_decided.enclosed_witness_mask.invert(round_to_be_decided._events.length));
                 const count_feature_famous_rounds = count_feature_famous_rounds(round_to_be_decided);
                 __write(
-                        "%12s Round %4d | %(%(%s:%) %)  witness=%2d decision? %s w_masks=%(%7s %)",
+                        "%12s Round %4d | %(%d: %) ",
                         _name,
-                        round_to_be_decided
-                        .number,
+                        round_to_be_decided.number,
                         round_to_be_decided[].retro
                         .map!(r => r.events)
-                        .map!(es => only(es.filter!(e => e !is null).count,
-                            es.filter!(e => e !is null)
-                            .filter!(e => e.witness.votedYes)
-                            .count))
-                        .take(10), //count_feature_famous_rounds,
-                        witness_in_round.count,
-                        witness_in_round.filter!(w => w.votedYes).count,
-                        round_to_be_decided[].retro.drop(1).take(2)
-                            .map!(r => r.witness_mask),
-                );
-                __write("%12s Round %d voted_yes_mask    = %(%7s %) witness=%d yes=%d separation=%(%d %)", _name,
-                        round_to_be_decided.number,
-                        round_to_be_decided._events.map!(e => (e is null) ? BitMask.init : e.witness.voted_yes_mask)
-                        .take(10),
-                        round_to_be_decided._events.filter!(e => e !is null).count,
-                        round_to_be_decided._events
-                        .filter!(e => e !is null)
-                        .filter!(e => e.witness.votedYes)
-                        .count,
-                        round_to_be_decided._events.map!(e => (e is null) ? -1 : e.witness.separation)
-                );
+                        .map!(es => es.filter!(e => e !is null).count));
             }
             version (none)
                 if (!can_round_be_decided(round_to_be_decided)) {
