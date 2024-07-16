@@ -33,23 +33,28 @@ import tagion.utils.StdTime;
 import tagion.basic.Debug;
 
 @safe:
-string level_color(const size_t c) pure nothrow {
-    import tagion.utils.Term;
 
+uint level(const size_t c) pure nothrow {
     if (c < 6) {
-        return GREEN;
+        return 0;
     }
     if (c < 10) {
-        return BLUE;
+        return 1;
     }
     if (c < 16) {
-        return YELLOW;
+        return 2;
     }
     if (c < 20) {
-        return MAGENTA;
+        return 3;
     }
-    return RED;
+    return 4;
 }
+
+string level_color(const size_t c) pure nothrow {
+    import tagion.utils.Term;
+    return [GREEN, BLUE,  YELLOW, MAGENTA, RED][level(c)];
+}
+
 
 string show(const BitMask target, const BitMask mask, const size_t size) pure nothrow {
     import tagion.utils.Term;
@@ -176,7 +181,8 @@ class Round {
             ShowRange show_masks() {
                 return ShowRange(hashgraph.last_witnesses);
             }
-
+            const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
+            const _name=__format("%s%12s @%d%s", level_color(number_of_future_rounds), hashgraph.name, level(number_of_future_rounds),RESET);
             scope (exit) {
                 BitMask first_mask;
                 if (!hashgraph.last_witnesses.empty) {
@@ -184,16 +190,16 @@ class Round {
                 }
                  BitMask diff_mask = first_mask ^ future_witness_masks.front;
                 __write(
-                        "%12s Round %d completed=%#s included_mask=%#s witness=%#s| %(%#s %) count=%d ret=%s%s%s".replace(
+                        "%s Round %d completed=%#s included_mask=%#s witness=%#s| %(%#s %) count=%d ret=%s%s%s".replace(
                         "#", node_size.to!string),
-                        hashgraph.name, number, completed_mask, included_mask,
+                        _name, number, completed_mask, included_mask,
                         __valid_witness,
                         show_witness_masks.drop(1).take(10),
                         count,
                         (ret <= Completed.undecided) ? RED : GREEN, ret, RESET
                 );
-                __write("%12s Round %d seen %(%#s %)".replace("#", node_size.to!string),
-                        hashgraph.name,
+                __write("%s Round %d seen %(%#s %)".replace("#", node_size.to!string),
+                        _name,
                         number,
                         list_majority_rounds
                         .take(8)
@@ -203,8 +209,8 @@ class Round {
                             .fold!((a, b) => a | b)(null_mask))
                 );
                 const _color = ret > Completed.undecided ? "good " ~ GREEN : "badi " ~ RED;
-                __write("%12s Round %d %sshow%s diff=%d %s %s | %-(%s %)".replace("#", node_size.to!string),
-                        hashgraph.name,
+                __write("%s Round %d %sshow%s diff=%d %s %s | %-(%s %)".replace("#", node_size.to!string),
+                        _name,
                         number,
                         _color,
                         RESET,
@@ -216,8 +222,8 @@ class Round {
                     hashgraph.last_witnesses = future_witness_masks.array;
                 }
                 else {
-                    __write("%12s Round %d %sincluded=%#s%s ret=%s".replace("#", node_size.to!string),
-                            hashgraph.name,
+                    __write("%s Round %d %sincluded=%#s%s ret=%s".replace("#", node_size.to!string),
+                            _name,
                             number,
                             _color,
                             included_mask,
@@ -236,7 +242,6 @@ class Round {
             if (list_majority_rounds.empty) {
                 return Completed.none;
             }
-            const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
             if (number_of_future_rounds < 3) {
                 return ret = Completed.too_few;
             }
@@ -246,8 +251,35 @@ class Round {
             included_mask = __valid_witness;
             included_mask_2 = __valid_witness;
             completed_mask = BitMask(node_size.iota.filter!(n => (_events[n] !is null) && (_events[n].witness.separation >= 2)));
-            foreach (i, witness_mask; future_witness_masks.drop(1).enumerate) {
+            
+            int i;
+            auto future_witness_masks_2 = future_witness_masks;
+            future_witness_masks_2.popFront;
+            while(!future_witness_masks_2.empty) {
+                const witness_mask=future_witness_masks_2.front;
                 some_witnesses_2 |= witness_mask;
+                if ((i==0) && (i< number_of_future_rounds-3)) {
+                    assert(future_witness_masks_2.count >=3);
+                    const witness_mask_gap = future_witness_masks_2
+                    .takeExactly(3)
+                    .fold!((a,b) => a|b)(null_mask)
+                    .invert(node_size);
+                    included_mask_2 -= witness_mask_gap;
+                    completed_mask |= witness_mask_gap;
+                    
+                }
+                version(none)
+                if (i< number_of_future_rounds-7) {
+                    assert(future_witness_masks_2.count >=5);
+                    const witness_mask_gap = future_witness_masks_2
+                    .takeExactly(4)
+                    .fold!((a,b) => a|b)(null_mask)
+                    .invert(node_size);
+                    completed_mask |= witness_mask_gap;
+                    
+                }
+                 
+                version(none)
                 if (i == 2) {
                     included_mask_2 -= some_witnesses_2.invert(node_size);
                     completed_mask |= some_witnesses_2.invert(node_size);
@@ -256,9 +288,9 @@ class Round {
                     completed_mask |= witness_mask;
                 }
                 __write(
-                        "%12s %sRound %d%s %2d]:%d complete=%#s included=%#s  some=%#s %#s | %(%#s %) "
+                        "%s %sRound %d%s %2d]:%d complete=%#s included=%#s  some=%#s %#s | %(%#s %) "
                         .replace("#", node_size.to!string),
-                        hashgraph.name,
+                        _name,
                         CYAN,
                         number,
                         RESET,
@@ -274,6 +306,8 @@ class Round {
                     return ret = Completed.all_witness;
 
                 }
+                future_witness_masks_2.popFront;
+                i++;
             }
             return ret = Completed.undecided;
         }
