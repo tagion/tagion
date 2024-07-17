@@ -7,6 +7,7 @@ import std.datetime; // Date, DateTime
 import std.algorithm.iteration : cache, each, filter, fold, joiner, map, reduce;
 import std.algorithm.searching : all, any, canFind, count, until;
 import std.algorithm.sorting : sort;
+import std.algorithm.comparison : max;
 import std.array : array;
 import std.conv;
 import std.format;
@@ -197,8 +198,17 @@ class Event {
 
         }
         const BitMask previous_witness_seen_mask;
+        BitMask seen_voting_mask;
         int separation;
         bool weak;
+        bool __seen_decided(size_t voters) const pure nothrow {
+            const seen_votes=seen_voting_mask.count;
+            const total_voters=max(voters, seen_votes);
+            //assert(voters >= seen_votes, "Voters );
+            const N=_round.node_size;
+            const not_seen=(N-total_voters)+(N-seen_votes);
+            return isMajority(seen_votes, N) || isMajority(not_seen, N);
+        }
         @nogc final const pure nothrow {
             const(BitMask) previous_strongly_seen_mask() {
                 return _previous_strongly_seen_mask;
@@ -219,10 +229,12 @@ class Event {
             bool votedYes() {
                 return isMajority(yes_votes, _round.events.length);
             }
-           
+
+            
             bool _weak() {
-                return (separation >=2);
+                return (separation >= 2);
             }
+
             bool decided() {
                 const voted = _voted_yes_mask.count;
                 const N = _round.events.length;
@@ -239,37 +251,33 @@ class Event {
                 }
                 return false;
             }
-            version(none)
-            bool decided(const size_t voters) {
+
+            version (none) bool decided(const size_t voters) {
                 const N = _round.events.length;
                 const votes = decided_yes_mask.count;
                 assert(votes <= voters, "Number of votes greater than then number of voters");
-                const votedNo = voters-votes;
+                const votedNo = voters - votes;
                 //assert(votes <= voters, "Voters >= the the votes");
-                return isMajority(votes, N) ||  isMajority( votedNo, N);
+                return isMajority(votes, N) || isMajority(votedNo, N);
             }
 
-            version(none)
-            bool newDecision() {
+            version (none) bool newDecision() {
                 if (_round.voting) {
                     return decided(_round.voting._events.filter!(e => e !is null).count);
                 }
                 return false;
             }
 
-            version(none)
-            bool _decidedYes() {
+            version (none) bool _decidedYes() {
                 return isMajority(decided_yes_mask, _round.events.length);
             }
         }
 
-        version(none)
-        final void update_decision_mask() pure nothrow {
+        version (none) final void update_decision_mask() pure nothrow {
             decided_yes_mask = _voted_yes_mask;
         }
 
-        version(none)
-        final const(BitMask) _decidedYes(const Round r) const pure nothrow {
+        version (none) final const(BitMask) _decidedYes(const Round r) const pure nothrow {
             BitMask result;
             return _round[].retro
                 .map!(r => r._events[node_id])
@@ -279,18 +287,15 @@ class Event {
                 .fold!((a, b) => a | b)(result);
         }
 
-        version(none)
-        bool _decidedYes() const pure nothrow @nogc {
+        version (none) bool _decidedYes() const pure nothrow @nogc {
             return isMajority(decided_yes_mask.count, _round.node_size);
         }
 
-        version(none)
-        bool decidedYes() const pure nothrow {
+        version (none) bool decidedYes() const pure nothrow {
             return decision == DecisionType.Yes;
         }
 
-        version(none)
-        final DecisionType decision() const pure nothrow {
+        version (none) final DecisionType decision() const pure nothrow {
             auto feature_rounds = _round[].retro.drop(1);
             if ((feature_rounds.take(2).walkLength == 2) && feature_rounds.take(2).map!(r => r.majority).all) {
                 if (feature_rounds.take(2).map!(r => r.events[node_id]!is null).any) {
@@ -306,7 +311,7 @@ class Event {
         alias isFamous = votedYes;
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
-            if (!_voted_yes_mask[voting_node_id] ) {
+            if (!_voted_yes_mask[voting_node_id]) {
                 _voted_yes_mask[voting_node_id] = true;
                 //if (isMajority(_voted_yes_mask, _round.node_size)) {
                 //decided_yes_mask[voting_node_id] = true;
@@ -352,9 +357,10 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
         do {
             hashgraph._rounds.set_round(this.outer);
-            weak =_mother &&  (_round.previous.events[node_id] is null);
+            weak = _mother && (_round.previous.events[node_id] is null);
             /// Counting yes/no votes from this witness to witness in the previous round
-            if (round.previous && (round.previous.events[node_id] !is null) && !round.previous.events[node_id].witness.weak) {
+            if (round.previous && (round.previous.events[node_id]!is null) && !round.previous.events[node_id].witness
+                .weak) {
                 auto previous_witness_events = _round.previous._events;
                 foreach (n, previous_witness_event; previous_witness_events) {
                     //auto previous_witness_event = previous_witness_events[n];
