@@ -9,7 +9,7 @@ Help information for subscriber
 -f  --format Set the output format default: pretty, available [pretty, json, hibon]
    --address Specify the address to subscribe to
        --tag Specify tags to subscribe to
-  --contract Subscribe to status of a specific contract (base64url hash)
+  --contract Subscribe to status of a specific contract (base58url hash)
 -h    --help This help information.
 ```
 
@@ -32,10 +32,10 @@ subscriber --contract
 **Subscribing to a specific contract**
 
 You can show the outputs of specific contracts only 
-by providing the hash of the [SignedContract](/docs/protocols/contract#signed-contractssc) in base64url.
+by providing the hash of the [SignedContract](/docs/protocols/contract#signed-contractssc) in base58url.
 
 :::tip
-base64url hash of a HiBON can be shown with `hibonutil -tHc`  
+base58url hash of a HiBON can be shown with `hibonutil -tHc`  
 Make sure you are getting the hash of the SignedContract and not the HiRPC
 :::
 

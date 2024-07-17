@@ -29,7 +29,7 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
 import tagion.wallet.BIP39;
-import tagion.basic.Types : encodeBase64, Buffer;
+import tagion.basic.Types : encodeBase58, Buffer;
 import tagion.basic.range : eatOne;
 import tagion.basic.basic : isinit;
 import tagion.crypto.SecureNet;
@@ -339,7 +339,7 @@ int _main(string[] args) {
                     if (!found_bill.empty) {
                         record[success_name] = 1.to!string;
                         record[paid_name] = found_bill.front.value.toString;
-                        record[bill_name] = hash_net.dartIndex(found_bill.front).encodeBase64;
+                        record[bill_name] = hash_net.dartIndex(found_bill.front).encodeBase58;
                     }
                 }
 
@@ -452,7 +452,7 @@ int _main(string[] args) {
                     warn("%s has already been paid", record[id_name]);
                 }
                 bill_indices ~= hash_net.dartIndex(bill);
-                info("%-16s %37s %20sTGN", record[payee_name], pubkey.encodeBase64, amount_tgn.toString);
+                info("%-16s %37s %20sTGN", record[payee_name], pubkey.encodeBase58, amount_tgn.toString);
             }
             SignedContract signed_contract;
             TagionCurrency fees;

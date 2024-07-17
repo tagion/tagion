@@ -421,14 +421,14 @@ struct WalletInterface {
         const index = secure_wallet.net.dartIndex(bill);
         const deriver = secure_wallet.account.derivers.get(bill.owner, Buffer.init);
         return format("dartIndex %s\nDeriver   %s\n%s",
-                index.encodeBase64, deriver.encodeBase64, bill.toPretty);
+                index.encodeBase58, deriver.encodeBase58, bill.toPretty);
     }
 
     string show(const Document doc) {
         const index = secure_wallet.net.calcHash(doc);
         const deriver = secure_wallet.account.derivers.get(Pubkey(doc[StdNames.owner].get!Buffer), Buffer.init);
         return format("fingerprint %s\nDeriver   %s\n%s",
-                index.encodeBase64, deriver.encodeBase64, doc.toPretty);
+                index.encodeBase58, deriver.encodeBase58, doc.toPretty);
     }
 
     string show(T)(T rec) if (isHiBONRecord!T) {
@@ -447,7 +447,7 @@ struct WalletInterface {
                 RESET, mark,
                 bill.time.toText,
                 hash_net.calcHash(bill)
-                .encodeBase64,
+                .encodeBase58,
                 bill.value.value);
     }
 
@@ -490,7 +490,7 @@ struct WalletInterface {
         const line = format("%-(%s%)", "- ".repeat(40));
         fout.writefln("%-5s %-10s %-45s", "No", "Label", "Deriver");
         foreach (i, invoice; invoices) {
-            fout.writefln("%4s] %-10s %s", i, invoice.name, invoice.pkey.encodeBase64);
+            fout.writefln("%4s] %-10s %s", i, invoice.name, invoice.pkey.encodeBase58);
         }
         fout.writeln(line);
     }
@@ -592,7 +592,7 @@ struct WalletInterface {
                 if (request) {
                     secure_wallet.account.requested.byValue
                         .each!(bill => secure_wallet.net.dartIndex(bill)
-                                .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
+                                .encodeBase58.setExtension(FileExtension.hibon).fwrite(bill));
                 }
                 if (update || trt_update || trt_read) {
                     const update_net = secure_wallet.net.derive(

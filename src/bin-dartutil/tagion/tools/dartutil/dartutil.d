@@ -37,7 +37,7 @@ import tagion.Keywords;
 import tagion.dart.DARTFakeNet;
 import tagion.dart.DARTRim;
 import tagion.dart.Recorder;
-import tagion.hibon.HiBONtoText : decode, encodeBase64;
+import tagion.hibon.HiBONtoText : decode, encodeBase58;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile : Index;
@@ -395,7 +395,7 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
                 import tagion.tools.dartutil.dartindex : dartIndexDecode;
 
                 auto dart_index = net.dartIndexDecode(read_arg);
-                verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase64, dart_index);
+                verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase58, dart_index);
                 dart_indices ~= dart_index;
             }
 

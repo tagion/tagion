@@ -21,7 +21,7 @@ import tagion.testbench.services.helper_functions;
 import tagion.crypto.SecureNet;
 import tagion.dart.DARTBasic : dartIndex, dartKey;
 import std.digest : toHexString;
-import tagion.basic.Types : encodeBase64;
+import tagion.basic.Types : encodeBase58;
 import tagion.dart.DART;
 import tagion.script.standardnames;
 import tagion.hibon.HiBON;
@@ -85,7 +85,7 @@ class ProperContract {
                 .value, "Error creating payment");
         check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 
-        writeln("Contract hash: ", net.dartIndex(signed_contract.contract.toDoc).encodeBase64);
+        writeln("Contract hash: ", net.dartIndex(signed_contract.contract.toDoc).encodeBase58);
 
         return result_ok;
     }
@@ -166,7 +166,7 @@ class InvalidContract {
                 .value, "Error creating payment");
         check(signed_contract1.contract.inputs.uniq.array.length == signed_contract1.contract.inputs.length, "signed contract inputs invalid");
 
-        writeln("Contract hash: ", net.dartIndex(signed_contract1.contract.toDoc).encodeBase64);
+        writeln("Contract hash: ", net.dartIndex(signed_contract1.contract.toDoc).encodeBase58);
 
         return result_ok;
     }

@@ -35,7 +35,7 @@ registerd = "registered"
 
 [default]
 extend-ignore-re = [
-    # Ignore base64url encoded strings
+    # Ignore base58url encoded strings
     "@.*=",
     # Ignore hex values
     "0x.*",

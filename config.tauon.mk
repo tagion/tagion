@@ -20,6 +20,7 @@ TAUON_DINC+=$(DSRC)/wasi
 TAUON_DFILES+=$(DSRC)/wasi/tvm/wasi_main.d
 
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/basic.d
+TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/base58.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Message.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Types.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Version.d

@@ -21,7 +21,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONFile : fread;
-import tagion.hibon.HiBONtoText : decodeBase64, encodeBase64;
+import tagion.hibon.HiBONtoText : decodeBase58, encodeBase58;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tools = tagion.tools.toolsexception;
@@ -118,7 +118,7 @@ int _main(string[] args) {
     bool reserved;
     bool input_json;
     bool input_text;
-    bool output_base64;
+    bool output_base58;
     bool output_hex;
     bool output_hash;
     bool output_dartindex;
@@ -140,9 +140,9 @@ int _main(string[] args) {
                 "r|reserved", "Check reserved keys and types enabled", &reserved,
                 "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
                 "J", "Input stream format json", &input_json,
-                "t|base64url", "Convert to base64url output", &output_base64,
+                "t|base58url", "Convert to base58url output", &output_base58,
                 "x|hex", "Convert to hex output", &output_hex,
-                "T|text", "Input stream base64url or hex-string", &input_text,
+                "T|text", "Input stream base58url or hex-string", &input_text,
                 "sample", "Produce a sample HiBON", &sample,
                 "check", "Check the hibon format", &hibon_check,
                 "H|hash", "Prints the hash value", &output_hash,
@@ -181,7 +181,7 @@ int _main(string[] args) {
             return 0;
         }
         if (output_hash || output_dartindex) {
-            output_hex = !output_base64;
+            output_hex = !output_base58;
         }
         tools.check(!input_json || !input_text, "Input stream can not be defined as both JSON and text-format");
         if (standard_output || stream_output) {
@@ -208,8 +208,8 @@ int _main(string[] args) {
                 else if (output_dartindex) {
                     stream = cast(Buffer) net.dartIndex(doc);
                 }
-                if (output_base64) {
-                    fout.writeln(stream.encodeBase64);
+                if (output_base58) {
+                    fout.writeln(stream.encodeBase58);
                     return;
                 }
                 if (output_hex) {
@@ -227,7 +227,7 @@ int _main(string[] args) {
 
             if (input_text) {
                 foreach (no, line; fin.byLine.enumerate(1)) {
-                    immutable data = line.decodeBase64;
+                    immutable data = line.decodeBase58;
                     const doc = Document(data);
                     verbose("%d:%s", no, line);
                     print(doc);
@@ -285,7 +285,7 @@ int _main(string[] args) {
                         return 1;
                     }
                 }
-                if (output_base64 || output_hex) {
+                if (output_base58 || output_hex) {
                     Buffer stream = doc.serialize;
                     if (output_hash) {
                         stream = net.rawCalcHash(stream);
@@ -294,7 +294,7 @@ int _main(string[] args) {
                         stream = cast(Buffer) net.dartIndex(doc);
                     }
 
-                    const text_output = (output_hex) ? format("%(%02x%)", stream) : stream.encodeBase64;
+                    const text_output = (output_hex) ? format("%(%02x%)", stream) : stream.encodeBase58;
                     if (standard_output) {
                         writefln("%s", text_output);
                         continue loop_files;
@@ -361,7 +361,7 @@ int _main(string[] args) {
                 text = inputfilename.readText;
                 writefln("...");
                 Document doc;
-                doc = decodeBase64(text);
+                doc = decodeBase58(text);
                 if (standard_output) {
                     stdout.rawWrite(doc.serialize);
                     continue loop_files;
