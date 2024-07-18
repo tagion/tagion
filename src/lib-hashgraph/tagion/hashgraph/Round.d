@@ -114,7 +114,7 @@ class Round {
             Completed ret;
             BitMask null_mask;
             BitMask all_mask = BitMask.init.invert(node_size);
-            BitMask included_mask_2;
+            BitMask included_mask;
             auto list_majority_rounds =
                 this[].retro
                     .until!(r => !r.majority);
@@ -129,6 +129,7 @@ class Round {
             auto show_witness_masks = future_witness_masks;
             const fmt = "%#s".replace("#", node_size.to!string);
 
+            version(none)
             struct ShowRange {
                 protected {
                     typeof(future_witness_masks) witness_list;
@@ -167,7 +168,7 @@ class Round {
                     witness_list.popFront;
                 }
             }
-
+            version(none)
             ShowRange show_masks() {
                 return ShowRange(hashgraph.last_witnesses);
             }
@@ -175,11 +176,6 @@ class Round {
             const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
             const _name = __format("%s%12s @%d%s", level_color(number_of_future_rounds), hashgraph.name, level(number_of_future_rounds), RESET);
             scope (exit) {
-                BitMask first_mask;
-                if (!hashgraph.last_witnesses.empty) {
-                    first_mask = hashgraph.last_witnesses[0];
-                }
-                BitMask diff_mask = first_mask ^ future_witness_masks.front;
                 __write(
                         "%s Round %d  witness=%#s| %(%#s %) ret=%s%s%s".replace(
                         "#", node_size.to!string),
@@ -191,7 +187,7 @@ class Round {
                 );
             }
             scope (exit) {
-                __valid_witness &= included_mask_2;
+                __valid_witness &= included_mask;
             }
             if (list_majority_rounds.empty) {
                 return Completed.none;
@@ -271,7 +267,7 @@ class Round {
             );
 
             if (voter) {
-                included_mask_2 = BitMask(_events
+                included_mask = BitMask(_events
                         .filter!(e => (e !is null))
                         .filter!(e => isMajority(e.witness.seen_voting_mask, node_size))
                         .map!(e => e.node_id));

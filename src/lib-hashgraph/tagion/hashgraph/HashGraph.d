@@ -40,7 +40,6 @@ class HashGraph {
     protected alias check = Check!HashGraphConsensusException;
     import tagion.logger.Statistic;
 
-    BitMask[] last_witnesses;
     immutable size_t node_size; /// Number of active nodes in the graph
     immutable(string) name; // Only used for debugging
     struct HashGraphStatistics {
