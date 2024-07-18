@@ -69,6 +69,11 @@ unittest {
 
 }
 
+@nogc 
+bool isUndecided(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
+    return (3 * voting <= 2 * node_size) && (3 * voting > node_size);
+}
+        
 @nogc
 bool isMajority(const(BitMask) mask, const size_t size) pure nothrow {
     return isMajority(mask.count, size);

@@ -7,7 +7,7 @@ import std.datetime; // Date, DateTime
 import std.algorithm.iteration : cache, each, filter, fold, joiner, map, reduce;
 import std.algorithm.searching : all, any, canFind, count, until;
 import std.algorithm.sorting : sort;
-import std.algorithm.comparison : max;
+import std.algorithm.comparison : min, max;
 import std.array : array;
 import std.conv;
 import std.format;
@@ -202,12 +202,16 @@ class Event {
         int separation;
         bool weak;
         bool __seen_decided(size_t voters) const pure nothrow {
-            const seen_votes=seen_voting_mask.count;
-            const total_voters=max(voters, seen_votes);
-            //assert(voters >= seen_votes, "Voters );
+        const seen_votes=seen_voting_mask.count;
             const N=_round.node_size;
-            const not_seen=(N-total_voters)+(N-seen_votes);
-            return isMajority(seen_votes, N) || isMajority(not_seen, N);
+            if ((voters == 0) || isMajority(min(seen_votes, yes_votes), N) ||
+                seen_votes >= voters) {
+                return true;
+            }
+            if (isMajority(N-seen_votes, N)) {
+                return true;
+            }
+            return false;
         }
         @nogc final const pure nothrow {
             const(BitMask) previous_strongly_seen_mask() {

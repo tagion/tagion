@@ -21,7 +21,7 @@ import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
 import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
@@ -35,16 +35,16 @@ import tagion.basic.Debug;
 @safe:
 
 uint level(const size_t c) pure nothrow {
-    if (c < 6) {
+    if (c < 4 ) {
         return 0;
     }
-    if (c < 10) {
+    if (c < 6) {
         return 1;
     }
-    if (c < 16) {
+    if (c < 8) {
         return 2;
     }
-    if (c < 20) {
+    if (c < 10) {
         return 3;
     }
     return 4;
@@ -253,8 +253,8 @@ class Round {
                 return ret = Completed.too_few;
             }
 
-            __write("%12s Round %d valid  %-(%2d %) ".replace("#", node_size.to!string),
-                    hashgraph.name,
+            __write("%s Round %d valid  %-(%2d %) ".replace("#", node_size.to!string),
+                    _name,
                     number,
                     _events.map!(e => (e is null) ? -1 : cast(int) e.witness.seen_voting_mask.count));
 
@@ -262,11 +262,25 @@ class Round {
             list_majority_rounds_1.popFront;
             Round gather_round = list_majority_rounds_1.drop(1).front;
             Round voter;
-            const gather_voters= gather_round._events.filter!(e => e !is null).count;
-            __write("%12s Round %-3d    gather %-(%2d %) <-".replace("#", node_size.to!string),
-                    hashgraph.name,
+            const gather_number_of_voters= gather_round._events.filter!(e => e !is null).count;
+            __write("%s Round %-3d    gather %-(%2d %) <-".replace("#", node_size.to!string),
+                    _name,
                     number,
                     gather_round.events.map!(e => (e is null) ? -1 : cast(int) e.witness.previous_witness_seen_mask.count));
+            uint[] gather_voters;
+            gather_voters.length=node_size;
+            gather_round._events
+            .filter!(e => e !is null)
+            .map!(e => e.witness)
+            .map!(w => w.previous_witness_seen_mask[])
+            .joiner
+            .each!(n => gather_voters[n]++);
+             __write("%s Round %-3d voters %(%2d %) ",
+                        _name,
+                        number,
+                        gather_voters);
+
+            
             foreach (r; list_majority_rounds_1.drop(2)) {
                version(none)
                 r._events
@@ -289,15 +303,15 @@ class Round {
                 _events.map!(e => e?e.witness.seen_voting_mask:BitMask.init));
                 const _all = 
                 _events.filter!(e => e !is null)
-                .map!(e => e.witness.__seen_decided(gather_voters)).all;
-                __write("%12s Round %-3d:%-3d ->->-> %-(%2d %) %s%s".replace("#", node_size.to!string),
+                .map!(e => e.witness.__seen_decided(gather_voters[e.node_id])).all;
+                __write("%s Round %-3d:%-3d ->->-> %-(%2d %) %s%s".replace("#", node_size.to!string),
 
-                        hashgraph.name,
+                        _name,
                         number,
                         r.number,
                         r.events.map!(e => (e is null) ? -1 : cast(int) e.witness.previous_witness_seen_mask.count), _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
-                __write("%12s %sRound %-3d:%-3d%s votes %-(%2d %) %s%s".replace("#", node_size.to!string),
-                        hashgraph.name,
+                __write("%s %sRound %-3d:%-3d%s count %-(%2d %) %s%s".replace("#", node_size.to!string),
+                        _name,
                         BACKGROUND_BLACK,
                         number,
                         r.number,
@@ -306,19 +320,22 @@ class Round {
                         .map!(n => (__valid_witness[n]) ? cast(int) _events[n].witness.seen_voting_mask.count : -1),
                 _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
                 if (_all) {
+                    if (!_events.filter!(e => e !is null)
+                    .map!(e => e.witness.seen_voting_mask.count)
+                    .any!(v => !isMajority(v, node_size) && (v*2 > node_size))) {
                     voter = r;
                     break;
+                    }
                 }
 
             }
 
-            __write("%12s Round %-3d     yes   %(%2d %)".replace("#", node_size.to!string),
-                    hashgraph.name,
+            __write("%s Round %-3d     yes   %(%2d %)".replace("#", node_size.to!string),
+                    _name,
                     number,
-                    _events.map!(e => (e is null) ? 0 : e.witness.yes_votes)
-    );
-             __write("%12s Round %-3d    gather %-(%s %) %#s distance=%d".replace("#", node_size.to!string),
-                    hashgraph.name,
+                    gather_voters); 
+             __write("%s Round %-3d    gather %-(%s %) %#s distance=%d".replace("#", node_size.to!string),
+                    _name,
                     number,
                     _events.map!(e => (e is null) ? 0 : e.witness.seen_voting_mask.count)
                     .map!(v => format("%s%2d%s", isMajority(v, node_size) ? GREEN : RED, v, RESET)),
@@ -965,9 +982,29 @@ class Round {
             hashgraph.statistics.feature_famous_rounds(count_feature_famous_rounds(round_to_be_decided));
             log.event(Event.topic, hashgraph.statistics.feature_famous_rounds.stringof, hashgraph.statistics
                     .feature_famous_rounds);
+            string show(const Event e) {
+                if (e) {
+                    return format("%s%d%s", (round_to_be_decided._valid_witness[e.node_id]) ? GREEN : YELLOW, e.order, RESET);
+                }
+                return format("%sX %s", RED, RESET);
+            }
             if (!isMajority(round_to_be_decided._valid_witness.count,
                     hashgraph.node_size)) {
                 __write("%12s %sRound %d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
+    
+            __write("%s %sRound %d%s xepoch %-(%s %) collected=0  separation=%(%d %) votes=%#s yes=%d  %(%d%) | %(%(%d%) %)".replace("#", round_to_be_decided.node_size.to!string),
+
+                    _name,
+                    RED,
+                    round_to_be_decided.number,
+                    RESET,
+                    round_to_be_decided._events.map!(e => show(e)),
+                    round_to_be_decided._events.map!(e => ((e is null) ? -1 : e.witness.separation)),
+                    round_to_be_decided._valid_witness,
+                    round_to_be_decided._valid_witness.count,
+                    round_to_be_decided.events.map!(e => (e !is null)),
+                    round_to_be_decided[].retro.drop(1).map!(rx => rx.events.map!(e => (e !is null))));
+
                 return;
             }
             collect_received_round(round_to_be_decided);
@@ -1065,11 +1102,14 @@ class Round {
                 return format("%sX %s", RED, RESET);
             }
 
-            __write("%12s Round %d xepoch %-(%s %) collected=%d  separation=%(%d %) votes=%7s yes=%d  %(%d%) | %(%(%d%) %)",
+            __write("%12s %sRound %d%s xepoch %-(%s %) collected=%d  separation=%(%d %) votes=%#s yes=%d  %(%d%) | %(%(%d%) %)".replace("#", r.node_size.to!string),
 
                     _name,
+                    GREEN,
                     r.number,
-                    r._events.map!(e => show(e)), event_collection.length,
+                    RESET,
+                    r._events.map!(e => show(e)),
+                    event_collection.length,
                     r._events.map!(e => ((e is null) ? -1 : e.witness.separation)),
                     r._valid_witness,
                     r._valid_witness.count,
