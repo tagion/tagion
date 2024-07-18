@@ -35,7 +35,7 @@ import tagion.basic.Debug;
 @safe:
 
 uint level(const size_t c) pure nothrow {
-    if (c < 4 ) {
+    if (c < 4) {
         return 0;
     }
     if (c < 6) {
@@ -260,41 +260,35 @@ class Round {
 
             auto list_majority_rounds_1 = list_majority_rounds;
             list_majority_rounds_1.popFront;
-            Round gather_round = list_majority_rounds_1.front;
             Round voter;
-            const gather_number_of_voters= gather_round._events.filter!(e => e !is null).count;
-            __write("%s Round %-3d    gather %-(%2d %) <-".replace("#", node_size.to!string),
-                    _name,
-                    number,
-                    gather_round.events.map!(e => (e is null) ? -1 : cast(int) e.witness.previous_witness_seen_mask.count));
-            uint[] gather_voters;
-            gather_voters.length=node_size;
-            gather_round._events
-            .filter!(e => e !is null)
-            .map!(e => e.witness)
-            .map!(w => w.previous_witness_seen_mask[])
-            .joiner
-            .each!(n => gather_voters[n]++);
-             __write("%s Round %-3d voters %(%2d %) ",
-                        _name,
-                        number,
-                        gather_voters);
-
-            
-            foreach (r; list_majority_rounds_1.drop(1)) {
+            uint[] _gather_voters;
+            foreach (slide_r; list_majority_rounds_1.slide(2)) {
+                Round gather_round = slide_r.front;
+                Round r = slide_r.drop(1).front;
+                const gather_number_of_voters = gather_round._events.filter!(e => e !is null).count;
+                uint[] gather_voters;
+                _gather_voters = gather_voters;
+                gather_voters.length = node_size;
+                gather_round._events
+                    .filter!(e => e !is null)
+                    .map!(e => e.witness)
+                    .map!(w => w.previous_witness_seen_mask[])
+                    .joiner
+                    .each!(n => gather_voters[n]++);
                 r._events
                     .filter!(e => e !is null)
                     .each!(e => e.witness.previous_witness_seen_mask[]
-                        .filter!(n => gather_round._events[n] !is null)
-                        .each!(n => gather_round._events[n].witness.previous_witness_seen_mask[]
-                            .filter!(m => _events[m] !is null)
-                            .each!(m => _events[m]._witness.seen_voting_mask[e.node_id]=true)));
-                        
+                    .filter!(n => gather_round._events[n]!is null)
+                    .each!(n => gather_round._events[n].witness.previous_witness_seen_mask[]
+                    .filter!(m => _events[m]!is null)
+                    .each!(m => _events[m]._witness.seen_voting_mask[e.node_id] = true)));
+
                 __write("%(%#s %)".replace("#", node_size.to!string),
-                _events.map!(e => e?e.witness.seen_voting_mask:BitMask.init));
-                const _all = 
-                _events.filter!(e => e !is null)
-                .map!(e => e.witness.__seen_decided(gather_voters[e.node_id])).all;
+                        _events.map!(e => e ? e.witness.seen_voting_mask : BitMask.init));
+                const _all =
+                    _events.filter!(e => e !is null)
+                        .map!(e => e.witness.__seen_decided(gather_voters[e.node_id]))
+                    .all;
                 __write("%s Round %-3d:%-3d >->-> %-(%2d %) %s%s".replace("#", node_size.to!string),
 
                         _name,
@@ -311,12 +305,8 @@ class Round {
                         .map!(n => (__valid_witness[n]) ? cast(int) _events[n].witness.seen_voting_mask.count : -1),
                 _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
                 if (_all) {
-                    if (!_events.filter!(e => e !is null)
-                    .map!(e => e.witness.seen_voting_mask.count)
-                    .any!(v => isUndecided(v, node_size))) {
                     voter = r;
                     break;
-                    }
                 }
 
             }
@@ -324,8 +314,8 @@ class Round {
             __write("%s Round %-3d     yes   %(%2d %)".replace("#", node_size.to!string),
                     _name,
                     number,
-                    gather_voters); 
-             __write("%s Round %-3d    gather %-(%s %) %#s distance=%d".replace("#", node_size.to!string),
+                    _gather_voters);
+            __write("%s Round %-3d    gather %-(%s %) %#s distance=%d".replace("#", node_size.to!string),
                     _name,
                     number,
                     _events.map!(e => (e is null) ? 0 : e.witness.seen_voting_mask.count)
@@ -337,74 +327,10 @@ class Round {
 
             if (voter) {
                 included_mask_2 = BitMask(_events
-                .filter!(e => (e !is null))
-                .filter!(e => isMajority(e.witness.seen_voting_mask, node_size))
-                .map!( e=> e.node_id));
-                    return ret = Completed.all_witness;
-            }
-            return ret = Completed.undecided;
-            BitMask some_witnesses_2;
-            BitMask no_witness_void_2;
-            included_mask = __valid_witness;
-            included_mask_2 = __valid_witness;
-            completed_mask = BitMask(node_size.iota.filter!(n => (_events[n]!is null) && (_events[n].witness.separation >= 2)));
-
-            int i;
-            auto future_witness_masks_2 = future_witness_masks;
-            future_witness_masks_2.popFront;
-            while (!future_witness_masks_2.empty) {
-                const witness_mask = future_witness_masks_2.front;
-                some_witnesses_2 |= witness_mask;
-                if ((i == 0) && (i < number_of_future_rounds - 3)) {
-                    assert(future_witness_masks_2.count >= 3);
-                    const witness_mask_gap = future_witness_masks_2
-                        .takeExactly(3)
-                        .fold!((a, b) => a | b)(null_mask)
-                        .invert(node_size);
-                    included_mask_2 -= witness_mask_gap;
-                    completed_mask |= witness_mask_gap;
-
-                }
-                version (none)
-                    if (i < number_of_future_rounds - 7) {
-                        assert(future_witness_masks_2.count >= 5);
-                        const witness_mask_gap = future_witness_masks_2
-                            .takeExactly(4)
-                            .fold!((a, b) => a | b)(null_mask)
-                            .invert(node_size);
-                        completed_mask |= witness_mask_gap;
-
-                    }
-
-                version (none)
-                    if (i == 2) {
-                        included_mask_2 -= some_witnesses_2.invert(node_size);
-                        completed_mask |= some_witnesses_2.invert(node_size);
-                    }
-                if (i > 1) {
-                    completed_mask |= witness_mask;
-                }
-                __write(
-                        "%s %sRound %d%s %2d]:%d complete=%#s included=%#s  some=%#s %#s | %(%#s %) "
-                        .replace("#", node_size.to!string),
-                        _name,
-                        CYAN,
-                        number,
-                        RESET,
-                        i,
-                        number,
-                        completed_mask,
-                        included_mask,
-                        some_witnesses_2,
-                        _valid_witness,
-                        show_witness_masks.drop(1 + i).take(10),
-                );
-                if (completed_mask.count == node_size) {
-                    return ret = Completed.all_witness;
-
-                }
-                future_witness_masks_2.popFront;
-                i++;
+                        .filter!(e => (e !is null))
+                        .filter!(e => isMajority(e.witness.seen_voting_mask, node_size))
+                        .map!(e => e.node_id));
+                return ret = Completed.all_witness;
             }
             return ret = Completed.undecided;
         }
@@ -979,22 +905,24 @@ class Round {
                 }
                 return format("%sX %s", RED, RESET);
             }
+
             if (!isMajority(round_to_be_decided._valid_witness.count,
                     hashgraph.node_size)) {
                 __write("%12s %sRound %d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
-    
-            __write("%s %sRound %d%s xepoch %-(%s %) collected=0  separation=%(%d %) votes=%#s yes=%d  %(%d%) | %(%(%d%) %)".replace("#", round_to_be_decided.node_size.to!string),
 
-                    _name,
-                    RED,
-                    round_to_be_decided.number,
-                    RESET,
-                    round_to_be_decided._events.map!(e => show(e)),
-                    round_to_be_decided._events.map!(e => ((e is null) ? -1 : e.witness.separation)),
-                    round_to_be_decided._valid_witness,
-                    round_to_be_decided._valid_witness.count,
-                    round_to_be_decided.events.map!(e => (e !is null)),
-                    round_to_be_decided[].retro.drop(1).map!(rx => rx.events.map!(e => (e !is null))));
+                __write("%s %sRound %d%s xepoch %-(%s %) collected=0  separation=%(%d %) votes=%#s yes=%d  %(%d%) | %(%(%d%) %)"
+                        .replace("#", round_to_be_decided.node_size.to!string),
+
+                        _name,
+                        RED,
+                        round_to_be_decided.number,
+                        RESET,
+                        round_to_be_decided._events.map!(e => show(e)),
+                        round_to_be_decided._events.map!(e => ((e is null) ? -1 : e.witness.separation)),
+                        round_to_be_decided._valid_witness,
+                        round_to_be_decided._valid_witness.count,
+                        round_to_be_decided.events.map!(e => (e !is null)),
+                        round_to_be_decided[].retro.drop(1).map!(rx => rx.events.map!(e => (e !is null))));
 
                 return;
             }
@@ -1093,7 +1021,8 @@ class Round {
                 return format("%sX %s", RED, RESET);
             }
 
-            __write("%12s %sRound %d%s xepoch %-(%s %) collected=%d  separation=%(%d %) votes=%#s yes=%d  %(%d%) | %(%(%d%) %)".replace("#", r.node_size.to!string),
+            __write("%12s %sRound %d%s xepoch %-(%s %) collected=%d  separation=%(%d %) votes=%#s yes=%d  %(%d%) | %(%(%d%) %)"
+                    .replace("#", r.node_size.to!string),
 
                     _name,
                     GREEN,
