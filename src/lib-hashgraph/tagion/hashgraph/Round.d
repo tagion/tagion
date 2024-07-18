@@ -313,7 +313,7 @@ class Round {
                 if (_all) {
                     if (!_events.filter!(e => e !is null)
                     .map!(e => e.witness.seen_voting_mask.count)
-                    .any!(v => !isMajority(v, node_size) && (v*2 > node_size))) {
+                    .any!(v => isUndecided(v, node_size))) {
                     voter = r;
                     break;
                     }
