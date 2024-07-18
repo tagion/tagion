@@ -260,7 +260,7 @@ class Round {
 
             auto list_majority_rounds_1 = list_majority_rounds;
             list_majority_rounds_1.popFront;
-            Round gather_round = list_majority_rounds_1.drop(1).front;
+            Round gather_round = list_majority_rounds_1.front;
             Round voter;
             const gather_number_of_voters= gather_round._events.filter!(e => e !is null).count;
             __write("%s Round %-3d    gather %-(%2d %) <-".replace("#", node_size.to!string),
@@ -281,30 +281,21 @@ class Round {
                         gather_voters);
 
             
-            foreach (r; list_majority_rounds_1.drop(2)) {
-               version(none)
+            foreach (r; list_majority_rounds_1.drop(1)) {
                 r._events
                     .filter!(e => e !is null)
                     .each!(e => e.witness.previous_witness_seen_mask[]
+                        .filter!(n => gather_round._events[n] !is null)
                         .each!(n => gather_round._events[n].witness.previous_witness_seen_mask[]
+                            .filter!(m => _events[m] !is null)
                             .each!(m => _events[m]._witness.seen_voting_mask[e.node_id]=true)));
                         
-                foreach(e; r._events.filter!(e => e !is null)) {
-                    foreach(n; e.witness.previous_witness_seen_mask[]
-                            .filter!(m => gather_round._events[m] !is null)) {
-                        foreach(m; gather_round._events[n].witness.previous_witness_seen_mask[]
-                            .filter!(j => _events[j] !is null)) {
-                        _events[m]._witness.seen_voting_mask[e.node_id]=true;
-       
-                    }
-    }
-}
                 __write("%(%#s %)".replace("#", node_size.to!string),
                 _events.map!(e => e?e.witness.seen_voting_mask:BitMask.init));
                 const _all = 
                 _events.filter!(e => e !is null)
                 .map!(e => e.witness.__seen_decided(gather_voters[e.node_id])).all;
-                __write("%s Round %-3d:%-3d ->->-> %-(%2d %) %s%s".replace("#", node_size.to!string),
+                __write("%s Round %-3d:%-3d >->-> %-(%2d %) %s%s".replace("#", node_size.to!string),
 
                         _name,
                         number,
