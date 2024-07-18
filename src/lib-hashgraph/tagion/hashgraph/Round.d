@@ -126,52 +126,6 @@ class Round {
 
             _events.filter!(e => e !is null)
                 .each!(e => e._witness.seen_voting_mask.clear);
-            auto show_witness_masks = future_witness_masks;
-            const fmt = "%#s".replace("#", node_size.to!string);
-
-            version(none)
-            struct ShowRange {
-                protected {
-                    typeof(future_witness_masks) witness_list;
-                    BitMask[] last_witness;
-                }
-                this(BitMask[] bit_masks) {
-                    witness_list = future_witness_masks;
-                    last_witness = bit_masks;
-                }
-
-                bool empty() pure nothrow {
-                    return (last_witness.length == 0) && witness_list.empty;
-
-                }
-
-                string front() pure nothrow {
-                    if (!empty) {
-                        if (last_witness.length == 0) {
-                            return __format(fmt, witness_list.front);
-
-                        }
-                        const mask = witness_list.front;
-                        const same = last_witness[0] & witness_list.front;
-                        return hashgraph.node_size.iota.map!(n =>
-                                __format("%s%d%s",
-
-                                    (same[n] == mask[n]) ? WHITE : YELLOW, mask[n], RESET)).join;
-                    }
-                    return null;
-                }
-
-                void popFront() pure nothrow {
-                    if (last_witness.length) {
-                        last_witness = last_witness[1 .. $];
-                    }
-                    witness_list.popFront;
-                }
-            }
-            version(none)
-            ShowRange show_masks() {
-                return ShowRange(hashgraph.last_witnesses);
-            }
 
             const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
             const _name = __format("%s%12s @%d%s", level_color(number_of_future_rounds), hashgraph.name, level(number_of_future_rounds), RESET);
@@ -181,7 +135,7 @@ class Round {
                         "#", node_size.to!string),
                         _name, number, 
                         __valid_witness,
-                        show_witness_masks.drop(1)
+                        future_witness_masks.drop(1)
                         .take(10),
                         (ret <= Completed.undecided) ? RED : GREEN, ret, RESET
                 );
@@ -192,7 +146,7 @@ class Round {
             if (list_majority_rounds.empty) {
                 return Completed.none;
             }
-            if (number_of_future_rounds < 3) {
+            if (number_of_future_rounds < 4) {
                 return ret = Completed.too_few;
             }
 
@@ -331,51 +285,6 @@ class Round {
         event._round = this;
     }
 
-    version (none) final bool _can_round_be_decided() const pure nothrow {
-        auto feature_rounds = opSlice.retro.drop(1).take(2);
-        if (feature_rounds.walkLength < 2) {
-            return false;
-        }
-        if (!feature_rounds.map!(r => r.majority).all) {
-            return false;
-        }
-        bool decided_inner(T)(T item) nothrow pure {
-            const event = item.value;
-            if (event) {
-                return event.witness.decision !is Event.Witness.DecisionType.undecided;
-            }
-            const _node_id = item.index;
-            return feature_rounds.map!(r => r.events[_node_id] is null).all ||
-                feature_rounds.map!(r => r.events[_node_id]!is null).any;
-        }
-
-        return _events.enumerate.map!(item => decided_inner(item)).all;
-    }
-
-    version (none) private bool _decided_round_yes() const pure nothrow {
-        return majority && _events
-            .filter!(e => e !is null)
-            .map!(e => e.witness._decidedYes)
-            .all;
-    }
-
-    version (none) final bool __can_round_be_decided() const pure nothrow {
-        bool inner_can_round_be_decided(const Round end_round) {
-            if (end_round && majority) {
-                const votes_mask = BitMask(end_round.events
-                        .filter!(e => e !is null)
-                        .map!(e => e.node_id));
-                if (isMajority(votes_mask, node_size)) {
-
-                }
-
-            }
-            return false;
-        }
-
-        return inner_can_round_be_decided(_next);
-    }
-
     version (none) final bool update_round_decided() pure nothrow {
         bool inner_update_decision(const Round r) {
             if (_decided_round_yes) {
@@ -394,17 +303,6 @@ class Round {
         return majority && inner_update_decision(_next);
     }
 
-    /*
-    final bool __can_round_be_decided() const pure nothrow {
-        if (engulfed) {
-            const _witness_mask = witness_mask;
-            const _enclosed_witness_mask = enclosed_witness_mask;
-            return  _enclosed_witness_mask.invert(_events.length)
-            .map!(n => _witness_mask[0]
-        }
-        return false;
-    }
-    */
     /**
      * Remove the event from the round 
      * Params:
@@ -715,18 +613,6 @@ class Round {
                     .canFind(event.event_package.fingerprint);
             }
 
-            /**
-     * Check of a round has been decided
-     * Params:
-     *   test_round = round to be tested
-     * Returns: 
-     */
-            version (none) bool decided(const Round r) {
-                if (r) {
-                    return (r.number - last_decided_round.number) <= 0;
-                }
-                return false;
-            }
 
             /**
      * Calculates the number of rounds since the last decided round
