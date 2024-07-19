@@ -672,7 +672,7 @@ class Round {
                     hashgraph.node_size)) {
                 __write("%12s %sRound %d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
 
-                __write("%s %sRound %d%s xepoch %-(%s %) collected=0  votes=%#s yes=%d  "
+                __write("%s %sRound %d%s epoch %-(%s %) collected=0  votes=%#s yes=%d  "
                         .replace("#", round_to_be_decided.node_size.to!string),
                         _name,
                         RED,

@@ -247,61 +247,6 @@ class Event {
                 }
                 return false;
             }
-
-            version (none) bool decided(const size_t voters) {
-                const N = _round.events.length;
-                const votes = decided_yes_mask.count;
-                assert(votes <= voters, "Number of votes greater than then number of voters");
-                const votedNo = voters - votes;
-                //assert(votes <= voters, "Voters >= the the votes");
-                return isMajority(votes, N) || isMajority(votedNo, N);
-            }
-
-            version (none) bool newDecision() {
-                if (_round.voting) {
-                    return decided(_round.voting._events.filter!(e => e !is null).count);
-                }
-                return false;
-            }
-
-            version (none) bool _decidedYes() {
-                return isMajority(decided_yes_mask, _round.events.length);
-            }
-        }
-
-        version (none) final void update_decision_mask() pure nothrow {
-            decided_yes_mask = _voted_yes_mask;
-        }
-
-        version (none) final const(BitMask) _decidedYes(const Round r) const pure nothrow {
-            BitMask result;
-            return _round[].retro
-                .map!(r => r._events[node_id])
-                .filter!(e => e !is null)
-                .until!(e => (e.round.number - r.number) >= 0)
-                .map!(e => e.witness.voted_yes_mask)
-                .fold!((a, b) => a | b)(result);
-        }
-
-        version (none) bool _decidedYes() const pure nothrow @nogc {
-            return isMajority(decided_yes_mask.count, _round.node_size);
-        }
-
-        version (none) bool decidedYes() const pure nothrow {
-            return decision == DecisionType.Yes;
-        }
-
-        version (none) final DecisionType decision() const pure nothrow {
-            auto feature_rounds = _round[].retro.drop(1);
-            if ((feature_rounds.take(2).walkLength == 2) && feature_rounds.take(2).map!(r => r.majority).all) {
-                if (feature_rounds.take(2).map!(r => r.events[node_id]!is null).any) {
-                    return (votedYes) ? DecisionType.Yes : DecisionType.No;
-                }
-                if (feature_rounds.take(3).map!(r => r.majority).all) {
-                    return DecisionType.Weak;
-                }
-            }
-            return DecisionType.undecided;
         }
 
         alias isFamous = votedYes;
@@ -309,8 +254,6 @@ class Event {
         private void voteYes(const size_t voting_node_id) pure nothrow {
             if (!_voted_yes_mask[voting_node_id]) {
                 _voted_yes_mask[voting_node_id] = true;
-                //if (isMajority(_voted_yes_mask, _round.node_size)) {
-                //decided_yes_mask[voting_node_id] = true;
             }
         }
 
