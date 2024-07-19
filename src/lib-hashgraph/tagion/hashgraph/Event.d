@@ -221,11 +221,6 @@ class Event {
             const(BitMask) voted_yes_mask() {
                 return _voted_yes_mask;
             }
-            version(none)
-            bool votedYes() {
-                return isMajority(yes_votes, _round.events.length);
-            }
-
             
             bool weak() {
                 return _mother && _round.previous && (_round.previous.events[node_id] is null);
