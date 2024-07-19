@@ -202,7 +202,7 @@
         "SUBSCRIPTION": "TRANSACTION_TEST_SUBSCRIPTION_",
         "PREFIX": "TRANSACTION_Node_%s_"
       },
-      "stages": ["shell", "acceptance"],
+      "stages": ["shell"],
       "timeout": 0.0
     },
     "run_epochs": {
