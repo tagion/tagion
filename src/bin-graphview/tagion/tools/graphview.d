@@ -244,20 +244,13 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
 
             node_circle.stroke = "red";
             if (e.decided) {
-                node_circle.stroke = "blue";
-            }
-            if (e.famous) {
                 node_circle.stroke = "green";
             }
             if (e.weak) {
                 node_circle.stroke = "yellow";
                 
             }
-               //node_circle.stroke = (e.famous) ? "green" : "red";
             node_circle.stroke_width = 10;
-            // }
-            // else {
-            // }
             node_circle.radius += NODE_CIRCLE_SIZE / 4;
         }
         else {
@@ -438,7 +431,7 @@ struct Dot(Range) if (isInputRange!Range && is(ElementType!Range : Document)) {
         obuf.writefln(`%s%s [pos="%s, %s!"];`, indent ~ INDENT, e.id, e.node_id * 2, e.order);
 
         if (e.witness) {
-            const color = (e.famous) ? "red" : "lightgreen";
+            const color = "red"; 
             obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, color);
         }
         else {

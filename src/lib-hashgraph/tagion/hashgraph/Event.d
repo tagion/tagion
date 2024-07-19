@@ -221,7 +221,7 @@ class Event {
             const(BitMask) voted_yes_mask() {
                 return _voted_yes_mask;
             }
-
+            version(none)
             bool votedYes() {
                 return isMajority(yes_votes, _round.events.length);
             }
@@ -248,8 +248,6 @@ class Event {
                 return false;
             }
         }
-
-        alias isFamous = votedYes;
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
             if (!_voted_yes_mask[voting_node_id]) {
