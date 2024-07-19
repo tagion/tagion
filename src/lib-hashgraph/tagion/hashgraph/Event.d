@@ -199,7 +199,6 @@ class Event {
         }
         const BitMask previous_witness_seen_mask;
         BitMask seen_voting_mask;
-        protected bool _weak;
         bool __seen_decided(size_t voters) const pure nothrow {
         const seen_votes=seen_voting_mask.count;
             const N=_round.node_size;
@@ -236,7 +235,7 @@ class Event {
 
             
             bool weak() {
-                return _weak;
+                return _mother && _round.previous && (_round.previous.events[node_id] is null);
             }
 
             bool decided() {
@@ -361,7 +360,6 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
         do {
             hashgraph._rounds.set_round(this.outer);
-            _weak = _mother && (_round.previous.events[node_id] is null);
             /// Counting yes/no votes from this witness to witness in the previous round
             if (round.previous && (round.previous.events[node_id]!is null) && !round.previous.events[node_id].witness
                 .weak) {
