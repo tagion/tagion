@@ -457,7 +457,6 @@ class Event {
             if (strongly_seen) {
                 new Witness;
                 _witness.vote(hashgraph);
-                _round.accumulate_previous_seen_witness_mask(_witness);
                 hashgraph._rounds.check_decide_round;
                 return;
             }
@@ -534,10 +533,6 @@ class Event {
     }
 
     @nogc pure nothrow const final {
-        version (none) bool isFamous() {
-            return isWitness && round.famous_mask[node_id];
-        }
-
         /**
      * The received round for this event
      * Returns: received round

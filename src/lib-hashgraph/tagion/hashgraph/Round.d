@@ -74,7 +74,6 @@ class Round {
     protected {
         Round _previous;
         Round _next;
-        BitMask _common_previous_seen_witness_mask;
         BitMask _valid_witness;
     }
     immutable int number;
@@ -280,24 +279,6 @@ class Round {
         event._round = this;
     }
 
-    version (none) final bool update_round_decided() pure nothrow {
-        bool inner_update_decision(const Round r) {
-            if (_decided_round_yes) {
-                return true;
-            }
-            if (r && r.majority) {
-                node_size.iota
-                    .filter!(n => _events[n] && r._events[n])
-                    .each!(n => _events[n]._witness.decided_yes_mask |= r._events[n]._witness.decided_yes_mask);
-                return inner_update_decision(r._next);
-
-            }
-            return false;
-        }
-
-        return majority && inner_update_decision(_next);
-    }
-
     /**
      * Remove the event from the round 
      * Params:
@@ -330,12 +311,6 @@ class Round {
         void scrap_events(Event e) {
             if (e !is null) {
                 count++;
-
-                pragma(msg, "fixme(phr): make event remove work with eventview");
-                version (none)
-                    if (Event.callbacks) {
-                        Event.callbacks.remove(e);
-                    }
                 scrap_events(e._mother);
                 e.disconnect(hashgraph);
                 e.destroy;
@@ -359,10 +334,6 @@ class Round {
         return _previous;
     }
 
-    package final void accumulate_previous_seen_witness_mask(const(Event.Witness) w) nothrow {
-        _common_previous_seen_witness_mask |= w.previous_witness_seen_mask;
-    }
-
     final const pure nothrow @nogc {
         /**
      * Check of the round has no events
@@ -372,9 +343,6 @@ class Round {
             return !_events.any!((e) => e !is null);
         }
 
-        const(BitMask) common_previous_seen_witness_mask() @nogc {
-            return _common_previous_seen_witness_mask;
-        }
         /**
      * Counts the number of events which has been set in this round
      * Returns: number of events set
@@ -400,15 +368,6 @@ class Round {
      */
         const(Event) event(const size_t node_id) {
             return _events[node_id];
-        }
-
-        bool _isFamous() {
-            return isMajority(_events
-                    .filter!(e => e !is null)
-                    .filter!(e => e.witness.votedYes)
-                    .count,
-                    _events.length);
-
         }
 
         bool majority() {
@@ -458,7 +417,6 @@ class Round {
     struct Rounder {
         Round last_round;
         Round last_decided_round;
-        Round latest_famous_round;
         HashGraph hashgraph;
         Event[] last_witness_events;
 
@@ -469,26 +427,6 @@ class Round {
             this.hashgraph = hashgraph;
             last_round = new Round(null, hashgraph.node_size);
             last_witness_events.length = hashgraph.node_size;
-            //voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
-        }
-
-        private void update_latest_famous_round() pure nothrow {
-            Round inner_latest_famous_round(Round r) {
-                if (r && r._isFamous) {
-                    return inner_latest_famous_round(r._next);
-                }
-                if (!r) {
-                    return inner_latest_famous_round(last_decided_round);
-                }
-                return r;
-            }
-
-            latest_famous_round = inner_latest_famous_round(latest_famous_round);
-        }
-
-        uint count_feature_famous_rounds(const Round r) pure nothrow {
-            update_latest_famous_round;
-            return cast(uint)(latest_famous_round.number - r.number);
         }
 
         package void erase() {
@@ -525,7 +463,6 @@ class Round {
                 if (e._witness) {
                     e._round.add(e);
                     last_witness_events[e.node_id] = e;
-                    update_latest_famous_round;
                 }
             }
             e._round = e.maxRound;
@@ -651,10 +588,6 @@ class Round {
                     witness_in_round.walkLength
             );
             Event.view(witness_in_round.map!(w => w.outer));
-            version (none)
-                if (!witness_in_round.map!(w => w.votedYes).all) {
-                    return;
-                }
             log("Round %d decided", round_to_be_decided.number);
             last_decided_round = round_to_be_decided;
             round_to_be_decided.decide;
@@ -716,14 +649,6 @@ class Round {
 
             auto famous_witness_in_round = witness_event_in_round
                 .filter!(e => r._valid_witness[e.node_id]);
-            version (none)
-                witness_event_in_round
-                    .filter!(e => !r._valid_witness[e.node_id])
-                .map!(e => e._witness)
-                .each!(w => w.weak = true);
-            version (none)
-                Event.view(witness_event_in_round);
-
             auto event_list = majority_seen_from_famous(famous_witness_in_round);
             event_list
                 .sort!((a, b) => Event.higher_order(a, b));
