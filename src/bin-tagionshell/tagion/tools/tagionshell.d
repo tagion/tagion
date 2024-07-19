@@ -1156,10 +1156,8 @@ appoint:
                 writeln("Reset app!");
                 version(TAGIONSHELL_WEB_SOCKET){
                     wsa.stop;
-                    destroy(wsa);
                 }
                 app.stop;
-                destroy(app);
                 goto appoint;
             }
         }
@@ -1170,10 +1168,8 @@ appoint:
             }
             version(TAGIONSHELL_WEB_SOCKET){
                 wsa.stop;
-                destroy(wsa);
             }
             app.stop;
-            destroy(app);
             return 0;
         }
     }

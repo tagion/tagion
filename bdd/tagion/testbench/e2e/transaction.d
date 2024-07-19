@@ -68,6 +68,9 @@ int _main(string[] args) {
 
     scope ShellOptions shell_opts = ShellOptions.defaultOptions;
     shell_opts.shell_uri = environment["SHELL_URI"];
+    shell_opts.monitor_pub_uri = environment["MR_PUB_URI"];
+    shell_opts.monitor_sub_uri = environment["MR_SUB_URI"];
+    shell_opts.ws_pub_uri = environment["WS_PUB_URI"];
     shell_opts.tagion_subscription_addr = contract_sock_addr(environment["SUBSCRIPTION"]);
     shell_opts.dart_subscription_task_prefix = "TRANSACTION_Node_0_";
     shell_opts.mode0_prefix = environment["PREFIX"];
