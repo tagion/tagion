@@ -202,15 +202,8 @@ class Event {
         bool __seen_decided(size_t voters) const pure nothrow {
         const seen_votes=seen_voting_mask.count;
             const N=_round.node_size;
-            if ((voters == 0) || isMajority(min(seen_votes, yes_votes), N) ||
-                seen_votes >= voters) {
-                return true;
-            }
-            version(none)
-            if (isMajority(N-seen_votes, N)) {
-                return true;
-            }
-            return false;
+            return ((voters == 0) || isMajority(min(seen_votes, yes_votes), N) ||
+                seen_votes >= voters); 
         }
         @nogc final const pure nothrow {
             const(BitMask) previous_strongly_seen_mask() {
