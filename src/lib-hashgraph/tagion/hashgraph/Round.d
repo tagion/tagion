@@ -74,21 +74,11 @@ class Round {
     protected {
         Round _previous;
         Round _next;
-        Round _voting; /// This is the voting round
         BitMask _common_previous_seen_witness_mask;
         BitMask _valid_witness;
     }
     immutable int number;
 
-    final int voting_number() const pure nothrow @nogc {
-        return (_voting) ? _voting.number : -1;
-    }
-
-    final const(Round) voting() const pure nothrow @nogc {
-        return _voting;
-    }
-
-    
     package Event[] _events;
     protected bool _decided;
     private void decide() pure nothrow @nogc
@@ -540,16 +530,6 @@ class Round {
                     }
                     last_witness_events[e.node_id] = e;
                     update_latest_famous_round;
-
-                    if (e._round.majority) {
-                        version (none)
-                            e._round
-                                ._events
-                                .filter!(e => e !is null)
-                                .map!(e => e.witness)
-                                .each!(w => w.update_decision_mask);
-                        e._round._voting = null;
-                    }
                 }
             }
             e._round = e.maxRound;
