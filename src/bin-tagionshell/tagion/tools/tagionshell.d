@@ -51,6 +51,7 @@ import tagion.utils.LRUT;
 import tagion.hashgraphview.EventView;
 import tagion.communication.Envelope;
 import tagion.tools.dartutil.dartindex;
+import tagion.actor;
 
 import core.thread;
 import nngd.nngd;
@@ -1025,6 +1026,8 @@ int _main(string[] args) {
     const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
     auto config_file = (user_config_file < 0) ? default_shell_config_filename : args[user_config_file];
 
+    ActorHandle[] actors;
+
     if (config_file.exists) {
         try {
             options.load(config_file);
@@ -1084,16 +1087,14 @@ int _main(string[] args) {
         icache = new shared(IndexCache)(null, cast(immutable) options.dartcache_size, cast(immutable) options
                 .dartcache_ttl_msec);
     }
+    
     auto ds_tid = spawn(&dart_worker, options);
 
-    if(!options.ws_pub_uri.empty){
-        //auto ws_tid = spawn(&ws_worker, options);
+    version(TAGIONSHELL_WEB_SOCKET) {
         ws_devices = new shared(WSCache)(null, 512, 0); // TODO: hardcoded session cache size -> options
         WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_close, &ws_on_error, &ws_on_message, cast(void*)&options );
         wsa.start();
     }
-    
-
 
     Appender!string help_text;
 
@@ -1109,6 +1110,10 @@ int _main(string[] args) {
     isz = getmemstatus();
 
 appoint:
+
+    scope(exit){
+        Thread.sleep(500.msecs);
+    }
 
     WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"`~options.webroot~`","static_path":"`~options.webstaticdir~`"}`), &options);
 
@@ -1138,10 +1143,8 @@ appoint:
     app.start();
 
     if (options.save_rpcs_enable) {
-        import tagion.actor;
-        import tagion.tools.shell.contracts;
-
-        _spawn!(RPCSaver)(options.save_rpcs_task);
+        auto rpca = _spawn!(RPCSaver)(options.save_rpcs_task);
+        actors ~= [rpca];
     }
 
     while (true) {
@@ -1151,6 +1154,10 @@ appoint:
             writeln("mem: ", sz);
             if (sz > isz * 2) {
                 writeln("Reset app!");
+                version(TAGIONSHELL_WEB_SOCKET){
+                    wsa.stop;
+                    destroy(wsa);
+                }
                 app.stop;
                 destroy(app);
                 goto appoint;
@@ -1158,11 +1165,17 @@ appoint:
         }
         if (abort) {
             writeln("Shell aborting");
+            foreach(a; actors){
+                a.send(Sig.STOP);
+            }
+            version(TAGIONSHELL_WEB_SOCKET){
+                wsa.stop;
+                destroy(wsa);
+            }
             app.stop;
             destroy(app);
             return 0;
         }
-
     }
 
     return 0;
