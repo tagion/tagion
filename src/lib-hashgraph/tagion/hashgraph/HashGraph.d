@@ -48,7 +48,7 @@ class HashGraph {
         Statistic!uint wavefront_event_package_used;
         Statistic!uint live_events;
         Statistic!uint live_witness;
-        Statistic!(uint, Yes.histogram) feature_famous_rounds;
+        Statistic!(uint, Yes.histogram) future_majority_rounds;
         mixin HiBONRecord;
     }
 
