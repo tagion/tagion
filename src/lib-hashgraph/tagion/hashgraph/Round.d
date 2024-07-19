@@ -35,16 +35,16 @@ import tagion.basic.Debug;
 @safe:
 
 uint level(const size_t c) pure nothrow {
-    if (c < 4) {
+    if (c <= 4) {
         return 0;
     }
-    if (c < 6) {
+    if (c <= 6) {
         return 1;
     }
-    if (c < 8) {
+    if (c <= 8) {
         return 2;
     }
-    if (c < 10) {
+    if (c <= 10) {
         return 3;
     }
     return 4;
@@ -113,7 +113,7 @@ class Round {
             auto future_witness_masks = list_majority_rounds
                 .map!(r => BitMask(r.node_size.iota.filter!(n => (r.events[n]!is null))));
             _valid_witness = BitMask(node_size.iota
-                    .filter!(n => (_events[n]!is null) && (_events[n].witness.separation == 1)));
+                    .filter!(n => (_events[n]!is null) && !_events[n].witness.weak));
 
             _events.filter!(e => e !is null)
                 .each!(e => e._witness.seen_voting_mask.clear);
@@ -524,10 +524,6 @@ class Round {
             scope (exit) {
                 if (e._witness) {
                     e._round.add(e);
-                    const last_witness_event = last_witness_events[e.node_id];
-                    if (last_witness_event) {
-                        e._witness.separation = e.round.number - last_witness_event.round.number;
-                    }
                     last_witness_events[e.node_id] = e;
                     update_latest_famous_round;
                 }
