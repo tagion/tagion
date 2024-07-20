@@ -140,23 +140,20 @@ class Round {
                 return ret = Completed.too_few;
             }
 
-            __write("%s Round %d valid  %-(%2d %) ".replace("#", node_size.to!string),
+            __write("%s Round %-3d    valid  %-(%2d %) ".replace("#", node_size.to!string),
                     _name,
                     number,
                     _events.map!(e => (e is null) ? -1 : cast(int) e.witness.seen_voting_mask.count));
 
             auto list_majority_rounds_1 = list_majority_rounds;
             list_majority_rounds_1.popFront;
-            Round voter;
-            uint[] _gather_voters;
+                uint[] gather_voters;
+                gather_voters.length = node_size;
             foreach (slide_r; list_majority_rounds_1.slide(2)) {
                 Round gather_round = slide_r.front;
                 Round r = slide_r.drop(1).front;
-                const gather_number_of_voters = gather_round._events.filter!(e => e !is null).count;
-                uint[] gather_voters;
-                gather_voters.length = node_size;
                 scope (exit) {
-                    _gather_voters = gather_voters;
+                gather_voters[]=0;
                 }
                 gather_round._events
                     .filter!(e => e !is null)
@@ -182,11 +179,11 @@ class Round {
                         number,
                         r.number,
                         r.events.map!(e => (e is null) ? -1 : cast(int) e.witness.previous_witness_seen_mask.count), _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
-                __write("%s %sRound %-3d:%-3d%s count %-(%2d %) %s%s".replace("#", node_size.to!string),
+                __write("%s %sRound %-3d:%-2d%s count %-(%2d %) %s%s".replace("#", node_size.to!string),
                         _name,
                         BACKGROUND_BLACK,
                         number,
-                        r.number,
+                        r.number-number,
                         RESET,
                         node_size.iota
                         .map!(n => (_valid_witness[n]) ? cast(int) _events[n].witness.seen_voting_mask.count : -1),
@@ -195,7 +192,7 @@ class Round {
                     __write("%s Round %-3d     yes   %(%2d %)".replace("#", node_size.to!string),
                             _name,
                             number,
-                            _gather_voters);
+                            gather_voters);
                     __write("%s Round %-3d    gather %-(%s %) %#s distance=%d".replace("#", node_size.to!string),
                             _name,
                             number,
