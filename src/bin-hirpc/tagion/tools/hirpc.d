@@ -117,7 +117,6 @@ int _main(string[] args) {
 
             const dart_indices = get_indices(inputs);
             const pkey_indices = get_pkey_indices(pkeys);
-            __write("dart_indices=%s", dart_indices);
             const res = dart_indices ~ pkey_indices;
             result = isTRTreq ? trtdartRead(res).toDoc : dartRead(res).toDoc;
             break;
