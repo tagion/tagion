@@ -349,7 +349,9 @@ int _main(string[] args) {
 
                 const csv_backup_filename = [csv_files.front.stripExtension, "backup"].join("_")
                     .setExtension(FileExtension.csv);
-                rename(csv_files.front, csv_backup_filename);
+                if (!dry_switch) {
+                    rename(csv_files.front, csv_backup_filename);
+                }
                 File fout = (dry_switch) ? stdout : File(csv_files.front, "w");
                 scope (exit) {
                     if (!dry_switch) {
