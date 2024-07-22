@@ -1,7 +1,6 @@
 /// HiRPC utility for generating HiRPC requests
 module tagion.tools.hirpc;
 
-
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tools = tagion.tools.toolsexception;
@@ -15,13 +14,14 @@ import tagion.crypto.Types;
 import tagion.hibon.Document;
 import tagion.script.standardnames;
 import tagion.hibon.HiBONtoText : decode;
-
+import tagion.basic.Debug;
 import std.path;
 import std.stdio;
 import std.getopt;
 import std.format;
 import std.array;
 import std.algorithm;
+import std.string;
 
 static immutable IMPLEMENTED_METHODS = [
     Queries.dartRead,
@@ -35,19 +35,19 @@ int _main(string[] args) {
     bool version_switch;
     string output_filename;
     string method_name;
-    string input;
-    string pkeys;
+    string[] inputs;
+    string[] pkeys;
 
     try {
         auto main_args = getopt(args,
-            std.getopt.config.caseSensitive,
-            std.getopt.config.bundling,
-            "version", "display the version", &version_switch,
-            "v|verbose", "Prints more debug information", &__verbose_switch,
-            "o|output", "Output filename (Default stdout)", &output_filename,
-            "m|method", "method name for the hirpc to generate", &method_name,
-            "d|dartinput", "dart inputs sep. by comma for multiples generated differently for each cmd", &input,
-            "p|pkeys", "pkeys sep. by comma for multiple entries", &pkeys,
+                std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "version", "display the version", &version_switch,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
+                "o|output", "Output filename (Default stdout)", &output_filename,
+                "m|method", "method name for the hirpc to generate", &method_name,
+                "d|dartinput", "dart inputs sep. by comma or multiple args for multiples generated differently for each cmd", &inputs,
+                "p|pkeys", "pkeys sep. by comma or multiple args for multiple entries", &pkeys,
         );
 
         if (version_switch) {
@@ -57,16 +57,16 @@ int _main(string[] args) {
 
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
-                [
-                "Documentation: https://docs.tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...]", program),
-                "",
-                "<option>:",
+                    [
+                    "Documentation: https://docs.tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...]", program),
+                    "",
+                    "<option>:",
 
-            ].join("\n"),
-            main_args.options);
+                    ].join("\n"),
+                    main_args.options);
             return 0;
         }
 
@@ -78,24 +78,26 @@ int _main(string[] args) {
         }
         else {
             tools.check(output_filename.hasExtension(FileExtension.hibon),
-                format("Output %s should be a .%s file", output_filename, FileExtension.hibon));
+                    format("Output %s should be a .%s file", output_filename, FileExtension.hibon));
             fout = File(output_filename, "w");
         }
 
         tools.check(all_dartinterface_methods.canFind(method_name), format("method name not valid must be one of %s", all_dartinterface_methods));
 
-        DARTIndex[] get_indices(string _input) {
+        DARTIndex[] get_indices(string[] _input) {
             return _input
-                .split(",")
-                .array
+                .map!(s => s.split(","))
+                .joiner
+                .map!(s => s.strip)
                 .map!(d => hash_net.dartIndexDecode(d))
                 .array;
         }
 
-        DARTIndex[] get_pkey_indices(string _input) {
-            return _input
-                .split(",")
-                .array
+        DARTIndex[] get_pkey_indices(string[] _pkeys) {
+            return _pkeys
+                .map!(s => s.split(","))
+                .joiner
+                .map!(s => s.strip)
                 .map!(p => hash_net.dartKey(TRTLabel, Pubkey(p.decode)))
                 .array;
         }
@@ -106,26 +108,28 @@ int _main(string[] args) {
         }
 
         Document result;
-        switch(method_name) {
-            case Queries.dartBullseye, TRT_METHOD ~ Queries.dartBullseye:
-                result = isTRTreq ? trtdartBullseye().toDoc : dartBullseye().toDoc;
-                break;
-            case Queries.dartRead, TRT_METHOD ~ Queries.dartRead:
-                tools.check(input !is string.init || pkeys !is string.init, "must supply pkeys or dartindices"); 
-                const dart_indices = get_indices(input);
-                const pkey_indices = get_pkey_indices(pkeys);
-                const res = dart_indices ~ pkey_indices;
-                result = isTRTreq ? trtdartRead(res).toDoc : dartRead(res).toDoc;
-                break;
-            case Queries.dartCheckRead, TRT_METHOD ~ Queries.dartCheckRead:
-                tools.check(input !is string.init || pkeys !is string.init, "must supply pkeys or dartindices"); 
-                const dart_indices = get_indices(input);
-                const pkey_indices = get_pkey_indices(pkeys);
-                const res = dart_indices ~ pkey_indices;
-                result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
-                break;
-            default:
-                tools.check(0, format("method %s not implemented use one of %s", method_name, IMPLEMENTED_METHODS));
+        switch (method_name) {
+        case Queries.dartBullseye, TRT_METHOD ~ Queries.dartBullseye:
+            result = isTRTreq ? trtdartBullseye().toDoc : dartBullseye().toDoc;
+            break;
+        case Queries.dartRead, TRT_METHOD ~ Queries.dartRead:
+            tools.check(!inputs.empty || !pkeys.empty, "must supply pkeys or dartindices");
+
+            const dart_indices = get_indices(inputs);
+            const pkey_indices = get_pkey_indices(pkeys);
+            __write("dart_indices=%s", dart_indices);
+            const res = dart_indices ~ pkey_indices;
+            result = isTRTreq ? trtdartRead(res).toDoc : dartRead(res).toDoc;
+            break;
+        case Queries.dartCheckRead, TRT_METHOD ~ Queries.dartCheckRead:
+            tools.check(!inputs.empty || !pkeys.empty, "must supply pkeys or dartindices");
+            const dart_indices = get_indices(inputs);
+            const pkey_indices = get_pkey_indices(pkeys);
+            const res = dart_indices ~ pkey_indices;
+            result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
+            break;
+        default:
+            tools.check(0, format("method %s not implemented use one of %s", method_name, IMPLEMENTED_METHODS));
         }
         fout.rawWrite(result.serialize);
     }
