@@ -251,6 +251,7 @@ webhandler handler_helper(alias cb)() {
             rep.text = format!"<!DOCTYPE html>\n<html>\n<body>\nInternal Error<br>\nerror_id %s: %s\n</html>\n</body>"(error_id, e.msg);
             stderr.writefln!"error_id %s\n%s"(error_id, dump_exception_recursive(e, fullyQualifiedName!cb, ExceptionFormat.PLAIN));
         }
+        return;
     };
 }
 
@@ -279,7 +280,7 @@ void dart_worker(ShellOptions opt) {
     s.subscribe(opt.trt_subscription_tag);
     s.subscribe(opt.monitor_subscription_tag);
     writeit("DS: subscribed");
-    while (true) {
+    while (!abort) {
         rc = s.dial(opt.tagion_subscription_addr);
         if (rc == 0)
             break;
@@ -289,7 +290,7 @@ void dart_worker(ShellOptions opt) {
         s.close();
     }
     writeit("DS: connected");
-    while (true) {
+    while (!abort) {
         try {
             auto received = s.receive!(immutable(ubyte[]))();
             if (received.empty) {
@@ -437,7 +438,7 @@ int query_socket_once(string addr, uint timeout, uint delay, uint retries,  cons
     NNGMessage msg = NNGMessage(0);
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(timeout);
-    while (true) {
+    while (!abort) {
         rc = s.dial(addr);
         if (rc == 0)
             break;
@@ -450,7 +451,7 @@ int query_socket_once(string addr, uint timeout, uint delay, uint retries,  cons
     rc = s.send(request);
     if(rc != 0)
         return cast(int) nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-    while (true) {
+    while (!abort) {
         rc = s.receivemsg(&msg, true);
         if (rc < 0) {
             if (s.errno == nng_errno.NNG_EAGAIN) {
@@ -509,7 +510,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         return;
     }
 
-    ulong[string] stats = [ "requests": 0, "tofetch": 0 ];
+    ulong[string] stats = [ "requests": 0, "tofetch": 0, "resplen": 0 ];
     
     string method = receiver.method.name;
     /* string method = opt.cache_enabled ? receiver.method.name : "unprocessed"; */
@@ -653,11 +654,10 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
     rep.type = mime_type.BINARY;
     rep.rawdata = (doclen > 0) ? docbuf.dup[0 .. doclen] : null;
-
+    stats["resplen"] = doclen;
     writeit("STATS: ", stats);
+    writeit("handlerHIRPC: to end");
 }
-
-
 
 // ---------------- non-hirpc handlers
 
@@ -669,7 +669,7 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
 
     int rc;
-    while (true) {
+    while (!abort) {
         rc = s.dial(opt.node_dart_addr);
         if (rc == 0)
             break;
@@ -951,7 +951,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     int rc;
     int attempts = 0;
-    while (true) {
+    while (!abort) {
         rc = s.dial(opt.node_dart_addr);
         if (rc == 0)
             break;
@@ -1147,32 +1147,30 @@ appoint:
         actors ~= [rpca];
     }
 
-    while (true) {
-        nng_sleep(2000.msecs);
+    while (!abort) {
+        nng_sleep(500.msecs);
         version (none) {
             sz = getmemstatus();
-            writeln("mem: ", sz);
+            writeit("mem: ", sz);
             if (sz > isz * 2) {
                 writeln("Reset app!");
                 version(TAGIONSHELL_WEB_SOCKET){
                     wsa.stop;
                 }
                 app.stop;
+                Thread.sleep(1000.msecs);
                 goto appoint;
             }
         }
-        if (abort) {
-            writeln("Shell aborting");
-            foreach(a; actors){
-                a.send(Sig.STOP);
-            }
-            version(TAGIONSHELL_WEB_SOCKET){
-                wsa.stop;
-            }
-            app.stop;
-            return 0;
-        }
     }
-
+    writeit("Shell aborting");
+    foreach(a; actors){
+        a.send(Sig.STOP);
+    }
+    version(TAGIONSHELL_WEB_SOCKET){
+        wsa.stop;
+    }
+    app.stop;
+    writeit("Shell to close");
     return 0;
 }
