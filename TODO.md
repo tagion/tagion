@@ -2,12 +2,17 @@
 
 ## In Progress
 
-### CLI testing
-Description: Create proposal for how to test CLI-tools
-[X] Create proposal
-[] Create HiREP tests based on documentation
+### Misc
 
-Assignee: ib
+### C-api fixes
+- [ ] check error text is set
+- [ ] check rt_init exported functions on android
+- [ ] add hibon override/delete key functions
+
+Assignee: lr
+
+## merge wavefront
+Assignee: lr, cbr
 
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
@@ -36,23 +41,10 @@ Assignee: yr
 - []: create HiBON api
 - []: create wallet api
 
-
-### Implement wavefront for nodeinterface
-description: nodes should be able to communicate p2p on a half-duplex communication using the wavefront protocol
-
-tasks:
-    - [x]: make nng_stream aio tasks convenient to use with std.concurrency
-    - [x]: associate in/out-comming connections with public keys
-    - [ ]: handle breaking waves
-    - [ ]: tests, tests, tests...
-
-Assignee: lr
-
-### Epoch shutdown test
-description: Test the synchronized mode0 epch stop, where all nodes stop at a specific epoch
-assignee: lr
-
 ## Backlog
+
+### Distributed nodes test
+setup tests for multiple distributed nodes
 
 ### Subscription API implementation
 Description: Provide external API for subscribing and querying data in the system as in [Subscription API proposal](https://docs.tagion.org/tips/3)
@@ -80,77 +72,18 @@ Test should also be made for NNG buffer overrun!
 description: Add a github ci script which activates the operational test once a day
 Assignee: lr
 
-## Done
-### Hashgraph viewer
-Description: Be able in frontend via query parameter or other in order to specify tagionshell url for websocket that it should connect to.
-
-Assignee: yr
-
-### Envelope on shell
-Description: The shell should be able to accept a envelope package.
-
-[X] - Create function in CLI-wallet to serialize to envelope.
-[X] - Shell to deserialize to HiRPC hibon based on if it receives an Envelope
-
-Assignee: yr
-### Implement "not" flag in HiREP
-
-Description:
-The not flag should implement similar function as the `grep -v` or like the `find . -not ...`.
-This it should filter out all which matches the pattern.
-
-Assignee: ib
-### Contract storage behaviour test
-Description: 
-
-DONE
-Scenario: Proper contract
-* Given a network
-* Given a correctly signed contract
-* When the contract is sent to the network and goes through
-* Then the contract should be saved in the TRT 
-
-DONE
-Scenario: Invalid contract
-* Given a network
-* Given a incorrect contract which fails in the Transcript
-* When the contract is sent to the network 
-* Then it should be rejected
-* Then the contract should not be stored in the TRT
-
-[X] - Add function in SecureWallet.d which takes contract and produces hirpc for trt.dartRead of the contract hash.
-[X] - Check functions should show the amount and expected amount on error.
-
-Labels: [Tracing, TRT]
-
-Assignee: ib
-
-
-### Logging of events in android
-Description: Open a file with the `WalletWrapperSdk path()` function which can be printed to the log in flutter later.
-[x] - Create DEBUG_ANDROID flag instead of WRITE_LOGS
-[x] - Check if debug symbols on android libmobile. Are they compiled in?
-Old serialization enabled in android fixed the problem.
-
-Assignee: ab
-### Wasmer execution engine prototype
-Description: Integrate Wasmer as a simple execution engine for WASM smart contracts
-
-Setup the build flow for libwasmer
-
-Implement the interface from D to C of libwasmer.
-
-Initial TVM cli tool.
-
-Assignee: cbr
-
 ### Types filtering in hirep 
 Description: hirep have --types arg, but it's not implemented yet.
 
 - [] - Implement --type filtering in hirep.
 - [] - Write bdd test for this feature
 
-Assignee: ib
+---
+
+## Done
+
+
+---
 
 ## Template
 ### Task Title
