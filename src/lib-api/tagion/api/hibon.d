@@ -76,6 +76,16 @@ void tagion_hibon_free(HiBONT* instance) {
     GC.free(instance);
 }
 
+/** 
+ *  Get the string representation of a hibon
+ *
+ *  Params:
+ *    instance = Reference to the hibon object instance
+ *    text_format = [tagion.api.document.DocumentTextFormat]
+ *    str = reference to the returned string
+ *    str_len = The length of the returned string
+ *  Returns: [tagion.api.errors.ErrorCode]
+*/
 int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, size_t* str_len) {
     import tagion.hibon.HiBONJSON;
     import tagion.hibon.HiBONtoText;
