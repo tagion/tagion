@@ -82,7 +82,8 @@ struct EventView {
                voted = witness.voted_yes_mask.bytes; 
                decided = witness.decided;
                 witness_seen = witness.previous_witness_seen_mask.bytes;
-                weak = witness.weak;
+                
+                weak = event.round.valid_witness[event.node_id];
             }
         }
     });

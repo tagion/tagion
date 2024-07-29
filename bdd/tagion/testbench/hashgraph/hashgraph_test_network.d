@@ -36,7 +36,8 @@ struct HashGraphOptions {
     size_t seed = 123_456_689;
     string path;
     bool disable_graphfile; /// Disable graph file
-    int max_rounds;
+    bool continue_on_error; /// Don't stop if the epochs does not match
+    int max_epochs;
 }
 
 class TestRefinement : StdRefinement {
@@ -67,6 +68,7 @@ class TestRefinement : StdRefinement {
 class NewTestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
     static long last_epoch;
+static bool continue_on_error;
     override void epoch(Event[] event_collection, const Round decided_round) const {
         static bool first_epoch;
         if (!first_epoch) {
@@ -123,7 +125,7 @@ class NewTestRefinement : StdRefinement {
 
         epochs[finished_epoch.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = finished_epoch;
 
-        checkepoch(hashgraph.nodes.length.to!uint, epochs, last_epoch);
+        checkepoch(hashgraph.nodes.length.to!uint, epochs, last_epoch, continue_on_error);
     }
 
 }
@@ -398,17 +400,17 @@ void printStates(R)(TestNetworkT!(R) network) if (is(R : Refinement)) {
 }
 
 @safe
-static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs, ref long last_epoch) {
+static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs, ref long last_epoch, const bool continue_on_error=false) {
     static int error_count;
     import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
     import tagion.crypto.SecureInterfaceNet;
+                    import tagion.utils.Term;
 
     try {
-        writefln("unfinished epochs %s", epochs.length);
+        //writefln("unfinished epochs %s", epochs.length);
         foreach (epoch; epochs.byKeyValue) {
             if (epoch.value.length == number_of_nodes) {
                 HashNet net = new StdHashNet;
-                // check that all epoch numbers are the same
                 check(epoch.value.byValue.map!(finished_epoch => finished_epoch.epoch).uniq.walkLength == 1, "not all epoch numbers were the same!");
 
                 const(Event)[][] all_node_events = epoch.value.byValue.map!(finished_epoch => finished_epoch.events)
@@ -438,11 +440,10 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     foreach (i, events; epoch_events) {
                         uint number_of_empty_events;
                         printout ~= format("\n%s: ", i);
+                        if (!continue_on_error) 
                         foreach (j, epack; events) {
                             const go_hash = net.calcHash(*epack);
                             const equal = (j < epoch_events[0].length) && (net.calcHash(*epoch_events[0][j]) == go_hash);
-                            //const go_hash=net.calcHash(epack);
-                            import tagion.utils.Term;
 
                             const mark = (equal) ? GREEN : RED;
                             printout ~= format("%s%(%02x%):%03d ", mark, go_hash[0 .. 4], j);
@@ -456,7 +457,10 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 }
 
                 if (!epoch_events.all!(e => equal(e.map!(e => *e), epoch_events[0].map!(e => *e)))) {
-                    check(0, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
+                    check(continue_on_error, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
+                    if (continue_on_error) {
+                        writefln("%sMismatch Round %d\n%s%s", RED, epoch.key, print_events, RESET);
+                    }
                 }
 
                 auto timestamps = epoch.value.byValue.map!(finished_epoch => finished_epoch.time).array;
@@ -466,7 +470,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                         auto line = format("\n%s: %s", i, t);
                         text ~= line;
                     }
-                    check(0, format("not all timestamps were the same!\n%s\n%s", text, print_events));
+                    check(continue_on_error, format("not all timestamps were the same!\n%s\n%s", text, print_events));
                 }
 
                 writefln("FINISHED ENTIRE EPOCH %s", epoch.key);
