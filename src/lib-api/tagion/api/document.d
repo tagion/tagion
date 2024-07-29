@@ -5,6 +5,8 @@ import tagion.api.errors;
 import tagion.hibon.Document;
 import tagion.basic.tagionexceptions;
 import core.stdc.stdint;
+
+private enum DOCUMENT_ERROR_TEXT = "Document ErrorCode";
 version(C_API_DEBUG) {
 import std.stdio;
 }
@@ -41,6 +43,7 @@ int tagion_document(
         const doc = Document(_buf);
         const doc_error = doc.valid;
         if (doc_error !is Document.Element.ErrorCode.NONE) {
+            set_error_text = DOCUMENT_ERROR_TEXT;
             return cast(int)doc_error;
         }
         auto doc_elm=doc[_key];
@@ -70,6 +73,7 @@ int tagion_document_get_version(
         const doc = Document(_buf);
         const doc_error = doc.valid;
         if (doc_error !is Document.Element.ErrorCode.NONE) {
+            set_error_text = DOCUMENT_ERROR_TEXT;
             return cast(int)doc_error;
         }
         *ver = doc.ver();
@@ -114,6 +118,7 @@ int tagion_document_get_record_name(
         const doc = Document(_buf);
         const doc_error = doc.valid;
         if (doc_error !is Document.Element.ErrorCode.NONE) {
+            set_error_text = DOCUMENT_ERROR_TEXT;
             return cast(int)doc_error;
         }
         string data = doc.recordName;
@@ -203,6 +208,7 @@ int tagion_document_array(
         const doc = Document(_buf);
         const doc_error = doc.valid;
         if (doc_error !is Document.Element.ErrorCode.NONE) {
+            set_error_text = DOCUMENT_ERROR_TEXT;
             return cast(int)doc_error;
         }
         auto doc_elm=doc[index];
@@ -248,6 +254,7 @@ int tagion_document_get_text(
         const doc = Document(_buf);
         const doc_error = doc.valid;
         if (doc_error !is Document.Element.ErrorCode.NONE) {
+            set_error_text = DOCUMENT_ERROR_TEXT;
             return cast(int)doc_error;
         }
 
@@ -339,6 +346,7 @@ int tagion_document_get_document(const Document.Element* element, uint8_t** buf,
         auto sub_doc = element.get!Document;
         const sub_doc_error = sub_doc.valid;
         if (sub_doc_error !is Document.Element.ErrorCode.NONE) {
+            set_error_text = DOCUMENT_ERROR_TEXT;
             return cast(int) sub_doc_error;
         }
         auto data = sub_doc.data;

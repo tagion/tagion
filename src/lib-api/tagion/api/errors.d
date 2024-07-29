@@ -1,9 +1,22 @@
 module tagion.api.errors;
 
-import std.exception;
+nothrow:
+
+package
+void last_error(const Exception e) {
+    last_error_text = e.msg;
+}
+
+package
+void set_error_text(string msg) {
+    last_error_text = msg;
+}
+
+/* static Exception last_error; */
+private
+string last_error_text;
 
 extern(C):
-nothrow:
 
 /// Tagion c-api error codes
 enum ErrorCode {
@@ -12,7 +25,6 @@ enum ErrorCode {
     error = -2, /// Other error
 }
 
-static Exception last_error;
 
 /* 
   Get the error text for the last exception
@@ -22,13 +34,13 @@ static Exception last_error;
     msg_len = The length of the allocated message
  */
 void tagion_error_text(char** msg, size_t* msg_len) {
-    if (last_error) {
-        *msg=cast(char*) &last_error.msg[0];
-        *msg_len=last_error.msg.length;
+    if (last_error_text) {
+        *msg=cast(char*) &last_error_text[0];
+        *msg_len=last_error_text.length;
     }
 }
 
 void tagion_clear_error() {
-    last_error = null;
+    last_error_text = "";
+    /* last_error = null; */
 }
-

@@ -2,10 +2,8 @@
 
 ## In Progress
 
-### Misc
-
 ### C-api fixes
-- [ ] check error text is set
+- [x] check error text is set
 - [ ] check rt_init exported functions on android
 - [ ] add hibon override/delete key functions
 
