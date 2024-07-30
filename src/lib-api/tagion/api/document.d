@@ -31,7 +31,7 @@ nothrow:
  *   element = pointer to the returned element
  * Returns: ErrorCode
  */
-int tagion_document(
+int tagion_document_get_element(
     const uint8_t* buf, 
     const size_t buf_len, 
     const char* key, 
@@ -198,7 +198,7 @@ unittest {
  *   element = 
  * Returns: ErrorCode
  */
-int tagion_document_array(
+int tagion_document_get_array(
     const uint8_t* buf, 
     const size_t buf_len, 
     const size_t index, 
@@ -370,7 +370,7 @@ unittest {
     const doc = Document(h);
 
     Document.Element elm_doc;
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_doc[0], key_doc.length, &elm_doc);
+    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key_doc[0], key_doc.length, &elm_doc);
     assert(rt == ErrorCode.none, "Get document element string returned error");
 
     uint8_t* buf;
@@ -416,7 +416,7 @@ unittest {
     const doc = Document(h);
     Document.Element elm_string;
 
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_string[0], key_string.length, &elm_string);
+    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key_string[0], key_string.length, &elm_string);
     assert(rt == ErrorCode.none, "Get document element string returned error");
 
     char* str_value;
@@ -434,7 +434,7 @@ unittest {
     h = ["hey0", "hey1", "hey2"];
     const doc = Document(h);
     Document.Element elm_string;
-    int rt = tagion_document_array(&doc.data[0], doc.data.length, 0, &elm_string);
+    int rt = tagion_document_get_array(&doc.data[0], doc.data.length, 0, &elm_string);
     assert(rt == ErrorCode.none, "get array index returned error");
     char* str_value;
     size_t str_len;
@@ -445,7 +445,7 @@ unittest {
     assert(str == "hey0", "read string was different"); 
 
     // read index to trigger range error
-    rt = tagion_document_array(&doc.data[0], doc.data.length, 5, &elm_string);
+    rt = tagion_document_get_array(&doc.data[0], doc.data.length, 5, &elm_string);
     assert(rt == ErrorCode.exception, "should throw error on undefined index");
 }
 
@@ -480,7 +480,7 @@ unittest {
     const doc = Document(h);
 
     Document.Element elm_binary;
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_binary[0], key_binary.length, &elm_binary);
+    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key_binary[0], key_binary.length, &elm_binary);
     assert(rt == ErrorCode.none, "Get document element binary returned error");
 
     uint8_t* buf;
@@ -520,7 +520,7 @@ unittest {
     const doc = Document(h);
 
     Document.Element elm_time;
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_time);
+    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_time);
     assert(rt == ErrorCode.none, "Get document element time returned error");
 
     long value;
@@ -655,7 +655,7 @@ void testGetFunc(T)(
     h[key] = h_value;
     const doc = Document(h);
     Document.Element elmT;
-    int rt = tagion_document(&doc.data[0], doc.data.length, &key[0], key.length, &elmT);
+    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key[0], key.length, &elmT);
     assert(rt == ErrorCode.none);
 
     T get_value;
