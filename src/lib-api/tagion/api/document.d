@@ -22,7 +22,7 @@ nothrow:
 }
 
 /** 
- * Get a Document element
+ * Get a Document element by a key
  * Params:
  *   buf = the document buffer
  *   buf_len = length of the document buffer
@@ -31,7 +31,7 @@ nothrow:
  *   element = pointer to the returned element
  * Returns: ErrorCode
  */
-int tagion_document_get_element(
+int tagion_document_element_by_key(
     const uint8_t* buf, 
     const size_t buf_len, 
     const char* key, 
@@ -61,7 +61,7 @@ int tagion_document_get_element(
  * Params:
  *   buf = doc buf 
  *   buf_len = doc len
- *   ver = 
+ *   ver = The returned version number
  * Returns: ErrorCode
  */
 int tagion_document_get_version(
@@ -99,12 +99,12 @@ unittest {
 }
 
 /** 
- * Get document record type
+ * Get document record type name of a document
  * Params:
- *   buf = 
- *   buf_len = 
- *   record_name = 
- *   record_name_len = 
+ *   buf = The document buffer pointer
+ *   buf_len = Length of document buffer
+ *   record_name = The returned record name string
+ *   record_name_len = The length of the returned record name
  * Returns: ErrorCode
  */
 int tagion_document_get_record_name(
@@ -195,16 +195,17 @@ unittest {
  *   buf = the document buffer
  *   buf_len = length of the buffer
  *   index = index to
- *   element = 
+ *   element = the returned element array
  * Returns: ErrorCode
  */
-int tagion_document_get_array(
+int tagion_document_element_by_index(
     const uint8_t* buf, 
     const size_t buf_len, 
     const size_t index, 
-    Document.Element* element) {
+    Document.Element* element
+) {
     try {
-        immutable _buf=cast(immutable)buf[0..buf_len]; 
+        immutable _buf = cast(immutable)buf[0..buf_len]; 
         const doc = Document(_buf);
         const doc_error = doc.valid;
         if (doc_error !is Document.Element.ErrorCode.NONE) {
@@ -245,7 +246,7 @@ int tagion_document_get_text(
     const int text_format,
     char** str, 
     size_t* str_len
-    ) {
+) {
     import tagion.hibon.HiBONJSON;
     import tagion.hibon.HiBONtoText;
     import std.format;
@@ -370,7 +371,7 @@ unittest {
     const doc = Document(h);
 
     Document.Element elm_doc;
-    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key_doc[0], key_doc.length, &elm_doc);
+    int rt = tagion_document_element_by_key(&doc.data[0], doc.data.length, &key_doc[0], key_doc.length, &elm_doc);
     assert(rt == ErrorCode.none, "Get document element string returned error");
 
     uint8_t* buf;
@@ -384,7 +385,7 @@ unittest {
 }
 
 /** 
- * Get an string from a document
+ * Get an element string value
  * Params:
  *   element = element to get
  *   value = pointer to the string
@@ -416,7 +417,7 @@ unittest {
     const doc = Document(h);
     Document.Element elm_string;
 
-    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key_string[0], key_string.length, &elm_string);
+    int rt = tagion_document_element_by_key(&doc.data[0], doc.data.length, &key_string[0], key_string.length, &elm_string);
     assert(rt == ErrorCode.none, "Get document element string returned error");
 
     char* str_value;
@@ -434,7 +435,7 @@ unittest {
     h = ["hey0", "hey1", "hey2"];
     const doc = Document(h);
     Document.Element elm_string;
-    int rt = tagion_document_get_array(&doc.data[0], doc.data.length, 0, &elm_string);
+    int rt = tagion_document_element_by_index(&doc.data[0], doc.data.length, 0, &elm_string);
     assert(rt == ErrorCode.none, "get array index returned error");
     char* str_value;
     size_t str_len;
@@ -445,7 +446,7 @@ unittest {
     assert(str == "hey0", "read string was different"); 
 
     // read index to trigger range error
-    rt = tagion_document_get_array(&doc.data[0], doc.data.length, 5, &elm_string);
+    rt = tagion_document_element_by_index(&doc.data[0], doc.data.length, 5, &elm_string);
     assert(rt == ErrorCode.exception, "should throw error on undefined index");
 }
 
@@ -458,7 +459,7 @@ unittest {
  *   buf_len = pointer to buffer length
  * Returns: ErrorCode
  */
-int tagion_document_get_binary(const Document.Element* element, uint8_t** buf, size_t* buf_len) {
+int tagion_document_get_u8_array(const Document.Element* element, uint8_t** buf, size_t* buf_len) {
     try {
         auto data = element.get!(immutable(ubyte[]));
         *buf = cast(uint8_t*) &data[0];
@@ -480,12 +481,12 @@ unittest {
     const doc = Document(h);
 
     Document.Element elm_binary;
-    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key_binary[0], key_binary.length, &elm_binary);
+    int rt = tagion_document_element_by_key(&doc.data[0], doc.data.length, &key_binary[0], key_binary.length, &elm_binary);
     assert(rt == ErrorCode.none, "Get document element binary returned error");
 
     uint8_t* buf;
     size_t buf_len;
-    rt = tagion_document_get_binary(&elm_binary, &buf, &buf_len);
+    rt = tagion_document_get_u8_array(&elm_binary, &buf, &buf_len);
     assert(rt == ErrorCode.none);
 
     auto read_data = cast(immutable) buf[0..buf_len];
@@ -520,7 +521,7 @@ unittest {
     const doc = Document(h);
 
     Document.Element elm_time;
-    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_time);
+    int rt = tagion_document_element_by_key(&doc.data[0], doc.data.length, &key_time[0], key_time.length, &elm_time);
     assert(rt == ErrorCode.none, "Get document element time returned error");
 
     long value;
@@ -655,7 +656,7 @@ void testGetFunc(T)(
     h[key] = h_value;
     const doc = Document(h);
     Document.Element elmT;
-    int rt = tagion_document_get_element(&doc.data[0], doc.data.length, &key[0], key.length, &elmT);
+    int rt = tagion_document_element_by_key(&doc.data[0], doc.data.length, &key[0], key.length, &elmT);
     assert(rt == ErrorCode.none);
 
     T get_value;
