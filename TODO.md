@@ -5,7 +5,7 @@
 ### C-api fixes
 - [x] check error text is set
 - [ ] check rt_init exported functions on android
-- [ ] add hibon override/delete key functions
+- [x] add hibon override/delete key functions
 
 Assignee: lr
 
@@ -36,7 +36,7 @@ Assignee: yr
 
 ### Tagion API library
 - [X]: Create document API
-- []: create HiBON api
+- [x]: create HiBON api
 - []: create wallet api
 
 ## Backlog

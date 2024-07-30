@@ -78,6 +78,64 @@ void tagion_hibon_free(HiBONT* instance) {
     GC.free(instance);
 }
 
+///
+int tagion_hibon_has_member(const HiBONT* instance, const char* str, size_t str_len, bool* result) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        scope string key = cast(immutable)str[0..str_len];
+        *result = h.hasMember(key);
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+int tagion_hibon_remove_by_key(HiBONT* instance, const char* str, size_t str_len) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        scope string key = cast(immutable)str[0..str_len];
+        h.remove(key);
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    HiBONT* h = new HiBONT;
+    int rc = tagion_hibon_create(h);
+    assert(rc == ErrorCode.none);
+
+    const string key = "a";
+    rc = tagion_hibon_add_bool(h, &key[0], key.length, true);
+    assert(rc == ErrorCode.none);
+
+    bool result;
+    rc = tagion_hibon_has_member(h, &key[0], key.length, &result);
+    assert(rc == ErrorCode.none);
+    assert(result == true);
+
+    rc = tagion_hibon_remove_by_key(h, &key[0], key.length);
+    assert(rc == ErrorCode.none);
+    rc = tagion_hibon_has_member(h, &key[0], key.length, &result);
+    assert(rc == ErrorCode.none);
+    assert(result == false);
+}
+
 /** 
  *  Get the string representation of a hibon
  *
@@ -138,7 +196,7 @@ int tagion_hibon_get_document(const(HiBONT*) instance, uint8_t** buf, size_t* bu
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
             set_error_text = INVALID_HIBON_INSTANCE;
-            return ErrorCode.exception;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
         const doc = Document(h);
