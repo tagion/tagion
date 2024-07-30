@@ -224,10 +224,10 @@ int tagion_document_element_by_index(
 
 /// Format to use for tagion_document_get_text
 enum DocumentTextFormat {
-    JSON, 
-    PRETTYJSON, 
-    BASE64, 
-    HEX,
+    JSON = 0,
+    PRETTYJSON = 1,
+    BASE64 = 2, 
+    HEX = 3,
 }
 
 /** 
