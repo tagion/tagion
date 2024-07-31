@@ -34,10 +34,27 @@ enum ErrorCode {
     msg_len = The length of the allocated message
  */
 void tagion_error_text(char** msg, size_t* msg_len) {
+    *msg_len = 0;
     if (last_error_text) {
         *msg=cast(char*) &last_error_text[0];
         *msg_len=last_error_text.length;
     }
+}
+
+unittest {
+    char* msg_ptr = new char*;
+    size_t msg_len;
+    last_error = new Exception("bad exception");
+    tagion_error_text(&msg_ptr, &msg_len);
+    assert(msg_ptr[0..msg_len] == "bad exception");
+
+    last_error_text = "bad error";
+    tagion_error_text(&msg_ptr, &msg_len);
+    assert(msg_ptr[0..msg_len] == "bad error");
+
+    tagion_clear_error();
+    tagion_error_text(&msg_ptr, &msg_len);
+    assert(msg_len == 0);
 }
 
 void tagion_clear_error() {
