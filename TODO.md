@@ -16,30 +16,29 @@ Assignee: lr, cbr
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
 - [X] Create callback array and reassign pointer on fiber switch
-- [] Show all errors for multi-view. (having problems with this)
+- [ ] Show all errors for multi-view. (having problems with this)
 - [X] Create Event overload (CBR)
-- [] Investigate Youngest Son Ancestor impl.
-- [] profit?
+- [ ] Investigate Youngest Son Ancestor impl.
+- [ ] profit?
 
 ### Wallet 
-Description: simplify the wallet logic so that there is only one way to do everything
+Description: simplify the wallet interface so that there is only one way to do everything
 
 ### Hashgraph monitor updates
 Tasks: 
 - [X] Remove old events that are older than X round received. 
-- [] Document the hashgraph monitor widget. `docs/docs/gui-tools/hashgraph_viewer.md` 
-Assignee: yr
-### NNG test flow
-Description: Extend the CI-pipeline for github.com/tagion/nng to automatically build and execute tests
-
+- [ ] Document the hashgraph monitor widget. `docs/docs/gui-tools/hashgraph_viewer.md` 
 Assignee: yr
 
 ### Tagion API library
 - [X]: Create document API
 - [x]: create HiBON api
-- []: create wallet api
+- [ ]: create wallet api
 
 ## Backlog
+
+### Tauon was test build fails
+Linking of wasm tauon test file fails after 91fd2e09c560530a8ffd19292e82dedc1b5e2d08 or 4999f813071e64f8eda78e98e3b649958f5b52bf because of missing _start function. I've tried reverting both commits individually but it didn't change anything. Also they both seem unrelated.
 
 ### Distributed nodes test
 setup tests for multiple distributed nodes
@@ -50,9 +49,7 @@ Labels: [Tracing]
 
 ### Envelope communication
 Description: 
-
 Create functionalitiy in wallet to serialize to Envelope.
-
 Create functionality for shell to accept Envelope.
 
 ### Mirror Node proposal
@@ -73,12 +70,16 @@ Assignee: lr
 ### Types filtering in hirep 
 Description: hirep have --types arg, but it's not implemented yet.
 
-- [] - Implement --type filtering in hirep.
-- [] - Write bdd test for this feature
+- [ ] - Implement --type filtering in hirep.
+- [ ] - Write bdd test for this feature
 
 ---
 
 ## Done
+
+### NNG test flow
+Description: Extend the CI-pipeline for github.com/tagion/nng to automatically build and execute tests
+Assignee: yr
 
 
 ---
@@ -97,4 +98,3 @@ Labels (optional): [Label 1], [Label 2]
 Priority (optional): High/Medium/Low
 
 Due Date: YYYY-MM-DD
-
