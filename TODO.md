@@ -2,16 +2,6 @@
 
 ## In Progress
 
-### C-api fixes
-- [x] check error text is set
-- [ ] check rt_init exported functions on android
-- [x] add hibon override/delete key functions
-
-Assignee: lr
-
-## merge wavefront
-Assignee: lr, cbr
-
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
 
@@ -67,11 +57,15 @@ Test should also be made for NNG buffer overrun!
 description: Add a github ci script which activates the operational test once a day
 Assignee: lr
 
-### Types filtering in hirep 
+### Types filtering in hirep
 Description: hirep have --types arg, but it's not implemented yet.
 
 - [ ] - Implement --type filtering in hirep.
 - [ ] - Write bdd test for this feature
+
+## merge wavefront
+Description: Merge the changes to the hashgraph with changes to the wavefront and ensure that all tests pass.
+Assignee: lr, cbr
 
 ---
 
@@ -80,6 +74,16 @@ Description: hirep have --types arg, but it's not implemented yet.
 ### NNG test flow
 Description: Extend the CI-pipeline for github.com/tagion/nng to automatically build and execute tests
 Assignee: yr
+
+### Fix Mode1 test
+Description: Mode1 test doesn't work with other than 5 nodes
+Assignee: lr
+
+### C-api fixes
+- [x] check error text is set
+~- [ ] check rt_init exported functions on android~ This is insignifant and we decided not to spend time on this now. Currently just use start_rt
+- [x] add hibon override/delete key functions
+Assignee: lr
 
 
 ---
