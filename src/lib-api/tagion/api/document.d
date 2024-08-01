@@ -36,7 +36,8 @@ int tagion_document_element_by_key(
     const size_t buf_len, 
     const char* key, 
     const size_t key_len, 
-    Document.Element* element) {
+    Document.Element* element
+) {
     try {
         immutable _buf=cast(immutable)buf[0..buf_len]; 
         immutable _key=cast(immutable)key[0..key_len];

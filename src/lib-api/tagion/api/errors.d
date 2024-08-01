@@ -35,14 +35,14 @@ enum ErrorCode {
  */
 void tagion_error_text(char** msg, size_t* msg_len) {
     *msg_len = 0;
-    if (last_error_text) {
+    if (last_error_text.length) {
         *msg=cast(char*) &last_error_text[0];
         *msg_len=last_error_text.length;
     }
 }
 
 unittest {
-    char* msg_ptr = new char*;
+    char* msg_ptr = new char;
     size_t msg_len;
     last_error = new Exception("bad exception");
     tagion_error_text(&msg_ptr, &msg_len);
