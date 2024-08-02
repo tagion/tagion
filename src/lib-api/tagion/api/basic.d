@@ -13,10 +13,10 @@ enum MAGIC : uint {
 extern (C):
 
 /// Start druntime https://dlang.org/library/core/runtime/rt_init.html
-export void rt_init();
+export int rt_init();
 
 /// Stop druntime https://dlang.org/library/core/runtime/rt_term.html
-export void rt_term();
+export int rt_term();
 
 /**
   starts druntime
