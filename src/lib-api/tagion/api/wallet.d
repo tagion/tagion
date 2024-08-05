@@ -156,9 +156,6 @@ int tagion_decrypt_devicepin (
     securenet_t* out_securenet,
 ) {
     try {
-        if (out_securenet.magic_byte != MAGIC.SECURENET) {
-            return ErrorCode.error; // TODO: better message
-        }
         const _pincode = pin_ptr[0..pin_len];
         const _device_doc_buf = cast(immutable) devicepin_ptr[0..devicepin_len];
 
