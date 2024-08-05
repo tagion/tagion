@@ -219,7 +219,7 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
 }
 
 /** 
- * Get document from hibon
+ * Convert a hibon to a document
  * Params:
  *   instance = HiBONT instance
  *   buf = the returned buf ptr

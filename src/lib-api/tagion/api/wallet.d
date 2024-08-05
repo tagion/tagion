@@ -102,8 +102,6 @@ int tagion_generate_keypair (
             }
             _net.generateKeyPair(_passphrase, _salt,
                     (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
-
-
         } else {
             _net.generateKeyPair(_passphrase, _salt); 
         }
