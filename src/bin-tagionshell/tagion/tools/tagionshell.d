@@ -28,7 +28,9 @@ import tagion.crypto.Types : Pubkey;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;
-import tagion.hibon.HiBONRecord : isRecord;
+import tagion.hibon.HiBONRecord : isRecord, GetLabel;
+import tagion.hibon.HiBONJSON : NotSupported, typeMap;
+import tagion.hibon.HiBONBase : Type;
 import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex, Params;
 import tagion.dart.Recorder;
 import crud = tagion.dart.DARTcrud;
@@ -137,6 +139,33 @@ string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat k
     return join(res, "\r\n");
 }
 
+T parseNumeric(T)(string str) @safe pure {
+    static if ( is (T == float) ){
+        if(str.startsWith("0x")){
+            auto z = to!uint(str[2..$],16);
+            return *cast(float*)&z;
+        }else{
+            return to!float(str);
+        }
+    }
+    else static if ( is (T == double) ){
+        if(str.startsWith("0x")){
+            auto z = to!ulong(str[2..$],16);
+            return *cast(double*)&z;
+        }else{
+            return to!double(str);
+        }
+    }
+    else {
+        static if ( is (T == long) ){
+            if( str == "0x8000000000000000" ){
+                return long.max;
+            }    
+        }
+        return str.startsWith("0x") ? (str[2..$]).to!T(16) : (str).to!T(10);
+    }        
+}
+
 JSONValue json_dehibonize(JSONValue obj)
 {
     if(obj.type() == JSONType.object){
@@ -147,60 +176,43 @@ JSONValue json_dehibonize(JSONValue obj)
                 if(val.array.length == 2 && val.array[0].type() == JSONType.string){
                     auto t = (val.array[0]).str;
                     auto x = val.array[1];
-                    if(x.type() == JSONType.integer)
-                    {
-                        obj[key] = x.integer;
-                    }
-                    else if(x.type() == JSONType.uinteger)
-                    {
-                        obj[key] = x.uinteger;
-                    }
-                    else if (x.type() == JSONType.float_)
-                    {
-                        obj[key] = x.floating;    
-                    }
-                    else
-                    {
-                        if(x.type() != JSONType.string){
-                            writeit("##### JERR: ",val);
-                        }
-                        auto y = x.str;
-                        switch(t){
-                            case "i32":
-                                obj[key] = y.startsWith("0x") ? to!int(y[2..$],16) : to!int(y,10);
-                                break;
-                            case "u32":
-                                obj[key] = y.startsWith("0x") ? to!uint(y[2..$],16) : to!uint(y,10);
-                                break;
-                            case "i64":
-                                if(y == "0x8000000000000000"){
-                                    obj[key] = long.max;
-                                } else {    
-                                    obj[key] = y.startsWith("0x") ? to!long(y[2..$],16) : to!long(y,10);
-                                }    
-                                break;
-                            case "u64":
-                                obj[key] = y.startsWith("0x") ? to!ulong(y[2..$],16) : to!ulong(y,10);
-                                break;
-                            case "f32":
-                                if(y.startsWith("0x")){
-                                    auto z = to!uint(y[2..$],16);
-                                    obj[key] = *cast(float*)&z;
-                                }else{
-                                    obj[key] = to!float(y);
-                                }
-                                break;
-                            case "f64":
-                                if(y.startsWith("0x")){
-                                    auto z = to!ulong(y[2..$],16);
-                                    obj[key] = *cast(double*)&z;
-                                }else{
-                                    obj[key] = to!double(y);
-                                }
-                                break;
-                            default:
-                                break;
-                        }
+                    switch(x.type()){
+                        case JSONType.integer:
+                            obj[key] = x.integer;
+                            break;
+                        case JSONType.uinteger:
+                            obj[key] = x.uinteger;
+                            break;
+                        case JSONType.float_:
+                            obj[key] = x.floating;    
+                            break;
+                        case JSONType.string:
+                            auto y = x.str;
+                            switch(t){
+                                case typeMap[Type.INT32]:
+                                    obj[key] = parseNumeric!int(y);
+                                    break;
+                                case typeMap[Type.UINT32]:
+                                    obj[key] = parseNumeric!uint(y);
+                                    break;
+                                case typeMap[Type.INT64]:
+                                    obj[key] = parseNumeric!long(y);
+                                    break;
+                                case typeMap[Type.UINT64]:
+                                    obj[key] = parseNumeric!ulong(y);
+                                    break;
+                                case typeMap[Type.FLOAT32]:
+                                    obj[key] = parseNumeric!float(y);
+                                    break;
+                                case typeMap[Type.FLOAT64]:
+                                    obj[key] = parseNumeric!double(y);
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            writeit("Invalid type: ", t, x);
                     }
                 } else {
                     obj[key] = json_dehibonize(val);;
