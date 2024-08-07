@@ -1,11 +1,9 @@
 # Build image
-FROM ubuntu:24.10 as build
+FROM alpine:20240606 as build
 
 # Install deps
 WORKDIR /tmp/
-RUN apt-get update && apt-get install -y git autoconf build-essential libtool cmake wget
-RUN wget https://downloads.dlang.org/releases/2024/dmd_2.108.1-0_amd64.deb
-RUN dpkg -i dmd_2.108.1-0_amd64.deb
+RUN apk add --no-cache git autoconf clang libtool cmake dmd make automake
 
 # Build
 COPY . ./src
@@ -16,9 +14,12 @@ RUN strip /usr/local/bin/tagion
 
 
 # Final image
-FROM ubuntu:24.10
+FROM alpine:20240606
 WORKDIR /usr/local/
+RUN apk add libunwind
+RUN ln -s libunwind.so.8.1.0 /usr/lib/libunwind.so.1
 COPY --from=build /usr/local/bin bin/
+COPY ./scripts/create_wallets.sh /usr/local/bin/
 # COPY --from=build /usr/local/app app/
 
 WORKDIR /usr/local/app
