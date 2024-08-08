@@ -10,12 +10,19 @@ import core.sync.event;
 import tagion.basic.Version;
 import tagion.logger.Logger;
 
+version(CRuntime_Glibc)
+    version = supports_backtrace;
+else version(CRuntime_Bionic)
+    version = supports_backtrace;
+else version(Darwin)
+    version = supports_backtrace;
+
 //import core.internal.execinfo;
 // The declaration of the backtrace function in the execinfo.d is not declared @nogc
 // so they are declared here with @nogc because signal needs a @nogc function
-static if (ver.Posix && not_unittest) {
+version(supports_backtrace) {
     extern (C) {
-        nothrow @nogc {
+            nothrow @nogc {
             int backtrace(void** buffer, int size);
             char** backtrace_symbols(const(void*)* buffer, int size);
             void backtrace_symbols_fd(const(void*)* buffer, int size, int fd);
@@ -87,6 +94,8 @@ static if (ver.Posix && not_unittest) {
     import core.sys.posix.unistd : STDERR_FILENO;
 
     enum BACKTRACE_SIZE = 0x80; /// Just big enough to hold the call stack
+
+    version(supports_backtrace)
     static extern (C) void segment_fault(int sig, siginfo_t* ctx, void* ptr) @nogc nothrow {
         if (fault) {
             return;
@@ -123,6 +132,11 @@ static if (ver.Posix && not_unittest) {
                 cast(int) call_stack_file.length, call_stack_file.ptr);
         fprintf(stderr, "Use the callstack to list the backtrace\n");
         exit(-1);
+    }
+    else {
+        static extern (C) void segment_fault(int sig, siginfo_t* ctx, void* ptr) @nogc nothrow {
+            exit(-1);
+        }
     }
 }
 

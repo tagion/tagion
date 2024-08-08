@@ -1,6 +1,6 @@
 module tagion.script.wasm;
 
-version(ENABLE_WASM):
+version(ENABLE_WASMER):
 
 import tagion.wasmer.c;
 import tagion.hibon.Document;

@@ -18,6 +18,7 @@ import std.exception;
 import std.array;
 import std.utf;
 import std.mmfile;
+import std.uuid;
 
 private import nngd.mime;
 private import libnng;
@@ -2474,6 +2475,7 @@ struct WebClient {
 // WebSocket tools
 
 alias nng_ws_onconnect = void function ( WebSocket*, void* );
+alias nng_ws_onerror = void function ( WebSocket*, int, void* );
 alias nng_ws_onmessage = void function ( WebSocket*, ubyte[], void* );
 
 /**
@@ -2485,19 +2487,26 @@ alias nng_ws_onmessage = void function ( WebSocket*, ubyte[], void* );
  *      send(ubyte[])    
  */
 struct WebSocket {
+    string sid;
     WebSocketApp *app;
     void* context;
     nng_aio *rxaio;
     nng_aio *txaio;
     nng_aio *connaio;
+    nng_aio *keepaio;
     nng_stream *s;
     nng_ws_onconnect onconnect;
+    nng_ws_onconnect onclose;
+    nng_ws_onerror onerror;
     nng_ws_onmessage onmessage;
     nng_iov rxiov;
     nng_iov txiov;
+    nng_mtx *mtx;
     ubyte[] rxbuf;
     ubyte[] txbuf;
+    nng_duration keeptm, conntm;
     bool closed;
+    bool joined;
     bool ready;
     
     @disable this();
@@ -2506,17 +2515,25 @@ struct WebSocket {
         WebSocketApp *_app, 
         nng_stream *_s, 
         nng_ws_onconnect _onconnect, 
+        nng_ws_onconnect _onclose, 
+        nng_ws_onerror _onerror, 
         nng_ws_onmessage _onmessage, 
         void* _context,
-        size_t _bufsize = 4096 )
+        size_t _bufsize = 4096, 
+        nng_duration _keeptm = 100,
+        nng_duration _conntm = 100 )
     {
         int rc;
+        sid = randomUUID().toString();
         app = _app;
         s = _s;
         onconnect = _onconnect;
+        onclose = _onclose;
+        onerror = _onerror;
         onmessage = _onmessage;
         context = _context;
         closed = false;
+        joined = false;
         void delegate(void*) d1 = &(this.nng_ws_rxcb);
         rc = nng_aio_alloc(&rxaio, d1.funcptr, self());
         enforce(rc == 0, "Conn aio init0");
@@ -2526,6 +2543,11 @@ struct WebSocket {
         void delegate(void*) d3 = &(this.nng_ws_conncb);
         rc = nng_aio_alloc(&connaio, d3.funcptr, self());
         enforce(rc == 0, "Conn aio init2");
+        void delegate(void*) d4 = &(this.nng_ws_keepcb);
+        rc = nng_aio_alloc(&keepaio, d4.funcptr, self());
+        enforce(rc == 0, "Conn aio init3");
+        rc = nng_mtx_alloc(&mtx);
+        enforce(rc == 0, "Mtx init");
         rxbuf = new ubyte[](_bufsize);
         txbuf = new ubyte[](_bufsize);
         rxiov.iov_buf = rxbuf.ptr;
@@ -2536,13 +2558,45 @@ struct WebSocket {
         enforce(rc == 0, "Invalid rx iov");
         rc = nng_aio_set_iov(txaio, 1, &txiov);
         enforce(rc == 0, "Invalid tx iov");
+        keeptm = _keeptm;
+        conntm = _conntm;
         ready = true;
-        nng_sleep_aio(100, connaio);
+        nng_sleep_aio(conntm, connaio);
+        nng_sleep_aio(keeptm, keepaio);
         nng_stream_recv(s, rxaio);
     }
     
     void* self () {
         return cast(void*)&this;
+    }
+
+    void join(){
+        if(closed && !joined){
+            nng_mtx_lock(mtx);
+            if(closed && !joined){
+                if(onclose != null)
+                    onclose(cast(WebSocket*)self(), context);
+                    app.rmconn(cast(WebSocket*)self());
+                joined = true;    
+            }    
+            nng_mtx_unlock(mtx);
+        }
+    }
+    
+    void close(){
+        if(!closed){
+            nng_mtx_lock(mtx);
+            closed = true;
+            nng_mtx_unlock(mtx);
+            join();
+        }
+    }
+
+    void nng_ws_keepcb( void *ptr ){
+        if(closed){
+            join();
+        } else
+            nng_sleep_aio(keeptm, keepaio);
     }
 
     void nng_ws_conncb( void *ptr ){
@@ -2551,9 +2605,12 @@ struct WebSocket {
             return;
         rc = nng_aio_result(connaio);
         if(rc == 0){
-            onconnect(cast(WebSocket*)self(), context);
+            if(onconnect != null)
+                onconnect(cast(WebSocket*)self(), context);
         }else{
             closed = true;
+            if(onerror != null)
+                onerror(cast(WebSocket*)self(), rc, context);
             return;
         }
     }
@@ -2566,12 +2623,13 @@ struct WebSocket {
         if(rc == 0){
             auto sz = nng_aio_count(rxaio);
             if(sz > 0){
-                if(onmessage != null){
+                if(onmessage != null)
                     onmessage(cast(WebSocket*)self(), cast(ubyte[])(rxbuf[0..sz].dup), context);
-                }                
             }
         }else{
             closed = true;
+            if(onerror != null)
+                onerror(cast(WebSocket*)self(), rc, context);
             return;
         }
         rc = nng_aio_set_iov(rxaio, 1, &rxiov);
@@ -2588,6 +2646,8 @@ struct WebSocket {
             //TBD:
         }else{
             closed = true;
+            if(onerror != null)
+                onerror(cast(WebSocket*)self(), rc, context);
             return;
         }    
     }
@@ -2619,7 +2679,7 @@ struct WebSocket {
  *      start() - start server to listen
  *
  *  TODO:
- *      - add on_disconnect callback
+ *      - add on_close callback
  *      - add on_error callback
  */
 struct WebSocketApp {
@@ -2627,9 +2687,14 @@ struct WebSocketApp {
 
     this( 
         string iuri, 
-        nng_ws_onconnect ionconnect,
-        nng_ws_onmessage ionmessage,
-        void* icontext
+        nng_ws_onconnect    ionconnect,
+        nng_ws_onconnect    ionclose,
+        nng_ws_onerror      ionerror,
+        nng_ws_onmessage    ionmessage,
+        void* icontext = null,
+        size_t ibs = 8192,
+        nng_duration ikeeptm = 100,
+        nng_duration iconntm = 100
     )
     {
         int rc;
@@ -2638,8 +2703,13 @@ struct WebSocketApp {
         starts = 0;
         s = null;
         onconnect = ionconnect;
+        onclose = ionclose;
+        onerror = ionerror;
         onmessage = ionmessage;
         context = icontext;
+        bufsize = ibs;
+        keeptm = ikeeptm;
+        conntm = iconntm;
         rc = nng_mtx_alloc(&mtx);
         enforce(rc==0,"Listener init0");
         rc = nng_stream_listener_alloc(&sl, uri.toStringz());            
@@ -2651,7 +2721,6 @@ struct WebSocketApp {
         void delegate(void*) d = &(this.accb);
         rc = nng_aio_alloc( &accio, d.funcptr, self() );
         enforce(rc==0,"Accept aio init");
-        
     }
 
     void start()
@@ -2666,9 +2735,21 @@ struct WebSocketApp {
         starts++;
         nng_mtx_unlock(mtx);        
     }
+    
+    void stop()
+    {
+        foreach(c; conns)
+            c.close;
+        nng_stream_listener_close(sl);      
+        nng_aio_stop(accio);            
+    }
 
     void* self () {
         return cast(void*)&this;
+    }
+
+    void rmconn(WebSocket *c){
+        conns = conns.remove!(x => x == c);
     }
 
     private:
@@ -2676,11 +2757,15 @@ struct WebSocketApp {
         int starts;
         string uri;
         void* context;
+        size_t bufsize;
+        nng_duration keeptm, conntm;
         nng_stream_listener *sl;
         nng_aio *accio;
         nng_stream *s;
         nng_iov rxiov;
         nng_ws_onconnect onconnect;
+        nng_ws_onconnect onclose;
+        nng_ws_onerror   onerror;
         nng_ws_onmessage onmessage;
         WebSocket*[] conns;
 
@@ -2695,7 +2780,7 @@ struct WebSocketApp {
             }
             s = cast(nng_stream*)nng_aio_get_output(accio, 0);
             enforce(s != null, "Invalid stream pointer");
-            c = new WebSocket(cast(WebSocketApp*)self(), s, onconnect, onmessage, context, 8192);
+            c = new WebSocket(cast(WebSocketApp*)self(), s, onconnect, onclose, onerror, onmessage, context, bufsize, keeptm, conntm);
             enforce(c != null, "Invalid conn pointer");
             conns ~= c;
             nng_stream_listener_accept(sl, accio);

@@ -74,7 +74,7 @@ DVERSIONS+=OLD_ORDERING
 
 # Enable websocket pub in shell. 
 # Currently causes the program not to stop properly in bddtests.
-# DVERSIONS+=TAGIONSHELL_WEB_SOCKET
+DVERSIONS+=TAGIONSHELL_WEB_SOCKET
 
 # # This enables a redundant check in dart to see if there are overlaps between segments 
 # DVERSIONS+=DART_RECYCLER_INVARIANT
