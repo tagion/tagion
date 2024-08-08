@@ -38,9 +38,9 @@ struct EventView {
     @label("$prevwitness") @optional Buffer witness_seen;
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
-//    @label("$type") @optional Event.Witness.DecisionType type; /// Famous yes votes    
-    @label("$weak") @optional bool weak;    
-//    @label("$no") @optional uint no_votes; /// Famous no votes    
+    //    @label("$type") @optional Event.Witness.DecisionType type; /// Famous yes votes    
+    @label("$weak") @optional bool weak;
+    //    @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
     @optional @(filter.Initialized) bool top;
     bool father_less;
@@ -80,10 +80,10 @@ struct EventView {
                yes_votes = witness.yes_votes;
                //famous = isMajority(yes_votes, event.round.events.length); 
                voted = witness.voted_yes_mask.bytes; 
-               decided = witness.decided;
                 witness_seen = witness.previous_witness_seen_mask.bytes;
                 
-                weak = event.round.valid_witness[event.node_id];
+                decided = event.round.valid_witness[event.node_id];
+                weak = witness.weak;
             }
         }
     });
