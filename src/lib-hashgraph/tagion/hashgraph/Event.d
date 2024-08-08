@@ -7,6 +7,7 @@ import std.datetime; // Date, DateTime
 import std.algorithm.iteration : cache, each, filter, fold, joiner, map, reduce;
 import std.algorithm.searching : all, any, canFind, count, until;
 import std.algorithm.sorting : sort;
+import std.algorithm.comparison : min, max;
 import std.array : array;
 import std.conv;
 import std.format;
@@ -19,7 +20,7 @@ import tagion.basic.Types : Buffer;
 import tagion.basic.basic : isinit;
 import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Round;
 import tagion.monitor.Monitor : EventMonitorCallbacks;
 import tagion.hibon.Document : Document;
@@ -178,6 +179,13 @@ class Event {
      */
     @safe
     class Witness {
+        enum DecisionType {
+            undecided,
+            Weak,
+            No,
+            Yes,
+        }
+
         protected static uint _count;
         @nogc static uint count() nothrow {
             return _count;
@@ -190,6 +198,13 @@ class Event {
 
         }
         const BitMask previous_witness_seen_mask;
+        BitMask seen_voting_mask;
+        bool __seen_decided(size_t voters) const pure nothrow {
+            const seen_votes = seen_voting_mask.count;
+            const N = _round.node_size;
+            return ((voters == 0) || isMajority(min(seen_votes, yes_votes), N) ||
+                    seen_votes >= voters) && !isUndecided(seen_votes, N);
+        }
 
         @nogc final const pure nothrow {
             const(BitMask) previous_strongly_seen_mask() {
@@ -208,11 +223,11 @@ class Event {
                 return _voted_yes_mask;
             }
 
-            bool votedYes() {
-                return isMajority(yes_votes, _round.events.length);
+            bool weak() {
+                return _mother && _round.previous && (_round.previous.events[node_id] is null);
             }
 
-            bool decided() {
+            version (none) bool decided() {
                 const voted = _voted_yes_mask.count;
                 const N = _round.events.length;
 
@@ -229,33 +244,10 @@ class Event {
                 return false;
             }
         }
-        alias isFamous = votedYes;
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
             if (!_voted_yes_mask[voting_node_id]) {
                 _voted_yes_mask[voting_node_id] = true;
-                if (_round.previous) {
-                    auto _previous_witness = _round.previous[]
-                        .map!(r => r._events[node_id])
-                        .filter!(e => e !is null)
-                        .map!(e => e._witness);
-                    if (!_previous_witness.empty) {
-                        auto w = _previous_witness.front;
-                        w.voteYes(voting_node_id);
-                        debug Event.view(w.outer);
-                        if (_round.previous.previous) {
-                            const missing_votes = w.previous_witness_seen_mask - w.voted_yes_mask;
-                            __write("Missing votes round %d missing_votes=%d", _round.number, missing_votes.count);
-                            missing_votes[]
-                                .map!(vote_on_node_id => _round.previous.previous._events[vote_on_node_id])
-                                .filter!(e => e !is null)
-                                .map!(e => e._witness)
-                                .each!(w => w.voteYes(voting_node_id));
-                            //.each!((ref w) => w.voteYes(voting_node_id));
-                        }
-                    }
-
-                }
             }
         }
 
@@ -271,11 +263,11 @@ class Event {
             if (father_witness_is_leading) {
                 _previous_strongly_seen_mask = _mother._intermediate_seen_mask |
 
-                    _father._round._events[_father.node_id]._witness
-                        ._previous_strongly_seen_mask;
+                    _father.round.events[_father.node_id].witness
+                        .previous_strongly_seen_mask;
 
                 previous_witness_seen_mask = _witness_seen_mask |
-                    _father._round._events[_father.node_id]._witness
+                    _father.round.events[_father.node_id].witness
                         .previous_witness_seen_mask;
             }
             else {
@@ -290,7 +282,7 @@ class Event {
             _witness_seen_mask[node_id] = true;
         }
 
-        bool hasVoted() const pure nothrow {
+        bool hasVoted() const pure nothrow @nogc {
             return _round !is null;
         }
 
@@ -299,17 +291,19 @@ class Event {
         do {
             hashgraph._rounds.set_round(this.outer);
             /// Counting yes/no votes from this witness to witness in the previous round
-            if (round.previous) {
-                auto previous_witness_events = _round.previous._events;
+            if (round.previous && (round.previous.events[node_id]!is null) && !round.previous.events[node_id].witness
+                .weak) {
+                auto previous_witness_events = _round.previous.events;
                 foreach (n, previous_witness_event; previous_witness_events) {
                     //auto previous_witness_event = previous_witness_events[n];
                     if (previous_witness_event) {
                         auto vote_for_witness = previous_witness_event._witness;
                         const seen_strongly = _previous_strongly_seen_mask[n];
+                        //const seen_strongly = previous_witness_seen_mask[n];
                         if (seen_strongly) {
                             vote_for_witness.voteYes(node_id);
+                            view(previous_witness_event);
                         }
-                        view(previous_witness_event);
                     }
                 }
             }
@@ -324,7 +318,7 @@ class Event {
     bool father_witness_is_leading() const pure nothrow {
         return _father &&
             higher(_father._round.number, _mother._round.number) &&
-            _father._round._events[_father.node_id];
+            _father.round.events[_father.node_id];
     }
 
     bool calc_strongly_seen(HashGraph hashgraph) const pure nothrow
@@ -335,8 +329,8 @@ class Event {
         }
         const majority_intermediate_seen = isMajority(_intermediate_seen_mask, hashgraph);
         if (majority_intermediate_seen) {
-            const vote_strongly_seen = _mother._round
-                ._events
+            const vote_strongly_seen = _mother.round
+                .events
                 .filter!(e => e !is null)
                 .map!(e => e._witness)
                 .map!(w => w._intermediate_event_mask[node_id])
@@ -356,8 +350,7 @@ class Event {
 
     static void view(R)(R range) nothrow if (isInputRange!R && is(ElementType!R : const(Event))) {
         if (callbacks) {
-            range
-                .each!(e => view(e));
+            range.each!(e => view(e));
         }
     }
 
@@ -373,7 +366,7 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    final void witness_event() nothrow
+    package final void witness_event() nothrow
     in (!_witness, "Witness has already been set")
     out {
         assert(_witness, "Witness should be set");
@@ -419,7 +412,7 @@ class Event {
 
         _mother = hashgraph.register(event_package.event_body.mother);
         if (!_mother) {
-            if (!isEva && !hashgraph.rounds.isEventInLastDecidedRound(this)) {
+            if (!isEva &&  !hashgraph.rounds.isEventInLastDecidedRound(this)) {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
             return;
@@ -449,15 +442,15 @@ class Event {
                 _intermediate_seen_mask[node_id] = true;
                 auto max_round = maxRound;
                 new_witness_seen[]
-                    .filter!((n) => max_round._events[n]!is null)
-                    .map!((n) => max_round._events[n]._witness)
+                    .filter!((n) => max_round.events[n]!is null)
+                    .map!((n) => max_round.events[n]._witness)
                     .filter!((witness) => witness._intermediate_event_mask[node_id])
                     .each!((witness) => witness._intermediate_event_mask[node_id] = true);
             }
             const strongly_seen = calc_strongly_seen(hashgraph);
             if (strongly_seen) {
-                auto witness = new Witness;
-                witness.vote(hashgraph);
+                new Witness;
+                _witness.vote(hashgraph);
                 hashgraph._rounds.check_decide_round;
                 return;
             }
@@ -482,9 +475,7 @@ class Event {
      *   hashgraph = event owner
      */
     final package void disconnect(HashGraph hashgraph) nothrow @trusted
-    in {
-        assert(!_mother, "Event with a mother can not be disconnected");
-    }
+    in (!_mother, "Event with a mother can not be disconnected")
     do {
         hashgraph.eliminate(fingerprint);
         if (_witness) {
@@ -528,16 +519,14 @@ class Event {
             _round_received = r;
         }
 
-        package Witness witness() {
+        package Witness witness()
+        in (_witness, "Event is not a witness")
+        do {
             return _witness;
         }
     }
 
     @nogc pure nothrow const final {
-        version (none) bool isFamous() {
-            return isWitness && round.famous_mask[node_id];
-        }
-
         /**
      * The received round for this event
      * Returns: received round
@@ -684,12 +673,13 @@ class Event {
         /// An Eva is is also defined as han father less event
         /// This also means that the event has not valid order and must not be included in the epoch order.
         bool isFatherLess() {
-            return isEva || !isGrounded && (event_package.event_body.father is null) && _mother
-                .isFatherLess;
+            return isEva || !isGrounded &&
+                (event_package.event_body.father is null) && _mother.isFatherLess;
         }
 
         bool isGrounded() {
-            return (_mother is null) && (event_package.event_body.mother !is null) ||
+            return (_mother is null) &&
+                (event_package.event_body.mother !is null) ||
                 (_father is null) && (event_package.event_body.father !is null);
         }
 

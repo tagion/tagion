@@ -32,13 +32,14 @@ struct EventView {
     @label("$R") int round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
     @label("$i") @optional @(filter.Initialized) bool intermediate;
-    @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$seen") @optional Buffer seen; /// Event seeing witness  
     @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
     @label("$intermediate") @optional Buffer intermediate_seen;
     @label("$prevwitness") @optional Buffer witness_seen;
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
+    //    @label("$type") @optional Event.Witness.DecisionType type; /// Famous yes votes    
+    @label("$weak") @optional bool weak;
     //    @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
     @optional @(filter.Initialized) bool top;
@@ -75,13 +76,14 @@ struct EventView {
             intermediate_seen=event._intermediate_seen_mask.bytes;
             if (event.isWitness) {
                auto witness=event.witness;
-               famous=witness.isFamous;
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
                yes_votes = witness.yes_votes;
-               famous = isMajority(yes_votes, event.round.events.length); 
+               //famous = isMajority(yes_votes, event.round.events.length); 
                voted = witness.voted_yes_mask.bytes; 
-               decided = witness.decided;
                 witness_seen = witness.previous_witness_seen_mask.bytes;
+                
+                decided = event.round.valid_witness[event.node_id];
+                weak = witness.weak;
             }
         }
     });

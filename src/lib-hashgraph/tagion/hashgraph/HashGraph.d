@@ -36,23 +36,24 @@ class HashGraph {
     enum default_scrap_depth = 10;
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
- 
+
     protected alias check = Check!HashGraphConsensusException;
     import tagion.logger.Statistic;
 
-    immutable uint node_size; /// Number of active nodes in the graph
+    immutable size_t node_size; /// Number of active nodes in the graph
     immutable(string) name; // Only used for debugging
     struct HashGraphStatistics {
-    Statistic!ulong epoch_events;
-    Statistic!uint wavefront_event_package;
-    Statistic!uint wavefront_event_package_used;
-    Statistic!uint live_events;
-    Statistic!uint live_witness;
-    Statistic!(uint, Yes.histogram) feature_famous_rounds; 
+        Statistic!ulong epoch_events;
+        Statistic!uint wavefront_event_package;
+        Statistic!uint wavefront_event_package_used;
+        Statistic!uint live_events;
+        Statistic!uint live_witness;
+        Statistic!(uint, Yes.histogram) future_majority_rounds;
         mixin HiBONRecord;
     }
+
     HashGraphStatistics statistics;
-    //Statistic!long epoch_delay_statistic;
+    //Statistic!long statistics.epoch_delay;
     BitMask _excluded_nodes_mask;
     private {
         Node[Pubkey] _nodes; // List of participating _nodes T
@@ -106,12 +107,12 @@ class HashGraph {
     in (node_size >= 4)
     do {
         hirpc = HiRPC(net);
-        this.node_size = cast(uint)node_size;
+        this.node_size = node_size;
         this._owner_node = getNode(hirpc.net.pubkey);
         this.refinement = refinement;
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
-        this.name = (name)?name:format("%(%02x%)",hirpc.net.pubkey[0..8]);
+        this.name = (name) ? name : format("%(%02x%)", hirpc.net.pubkey[0 .. 8]);
         _rounds = Round.Rounder(this);
     }
 
@@ -314,7 +315,7 @@ class HashGraph {
     }
 
     class Register {
-        EventPackageCache event_package_cache;
+        private EventPackageCache event_package_cache;
 
         this(const Wavefront received_wave) pure nothrow {
             uint count_events;
@@ -667,7 +668,7 @@ class HashGraph {
         return hirpc.error(received.getId, "wavefront_error");
     }
 
-    void front_seat(Event event)
+    void front_seat(Event event) pure
     in {
         assert(event, "event must be defined");
     }
@@ -692,7 +693,7 @@ class HashGraph {
         /++
          Register first event
          +/
-        private void front_seat(Event event)
+        private void front_seat(Event event) pure
         in {
             assert(event.channel == channel, "Wrong channel");
         }
@@ -701,12 +702,11 @@ class HashGraph {
                 _event = event;
             }
             else if (higher(event.altitude, _event.altitude)) {
-                // Event.check(event.mother !is null, ConsensusFailCode.EVENT_MOTHER_LESS);
                 _event = event;
             }
         }
 
-        private Event _event; /// This is the last event in this Node
+        protected Event _event; /// This is the last event in this Node
 
         @nogc
         const(Event) event() const pure nothrow {
@@ -753,27 +753,29 @@ class HashGraph {
 
     alias NodeRange = typeof((cast(const) _nodes).byValue);
 
-    @nogc final const pure nothrow {
-        NodeRange opSlice() {
-            return _nodes.byValue;
-        }
+    @nogc
+    NodeRange opSlice() const pure nothrow {
+        return _nodes.byValue;
+    }
 
-        size_t active_nodes() {
-            return _nodes.length;
-        }
+    @nogc
+    size_t active_nodes() const pure nothrow {
+        return _nodes.length;
+    }
 
-        const(SecureNet) net() {
-            return hirpc.net;
-        }
-
-        bool isMajority(const size_t voting) {
-            return .isMajority(voting, node_size);
-        }
+    @nogc
+    const(SecureNet) net() const pure nothrow {
+        return hirpc.net;
     }
 
     package Node getNode(Pubkey channel) pure {
         const next_id = next_node_id;
         return _nodes.require(channel, new Node(channel, next_id));
+    }
+
+    @nogc
+    bool isMajority(const size_t voting) const pure nothrow {
+        return .isMajority(voting, node_size);
     }
 
     private void remove_node(Node n) nothrow
@@ -823,6 +825,53 @@ class HashGraph {
         _nodes.byValue
             .map!(a => a.node_id)
             .each!((n) { used_nodes[n] = true; });
-        return cast(uint)(~used_nodes)[].front;
+        return cast(uint)((~used_nodes)[].front);
     }
+
+    //bool disable_scrapping;
+
+    enum max_package_size = 0x1000;
+    enum round_clean_limit = 10;
+
+    /++
+     Dumps all events in the Hashgraph to a file
+     +/
+    void fwrite(string filename, Pubkey[string] node_labels = null) {
+        import tagion.hashgraphview.EventView;
+        import tagion.hibon.HiBONFile : fwrite;
+
+        File graphfile = File(filename, "w");
+
+        uint[Pubkey] node_id_relocation;
+        if (node_labels.length) {
+            // assert(node_labels.length is _nodes.length);
+            auto names = node_labels.keys;
+            names.sort;
+            foreach (i, name; names) {
+                node_id_relocation[node_labels[name]] = cast(uint)i;
+            }
+
+        }
+
+        EventView[size_t] events;
+        /* auto events = new HiBON; */
+        (() @trusted {
+            foreach (n; _nodes) {
+                const node_id = (node_id_relocation.length is 0) ? uint.max : node_id_relocation[n.channel];
+                n[]
+                    .filter!((e) => !e.isGrounded)
+                    .each!((e) => events[e.id] = EventView(e, node_id));
+            }
+        })();
+
+        graphfile.fwrite(NodeAmount(node_size));
+        foreach(e; events) {
+            graphfile.fwrite(e);
+        }
+        /* auto h = new HiBON; */
+        /* h[Params.size] = node_size; */
+        /* h[Params.events] = events; */
+        /* graphfile.fwrite(h); */
+    }
+
 }

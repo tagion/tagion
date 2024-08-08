@@ -49,10 +49,11 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "N", "Number of nodes in the test", &opts.number_of_nodes,
-                "R|rounds", "Number of rounds", &opts.max_rounds,
+                "R|rounds", "Number of rounds", &opts.max_epochs,
                 "seed", "Random seed value", &opts.seed,
                 "P|path", "File path for the generated files", &opts.path,
                 "d", "Disable graph files", &opts.disable_graphfile,
+                "k", "Continues on error with stoppig", &opts.continue_on_error,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -93,7 +94,7 @@ int _main(string[] args) {
         import tagion.utils.pretend_safe_concurrency : register, thisTid;
 
         register("run_fiber_epoch", thisTid);
-
+        NewTestRefinement.continue_on_error=opts.continue_on_error;
         auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
         hashgraph_fiber_feature.RunPassiveFastHashgraph(opts, weights);
         hashgraph_fiber_feature.run;
@@ -120,7 +121,7 @@ class RunPassiveFastHashgraph {
     this(const HashGraphOptions opts, int[] weights) {
         this.opts = opts;
         //this.number_of_nodes = opts.number_of_nodes;
-        this.node_names = opts.number_of_nodes.iota.map!(i => format("Node_%s", i)).array;
+        this.node_names = opts.number_of_nodes.iota.map!(i => format("Node_%02d", i)).array;
         //this.MAX_CALLS = MAX_CALLS;
         this.weights = weights;
 
@@ -156,7 +157,7 @@ class RunPassiveFastHashgraph {
                         cast(Pubkey[]) network.channels);
             }
         }
-        while (NewTestRefinement.last_epoch < opts.max_rounds) {
+        while (NewTestRefinement.last_epoch < opts.max_epochs) {
             size_t channel_number;
             if (NewTestRefinement.epochs.length > 0) {
                 channel_number = rnd.dice(weights);
