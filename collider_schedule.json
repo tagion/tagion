@@ -75,7 +75,7 @@
     "hashgraph_test": {
       "args": ["5", "5000"],
       "envs": {},
-      "stages": ["hashgraph", "acceptance"],
+      "stages": ["hashgraph", "hashgraph_sync"],
       "timeout": 0.0
     },
     "hashgraph_contributors": {
@@ -158,7 +158,11 @@
     },
     "spam_double_spend": {
       "args": [],
-      "envs": {},
+      "envs": {
+            "WAIT_UNTIL_ALIVE" : "10",
+            "EPOCH_TIMEOUT" : "15", 
+            "CONTRACT_TIMEOUT" : "100" 
+      },
       "stages": ["acceptance", "spam_double_spend"],
       "timeout": 0.0
     },
@@ -170,7 +174,9 @@
     },
     "genesis_test": {
       "args": [],
-      "envs": {},
+      "envs": {
+            "EPOCH_TIMEOUT" : "100" 
+      },
       "stages": ["acceptance", "genesis"],
       "timeout": 0.0
     },
@@ -219,9 +225,10 @@
     },
     "run_fiber_epoch": {
       "args": [
-        "10000",
-        "100,5",
-        "7"
+        "--rounds=300",
+        "-N7",
+        "100,2,25",
+        "-k"
       ],
       "envs": {},
       "stages": [

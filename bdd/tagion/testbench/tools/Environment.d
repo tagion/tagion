@@ -128,12 +128,25 @@ struct Environment {
 
         assert(0, format("variable is not legal %s", test_stage));
     }
+
+    template opDispatch(string env) {
+        T opDispatch(T=string)() {
+            static T result;
+            static bool set;
+            if (!set) {
+                result=environment[env].to!T;
+                set=true;
+            }
+            return result;
+        }
+    }
 }
 
-immutable Environment env;
+static Environment env;
 
 import std.stdio;
 
 shared static this() {
     reporter = new Reporter;
 }
+
