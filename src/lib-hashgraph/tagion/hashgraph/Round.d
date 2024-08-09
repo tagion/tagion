@@ -144,27 +144,27 @@ class Round {
                     );
                 }
             }
-            version (none)
-                scope (exit) {
-                    _valid_witness &= included_mask;
-                }
             if (list_majority_rounds.empty) {
                 return Completed.none;
             }
             if (number_of_future_rounds < 4) {
                 return ret = Completed.too_few;
             }
+            version(none)
+                scope (exit) {
+                    _valid_witness &= included_mask;
+                }
 
             __write("%s Round %d    valid  %-(%2d %) ".replace("#", node_size.to!string),
                     _name,
                     number,
                     _events.map!(e => (e is null) ? -1 : cast(int) e.witness.seen_voting_mask.count));
 
-            auto list_majority_rounds_1 = list_majority_rounds;
-            list_majority_rounds_1.popFront;
+    //            auto list_majority_rounds_1 = list_majority_rounds;
+      //      list_majority_rounds_1.popFront;
             uint[] gather_voters;
             gather_voters.length = node_size;
-            foreach (slide_r; list_majority_rounds_1.slide(2)) {
+            foreach (slide_r; list_majority_rounds.drop(1).slide(2)) {
                 Round gather_round = slide_r.front;
                 Round r = slide_r.drop(1).front;
                 scope (exit) {
@@ -173,6 +173,7 @@ class Round {
                 gather_round._events
                     .filter!(e => e !is null)
                     .map!(e => e.witness)
+                    .filter!(w => !w.weak)
                     .map!(w => w.previous_strongly_seen_mask[])
                     .joiner
                     .each!(n => gather_voters[n]++);
@@ -206,6 +207,7 @@ class Round {
                 if (_all) {
                     _valid_witness &= BitMask(_events
                             .filter!(e => (e !is null))
+                            .filter!(e => isMajority(e.witness.yes_votes, node_size))
                             .filter!(e => isMajority(e.witness.seen_voting_mask, node_size))
                             .map!(e => e.node_id));
                     __write("%s Round %d     yes   %(%2d %) pattern=%(%02x %)".replace("#", node_size

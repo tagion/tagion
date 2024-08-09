@@ -75,7 +75,7 @@
     "hashgraph_test": {
       "args": ["5", "5000"],
       "envs": {},
-      "stages": ["hashgraph", "acceptance"],
+      "stages": ["hashgraph", "hashgraph_sync"],
       "timeout": 0.0
     },
     "hashgraph_contributors": {
@@ -222,9 +222,9 @@
     },
     "run_fiber_epoch": {
       "args": [
-        "--rounds=50",
+        "--rounds=300",
         "-N7",
-        "100,2,7,10",
+        "100,2,25",
         "-k"
       ],
       "envs": {},

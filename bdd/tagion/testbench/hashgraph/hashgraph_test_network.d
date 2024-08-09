@@ -130,7 +130,7 @@ static bool continue_on_error;
 
 }
 
-alias TestNetwork = TestNetworkT!TestRefinement;
+alias TestNetwork = TestNetworkT!NewTestRefinement;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
