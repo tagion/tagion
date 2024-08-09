@@ -19,8 +19,8 @@ nodes=5
 wallets=5
 bills=50
 network_mode=0
-data_dir="$(readlink -m ./)"
-keyfile=$(readlink -m "keys")
+data_dir="$(readlink -f ./)"
+keyfile="keys"
 
 # Process command-line options
 while getopts "n:w:b:k:t:h:u:q:m:" opt
@@ -29,18 +29,15 @@ do
         h)  usage ;;
         n)  nodes=$OPTARG ;;
         w)  wallets=$OPTARG ;;
-        b)  bdir=$(readlink -m "$OPTARG") ;;
-        k)  data_dir=$(readlink -m "$OPTARG") ;;
+        b)  bdir=$(readlink -f "$OPTARG") ;;
+        k)  data_dir=$(readlink -f "$OPTARG") ;;
         t)  echo "option '-t' was removed only '-k' is supported"; exit 1 ;;
-        u)  keyfile=$(readlink -m "$OPTARG") ;;
+        u)  keyfile=$(readlink -f "$OPTARG") ;;
         q)  bills=$OPTARG ;;
         m)  network_mode=$OPTARG ;;
         *)  usage ;;
     esac
 done
-
-ndir=$(readlink -m "${data_dir}/mode$network_mode/")
-wdir=$(readlink -m "${data_dir}/mode$network_mode/")
 
 if [ "$network_mode" -lt 0 ] || [ "$network_mode" -gt 1 ]; then
   echo "Unsupported network mode $network_mode"
@@ -51,22 +48,23 @@ fi
 if [ -z "$bdir" ] && [ -x "$(which tagion)" ]; then
     bdir="$(dirname "$(which tagion)")"
 elif [ -f "$bdir/tagion" ]; then
-    true
+    # Finalize binary directory path
+    bdir=$(readlink -f "$bdir")
 else
-    echo "Tagon executable not found either add them to your PATH or set the -b option" 1>&2
+    echo "Tagion executable not found either add them to your PATH or set the binary path with -b flag" 1>&2
     usage
 fi
 
-# Finalize binary directory path
-bdir=$(readlink -m "$bdir")
 
 # Create network and wallets directories, handle existing folders
-mkdir -p "$ndir" || echo "folder already exists $ndir"
-mkdir -p "$wdir" || echo "folder already exists $wdir"
+mkdir -p "${data_dir}/mode$network_mode/" || echo "folder already exists $ndir"
+ndir=$(readlink -f "${data_dir}/mode$network_mode/")
+wdir=$(readlink -f "${data_dir}/mode$network_mode/")
 
 # Remove existing key file, if any, and create a new one
 rm "$keyfile" || echo "No key file to delete"
 touch "$keyfile"
+keyfile=$(realpath "$keyfile")
 
 # Variable to accumulate wallet information
 all_infos=""
@@ -75,11 +73,9 @@ all_infos=""
 for ((i = 0; i < wallets; i++)); 
 do
   # Set up wallet directory and configuration
-  # wallet_dir=$(readlink -m "${wdir}/wallet$i")
-  wallet_dir=$(readlink -m "${wdir}/node$i/wallet")
+  wallet_dir="${wdir}/node$i/wallet"
   mkdir -p "$wallet_dir"
-  # wallet_config=$(readlink -m "${wdir}/wallet$i.json")
-  wallet_config=$(readlink -m "${wdir}/node$i/wallet.json")
+  wallet_config="${wdir}/node$i/wallet.json"
   password="password$i"
   pincode=$(printf "%04d" $i)
 
@@ -108,8 +104,8 @@ do
   # Create bills for the wallet
   for (( b=1; b <= bills; b++ )); 
   do
-    bill_name=$(readlink -m "$wallet_dir/bill_$b.hibon")
-    "$bdir/geldbeutel" "$wallet_config" -x "$pincode" --amount 10000 -o "$bill_name" 
+    bill_name="$wallet_dir/bill_$b.hibon"
+    "$bdir/geldbeutel" "$wallet_config" -x "$pincode" --amount 10000 -o "$bill_name"
     echo "Created bill $bill_name"
     echo "$bdir/geldbeutel $wallet_config -x $pincode --force $bill_name"
     "$bdir/geldbeutel" "$wallet_config" -x "$pincode" --force "$bill_name"
