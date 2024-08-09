@@ -25,6 +25,7 @@ import tagion.tools.wallet.WalletInterface;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
 import tagion.wallet.request;
 import tagion.wallet.SecureWallet : SecureWallet;
+import tagion.wave.mode0;
 
 import core.thread;
 import core.time;
@@ -34,8 +35,6 @@ import std.range;
 import std.stdio;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
-enum CONTRACT_TIMEOUT = 40;
-enum EPOCH_TIMEOUT = 15;
 
 enum feature = Feature(
             "Spam the network with the same contracts until we know it does not go through.",
@@ -94,7 +93,7 @@ class SpamOneNodeUntil10EpochsHaveOccurred {
 
         long epoch_number;
 
-        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
+        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
         check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
         epoch_number = FinishedEpoch(epoch_before[1]).epoch;
 
@@ -104,13 +103,13 @@ class SpamOneNodeUntil10EpochsHaveOccurred {
             sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
-            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
+            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
             check(current_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
             current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
             writefln("epoch_number %s, CURRENT EPOCH %s", epoch_number, current_epoch_number);
         }
 
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
+        (() @trusted => Thread.sleep(env.CONTRACT_TIMEOUT!uint.seconds))();
         return result_ok;
     }
 
@@ -179,7 +178,7 @@ struct SpamWorker {
 
         while (!thisActor.stop && epoch_number is long.init) {
             writefln("WAITING FOR RECEIVE");
-            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
+            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
             writefln("AFTER RECEIVE %s", epoch_before);
             if (epoch_before[0].task_name == opts.task_names.epoch_creator) {
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
@@ -191,7 +190,7 @@ struct SpamWorker {
             sendHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
-            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
+            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
             if (current_epoch[0].task_name != opts.task_names.epoch_creator) {
                 current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
                 writefln("epoch_number %s, CURRENT EPOCH %s", epoch_number, current_epoch_number);
@@ -247,11 +246,11 @@ class SpamMultipleNodesUntil10EpochsHaveOccurred {
                     immutable) signed_contract);
         }
         writefln("waiting for alive");
-        waitforChildren(Ctrl.ALIVE, 5.seconds);
+        waitforChildren(Ctrl.ALIVE, env.WAIT_UNTIL_ALIVE!uint.seconds);
         writefln("waiting for end");
         waitforChildren(Ctrl.END);
 
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
+        (() @trusted => Thread.sleep(env.CONTRACT_TIMEOUT!uint.seconds))();
         return result_ok;
     }
 
