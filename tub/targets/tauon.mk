@@ -69,7 +69,7 @@ files-tauon:
 env-files: files-tauon
 
 
-tauon-run: tauon-test
+tauon-run: wasi tauon-test
 	$(PRECMD)
 	$(foreach wasm,$(TAUON_BINS), wasmer $(wasm);)
 
