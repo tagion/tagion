@@ -245,6 +245,14 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     return result;
 }
 
+// Serialization invalid for some objects when compilling on alpine
+version (CRuntime_Musl)
+    version = OLD_HIBON_SERIALIZATION;
+    /// version flag added because new serialization causes crash on snapdragon gen 8 1
+    /// Do not remove
+else version (Android)
+    version = OLD_HIBON_SERIALIZATION;
+
 mixin template Serialize() {
     import std.algorithm;
     import std.range;
@@ -309,9 +317,7 @@ mixin template Serialize() {
             }
         }
 
-        /// version flag added because new serialization causes crash on snapdragon gen 8 1
-        /// Do not remove
-        version (Android) {
+        version (OLD_HIBON_SERIALIZATION) {
             Buffer serialize() const pure @safe {
                 return this.toHiBON.serialize;
             }
