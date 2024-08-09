@@ -76,8 +76,8 @@ tauon-run: tauon-test
 help-tauon:
 	$(PRECMD)
 	$(call log.header, $@ :: help)
-	$(call log.help, make tauon-test, Compile the tauon tests as .wasm)
-	$(call log.help, make clean-tauon, Cleans the tauon library)
+	$(call log.help, "make tauon-test", "Compile the tauon tests as .wasm")
+	$(call log.help, "make clean-tauon", "Cleans the tauon library")
 	$(call log.close)
 
 FUNC_EXIT_SCRIPT="$(DSRC)/lib-wasm/scripts/func_exit.pl"
