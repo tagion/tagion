@@ -1,0 +1,4 @@
+tools/
+build/
+logs/
+src/fork-wasmer/

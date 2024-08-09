@@ -39,13 +39,13 @@ void test_document() {
 
     Document.Element elm_i32, elm_i64;
     {
-        const rt=tagion_document(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
+        const rt=tagion_document_element_by_key(&doc.data[0], doc.data.length, &key_i32[0], key_i32.length, &elm_i32);
         writefln("rt=%s", rt);
         writefln("elm.type %s", elm_i32.type);
         writefln("elm.data %(%02x %)", elm_i32.data[0..8]);
     }
     {
-        const rt=tagion_document(&doc.data[0], doc.data.length, &key_i64[0], key_i64.length, &elm_i64);
+        const rt=tagion_document_element_by_key(&doc.data[0], doc.data.length, &key_i64[0], key_i64.length, &elm_i64);
         writefln("rt=%s", rt);
         writefln("elm.type %s", elm_i64.type);
         writefln("elm.data %(%02x %)", elm_i64.data);

@@ -191,8 +191,10 @@ class RunPassiveFastNetwork {
     import tagion.testbench.actor.util : receiveOnlyTimeout;
     import tagion.logger.LogRecords : LogInfo;
 
+
     enum EPOCH_TIMEOUT_SECONDS = 60;
     uint number_of_nodes;
+    long last_epoch;
     long end_epoch;
     this(uint number_of_nodes, long end_epoch) {
         this.number_of_nodes = number_of_nodes;
@@ -218,7 +220,7 @@ class RunPassiveFastNetwork {
             check(finished_epoch_log[1].isRecord!(FinishedEpoch), "Did not receive finished epoch");
             FinishedEpoch epoch_received = FinishedEpoch(finished_epoch_log[1]);
             epochs[epoch_received.epoch][finished_epoch_log[0].to!string] = epoch_received;
-            checkepoch(this.number_of_nodes, epochs);
+            checkepoch(this.number_of_nodes, epochs, last_epoch);
 
             if (newest_epoch < epoch_received.epoch) {
                 newest_epoch = epoch_received.epoch;

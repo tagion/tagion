@@ -1370,7 +1370,7 @@ static assert(uint.sizeof == 4);
                     return KEY_INVALID;
                 }
 
-                if ((isNative(type) || (type is Type.DEFINED_ARRAY))) {
+                if (isNative(type) || (type is Type.DEFINED_ARRAY)) {
                     return ILLEGAL_TYPE;
                 }
                 if (size > data.length) {

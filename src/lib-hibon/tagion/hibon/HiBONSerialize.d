@@ -217,7 +217,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     }
     static foreach (i; 0 .. T.tupleof.length) {
         {
-
             enum exclude_flag = hasUDA!(T.tupleof[i], exclude);
             enum filter_flag = hasUDA!(T.tupleof[i], filter);
             static if (!exclude_flag) {
@@ -245,6 +244,14 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     result += LEB128.calc_size(result);
     return result;
 }
+
+// Serialization invalid for some objects when compilling on alpine
+version (CRuntime_Musl)
+    version = OLD_HIBON_SERIALIZATION;
+    /// version flag added because new serialization causes crash on snapdragon gen 8 1
+    /// Do not remove
+else version (Android)
+    version = OLD_HIBON_SERIALIZATION;
 
 mixin template Serialize() {
     import std.algorithm;
@@ -310,10 +317,7 @@ mixin template Serialize() {
             }
         }
 
-
-        /// version flag added because new serialization causes crash on snapdragon gen 8 1
-        /// Do not remove
-        version (Android) {
+        version (OLD_HIBON_SERIALIZATION) {
             Buffer serialize() const pure @safe {
                 return this.toHiBON.serialize;
             }
@@ -329,6 +333,9 @@ mixin template Serialize() {
             do {
                 Appender!(ubyte[]) buf;
                 static if (SupportingFullSizeFunction!(This)) {
+                    static if (isPointer!This) {
+                        __write("isPointer %s %s", This.stringof, this !is null);
+                    }
                     const reserve_size = full_size(this);
                     buf.reserve(reserve_size);
                 }

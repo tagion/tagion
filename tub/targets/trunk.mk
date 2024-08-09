@@ -31,6 +31,7 @@ copy_trunk_files:
 	$(CP) tub/targets/install.mk ${TRUNK}/GNUmakefile
 	$(CP) $(REPOROOT)/collider_schedule.json ${TRUNK}
 	$(CP) -r scripts/ etc/ $(TRUNK)/
+	$(CP) -r src/wasi/explorer/ $(TRUNK)/
 
 .PHONY: help-trunk
 help-trunk:

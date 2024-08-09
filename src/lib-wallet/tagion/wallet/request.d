@@ -65,7 +65,7 @@ pragma(msg, __FILE__ ~ ": fixme(lr) Remove trusted when nng is safe");
 HiRPC.Receiver sendShellHiRPC(string address, Document doc, HiRPC hirpc) {
     WebData rep = WebClient.post(address, doc.serialize, [
         "Content-type": "application/octet-stream"
-    ]);
+    ], 3000.msecs);
 
     if (rep.status != http_status.NNG_HTTP_STATUS_OK || rep.type != "application/octet-stream") {
         throw new WalletRequestException(format("send shell submit, received: %s code(%d): %s text: %s", rep.type, rep.status, rep.msg, rep.text));

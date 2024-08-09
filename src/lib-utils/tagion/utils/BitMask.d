@@ -25,21 +25,39 @@ struct BitMask {
     enum absolute_mask = 0x1000;
     private size_t[] mask;
 
-    void opAssign(const BitMask rhs) pure nothrow {
-        mask = rhs.mask.dup;
+    BitMask opAssign(scope const(BitMask) rhs)  pure nothrow {
+        mask=rhs.mask.dup;
+        return this;
     }
 
-
-    void opAssign(const(ubyte)[] buf) pure nothrow @trusted {
+    BitMask opAssign(const(ubyte)[] buf) pure nothrow @trusted {
         if (buf.length == 0) {
-            mask=null;
-            return;
+            mask = null;
+            return this;
         }
-        const size=(buf.length / size_t.sizeof) + (buf.length % size_t.sizeof !=0);
-        buf.length=size * size_t.sizeof;
-        mask=(cast(size_t*)&buf[0])[0..size].dup;
+        const size = (buf.length / size_t.sizeof) + (buf.length % size_t.sizeof != 0);
+        buf.length = size * size_t.sizeof;
+        mask = (cast(size_t*)&buf[0])[0 .. size].dup;
+        return this;
     }
-    
+
+    /**
+        Make an reference with out a copy
+    */
+    void refer(BitMask rhs) pure nothrow {
+        mask=rhs.mask;
+    }
+
+    unittest {
+        BitMask a,b;
+        a.mask=[0x17];
+        b.refer=a;
+        assert(a.count == 4);
+        assert(a == b);
+        b[0]=false;
+        assert(b.count == 3);
+        assert(a == b);
+    }
     /++
      This set the mask as bit stream with LSB first
      +/
@@ -52,13 +70,16 @@ struct BitMask {
         }
     }
 
-    this(R)(scope R range) pure nothrow if ((isInputRange!R) && is(ElementType!R : bool) && !is(Uqual!(Element!R) == ubyte)) {
+    this(R)(scope R range) pure nothrow
+    if ((isInputRange!R) && is(ElementType!R : bool) && !is(Uqual!(Element!R) == ubyte)) {
         this(range.enumerate
                 .filter!(b => b.value)
                 .map!(b => b.index));
     }
 
-    this(R)(scope R range) pure nothrow if ((isInputRange!R) && isIntegral!(ElementType!R) && !is(ElementType!R : bool) && !is(Uqual!(ElementType!R) == ubyte)) {
+    this(R)(scope R range) pure nothrow
+    if ((isInputRange!R) && isIntegral!(ElementType!R) && 
+        !is(ElementType!R : bool) && !is(Uqual!(ElementType!R) == ubyte)) {
         range.each!((n) => this[n] = true);
     }
 
@@ -66,14 +87,14 @@ struct BitMask {
         if (mask.length == 0) {
             return null;
         }
-        return (cast(ubyte*)&mask[0])[0..mask.length*size_t.sizeof];
+        return (cast(ubyte*)&mask[0])[0 .. mask.length * size_t.sizeof];
     }
 
     unittest {
-        const(ubyte[]) buf = [0x10,0x01, 0x80];
-        BitMask bits;    
-        bits=buf;
-        assert(equal(bits[], [4,8,23]));
+        const(ubyte[]) buf = [0x10, 0x01, 0x80];
+        BitMask bits;
+        bits = buf;
+        assert(equal(bits[], [4, 8, 23]));
         assert(equal(bits.bytes, [16, 1, 128, 0, 0, 0, 0, 0]));
     }
 
@@ -83,8 +104,82 @@ struct BitMask {
         return result;
     }
 
+    BitMask invert(const size_t size = 0) const pure nothrow {
+        BitMask result;
+        if (mask.length || size > 0) {
+            result.mask.length = mask.length;
+            result.mask[] = ~mask[];
+            if (size) {
+                if (size.wordindex + 1 < result.mask.length) {
+                    result.mask.length = size.wordindex + 1;
+                }
+                else if (size.wordindex + 1 > result.mask.length) {
+                    result.mask.length = size.wordindex + 1;
+                    if (mask.length < result.mask.length) {
+                        result.mask[mask.length .. $] = size_t.max;
+                    }
+                }
+                result.mask[size.wordindex] &= ((size_t(1) << size.word_bitindex) - 1);
+            }
+        }
+        return result;
+    }
+
+    unittest {
+        import std.range;
+        import std.array;
+
+        {
+            BitMask set_all=BitMask.init.invert(7);
+            assert(set_all.count == 7);
+        }
+        BitMask bits = BitMask([1, 0x75, 0x10, 19]);
+
+        { /// mask with size_t element
+            const bit_length = size_t.sizeof * 8 / 2 - 5;
+            const bits_invert = bits.invert(bit_length);
+            assert(bits_invert[].array.retro.front + 1 == bit_length, "Last bit should be one");
+            assert(bits_invert.count == bit_length - 3, "Number of bits does not match");
+        }
+        { /// mask with two elements
+            const bit_length = size_t.sizeof * 8 + 5;
+            const bits_invert = bits.invert(bit_length);
+            assert(bits_invert[].array.retro.front + 1 == bit_length, "Last bit should be one");
+            assert(bits_invert.count == bit_length - 3, "Number of bits does not match");
+        }
+        { /// mask with two elements
+            const bit_length = size_t.sizeof * 8 * 2 - 3;
+            const bits_invert = bits.invert(bit_length);
+            assert(bits_invert[].array.retro.front + 1 == bit_length, "Last bit should be one");
+            assert(bits_invert.count == bit_length - 4, "Number of bits does not match");
+        }
+        { /// The size of the inverted mask is greater than the size of the mask
+            const bit_length = size_t.sizeof * 8 * 3 - 3;
+            const bits_invert = bits.invert(bit_length);
+            assert(bits_invert[].array.retro.front + 1 == bit_length, "Last bit should be one");
+            assert(bits_invert.count == bit_length - 4, "Number of bits does not match");
+        }
+    }
+
     void clear() pure nothrow {
         mask[] = 0;
+    }
+
+    void erase() pure nothrow {
+        mask = null;
+    }
+
+    bool empty() const pure nothrow @nogc {
+        return mask.map!(a => a == 0).all;
+    }
+
+    unittest {
+        BitMask bits;
+        assert(bits.empty);
+        bits.mask.length = 2;
+        assert(bits.empty);
+        bits.mask = [17];
+        assert(!bits.empty);
     }
 
     @nogc
@@ -104,6 +199,7 @@ struct BitMask {
 
     unittest {
         import std.algorithm;
+
         BitMask bits_a, bits_b;
         assert(bits_a == bits_b);
         bits_b.mask.length = 1;
@@ -288,9 +384,7 @@ struct BitMask {
     }
 
     BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
-    if (op == "-" || op == "&" || op == "|" || op == "^") {
-        import std.algorithm.comparison : max, min;
-
+    if (only("-", "&", "|", "^").canFind(op)) {
         BitMask result;
         result.mask = mask.dup;
         result.opOpAssign!op(rhs);
@@ -360,7 +454,7 @@ struct BitMask {
     }
 
     BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
-    if (op == "-" || op == "&" || op == "|" || op == "^") {
+    if (only("-", "&", "|", "^").canFind(op)) {
         if (mask.length > rhs.mask.length) {
             switch (op) {
             case "&":
@@ -383,8 +477,25 @@ struct BitMask {
         return this;
     }
 
+    BitMask opOpAssign(string op, R)(R range) pure
+    if (only("-", "+").canFind(op) && isInputRange!R && isIntegral!(ElementType!R)) {
+        foreach (bit_number; range) {
+            this[bit_number] = (op == "+");
+        }
+        return this;
+    }
+
+    unittest {
+        BitMask bits = BitMask([1, 4, 5]);
+        bits += [8, 17];
+        assert(bits == BitMask("01001100_10000000_01000000"));
+        bits -= [4, 15, 5];
+
+        assert(bits == BitMask("01000000_10000000_01000000"));
+    }
+
     BitMask opBinary(string op, Index)(const Index index) const pure nothrow
-    if ((op == "-" || op == "+") && isIntegral!Index) {
+    if (only("-", "+").canFind(op) && isIntegral!Index) {
         BitMask result = dup;
         result[index] = (op == "+");
         return result;
@@ -398,13 +509,21 @@ struct BitMask {
         assert(bits - 17 == BitMask([42]));
     }
 
-    void chunk(size_t bit_len) pure nothrow {
+    BitMask chunk(size_t bit_len) pure nothrow {
         const new_size = bit_len.wordindex + 1;
         if (new_size < mask.length) {
             mask.length = new_size;
         }
         const chunk_mask = ((size_t(1) << (bit_len.word_bitindex)) - 1);
         mask[$ - 1] &= chunk_mask;
+        return this;
+    }
+
+    BitMask chunk(const size_t bit_len) const pure nothrow {
+        BitMask result;
+        result.mask=mask.dup;
+        result.chunk(bit_len);
+        return result;
     }
 
     unittest {
@@ -517,6 +636,22 @@ struct BitMask {
         {
             const a = BitMask("1000_1100_1100");
             const b = BitMask("0010_1001_0101");
+            const null_mask=BitMask.init;
+            { // bit or with null_mask
+                const y = a | null_mask;
+                assert(y == a);
+            }
+            
+            { // bit and with null_mask
+                const y = a & null_mask;
+                assert(y == null_mask);
+            }
+            
+            { // bit xor with null_mask
+                const y = a ^ null_mask;
+                assert(y == a);
+            }
+
             { // bit or
                 const y = a | b;
                 assert(format("%16.4s", y) == "1010_1101_1101_0000");
@@ -541,6 +676,7 @@ struct BitMask {
                 assert(y.count is 3);
             }
 
+            
             version (BITMASK) {
                 BitMask null_mask;
                 const y = a - null_mask;
@@ -794,5 +930,18 @@ struct BitMask {
             assert(equal(y[], [3]));
         }
 
+        { // Fold on a lazy range
+            import std.algorithm;
+            import std.range;
+            auto masks =only(BitMask([1,4]),BitMask([4,8]),BitMask([7,4]));
+            BitMask null_mask;
+            const or_mask=masks
+            .fold!((a,b) => a|b)(null_mask);
+            assert(or_mask.count == 4);
+            BitMask all_mask=BitMask.init.invert(16);
+            const and_mask=masks
+            .fold!((a,b) => a&b)(all_mask);
+            assert(and_mask.count == 1);
+        }
     }
 }

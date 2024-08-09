@@ -2501,6 +2501,7 @@ struct WebSocket {
     nng_ws_onmessage onmessage;
     nng_iov rxiov;
     nng_iov txiov;
+    nng_mtx *mtx;
     ubyte[] rxbuf;
     ubyte[] txbuf;
     nng_duration keeptm, conntm;
@@ -2545,6 +2546,8 @@ struct WebSocket {
         void delegate(void*) d4 = &(this.nng_ws_keepcb);
         rc = nng_aio_alloc(&keepaio, d4.funcptr, self());
         enforce(rc == 0, "Conn aio init3");
+        rc = nng_mtx_alloc(&mtx);
+        enforce(rc == 0, "Mtx init");
         rxbuf = new ubyte[](_bufsize);
         txbuf = new ubyte[](_bufsize);
         rxiov.iov_buf = rxbuf.ptr;
@@ -2569,18 +2572,31 @@ struct WebSocket {
 
     void join(){
         if(closed && !joined){
-            if(onclose != null)
-                onclose(cast(WebSocket*)self(), context);
-                app.rmconn(cast(WebSocket*)self());
-            joined = true;    
+            nng_mtx_lock(mtx);
+            if(closed && !joined){
+                if(onclose != null)
+                    onclose(cast(WebSocket*)self(), context);
+                    app.rmconn(cast(WebSocket*)self());
+                joined = true;    
+            }    
+            nng_mtx_unlock(mtx);
+        }
+    }
+    
+    void close(){
+        if(!closed){
+            nng_mtx_lock(mtx);
+            closed = true;
+            nng_mtx_unlock(mtx);
+            join();
         }
     }
 
     void nng_ws_keepcb( void *ptr ){
         if(closed){
             join();
-        }
-        nng_sleep_aio(keeptm, keepaio);
+        } else
+            nng_sleep_aio(keeptm, keepaio);
     }
 
     void nng_ws_conncb( void *ptr ){
@@ -2705,7 +2721,6 @@ struct WebSocketApp {
         void delegate(void*) d = &(this.accb);
         rc = nng_aio_alloc( &accio, d.funcptr, self() );
         enforce(rc==0,"Accept aio init");
-        
     }
 
     void start()
@@ -2719,6 +2734,14 @@ struct WebSocketApp {
         }
         starts++;
         nng_mtx_unlock(mtx);        
+    }
+    
+    void stop()
+    {
+        foreach(c; conns)
+            c.close;
+        nng_stream_listener_close(sl);      
+        nng_aio_stop(accio);            
     }
 
     void* self () {

@@ -14,7 +14,8 @@ struct ShellOptions {
     string contract_addr_prefix = "CONTRACT_";
     string dart_addr_prefix = "DART_";
     string shell_uri = "http://0.0.0.0:8080";
-    string monitor_pub_uri = "tcp://127.0.0.1:8081";
+    string monitor_pub_uri = "tcp://0.0.0.0:8082";
+    string monitor_sub_uri = "tcp://127.0.0.1:8082";
     string recorder_subscription_tag = "recorder";
     string dart_subscription_task_prefix = "Node_0_";
     string trt_subscription_tag = "trt_created";

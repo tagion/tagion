@@ -90,7 +90,6 @@ void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Ke
     import std.range;
     import traits = std.traits;
     import tagion.basic.Debug;
-
     alias BaseT = TypedefBase!T;
     static if (!is(BaseT == T) && __traits(compiles, { auto x = cast(const(BaseT)) val; })) {
         auto x = (() @trusted => cast(BaseT) val)();
@@ -249,6 +248,9 @@ void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Ke
         //emplace_buffer(buffer, start_index);
     }
     else {
+        if (isPointer!BaseT) {
+            __write("---BaseT %s", BaseT.stringof);
+        }
         buffer.binwrite(x);
     }
 }
@@ -868,8 +870,8 @@ bool is_key_valid(const(char[]) a) pure nothrow {
 }
 
 shared static this() @system {
-    uint little_endian=0x0000_0001;
-    uint* x=&little_endian;
+    uint little_endian = 0x0000_0001;
+    uint* x = &little_endian;
     assert(x[0] == 1, "Only supports little endian for now!");
 }
 ///

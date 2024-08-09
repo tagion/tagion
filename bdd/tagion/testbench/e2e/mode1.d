@@ -78,6 +78,7 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     Options local_options;
     local_options.setDefault;
     local_options.trt.enable = false;
+    local_options.wave.number_of_nodes = number_of_nodes;
     local_options.wave.network_mode = NetworkMode.LOCAL;
     local_options.epoch_creator.timeout = 300; //msecs
     local_options.wave.prefix_format = "Mode1_%s_";

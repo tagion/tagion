@@ -28,6 +28,7 @@ import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
 import std.format;
+import std.array;
 
 import tagion.tools.shell.shelloptions;
 import tagion.tools.tagionshell : abort;
@@ -57,7 +58,6 @@ void wrap_neuewelle(immutable(string)[] args) {
 
 mixin Main!(_main);
 int _main(string[] args) {
-
     auto module_path = env.bdd_log.buildPath(__MODULE__);
     if (module_path.exists) {
         rmdirRecurse(module_path);
@@ -68,6 +68,10 @@ int _main(string[] args) {
 
     scope ShellOptions shell_opts = ShellOptions.defaultOptions;
     shell_opts.shell_uri = environment["SHELL_URI"];
+    shell_opts.monitor_pub_uri = environment["MR_PUB_URI"];
+    shell_opts.monitor_sub_uri = environment["MR_SUB_URI"];
+    shell_opts.ws_pub_uri = environment["WS_PUB_URI"];
+    shell_opts.cache_enabled = true;
     shell_opts.tagion_subscription_addr = contract_sock_addr(environment["SUBSCRIPTION"]);
     shell_opts.dart_subscription_task_prefix = "TRANSACTION_Node_0_";
     shell_opts.mode0_prefix = environment["PREFIX"];
@@ -194,6 +198,7 @@ int _main(string[] args) {
 
     auto feature = automation!(transaction);
     feature.SendAContractWithOneOutputsThroughTheShell(shell_opts, wallets[0], wallets[1]);
+
     feature.run;
     stopsignal.setIfInitialized;
     abort = true;
@@ -228,7 +233,8 @@ class SendAContractWithOneOutputsThroughTheShell {
         start_amount2 = wallet2.calcTotal(wallet2.account.bills);
         wallet1_hirpc = HiRPC(wallet1.net);
         wallet2_hirpc = HiRPC(wallet2.net);
-        shell_addr = shell_opts.shell_uri ~ shell_opts.shell_api_prefix;
+
+        shell_addr = shell_opts.shell_uri.replace("0.0.0.0","127.0.0.1") ~ shell_opts.shell_api_prefix;
         bullseye_address = shell_addr ~ shell_opts.bullseye_endpoint ~ "/hibon";
         dart_address = shell_addr ~ shell_opts.hirpc_endpoint;
         contract_address = shell_addr ~ shell_opts.hirpc_endpoint;
@@ -277,29 +283,28 @@ class SendAContractWithOneOutputsThroughTheShell {
     @Then("the transaction should go through")
     Document through() @trusted {
 
-        int max_tries;
+        int max_tries = 0;
         TagionCurrency wallet1_amount;
         TagionCurrency wallet2_amount;
+        bool wallet1_ok = false; 
+        bool wallet2_ok = false;
         const wallet2_expected = start_amount2 + amount;
-        Update: while (max_tries < 10) {
-            bool both_updated;
-            if (wallet1_amount != 0.TGN) {
-                writefln("wallet1 sending update to dartaddress %s", dart_address);
-                wallet1_amount = getWalletTRTUpdateAmount(wallet1, dart_address, wallet1_hirpc);
-            }
-            else {
-                both_updated = true;
-            }
-            if (wallet2_amount != wallet2_expected) {
+        Thread.sleep(10.seconds);
+        while ( (!wallet1_ok || !wallet2_ok) &&  max_tries++ < 10) {
+            Thread.sleep(5.seconds);
+            if(!wallet2_ok){
                 writefln("wallet2 sending update to dartaddress %s", dart_address);
                 wallet2_amount = getWalletTRTUpdateAmount(wallet2, dart_address, wallet2_hirpc);
+                if (wallet2_amount == wallet2_expected) 
+                    wallet2_ok = true;
             }
-            else {
-                if (both_updated) {
-                    break Update;
-                }
+            Thread.sleep(1000.msecs);
+            if(!wallet1_ok){
+                writefln("wallet1 sending update to dartaddress %s", dart_address);
+                wallet1_amount = getWalletTRTUpdateAmount(wallet1, dart_address, wallet1_hirpc);
+                if(wallet1_amount == 0.TGN)
+                    wallet1_ok = true;
             }
-            Thread.sleep(5.seconds);
         }
         check(wallet1_amount == 0.TGN, format("Should have zero tagions after sending all... had %s", wallet1_amount));
         check(wallet2_amount == wallet2_expected, format("should have %s had %s", wallet2_expected, wallet2_amount));

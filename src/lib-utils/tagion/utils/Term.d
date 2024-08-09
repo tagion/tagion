@@ -111,10 +111,9 @@ version (Posix) {
     private import core.stdc.stdio;
     private import core.sys.posix.termios;
 
-    version(CRuntime_Bionic) { // Termios is not defined for bionic libc in druntime yet
+    // Termios is not defined for bionic & musl libc in druntime
     extern (C) int tcsetattr(int, int, const scope termios*);
     extern (C) int tcgetattr(int, termios*);
-    }
 
     extern (C) void cfmakeraw(termios* termios_p);
 

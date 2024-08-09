@@ -12,8 +12,8 @@ hirpc [<option>...]
 -v   --verbose Prints more debug information
 -o    --output Output filename (Default stdout)
 -m    --method method name for the hirpc to generate
--d --dartinput dart inputs sep. by comma for multiples generated differently for each cmd
--p     --pkeys pkeys sep. by comma for multiple entries
+-d --dartinput dart inputs sep. by comma or multiple args for multiples generated differently for each cmd
+-p     --pkeys pkeys sep. by comma or multiple args for multiple entries
 -h      --help This help information.
 ```
 
@@ -62,6 +62,11 @@ Check that epoch record 13 and 27 has been written to the DART.
 ```sh
 hirpc -m dartCheckRead -d \#\$epoch:i64:13,\#\$epoch:i64:27
 ```
+Or just
+```sh
+hirpc -m dartCheckRead -d \#\$epoch:i64:13  -d \#\$epoch:i64:27
+```
+
 
 Read a trt archive to get all of the archives associated with a public key.  
 The trt archives aren't stored in the main consensus database so they have to be redirected to the `trt.` entity
