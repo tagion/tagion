@@ -8,6 +8,8 @@ WASI_DRUNTIME_REPO?=git@github.com:tagion/wasi-druntime.git
 wasi: $(WASI_DRUNTIME_ROOT)/.git $(DLIB)/.way 
 	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) prebuild 
 
+wasi-run: wasi
+
 wasi-%: $(WASI_DRUNTIME_ROOT)/.git $(DLIB)/.way 
 	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) $*
 
