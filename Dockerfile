@@ -21,4 +21,4 @@ COPY --from=build /usr/local/bin bin/
 COPY ./scripts/create_wallets.sh /usr/local/bin/
 
 WORKDIR /usr/local/app
-CMD neuewelle /usr/local/app/mode0/tagionwave.json --keys /usr/local/app/mode0 < /usr/local/app/keys
+CMD create_wallets.sh && neuewelle /usr/local/app/mode0/tagionwave.json --keys /usr/local/app/mode0 < /usr/local/app/keys
