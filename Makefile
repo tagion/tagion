@@ -8,7 +8,7 @@ DINC=libnng
 
 ifeq ($(NNG_WITH_MBEDTLS),ON)
 	DCFLAGS=-O -d -m64 -i -version=withtls
-	DLFLAGS=-Lextern/nng/build/lib/ -Lextern/mbedtls/build/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
+	DLFLAGS=-Lextern/nng/build/lib/ -Lextern/mbedtls/build/target/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
 else
 	DCFLAGS=-O -d -m64 -i
 	DLFLAGS=-Lextern/nng/build/lib/ -lnng
@@ -46,5 +46,8 @@ clean-local:
 clean-extern:
 	$(MAKE) clean -C extern/
 
-.PHONY: all extern lib clean $(DTESTS)
+update:
+	git submodule update --remote --recursive
+
+.PHONY: all extern lib clean update $(DTESTS)
 

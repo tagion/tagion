@@ -21,11 +21,16 @@ mk-mbedtls:
 	cmake --install .
 mk-nng:
 	mkdir -p nng/build
+	cd nng
+	patch -N -p2 < ../_patch/nng.cmake.mbedtls.patch
 	cd nng/build
 	cmake $(NNGFLAGS) ..
 	cmake --build . --target install --config Release
 
 clean-nng:
+	cd nng
+	git checkout cmake/FindMbedTLS.cmake
+	cd ..
 	rm -rf nng/build
 
 clean-mbedtls:
