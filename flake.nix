@@ -47,9 +47,6 @@
                 tag = "latest";
                 config.Cmd = "${package}/bin/tagion";
               };
-
-          wasi-sdk = pkgs.callPackage ./tub/wasi-sdk.nix { };
-
         });
 
       devShells = forAllSystems (pkgs: {
