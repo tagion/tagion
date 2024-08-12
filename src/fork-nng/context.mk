@@ -4,10 +4,6 @@ DTMP_NNG := $(DTMP)/nng
 
 LIBNNG := $(DTMP_NNG)/libnng.a
 
-ifdef CMAKE_TOOLCHAIN_FILE
-NNG_CMAKE_FLAGS+=-D$(CMAKE_TOOLCHAIN_FILE)
-endif
-
 ifdef USE_SYSTEM_LIBS
 # NNG Does not provide a .pc file,
 # so you'll have to configure it manually if nng not in the regular LD search path
@@ -36,8 +32,8 @@ $(NNG_HEAD): $(NNG_GIT_MODULE)
 
 $(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD)
 	cd $(DTMP_NNG)
-	$(CMAKE) $(DSRC_NNG) $(NNG_CMAKE_FLAGS)
-	$(CMAKE) --build .
+	$(CMAKE) $(DSRC_NNG) $(CMAKE_GENERATOR_FLAG) $(CMAKE_TOOLCHAIN_FILE_FLAG) $(addprefix -D,$(CONFIGUREFLAGS_NNG))
+	$(BUILDENV_NNG) $(CMAKE) --build . $(BUILDFLAGS_SECP256K1)
 
 ifdef USE_SYSTEM_LIBS
 nng: # NOTHING TO BUILD

@@ -59,15 +59,11 @@
             dub
             gcc
             git
-            libtool
-            autoconf
-            automake
-            autoreconfHook
             cmake
-            libz
+            ninja
+            libz # Used by the documentation generator
             dtools
             dfmt-pull.legacyPackages.${pkgs.system}.dlang-dfmt
-            graphviz
             wasmer # wasm-executor
             clang # used for wasm compilation
             wabt # conversion between wat <-> wasm
