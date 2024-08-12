@@ -260,12 +260,12 @@ jobs:
 
       - run: |
           docker build . -t tagion:latest
-          docker save tagion:latest -o tagion_docker.tar.gz
+          docker save tagion:latest -o tagion_docker.tar
 
       - uses: actions/upload-artifact@v4
         with:
           name: tagion_docker
-          path: tagion_docker.tar.gz
+          path: tagion_docker.tar
           if-no-files-found: error
 
   add_logs:
