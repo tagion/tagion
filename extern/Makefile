@@ -23,7 +23,7 @@ mk-nng:
 	mkdir -p nng/build
 	cd nng
 	patch -N -p2 < ../_patch/nng.cmake.mbedtls.patch
-	cd nng/build
+	cd build
 	cmake $(NNGFLAGS) ..
 	cmake --build . --target install --config Release
 
