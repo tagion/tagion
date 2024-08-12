@@ -94,7 +94,7 @@ class Round {
         return _valid_witness;
     }
 
-    Buffer pattern() const pure nothrow {
+    final Buffer pattern() const pure nothrow {
         import tagion.utils.Miscellaneous;
 
         auto fingerprints = _valid_witness[]
@@ -102,6 +102,10 @@ class Round {
             .filter!(e => e !is null)
             .map!(e => cast(Buffer) e.fingerprint);
         return xor(fingerprints);
+    }
+
+    final EpochVote epochVote(const long epoch_number) const pure nothrow {
+        return EpochVote(epoch_number, cast(uint)(_valid_witness.count), pattern);
     }
 
     enum Completed {
@@ -629,6 +633,11 @@ class Round {
                 );
                 return;
             }
+        /*
+                const sender = () => hashgraph.create_init_tide(round_to_be_decided.epochVote(round_to_be_decided.number), 
+                currentTime);
+                 hashgraph.hirpc.net.gossip(&hashgraph.not_used_channels, sender);
+        */
             collect_received_round(round_to_be_decided);
             check_decide_round;
         }

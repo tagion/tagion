@@ -349,3 +349,11 @@ struct EvaPayload {
 static assert(isHiBONRecord!Wavefront);
 static assert(isHiBONRecord!(EventPackage));
 static assert(isHiBONRecord!(immutable(EventPackage)));
+
+@recordType("$@EVote")
+struct EpochVote {
+    @label(StdNames.epoch_number) long epoch_number; /// should always be zero
+    uint nodes;
+    Buffer pattern;
+    mixin HiBONRecord;
+}

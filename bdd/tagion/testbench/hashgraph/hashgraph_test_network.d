@@ -319,10 +319,8 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
                 //const onLine=_hashgraph.areWeOnline;
                 const init_tide = random.value(0, 2) is 1;
                 if (init_tide) {
-                    _hashgraph.init_tide(
-                            &authorising.gossip,
-                            &payload,
-                            time);
+                    authorising.gossip(
+                    &(_hashgraph.not_used_channels), () => _hashgraph.create_init_tide(payload(), time));
                     count++;
                 }
             }

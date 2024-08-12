@@ -218,20 +218,6 @@ class HashGraph {
         }
     }
 
-    alias GraphResponse = const(Pubkey) delegate(
-            GossipNet.ChannelFilter channel_filter,
-            GossipNet.SenderCallBack sender) @safe;
-    alias GraphPayload = const(Document) delegate() @safe;
-
-    version(BDD)
-    void init_tide(
-            const(GraphResponse) respond,
-            const(GraphPayload) payload,
-            lazy const sdt_t time) {
-
-        const _ = respond(&not_used_channels, () => create_init_tide(payload(), time));
-    }
-
     immutable(EventPackage)* event_pack(
             lazy const sdt_t time,
             const(Event) father_event,
