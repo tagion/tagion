@@ -56,7 +56,8 @@ DVERSIONS+=USE_GENESIS_EPOCH
 # NEW_ORDERING uses PseudoTime
 # OLD_ORDERING uses old simple method
 # DVERSIONS+=NEW_ORDERING 
-DVERSIONS+=OLD_ORDERING
+#DVERSIONS+=OLD_ORDERING
+DVERSIONS+=HASH_ORDERING
 
 # Flag for enabling printing in C-API
 # DVERIONS+=C_API_DEBUG
@@ -71,10 +72,6 @@ DVERSIONS+=OLD_ORDERING
 
 # Enable verbose epoch logging
 # DVERSIONS+=EPOCH_LOG
-
-# Enable websocket pub in shell. 
-# Currently causes the program not to stop properly in bddtests.
-DVERSIONS+=TAGIONSHELL_WEB_SOCKET
 
 # # This enables a redundant check in dart to see if there are overlaps between segments 
 # DVERSIONS+=DART_RECYCLER_INVARIANT
@@ -93,3 +90,4 @@ DVERSIONS+=TAGIONSHELL_WEB_SOCKET
 INSTALL?=$(HOME)/bin
 
 #ENABLE_WASMER?=1
+UNSHARE_NET=1
