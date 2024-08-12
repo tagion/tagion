@@ -3,13 +3,13 @@ FROM alpine:20240606 as build
 
 # Install deps
 WORKDIR /tmp/
-RUN apk add --no-cache git autoconf clang libtool cmake ldc make automake
+RUN apk add --no-cache git clang cmake ldc make ninja
 
 # Build
 COPY . ./src
 WORKDIR /tmp/src/
 RUN echo DFLAGS+=--static --O3 >> local.mk
-RUN make tagion install INSTALL=/usr/local/bin/ DC=ldc2 DEBUG_ENABLE=
+RUN make tagion install CMAKE_GENERATOR=Ninja INSTALL=/usr/local/bin/ DC=ldc2 DEBUG_ENABLE=
 RUN strip /usr/local/bin/tagion
 
 
