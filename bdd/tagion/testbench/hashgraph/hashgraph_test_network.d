@@ -75,7 +75,7 @@ static bool continue_on_error;
             check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
         }
         first_epoch = true;
-        __write("%12s Round %d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
+        __write("%12s Round %04d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
         if (event_collection.length == 0) {
             return;
         }
@@ -457,7 +457,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 if (!epoch_events.all!(e => equal(e.map!(e => *e), epoch_events[0].map!(e => *e)))) {
                     check(continue_on_error, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
                     if (continue_on_error) {
-                        writefln("%sMismatch Round %d\n%s%s", RED, epoch.key, print_events, RESET);
+                        writefln("%sMismatch Round %04d\n%s%s", RED, epoch.key, print_events, RESET);
                     }
                 }
 
