@@ -14,7 +14,7 @@ import tagion.basic.Types : Buffer;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.Types : Privkey, Pubkey, Signature;
-import tagion.gossip.GossipNet;
+import tagion.gossip.GossipNet : GossipNet;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.RefinementInterface;
@@ -87,14 +87,13 @@ class HashGraph {
 
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
-    alias ValidChannel = bool delegate(const Pubkey channel);
-    const ValidChannel valid_channel; /// Valiates of a node at channel is valid
+    const GossipNet gossip_net;
     /**
  * Creates a graph with node_size nodes
  * Params:
  *   node_size = number of nodes handles byt the graph
  *   net = Securety element handles hash function, signing and signature validation
- *   valid_channel = call-back to check if a node is valid
+ *   gossip_net = gossip interface used to select the valid channel etc.
  *   epoch_callback = call-back which is called when an epoch has been produced
  *   epack_callback = call-back call if when a package has been added to the cache.
  *   name = used for debugging label the node name
@@ -102,7 +101,8 @@ class HashGraph {
     this(const size_t node_size,
             const SecureNet net,
             Refinement refinement,
-            const ValidChannel valid_channel,
+            const GossipNet gossip_net,
+            //const ValidChannel isValidChannel,
             string name = null)
     in (node_size >= 4)
     do {
@@ -111,7 +111,8 @@ class HashGraph {
         this._owner_node = getNode(hirpc.net.pubkey);
         this.refinement = refinement;
         this.refinement.setOwner(this);
-        this.valid_channel = valid_channel;
+//        this.isValidChannel = &(gossip_net.isValidChannel);
+        this.gossip_net = gossip_net;
         this.name = (name) ? name : format("%(%02x%)", hirpc.net.pubkey[0 .. 8]);
         _rounds = Round.Rounder(this);
     }
@@ -290,7 +291,7 @@ class HashGraph {
         format("Event %(%02x%) has already been registered",
             event_pack.fingerprint))
     do {
-        if (valid_channel(event_pack.pubkey)) {
+        if (gossip_net.isValidChannel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
             refinement.epack(event_pack);
@@ -324,7 +325,7 @@ class HashGraph {
 
             if (fingerprint in event_package_cache) {
                 immutable event_pack = event_package_cache[fingerprint];
-                if (valid_channel(event_pack.pubkey)) {
+                if (gossip_net.isValidChannel(event_pack.pubkey)) {
                     auto event = new Event(event_pack, this.outer);
                     _event_cache[fingerprint] = event;
                     return event;
@@ -547,7 +548,7 @@ class HashGraph {
             lazy const(sdt_t) time,
             lazy const(Document) payload) {
         immutable from_channel = received.pubkey;
-        check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
+        check(gossip_net.isValidChannel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         const _ = getNode(from_channel);
 
         const received_wave = (received.isMethod)

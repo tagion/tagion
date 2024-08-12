@@ -54,7 +54,7 @@ class StdRefinement : Refinement {
     }
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
-        HashGraph hashgraph;
+    HashGraph hashgraph;
     protected {
         TaskNames task_names;
     }

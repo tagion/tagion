@@ -93,7 +93,7 @@ struct EpochCreatorService {
         auto refinement = new StdRefinement;
         refinement.setTasknames(task_names);
 
-        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel);
+        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, gossip_net);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         PayloadQueue payload_queue = new PayloadQueue();
@@ -116,6 +116,7 @@ struct EpochCreatorService {
         }
 
         void receivePayload(Payload, const(Document) pload) {
+            pragma(msg, "fixme(cbr): Should we not just send the payload directly to the hashgraph");
             payload_queue.write(pload);
             counter++;
         }

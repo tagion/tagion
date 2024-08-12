@@ -316,7 +316,6 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
                     count++;
                 }
                 (() @trusted { yield; })();
-                //const onLine=_hashgraph.areWeOnline;
                 const init_tide = random.value(0, 2) is 1;
                 if (init_tide) {
                     authorising.gossip(
@@ -344,7 +343,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
-        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
+        auto h = new HashGraph(N, net, refinement, authorising, name);
         h.scrap_depth = scrap_depth;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
