@@ -154,7 +154,7 @@ class Round {
             if (number_of_future_rounds < 4) {
                 return ret = Completed.too_few;
             }
-            version(none)
+            version (none)
                 scope (exit) {
                     _valid_witness &= included_mask;
                 }
@@ -164,8 +164,8 @@ class Round {
                     number,
                     _events.map!(e => (e is null) ? -1 : cast(int) e.witness.seen_voting_mask.count));
 
-    //            auto list_majority_rounds_1 = list_majority_rounds;
-      //      list_majority_rounds_1.popFront;
+            //            auto list_majority_rounds_1 = list_majority_rounds;
+            //      list_majority_rounds_1.popFront;
             uint[] gather_voters;
             gather_voters.length = node_size;
             foreach (slide_r; list_majority_rounds.drop(1).slide(2)) {
@@ -210,8 +210,7 @@ class Round {
                 _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
                 if (_all) {
                     _valid_witness &= BitMask(_events
-                            .filter!(e => (e !is null))
-                            //.filter!(e => isMajority(e.witness.yes_votes, node_size))
+                            .filter!(e => (e !is null)) //.filter!(e => isMajority(e.witness.yes_votes, node_size))
                             .filter!(e => isMajority(e.witness.seen_voting_mask, node_size))
                             .map!(e => e.node_id));
                     __write("%s Round %04d     yes   %(%2d %) pattern=%(%02x %)".replace("#", node_size
@@ -228,7 +227,6 @@ class Round {
                             .map!(v => format("%s%2d%s", isMajority(v, node_size) ? GREEN : RED, v, RESET)),
                             _valid_witness,
                             cast(int)(r.number - number)
-
 
                     );
                     if (isMajority(_valid_witness, node_size)) {
@@ -633,11 +631,15 @@ class Round {
                 );
                 return;
             }
-        /*
-                const sender = () => hashgraph.create_init_tide(round_to_be_decided.epochVote(round_to_be_decided.number), 
-                currentTime);
-                 hashgraph.hirpc.net.gossip(&hashgraph.not_used_channels, sender);
-        */
+            version (none)
+                scope (exit) {
+                    const sender = () => hashgraph.create_init_tide(
+                            round_to_be_decided.epochVote(round_to_be_decided.number).toDoc,
+                            currentTime);
+
+                    __write("sender=%J", sender());
+                    hashgraph.gossip_net.gossip(&hashgraph.not_used_channels, sender);
+                }
             collect_received_round(round_to_be_decided);
             check_decide_round;
         }

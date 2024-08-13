@@ -87,7 +87,7 @@ class HashGraph {
 
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
-    const GossipNet gossip_net;
+    package GossipNet gossip_net;
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -101,8 +101,7 @@ class HashGraph {
     this(const size_t node_size,
             const SecureNet net,
             Refinement refinement,
-            const GossipNet gossip_net,
-            //const ValidChannel isValidChannel,
+            GossipNet gossip_net,
             string name = null)
     in (node_size >= 4)
     do {
@@ -111,7 +110,6 @@ class HashGraph {
         this._owner_node = getNode(hirpc.net.pubkey);
         this.refinement = refinement;
         this.refinement.setOwner(this);
-//        this.isValidChannel = &(gossip_net.isValidChannel);
         this.gossip_net = gossip_net;
         this.name = (name) ? name : format("%(%02x%)", hirpc.net.pubkey[0 .. 8]);
         _rounds = Round.Rounder(this);
@@ -208,7 +206,7 @@ class HashGraph {
     }
 
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
-        if(areWeInGraph) {
+        if (areWeInGraph) {
             immutable epack = event_pack(time, null, payload);
             const registered = registerEventPackage(epack);
             assert(registered, "Could not register init tide");
@@ -217,6 +215,11 @@ class HashGraph {
         else {
             return hirpc.wavefront(sharpWave());
         }
+    }
+
+    const(HiRPC.Sender) create_init_tide(T)(lazy const T payload, lazy const sdt_t time) if (isHiBONRecord!T) {
+        return create_init_tide(payload.toDoc, time);
+
     }
 
     immutable(EventPackage)* event_pack(
@@ -530,15 +533,14 @@ class HashGraph {
         return Wavefront(result, null, ExchangeState.SHARP);
     }
 
-    version(BDD)
-    void wavefront(
+    version (BDD) void wavefront(
             const HiRPC.Receiver received,
             lazy const(sdt_t) time,
             void delegate(const(HiRPC.Sender) sender) @safe send,
             const(Document) delegate() @safe payload) {
 
         const response = this.wavefront_response(received, time, payload());
-        if(!response.isError) {
+        if (!response.isError) {
             send(response);
         }
     }
@@ -552,105 +554,103 @@ class HashGraph {
         const _ = getNode(from_channel);
 
         const received_wave = (received.isMethod)
-                ? received.params!Wavefront(hirpc.net)
-                : received.result!Wavefront(hirpc.net);
+            ? received.params!Wavefront(hirpc.net) : received.result!Wavefront(hirpc.net);
 
-        with(ExchangeState) 
-        switch (received_wave.state) {
-            case SHARP: 
-                return hirpc.result(received, sharpResponse(received_wave));
+        with (ExchangeState) switch (received_wave.state) {
+        case SHARP:
+            return hirpc.result(received, sharpResponse(received_wave));
 
-            case RIPPLE:
-                if (areWeInGraph) {
-                    break;
+        case RIPPLE:
+            if (areWeInGraph) {
+                break;
+            }
+
+            auto received_epacks = received_wave
+                .epacks
+                .map!((e) => cast(immutable(EventPackage)*) e)
+                .array
+                .sort!((a, b) => a.fingerprint < b.fingerprint);
+
+            auto _own_epacks = _nodes.byValue
+                .map!((n) => n[])
+                .joiner
+                .map!((e) => cast(immutable(EventPackage)*) e.event_package)
+                .array
+                .sort!((a, b) => a.fingerprint < b.fingerprint);
+
+            auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, _own_epacks);
+
+            foreach (epack; changes) {
+                const epack_node = getNode(epack.pubkey);
+                auto first_event = new Event(epack, this);
+                if (epack_node.event is null) {
+                    check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                 }
+                _event_cache[first_event.fingerprint] = first_event;
+                front_seat(first_event);
+            }
 
-                auto received_epacks = received_wave
-                    .epacks
-                    .map!((e) => cast(immutable(EventPackage)*) e)
-                    .array
-                    .sort!((a,b) => a.fingerprint < b.fingerprint);
+            const contain_all =
+                _nodes
+                    .byValue
+                    .all!((n) => n._event !is null);
 
-                auto _own_epacks = _nodes.byValue
+            if (contain_all && node_size == _nodes.length) {
+                const own_epacks = _nodes
+                    .byValue
                     .map!((n) => n[])
                     .joiner
-                    .map!((e) => cast(immutable(EventPackage)*) e.event_package)
-                    .array
-                    .sort!((a, b) => a.fingerprint < b.fingerprint);
+                    .map!((e) => e.event_package)
+                    .array;
 
-                auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, _own_epacks);
+                initialize_witness(own_epacks);
+            }
+            break;
 
-                foreach (epack; changes) {
-                    const epack_node = getNode(epack.pubkey);
-                    auto first_event = new Event(epack, this);
-                    if (epack_node.event is null) {
-                        check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
-                    }
-                    _event_cache[first_event.fingerprint] = first_event;
-                    front_seat(first_event);
+        case COHERENT:
+            if (!areWeInGraph) {
+                try {
+                    initialize_witness(received_wave.epacks);
                 }
-
-                const contain_all =
-                    _nodes
-                        .byValue
-                        .all!((n) => n._event !is null);
-
-                if (contain_all && node_size == _nodes.length) {
-                    const own_epacks = _nodes
-                        .byValue
-                        .map!((n) => n[])
-                        .joiner
-                        .map!((e) => e.event_package)
-                        .array;
-
-                    initialize_witness(own_epacks);
+                catch (ConsensusException e) {
+                    // initialized witness not correct
                 }
+            }
+            break;
+
+        case TIDAL_WAVE:
+            if (!areWeInGraph) {
                 break;
+            }
+            check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
+            immutable epack = event_pack(time, null, payload());
+            const registered = registerEventPackage(epack);
+            assert(registered);
 
-            case COHERENT:
-                if (!areWeInGraph) {
-                    try {
-                        initialize_witness(received_wave.epacks);
-                    }
-                    catch (ConsensusException e) {
-                        // initialized witness not correct
-                    }
-                }
+            return wavefront(buildWavefront(FIRST_WAVE, received_wave.tides), received.getId);
+
+        case FIRST_WAVE:
+            if (!areWeInGraph) {
                 break;
+            }
+            const from_front_seat = register_wavefront(received_wave, from_channel);
+            immutable epack = event_pack(time, from_front_seat, payload());
+            const registered = registerEventPackage(epack);
+            assert(registered, "The event package has not been registered correct (The wave should be dumped)");
+            return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides));
 
-            case TIDAL_WAVE: 
-                if (!areWeInGraph) {
-                    break;
-                }
-                check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
-                immutable epack = event_pack(time, null, payload());
-                const registered = registerEventPackage(epack);
-                assert(registered);
-
-                return wavefront(buildWavefront(FIRST_WAVE, received_wave.tides), received.getId);
-
-            case FIRST_WAVE:
-                if (!areWeInGraph) {
-                    break;
-                }
-                const from_front_seat = register_wavefront(received_wave, from_channel);
-                immutable epack = event_pack(time, from_front_seat, payload());
-                const registered = registerEventPackage(epack);
-                assert(registered, "The event package has not been registered correct (The wave should be dumped)");
-                return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides));
-
-            case SECOND_WAVE:
-                if (!areWeInGraph) {
-                    break;
-                }
-                const from_front_seat = register_wavefront(received_wave, from_channel);
-                immutable epack = event_pack(time, from_front_seat, payload());
-                const registered = registerEventPackage(epack);
-                assert(registered, "The event package has not been registered correct (The wave should be dumped)");
+        case SECOND_WAVE:
+            if (!areWeInGraph) {
                 break;
+            }
+            const from_front_seat = register_wavefront(received_wave, from_channel);
+            immutable epack = event_pack(time, from_front_seat, payload());
+            const registered = registerEventPackage(epack);
+            assert(registered, "The event package has not been registered correct (The wave should be dumped)");
+            break;
 
-            default:
-                break;
+        default:
+            break;
         }
         return hirpc.error(received.getId, "wavefront_error");
     }
@@ -835,7 +835,7 @@ class HashGraph {
             auto names = node_labels.keys;
             names.sort;
             foreach (i, name; names) {
-                node_id_relocation[node_labels[name]] = cast(uint)i;
+                node_id_relocation[node_labels[name]] = cast(uint) i;
             }
 
         }
@@ -852,7 +852,7 @@ class HashGraph {
         })();
 
         graphfile.fwrite(NodeAmount(node_size));
-        foreach(e; events) {
+        foreach (e; events) {
             graphfile.fwrite(e);
         }
         /* auto h = new HiBON; */
