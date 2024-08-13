@@ -57,7 +57,7 @@ class Event {
     BitMask _intermediate_seen_mask;
     // This is the internal pointer to the connected Event's
     package Event _mother; /// Points to the self-parent
-    package Event _father; /// Points to other-parrent
+    package Event _father; /// Points to other-parent
     protected {
         Event _daughter; /// Points to the direct self-ancestor
         Event _son; /// Points to the direct other-ancestor

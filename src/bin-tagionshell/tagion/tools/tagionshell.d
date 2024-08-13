@@ -1102,11 +1102,9 @@ int _main(string[] args) {
     
     auto ds_tid = spawn(&dart_worker, options);
 
-    version(TAGIONSHELL_WEB_SOCKET) {
-        ws_devices = new shared(WSCache)(null, 512, 0); // TODO: hardcoded session cache size -> options
-        WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_close, &ws_on_error, &ws_on_message, cast(void*)&options );
-        wsa.start();
-    }
+    ws_devices = new shared(WSCache)(null, 512, 0); // TODO: hardcoded session cache size -> options
+    WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_close, &ws_on_error, &ws_on_message, cast(void*)&options );
+    wsa.start();
 
     Appender!string help_text;
 
@@ -1166,9 +1164,7 @@ appoint:
             writeit("mem: ", sz);
             if (sz > isz * 2) {
                 writeln("Reset app!");
-                version(TAGIONSHELL_WEB_SOCKET){
-                    wsa.stop;
-                }
+                wsa.stop;
                 app.stop;
                 Thread.sleep(1000.msecs);
                 goto appoint;
@@ -1179,9 +1175,7 @@ appoint:
     foreach(a; actors){
         a.send(Sig.STOP);
     }
-    version(TAGIONSHELL_WEB_SOCKET){
-        wsa.stop;
-    }
+    wsa.stop;
     app.stop;
     writeit("Shell to close");
     return 0;

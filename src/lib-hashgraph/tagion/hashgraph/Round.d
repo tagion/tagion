@@ -467,7 +467,7 @@ class Round {
      */
         void set_round(Event e) nothrow
         in {
-            assert(!e._round, "Round has allready been added");
+            assert(!e._round, "Round has already been added");
             assert(last_round, "Base round must be created");
             assert(last_decided_round, "Last decided round must exist");
             assert(e, "Event must create before a round can be added");
