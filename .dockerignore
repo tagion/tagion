@@ -2,3 +2,4 @@ tools/
 build/
 logs/
 src/fork-wasmer/
+local.mk

@@ -2,14 +2,6 @@
 
 ## In Progress
 
-### Hashgraph Consensus bug
-Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
-
-- [X] Create callback array and reassign pointer on fiber switch
-- [ ] Show all errors for multi-view. (having problems with this)
-- [X] Create Event overload (CBR)
-- [ ] Investigate Youngest Son Ancestor impl.
-- [ ] profit?
 
 ### Wallet 
 Description: simplify the wallet interface so that there is only one way to do everything
@@ -21,17 +13,32 @@ Tasks:
 Assignee: yr
 
 ### Tagion API library
-- [X]: Create document API
-- [x]: create HiBON api
-- [ ]: create wallet api
+- [X] Create document API
+- [x] create HiBON api
+- [ ] create wallet api
+
+### Distributed nodes test
+Setup tests for multiple distributed nodes
+- [ ] Setup tool to start distribute test network
+- [ ] Implement a remote monitor tool for the distribute network
+
+## Merge wavefront
+Description: Merge the changes to the hashgraph with changes to the wavefront and ensure that all tests pass.
+Assignee: lr, cbr
 
 ## Backlog
 
-### Tauon was test build fails
-Linking of wasm tauon test file fails after 91fd2e09c560530a8ffd19292e82dedc1b5e2d08 or 4999f813071e64f8eda78e98e3b649958f5b52bf because of missing _start function. I've tried reverting both commits individually but it didn't change anything. Also they both seem unrelated.
 
-### Distributed nodes test
-setup tests for multiple distributed nodes
+### Hashgraph node swapping
+Description: Enable a new node to join the graph
+- [ ] Enable a node to follow the graph and build the consensus with out participating
+- [ ] Detection when the join node can join the network
+- [ ] Implement consensus joining
+Assignee: cbr
+
+
+### Tauon was test build fails
+Description: Linking of wasm tauon test file fails after 91fd2e09c560530a8ffd19292e82dedc1b5e2d08 or 4999f813071e64f8eda78e98e3b649958f5b52bf because of missing _start function. I've tried reverting both commits individually but it didn't change anything. Also they both seem unrelated.
 
 ### Subscription API implementation
 Description: Provide external API for subscribing and querying data in the system as in [Subscription API proposal](https://docs.tagion.org/tips/3)
@@ -47,14 +54,14 @@ Description: Create Query nodes which can be used for both sending and receiving
 
 
 ### HiBON Document max-size check test 
-We should make sure that we have check for max-size/out-of-memory
+Description: We should make sure that we have check for max-size/out-of-memory
 For all external Documents
 Like the inputvalidator...
 
 Test should also be made for NNG buffer overrun!
 
 ### Daily operational test
-description: Add a github ci script which activates the operational test once a day
+Description: Add a github ci script which activates the operational test once a day
 Assignee: lr
 
 ### Types filtering in hirep
@@ -63,13 +70,16 @@ Description: hirep have --types arg, but it's not implemented yet.
 - [ ] - Implement --type filtering in hirep.
 - [ ] - Write bdd test for this feature
 
-## merge wavefront
-Description: Merge the changes to the hashgraph with changes to the wavefront and ensure that all tests pass.
-Assignee: lr, cbr
-
 ---
 
 ## Done
+
+### Hashgraph Consensus bug
+Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
+
+- [X] Create callback array and reassign pointer on fiber switch
+- [X] Show all errors for multi-view. (having problems with this)
+- [X] Create Event overload (CBR)
 
 ### NNG test flow
 Description: Extend the CI-pipeline for github.com/tagion/nng to automatically build and execute tests
