@@ -61,7 +61,10 @@ class HashGraph {
         sdt_t last_epoch_time;
     }
     Refinement refinement;
-    protected Node _owner_node;
+    protected {
+        Pubkey[] _channels;
+        Node _owner_node;
+    }
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
     }
@@ -188,8 +191,11 @@ class HashGraph {
         return hirpc.net.pubkey;
     }
 
-    final const(Pubkey[]) channels() const pure nothrow {
-        return _nodes.keys;
+    final const(Pubkey[]) channels() pure nothrow {
+        if (!_channels) {
+            _channels = _nodes.keys;
+        }
+        return _channels;
     }
 
     bool not_used_channels(const(Pubkey) selected_channel) {
@@ -757,7 +763,7 @@ class HashGraph {
 
     package Node getNode(Pubkey channel) pure {
         const next_id = next_node_id;
-        return _nodes.require(channel, new Node(channel, next_id));
+        return _nodes.require(channel, { _channels = null; return new Node(channel, next_id); }());
     }
 
     @nogc

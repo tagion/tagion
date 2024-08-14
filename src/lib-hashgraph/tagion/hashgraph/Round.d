@@ -641,7 +641,7 @@ class Round {
                     hashgraph.gossip_net.gossip(&hashgraph.not_used_channels, sender);
                 }
             collect_received_round(round_to_be_decided);
-            check_decide_round;
+            //            check_decide_round;
         }
 
         protected void collect_received_round(Round r)

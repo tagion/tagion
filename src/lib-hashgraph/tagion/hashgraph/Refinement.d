@@ -26,6 +26,7 @@ import tagion.script.standardnames;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Version;
+
 @safe
 @recordType("finishedEpoch")
 struct FinishedEpoch {
@@ -54,8 +55,8 @@ class StdRefinement : Refinement {
     }
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
-    HashGraph hashgraph;
     protected {
+        HashGraph hashgraph;
         TaskNames task_names;
     }
 
@@ -106,6 +107,11 @@ class StdRefinement : Refinement {
 
     void epack(immutable(EventPackage*) epack) {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
+    }
+
+    Pubkey select_channel() nothrow {
+        assert(hashgraph, "Missing hashgraph");
+        return Pubkey.init;
     }
 
     version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
@@ -205,19 +211,19 @@ class StdRefinement : Refinement {
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
-        auto times=event_collection.map!(e => cast(sdt_t)e.event_body.time).array;
+        auto times = event_collection.map!(e => cast(sdt_t) e.event_body.time).array;
 
         static if (ver.HASH_ORDERING) {
-            auto sorted_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint)
-            .filter!((e) => !e.event_body.payload.empty)
-            .array; 
+            auto sorted_events = event_collection.sort!((a, b) => a.fingerprint < b.fingerprint)
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
         else static if (ver.OLD_ORDERING) {
-            auto sorted_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT))
-            .filter!((e) => !e.event_body.payload.empty)
-            .array;
+            auto sorted_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
-        else static if  (ver.NEW_ORDERING) {
+        else static if (ver.NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
@@ -229,14 +235,14 @@ class StdRefinement : Refinement {
 
         const mid = times.length / 2 + (times.length % 1);
         const epoch_time = times[mid];
-        
+
         version (BDD) {
             // raw event_collection subscription
             static if (ver.HASH_ORDERING) {
-                auto __sorted_raw_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint).array;
+                auto __sorted_raw_events = event_collection.sort!((a, b) => a.fingerprint < b.fingerprint).array;
             }
             else static if (ver.OLD_ORDERING) {
-                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
             }
             else static if (ver.NEW_ORDERING) {
                 const famous_witnesses = decided_round
@@ -257,7 +263,8 @@ class StdRefinement : Refinement {
                     Event.count, Event.Witness.count, events.length, epoch_time);
         }
 
-        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, event_collection.length);
+        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, event_collection
+                .length);
 
         finishedEpoch(sorted_events, epoch_time, decided_round);
         excludedNodes(hashgraph._excluded_nodes_mask);
