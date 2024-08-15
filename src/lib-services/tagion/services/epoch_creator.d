@@ -161,7 +161,7 @@ struct EpochCreatorService {
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
             if (init_tide) {
-                auto sender = hashgraph.create_init_tide(payload, currentTime);
+                const sender = hashgraph.create_init_tide(payload, gossip_net.time);
                 gossip_net.send(hashgraph.select_channel, sender);
             }
         }
@@ -175,6 +175,10 @@ struct EpochCreatorService {
                     &unknown
             );
             if (received) {
+                while (!payload_queue.empty) {
+                    const sender = hashgraph.create_init_tide(payload, gossip_net.time);
+                    gossip_net.send(hashgraph.select_channel, sender);
+                }
                 continue;
             }
             timeout();
