@@ -3,7 +3,7 @@
 # Display usage instructions
 usage() { 
     echo "Usage: $0
-        -b <bindir>
+        -b <bindir, default is to search in user PATH>
         -n <nodes=5>
         -w <wallets=5>
         -q <bills=50>
@@ -16,7 +16,7 @@ usage() {
 # Initialize default values
 bdir=""
 nodes=5
-wallets=5
+# wallets=5
 bills=50
 network_mode=0
 data_dir="$(readlink -f ./)"
@@ -28,7 +28,7 @@ do
     case $opt in
         h)  usage ;;
         n)  nodes=$OPTARG ;;
-        w)  wallets=$OPTARG ;;
+        w)  echo "option '-w' was removed only '-n' is supported"; exit 1 ;;
         b)  bdir=$(readlink -f "$OPTARG") ;;
         k)  data_dir=$(readlink -f "$OPTARG") ;;
         t)  echo "option '-t' was removed only '-k' is supported"; exit 1 ;;
@@ -70,7 +70,7 @@ keyfile=$(realpath "$keyfile")
 all_infos=""
 
 # Create wallets in a loop
-for ((i = 0; i < wallets; i++)); 
+for ((i = 0; i < nodes; i++)); 
 do
   # Set up wallet directory and configuration
   wallet_dir="${wdir}/node$i/wallet"
@@ -96,7 +96,8 @@ do
       echo "node$i/wallet:$pincode" >> "$keyfile"
   elif [ $network_mode -eq 1 ]; then
       port=$((10700+i))
-      address=$(printf 'tcp://0.0.0.0:%s' $port)
+      # address=$(printf "tcp://node$i:%s" $port)
+      address=$(printf "tcp://0.0.0.0:%s" $port)
   fi
 
   all_infos+=" -p $node_info,$address"
