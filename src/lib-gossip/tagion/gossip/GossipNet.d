@@ -33,17 +33,17 @@ interface GossipNet {
     Pubkey gossip(const(SelectChannel) select_channel, const(SenderCallBack) sender);
     Pubkey select_channel(const(ChannelFilter) channel_filter);
     const(Pubkey[]) active_channels() nothrow;
-    ref Random _random() pure nothrow;
+    ref Random random() pure nothrow;
 }
 
 abstract class StdGossipNet : GossipNet {
     private string[immutable(Pubkey)] addresses;
     private immutable(Pubkey)[] _pkeys;
     immutable(Pubkey) mypk;
-    Random random;
+    Random _random;
 
     this(const Pubkey mypk) {
-        this.random = Random(unpredictableSeed);
+        this._random = Random(unpredictableSeed);
         this.mypk = mypk;
     }
 
@@ -51,8 +51,8 @@ abstract class StdGossipNet : GossipNet {
         return _pkeys;
     }
 
-    ref Random _random() pure nothrow {
-        return random;
+    ref Random random() pure nothrow {
+        return _random;
     }
 
     void add_channel(const Pubkey channel) {

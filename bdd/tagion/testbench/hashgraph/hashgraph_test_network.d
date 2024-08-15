@@ -169,8 +169,8 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             // empty
         }
 
-        ref Random _random() pure nothrow {
-            return random;
+        ref Random random() pure nothrow {
+            return this.outer.random;
         }
 
         @property
