@@ -62,7 +62,6 @@ class HashGraph {
     }
     Refinement refinement;
     protected {
-        Pubkey[] _channels;
         Node _owner_node;
     }
     const(Node) owner_node() const pure nothrow @nogc {
@@ -191,18 +190,12 @@ class HashGraph {
         return hirpc.net.pubkey;
     }
 
-    final const(Pubkey[]) channels() pure nothrow {
-        if (!_channels) {
-            _channels = _nodes.keys;
-        }
-        return _channels;
+    final const(Pubkey[]) channels() const pure nothrow {
+        return _nodes.keys;
     }
 
     bool not_used_channels(const(Pubkey) selected_channel) {
-        if (selected_channel == channel) {
-            return false;
-        }
-        return true;
+        return selected_channel != channel;
     }
 
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
@@ -462,9 +455,7 @@ class HashGraph {
      * Returns: either coherent if in graph or rippleWave
      */
     const(Wavefront) sharpResponse(const Wavefront received_wave)
-    in {
-        assert(received_wave.state is ExchangeState.SHARP);
-    }
+    in (received_wave.state is ExchangeState.SHARP)
     do {
         if (areWeInGraph) {
             // writefln("sharp response ingraph:true");
@@ -531,18 +522,6 @@ class HashGraph {
             .array;
 
         return Wavefront(result, null, ExchangeState.SHARP);
-    }
-
-    version (BDD) void wavefront(
-            const HiRPC.Receiver received,
-            lazy const(sdt_t) time,
-            void delegate(const(HiRPC.Sender) sender) @safe send,
-            const(Document) delegate() @safe payload) {
-
-        const response = this.wavefront_response(received, time, payload());
-        if (!response.isError) {
-            send(response);
-        }
     }
 
     HiRPC.Sender wavefront_response(
@@ -656,9 +635,7 @@ class HashGraph {
     }
 
     void front_seat(Event event) pure
-    in {
-        assert(event, "event must be defined");
-    }
+    in (event, "event must be defined")
     do {
         getNode(event.channel).front_seat(event);
     }
@@ -757,7 +734,7 @@ class HashGraph {
 
     package Node getNode(Pubkey channel) pure {
         const next_id = next_node_id;
-        return _nodes.require(channel, { _channels = null; return new Node(channel, next_id); }());
+        return _nodes.require(channel, new Node(channel, next_id));
     }
 
     @nogc
@@ -766,11 +743,9 @@ class HashGraph {
     }
 
     private void remove_node(Node n) nothrow
-    in {
-        assert(n !is null);
-        assert(n.channel in _nodes, __format("Node id %d is not removable because it does not exist", n
-                .node_id));
-    }
+    in (n !is null)
+    in (n.channel in _nodes,
+        __format("Node id %d is not removable because it does not exist", n.node_id))
     do {
         _nodes.remove(n.channel);
     }
@@ -831,7 +806,6 @@ class HashGraph {
 
         uint[Pubkey] node_id_relocation;
         if (node_labels.length) {
-            // assert(node_labels.length is _nodes.length);
             auto names = node_labels.keys;
             names.sort;
             foreach (i, name; names) {
@@ -855,10 +829,5 @@ class HashGraph {
         foreach (e; events) {
             graphfile.fwrite(e);
         }
-        /* auto h = new HiBON; */
-        /* h[Params.size] = node_size; */
-        /* h[Params.events] = events; */
-        /* graphfile.fwrite(h); */
     }
-
 }

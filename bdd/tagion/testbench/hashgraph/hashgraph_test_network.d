@@ -311,6 +311,17 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
                 return Document(h);
             }
 
+            void wavefront(
+                    const HiRPC.Receiver received,
+                    lazy const(sdt_t) time,
+                    const(Document) delegate() @safe payload) {
+
+                const response = _hashgraph.wavefront_response(received, time, payload());
+                if (!response.isError) {
+                    authorising.send(received.pubkey, response);
+                }
+            }
+
             while (!stop) {
                 while (!authorising.empty(_hashgraph.channel)) {
                     if (current !is Pubkey.init && TestGossipNet.online_states !is null && !TestGossipNet.online_states[current]) {
@@ -319,12 +330,9 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
-                    _hashgraph.wavefront(
+                    wavefront(
                             received,
                             time,
-                            (const(HiRPC.Sender) return_wavefront) @safe {
-                        authorising.send(received.pubkey, return_wavefront);
-                    },
                             &payload
                     );
                     count++;
