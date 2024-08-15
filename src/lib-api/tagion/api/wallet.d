@@ -227,7 +227,7 @@ int tagion_sign_message (
         }
         const message = message_ptr[0..message_len].idup;
         if (message.length != NativeSecp256k1.MESSAGE_SIZE) {
-            set_error_text = "Message length is invalid should be " ~ NativeSecp256k1.MESSAGE_SIZE;
+            set_error_text = "Message length is invalid should be 32";
             return ErrorCode.error;
         }
         const message_fingerprint = Fingerprint(message);
