@@ -20,13 +20,10 @@ import tagion.services.messages;
 import tagion.utils.StdTime;
 
 interface GossipNet {
-    alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
-    alias SenderCallBack = const(HiRPC.Sender) delegate() @safe;
     const(sdt_t) time() const nothrow;
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
     void send(Pubkey channel, const(HiRPC.Sender) sender);
-    Pubkey select_channel(const(ChannelFilter) channel_filter);
     const(Pubkey)[] active_channels() nothrow;
     ref Random random() pure nothrow;
 }
@@ -74,19 +71,6 @@ abstract class StdGossipNet : GossipNet {
         import std.exception : assumeWontThrow;
 
         return assumeWontThrow(currentTime);
-    }
-
-    Pubkey select_channel(const(ChannelFilter) channel_filter) {
-        import std.algorithm : filter;
-        import std.array;
-
-        assert(_pkeys.length > 1);
-        auto keys_to_send = _pkeys.filter!(n => channel_filter(n) && n != mypk);
-        if (keys_to_send.empty) {
-            log("NO AVAILABLE TO SEND TO");
-            return Pubkey.init;
-        }
-        return choice(keys_to_send.array, random);
     }
 
     void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender);

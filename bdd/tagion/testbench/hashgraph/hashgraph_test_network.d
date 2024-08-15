@@ -184,27 +184,17 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         }
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
-            if (online_states !is null && !online_states[channel]) {
-                return;
-            }
-
-            const doc = sender.toDoc;
-            channel_queues[channel].write(doc);
+            send(channel, sender.toDoc);
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
             if (online_states !is null && !online_states[channel]) {
                 return;
             }
-
             channel_queues[channel].write(doc);
         }
 
         final void send(T)(const(Pubkey) channel, T pack) if (isHiBONRecord!T) {
-            if (online_states !is null && !online_states[channel]) {
-                return;
-            }
-
             send(channel, pack.toDoc);
         }
 
@@ -214,21 +204,6 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
         void close() {
             // Dummy empty
-        }
-
-        Pubkey select_channel(ChannelFilter channel_filter) {
-            auto send_channels = channel_queues
-                .byKey
-                .filter!(k => online_states[k])
-                .filter!(k => channel_filter(k))
-                .array;
-
-            if (!send_channels.empty) {
-                const node_index = uniform(0, send_channels.length, random);
-                return send_channels[node_index];
-            }
-
-            return Pubkey.init;
         }
 
         bool empty(const Pubkey channel) const pure nothrow {
