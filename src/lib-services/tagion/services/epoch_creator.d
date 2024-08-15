@@ -62,19 +62,21 @@ struct EpochCreatorService {
         assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
 
         import tagion.hashgraph.Event : Event;
+
         Event.callbacks = new LogMonitorCallbacks();
-        version(BDD) {
-            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook.keys);
+        version (BDD) {
+            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook
+                    .keys);
         }
 
         StdGossipNet gossip_net;
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL:
-            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout);
+            gossip_net = new EmulatorGossipNet(opts.timeout);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, opts.timeout, ActorHandle(task_names.node_interface));
+            gossip_net = new NNGGossipNet(opts.timeout, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
@@ -128,21 +130,20 @@ struct EpochCreatorService {
             }
 
             const received_wave = (receiver.isMethod)
-                ? receiver.params!Wavefront(net)
-                : receiver.result!Wavefront(net);
+                ? receiver.params!Wavefront(net) : receiver.result!Wavefront(net);
 
-            debug(epoch_creator) log("<- %s", received_wave.state);
+            debug (epoch_creator)
+                log("<- %s", received_wave.state);
 
             // Filter out all signed contracts from the payload
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
-                .filter!(p => p.isRecord!SignedContract)
-                // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+                .filter!(p => p.isRecord!SignedContract) // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
                 .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
                 .handle!(HiBONException, RangePrimitive.front,
                         (e, r) { log("invalid SignedContract from hashgraph"); return null; }
-                )
+            )
                 .filter!(s => !s.isinit)
                 .array;
 
@@ -152,8 +153,8 @@ struct EpochCreatorService {
 
             const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
 
-            if(receiver.isMethod) {
-                gossip_net.send(req, cast(Pubkey)receiver.pubkey, return_wavefront);
+            if (receiver.isMethod) {
+                gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
             }
         }
 
@@ -161,7 +162,7 @@ struct EpochCreatorService {
             const init_tide = random.value(0, 2) is 1;
             if (init_tide) {
                 auto sender = hashgraph.create_init_tide(payload, currentTime);
-                 gossip_net.send(hashgraph.select_channel, sender);
+                gossip_net.send(hashgraph.select_channel, sender);
             }
         }
 

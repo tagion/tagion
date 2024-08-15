@@ -31,12 +31,10 @@ interface GossipNet {
 abstract class StdGossipNet : GossipNet {
     private string[immutable(Pubkey)] addresses;
     private immutable(Pubkey)[] _pkeys;
-    immutable(Pubkey) mypk;
     Random _random;
 
-    this(const Pubkey mypk) {
+    this() {
         this._random = Random(unpredictableSeed);
-        this.mypk = mypk;
     }
 
     const(Pubkey)[] active_channels() nothrow {
@@ -86,9 +84,9 @@ private void sleep(Duration dur) @trusted {
 
 class EmulatorGossipNet : StdGossipNet {
     uint delay;
-    this(const Pubkey mypk, uint avrg_delay_msecs) {
+    this(uint avrg_delay_msecs) {
         this.delay = avrg_delay_msecs;
-        super(mypk);
+        super();
     }
 
     override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
@@ -119,11 +117,11 @@ class EmulatorGossipNet : StdGossipNet {
 class NNGGossipNet : StdGossipNet {
     uint delay;
     private ActorHandle nodeinterface;
-    this(const Pubkey mypk, uint avrg_delay_msecs, ActorHandle nodeinterface) {
+    this(uint avrg_delay_msecs, ActorHandle nodeinterface) {
         this.random = Random(unpredictableSeed);
         this.nodeinterface = nodeinterface;
         this.delay = avrg_delay_msecs;
-        super(mypk);
+        super();
     }
 
     override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
