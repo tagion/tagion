@@ -339,8 +339,8 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
                 (() @trusted { yield; })();
                 const init_tide = uniform(0, 2, random) is 1;
                 if (init_tide) {
-                    authorising.gossip(
-                            &(_hashgraph.not_used_channels), () => _hashgraph.create_init_tide(payload(), time));
+                    authorising.send(
+                            _hashgraph.select_channel,  _hashgraph.create_init_tide(payload(), time));
                 }
             }
         }

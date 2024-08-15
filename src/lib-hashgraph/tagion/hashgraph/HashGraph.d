@@ -8,6 +8,7 @@ import std.exception : assumeWontThrow;
 import std.format;
 import std.range;
 import std.stdio;
+import std.random;
 import std.typecons : Flag, No, Yes;
 import tagion.basic.Debug : __format;
 import tagion.basic.Types : Buffer;
@@ -91,9 +92,6 @@ class HashGraph {
 
     package GossipNet gossip_net;
 
-    Pubkey select_channel() {
-        return Pubkey.init;
-    }
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -202,6 +200,10 @@ class HashGraph {
         return selected_channel != channel;
     }
 
+    Pubkey select_channel()   {
+        auto new_channel = generate!(() => Pubkey(choice(gossip_net.active_channels, gossip_net.random)));
+        return new_channel.filter!(p => p !is channel).front;
+    }
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
         if (areWeInGraph) {
             immutable epack = event_pack(time, null, payload);
