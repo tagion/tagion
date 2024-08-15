@@ -419,7 +419,7 @@ class HashGraph {
     }
 
     const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides = null) {
-        if (state is ExchangeState.NONE || state is ExchangeState.BREAKING_WAVE) {
+        if (state is ExchangeState.NONE ) {
             return Wavefront(null, null, state);
         }
 
@@ -530,7 +530,9 @@ class HashGraph {
         const received_wave = (received.isMethod)
             ? received.params!Wavefront(hirpc.net) : received.result!Wavefront(hirpc.net);
 
-        with (ExchangeState) switch (received_wave.state) {
+        with (ExchangeState) final switch (received_wave.state) {
+        case NONE, INIT_TIDE:
+            break;
         case SHARP:
             return hirpc.result(received, sharpResponse(received_wave));
 
@@ -622,11 +624,8 @@ class HashGraph {
             const registered = registerEventPackage(epack);
             assert(registered, "The event package has not been registered correct (The wave should be dumped)");
             break;
-
-        default:
-            break;
         }
-        return hirpc.error(received.getId, "wavefront_error");
+        return hirpc.error(received.getId, format("wavefront_error %s", received_wave.state));
     }
 
     void front_seat(Event event) pure

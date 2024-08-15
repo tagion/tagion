@@ -31,6 +31,7 @@ import tagion.behaviour.BehaviourException : check, BehaviourException;
 import tagion.basic.Debug;
 import tagion.basic.Version;
 
+@safe:
 struct HashGraphOptions {
     uint number_of_nodes;
     uint seed = 123_456_689;
@@ -134,7 +135,6 @@ alias TestNetwork = TestNetworkT!NewTestRefinement;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
-@safe
 static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import core.time;
@@ -260,7 +260,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             uint count;
             bool stop;
 
-            const(Document) payload() @safe {
+            const(Document) payload()  {
                 auto h = new HiBON;
                 h["node"] = format("%s-%d", _hashgraph.name, count);
                 count++;
@@ -332,7 +332,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
 import tagion.hashgraphview.Compare;
 
-bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
+bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) nothrow {
     static string print(const Event e) nothrow {
         if (e) {
             const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
@@ -347,7 +347,6 @@ bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @
     return false;
 }
 
-@safe
 void printStates(R)(TestNetworkT!(R) network) if (is(R : Refinement)) {
     foreach (channel; network.networks) {
         writeln("----------------------");
