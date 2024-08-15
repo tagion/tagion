@@ -202,12 +202,6 @@ class HashGraph {
         if (selected_channel == channel) {
             return false;
         }
-        const node = _nodes.get(selected_channel, null);
-        version (SEND_ALWAYS) {
-            if (node) {
-                return node.state is ExchangeState.NONE;
-            }
-        }
         return true;
     }
 
