@@ -90,6 +90,10 @@ class HashGraph {
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     package GossipNet gossip_net;
+
+    Pubkey select_channel() {
+        return Pubkey.init;
+    }
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -635,7 +639,7 @@ class HashGraph {
     }
 
     void front_seat(Event event) pure
-    in (event, "event must be defined")
+    in (event, "Event must be defined")
     do {
         getNode(event.channel).front_seat(event);
     }

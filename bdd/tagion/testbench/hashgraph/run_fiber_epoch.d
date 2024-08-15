@@ -11,20 +11,20 @@ import std.file : mkdirRecurse, rmdirRecurse, exists;
 import std.path : buildPath, setExtension;
 import std.stdio;
 import std.algorithm;
-import tagion.testbench.hashgraph;
-import tagion.testbench.hashgraph.hashgraph_test_network;
+import std.random;
 import std.range;
-import std.algorithm;
-import tagion.crypto.Types : Pubkey;
-import std.datetime.systime : SysTime;
-import tagion.hashgraph.Event;
 import std.format;
+import std.datetime.systime : SysTime;
 import std.conv : to;
 import std.exception : ifThrown;
+import std.getopt;
+import tagion.testbench.hashgraph;
+import tagion.testbench.hashgraph.hashgraph_test_network;
+import tagion.crypto.Types : Pubkey;
+import tagion.hashgraph.Event;
 import tagion.monitor.Monitor;
 import tagion.tools.Basic;
 import tagion.tools.revision;
-import std.getopt;
 import tagion.hibon.HiBONFile : fwrite;
 
 enum feature = Feature(
@@ -94,7 +94,7 @@ int _main(string[] args) {
         import tagion.utils.pretend_safe_concurrency : register, thisTid;
 
         register("run_fiber_epoch", thisTid);
-        NewTestRefinement.continue_on_error=opts.continue_on_error;
+        NewTestRefinement.continue_on_error = opts.continue_on_error;
         auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
         hashgraph_fiber_feature.RunPassiveFastHashgraph(opts, weights);
         hashgraph_fiber_feature.run;
@@ -127,7 +127,7 @@ class RunPassiveFastHashgraph {
 
         network = new TestNetworkT!(NewTestRefinement)(node_names);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 100);
-        network.random.seed(opts.seed);
+        network.random = Random(opts.seed);
         writeln(network.random);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
     }
@@ -150,7 +150,7 @@ class RunPassiveFastHashgraph {
         if (!opts.disable_graphfile) {
             foreach (channel, network_fiber; network.networks) {
                 const graph_file = buildPath(opts.path, format("%s_graph", network_fiber._hashgraph.name))
-                .setExtension(FileExtension.hibon);
+                    .setExtension(FileExtension.hibon);
                 node_callbacks[channel] = new FileMonitorCallbacks(
                         graph_file,
                         opts.number_of_nodes,
@@ -163,20 +163,20 @@ class RunPassiveFastHashgraph {
                 channel_number = rnd.dice(weights);
             }
             else {
-                channel_number = network.random.value(0, network.channels.length);
+                channel_number = uniform(0, network.channels.length, network.random);
             }
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
-            if (!node_callbacks.empty) { 
+            if (!node_callbacks.empty) {
                 Event.callbacks = node_callbacks[network.current];
             }
             (() @trusted { current.call; })();
             i++;
         }
         sw.stop;
-        foreach(channel, network_fiber; network.networks) {
-            const statistic_file=buildPath(opts.path, format("%s_statistic", network_fiber._hashgraph.name))
-        .setExtension(FileExtension.hibon);
+        foreach (channel, network_fiber; network.networks) {
+            const statistic_file = buildPath(opts.path, format("%s_statistic", network_fiber._hashgraph.name))
+                .setExtension(FileExtension.hibon);
             statistic_file.fwrite(network_fiber._hashgraph.statistics);
         }
         writefln("test took: %s", sw.peek);

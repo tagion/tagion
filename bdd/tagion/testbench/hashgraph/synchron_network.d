@@ -13,6 +13,7 @@ import std.path : buildPath;
 import std.path : extension, setExtension;
 import std.range;
 import std.stdio;
+import std.random;
 import std.typecons : Tuple;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.Types;
@@ -89,7 +90,7 @@ class StartNetworkWithNAmountOfNodes {
     @When("all nodes are sending ripples")
     Document ripples() {
         foreach (i; 0 .. MAX_CALLS) {
-            const channel_number = network.random.value(0, network.channels.length);
+            const channel_number = uniform(0, network.channels.length, network.random);
             const channel = network.channels[channel_number];
             auto current = network.networks[channel];
             (() @trusted { current.call; })();
@@ -116,7 +117,7 @@ class StartNetworkWithNAmountOfNodes {
             uint i = 0;
             while (i < MAX_CALLS) {
 
-                const channel_number = network.random.value(0, network.channels.length);
+                const channel_number = uniform(0, network.channels.length, network.random);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();

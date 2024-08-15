@@ -33,7 +33,7 @@ import tagion.basic.Version;
 
 struct HashGraphOptions {
     uint number_of_nodes;
-    size_t seed = 123_456_689;
+    uint seed = 123_456_689;
     string path;
     bool disable_graphfile; /// Disable graph file
     bool continue_on_error; /// Don't stop if the epochs does not match
@@ -144,10 +144,10 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
     import tagion.gossip.GossipNet;
     import tagion.hibon.HiBONJSON;
     import tagion.utils.Queue;
-    import tagion.utils.Random;
+    import std.random;
 
     TestGossipNet authorising;
-    Random!size_t random;
+    Random random;
     SysTime global_time;
     enum timestep {
         MIN = 50,
@@ -167,6 +167,10 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
         void start_listening() {
             // empty
+        }
+
+        ref Random _random() pure nothrow {
+            return random;
         }
 
         @property
@@ -224,7 +228,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
                 .array;
 
             if (!send_channels.empty) {
-                const node_index = random.value(0, send_channels.length);
+                const node_index = uniform(0, send_channels.length, random);
                 return send_channels[node_index];
             }
 
@@ -286,7 +290,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         }
 
         sdt_t time() {
-            const systime = global_time + random.value(timestep.MIN, timestep.MAX).msecs;
+            const systime = global_time + uniform(timestep.MIN, timestep.MAX, random).msecs;
             const sdt_time = sdt_t(systime.stdTime);
             return sdt_time;
         }
@@ -308,13 +312,13 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             const(Document) payload() @safe {
                 auto h = new HiBON;
                 h["node"] = format("%s-%d", _hashgraph.name, count);
+                count++;
                 return Document(h);
             }
 
             void wavefront(
                     const HiRPC.Receiver received,
-                    lazy const(sdt_t) time,
-                    const(Document) delegate() @safe payload) {
+                    lazy const(sdt_t) time) {
 
                 const response = _hashgraph.wavefront_response(received, time, payload());
                 if (!response.isError) {
@@ -330,19 +334,13 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
-                    wavefront(
-                            received,
-                            time,
-                            &payload
-                    );
-                    count++;
+                    wavefront(received, time);
                 }
                 (() @trusted { yield; })();
-                const init_tide = random.value(0, 2) is 1;
+                const init_tide = uniform(0, 2, random) is 1;
                 if (init_tide) {
                     authorising.gossip(
                             &(_hashgraph.not_used_channels), () => _hashgraph.create_init_tide(payload(), time));
-                    count++;
                 }
             }
         }

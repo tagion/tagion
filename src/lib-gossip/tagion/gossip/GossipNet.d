@@ -33,6 +33,7 @@ interface GossipNet {
     Pubkey gossip(const(SelectChannel) select_channel, const(SenderCallBack) sender);
     Pubkey select_channel(const(ChannelFilter) channel_filter);
     const(Pubkey[]) active_channels() nothrow;
+    ref Random _random() pure nothrow;
 }
 
 abstract class StdGossipNet : GossipNet {
@@ -48,6 +49,10 @@ abstract class StdGossipNet : GossipNet {
 
     const(Pubkey[]) active_channels() nothrow {
         return _pkeys;
+    }
+
+    ref Random _random() pure nothrow {
+        return random;
     }
 
     void add_channel(const Pubkey channel) {
@@ -166,6 +171,7 @@ class NNGGossipNet : StdGossipNet {
     uint delay;
     private ActorHandle nodeinterface;
     this(const Pubkey mypk, uint avrg_delay_msecs, ActorHandle nodeinterface) {
+        this.random = Random(unpredictableSeed);
         this.nodeinterface = nodeinterface;
         this.delay = avrg_delay_msecs;
         super(mypk);
