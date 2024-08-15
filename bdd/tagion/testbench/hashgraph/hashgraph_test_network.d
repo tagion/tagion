@@ -183,10 +183,6 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             return _current_time;
         }
 
-        bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-            return (channel in channel_queues) !is null;
-        }
-
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
             if (online_states !is null && !online_states[channel]) {
                 return;
@@ -320,7 +316,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
                 const init_tide = uniform(0, 2, random) is 1;
                 if (init_tide) {
                     authorising.send(
-                            _hashgraph.select_channel,  _hashgraph.create_init_tide(payload(), time));
+                            _hashgraph.select_channel, _hashgraph.create_init_tide(payload(), time));
                 }
             }
         }

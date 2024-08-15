@@ -196,10 +196,11 @@ class HashGraph {
         return _nodes.keys;
     }
 
-    Pubkey select_channel()   {
+    Pubkey select_channel() {
         auto new_channel = generate!(() => Pubkey(choice(gossip_net.active_channels, gossip_net.random)));
         return new_channel.filter!(p => p !is channel).front;
     }
+
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
         if (areWeInGraph) {
             immutable epack = event_pack(time, null, payload);
@@ -207,7 +208,7 @@ class HashGraph {
             assert(registered, "Could not register init tide");
             return hirpc.wavefront(tidalWave());
         }
-            return hirpc.wavefront(sharpWave());
+        return hirpc.wavefront(sharpWave());
     }
 
     const(HiRPC.Sender) create_init_tide(T)(lazy const T payload, lazy const sdt_t time) if (isHiBONRecord!T) {
@@ -287,14 +288,11 @@ class HashGraph {
         format("Event %(%02x%) has already been registered",
             event_pack.fingerprint))
     do {
-        if (gossip_net.isValidChannel(event_pack.pubkey)) {
-            auto event = new Event(event_pack, this);
-            _event_cache[event.fingerprint] = event;
-            refinement.epack(event_pack);
-            event.connect(this);
-            return event;
-        }
-        return null;
+        auto event = new Event(event_pack, this);
+        _event_cache[event.fingerprint] = event;
+        refinement.epack(event_pack);
+        event.connect(this);
+        return event;
     }
 
     class Register {
@@ -321,11 +319,9 @@ class HashGraph {
 
             if (fingerprint in event_package_cache) {
                 immutable event_pack = event_package_cache[fingerprint];
-                if (gossip_net.isValidChannel(event_pack.pubkey)) {
-                    auto event = new Event(event_pack, this.outer);
-                    _event_cache[fingerprint] = event;
-                    return event;
-                }
+                auto event = new Event(event_pack, this.outer);
+                _event_cache[fingerprint] = event;
+                return event;
             }
             return null;
         }
@@ -529,7 +525,6 @@ class HashGraph {
             lazy const(sdt_t) time,
             lazy const(Document) payload) {
         immutable from_channel = received.pubkey;
-        check(gossip_net.isValidChannel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         const _ = getNode(from_channel);
 
         const received_wave = (received.isMethod)

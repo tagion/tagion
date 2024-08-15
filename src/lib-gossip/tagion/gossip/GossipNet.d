@@ -23,8 +23,6 @@ interface GossipNet {
     alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
     alias SenderCallBack = const(HiRPC.Sender) delegate() @safe;
     const(sdt_t) time() const nothrow;
-
-    bool isValidChannel(const(Pubkey) channel) const nothrow;
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
     void send(Pubkey channel, const(HiRPC.Sender) sender);
@@ -76,10 +74,6 @@ abstract class StdGossipNet : GossipNet {
         import std.exception : assumeWontThrow;
 
         return assumeWontThrow(currentTime);
-    }
-
-    bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        return (channel in addresses) !is null;
     }
 
     Pubkey select_channel(const(ChannelFilter) channel_filter) {
