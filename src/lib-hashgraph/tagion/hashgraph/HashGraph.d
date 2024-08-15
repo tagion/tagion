@@ -196,10 +196,6 @@ class HashGraph {
         return _nodes.keys;
     }
 
-    bool not_used_channels(const(Pubkey) selected_channel) {
-        return selected_channel != channel;
-    }
-
     Pubkey select_channel()   {
         auto new_channel = generate!(() => Pubkey(choice(gossip_net.active_channels, gossip_net.random)));
         return new_channel.filter!(p => p !is channel).front;
@@ -211,9 +207,7 @@ class HashGraph {
             assert(registered, "Could not register init tide");
             return hirpc.wavefront(tidalWave());
         }
-        else {
             return hirpc.wavefront(sharpWave());
-        }
     }
 
     const(HiRPC.Sender) create_init_tide(T)(lazy const T payload, lazy const sdt_t time) if (isHiBONRecord!T) {

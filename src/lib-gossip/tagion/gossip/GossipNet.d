@@ -28,7 +28,6 @@ interface GossipNet {
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
     void send(Pubkey channel, const(HiRPC.Sender) sender);
-    Pubkey gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
     Pubkey select_channel(const(ChannelFilter) channel_filter);
     const(Pubkey)[] active_channels() nothrow;
     ref Random random() pure nothrow;
@@ -94,19 +93,6 @@ abstract class StdGossipNet : GossipNet {
             return Pubkey.init;
         }
         return choice(keys_to_send.array, random);
-    }
-
-    Pubkey gossip(
-            const(ChannelFilter) channel_filter,
-            const(SenderCallBack) sender) {
-        const send_channel = select_channel(channel_filter);
-        version (EPOCH_LOG) {
-            log.trace("Selected channel: %s", send_channel.encodeBase64);
-        }
-        if (send_channel.length) {
-            send(WavefrontReq(), send_channel, sender());
-        }
-        return send_channel;
     }
 
     void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender);

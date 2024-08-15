@@ -154,15 +154,14 @@ struct EpochCreatorService {
 
             if(receiver.isMethod) {
                 gossip_net.send(req, cast(Pubkey)receiver.pubkey, return_wavefront);
-                /* locate(req.task_name).send(WavefrontReq(req.id), cast(Pubkey)receiver.pubkey, return_wavefront.toDoc); */
             }
         }
 
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
             if (init_tide) {
-                auto sender = () => hashgraph.create_init_tide(payload, currentTime);
-                const _ = gossip_net.gossip(&hashgraph.not_used_channels, sender);
+                auto sender = hashgraph.create_init_tide(payload, currentTime);
+                 gossip_net.send(hashgraph.select_channel, sender);
             }
         }
 
