@@ -21,7 +21,6 @@ import tagion.utils.StdTime;
 
 interface GossipNet {
     alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
-    alias SelectChannel = Pubkey delegate() @safe;
     alias SenderCallBack = const(HiRPC.Sender) delegate() @safe;
     const(sdt_t) time() const nothrow;
 
@@ -30,7 +29,6 @@ interface GossipNet {
     void remove_channel(const(Pubkey) channel);
     void send(Pubkey channel, const(HiRPC.Sender) sender);
     Pubkey gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
-    Pubkey gossip(const(SelectChannel) select_channel, const(SenderCallBack) sender);
     Pubkey select_channel(const(ChannelFilter) channel_filter);
     const(Pubkey)[] active_channels() nothrow;
     ref Random random() pure nothrow;
@@ -102,19 +100,6 @@ abstract class StdGossipNet : GossipNet {
             const(ChannelFilter) channel_filter,
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
-        version (EPOCH_LOG) {
-            log.trace("Selected channel: %s", send_channel.encodeBase64);
-        }
-        if (send_channel.length) {
-            send(WavefrontReq(), send_channel, sender());
-        }
-        return send_channel;
-    }
-
-    Pubkey gossip(
-            const(SelectChannel) _select_channel,
-            const(SenderCallBack) sender) {
-        const send_channel = _select_channel();
         version (EPOCH_LOG) {
             log.trace("Selected channel: %s", send_channel.encodeBase64);
         }

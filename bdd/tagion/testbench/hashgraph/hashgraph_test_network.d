@@ -236,16 +236,6 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         }
 
         Pubkey gossip(
-                SelectChannel select_channel,
-                SenderCallBack sender) {
-            const send_channel = select_channel();
-            if (send_channel !is Pubkey.init) {
-                send(send_channel, sender());
-            }
-            return send_channel;
-        }
-
-        Pubkey gossip(
                 ChannelFilter channel_filter,
                 SenderCallBack sender) {
             const send_channel = select_channel(channel_filter);
@@ -346,7 +336,6 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         }
     }
 
-    @trusted
     const(Pubkey[]) channels() const pure nothrow {
         return networks.keys;
     }
