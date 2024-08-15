@@ -19,9 +19,9 @@ import tagion.logger;
 import tagion.services.messages;
 import tagion.utils.StdTime;
 
-
 interface GossipNet {
     alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
+    alias SelectChannel = Pubkey delegate() @safe;
     alias SenderCallBack = const(HiRPC.Sender) delegate() @safe;
     const(sdt_t) time() const nothrow;
 
@@ -30,7 +30,9 @@ interface GossipNet {
     void remove_channel(const(Pubkey) channel);
     void send(Pubkey channel, const(HiRPC.Sender) sender);
     Pubkey gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
+    Pubkey gossip(const(SelectChannel) select_channel, const(SenderCallBack) sender);
     Pubkey select_channel(const(ChannelFilter) channel_filter);
+    const(Pubkey[]) active_channels() nothrow;
 }
 
 abstract class StdGossipNet : GossipNet {
@@ -42,6 +44,10 @@ abstract class StdGossipNet : GossipNet {
     this(const Pubkey mypk) {
         this.random = Random(unpredictableSeed);
         this.mypk = mypk;
+    }
+
+    const(Pubkey[]) active_channels() nothrow {
+        return _pkeys;
     }
 
     void add_channel(const Pubkey channel) {
@@ -66,6 +72,7 @@ abstract class StdGossipNet : GossipNet {
 
     const(sdt_t) time() const nothrow {
         import std.exception : assumeWontThrow;
+
         return assumeWontThrow(currentTime);
     }
 
@@ -78,7 +85,7 @@ abstract class StdGossipNet : GossipNet {
         import std.array;
 
         assert(_pkeys.length > 1);
-        auto keys_to_send = _pkeys.filter!(n => channel_filter(n) && n != mypk); 
+        auto keys_to_send = _pkeys.filter!(n => channel_filter(n) && n != mypk);
         if (keys_to_send.empty) {
             log("NO AVAILABLE TO SEND TO");
             return Pubkey.init;
@@ -90,6 +97,19 @@ abstract class StdGossipNet : GossipNet {
             const(ChannelFilter) channel_filter,
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
+        version (EPOCH_LOG) {
+            log.trace("Selected channel: %s", send_channel.encodeBase64);
+        }
+        if (send_channel.length) {
+            send(WavefrontReq(), send_channel, sender());
+        }
+        return send_channel;
+    }
+
+    Pubkey gossip(
+            const(SelectChannel) _select_channel,
+            const(SenderCallBack) sender) {
+        const send_channel = _select_channel();
         version (EPOCH_LOG) {
             log.trace("Selected channel: %s", send_channel.encodeBase64);
         }
@@ -122,9 +142,10 @@ class EmulatorGossipNet : StdGossipNet {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
-        version(RANDOM_DELAY) {
-            sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
-        } else {
+        version (RANDOM_DELAY) {
+            sleep((cast(int) uniform(0.5f, 1.5f, random) * delay).msecs);
+        }
+        else {
             sleep(delay.msecs);
         }
 
@@ -135,7 +156,8 @@ class EmulatorGossipNet : StdGossipNet {
 
         node_tid.send(WavefrontReq(req.id), sender.toDoc);
         version (EPOCH_LOG) {
-            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender.toDoc.serialize.length);
+            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender
+                    .toDoc.serialize.length);
         }
     }
 }
@@ -148,8 +170,9 @@ class NNGGossipNet : StdGossipNet {
         this.delay = avrg_delay_msecs;
         super(mypk);
     }
+
     override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
-        sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
+        sleep((cast(int) uniform(0.5f, 1.5f, random) * delay).msecs);
 
         nodeinterface.send(WavefrontReq(req.id), channel, sender.toDoc);
     }

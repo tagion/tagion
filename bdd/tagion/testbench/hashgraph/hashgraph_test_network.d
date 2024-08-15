@@ -68,7 +68,7 @@ class TestRefinement : StdRefinement {
 class NewTestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
     static long last_epoch;
-static bool continue_on_error;
+    static bool continue_on_error;
     override void epoch(Event[] event_collection, const Round decided_round) const {
         static bool first_epoch;
         if (!first_epoch) {
@@ -80,47 +80,47 @@ static bool continue_on_error;
             return;
         }
 
-        auto times=event_collection.map!(e => cast(sdt_t)e.event_body.time).array;
+        auto times = event_collection.map!(e => cast(sdt_t) e.event_body.time).array;
 
-         static if (ver.HASH_ORDERING) {
-            auto sorted_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint)
-            .filter!((e) => !e.event_body.payload.empty)
-            .array; 
+        static if (ver.HASH_ORDERING) {
+            auto sorted_events = event_collection.sort!((a, b) => a.fingerprint < b.fingerprint)
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
         else static if (ver.OLD_ORDERING) {
-            auto sorted_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT))
-            .filter!((e) => !e.event_body.payload.empty)
-            .array;
+            auto sorted_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
-        else static if  (ver.NEW_ORDERING) {
+        else static if (ver.NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
                 .filter!(e => decided_round.famous_mask[e.node_id])
                 .array;
             auto sorted_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
-            .filter!((e) => !e.event_body.payload.empty)
-            .array;
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
         times.sort;
         const mid = times.length / 2 + (times.length % 1);
         const epoch_time = times[mid];
 
         static if (ver.HASH_ORDERING) {
-            auto __sorted_raw_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint).array;
-            }
-            else static if (ver.OLD_ORDERING) {
-                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
-            }
-            else static if (ver.NEW_ORDERING) {
-                const famous_witnesses = decided_round
-                    ._events
-                    .filter!(e => e !is null)
-                    .filter!(e => decided_round.famous_mask[e.node_id])
-                    .array;
-                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
-                    .array;
-            }
+            auto __sorted_raw_events = event_collection.sort!((a, b) => a.fingerprint < b.fingerprint).array;
+        }
+        else static if (ver.OLD_ORDERING) {
+            auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        }
+        else static if (ver.NEW_ORDERING) {
+            const famous_witnesses = decided_round
+                ._events
+                .filter!(e => e !is null)
+                .filter!(e => decided_round.famous_mask[e.node_id])
+                .array;
+            auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
+                .array;
+        }
         auto finished_epoch = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
 
         epochs[finished_epoch.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = finished_epoch;
@@ -232,6 +232,16 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         }
 
         Pubkey gossip(
+                SelectChannel select_channel,
+                SenderCallBack sender) {
+            const send_channel = select_channel();
+            if (send_channel !is Pubkey.init) {
+                send(send_channel, sender());
+            }
+            return send_channel;
+        }
+
+        Pubkey gossip(
                 ChannelFilter channel_filter,
                 SenderCallBack sender) {
             const send_channel = select_channel(channel_filter);
@@ -251,6 +261,10 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
         void remove_channel(const Pubkey channel) {
             channel_queues.remove(channel);
+        }
+
+        const(Pubkey[]) active_channels() pure nothrow {
+            return channel_queues.keys;
         }
     }
 
@@ -319,7 +333,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
                 const init_tide = random.value(0, 2) is 1;
                 if (init_tide) {
                     authorising.gossip(
-                    &(_hashgraph.not_used_channels), () => _hashgraph.create_init_tide(payload(), time));
+                            &(_hashgraph.not_used_channels), () => _hashgraph.create_init_tide(payload(), time));
                     count++;
                 }
             }
@@ -395,11 +409,11 @@ void printStates(R)(TestNetworkT!(R) network) if (is(R : Refinement)) {
 }
 
 @safe
-static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs, ref long last_epoch, const bool continue_on_error=false) {
+static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs, ref long last_epoch, const bool continue_on_error = false) {
     static int error_count;
     import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
     import tagion.crypto.SecureInterfaceNet;
-                    import tagion.utils.Term;
+    import tagion.utils.Term;
 
     try {
         //writefln("unfinished epochs %s", epochs.length);
@@ -435,17 +449,17 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     foreach (i, events; epoch_events) {
                         uint number_of_empty_events;
                         printout ~= format("\n%s: ", i);
-                        if (!continue_on_error) 
-                        foreach (j, epack; events) {
-                            const go_hash = net.calcHash(*epack);
-                            const equal = (j < epoch_events[0].length) && (net.calcHash(*epoch_events[0][j]) == go_hash);
+                        if (!continue_on_error)
+                            foreach (j, epack; events) {
+                                const go_hash = net.calcHash(*epack);
+                                const equal = (j < epoch_events[0].length) && (net.calcHash(*epoch_events[0][j]) == go_hash);
 
-                            const mark = (equal) ? GREEN : RED;
-                            printout ~= format("%s%(%02x%):%03d ", mark, go_hash[0 .. 4], j);
-                            if (epack.event_body.payload.empty) {
-                                number_of_empty_events++;
+                                const mark = (equal) ? GREEN : RED;
+                                printout ~= format("%s%(%02x%):%03d ", mark, go_hash[0 .. 4], j);
+                                if (epack.event_body.payload.empty) {
+                                    number_of_empty_events++;
+                                }
                             }
-                        }
                         printout ~= format("TOTAL: %s EMPTY: %s", events.length, number_of_empty_events);
                     }
                     return printout;
@@ -469,7 +483,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 }
 
                 writefln("FINISHED ENTIRE EPOCH %s", epoch.key);
-                last_epoch=max(last_epoch, epoch.key); 
+                last_epoch = max(last_epoch, epoch.key);
                 epochs.remove(epoch.key);
             }
         }

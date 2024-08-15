@@ -109,11 +109,6 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    Pubkey select_channel() nothrow {
-        assert(hashgraph, "Missing hashgraph");
-        return Pubkey.init;
-    }
-
     version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
         import std.bigint;
         import std.numeric : gcd;
