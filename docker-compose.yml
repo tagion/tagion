@@ -8,6 +8,8 @@ volumes:
 
 services:
   setup-volumes:
+    environment:
+      - ADDRESS_FORMAT='tcp://node%NODE:%PORT'
     image: tagion
     volumes:
       - setup-volume:/usr/local/app
