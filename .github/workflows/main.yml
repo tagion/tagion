@@ -266,8 +266,8 @@ jobs:
 
       - name: Build and push
         run: |
-          docker build . -t tagion/tagion:${{ github.ref }}
-          docker push tagion/tagion:${{ github.ref }}
+          docker build . -t tagion/tagion:${{ github.ref_name }}
+          docker push tagion/tagion:${{ github.ref_name }}
 
   add_logs:
     if: failure()
