@@ -1123,8 +1123,9 @@ appoint:
 
     scope(exit){
         Thread.sleep(500.msecs);
+        pragma(msg, "fixme: investigate if we need this or can move it to the app. logic. Bad behaviour to have sleep in exit scopes");
     }
-
+    
     WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"`~options.webroot~`","static_path":"`~options.webstaticdir~`"}`), &options);
 
     help_text ~= ("TagionShell web service\n");

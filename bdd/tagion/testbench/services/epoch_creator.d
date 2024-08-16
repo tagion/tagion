@@ -125,7 +125,6 @@ class SendPayloadAndCreateEpoch {
         uint counter;
         do {
             const received = receiveOnlyTimeout!(LogInfo, const(Document))(27.seconds);
-            pragma(msg, "Received ", typeof(received));
             check(received[0].symbol_name.canFind("epoch_successful"), "Event should have been epoch_successful");
             const epoch = received[1];
 

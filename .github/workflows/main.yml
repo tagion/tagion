@@ -428,7 +428,7 @@ jobs:
         with:
           host: 'gitlab.com'
           trigger_token: ${{ secrets.GITLAB_TRIGGER }}
-          # access_token: ${{ secrets.DEPLOY_ACCESS_TOKEN }}
+          access_token: ${{ secrets.GITLAB_ACCESS_TOKEN }}
           id: '59713152'
           ref: 'github_binaries_update'
           variables: '{"run_id":"${{ github.run_id }}","sha":"${{ github.sha }}"}'
