@@ -12,10 +12,7 @@ Tasks:
 - [ ] Document the hashgraph monitor widget. `docs/docs/gui-tools/hashgraph_viewer.md` 
 Assignee: yr
 
-### Tagion API library
-- [X] Create document API
-- [x] create HiBON api
-- [ ] create wallet api
+
 
 ### Distributed nodes test
 Setup tests for multiple distributed nodes
@@ -73,6 +70,11 @@ Description: hirep have --types arg, but it's not implemented yet.
 ---
 
 ## Done
+
+### Tagion API library
+- [X] Create document API
+- [x] create HiBON api
+- [x] create wallet api
 
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
