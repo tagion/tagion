@@ -179,13 +179,6 @@ class Event {
      */
     @safe
     class Witness {
-        enum DecisionType {
-            undecided,
-            Weak,
-            No,
-            Yes,
-        }
-
         protected static uint _count;
         @nogc static uint count() nothrow {
             return _count;
