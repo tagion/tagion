@@ -11,7 +11,7 @@ https://github.com/tagion/tagion-visual-hashgraph
 ## Howto build
 
 - cd hashgraph-app 
-- `npm install` to init pachage dependencies
+- `npm install` to init package dependencies
 - `npm run build` to build package
 - use `dist/hashgraph.js`, `dist/hashgraph.js.map`, `assets/hashgraph.css` to deploy
 
