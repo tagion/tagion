@@ -2,7 +2,6 @@
 
 ## In Progress
 
-
 ### Wallet 
 Description: simplify the wallet interface so that there is only one way to do everything
 
@@ -12,22 +11,19 @@ Tasks:
 - [ ] Document the hashgraph monitor widget. `docs/docs/gui-tools/hashgraph_viewer.md` 
 Assignee: yr
 
-### Tagion API library
-- [X] Create document API
-- [x] create HiBON api
-- [ ] create wallet api
 
 ### Distributed nodes test
 Setup tests for multiple distributed nodes
 - [ ] Setup tool to start distribute test network
 - [ ] Implement a remote monitor tool for the distribute network
+Assignee: lr
 
-## Merge wavefront
-Description: Merge the changes to the hashgraph with changes to the wavefront and ensure that all tests pass.
-Assignee: lr, cbr
+### Gitlab ci trigger
+Make a script to trigger the gitlab app ci when the native mobile libraries have been built
+Assignee: lr
+
 
 ## Backlog
-
 
 ### Hashgraph node swapping
 Description: Enable a new node to join the graph
@@ -58,7 +54,6 @@ Description: We should make sure that we have check for max-size/out-of-memory
 For all external Documents
 Like the inputvalidator...
 
-Test should also be made for NNG buffer overrun!
 
 ### Daily operational test
 Description: Add a github ci script which activates the operational test once a day
@@ -73,6 +68,11 @@ Description: hirep have --types arg, but it's not implemented yet.
 ---
 
 ## Done
+
+### Tagion API library
+- [X] Create document API
+- [x] create HiBON api
+- [x] create wallet api
 
 ### Hashgraph Consensus bug
 Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
@@ -95,6 +95,9 @@ Assignee: lr
 - [x] add hibon override/delete key functions
 Assignee: lr
 
+## Merge wavefront
+Description: Merge the changes to the hashgraph with changes to the wavefront and ensure that all tests pass.
+Assignee: lr, cbr
 
 ---
 
