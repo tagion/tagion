@@ -731,6 +731,7 @@ template add_T(T) {
     }
 }
 
+pragma(msg, "fixme: remomve");
 extern(D)
 private
 template add_array_T(T) {
