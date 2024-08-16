@@ -174,14 +174,9 @@ struct EpochCreatorService {
                     &receiveWavefront_req,
                     &unknown
             );
-            if (received) {
-                while (!payload_queue.empty) {
-                    const sender = hashgraph.create_init_tide(payload, gossip_net.time);
-                    gossip_net.send(hashgraph.select_channel, sender);
-                }
-                continue;
+            if (!received) {
+                timeout();
             }
-            timeout();
         }
 
         if (hashgraph.areWeInGraph) {
