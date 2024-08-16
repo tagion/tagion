@@ -1,6 +1,9 @@
 # Build image
 FROM alpine:20240606 as build
 
+# set the --build-arg DEBUG=1 to build the executable with debug information
+ARG DEBUG
+
 # Install deps
 WORKDIR /tmp/
 RUN apk add --no-cache git clang cmake ldc make ninja
@@ -8,10 +11,12 @@ RUN apk add --no-cache git clang cmake ldc make ninja
 # Build
 COPY . ./src
 WORKDIR /tmp/src/
-RUN echo DFLAGS+=--static --O3 >> local.mk
-RUN make tagion install CMAKE_GENERATOR=Ninja INSTALL=/usr/local/bin/ DC=ldc2 DEBUG_ENABLE=
-RUN strip /usr/local/bin/tagion
-
+RUN echo DFLAGS+=--static >> local.mk && \
+if [[ "$DEBUG" == "" ]]; then \
+    echo DFLAGS+=--O3 >> local.mk; \
+    echo DEBUG_ENABLE= >> local.mk; \
+fi
+RUN make tagion install CMAKE_GENERATOR=Ninja INSTALL=/usr/local/bin/ DC=ldc2
 
 # Final image
 FROM alpine:20240606

@@ -31,9 +31,10 @@ import tagion.behaviour.BehaviourException : check, BehaviourException;
 import tagion.basic.Debug;
 import tagion.basic.Version;
 
+@safe:
 struct HashGraphOptions {
     uint number_of_nodes;
-    size_t seed = 123_456_689;
+    uint seed = 123_456_689;
     string path;
     bool disable_graphfile; /// Disable graph file
     bool continue_on_error; /// Don't stop if the epochs does not match
@@ -68,59 +69,59 @@ class TestRefinement : StdRefinement {
 class NewTestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
     static long last_epoch;
-static bool continue_on_error;
+    static bool continue_on_error;
     override void epoch(Event[] event_collection, const Round decided_round) const {
         static bool first_epoch;
         if (!first_epoch) {
             check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
         }
         first_epoch = true;
-        __write("%12s Round %d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
+        __write("%12s Round %04d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
         if (event_collection.length == 0) {
             return;
         }
 
-        auto times=event_collection.map!(e => cast(sdt_t)e.event_body.time).array;
+        auto times = event_collection.map!(e => cast(sdt_t) e.event_body.time).array;
 
-         static if (ver.HASH_ORDERING) {
-            auto sorted_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint)
-            .filter!((e) => !e.event_body.payload.empty)
-            .array; 
+        static if (ver.HASH_ORDERING) {
+            auto sorted_events = event_collection.sort!((a, b) => a.fingerprint < b.fingerprint)
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
         else static if (ver.OLD_ORDERING) {
-            auto sorted_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT))
-            .filter!((e) => !e.event_body.payload.empty)
-            .array;
+            auto sorted_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
-        else static if  (ver.NEW_ORDERING) {
+        else static if (ver.NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
                 .filter!(e => decided_round.famous_mask[e.node_id])
                 .array;
             auto sorted_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
-            .filter!((e) => !e.event_body.payload.empty)
-            .array;
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
         times.sort;
         const mid = times.length / 2 + (times.length % 1);
         const epoch_time = times[mid];
 
         static if (ver.HASH_ORDERING) {
-            auto __sorted_raw_events = event_collection.sort!((a,b) => a.fingerprint < b.fingerprint).array;
-            }
-            else static if (ver.OLD_ORDERING) {
-                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
-            }
-            else static if (ver.NEW_ORDERING) {
-                const famous_witnesses = decided_round
-                    ._events
-                    .filter!(e => e !is null)
-                    .filter!(e => decided_round.famous_mask[e.node_id])
-                    .array;
-                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
-                    .array;
-            }
+            auto __sorted_raw_events = event_collection.sort!((a, b) => a.fingerprint < b.fingerprint).array;
+        }
+        else static if (ver.OLD_ORDERING) {
+            auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        }
+        else static if (ver.NEW_ORDERING) {
+            const famous_witnesses = decided_round
+                ._events
+                .filter!(e => e !is null)
+                .filter!(e => decided_round.famous_mask[e.node_id])
+                .array;
+            auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
+                .array;
+        }
         auto finished_epoch = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
 
         epochs[finished_epoch.epoch][format("%(%02x%)", hashgraph.owner_node.channel)] = finished_epoch;
@@ -134,7 +135,6 @@ alias TestNetwork = TestNetworkT!NewTestRefinement;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
-@safe
 static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import core.time;
@@ -144,10 +144,10 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
     import tagion.gossip.GossipNet;
     import tagion.hibon.HiBONJSON;
     import tagion.utils.Queue;
-    import tagion.utils.Random;
+    import std.random;
 
     TestGossipNet authorising;
-    Random!size_t random;
+    Random random;
     SysTime global_time;
     enum timestep {
         MIN = 50,
@@ -169,6 +169,10 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             // empty
         }
 
+        ref Random random() pure nothrow {
+            return this.outer.random;
+        }
+
         @property
         void time(const(sdt_t) t) {
             _current_time = sdt_t(t);
@@ -179,32 +183,18 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             return _current_time;
         }
 
-        bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-            return (channel in channel_queues) !is null;
-        }
-
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
-            if (online_states !is null && !online_states[channel]) {
-                return;
-            }
-
-            const doc = sender.toDoc;
-            channel_queues[channel].write(doc);
+            send(channel, sender.toDoc);
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
             if (online_states !is null && !online_states[channel]) {
                 return;
             }
-
             channel_queues[channel].write(doc);
         }
 
         final void send(T)(const(Pubkey) channel, T pack) if (isHiBONRecord!T) {
-            if (online_states !is null && !online_states[channel]) {
-                return;
-            }
-
             send(channel, pack.toDoc);
         }
 
@@ -214,31 +204,6 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
         void close() {
             // Dummy empty
-        }
-
-        Pubkey select_channel(ChannelFilter channel_filter) {
-            auto send_channels = channel_queues
-                .byKey
-                .filter!(k => online_states[k])
-                .filter!(k => channel_filter(k))
-                .array;
-
-            if (!send_channels.empty) {
-                const node_index = random.value(0, send_channels.length);
-                return send_channels[node_index];
-            }
-
-            return Pubkey.init;
-        }
-
-        Pubkey gossip(
-                ChannelFilter channel_filter,
-                SenderCallBack sender) {
-            const send_channel = select_channel(channel_filter);
-            if (send_channel !is Pubkey.init) {
-                send(send_channel, sender());
-            }
-            return send_channel;
         }
 
         bool empty(const Pubkey channel) const pure nothrow {
@@ -251,6 +216,10 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
         void remove_channel(const Pubkey channel) {
             channel_queues.remove(channel);
+        }
+
+        const(Pubkey[]) active_channels() pure nothrow {
+            return channel_queues.keys;
         }
     }
 
@@ -272,7 +241,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         }
 
         sdt_t time() {
-            const systime = global_time + random.value(timestep.MIN, timestep.MAX).msecs;
+            const systime = global_time + uniform(timestep.MIN, timestep.MAX, random).msecs;
             const sdt_time = sdt_t(systime.stdTime);
             return sdt_time;
         }
@@ -291,10 +260,21 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             uint count;
             bool stop;
 
-            const(Document) payload() @safe {
+            const(Document) payload()  {
                 auto h = new HiBON;
                 h["node"] = format("%s-%d", _hashgraph.name, count);
+                count++;
                 return Document(h);
+            }
+
+            void wavefront(
+                    const HiRPC.Receiver received,
+                    lazy const(sdt_t) time) {
+
+                const response = _hashgraph.wavefront_response(received, time, payload());
+                if (!response.isError) {
+                    authorising.send(received.pubkey, response);
+                }
             }
 
             while (!stop) {
@@ -305,31 +285,18 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
-                    _hashgraph.wavefront(
-                            received,
-                            time,
-                            (const(HiRPC.Sender) return_wavefront) @safe {
-                        authorising.send(received.pubkey, return_wavefront);
-                    },
-                            &payload
-                    );
-                    count++;
+                    wavefront(received, time);
                 }
                 (() @trusted { yield; })();
-                //const onLine=_hashgraph.areWeOnline;
-                const init_tide = random.value(0, 2) is 1;
+                const init_tide = uniform(0, 2, random) is 1;
                 if (init_tide) {
-                    _hashgraph.init_tide(
-                            &authorising.gossip,
-                            &payload,
-                            time);
-                    count++;
+                    authorising.send(
+                            _hashgraph.select_channel, _hashgraph.create_init_tide(payload(), time));
                 }
             }
         }
     }
 
-    @trusted
     const(Pubkey[]) channels() const pure nothrow {
         return networks.keys;
     }
@@ -346,7 +313,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
-        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
+        auto h = new HashGraph(N, net, refinement, authorising, name);
         h.scrap_depth = scrap_depth;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
@@ -365,7 +332,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
 import tagion.hashgraphview.Compare;
 
-bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
+bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) nothrow {
     static string print(const Event e) nothrow {
         if (e) {
             const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
@@ -380,7 +347,6 @@ bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @
     return false;
 }
 
-@safe
 void printStates(R)(TestNetworkT!(R) network) if (is(R : Refinement)) {
     foreach (channel; network.networks) {
         writeln("----------------------");
@@ -398,11 +364,11 @@ void printStates(R)(TestNetworkT!(R) network) if (is(R : Refinement)) {
 }
 
 @safe
-static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs, ref long last_epoch, const bool continue_on_error=false) {
+static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epochs, ref long last_epoch, const bool continue_on_error = false) {
     static int error_count;
     import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
     import tagion.crypto.SecureInterfaceNet;
-                    import tagion.utils.Term;
+    import tagion.utils.Term;
 
     try {
         //writefln("unfinished epochs %s", epochs.length);
@@ -438,17 +404,17 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                     foreach (i, events; epoch_events) {
                         uint number_of_empty_events;
                         printout ~= format("\n%s: ", i);
-                        if (!continue_on_error) 
-                        foreach (j, epack; events) {
-                            const go_hash = net.calcHash(*epack);
-                            const equal = (j < epoch_events[0].length) && (net.calcHash(*epoch_events[0][j]) == go_hash);
+                        if (!continue_on_error)
+                            foreach (j, epack; events) {
+                                const go_hash = net.calcHash(*epack);
+                                const equal = (j < epoch_events[0].length) && (net.calcHash(*epoch_events[0][j]) == go_hash);
 
-                            const mark = (equal) ? GREEN : RED;
-                            printout ~= format("%s%(%02x%):%03d ", mark, go_hash[0 .. 4], j);
-                            if (epack.event_body.payload.empty) {
-                                number_of_empty_events++;
+                                const mark = (equal) ? GREEN : RED;
+                                printout ~= format("%s%(%02x%):%03d ", mark, go_hash[0 .. 4], j);
+                                if (epack.event_body.payload.empty) {
+                                    number_of_empty_events++;
+                                }
                             }
-                        }
                         printout ~= format("TOTAL: %s EMPTY: %s", events.length, number_of_empty_events);
                     }
                     return printout;
@@ -457,7 +423,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 if (!epoch_events.all!(e => equal(e.map!(e => *e), epoch_events[0].map!(e => *e)))) {
                     check(continue_on_error, format("not all events the same on epoch %s \n%s", epoch.key, print_events));
                     if (continue_on_error) {
-                        writefln("%sMismatch Round %d\n%s%s", RED, epoch.key, print_events, RESET);
+                        writefln("%sMismatch Round %04d\n%s%s", RED, epoch.key, print_events, RESET);
                     }
                 }
 
@@ -472,7 +438,7 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                 }
 
                 writefln("FINISHED ENTIRE EPOCH %s", epoch.key);
-                last_epoch=max(last_epoch, epoch.key); 
+                last_epoch = max(last_epoch, epoch.key);
                 epochs.remove(epoch.key);
             }
         }

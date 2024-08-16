@@ -100,9 +100,7 @@ int _main(string[] args) {
 
     string test_dart;
     string angle_range;
-    string exec;
     bool fake;
-    string passphrase = "verysecret";
 
     GetoptResult main_args;
     try {
@@ -124,8 +122,6 @@ int _main(string[] args) {
             "dump-branches", "Dumps all the archives and branches with in the given angle", &op.dump_branches,
             "eye", "Prints the bullseye", &op.eye,
             "sync", "Synchronize src.drt to dest.drt", &op.sync,
-            "e|exec", "Execute string to be used for remote access", &exec,
-            "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
             "A|angle", "Sets angle range from:to (Default is full range)", &angle_range,
             "depth", "Set limit on dart rim depth", &op.depth,
             "fake", format(
@@ -162,10 +158,6 @@ int _main(string[] args) {
             return 0;
         }
 
-        if (!exec.empty) {
-            writeln("%s", exec);
-            writefln(exec, "hirpc.hibon", "response.hibon");
-        }
         if (!angle_range.empty) {
             import std.bitmanip;
 
@@ -202,11 +194,10 @@ int _main(string[] args) {
             fake = blockfile.headerBlock.checkId(DARTFakeNet.hashname);
         }
         if (fake) {
-            net = new DARTFakeNet(passphrase);
+            net = new DARTFakeNet();
         }
         else {
             net = new StdSecureNet;
-            net.generateKeyPair(passphrase);
         }
 
         if (!test_dart.empty) {

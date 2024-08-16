@@ -94,7 +94,7 @@ class Round {
         return _valid_witness;
     }
 
-    Buffer pattern() const pure nothrow {
+    final Buffer pattern() const pure nothrow {
         import tagion.utils.Miscellaneous;
 
         auto fingerprints = _valid_witness[]
@@ -102,6 +102,10 @@ class Round {
             .filter!(e => e !is null)
             .map!(e => cast(Buffer) e.fingerprint);
         return xor(fingerprints);
+    }
+
+    final EpochVote epochVote(const long epoch_number) const pure nothrow {
+        return EpochVote(epoch_number, cast(uint)(_valid_witness.count), pattern);
     }
 
     enum Completed {
@@ -134,7 +138,7 @@ class Round {
             scope (exit) {
                 if (ret > Completed.undecided) {
                     __write(
-                            "%s Round %d  witness=%#s| %(%#s %) ret=%s%s%s".replace(
+                            "%s Round %04d  witness=%#s| %(%#s %) ret=%s%s%s".replace(
                             "#", node_size.to!string),
                             _name, number,
                             _valid_witness,
@@ -150,18 +154,18 @@ class Round {
             if (number_of_future_rounds < 4) {
                 return ret = Completed.too_few;
             }
-            version(none)
+            version (none)
                 scope (exit) {
                     _valid_witness &= included_mask;
                 }
 
-            __write("%s Round %d    valid  %-(%2d %) ".replace("#", node_size.to!string),
+            __write("%s Round %04d    valid  %-(%2d %) ".replace("#", node_size.to!string),
                     _name,
                     number,
                     _events.map!(e => (e is null) ? -1 : cast(int) e.witness.seen_voting_mask.count));
 
-    //            auto list_majority_rounds_1 = list_majority_rounds;
-      //      list_majority_rounds_1.popFront;
+            //            auto list_majority_rounds_1 = list_majority_rounds;
+            //      list_majority_rounds_1.popFront;
             uint[] gather_voters;
             gather_voters.length = node_size;
             foreach (slide_r; list_majority_rounds.drop(1).slide(2)) {
@@ -189,13 +193,13 @@ class Round {
                 const _all = _events.filter!(e => e !is null)
                     .map!(e => e.witness.__seen_decided(gather_voters[e.node_id]))
                     .all;
-                __write("%s Round %d:%-2d ->->-> %-(%2d %) %s%s",
+                __write("%s Round %04d:%-2d ->->-> %-(%2d %) %s%s",
                         _name,
                         number,
                         r.number - number,
                         r.events.map!(e => (e is null) ? -1 : cast(
                         int) e.witness.previous_witness_seen_mask.count), _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
-                __write("%s %sRound %d:%-2d%s count  %-(%2d %) %s%s",
+                __write("%s %sRound %04d:%-2d%s count  %-(%2d %) %s%s",
                         _name,
                         BACKGROUND_BLACK,
                         number,
@@ -206,17 +210,16 @@ class Round {
                 _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
                 if (_all) {
                     _valid_witness &= BitMask(_events
-                            .filter!(e => (e !is null))
-                            .filter!(e => isMajority(e.witness.yes_votes, node_size))
+                            .filter!(e => (e !is null)) //.filter!(e => isMajority(e.witness.yes_votes, node_size))
                             .filter!(e => isMajority(e.witness.seen_voting_mask, node_size))
                             .map!(e => e.node_id));
-                    __write("%s Round %d     yes   %(%2d %) pattern=%(%02x %)".replace("#", node_size
+                    __write("%s Round %04d     yes   %(%2d %) pattern=%(%02x %)".replace("#", node_size
                             .to!string),
                             _name,
                             number,
                             gather_voters,
                             pattern);
-                    __write("%s Round %d    gather %-(%s %) %#s distance=%d".replace("#", node_size
+                    __write("%s Round %04d    gather %-(%s %) %#s distance=%d".replace("#", node_size
                             .to!string),
                             _name,
                             number,
@@ -226,8 +229,10 @@ class Round {
                             cast(int)(r.number - number)
 
                     );
+                    if (isMajority(_valid_witness, node_size)) {
 
-                    return ret = Completed.all_witness;
+                        return ret = Completed.all_witness;
+                    }
                 }
             }
             return ret = Completed.undecided;
@@ -588,7 +593,7 @@ class Round {
                 return;
             }
             __write(
-                    "%s %s%sRound %d%s can be decided  witness=%d",
+                    "%s %s%sRound %04d%s can be decided  witness=%d",
                     _name,
                     BOLD, GREEN,
                     round_to_be_decided.number,
@@ -596,7 +601,7 @@ class Round {
                     witness_in_round.walkLength
             );
             Event.view(witness_in_round.map!(w => w.outer));
-            log("Round %d decided", round_to_be_decided.number);
+            log("Round %04d decided", round_to_be_decided.number);
             last_decided_round = round_to_be_decided;
             round_to_be_decided.decide;
             hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
@@ -612,9 +617,9 @@ class Round {
 
             if (!isMajority(round_to_be_decided._valid_witness.count,
                     hashgraph.node_size)) {
-                __write("%12s %sRound %d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
+                __write("%12s %sRound %04d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
 
-                __write("%s %sRound %d%s epoch %-(%s %) collected=0  votes=%#s yes=%d  "
+                __write("%s %sRound %04d%s epoch %-(%s %) collected=0  votes=%#s yes=%d  "
                         .replace("#", round_to_be_decided.node_size.to!string),
                         _name,
                         RED,
@@ -626,8 +631,17 @@ class Round {
                 );
                 return;
             }
+            version (none)
+                scope (exit) {
+                    const sender = () => hashgraph.create_init_tide(
+                            round_to_be_decided.epochVote(round_to_be_decided.number).toDoc,
+                            currentTime);
+
+                    __write("sender=%J", sender());
+                    hashgraph.gossip_net.gossip(&hashgraph.not_used_channels, sender);
+                }
             collect_received_round(round_to_be_decided);
-            check_decide_round;
+            //            check_decide_round;
         }
 
         protected void collect_received_round(Round r)
@@ -715,7 +729,7 @@ class Round {
                 return format("%sX %s", RED, RESET);
             }
 
-            __write("%12s %sRound %d%s epoch %-(%s %) collected=%d  votes=%#s yes=%d"
+            __write("%12s %sRound %04d%s epoch %-(%s %) collected=%d  votes=%#s yes=%d"
                     .replace("#", r.node_size.to!string),
 
                     _name,

@@ -62,19 +62,21 @@ struct EpochCreatorService {
         assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
 
         import tagion.hashgraph.Event : Event;
+
         Event.callbacks = new LogMonitorCallbacks();
-        version(BDD) {
-            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook.keys);
+        version (BDD) {
+            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook
+                    .keys);
         }
 
         StdGossipNet gossip_net;
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL:
-            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout);
+            gossip_net = new EmulatorGossipNet(opts.timeout);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, opts.timeout, ActorHandle(task_names.node_interface));
+            gossip_net = new NNGGossipNet(opts.timeout, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
@@ -93,7 +95,7 @@ struct EpochCreatorService {
         auto refinement = new StdRefinement;
         refinement.setTasknames(task_names);
 
-        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel);
+        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, gossip_net);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         PayloadQueue payload_queue = new PayloadQueue();
@@ -116,6 +118,7 @@ struct EpochCreatorService {
         }
 
         void receivePayload(Payload, const(Document) pload) {
+            pragma(msg, "fixme(cbr): Should we not just send the payload directly to the hashgraph");
             payload_queue.write(pload);
             counter++;
         }
@@ -127,21 +130,20 @@ struct EpochCreatorService {
             }
 
             const received_wave = (receiver.isMethod)
-                ? receiver.params!Wavefront(net)
-                : receiver.result!Wavefront(net);
+                ? receiver.params!Wavefront(net) : receiver.result!Wavefront(net);
 
-            debug(epoch_creator) log("<- %s", received_wave.state);
+            debug (epoch_creator)
+                log("<- %s", received_wave.state);
 
             // Filter out all signed contracts from the payload
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
-                .filter!(p => p.isRecord!SignedContract)
-                // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+                .filter!(p => p.isRecord!SignedContract) // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
                 .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
                 .handle!(HiBONException, RangePrimitive.front,
                         (e, r) { log("invalid SignedContract from hashgraph"); return null; }
-                )
+            )
                 .filter!(s => !s.isinit)
                 .array;
 
@@ -151,17 +153,16 @@ struct EpochCreatorService {
 
             const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
 
-            if(receiver.isMethod) {
-                gossip_net.send(req, cast(Pubkey)receiver.pubkey, return_wavefront);
-                /* locate(req.task_name).send(WavefrontReq(req.id), cast(Pubkey)receiver.pubkey, return_wavefront.toDoc); */
+            if (receiver.isMethod) {
+                gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
             }
         }
 
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
             if (init_tide) {
-                auto sender = () => hashgraph.create_init_tide(payload, currentTime);
-                const _ = gossip_net.gossip(&hashgraph.not_used_channels, sender);
+                const sender = hashgraph.create_init_tide(payload, gossip_net.time);
+                gossip_net.send(hashgraph.select_channel, sender);
             }
         }
 
@@ -174,6 +175,10 @@ struct EpochCreatorService {
                     &unknown
             );
             if (received) {
+                while (!payload_queue.empty) {
+                    const sender = hashgraph.create_init_tide(payload, gossip_net.time);
+                    gossip_net.send(hashgraph.select_channel, sender);
+                }
                 continue;
             }
             timeout();

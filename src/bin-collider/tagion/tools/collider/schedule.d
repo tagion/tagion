@@ -62,6 +62,7 @@ enum TEST_STAGE = "TEST_STAGE";
 enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
 enum BDD_RESULTS = "BDD_RESULTS";
+enum UNSHARE_NET = "UNSHARE_NET";
 @safe
 struct ScheduleRunner {
     Schedule schedule;
@@ -127,10 +128,7 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
-
-            
-
-                .kill(pid); //.ifThrown!ProcessException;
+           .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {
             // ignore
@@ -253,7 +251,7 @@ struct ScheduleRunner {
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
 
-                        bool unshare_net = ("UNSHARE_NET" in env) !is null;
+                        const unshare_net = (UNSHARE_NET in env) !is null;
                         if(unshare_net) {
                             cmd = ["bwrap", "--unshare-net", "--dev-bind", "/", "/"] ~ cmd;
                         }

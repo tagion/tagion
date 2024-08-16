@@ -1,0 +1,74 @@
+volumes:
+  setup-volume:
+  node0:
+  node1:
+  node2:
+  node3:
+  node4:
+
+services:
+  setup-volumes:
+    image: tagion
+    volumes:
+      - setup-volume:/usr/local/app
+    command: create_wallets.sh -m1
+
+  node0:
+    image: tagion
+    depends_on:
+      setup-volumes:
+        condition: service_completed_successfully
+    ports:
+      - "10700:10700"
+    volumes: 
+      - setup-volume:/data
+      - node0:/usr/local/app
+    command: sh -c "cp -r /data/. /usr/local/app && echo 0000 | neuewelle /usr/local/app/mode1/node0/tagionwave.json"
+
+  node1:
+    image: tagion
+    depends_on:
+      setup-volumes:
+        condition: service_completed_successfully
+    ports:
+      - "10701:10700"
+    volumes: 
+      - setup-volume:/data
+      - node1:/usr/local/app
+    command: sh -c "cp -r /data/. /usr/local/app && echo 0001 | neuewelle /usr/local/app/mode1/node1/tagionwave.json"
+
+  node2:
+    image: tagion
+    depends_on:
+      setup-volumes:
+        condition: service_completed_successfully
+    ports:
+      - "10702:10700"
+    volumes: 
+      - setup-volume:/data
+      - node2:/usr/local/app
+    command: sh -c "cp -r /data/. /usr/local/app && echo 0002 | neuewelle /usr/local/app/mode1/node2/tagionwave.json"
+
+  node3:
+    image: tagion
+    depends_on:
+      setup-volumes:
+        condition: service_completed_successfully
+    ports:
+      - "10703:10700"
+    volumes: 
+      - setup-volume:/data
+      - node3:/usr/local/app
+    command: sh -c "cp -r /data/. /usr/local/app && echo 0003 | neuewelle /usr/local/app/mode1/node3/tagionwave.json"
+
+  node4:
+    image: tagion
+    depends_on:
+      setup-volumes:
+        condition: service_completed_successfully
+    ports:
+      - "10704:10700"
+    volumes: 
+      - setup-volume:/data
+      - node4:/usr/local/app
+    command: sh -c "cp -r /data/. /usr/local/app && echo 0004 | neuewelle /usr/local/app/mode1/node4/tagionwave.json"

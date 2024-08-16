@@ -5,12 +5,13 @@ module tagion.services.inputvalidator;
 @safe:
 
 import core.time;
-import nngd;
+
 import std.algorithm : remove;
 import std.conv : to;
 import std.format;
 import std.socket;
 import std.stdio;
+
 import tagion.actor;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
@@ -27,6 +28,8 @@ import tagion.services.codes;
 import tagion.services.options : TaskNames;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
+
+import nngd;
 
 struct InputValidatorOptions {
     string sock_addr;

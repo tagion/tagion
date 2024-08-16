@@ -2,8 +2,6 @@ module tagion.dart.synchronizer;
 
 import tagion.communication.HiRPC;
 
-alias HiRPCSender = HiRPC.Sender;
-alias HiRPCReceiver = HiRPC.Receiver;
 import tagion.dart.BlockFile;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;

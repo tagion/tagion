@@ -226,23 +226,6 @@ class Event {
             bool weak() {
                 return _mother && _round.previous && (_round.previous.events[node_id] is null);
             }
-
-            version (none) bool decided() {
-                const voted = _voted_yes_mask.count;
-                const N = _round.events.length;
-
-                if (isMajority(voted, N)) {
-                    if (isMajority(yes_votes, N)) {
-                        return true;
-                    }
-                    const voters = _round.next.voters;
-                    if (voters == voted) {
-                        const votes_left = long(N) - long(voted);
-                        return !isMajority(votes_left + yes_votes, N);
-                    }
-                }
-                return false;
-            }
         }
 
         private void voteYes(const size_t voting_node_id) pure nothrow {
