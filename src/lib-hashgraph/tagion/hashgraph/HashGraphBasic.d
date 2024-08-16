@@ -105,7 +105,6 @@ enum ExchangeState : uint {
     TIDAL_WAVE, /// Initial state A
     FIRST_WAVE, /// Difference between B and initial state A
     SECOND_WAVE, /// Acknowledgment, difference between state and calculated state B
-    BREAKING_WAVE, /// Communication conflict, wavefront initiated from both peers
 
     SHARP,
     RIPPLE, /// Ripple is used the first time a node connects to the network
@@ -349,3 +348,11 @@ struct EvaPayload {
 static assert(isHiBONRecord!Wavefront);
 static assert(isHiBONRecord!(EventPackage));
 static assert(isHiBONRecord!(immutable(EventPackage)));
+
+@recordType("$@EVote")
+struct EpochVote {
+    @label(StdNames.epoch_number) long epoch_number; /// should always be zero
+    uint nodes;
+    Buffer pattern;
+    mixin HiBONRecord;
+}

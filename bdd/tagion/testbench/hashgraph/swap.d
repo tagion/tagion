@@ -7,6 +7,7 @@ import std.path : buildPath, extension, setExtension;
 import std.stdio;
 import std.typecons : Tuple;
 import std.typecons;
+import std.random;
 import tagion.basic.Types : FileExtension;
 import tagion.behaviour;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -49,7 +50,7 @@ class NodeSwap {
 
         network = new TestNetwork(node_names);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
-        network.random.seed(123456789);
+        network.random=Random(123456789);
         writeln(network.random);
 
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
@@ -69,7 +70,7 @@ class NodeSwap {
     @When("a node has created a specific amount of epochs, it swaps in the new node.")
     Document node() {
         foreach (i; 0 .. MAX_CALLS) {
-            const channel_number = network.random.value(0, network.channels.length);
+            const channel_number = uniform(0, network.channels.length, network.random);
             const channel = network.channels[channel_number];
             network.current = Pubkey(channel);
             auto current = network.networks[channel];
@@ -87,7 +88,7 @@ class NodeSwap {
         // TestNetwork.TestGossipNet.online_states[offline_key] = false;
 
         foreach (i; 0 .. MAX_CALLS) {
-            const channel_number = network.random.value(0, network.channels.length);
+            const channel_number = uniform(0, network.channels.length, network.random);
             const channel = network.channels[channel_number];
             network.current = Pubkey(channel);
             auto current = network.networks[channel];
@@ -99,7 +100,7 @@ class NodeSwap {
         network.addNode(new TestRefinement, node_names.length, new_node, /*Yes.joining*/);
 
         foreach (i; 0 .. MAX_CALLS) {
-            const channel_number = network.random.value(0, network.channels.length);
+            const channel_number = uniform(0, network.channels.length, network.random);
             const channel = network.channels[channel_number];
             network.current = Pubkey(channel);
             auto current = network.networks[channel];

@@ -66,10 +66,6 @@ DVERSIONS+=HASH_ORDERING
 # see GossipNet
 # DVERSIONS+=RANDOM_DELAY
 
-# HashGraph.d not_used_channels turn on check of
-# node.state is ExchangeState.NONE. Mode1 does not function with this.
-# DVERSIONS=SEND_ALWAYS
-
 # Enable verbose epoch logging
 # DVERSIONS+=EPOCH_LOG
 

@@ -34,8 +34,8 @@ import tagion.utils.pretend_safe_concurrency;
 enum feature = Feature(
             "EpochCreator service",
             [
-        "This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
-]);
+            "This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
+            ]);
 
 alias FeatureContext = Tuple!(
         SendPayloadAndCreateEpoch, "SendPayloadAndCreateEpoch",
@@ -125,6 +125,7 @@ class SendPayloadAndCreateEpoch {
         uint counter;
         do {
             const received = receiveOnlyTimeout!(LogInfo, const(Document))(27.seconds);
+            pragma(msg, "Received ", typeof(received));
             check(received[0].symbol_name.canFind("epoch_successful"), "Event should have been epoch_successful");
             const epoch = received[1];
 
