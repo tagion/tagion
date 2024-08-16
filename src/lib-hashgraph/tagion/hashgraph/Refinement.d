@@ -27,6 +27,7 @@ import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Version;
 
+/// epoch subscription event record
 @safe
 @recordType("finishedEpoch")
 struct FinishedEpoch {
