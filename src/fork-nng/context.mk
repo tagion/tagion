@@ -2,7 +2,15 @@
 DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
 
-LIBNNG := $(DTMP_NNG)/libnng.a
+ifdef DEBUG_ENABLE
+CONFIGUREFLAGS_NNG+=CMAKE_BUILD_TYPE=Debug
+DTMP_NNG:=$(DTMP_NNG)/debug/
+else
+CONFIGUREFLAGS_NNG+=CMAKE_BUILD_TYPE=Release
+DTMP_NNG:=$(DTMP_NNG)/release/
+endif
+
+LIBNNG := $(DTMP_NNG)libnng.a
 
 ifdef USE_SYSTEM_LIBS
 # NNG Does not provide a .pc file,
@@ -15,10 +23,6 @@ LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
 endif
 else
 LD_NNG+=$(LIBNNG)
-endif
-
-ifndef DEBUG_DISABLE
-NNGFLAGS+=-DCMAKE_BUILD_TYPE=Debug
 endif
 
 # Used to check if the submodule has been updated
