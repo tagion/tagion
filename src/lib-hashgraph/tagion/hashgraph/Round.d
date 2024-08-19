@@ -159,7 +159,11 @@ class Round {
                     _valid_witness &= included_mask;
                 }
 
-            __write("%s Round %04d    valid  %-(%2d %) ".replace("#", node_size.to!string),
+            __write("%s Round %04d  witness  %-(%2d %) ".replace("#", node_size.to!string),
+                    _name,
+                    number,
+                    _events.map!(e => e !is null));
+             __write("%s Round %04d    valid  %-(%2d %) ".replace("#", node_size.to!string),
                     _name,
                     number,
                     _events.map!(e => (e is null) ? -1 : cast(int) e.witness.seen_voting_mask.count));

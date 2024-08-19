@@ -362,7 +362,7 @@ class Event {
       * Params:
       *   hashgraph = event owner 
       */
-    final void connect(HashGraph hashgraph)
+    package final void connect(HashGraph hashgraph)
     in {
         assert(hashgraph.areWeInGraph);
     }

@@ -732,33 +732,6 @@ template add_T(T) {
     }
 }
 
-pragma(msg, "fixme: remomve");
-extern(D)
-private
-template add_array_T(T) {
-    int add_array_T(const(HiBONT*) instance,
-                const char* key,
-                const size_t key_len,
-                T* buf,
-                const size_t buf_len) {
-
-        try {
-            if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-                set_error_text = INVALID_HIBON_INSTANCE;
-                return ErrorCode.error;
-            }
-            HiBON h = cast(HiBON) instance.hibon;
-            const _key = key[0 .. key_len].idup;
-            h[_key] = buf[0 .. buf_len];
-        }
-        catch(Exception e) {
-            last_error = e;
-            return ErrorCode.exception;
-        }
-        return ErrorCode.none;
-    }
-}
-
 /** 
 * Add boolean to hibon instance
 * Params:
