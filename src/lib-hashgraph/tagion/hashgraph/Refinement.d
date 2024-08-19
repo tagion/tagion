@@ -25,11 +25,13 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.standardnames;
 import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.basic.Version;
 
+/// epoch subscription event record
 @safe
 @recordType("finishedEpoch")
 struct FinishedEpoch {
-    @label("event_packages") const(EventPackage)[] event_packages;
+    @label("event_packages") immutable(EventPackage)*[] event_packages;
     @exclude const(Event)[] events;
     @label(StdNames.time) sdt_t time;
     @label("epoch") long epoch;
@@ -37,9 +39,8 @@ struct FinishedEpoch {
         this(const(Event)[] events, sdt_t time, long epoch) pure nothrow {
             this.events = events; // not serialized
             this.event_packages = events
-                .map!((e) => *(e.event_package))
+                .map!((e) => cast(immutable(EventPackage)*)e.event_package)
                 .array;
-
             this.time = time;
             this.epoch = epoch;
         }
@@ -81,8 +82,8 @@ class StdRefinement : Refinement {
 
     void finishedEpoch(
             const(Event[]) events,
-            const sdt_t epoch_time,
-            const Round decided_round) const {
+    const sdt_t epoch_time,
+    const Round decided_round) const {
         auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
 
         log.event(epoch_created, "epoch_successful", event_payload);
@@ -109,8 +110,7 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    version (NEW_ORDERING) 
-    static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
+    version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
         import std.bigint;
         import std.numeric : gcd;
         import std.range : back, retro, tee;
@@ -143,21 +143,23 @@ class StdRefinement : Refinement {
                         time + other.time);
             }
         }
+
         PseudoTime calc_pseudo_time(Event event) pure const {
             auto receivers = famous_witnesses
                 .map!(e => e[].until!(e => !e.sees(event))
-                        .array.back);
+                .array.back);
 
             return receivers.map!(e => PseudoTime(e.pseudo_time_counter,
                     (e[].retro.filter!(e => e._witness)
-                    .front._mother.pseudo_time_counter + 1),
-                    e.order,
-                    e.event_body.time,
-                    e.round.number,
-                    decided_round.famous_mask.count))
+                .front._mother.pseudo_time_counter + 1),
+            e.order,
+            e.event_body.time,
+            e.round.number,
+            decided_round.famous_mask.count))
                 .array
                 .reduce!((a, b) => a + b);
         }
+
         PseudoTime at = calc_pseudo_time(a);
         PseudoTime bt = calc_pseudo_time(b);
 
@@ -172,7 +174,7 @@ class StdRefinement : Refinement {
         }
         return at.num * bt.denom < at.denom * bt.num;
     }
-    
+
     version (OLD_ORDERING) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
     @safe static bool order_less(const Event a, const Event b, const(int) order_count) pure {
         bool rare_less(Buffer a_print, Buffer b_print) {
@@ -181,9 +183,9 @@ class StdRefinement : Refinement {
             return a_print < b_print;
         }
 
-        if (order_count < 0) {
-            return rare_less(a.fingerprint, b.fingerprint);
-        }
+        //if (order_count < 0) {
+        //    return rare_less(a.fingerprint, b.fingerprint);
+        //}
         if (a.order is b.order) {
             if (a.father && b.father) {
                 return order_less(a.father, b.father, order_count - 1);
@@ -205,48 +207,47 @@ class StdRefinement : Refinement {
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
-        import std.range : tee;
+        auto times = event_collection.map!(e => cast(sdt_t) e.event_body.time).array;
 
-
-        sdt_t[] times;
-        auto events = event_collection
-            .tee!((e) => times ~= e.event_body.time)
-            .filter!((e) => !e.event_body.payload.empty)
-            .array;
-
-
-        version(OLD_ORDERING) {
-            auto sorted_events = events.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+        static if (ver.HASH_ORDERING) {
+            auto sorted_events = event_collection.sort!((a, b) => a.fingerprint < b.fingerprint)
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
         }
-        version(NEW_ORDERING) {
+        else static if (ver.OLD_ORDERING) {
+            auto sorted_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
+                .filter!((e) => !e.event_body.payload.empty)
+                .array;
+        }
+        else static if (ver.NEW_ORDERING) {
             const famous_witnesses = decided_round
                 ._events
                 .filter!(e => e !is null)
                 .filter!(e => decided_round.famous_mask[e.node_id])
                 .array;
-            auto sorted_events = events.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+            auto sorted_events = events.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round)).array;
         }
         times.sort;
-        
-        version(OLD_ORDERING) {
-            const mid = times.length / 2 + (times.length % 1);
-            const epoch_time = times[mid];
-        }
-        version(NEW_ORDERING) {
-            const epoch_time = times[times.length / 2];
-        }
-        version(BDD) {
+
+        const mid = times.length / 2 + (times.length % 1);
+        const epoch_time = times[mid];
+
+        version (BDD) {
             // raw event_collection subscription
-            version(OLD_ORDERING) {
-                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+            static if (ver.HASH_ORDERING) {
+                auto __sorted_raw_events = event_collection.sort!((a, b) => a.fingerprint < b.fingerprint).array;
             }
-            version(NEW_ORDERING) {
+            else static if (ver.OLD_ORDERING) {
+                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT)).array;
+            }
+            else static if (ver.NEW_ORDERING) {
                 const famous_witnesses = decided_round
                     ._events
                     .filter!(e => e !is null)
                     .filter!(e => decided_round.famous_mask[e.node_id])
                     .array;
-                auto __sorted_raw_events = event_collection.sort!((a,b) => order_less(a,b, famous_witnesses, decided_round)).array;
+                auto __sorted_raw_events = event_collection.sort!((a, b) => order_less(a, b, famous_witnesses, decided_round))
+                    .array;
             }
             auto event_payload = FinishedEpoch(__sorted_raw_events, epoch_time, decided_round.number);
             log.event(raw_epoch_events, "raw_epoch", event_payload);
@@ -258,7 +259,7 @@ class StdRefinement : Refinement {
                     Event.count, Event.Witness.count, events.length, epoch_time);
         }
 
-        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, events
+        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, event_collection
                 .length);
 
         finishedEpoch(sorted_events, epoch_time, decided_round);

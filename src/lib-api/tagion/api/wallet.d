@@ -102,8 +102,6 @@ int tagion_generate_keypair (
             }
             _net.generateKeyPair(_passphrase, _salt,
                     (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
-
-
         } else {
             _net.generateKeyPair(_passphrase, _salt); 
         }
@@ -156,9 +154,6 @@ int tagion_decrypt_devicepin (
     securenet_t* out_securenet,
 ) {
     try {
-        if (out_securenet.magic_byte != MAGIC.SECURENET) {
-            return ErrorCode.error; // TODO: better message
-        }
         const _pincode = pin_ptr[0..pin_len];
         const _device_doc_buf = cast(immutable) devicepin_ptr[0..devicepin_len];
 
@@ -176,6 +171,7 @@ int tagion_decrypt_devicepin (
         }
         _net.createKeyPair(R);
 
+        out_securenet.magic_byte = MAGIC.SECURENET;
         out_securenet.securenet = cast(void*) _net;
     } catch(Exception e) {
         last_error = e;
@@ -225,12 +221,14 @@ int tagion_sign_message (
     size_t* signature_len,
 ) {
     try {
-        if (root_net.magic_byte != MAGIC.SECURENET) {
+        if (root_net.magic_byte != MAGIC.SECURENET && root_net !is null) {
+            set_error_text = "root_net is invalid";
             return ErrorCode.error; // TODO: better message
         }
         const message = message_ptr[0..message_len].idup;
         if (message.length != NativeSecp256k1.MESSAGE_SIZE) {
-            return ErrorCode.error; // TODO: add better message
+            set_error_text = "Message length is invalid should be 32";
+            return ErrorCode.error;
         }
         const message_fingerprint = Fingerprint(message);
         StdSecureNet _net = cast(StdSecureNet) root_net.securenet;

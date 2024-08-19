@@ -13,6 +13,7 @@ import std.path : buildPath;
 import std.path : extension, setExtension;
 import std.range;
 import std.stdio;
+import std.random;
 import std.typecons : Tuple;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.Types;
@@ -61,9 +62,10 @@ class StartNetworkWithNAmountOfNodes {
         (() @trusted { getrlimit(RLIMIT_STACK, &limit); })();
         writefln("RESOURCE LIMIT = %s", limit);
 
-        network = new TestNetwork(node_names);
+        network = new TestNetwork(node_names,  0);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
+        pragma(msg, "fixme: change to collider random");
         writeln(network.random);
 
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
@@ -85,7 +87,7 @@ class StartNetworkWithNAmountOfNodes {
     @When("all nodes are sending ripples")
     Document ripples() {
         foreach (i; 0 .. MAX_CALLS) {
-            const channel_number = network.random.value(0, network.channels.length);
+            const channel_number = uniform(0, network.channels.length, network.random);
             const channel = network.channels[channel_number];
             auto current = network.networks[channel];
             (() @trusted { current.call; })();
@@ -112,7 +114,7 @@ class StartNetworkWithNAmountOfNodes {
             uint i = 0;
             while (i < MAX_CALLS) {
 
-                const channel_number = network.random.value(0, network.channels.length);
+                const channel_number = uniform(0, network.channels.length, network.random);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
@@ -204,6 +206,7 @@ class StartNetworkWithNAmountOfNodes {
     @Then("stop the network")
     Document _network() {
         Pubkey[string] node_labels;
+        import tagion.hashgraphview.EventView;
         foreach (channel, _net; network.networks) {
             node_labels[_net._hashgraph.name] = channel;
         }

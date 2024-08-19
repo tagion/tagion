@@ -5,6 +5,8 @@ import core.time;
 import std.file;
 import std.path : buildPath, setExtension;
 import std.stdio;
+import std.conv;
+import std.process : environment;
 import tagion.GlobalSignals;
 import tagion.actor;
 import tagion.basic.Types : FileExtension;
@@ -35,6 +37,7 @@ int _main(string[] args) {
     string config_file = buildPath(module_path, "tagionwave.json");
 
     scope Options local_options = Options.defaultOptions;
+    local_options.wave.number_of_nodes = 5;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.trt.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
@@ -66,7 +69,7 @@ int _main(string[] args) {
     foreach (i; 0 .. 2) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-            iota(0, 5)
+                iota(0, 5)
                 .map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5)
                 .map!(n => format("%danswer%d", i, n)).array,
@@ -124,9 +127,12 @@ int _main(string[] args) {
     NodeSettings[] node_settings;
     foreach (opt, key; zip(node_opts, keys)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            key,
-            opt.task_names.epoch_creator, // Address
+                opt.task_names.epoch_creator, // Name
+                key,
+                opt.task_names.epoch_creator, // Address
+
+                
+
         );
     }
 
@@ -144,9 +150,9 @@ int _main(string[] args) {
     /// FIXME: Duplicate generate genesis_epoch
     const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
     const genesis = createGenesis(
-        node_settings,
-        Document(testamony), 
-        globals,
+            node_settings,
+            Document(testamony),
+            globals,
     );
 
     recorder.insert(genesis, Archive.Type.ADD);

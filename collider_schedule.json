@@ -75,7 +75,7 @@
     "hashgraph_test": {
       "args": ["5", "5000"],
       "envs": {},
-      "stages": ["hashgraph", "acceptance"],
+      "stages": ["hashgraph", "hashgraph_sync"],
       "timeout": 0.0
     },
     "hashgraph_contributors": {
@@ -158,7 +158,11 @@
     },
     "spam_double_spend": {
       "args": [],
-      "envs": {},
+      "envs": {
+            "WAIT_UNTIL_ALIVE" : "10",
+            "EPOCH_TIMEOUT" : "15", 
+            "CONTRACT_TIMEOUT" : "100" 
+      },
       "stages": ["acceptance", "spam_double_spend"],
       "timeout": 0.0
     },
@@ -170,7 +174,9 @@
     },
     "genesis_test": {
       "args": [],
-      "envs": {},
+      "envs": {
+            "EPOCH_TIMEOUT" : "100" 
+      },
       "stages": ["acceptance", "genesis"],
       "timeout": 0.0
     },
@@ -196,6 +202,9 @@
       "args": [],
       "envs": {
         "SHELL_URI": "http://0.0.0.0:4000",
+        "MR_PUB_URI": "tcp://0.0.0.0:4002",
+        "MR_SUB_URI": "tcp://127.0.0.1:4002",
+        "WS_PUB_URI": "ws://0.0.0.0:4000/api/v1/subscribe",
         "SUBSCRIPTION": "TRANSACTION_TEST_SUBSCRIPTION_",
         "PREFIX": "TRANSACTION_Node_%s_"
       },
@@ -216,9 +225,10 @@
     },
     "run_fiber_epoch": {
       "args": [
-        "10000",
-        "100,5",
-        "7"
+        "--rounds=100",
+        "-N7",
+        "100,25",
+        "-k"
       ],
       "envs": {},
       "stages": [

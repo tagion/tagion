@@ -14,6 +14,8 @@ import tagion.hibon.Document;
 import tagion.utils.StdTime;
 import tagion.hibon.BigNumber;
 
+private enum INVALID_HIBON_INSTANCE =  "Empty or none hibon instance";
+
 extern (C):
 
 version(unittest) {
@@ -50,7 +52,7 @@ void mydealloc(void* ptr) {
 int tagion_hibon_create(HiBONT* instance) {
     try {
         if (instance is null) {
-    //         writefln("instance is null");
+            set_error_text = "HiBON instance is null";
             return ErrorCode.error;
         }
         instance.hibon = cast(void*) new HiBON;
@@ -76,6 +78,108 @@ void tagion_hibon_free(HiBONT* instance) {
     GC.free(instance);
 }
 
+///
+int tagion_hibon_has_member(const HiBONT* instance, const char* str, size_t str_len, bool* result) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        scope string key = cast(immutable)str[0..str_len];
+        *result = h.hasMember(key);
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+int tagion_hibon_has_member_index(const HiBONT* instance, size_t index, bool* result) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        *result = h.hasMember(index);
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+int tagion_hibon_remove_by_key(HiBONT* instance, const char* str, size_t str_len) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        scope string key = cast(immutable)str[0..str_len];
+        h.remove(key);
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+int tagion_hibon_remove_by_index(HiBONT* instance, size_t index) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        h.remove(index);
+    }
+    catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    HiBONT* h = new HiBONT;
+    int rc = tagion_hibon_create(h);
+    assert(rc == ErrorCode.none);
+
+    const string key = "a";
+    rc = tagion_hibon_add_bool(h, &key[0], key.length, true);
+    assert(rc == ErrorCode.none);
+
+    bool result;
+    rc = tagion_hibon_has_member(h, &key[0], key.length, &result);
+    assert(rc == ErrorCode.none);
+    assert(result == true);
+
+    rc = tagion_hibon_remove_by_key(h, &key[0], key.length);
+    assert(rc == ErrorCode.none);
+    rc = tagion_hibon_has_member(h, &key[0], key.length, &result);
+    assert(rc == ErrorCode.none);
+    assert(result == false);
+}
+
+/** 
+ *  Get the string representation of a hibon
+ *
+ *  Params:
+ *    instance = Reference to the hibon object instance
+ *    text_format = [tagion.api.document.DocumentTextFormat]
+ *    str = reference to the returned string
+ *    str_len = The length of the returned string
+ *  Returns: [tagion.api.errors.ErrorCode]
+*/
 int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, size_t* str_len) {
     import tagion.hibon.HiBONJSON;
     import tagion.hibon.HiBONtoText;
@@ -85,20 +189,23 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
         const fmt = cast(DocumentTextFormat) text_format;
 
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
 
         string text;
         with (DocumentTextFormat) {
             switch(fmt) {
-                // case JSON:
-                //     text = h.toJSON.toString; 
-                //     break;
+                case JSON:
+                    scope const doc = Document(h);
+                    text = doc.toJSON.toString; 
+                    break;
                 case PRETTYJSON:
                     text = h.toPretty;
                     break;
                 default:
+                    set_error_text = "Invalid format";
                     return ErrorCode.error;
             }
         }
@@ -113,7 +220,7 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
 }
 
 /** 
- * Get document from hibon
+ * Convert a hibon to a document
  * Params:
  *   instance = HiBONT instance
  *   buf = the returned buf ptr
@@ -123,7 +230,8 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
 int tagion_hibon_get_document(const(HiBONT*) instance, uint8_t** buf, size_t* buf_len) {
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
         const doc = Document(h);
@@ -176,7 +284,8 @@ int tagion_hibon_add_string(const(HiBONT*) instance,
         const size_t value_len) {
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
         const _key = key[0 .. key_len].idup;
@@ -211,14 +320,16 @@ unittest {
  *   buf_len = length of the buffer
  * Returns: ErrorCode
  */
-int tagion_hibon_add_document(const(HiBONT*) instance,
+int tagion_hibon_add_document(
+        HiBONT* instance,
         const char* key,
         const size_t key_len,
         const(uint8_t*) buf,
         const size_t buf_len) {
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
         const _key = key[0 .. key_len].idup;
@@ -254,6 +365,57 @@ unittest {
 }
 
 /** 
+ * Add document to hibon by index
+ * Params:
+ *   instance = pointer to the hibon instance
+ *   index = The index to put the Document at
+ *   buf = pointer to the document buffer
+ *   buf_len = length of the buffer
+ * Returns: [tagion.api.errors.ErrorCode]
+ */
+int tagion_hibon_add_index_document(
+        HiBONT* instance,
+        const size_t index,
+        const(uint8_t*) buf,
+        const size_t buf_len) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        immutable _buf = buf[0 .. buf_len].idup;
+        const doc = Document(_buf);
+        const doc_error = doc.valid;
+        if (doc_error !is Document.Element.ErrorCode.NONE) {
+            return cast(int) doc_error;
+        }
+        h[index] = doc;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    auto sub_hibon = new HiBON;
+    sub_hibon["sub_doc"] = "test";
+    const doc = Document(sub_hibon);
+
+    HiBONT h;
+    int rt = tagion_hibon_create(&h);
+    assert(rt == ErrorCode.none, "could not create hibon");
+    const key = 0;
+
+    rt = tagion_hibon_add_index_document(&h, key, &doc.data[0], doc.data.length);
+    HiBON string_hibon = cast(HiBON) h.hibon;
+    assert(string_hibon[key].get!Document == doc);
+}
+
+/** 
  * Add hibon to hibon instance
  * Params:
  *   instance = pointer to the hibon instance
@@ -262,18 +424,22 @@ unittest {
  *   sub_instance = pointer to the sub hibon instance that needs to be inserted
  * Returns: ErrorCode
  */
-int tagion_hibon_add_hibon(const(HiBONT*) instance,
+int tagion_hibon_add_hibon(
+        const(HiBONT*) instance,
         const char* key,
         const size_t key_len,
-        const(HiBONT*) sub_instance) {
+        const(HiBONT*) sub_instance
+) {
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
         // do the same for the subinstance
         if (sub_instance is null || sub_instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = "Invalid hibon subinstance";
+            return ErrorCode.error;
         }
         HiBON sub_h = cast(HiBON) sub_instance.hibon;
         const _key = key[0 .. key_len].idup;
@@ -309,6 +475,62 @@ unittest {
 }
 
 /** 
+ * Add hibon to hibon instance by index
+ * Params:
+ *   instance = pointer to the hibon instance
+ *   index = The index to pute the hibon add
+ *   sub_instance = pointer to the sub hibon instance that needs to be inserted
+ * Returns: ErrorCode
+ */
+int tagion_hibon_add_index_hibon(
+        const(HiBONT*) instance,
+        const size_t index,
+        const(HiBONT*) sub_instance
+) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        // do the same for the subinstance
+        if (sub_instance is null || sub_instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = "Invalid hibon subinstance";
+            return ErrorCode.error;
+        }
+        HiBON sub_h = cast(HiBON) sub_instance.hibon;
+        h[index] = sub_h;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+/// 
+unittest {
+    HiBONT sub_h;
+    int rt = tagion_hibon_create(&sub_h);
+    assert(rt == ErrorCode.none, "could not create hibon");
+    const key = "some_key";
+    string value = "some_value";
+    rt = tagion_hibon_add_string(&sub_h, &key[0], key.length, &value[0], value.length);
+    HiBON string_hibon = cast(HiBON) sub_h.hibon;
+    assert(string_hibon[key].get!string == value);
+
+    // add it to a new hibon instance as a subhibon;
+    HiBONT h;
+    rt = tagion_hibon_create(&h);
+    assert(rt == ErrorCode.none, "Could not create hibon");
+    const _key = 1;
+    rt = tagion_hibon_add_index_hibon(&h, _key, &sub_h);
+    assert(rt == ErrorCode.none);
+    HiBON result = cast(HiBON) h.hibon;
+    assert(result[_key].get!HiBON == string_hibon, "The read subhibon was not the same");
+}
+
+/** 
  * Add binary data to hibon instance
  * Params: 
  *   instance = pointer to the instance
@@ -318,14 +540,17 @@ unittest {
  *   buf_len = length of the buffer
  * Returns: 
  */
-int tagion_hibon_add_binary(const(HiBONT*) instance,
+int tagion_hibon_add_binary(
+        const(HiBONT*) instance,
         const char* key,
         const size_t key_len,
         const uint8_t* buf,
-        const size_t buf_len) {
+        const size_t buf_len
+) {
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
         const _key = key[0 .. key_len].idup;
@@ -352,6 +577,50 @@ unittest {
     assert(result[key].get!(immutable(ubyte[])) == binary_data);
 }
 
+/** 
+ * Add binary data to hibon instance by index
+ * Params: 
+ *   instance = pointer to the instance
+ *   index = The index to put the binary data at
+ *   buf = pointer to the buffer to insert.
+ *   buf_len = length of the buffer
+ * Returns: [tagion.api.errors.ErrorCode]
+ */
+int tagion_hibon_add_index_binary(
+        const(HiBONT*) instance,
+        const size_t index,
+        const uint8_t* buf,
+        const size_t buf_len
+) {
+    try {
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        HiBON h = cast(HiBON) instance.hibon;
+        immutable _buf = buf[0 .. buf_len].idup;
+        h[index] = _buf;
+    }
+    catch (Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+///
+unittest {
+    HiBONT h;
+    int rt = tagion_hibon_create(&h);
+    assert(rt == ErrorCode.none, "could not create hibon");
+    const index = 1;
+    immutable(ubyte[]) binary_data = [0, 1, 0, 1];
+    rt = tagion_hibon_add_index_binary(&h, index, &binary_data[0], binary_data.length);
+    assert(rt == ErrorCode.none);
+    HiBON result = cast(HiBON) h.hibon;
+    assert(result[index].get!(immutable(ubyte[])) == binary_data);
+}
+
 ///
 int tagion_hibon_add_time(const(HiBONT*) instance,
         const char* key,
@@ -359,7 +628,8 @@ int tagion_hibon_add_time(const(HiBONT*) instance,
         const(int64_t) time) {
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
         const _key = key[0 .. key_len].idup;
@@ -407,7 +677,8 @@ int tagion_hibon_add_bigint(const(HiBONT*) instance,
         const size_t bigint_buf_len) {
     try {
         if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-            return ErrorCode.exception;
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
         }
         HiBON h = cast(HiBON) instance.hibon;
         const _key = key[0 .. key_len].idup;
@@ -461,36 +732,6 @@ template add_T(T) {
     }
 }
 
-extern(D)
-private
-template add_array_T(T) {
-    int add_array_T(const(HiBONT*) instance,
-                const char* key,
-                const size_t key_len,
-                uint8_t* buf,
-                const size_t buf_len) {
-
-        try {
-            if (instance is null || instance.magic_byte != MAGIC_HIBON) {
-                return ErrorCode.exception;
-            }
-            HiBON h = cast(HiBON) instance.hibon;
-            const _key = key[0 .. key_len].idup;
-            if (buf_len != T.sizeof) {
-                return ErrorCode.exception;
-            }
-            ubyte[] _value_buf = buf[0..buf_len];
-            const _value = read!T(_value_buf);
-            h[_key] = _value;
-        }
-        catch(Exception e) {
-            last_error = e;
-            return ErrorCode.exception;
-        }
-        return ErrorCode.none;
-    }
-}
-
 /** 
 * Add boolean to hibon instance
 * Params:
@@ -502,11 +743,6 @@ template add_array_T(T) {
 */
 int tagion_hibon_add_bool(const(HiBONT*) h, const char* key, const size_t key_len, bool value) {
     return add_T!bool(__traits(parameters));
-}
-
-///
-int tagion_hibon_add_array_bool(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
-    return add_array_T!bool(__traits(parameters));
 }
 
 /** 
@@ -522,11 +758,6 @@ int tagion_hibon_add_int32(const(HiBONT*) h, const char* key, const size_t key_l
     return add_T!int32_t(__traits(parameters));
 }
 
-///
-int tagion_hibon_add_array_int32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
-    return add_array_T!int32_t(__traits(parameters));
-}
-
 /** 
 * Add int64 to hibon instance
 * Params:
@@ -538,9 +769,6 @@ int tagion_hibon_add_array_int32(const(HiBONT*) h, const char* key, const size_t
 */
 int tagion_hibon_add_int64(const(HiBONT*) h, const char* key, const size_t key_len, int64_t value) {
     return add_T!int64_t(__traits(parameters));
-}
-int tagion_hibon_add_array_int64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
-    return add_array_T!int64_t(__traits(parameters));
 }
 
 /** 
@@ -556,10 +784,6 @@ int tagion_hibon_add_uint32(const(HiBONT*) h, const char* key, const size_t key_
     return add_T!uint32_t(__traits(parameters));
 }
 
-///
-int tagion_hibon_add_array_uint32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
-    return add_array_T!uint32_t(__traits(parameters));
-}
 /** 
 * Add uint64 to hibon instance
 * Params:
@@ -573,10 +797,6 @@ int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_
     return add_T!uint64_t(__traits(parameters));
 }
 
-///
-int tagion_hibon_add_array_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
-    return add_array_T!uint64_t(__traits(parameters));
-}
 /** 
 * Add float32 to hibon instance
 * Params:
@@ -588,11 +808,6 @@ int tagion_hibon_add_array_uint64(const(HiBONT*) h, const char* key, const size_
 */
 int tagion_hibon_add_float32(const(HiBONT*) h, const char* key, const size_t key_len, float value) {
     return add_T!float(__traits(parameters));
-}
-
-///
-int tagion_hibon_add_array_float32(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
-    return add_array_T!float(__traits(parameters));
 }
 
 /** 
@@ -608,16 +823,12 @@ int tagion_hibon_add_float64(const(HiBONT*) h, const char* key, const size_t key
     return add_T!double(__traits(parameters));
 }
 
-///
-int tagion_hibon_add_array_float64(const(HiBONT*) h, const char* key, const size_t key_len, uint8_t* buf, const size_t buf_len){
-    return add_array_T!double(__traits(parameters));
-}
-
 version(unittest)
 private
 void testAddFunc(T)(
         T call_value,
-        int function(const(HiBONT*), const char*, const size_t, T) func) {
+        int function(const(HiBONT*), const char*, const size_t, T) func
+) {
     HiBONT h;
     int rt = tagion_hibon_create(&h);
     assert(rt == ErrorCode.none);
@@ -627,25 +838,6 @@ void testAddFunc(T)(
     assert(rt == ErrorCode.none, "could not add time");
     HiBON result = cast(HiBON) h.hibon;
 
-    assert(result[key].get!T == call_value);
-}
-
-version(unittest)
-private
-void testArrayAddFunc(T)(
-    T call_value,
-    int function(const(HiBONT*), const char*, const size_t, uint8_t*, const size_t) func) {
-
-    HiBONT h;
-    int rt = tagion_hibon_create(&h);
-    assert(rt == ErrorCode.none);
-    string key = "some_key";
-    ubyte[] buf;
-    buf.length = T.sizeof;
-    buf.write!T(call_value, 0);
-    rt = func(&h, &key[0], key.length, &buf[0], buf.length);
-    assert(rt == ErrorCode.none);
-    HiBON result = cast(HiBON) h.hibon;
     assert(result[key].get!T == call_value);
 }
 
@@ -659,16 +851,6 @@ unittest {
     testAddFunc!(ulong)(ulong(42), &tagion_hibon_add_uint64);
     testAddFunc!(float)(21.1f, &tagion_hibon_add_float32);
     testAddFunc!(double)(321.312312f, &tagion_hibon_add_float64);
-}
-
-unittest {
-    testArrayAddFunc!(bool)(true, &tagion_hibon_add_array_bool);
-    testArrayAddFunc!(int)(42, &tagion_hibon_add_array_int32);
-    testArrayAddFunc!(long)(long(42), &tagion_hibon_add_array_int64);
-    testArrayAddFunc!(uint)(uint(42), &tagion_hibon_add_array_uint32);
-    testArrayAddFunc!(ulong)(ulong(42), &tagion_hibon_add_array_uint64);
-    testArrayAddFunc!(float)(21.1f, &tagion_hibon_add_array_float32);
-    testArrayAddFunc!(double)(321.312312f, &tagion_hibon_add_array_float64);
 }
 
 /// malloc test

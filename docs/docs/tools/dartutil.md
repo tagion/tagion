@@ -21,20 +21,17 @@ dartutil --sync src.drt dst.drt
 -m        --modify Executes a DART modify sequency
              --rpc Executes a HiPRC on the DART
            --strip Strips the dart-recoder dumps archives
--f         --force Force erase and create journal and destination DART
            --print prints all the archives with in the given angle
             --dump Dumps all the archives with in the given angle
    --dump-branches Dumps all the archives and branches with in the given angle
              --eye Prints the bullseye
             --sync Synchronize src.drt to dest.drt
--e          --exec Execute string to be used for remote access
--P    --passphrase Passphrase of the keypair : default: verysecret
 -A         --angle Sets angle range from:to (Default is full range)
            --depth Set limit on dart rim depth
             --fake Use fakenet instead of real hashes : default :false
--h          --help This help information.sage:
-dartutil [<option>...] file.drt <files>
-
+            --test Generate a test dart with specified number of archives total:bundle
+    --flat-disable Disable flat branch hash
+-h          --help This help information.
 ```
 
 ## Examples
