@@ -197,9 +197,10 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
         string text;
         with (DocumentTextFormat) {
             switch(fmt) {
-                // case JSON:
-                //     text = h.toJSON.toString; 
-                //     break;
+                case JSON:
+                    scope const doc = Document(h);
+                    text = doc.toJSON.toString; 
+                    break;
                 case PRETTYJSON:
                     text = h.toPretty;
                     break;

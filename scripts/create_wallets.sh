@@ -16,11 +16,12 @@ usage() {
 # Initialize default values
 bdir=""
 nodes=5
-# wallets=5
 bills=50
 network_mode=0
 data_dir="$(readlink -f ./)"
 keyfile="keys"
+
+ADDRESS_FORMAT=${ADDRESS_FORMAT:='tcp://localhost:%PORT'}
 
 # Process command-line options
 while getopts "n:w:b:k:t:h:u:q:m:" opt
@@ -95,9 +96,10 @@ do
       address=$(printf "Node_%d_epoch_creator" $i)
       echo "node$i/wallet:$pincode" >> "$keyfile"
   elif [ $network_mode -eq 1 ]; then
+      node=$i
       port=$((10700+i))
-      # address=$(printf "tcp://node$i:%s" $port)
-      address=$(printf "tcp://0.0.0.0:%s" $port)
+      address=${ADDRESS_FORMAT//\%NODE/$node}
+      address=${address//\%PORT/$port}
   fi
 
   all_infos+=" -p $node_info,$address"

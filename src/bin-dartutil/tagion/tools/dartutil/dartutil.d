@@ -198,6 +198,8 @@ int _main(string[] args) {
         }
         else {
             net = new StdSecureNet;
+            // fixme:? Modify does not work without a keypair
+            net.generateKeyPair("dummy_passphrase");
         }
 
         if (!test_dart.empty) {
