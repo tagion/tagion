@@ -198,7 +198,7 @@ class HashGraph {
 
     Pubkey select_channel() {
         auto new_channel = generate!(() => Pubkey(choice(gossip_net.active_channels, gossip_net.random)));
-        return new_channel.filter!(p => p !is channel).front;
+        return new_channel.filter!(p => p != this.channel).front;
     }
 
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
