@@ -21,7 +21,7 @@ network_mode=0
 data_dir="$(readlink -f ./)"
 keyfile="keys"
 
-ADDRESS_FORMAT=${ADDRESS_FORMAT:='tcp://localhost:%PORT'}
+ADDRESS_FORMAT=${ADDRESS_FORMAT:=tcp://[::1]:%PORT}
 
 # Process command-line options
 while getopts "n:w:b:k:t:h:u:q:m:" opt
@@ -184,7 +184,7 @@ else
                --option=inputvalidator.sock_addr:abstract://CONTRACT_NEUEWELLE_$i \
                --option=dart_interface.sock_addr:abstract://DART_NEUEWELLE_$i \
                --option=subscription.address:abstract://SUBSCRIPTION_NEUEWELLE_$i \
-               --option=node_interface.node_address:"tcp://0.0.0.0:$((10700+i))" 2&> /dev/null
+               --option=node_interface.node_address:"tcp://[::1]:$((10700+i))" 2&> /dev/null
         )
 
         echo 'echo' "$(printf "%04d" $i)" '|' "$bdir/neuewelle" "$node_dir/tagionwave.json" '&'
