@@ -1,3 +1,19 @@
+# Changelog for Epoch 2278693 .. 2844845
+
+**Hashgraph consensus changes**
+
+**DockerFile**
+We've created a small alpine based docker image to use for deploying of mode1 test networks.
+This image also allows to create a small single statically linked tagion executable for easier distribution.
+
+**NNG Websocket fixes**
+Fixed a case where nng websocket workers would cause the process to not exit properly
+
+**C-API**
+We've fixed some issues in the c-api functions and
+created integration tests for most functions in the dart programming language.
+
+
 # Changelog for Epoch 2094264 .. 2278693
 
 **Node interface**
