@@ -129,9 +129,6 @@ class Round {
             _valid_witness = BitMask(node_size.iota
                     .filter!(n => (_events[n]!is null) && !_events[n].witness.weak));
 
-            _events.filter!(e => e !is null)
-                .each!(e => e._witness.seen_voting_mask.clear);
-
             const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
             const _name = __format("%s%12s @%d%s", level_color(number_of_future_rounds), hashgraph.name, level(
                     number_of_future_rounds), RESET);
@@ -151,6 +148,9 @@ class Round {
             if (list_majority_rounds.empty) {
                 return Completed.none;
             }
+            if (number_of_future_rounds < 4) {
+                return ret = Completed.too_few;
+            }
             version (none)
                 scope (exit) {
                     _valid_witness &= included_mask;
@@ -160,10 +160,6 @@ class Round {
                     _name,
                     number,
                     _events.map!(e => e !is null));
-             __write("%s Round %04d    valid  %-(%2d %) ".replace("#", node_size.to!string),
-                    _name,
-                    number,
-                    _events.map!(e => (e is null) ? -1 : cast(int) e.witness.seen_voting_mask.count));
 
             //            auto list_majority_rounds_1 = list_majority_rounds;
             //      list_majority_rounds_1.popFront;
@@ -267,14 +263,7 @@ class Round {
                             cast(int)(r.number - number)
 
                     );
-                    const equal_votes = _events
-                    .filter!(e => e !is null)
-                    .map!(e => e.witness)
-                    .filter!(w => isMajority(w.yes_votes, node_size))
-                    .all!(w => isMajority(w.seen_voting_mask, node_size));
-                    //if (equal_votes) {
                         return ret = Completed.all_witness;
-                    //}
             }
             return ret = Completed.undecided;
         }
