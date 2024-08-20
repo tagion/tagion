@@ -280,7 +280,7 @@ struct PeerMgr {
         addr ~= '\0';
         assert(this.address.length < addr.length);
         rc = cast(nng_errno)nng_stream_listener_alloc(&listener, &address[0]);
-        check!ServiceError(rc == nng_errno.NNG_OK, nng_errstr(rc));
+        check!ServiceError(rc == nng_errno.NNG_OK, format("%s - %s", nng_errstr(rc), address));
 
         all_peers = new PeerLRU(
                 (scope const uint k, PeerLRU.Element* v) @safe nothrow { 
