@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
-usage() { 
-    echo "Usage: $0
-        -n <nodes=5, the number of nodes>
-        -i <image=tagion/tagion:current, the image to use>
-        -o <outfile=docker-compose.yml" 1>&2;
-    exit 1;
-}
-
 # Initialize default values
 nodes=5
 image=tagion/tagion:current
 outfile=docker-compose.yml
+
+usage() { 
+    echo "Usage: $0
+        -n <nodes=$nodes, the number of nodes>
+        -i <image=$image, the docker image to use>
+        -o <outfile=$outfile>" 1>&2;
+    exit 1;
+}
 
 ADDRESS_FORMAT=${ADDRESS_FORMAT:=tcp://[::1]:7000}
 
