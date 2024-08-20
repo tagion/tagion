@@ -151,108 +151,56 @@ class Round {
             if (number_of_future_rounds < 4) {
                 return ret = Completed.too_few;
             }
-            version (none)
-                scope (exit) {
-                    _valid_witness &= included_mask;
-                }
-
-            __write("%s Round %04d  witness  %-(%2d %) ".replace("#", node_size.to!string),
-                    _name,
-                    number,
-                    _events.map!(e => e !is null));
-
-            //            auto list_majority_rounds_1 = list_majority_rounds;
-            //      list_majority_rounds_1.popFront;
-            //uint[] gather_voters;
-            //gather_voters.length = node_size;
-            //foreach (slide_r; list_majority_rounds.drop(1).slide(2)) {
-                version(none) {
-                Round gather_round = slide_r.front;
-                Round r = slide_r.drop(1).front;
-               scope (exit) {
-                    gather_voters[] = 0;
-                }
-                gather_round._events
-                    .filter!(e => e !is null)
-                    .map!(e => e.witness)
-                    .filter!(w => !w.weak)
-                    .map!(w => w.previous_strongly_seen_mask[])
-                    .joiner
-                    .each!(n => gather_voters[n]++);
-                r._events
-                    .filter!(e => e !is null)
-                    .filter!(e => !e.witness.weak)
-                    .each!(e => e.witness.previous_strongly_seen_mask[]
-                    .filter!(n => gather_round._events[n]!is null)
-                    .each!(n => gather_round._events[n].witness.previous_strongly_seen_mask[]
-                    .filter!(m => _events[m]!is null)
-                    .each!(m => _events[m]._witness.seen_voting_mask[e.node_id] = true)));
-    }
-                version(none)
-                const _all = _events.filter!(e => e !is null)
-                    .map!(e => e.witness.__seen_decided(gather_voters[e.node_id]))
-                    .all;
-                const _all = _events.filter!(e => e !is null).all!(e => e.witness.decided) ||
-                 this[].retro.drop(1)
-                    .filter!(r => r.events.filter!(e => e !is null).all!(e => e.witness.decided))
-                    .map!(r => r.number-number)
+            const _all = _events.filter!(e => e !is null)
+                .all!(e => e.witness.decided) ||
+                this[].retro.drop(1)
+                    .filter!(r => r.events
+                            .filter!(e => e !is null)
+                            .all!(e => e.witness.decided))
+                    .map!(r => r.number - number)
                     .any!(diff => diff > 2);
 
-                version(none)
-                __write("%s Round %04d:%-2d ->->-> %-(%2d %) %s%s",
+            __write("%s Round %04d     Dec   %(%2d %) => %(%d %)".replace("#", node_size
+                    .to!string),
+                    _name,
+                    number,
+                    _events.map!(e => (e is null) ? -1 : e.witness.decided),
+                    this[].retro
+                    .map!(r => r.events
+                        .filter!(e => e !is null)
+                        .all!(e => e.witness.decided))
+            );
+            if (_all) {
+                _valid_witness &= BitMask(_events
+                        .filter!(e => (e !is null))
+                        .filter!(e => isMajority(e.witness.yes_votes, node_size))
+                        .filter!(e => !e.witness.weak)
+                        .map!(e => e.node_id));
+                __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
+                        .to!string),
                         _name,
                         number,
-                        r.number - number,
-                        r.events.map!(e => (e is null) ? -1 : cast(
-                        int) e.witness.previous_witness_seen_mask.count), _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
-                version(none)
-                __write("%s %sRound %04d:%-2d%s count  %-(%2d %) %s%s",
+                        _events.map!(e => (e is null) ? -1 : cast(int) e.witness.yes_votes),
+                        _events
+                        .filter!(e => (e !is null))
+                        .filter!(e => isMajority(e.witness.yes_votes, node_size))
+                        .count
+                );
+                __write("%s Round %04d     No    %(%2d %) pattern=%(%02x %)".replace("#", node_size
+                        .to!string),
                         _name,
-                        BACKGROUND_BLACK,
                         number,
-                        r.number - number,
-                        RESET,
-                        node_size.iota
-                        .map!(n => (_valid_witness[n]) ? cast(int) _events[n].witness.seen_voting_mask.count : -1),
-                _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
-                    __write("%s Round %04d     Dec   %(%2d %) => %(%d %)".replace("#", node_size
-                            .to!string),
-                            _name,
-                            number,
-                            _events.map!(e => (e is null)?-1:e.witness.decided),
-                            this[].retro
-                            .map!(r => r.events.filter!(e => e !is null).all!(e => e.witness.decided))
-                            );
-                if (_all ) {
-                    _valid_witness &= BitMask(_events
-                            .filter!(e => (e !is null)) 
-                            .filter!(e => isMajority(e.witness.yes_votes, node_size))
-                            .map!(e => e.node_id));
-                    __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
-                            .to!string),
-                            _name,
-                            number,
-                            _events.map!(e => (e is null)?-1:cast(int)e.witness.yes_votes),
-                            _events
-                            .filter!(e => (e !is null))
-                            .filter!(e => isMajority(e.witness.yes_votes, node_size))
-                            .count
-                            );
-                    __write("%s Round %04d     No    %(%2d %) pattern=%(%02x %)".replace("#", node_size
-                            .to!string),
-                            _name,
-                            number,
-                            _events.map!(e => (e is null)?-1:cast(int)e.witness.no_votes),
-                            pattern
-                            );
-                    version(none) 
+                        _events.map!(e => (e is null) ? -1 : cast(int) e.witness.no_votes),
+                        pattern
+                );
+                version (none)
                     __write("%s Round %04d    gather %(%2d %) pattern=%(%02x %)".replace("#", node_size
                             .to!string),
                             _name,
                             number,
                             gather_voters,
                             pattern);
-                    version(none)
+                version (none)
                     __write("%s Round %04d    seen   %-(%s %) %#s distance=%d".replace("#", node_size
                             .to!string),
                             _name,
@@ -263,7 +211,7 @@ class Round {
                             cast(int)(r.number - number)
 
                     );
-                        return ret = Completed.all_witness;
+                return ret = Completed.all_witness;
             }
             return ret = Completed.undecided;
         }
