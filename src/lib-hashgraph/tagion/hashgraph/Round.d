@@ -159,7 +159,11 @@ class Round {
                     _valid_witness &= included_mask;
                 }
 
-            __write("%s Round %04d    valid  %-(%2d %) ".replace("#", node_size.to!string),
+            __write("%s Round %04d  witness  %-(%2d %) ".replace("#", node_size.to!string),
+                    _name,
+                    number,
+                    _events.map!(e => e !is null));
+             __write("%s Round %04d    valid  %-(%2d %) ".replace("#", node_size.to!string),
                     _name,
                     number,
                     _events.map!(e => (e is null) ? -1 : cast(int) e.witness.seen_voting_mask.count));
@@ -190,9 +194,15 @@ class Round {
                     .filter!(m => _events[m]!is null)
                     .each!(m => _events[m]._witness.seen_voting_mask[e.node_id] = true)));
 
+                version(none)
                 const _all = _events.filter!(e => e !is null)
                     .map!(e => e.witness.__seen_decided(gather_voters[e.node_id]))
                     .all;
+                const _all = _events.filter!(e => e !is null).all!(e => e.witness.decided);
+                const __all_count = this[].retro.drop(1)
+                    .filter!(r => r.events.filter!(e => e !is null).all!(e => e.witness.decided))
+                    .count;
+
                 __write("%s Round %04d:%-2d ->->-> %-(%2d %) %s%s",
                         _name,
                         number,
@@ -208,18 +218,43 @@ class Round {
                         node_size.iota
                         .map!(n => (_valid_witness[n]) ? cast(int) _events[n].witness.seen_voting_mask.count : -1),
                 _all ? GREEN ~ "Yes" : RED ~ "No", RESET);
-                if (_all) {
+                    __write("%s Round %04d     Dec   %(%2d %) => %(%d %)".replace("#", node_size
+                            .to!string),
+                            _name,
+                            number,
+                            _events.map!(e => (e is null)?-1:e.witness.decided),
+                            this[].retro
+                            .map!(r => r.events.filter!(e => e !is null).all!(e => e.witness.decided))
+                            );
+                if (_all || __all_count > 3) {
                     _valid_witness &= BitMask(_events
-                            .filter!(e => (e !is null)) //.filter!(e => isMajority(e.witness.yes_votes, node_size))
-                            .filter!(e => isMajority(e.witness.seen_voting_mask, node_size))
+                            .filter!(e => (e !is null)) 
+                            .filter!(e => isMajority(e.witness.yes_votes, node_size))
+                    //        .filter!(e => isMajority(e.witness.seen_voting_mask, node_size))
                             .map!(e => e.node_id));
-                    __write("%s Round %04d     yes   %(%2d %) pattern=%(%02x %)".replace("#", node_size
+                    __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
+                            .to!string),
+                            _name,
+                            number,
+                            _events.map!(e => (e is null)?-1:cast(int)e.witness.yes_votes),
+                            _events
+                            .filter!(e => (e !is null))
+                            .filter!(e => isMajority(e.witness.yes_votes, node_size))
+                            .count
+                            );
+                    __write("%s Round %04d     No    %(%2d %)".replace("#", node_size
+                            .to!string),
+                            _name,
+                            number,
+                            _events.map!(e => (e is null)?-1:cast(int)e.witness.no_votes)
+                            );
+                     __write("%s Round %04d    gather %(%2d %) pattern=%(%02x %)".replace("#", node_size
                             .to!string),
                             _name,
                             number,
                             gather_voters,
                             pattern);
-                    __write("%s Round %04d    gather %-(%s %) %#s distance=%d".replace("#", node_size
+                    __write("%s Round %04d    seen   %-(%s %) %#s distance=%d".replace("#", node_size
                             .to!string),
                             _name,
                             number,
@@ -229,7 +264,13 @@ class Round {
                             cast(int)(r.number - number)
 
                     );
-                    if (isMajority(_valid_witness, node_size)) {
+                    const equal_votes = _events
+                    .filter!(e => e !is null)
+                    .map!(e => e.witness)
+                    .filter!(w => isMajority(w.yes_votes, node_size))
+                    .all!(w => isMajority(w.seen_voting_mask, node_size));
+                    if (equal_votes) {
+                    //if (isMajority(_valid_witness, node_size)) {
 
                         return ret = Completed.all_witness;
                     }

@@ -198,7 +198,7 @@ class HashGraph {
 
     Pubkey select_channel() {
         auto new_channel = generate!(() => Pubkey(choice(gossip_net.active_channels, gossip_net.random)));
-        return new_channel.filter!(p => p !is channel).front;
+        return new_channel.filter!(p => p != this.channel).front;
     }
 
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
@@ -782,46 +782,5 @@ class HashGraph {
             .map!(a => a.node_id)
             .each!((n) { used_nodes[n] = true; });
         return cast(uint)((~used_nodes)[].front);
-    }
-
-    //bool disable_scrapping;
-
-    enum max_package_size = 0x1000;
-    enum round_clean_limit = 10;
-
-    /++
-     Dumps all events in the Hashgraph to a file
-     +/
-    void fwrite(string filename, Pubkey[string] node_labels = null) {
-        import tagion.hashgraphview.EventView;
-        import tagion.hibon.HiBONFile : fwrite;
-
-        File graphfile = File(filename, "w");
-
-        uint[Pubkey] node_id_relocation;
-        if (node_labels.length) {
-            auto names = node_labels.keys;
-            names.sort;
-            foreach (i, name; names) {
-                node_id_relocation[node_labels[name]] = cast(uint) i;
-            }
-
-        }
-
-        EventView[size_t] events;
-        /* auto events = new HiBON; */
-        (() @trusted {
-            foreach (n; _nodes) {
-                const node_id = (node_id_relocation.length is 0) ? uint.max : node_id_relocation[n.channel];
-                n[]
-                    .filter!((e) => !e.isGrounded)
-                    .each!((e) => events[e.id] = EventView(e, node_id));
-            }
-        })();
-
-        graphfile.fwrite(NodeAmount(node_size));
-        foreach (e; events) {
-            graphfile.fwrite(e);
-        }
     }
 }

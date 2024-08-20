@@ -58,6 +58,5 @@ unittest {
 }
 
 void tagion_clear_error() {
-    last_error_text = "";
-    /* last_error = null; */
+    last_error_text = null;
 }

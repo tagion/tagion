@@ -8,13 +8,15 @@ volumes:
 
 services:
   setup-volumes:
-    image: tagion
+    environment:
+      - ADDRESS_FORMAT=tcp://node%NODE:%PORT
+    image: tagion/tagion:current
     volumes:
       - setup-volume:/usr/local/app
     command: create_wallets.sh -m1
 
   node0:
-    image: tagion
+    image: tagion/tagion:current
     depends_on:
       setup-volumes:
         condition: service_completed_successfully
@@ -26,7 +28,7 @@ services:
     command: sh -c "cp -r /data/. /usr/local/app && echo 0000 | neuewelle /usr/local/app/mode1/node0/tagionwave.json"
 
   node1:
-    image: tagion
+    image: tagion/tagion:current
     depends_on:
       setup-volumes:
         condition: service_completed_successfully
@@ -38,7 +40,7 @@ services:
     command: sh -c "cp -r /data/. /usr/local/app && echo 0001 | neuewelle /usr/local/app/mode1/node1/tagionwave.json"
 
   node2:
-    image: tagion
+    image: tagion/tagion:current
     depends_on:
       setup-volumes:
         condition: service_completed_successfully
@@ -50,7 +52,7 @@ services:
     command: sh -c "cp -r /data/. /usr/local/app && echo 0002 | neuewelle /usr/local/app/mode1/node2/tagionwave.json"
 
   node3:
-    image: tagion
+    image: tagion/tagion:current
     depends_on:
       setup-volumes:
         condition: service_completed_successfully
@@ -62,7 +64,7 @@ services:
     command: sh -c "cp -r /data/. /usr/local/app && echo 0003 | neuewelle /usr/local/app/mode1/node3/tagionwave.json"
 
   node4:
-    image: tagion
+    image: tagion/tagion:current
     depends_on:
       setup-volumes:
         condition: service_completed_successfully

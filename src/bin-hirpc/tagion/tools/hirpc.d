@@ -39,6 +39,7 @@ int _main(string[] args) {
     string[] pkeys;
 
     try {
+        arraySep = ",";
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
@@ -85,21 +86,11 @@ int _main(string[] args) {
         tools.check(all_dartinterface_methods.canFind(method_name), format("method name not valid must be one of %s", all_dartinterface_methods));
 
         DARTIndex[] get_indices(string[] _input) {
-            return _input
-                .map!(s => s.split(","))
-                .joiner
-                .map!(s => s.strip)
-                .map!(d => hash_net.dartIndexDecode(d))
-                .array;
+            return _input.map!(d => hash_net.dartIndexDecode(d)).array;
         }
 
         DARTIndex[] get_pkey_indices(string[] _pkeys) {
-            return _pkeys
-                .map!(s => s.split(","))
-                .joiner
-                .map!(s => s.strip)
-                .map!(p => hash_net.dartKey(TRTLabel, Pubkey(p.decode)))
-                .array;
+            return _pkeys.map!(p => hash_net.dartKey(TRTLabel, Pubkey(p.decode))).array;
         }
 
         enum TRT_METHOD = "trt.";

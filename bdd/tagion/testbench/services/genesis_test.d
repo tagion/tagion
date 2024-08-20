@@ -36,7 +36,6 @@ import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBONtoText;
 
-//enum env.EPOCH_TIMEOUT!uint = 100;
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 enum feature = Feature(

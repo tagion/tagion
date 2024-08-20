@@ -65,6 +65,9 @@ Description: hirep have --types arg, but it's not implemented yet.
 - [ ] - Implement --type filtering in hirep.
 - [ ] - Write bdd test for this feature
 
+# Update recorderchain documentation
+Description: the current recorderchain tool documentation is for a previous version of the tool
+
 ---
 
 ## Done

@@ -16,11 +16,12 @@ usage() {
 # Initialize default values
 bdir=""
 nodes=5
-# wallets=5
 bills=50
 network_mode=0
 data_dir="$(readlink -f ./)"
 keyfile="keys"
+
+ADDRESS_FORMAT=${ADDRESS_FORMAT:=tcp://[::1]:%PORT}
 
 # Process command-line options
 while getopts "n:w:b:k:t:h:u:q:m:" opt
@@ -77,7 +78,7 @@ do
   mkdir -p "$wallet_dir"
   wallet_config="${wdir}/node$i/wallet.json"
   password="password$i"
-  pincode=$(printf "%04d" $i)
+  pincode=0000
 
   # Step 1: Create wallet directory and config file
   "$bdir/geldbeutel" -O --path "$wallet_dir" "$wallet_config"
@@ -95,9 +96,10 @@ do
       address=$(printf "Node_%d_epoch_creator" $i)
       echo "node$i/wallet:$pincode" >> "$keyfile"
   elif [ $network_mode -eq 1 ]; then
+      node=$i
       port=$((10700+i))
-      # address=$(printf "tcp://node$i:%s" $port)
-      address=$(printf "tcp://0.0.0.0:%s" $port)
+      address=${ADDRESS_FORMAT//\%NODE/$node}
+      address=${address//\%PORT/$port}
   fi
 
   all_infos+=" -p $node_info,$address"
@@ -179,13 +181,13 @@ else
                --option=wave.network_mode:LOCAL \
                --option=epoch_creator.timeout:500 \
                --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
-               --option=inputvalidator.sock_addr:abstract://CONTRACT_NEUEWELLE_$i \
-               --option=dart_interface.sock_addr:abstract://DART_NEUEWELLE_$i \
-               --option=subscription.address:abstract://SUBSCRIPTION_NEUEWELLE_$i \
-               --option=node_interface.node_address:"tcp://0.0.0.0:$((10700+i))" 2&> /dev/null
+               --option=inputvalidator.sock_addr:abstract://node$i/CONTRACT_NEUEWELLE \
+               --option=dart_interface.sock_addr:abstract://node$i/DART_NEUEWELLE \
+               --option=subscription.address:abstract://node$i/SUBSCRIPTION_NEUEWELLE \
+               --option=node_interface.node_address:"tcp://[::1]:$((10700+i))" 2&> /dev/null
         )
 
-        echo 'echo' "$(printf "%04d" $i)" '|' "$bdir/neuewelle" "$node_dir/tagionwave.json" '&'
+        echo "echo 0000 | $bdir/neuewelle $node_dir/tagionwave.json &"
 
     done
 fi

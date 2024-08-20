@@ -958,7 +958,6 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 const lookup_handler = handler_helper!lookup_handler_impl;
 void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     string query_subject = req.path[$ - 2];
-    writeit("2B64: ",req.path[$ - 1]);
     string query_str = cast(immutable(char)[])(Base64.decode(req.path[$ - 1]));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     int rc;
@@ -1119,14 +1118,12 @@ int _main(string[] args) {
 
     isz = getmemstatus();
 
-appoint:
-
     scope(exit){
         Thread.sleep(500.msecs);
+        pragma(msg, "fixme: investigate if we need this or can move it to the app. logic. Bad behaviour to have sleep in exit scopes");
     }
-
+    
     WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"`~options.webroot~`","static_path":"`~options.webstaticdir~`"}`), &options);
-
     help_text ~= ("TagionShell web service\n");
     help_text ~= ("Listening at " ~ options.shell_uri ~ "\n\n");
     add_v1_route(app, options.i2p_endpoint, i2p_handler, [HTTPMethod.POST], "invoice-to-pay hibon");
@@ -1159,17 +1156,6 @@ appoint:
 
     while (!abort) {
         nng_sleep(500.msecs);
-        version (none) {
-            sz = getmemstatus();
-            writeit("mem: ", sz);
-            if (sz > isz * 2) {
-                writeln("Reset app!");
-                wsa.stop;
-                app.stop;
-                Thread.sleep(1000.msecs);
-                goto appoint;
-            }
-        }
     }
     writeit("Shell aborting");
     foreach(a; actors){

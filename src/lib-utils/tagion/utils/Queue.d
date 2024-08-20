@@ -1,7 +1,10 @@
 /// Queue data structure
 module tagion.utils.Queue;
+import std.range;
 
-@safe class Queue(T) {
+@safe:
+
+class Queue(T) {
     private Element _head;
     private Element _tail;
     static class Element {
@@ -86,16 +89,24 @@ module tagion.utils.Queue;
         return _head is null;
     }
 
+    size_t length() const pure nothrow {
+        return Range(this).walkLength;
+    }
+
     Range opSlice() {
+        return Range(this);
+    }
+
+    Range opSlice() const {
         return Range(this);
     }
 
     struct Range {
         private Element entry;
         private Queue owner;
-        this(Queue owner) pure nothrow {
-            this.owner = owner;
-            entry = owner._tail;
+        this(const Queue owner) pure nothrow @trusted {
+            this.owner = cast(Queue) owner;
+            entry = this.owner._tail;
         }
 
         pure nothrow {
