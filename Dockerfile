@@ -17,14 +17,13 @@ if [[ "$DEBUG" == "" ]]; then \
     echo DEBUG_ENABLE= >> local.mk; \
 fi
 
-RUN make tagion install CMAKE_GENERATOR=Ninja INSTALL=/
+RUN make tagion install install-nngcat CMAKE_GENERATOR=Ninja INSTALL=/
 
 # Final image
 FROM alpine:20240606
 WORKDIR /usr/local/
 ENV NODE_NUMBER=0
 RUN apk add bash
-COPY --from=build /tmp/src/build/x86_64-linux/tmp/nng/src/tools/nngcat/nngcat bin/
 COPY --from=build /usr/local/bin bin/
 COPY ./scripts/create_wallets.sh /usr/local/bin/
 

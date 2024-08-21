@@ -46,6 +46,13 @@ else
 nng: $(LIBNNG)
 endif
 
+NNGCAT=$(DTMP_NNG)/src/tools/nngcat/nngcat
+INSTALLEDNNGCAT=$(INSTALL)/nngcat
+$(NNGCAT): nng
+install-nngcat: $(INSTALLEDNNGCAT)
+$(INSTALLEDNNGCAT): $(DTMP_NNG)/src/tools/nngcat/nngcat
+	$(PRECMD)
+	$(CP) $(NNGCAT) $(INSTALLEDNNGCAT)
 
 env-nng:
 	$(PRECMD)
