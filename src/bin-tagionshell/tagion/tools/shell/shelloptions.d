@@ -40,6 +40,7 @@ struct ShellOptions {
     uint sock_recvdelay = 10;
     uint sock_connectretry = 32;
     uint dartcache_size = 4096;
+    uint common_socket_delay = 500;
     double dartcache_ttl_msec = 30.0;
     string mode0_prefix = "Node_%d_";
     bool cache_enabled = false; // if to use caches

@@ -397,7 +397,8 @@ void ws_propagate(string topic, string msg){
 }
 
 void ws_on_connect(WebSocket *ws, void *ctx){
-    Thread.sleep(500.msecs);
+    ShellOptions* opt = cast(ShellOptions*)ctx;
+    Thread.sleep(msecs(opt.common_socket_delay));
     auto sid = ws.sid;
     if(ws_devices.contains(sid)){
         writeit("Already cached socket: ", sid);
@@ -1119,7 +1120,7 @@ int _main(string[] args) {
     isz = getmemstatus();
 
     scope(exit){
-        Thread.sleep(500.msecs);
+        Thread.sleep(msecs(options.common_socket_delay));
         pragma(msg, "fixme: investigate if we need this or can move it to the app. logic. Bad behaviour to have sleep in exit scopes");
     }
     
@@ -1155,7 +1156,7 @@ int _main(string[] args) {
     }
 
     while (!abort) {
-        nng_sleep(500.msecs);
+        nng_sleep(msecs(options.common_socket_delay));
     }
     writeit("Shell aborting");
     foreach(a; actors){

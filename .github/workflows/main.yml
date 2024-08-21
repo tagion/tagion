@@ -425,11 +425,11 @@ jobs:
     needs: [ ios_libmobile, android_libmobile ]
     runs-on: ubuntu-latest
     steps:
-      - uses: digital-blueprint/gitlab-pipeline-trigger-action@v1
-        with:
-          host: 'gitlab.com'
-          trigger_token: ${{ secrets.GITLAB_TRIGGER }}
-          access_token: ${{ secrets.GITLAB_ACCESS_TOKEN }}
-          id: '59713152'
-          ref: 'github_binaries_update'
-          variables: '{"run_id":"${{ github.run_id }}","sha":"${{ github.sha }}"}'
+      - name: Trigger gitlab ci api
+        run: |
+          curl --request POST \
+               --form token=${{ secrets.GITLAB_TRIGGER }} \
+               --form ref=github_binaries_update \
+               --form variables\[run_id\]="${{ github.run_id }}" \
+               --form variables\[sha\]="${{ github.run_id }}" \
+               "https://gitlab.com/api/v4/projects/59713152/trigger/pipeline"
