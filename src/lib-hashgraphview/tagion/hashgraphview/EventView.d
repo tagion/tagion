@@ -38,9 +38,7 @@ struct EventView {
     @label("$prevwitness") @optional Buffer witness_seen;
     @label("$voted") @optional Buffer voted; /// Witness which has voted    
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
-    //    @label("$type") @optional Event.Witness.DecisionType type; /// Famous yes votes    
     @label("$weak") @optional bool weak;
-    //    @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
     @optional @(filter.Initialized) bool collector;
     bool father_less;
@@ -67,6 +65,8 @@ struct EventView {
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:int.min;
+            collector=event.collector;
+
             intermediate=event._intermediate_event;
             seen=event._witness_seen_mask.bytes;   
             intermediate_seen=event._intermediate_seen_mask.bytes;
@@ -75,7 +75,7 @@ struct EventView {
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
                yes_votes = witness.yes_votes;
                voted = witness.voted_yes_mask.bytes; 
-                witness_seen = witness.previous_witness_seen_mask.bytes;
+               witness_seen = witness.previous_witness_seen_mask.bytes;
                 decided = event.round.valid_witness[event.node_id];
                 weak = witness.weak;
             }
@@ -94,7 +94,9 @@ void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node
     import tagion.hibon.HiBONFile : fwrite;
 
     File graphfile = File(filename, "w");
-
+    scope(exit) {
+    graphfile.close; 
+    }
     uint[Pubkey] node_id_relocation;
     if (node_labels.length) {
         // assert(node_labels.length is _nodes.length);

@@ -707,18 +707,11 @@ class HashGraph {
         }
     }
 
-    import std.traits : fullyQualifiedName;
-
     alias NodeRange = typeof((cast(const) _nodes).byValue);
 
     @nogc
     NodeRange opSlice() const pure nothrow {
         return _nodes.byValue;
-    }
-
-    @nogc
-    size_t active_nodes() const pure nothrow {
-        return _nodes.length;
     }
 
     @nogc
