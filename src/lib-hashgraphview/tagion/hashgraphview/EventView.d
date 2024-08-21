@@ -42,7 +42,7 @@ struct EventView {
     @label("$weak") @optional bool weak;
     //    @label("$no") @optional uint no_votes; /// Famous no votes    
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
-    @optional @(filter.Initialized) bool top;
+    @optional @(filter.Initialized) bool collector;
     bool father_less;
 
     mixin HiBONRecord!(q{
@@ -67,10 +67,6 @@ struct EventView {
             round=(event.hasRound)?event.round.number:event.round.number.min;
             father_less=event.isFatherLess;
             round_received=(event.round_received)?event.round_received.number:int.min;
-            if (event.top) {
-                top=true;
-            }
-
             intermediate=event._intermediate_event;
             seen=event._witness_seen_mask.bytes;   
             intermediate_seen=event._intermediate_seen_mask.bytes;
@@ -78,10 +74,8 @@ struct EventView {
                auto witness=event.witness;
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
                yes_votes = witness.yes_votes;
-               //famous = isMajority(yes_votes, event.round.events.length); 
                voted = witness.voted_yes_mask.bytes; 
                 witness_seen = witness.previous_witness_seen_mask.bytes;
-                
                 decided = event.round.valid_witness[event.node_id];
                 weak = witness.weak;
             }

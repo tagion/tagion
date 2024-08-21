@@ -664,7 +664,7 @@ class Round {
             foreach (e; event_list) {
                 famous_seen_masks[e.node_id][e.node_id] = true;
                 famous_seen_masks[e._father.node_id] |= famous_seen_masks[e.node_id];
-                const top = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
+                const collector = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
                 if (!event_front[e._father.node_id] && isMajority(famous_seen_masks[e._father.node_id], hashgraph)) {
                     event_front[e._father.node_id] = e._father;
                 }
@@ -689,7 +689,7 @@ class Round {
 
             event_front
                 .filter!(e => e !is null)
-                .each!(e => e.top = true);
+                .each!(e => e.collector = true);
 
             auto event_collection = event_front
                 .filter!(e => e !is null)

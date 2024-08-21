@@ -264,7 +264,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             }
             obuf[5].writefln("%s", node_box.toString);
         }
-        if (e.top) {
+        if (e.collector) {
             node_circle.stroke = nonPastel19.color(e.round);
             node_circle.stroke_width += 6;
             //node_circle.radius += NODE_CIRCLE_SIZE / 4;

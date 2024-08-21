@@ -42,10 +42,7 @@ class Event {
     alias check = Check!EventConsensusException;
     protected static uint _count;
 
-    package int pseudo_time_counter;
-
     package {
-
         Round _round; /// The where the event has been created
         Witness _witness; /// Contains information for the witness events
     }
@@ -65,7 +62,7 @@ class Event {
         Round _round_received; /// The round in which the event has been voted to be received
     }
     static Topic topic = Topic("hashgraph_event");
-    bool top;
+    bool collector; /// Epoch collector node
     bool _intermediate_event;
 
     @nogc
