@@ -96,11 +96,13 @@ class Round {
 
     final Buffer pattern() const pure nothrow {
         import tagion.utils.Miscellaneous;
-
         auto fingerprints = _valid_witness[]
             .map!(n => _events[n])
             .filter!(e => e !is null)
             .map!(e => cast(Buffer) e.fingerprint);
+        if (fingerprints.empty) {
+            return Buffer.init;
+        }
         return xor(fingerprints);
     }
 
