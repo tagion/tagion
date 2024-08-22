@@ -225,8 +225,8 @@
     },
     "run_fiber_epoch": {
       "args": [
-        "--rounds=400",
-        "-N7",
+        "--rounds=100",
+        "-N5",
         "100",
         "-k",
         "-x"

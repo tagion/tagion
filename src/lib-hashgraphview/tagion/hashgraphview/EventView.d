@@ -94,8 +94,8 @@ void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node
     import tagion.hibon.HiBONFile : fwrite;
 
     File graphfile = File(filename, "w");
-    scope(exit) {
-    graphfile.close; 
+    scope (exit) {
+        graphfile.close;
     }
     uint[Pubkey] node_id_relocation;
     if (node_labels.length) {

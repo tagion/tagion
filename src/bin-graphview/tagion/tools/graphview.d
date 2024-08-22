@@ -71,7 +71,7 @@ struct Segment {
     Flag!"order" mode;
     this(string s, Flag!"order" mode) const pure {
         this.mode=mode;
-        auto r = s.split(":");
+        auto r = s.split("..");
         from = r.front.to!int;
         r.popFront;
         to = r.front.to!int;
@@ -79,7 +79,7 @@ struct Segment {
 
     bool inRange(ref const EventView event) {
         const x=mode?event.order:event.round;
-        return (from == to) || ((x >= from) || from == 0) && ((x < to) || (to == 0));
+        return (from == to) || ((x >= from) || from == -1) && ((x < to) || (to == -1));
     }
 }
 
