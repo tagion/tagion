@@ -2,6 +2,7 @@ module tagion.tools.graphview;
 import std.array : join;
 import std.range;
 import std.conv : to;
+import std.typecons;
 import std.file : exists, fwrite = write;
 import std.format;
 import std.functional : toDelegate;
@@ -67,15 +68,18 @@ static immutable nonPastel19 = [
 
 struct Segment {
     int from, to;
-    this(string s) const pure {
+    Flag!"order" mode;
+    this(string s, Flag!"order" mode) const pure {
+        this.mode=mode;
         auto r = s.split(":");
         from = r.front.to!int;
         r.popFront;
         to = r.front.to!int;
     }
 
-    bool inRange(const int order) {
-        return (from == to) || ((order >= from) || from == 0) && ((order < to) || (to == 0));
+    bool inRange(ref const EventView event) {
+        const x=mode?event.order:event.round;
+        return (from == to) || ((x >= from) || from == 0) && ((x < to) || (to == 0));
     }
 }
 
@@ -160,6 +164,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         int width;
         int height;
         string fill;
+        float fill_opacity=1.0;
         string stroke;
         int stroke_width;
 
@@ -168,8 +173,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         string data_info;
 
         string toString() const pure @safe {
-            string options = format(`x="%s" y="%s" width="%s" height="%s" fill="%s" stroke="%s" stroke-width="%s" `, pos
-                    .x - width, pos.y - height, width * 2, height * 2, fill, stroke, stroke_width);
+            string options = format(`x="%s" y="%s" width="%s" height="%s" fill="%s" fill-opacity="%f" stroke="%s" stroke-width="%s" `, pos
+                    .x - width, pos.y - height, width * 2, height * 2, fill, fill_opacity, stroke, stroke_width);
             if (!raw_svg) {
                 options ~= format(`class="%s" data-info="%s"`, classes, data_info);
             }
@@ -253,7 +258,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         node_box.raw_svg = raw_svg;
         node_box.pos = pos;
         node_box.width = node_box.height = NODE_CIRCLE_SIZE * 5 / 4;
-
+        node_box.fill_opacity=0;
         // colors
         if (e.witness) {
             //  if (e.famous || e.decided) {
@@ -275,7 +280,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             node_circle.fill = pastel19.color(e.round_received);
         }
         if (e.intermediate) {
-            node_box.fill = "lightblue";
+           // node_box.fill = "lightblue";
             if (e.round_received != int.min) {
                 node_box.stroke = pastel19.color(e.round_received);
                 node_box.stroke_width = 6;
@@ -305,7 +310,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text = format("%d", e.id);
         text.pos.y += NODE_CIRCLE_SIZE / 2;
         obuf[20].writefln("%s", text.toString);
-        
+
         text.pos.y += NODE_CIRCLE_SIZE / 2;
         BitMask seen_mask;
         seen_mask = e.seen;
@@ -357,7 +362,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         foreach (e; doc_range) {
             if (e.isRecord!EventView) {
                 auto event = EventView(e);
-                if (segment.inRange(event.order)) {
+                if (segment.inRange(event)) {
                     events[event.id] = event;
                 }
             }
@@ -370,8 +375,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
 
         scope (success) {
-            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height - min_height + 4*NODE_INDENT);
-            start.writefln(`<g transform="translate(0,%s)">`, max_height + 2*NODE_INDENT);
+            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height - min_height + 4 * NODE_INDENT);
+            start.writefln(`<g transform="translate(0,%s)">`, max_height + 2 * NODE_INDENT);
             end.writefln("</g>");
             end.writefln("</svg>");
         }
@@ -431,101 +436,104 @@ int _main(string[] args) @trusted {
     string[] inputfilenames;
     //string outputfilename;
     string segment_arg;
-
+    bool by_order;
     bool svg;
-try {
-    auto main_args = getopt(args,
-            std.getopt.config.caseSensitive,
-            std.getopt.config.bundling,
-            "version", "display the version", &version_switch,
-            "v|verbose", "Prints more debug information", &__verbose_switch,
-            "svg", "Generate raw svg to stdout else html", &svg,
-            "s|segment", "Segment of graph (from:to)", &segment_arg,
-    );
+    try {
+        auto main_args = getopt(args,
+                std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "version", "display the version", &version_switch,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
+                "svg", "Generate raw svg to stdout else html", &svg,
+                "s|segment", "Segment of graph (from:to)", &segment_arg,
+                "S|order", "Segment by order", &by_order,
 
-    if (version_switch) {
-        revision_text.writeln;
-        return 0;
-    }
+        );
 
-    if (main_args.helpWanted) {
-        defaultGetoptPrinter(
-                [
-                "Documentation: https://docs.tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .hibon format",
-                "",
-                "Example:",
-                "# SVG",
-                "graphview Alice.hibon index.svg",
-                "# HTML multi-graph",
-                "graphview *_graph.hibon index.html",
-                "<option>:",
-                ].join("\n"),
-                main_args.options);
-        return 0;
-    }
-    
-    if (segment_arg) {
-        segment = Segment(segment_arg);
-    }
-    import tagion.basic.Types : hasExtension, FileExtension;
-
-    inputfilenames = args.filter!(arg => arg.hasExtension(FileExtension.hibon)).array;
-
-    File[] inputfiles;
-    if (inputfilenames.empty) {
-        inputfiles ~= stdin;
-        verbose("Reading graph data from stdin");
-    }
-    else {
-        inputfilenames.each!(inputfilename => inputfiles ~= File(inputfilename, "r"));
-    }
-
-    File outfile=stdout();
-    auto outputfilename=args.filter!(file => file.hasExtension(FileExtension.svg) || file.hasExtension(FileExtension.html));
-    if (!outputfilename.empty) {
-        tools.check(outputfilename.walkLength == 1, format("More then one output file %s", outputfilename));
-        const filename=outputfilename.front;
-        outfile = File(filename, "w");
-        svg=filename.hasExtension(FileExtension.svg);
-    }
-
-
-    assert(inputfiles.length != 0);
-    foreach (i, inputfile; inputfiles) {
-        HiBONRange hibon_range = HiBONRange(inputfile);
-
-        //auto obuf = new OutBuffer;
-        //obuf.reserve(inputfile.size * 2);
-        HeightBuffer obuf;
-        verbose("inputfile size=%s", inputfile.size);
-        auto startbuf = new OutBuffer;
-        auto endbuf = new OutBuffer;
-        if (i == 0 && !svg) {
-            startbuf.writefln(HTML_BEGIN);
+        if (version_switch) {
+            revision_text.writeln;
+            return 0;
         }
+
+        if (main_args.helpWanted) {
+            defaultGetoptPrinter(
+                    [
+                    "Documentation: https://docs.tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] <in-file>", program),
+                    "",
+                    "Where:",
+                    "<in-file>           Is an input file in .hibon format",
+                    "",
+                    "Example:",
+                    "# SVG",
+                    "graphview Alice.hibon index.svg",
+                    "# HTML multi-graph",
+                    "graphview *_graph.hibon index.html",
+                    "<option>:",
+                    ].join("\n"),
+                    main_args.options);
+            return 0;
+        }
+
+        if (segment_arg) {
+            const mode=(by_order)?Yes.order:No.order;
+            segment = Segment(segment_arg, mode);
+        }
+        import tagion.basic.Types : hasExtension, FileExtension;
+
+        inputfilenames = args.filter!(arg => arg.hasExtension(FileExtension.hibon)).array;
+
+        File[] inputfiles;
+        if (inputfilenames.empty) {
+            inputfiles ~= stdin;
+            verbose("Reading graph data from stdin");
+        }
+        else {
+            inputfilenames.each!(inputfilename => inputfiles ~= File(inputfilename, "r"));
+        }
+
+        File outfile = stdout();
+        auto outputfilename = args.filter!(file => file.hasExtension(FileExtension.svg) || file.hasExtension(FileExtension
+                .html));
+        if (!outputfilename.empty) {
+            tools.check(outputfilename.walkLength == 1, format("More then one output file %s", outputfilename));
+            const filename = outputfilename.front;
+            outfile = File(filename, "w");
+            svg = filename.hasExtension(FileExtension.svg);
+        }
+
+        assert(inputfiles.length != 0);
+        foreach (i, inputfile; inputfiles) {
+            HiBONRange hibon_range = HiBONRange(inputfile);
+
+            //auto obuf = new OutBuffer;
+            //obuf.reserve(inputfile.size * 2);
+            HeightBuffer obuf;
+            verbose("inputfile size=%s", inputfile.size);
+            auto startbuf = new OutBuffer;
+            auto endbuf = new OutBuffer;
+            if (i == 0 && !svg) {
+                startbuf.writefln(HTML_BEGIN);
+            }
 
             auto dot = SVGDot!HiBONRange(hibon_range);
             dot.draw(obuf, startbuf, endbuf, svg);
-        if (inputfiles.length == i + 1 && !svg) {
-            endbuf.writefln(EVENT_POPUP);
-            endbuf.writefln(HTML_END);
+            if (inputfiles.length == i + 1 && !svg) {
+                endbuf.writefln(EVENT_POPUP);
+                endbuf.writefln(HTML_END);
+            }
+
+            outfile.write(startbuf);
+            obuf[].each!(buf => outfile.write(buf));
+
+            //outfile.write(obuf);
+            outfile.write(endbuf);
+            verbose("outfile size=%s", outfile.size);
         }
-
-        outfile.write(startbuf);
-        obuf[].each!(buf => outfile.write(buf));
-
-        //outfile.write(obuf);
-        outfile.write(endbuf);
-        verbose("outfile size=%s", outfile.size);
     }
-    }
-catch (Exception e) {
+    catch (Exception e) {
         error(e);
         return 1;
     }
