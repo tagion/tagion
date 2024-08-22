@@ -124,7 +124,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
     Range doc_range;
     size_t node_size = 5;
     EventView[uint] events;
-    int NODE_INDENT = 110;
+    int NODE_INDENT = 120;
     const NODE_CIRCLE_SIZE = 40;
 
     this(Range doc_range) {
@@ -315,6 +315,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         BitMask seen_mask;
         seen_mask = e.seen;
         text.text = (() @trusted => format(vote_fmt ~ ":%d", seen_mask, seen_mask.count))();
+        text.fill = "orange";
         text.pos.y += NODE_CIRCLE_SIZE / 2;
         obuf[20].writefln("%s", text.toString);
         BitMask vote_intermediate;
