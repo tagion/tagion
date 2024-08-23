@@ -17,7 +17,7 @@ if [[ "$DEBUG" == "" ]]; then \
     echo DEBUG_ENABLE= >> local.mk; \
 fi
 
-RUN make tagion install INSTALL=/usr/local/bin/ DC=ldc2 && ldd ./build/x86_64-linux/tmp/nng/src/tools/nngcat/nngcat
+RUN make tagion install INSTALL=/usr/local/bin/ DC=ldc2
 
 # Final image
 FROM alpine:20240606

@@ -42,7 +42,8 @@ int _main(string[] args) {
     local_options.trt.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "Genesis_Node_%s_";
-    local_options.subscription.address = contract_sock_addr("GENESIS_SUBSCRIPTION");
+    // Don't start the subscription service because we want to use the test thread for subscription
+    local_options.subscription.enable = false;
     local_options.save(config_file);
 
     import std.algorithm;
@@ -130,9 +131,6 @@ int _main(string[] args) {
                 opt.task_names.epoch_creator, // Name
                 key,
                 opt.task_names.epoch_creator, // Address
-
-                
-
         );
     }
 
@@ -187,12 +185,12 @@ int _main(string[] args) {
     immutable neuewelle_args = [
         "genesis_test", config_file
     ]; // ~ args;
-    auto tid = spawn(&wrap_neuewelle, neuewelle_args);
+    Tid tid = spawn(&wrap_neuewelle, neuewelle_args);
+    string test_task_name = "genesis_testing";
+    register(test_task_name, thisTid);
+    log.registerSubscriptionTask(test_task_name);
 
     Thread.sleep(15.seconds);
-    auto name = "genesis_testing";
-    register(name, thisTid);
-    log.registerSubscriptionTask(name);
 
     auto feature = automation!(genesis_test);
     feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch);

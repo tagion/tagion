@@ -5,6 +5,7 @@ private import concurrency = std.concurrency;
 import core.time : Duration;
 import std.meta : allSatisfy;
 import std.traits : isSafe;
+import std.exception;
 
 /** @brief File contains functions of std.concurrency wrapped in @trusted
  *         to use them in @safe code
@@ -57,10 +58,11 @@ Tid spawn(F, Args...)(F fn, Args args) @trusted {
     return concurrency.spawn(fn, args);
 }
 
-Tid locate(string name) @trusted {
-    return concurrency.locate(name);
+Tid locate(string name) @trusted nothrow {
+    return assumeWontThrow(concurrency.locate(name));
 }
 
-bool register(string name, Tid tid) @trusted {
-    return concurrency.register(name, tid);
+bool register(string name, Tid tid) @trusted nothrow 
+in (tid !is Tid.init) {
+    return assumeWontThrow(concurrency.register(name, tid));
 }

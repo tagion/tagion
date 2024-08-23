@@ -432,4 +432,6 @@ jobs:
                --form ref=github_binaries_update \
                --form variables\[run_id\]="${{ github.run_id }}" \
                --form variables\[sha\]="${{ github.run_id }}" \
+               --form variables\[ref_name\]="${{ github.ref_name }}" \
+               --form variables\[commit_message\]="${{ github.event.head_commit.message }}" \
                "https://gitlab.com/api/v4/projects/59713152/trigger/pipeline"
