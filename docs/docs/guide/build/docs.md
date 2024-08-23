@@ -28,8 +28,9 @@ npm install
 After feeding the black hole you'll be able to build the documentation
 
 **Start a development server**
+
 ```
-npm run docusaurus start
+npm run start
 ```
 
 

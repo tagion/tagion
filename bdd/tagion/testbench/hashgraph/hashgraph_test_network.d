@@ -37,6 +37,7 @@ struct HashGraphOptions {
     uint seed = 123_456_689;
     string path;
     bool disable_graphfile; /// Disable graph file
+    bool disable_name_order; /// Don't sort node name (Used to see the mask voting)
     bool continue_on_error; /// Don't stop if the epochs does not match
     int max_epochs;
 }

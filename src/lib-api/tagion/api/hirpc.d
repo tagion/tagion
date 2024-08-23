@@ -9,9 +9,8 @@ import tagion.crypto.SecureNet;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 
-version(unittest) {}
+version(unittest) { }
 else {
-extern(C):
 nothrow:
 }
 
@@ -26,6 +25,7 @@ nothrow:
  *   out_doc_len = The length of the resulting document
  * Returns: [tagion.api.errors.ErrorCode]
  */
+extern(C)
 int tagion_hirpc_create_sender(
         const char* method,
         const size_t method_len,
@@ -95,6 +95,7 @@ unittest {
  *   out_doc_len = The length of the resulting document
  * Returns: [tagion.api.errors.ErrorCode]
  */
+extern(C)
 int tagion_hirpc_create_signed_sender(
         const char* method,
         const size_t method_len,

@@ -97,13 +97,14 @@ do {
 }
 
 @safe
-Buffer xor(Range)( Range range) pure if (isInputRange!Range && is(ElementType!Range : const(ubyte[])))
+Buffer xor(Range)(Range range) pure if (isInputRange!Range && is(ElementType!Range : const(ubyte[])))
 in (!range.empty)
 do {
     import std.array : array;
     import std.range : tail;
+
     auto result = new ubyte[range.front.length];
     range
-    .each!(b => result[]^=b[]);
+        .each!(b => result[] ^= b[]);
     return (() @trusted => assumeUnique(result))();
 }

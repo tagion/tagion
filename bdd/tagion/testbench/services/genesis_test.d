@@ -78,6 +78,9 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
 
     @Given("i have a network booted with a genesis block")
     Document block() {
+        check(log.isLoggerSubRegistered, "A subscription task was not registered");
+
+        submask.subscribe(modify_log);
 
         amount = 500.TGN;
         auto bill_to_pay = TagionBill(amount, currentTime, Pubkey([0]), Buffer.init);
@@ -94,7 +97,6 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
 
         writefln("signed_contract: %s", signed_contract.toPretty);
 
-        submask.subscribe(modify_log);
 
         int max = 100;
         int start = 0;
@@ -104,7 +106,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
             }
             log("EPOCH_TIMEOUT=%s", env.EPOCH_TIMEOUT!uint);
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
-            log("received something");
+            log("received subscription event");
 
             check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");
             // writefln("received recorder %s", modify_log_result[1].toPretty);

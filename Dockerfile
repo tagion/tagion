@@ -17,7 +17,7 @@ if [[ "$DEBUG" == "" ]]; then \
     echo DEBUG_ENABLE= >> local.mk; \
 fi
 
-RUN make tagion install install-nngcat CMAKE_GENERATOR=Ninja INSTALL=/
+RUN make tagion install install-nngcat CMAKE_GENERATOR=Ninja INSTALL=/usr/local/bin/ DC=ldc2
 
 # Final image
 FROM alpine:20240606
