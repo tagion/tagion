@@ -70,7 +70,7 @@ struct Segment {
     int from, to;
     Flag!"order" mode;
     this(string s, Flag!"order" mode) const pure {
-        this.mode=mode;
+        this.mode = mode;
         auto r = s.split("..");
         from = r.front.to!int;
         r.popFront;
@@ -78,7 +78,7 @@ struct Segment {
     }
 
     bool inRange(ref const EventView event) {
-        const x=mode?event.order:event.round;
+        const x = mode ? event.order : event.round;
         return (from == to) || ((x >= from) || from == -1) && ((x < to) || (to == -1));
     }
 }
@@ -143,6 +143,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         int radius;
         string fill;
         string stroke;
+        string dasharray;
         int stroke_width;
 
         // for html
@@ -150,7 +151,9 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         string data_info;
 
         string toString() const pure @safe {
-            string options = format(`cx="%s" cy="%s" r="%s" fill="%s" stroke="%s" stroke-width="%s" `, pos.x, pos.y, radius, fill, stroke, stroke_width);
+            string options = format(
+                    `cx="%s" cy="%s" r="%s" fill="%s" stroke="%s" stroke-width="%s" stroke-dasharray="%s"`, pos.x, pos
+                    .y, radius, fill, stroke, stroke_width, dasharray);
             if (!raw_svg) {
                 options ~= format(`class="%s" data-info="%s"`, classes, data_info);
             }
@@ -164,8 +167,9 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         int width;
         int height;
         string fill;
-        float fill_opacity=1.0;
+        float fill_opacity = 1.0;
         string stroke;
+        string dasharray;
         int stroke_width;
 
         // for html
@@ -173,8 +177,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         string data_info;
 
         string toString() const pure @safe {
-            string options = format(`x="%s" y="%s" width="%s" height="%s" fill="%s" fill-opacity="%f" stroke="%s" stroke-width="%s" `, pos
-                    .x - width, pos.y - height, width * 2, height * 2, fill, fill_opacity, stroke, stroke_width);
+            string options = format(`x="%s" y="%s" width="%s" height="%s" fill="%s" fill-opacity="%f" stroke="%s" stroke-width="%s" stroke-dasharray="%s"`, pos
+                    .x - width, pos.y - height, width * 2, height * 2, fill, fill_opacity, stroke, stroke_width, dasharray);
             if (!raw_svg) {
                 options ~= format(`class="%s" data-info="%s"`, classes, data_info);
             }
@@ -258,7 +262,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         node_box.raw_svg = raw_svg;
         node_box.pos = pos;
         node_box.width = node_box.height = NODE_CIRCLE_SIZE * 5 / 4;
-        node_box.fill_opacity=0;
+        node_box.fill_opacity = 0;
         // colors
         if (e.witness) {
             //  if (e.famous || e.decided) {
@@ -280,10 +284,11 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             node_circle.fill = pastel19.color(e.round_received);
         }
         if (e.intermediate) {
-           // node_box.fill = "lightblue";
+            // node_box.fill = "lightblue";
             if (e.round_received != int.min) {
-                node_box.stroke = pastel19.color(e.round_received);
-                node_box.stroke_width = 6;
+                node_box.stroke = "darkblue";
+                node_box.stroke_width = 4;
+                node_box.dasharray = "10,10";
             }
             obuf[5].writefln("%s", node_box.toString);
         }
@@ -479,7 +484,7 @@ int _main(string[] args) @trusted {
         }
 
         if (segment_arg) {
-            const mode=(by_order)?Yes.order:No.order;
+            const mode = (by_order) ? Yes.order : No.order;
             segment = Segment(segment_arg, mode);
         }
         import tagion.basic.Types : hasExtension, FileExtension;

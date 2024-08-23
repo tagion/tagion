@@ -36,7 +36,7 @@ struct EventView {
     @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
     @label("$intermediate") @optional Buffer intermediate_seen;
     @label("$prevwitness") @optional Buffer witness_seen;
-    @label("$voted") @optional Buffer voted; /// Witness which has voted    
+    @label("$voted") @optional Buffer voted; /// Witness which has voted yes   
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
     @label("$weak") @optional bool weak;
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided

@@ -51,7 +51,7 @@ class Event {
     immutable(EventPackage*) event_package; /// Then exchanged event information
 
     BitMask _witness_seen_mask; /// Witness seen in previous round
-    BitMask _intermediate_seen_mask;
+    BitMask _intermediate_seen_mask; /// Intermediate seen from this event
     // This is the internal pointer to the connected Event's
     package Event _mother; /// Points to the self-parent
     package Event _father; /// Points to other-parent
@@ -62,7 +62,7 @@ class Event {
         Round _round_received; /// The round in which the event has been voted to be received
     }
     static Topic topic = Topic("hashgraph_event");
-    bool collector; /// Epoch collector node
+    bool collector; /// Epoch collector event
     bool _intermediate_event;
 
     @nogc
@@ -182,7 +182,7 @@ class Event {
         }
 
         private {
-            BitMask _intermediate_event_mask;
+            BitMask _intermediate_voting_mask;
             BitMask _previous_strongly_seen_mask;
             BitMask _voted_yes_mask; /// Witness in the next round which has voted
 
@@ -193,8 +193,8 @@ class Event {
                 return _previous_strongly_seen_mask;
             }
 
-            const(BitMask) intermediate_event_mask() {
-                return _intermediate_event_mask;
+            const(BitMask) intermediate_voting_mask() {
+                return _intermediate_voting_mask;
             }
 
             uint yes_votes() {
@@ -204,19 +204,21 @@ class Event {
             bool decided() {
                 const N = _round.node_size;
                 return isMajority(yes_votes, N) ||
-                !isMajority(yes_votes+N-voters, N) ||
-                isMajority(voters - yes_votes, N);
+                    !isMajority(yes_votes + N - voters, N) ||
+                    isMajority(voters - yes_votes, N);
             }
 
             uint voters() {
                 if (_round.next) {
-                return cast(uint)_round.next.events.filter!(e => e !is null).count; 
+                    return cast(uint) _round.next.events.filter!(e => e !is null).count;
                 }
                 return 0;
-    }   
+            }
+
             uint no_votes() {
                 return voters - yes_votes;
             }
+
             const(BitMask) voted_yes_mask() {
                 return _voted_yes_mask;
             }
@@ -255,7 +257,7 @@ class Event {
                 _previous_strongly_seen_mask = _intermediate_seen_mask.dup;
                 previous_witness_seen_mask = _witness_seen_mask;
             }
-            _intermediate_event_mask[node_id] = true;
+            _intermediate_voting_mask[node_id] = true;
 
             _intermediate_seen_mask.clear;
             _intermediate_event = false;
@@ -271,6 +273,9 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
         do {
             hashgraph._rounds.set_round(this.outer);
+            if (_father && _father.round.number == _round.number) {
+                _witness_seen_mask |= _father._witness_seen_mask;
+            }
             /// Counting yes/no votes from this witness to witness in the previous round
             if (round.previous && (round.previous.events[node_id]!is null) && !round.previous.events[node_id].witness
                 .weak) {
@@ -313,7 +318,7 @@ class Event {
                 .events
                 .filter!(e => e !is null)
                 .map!(e => e._witness)
-                .map!(w => w._intermediate_event_mask[node_id])
+                .map!(w => w._intermediate_voting_mask[node_id])
                 .count;
             return isMajority(vote_strongly_seen, hashgraph.node_size);
         }
@@ -392,7 +397,7 @@ class Event {
 
         _mother = hashgraph.register(event_package.event_body.mother);
         if (!_mother) {
-            if (!isEva &&  !hashgraph.rounds.isEventInLastDecidedRound(this)) {
+            if (!isEva && !hashgraph.rounds.isEventInLastDecidedRound(this)) {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
             return;
@@ -407,25 +412,28 @@ class Event {
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
-            BitMask new_witness_seen;
+            //BitMask new_witness_seen;
             if (_father._round.number == _mother._round.number) {
                 _witness_seen_mask |= _father._witness_seen_mask;
                 _intermediate_seen_mask |= _father._intermediate_seen_mask;
-                new_witness_seen = _father._witness_seen_mask - _mother
+                const new_witness_seen = _father._witness_seen_mask - _mother
                     ._witness_seen_mask;
-            }
-            else {
+                //}
+                /*
+        else {
                 new_witness_seen = _witness_seen_mask;
             }
-            if (!new_witness_seen[].empty) {
-                _intermediate_event = true;
-                _intermediate_seen_mask[node_id] = true;
-                auto max_round = maxRound;
-                new_witness_seen[]
-                    .filter!((n) => max_round.events[n]!is null)
-                    .map!((n) => max_round.events[n]._witness)
-                    .filter!((witness) => witness._intermediate_event_mask[node_id])
-                    .each!((witness) => witness._intermediate_event_mask[node_id] = true);
+*/
+                if (!new_witness_seen[].empty) {
+                    _intermediate_event = true;
+                    _intermediate_seen_mask[node_id] = true;
+                    auto max_round = maxRound;
+                    new_witness_seen[]
+                        .filter!((n) => max_round.events[n]!is null)
+                        .map!((n) => max_round.events[n]._witness)
+                        .filter!((witness) => witness._intermediate_voting_mask[node_id])
+                        .each!((witness) => witness._intermediate_voting_mask[node_id] = true);
+                }
             }
             const strongly_seen = calc_strongly_seen(hashgraph);
             if (strongly_seen) {

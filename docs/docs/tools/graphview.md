@@ -78,8 +78,7 @@ graphview Node_00_graph.hibon -s642:656 --order index.svg
 ### HTML example
 
 ```
-ggraphview *_graph.hibon -s4..6 index.html
+graphview *_graph.hibon -s4..6 index.html
 ```
-
-![HTML example](/figs/graphview_example_2.html)
+<iframe src="/docs/figs/graphview_example_2.html" title="Graphview html example"></iframe>
 
