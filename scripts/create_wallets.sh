@@ -21,7 +21,7 @@ network_mode=0
 data_dir="$(readlink -f ./)"
 keyfile="keys"
 
-ADDRESS_FORMAT=${ADDRESS_FORMAT:='tcp://localhost:%PORT'}
+ADDRESS_FORMAT=${ADDRESS_FORMAT:=tcp://[::1]:%PORT}
 
 # Process command-line options
 while getopts "n:w:b:k:t:h:u:q:m:" opt
@@ -78,7 +78,7 @@ do
   mkdir -p "$wallet_dir"
   wallet_config="${wdir}/node$i/wallet.json"
   password="password$i"
-  pincode=$(printf "%04d" $i)
+  pincode=0000
 
   # Step 1: Create wallet directory and config file
   "$bdir/geldbeutel" -O --path "$wallet_dir" "$wallet_config"
@@ -180,14 +180,15 @@ else
             "$bdir/neuewelle" -O \
                --option=wave.network_mode:LOCAL \
                --option=epoch_creator.timeout:500 \
+               --option=wave.number_of_nodes:"$nodes" \
                --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
-               --option=inputvalidator.sock_addr:abstract://CONTRACT_NEUEWELLE_$i \
-               --option=dart_interface.sock_addr:abstract://DART_NEUEWELLE_$i \
-               --option=subscription.address:abstract://SUBSCRIPTION_NEUEWELLE_$i \
+               --option=inputvalidator.sock_addr:abstract://node$i/CONTRACT_NEUEWELLE \
+               --option=dart_interface.sock_addr:abstract://node$i/DART_NEUEWELLE \
+               --option=subscription.address:abstract://node$i/SUBSCRIPTION_NEUEWELLE \
                --option=node_interface.node_address:"tcp://0.0.0.0:$((10700+i))" 2&> /dev/null
         )
 
-        echo 'echo' "$(printf "%04d" $i)" '|' "$bdir/neuewelle" "$node_dir/tagionwave.json" '&'
+        echo "echo 0000 | $bdir/neuewelle $node_dir/tagionwave.json &"
 
     done
 fi

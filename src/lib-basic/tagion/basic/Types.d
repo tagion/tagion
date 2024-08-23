@@ -63,6 +63,8 @@ enum FileExtension {
     epochdumpblock = ".epdmp", /// Epoch dump chain block file format
     text = ".txt",
     csv = ".csv", /// Comma-separated values
+    html = ".html", /// HTML text file
+    svg = ".svg",   /// Scalable vector graphics file
 }
 
 enum DOT = '.'; /// File extension separator

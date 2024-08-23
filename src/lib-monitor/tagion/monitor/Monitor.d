@@ -84,7 +84,8 @@ class FileMonitorCallbacks : BaseMonitorCallbacks {
 
     override void _write_eventview(string _, const(Event) e) {
         try {
-            out_file.rawWrite(EventView(e, node_id_relocation[e.event_package.pubkey]).toDoc.serialize);
+            const node_id = node_id_relocation.get(e.event_package.pubkey, e.node_id); 
+            out_file.rawWrite(EventView(e, node_id).toDoc.serialize);
         } catch(Exception err) {
             log.error("Could not write monitor event, %s", err.message);
         }

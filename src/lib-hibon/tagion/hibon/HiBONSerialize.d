@@ -333,9 +333,6 @@ mixin template Serialize() {
             do {
                 Appender!(ubyte[]) buf;
                 static if (SupportingFullSizeFunction!(This)) {
-                    static if (isPointer!This) {
-                        __write("isPointer %s %s", This.stringof, this !is null);
-                    }
                     const reserve_size = full_size(this);
                     buf.reserve(reserve_size);
                 }

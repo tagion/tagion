@@ -42,10 +42,7 @@ class Event {
     alias check = Check!EventConsensusException;
     protected static uint _count;
 
-    package int pseudo_time_counter;
-
     package {
-
         Round _round; /// The where the event has been created
         Witness _witness; /// Contains information for the witness events
     }
@@ -65,7 +62,7 @@ class Event {
         Round _round_received; /// The round in which the event has been voted to be received
     }
     static Topic topic = Topic("hashgraph_event");
-    bool top;
+    bool collector; /// Epoch collector node
     bool _intermediate_event;
 
     @nogc
@@ -191,14 +188,6 @@ class Event {
 
         }
         const BitMask previous_witness_seen_mask;
-        BitMask seen_voting_mask;
-        bool __seen_decided(size_t voters) const pure nothrow {
-            const seen_votes = seen_voting_mask.count;
-            const N = _round.node_size;
-            return ((voters == 0) || isMajority(min(seen_votes, yes_votes), N) ||
-                    seen_votes >= voters) && !isUndecided(seen_votes, N);
-        }
-
         @nogc final const pure nothrow {
             const(BitMask) previous_strongly_seen_mask() {
                 return _previous_strongly_seen_mask;
@@ -212,6 +201,22 @@ class Event {
                 return cast(uint)(_voted_yes_mask.count);
             }
 
+            bool decided() {
+                const N = _round.node_size;
+                return isMajority(yes_votes, N) ||
+                !isMajority(yes_votes+N-voters, N) ||
+                isMajority(voters - yes_votes, N);
+            }
+
+            uint voters() {
+                if (_round.next) {
+                return cast(uint)_round.next.events.filter!(e => e !is null).count; 
+                }
+                return 0;
+    }   
+            uint no_votes() {
+                return voters - yes_votes;
+            }
             const(BitMask) voted_yes_mask() {
                 return _voted_yes_mask;
             }
@@ -271,7 +276,6 @@ class Event {
                 .weak) {
                 auto previous_witness_events = _round.previous.events;
                 foreach (n, previous_witness_event; previous_witness_events) {
-                    //auto previous_witness_event = previous_witness_events[n];
                     if (previous_witness_event) {
                         auto vote_for_witness = previous_witness_event._witness;
                         const seen_strongly = _previous_strongly_seen_mask[n];

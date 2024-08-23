@@ -54,6 +54,7 @@ int _main(string[] args) {
                 "P|path", "File path for the generated files", &opts.path,
                 "d", "Disable graph files", &opts.disable_graphfile,
                 "k", "Continues on error with stoppig", &opts.continue_on_error,
+                "x", "Disable node name sort", &opts.disable_name_order,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -150,10 +151,20 @@ class RunPassiveFastHashgraph {
             foreach (channel, network_fiber; network.networks) {
                 const graph_file = buildPath(opts.path, format("%s_graph", network_fiber._hashgraph.name))
                     .setExtension(FileExtension.hibon);
+                Pubkey[] node_channels;
+                if (opts.disable_name_order) {
+                    node_channels.length = network_fiber._hashgraph.node_size;
+                    network_fiber._hashgraph[].each!(n => node_channels[n.node_id]=cast(Pubkey)n.channel);
+                    import tagion.basic.Debug;
+                    __write("node_channels=%(%(%02x%) %) length=%d %s", node_channels, node_channels.length, network_fiber._hashgraph[].map!(n => n.node_id));
+                }
+            else {
+                    node_channels=cast(Pubkey[]) network.channels;
+                }
                 node_callbacks[channel] = new FileMonitorCallbacks(
                         graph_file,
                         opts.number_of_nodes,
-                        cast(Pubkey[]) network.channels);
+                        node_channels);
             }
         }
         while (NewTestRefinement.last_epoch < opts.max_epochs) {
