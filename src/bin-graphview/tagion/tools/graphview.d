@@ -355,7 +355,7 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
 
             text.pos = pos;
             BitMask intermediate_mask;
-            intermediate_mask = e.voted;
+            intermediate_mask = e.intermediate_votes;
             text.text = (() @trusted => format(vote_fmt ~ ":%d", intermediate_mask, intermediate_mask.count))();
             text.pos.y -= NODE_CIRCLE_SIZE / 2;
             text.fill = "black";

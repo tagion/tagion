@@ -16,6 +16,7 @@ import std.range.primitives : isBidirectionalRange, isForwardRange, isInputRange
 import std.stdio;
 import std.traits;
 import std.typecons;
+import std.exception;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : isinit;
 import tagion.crypto.Types : Pubkey;
@@ -318,7 +319,7 @@ class Event {
                 .events
                 .filter!(e => e !is null)
                 .map!(e => e._witness)
-                .map!(w => w._intermediate_voting_mask[node_id])
+                .filter!(w => w._intermediate_voting_mask[node_id])
                 .count;
             return isMajority(vote_strongly_seen, hashgraph.node_size);
         }
@@ -333,9 +334,9 @@ class Event {
         }
     }
 
-    static void view(R)(R range) nothrow if (isInputRange!R && is(ElementType!R : const(Event))) {
+    static void view(R)(lazy R range) nothrow if (isInputRange!R && is(ElementType!R : const(Event))) {
         if (callbacks) {
-            range.each!(e => view(e));
+            assumeWontThrow(range.each!(e => view(e)));
         }
     }
 
@@ -423,7 +424,7 @@ class Event {
                     new_witness_seen[]
                         .filter!((n) => max_round.events[n]!is null)
                         .map!((n) => max_round.events[n]._witness)
-                        .filter!((witness) => witness._intermediate_voting_mask[node_id])
+                        .filter!((witness) => !witness._intermediate_voting_mask[node_id])
                         .each!((witness) => witness._intermediate_voting_mask[node_id] = true);
                 }
             }
