@@ -50,7 +50,7 @@ class Event {
     immutable uint id; /// Event id
     immutable(EventPackage*) event_package; /// Then exchanged event information
 
-    BitMask _witness_seen_mask; /// Witness seen in previous round
+    BitMask _witness_seen_mask; /// Witness seen in previous round from this event
     BitMask _intermediate_seen_mask; /// Intermediate seen from this event
     // This is the internal pointer to the connected Event's
     package Event _mother; /// Points to the self-parent
@@ -63,7 +63,7 @@ class Event {
     }
     static Topic topic = Topic("hashgraph_event");
     bool collector; /// Epoch collector event
-    bool _intermediate_event;
+    bool _intermediate_event; /// Marks when an additional witness seen is connected
 
     @nogc
     static uint count() nothrow {
@@ -187,7 +187,7 @@ class Event {
             BitMask _voted_yes_mask; /// Witness in the next round which has voted
 
         }
-        const BitMask previous_witness_seen_mask;
+        //const BitMask previous_witness_seen_mask;
         @nogc final const pure nothrow {
             const(BitMask) previous_strongly_seen_mask() {
                 return _previous_strongly_seen_mask;
@@ -245,17 +245,17 @@ class Event {
             _witness = this;
             if (father_witness_is_leading) {
                 _previous_strongly_seen_mask = _mother._intermediate_seen_mask |
-
                     _father.round.events[_father.node_id].witness
                         .previous_strongly_seen_mask;
 
+                version(none)
                 previous_witness_seen_mask = _witness_seen_mask |
                     _father.round.events[_father.node_id].witness
                         .previous_witness_seen_mask;
             }
             else {
                 _previous_strongly_seen_mask = _intermediate_seen_mask.dup;
-                previous_witness_seen_mask = _witness_seen_mask;
+                version(none)previous_witness_seen_mask = _witness_seen_mask;
             }
             _intermediate_voting_mask[node_id] = true;
 
@@ -397,9 +397,8 @@ class Event {
 
         _mother = hashgraph.register(event_package.event_body.mother);
         if (!_mother) {
-            if (!isEva && !hashgraph.rounds.isEventInLastDecidedRound(this)) {
-                check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
-            }
+            check(isEva || hashgraph.rounds.isEventInLastDecidedRound(this),
+                ConsensusFailCode.EVENT_MOTHER_LESS);
             return;
         }
 
@@ -412,18 +411,11 @@ class Event {
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
-            //BitMask new_witness_seen;
             if (_father._round.number == _mother._round.number) {
                 _witness_seen_mask |= _father._witness_seen_mask;
                 _intermediate_seen_mask |= _father._intermediate_seen_mask;
                 const new_witness_seen = _father._witness_seen_mask - _mother
                     ._witness_seen_mask;
-                //}
-                /*
-        else {
-                new_witness_seen = _witness_seen_mask;
-            }
-*/
                 if (!new_witness_seen[].empty) {
                     _intermediate_event = true;
                     _intermediate_seen_mask[node_id] = true;

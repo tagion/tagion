@@ -32,10 +32,11 @@ struct EventView {
     @label("$R") int round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
     @label("$i") @optional @(filter.Initialized) bool intermediate;
-    @label("$seen") @optional Buffer seen; /// Event seeing witness  
+//    @label("$seen") @optional Buffer seen; /// Event seeing witness  
     @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
     @label("$intermediate") @optional Buffer intermediate_seen;
-    @label("$prevwitness") @optional Buffer witness_seen;
+    @label("$W") @optional Buffer witness_seen;
+    @label("$I") @optional Buffer intermediate_votes;
     @label("$voted") @optional Buffer voted; /// Witness which has voted yes   
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
     @label("$weak") @optional bool weak;
@@ -68,14 +69,15 @@ struct EventView {
             collector=event.collector;
 
             intermediate=event._intermediate_event;
-            seen=event._witness_seen_mask.bytes;   
+            witness_seen=event._witness_seen_mask.bytes;   
             intermediate_seen=event._intermediate_seen_mask.bytes;
             if (event.isWitness) {
                auto witness=event.witness;
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
                yes_votes = witness.yes_votes;
-               voted = witness.voted_yes_mask.bytes; 
-               witness_seen = witness.previous_witness_seen_mask.bytes;
+               voted = witness.voted_yes_mask.bytes;
+               intermediate_votes = witness.intermediate_voting_mask.bytes;
+               //witness_seen = witness.previous_witness_seen_mask.bytes;
                 decided = event.round.valid_witness[event.node_id];
                 weak = witness.weak;
             }
