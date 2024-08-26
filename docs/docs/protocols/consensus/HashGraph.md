@@ -3,9 +3,6 @@
 The Tagion hashgraph implementation is a variant of the [HashGraph](https://www.swirlds.com/downloads/SWIRLDS-TR-2016-01.pdf)
 
 
-The hashgraph are constructed 
-
-
 
 The hashgraph is a Directed Acyclic Graph(DAG) that recorder the history of communication events this means that the graph of events is connected to the previous communications events and makes up a DAG.
 The hashgraph algorithm is built around virtual voting and the majority voting is defined when more than  ⅔ has voted yes and hashgraph has a finite number of nodes N.
