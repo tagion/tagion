@@ -12,7 +12,7 @@ The hashgraph algorithm is built around virtual voting and the majority voting i
 
 ![Mother father](/figs/mother_father.svg)
 
-The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, which is the previous event from the same node, and a father-event, the father-event created and sent from another node.
+The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, which is the previous event from the same node, the father-event created and sent from another node.
 If an event does not have a mother, it’s defined as an Eva event; if an event only has mothers connected to it, it is defined as a father-less event.
 ![Event package](/figs/event_package.svg)
 
@@ -26,31 +26,31 @@ The voting is recorded in bit vectors/masks which makes it efficient for compute
 Each node in the graph has a node_id which is specified from 0 to N-1 and the voting is done by setting the bit number at node_id to 1. 
 
 An event has two voting masks.
+```
 	$w witness_seen_mask
-	$i intemediate_seen_mask
-
+    $i intemediate_seen_mask
+```
 
 The witness_seen_mask is updated when the event connects to a father event the witness_seen_mask like
 ```
 if the event has a father
-
-witness_seen_mask = mother.witness_seen_mask | father.witness_seen_mask
+    witness_seen_mask = mother.witness_seen_mask | father.witness_seen_mask
 else
-witness_seen_mask = mother.witness_seen_mask
+    witness_seen_mask = mother.witness_seen_mask
 ```
 
 ### intermediate Seen Mask
 The intermediate_seen_mask is set when is set, when the witness_seen_mask changed
 ```
 intermediate_seen_mask = intermediate_seen_mask | mother.intermediate_seen_mask
-if (witness_seen_mask add a bit) {
-intermediate_seen_mask[node_id] = 1
-intermediate_seen_mask = intermediate_seen_mask | father.intermediate_seen_mask
-}
-}
+if (witness_seen_mask add a bit) 
+    intermediate_seen_mask[node_id] = 1
+    intermediate_seen_mask = intermediate_seen_mask | father.intermediate_seen_mask
 
+```
 Each witness contains the flowing bit masks
-	$d intermediate_voting_mask
+```
+    $d intermediate_voting_mask
 	$s previous_strongly_seen_mask
 	$v voted_yes_mask
 ```
@@ -81,7 +81,7 @@ The previous_strogly_seen_mask is sent to the intermediate_seen_mask and the nod
 All bits in intermediate_seen_mask are set to 0 and the node_id witness_seen_mask is set 1 (because the event is its own witness).
 
 ```
- previous_stongly_seen_mask = intermediate_seen_mask
+previous_stongly_seen_mask = intermediate_seen_mask
 intermediate_voting_mask[node_id]  = 1
 clear intermediate_seen_mask
 witness_seen_mask[node_id] =1
