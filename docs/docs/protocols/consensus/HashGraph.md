@@ -17,6 +17,7 @@ The hashgraph algorithm is built around virtual voting and the majority voting i
 The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, which is the previous event from the same node, and a father-event, the father-event created and sent from another node.
 If an event does not have a mother, it’s defined as an Eva event; if an event only has mothers connected to it, it is defined as a father-less event.
 
+## Witness
 An event is defined as a witness if you can strongly see the majority of previous witnesses and strongly seeing means that a witness is connected through the majority of other nodes meaning that it crosses the majority. 
 A witness event also divides the round for new witnesses the round number is increased.
 
@@ -39,6 +40,7 @@ else
 witness_seen_mask = mother.witness_seen_mask
 ```
 
+### intermediate Seen Mask
 The intermediate_seen_mask is set when is set, when the witness_seen_mask changed
 ```
 intermediate_seen_mask = intermediate_seen_mask | mother.intermediate_seen_mask
@@ -53,6 +55,8 @@ Each witness contains the flowing bit masks
 	$s previous_strongly_seen_mask
 	$v voted_yes_mask
 ```
+
+### intermediate Voting mask
 The intermediate_voting_mask accounts for the intermediate voting for the next round which helps to decide if an event is a witness.
 
 The voting round that is used to account for the intermediate voting is the father round if the event does not have a father then the account round is the mother round.
@@ -61,11 +65,11 @@ Each added newly added bit number witness_seen_mask will be selected to select t
 
 select all newly added witnesses in the selected round and set the intermediate_voting_mask a the event  node_id to 1.
 
-``` 
 The intermediate_voting_mask accounts for the new crossing of nodes which helps the decide the strongly seen.
 
 The strongly-seen can be decided from this and this also means
 
+### Strongly seen
 The following conditions should be met to decide if an event is a witness.
 The event should have the majority of intermediate_seen_mask 
 This means that we have seen the majority of witnesses in the previous round.
@@ -92,7 +96,7 @@ Select all the non-weak witnesses in the previous round and vote yes if the bit 
 Select all witnesses in the previous round and set the voted_yes_mask[node_id]  = 1
 ```
 
-Decided round
+### Decided witness and round
 A witness is decided if the majority of the witnesses vote yes or no or if the vote is a tie. 
 
 
@@ -100,7 +104,7 @@ A round is decided if all witnesses in a round are decided.
 
 If the round is not decided then we wait D round until we have a decision and then we define the round to be decided. 
  
-Collection of events.
+### Collection of events.
 If a round is decided with the majority of witnesses having yes votes those events will collect the event for the epoch.
 
 All the events which parents of collecting witnesses and are connected to the majority will be collected for the epoch and the received round of all the collected events will be set to the collection round.
