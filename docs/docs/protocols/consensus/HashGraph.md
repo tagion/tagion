@@ -36,7 +36,7 @@ else
     witness_seen_mask = mother.witness_seen_mask
 ```
 
-### intermediate Seen Mask
+## Intermediate Seen Mask
 The intermediate_seen_mask is set when is set, when the witness_seen_mask changed
 ```
 intermediate_seen_mask = intermediate_seen_mask | mother.intermediate_seen_mask
@@ -52,7 +52,7 @@ Each witness contains the flowing bit masks
 	$v voted_yes_mask
 ```
 
-### intermediate Voting mask
+## intermediate Voting mask
 The intermediate_voting_mask accounts for the intermediate voting for the next round which helps to decide if an event is a witness.
 
 The voting round that is used to account for the intermediate voting is the father round if the event does not have a father then the account round is the mother round.
@@ -65,7 +65,7 @@ The intermediate_voting_mask accounts for the new crossing of nodes which helps 
 
 The strongly-seen can be decided from this and this also means
 
-### Strongly seen
+## Strongly seen
 The following conditions should be met to decide if an event is a witness.
 The event should have the majority of intermediate_seen_mask 
 This means that we have seen the majority of witnesses in the previous round.
@@ -93,7 +93,7 @@ Select all the non-weak witnesses in the previous round and vote yes if the bit 
 Select all witnesses in the previous round and set the voted_yes_mask[node_id]  = 1
 ```
 
-### Decided witness and round
+## Decided witness and round
 A witness is decided if the majority of the witnesses vote yes or no or if the vote is a tie. 
 
 
@@ -101,7 +101,7 @@ A round is decided if all witnesses in a round are decided.
 
 If the round is not decided then we wait D round until we have a decision and then we define the round to be decided. 
  
-### Collection of events.
+## Collection of events.
 If a round is decided with the majority of witnesses having yes votes those events will collect the event for the epoch.
 
 All the events which parents of collecting witnesses and are connected to the majority will be collected for the epoch and the received round of all the collected events will be set to the collection round.
