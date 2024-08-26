@@ -4,18 +4,17 @@ The Tagion hashgraph implementation is a variant of the [HashGraph](https://www.
 
 
 The hashgraph are constructed 
-![Mother father](/figs/mother_father.svg)
-![Event package](/figs/event_package.svg)
 
-![hashgraph](/figs/hashgraph.svg)
 
 
 The hashgraph is a Directed Acyclic Graph(DAG) that recorder the history of communication events this means that the graph of events is connected to the previous communications events and makes up a DAG.
 The hashgraph algorithm is built around virtual voting and the majority voting is defined when more than  ⅔ has voted yes and hashgraph has a finite number of nodes N.
 
+![Mother father](/figs/mother_father.svg)
 
 The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, which is the previous event from the same node, and a father-event, the father-event created and sent from another node.
 If an event does not have a mother, it’s defined as an Eva event; if an event only has mothers connected to it, it is defined as a father-less event.
+![Event package](/figs/event_package.svg)
 
 ## Witness
 An event is defined as a witness if you can strongly see the majority of previous witnesses and strongly seeing means that a witness is connected through the majority of other nodes meaning that it crosses the majority. 
@@ -87,6 +86,7 @@ intermediate_voting_mask[node_id]  = 1
 clear intermediate_seen_mask
 witness_seen_mask[node_id] =1
 ```
+![hashgraph](/figs/hashgraph.svg)
 
 A witness is defined as weak if there is no witness in the previous round.
  
