@@ -160,7 +160,7 @@ class Round {
                             .filter!(e => e !is null)
                             .all!(e => e.witness.decided))
                     .map!(r => r.number - number)
-                    .any!(diff => diff > 2);
+                    .any!(diff => diff > 3);
 
             __write("%s Round %04d     Dec   %(%2d %) => %(%d %)".replace("#", node_size
                     .to!string),
