@@ -92,13 +92,18 @@ Select all the non-weak witnesses in the previous round and vote yes if the bit 
 Select all witnesses in the previous round and set the voted_yes_mask[node_id]  = 1
 ```
 
-## Decided witness and round
-A witness is decided if the majority of the witnesses vote yes or no or if the vote is a tie. 
+## Epoch Decision
+When an round is decided then the node votes for a round.
 
+### Decided Witness
+A witness is decided if the majority of the witnesses vote yes or no or if the vote is a tie.
 
-A round is decided if all witnesses in a round are decided.
+### Deicded Round
 
-If the round is not decided then we wait D round until we have a decision and then we define the round to be decided. 
+1. A round is decided if the number of witnesses in round is in majority and
+when all witnesses in a round is decided.
+
+2. If the round is not decided then if a round is decided after D rounds.
  
 ## Collection of events.
 If a round is decided with the majority of witnesses having yes votes those events will collect the event for the epoch.
