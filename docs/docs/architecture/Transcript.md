@@ -44,3 +44,8 @@ sequenceDiagram
     Transcript ->> DART: Recorder(Modify)
 ```
 
+
+# Transcript update
+New transcript proposal
+
+![New transcript proposal](/figs/transcript_update.excalidraw.svg)
