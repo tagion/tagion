@@ -3,14 +3,14 @@
 The Tagion hashgraph implementation is a variant of the [HashGraph](https://www.swirlds.com/downloads/SWIRLDS-TR-2016-01.pdf)
 
 
-
 The hashgraph is a Directed Acyclic Graph(DAG) that recorder the history of communication events this means that the graph of events is connected to the previous communications events and makes up a DAG.
-The hashgraph algorithm is built around virtual voting and the majority voting is defined when more than  ⅔ has voted yes and hashgraph has a finite number of nodes N.
+The hashgraph algorithm is built around virtual voting and the majority voting is defined when more than ⅔ has voted yes and hashgraph has a finite number of nodes N.
 
 ![Mother father](/figs/mother_father.svg)
 
 The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, which is the previous event from the same node, the father-event created and sent from another node.
 If an event does not have a mother, it’s defined as an Eva event; if an event only has mothers connected to it, it is defined as a father-less event.
+
 ![Event package](/figs/event_package.svg)
 
 ## Witness
@@ -37,7 +37,7 @@ else
 ```
 
 ## Intermediate Seen Mask
-The intermediate_seen_mask is set when is set, when the witness_seen_mask changed
+The intermediate_seen_mask is set when is set, when the witness_seen_mask are changed
 ```
 intermediate_seen_mask = intermediate_seen_mask | mother.intermediate_seen_mask
 if (witness_seen_mask add a bit) 
@@ -45,7 +45,7 @@ if (witness_seen_mask add a bit)
     intermediate_seen_mask = intermediate_seen_mask | father.intermediate_seen_mask
 
 ```
-Each witness contains the flowing bit masks
+Each witness contains the following bit masks
 ```
     $d intermediate_voting_mask
 	$s previous_strongly_seen_mask
@@ -57,7 +57,7 @@ The intermediate_voting_mask accounts for the intermediate voting for the next r
 
 The voting round that is used to account for the intermediate voting is the father round if the event does not have a father then the account round is the mother round.
 
-Each added newly added bit number witness_seen_mask will be selected to select the witness in the voting round
+Each newly added bit number witness_seen_mask will be selected to select the witness in the voting round
 
 select all newly added witnesses in the selected round and set the intermediate_voting_mask a the event  node_id to 1.
 
@@ -71,7 +71,6 @@ The event should have the majority of intermediate_seen_mask
 This means that we have seen the majority of witnesses in the previous round.
 Select and count all witnesses in the previous round and check if the intermediate_voting_mask is set to the event node_id.
 If the count is the majority then the event is a witness and the event is now created as a witness.
-
 
 When a witness is created then the following is done.
 The previous_strogly_seen_mask is sent to the intermediate_seen_mask and the node_id bit of internedate_voting_mask is set to 1 (the event is self-intermediate).

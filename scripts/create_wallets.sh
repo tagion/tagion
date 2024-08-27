@@ -163,7 +163,7 @@ done
 if [ $network_mode -eq 0 ]; then
     (cd "$ndir"
         # Configure the network with the neuewelle binary
-        "$bdir/neuewelle" -O --option=wave.number_of_nodes:"$nodes" --option=wave.prefix_format:"node%s/" --option=subscription.tags:taskfailure,recorder
+        "$bdir/neuewelle" -O --option=wave.number_of_nodes:"$nodes" --option=wave.prefix_format:"node%s/" --option=subscription.tags:taskfailure,recorder,hashgraph_event
     )
     # Print instructions on how to run the network
     echo "Run the network this way:"

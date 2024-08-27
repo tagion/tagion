@@ -75,6 +75,7 @@ class Round {
         Round _previous;
         Round _next;
         BitMask _valid_witness;
+        BitMask _visit_node_mask; /// Mark if a node has been connected in this round
     }
     immutable int number;
 
@@ -90,6 +91,10 @@ class Round {
         return _decided;
     }
 
+    final const(BitMask) visit_node_mask() const pure nothrow @nogc {
+        return _visit_node_mask;
+    }
+    
     final const(BitMask) valid_witness() const pure nothrow @nogc {
         return _valid_witness;
     }
@@ -137,13 +142,14 @@ class Round {
             scope (exit) {
                 if (ret > Completed.undecided) {
                     __write(
-                            "%s Round %04d  witness=%#s| %(%#s %) ret=%s%s%s".replace(
+                            "%s Round %04d  witness=%#s | %(%#s %) ret=%s%s%s visit=%(%#s %)".replace(
                             "#", node_size.to!string),
                             _name, number,
                             _valid_witness,
                             future_witness_masks.drop(1)
                             .take(10),
-                            (ret <= Completed.undecided) ? RED : GREEN, ret, RESET
+                            (ret <= Completed.undecided) ? RED : GREEN, ret, RESET,
+                            list_majority_rounds.map!(r => r._visit_node_mask)
                     );
                 }
             }
@@ -162,7 +168,7 @@ class Round {
                     .map!(r => r.number - number)
                     .any!(diff => diff > 3);
 
-            __write("%s Round %04d     Dec   %(%2d %) => %(%d %)".replace("#", node_size
+            __write("%s Round %04d     Dec   %(%2d %) => %(%d %) ".replace("#", node_size
                     .to!string),
                     _name,
                     number,
@@ -457,6 +463,9 @@ class Round {
                 if (e._witness) {
                     e._round.add(e);
                     last_witness_events[e.node_id] = e;
+                }
+                if (e._father && e._father._round.number == e._round.number) {
+                    e._round._visit_node_mask[e._father.node_id] = true; 
                 }
             }
             e._round = e.maxRound;
