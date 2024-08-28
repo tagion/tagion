@@ -1,6 +1,7 @@
 import std.stdio;
 import std.conv;
 import std.string;
+import std.file;
 import std.concurrency;
 import core.thread;
 import std.datetime.systime;
@@ -73,15 +74,121 @@ static void log(A...)(A a){
 }
 
 
+int tls_client_setup(nng_dialer *d, string imode, string iserver, string istore ){
+    int rc;
+    nng_tls_config *cfg;    
+    
+    auto auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_OPTIONAL;
+    
+    if("NNG_TLS_AUTH_MODE_NONE" == imode){
+        auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_NONE;
+    }
+    
+    if("NNG_TLS_AUTH_MODE_REQUIRED" == imode){
+        auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_REQUIRED;
+    }
+
+    if(istore == "file"){
+
+        string filepath = "/tmp/test1_client_cert.pem";
+        std.file.write(filepath, cert);
+        rc = nng_dialer_set_string(*d, toStringz(NNG_OPT_TLS_CA_FILE), toStringz(filepath));
+        assert(rc == 0);
+        rc = nng_dialer_set_int(*d, toStringz(NNG_OPT_TLS_AUTH_MODE), cast(int)auth_mode);
+        assert(rc == 0);
+        rc = nng_dialer_set_string(*d, toStringz(NNG_OPT_TLS_SERVER_NAME), toStringz(iserver));
+        assert(rc == 0);
+        if(auth_mode == nng_tls_auth_mode.NNG_TLS_AUTH_MODE_REQUIRED){
+            string filepath1 = "/tmp/test1_client_cert_key.pem";
+            std.file.write(filepath1, cert~"\r\n"~key~"\r\n");
+            rc = nng_dialer_set_string(*d, toStringz(NNG_OPT_TLS_CERT_KEY_FILE), toStringz(filepath1));
+            assert(rc == 0);
+        }
 
 
+    } else {
 
+        rc = nng_dialer_set_int(*d, toStringz(NNG_OPT_TLS_AUTH_MODE), auth_mode);
+        assert(rc == 0);
+
+        rc = nng_tls_config_alloc(&cfg, nng_tls_mode.NNG_TLS_MODE_CLIENT);
+        assert(rc == 0);
+        
+        rc = nng_tls_config_ca_chain(cfg, toStringz(cert), null);
+        assert(rc == 0);
+
+        rc = nng_tls_config_server_name(cfg, toStringz(iserver));
+        assert(rc == 0);
+
+        rc = nng_tls_config_auth_mode(cfg, auth_mode);
+        assert(rc == 0);
+
+        if(auth_mode == nng_tls_auth_mode.NNG_TLS_AUTH_MODE_REQUIRED){
+            rc = nng_tls_config_own_cert(cfg, toStringz(cert), toStringz(key), null);
+            assert(rc == 0);
+        }
+
+        rc = nng_dialer_set_ptr(*d, toStringz(NNG_OPT_TLS_CONFIG), cfg); // ???
+        assert(rc == 0);
+    
+    }
+    
+    return 0;
+}
+
+int tls_server_setup(nng_listener *l, string imode, string iserver, string istore){
+    int rc;
+    nng_tls_config *cfg;    
+
+    auto auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_OPTIONAL;
+    
+    if("NNG_TLS_AUTH_MODE_NONE" == imode){
+        auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_NONE;
+    }
+    
+    if("NNG_TLS_AUTH_MODE_REQUIRED" == imode){
+        auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_REQUIRED;
+    }
+    
+    if(istore == "file"){
+        
+        string filepath = "/tmp/test1_server_cert_key.pem";
+        std.file.write(filepath, cert~"\r\n"~key~"\r\n");
+        rc = nng_listener_set_string(*l, toStringz(NNG_OPT_TLS_CERT_KEY_FILE), toStringz(filepath));
+        assert(rc == 0);
+        rc = nng_listener_set_int(*l, toStringz(NNG_OPT_TLS_AUTH_MODE), cast(int)auth_mode);
+        assert(rc == 0);
+
+    }else{
+    
+        rc = nng_tls_config_alloc(&cfg, nng_tls_mode.NNG_TLS_MODE_SERVER);
+        assert(rc == 0);
+        
+
+        rc = nng_listener_set_ptr(*l, toStringz(NNG_OPT_TLS_CONFIG), cfg); // ???
+        assert(rc == 0);
+
+
+        rc = nng_tls_config_own_cert(cfg, toStringz(cert), toStringz(key), null);
+        assert(rc == 0);
+
+        if(auth_mode != nng_tls_auth_mode.NNG_TLS_AUTH_MODE_NONE){
+            rc = nng_tls_config_ca_chain(cfg, toStringz(cert), null);
+            assert(rc == 0);
+        }            
+
+        rc = nng_tls_config_auth_mode(cfg, auth_mode);
+        assert(rc == 0);
+
+    }
+    
+    return 0;
+}
 // [1] #begin push-pull test 
 
 
-void test1_sender( string url ){
+void test1_sender( string url, string imode, string iserver, string istore ){
     nng_dialer d;
-    nng_tls_config *cfg;    
     nng_socket sock;
     nng_sockaddr sa;
     string s;
@@ -95,31 +202,23 @@ void test1_sender( string url ){
     assert(rc == 0);
     log( " SS: dialing");
     
-    int auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_OPTIONAL;
-    
     rc = nng_dialer_create(&d, sock, toStringz(url));
     assert(rc == 0);
-
-    rc = nng_dialer_set_int(d, toStringz(NNG_OPT_TLS_AUTH_MODE), nng_tls_auth_mode.NNG_TLS_AUTH_MODE_NONE);
-    assert(rc == 0);
-
-    rc = nng_tls_config_alloc(&cfg, nng_tls_mode.NNG_TLS_MODE_CLIENT);
-    assert(rc == 0);
     
-    rc = nng_tls_config_ca_chain(cfg, toStringz(cert), null);
+    rc = tls_client_setup( &d, imode, iserver, istore );
     assert(rc == 0);
 
-    rc = nng_tls_config_server_name(cfg, toStringz("localhost"));
-    assert(rc == 0);
-
-    rc = nng_tls_config_auth_mode(cfg, nng_tls_auth_mode.NNG_TLS_AUTH_MODE_REQUIRED);
-    assert(rc == 0);
-
-    rc = nng_tls_config_own_cert(cfg, toStringz(cert), toStringz(key), null);
-    assert(rc == 0);
-    
-    rc = nng_dialer_set_ptr(d, toStringz(NNG_OPT_TLS_CONFIG), cfg); // ???
-    assert(rc == 0);
+    if(istore == "file"){
+        auto auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_OPTIONAL;
+        if("NNG_TLS_AUTH_MODE_NONE" == imode){
+            auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_NONE;
+        }
+        if("NNG_TLS_AUTH_MODE_REQUIRED" == imode){
+            auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_REQUIRED;
+        }
+        rc = nng_socket_set_int(sock, toStringz(NNG_OPT_TLS_AUTH_MODE), cast(int)auth_mode);
+        assert(rc == 0);
+    }
 
     while(1){
         rc = nng_dialer_start(d, 0);        
@@ -145,16 +244,13 @@ void test1_sender( string url ){
     log(" SS: bye!");
 }
 
-void test1_receiver( string url ){
-    nng_tls_config *cfg;    
+void test1_receiver( string url, string imode, string iserver, string istore ){
     nng_listener l;
     nng_socket sock;
     ubyte[4096] buf;
     size_t sz;
     int rc = 0;
     
-    int auth_mode = nng_tls_auth_mode.NNG_TLS_AUTH_MODE_OPTIONAL;
-
     foreach(i;0..4095) buf[i] = 0;
     
     rc = nng_pull0_open(&sock);
@@ -163,26 +259,8 @@ void test1_receiver( string url ){
     
     rc = nng_listener_create(&l, sock, toStringz(url));
     assert(rc == 0);    
-
-    rc = nng_tls_config_alloc(&cfg, nng_tls_mode.NNG_TLS_MODE_SERVER);
-    assert(rc == 0);
-
-    rc = nng_tls_config_own_cert(cfg, toStringz(cert), toStringz(key), null);
-    assert(rc == 0);
     
-    rc = nng_listener_set_ptr(l, toStringz(NNG_OPT_TLS_CONFIG), cfg); // ???
-    assert(rc == 0);
-
-    switch (auth_mode) {
-        case nng_tls_auth_mode.NNG_TLS_AUTH_MODE_REQUIRED:
-        case nng_tls_auth_mode.NNG_TLS_AUTH_MODE_OPTIONAL:
-            rc = nng_tls_config_ca_chain(cfg, toStringz(cert), null);
-            assert(rc == 0);
-            break;
-        default:
-            break;
-    }
-    rc = nng_tls_config_auth_mode(cfg, cast(nng_tls_auth_mode)auth_mode);
+    rc = tls_server_setup( &l,  imode, iserver, istore );
     assert(rc == 0);
         
     rc = nng_listener_start(l, 0);
@@ -222,7 +300,6 @@ int main()
 {
     writeln("Hello LIBNNG!");
     
-    string uri = "tls+tcp://127.0.0.1:31200";
 
     writeln("// ERROR TEST");
     for(auto i=1; i<32; i++ ){
@@ -230,16 +307,40 @@ int main()
     }
 
     // -- [1] push-pull TLS test
+
+    // opt: [ NNG_TLS_AUTH_MODE_* , server_name , <string|file> ]
+
+            string uri1 = "tls+tcp://127.0.0.1:31200";
         writeln("\n<TEST01>");
-            writeln("TEST01 -------------------- simple push-pull on " ~ uri);
-            auto tid01 = spawn(&test1_sender, uri);
-            auto tid02 = spawn(&test1_receiver, uri);
-            //nng_msleep(50);
-            //nng_msleep(2000);
+            writeln("TEST01 -------------------- push-pull static cert none auth on " ~ uri1);
+            auto tid011 = spawn(&test1_sender, uri1, "NNG_TLS_AUTH_MODE_NONE", "localhost", "string");
+            auto tid012 = spawn(&test1_receiver, uri1, "NNG_TLS_AUTH_MODE_NONE", "localhost", "string");
             thread_joinAll();
         writeln("</TEST01>\n");
         
+            string uri2 = "tls+tcp://127.0.0.1:31201";
+        writeln("\n<TEST02>");
+            writeln("TEST02 -------------------- push-pull static cert required auth on " ~ uri2);
+            auto tid021 = spawn(&test1_sender, uri2, "NNG_TLS_AUTH_MODE_REQUIRED", "localhost", "string");
+            auto tid022 = spawn(&test1_receiver, uri2, "NNG_TLS_AUTH_MODE_REQUIRED", "localhost", "string");
+            thread_joinAll();
+        writeln("</TEST02>\n");
 
+            string uri3 = "tls+tcp://127.0.0.1:31202";
+        writeln("\n<TEST03>");
+            writeln("TEST03 -------------------- push-pull file cert none auth on " ~ uri3);
+            auto tid031 = spawn(&test1_sender, uri3, "NNG_TLS_AUTH_MODE_NONE", "localhost", "file");
+            auto tid032 = spawn(&test1_receiver, uri3, "NNG_TLS_AUTH_MODE_NONE", "localhost", "file");
+            thread_joinAll();
+        writeln("</TEST03>\n");
+        
+            string uri4 = "tls+tcp://127.0.0.1:31203";
+        writeln("\n<TEST04>");
+            writeln("TEST04 -------------------- push-pull file cert required auth on " ~ uri4);
+            auto tid041 = spawn(&test1_sender, uri4, "NNG_TLS_AUTH_MODE_REQUIRED", "localhost", "string");
+            auto tid042 = spawn(&test1_receiver, uri4, "NNG_TLS_AUTH_MODE_REQUIRED", "localhost", "file");
+            thread_joinAll();
+        writeln("</TEST04>\n");
 
     return 0;
 }
