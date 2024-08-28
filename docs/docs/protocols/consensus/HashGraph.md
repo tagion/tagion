@@ -11,7 +11,7 @@ The consensus between network nodes is archived by looking at the transaction hi
 
 The active nodes, which are tracked in the hashgraph are a fixed number of N nodes, and the majority voting is defined when more than 2/3 of nodes N have voted.
 
-![Mother father](/figs/mother_father.svg)
+![Mother father](/figs/mother_father.excalidraw.svg)
 
 The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, the previous event from the same node and a father-event which is created and sent from another node.
 
@@ -22,6 +22,9 @@ If an event only has mothers connected to it, it is defined as a father-less eve
 
 
 ## Witness
+
+
+### Strongly Seen Witness 
 An event is defined as a witness if you can strongly see the majority of previous witnesses and strongly seeing means that a witness is connected through the majority of other nodes meaning that it crosses the majority of the other events in the other nodes.
 ![Event package](/figs/strongly_seen.excalidraw.svg)
 
@@ -102,7 +105,7 @@ clear intermediate_seen_mask
 
 When an event is changed to a witness the following is done.
 
-![hashgraph](/figs/hashgraph.svg)
+![hashgraph](/figs/hashgraph.excalidraw.svg)
 
 A witness is defined as weak if there is no witness in the previous round.
  
