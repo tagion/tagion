@@ -9,11 +9,11 @@ The hashgraph is built around a gossip network where each node maintains a gossi
 
 The consensus between network nodes is archived by looking at the transaction history in the graph and updating the virtual voting.
 
-The active nodes, which are tracked in the hashgraph are a fixed number of N nodes, and the majority voting is defined when more than 2/3 has of nodes N.
+The active nodes, which are tracked in the hashgraph are a fixed number of N nodes, and the majority voting is defined when more than 2/3 of nodes N have voted.
 
 ![Mother father](/figs/mother_father.svg)
 
-The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, the previous event from the same node, the father-event created and sent from another node.
+The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, the previous event from the same node and a father-event which is created and sent from another node.
 If an event does not have a mother, it’s defined as an Eva event; if an event only has mothers connected to it, it is defined as a father-less event.
 
 ![Event package](/figs/event_package.excalidraw.svg)
@@ -85,7 +85,7 @@ Select and count all witnesses in the previous round and check if the intermedia
 If the count is the majority then the event is a witness and the event is now created as a witness.
 
 When a witness is created the previous_strongly_seen_mask is created.
-If the father round is leading the the strongy_seen_mask is set to the previous_strongly_seen_mask of the mother and the father and if the mother is leading the the strongy_seen_mask is set to the intermediate_seen_mask of the mother.
+If the father round is leading the strongy_seen_mask is set to the previous_strongly_seen_mask of the mother and the father and if the mother is leading the strongy_seen_mask is set to the intermediate_seen_mask of the mother.
 
 The father round is leading if a witness exists in the round of the father and if the father round number is higher than the mother round number.
 ```
@@ -119,13 +119,16 @@ A witness is decided if the majority of the witnesses vote yes or no or if the v
 
 1. A round is decided if the number of witnesses in round is in the majority and
 when all witnesses in a round are decided.
+
 Or
+
 2. If the round is not decided and after more than D rounds a round will be decided.
  
 ## Collection of events.
 If a round is decided with the majority of witnesses having yes votes those events will collect the event for the epoch.
 
 All events will be collected by voting witnesses which are the parent's events are connected to the majority of the witness collecting events the received round of the collected event with be set to the round of the collection witnesses.
+
 An epoch is defined as a list of all the collected events.
 
 ![overview of network nodes](/figs/hashgraph_event_sample.svg)
