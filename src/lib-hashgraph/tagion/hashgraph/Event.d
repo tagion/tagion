@@ -204,8 +204,7 @@ class Event {
 
             bool decided() {
                 const N = _round.node_size;
-                return isMajority(yes_votes, N) ||
-                    !isMajority(yes_votes + N - voters, N) ||
+                return weak || isMajority(yes_votes, N) ||
                     isMajority(voters - yes_votes, N);
             }
 
@@ -236,7 +235,7 @@ class Event {
         }
 
         /**
-         * Contsruct a witness of an event
+         * Construct a witness of an event
          * Params:
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
@@ -248,15 +247,9 @@ class Event {
                 _previous_strongly_seen_mask = _mother._intermediate_seen_mask |
                     _father.round.events[_father.node_id].witness
                         .previous_strongly_seen_mask;
-
-                version(none)
-                previous_witness_seen_mask = _witness_seen_mask |
-                    _father.round.events[_father.node_id].witness
-                        .previous_witness_seen_mask;
             }
             else {
                 _previous_strongly_seen_mask = _intermediate_seen_mask.dup;
-                version(none)previous_witness_seen_mask = _witness_seen_mask;
             }
             _intermediate_voting_mask[node_id] = true;
 

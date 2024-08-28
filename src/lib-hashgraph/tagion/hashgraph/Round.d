@@ -459,7 +459,6 @@ class Round {
             e._round = e.maxRound;
             if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
-
                     e._round = e._round._next;
                     return;
                 }
