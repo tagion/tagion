@@ -14,7 +14,9 @@ The active nodes, which are tracked in the hashgraph are a fixed number of N nod
 ![Mother father](/figs/mother_father.svg)
 
 The edges are uniquely identified by the cryptographical hash of the event to which it is connected. An event can only have two event connections: a mother-event, the previous event from the same node and a father-event which is created and sent from another node.
-If an event does not have a mother, it’s defined as an Eva event; if an event only has mothers connected to it, it is defined as a father-less event.
+
+If an event does not have a mother, it’s defined as an Eva event; 
+If an event only has mothers connected to it, it is defined as a father-less event.
 
 ![Event package](/figs/event_package.excalidraw.svg)
 
