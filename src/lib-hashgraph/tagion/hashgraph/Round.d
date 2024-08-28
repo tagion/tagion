@@ -75,7 +75,6 @@ class Round {
         Round _previous;
         Round _next;
         BitMask _valid_witness;
-        BitMask _visit_node_mask; /// Mark if a node has been connected in this round
     }
     immutable int number;
 
@@ -91,10 +90,6 @@ class Round {
         return _decided;
     }
 
-    final const(BitMask) visit_node_mask() const pure nothrow @nogc {
-        return _visit_node_mask;
-    }
-    
     final const(BitMask) valid_witness() const pure nothrow @nogc {
         return _valid_witness;
     }
@@ -139,19 +134,16 @@ class Round {
             const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
             const _name = __format("%s%12s @%d%s", level_color(number_of_future_rounds), hashgraph.name, level(
                     number_of_future_rounds), RESET);
-            BitMask x_mask;
             scope (exit) {
                 if (ret > Completed.undecided) {
                     __write(
-                            "%s Round %04d  witness=%#s | %(%#s %) ret=%s%s%s visit=%(%#s %) x_mask=%#s".replace(
+                            "%s Round %04d  witness=%#s| %(%#s %) ret=%s%s%s".replace(
                             "#", node_size.to!string),
                             _name, number,
                             _valid_witness,
                             future_witness_masks.drop(1)
                             .take(10),
-                            (ret <= Completed.undecided) ? RED : GREEN, ret, RESET,
-                            list_majority_rounds.map!(r => r._visit_node_mask),
-                            x_mask
+                            (ret <= Completed.undecided) ? RED : GREEN, ret, RESET
                     );
                 }
             }
@@ -170,7 +162,7 @@ class Round {
                     .map!(r => r.number - number)
                     .any!(diff => diff > 3);
 
-            __write("%s Round %04d     Dec   %(%2d %) => %(%d %) ".replace("#", node_size
+            __write("%s Round %04d     Dec   %(%2d %) => %(%d %)".replace("#", node_size
                     .to!string),
                     _name,
                     number,
@@ -181,14 +173,10 @@ class Round {
                         .all!(e => e.witness.decided))
             );
             if (_all) {
-                BitMask tmp_mask;
-                x_mask=list_majority_rounds.take(3).map!(r => r._visit_node_mask).fold!((a,b) => a | b)(tmp_mask);
-                
-                _valid_witness &= x_mask;
                 _valid_witness &= BitMask(_events
                         .filter!(e => (e !is null))
                         .filter!(e => isMajority(e.witness.yes_votes, node_size))
-                        //.filter!(e => !e.witness.weak)
+                        .filter!(e => !e.witness.weak)
                         .map!(e => e.node_id));
                 __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
                         .to!string),
@@ -207,6 +195,24 @@ class Round {
                         _events.map!(e => (e is null) ? -1 : cast(int) e.witness.no_votes),
                         pattern
                 );
+                version (none)
+                    __write("%s Round %04d    gather %(%2d %) pattern=%(%02x %)".replace("#", node_size
+                            .to!string),
+                            _name,
+                            number,
+                            gather_voters,
+                            pattern);
+                version (none)
+                    __write("%s Round %04d    seen   %-(%s %) %#s distance=%d".replace("#", node_size
+                            .to!string),
+                            _name,
+                            number,
+                            _events.map!(e => (e is null) ? 0 : e.witness.seen_voting_mask.count)
+                            .map!(v => format("%s%2d%s", isMajority(v, node_size) ? GREEN : RED, v, RESET)),
+                            _valid_witness,
+                            cast(int)(r.number - number)
+
+                    );
                 return ret = Completed.all_witness;
             }
             return ret = Completed.undecided;
@@ -452,13 +458,11 @@ class Round {
                     e._round.add(e);
                     last_witness_events[e.node_id] = e;
                 }
-                if (e._father && e._father._round.number == e._round.number) {
-                    e._round._visit_node_mask[e._father.node_id] = true; 
-                }
             }
             e._round = e.maxRound;
             if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
+
                     e._round = e._round._next;
                     return;
                 }
