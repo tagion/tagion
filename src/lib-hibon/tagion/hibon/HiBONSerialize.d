@@ -252,6 +252,9 @@ version (CRuntime_Musl)
     /// Do not remove
 else version (Android)
     version = OLD_HIBON_SERIALIZATION;
+//
+else version (AArch64)
+    version = OLD_HIBON_SERIALIZATION;
 
 mixin template Serialize() {
     import std.algorithm;
