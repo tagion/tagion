@@ -75,6 +75,7 @@ class Round {
         Round _previous;
         Round _next;
         BitMask _valid_witness;
+        BitMask _visit_node_mask; /// Mark if a node has been connected in this round
     }
     immutable int number;
 
@@ -162,7 +163,7 @@ class Round {
                     .map!(r => r.number - number)
                     .any!(diff => diff > 3);
 
-            __write("%s Round %04d     Dec   %(%2d %) => %(%d %)".replace("#", node_size
+            __write("%s Round %04d     Dec   %(%2d %) => %(%d %) ".replace("#", node_size
                     .to!string),
                     _name,
                     number,
@@ -176,7 +177,7 @@ class Round {
                 _valid_witness &= BitMask(_events
                         .filter!(e => (e !is null))
                         .filter!(e => isMajority(e.witness.yes_votes, node_size))
-                        .filter!(e => !e.witness.weak)
+                        //.filter!(e => !e.witness.weak)
                         .map!(e => e.node_id));
                 __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
                         .to!string),
@@ -195,24 +196,6 @@ class Round {
                         _events.map!(e => (e is null) ? -1 : cast(int) e.witness.no_votes),
                         pattern
                 );
-                version (none)
-                    __write("%s Round %04d    gather %(%2d %) pattern=%(%02x %)".replace("#", node_size
-                            .to!string),
-                            _name,
-                            number,
-                            gather_voters,
-                            pattern);
-                version (none)
-                    __write("%s Round %04d    seen   %-(%s %) %#s distance=%d".replace("#", node_size
-                            .to!string),
-                            _name,
-                            number,
-                            _events.map!(e => (e is null) ? 0 : e.witness.seen_voting_mask.count)
-                            .map!(v => format("%s%2d%s", isMajority(v, node_size) ? GREEN : RED, v, RESET)),
-                            _valid_witness,
-                            cast(int)(r.number - number)
-
-                    );
                 return ret = Completed.all_witness;
             }
             return ret = Completed.undecided;
@@ -458,11 +441,13 @@ class Round {
                     e._round.add(e);
                     last_witness_events[e.node_id] = e;
                 }
+                if (e._father && e._father._round.number == e._round.number) {
+                    e._round._visit_node_mask[e._father.node_id] = true; 
+                }
             }
             e._round = e.maxRound;
             if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
-
                     e._round = e._round._next;
                     return;
                 }
