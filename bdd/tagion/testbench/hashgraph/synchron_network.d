@@ -66,7 +66,7 @@ class StartNetworkWithNAmountOfNodes {
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
         pragma(msg, "fixme: change to collider random");
-        writeln(network.random);
+        //writeln(network.random);
 
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
 

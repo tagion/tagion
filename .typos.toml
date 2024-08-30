@@ -52,4 +52,5 @@ extend-exclude = [
     "*.wast",
     "src/lib-behaviour/tagion/behaviour/unitdata/",
     "*.svg",
+    "*.excalidraw"
 ]

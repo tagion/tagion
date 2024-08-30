@@ -1,410 +1,335 @@
-<svg id="hashgraph" width="960" height="2040" xmlns="http://www.w3.org/2000/svg">
-<g transform="translate(0,678960)">
-<line x1="360" y1="-678360" x2="720" y2="-678240" style="stroke: #795548; stroke-width: 10"/>
-<line x1="360" y1="-678360" x2="360" y2="-677520" style="stroke: #9c27b0; stroke-width: 10"/>
-<line x1="840" y1="-678600" x2="840" y2="-678480" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="240" y1="-677400" x2="600" y2="-677280" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="120" y1="-677520" x2="120" y2="-677400" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="120" y1="-678120" x2="480" y2="-677400" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="120" y1="-678120" x2="120" y2="-678000" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="600" y1="-678600" x2="840" y2="-678480" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="600" y1="-678600" x2="600" y2="-678120" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="720" y1="-677280" x2="720" y2="-677160" style="stroke: #795548; stroke-width: 10"/>
-<line x1="360" y1="-677400" x2="360" y2="-677280" style="stroke: #9c27b0; stroke-width: 10"/>
-<line x1="480" y1="-678240" x2="120" y2="-678120" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="480" y1="-678240" x2="480" y2="-677640" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="600" y1="-677400" x2="600" y2="-677280" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="840" y1="-677640" x2="240" y2="-677520" style="stroke: #4caf50; stroke-width: 10"/>
-<line x1="120" y1="-677280" x2="120" y2="-677160" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="120" y1="-678000" x2="480" y2="-677280" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="120" y1="-678000" x2="120" y2="-677880" style="stroke: red; stroke-width: 10"/>
-<line x1="600" y1="-677880" x2="720" y2="-677160" style="stroke: #795548; stroke-width: 10"/>
-<line x1="600" y1="-677880" x2="600" y2="-677760" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="840" y1="-677760" x2="840" y2="-677640" style="stroke: red; stroke-width: 10"/>
-<line x1="840" y1="-678720" x2="840" y2="-678600" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="240" y1="-677880" x2="240" y2="-677760" style="stroke: #4caf50; stroke-width: 10"/>
-<line x1="720" y1="-678480" x2="360" y2="-678360" style="stroke: #9c27b0; stroke-width: 10"/>
-<line x1="720" y1="-678480" x2="720" y2="-678360" style="stroke: #795548; stroke-width: 10"/>
-<line x1="360" y1="-677280" x2="360" y2="-677160" style="stroke: #9c27b0; stroke-width: 10"/>
-<line x1="120" y1="-677400" x2="120" y2="-677280" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="600" y1="-678120" x2="600" y2="-678000" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="720" y1="-678600" x2="720" y2="-678480" style="stroke: #795548; stroke-width: 10"/>
-<line x1="240" y1="-678000" x2="240" y2="-677880" style="stroke: #4caf50; stroke-width: 10"/>
-<line x1="480" y1="-678360" x2="840" y2="-678120" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="480" y1="-678360" x2="480" y2="-678240" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="600" y1="-678000" x2="600" y2="-677880" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="120" y1="-678600" x2="120" y2="-678480" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="480" y1="-677640" x2="480" y2="-677520" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="600" y1="-677280" x2="600" y2="-677160" style="stroke: red; stroke-width: 10"/>
-<line x1="840" y1="-678240" x2="720" y2="-678120" style="stroke: #795548; stroke-width: 10"/>
-<line x1="840" y1="-678240" x2="840" y2="-678120" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="720" y1="-678720" x2="720" y2="-678600" style="stroke: #795548; stroke-width: 10"/>
-<line x1="120" y1="-678240" x2="120" y2="-678120" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="600" y1="-677520" x2="600" y2="-677400" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="480" y1="-677520" x2="480" y2="-677400" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="240" y1="-677520" x2="240" y2="-677400" style="stroke: red; stroke-width: 10"/>
-<line x1="840" y1="-678120" x2="480" y2="-677520" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="840" y1="-678120" x2="840" y2="-678000" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="480" y1="-677280" x2="120" y2="-677160" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="480" y1="-677280" x2="480" y2="-677160" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="840" y1="-678360" x2="120" y2="-677880" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="840" y1="-678360" x2="840" y2="-678240" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="720" y1="-678000" x2="600" y2="-677880" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="720" y1="-678000" x2="720" y2="-677880" style="stroke: red; stroke-width: 10"/>
-<line x1="120" y1="-678360" x2="360" y2="-677400" style="stroke: #9c27b0; stroke-width: 10"/>
-<line x1="120" y1="-678360" x2="120" y2="-678240" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="480" y1="-678720" x2="840" y2="-678600" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="480" y1="-678720" x2="480" y2="-678360" style="stroke: #ff9800; stroke-width: 10"/>
-<line x1="840" y1="-678000" x2="840" y2="-677880" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="120" y1="-677640" x2="120" y2="-677520" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="720" y1="-677880" x2="600" y2="-677760" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="720" y1="-677880" x2="720" y2="-677280" style="stroke: #795548; stroke-width: 10"/>
-<line x1="120" y1="-677880" x2="840" y2="-677760" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="120" y1="-677880" x2="120" y2="-677640" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="840" y1="-677880" x2="840" y2="-677760" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="120" y1="-678480" x2="120" y2="-678360" style="stroke: #f06292; stroke-width: 10"/>
-<line x1="720" y1="-678360" x2="720" y2="-678240" style="stroke: #795548; stroke-width: 10"/>
-<line x1="600" y1="-677760" x2="600" y2="-677640" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="360" y1="-677520" x2="360" y2="-677400" style="stroke: #9c27b0; stroke-width: 10"/>
-<line x1="600" y1="-678720" x2="600" y2="-678600" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="240" y1="-677760" x2="840" y2="-677640" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="240" y1="-677760" x2="240" y2="-677520" style="stroke: #4caf50; stroke-width: 10"/>
-<line x1="720" y1="-678240" x2="720" y2="-678120" style="stroke: #795548; stroke-width: 10"/>
-<line x1="840" y1="-678480" x2="600" y2="-678000" style="stroke: #ffeb3b; stroke-width: 10"/>
-<line x1="840" y1="-678480" x2="840" y2="-678360" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="720" y1="-678120" x2="840" y2="-678000" style="stroke: #e91e63; stroke-width: 10"/>
-<line x1="720" y1="-678120" x2="720" y2="-678000" style="stroke: #795548; stroke-width: 10"/>
-<line x1="480" y1="-677400" x2="480" y2="-677280" style="stroke: red; stroke-width: 10"/>
-<line x1="600" y1="-677640" x2="240" y2="-677400" style="stroke: #4caf50; stroke-width: 10"/>
-<line x1="600" y1="-677640" x2="600" y2="-677520" style="stroke: #ffeb3b; stroke-width: 10"/>
-<rect x="550" y="-678650" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#b9f6ca" stroke-width="6"  />
-<rect x="430" y="-678290" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#b9f6ca" stroke-width="6"  />
-<rect x="70" y="-678050" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#b9f6ca" stroke-width="6"  />
-<rect x="550" y="-677930" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<rect x="310" y="-677210" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#b9f6ca" stroke-width="6"  />
-<rect x="670" y="-678530" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#b9f6ca" stroke-width="6"  />
-<rect x="430" y="-678410" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#b9f6ca" stroke-width="6"  />
-<rect x="790" y="-678290" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<rect x="550" y="-677570" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<rect x="790" y="-678170" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<rect x="790" y="-678410" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<rect x="670" y="-678050" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<rect x="70" y="-678410" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#b9f6ca" stroke-width="6"  />
-<rect x="550" y="-677810" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<rect x="190" y="-677810" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#b9f6ca" stroke-width="6"  />
-<rect x="670" y="-678170" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<rect x="550" y="-677690" width="100" height="100" fill="" fill-opacity="0.000000" stroke="#ffcccc" stroke-width="6"  />
-<circle cx="360" cy="-678360" r="50" fill="#9e9e9e" stroke="red" stroke-width="10"  />
-<circle cx="840" cy="-678600" r="40" fill="#ffcccc" stroke="#9e9e9e" stroke-width="10"  />
-<circle cx="240" cy="-677400" r="50" fill="#9e9e9e" stroke="yellow" stroke-width="10"  />
-<circle cx="120" cy="-677520" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="120" cy="-678120" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-678600" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-677280" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="360" cy="-677400" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="480" cy="-678240" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-677400" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="840" cy="-677640" r="50" fill="#9e9e9e" stroke="green" stroke-width="10"  />
-<circle cx="120" cy="-677280" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="120" cy="-678000" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-677880" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="840" cy="-677760" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="840" cy="-678720" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="240" cy="-677880" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-677160" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="360" cy="-677160" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-678480" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="360" cy="-677280" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="120" cy="-677400" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-678120" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-678600" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="240" cy="-678000" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="480" cy="-678360" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-678000" r="40" fill="#ffcccc" stroke="#9e9e9e" stroke-width="10"  />
-<circle cx="120" cy="-678600" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="480" cy="-677640" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-677280" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="840" cy="-678240" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-678720" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="120" cy="-678240" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-677520" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="480" cy="-677520" r="40" fill="#ffcccc" stroke="#9e9e9e" stroke-width="10"  />
-<circle cx="240" cy="-677520" r="40" fill="#ffcccc" stroke="#9e9e9e" stroke-width="10"  />
-<circle cx="840" cy="-678120" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="480" cy="-677280" r="50" fill="#9e9e9e" stroke="green" stroke-width="10"  />
-<circle cx="840" cy="-678360" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-678000" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="120" cy="-678360" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="480" cy="-678720" r="50" fill="#f44336" stroke="green" stroke-width="10"  />
-<circle cx="840" cy="-678000" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="120" cy="-677640" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-677880" r="50" fill="#9e9e9e" stroke="green" stroke-width="10"  />
-<circle cx="600" cy="-677160" r="50" fill="#9e9e9e" stroke="green" stroke-width="10"  />
-<circle cx="120" cy="-677880" r="50" fill="#9e9e9e" stroke="#9e9e9e" stroke-width="16"  />
-<circle cx="840" cy="-677880" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="120" cy="-678480" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-678360" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="120" cy="-677160" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-677760" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="360" cy="-677520" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-678720" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="240" cy="-677760" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-678240" r="40" fill="#b9f6ca" stroke="black" stroke-width="4"  />
-<circle cx="840" cy="-678480" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="720" cy="-678120" r="40" fill="#ffcccc" stroke="#9e9e9e" stroke-width="10"  />
-<circle cx="480" cy="-677160" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="480" cy="-677400" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<circle cx="600" cy="-677640" r="40" fill="#ffcccc" stroke="black" stroke-width="4"  />
-<text x="360" y="-678360" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="360" y="-678340" text-anchor="middle" dominant-baseline="middle" fill="black"> 24907 </text>
-<text x="360" y="-678300" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0010000:1 </text>
-<text x="360" y="-678280" text-anchor="middle" dominant-baseline="middle" fill="red"> 1011110:5 </text>
-<text x="360" y="-678260" text-anchor="middle" dominant-baseline="middle" fill="blue"> 0010111:4 </text>
-<text x="280" y="-678360" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 4 </text>
-<text x="840" y="-678600" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-678580" text-anchor="middle" dominant-baseline="middle" fill="black"> 24902 </text>
-<text x="840" y="-678540" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1101111:6 </text>
-<text x="840" y="-678520" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000111:3 </text>
-<text x="240" y="-677400" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="240" y="-677380" text-anchor="middle" dominant-baseline="middle" fill="black"> 24857 </text>
-<text x="240" y="-677340" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100000:1 </text>
-<text x="240" y="-677320" text-anchor="middle" dominant-baseline="middle" fill="red"> 1111110:6 </text>
-<text x="240" y="-677300" text-anchor="middle" dominant-baseline="middle" fill="blue"> 0000010:1 </text>
-<text x="160" y="-677400" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 1 </text>
-<text x="120" y="-677520" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:348 </text>
-<text x="120" y="-677500" text-anchor="middle" dominant-baseline="middle" fill="black"> 24895 </text>
-<text x="120" y="-677460" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="120" y="-677440" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="120" y="-678120" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="120" y="-678100" text-anchor="middle" dominant-baseline="middle" fill="black"> 24917 </text>
-<text x="120" y="-678060" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1001000:2 </text>
-<text x="120" y="-678040" text-anchor="middle" dominant-baseline="middle" fill="green"> 1000000:1 </text>
-<text x="600" y="-678600" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="600" y="-678580" text-anchor="middle" dominant-baseline="middle" fill="black"> 24924 </text>
-<text x="600" y="-678540" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1101111:6 </text>
-<text x="600" y="-678520" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000111:3 </text>
-<text x="720" y="-677280" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:348 </text>
-<text x="720" y="-677260" text-anchor="middle" dominant-baseline="middle" fill="black"> 24880 </text>
-<text x="720" y="-677220" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1000110:3 </text>
-<text x="720" y="-677200" text-anchor="middle" dominant-baseline="middle" fill="green"> 1000110:3 </text>
-<text x="360" y="-677400" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:349 </text>
-<text x="360" y="-677380" text-anchor="middle" dominant-baseline="middle" fill="black"> 24909 </text>
-<text x="360" y="-677340" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="360" y="-677320" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="480" y="-678240" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="480" y="-678220" text-anchor="middle" dominant-baseline="middle" fill="black"> 24916 </text>
-<text x="480" y="-678180" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1001000:2 </text>
-<text x="480" y="-678160" text-anchor="middle" dominant-baseline="middle" fill="green"> 1001000:2 </text>
-<text x="600" y="-677400" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="600" y="-677380" text-anchor="middle" dominant-baseline="middle" fill="black"> 24887 </text>
-<text x="600" y="-677340" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000100:1 </text>
-<text x="840" y="-677640" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-677620" text-anchor="middle" dominant-baseline="middle" fill="black"> 24865 </text>
-<text x="840" y="-677580" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000001:1 </text>
-<text x="840" y="-677560" text-anchor="middle" dominant-baseline="middle" fill="red"> 1111110:6 </text>
-<text x="840" y="-677540" text-anchor="middle" dominant-baseline="middle" fill="blue"> 1011111:6 </text>
-<text x="760" y="-677640" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 6 </text>
-<text x="120" y="-677280" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:348 </text>
-<text x="120" y="-677260" text-anchor="middle" dominant-baseline="middle" fill="black"> 24894 </text>
-<text x="120" y="-677220" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="120" y="-677200" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="120" y="-678000" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="120" y="-677980" text-anchor="middle" dominant-baseline="middle" fill="black"> 24918 </text>
-<text x="120" y="-677940" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1001000:2 </text>
-<text x="120" y="-677920" text-anchor="middle" dominant-baseline="middle" fill="green"> 1000000:1 </text>
-<text x="600" y="-677880" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="600" y="-677860" text-anchor="middle" dominant-baseline="middle" fill="black"> 24888 </text>
-<text x="600" y="-677820" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100100:2 </text>
-<text x="600" y="-677800" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000100:1 </text>
-<text x="840" y="-677760" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-677740" text-anchor="middle" dominant-baseline="middle" fill="black"> 24866 </text>
-<text x="840" y="-677700" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000001:1 </text>
-<text x="840" y="-678720" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="840" y="-678700" text-anchor="middle" dominant-baseline="middle" fill="black"> 24903 </text>
-<text x="840" y="-678660" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1101111:6 </text>
-<text x="840" y="-678640" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000111:3 </text>
-<text x="240" y="-677880" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="240" y="-677860" text-anchor="middle" dominant-baseline="middle" fill="black"> 24933 </text>
-<text x="240" y="-677820" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100001:2 </text>
-<text x="240" y="-677800" text-anchor="middle" dominant-baseline="middle" fill="green"> 0100000:1 </text>
-<text x="720" y="-677160" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:348 </text>
-<text x="720" y="-677140" text-anchor="middle" dominant-baseline="middle" fill="black"> 24881 </text>
-<text x="720" y="-677100" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1000110:3 </text>
-<text x="720" y="-677080" text-anchor="middle" dominant-baseline="middle" fill="green"> 1000110:3 </text>
-<text x="360" y="-677160" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:349 </text>
-<text x="360" y="-677140" text-anchor="middle" dominant-baseline="middle" fill="black"> 24911 </text>
-<text x="360" y="-677100" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="360" y="-677080" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="720" y="-678480" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="720" y="-678460" text-anchor="middle" dominant-baseline="middle" fill="black"> 24940 </text>
-<text x="720" y="-678420" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0110111:5 </text>
-<text x="720" y="-678400" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000110:2 </text>
-<text x="360" y="-677280" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:349 </text>
-<text x="360" y="-677260" text-anchor="middle" dominant-baseline="middle" fill="black"> 24910 </text>
-<text x="360" y="-677220" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="360" y="-677200" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="120" y="-677400" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:348 </text>
-<text x="120" y="-677380" text-anchor="middle" dominant-baseline="middle" fill="black"> 24896 </text>
-<text x="120" y="-677340" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="120" y="-677320" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="600" y="-678120" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="600" y="-678100" text-anchor="middle" dominant-baseline="middle" fill="black"> 24925 </text>
-<text x="600" y="-678060" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100100:2 </text>
-<text x="600" y="-678040" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000100:1 </text>
-<text x="720" y="-678600" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="720" y="-678580" text-anchor="middle" dominant-baseline="middle" fill="black"> 24939 </text>
-<text x="720" y="-678540" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0110111:5 </text>
-<text x="720" y="-678520" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000110:2 </text>
-<text x="240" y="-678000" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="240" y="-677980" text-anchor="middle" dominant-baseline="middle" fill="black"> 24932 </text>
-<text x="240" y="-677940" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100001:2 </text>
-<text x="240" y="-677920" text-anchor="middle" dominant-baseline="middle" fill="green"> 0100000:1 </text>
-<text x="480" y="-678360" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="480" y="-678340" text-anchor="middle" dominant-baseline="middle" fill="black"> 24919 </text>
-<text x="480" y="-678300" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1001001:3 </text>
-<text x="480" y="-678280" text-anchor="middle" dominant-baseline="middle" fill="green"> 1001001:3 </text>
-<text x="600" y="-678000" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="600" y="-677980" text-anchor="middle" dominant-baseline="middle" fill="black"> 24900 </text>
-<text x="600" y="-677940" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100100:2 </text>
-<text x="600" y="-677920" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000100:1 </text>
-<text x="120" y="-678600" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="120" y="-678580" text-anchor="middle" dominant-baseline="middle" fill="black"> 24971 </text>
-<text x="120" y="-678540" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1001000:2 </text>
-<text x="120" y="-678520" text-anchor="middle" dominant-baseline="middle" fill="green"> 1000000:1 </text>
-<text x="480" y="-677640" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="480" y="-677620" text-anchor="middle" dominant-baseline="middle" fill="black"> 24915 </text>
-<text x="480" y="-677580" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0001000:1 </text>
-<text x="600" y="-677280" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="600" y="-677260" text-anchor="middle" dominant-baseline="middle" fill="black"> 24859 </text>
-<text x="600" y="-677220" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000100:1 </text>
-<text x="840" y="-678240" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-678220" text-anchor="middle" dominant-baseline="middle" fill="black"> 24893 </text>
-<text x="840" y="-678180" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0101111:5 </text>
-<text x="840" y="-678160" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000111:3 </text>
-<text x="720" y="-678720" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="720" y="-678700" text-anchor="middle" dominant-baseline="middle" fill="black"> 24938 </text>
-<text x="720" y="-678660" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0110111:5 </text>
-<text x="720" y="-678640" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000110:2 </text>
-<text x="120" y="-678240" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="120" y="-678220" text-anchor="middle" dominant-baseline="middle" fill="black"> 24929 </text>
-<text x="120" y="-678180" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1001000:2 </text>
-<text x="120" y="-678160" text-anchor="middle" dominant-baseline="middle" fill="green"> 1000000:1 </text>
-<text x="600" y="-677520" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="600" y="-677500" text-anchor="middle" dominant-baseline="middle" fill="black"> 24886 </text>
-<text x="600" y="-677460" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000100:1 </text>
-<text x="600" y="-677440" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000100:1 </text>
-<text x="480" y="-677520" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="480" y="-677500" text-anchor="middle" dominant-baseline="middle" fill="black"> 24877 </text>
-<text x="480" y="-677460" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0001000:1 </text>
-<text x="240" y="-677520" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="240" y="-677500" text-anchor="middle" dominant-baseline="middle" fill="black"> 24864 </text>
-<text x="240" y="-677460" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100000:1 </text>
-<text x="840" y="-678120" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-678100" text-anchor="middle" dominant-baseline="middle" fill="black"> 24879 </text>
-<text x="840" y="-678060" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0001001:2 </text>
-<text x="840" y="-678040" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000001:1 </text>
-<text x="480" y="-677280" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="480" y="-677260" text-anchor="middle" dominant-baseline="middle" fill="black"> 24870 </text>
-<text x="480" y="-677220" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0001000:1 </text>
-<text x="480" y="-677200" text-anchor="middle" dominant-baseline="middle" fill="red"> 1011110:5 </text>
-<text x="480" y="-677180" text-anchor="middle" dominant-baseline="middle" fill="blue"> 1011111:6 </text>
-<text x="400" y="-677280" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 6 </text>
-<text x="840" y="-678360" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-678340" text-anchor="middle" dominant-baseline="middle" fill="black"> 24899 </text>
-<text x="840" y="-678300" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1101111:6 </text>
-<text x="840" y="-678280" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000111:3 </text>
-<text x="720" y="-678000" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="720" y="-677980" text-anchor="middle" dominant-baseline="middle" fill="black"> 24891 </text>
-<text x="720" y="-677940" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100110:3 </text>
-<text x="720" y="-677920" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000110:2 </text>
-<text x="120" y="-678360" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="120" y="-678340" text-anchor="middle" dominant-baseline="middle" fill="black"> 24928 </text>
-<text x="120" y="-678300" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1001000:2 </text>
-<text x="120" y="-678280" text-anchor="middle" dominant-baseline="middle" fill="green"> 1000000:1 </text>
-<text x="480" y="-678720" text-anchor="middle" dominant-baseline="middle" fill="black"> 348:349 </text>
-<text x="480" y="-678700" text-anchor="middle" dominant-baseline="middle" fill="black"> 24920 </text>
-<text x="480" y="-678660" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0001000:1 </text>
-<text x="480" y="-678640" text-anchor="middle" dominant-baseline="middle" fill="red"> 1001111:5 </text>
-<text x="480" y="-678620" text-anchor="middle" dominant-baseline="middle" fill="blue"> 1111111:7 </text>
-<text x="400" y="-678720" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 7 </text>
-<text x="840" y="-678000" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-677980" text-anchor="middle" dominant-baseline="middle" fill="black"> 24868 </text>
-<text x="840" y="-677940" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000001:1 </text>
-<text x="120" y="-677640" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:348 </text>
-<text x="120" y="-677620" text-anchor="middle" dominant-baseline="middle" fill="black"> 24898 </text>
-<text x="120" y="-677580" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="120" y="-677560" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="720" y="-677880" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="720" y="-677860" text-anchor="middle" dominant-baseline="middle" fill="black"> 24890 </text>
-<text x="720" y="-677820" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000010:1 </text>
-<text x="720" y="-677800" text-anchor="middle" dominant-baseline="middle" fill="red"> 1011110:5 </text>
-<text x="720" y="-677780" text-anchor="middle" dominant-baseline="middle" fill="blue"> 1011111:6 </text>
-<text x="640" y="-677880" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 6 </text>
-<text x="600" y="-677160" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="600" y="-677140" text-anchor="middle" dominant-baseline="middle" fill="black"> 24860 </text>
-<text x="600" y="-677100" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000100:1 </text>
-<text x="600" y="-677080" text-anchor="middle" dominant-baseline="middle" fill="red"> 1011110:5 </text>
-<text x="600" y="-677060" text-anchor="middle" dominant-baseline="middle" fill="blue"> 1011111:6 </text>
-<text x="520" y="-677160" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 6 </text>
-<text x="120" y="-677880" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="120" y="-677860" text-anchor="middle" dominant-baseline="middle" fill="black"> 24897 </text>
-<text x="120" y="-677820" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1000000:1 </text>
-<text x="120" y="-677800" text-anchor="middle" dominant-baseline="middle" fill="red"> 1111110:6 </text>
-<text x="120" y="-677780" text-anchor="middle" dominant-baseline="middle" fill="blue"> 1011111:6 </text>
-<text x="40" y="-677880" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 6 </text>
-<text x="840" y="-677880" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-677860" text-anchor="middle" dominant-baseline="middle" fill="black"> 24867 </text>
-<text x="840" y="-677820" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0000001:1 </text>
-<text x="120" y="-678480" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="120" y="-678460" text-anchor="middle" dominant-baseline="middle" fill="black"> 24930 </text>
-<text x="120" y="-678420" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1001000:2 </text>
-<text x="120" y="-678400" text-anchor="middle" dominant-baseline="middle" fill="green"> 1000000:1 </text>
-<text x="720" y="-678360" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="720" y="-678340" text-anchor="middle" dominant-baseline="middle" fill="black"> 24941 </text>
-<text x="720" y="-678300" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100111:4 </text>
-<text x="720" y="-678280" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000110:2 </text>
-<text x="120" y="-677160" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:348 </text>
-<text x="120" y="-677140" text-anchor="middle" dominant-baseline="middle" fill="black"> 24874 </text>
-<text x="120" y="-677100" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="120" y="-677080" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="600" y="-677760" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="600" y="-677740" text-anchor="middle" dominant-baseline="middle" fill="black"> 24889 </text>
-<text x="600" y="-677700" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100100:2 </text>
-<text x="600" y="-677680" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000100:1 </text>
-<text x="360" y="-677520" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:349 </text>
-<text x="360" y="-677500" text-anchor="middle" dominant-baseline="middle" fill="black"> 24908 </text>
-<text x="360" y="-677460" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1010110:4 </text>
-<text x="360" y="-677440" text-anchor="middle" dominant-baseline="middle" fill="green"> 1010110:4 </text>
-<text x="600" y="-678720" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="600" y="-678700" text-anchor="middle" dominant-baseline="middle" fill="black"> 24923 </text>
-<text x="600" y="-678660" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1101111:6 </text>
-<text x="600" y="-678640" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000111:3 </text>
-<text x="240" y="-677760" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="240" y="-677740" text-anchor="middle" dominant-baseline="middle" fill="black"> 24934 </text>
-<text x="240" y="-677700" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100001:2 </text>
-<text x="240" y="-677680" text-anchor="middle" dominant-baseline="middle" fill="green"> 0100000:1 </text>
-<text x="720" y="-678240" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:349 </text>
-<text x="720" y="-678220" text-anchor="middle" dominant-baseline="middle" fill="black"> 24912 </text>
-<text x="720" y="-678180" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100111:4 </text>
-<text x="720" y="-678160" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000110:2 </text>
-<text x="840" y="-678480" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="840" y="-678460" text-anchor="middle" dominant-baseline="middle" fill="black"> 24901 </text>
-<text x="840" y="-678420" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1101111:6 </text>
-<text x="840" y="-678400" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000111:3 </text>
-<text x="720" y="-678120" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="720" y="-678100" text-anchor="middle" dominant-baseline="middle" fill="black"> 24892 </text>
-<text x="720" y="-678060" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100111:4 </text>
-<text x="720" y="-678040" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000110:2 </text>
-<text x="480" y="-677160" text-anchor="middle" dominant-baseline="middle" fill="black"> 346:348 </text>
-<text x="480" y="-677140" text-anchor="middle" dominant-baseline="middle" fill="black"> 24871 </text>
-<text x="480" y="-677100" text-anchor="middle" dominant-baseline="middle" fill="orange"> 1011100:4 </text>
-<text x="480" y="-677080" text-anchor="middle" dominant-baseline="middle" fill="green"> 0011100:3 </text>
-<text x="480" y="-677400" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="480" y="-677380" text-anchor="middle" dominant-baseline="middle" fill="black"> 24878 </text>
-<text x="480" y="-677340" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0001000:1 </text>
-<text x="600" y="-677640" text-anchor="middle" dominant-baseline="middle" fill="black"> 347:348 </text>
-<text x="600" y="-677620" text-anchor="middle" dominant-baseline="middle" fill="black"> 24885 </text>
-<text x="600" y="-677580" text-anchor="middle" dominant-baseline="middle" fill="orange"> 0100100:2 </text>
-<text x="600" y="-677560" text-anchor="middle" dominant-baseline="middle" fill="green"> 0000100:1 </text>
+<svg id="hashgraph" width="960" height="1800" xmlns="http://www.w3.org/2000/svg">
+<g transform="translate(0,44400)">
+<line x1="720" y1="-43200" x2="840" y2="-42840" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="720" y1="-43200" x2="720" y2="-43080" style="stroke: #795548; stroke-width: 10"/>
+<line x1="720" y1="-43560" x2="360" y2="-43440" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="720" y1="-43560" x2="720" y2="-43320" style="stroke: #795548; stroke-width: 10"/>
+<line x1="360" y1="-43560" x2="360" y2="-43440" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="360" y1="-43440" x2="360" y2="-43320" style="stroke: red; stroke-width: 10"/>
+<line x1="840" y1="-44160" x2="240" y2="-44040" style="stroke: #4caf50; stroke-width: 10"/>
+<line x1="840" y1="-44160" x2="840" y2="-43800" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="360" y1="-43200" x2="360" y2="-43080" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="240" y1="-44160" x2="840" y2="-43680" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="240" y1="-44160" x2="240" y2="-44040" style="stroke: #4caf50; stroke-width: 10"/>
+<line x1="360" y1="-43080" x2="360" y2="-42960" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="360" y1="-42960" x2="360" y2="-42840" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="840" y1="-42960" x2="840" y2="-42840" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="120" y1="-43560" x2="120" y2="-43440" style="stroke: #f06292; stroke-width: 10"/>
+<line x1="840" y1="-43800" x2="840" y2="-43680" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="240" y1="-44040" x2="240" y2="-43920" style="stroke: red; stroke-width: 10"/>
+<line x1="600" y1="-43920" x2="480" y2="-42960" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="600" y1="-43920" x2="600" y2="-43800" style="stroke: red; stroke-width: 10"/>
+<line x1="120" y1="-42960" x2="120" y2="-42840" style="stroke: #f06292; stroke-width: 10"/>
+<line x1="360" y1="-43920" x2="840" y2="-43440" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="360" y1="-43920" x2="360" y2="-43800" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="480" y1="-43680" x2="480" y2="-43560" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="720" y1="-43320" x2="720" y2="-43200" style="stroke: red; stroke-width: 10"/>
+<line x1="720" y1="-43680" x2="720" y2="-43560" style="stroke: #795548; stroke-width: 10"/>
+<line x1="840" y1="-43320" x2="720" y2="-43200" style="stroke: #795548; stroke-width: 10"/>
+<line x1="840" y1="-43320" x2="840" y2="-42960" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="480" y1="-43080" x2="480" y2="-42960" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="120" y1="-43320" x2="120" y2="-43200" style="stroke: red; stroke-width: 10"/>
+<line x1="480" y1="-43920" x2="480" y2="-43800" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="840" y1="-43560" x2="360" y2="-43320" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="840" y1="-43560" x2="840" y2="-43440" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="240" y1="-42960" x2="240" y2="-42840" style="stroke: #4caf50; stroke-width: 10"/>
+<line x1="480" y1="-43200" x2="480" y2="-43080" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="480" y1="-43560" x2="480" y2="-43440" style="stroke: red; stroke-width: 10"/>
+<line x1="720" y1="-43080" x2="360" y2="-42960" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="360" y1="-44160" x2="600" y2="-43800" style="stroke: #ffeb3b; stroke-width: 10"/>
+<line x1="360" y1="-44160" x2="360" y2="-44040" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="840" y1="-43680" x2="840" y2="-43560" style="stroke: #e91e63; stroke-width: 10"/>
+<line x1="360" y1="-43320" x2="360" y2="-43200" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="480" y1="-43440" x2="120" y2="-43200" style="stroke: #f06292; stroke-width: 10"/>
+<line x1="480" y1="-43440" x2="480" y2="-43320" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="600" y1="-44040" x2="600" y2="-43920" style="stroke: #ffeb3b; stroke-width: 10"/>
+<line x1="480" y1="-43320" x2="480" y2="-43200" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="240" y1="-43920" x2="360" y2="-43800" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="240" y1="-43920" x2="240" y2="-43080" style="stroke: #4caf50; stroke-width: 10"/>
+<line x1="240" y1="-43080" x2="240" y2="-42960" style="stroke: #4caf50; stroke-width: 10"/>
+<line x1="600" y1="-43800" x2="360" y2="-43680" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="600" y1="-43800" x2="600" y2="-42840" style="stroke: #ffeb3b; stroke-width: 10"/>
+<line x1="840" y1="-43440" x2="360" y2="-43200" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="840" y1="-43440" x2="840" y2="-43320" style="stroke: red; stroke-width: 10"/>
+<line x1="480" y1="-43800" x2="120" y2="-43440" style="stroke: #f06292; stroke-width: 10"/>
+<line x1="480" y1="-43800" x2="480" y2="-43680" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="360" y1="-44040" x2="240" y2="-43080" style="stroke: #4caf50; stroke-width: 10"/>
+<line x1="360" y1="-44040" x2="360" y2="-43920" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="480" y1="-42960" x2="600" y2="-42840" style="stroke: #ffeb3b; stroke-width: 10"/>
+<line x1="360" y1="-43800" x2="240" y2="-42960" style="stroke: #4caf50; stroke-width: 10"/>
+<line x1="360" y1="-43800" x2="360" y2="-43680" style="stroke: #9c27b0; stroke-width: 10"/>
+<line x1="120" y1="-43440" x2="480" y2="-43320" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="120" y1="-43440" x2="120" y2="-43320" style="stroke: #f06292; stroke-width: 10"/>
+<line x1="600" y1="-44160" x2="600" y2="-44040" style="stroke: #ffeb3b; stroke-width: 10"/>
+<line x1="120" y1="-43200" x2="480" y2="-43080" style="stroke: #ff9800; stroke-width: 10"/>
+<line x1="120" y1="-43200" x2="120" y2="-42960" style="stroke: #f06292; stroke-width: 10"/>
+<line x1="360" y1="-43680" x2="360" y2="-43560" style="stroke: #9c27b0; stroke-width: 10"/>
+<rect x="670" y="-43610" width="100" height="100" fill="" fill-opacity="0.000000" stroke="darkblue" stroke-width="4" stroke-dasharray="10,10" />
+<rect x="790" y="-44210" width="100" height="100" fill="" fill-opacity="0.000000" stroke="darkblue" stroke-width="4" stroke-dasharray="10,10" />
+<rect x="190" y="-44210" width="100" height="100" fill="" fill-opacity="0.000000" stroke="darkblue" stroke-width="4" stroke-dasharray="10,10" />
+<rect x="310" y="-43970" width="100" height="100" fill="" fill-opacity="0.000000" stroke="darkblue" stroke-width="4" stroke-dasharray="10,10" />
+<rect x="790" y="-43610" width="100" height="100" fill="" fill-opacity="0.000000" stroke="darkblue" stroke-width="4" stroke-dasharray="10,10" />
+<rect x="670" y="-43130" width="100" height="100" fill="" fill-opacity="0.000000" stroke="darkblue" stroke-width="4" stroke-dasharray="10,10" />
+<rect x="310" y="-44210" width="100" height="100" fill="" fill-opacity="0.000000" stroke="darkblue" stroke-width="4" stroke-dasharray="10,10" />
+<rect x="190" y="-42890" width="100" height="100" fill="" fill-opacity="0.000000" stroke="darkblue" stroke-width="4" stroke-dasharray="10,10" />
+<circle cx="720" cy="-43200" r="50" fill="#9c27b0" stroke="#9c27b0" stroke-width="16" stroke-dasharray="" />
+<circle cx="720" cy="-43560" r="40" fill="#ffffcc" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-43560" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-43440" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="840" cy="-44160" r="40" fill="#fed9a6" stroke="#9c27b0" stroke-width="10" stroke-dasharray="" />
+<circle cx="840" cy="-42840" r="40" fill="#decde4" stroke="#4caf50" stroke-width="10" stroke-dasharray="" />
+<circle cx="360" cy="-43200" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="240" cy="-44160" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-43080" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-42960" r="40" fill="#decde4" stroke="#4caf50" stroke-width="10" stroke-dasharray="" />
+<circle cx="840" cy="-42960" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="120" cy="-43560" r="40" fill="#e5d8bd" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="840" cy="-43800" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="600" cy="-42840" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="240" cy="-44040" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="600" cy="-43920" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="120" cy="-42960" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-43920" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="480" cy="-43680" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="720" cy="-43320" r="40" fill="#ffffcc" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="720" cy="-43680" r="40" fill="#ffffcc" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="840" cy="-43320" r="50" fill="#9c27b0" stroke="green" stroke-width="10" stroke-dasharray="" />
+<circle cx="480" cy="-43080" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="120" cy="-43320" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="480" cy="-43920" r="40" fill="#fed9a6" stroke="#9c27b0" stroke-width="10" stroke-dasharray="" />
+<circle cx="840" cy="-43560" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="240" cy="-42960" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="480" cy="-43200" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="480" cy="-43560" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="720" cy="-43080" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-44160" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="840" cy="-43680" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-43320" r="50" fill="#9c27b0" stroke="green" stroke-width="10" stroke-dasharray="" />
+<circle cx="480" cy="-43440" r="50" fill="#9c27b0" stroke="green" stroke-width="10" stroke-dasharray="" />
+<circle cx="600" cy="-44040" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="480" cy="-43320" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="240" cy="-43920" r="50" fill="#9c27b0" stroke="green" stroke-width="10" stroke-dasharray="" />
+<circle cx="240" cy="-43080" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="600" cy="-43800" r="50" fill="#9c27b0" stroke="green" stroke-width="10" stroke-dasharray="" />
+<circle cx="360" cy="-42840" r="40" fill="#decde4" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="840" cy="-43440" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="480" cy="-43800" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-44040" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="480" cy="-42960" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="120" cy="-42840" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="360" cy="-43800" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="240" cy="-42840" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="120" cy="-43440" r="40" fill="#fed9a6" stroke="#9c27b0" stroke-width="10" stroke-dasharray="" />
+<circle cx="600" cy="-44160" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<circle cx="120" cy="-43200" r="50" fill="#9c27b0" stroke="red" stroke-width="10" stroke-dasharray="" />
+<circle cx="360" cy="-43680" r="40" fill="#fed9a6" stroke="black" stroke-width="4" stroke-dasharray="" />
+<text x="720" y="-43200" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="720" y="-43180" text-anchor="middle" dominant-baseline="middle" fill="black"> 1561 </text>
+<text x="720" y="-43140" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0000010:1 </text>
+<text x="720" y="-43120" text-anchor="middle" dominant-baseline="middle" fill="red"> s=1110111:6 </text>
+<text x="720" y="-43100" text-anchor="middle" dominant-baseline="middle" fill="blue"> v=1010111:5 </text>
+<text x="640" y="-43200" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 5 </text>
+<text x="720" y="-43220" text-anchor="middle" dominant-baseline="middle" fill="black"> d=1111110:6 </text>
+<text x="720" y="-43560" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:21 </text>
+<text x="720" y="-43540" text-anchor="middle" dominant-baseline="middle" fill="black"> 1606 </text>
+<text x="720" y="-43500" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010010:2 </text>
+<text x="720" y="-43480" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0000010:1 </text>
+<text x="360" y="-43560" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="360" y="-43540" text-anchor="middle" dominant-baseline="middle" fill="black"> 1571 </text>
+<text x="360" y="-43500" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010000:1 </text>
+<text x="360" y="-43440" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="360" y="-43420" text-anchor="middle" dominant-baseline="middle" fill="black"> 1572 </text>
+<text x="360" y="-43380" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010000:1 </text>
+<text x="840" y="-44160" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="840" y="-44140" text-anchor="middle" dominant-baseline="middle" fill="black"> 1580 </text>
+<text x="840" y="-44100" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0110011:4 </text>
+<text x="840" y="-44080" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0000001:1 </text>
+<text x="840" y="-42840" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:19 </text>
+<text x="840" y="-42820" text-anchor="middle" dominant-baseline="middle" fill="black"> 1528 </text>
+<text x="840" y="-42780" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110101:5 </text>
+<text x="840" y="-42760" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1100101:4 </text>
+<text x="360" y="-43200" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="360" y="-43180" text-anchor="middle" dominant-baseline="middle" fill="black"> 1563 </text>
+<text x="360" y="-43140" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110111:6 </text>
+<text x="360" y="-43120" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0110110:4 </text>
+<text x="240" y="-44160" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="240" y="-44140" text-anchor="middle" dominant-baseline="middle" fill="black"> 1581 </text>
+<text x="240" y="-44100" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0110011:4 </text>
+<text x="240" y="-44080" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0100001:2 </text>
+<text x="360" y="-43080" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="360" y="-43060" text-anchor="middle" dominant-baseline="middle" fill="black"> 1564 </text>
+<text x="360" y="-43020" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110111:6 </text>
+<text x="360" y="-43000" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0110110:4 </text>
+<text x="360" y="-42960" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:19 </text>
+<text x="360" y="-42940" text-anchor="middle" dominant-baseline="middle" fill="black"> 1555 </text>
+<text x="360" y="-42900" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110111:6 </text>
+<text x="360" y="-42880" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0110110:4 </text>
+<text x="840" y="-42960" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="840" y="-42940" text-anchor="middle" dominant-baseline="middle" fill="black"> 1529 </text>
+<text x="840" y="-42900" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110101:5 </text>
+<text x="840" y="-42880" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1100101:4 </text>
+<text x="120" y="-43560" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:22 </text>
+<text x="120" y="-43540" text-anchor="middle" dominant-baseline="middle" fill="black"> 1621 </text>
+<text x="120" y="-43500" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1000000:1 </text>
+<text x="840" y="-43800" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="840" y="-43780" text-anchor="middle" dominant-baseline="middle" fill="black"> 1569 </text>
+<text x="840" y="-43740" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010011:3 </text>
+<text x="840" y="-43720" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0000001:1 </text>
+<text x="600" y="-42840" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="600" y="-42820" text-anchor="middle" dominant-baseline="middle" fill="black"> 1600 </text>
+<text x="600" y="-42780" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1010101:4 </text>
+<text x="600" y="-42760" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1000100:2 </text>
+<text x="240" y="-44040" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="240" y="-44020" text-anchor="middle" dominant-baseline="middle" fill="black"> 1573 </text>
+<text x="240" y="-43980" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0110000:2 </text>
+<text x="600" y="-43920" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="600" y="-43900" text-anchor="middle" dominant-baseline="middle" fill="black"> 1612 </text>
+<text x="600" y="-43860" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010100:2 </text>
+<text x="120" y="-42960" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="120" y="-42940" text-anchor="middle" dominant-baseline="middle" fill="black"> 1625 </text>
+<text x="120" y="-42900" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1011101:5 </text>
+<text x="120" y="-42880" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1000100:2 </text>
+<text x="360" y="-43920" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="360" y="-43900" text-anchor="middle" dominant-baseline="middle" fill="black"> 1648 </text>
+<text x="360" y="-43860" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010011:3 </text>
+<text x="360" y="-43840" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0010000:1 </text>
+<text x="480" y="-43680" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="480" y="-43660" text-anchor="middle" dominant-baseline="middle" fill="black"> 1661 </text>
+<text x="480" y="-43620" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1001000:2 </text>
+<text x="720" y="-43320" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:21 </text>
+<text x="720" y="-43300" text-anchor="middle" dominant-baseline="middle" fill="black"> 1607 </text>
+<text x="720" y="-43260" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0000010:1 </text>
+<text x="720" y="-43680" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:21 </text>
+<text x="720" y="-43660" text-anchor="middle" dominant-baseline="middle" fill="black"> 1605 </text>
+<text x="720" y="-43620" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010010:2 </text>
+<text x="720" y="-43600" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0000010:1 </text>
+<text x="840" y="-43320" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="840" y="-43300" text-anchor="middle" dominant-baseline="middle" fill="black"> 1562 </text>
+<text x="840" y="-43260" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0000011:2 </text>
+<text x="840" y="-43240" text-anchor="middle" dominant-baseline="middle" fill="red"> s=1110111:6 </text>
+<text x="840" y="-43220" text-anchor="middle" dominant-baseline="middle" fill="blue"> v=1111111:7 </text>
+<text x="760" y="-43320" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 7 </text>
+<text x="840" y="-43340" text-anchor="middle" dominant-baseline="middle" fill="black"> d=1111111:7 </text>
+<text x="480" y="-43080" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="480" y="-43060" text-anchor="middle" dominant-baseline="middle" fill="black"> 1598 </text>
+<text x="480" y="-43020" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1111101:6 </text>
+<text x="480" y="-43000" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1101101:5 </text>
+<text x="120" y="-43320" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="120" y="-43300" text-anchor="middle" dominant-baseline="middle" fill="black"> 1623 </text>
+<text x="120" y="-43260" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1000000:1 </text>
+<text x="480" y="-43920" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="480" y="-43900" text-anchor="middle" dominant-baseline="middle" fill="black"> 1659 </text>
+<text x="480" y="-43860" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1001000:2 </text>
+<text x="840" y="-43560" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="840" y="-43540" text-anchor="middle" dominant-baseline="middle" fill="black"> 1567 </text>
+<text x="840" y="-43500" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010011:3 </text>
+<text x="840" y="-43480" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0000001:1 </text>
+<text x="240" y="-42960" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="240" y="-42940" text-anchor="middle" dominant-baseline="middle" fill="black"> 1576 </text>
+<text x="240" y="-42900" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110111:6 </text>
+<text x="240" y="-42880" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0110100:3 </text>
+<text x="480" y="-43200" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="480" y="-43180" text-anchor="middle" dominant-baseline="middle" fill="black"> 1602 </text>
+<text x="480" y="-43140" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1111101:6 </text>
+<text x="480" y="-43120" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1101101:5 </text>
+<text x="480" y="-43560" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="480" y="-43540" text-anchor="middle" dominant-baseline="middle" fill="black"> 1662 </text>
+<text x="480" y="-43500" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1001000:2 </text>
+<text x="720" y="-43080" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="720" y="-43060" text-anchor="middle" dominant-baseline="middle" fill="black"> 1559 </text>
+<text x="720" y="-43020" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110111:6 </text>
+<text x="720" y="-43000" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0110110:4 </text>
+<text x="360" y="-44160" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="360" y="-44140" text-anchor="middle" dominant-baseline="middle" fill="black"> 1653 </text>
+<text x="360" y="-44100" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010111:4 </text>
+<text x="360" y="-44080" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0010000:1 </text>
+<text x="840" y="-43680" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="840" y="-43660" text-anchor="middle" dominant-baseline="middle" fill="black"> 1568 </text>
+<text x="840" y="-43620" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010011:3 </text>
+<text x="840" y="-43600" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0000001:1 </text>
+<text x="360" y="-43320" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="360" y="-43300" text-anchor="middle" dominant-baseline="middle" fill="black"> 1566 </text>
+<text x="360" y="-43260" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010000:1 </text>
+<text x="360" y="-43240" text-anchor="middle" dominant-baseline="middle" fill="red"> s=1110111:6 </text>
+<text x="360" y="-43220" text-anchor="middle" dominant-baseline="middle" fill="blue"> v=1111111:7 </text>
+<text x="280" y="-43320" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 7 </text>
+<text x="360" y="-43340" text-anchor="middle" dominant-baseline="middle" fill="black"> d=1011011:5 </text>
+<text x="480" y="-43440" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="480" y="-43420" text-anchor="middle" dominant-baseline="middle" fill="black"> 1663 </text>
+<text x="480" y="-43380" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1001000:2 </text>
+<text x="480" y="-43360" text-anchor="middle" dominant-baseline="middle" fill="red"> s=1101101:5 </text>
+<text x="480" y="-43340" text-anchor="middle" dominant-baseline="middle" fill="blue"> v=1101011:5 </text>
+<text x="400" y="-43440" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 5 </text>
+<text x="480" y="-43460" text-anchor="middle" dominant-baseline="middle" fill="black"> d=0011100:3 </text>
+<text x="600" y="-44040" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="600" y="-44020" text-anchor="middle" dominant-baseline="middle" fill="black"> 1611 </text>
+<text x="600" y="-43980" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010100:2 </text>
+<text x="480" y="-43320" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="480" y="-43300" text-anchor="middle" dominant-baseline="middle" fill="black"> 1627 </text>
+<text x="480" y="-43260" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1111101:6 </text>
+<text x="480" y="-43240" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1101101:5 </text>
+<text x="240" y="-43920" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="240" y="-43900" text-anchor="middle" dominant-baseline="middle" fill="black"> 1574 </text>
+<text x="240" y="-43860" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0110000:2 </text>
+<text x="240" y="-43840" text-anchor="middle" dominant-baseline="middle" fill="red"> s=1110111:6 </text>
+<text x="240" y="-43820" text-anchor="middle" dominant-baseline="middle" fill="blue"> v=1111111:7 </text>
+<text x="160" y="-43920" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 7 </text>
+<text x="240" y="-43940" text-anchor="middle" dominant-baseline="middle" fill="black"> d=1111111:7 </text>
+<text x="240" y="-43080" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="240" y="-43060" text-anchor="middle" dominant-baseline="middle" fill="black"> 1575 </text>
+<text x="240" y="-43020" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110111:6 </text>
+<text x="240" y="-43000" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0110100:3 </text>
+<text x="600" y="-43800" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="600" y="-43780" text-anchor="middle" dominant-baseline="middle" fill="black"> 1610 </text>
+<text x="600" y="-43740" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010100:2 </text>
+<text x="600" y="-43720" text-anchor="middle" dominant-baseline="middle" fill="red"> s=1110111:6 </text>
+<text x="600" y="-43700" text-anchor="middle" dominant-baseline="middle" fill="blue"> v=1111111:7 </text>
+<text x="520" y="-43800" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 7 </text>
+<text x="600" y="-43820" text-anchor="middle" dominant-baseline="middle" fill="black"> d=0111111:6 </text>
+<text x="360" y="-42840" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:19 </text>
+<text x="360" y="-42820" text-anchor="middle" dominant-baseline="middle" fill="black"> 1552 </text>
+<text x="360" y="-42780" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110111:6 </text>
+<text x="360" y="-42760" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0110100:3 </text>
+<text x="840" y="-43440" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="840" y="-43420" text-anchor="middle" dominant-baseline="middle" fill="black"> 1565 </text>
+<text x="840" y="-43380" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0000011:2 </text>
+<text x="480" y="-43800" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="480" y="-43780" text-anchor="middle" dominant-baseline="middle" fill="black"> 1660 </text>
+<text x="480" y="-43740" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1001000:2 </text>
+<text x="360" y="-44040" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="360" y="-44020" text-anchor="middle" dominant-baseline="middle" fill="black"> 1647 </text>
+<text x="360" y="-43980" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010011:3 </text>
+<text x="360" y="-43960" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0010000:1 </text>
+<text x="480" y="-42960" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="480" y="-42940" text-anchor="middle" dominant-baseline="middle" fill="black"> 1599 </text>
+<text x="480" y="-42900" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1111101:6 </text>
+<text x="480" y="-42880" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1101101:5 </text>
+<text x="120" y="-42840" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="120" y="-42820" text-anchor="middle" dominant-baseline="middle" fill="black"> 1626 </text>
+<text x="120" y="-42780" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1011101:5 </text>
+<text x="120" y="-42760" text-anchor="middle" dominant-baseline="middle" fill="green"> i=1000100:2 </text>
+<text x="360" y="-43800" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="360" y="-43780" text-anchor="middle" dominant-baseline="middle" fill="black"> 1579 </text>
+<text x="360" y="-43740" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010000:1 </text>
+<text x="240" y="-42840" text-anchor="middle" dominant-baseline="middle" fill="black"> 18:20 </text>
+<text x="240" y="-42820" text-anchor="middle" dominant-baseline="middle" fill="black"> 1577 </text>
+<text x="240" y="-42780" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1110111:6 </text>
+<text x="240" y="-42760" text-anchor="middle" dominant-baseline="middle" fill="green"> i=0110100:3 </text>
+<text x="120" y="-43440" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="120" y="-43420" text-anchor="middle" dominant-baseline="middle" fill="black"> 1622 </text>
+<text x="120" y="-43380" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1000000:1 </text>
+<text x="600" y="-44160" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="600" y="-44140" text-anchor="middle" dominant-baseline="middle" fill="black"> 1615 </text>
+<text x="600" y="-44100" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010100:2 </text>
+<text x="120" y="-43200" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="120" y="-43180" text-anchor="middle" dominant-baseline="middle" fill="black"> 1624 </text>
+<text x="120" y="-43140" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=1000000:1 </text>
+<text x="120" y="-43120" text-anchor="middle" dominant-baseline="middle" fill="red"> s=1101101:5 </text>
+<text x="120" y="-43100" text-anchor="middle" dominant-baseline="middle" fill="blue"> v=1000001:2 </text>
+<text x="40" y="-43200" text-anchor="middle" dominant-baseline="middle" fill="blue"> yes 2 </text>
+<text x="120" y="-43220" text-anchor="middle" dominant-baseline="middle" fill="black"> d=1010101:4 </text>
+<text x="360" y="-43680" text-anchor="middle" dominant-baseline="middle" fill="black"> 19:20 </text>
+<text x="360" y="-43660" text-anchor="middle" dominant-baseline="middle" fill="black"> 1570 </text>
+<text x="360" y="-43620" text-anchor="middle" dominant-baseline="middle" fill="orange"> w=0010000:1 </text>
 </g>
 </svg>

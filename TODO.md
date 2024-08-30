@@ -22,8 +22,28 @@ Assignee: lr
 Make a script to trigger the gitlab app ci when the native mobile libraries have been built
 Assignee: lr
 
+### DART dry run function
+A function which calculates the bullseye on a recorder 
+- [ ] Implement in a unittest
+Assignee: pr
+
+### Epoch Voting
+- [ ] Test asynchronity of the hashgraph by the amount of nodes
+- [ ] Integration test
+- [ ] Longitudinal test (Mode 1)
+
+### Dump of epoch 
+Implement a switch in tagionwave to enable trace dump of the wavefront.
+
+### Telegram wavefront
+Logger checker via Telegram.
+
 
 ## Backlog
+
+### Logger topics
+Logger topics enable switch (Remote).
+ 
 
 ### Hashgraph node swapping
 Description: Enable a new node to join the graph
