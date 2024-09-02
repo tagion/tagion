@@ -12,6 +12,7 @@ enum default_wallet_config_filename="wallet".setExtension(FileExtension.json);
  * struct WalletOptions
  * Struct wallet options files and network status storage models
  */
+@safe
 struct WalletOptions {
     /** account file name/path */
     string accountfile;
@@ -39,7 +40,7 @@ struct WalletOptions {
     string hirpc_shell_endpoint;
     string faucet_shell_endpoint;
     /**
-    * @brief set default values for wallet
+    * set default values for wallet
     */
     void setDefault() nothrow {
         accountfile = "account".setExtension(FileExtension.hibon);

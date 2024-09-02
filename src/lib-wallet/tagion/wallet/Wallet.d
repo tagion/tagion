@@ -30,9 +30,8 @@ alias check = Check!(WalletException);
 
 
 @safe
-static TagionBill requestBill(TagionCurrency amount, Pubkey bill_owner, sdt_t bill_time = currentTime) {
-    check(amount > 0.TGN, format("Requested bill should have a positive value and not %10.6fTGN", amount
-            .value));
+TagionBill requestBill(TagionCurrency amount, Pubkey bill_owner, sdt_t bill_time = currentTime) {
+    check(amount > 0.TGN, format("Requested bill should have a positive value and not %10.6fTGN", amount.value));
     TagionBill bill;
     bill.value = amount;
     bill.time = bill_time;
