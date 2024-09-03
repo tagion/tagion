@@ -53,9 +53,7 @@ struct ShellOptions {
 
     void setDefault() nothrow {
         tagion_subscription_addr = contract_sock_addr("SUBSCRIPTION_");
-        version(TAGIONSHELL_WEB_SOCKET) {
-            ws_pub_uri = "ws://0.0.0.0:8080"~shell_api_prefix~"/subscribe";
-        }
+        ws_pub_uri = "ws://0.0.0.0:8080"~shell_api_prefix~"/subscribe";
     }
 
     /// Gives a new node address each time it is called
