@@ -6,7 +6,7 @@ on:
 env:
   TARGET: x86_64-linux
   STAGE: commit
-  DC: dmd
+  DC: ldc2
   RETENTION_DAYS_BINS: 3
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
@@ -36,6 +36,7 @@ jobs:
       - name: Build tagion
         run: |
           export DC=${{ env.DC }}
+          $DC --version
           make tagion release || make proper tagion release
 
       - name: Post run
@@ -62,7 +63,7 @@ jobs:
 
       - name: Run unittest
         run: |
-          export DC=${{ env.DC }}
+          export DC=dmd
           make unittest-cov || make proper unittest-cov
 
       - name: Report unittest
