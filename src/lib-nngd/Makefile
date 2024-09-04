@@ -14,7 +14,7 @@ RUNTESTS=$(basename $(DTESTS))
 
 ifeq ($(NNG_WITH_MBEDTLS),ON)
 	DCFLAGS=-O -d -m64 -i -debug -g -version=withtls
-	DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -Lextern/libnng/extern/mbedtls/build/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
+	DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -Lextern/libnng/extern/mbedtls/build/target/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
 else
 	DCFLAGS=-O -d -m64 -i -debug -g
 	DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -lnng
