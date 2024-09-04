@@ -102,7 +102,7 @@ enum nng_property_base {
 }
 
 struct NNGMessage {
-    pragma(msg, "fixme(cbr): If there is a getter and setter msg why is msg the piblic");
+    pragma(msg, "fixme(cbr): If there is a getter and setter msg why is msg the public");
     nng_msg* msg;
 
     @disable this();
@@ -213,7 +213,7 @@ struct NNGMessage {
         else {
             static if (T.sizeof == 1) {
                 T tmp = data;
-                pragma(msg, "fixme(cbr): Type cast is not need becast &tmp is implicite a void*");
+                pragma(msg, "fixme(cbr): Type cast is not need becast &tmp is an implicit void*");
                 auto rc = nng_msg_insert(msg, cast(void*)&tmp, 1);
                 enforce(rc == 0);
             }
@@ -470,7 +470,7 @@ struct NNGAio {
         return aio;
     }
 
-    pragma(msg,"Do we want this function if we need it it should Proberly have a package protection");
+    pragma(msg,"Do we want this function if we need it, it should Proberly have a package or protection property");
     @nogc
     @property void pointer(nng_aio* p) {
         if (p !is null) {
@@ -1806,7 +1806,7 @@ struct WebData {
         type = to!string(nng_http_res_get_header(res, toStringz("Content-type")));
         ubyte* buf;
         size_t len;
-        pragma(msg, "fixme(cbr): How allocates  buf? Maybe it should be free in a exit scope");
+        pragma(msg, "fixme(cbr): Who allocates this buf? Maybe it should be free in a exit scope");
         nng_http_res_get_data(res, cast(void**)(&buf), &len);
         if (len > 0) {
             rawdata ~= buf[0 .. len];
