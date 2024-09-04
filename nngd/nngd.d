@@ -665,6 +665,21 @@ struct NNGSocket {
             return -1;
         }
     }        
+    
+    version(withtls) {
+        int listener_set_tls ( NNGTLS* tls ) {
+            if(tls.mode == nng_tls_mode.NNG_TLS_MODE_SERVER){
+                auto rc = nng_listener_set_ptr(m_listener, toStringz(NNG_OPT_TLS_CONFIG), tls.tls);
+                if(rc != 0){
+                    m_errno = cast(nng_errno)rc;
+                    return rc;
+                }
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+    }
 
     int listener_start( const bool nonblock = false ) @safe {
         m_errno = cast(nng_errno)0;
@@ -750,6 +765,21 @@ struct NNGSocket {
             return -1;
         }
     }        
+    
+    version(withtls) {
+        int dialer_set_tls ( NNGTLS* tls ) {
+            if(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT){
+                auto rc = nng_dialer_set_ptr(m_dialer, toStringz(NNG_OPT_TLS_CONFIG), tls.tls);
+                if(rc != 0){
+                    m_errno = cast(nng_errno)rc;
+                    return rc;
+                }
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+    }
 
     int dialer_start( const bool nonblock = false ) @safe nothrow {
         m_errno = cast(nng_errno)0;
@@ -1409,40 +1439,53 @@ version(withtls) {
     alias nng_tls_auth_mode = libnng.nng_tls_auth_mode;
     alias nng_tls_version = libnng.nng_tls_version;
 
-    struct WebTLS {
+    struct NNGTLS {
         nng_tls_config* tls;
+        nng_tls_mode _mode;
         
         @disable this();
         
-        this(ref return scope WebTLS rhs) {}
+        this(ref return scope NNGTLS rhs) {}
         
         this( nng_tls_mode imode  ) {
             int rc;
+            _mode = imode;
             rc = nng_tls_config_alloc(&tls, imode);
             enforce(rc == 0, "TLS config init");
             nng_tls_config_hold(tls);
         }
-        
 
         ~this() {
             nng_tls_config_free(tls);
         }
 
         void set_server_name ( string iname ) {
-            auto rc = nng_tls_config_server_name(tls, iname.toStringz());
+            enforce(_mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+            auto rc = nng_tls_config_server_name(tls, toStringz(iname));
             enforce(rc == 0);
         }
         
         void set_ca_chain ( string pem, string crl = "" ) {
-            auto rc = nng_tls_config_ca_chain(tls, pem.toStringz(), crl.toStringz());
+            auto rc = nng_tls_config_ca_chain(tls, toStringz(pem), crl == "" ? null : toStringz(crl));
             enforce(rc == 0);
         }
+        
+        void set_ca_chain_file_load( string filename, string crl = "" ) {
+            string ca = std.file.readText(filename);
+            set_ca_chain ( ca, crl );
+        }    
 
         void set_own_cert ( string pem, string key, string pwd = "" ) {
-            auto rc = nng_tls_config_own_cert(tls, pem.toStringz(), key.toStringz(), pwd.toStringz());
+            auto rc = nng_tls_config_own_cert(tls, pem.toStringz(), toStringz(key), pwd == "" ? null : toStringz(pwd));
             enforce(rc == 0);
         }
 
+        void set_own_cert_load ( string pemfilename, string keyfilename, string pwd = "" ){
+            string pem = std.file.readText(pemfilename);
+            string key = std.file.readText(keyfilename);
+            set_own_cert ( pem, key, pwd );
+        }
+    
     // TODO: check why this two excluded from the lib
     /*
         void set_pass ( string ipass ) {
@@ -1456,21 +1499,20 @@ version(withtls) {
         }
     */
 
-        void set_auth_mode ( nng_tls_auth_mode imode ) {
-            auto rc = nng_tls_config_auth_mode(tls, imode);
-            enforce(rc == 0);
-        }
-        
-        void set_ca_file ( string ica ) {
-            auto rc = nng_tls_config_ca_file(tls, ica.toStringz());
+        void set_ca_file ( string icafile ) {
+            auto rc = nng_tls_config_ca_file(tls, toStringz(icafile));
             enforce(rc == 0);
         }
 
-        void set_cert_key_file ( string ipem , string ikey ) {
-            auto rc = nng_tls_config_cert_key_file(tls, ipem.toStringz(), ikey.toStringz());
-            writeln("TDEBUG: ", nng_errstr(rc));
+        void set_cert_key_file ( string ipemkeyfile, string ipass ) {
+            auto rc = nng_tls_config_cert_key_file(tls, toStringz(ipemkeyfile), toStringz(ipass));   // pemkey file should contain both cert and key delimited with \r\n
             enforce(rc == 0);
         }
+        
+        void set_auth_mode ( nng_tls_auth_mode imode ) {
+            auto rc = nng_tls_config_auth_mode(tls, imode);
+            enforce(rc == 0);
+        }        
 
         void set_version( nng_tls_version iminversion, nng_tls_version imaxversion ) {
             auto rc = nng_tls_config_version(tls, iminversion, imaxversion);
@@ -1490,6 +1532,21 @@ version(withtls) {
         bool fips_mode() {
             return nng_tls_engine_fips_mode();
         }
+
+        nng_tls_mode mode() {
+            return _mode;
+        }
+
+        string toString(){
+            return "\r\n------------------------<NNGTLS>\r\n"
+                ~format("engine name:           %s\r\n", engine_name)                    
+                ~format("engine description:    %s\r\n", engine_description)                    
+                ~format("FIPS:                  %s\r\n", fips_mode)                    
+                ~format("mode:                  %s\r\n", mode)                    
+                ~"------------------------------</NNGTLS>\r\n"
+            ;                
+        }
+
     }
 
 }
@@ -1995,7 +2052,8 @@ struct WebApp {
     }
     
     version(withtls) {
-        void set_tls ( WebTLS tls ) {
+        void set_tls ( NNGTLS* tls ) {
+            enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_SERVER);
             auto rc = nng_http_server_set_tls(server, tls.tls);
             enforce(rc==0, "server set tls");
         }
@@ -2239,8 +2297,16 @@ struct WebClient {
         nng_http_res_free(res);
     }
 
+    version(withtls) {
+        void set_tls ( NNGTLS* tls ) {
+            enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+            auto rc = nng_http_client_set_tls(cli, tls.tls);
+            enforce(rc==0, "client set tls");
+        }
+    }
+
     // static sync get
-    static WebData get ( string uri, string[string] headers, Duration timeout = 30000.msecs ) {
+    static WebData get ( string uri, string[string] headers, Duration timeout = 30000.msecs, void* ptls = null ) { 
         int rc;
         nng_http_client *cli;
         nng_url *url;
@@ -2259,6 +2325,15 @@ struct WebClient {
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
+    
+        version(withtls) {
+            if(ptls) {
+                NNGTLS *tls = cast(NNGTLS*) ptls;
+                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                rc = nng_http_client_set_tls(cli, tls.tls);
+                enforce(rc==0, "client set tls");
+            }
+        }
         
         scope(exit) {
             nng_http_client_free(cli);
@@ -2287,7 +2362,8 @@ struct WebClient {
     }
 
     // static sync post
-    static WebData post ( string uri, const ubyte[] data, const string[string] headers, Duration timeout = 30000.msecs ) {
+    static WebData post ( string uri, const ubyte[] data, const string[string] headers, Duration timeout = 30000.msecs, void *ptls = null ) 
+    {
         int rc;
         nng_http_client *cli;
         nng_url *url;
@@ -2306,6 +2382,16 @@ struct WebClient {
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
+        
+        version(withtls) {
+            if(ptls) {
+                NNGTLS *tls = cast(NNGTLS*) ptls;
+                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                rc = nng_http_client_set_tls(cli, tls.tls);
+                enforce(rc==0, "client set tls");
+            }
+        }
+
         scope(exit) {
             nng_http_client_free(cli);
             nng_url_free(url);
@@ -2335,7 +2421,8 @@ struct WebClient {
     }
 
     // static async get
-    static NNGAio get_async ( string uri, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
+    static NNGAio get_async ( string uri, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null, void *ptls = null ) 
+    {
         int rc;
         nng_aio *aio;
         nng_http_client *cli;
@@ -2352,6 +2439,17 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
+        
+        version(withtls) {
+            if(ptls) {
+                NNGTLS *tls = cast(NNGTLS*) ptls;
+                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                rc = nng_http_client_set_tls(cli, tls.tls);
+                enforce(rc==0, "client set tls");
+            }
+        }
+
+
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
         a.uri = cast(char*)uri.dup.toStringz();
@@ -2373,7 +2471,8 @@ struct WebClient {
     }
 
     // static async post
-    static NNGAio post_async ( string uri, const ubyte[] data, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ) {
+    static NNGAio post_async ( string uri, const ubyte[] data, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null, void *ptls = null ) 
+    {
         int rc;
         nng_aio *aio;
         nng_http_client *cli;
@@ -2390,6 +2489,16 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
+        
+        version(withtls) {
+            if(ptls) {
+                NNGTLS *tls = cast(NNGTLS*) ptls;
+                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                rc = nng_http_client_set_tls(cli, tls.tls);
+                enforce(rc==0, "client set tls");
+            }
+        }
+
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
         a.uri = cast(char*)uri.dup.toStringz();
@@ -2424,7 +2533,8 @@ struct WebClient {
         webclienthandler onsuccess,
         webclienthandler onerror,
         Duration timeout = 30000.msecs, 
-        void *context = null ) 
+        void *context = null,
+        void *ptls = null ) 
     {
         int rc;
         nng_aio *aio;
@@ -2442,6 +2552,16 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
+        
+        version(withtls) {
+            if(ptls) {
+                NNGTLS *tls = cast(NNGTLS*) ptls;
+                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                rc = nng_http_client_set_tls(cli, tls.tls);
+                enforce(rc==0, "client set tls");
+            }
+        }
+
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
         a.uri = cast(char*)uri.dup.toStringz();
