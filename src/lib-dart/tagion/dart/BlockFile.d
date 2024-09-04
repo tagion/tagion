@@ -663,6 +663,11 @@ class BlockFile {
 
     }
 
+    void remove_disposed_and_added() {
+        block_chains.clear;
+        recycler.clear_to_be_recycled();
+    }
+
     struct BlockSegmentRange {
         BlockFile owner;
 

@@ -32,7 +32,7 @@ struct EventView {
     @label("$R") int round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
     @label("$i") @optional @(filter.Initialized) bool intermediate;
-//    @label("$seen") @optional Buffer seen; /// Event seeing witness  
+    //    @label("$seen") @optional Buffer seen; /// Event seeing witness  
     @label("$strong") @optional Buffer strongly_seen; /// Witness seen strongly in previous round
     @label("$intermediate") @optional Buffer intermediate_seen;
     @label("$W") @optional Buffer witness_seen;
@@ -69,8 +69,8 @@ struct EventView {
             collector=event.collector;
 
             intermediate=event._intermediate_event;
-            witness_seen=event._witness_seen_mask.bytes;   
-            intermediate_seen=event._intermediate_seen_mask.bytes;
+            witness_seen=event.witness_seen_mask.bytes;   
+            intermediate_seen=event.intermediate_seen_mask.bytes;
             if (event.isWitness) {
                auto witness=event.witness;
                strongly_seen=witness.previous_strongly_seen_mask.bytes;
