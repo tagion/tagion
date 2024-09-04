@@ -154,22 +154,11 @@ struct NNGMessage {
         return nng_msg_header(msg);
     }
 
-    @property size_t length() @safe const nothrow {
-        return nng_msg_len(msg);
-    }
-
-    @property void length(size_t sz) @safe {
-        auto rc = nng_msg_realloc(msg, sz);
-        enforce(rc == 0);
-    }
-
-    @property size_t header_length() @safe const nothrow {
-        return nng_msg_header_len(msg);
-    }
-
-    void clear() {
-        nng_msg_clear(msg);
-    }
+    @property size_t length() @safe const nothrow { return nng_msg_len(msg); }
+    @property void length( size_t sz ) @safe { auto rc = nng_msg_realloc(msg, sz); enforce(rc == 0); }
+    @property size_t header_length() @safe const nothrow { return nng_msg_header_len(msg); }
+    
+    void clear() { nng_msg_clear(msg); }
 
     int body_append(T)(const(T) data) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
@@ -685,10 +674,9 @@ struct NNGSocket {
             }
             m_state = nng_socket_state.NNG_STATE_PREPARED;
             return 0;
+        }else{
+            return -1;
         }
-<<<<<<< HEAD
-        else {
-=======
     }        
     
     version(withtls) {
@@ -717,39 +705,21 @@ struct NNGSocket {
             m_state = nng_socket_state.NNG_STATE_CONNECTED;
             return 0;
         } else { 
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
             return -1;
         }
     }
 
-    int listener_start(const bool nonblock = false) @safe {
-        m_errno = cast(nng_errno) 0;
-        if (m_state == nng_socket_state.NNG_STATE_PREPARED) {
-            auto rc = nng_listener_start(m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
-            if (rc != 0) {
-                m_errno = cast(nng_errno) rc;
+    int listen ( const(string) url, const bool nonblock = false ) nothrow {
+        m_errno = cast(nng_errno)0;
+        if(m_state == nng_socket_state.NNG_STATE_CREATED) {
+            auto rc = nng_listen(m_socket, toStringz(url), &m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
+            if( rc != 0) {
+                m_errno = cast(nng_errno)rc;
                 return rc;
             }
             m_state = nng_socket_state.NNG_STATE_CONNECTED;
             return 0;
-        }
-        else {
-            return -1;
-        }
-    }
-
-    int listen(const(string) url, const bool nonblock = false) nothrow {
-        m_errno = cast(nng_errno) 0;
-        if (m_state == nng_socket_state.NNG_STATE_CREATED) {
-            auto rc = nng_listen(m_socket, toStringz(url), &m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
-            if (rc != 0) {
-                m_errno = cast(nng_errno) rc;
-                return rc;
-            }
-            m_state = nng_socket_state.NNG_STATE_CONNECTED;
-            return 0;
-        }
-        else {
+        }else{
             return -1;
         }
     }
@@ -805,10 +775,9 @@ struct NNGSocket {
             }
             m_state = nng_socket_state.NNG_STATE_PREPARED;
             return 0;
+        }else{
+            return -1;
         }
-<<<<<<< HEAD
-        else {
-=======
     }        
     
     version(withtls) {
@@ -837,33 +806,16 @@ struct NNGSocket {
             m_state = nng_socket_state.NNG_STATE_CONNECTED;
             return 0;
         } else { 
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
             return -1;
         }
     }
 
-    int dialer_start(const bool nonblock = false) @safe nothrow {
-        m_errno = cast(nng_errno) 0;
-        if (m_state == nng_socket_state.NNG_STATE_PREPARED) {
-            auto rc = nng_dialer_start(m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
-            if (rc != 0) {
-                m_errno = cast(nng_errno) rc;
-                return rc;
-            }
-            m_state = nng_socket_state.NNG_STATE_CONNECTED;
-            return 0;
-        }
-        else {
-            return -1;
-        }
-    }
-
-    int dial(const(string) url, const bool nonblock = false) @trusted nothrow {
+    int dial ( const(string) url, const bool nonblock = false ) @trusted nothrow {
         m_errno = nng_errno.NNG_OK;
-        if (m_state == nng_socket_state.NNG_STATE_CREATED) {
-            int rc = nng_dial(m_socket, toStringz(url), &m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
-            if (rc != 0) {
-                m_errno = cast(nng_errno) rc;
+        if(m_state == nng_socket_state.NNG_STATE_CREATED) {
+            int rc = nng_dial(m_socket, toStringz(url), &m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
+            if( rc != 0) {
+                m_errno = cast(nng_errno)rc;
                 return rc;
             }
             m_state = nng_socket_state.NNG_STATE_CONNECTED;
@@ -1039,117 +991,64 @@ struct NNGSocket {
     } // nogc nothrow pure
 
     nothrow {
-        @safe @property int proto() {
-            return getopt_int(NNG_OPT_PROTO);
-        }
+        @safe @property int proto() { return getopt_int(NNG_OPT_PROTO); }
+        @property string protoname() { return getopt_string(NNG_OPT_PROTONAME); }
+        
+        @safe @property int peer() { return getopt_int(NNG_OPT_PEER); }
+        @property string peername() { return getopt_string(NNG_OPT_PEERNAME); } 
+        
+        @safe @property int recvbuf() { return getopt_int(NNG_OPT_RECVBUF); }
+        @safe @property void recvbuf(int val) { setopt_int(NNG_OPT_RECVBUF, val); }
 
-        @property string protoname() {
-            return getopt_string(NNG_OPT_PROTONAME);
-        }
+        @safe @property int sendbuf() { return getopt_int(NNG_OPT_SENDBUF); } 
+        @safe @property void sendbuf(int val) { setopt_int(NNG_OPT_SENDBUF, val); }
 
-        @safe @property int peer() {
-            return getopt_int(NNG_OPT_PEER);
-        }
+        @safe @property int recvfd() { return (m_may_recv) ? getopt_int(NNG_OPT_RECVFD) : -1; } 
+        @safe @property int sendfd() { return (m_may_send) ? getopt_int(NNG_OPT_SENDFD) : -1; } 
 
-        @property string peername() {
-            return getopt_string(NNG_OPT_PEERNAME);
-        }
+        @safe @property Duration recvtimeout() { return getopt_duration(NNG_OPT_RECVTIMEO); } 
+        @safe @property void recvtimeout(Duration val) { setopt_duration(NNG_OPT_RECVTIMEO, val); }
 
-        @safe @property int recvbuf() {
-            return getopt_int(NNG_OPT_RECVBUF);
-        }
+        @safe @property Duration sendtimeout() { return getopt_duration(NNG_OPT_SENDTIMEO); } 
+        @safe @property void sendtimeout(Duration val) { setopt_duration(NNG_OPT_SENDTIMEO, val); }
 
-        @safe @property void recvbuf(int val) {
-            setopt_int(NNG_OPT_RECVBUF, val);
-        }
-
-        @safe @property int sendbuf() {
-            return getopt_int(NNG_OPT_SENDBUF);
-        }
-
-        @safe @property void sendbuf(int val) {
-            setopt_int(NNG_OPT_SENDBUF, val);
-        }
-
-        @safe @property int recvfd() {
-            return (m_may_recv) ? getopt_int(NNG_OPT_RECVFD) : -1;
-        }
-
-        @safe @property int sendfd() {
-            return (m_may_send) ? getopt_int(NNG_OPT_SENDFD) : -1;
-        }
-
-        @safe @property Duration recvtimeout() {
-            return getopt_duration(NNG_OPT_RECVTIMEO);
-        }
-
-        @safe @property void recvtimeout(Duration val) {
-            setopt_duration(NNG_OPT_RECVTIMEO, val);
-        }
-
-        @safe @property Duration sendtimeout() {
-            return getopt_duration(NNG_OPT_SENDTIMEO);
-        }
-
-        @safe @property void sendtimeout(Duration val) {
-            setopt_duration(NNG_OPT_SENDTIMEO, val);
-        }
-
-        @property nng_sockaddr locaddr() {
+        @property nng_sockaddr locaddr() { 
             return (m_may_send)
-                ? getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_DIALER) : getopt_addr(NNG_OPT_LOCADDR, nng_property_base
-                        .NNG_BASE_LISTENER);
-        }
-
-        @property nng_sockaddr remaddr() {
+                ? getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_DIALER) 
+                : getopt_addr(NNG_OPT_LOCADDR, nng_property_base.NNG_BASE_LISTENER); 
+        } 
+        @property nng_sockaddr remaddr() { 
             return (m_may_send)
-                ? getopt_addr(NNG_OPT_REMADDR, nng_property_base.NNG_BASE_DIALER) : nng_sockaddr(nng_sockaddr_family
-                        .NNG_AF_NONE);
-        }
+                ? getopt_addr(NNG_OPT_REMADDR, nng_property_base.NNG_BASE_DIALER)
+                : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE);
+        } 
     } // @safe nothrow
-
-    @property string url() {
-        if (m_may_send)
-            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_DIALER);
-        else if (m_may_recv)
-            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_LISTENER);
-        else
-            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_SOCKET);
+    
+    @property string url() { 
+        if(m_may_send)
+            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_DIALER); 
+        else if(m_may_recv)    
+            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_LISTENER); 
+        else            
+            return getopt_string(NNG_OPT_URL, nng_property_base.NNG_BASE_SOCKET); 
     }
 
-    @property int maxttl() {
-        return getopt_int(NNG_OPT_MAXTTL);
-    }
+    @property int maxttl() { return getopt_int(NNG_OPT_MAXTTL); } 
     /// MAXTTL a value between 0 and 255, inclusive. Where 0 is infinite
     @property void maxttl(uint val)
     in (val <= 255, "MAXTTL, hops cannot be greater than 255")
-    do {
+    do { 
         setopt_int(NNG_OPT_MAXTTL, val);
     }
+    
+    @property int recvmaxsz() { return getopt_int(NNG_OPT_RECVMAXSZ); } 
+    @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ, val); } 
 
-    @property int recvmaxsz() {
-        return getopt_int(NNG_OPT_RECVMAXSZ);
-    }
+    @property Duration reconnmint() { return getopt_duration(NNG_OPT_RECONNMINT); } 
+    @property void reconnmint(Duration val) { setopt_duration(NNG_OPT_RECONNMINT, val); }
 
-    @property void recvmaxsz(int val) {
-        return setopt_int(NNG_OPT_RECVMAXSZ, val);
-    }
-
-    @property Duration reconnmint() {
-        return getopt_duration(NNG_OPT_RECONNMINT);
-    }
-
-    @property void reconnmint(Duration val) {
-        setopt_duration(NNG_OPT_RECONNMINT, val);
-    }
-
-    @property Duration reconnmaxt() {
-        return getopt_duration(NNG_OPT_RECONNMAXT);
-    }
-
-    @property void reconnmaxt(Duration val) {
-        setopt_duration(NNG_OPT_RECONNMAXT, val);
-    }
+    @property Duration reconnmaxt() { return getopt_duration(NNG_OPT_RECONNMAXT); } 
+    @property void reconnmaxt(Duration val) { setopt_duration(NNG_OPT_RECONNMAXT, val); }
 
     // TODO: NNG_OPT_IPC_*, NNG_OPT_TLS_*, NNG_OPT_WS_*  
 private:
@@ -1638,23 +1537,15 @@ string nng_find_mime_type(string fname, const string[string] custom_map = null) 
     return default_mime;
 }
 
-version (withtls) {
 
+version(withtls) {
+    
     alias nng_tls_mode = libnng.nng_tls_mode;
     alias nng_tls_auth_mode = libnng.nng_tls_auth_mode;
     alias nng_tls_version = libnng.nng_tls_version;
 
     struct NNGTLS {
         nng_tls_config* tls;
-<<<<<<< HEAD
-
-        @disable this();
-
-        this(ref return scope WebTLS rhs) {
-        }
-
-        this(nng_tls_mode imode) {
-=======
         nng_tls_mode _mode;
         
         @disable this();
@@ -1662,7 +1553,6 @@ version (withtls) {
         this(ref return scope NNGTLS rhs) {}
         
         this( nng_tls_mode imode  ) {
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
             int rc;
             _mode = imode;
             rc = nng_tls_config_alloc(&tls, imode);
@@ -1674,15 +1564,6 @@ version (withtls) {
             nng_tls_config_free(tls);
         }
 
-<<<<<<< HEAD
-        void set_server_name(string iname) {
-            auto rc = nng_tls_config_server_name(tls, iname.toStringz());
-            enforce(rc == 0);
-        }
-
-        void set_ca_chain(string pem, string crl = "") {
-            auto rc = nng_tls_config_ca_chain(tls, pem.toStringz(), crl.toStringz());
-=======
         void set_server_name ( string iname ) {
             enforce(_mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
             auto rc = nng_tls_config_server_name(tls, toStringz(iname));
@@ -1691,7 +1572,6 @@ version (withtls) {
         
         void set_ca_chain ( string pem, string crl = "" ) {
             auto rc = nng_tls_config_ca_chain(tls, toStringz(pem), crl == "" ? null : toStringz(crl));
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
             enforce(rc == 0);
         }
         
@@ -1700,15 +1580,6 @@ version (withtls) {
             set_ca_chain ( ca, crl );
         }    
 
-<<<<<<< HEAD
-        void set_own_cert(string pem, string key, string pwd = "") {
-            auto rc = nng_tls_config_own_cert(tls, pem.toStringz(), key.toStringz(), pwd.toStringz());
-            enforce(rc == 0);
-        }
-
-        // TODO: check why this two excluded from the lib
-        /*
-=======
         void set_own_cert ( string pem, string key, string pwd = "" ) {
             auto rc = nng_tls_config_own_cert(tls, pem.toStringz(), toStringz(key), pwd == "" ? null : toStringz(pwd));
             enforce(rc == 0);
@@ -1722,7 +1593,6 @@ version (withtls) {
     
     // TODO: check why this two excluded from the lib
     /*
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         void set_pass ( string ipass ) {
             auto rc = nng_tls_config_pass(tls, ipass.toStringz());
             enforce(rc == 0);
@@ -1734,21 +1604,6 @@ version (withtls) {
         }
     */
 
-<<<<<<< HEAD
-        void set_auth_mode(nng_tls_auth_mode imode) {
-            auto rc = nng_tls_config_auth_mode(tls, imode);
-            enforce(rc == 0);
-        }
-
-        void set_ca_file(string ica) {
-            auto rc = nng_tls_config_ca_file(tls, ica.toStringz());
-            enforce(rc == 0);
-        }
-
-        void set_cert_key_file(string ipem, string ikey) {
-            auto rc = nng_tls_config_cert_key_file(tls, ipem.toStringz(), ikey.toStringz());
-            writeln("TDEBUG: ", nng_errstr(rc));
-=======
         void set_ca_file ( string icafile ) {
             auto rc = nng_tls_config_ca_file(tls, toStringz(icafile));
             enforce(rc == 0);
@@ -1756,7 +1611,6 @@ version (withtls) {
 
         void set_cert_key_file ( string ipemkeyfile, string ipass ) {
             auto rc = nng_tls_config_cert_key_file(tls, toStringz(ipemkeyfile), toStringz(ipass));   // pemkey file should contain both cert and key delimited with \r\n
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
             enforce(rc == 0);
         }
         
@@ -1765,7 +1619,7 @@ version (withtls) {
             enforce(rc == 0);
         }        
 
-        void set_version(nng_tls_version iminversion, nng_tls_version imaxversion) {
+        void set_version( nng_tls_version iminversion, nng_tls_version imaxversion ) {
             auto rc = nng_tls_config_version(tls, iminversion, imaxversion);
             enforce(rc == 0);
         }
@@ -2290,16 +2144,10 @@ struct WebApp {
         }
         init();
     }
-<<<<<<< HEAD
-
-    version (withtls) {
-        void set_tls(WebTLS tls) {
-=======
     
     version(withtls) {
         void set_tls ( NNGTLS* tls ) {
             enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_SERVER);
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
             auto rc = nng_http_server_set_tls(server, tls.tls);
             enforce(rc == 0, "server set tls");
         }
@@ -2554,11 +2402,7 @@ struct WebClient {
     }
 
     // static sync get
-<<<<<<< HEAD
-    static WebData get(string uri, string[string] headers, Duration timeout = 30000.msecs) {
-=======
     static WebData get ( string uri, string[string] headers, Duration timeout = 30000.msecs, void* ptls = null ) { 
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         int rc;
         nng_http_client* cli;
         nng_url* url;
@@ -2576,11 +2420,6 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
-<<<<<<< HEAD
-        nng_aio_set_timeout(aio, cast(nng_duration) timeout.total!"msecs");
-
-        scope (exit) {
-=======
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
     
         version(withtls) {
@@ -2593,7 +2432,6 @@ struct WebClient {
         }
         
         scope(exit) {
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
             nng_http_client_free(cli);
             nng_url_free(url);
             nng_aio_free(aio);
@@ -2621,12 +2459,8 @@ struct WebClient {
     }
 
     // static sync post
-<<<<<<< HEAD
-    static WebData post(string uri, const ubyte[] data, const string[string] headers, Duration timeout = 30000.msecs) {
-=======
     static WebData post ( string uri, const ubyte[] data, const string[string] headers, Duration timeout = 30000.msecs, void *ptls = null ) 
     {
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         int rc;
         nng_http_client* cli;
         nng_url* url;
@@ -2644,10 +2478,6 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
-<<<<<<< HEAD
-        nng_aio_set_timeout(aio, cast(nng_duration) timeout.total!"msecs");
-        scope (exit) {
-=======
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         
         version(withtls) {
@@ -2660,7 +2490,6 @@ struct WebClient {
         }
 
         scope(exit) {
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
             nng_http_client_free(cli);
             nng_url_free(url);
             nng_aio_free(aio);
@@ -2690,13 +2519,8 @@ struct WebClient {
     }
 
     // static async get
-<<<<<<< HEAD
-    static NNGAio get_async(string uri, const string[string] headers, const webclienthandler handler, Duration timeout = 30000
-        .msecs, void* context = null) {
-=======
     static NNGAio get_async ( string uri, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null, void *ptls = null ) 
     {
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         int rc;
         nng_aio* aio;
         nng_http_client* cli;
@@ -2713,11 +2537,6 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
-<<<<<<< HEAD
-        nng_aio_set_timeout(aio, cast(nng_duration) timeout.total!"msecs");
-        WebClientAsync* a = new WebClientAsync();
-        a.uri = cast(char*) uri.dup.toStringz();
-=======
         
         version(withtls) {
             if(ptls) {
@@ -2732,7 +2551,6 @@ struct WebClient {
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
         a.uri = cast(char*)uri.dup.toStringz();
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         a.commonhandler = handler;
         a.context = context;
         a.req = req;
@@ -2751,13 +2569,8 @@ struct WebClient {
     }
 
     // static async post
-<<<<<<< HEAD
-    static NNGAio post_async(string uri, const ubyte[] data, const string[string] headers, const webclienthandler handler, Duration timeout = 30000
-        .msecs, void* context = null) {
-=======
     static NNGAio post_async ( string uri, const ubyte[] data, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null, void *ptls = null ) 
     {
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         int rc;
         nng_aio* aio;
         nng_http_client* cli;
@@ -2774,11 +2587,6 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
-<<<<<<< HEAD
-        nng_aio_set_timeout(aio, cast(nng_duration) timeout.total!"msecs");
-        WebClientAsync* a = new WebClientAsync();
-        a.uri = cast(char*) uri.dup.toStringz();
-=======
         
         version(withtls) {
             if(ptls) {
@@ -2792,7 +2600,6 @@ struct WebClient {
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
         a.uri = cast(char*)uri.dup.toStringz();
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         a.commonhandler = handler;
         a.context = context;
         a.req = req;
@@ -2815,18 +2622,6 @@ struct WebClient {
     // common static method for any request methods and error handler ( inspired by ajax )
     // if text is not null data is ignored
     // for methods except POST, PUT, PATCH both text and data are ignored
-<<<<<<< HEAD
-    static NNGAio request(
-            string method,
-            string uri,
-            string[string] headers,
-            string text,
-            ubyte[] data,
-            webclienthandler onsuccess,
-            webclienthandler onerror,
-            Duration timeout = 30000.msecs,
-            void* context = null) {
-=======
     static NNGAio request ( 
         string method,
         string uri, 
@@ -2839,7 +2634,6 @@ struct WebClient {
         void *context = null,
         void *ptls = null ) 
     {
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         int rc;
         nng_aio* aio;
         nng_http_client* cli;
@@ -2856,11 +2650,6 @@ struct WebClient {
         enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
         enforce(rc == 0);
-<<<<<<< HEAD
-        nng_aio_set_timeout(aio, cast(nng_duration) timeout.total!"msecs");
-        WebClientAsync* a = new WebClientAsync();
-        a.uri = cast(char*) uri.dup.toStringz();
-=======
         
         version(withtls) {
             if(ptls) {
@@ -2874,7 +2663,6 @@ struct WebClient {
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         WebClientAsync *a = new WebClientAsync();
         a.uri = cast(char*)uri.dup.toStringz();
->>>>>>> 4f6e669251ab5a797cc7b50eb770362275aaefbc
         a.commonhandler = onsuccess;
         a.errorhandler = onerror;
         a.context = context;
@@ -3200,21 +2988,21 @@ private:
     nng_ws_onmessage onmessage;
     WebSocket*[] conns;
 
-    void accb(void* ptr) {
-        int rv;
-        WebSocket* c;
-        nng_mtx_lock(mtx);
-        rv = nng_aio_result(accio);
-        if (rv != 0) {
+        void accb ( void* ptr ){
+            int rv;
+            WebSocket *c;
+            nng_mtx_lock(mtx);
+            rv = nng_aio_result(accio);    
+            if(rv != 0){
+                nng_stream_listener_accept(sl, accio);
+                return;
+            }
+            s = cast(nng_stream*)nng_aio_get_output(accio, 0);
+            enforce(s != null, "Invalid stream pointer");
+            c = new WebSocket(cast(WebSocketApp*)self(), s, onconnect, onclose, onerror, onmessage, context, bufsize, keeptm, conntm);
+            enforce(c != null, "Invalid conn pointer");
+            conns ~= c;
             nng_stream_listener_accept(sl, accio);
-            return;
+            nng_mtx_unlock(mtx);
         }
-        s = cast(nng_stream*) nng_aio_get_output(accio, 0);
-        enforce(s != null, "Invalid stream pointer");
-        c = new WebSocket(cast(WebSocketApp*) self(), s, onconnect, onclose, onerror, onmessage, context, bufsize, keeptm, conntm);
-        enforce(c != null, "Invalid conn pointer");
-        conns ~= c;
-        nng_stream_listener_accept(sl, accio);
-        nng_mtx_unlock(mtx);
-    }
 }
