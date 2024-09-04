@@ -1871,9 +1871,12 @@ unittest {
 
             saved_archives.bitsSet.each!(
                 n => recorder_B.add(net.fake_doc(random_table[n])));
+            const current_eye = dart_B.fingerprint;
             const future_eye = dart_B.futureEye(recorder_B);
+            assert(future_eye != current_eye, "The bullseye was updated incorrectly");
             assert(future_eye == dart_A.fingerprint, "Bullseyes were not the same");
             dart_B.modify(recorder_B);
+            assert(future_eye == dart_B.fingerprint);
             // dart_B.dump;
             assert(dart_A.fingerprint == dart_B.fingerprint);
         })();
