@@ -24,6 +24,7 @@ private import libnng;
 
 import std.stdio;
 
+pragma(msg, "fixme(cbr): This would result in a segment fault if the length=0");
 @safe
 T* ptr(T)(T[] arr, size_t off = 0) pure nothrow {
     return arr.length == 0 ? null : &arr[off];
@@ -101,6 +102,7 @@ enum nng_property_base {
 }
 
 struct NNGMessage {
+    pragma(msg, "fixme(cbr): If there is a getter and setter msg why is msg the piblic");
     nng_msg* msg;
 
     @disable this();
@@ -203,6 +205,7 @@ struct NNGMessage {
     int body_prepend(T)(const(T) data) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
+            pragma(msg, "fixme(cbr): Do this instead nng_msg_inster(msg, &data[0], data.length) (Because this is safe code)");
             auto rc = nng_msg_insert(msg, ptr(data), data.length);
             enforce(rc == 0);
             return 0;
@@ -210,6 +213,7 @@ struct NNGMessage {
         else {
             static if (T.sizeof == 1) {
                 T tmp = data;
+                pragma(msg, "fixme(cbr): Type cast is not need becast &tmp is implicite a void*");
                 auto rc = nng_msg_insert(msg, cast(void*)&tmp, 1);
                 enforce(rc == 0);
             }
@@ -230,11 +234,15 @@ struct NNGMessage {
     }
 
     T body_chop(T)(size_t size = 0) if (isArray!T || isUnsigned!T) {
+        pragma(msg, "fixme(cbr): If (msg is null) the return T.init; or throw an error");
+        pragma(msg, "fixme(cbr): Use the raw function nng_msg_body");
+        pragma(msg, "fixme(cbr): How is the boundray check it msg (Size > buffer size) we get an address out of boundray");
         static if (isArray!T) {
             if (size == 0)
                 size = length;
             if (size == 0)
                 return [];
+            pragma(msg, "fixme(cbr): You can also just do auto data=cast(T*)(bodyptr[length-size..length])"); 
             T data = cast(T)(bodyptr + (length - size))[0 .. size];
             auto rc = nng_msg_chop(msg, size);
             enforce(rc == 0);
@@ -428,6 +436,7 @@ struct NNGMessage {
 alias nng_aio_cb = void function(void*);
 
 struct NNGAio {
+    pragma(msg, "fixme(cbr): Proberly aio should be private or protected rename to _aio");
     nng_aio* aio;
 
     @disable this();
@@ -453,12 +462,15 @@ struct NNGAio {
     }
 
     // ---------- pointer prop
+    pragma(msg, "fixme(cbr): aio is public so this.aio is the same (if we want a getter and setter for aio we should rename pointer to aio");
+    pragma(msg, "fixme(cbr): Proberly this function should be a const?");
 
     @nogc @safe
     @property nng_aio* pointer() {
         return aio;
     }
 
+    pragma(msg,"Do we want this function if we need it it should Proberly have a package protection");
     @nogc
     @property void pointer(nng_aio* p) {
         if (p !is null) {
@@ -1285,6 +1297,8 @@ private:
 
 @safe
 struct NNGURL {
+    pragma(msg, "fixme(cbr): Suggestion: all this could be lazy we don't need I don't think we need allocate all the strings in the constructor");
+    pragma(msg, "fixme(cbr): Example string rawurl() return cast(string)(_nng_url.rawurl[0..strlen(_nng_url.rawurl)]);");
     string rawurl;
     string scheme;
     string userinfo;
@@ -1320,6 +1334,8 @@ struct NNGURL {
     }
 
     ~this() {
+        pragma(msg, "fixme(cbr): _nng_url is allocate the ctor so we don't need check if it's not null");
+        pragma(msg, "fixme(cbr): Make sure we don't have a special malloc for _nng_url because we use new operator to allocate");
         if (_nng_url !is null) {
             nng_url_free(_nng_url);
         }
@@ -1583,6 +1599,7 @@ version (withtls) {
     alias nng_tls_version = libnng.nng_tls_version;
 
     struct WebTLS {
+        pragma(msg, "fixme(cbr): Should this be private?");
         nng_tls_config* tls;
 
         @disable this();
@@ -1668,6 +1685,7 @@ version (withtls) {
 }
 
 struct WebAppConfig {
+    pragma(msg, "fixme(cbr): All variables in D is initialized by default  x == "" is not needed");
     string root_path = "";
     string static_path = "";
     string static_url = "";
@@ -1679,6 +1697,7 @@ struct WebAppConfig {
         ".hibon": "application/hibon",
         ".js": "text/javascript"
     ];
+    pragma(msg, "fixme(cbr): Why do we have a ctor which in used?");
     this(ref return scope WebAppConfig rhs) {
     }
 }
@@ -1700,6 +1719,7 @@ struct WebData {
     string msg = null;
 
     void clear() {
+        pragma(msg, "fixme(cbr): Just a note all arrays can be set to null (route=null; parh=null) this is safe");
         route = "";
         rawuri = "";
         uri = "";
@@ -1786,6 +1806,7 @@ struct WebData {
         type = to!string(nng_http_res_get_header(res, toStringz("Content-type")));
         ubyte* buf;
         size_t len;
+        pragma(msg, "fixme(cbr): How allocates  buf? Maybe it should be free in a exit scope");
         nng_http_res_get_data(res, cast(void**)(&buf), &len);
         if (len > 0) {
             rawdata ~= buf[0 .. len];
@@ -1794,7 +1815,9 @@ struct WebData {
             json = parseJSON(cast(string)(rawdata[0 .. len]));
         }
         else if (type.startsWith("text")) {
-            text = cast(string)(rawdata[0 .. len]);
+            pragma(msg, "fixme(cbr): The length of rawdata is already known so you just write rawdata"); 
+            pragma(msg, "fixme(cbr): Why is rawdata a member it could just be declared local (it's seems it only used inside the function)");
+             text = cast(string)(rawdata[0 .. len]);
         }
         length = len;
         auto hlength = to!long(to!string(nng_http_res_get_header(res, toStringz("Content-length"))));
@@ -1835,9 +1858,11 @@ struct WebData {
     }
 
     nng_http_res* export_res() {
+        pragma(msg, "fixme(cbr): It's not recommend to make stack allocation in D like this. Just write char[512] buf;");
         char* buf = cast(char*) alloca(512);
         nng_http_res* res;
         int rc;
+        pragma(msg, "fixme(cbr): Who will deallocate res, because the it is returned");
         rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
         rc = nng_http_res_set_status(res, cast(ushort) status);
@@ -1885,6 +1910,7 @@ struct WebData {
 
 alias webhandler = void function(WebData*, WebData*, void*);
 
+pragma(msg, "fixme(cbr): Should we use NNGAio instead of the raw aio NNGAio should handle the resource in the NNGAio scope (because who dealocate the aio)");
 //----------------
 void webrouter(nng_aio* aio) {
 
@@ -1901,6 +1927,7 @@ void webrouter(nng_aio* aio) {
     WebApp* app;
 
     char* sbuf = cast(char*) nng_alloc(4096);
+    pragma(msg, "fixme(cbr): It is recommend to make an scope(exit) { nng_free(sbuf); } because then it guaranteed to be freed when the function exits (and remove the other free)");
 
     string[string] headers;
     string errstr = "";
@@ -1970,6 +1997,7 @@ failure:
     nng_aio_finish(aio, rc);
 } // router handler
 
+pragma(msg, "fixme(cbr): The same here NNGAio should wrapper the resource of aio");
 // ------------------------------------------
 void webstatichandler(nng_aio* aio) {
 
@@ -1978,6 +2006,7 @@ void webstatichandler(nng_aio* aio) {
     nng_http_req* req;
     nng_http_handler* h;
 
+    pragma(msg, "fixme(cbr): reqbody and reqbodylen not used");
     void* reqbody;
     size_t reqbodylen;
 
@@ -2322,6 +2351,7 @@ private:
 // for user defined result handlers
 alias webclienthandler = void function(WebData*, void*);
 
+pragma(msg, "fixme(cbr): Is this struct defined in nng.h because if not we don't need extern(C) Maybe we should just import it from c");
 // for async client router
 extern (C) struct WebClientAsync {
     char* uri;
@@ -2333,6 +2363,7 @@ extern (C) struct WebClientAsync {
     webclienthandler errorhandler;
 }
 
+pragma(msg, "fixme(cbr): Why is this a void* it's just WebClientAsync*");
 // common async client router
 static void webclientrouter(void* p) {
     if (p == null)
@@ -2733,6 +2764,7 @@ struct WebSocket {
         nng_stream_recv(s, rxaio);
     }
 
+    pragma(msg, "fixme(cbr): Why do we have this function this use &this"); 
     void* self() {
         return cast(void*)&this;
     }
@@ -2759,6 +2791,7 @@ struct WebSocket {
         }
     }
 
+    pragma(msg, "fixme(cbr): ptr is not used");
     void nng_ws_keepcb(void* ptr) {
         if (closed) {
             join();
@@ -2767,6 +2800,7 @@ struct WebSocket {
             nng_sleep_aio(keeptm, keepaio);
     }
 
+    pragma(msg, "fixme(cbr): ptr is not used");
     void nng_ws_conncb(void* ptr) {
         int rc;
         if (closed)
@@ -2784,6 +2818,7 @@ struct WebSocket {
         }
     }
 
+    pragma(msg, "fixme(cbr): ptr is not used");
     void nng_ws_rxcb(void* ptr) {
         int rc;
         if (closed)
@@ -2806,7 +2841,7 @@ struct WebSocket {
         enforce(rc == 0, "Invalid rx iov1");
         nng_stream_recv(s, rxaio);
     }
-
+    pragma(msg, "fixme(cbr): ptr is not used");
     void nng_ws_txcb(void* ptr) {
         int rc;
         if (closed)
