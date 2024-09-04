@@ -29,7 +29,7 @@ HF		= -fintfc-file=
 DF		= -fdoc-file=
 NO_OBJ	= -fsyntax-only
 DDOC_MACRO= -fdoc-inc=
-else ifeq ($(COMPILER),ldc2)
+else ifeq ($(COMPILER),ldc)
 DOPT	= -O3
 LINKERFLAG= -L
 OUTPUT	= -of
