@@ -36,8 +36,9 @@ jobs:
       - name: Build tagion
         run: |
           export DC=${{ env.DC }}
+          export RELEASE=1
           $DC --version
-          make tagion release || make proper tagion release
+          make tagion || make proper tagion
 
       - name: Post run
         if: always()
@@ -187,6 +188,7 @@ jobs:
           export TEST_STAGE=commit
           export TESTBENCH_FLAGS=--silent 
           export UNSHARE_NET=1
+          export RELEASE=1
           make bddtest -j || make proper bddtest
 
       - name: Report commit stage tests
