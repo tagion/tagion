@@ -417,7 +417,7 @@ class Event {
                     ._witness_seen_mask;
                 if (!new_witness_seen[].empty) {
                     _intermediate_event = true;
-                    _intermediate_seen_mask[_father.node_id] = true;
+                    //_intermediate_seen_mask[_father.node_id] = true;
                     _intermediate_seen_mask[node_id] = true;
                     auto max_round = maxRound;
                     new_witness_seen[]
