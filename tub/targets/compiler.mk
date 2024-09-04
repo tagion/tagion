@@ -29,6 +29,14 @@ HF		= -fintfc-file=
 DF		= -fdoc-file=
 NO_OBJ	= -fsyntax-only
 DDOC_MACRO= -fdoc-inc=
+else ifeq ($(COMPILER),ldc2)
+DOPT	= -O3
+LINKERFLAG= -L
+OUTPUT	= -of
+HF		= -Hf
+DF		= -Df
+DD		= -Dd
+DDOC_MACRO=
 else
 DOPT	= -O
 LINKERFLAG= -L
@@ -127,6 +135,10 @@ INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep
 DDEBUG_FLAGS+=$(DDEBUG)
 DDEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
 DDEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
+
+ifdef RELEASE
+DFLAGS+=$(RELEASE_DFLAGS)
+endif
 
 ifdef DEBUG_ENABLE
 DFLAGS+=$(DDEBUG_FLAGS)

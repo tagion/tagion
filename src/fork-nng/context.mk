@@ -18,7 +18,7 @@ else
 LD_NNG+=$(LIBNNG)
 endif
 
-ifndef DEBUG_DISABLE
+ifdef DEBUG_ENABLE
 NNGFLAGS+=-DCMAKE_BUILD_TYPE=Debug
 endif
 
