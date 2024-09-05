@@ -82,7 +82,7 @@ class Round {
     private Event[] _events;
     protected bool _decided;
     private void decide() pure nothrow @nogc
-    in (!_decided)
+    in (!_decided, "A round should only be decided once")
     do {
         _decided = true;
     }
@@ -526,10 +526,10 @@ class Round {
         void check_decide_round() {
             import tagion.utils.Term;
 
-            auto _round_to_be_decided = last_decided_round._next;
-            scope (exit) {
-                round_to_be_decided = _round_to_be_decided;
+            if (round_to_be_decided) {
+                return;
             }
+            auto _round_to_be_decided = last_decided_round._next;
             if (!_round_to_be_decided) {
                 return;
             }
@@ -551,8 +551,13 @@ class Round {
             );
             Event.view(witness_in_round.map!(w => w.outer));
             log("Round %04d decided", _round_to_be_decided.number);
-            last_decided_round = _round_to_be_decided;
-            _round_to_be_decided.decide;
+            version (none) {
+                last_decided_round = _round_to_be_decided;
+                _round_to_be_decided.decide;
+                hashgraph.statistics.future_majority_rounds(count_majority_rounds(_round_to_be_decided));
+                log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
+                        hashgraph.statistics.future_majority_rounds);
+            }
             string show(const Event e) {
                 if (e) {
                     return format("%s%d%s", (_round_to_be_decided._valid_witness[e.node_id]) ? GREEN : YELLOW, e
@@ -561,6 +566,7 @@ class Round {
                 return format("%sX %s", RED, RESET);
             }
 
+            round_to_be_decided = _round_to_be_decided;
             if (!isMajority(_round_to_be_decided._valid_witness.count,
                     hashgraph.node_size)) {
                 __write("%12s %sRound %04d%s Not collected", hashgraph.name, RED, _round_to_be_decided.number, RESET);
@@ -575,20 +581,23 @@ class Round {
                         _round_to_be_decided._valid_witness,
                         _round_to_be_decided._valid_witness.count,
                 );
+                return;
             }
-            //collect_received_round(round_to_be_decided);
+            //collect_received_round(_round_to_be_decided);
         }
 
         void decide_round() {
-            return;
-            if (round_to_be_decided) {
+            //  return;
+            //version(none) {
+            if (round_to_be_decided && !round_to_be_decided.decided) {
                 last_decided_round = round_to_be_decided;
                 round_to_be_decided.decide;
-            hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
-            log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
-                    hashgraph.statistics.future_majority_rounds);
+                hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
+                log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
+                        hashgraph.statistics.future_majority_rounds);
                 collect_received_round(round_to_be_decided);
-                //round_to_be_decided=null;
+                round_to_be_decided = null;
+                //}
             }
         }
 
