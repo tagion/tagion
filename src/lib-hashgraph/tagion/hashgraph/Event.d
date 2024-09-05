@@ -236,8 +236,8 @@ class Event {
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
-        private this() nothrow 
-        in(!_witness, "A witness can only be created once for an event")
+        private this() nothrow
+        in (!_witness, "A witness can only be created once for an event")
         do {
             _count++;
             _witness = this;
@@ -275,19 +275,7 @@ class Event {
                 foreach (previous_witness_event; previous_witness_events
                         .filter!(e => e !is null)
                         .filter!(e => previous_strongly_seen_mask[e.node_id])) {
-                    const r=_round.previous;
                     previous_witness_event._witness.voteYes(node_id);
-                    if (r.number == 690) {
-                        __write("%12s Round %04d %d -> %d | %#s ->-> %#s  e=%(%d%) id=%d connect %d" .replace("#", hashgraph.node_size.to!string),
-                        hashgraph.name,
-                        r.number,
-                        node_id, previous_witness_event.node_id,
-                        previous_strongly_seen_mask,
-                        previous_witness_event._witness.voted_yes_mask,
-                        previous_witness_events.map!(e => (e !is null)),
-                        id, previous_witness_event.id
-            );
-                    }
                     view(previous_witness_event);
                 }
             }
@@ -431,7 +419,10 @@ class Event {
             if (strongly_seen) {
                 new Witness;
                 _witness.vote(hashgraph);
-                hashgraph._rounds.check_decide_round;
+                 hashgraph._rounds.check_decide_round;
+                //if (decided) {
+                hashgraph._rounds.decide_round;
+                //}
                 return;
             }
         }
