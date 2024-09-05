@@ -43,6 +43,7 @@ int main(string[] args) {
     import wallet_test = tagion.testbench.testtools.wallet_test;
     import epoch_shutdown = tagion.testbench.services.epoch_shutdown;
     import node_interface = tagion.testbench.services.node_interface;
+    import remote_sample = tagion.testbench.e2e.remote_sample;
 
     alias alltools = AliasSeq!(
         collector,
@@ -84,6 +85,7 @@ int main(string[] args) {
         wallet_test,
         epoch_shutdown,
         node_interface,
+        remote_sample,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

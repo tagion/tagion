@@ -6,6 +6,7 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
 import std.range;
+import std.getopt;
 
 import tagion.testbench.e2e.network;
 import tagion.communication.HiRPC;
@@ -14,6 +15,24 @@ import tagion.script.TagionCurrency;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions;
 import tagion.wallet.request;
+import tagion.tools.Basic : Main, __verbose_switch;
+
+
+mixin Main!(_main);
+
+int _main(string[] args) {
+    auto main_args = getopt(args,
+            "verbose", "print verbose", &__verbose_switch,
+    );
+
+    auto feature = automation!(mixin(__MODULE__));
+    NetworkOptions options;
+    options.parseFromEnv();
+    feature.WeMakeASimpleTransactionOnARemoteNetwork(options);
+    feature.run;
+
+    return 0;
+}
 
 enum feature = Feature(
             "remote network test",
@@ -80,7 +99,6 @@ class WeMakeASimpleTransactionOnARemoteNetwork {
 
     @When("i send a transaction from wallet 1 to wallet 2")
     Document wallet2() {
-
         const bill = wallet_2.secure_wallet.requestBill(700.TGN);
         SignedContract s_contract;
         TagionCurrency fees;
