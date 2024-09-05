@@ -530,7 +530,7 @@ class Round {
             scope (exit) {
                 round_to_be_decided = _round_to_be_decided;
             }
-            if (!round_to_be_decided) {
+            if (!_round_to_be_decided) {
                 return;
             }
             const new_completed = _round_to_be_decided.completed(hashgraph);
@@ -553,9 +553,6 @@ class Round {
             log("Round %04d decided", _round_to_be_decided.number);
             last_decided_round = _round_to_be_decided;
             _round_to_be_decided.decide;
-            hashgraph.statistics.future_majority_rounds(count_majority_rounds(_round_to_be_decided));
-            log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
-                    hashgraph.statistics.future_majority_rounds);
             string show(const Event e) {
                 if (e) {
                     return format("%s%d%s", (_round_to_be_decided._valid_witness[e.node_id]) ? GREEN : YELLOW, e
@@ -578,20 +575,21 @@ class Round {
                         _round_to_be_decided._valid_witness,
                         _round_to_be_decided._valid_witness.count,
                 );
-                // return true;
             }
-            collect_received_round(round_to_be_decided);
+            //collect_received_round(round_to_be_decided);
         }
 
         void decide_round() {
             return;
-            if (round_to_be_decided && isMajority(round_to_be_decided._valid_witness.count,
-                    hashgraph.node_size)) {
+            if (round_to_be_decided) {
+                last_decided_round = round_to_be_decided;
+                round_to_be_decided.decide;
+            hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
+            log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
+                    hashgraph.statistics.future_majority_rounds);
                 collect_received_round(round_to_be_decided);
                 //round_to_be_decided=null;
             }
-            last_decided_round = round_to_be_decided;
-            round_to_be_decided.decide;
         }
 
         protected void collect_received_round(Round r)
