@@ -2469,15 +2469,15 @@ struct WebClient {
         nng_aio* aio;
         WebData wd = WebData();
         rc = nng_url_parse(&url, uri.toStringz());
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_client_alloc(&cli, url);
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_req_alloc(&req, url);
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         
         version(withtls) {
