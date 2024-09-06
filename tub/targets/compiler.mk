@@ -22,28 +22,28 @@ endif
 
 # Define flags for gdc other
 ifeq ($(COMPILER),gdc)
-DOPT	= -O2
+DOPT    = -O2
 LINKERFLAG= -Xlinker
-OUTPUT	= -o
-HF		= -fintfc-file=
-DF		= -fdoc-file=
+OUTPUT  = -o
+HF      = -fintfc-file=
+DF      = -fdoc-file=
 NO_OBJ	= -fsyntax-only
 DDOC_MACRO= -fdoc-inc=
 else ifeq ($(COMPILER),ldc)
-DOPT	= -O3
+DOPT    = -O3
 LINKERFLAG= -L
-OUTPUT	= -of
-HF		= -Hf
-DF		= -Df
-DD		= -Dd
+OUTPUT  = -of
+HF      = -Hf
+DF      = -Df
+DD      = -Dd
 DDOC_MACRO=
 else
-DOPT	= -O
-LINKERFLAG= -L
-OUTPUT	= -of
-HF		= -Hf
-DF		= -Df
-DD		= -Dd
+DOPT    = -O
+LINKERFLAG=-L
+OUTPUT  = -of
+HF      = -Hf
+DF      = -Df
+DD      = -Dd
 DDOC_MACRO=
 endif
 

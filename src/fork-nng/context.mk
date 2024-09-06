@@ -11,11 +11,13 @@ ifdef USE_SYSTEM_LIBS
 # We'll keep this here in case they make one in the future
 # LD_NNG+=${shell pkg-config --libs nng}
 LD_NNG+=-lnng
-ifdef NNG_ENABLE_TLS
-LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
-endif
 else
 LD_NNG+=$(LIBNNG)
+endif
+
+ifdef NNG_ENABLE_TLS
+LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
+DVERSIONS+=withtls
 endif
 
 ifdef DEBUG_ENABLE
