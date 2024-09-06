@@ -18,10 +18,16 @@ endif
 ifdef NNG_ENABLE_TLS
 LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
 DVERSIONS+=withtls
+NNG_CMAKE_FLAGS+=-DNNG_ENABLE_TLS=ON
+ifdef MBEDTLS_ROOT_DIR
+NNG_CMAKE_FLAGS+=-DMBEDTLS_ROOT_DIR=${MBEDTLS_ROOT_DIR}
+endif
 endif
 
 ifdef DEBUG_ENABLE
-NNGFLAGS+=-DCMAKE_BUILD_TYPE=Debug
+NNG_CMAKE_FLAGS+=-DCMAKE_BUILD_TYPE=Debug
+else
+NNG_CMAKE_FLAGS+=-DCMAKE_BUILD_TYPE=Release
 endif
 
 # Used to check if the submodule has been updated
