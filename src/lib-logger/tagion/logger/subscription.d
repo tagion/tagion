@@ -12,8 +12,6 @@ import tagion.hibon.Document;
 import tagion.logger.LogRecords;
 import tagion.utils.Result;
 
-import nngd;
-
 /// The package which is published over the subscription socket
 @recordType("sub_payload")
 struct SubscriptionPayload {
@@ -44,8 +42,9 @@ unittest {
     const sender = HiRPC(null).action("sub", sub);
     const received_doc = sender.toDoc;
     const received_data = received_doc["$msg"]["params"]["data"].get!MyRecord;
-
 }
+
+import nngd;
 
 struct SubscriptionHandle {
     string address;

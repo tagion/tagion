@@ -99,6 +99,10 @@ struct Recycler {
         RecycleSegment*[] segments; /// The other way to sort. Sorted by segment size therefore allowing overlaps.
         RecycleSegment*[] to_be_recycled; /// RecycleSegments that are disposed and need to be added to the recycler.
     }
+    void clear_to_be_recycled() {
+        to_be_recycled = null;
+    }
+
     @disable this();
     this(BlockFile owner) pure nothrow
     in (owner !is null)

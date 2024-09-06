@@ -14,7 +14,7 @@ ifdef VERBOSE_COMPILER_ERRORS
 DFLAGS+=$(VERRORS)
 endif
 
-DFLAGS+=-J$(DTUB)/logos/
+DIMPORTFILES+=$(DTUB)/logos/
 
 ifdef SPLIT_LINKER
 # dmd already sets this when it invokes the linker
@@ -29,6 +29,7 @@ $(addprefix -I,$(DINC))\
 $(addprefix -L,$(LDFLAGS))\
 $(addprefix $(DVERSION)=,$(DVERSIONS))\
 $(addprefix $(DDEBUG)=,$(DDEBUG_VERSIONS))\
+$(addprefix $(DIMPORTFILE)=,$(DIMPORTFILES))\
 $(LIBS) $(OBJS)
 endef
 

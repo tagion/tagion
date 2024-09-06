@@ -505,7 +505,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
     if (req.type != mime_type.BINARY) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "invalid data type";
+        rep.text = "invalid data type";
         return;
     }
     
@@ -519,7 +519,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     immutable receiver = hirpc.receive(doc);
     if (!receiver.isMethod) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "HIRPC: Invalid request method";
+        rep.text = "HIRPC: Invalid request method";
         return;
     }
 
@@ -587,19 +587,19 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                         writeit("hirpc_handler: ", full_method, " query: ", nng_errstr(rc));
                         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
                     }
-                    rep.msg = "socket error";
+                    rep.text = "socket error";
                     return;
                 }
                 if (docbuf.empty) {
                     rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                    rep.msg = "No response";
+                    rep.text = "No response";
                     return;
                 }
                 const repdoc = Document(docbuf);
                 immutable repreceiver = hirpc.receive(repdoc);
                 if (!repreceiver.isResponse){
                     rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-                    rep.msg = "Invalid response";
+                    rep.text = "Invalid response";
                     return;
                 }
                 const recorder_doc = repreceiver.message[Keywords.result].get!Document;
@@ -634,6 +634,76 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             // Not Sure if this is needed. Submit should be a faster request, since it doesn't retrieve any data from the system.
             recvtimeout = opt.sock_recvtimeout * 6;
             break;
+        case "faucet":
+            WalletOptions options;
+            auto wallet_config_file = opt.default_i2p_wallet;
+            if (wallet_config_file.exists) {
+                options.load(wallet_config_file);
+            }
+            else {
+                writeit("i2p: invalid wallet config: " ~ opt.default_i2p_wallet);
+                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                rep.text = "invalid wallet config";
+                return;
+            }
+            auto wallet_interface = WalletInterface(options);
+
+            if (!wallet_interface.load) {
+                writeit("i2p: Wallet does not exist");
+                rep.status = nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                rep.text = "wallet does not exist";
+                return;
+            }
+            const flag = wallet_interface.secure_wallet.login(opt.default_i2p_wallet_pin);
+            if (!flag) {
+                writeit("i2p: Wallet wrong pincode");
+                rep.status = nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                rep.text = "Faucet invalid pin code";
+                return;
+            }
+
+            if (!wallet_interface.secure_wallet.isLoggedin) {
+                writeit("i2p: invalid wallet login");
+                rep.status = nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                rep.text = "invalid wallet login";
+                return;
+            }
+
+            TagionBill[] to_pay = receiver.params[StdNames.values].get!(TagionBill[]);
+
+            SignedContract signed_contract;
+            TagionCurrency fees;
+            const payment_status = wallet_interface.secure_wallet.createPayment(to_pay, signed_contract, fees);
+            if (!payment_status.value) {
+                writeit("i2p: faucet is empty");
+                rep.status = nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                rep.text = format("faucet createPayment error: %s", payment_status.msg);
+                return;
+            }
+
+            const message = wallet_interface.secure_wallet.net.calcHash(signed_contract);
+            const contract_net = wallet_interface.secure_wallet.net.derive(message);
+            const wallet_hirpc = HiRPC(contract_net);
+            const hirpc_submit = wallet_hirpc.submit(signed_contract);
+            wallet_interface.secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
+
+            auto i2p_contract_receiver = sendKernelHiRPC(options.contract_address, hirpc_submit, wallet_hirpc);
+            wallet_interface.save(false);
+
+            //dfmt off
+            const wallet_update_switch = WalletInterface.Switch(
+                update : true,
+                sendkernel: true
+            );
+            //dfmt on
+
+            wallet_interface.operate(wallet_update_switch, []);
+
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = mime_type.BINARY;
+            rep.rawdata = cast(ubyte[])(i2p_contract_receiver.toDoc.serialize);
+            return;
+
         default:
             sockaddr = opt.node_dart_addr;
             break;
@@ -655,12 +725,12 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             writeit("hirpc_handler: query: ", nng_errstr(rc));
             rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         }    
-        rep.msg = "socket error";
+        rep.text = "socket error";
         return;
     }
     if (docbuf.empty) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
-        rep.msg = "No response";
+        rep.text = "No response";
         return;
     }
     doclen = docbuf.length;
@@ -697,7 +767,7 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     size_t len = s.receivebuf(buf, buf.length);
     if (len == size_t.max && s.errno != 0) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "socket error";
+        rep.text = "socket error";
         return;
     }
 
@@ -705,7 +775,7 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
     if (!receiver.isResponse) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "response error";
+        rep.text = "response error";
         return;
     }
 
@@ -726,12 +796,13 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 }
 
 
+// Deprecated should use faucet request in hirpc handler
 const i2p_handler = handler_helper!i2p_handler_impl;
 void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     int rc;
     if (req.type != mime_type.BINARY) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "invalid data type";
+        rep.text = "invalid data type";
         return;
     }
 
@@ -747,7 +818,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     else {
         writeit("i2p: invalid wallet config: " ~ opt.default_i2p_wallet);
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "invalid wallet config";
+        rep.text = "invalid wallet config";
         return;
     }
     auto wallet_interface = WalletInterface(options);
@@ -755,52 +826,62 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     if (!wallet_interface.load) {
         writeit("i2p: Wallet does not exist");
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "wallet does not exist";
+        rep.text = "wallet does not exist";
         return;
     }
     const flag = wallet_interface.secure_wallet.login(opt.default_i2p_wallet_pin);
     if (!flag) {
         writeit("i2p: Wallet wrong pincode");
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "Faucet invalid pin code";
+        rep.text = "Faucet invalid pin code";
         return;
     }
 
     if (!wallet_interface.secure_wallet.isLoggedin) {
         writeit("i2p: invalid wallet login");
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "invalid wallet login";
+        rep.text = "invalid wallet login";
         return;
     }
 
     writeit("Before creating of invoices");
 
-    Document[] requests_to_pay;
-    requests_to_pay ~= Document(cast(immutable(ubyte[])) req.rawdata);
+    Document doc = Document(cast(immutable(ubyte[])) req.rawdata);
     TagionBill[] to_pay;
     import tagion.hibon.HiBONRecord;
 
-    foreach (doc; requests_to_pay) {
-        if (doc.valid != Document.Element.ErrorCode.NONE) {
-            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "invalid document: ";
-            writeln("i2p: invalid document");
-            return;
-        }
-        if (doc.isRecord!TagionBill) {
-            to_pay ~= TagionBill(doc);
-        }
-        else if (doc.isRecord!Invoice) {
-            import tagion.utils.StdTime : currentTime;
+    if (doc.isInorder) {
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+        rep.text = "invalid document: ";
+        writeln("i2p: invalid document");
+        return;
+    }
+    if (doc.isRecord!(HiRPC.Sender)) {
+        const receiver = HiRPC(null).receive(doc);
 
-            auto read_invoice = Invoice(doc);
-            to_pay ~= TagionBill(read_invoice.amount, currentTime, read_invoice.pkey, Buffer.init);
-        }
-        else {
+        if(!(receiver.method.name == "faucet")) {
+            rep.text = "Invalid method name";
             rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-            rep.msg = "invalid faucet request";
             return;
         }
+
+        to_pay = receiver.params[StdNames.values].get!(TagionBill[]);
+    }
+    // Deprecated: i2p faucet request should only be a proper hirpc call.
+    // Will Need to coordinate with app team
+    else if (doc.isRecord!TagionBill) {
+        to_pay ~= TagionBill(doc);
+    }
+    else if (doc.isRecord!Invoice) {
+        import tagion.utils.StdTime : currentTime;
+
+        auto read_invoice = Invoice(doc);
+        to_pay ~= TagionBill(read_invoice.amount, currentTime, read_invoice.pkey, Buffer.init);
+    }
+    else {
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+        rep.text = "invalid faucet request";
+        return;
     }
 
     writeit(to_pay[0].toPretty);
@@ -811,7 +892,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     if (!payment_status.value) {
         writeit("i2p: faucet is empty");
         rep.status = nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
-        rep.msg = format("faucet createPayment error: %s", payment_status.msg);
+        rep.text = format("faucet createPayment error: %s", payment_status.msg);
         return;
     }
 
@@ -866,27 +947,27 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     else {
         writeit("selftest: invalid I2P wallet config: " ~ opt.default_i2p_wallet);
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "invalid wallet config";
+        rep.text = "invalid wallet config";
         return;
     }
     auto wallet_interface = WalletInterface(options);
     if (!wallet_interface.load) {
         writeit("selftest: Wallet does not exist");
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "wallet does not exist";
+        rep.text = "wallet does not exist";
         return;
     }
     const flag = wallet_interface.secure_wallet.login(opt.default_i2p_wallet_pin);
     if (!flag) {
         writeit("selftest: Wallet wrong pincode");
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "Faucet invalid pin code";
+        rep.text = "Faucet invalid pin code";
         return;
     }
     if (!wallet_interface.secure_wallet.isLoggedin) {
         writeit("selftest: invalid wallet login");
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-        rep.msg = "invalid wallet login";
+        rep.text = "invalid wallet login";
         return;
     }
 
@@ -906,7 +987,6 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ "/json", null);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
-                rep.msg = hrep.msg;
                 rep.text = hrep.text;
                 break;
             }
@@ -930,7 +1010,6 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                     ["Content-type": mime_type.BINARY]);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
-                rep.msg = hrep.msg;
                 rep.text = hrep.text;
                 break;
             }
@@ -952,7 +1031,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
         rep.type = mime_type.HTML;
         rep.text = "<h2>The requested test couldn`t be processed</h2>\n\r<pre>\n\r" ~ to!string(
-                reqpath) ~ "\r\n" ~ rep.msg ~ "\r\n" ~ rep.text ~ "\n\r</pre>\n\r";
+                reqpath) ~ "\r\n" ~ rep.text ~ "\r\n" ~ rep.text ~ "\n\r</pre>\n\r";
     }
 }
 
@@ -980,7 +1059,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             size_t len = s.receivebuf(buf, buf.length);
             if (len == size_t.max && s.errno != 0) {
                 rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                rep.msg = "socket error";
+                rep.text = "socket error";
                 return;
             }
             const receiver = HiRPC(null).receive(Document(buf.idup[0..len]));
@@ -995,7 +1074,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             size_t len = s.receivebuf(buf, buf.length);
             if (len == size_t.max && s.errno != 0) {
                 rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
-                rep.msg = "socket error";
+                rep.text = "socket error";
                 return;
             }
             const receiver = HiRPC(null).receive(Document(buf.idup[0..len]));

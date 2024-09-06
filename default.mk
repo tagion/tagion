@@ -29,9 +29,6 @@ DVERSIONS+=REDBLACKTREE_SAFE_PROBLEM
 # By copying the securenet each time an operation is done
 DVERSIONS+=NET_HACK
 
-# Sets the inputvalidators NNG socket to be blocking
-DVERSIONS+=BLOCKING
-
 # Fix a randomly occurring RangeError on hashgraph startup
 # By filtering out empty events
 DVERSIONS+=EPOCH_FIX
