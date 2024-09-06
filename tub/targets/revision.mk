@@ -8,6 +8,9 @@ $(REVISION_FILE): $(DBUILD)/.way
 	echo 'branch: $(GIT_BRANCH)' >> $@
 	echo 'hash: $(GIT_HASH)' >> $@
 	echo 'revno: $(GIT_REVNO)' >> $@
+	echo 'DVERSIONS: $(DVERSIONS)' >> $@
+	echo 'DEBUG_VERSIONS: $(DDEBUG_VERSIONS)' >> $@
+	echo 'DFLAGS: $(DFLAGS)' >> $@
 	echo 'builder_name: $(GIT_USER)' >> $@
 	echo 'builder_email: $(GIT_EMAIL)' >> $@
 	echo 'build_date:  $(BUILD_DATE)' >> $@

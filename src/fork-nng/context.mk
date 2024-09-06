@@ -11,15 +11,23 @@ ifdef USE_SYSTEM_LIBS
 # We'll keep this here in case they make one in the future
 # LD_NNG+=${shell pkg-config --libs nng}
 LD_NNG+=-lnng
-ifdef NNG_ENABLE_TLS
-LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
-endif
 else
 LD_NNG+=$(LIBNNG)
 endif
 
-ifndef DEBUG_DISABLE
-NNGFLAGS+=-DCMAKE_BUILD_TYPE=Debug
+ifdef NNG_ENABLE_TLS
+LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
+DVERSIONS+=withtls
+NNG_CMAKE_FLAGS+=-DNNG_ENABLE_TLS=ON
+ifdef MBEDTLS_ROOT_DIR
+NNG_CMAKE_FLAGS+=-DMBEDTLS_ROOT_DIR=${MBEDTLS_ROOT_DIR}
+endif
+endif
+
+ifdef DEBUG_ENABLE
+NNG_CMAKE_FLAGS+=-DCMAKE_BUILD_TYPE=Debug
+else
+NNG_CMAKE_FLAGS+=-DCMAKE_BUILD_TYPE=Release
 endif
 
 # Used to check if the submodule has been updated
