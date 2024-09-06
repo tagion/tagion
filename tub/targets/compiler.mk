@@ -22,20 +22,28 @@ endif
 
 # Define flags for gdc other
 ifeq ($(COMPILER),gdc)
-DOPT	= -O2
+DOPT    = -O2
 LINKERFLAG= -Xlinker
-OUTPUT	= -o
-HF		= -fintfc-file=
-DF		= -fdoc-file=
+OUTPUT  = -o
+HF      = -fintfc-file=
+DF      = -fdoc-file=
 NO_OBJ	= -fsyntax-only
 DDOC_MACRO= -fdoc-inc=
-else
-DOPT	= -O
+else ifeq ($(COMPILER),ldc)
+DOPT    = -O3
 LINKERFLAG= -L
-OUTPUT	= -of
-HF		= -Hf
-DF		= -Df
-DD		= -Dd
+OUTPUT  = -of
+HF      = -Hf
+DF      = -Df
+DD      = -Dd
+DDOC_MACRO=
+else
+DOPT    = -O
+LINKERFLAG=-L
+OUTPUT  = -of
+HF      = -Hf
+DF      = -Df
+DD      = -Dd
 DDOC_MACRO=
 endif
 
@@ -128,9 +136,15 @@ DDEBUG_FLAGS+=$(DDEBUG)
 DDEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
 DDEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
 
+ifdef RELEASE
+DFLAGS+=$(RELEASE_DFLAGS)
+endif
+
 ifdef DEBUG_ENABLE
 DFLAGS+=$(DDEBUG_FLAGS)
 LDFLAGS+=$(LD_EXPORT_DYN)
+else
+LDFLAGS+=$(LD_STRIP)
 endif
 
 ifdef WARNINGS

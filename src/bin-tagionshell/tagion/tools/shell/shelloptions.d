@@ -31,7 +31,7 @@ struct ShellOptions {
     string selftest_endpoint = "/selftest";
     string version_endpoint = "/version";
     string lookup_endpoint = "/lookup";
-    string default_i2p_wallet = "./wallets/wallet1.json";
+    string default_i2p_wallet = "./shell/wallet.json";
     string default_i2p_wallet_pin = "0001";
     string webroot="/tmp/webapp";
     string webstaticdir="static";
@@ -53,9 +53,7 @@ struct ShellOptions {
 
     void setDefault() nothrow {
         tagion_subscription_addr = contract_sock_addr("SUBSCRIPTION_");
-        version(TAGIONSHELL_WEB_SOCKET) {
-            ws_pub_uri = "ws://0.0.0.0:8080"~shell_api_prefix~"/subscribe";
-        }
+        ws_pub_uri = "ws://0.0.0.0:8080"~shell_api_prefix~"/subscribe";
     }
 
     /// Gives a new node address each time it is called

@@ -16,6 +16,7 @@ import std.range.primitives : isBidirectionalRange, isForwardRange, isInputRange
 import std.stdio;
 import std.traits;
 import std.typecons;
+import std.exception;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : isinit;
 import tagion.crypto.Types : Pubkey;
@@ -50,20 +51,20 @@ class Event {
     immutable uint id; /// Event id
     immutable(EventPackage*) event_package; /// Then exchanged event information
 
-    BitMask _witness_seen_mask; /// Witness seen in previous round
-    BitMask _intermediate_seen_mask;
     // This is the internal pointer to the connected Event's
     package Event _mother; /// Points to the self-parent
     package Event _father; /// Points to other-parent
     protected {
+        BitMask _witness_seen_mask; /// Witness seen in previous round from this event
+        BitMask _intermediate_seen_mask; /// Intermediate seen from this event
         Event _daughter; /// Points to the direct self-ancestor
         Event _son; /// Points to the direct other-ancestor
         int _order; /// Event order higher value means after
         Round _round_received; /// The round in which the event has been voted to be received
     }
     static Topic topic = Topic("hashgraph_event");
-    bool collector; /// Epoch collector node
-    bool _intermediate_event;
+    bool collector; /// Epoch collector event
+    bool _intermediate_event; /// Marks when an additional witness seen is connected
 
     @nogc
     static uint count() nothrow {
@@ -182,19 +183,14 @@ class Event {
         }
 
         private {
-            BitMask _intermediate_event_mask;
-            BitMask _previous_strongly_seen_mask;
+            BitMask _intermediate_voting_mask;
             BitMask _voted_yes_mask; /// Witness in the next round which has voted
 
         }
-        const BitMask previous_witness_seen_mask;
+        const BitMask previous_strongly_seen_mask;
         @nogc final const pure nothrow {
-            const(BitMask) previous_strongly_seen_mask() {
-                return _previous_strongly_seen_mask;
-            }
-
-            const(BitMask) intermediate_event_mask() {
-                return _intermediate_event_mask;
+            const(BitMask) intermediate_voting_mask() {
+                return _intermediate_voting_mask;
             }
 
             uint yes_votes() {
@@ -204,19 +200,21 @@ class Event {
             bool decided() {
                 const N = _round.node_size;
                 return isMajority(yes_votes, N) ||
-                !isMajority(yes_votes+N-voters, N) ||
-                isMajority(voters - yes_votes, N);
+                    !isMajority(yes_votes + N - voters, N) ||
+                    isMajority(voters - yes_votes, N);
             }
 
             uint voters() {
                 if (_round.next) {
-                return cast(uint)_round.next.events.filter!(e => e !is null).count; 
+                    return cast(uint) _round.next.events.filter!(e => e !is null).count;
                 }
                 return 0;
-    }   
+            }
+
             uint no_votes() {
                 return voters - yes_votes;
             }
+
             const(BitMask) voted_yes_mask() {
                 return _voted_yes_mask;
             }
@@ -233,7 +231,7 @@ class Event {
         }
 
         /**
-         * Contsruct a witness of an event
+         * Construct a witness of an event
          * Params:
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
@@ -242,20 +240,14 @@ class Event {
             _count++;
             _witness = this;
             if (father_witness_is_leading) {
-                _previous_strongly_seen_mask = _mother._intermediate_seen_mask |
-
+                previous_strongly_seen_mask = _mother._intermediate_seen_mask |
                     _father.round.events[_father.node_id].witness
                         .previous_strongly_seen_mask;
-
-                previous_witness_seen_mask = _witness_seen_mask |
-                    _father.round.events[_father.node_id].witness
-                        .previous_witness_seen_mask;
             }
             else {
-                _previous_strongly_seen_mask = _intermediate_seen_mask.dup;
-                previous_witness_seen_mask = _witness_seen_mask;
+                previous_strongly_seen_mask = _intermediate_seen_mask.dup;
             }
-            _intermediate_event_mask[node_id] = true;
+            _intermediate_voting_mask[node_id] = true;
 
             _intermediate_seen_mask.clear;
             _intermediate_event = false;
@@ -271,20 +263,18 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
         do {
             hashgraph._rounds.set_round(this.outer);
-            /// Counting yes/no votes from this witness to witness in the previous round
-            if (round.previous && (round.previous.events[node_id]!is null) && !round.previous.events[node_id].witness
-                .weak) {
-                auto previous_witness_events = _round.previous.events;
-                foreach (n, previous_witness_event; previous_witness_events) {
-                    if (previous_witness_event) {
-                        auto vote_for_witness = previous_witness_event._witness;
-                        const seen_strongly = _previous_strongly_seen_mask[n];
-                        //const seen_strongly = previous_witness_seen_mask[n];
-                        if (seen_strongly) {
-                            vote_for_witness.voteYes(node_id);
-                            view(previous_witness_event);
-                        }
-                    }
+            assert(_round.previous, "Round should have a previous round");
+            if (_father && _father.round.number == _round.number) {
+                _witness_seen_mask |= _father._witness_seen_mask;
+            }
+            auto previous_witness_events = _round.previous.events;
+            if ((previous_witness_events[node_id]!is null) &&
+                !previous_witness_events[node_id].witness.weak) {
+                foreach (previous_witness_event; previous_witness_events
+                        .filter!(e => e !is null)
+                        .filter!(e => previous_strongly_seen_mask[e.node_id])) {
+                    previous_witness_event._witness.voteYes(node_id);
+                    view(previous_witness_event);
                 }
             }
         }
@@ -313,7 +303,7 @@ class Event {
                 .events
                 .filter!(e => e !is null)
                 .map!(e => e._witness)
-                .map!(w => w._intermediate_event_mask[node_id])
+                .filter!(w => w._intermediate_voting_mask[node_id])
                 .count;
             return isMajority(vote_strongly_seen, hashgraph.node_size);
         }
@@ -328,9 +318,9 @@ class Event {
         }
     }
 
-    static void view(R)(R range) nothrow if (isInputRange!R && is(ElementType!R : const(Event))) {
+    static void view(R)(lazy R range) nothrow if (isInputRange!R && is(ElementType!R : const(Event))) {
         if (callbacks) {
-            range.each!(e => view(e));
+            assumeWontThrow(range.each!(e => view(e)));
         }
     }
 
@@ -392,9 +382,8 @@ class Event {
 
         _mother = hashgraph.register(event_package.event_body.mother);
         if (!_mother) {
-            if (!isEva &&  !hashgraph.rounds.isEventInLastDecidedRound(this)) {
-                check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
-            }
+            check(isEva || hashgraph.rounds.isEventInLastDecidedRound(this),
+                    ConsensusFailCode.EVENT_MOTHER_LESS);
             return;
         }
 
@@ -407,25 +396,22 @@ class Event {
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
-            BitMask new_witness_seen;
             if (_father._round.number == _mother._round.number) {
                 _witness_seen_mask |= _father._witness_seen_mask;
                 _intermediate_seen_mask |= _father._intermediate_seen_mask;
-                new_witness_seen = _father._witness_seen_mask - _mother
+                const new_witness_seen = _father._witness_seen_mask - _mother
                     ._witness_seen_mask;
-            }
-            else {
-                new_witness_seen = _witness_seen_mask;
-            }
-            if (!new_witness_seen[].empty) {
-                _intermediate_event = true;
-                _intermediate_seen_mask[node_id] = true;
-                auto max_round = maxRound;
-                new_witness_seen[]
-                    .filter!((n) => max_round.events[n]!is null)
-                    .map!((n) => max_round.events[n]._witness)
-                    .filter!((witness) => witness._intermediate_event_mask[node_id])
-                    .each!((witness) => witness._intermediate_event_mask[node_id] = true);
+                if (!new_witness_seen[].empty) {
+                    _intermediate_event = true;
+                    _intermediate_seen_mask[_father.node_id] = true;
+                    _intermediate_seen_mask[node_id] = true;
+                    auto max_round = maxRound;
+                    new_witness_seen[]
+                        .filter!((n) => max_round.events[n]!is null)
+                        .map!((n) => max_round.events[n]._witness)
+                        .filter!((witness) => !witness._intermediate_voting_mask[node_id])
+                        .each!((witness) => witness._intermediate_voting_mask[node_id] = true);
+                }
             }
             const strongly_seen = calc_strongly_seen(hashgraph);
             if (strongly_seen) {
@@ -507,6 +493,13 @@ class Event {
     }
 
     @nogc pure nothrow const final {
+        const(BitMask) witness_seen_mask() {
+            return _witness_seen_mask;
+        }
+
+        const(BitMask) intermediate_seen_mask() {
+            return _intermediate_seen_mask;
+        }
         /**
      * The received round for this event
      * Returns: received round

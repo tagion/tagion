@@ -14,5 +14,6 @@ unittest: proto-unittest-run
 build-unittest: proto-unittest-build
 
 LD_EXPORT_DYN?=-export-dynamic
+LD_STRIP:=-s
 
 endif

@@ -1,0 +1,44 @@
+diff --git a/nng/cmake/FindMbedTLS.cmake b/nng/cmake/FindMbedTLS.cmake
+index 2d3f05e2..032b8aa4 100644
+--- a/nng/cmake/FindMbedTLS.cmake
++++ b/nng/cmake/FindMbedTLS.cmake
+@@ -51,31 +51,34 @@ find_library(_MBEDCRYPTO_LIBRARY
+         NAMES mbedcrypto
+         HINTS ${_MBEDTLS_ROOT_HINTS}
+         # PATHS /usr/local
+-        # PATH_SUFFIXES lib
++        PATH_SUFFIXES lib
+         )
+ 
+ find_library(_MBEDX509_LIBRARY
+         NAMES mbedx509
+         HINTS ${_MBEDTLS_ROOT_HINTS}
+         #PATHS /usr/local
+-        # PATH_SUFFIXES lib
++        PATH_SUFFIXES lib
+         )
+ 
+ find_library(_MBEDTLS_LIBRARY
+         NAMES mbedtls
+         HINTS ${_MBEDTLS_ROOT_HINTS}
+         #PATHS /usr/local
+-        #PATH_SUFFIXES lib
++        PATH_SUFFIXES lib
+         )
+ 
+ if ("${_MBEDTLS_TLS_LIBRARY}" STREQUAL "_MBEDTLS_TLS_LIBRARY-NOTFOUND")
+     message("Failed to find Mbed TLS library")
+ else()
+-
+     cmake_push_check_state(RESET)
+     set(CMAKE_REQUIRED_INCLUDES ${_MBEDTLS_INCLUDE_DIR} ${CMAKE_REQUIRED_INCLUDES_${BUILD_TYPE}})
+     list(APPEND CMAKE_REQUIRED_LIBRARIES ${_MBEDTLS_LIBRARY} ${_MBEDX509_LIBRARY} ${_MBEDCRYPTO_LIBRARY})
+-    check_symbol_exists(mbedtls_ssl_init "mbedtls/ssl.h" _MBEDTLS_V2_OR_NEWER)
++    if(DEFINED FORCE_MBED_OK)
++        set(_MBEDTLS_V2_OR_NEWER 1)
++    else()    
++        check_symbol_exists(mbedtls_ssl_init "mbedtls/ssl.h" _MBEDTLS_V2_OR_NEWER)
++    endif()        
+     cmake_pop_check_state()
+ 
+     if (NOT _MBEDTLS_V2_OR_NEWER)

@@ -75,6 +75,7 @@ class Round {
         Round _previous;
         Round _next;
         BitMask _valid_witness;
+        BitMask _visit_node_mask; /// Mark if a node has been connected in this round
     }
     immutable int number;
 
@@ -96,6 +97,7 @@ class Round {
 
     final Buffer pattern() const pure nothrow {
         import tagion.utils.Miscellaneous;
+
         auto fingerprints = _valid_witness[]
             .map!(n => _events[n])
             .filter!(e => e !is null)
@@ -137,11 +139,11 @@ class Round {
             scope (exit) {
                 if (ret > Completed.undecided) {
                     __write(
-                            "%s Round %04d  witness=%#s| %(%#s %) ret=%s%s%s".replace(
+                            "%s Round %04d  witness=%#s | %(%#s %) ret=%s%s%s".replace(
                             "#", node_size.to!string),
                             _name, number,
                             _valid_witness,
-                            future_witness_masks.drop(1)
+                            future_witness_masks
                             .take(10),
                             (ret <= Completed.undecided) ? RED : GREEN, ret, RESET
                     );
@@ -160,9 +162,9 @@ class Round {
                             .filter!(e => e !is null)
                             .all!(e => e.witness.decided))
                     .map!(r => r.number - number)
-                    .any!(diff => diff > 2);
+                    .any!(diff => diff > 1);
 
-            __write("%s Round %04d     Dec   %(%2d %) => %(%d %)".replace("#", node_size
+            __write("%s Round %04d     Dec   %(%2d %) => %(%d %) ".replace("#", node_size
                     .to!string),
                     _name,
                     number,
@@ -175,8 +177,7 @@ class Round {
             if (_all) {
                 _valid_witness &= BitMask(_events
                         .filter!(e => (e !is null))
-                        .filter!(e => isMajority(e.witness.yes_votes, node_size))
-                        .filter!(e => !e.witness.weak)
+                        .filter!(e => isMajority(e.witness.yes_votes, node_size)) //.filter!(e => !e.witness.weak)
                         .map!(e => e.node_id));
                 __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
                         .to!string),
@@ -195,24 +196,16 @@ class Round {
                         _events.map!(e => (e is null) ? -1 : cast(int) e.witness.no_votes),
                         pattern
                 );
-                version (none)
-                    __write("%s Round %04d    gather %(%2d %) pattern=%(%02x %)".replace("#", node_size
-                            .to!string),
+                if (number == 690) {
+                    __write("%s Round %04d strong  %(%#s %)".replace("#", node_size.to!string),
                             _name,
                             number,
-                            gather_voters,
-                            pattern);
-                version (none)
-                    __write("%s Round %04d    seen   %-(%s %) %#s distance=%d".replace("#", node_size
-                            .to!string),
+                            _next._events.map!(e => (e !is null) ? e.witness.previous_strongly_seen_mask : BitMask.init));
+                    __write("%s Round %04d votes   %(%#s %)".replace("#", node_size.to!string),
                             _name,
                             number,
-                            _events.map!(e => (e is null) ? 0 : e.witness.seen_voting_mask.count)
-                            .map!(v => format("%s%2d%s", isMajority(v, node_size) ? GREEN : RED, v, RESET)),
-                            _valid_witness,
-                            cast(int)(r.number - number)
-
-                    );
+                            _events.map!(e => (e !is null) ? e.witness.voted_yes_mask : BitMask.init));
+                }
                 return ret = Completed.all_witness;
             }
             return ret = Completed.undecided;
@@ -301,10 +294,8 @@ class Round {
         assert(!_previous, "Round can not be scrapped due that a previous round still exists");
     }
     do {
-        uint count;
         void scrap_events(Event e) {
             if (e !is null) {
-                count++;
                 scrap_events(e._mother);
                 e.disconnect(hashgraph);
                 e.destroy;
@@ -371,14 +362,6 @@ class Round {
                     _events.length);
         }
 
-        version (none) uint decisions() {
-            return cast(uint) _events
-                .filter!(e => e !is null)
-                .map!(e => e.witness)
-                .filter!(w => w.decided)
-                .count;
-        }
-
         uint voters() {
             return cast(uint)(_events.filter!(e => e !is null).count);
         }
@@ -414,7 +397,6 @@ class Round {
         HashGraph hashgraph;
         Event[] last_witness_events;
 
-        //Round[] voting_round_per_node;
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
@@ -458,11 +440,13 @@ class Round {
                     e._round.add(e);
                     last_witness_events[e.node_id] = e;
                 }
+                if (e._father && e._father._round.number == e._round.number) {
+                    e._round._visit_node_mask[e._father.node_id] = true;
+                }
             }
             e._round = e.maxRound;
             if (e._witness && e._round._events[e.node_id]) {
                 if (e._round._next) {
-
                     e._round = e._round._next;
                     return;
                 }
@@ -611,17 +595,7 @@ class Round {
                 );
                 return;
             }
-            version (none)
-                scope (exit) {
-                    const sender = () => hashgraph.create_init_tide(
-                            round_to_be_decided.epochVote(round_to_be_decided.number).toDoc,
-                            currentTime);
-
-                    __write("sender=%J", sender());
-                    hashgraph.gossip_net.gossip(&hashgraph.not_used_channels, sender);
-                }
             collect_received_round(round_to_be_decided);
-            //            check_decide_round;
         }
 
         protected void collect_received_round(Round r)
