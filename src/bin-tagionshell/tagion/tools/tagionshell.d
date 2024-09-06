@@ -850,7 +850,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     TagionBill[] to_pay;
     import tagion.hibon.HiBONRecord;
 
-    if (doc.valid != Document.Element.ErrorCode.NONE) {
+    if (doc.isInorder) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.text = "invalid document: ";
         writeln("i2p: invalid document");
@@ -987,7 +987,6 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ "/json", null);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
-                rep.text = hrep.msg;
                 rep.text = hrep.text;
                 break;
             }
@@ -1011,7 +1010,6 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                     ["Content-type": mime_type.BINARY]);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
-                rep.text = hrep.msg;
                 rep.text = hrep.text;
                 break;
             }
