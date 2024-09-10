@@ -405,7 +405,6 @@ class Event {
                     ._witness_seen_mask;
                 if (!new_witness_seen[].empty) {
                     _intermediate_event = true;
-                    //_intermediate_seen_mask[_father.node_id] = true;
                     _intermediate_seen_mask[node_id] = true;
                     auto max_round = maxRound;
                     new_witness_seen[]
@@ -419,10 +418,8 @@ class Event {
             if (strongly_seen) {
                 new Witness;
                 _witness.vote(hashgraph);
-                 hashgraph._rounds.check_decide_round;
-                //if (decided) {
+                hashgraph._rounds.check_decide_round;
                 hashgraph._rounds.decide_round;
-                //}
                 return;
             }
         }
@@ -677,7 +674,7 @@ class Event {
 
     @nogc
     struct Range(bool CONST = true) {
-        private Event current;
+        protected Event current;
         static if (CONST) {
             this(const Event event) pure nothrow @trusted {
                 current = cast(Event) event;

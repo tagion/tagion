@@ -180,11 +180,11 @@ class HashGraph {
         }
     }
 
-    const(Round.Rounder) rounds() const pure nothrow @nogc {
+    final const(Round.Rounder) rounds() const pure nothrow @nogc {
         return _rounds;
     }
 
-    bool areWeInGraph() const pure nothrow @nogc {
+    final bool areWeInGraph() const pure nothrow @nogc {
         return _rounds.last_decided_round !is null;
     }
 
@@ -280,9 +280,9 @@ class HashGraph {
     }
 
     /++
-     @return true if the event package has been register correct
+    Returns: En event if the event package has been register correct
      +/
-    Event registerEventPackage(
+    private Event registerEventPackage(
             immutable(EventPackage*) event_pack)
     in (event_pack.fingerprint !in _event_cache,
         format("Event %(%02x%) has already been registered",
@@ -324,11 +324,6 @@ class HashGraph {
                 return event;
             }
             return null;
-        }
-
-        // function not used
-        final bool isCached(scope const(Buffer) fingerprint) const pure nothrow {
-            return (fingerprint in event_package_cache) !is null;
         }
 
         final Event register(const(Buffer) fingerprint) {
