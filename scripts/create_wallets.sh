@@ -21,7 +21,7 @@ network_mode=0
 data_dir="$(readlink -f ./)"
 keyfile="keys"
 
-ADDRESS_FORMAT=${ADDRESS_FORMAT:=tcp://[::1]:%PORT}
+ADDRESS_FORMAT=${ADDRESS_FORMAT:=tcp6://[::1]:%PORT}
 
 # Process command-line options
 while getopts "n:w:b:k:t:h:u:q:m:" opt
@@ -70,6 +70,36 @@ keyfile=$(realpath "$keyfile")
 # Variable to accumulate wallet information
 all_infos=""
 
+function create_wallet() {
+  wallet_dir=$1
+  wallet_config=$2
+  pincode=$3
+  password=$4
+  amount_of_bills=$5
+  amount_per_bill=$6
+
+  mkdir -p "$wallet_dir"
+
+  # Step 1: Create wallet directory and config file
+  "$bdir/geldbeutel" -O --path "$wallet_dir" "$wallet_config"
+
+  # Step 2: Generate wallet passphrase and pincode
+  "$bdir/geldbeutel" "$wallet_config" -P "$password" -x "$pincode"
+  echo "Created wallet $i in $wallet_dir with passphrase: $password and pincode: $pincode"
+
+
+  # Create bills for the wallet
+  echo "creating $amount_of_bills bills with value $amount_per_bill for $wallet_config"
+  for (( b=1; b <= amount_of_bills; b++ )); 
+  do
+    bill_name="$wallet_dir/bill_$b.hibon"
+    "$bdir/geldbeutel" "$wallet_config" -x "$pincode" --amount "$amount_per_bill" -o "$bill_name" > /dev/null
+    "$bdir/geldbeutel" "$wallet_config" -x "$pincode" --force "$bill_name" > /dev/null
+  done 
+}
+
+create_wallet "$wdir/shell/wallet/" "$wdir/shell/wallet.json" 0001 "shellpass01" 100 10000
+
 # Create wallets in a loop
 for ((i = 0; i < nodes; i++)); 
 do
@@ -80,12 +110,7 @@ do
   password="password$i"
   pincode=0000
 
-  # Step 1: Create wallet directory and config file
-  "$bdir/geldbeutel" -O --path "$wallet_dir" "$wallet_config"
-
-  # Step 2: Generate wallet passphrase and pincode
-  "$bdir/geldbeutel" "$wallet_config" -P "$password" -x "$pincode"
-  echo "Created wallet $i in $wallet_dir with passphrase: $password and pincode: $pincode"
+  create_wallet "$wallet_dir" "$wallet_config" "$pincode" "$password" 0 0
 
   # Step 3: Generate a node name and insert into all infos
   name="node_$i"
@@ -98,22 +123,12 @@ do
   elif [ $network_mode -eq 1 ]; then
       node=$i
       port=$((10700+i))
+      # Replace %NODE and %PORT in address string with node number and port
       address=${ADDRESS_FORMAT//\%NODE/$node}
       address=${address//\%PORT/$port}
   fi
 
   all_infos+=" -p $node_info,$address"
-
-  # Create bills for the wallet
-  for (( b=1; b <= bills; b++ )); 
-  do
-    bill_name="$wallet_dir/bill_$b.hibon"
-    "$bdir/geldbeutel" "$wallet_config" -x "$pincode" --amount 10000 -o "$bill_name"
-    echo "Created bill $bill_name"
-    echo "$bdir/geldbeutel $wallet_config -x $pincode --force $bill_name"
-    "$bdir/geldbeutel" "$wallet_config" -x "$pincode" --force "$bill_name"
-    echo "Forced bill into wallet $bill_name"
-  done 
 
 done
 
@@ -122,7 +137,7 @@ echo "$all_infos"
 
 # Concatenate and process all bill files
 echo "Create genesis dart_recorder"
-cat $wdir/node*/wallet/bill*.hibon | "${bdir}/stiefel" -a $all_infos -o "$wdir/dart_recorder.hibon"
+cat $wdir/shell/wallet/bill*.hibon $wdir/node*/wallet/bill*.hibon | "${bdir}/stiefel" -a $all_infos -o "$wdir/dart_recorder.hibon"
 
 echo "Create genesis trt_recorder"
 cat $wdir/node*/wallet/bill*.hibon | "${bdir}/stiefel" --trt -o "$wdir/trt_recorder.hibon"
@@ -185,9 +200,10 @@ else
                --option=inputvalidator.sock_addr:abstract://node$i/CONTRACT_NEUEWELLE \
                --option=dart_interface.sock_addr:abstract://node$i/DART_NEUEWELLE \
                --option=subscription.address:abstract://node$i/SUBSCRIPTION_NEUEWELLE \
-               --option=node_interface.node_address:"tcp://0.0.0.0:$((10700+i))" 2&> /dev/null
+               --option=node_interface.node_address:"tcp6://[::1]:$((10700+i))" 2&> /dev/null
         )
 
+        echo "cd $data_dir/ && tagionshell"
         echo "echo 0000 | $bdir/neuewelle $node_dir/tagionwave.json &"
 
     done
