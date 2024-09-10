@@ -375,7 +375,6 @@ class Round {
     struct Rounder {
         Round last_round;
         Round last_decided_round;
-        Round round_to_be_decided;
         HashGraph hashgraph;
         Event[] last_witness_events;
 
@@ -526,67 +525,59 @@ class Round {
         void check_decide_round() {
             import tagion.utils.Term;
 
-            if (round_to_be_decided) {
+            auto round_to_be_decided = last_decided_round._next;
+            if (!round_to_be_decided) {
                 return;
             }
-            auto _round_to_be_decided = last_decided_round._next;
-            if (!_round_to_be_decided) {
-                return;
-            }
-            const new_completed = _round_to_be_decided.completed(hashgraph);
+            auto witness_in_round = round_to_be_decided._events
+                .filter!(e => e !is null)
+                .map!(e => e.witness);
+            const _name = hashgraph.name;          
+            const new_completed = round_to_be_decided.completed(hashgraph);
+            
             if (!new_completed) {
                 return;
             }
-            auto witness_in_round = _round_to_be_decided._events
-                .filter!(e => e !is null)
-                .map!(e => e.witness);
-            const _name = hashgraph.name;
             __write(
                     "%s %s%sRound %04d%s can be decided  witness=%d",
                     _name,
                     BOLD, GREEN,
-                    _round_to_be_decided.number,
+                    round_to_be_decided.number,
                     RESET,
                     witness_in_round.walkLength
             );
             Event.view(witness_in_round.map!(w => w.outer));
-            log("Round %04d decided", _round_to_be_decided.number);
+            log("Round %04d decided", round_to_be_decided.number);
+            last_decided_round = round_to_be_decided;
+            round_to_be_decided.decide;
+            hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
+            log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
+                    hashgraph.statistics.future_majority_rounds);
             string show(const Event e) {
                 if (e) {
-                    return format("%s%d%s", (_round_to_be_decided._valid_witness[e.node_id]) ? GREEN : YELLOW, e
+                    return format("%s%d%s", (round_to_be_decided._valid_witness[e.node_id]) ? GREEN : YELLOW, e
                         .order, RESET);
                 }
                 return format("%sX %s", RED, RESET);
             }
 
-            round_to_be_decided = _round_to_be_decided;
-            if (!isMajority(_round_to_be_decided._valid_witness.count,
+            if (!isMajority(round_to_be_decided._valid_witness.count,
                     hashgraph.node_size)) {
-                __write("%12s %sRound %04d%s Not collected", hashgraph.name, RED, _round_to_be_decided.number, RESET);
+                __write("%12s %sRound %04d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
 
                 __write("%s %sRound %04d%s epoch %-(%s %) collected=0  votes=%#s yes=%d  "
-                        .replace("#", _round_to_be_decided.node_size.to!string),
+                        .replace("#", round_to_be_decided.node_size.to!string),
                         _name,
                         RED,
-                        _round_to_be_decided.number,
+                        round_to_be_decided.number,
                         RESET,
-                        _round_to_be_decided._events.map!(e => show(e)),
-                        _round_to_be_decided._valid_witness,
-                        _round_to_be_decided._valid_witness.count,
+                        round_to_be_decided._events.map!(e => show(e)),
+                        round_to_be_decided._valid_witness,
+                        round_to_be_decided._valid_witness.count,
                 );
+                return;
             }
-        }
-
-        void decide_round() {
-            if (round_to_be_decided ) {
-                last_decided_round = round_to_be_decided;
-                round_to_be_decided.decide;
-                hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
-                log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
-                        hashgraph.statistics.future_majority_rounds);
-                collect_received_round(round_to_be_decided);
-                round_to_be_decided = null;
-            }
+            collect_received_round(round_to_be_decided);
         }
 
         protected void collect_received_round(Round r)

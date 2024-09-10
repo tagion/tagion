@@ -419,7 +419,6 @@ class Event {
                 new Witness;
                 _witness.vote(hashgraph);
                 hashgraph._rounds.check_decide_round;
-                hashgraph._rounds.decide_round;
                 return;
             }
         }
