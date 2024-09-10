@@ -147,6 +147,15 @@ struct Environment {
             }
             return result;
         }
+        T opDispatch(T)(T _default) {
+            static T result;
+            static bool set;
+            if (!set) {
+                result=environment.get(env, _default.to!string).to!T;
+                set=true;
+            }
+            return result;
+        }
     }
 }
 
