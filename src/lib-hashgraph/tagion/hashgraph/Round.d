@@ -529,33 +529,39 @@ class Round {
             if (!round_to_be_decided) {
                 return;
             }
-            auto witness_in_round = round_to_be_decided._events
-                .filter!(e => e !is null)
-                .map!(e => e.witness);
-            const _name = hashgraph.name;          
-            const new_completed = round_to_be_decided.completed(hashgraph);
-            
+            auto _round_to_be_decided = last_decided_round._next;
+            if (!_round_to_be_decided) {
+                return;
+            }
+            const new_completed = _round_to_be_decided.completed(hashgraph);
             if (!new_completed) {
                 return;
             }
+            auto witness_in_round = _round_to_be_decided._events
+                .filter!(e => e !is null)
+                .map!(e => e.witness);
+            const _name = hashgraph.name;
             __write(
                     "%s %s%sRound %04d%s can be decided  witness=%d",
                     _name,
                     BOLD, GREEN,
-                    round_to_be_decided.number,
+                    _round_to_be_decided.number,
                     RESET,
                     witness_in_round.walkLength
             );
             Event.view(witness_in_round.map!(w => w.outer));
-            log("Round %04d decided", round_to_be_decided.number);
-            last_decided_round = round_to_be_decided;
+            log("Round %04d decided", _round_to_be_decided.number);
+            last_decided_round = _round_to_be_decided;
+            _round_to_be_decided.decide;
+	    round_to_be_decided = _round_to_be_decided;
             round_to_be_decided.decide;
+
             hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
             log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
                     hashgraph.statistics.future_majority_rounds);
             string show(const Event e) {
                 if (e) {
-                    return format("%s%d%s", (round_to_be_decided._valid_witness[e.node_id]) ? GREEN : YELLOW, e
+                    return format("%s%d%s", (_round_to_be_decided._valid_witness[e.node_id]) ? GREEN : YELLOW, e
                         .order, RESET);
                 }
                 return format("%sX %s", RED, RESET);
