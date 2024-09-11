@@ -54,7 +54,8 @@ private struct Operation {
     bool initialize;
     bool sync;
     bool flat_disable;
-    bool strip;
+    bool strip; /// Strips into hibonstream
+    bool strip_recorder; /// Outputs a recorder
     SectorRange sectors;
     string inputfilename;
     string outputfilename;
@@ -67,6 +68,7 @@ private struct Operation {
 
     bool oneread() => print + eye + dump + dump_branches <= 1;
     bool anyread() => print || eye || dump || dump_branches;
+    bool output_format() => strip + strip_recorder + print <= 1;
 
     bool dartrpc;
     string[] dartread_args;
@@ -81,7 +83,7 @@ private struct Operation {
     bool any() => anycrud || anyread;
 
     void checkCompatible() {
-        if(sync) {
+        if (sync) {
             tools.check(!any, "The sync operation is not compatible with any read or crud operation");
         }
         tools.check(onecrud, "Only one crud operation is possible at a time");
@@ -96,7 +98,7 @@ int _main(string[] args) {
     string[] dart_filenames;
     string journal_path = buildPath(tempDir, "dart_journals");
     bool version_switch;
-    const logo = import("logo.txt");
+    //    const logo = import("logo.txt");
 
     string test_dart;
     string angle_range;
@@ -105,29 +107,31 @@ int _main(string[] args) {
     GetoptResult main_args;
     try {
         main_args = getopt(args,
-            std.getopt.config.caseSensitive,
-            std.getopt.config.bundling,
-            "version", "display the version", &version_switch,
-            "verbose|v", "Prints verbose information to console", &__verbose_switch,
-            "dry", "Dry-run this will not save the wallet", &__dry_switch,
-            "I|initialize", "Create a dart file", &op.initialize,
-            "o|outputfile", "Sets the output file name", &op.outputfilename,
-            "r|read", "Executes a DART read sequency", &op.dartread_args,
-            "rim", "Performs DART rim read", &op.dartrim_arg,
-            "m|modify", "Executes a DART modify sequency", &op.dartmodify,
-            "rpc", "Executes a HiPRC on the DART", &op.dartrpc,
-            "strip", "Strips the dart-recoder dumps archives", &op.strip,
-            "print", "prints all the archives with in the given angle", &op.print,
-            "dump", "Dumps all the archives with in the given angle", &op.dump,
-            "dump-branches", "Dumps all the archives and branches with in the given angle", &op.dump_branches,
-            "eye", "Prints the bullseye", &op.eye,
-            "sync", "Synchronize src.drt to dest.drt", &op.sync,
-            "A|angle", "Sets angle range from:to (Default is full range)", &angle_range,
-            "depth", "Set limit on dart rim depth", &op.depth,
-            "fake", format(
+                std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "version", "display the version", &version_switch,
+                "verbose|v", "Prints verbose information to console", &__verbose_switch,
+                "dry", "Dry-run this will not save the wallet", &__dry_switch,
+                "I|initialize", "Create a dart file", &op.initialize,
+                "o|outputfile", "Sets the output file name", &op.outputfilename,
+                "r|read", "Executes a DART read sequency", &op.dartread_args,
+                "rim", "Performs DART rim read", &op.dartrim_arg,
+                "m|modify", "Executes a DART modify sequency", &op.dartmodify,
+                "rpc", "Executes a HiPRC on the DART", &op.dartrpc,
+                "strip", "Strips the dart-recoder archives as a HiBON-stream", &op.strip,
+                "R|recorder", "Strips out the recorder of archives", &op.strip_recorder,
+                "print", "Prints all the dartindex with in the given angle", &op.print,
+
+                "dump", "Dumps all the archives with in the given angle", &op.dump,
+                "dump-branches", "Dumps all the archives and branches with in the given angle", &op.dump_branches,
+                "eye", "Prints the bullseye", &op.eye,
+                "sync", "Synchronize src.drt to dest.drt", &op.sync,
+                "A|angle", "Sets angle range from..to (Default is full range)", &angle_range,
+                "depth", "Set limit on dart rim depth", &op.depth,
+                "fake", format(
                 "Use fakenet instead of real hashes : default :%s", fake), &fake,
-            "test", "Generate a test dart with specified number of archives total:bundle", &test_dart,
-            "flat-disable", "Disable flat branch hash", &op.flat_disable,
+                "test", "Generate a test dart with specified number of archives total:bundle", &test_dart,
+                "flat-disable", "Disable flat branch hash", &op.flat_disable,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -138,42 +142,42 @@ int _main(string[] args) {
             vout = stderr;
         }
         if (main_args.helpWanted) {
-            writeln(logo);
             defaultGetoptPrinter(
-                [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://docs.tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] file.drt <files>", program),
-                "",
-                "Example synchronizing src.drt on to dst.drt",
-                format("%s --sync src.drt dst.drt", program),
-                "",
+                    [
+                    // format("%s version %s", program, REVNO),
+                    "Documentation: https://docs.tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] file.drt <files>", program),
+                    "",
+                    "Example synchronizing src.drt on to dst.drt",
+                    format("%s --sync src.drt dst.drt", program),
+                    "",
 
-                "<option>:",
+                    "<option>:",
 
-            ].join("\n"),
-            main_args.options);
+                    ].join("\n"),
+                    main_args.options);
             return 0;
         }
 
+        tools.check(op.output_format, "The switch print, strip and recorder can not be combined");
         if (!angle_range.empty) {
             import std.bitmanip;
 
             ushort _from, _to;
             const fields =
-                angle_range.formattedRead("%x:%x", _from, _to)
-                .ifThrown(0);
+                angle_range.formattedRead("%x..%x", _from, _to)
+                    .ifThrown(0);
             tools.check(fields == 2,
-                format("Angle range should be ex. --range A0F0:B0F8 not %s", angle_range));
+                    format("Angle range should be ex. --range A0F0..B0F8 not %s", angle_range));
             verbose("Angle from %04x to %04x", _from, _to);
             op.sectors = SectorRange(_from, _to);
         }
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
                 tools.check(op.inputfilename is null,
-                    format("Input file '%s' has already been declared", op.inputfilename));
+                        format("Input file '%s' has already been declared", op.inputfilename));
                 op.inputfilename = file;
                 continue;
             }
@@ -242,19 +246,18 @@ int _main(string[] args) {
             long prev_dart_time;
             foreach (no; 0 .. (number_of_archives / bundle_size) + 1) {
                 count += bundle_size;
-                const N = (number_of_archives < count) ? number_of_archives % bundle_size
-                    : bundle_size;
-                auto rec = test_db.recorder;
+                const N = (number_of_archives < count) ? number_of_archives % bundle_size : bundle_size;
+                auto strip_recorder = test_db.recorder;
                 progress(no, RED);
                 rec_time.start;
                 foreach (i; 0 .. N) {
                     const random_doc_no = uniform(ulong.min, ulong.max, rnd);
-                    rec.add(doc_gen(random_doc_no));
+                    strip_recorder.add(doc_gen(random_doc_no));
                 }
                 rec_time.stop;
                 progress(no, YELLOW);
                 dart_time.start;
-                test_db.modify(rec);
+                test_db.modify(strip_recorder);
                 dart_time.stop;
                 progress(no, GREEN);
                 if ((no + 1) % line_length == 0) {
@@ -262,9 +265,9 @@ int _main(string[] args) {
                     const delta_dart_time = current_dart_time - prev_dart_time;
                     prev_dart_time = current_dart_time;
                     nobose(" dart %.3fmsec per archive %.3fmsec blocks %d",
-                        double(delta_dart_time) / 1000.0,
-                        double(delta_dart_time) / (1000.0 * line_length * bundle_size),
-                        count);
+                            double(delta_dart_time) / 1000.0,
+                            double(delta_dart_time) / (1000.0 * line_length * bundle_size),
+                            count);
                     vout.writeln;
                 }
             }
@@ -273,13 +276,10 @@ int _main(string[] args) {
 
         op.checkCompatible();
 
-        File fout;
+        File fout = stdout;
         if (!op.outputfilename.empty) {
             fout = File(op.outputfilename, "w");
             verbose("Output file %s", op.outputfilename);
-        }
-        else {
-            fout = stdout;
         }
         scope (exit) {
             if (fout !is stdout) {
@@ -323,11 +323,9 @@ int _main(string[] args) {
             synchronize(dest_db, src_db, _journal_path);
             return 0;
         }
-        else {
-            foreach(filename; dart_filenames) {
-                verbose("%s:", filename);
-                dartutil_operation(op, filename, net, fout);
-            }
+        foreach (filename; dart_filenames) {
+            verbose("%s:", filename);
+            dartutil_operation(op, filename, net, fout);
         }
     }
     catch (Exception e) {
@@ -339,10 +337,12 @@ int _main(string[] args) {
 }
 
 int dartutil_operation(Operation op, string dartfilename, const SecureNet net, ref File fout) {
-    with(op) {
+    with (op) {
         if (initialize) {
             const flat = (flat_disable) ? No.flat : Yes.flat;
-            DART.create(filename : dartfilename, net: net, flat: flat);
+            DART.create(filename : dartfilename, net:
+                    net, flat:
+                    flat);
         }
 
         Exception dart_exception;
@@ -364,7 +364,7 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
                 if (dump && DARTFile.Branches.isRecord(doc)) {
                     return false;
                 }
-                fout.rawWrite(doc.serialize);
+                fout.fwrite(doc);
                 return false;
             }
 
@@ -374,12 +374,15 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
         const hirpc = HiRPC(net);
 
         if (dartrpc) {
-            tools.check(!inputfilename.empty, "Missing input file for DART-rpc");
+            tools.check(!inputfilename.empty, "Missing input file for DART-RPC");
             const doc = inputfilename.fread;
             const received = hirpc.receive(doc);
-            const result = db(received);
-            const tosendResult = result.response.result[Keywords.result].get!Document;
-            op.outputfilename.fwrite(tosendResult);
+            const sender = db(received);
+            if (strip && sender.isResponse) {
+                fout.fwrite(sender.response.result);
+                return 0;
+            }
+            fout.fwrite(sender);
             return 0;
         }
         if (dartread) {
@@ -394,19 +397,23 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
 
             const sender = CRUD.dartRead(dart_indices, hirpc);
             if (dry_switch) {
-                fout.rawWrite(sender.serialize);
+                fout.fwrite(sender);
             }
             auto receiver = hirpc.receive(sender);
-            auto response = db(receiver, false);
+            auto response = db(receiver);
 
-            if (strip) {
+            if (strip || strip_recorder) {
                 auto recorder = db.recorder(response.result);
+                if (strip_recorder) {
+                    fout.fwrite(recorder);
+                    return 0;
+                }
                 foreach (archive; recorder[]) {
-                    fout.rawWrite(archive.filed.serialize);
+                    fout.fwrite(archive.filed);
                 }
                 return 0;
             }
-            fout.rawWrite(response.toDoc.serialize);
+            fout.fwrite(response);
             return 0;
         }
         if (dartrim) {
@@ -440,17 +447,17 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
             const sender = CRUD.dartRim(rims, hirpc);
             verbose("sender %s", sender.toPretty);
             if (dry_switch) {
-                fout.rawWrite(sender.serialize);
+                fout.fwrite(sender);
                 return 0;
             }
             auto receiver = hirpc.receive(sender);
             auto response = db(receiver, false);
 
             if (strip) {
-                fout.rawWrite(response.result.serialize);
+                fout.fwrite(response.result);
                 return 0;
             }
-            fout.rawWrite(response.toDoc.serialize);
+            fout.fwrite(response);
             return 0;
         }
         if (dartmodify) {
@@ -466,7 +473,7 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
             auto tosend = hirpc.toHiBON(result);
             auto tosendResult = tosend.method.params;
             if (fout != stdout) {
-                fout.rawWrite(tosendResult.serialize);
+                fout.fwrite(tosendResult);
             }
             return 0;
         }

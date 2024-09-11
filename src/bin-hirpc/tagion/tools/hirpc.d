@@ -14,7 +14,10 @@ import tagion.crypto.Types;
 import tagion.hibon.Document;
 import tagion.script.standardnames;
 import tagion.hibon.HiBONtoText : decode;
+import tagion.hibon.HiBONFile;
 import tagion.basic.Debug;
+import tagion.basic.basic : isinit;
+import tagion.communication.HiRPC;
 import std.path;
 import std.stdio;
 import std.getopt;
@@ -22,6 +25,46 @@ import std.format;
 import std.array;
 import std.algorithm;
 import std.string;
+
+@safe
+void strip_hirpc(const(HiRPC) hirpc, File fout, const(Document) doc, const bool info) {
+    const error_code = doc.valid;
+    tools.check(error_code.isinit, format("HiRPC is not a valid document %s", error_code));
+    const receiver = hirpc.receive(doc);
+    if (receiver.isMethod) {
+        if (info) {
+            fout.writefln("Method %s", receiver.method.full_name);
+            fout.writefln("id     %d", receiver.getId);
+            fout.writefln("Signed %s", receiver.signed);
+            return;
+        }
+        fout.fwrite(receiver.method.params);
+        return;
+    }
+    if (receiver.isResponse) {
+        if (info) {
+            fout.writeln("Receiver");
+            fout.writefln("Id     %d", receiver.getId);
+            fout.writefln("Signed %s", receiver.isSigned);
+            return;
+        }
+        fout.fwrite(receiver.result);
+        return;
+    }
+    if (receiver.isError) {
+        if (info) {
+            fout.writeln("Error");
+            fout.writefln("Id     %d", receiver.getId);
+            fout.writefln("Signed %s", receiver.isSigned);
+            fout.writefln("Code   %d", receiver.error.code);
+            fout.writefln("Data   size=%d", receiver.error.data.size);
+            return;
+        }
+        fout.fwrite(receiver.error);
+        return;
+    }
+
+}
 
 static immutable IMPLEMENTED_METHODS = [
     Queries.dartRead,
@@ -33,13 +76,15 @@ mixin Main!_main;
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
+    bool response_switch;
+    bool result_switch;
     string output_filename;
     string method_name;
     string[] inputs;
     string[] pkeys;
 
     try {
-        arraySep = ",";
+        File fin = stdin;
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
@@ -48,6 +93,8 @@ int _main(string[] args) {
                 "o|output", "Output filename (Default stdout)", &output_filename,
                 "m|method", "method name for the hirpc to generate", &method_name,
                 "d|dartinput", "dart inputs sep. by comma or multiple args for multiples generated differently for each cmd", &inputs,
+                "R|response", "Analyzer a HiRPC response", &response_switch,
+                "r|result", "Dumps the result of HiRPC response", &result_switch,
                 "p|pkeys", "pkeys sep. by comma or multiple args for multiple entries", &pkeys,
         );
 
@@ -71,8 +118,6 @@ int _main(string[] args) {
             return 0;
         }
 
-        tools.check(method_name !is string.init, "must supply methodname");
-
         File fout;
         if (output_filename is string.init) {
             fout = stdout;
@@ -83,7 +128,23 @@ int _main(string[] args) {
             fout = File(output_filename, "w");
         }
 
-        tools.check(all_dartinterface_methods.canFind(method_name), format("method name not valid must be one of %s", all_dartinterface_methods));
+        if (response_switch || result_switch) {
+            auto inputfiles = args[1 .. $].filter!(file => file.hasExtension(FileExtension.hibon));
+            verbose("inputfile %s", inputfiles);
+
+                const net = new StdSecureNet;
+                const hirpc = HiRPC(net);
+            if (!inputfiles.empty) {
+                inputfiles.each!(file => strip_hirpc(hirpc, fout, file.fread, result_switch));
+                return 0;
+            }
+            auto hrange=HiBONRange(fin);
+            hrange.each!(doc => strip_hirpc(hirpc, fout, doc, result_switch)); 
+
+        }
+        tools.check(method_name !is string.init, "must supply methodname");
+        tools.check(all_dartinterface_methods.canFind(method_name), format(
+                "method name not valid must be one of %s", all_dartinterface_methods));
 
         DARTIndex[] get_indices(string[] _input) {
             return _input.map!(d => hash_net.dartIndexDecode(d)).array;

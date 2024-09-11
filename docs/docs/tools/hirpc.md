@@ -13,6 +13,8 @@ hirpc [<option>...]
 -o    --output Output filename (Default stdout)
 -m    --method method name for the hirpc to generate
 -d --dartinput dart inputs sep. by comma or multiple args for multiples generated differently for each cmd
+-R  --response Analyzer a HiRPC response
+-r    --result Dumps the result of HiRPC response
 -p     --pkeys pkeys sep. by comma or multiple args for multiple entries
 -h      --help This help information.
 ```
@@ -39,7 +41,7 @@ nngcat --req --dial abstract://NEUEWELLE_DART --file request.hibon
 ```
 
 
-## Examples
+### Examples
 *Note that the special characters # and $ are escaped '\'. Some shell's may not treat these characters specially and you would not need to escape them*
 
 Create a dartBullseye request and save it to a file.
@@ -72,4 +74,70 @@ Read a trt archive to get all of the archives associated with a public key.
 The trt archives aren't stored in the main consensus database so they have to be redirected to the `trt.` entity
 ```sh
 hirpc -m trt.dartRead -d \#\$Y:\*:@AoL9_T3JJ09fnPKo7Y1in9mpKkjgxSQ_sD0t0CPCcLKk
+```
+
+## Check a Response
+
+A received hibon response can be analyzed with `-R` and `-r` switch.
+Given HiBON response like.
+
+### Examples
+```json
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@A2D7p10zvvwbzCWZVwp8AJeiZmc1ck7Tb-8uEaXP3q2u"
+    ],
+    "$msg": {
+        "result": {
+            "$@": "Recorder",
+            "0": {
+                "$T": [
+                    "i32",
+                    1
+                ],
+                "$a": {
+                    "text": "Test document 8412485838765354784"
+                }
+            }
+        }
+    },
+    "$sign": [
+        "*",
+        "@m5oiZUMzGrtEMaS7JsdwBzaCKvAzE437hhxANO_iS1dBRGUnZDWss2u-6uAyAYMUFH13JbIYy4rquQZwRhYADQ=="
+    ]
+}
+```
+If the response is place in a file 'response.hibon' then the following command with show the type of response.
+```sh
+hirpc dump.hibon -r
+```
+Prints this to the stdout.
+```
+Receiver
+Id     0
+Signed true
+```
+This show that the response is a result type and thery is not session Id and that response is signed correctly.
+
+The result of the response can be filter out, with the `-r` switch.
+```sh 
+hirpc dump.hibon -R|hibonutil -pc
+```
+
+This will output this to the stdout.
+```json
+{
+    "$@": "Recorder",
+    "0": {
+        "$T": [
+            "i32",
+            1
+        ],
+        "$a": {
+            "text": "Test document 8412485838765354784"
+        }
+    }
+}
 ```

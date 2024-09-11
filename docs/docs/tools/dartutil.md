@@ -4,6 +4,8 @@
 
 ## Options
 ```
+Documentation: https://docs.tagion.org/
+
 Usage:
 dartutil [<option>...] file.drt <files>
 
@@ -21,12 +23,12 @@ dartutil --sync src.drt dst.drt
 -m        --modify Executes a DART modify sequency
              --rpc Executes a HiPRC on the DART
            --strip Strips the dart-recoder dumps archives
-           --print prints all the archives with in the given angle
+           --print Prints all the dartindex with in the given angle
             --dump Dumps all the archives with in the given angle
    --dump-branches Dumps all the archives and branches with in the given angle
              --eye Prints the bullseye
             --sync Synchronize src.drt to dest.drt
--A         --angle Sets angle range from:to (Default is full range)
+-A         --angle Sets angle range from..to (Default is full range)
            --depth Set limit on dart rim depth
             --fake Use fakenet instead of real hashes : default :false
             --test Generate a test dart with specified number of archives total:bundle
@@ -95,7 +97,7 @@ The `#` at the end of the dart-index indicates that the archive is a dart-key.
 
 
 ```sh
-dartutil genesis.drt --angle C034:C670 --print --depth 3
+dartutil genesis.drt --angle C034..C670 --print --depth 3
 EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
 | C0 [66]
 | .. | 34 [65]
@@ -115,7 +117,7 @@ The data read out is stream out as a *HiBON* stream and by default is stream to 
 The output can be redirected via the `-o filename.hibon` switch.
 
 ```
-dartutil genesis.drt --angle C034:C670 --dump --depth 3|hibonutil -pc
+dartutil genesis.drt --angle C034..C670 --dump --depth 3|hibonutil -pc
 {
     "$@": "TGN",
     "$V": {
@@ -162,8 +164,8 @@ dartutil genesis.drt --angle C034:C670 --dump --depth 3|hibonutil -pc
 
 With the `--dump-branches` the branches in the DART are also streamed.
 
-```
-dartutil genesis.drt --angle 1175:1B2A --dump-branches --depth 3 |hibonutil -pc 
+```sh
+dartutil genesis.drt --angle 1175..1B2A --dump-branches --depth 3 |hibonutil -pc 
 {
     "$@": "$@B",
     "$idx": {
@@ -200,7 +202,7 @@ By default the `--rim` returns the `HiRPC` response (rim-path as hex-string).
 
 The rim-path can also be set in decimal by separating the number with a command.
 
-```
+```sh
 dartutil genesis.drt --rim C034 |hibonutil -pc
 {
     "$@": "HiRPC",
@@ -228,17 +230,42 @@ dartutil genesis.drt --rim C034 |hibonutil -pc
 
 `Note. Select the same rim-path with decimal rim keys.`
 
-```
+```sh
 dartutil genesis.drt --rim 192,52, |hibonutil -pc
 
 ```
 
 The `HiRPC` encapsulation can be stripped with the `--strip` switch.
 
-```
+```sh
 dartutil genesis.drt --rim 1175 --strip |hibonutil -pc
 
 ```
+
+Change the stdout to a file.
+
+```sh
+dartutil genesis.drt --rim 1175 --strip -o test.hibon 
+
+```
+
+## Generate a test database
+A test database containing random data can be generated with.
+```sh
+dartutil -I test.drt
+dartutil --test 100001000 test.drt
+```
+This will generate 10000 archives with 1000 archives in each recorder.
+
+## Synchronize two data base files.
+The following command will synchronizing test.drt to test1.drt
+```sh
+dartutil --sync test.drt test1.drt
+
+```
+The synchronizing will first generate list of journal files which will be replaced in the second phase.
+
+
 
 
 ## DART Crud commands
