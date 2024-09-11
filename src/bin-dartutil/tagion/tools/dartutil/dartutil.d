@@ -54,8 +54,6 @@ private struct Operation {
     bool initialize;
     bool sync;
     bool flat_disable;
-    bool strip; /// Strips into hibonstream
-    bool strip_recorder; /// Outputs a recorder
     SectorRange sectors;
     string inputfilename;
     string outputfilename;
@@ -68,7 +66,6 @@ private struct Operation {
 
     bool oneread() => print + eye + dump + dump_branches <= 1;
     bool anyread() => print || eye || dump || dump_branches;
-    bool output_format() => strip + strip_recorder + print <= 1;
 
     bool dartrpc;
     string[] dartread_args;
@@ -118,8 +115,6 @@ int _main(string[] args) {
                 "rim", "Performs DART rim read", &op.dartrim_arg,
                 "m|modify", "Executes a DART modify sequency", &op.dartmodify,
                 "rpc", "Executes a HiPRC on the DART", &op.dartrpc,
-                "strip", "Strips the dart-recoder archives as a HiBON-stream", &op.strip,
-                "R|recorder", "Strips out the recorder of archives", &op.strip_recorder,
                 "print", "Prints all the dartindex with in the given angle", &op.print,
 
                 "dump", "Dumps all the archives with in the given angle", &op.dump,
@@ -161,7 +156,6 @@ int _main(string[] args) {
             return 0;
         }
 
-        tools.check(op.output_format, "The switch print, strip and recorder can not be combined");
         if (!angle_range.empty) {
             import std.bitmanip;
 
@@ -247,17 +241,17 @@ int _main(string[] args) {
             foreach (no; 0 .. (number_of_archives / bundle_size) + 1) {
                 count += bundle_size;
                 const N = (number_of_archives < count) ? number_of_archives % bundle_size : bundle_size;
-                auto strip_recorder = test_db.recorder;
+                auto recorder = test_db.recorder;
                 progress(no, RED);
                 rec_time.start;
                 foreach (i; 0 .. N) {
                     const random_doc_no = uniform(ulong.min, ulong.max, rnd);
-                    strip_recorder.add(doc_gen(random_doc_no));
+                    recorder.add(doc_gen(random_doc_no));
                 }
                 rec_time.stop;
                 progress(no, YELLOW);
                 dart_time.start;
-                test_db.modify(strip_recorder);
+                test_db.modify(recorder);
                 dart_time.stop;
                 progress(no, GREEN);
                 if ((no + 1) % line_length == 0) {
@@ -378,10 +372,6 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
             const doc = inputfilename.fread;
             const received = hirpc.receive(doc);
             const sender = db(received);
-            if (strip && sender.isResponse) {
-                fout.fwrite(sender.response.result);
-                return 0;
-            }
             fout.fwrite(sender);
             return 0;
         }
@@ -401,18 +391,6 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
             }
             auto receiver = hirpc.receive(sender);
             auto response = db(receiver);
-
-            if (strip || strip_recorder) {
-                auto recorder = db.recorder(response.result);
-                if (strip_recorder) {
-                    fout.fwrite(recorder);
-                    return 0;
-                }
-                foreach (archive; recorder[]) {
-                    fout.fwrite(archive.filed);
-                }
-                return 0;
-            }
             fout.fwrite(response);
             return 0;
         }
@@ -451,12 +429,8 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
                 return 0;
             }
             auto receiver = hirpc.receive(sender);
-            auto response = db(receiver, false);
+            auto response = db(receiver, true);
 
-            if (strip) {
-                fout.fwrite(response.result);
-                return 0;
-            }
             fout.fwrite(response);
             return 0;
         }

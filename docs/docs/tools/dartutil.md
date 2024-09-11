@@ -22,7 +22,6 @@ dartutil --sync src.drt dst.drt
              --rim Performs DART rim read
 -m        --modify Executes a DART modify sequency
              --rpc Executes a HiPRC on the DART
-           --strip Strips the dart-recoder dumps archives
            --print Prints all the dartindex with in the given angle
             --dump Dumps all the archives with in the given angle
    --dump-branches Dumps all the archives and branches with in the given angle
@@ -53,6 +52,9 @@ The .drt file is a block-file so the [blockutil](/docs/tools/blockutil) can also
 
 ```sh
 dartutil genesis.drt --eye
+```
+Example of a bullseye.
+```sh
 EYE: 2069c3e00c031294ae45945d45fa20e0f0f09e036ca1153bb66da94d9bc369a8artutil 
 ```
 
@@ -60,6 +62,9 @@ EYE: 2069c3e00c031294ae45945d45fa20e0f0f09e036ca1153bb66da94d9bc369a8artutil
 
 ```sh
 dartutil genesis.drt --print
+```
+Sample output.
+```sh
 EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
 | 04 [3]
 | .. | 62 [2]
@@ -98,6 +103,9 @@ The `#` at the end of the dart-index indicates that the archive is a dart-key.
 
 ```sh
 dartutil genesis.drt --angle C034..C670 --print --depth 3
+```
+Sample output
+```sh
 EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
 | C0 [66]
 | .. | 34 [65]
@@ -118,6 +126,9 @@ The output can be redirected via the `-o filename.hibon` switch.
 
 ```
 dartutil genesis.drt --angle C034..C670 --dump --depth 3|hibonutil -pc
+```
+Prints this to the stdout.
+```json
 {
     "$@": "TGN",
     "$V": {
@@ -165,7 +176,10 @@ dartutil genesis.drt --angle C034..C670 --dump --depth 3|hibonutil -pc
 With the `--dump-branches` the branches in the DART are also streamed.
 
 ```sh
-dartutil genesis.drt --angle 1175..1B2A --dump-branches --depth 3 |hibonutil -pc 
+dartutil genesis.drt --angle 1175..1B2A --dump-branches --depth 3 |hibonutil -pc
+```
+Prints this to stdout
+```json
 {
     "$@": "$@B",
     "$idx": {
@@ -203,7 +217,10 @@ By default the `--rim` returns the `HiRPC` response (rim-path as hex-string).
 The rim-path can also be set in decimal by separating the number with a command.
 
 ```sh
-dartutil genesis.drt --rim C034 |hibonutil -pc
+dartutil genesis.drt --rim C034 | hibonutil -pc
+```
+Prints this to the stdout.
+```json
 {
     "$@": "HiRPC",
     "$Y": [
@@ -235,17 +252,17 @@ dartutil genesis.drt --rim 192,52, |hibonutil -pc
 
 ```
 
-The `HiRPC` encapsulation can be stripped with the `--strip` switch.
+The `HiRPC` response can be stripped with via the `hirpc` command.
 
 ```sh
-dartutil genesis.drt --rim 1175 --strip |hibonutil -pc
+dartutil genesis.drt --rim 1175 |hiprc -R |hibonutil -pc
 
 ```
 
 Change the stdout to a file.
 
 ```sh
-dartutil genesis.drt --rim 1175 --strip -o test.hibon 
+dartutil genesis.drt --rim 1175 -o response.hibon 
 
 ```
 
@@ -253,7 +270,7 @@ dartutil genesis.drt --rim 1175 --strip -o test.hibon
 A test database containing random data can be generated with.
 ```sh
 dartutil -I test.drt
-dartutil --test 100001000 test.drt
+dartutil --test 10000:1000 test.drt
 ```
 This will generate 10000 archives with 1000 archives in each recorder.
 
@@ -266,7 +283,131 @@ dartutil --sync test.drt test1.drt
 The synchronizing will first generate list of journal files which will be replaced in the second phase.
 
 
+## Example of reading data in a rim
 
+First a slice if DART is selected to list the fingerprints of the archives.
+```sh
+dartutil test.drt --print --angle AEDA..AEF4
+```
+The `--print` switch will print a list of the dart-indices in the angle range `[AEDA..AEF4[`.
+```sh
+| AE [40836]
+| .. | DA [26939]
+| .. | .. aeda1f49efc1a6a45481391df36aa64b2ad57409b4910f904480b42d2b823a5e [16412]
+| .. | E0 [22529]
+| .. | .. aee0a47cd2558f36222f3407d9af1d34016b1542276fdca122513b17cf6c5d30 [20211]
+| .. | E6 [16915]
+| .. | .. aee637b4a31d0decc43682bac53c55cec17ec85a8b236c94f4808291b56eebbc [16914]
+| .. | E7 [16913]
+| .. | .. aee74bb146b27920d0e548391f552717ca00959fab172d8b0d72e0f9ab6b4dc9 [29193]
+| .. | .. aee7cd1f669dec45f1df82195d0212c610bc1bf8a84c53dad7b6e31613734a61 [13915]
+| .. | E9 [16442]
+| .. | .. aee906caf1375710482c66a60f918db326d39b48e4d35d4c3c06f279bfdc7598 [16441]
+| .. | EC [37722]
+| .. | .. aeec9c6dbbfa3be1d9f71644522309e640ba05ac123dfe946245a907763f83be [18198]
+| .. | F2 [16908]
+| .. | .. aef2d4ac9930bf673d42f117c8e6f2fde6d3b66fff492598f012bc094d4bbb73 [16894]
+```
+For the print out it can be seen that at the rim-path `AEE7` contain two archive.
+```sh
+dartutil test.drt --rim aee7 | hibonutil -pc
+```
+This will print out the `HiRPC` response from the database.
+```json
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@A2D7p10zvvwbzCWZVwp8AJeiZmc1ck7Tb-8uEaXP3q2u"
+    ],
+    "$msg": {
+        "result": {
+            "$@": "$@B",
+            "$prints": {
+                "205": [
+                    "*",
+                    "@rufNH2ad7EXx34IZXQISxhC8G_ioTFPa17bjFhNzSmE="
+                ],
+                "75": [
+                    "*",
+                    "@rudLsUayeSDQ5Ug5H1UnF8oAlZ-rFy2LDXLg-atrTck="
+                ]
+            }
+        }
+    },
+    "$sign": [
+        "*",
+        "@RfVzQjiSYAvJU5QnTOzpAOUe4zlhe8Gp_wlYBy3qb5Tl6UJ-fT5CjMcqORpFw8pmRQYeXFvDldGzk3lCM7EYeQ=="
+    ]
+}
+```
+The result can be filter out with the `hirpc -R` command.
+```sh 
+dartutil test.drt --rim aee7 | hirpc -R | hibonutil -pc
+```
+This will list the branch at rim-path `aee7`.
+```json
+{
+    "$@": "$@B",
+    "$prints": {
+        "205": [
+            "*",
+            "@rufNH2ad7EXx34IZXQISxhC8G_ioTFPa17bjFhNzSmE="
+        ],
+        "75": [
+            "*",
+            "@rudLsUayeSDQ5Ug5H1UnF8oAlZ-rFy2LDXLg-atrTck="
+        ]
+    }
+}
+```
+To read the two archives in this can be done with.
+```sh 
+ dartutil test1.drt -r @rufNH2ad7EXx34IZXQISxhC8G_ioTFPa17bjFhNzSmE=  -r @rudLsUayeSDQ5Ug5H1UnF8oAlZ-rFy2LDXLg-atrTck= |hirpc -R|hibonutil -pc
+```
+This will print the recoder containing the two dart-indices
+```json
+{
+    "$@": "Recorder",
+    "0": {
+        "$T": [
+            "i32",
+            1
+        ],
+        "$a": {
+            "text": "Test document 16290047585690276710"
+        }
+    },
+    "1": {
+        "$T": [
+            "i32",
+            1
+        ],
+        "$a": {
+            "text": "Test document 6198624785561080932"
+        }
+    }
+}
+```
+The two archives can be copied to another database by the following.
+```sh
+ dartutil -I slice_test.drt
+ dartutil test1.drt -r @rufNH2ad7EXx34IZXQISxhC8G_ioTFPa17bjFhNzSmE=  -r @rudLsUayeSDQ5Ug5H1UnF8oAlZ-rFy2LDXLg-atrTck= |hirpc -R > recoder.hibon
+ dartutil slice_test.drt -m recoder.hibon 
+
+```
+Check that the two archives has been copied.
+```sh
+ dartutil slice_test.drt --print
+```
+Print this to the stdout.
+```sh
+EYE: 6DD2A52F5543892095524D41F7A1A33AF030E510AB779F775D0FCB88B7DD9518
+| AE [4]
+| .. | E7 [3]
+| .. | .. aee74bb146b27920d0e548391f552717ca00959fab172d8b0d72e0f9ab6b4dc9 [1]
+| .. | .. aee7cd1f669dec45f1df82195d0212c610bc1bf8a84c53dad7b6e31613734a61 [2]
+```
 
 ## DART Crud commands
 You can call only one of the CRUD command at a time

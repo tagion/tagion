@@ -25,10 +25,11 @@ import std.format;
 import std.array;
 import std.algorithm;
 import std.string;
+import std.typecons;
 
 @safe
 void strip_hirpc(const(HiRPC) hirpc, File fout, const(Document) doc, const bool info) {
-    const error_code = doc.valid;
+    const error_code = doc.valid(reserved : No.Reserved);
     tools.check(error_code.isinit, format("HiRPC is not a valid document %s", error_code));
     const receiver = hirpc.receive(doc);
     if (receiver.isMethod) {
@@ -140,7 +141,7 @@ int _main(string[] args) {
             }
             auto hrange=HiBONRange(fin);
             hrange.each!(doc => strip_hirpc(hirpc, fout, doc, result_switch)); 
-
+            return 0;
         }
         tools.check(method_name !is string.init, "must supply methodname");
         tools.check(all_dartinterface_methods.canFind(method_name), format(
