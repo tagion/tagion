@@ -134,11 +134,11 @@ int _main(string[] args) {
             const net = new StdSecureNet;
             const hirpc = HiRPC(net);
             if (!inputfiles.empty) {
-                inputfiles.each!(file => strip_hirpc(hirpc, fout, file.fread, result_switch));
+                inputfiles.each!(file => strip_hirpc(hirpc, fout, file.fread, response_switch));
                 return 0;
             }
             auto hrange=HiBONRange(fin);
-            hrange.each!(doc => strip_hirpc(hirpc, fout, doc, result_switch)); 
+            hrange.each!(doc => strip_hirpc(hirpc, fout, doc, response_switch)); 
             return 0;
         }
         tools.check(method_name !is string.init, "must supply methodname");
@@ -157,7 +157,7 @@ int _main(string[] args) {
         bool isTRTreq() {
             return method_name.startsWith(TRT_METHOD);
         }
-
+        
         Document result;
         switch (method_name) {
         case Queries.dartBullseye, TRT_METHOD ~ Queries.dartBullseye:
@@ -177,6 +177,19 @@ int _main(string[] args) {
             const pkey_indices = get_pkey_indices(pkeys);
             const res = dart_indices ~ pkey_indices;
             result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
+            break;
+        case Queries.dartModify, TRT_METHOD ~ Queries.dartModify:
+            tools.check(args.length <= 2, format("Only one file name expected Not %s", args[1..$]));
+                //const files = args[1..$].filter!(file => file.hasExtension(FileExtension.hibon));
+           
+                version(none) {
+            File fin=stdin;
+            if (!args.empty) {
+                fin = File(args[1], "r");
+            }
+            const doc = fin.fread;
+            result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
+                }
             break;
         default:
             tools.check(0, format("method %s not implemented use one of %s", method_name, IMPLEMENTED_METHODS));

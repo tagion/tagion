@@ -433,5 +433,53 @@ EYE: 6DD2A52F5543892095524D41F7A1A33AF030E510AB779F775D0FCB88B7DD9518
 
 ## Example of combining `hirpc` and `dartutil`
 
+Read the branch at the rim-path `fff4`.
+```sh
+dartutil test.drt --rim fff4 | hirpc -R | hibonutil -pc
+```
+Example result a DART branch
 
+```json
+{
+    "$@": "$@B",
+    "$prints": {
+        "222": [
+            "*",
+            "@__TehQYPILAwStZWVqqbZcqlQzDy6ArVvO0iOsoTDqY="
+        ],
+        "75": [
+            "*",
+            "@__RLbUSVma5bbdlVzIs9GugWWoCHgQCVeURUNgGlu4w="
+        ]
+    }
+}
+```
+Use the `hirpc` to read the archives in the dart-branch.
+```
+hirpc -m dartRead -r @__TehQYPILAwStZWVqqbZcqlQzDy6ArVvO0iOsoTDqY= -r @__RLbUSVma5bbdlVzIs9GugWWoCHgQCVeURUNgGlu4w=|dartutil test.drt --rpc|hirpc -R|hibonutil -pc
+```
+Shows the two archives read from the DART. 
+```json
+{
+    "$@": "Recorder",
+    "0": {
+        "$T": [
+            "i32",
+            1
+        ],
+        "$a": {
+            "text": "Test document 3398729426421699137"
+        }
+    },
+    "1": {
+        "$T": [
+            "i32",
+            1
+        ],
+        "$a": {
+            "text": "Test document 1467057469229928995"
+        }
+    }
+}
+```
 
