@@ -93,9 +93,9 @@ int _main(string[] args) {
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "o|output", "Output filename (Default stdout)", &output_filename,
                 "m|method", "method name for the hirpc to generate", &method_name,
-                "d|dartinput", "dart inputs sep. by comma or multiple args for multiples generated differently for each cmd", &inputs,
-                "R|response", "Analyzer a HiRPC response", &response_switch,
-                "r|result", "Dumps the result of HiRPC response", &result_switch,
+                "r|dartindex", "dart inputs sep. by comma or multiple args for multiples generated differently for each cmd", &inputs,
+                "A|response", "Analyzer a HiRPC response", &response_switch,
+                "R|result", "Dumps the result of HiRPC response", &result_switch,
                 "p|pkeys", "pkeys sep. by comma or multiple args for multiple entries", &pkeys,
         );
 
@@ -119,11 +119,9 @@ int _main(string[] args) {
             return 0;
         }
 
-        File fout;
-        if (output_filename is string.init) {
+        File fout=stdout;
+        if (!output_filename.isinit) {
             fout = stdout;
-        }
-        else {
             tools.check(output_filename.hasExtension(FileExtension.hibon),
                     format("Output %s should be a .%s file", output_filename, FileExtension.hibon));
             fout = File(output_filename, "w");
@@ -133,8 +131,8 @@ int _main(string[] args) {
             auto inputfiles = args[1 .. $].filter!(file => file.hasExtension(FileExtension.hibon));
             verbose("inputfile %s", inputfiles);
 
-                const net = new StdSecureNet;
-                const hirpc = HiRPC(net);
+            const net = new StdSecureNet;
+            const hirpc = HiRPC(net);
             if (!inputfiles.empty) {
                 inputfiles.each!(file => strip_hirpc(hirpc, fout, file.fread, result_switch));
                 return 0;

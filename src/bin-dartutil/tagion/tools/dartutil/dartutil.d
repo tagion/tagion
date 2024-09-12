@@ -170,7 +170,7 @@ int _main(string[] args) {
         }
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
-                tools.check(op.inputfilename is null,
+                tools.check(op.inputfilename.isinit,
                         format("Input file '%s' has already been declared", op.inputfilename));
                 op.inputfilename = file;
                 continue;

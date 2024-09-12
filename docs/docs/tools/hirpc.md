@@ -12,14 +12,14 @@ hirpc [<option>...]
 -v   --verbose Prints more debug information
 -o    --output Output filename (Default stdout)
 -m    --method method name for the hirpc to generate
--d --dartinput dart inputs sep. by comma or multiple args for multiples generated differently for each cmd
--R  --response Analyzer a HiRPC response
--r    --result Dumps the result of HiRPC response
+-r --dartindex dart inputs sep. by comma or multiple args for multiples generated differently for each cmd
+-A  --response Analyzer a HiRPC response
+-R    --result Dumps the result of HiRPC response
 -p     --pkeys pkeys sep. by comma or multiple args for multiple entries
 -h      --help This help information.
 ```
 
-The '--dartinput' flag is used for the dartRead and dartCheckRead methods.  
+The '--dartindex' flag is used for the dartRead and dartCheckRead methods.  
 It takes a list of dartIndices in the same format as the `dartutil --read` flag.  
 To better understand the dartIndex and namerecords you can read the [dartindex](https://docs.tagion.org/docs/protocols/dart/dartindex) page.  
 
@@ -45,40 +45,40 @@ nngcat --req --dial abstract://NEUEWELLE_DART --file request.hibon
 *Note that the special characters # and $ are escaped '\'. Some shell's may not treat these characters specially and you would not need to escape them*
 
 Create a dartBullseye request and save it to a file.
-```
+```sh
 hirpc -m dartBullseye -o bullseye_request.hibon
 ```
 
 Read a regular dart archive.
-```
-hirpc -m dartRead -d @SujJFrSfNbTtdbxtSqtapnww-V_rrpktwSJoE0WSPJM=
+```sh
+hirpc -m dartRead -r @SujJFrSfNbTtdbxtSqtapnww-V_rrpktwSJoE0WSPJM=
 ```
 
 Read the tagion head record.
 
 ```sh
-hirpc -m dartRead -d \#name:tagion
+hirpc -m dartRead -r \#name:tagion
 ```
 
 Check that epoch record 13 and 27 has been written to the DART.
 ```sh
-hirpc -m dartCheckRead -d \#\$epoch:i64:13,\#\$epoch:i64:27
+hirpc -m dartCheckRead -r \#\$epoch:i64:13,\#\$epoch:i64:27
 ```
 Or just
 ```sh
-hirpc -m dartCheckRead -d \#\$epoch:i64:13  -d \#\$epoch:i64:27
+hirpc -m dartCheckRead -r \#\$epoch:i64:13  -r \#\$epoch:i64:27
 ```
 
 
 Read a trt archive to get all of the archives associated with a public key.  
 The trt archives aren't stored in the main consensus database so they have to be redirected to the `trt.` entity
 ```sh
-hirpc -m trt.dartRead -d \#\$Y:\*:@AoL9_T3JJ09fnPKo7Y1in9mpKkjgxSQ_sD0t0CPCcLKk
+hirpc -m trt.dartRead -r \#\$Y:\*:@AoL9_T3JJ09fnPKo7Y1in9mpKkjgxSQ_sD0t0CPCcLKk
 ```
 
 ## Check a Response
 
-A received hibon response can be analyzed with `-R` and `-r` switch.
+A received hibon response can be analyzed with `-A` and `-R` switch.
 Given HiBON response like.
 
 ### Examples
@@ -111,7 +111,7 @@ Given HiBON response like.
 ```
 If the response is place in a file 'response.hibon' then the following command with show the type of response.
 ```sh
-hirpc dump.hibon -r
+hirpc dump.hibon -A
 ```
 Prints this to the stdout.
 ```
