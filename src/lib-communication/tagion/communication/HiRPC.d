@@ -6,6 +6,7 @@ module tagion.communication.HiRPC;
 import std.exception : assumeWontThrow;
 import std.format;
 import std.traits : EnumMembers;
+import std.range;
 import tagion.basic.Types : Buffer;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -70,6 +71,10 @@ struct HiRPC {
             return assumeWontThrow(full_name.splitter('.').retro.front);
         }
 
+        string domain() pure const nothrow {
+            return assumeWontThrow(full_name.split('.').dropBack(1).join('.'));
+        }
+        
         void name(string name) pure nothrow @nogc {
             full_name = name;
         }
