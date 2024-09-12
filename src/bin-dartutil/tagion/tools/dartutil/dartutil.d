@@ -32,7 +32,6 @@ import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONFile;
 import tagion.tools.dartutil.synchronize;
 
 import tagion.Keywords;
@@ -238,6 +237,44 @@ int _main(string[] args) {
     return 0;
 }
 
+int dartutil_sync(Operation op, string[] dart_filenames, const SecureNet net) {
+    Exception dart_exception;
+    tools.check(dart_filenames.length == 2,
+            "A source and a destination dart file is required for the sync operation");
+    string src_dart_filename = dart_filenames[0];
+    string dst_dart_filename = dart_filenames[1];
+
+    if (!dst_dart_filename.exists) {
+        DART.create(dst_dart_filename, net);
+        writefln("DART %s created", dst_dart_filename);
+    }
+    auto dest_db = new DART(net, dst_dart_filename, dart_exception);
+    writefln("Open destination %s", dst_dart_filename);
+    if (dart_exception !is null) {
+        writefln("Fail to open destination DART: %s. Abort.", dst_dart_filename);
+        error(dart_exception);
+        return 1;
+    }
+    auto src_db = new DART(net, src_dart_filename, dart_exception, Yes.read_only);
+    if (dart_exception !is null) {
+        error("Fail to open DART: %s. Abort.", src_dart_filename);
+        error(dart_exception);
+        return 1;
+    }
+
+    immutable _journal_path = buildPath(op.journal_path, dst_dart_filename.baseName.stripExtension);
+
+    verbose("journal path %s", op.journal_path);
+    if (op.journal_path.exists) {
+        op.journal_path.rmdirRecurse;
+    }
+    op.journal_path.mkdirRecurse;
+    writefln("Synchronize journals %s", _journal_path);
+    synchronize(dest_db, src_db, _journal_path);
+    return 0;
+
+}
+
 int dartutil_operation(Operation op, string dartfilename, const SecureNet net, ref File fout) {
     with (op) {
         if (initialize) {
@@ -276,17 +313,11 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
         const hirpc = HiRPC(net);
 
         if (dartrpc) {
-            //tools.check(!inputfilename.empty, "Missing input file for DART-RPC");
-            File fin=stdin;
-            if (!inputfilename.empty) {
-                fin = File(inputfilename, "r");
-            }
-            auto hrange=HiBONRange(fin);
-            foreach(doc; hrange) {
-                const received = hirpc.receive(doc);
-                const sender = db(received);
-                fout.fwrite(sender);
-            }
+            tools.check(!inputfilename.empty, "Missing input file for DART-RPC");
+            const doc = inputfilename.fread;
+            const received = hirpc.receive(doc);
+            const sender = db(received);
+            fout.fwrite(sender);
             return 0;
         }
         if (dartread) {
@@ -434,44 +465,6 @@ int dartutil_test(Operation op, const SecureNet net, string[] dart_filenames, st
             vout.writeln;
         }
     }
-    return 0;
-
-}
-
-int dartutil_sync(Operation op, string[] dart_filenames, const SecureNet net) {
-    Exception dart_exception;
-    tools.check(dart_filenames.length == 2,
-            "A source and a destination dart file is required for the sync operation");
-    string src_dart_filename = dart_filenames[0];
-    string dst_dart_filename = dart_filenames[1];
-
-    if (!dst_dart_filename.exists) {
-        DART.create(dst_dart_filename, net);
-        writefln("DART %s created", dst_dart_filename);
-    }
-    auto dest_db = new DART(net, dst_dart_filename, dart_exception);
-    writefln("Open destination %s", dst_dart_filename);
-    if (dart_exception !is null) {
-        writefln("Fail to open destination DART: %s. Abort.", dst_dart_filename);
-        error(dart_exception);
-        return 1;
-    }
-    auto src_db = new DART(net, src_dart_filename, dart_exception, Yes.read_only);
-    if (dart_exception !is null) {
-        error("Fail to open DART: %s. Abort.", src_dart_filename);
-        error(dart_exception);
-        return 1;
-    }
-
-    immutable _journal_path = buildPath(op.journal_path, dst_dart_filename.baseName.stripExtension);
-
-    verbose("journal path %s", op.journal_path);
-    if (op.journal_path.exists) {
-        op.journal_path.rmdirRecurse;
-    }
-    op.journal_path.mkdirRecurse;
-    writefln("Synchronize journals %s", _journal_path);
-    synchronize(dest_db, src_db, _journal_path);
     return 0;
 
 }
