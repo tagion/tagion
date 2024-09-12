@@ -454,6 +454,7 @@ struct HiRPC {
 
     alias check = Check!HiRPCException;
     const SecureNet net;
+    private string domain=null;
 
     /**
      * Generate a random id 
