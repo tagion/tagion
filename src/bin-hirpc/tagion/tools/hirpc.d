@@ -5,7 +5,7 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tools = tagion.tools.toolsexception;
 import tagion.basic.Types : FileExtension, hasExtension;
-import tagion.services.DARTInterface : all_dartinterface_methods, accepted_dart_methods;
+import tagion.services.DARTInterface : all_dartinterface_methods, accepted_dart_methods, accepted_trt_methods;
 import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
 import tagion.tools.dartutil.dartindex;
@@ -18,7 +18,6 @@ import tagion.hibon.HiBONFile;
 import tagion.basic.Debug;
 import tagion.basic.basic : isinit;
 import tagion.communication.HiRPC;
-import std.range;
 import std.path;
 import std.stdio;
 import std.getopt;
@@ -84,8 +83,7 @@ int _main(string[] args) {
     string method_name;
     string[] inputs;
     string[] pkeys;
-    const name = () => method_name.splitter('.').retro.front;
-    const domain = () => method_name.split('.').dropBack(1).join('.');
+
     try {
         File fin = stdin;
         auto main_args = getopt(args,
@@ -121,7 +119,7 @@ int _main(string[] args) {
             return 0;
         }
 
-        File fout = stdout;
+        File fout=stdout;
         if (!output_filename.isinit) {
             fout = stdout;
             tools.check(output_filename.hasExtension(FileExtension.hibon),
@@ -130,22 +128,21 @@ int _main(string[] args) {
         }
 
         if (response_switch || result_switch) {
-            const net = new StdSecureNet;
-            const hirpc = HiRPC(net);
             auto inputfiles = args[1 .. $].filter!(file => file.hasExtension(FileExtension.hibon));
             verbose("inputfile %s", inputfiles);
 
+            const net = new StdSecureNet;
+            const hirpc = HiRPC(net);
             if (!inputfiles.empty) {
-                inputfiles.each!(file => strip_hirpc(hirpc, fout, file.fread, response_switch));
+                inputfiles.each!(file => strip_hirpc(hirpc, fout, file.fread, result_switch));
                 return 0;
             }
-            auto hrange = HiBONRange(fin);
-            hrange.each!(doc => strip_hirpc(hirpc, fout, doc, response_switch));
+            auto hrange=HiBONRange(fin);
+            hrange.each!(doc => strip_hirpc(hirpc, fout, doc, result_switch)); 
             return 0;
         }
-        const hirpc = HiRPC(null);
         tools.check(method_name !is string.init, "must supply methodname");
-        tools.check(all_dartinterface_methods.canFind(name()), format(
+        tools.check(all_dartinterface_methods.canFind(method_name), format(
                 "method name not valid must be one of %s", all_dartinterface_methods));
 
         DARTIndex[] get_indices(string[] _input) {
@@ -156,41 +153,30 @@ int _main(string[] args) {
             return _pkeys.map!(p => hash_net.dartKey(TRTLabel, Pubkey(p.decode))).array;
         }
 
+        enum TRT_METHOD = "trt.";
+        bool isTRTreq() {
+            return method_name.startsWith(TRT_METHOD);
+        }
+
         Document result;
-        switch (name()) {
-        case Queries.dartBullseye:
-            //result = isTRTreq ? trtdartBullseye().toDoc : dartBullseye().toDoc;
-            result = dartBullseye(hirpc.relabel(domain())).toDoc;
+        switch (method_name) {
+        case Queries.dartBullseye, TRT_METHOD ~ Queries.dartBullseye:
+            result = isTRTreq ? trtdartBullseye().toDoc : dartBullseye().toDoc;
             break;
-        case Queries.dartRead, Queries.dartCheckRead:
+        case Queries.dartRead, TRT_METHOD ~ Queries.dartRead:
             tools.check(!inputs.empty || !pkeys.empty, "must supply pkeys or dartindices");
 
             const dart_indices = get_indices(inputs);
             const pkey_indices = get_pkey_indices(pkeys);
             const res = dart_indices ~ pkey_indices;
-            result = dartIndexCmd(name(), res, hirpc.relabel(domain())).toDoc;
+            result = isTRTreq ? trtdartRead(res).toDoc : dartRead(res).toDoc;
             break;
-                version(none) {
-        case Queries.dartCheckRead:
+        case Queries.dartCheckRead, TRT_METHOD ~ Queries.dartCheckRead:
             tools.check(!inputs.empty || !pkeys.empty, "must supply pkeys or dartindices");
             const dart_indices = get_indices(inputs);
             const pkey_indices = get_pkey_indices(pkeys);
             const res = dart_indices ~ pkey_indices;
-            result = dartCheckRead(res, hirpc.relabel(domain())).toDoc;
-            break;
-                }
-        case Queries.dartModify:
-            tools.check(args.length <= 2, format("Only one file name expected Not %s", args[1 .. $]));
-            //const files = args[1..$].filter!(file => file.hasExtension(FileExtension.hibon));
-
-            version (none) {
-                File fin = stdin;
-                if (!args.empty) {
-                    fin = File(args[1], "r");
-                }
-                const doc = fin.fread;
-                result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
-            }
+            result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
             break;
         default:
             tools.check(0, format("method %s not implemented use one of %s", method_name, IMPLEMENTED_METHODS));
