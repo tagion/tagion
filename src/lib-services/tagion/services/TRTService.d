@@ -11,7 +11,7 @@ import std.format : format;
 import std.path : isValidPath;
 import std.path;
 import std.stdio;
-import std.range : enumerate;
+import std.range;
 import tagion.actor;
 import tagion.basic.Types : FileExtension;
 import tagion.communication.HiRPC;
@@ -35,13 +35,16 @@ import tagion.trt.TRT;
 import tagion.hibon.HiBON;
 import tagion.script.standardnames;
 import tagion.services.exception;
-import tagion.services.DARTInterface : accepted_trt_methods;
+import tagion.services.DARTInterface : accepted_dart_methods;
+
+enum domain = "trt";
+enum accepted_trt_methods = accepted_dart_methods.map!(name => only(domain,name).join('.'));
 
 @safe
 struct TRTOptions {
     bool enable = true;
     string folder_path = buildPath(".");
-    string trt_filename = "trt".setExtension(FileExtension.dart);
+    string trt_filename = domain.setExtension(FileExtension.dart);
 
     string trt_path() inout nothrow {
         return buildPath(folder_path, trt_filename);
@@ -119,7 +122,7 @@ struct TRTService {
             log("before hirpc");
             immutable receiver = hirpc.receive(doc);
 
-            if (!(receiver.isMethod && accepted_trt_methods.canFind(receiver.method.full_name))) {
+            if (!(receiver.isMethod && accepted_trt_methods.canFind(receiver.method.name))) {
                 log("received non valid HIRPC method");
                 const err = hirpc.error(receiver, ServiceCode.method.toString, ServiceCode.method);
                 client_req.respond(err.toDoc);

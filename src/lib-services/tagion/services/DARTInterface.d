@@ -22,7 +22,7 @@ import tagion.services.messages;
 import tagion.services.codes;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
-import tagion.services.TRTService : TRTOptions;
+import tagion.services.TRTService : TRTOptions, accepted_trt_methods;
 import tagion.dart.DARTBasic;
 import tagion.utils.JSONCommon;
 
@@ -66,10 +66,8 @@ static immutable(string[]) accepted_dart_methods = [
 ];
 
 pragma(msg, "deprecated search method should be removed from trt");
-/// All methods allowed for the TRT
-static immutable(string[]) accepted_trt_methods = accepted_dart_methods.map!(m => "trt." ~ m).array ~ "search";
 /// All allowed methods for the DARTInterface
-static immutable all_dartinterface_methods = accepted_dart_methods ~ accepted_trt_methods;
+static immutable all_dartinterface_methods = accepted_dart_methods ~ "search";
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     void set_response_doc(Document doc) @trusted {
