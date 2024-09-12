@@ -6,6 +6,7 @@ module tagion.communication.HiRPC;
 import std.exception : assumeWontThrow;
 import std.format;
 import std.traits : EnumMembers;
+import std.range;
 import tagion.basic.Types : Buffer;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -70,6 +71,10 @@ struct HiRPC {
             return assumeWontThrow(full_name.splitter('.').retro.front);
         }
 
+        string domain() pure const nothrow {
+            return assumeWontThrow(full_name.split('.').dropBack(1).join('.'));
+        }
+        
         void name(string name) pure nothrow @nogc {
             full_name = name;
         }
@@ -449,6 +454,7 @@ struct HiRPC {
 
     alias check = Check!HiRPCException;
     const SecureNet net;
+    string domain=null;
 
     /**
      * Generate a random id 
@@ -488,7 +494,7 @@ struct HiRPC {
         if (!params.empty) {
             message.params = params;
         }
-        message.name = method;
+        message.name = only(domain, method).join(".");
         message.params = params;
         auto sender = Sender(net, message);
         return sender;
@@ -699,6 +705,24 @@ unittest {
         }
     }
 
+    {
+        const hirpc=HiRPC(null, "domain");
+{
+        const sender = hirpc.action("action");
+        assert(sender.method.name == "action");
+        assert(sender.method.full_name == "domain.action");
+        assert(sender.method.domain == "domain");
+        }
+version(none) {
+        const hirpc1=hirpc.relabel("newdomain");
+{
+        const sender = hirpc1.action("action");
+        assert(sender.method.name == "action");
+        assert(sender.method.full_name == "newdomain.action");
+        assert(sender.method.domain == "newdomain");
+        }
+    }
+}
 }
 
 /// A good HiRPC result with no additional data.
