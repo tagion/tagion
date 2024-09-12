@@ -11,6 +11,7 @@ import tagion.dart.DARTBasic : DARTIndex, Params;
 import tagion.dart.DARTRim;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 
 /**
  * Constructs a HiRPC method for dartRead 
@@ -27,8 +28,6 @@ alias dartCheckRead = _dartIndexCmd!"dartCheckRead";
 /// ditto
 deprecated("Should use hirpc.relabel instead") 
 alias trtdartRead = _dartIndexCmd!"trt.dartRead";
-/// ditto
-alias trtdartCheckRead = _dartIndexCmd!"trt.dartCheckRead";
 
 private template _dartIndexCmd(string method) {
     const(HiRPC.Sender) _dartIndexCmd(Range)(
@@ -46,8 +45,7 @@ const(HiRPC.Sender) dartIndexCmd(Range)(
         string method,
         Range dart_indices,
         HiRPC hirpc = HiRPC(null),
-        uint id = 0) 
-    if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
+        uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
 
     auto params = new HiBON;
     auto params_dart_indices = new HiBON;
@@ -99,11 +97,5 @@ const(HiRPC.Sender) dartModify(
 const(HiRPC.Sender) dartBullseye(
         HiRPC hirpc = HiRPC(null),
         uint id = 0) {
-    return hirpc.dartBullseye(null, id);
-}
-
-const(HiRPC.Sender) trtdartBullseye(
-        HiRPC hirpc = HiRPC(null),
-        uint id = 0) {
-    return hirpc.opDispatch!"trt.dartBullseye"(null, id);
+    return hirpc.dartBullseye(Document(), id);
 }
