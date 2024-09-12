@@ -25,22 +25,18 @@ alias dartRead = _dartIndexCmd!"dartRead";
 /// ditto
 alias dartCheckRead = _dartIndexCmd!"dartCheckRead";
 /// ditto
+deprecated("Should use hirpc.relabel instead") 
 alias trtdartRead = _dartIndexCmd!"trt.dartRead";
 /// ditto
 alias trtdartCheckRead = _dartIndexCmd!"trt.dartCheckRead";
 
-template _dartIndexCmd(string method) {
+private template _dartIndexCmd(string method) {
     const(HiRPC.Sender) _dartIndexCmd(Range)(
             Range dart_indices,
             HiRPC hirpc = HiRPC(null),
-            uint id = 0)
-    if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
+            uint id = 0) {
 
-        auto params = new HiBON;
-        auto params_dart_indices = new HiBON;
-        params_dart_indices = dart_indices.filter!(b => b.length !is 0);
-        params[Params.dart_indices] = params_dart_indices;
-        return hirpc.opDispatch!method(params, id);
+        return dartIndexCmd(method, dart_indices, hirpc, id);
     }
 }
 
@@ -59,7 +55,6 @@ const(HiRPC.Sender) dartIndexCmd(Range)(
     params[Params.dart_indices] = params_dart_indices;
     return hirpc.action(method, params, id);
 }
-
 
 /**
 * Constructs a HiRPC method for dartRim
