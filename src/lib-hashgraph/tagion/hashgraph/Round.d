@@ -375,6 +375,7 @@ class Round {
     struct Rounder {
         Round last_round;
         Round last_decided_round;
+        Round round_to_be_decided;
         HashGraph hashgraph;
         Event[] last_witness_events;
 
@@ -525,7 +526,7 @@ class Round {
         void check_decide_round() {
             import tagion.utils.Term;
 
-            auto round_to_be_decided = last_decided_round._next;
+            round_to_be_decided = last_decided_round._next;
             if (!round_to_be_decided) {
                 return;
             }
@@ -578,6 +579,18 @@ class Round {
                 return;
             }
             collect_received_round(round_to_be_decided);
+        }
+
+        void decide_round() {
+            if (round_to_be_decided ) {
+                last_decided_round = round_to_be_decided;
+                round_to_be_decided.decide;
+                hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
+                log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
+                        hashgraph.statistics.future_majority_rounds);
+                collect_received_round(round_to_be_decided);
+                round_to_be_decided = null;
+            }
         }
 
         protected void collect_received_round(Round r)
