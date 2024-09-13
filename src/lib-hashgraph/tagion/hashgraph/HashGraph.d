@@ -280,7 +280,7 @@ class HashGraph {
     }
 
     /++
-    Returns: En event if the event package has been register correct
+    Returns: An event if the event package has been register correct
      +/
     private Event registerEventPackage(
             immutable(EventPackage*) event_pack)

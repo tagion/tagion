@@ -170,16 +170,7 @@ int _main(string[] args) {
             const res = dart_indices ~ pkey_indices;
             result = dartIndexCmd(name(), res, hirpc.relabel(domain())).toDoc;
             break;
-                version(none) {
-        case Queries.dartCheckRead:
-            tools.check(!inputs.empty || !pkeys.empty, "must supply pkeys or dartindices");
-            const dart_indices = get_indices(inputs);
-            const pkey_indices = get_pkey_indices(pkeys);
-            const res = dart_indices ~ pkey_indices;
-            result = dartCheckRead(res, hirpc.relabel(domain())).toDoc;
-            break;
-                }
-        case Queries.dartModify:
+       case Queries.dartModify:
             tools.check(args.length <= 2, format("Only one file name expected Not %s", args[1 .. $]));
             //const files = args[1..$].filter!(file => file.hasExtension(FileExtension.hibon));
 

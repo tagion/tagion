@@ -360,7 +360,7 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
             auto result = db(received, false);
             auto tosend = hirpc.toHiBON(result);
             auto tosendResult = tosend.method.params;
-            if (fout != stdout) {
+            if (fout !is stdout) {
                 fout.fwrite(tosendResult);
             }
             return 0;
