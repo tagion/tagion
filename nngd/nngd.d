@@ -101,7 +101,6 @@ enum nng_property_base {
 }
 
 struct NNGMessage {
-    nng_msg* msg;
 
     @disable this();
 
@@ -192,8 +191,10 @@ struct NNGMessage {
     int body_prepend(T)(const(T) data) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
-            auto rc = nng_msg_insert(msg, ptr(data), data.length);
-            enforce(rc == 0);
+            if(data.length > 0){
+                auto rc = nng_msg_insert(msg, &data[0], data.length);
+                enforce(rc == 0);
+            }    
             return 0;
         }
         else {
@@ -224,7 +225,7 @@ struct NNGMessage {
                 size = length;
             if (size == 0)
                 return [];
-            T data = cast(T)(bodyptr + (length - size))[0 .. size];
+            T data = cast(T)(bodyptr[length - size .. length]);
             auto rc = nng_msg_chop(msg, size);
             enforce(rc == 0);
             return data;
@@ -412,11 +413,17 @@ struct NNGMessage {
             return tmp;
         }
     }
+    
+    private:
+
+    nng_msg* msg;
+
 } // struct NNGMessage
 
 alias nng_aio_cb = void function(void*);
 
 struct NNGAio {
+    // it is forced to be public and used directly
     nng_aio* aio;
 
     @disable this();
@@ -443,11 +450,13 @@ struct NNGAio {
 
     // ---------- pointer prop
 
+    // it is just a getter in pair to setter, not needed really, may be removed
     @nogc @safe
     @property nng_aio* pointer() {
         return aio;
     }
 
+    // TODO: to be double checked regarding the package protection and public pointer
     @nogc
     @property void pointer(nng_aio* p) {
         if (p !is null) {
@@ -674,9 +683,8 @@ struct NNGSocket {
             }
             m_state = nng_socket_state.NNG_STATE_PREPARED;
             return 0;
-        }else{
-            return -1;
         }
+        return -1;
     }        
     
     version(withtls) {
@@ -775,9 +783,8 @@ struct NNGSocket {
             }
             m_state = nng_socket_state.NNG_STATE_PREPARED;
             return 0;
-        }else{
-            return -1;
         }
+        return -1;
     }        
     
     version(withtls) {
@@ -789,9 +796,8 @@ struct NNGSocket {
                     return rc;
                 }
                 return 0;
-            } else {
-                return -1;
             }
+            return -1;
         }
     }
 
@@ -1543,15 +1549,27 @@ version(withtls) {
     alias nng_tls_mode = libnng.nng_tls_mode;
     alias nng_tls_auth_mode = libnng.nng_tls_auth_mode;
     alias nng_tls_version = libnng.nng_tls_version;
-
+    
+    /**
+    *   NNG TLS config implementation
+    *   - create it in server or client mode
+    *   - set CA certifivate if needed (from file or string)
+    *   - set chain certificate if needed (from file or string)
+    *   - set auth mode (required, optional or none)
+    *   - for auth mode set own certificate and key (from file or string)
+    *   - assign the filled config to the dealer or listener object
+    *   - start dealer or listener
+    */
     struct NNGTLS {
-        nng_tls_config* tls;
-        nng_tls_mode _mode;
         
         @disable this();
         
         this(ref return scope NNGTLS rhs) {}
         
+        /**
+        *   constructor with specific mode:
+        *   [NNG_TLS_MODE_SERVER, NNG_TLS_MODE_CLIENT]
+        */
         this( nng_tls_mode imode  ) {
             int rc;
             _mode = imode;
@@ -1564,6 +1582,9 @@ version(withtls) {
             nng_tls_config_free(tls);
         }
 
+        /**
+        *   server name make sense for CLIENT to correspond with the CN of server certificate
+        */
         void set_server_name ( string iname ) {
             enforce(_mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
             auto rc = nng_tls_config_server_name(tls, toStringz(iname));
@@ -1652,16 +1673,21 @@ version(withtls) {
             ;                
         }
 
+        private:
+            
+        nng_tls_config* tls;
+        nng_tls_mode _mode;
+
     }
 
 }
 
 struct WebAppConfig {
-    string root_path = "";
-    string static_path = "";
-    string static_url = "";
-    string template_path = "";
-    string prefix_url = "";
+    string root_path;
+    string static_path;
+    string static_url;
+    string template_path;
+    string prefix_url;
     string[] directory_index = ["index.html"];
     string[string] static_map = [
         ".wasm": "application/wasm",
@@ -1673,35 +1699,35 @@ struct WebAppConfig {
 }
 
 struct WebData {
-    string route = null;
-    string rawuri = null;
-    string uri = null;
-    string[] path = null;
-    string[string] param = null;
-    string[string] headers = null;
+    string route;
+    string rawuri;
+    string uri;
+    string[] path;
+    string[string] param;
+    string[string] headers;
     string type = "text/html";
     size_t length = 0;
-    string method = null;
-    ubyte[] rawdata = null;
-    string text = null;
-    JSONValue json = null;
+    string method;
+    ubyte[] rawdata;
+    string text;
+    JSONValue json;
     http_status status = http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;
-    string msg = null;
+    string msg;
 
     void clear() {
-        route = "";
-        rawuri = "";
-        uri = "";
+        route = null;
+        rawuri = null;
+        uri = null;
         status = http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;
-        msg = "";
+        msg = null;
         path = [];
         param = null;
         headers = null;
         type = "text/html";
         length = 0;
-        method = "";
+        method = null;
         rawdata = [];
-        text = "";
+        text = null;
         json = null;
     }
 
@@ -1762,7 +1788,7 @@ struct WebData {
     }
 
     void parse_req(nng_http_req* req) {
-        enforce(req != null);
+        enforce(req !is null);
     }
 
     // TODO: find the way to list all headers
@@ -1775,6 +1801,7 @@ struct WebData {
         type = to!string(nng_http_res_get_header(res, toStringz("Content-type")));
         ubyte* buf;
         size_t len;
+        // TODO: check for memory leak - buf points to the result internal buffer
         nng_http_res_get_data(res, cast(void**)(&buf), &len);
         if (len > 0) {
             rawdata ~= buf[0 .. len];
@@ -1824,7 +1851,7 @@ struct WebData {
     }
 
     nng_http_res* export_res() {
-        char* buf = cast(char*) alloca(512);
+        char[512] buf;
         nng_http_res* res;
         int rc;
         rc = nng_http_res_alloc(&res);
@@ -1844,9 +1871,9 @@ struct WebData {
             return res;
         }
         {
-            memcpy(buf, type.ptr, type.length);
+            memcpy(&buf[0], type.ptr, type.length);
             buf[type.length] = 0;
-            rc = nng_http_res_set_header(res, "Content-type", buf);
+            rc = nng_http_res_set_header(res, "Content-type", &buf[0]);
             enforce(rc == 0);
         }
         if (type.startsWith("application/json")) {
