@@ -236,7 +236,9 @@ class Event {
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the previous witness.
          */
-        private this() nothrow {
+        private this() nothrow
+        in (!_witness, "A witness can only be created once for an event")
+        do {
             _count++;
             _witness = this;
             if (father_witness_is_leading) {
@@ -403,7 +405,6 @@ class Event {
                     ._witness_seen_mask;
                 if (!new_witness_seen[].empty) {
                     _intermediate_event = true;
-                    _intermediate_seen_mask[_father.node_id] = true;
                     _intermediate_seen_mask[node_id] = true;
                     auto max_round = maxRound;
                     new_witness_seen[]
@@ -672,7 +673,7 @@ class Event {
 
     @nogc
     struct Range(bool CONST = true) {
-        private Event current;
+        protected Event current;
         static if (CONST) {
             this(const Event event) pure nothrow @trusted {
                 current = cast(Event) event;

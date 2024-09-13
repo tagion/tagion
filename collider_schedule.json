@@ -228,7 +228,8 @@
         "--rounds=1000",
         "-N7",
         "100,2",
-        "-k"
+        "-k",
+        "-d"
                     
       ],
       "envs": {},
@@ -277,6 +278,17 @@
       "args": [],
       "envs": {},
       "stages": ["node_interface", "commit"],
+      "timeout": 0.0
+    },
+    "remote_sample": {
+      "args": [],
+      "envs": {
+          "SHELL_ADDRESSES": "tcp://localhost:8080",
+          "NODE_DART_ADDRESSES" : "abstract://node0/DART_NEUEWELLE abstract://node1/DART_NEUEWELLE",
+          "NODE_INPUT_ADDRESSES" : "abstract://node0/CONTRACT_NEUEWELLE",
+          "NODE_SUBSCRIPTION_ADDRESSES": "abstract://node0/SUBSCRIPTION_NEUEWELLE"
+      },
+      "stages": ["remote"],
       "timeout": 0.0
     }
   }

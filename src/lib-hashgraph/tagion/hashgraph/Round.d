@@ -82,7 +82,7 @@ class Round {
     private Event[] _events;
     protected bool _decided;
     private void decide() pure nothrow @nogc
-    in (!_decided)
+    in (!_decided, "A round should only be decided once")
     do {
         _decided = true;
     }
@@ -112,18 +112,11 @@ class Round {
         return EpochVote(epoch_number, cast(uint)(_valid_witness.count), pattern);
     }
 
-    enum Completed {
-        none,
-        too_few,
-        undecided,
-        all_witness,
-    }
-
-    final Completed completed(HashGraph hashgraph) pure nothrow {
+    final bool completed(HashGraph hashgraph) pure nothrow {
         import tagion.utils.Term;
 
         if (majority) {
-            Completed ret;
+            bool ret;
             auto list_majority_rounds =
                 this[].retro
                     .until!(r => !r.majority);
@@ -137,23 +130,22 @@ class Round {
             const _name = __format("%s%12s @%d%s", level_color(number_of_future_rounds), hashgraph.name, level(
                     number_of_future_rounds), RESET);
             scope (exit) {
-                if (ret > Completed.undecided) {
+                if (ret) {
                     __write(
-                            "%s Round %04d  witness=%#s | %(%#s %) ret=%s%s%s".replace(
+                            "%s Round %04d  witness=%#s | %(%#s %)".replace(
                             "#", node_size.to!string),
                             _name, number,
                             _valid_witness,
                             future_witness_masks
-                            .take(10),
-                            (ret <= Completed.undecided) ? RED : GREEN, ret, RESET
+                            .take(10)
                     );
                 }
             }
             if (list_majority_rounds.empty) {
-                return Completed.none;
+                return ret = false;
             }
             if (number_of_future_rounds < 4) {
-                return ret = Completed.too_few;
+                return ret = false;
             }
             const _all = _events.filter!(e => e !is null)
                 .all!(e => e.witness.decided) ||
@@ -196,21 +188,10 @@ class Round {
                         _events.map!(e => (e is null) ? -1 : cast(int) e.witness.no_votes),
                         pattern
                 );
-                if (number == 690) {
-                    __write("%s Round %04d strong  %(%#s %)".replace("#", node_size.to!string),
-                            _name,
-                            number,
-                            _next._events.map!(e => (e !is null) ? e.witness.previous_strongly_seen_mask : BitMask.init));
-                    __write("%s Round %04d votes   %(%#s %)".replace("#", node_size.to!string),
-                            _name,
-                            number,
-                            _events.map!(e => (e !is null) ? e.witness.voted_yes_mask : BitMask.init));
-                }
-                return ret = Completed.all_witness;
+                return ret = true;
             }
-            return ret = Completed.undecided;
         }
-        return Completed.none;
+        return false;
     }
 
     final const(BitMask) witness_mask() const pure nothrow {
@@ -548,12 +529,13 @@ class Round {
             if (!round_to_be_decided) {
                 return;
             }
-            const new_completed = round_to_be_decided.completed(hashgraph);
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
                 .map!(e => e.witness);
-            const _name = hashgraph.name;
-            if (new_completed <= Completed.undecided) {
+            const _name = hashgraph.name;          
+            const new_completed = round_to_be_decided.completed(hashgraph);
+            
+            if (!new_completed) {
                 return;
             }
             __write(
@@ -600,7 +582,6 @@ class Round {
 
         protected void collect_received_round(Round r)
         in (r.decided, "The round should be decided before the round can be collected")
-
         do {
             import tagion.utils.Term;
 
@@ -638,7 +619,6 @@ class Round {
             foreach (e; event_list) {
                 famous_seen_masks[e.node_id][e.node_id] = true;
                 famous_seen_masks[e._father.node_id] |= famous_seen_masks[e.node_id];
-                const collector = isMajority(famous_seen_masks[e._father.node_id], hashgraph);
                 if (!event_front[e._father.node_id] && isMajority(famous_seen_masks[e._father.node_id], hashgraph)) {
                     event_front[e._father.node_id] = e._father;
                 }
