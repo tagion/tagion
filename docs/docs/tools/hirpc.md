@@ -82,6 +82,8 @@ A received hibon response can be analyzed with `-A` and `-R` switch.
 Given HiBON response like.
 
 ### Examples
+
+This a HiRPC sample response
 ```json
 {
     "$@": "HiRPC",
@@ -111,7 +113,7 @@ Given HiBON response like.
 ```
 If the response is place in a file 'response.hibon' then the following command with show the type of response.
 ```sh
-hirpc dump.hibon -A
+hirpc response.hibon -A
 ```
 Prints this to the stdout.
 ```
@@ -119,11 +121,11 @@ Receiver
 Id     0
 Signed true
 ```
-This show that the response is a result type and thery is not session Id and that response is signed correctly.
+This show that the response is a `result` type and there is no session Id `(id==0)` and that response is signed correctly.
 
-The result of the response can be filter out, with the `-r` switch.
+The result of the response can be filter out, with the `-R` switch.
 ```sh 
-hirpc dump.hibon -R|hibonutil -pc
+hirpc response.hibon -R|hibonutil -pc
 ```
 
 This will output this to the stdout.
