@@ -530,15 +530,15 @@ class Round {
             if (!_round_to_be_decided) {
                 return;
             }
-            auto witness_in_round = _round_to_be_decided._events
-                .filter!(e => e !is null)
-                .map!(e => e.witness);
-            const _name = hashgraph.name;          
             const new_completed = _round_to_be_decided.completed(hashgraph);
             
             if (!new_completed) {
                 return;
             }
+            auto witness_in_round = _round_to_be_decided._events
+                .filter!(e => e !is null)
+                .map!(e => e.witness);
+            const _name = hashgraph.name;
             __write(
                     "%s %s%sRound %04d%s can be decided  witness=%d",
                     _name,
