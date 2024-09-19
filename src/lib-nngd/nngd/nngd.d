@@ -961,10 +961,6 @@ struct NNGSocket {
             return m_errno;
         }
         
-        @property nng_errno nngerrno() const {
-            return m_errno;
-        }
-
         @property nng_socket_type type() const {
             return m_type;
         }
