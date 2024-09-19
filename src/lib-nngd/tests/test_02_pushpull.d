@@ -88,7 +88,7 @@ int main()
     log("Hello NNGD!");
     log("Simple push-pull test with byte buffers");
 
-    string uri = "tcp://127.0.0.1:31200";
+    string uri = "tcp://127.0.0.1:31201";
 
     auto tid01 = spawn(&receiver_worker, uri);
     auto tid02 = spawn(&sender_worker, uri);

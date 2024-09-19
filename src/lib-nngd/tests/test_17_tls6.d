@@ -160,7 +160,7 @@ void receiver_worker(string url)
         if(k++ > NSTEPS + 3) break;
         sz = s.receivebuf(buf, buf.length);
         if(sz < 0 || sz == size_t.max){
-            error("REcv error: " ~ toString(s.m_errno));
+            error("REcv error: " ~ toString(s.nngerrno));
             continue;
         }
         auto str = cast(string)buf[0..sz];
@@ -182,8 +182,8 @@ int main()
     log("Hello NNGD!");
     log("TLS+TCP6 push-pull test with byte buffers");
 
-    string server_uri = "tls+tcp6://[::]:31201";
-    string client_uri = "tls+tcp6://[::1]:31201";
+    string server_uri = "tls+tcp6://[::]:31217";
+    string client_uri = "tls+tcp6://[::1]:31217";
 
     auto tid01 = spawn(&receiver_worker, server_uri);
     Thread.sleep(100.msecs);
