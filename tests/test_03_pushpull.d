@@ -88,7 +88,7 @@ int main()
     log("Hello NNGD!");
     log("Simple push-pull test with all transports");
     
-    string[3] transports = ["tcp://127.0.0.1:31200", "ipc:///tmp/testnng.ipc", "inproc://testnng"];
+    string[3] transports = ["tcp://127.0.0.1:31202", "ipc:///tmp/testnng.ipc", "inproc://testnng"];
     
     int _res = 0;
 

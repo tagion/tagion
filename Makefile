@@ -49,12 +49,14 @@ pretest:
 	rm -f logs/*
 
 posttest:
-	@grep -q ERROR logs/runtest.log && echo "There are errors. See runtest.log" || echo "All passed!"
+	@echo "."
+	@grep -a '#TEST' logs/runtest.log |grep -q ERROR && echo "There are errors. See runtest.log" || echo "All passed!"
 
 .SILENT: $(RUNTESTS)
 
 $(RUNTESTS):
-	tests/build/$@ >> logs/runtest.log
+	NNG_DEBUG=TRUE tests/build/$@ >> logs/runtest.log
+	@echo -n "."
 
 clean: clean-extern clean-local
 

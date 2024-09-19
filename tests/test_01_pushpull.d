@@ -67,7 +67,7 @@ void receiver_worker(string url)
         if(k++ > NSTEPS + 3) break;
         sz = s.receivebuf(buf, buf.length);
         if(sz < 0 || sz == size_t.max){
-            error("REcv error: " ~ toString(s.m_errno));
+            error("REcv error: " ~ toString(s.nngerrno));
             continue;
         }
         auto str = cast(string)buf[0..sz];

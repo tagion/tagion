@@ -565,19 +565,6 @@ struct NNGAio {
 } // struct NNGAio
 
 struct NNGSocket {
-    nng_socket_type m_type;
-    nng_socket_state m_state;
-    nng_socket m_socket;
-    nng_ctx[] m_ctx;
-    string[] m_subscriptions;
-    string m_name;
-    nng_errno m_errno;
-
-    bool m_raw;
-    bool m_may_send, m_may_recv;
-
-    nng_listener m_listener;
-    nng_dialer m_dialer;
 
     @disable this();
 
@@ -586,6 +573,8 @@ struct NNGSocket {
         m_type = itype;
         m_raw = iraw;
         m_state = nng_socket_state.NNG_STATE_NONE;
+        m_has_dialer = false;
+        m_has_listener = false;
         with (nng_socket_type) {
             final switch (itype) {
             case NNG_SOCKET_BUS:
@@ -682,6 +671,7 @@ struct NNGSocket {
                 return rc;
             }
             m_state = nng_socket_state.NNG_STATE_PREPARED;
+            m_has_listener = true;
             return 0;
         }
         return -1;
@@ -689,6 +679,8 @@ struct NNGSocket {
     
     version(withtls) {
         int listener_set_tls ( NNGTLS* tls ) {
+            if(!m_has_listener)
+                return -1;
             if(tls.mode == nng_tls_mode.NNG_TLS_MODE_SERVER){
                 auto rc = nng_listener_set_ptr(m_listener, toStringz(NNG_OPT_TLS_CONFIG), tls.tls);
                 if(rc != 0){
@@ -696,14 +688,15 @@ struct NNGSocket {
                     return rc;
                 }
                 return 0;
-            } else {
-                return -1;
-            }
+            } 
+            return -1;
         }
     }
 
     int listener_start( const bool nonblock = false ) @safe {
         m_errno = cast(nng_errno)0;
+        if(!m_has_listener)
+            return -1;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED) {
             auto rc =  nng_listener_start(m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
             if( rc != 0) {
@@ -712,9 +705,8 @@ struct NNGSocket {
             }
             m_state = nng_socket_state.NNG_STATE_CONNECTED;
             return 0;
-        } else { 
-            return -1;
-        }
+        } 
+        return -1;
     }
 
     int listen ( const(string) url, const bool nonblock = false ) nothrow {
@@ -726,10 +718,10 @@ struct NNGSocket {
                 return rc;
             }
             m_state = nng_socket_state.NNG_STATE_CONNECTED;
+            m_has_listener = true;
             return 0;
-        }else{
-            return -1;
         }
+        return -1;
     }
 
     // setup subscriber
@@ -782,6 +774,7 @@ struct NNGSocket {
                 return rc;
             }
             m_state = nng_socket_state.NNG_STATE_PREPARED;
+            m_has_dialer = true;
             return 0;
         }
         return -1;
@@ -789,6 +782,8 @@ struct NNGSocket {
     
     version(withtls) {
         int dialer_set_tls ( NNGTLS* tls ) {
+            if(!m_has_dialer)
+                return -1;
             if(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT){
                 auto rc = nng_dialer_set_ptr(m_dialer, toStringz(NNG_OPT_TLS_CONFIG), tls.tls);
                 if(rc != 0){
@@ -803,6 +798,8 @@ struct NNGSocket {
 
     int dialer_start( const bool nonblock = false ) @safe nothrow {
         m_errno = cast(nng_errno)0;
+        if(!m_has_dialer)
+            return -1;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED) {
             auto rc =  nng_dialer_start(m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
             if( rc != 0) {
@@ -811,9 +808,8 @@ struct NNGSocket {
             }
             m_state = nng_socket_state.NNG_STATE_CONNECTED;
             return 0;
-        } else { 
-            return -1;
-        }
+        } 
+        return -1;
     }
 
     int dial ( const(string) url, const bool nonblock = false ) @trusted nothrow {
@@ -825,11 +821,10 @@ struct NNGSocket {
                 return rc;
             }
             m_state = nng_socket_state.NNG_STATE_CONNECTED;
+            m_has_dialer = true;
             return 0;
         }
-        else {
-            return -1;
-        }
+        return -1;
     }
 
     // send & receive TODO: Serialization for objects and structures - see protobuf or hibon?
@@ -965,6 +960,10 @@ struct NNGSocket {
         @property int errno() const {
             return m_errno;
         }
+        
+        @property nng_errno nngerrno() const {
+            return m_errno;
+        }
 
         @property nng_socket_type type() const {
             return m_type;
@@ -1056,85 +1055,199 @@ struct NNGSocket {
     @property Duration reconnmaxt() { return getopt_duration(NNG_OPT_RECONNMAXT); } 
     @property void reconnmaxt(Duration val) { setopt_duration(NNG_OPT_RECONNMAXT, val); }
 
-    // TODO: NNG_OPT_IPC_*, NNG_OPT_TLS_*, NNG_OPT_WS_*  
+    // TODO: NNG_OPT_IPC_*, NNG_OPT_WS_*  
 private:
+
+    nng_socket_type m_type;
+    nng_socket_state m_state;
+    nng_socket m_socket;
+    nng_ctx[] m_ctx;
+    string[] m_subscriptions;
+    string m_name;
+    nng_errno m_errno;
+
+    bool m_raw;
+    bool m_may_send, m_may_recv;
+
+    nng_listener m_listener;
+    nng_dialer m_dialer;
+    bool m_has_dialer, m_has_listener;
+    
     nothrow {
         @safe
-        void setopt_int(string opt, int val) {
+        void setopt_int(string opt, int val, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
-            int rc = nng_socket_set_int(m_socket, toStringz(opt), val);
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_set_int(m_dialer, toStringz(opt), val);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_set_int(m_listener, toStringz(opt), val);
+                    break;
+                default:
+                    rc = nng_socket_set_int(m_socket, toStringz(opt), val);
+                    break;
+            }    
             if (rc == 0) {
                 return;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-            }
+            m_errno = cast(nng_errno) rc;
         }
 
         @trusted
-        int getopt_int(string opt) {
+        int getopt_int(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = cast(nng_errno) 0;
             int p;
-            int rc = nng_socket_get_int(m_socket, toStringz(opt), &p);
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_get_int(m_dialer, toStringz(opt), &p);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_get_int(m_listener, toStringz(opt), &p);
+                    break;
+                default:
+                    rc = nng_socket_get_int(m_socket, toStringz(opt), &p);
+                    break;
+            }    
             if (rc == 0) {
                 return p;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-                return -1;
-            }
+            m_errno = cast(nng_errno) rc;
+            return -1;
         }
 
         @safe
-        void setopt_ulong(string opt, ulong val) {
+        void setopt_ulong(string opt, ulong val, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
-            int rc = nng_socket_set_uint64(m_socket, toStringz(opt), val);
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_set_uint64(m_dialer, toStringz(opt), val);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_set_uint64(m_listener, toStringz(opt), val);
+                    break;
+                default:
+                    rc = nng_socket_set_uint64(m_socket, toStringz(opt), val);
+                    break;
+            }    
             if (rc == 0) {
                 return;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-            }
+            m_errno = cast(nng_errno) rc;
         }
 
         @trusted
-        ulong getopt_ulong(string opt) {
+        ulong getopt_ulong(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
             ulong p;
-            int rc = nng_socket_get_uint64(m_socket, toStringz(opt), &p);
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_get_uint64(m_dialer, toStringz(opt), &p);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_get_uint64(m_listener, toStringz(opt), &p);
+                    break;
+                default:
+                    rc = nng_socket_get_uint64(m_socket, toStringz(opt), &p);
+                    break;
+            }    
             if (rc == 0) {
                 return p;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-                return -1;
-            }
+            m_errno = cast(nng_errno) rc;
+            return -1;
         }
 
         @safe
-        void setopt_size(string opt, size_t val) {
+        void setopt_size(string opt, size_t val, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
-            int rc = nng_socket_set_size(m_socket, toStringz(opt), val);
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_set_size(m_dialer, toStringz(opt), val);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_set_size(m_listener, toStringz(opt), val);
+                    break;
+                default:
+                    rc = nng_socket_set_size(m_socket, toStringz(opt), val);
+                    break;
+            }    
             if (rc == 0) {
                 return;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
+            m_errno = cast(nng_errno) rc;
+        }
+        
+        @safe
+        void setopt_bool(string opt, bool val, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
+            m_errno = nng_errno.NNG_OK;
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_set_bool(m_dialer, toStringz(opt), val);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_set_bool(m_listener, toStringz(opt), val);
+                    break;
+                default:
+                    rc = nng_socket_set_bool(m_socket, toStringz(opt), val);
+                    break;
+            }    
+            if (rc == 0) {
+                return;
             }
+            m_errno = cast(nng_errno) rc;
         }
 
         @trusted
-        size_t getopt_size(string opt) {
+        bool getopt_bool(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
-            size_t p;
-            int rc = nng_socket_get_size(m_socket, toStringz(opt), &p);
+            bool p;
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_get_bool(m_dialer, toStringz(opt), &p);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_get_bool(m_listener, toStringz(opt), &p);
+                    break;
+                default:
+                    rc = nng_socket_get_bool(m_socket, toStringz(opt), &p);
+                    break;
+            }    
             if (rc == 0) {
                 return p;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-                return -1;
+            m_errno = cast(nng_errno) rc;
+            return false;
+        }
+        
+        @trusted
+        size_t getopt_size(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
+            m_errno = nng_errno.NNG_OK;
+            size_t p;
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_get_size(m_dialer, toStringz(opt), &p);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_get_size(m_listener, toStringz(opt), &p);
+                    break;
+                default:
+                    rc = nng_socket_get_size(m_socket, toStringz(opt), &p);
+                    break;
+            }    
+            if (rc == 0) {
+                return p;
             }
+            m_errno = cast(nng_errno) rc;
+            return -1;
         }
 
         string getopt_string(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
@@ -1155,60 +1268,94 @@ private:
             if (rc == 0) {
                 return to!string(ptr);
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-                return "<none>";
-            }
+            m_errno = cast(nng_errno) rc;
+            return null;
         }
 
         @safe
-        void setopt_string(string opt, string val) {
+        void setopt_string(string opt, string val, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
-            int rc = nng_socket_set_string(m_socket, toStringz(opt), toStringz(val));
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_set_string(m_dialer, toStringz(opt), toStringz(val));
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_set_string(m_listener, toStringz(opt), toStringz(val));
+                    break;
+                default:
+                    rc = nng_socket_set_string(m_socket, toStringz(opt), toStringz(val));
+                    break;
+            }    
             if (rc == 0) {
                 return;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-            }
+            m_errno = cast(nng_errno) rc;
         }
 
         @safe
-        void setopt_buf(string opt, const ubyte[] val) {
+        void setopt_buf(string opt, const ubyte[] val, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
-            auto rc = nng_socket_set(m_socket, toStringz(opt), ptr(val), val.length);
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_set(m_dialer, toStringz(opt), ptr(val), val.length);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_set(m_listener, toStringz(opt), ptr(val), val.length);
+                    break;
+                default:
+                    rc = nng_socket_set(m_socket, toStringz(opt), ptr(val), val.length);
+                    break;
+            }    
             if (rc == 0) {
                 return;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-            }
+            m_errno = cast(nng_errno) rc;
         }
 
         @trusted
-        Duration getopt_duration(string opt) {
+        Duration getopt_duration(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
             nng_duration p;
-            int rc = nng_socket_get_ms(m_socket, toStringz(opt), &p);
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_get_ms(m_dialer, toStringz(opt), &p);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_get_ms(m_listener, toStringz(opt), &p);
+                    break;
+                default:
+                    rc = nng_socket_get_ms(m_socket, toStringz(opt), &p);
+                    break;
+            }    
             if (rc == 0) {
                 return msecs(p);
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-                return infiniteDuration;
-            }
+            m_errno = cast(nng_errno) rc;
+            return infiniteDuration;
         }
 
         @safe
-        void setopt_duration(string opt, Duration val) {
+        void setopt_duration(string opt, Duration val, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = cast(nng_errno) 0;
-            auto rc = nng_socket_set_ms(m_socket, cast(const char*) toStringz(opt), cast(int) val.total!"msecs");
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_set_ms(m_dialer, cast(const char*) toStringz(opt), cast(int) val.total!"msecs");
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_set_ms(m_listener, cast(const char*) toStringz(opt), cast(int) val.total!"msecs");
+                    break;
+                default:
+                    rc = nng_socket_set_ms(m_socket, cast(const char*) toStringz(opt), cast(int) val.total!"msecs");
+                    break;
+            }    
             if (rc == 0) {
                 return;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-            }
+            m_errno = cast(nng_errno) rc;
         }
 
         nng_sockaddr getopt_addr(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
@@ -1229,23 +1376,30 @@ private:
             if (rc == 0) {
                 return addr;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-                addr.s_family = nng_sockaddr_family.NNG_AF_NONE;
-                return addr;
-            }
+            m_errno = cast(nng_errno) rc;
+            addr.s_family = nng_sockaddr_family.NNG_AF_NONE;
+            return addr;
         }
 
         @trusted
-        void setopt_addr(string opt, nng_sockaddr val) {
+        void setopt_addr(string opt, nng_sockaddr val, nng_property_base base = nng_property_base.NNG_BASE_SOCKET) {
             m_errno = nng_errno.NNG_OK;
-            int rc = nng_socket_set_addr(m_socket, cast(const char*) toStringz(opt), &val);
+            int rc;
+            switch (base) {
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_set_addr(m_dialer, cast(const char*) toStringz(opt), &val);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_set_addr(m_listener, cast(const char*) toStringz(opt), &val);
+                    break;
+                default:
+                    rc = nng_socket_set_addr(m_socket, cast(const char*) toStringz(opt), &val);
+                    break;
+            }    
             if (rc == 0) {
                 return;
             }
-            else {
-                m_errno = cast(nng_errno) rc;
-            }
+            m_errno = cast(nng_errno) rc;
         }
     } // nothrow
 } // struct Socket
@@ -1550,6 +1704,36 @@ version(withtls) {
     alias nng_tls_auth_mode = libnng.nng_tls_auth_mode;
     alias nng_tls_version = libnng.nng_tls_version;
     
+    struct NNGTLSInfo {
+        nng_tls_auth_mode tls_authmode;
+        string tls_cert_key_file;
+        string tls_ca_file;
+        string tls_server_name;
+        bool tls_verified;
+        string tls_peer_cn;
+        string tls_peer_alt_names;
+        string toString(){
+            return format(
+                 "\r\n<TLS>\r\n"
+                ~"tls-verified:         %s\r\n"
+                ~"tls_authmode:         %s\r\n"
+                ~"tls-server-name       %s\r\n"
+                ~"tls-peer-cn:          %s\r\n"
+                ~"tls-peer-alt-names:   %s\r\n"
+                ~"tls-ca-file           %s\r\n"
+                ~"tls-cert-key-file     %s\r\n"
+                ~"</TLS>\r\n",
+                 (tls_verified) ? "TRUE" : "FALSE"
+                ,tls_authmode 
+                ,tls_server_name
+                ,tls_peer_cn
+                ,tls_peer_alt_names
+                ,tls_ca_file
+                ,tls_cert_key_file
+            );
+        }
+    }
+
     /**
     *   NNG TLS config implementation
     *   - create it in server or client mode
@@ -2438,15 +2622,15 @@ struct WebClient {
         nng_aio* aio;
         WebData wd = WebData();
         rc = nng_url_parse(&url, uri.toStringz());
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_client_alloc(&cli, url);
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_req_alloc(&req, url);
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0);
+        enforce(rc == 0, nng_errstr(rc));
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
     
         version(withtls) {
