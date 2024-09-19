@@ -953,40 +953,43 @@ struct NNGSocket {
 
     // properties Note @propery is not need anymore
     @nogc nothrow pure {
-        @property int state() const {
-            return m_state;
-        }
+        @safe {
+            @property int state() const {
+                return m_state;
+            }
 
-        @property int errno() const {
-            return m_errno;
-        }
+            @property int errno() const {
+                return m_errno;
+            }
+            
+            @property nng_socket_type type() const {
+                return m_type;
+            }
+
+            string name() const {
+                return m_name;
+            }
+
+            /* You don't need to dup the string because is immutable 
+                Only if you are planing to change the content in the string
+        @property void name(string val) { m_name = val.dup; }
+                Ex:
+                The function can be @nogc if you don't duplicate
+        */
+            void name(string val) {
+                m_name = val;
+            }
+
+            @property bool raw() const {
+                return m_raw;
+            }
         
-        @property nng_socket_type type() const {
-            return m_type;
         }
 
         @property string versionstring() {
             import core.stdc.string : strlen;
 
             return nng_version[0 .. strlen(nng_version)];
-        }
-
-        string name() const {
-            return m_name;
-        }
-
-        /* You don't need to dup the string because is immutable 
-            Only if you are planing to change the content in the string
-    @property void name(string val) { m_name = val.dup; }
-            Ex:
-            The function can be @nogc if you don't duplicate
-    */
-        void name(string val) {
-            m_name = val;
-        }
-
-        @property bool raw() @safe const {
-            return m_raw;
         }
 
     } // nogc nothrow pure
