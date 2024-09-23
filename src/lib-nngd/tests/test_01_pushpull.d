@@ -32,6 +32,9 @@ void sender_worker(string url)
         }
         enforce(rc == 0);
     }
+    if(s.state is nng_socket_state.NNG_STATE_CONNECTED){
+        log(">> connected with : " ~ nng_errstr(s.errno));
+    }
     log(nngtest_socket_properties(s,"sender"));
     while(1){
         line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
@@ -67,7 +70,7 @@ void receiver_worker(string url)
         if(k++ > NSTEPS + 3) break;
         sz = s.receivebuf(buf, buf.length);
         if(sz < 0 || sz == size_t.max){
-            error("REcv error: " ~ toString(s.m_errno));
+            error("REcv error: " ~ nng_errstr(s.errno));
             continue;
         }
         auto str = cast(string)buf[0..sz];

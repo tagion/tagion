@@ -66,7 +66,7 @@ main()
 
     log("NNGAio test 1: socket level send-receive");
 
-    string url = "tcp://127.0.0.1:13003";
+    string url = "tcp://127.0.0.1:13004";
     try{
         NNGSocket sr = NNGSocket(nng_socket_type.NNG_SOCKET_PULL, false);
         sr.recvtimeout = msecs(1000);

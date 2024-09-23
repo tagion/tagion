@@ -112,7 +112,7 @@ int main()
     log("Hello NNGD!");
     log("Simple req-rep test in sync mode");
 
-    string uri = "tcp://127.0.0.1:31200";
+    string uri = "tcp://127.0.0.1:31205";
     immutable string[] tags = ["TAG0", "TAG1", "TAG2", "TAG3"];
 
     auto tid01 = spawn(&server_worker, uri);         // server 
