@@ -60,6 +60,11 @@ struct AccountDetails {
         activated.remove(billHash);
     }
 
+    bool force_unlock_bills() {
+        import std.range;
+        activated.clear;
+        return activated.empty;
+    }
 
     bool add_bill(TagionBill bill) {
         auto index = hash_net.dartIndex(bill);
@@ -303,10 +308,8 @@ void create_pending_payment(
     account.bills ~= input_bill;
     account.activated[hash_net.dartIndex(input_bill)] = true;
     account.hirpcs ~= rpc.toDoc;
+    }
 }
-
-}
-
 /// AccountHistory
 unittest {
     import std.stdio;
@@ -413,6 +416,36 @@ unittest {
             assert(item.fee == 0.TGN, format("Incorrect amount fee %s", item.fee));
         }
     }
+}
+/// Bills force unlock
+unittest{
+    import std.stdio;
+    import tagion.hibon.HiBONJSON;
+
+    auto my_net = new StdSecureNet;
+    my_net.generateKeyPair("force_unlock");
+
+    auto your_net = new StdSecureNet;
+    your_net.generateKeyPair("I am someone else");
+
+    AccountDetails account;
+    account.derivers[my_net.pubkey] = [0];
+
+    account.bills ~= TagionBill(100.TGN, sdt_t(0), my_net.pubkey, []);
+    account.bills ~= TagionBill(200.TGN, sdt_t(0), my_net.pubkey, []);
+    account.bills ~= TagionBill(300.TGN, sdt_t(0), my_net.pubkey, []);
+
+    account.create_pending_payment(
+        change: 0.TGN,
+        sent: 400.TGN,
+        fee: 0.TGN,
+        sender: my_net.pubkey,
+        receiver: your_net.pubkey,
+    );
+    
+    assert(!account.activated.empty);
+    account.force_unlock_bills();
+    assert(account.activated.empty);
 }
 
 @safe
