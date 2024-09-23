@@ -60,6 +60,7 @@ struct AccountDetails {
         activated.remove(billHash);
     }
 
+    @trusted
     bool unlock_all_bills() {
         activated.clear();
         return activated.length == 0;
