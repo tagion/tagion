@@ -35,7 +35,7 @@ import tagion.wallet.AccountDetails;
 import tagion.wallet.KeyRecover;
 import Wallet = tagion.wallet.SecureWallet;
 import tagion.wallet.WalletException;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.tools.revision;
 
@@ -664,15 +664,6 @@ extern (C) {
             sContract.contract.inputs.each!(hash => __wallet_storage.wallet.account.unlock_bill_by_hash(hash));
 
             return SUCCESS;
-        }
-        return ERROR;
-    }
-
-    export uint force_unlock_bills() {
-        if (__wallet_storage.wallet.isLoggedin()) {
-            if(__wallet_storage.wallet.account.force_unlock_bills()){
-                return SUCCESS;
-            }
         }
         return ERROR;
     }
