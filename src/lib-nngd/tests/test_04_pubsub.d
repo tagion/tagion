@@ -110,7 +110,7 @@ int main()
     log("Hello NNGD!");
     log("Simple pub-sub test with post-allocated strings");
 
-    string uri = "tcp://127.0.0.1:31200";
+    string uri = "tcp://127.0.0.1:31203";
     immutable string[] tags = ["TAG0", "TAG1", "TAG2", "TAG3"];
 
     auto tid01 = spawn(&pub_worker, uri, tags);         // pub for random tag publish

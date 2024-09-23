@@ -99,7 +99,7 @@ int main()
     log("Hello NNGD!");
     log("Simple pair free duplex test");
 
-    string uri = "tcp://127.0.0.1:31200";
+    string uri = "tcp://127.0.0.1:31208";
 
     try{
 

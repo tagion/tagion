@@ -160,7 +160,7 @@ void receiver_worker(string url)
         if(k++ > NSTEPS + 3) break;
         sz = s.receivebuf(buf, buf.length);
         if(sz < 0 || sz == size_t.max){
-            error("REcv error: " ~ toString(s.m_errno));
+            error("REcv error: " ~ nng_errstr(s.errno));
             continue;
         }
         auto str = cast(string)buf[0..sz];
@@ -183,7 +183,7 @@ int main()
     log("Hello NNGD!");
     log("Simple push-pull test with byte buffers");
 
-    string uri = "tls+tcp://127.0.0.1:31201";
+    string uri = "tls+tcp://127.0.0.1:31207";
 
     auto tid01 = spawn(&receiver_worker, uri);
     Thread.sleep(100.msecs);

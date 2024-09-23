@@ -67,7 +67,7 @@ void receiver_worker(string url)
         if(k++ > NSTEPS + 3) break;
         sz = s.receivebuf(buf, buf.length);
         if(sz < 0 || sz == size_t.max){
-            error("REcv error: " ~ toString(s.m_errno));
+            error("REcv error: " ~ nng_errstr(s.errno));
             continue;
         }
         auto str = cast(string)buf[0..sz];
@@ -87,8 +87,8 @@ void receiver_worker(string url)
 int main()
 {
 
-    string server_uri = "tcp6://[::]:31200";
-    string client_uri = "tcp6://[::1]:31200";
+    string server_uri = "tcp6://[::]:31216";
+    string client_uri = "tcp6://[::1]:31216";
     
     log("Hello NNGD!");
     log("TCP6 push-pull test with byte buffers for %s <- %s ", server_uri, client_uri);
