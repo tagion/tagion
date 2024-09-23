@@ -3,7 +3,8 @@ module tagion.errors.ConsensusExceptions;
 @safe:
 
 import std.format : format;
-import tagion.errors.tagionexceptions : TagionException, ERRORS;
+import tagion.errors.tagionexceptions : TagionException;
+import tagion.errors.categories;
 
 void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
 if (is(E : ConsensusException)) {

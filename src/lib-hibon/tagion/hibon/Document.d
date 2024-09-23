@@ -22,7 +22,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.utils.StdTime;
 import tagion.basic.basic : isinit;
-import tagion.errors.tagionexceptions : ERRORS;
+import tagion.errors.categories : ERRORS;
 import LEB128 = tagion.utils.LEB128;
 import tagion.errors.tagionexceptions : Check;
 public import tagion.hibon.HiBONJSON;
