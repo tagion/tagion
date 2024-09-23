@@ -60,6 +60,10 @@ struct AccountDetails {
         activated.remove(billHash);
     }
 
+    bool unlock_all_bills() {
+        activated.clear();
+        return activated.length == 0;
+    }
 
     bool add_bill(TagionBill bill) {
         auto index = hash_net.dartIndex(bill);
@@ -413,6 +417,35 @@ unittest {
             assert(item.fee == 0.TGN, format("Incorrect amount fee %s", item.fee));
         }
     }
+}
+
+/// Unlock bills.
+unittest{
+
+    import std.stdio;
+    import tagion.hibon.HiBONJSON;
+
+    auto my_net = new StdSecureNet;
+    my_net.generateKeyPair("account_history");
+
+    AccountDetails account;
+    account.bills ~= TagionBill(100.TGN, sdt_t(0), my_net.pubkey, []);
+    account.bills ~= TagionBill(200.TGN, sdt_t(0), my_net.pubkey, []);
+    account.bills ~= TagionBill(300.TGN, sdt_t(0), my_net.pubkey, []);
+
+    account.activated[hash_net.dartIndex(account.bills[0])] = true;
+    account.activated[hash_net.dartIndex(account.bills[2])] = true;
+
+    assert(account.available == 200.TGN);
+    assert(account.locked == 400.TGN);
+    assert(account.total == 600.TGN);
+
+    writeln("Account activated ", account.activated.length);
+    account.unlock_all_bills();
+    writeln("Account activated ", account.activated.length);
+    assert(account.available == 600.TGN);
+    assert(account.locked == 0.TGN);
+    assert(account.total == 600.TGN);
 }
 
 @safe
