@@ -34,7 +34,6 @@ void check_errors(Errors)(string filename) nothrow if (is(Errors == enum)) {
     import std.exception;
     import std.algorithm;
     import std.string;
-    import tagion.basic.basic : NameOf;
     import tagion.basic.Debug : __format;
 
     void do_stuff() @safe nothrow {

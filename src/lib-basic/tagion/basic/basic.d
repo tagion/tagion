@@ -47,8 +47,6 @@ template basename(alias K) {
     enum basename = suffix!(name, name.length);
 }
 
-enum NameOf(alias nameType) = __traits(identifier, nameType);
-
 /++
  Returns:
  function name of the current function
