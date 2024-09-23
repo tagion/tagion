@@ -2,6 +2,20 @@ module tagion.basic.tagionexceptions;
 
 import std.exception;
 
+enum ERRORS {
+    HIBON = 10_000, 
+    HASHGRAPH = 11_000,
+    GOSSIPNET = 12_000,
+    DART = 13_000,
+    SECURITY = 14_000,
+    CIPHER = 15_000,
+    CREDITIAL = 16_000,
+    NETWORK = 17_000,
+    TVM = 18_000,
+    
+    
+}
+
 @safe
 interface TagionExceptionInterface {
     // Empty

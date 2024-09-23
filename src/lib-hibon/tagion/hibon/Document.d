@@ -22,6 +22,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.utils.StdTime;
 import tagion.basic.basic : isinit;
+import tagion.basic.tagionexceptions : ERRORS;
 import LEB128 = tagion.utils.LEB128;
 import tagion.basic.tagionexceptions : Check;
 public import tagion.hibon.HiBONJSON;
@@ -1296,7 +1297,7 @@ static assert(uint.sizeof == 4);
             /// Element error codes
             enum ErrorCode {
                 NONE, /// No errors
-                INVALID_NULL, /// Invalid null object
+                INVALID_NULL = ERRORS.HIBON, /// Invalid null object
                 //DOCUMENT_TYPE,  /// Warning document type
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION, /// Document can not be iterated because of a Document format fail
