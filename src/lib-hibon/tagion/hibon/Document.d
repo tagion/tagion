@@ -1481,3 +1481,14 @@ unittest {
     immutable imu_doc = Document.init;
     Document doc = imu_doc.mut;
 }
+
+unittest {
+    import tagion.basic.testbasic;
+    import tagion.errors.categories;
+
+    const category_file = unitfile("hibon_errors.json");
+    version (UPDATE_ERROR_CATEGORIES)
+        category_file.fwrite!(Document.Element.ErrorCode);
+    category_file.check_errors!(Document.Element.ErrorCode);
+}
+

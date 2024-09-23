@@ -111,10 +111,8 @@ enum ConsensusFailCode {
 unittest {
     import tagion.basic.testbasic;
     import tagion.errors.categories;
-    import std.stdio;
 
     const category_file = unitfile("consensus_errors.json");
-    writefln("%s = %s", __FILE_FULL_PATH__, category_file);
     version (UPDATE_ERROR_CATEGORIES)
         category_file.fwrite!ConsensusFailCode;
     category_file.check_errors!ConsensusFailCode;

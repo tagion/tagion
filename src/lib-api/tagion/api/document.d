@@ -676,3 +676,4 @@ unittest {
     testGetFunc!(float)(21.1f, &tagion_document_get_float32); 
     testGetFunc!(double)(321.312312f, &tagion_document_get_float64);
 }
+

@@ -73,10 +73,8 @@ void check_errors(Errors)(string filename) nothrow if (is(Errors == enum)) {
 
 unittest {
     import tagion.basic.testbasic;
-    import std.stdio;
 
     const category_file = unitfile("categories.json");
-    writefln("category_file=%s", category_file);
     version (UPDATE_ERROR_CATEGORIES)
         category_file.fwrite!ERRORS;
     category_file.check_errors!ERRORS;
