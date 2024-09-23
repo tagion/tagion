@@ -31,7 +31,7 @@ private {
 
     //import tagion.basic.basic;
     //    import std.stdio : writefln, writeln;
-    import tagion.basic.tagionexceptions : Check;
+    import tagion.errors.tagionexceptions : Check;
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;

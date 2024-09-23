@@ -13,7 +13,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONtoText;
 import tagion.hibon.HiBONRecord;
 import tagion.wallet.WalletException;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 import nngd;
 

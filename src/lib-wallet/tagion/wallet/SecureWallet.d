@@ -29,7 +29,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 
 import tagion.Keywords;
 import tagion.basic.Message;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.communication.HiRPC;
 import tagion.crypto.Cipher;
 import tagion.crypto.random.random;

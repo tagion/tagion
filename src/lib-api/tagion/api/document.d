@@ -3,7 +3,7 @@ module tagion.api.document;
 
 import tagion.api.errors;
 import tagion.hibon.Document;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import core.stdc.stdint;
 
 private enum DOCUMENT_ERROR_TEXT = "Document ErrorCode";

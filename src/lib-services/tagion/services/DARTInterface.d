@@ -165,7 +165,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 }
 
 import tagion.services.exception;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;

@@ -8,7 +8,7 @@ import tagion.basic.Debug;
 import tagion.basic.Version : ver;
 import tagion.crypto.random.random;
 import std.format;
-import tagion.basic.tagionexceptions : Check, TagionException;
+import tagion.errors.tagionexceptions : Check, TagionException;
 import std.uni;
 
 /**

@@ -35,7 +35,7 @@ import tagion.wallet.AccountDetails;
 import tagion.wallet.KeyRecover;
 import Wallet = tagion.wallet.SecureWallet;
 import tagion.wallet.WalletException;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 import tagion.tools.revision;
 

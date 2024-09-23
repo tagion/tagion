@@ -22,7 +22,7 @@ import tagion.hibon.HiBONFile;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.basic.Types : FileExtension;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.testbench.tools.Environment;
 import tagion.tools.Basic : Main, __verbose_switch;
 import tagion.tools.wallet.WalletInterface;

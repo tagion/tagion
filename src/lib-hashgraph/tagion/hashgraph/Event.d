@@ -38,7 +38,7 @@ import tagion.basic.Debug;
 class Event {
     package static bool scrapping;
 
-    import tagion.basic.ConsensusExceptions;
+    import tagion.errors.ConsensusExceptions;
 
     alias check = Check!EventConsensusException;
     protected static uint _count;

@@ -1,6 +1,6 @@
 module tagion.tools.toolsexception;
 
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 /**
  * Exception type used by tagion.tools module

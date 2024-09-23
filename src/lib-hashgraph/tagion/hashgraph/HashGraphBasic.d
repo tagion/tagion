@@ -9,7 +9,7 @@ import std.stdio;
 import std.traits : isSigned, isIntegral;
 import std.meta;
 import std.typecons : TypedefType;
-import tagion.basic.ConsensusExceptions : ConsensusException, GossipConsensusException, convertEnum;
+import tagion.errors.ConsensusExceptions : ConsensusException, GossipConsensusException, convertEnum;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText;
 import tagion.communication.HiRPC : HiRPC;
@@ -121,7 +121,7 @@ alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 ///
 struct EventBody {
     enum int eva_altitude = -77;
-    import tagion.basic.ConsensusExceptions;
+    import tagion.errors.ConsensusExceptions;
 
     protected alias check = Check!HashGraphConsensusException;
     import std.traits : OriginalType, Unqual, getSymbolsByUDA, hasMember;
@@ -202,7 +202,7 @@ struct EventPackage {
     @label(StdNames.owner) Pubkey pubkey;
     @label("$body") EventBody event_body;
 
-    import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
+    import tagion.errors.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
 
     protected alias consensus_check = ConsensusCheck!EventConsensusException;
 

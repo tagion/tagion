@@ -1,9 +1,9 @@
-module tagion.basic.ConsensusExceptions;
+module tagion.errors.ConsensusExceptions;
 
 @safe:
 
 import std.format : format;
-import tagion.basic.tagionexceptions : TagionException, ERRORS;
+import tagion.errors.tagionexceptions : TagionException, ERRORS;
 
 void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
 if (is(E : ConsensusException)) {

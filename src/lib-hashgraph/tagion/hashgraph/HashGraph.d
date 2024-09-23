@@ -36,7 +36,7 @@ import tagion.utils.Miscellaneous : cutHex;
 class HashGraph {
     enum default_scrap_depth = 10;
     int scrap_depth = default_scrap_depth;
-    import tagion.basic.ConsensusExceptions;
+    import tagion.errors.ConsensusExceptions;
 
     protected alias check = Check!HashGraphConsensusException;
     import tagion.logger.Statistic;

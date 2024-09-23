@@ -12,7 +12,7 @@ import std.algorithm;
 import std.exception;
 import std.string;
 
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.basic.Types;
 import tagion.crypto.Types : Pubkey;
 import tagion.dart.DART : DART;

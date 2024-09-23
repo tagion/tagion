@@ -26,7 +26,7 @@ import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
 import tagion.wallet.request;
 
-//import tagion.basic.tagionexceptions : check;
+//import tagion.errors.tagionexceptions : check;
 import std.range;
 import std.typecons;
 import tagion.communication.HiRPC;

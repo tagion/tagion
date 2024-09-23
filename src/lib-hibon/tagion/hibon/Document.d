@@ -22,9 +22,9 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.utils.StdTime;
 import tagion.basic.basic : isinit;
-import tagion.basic.tagionexceptions : ERRORS;
+import tagion.errors.tagionexceptions : ERRORS;
 import LEB128 = tagion.utils.LEB128;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 public import tagion.hibon.HiBONJSON;
 
 import std.exception;
@@ -238,7 +238,7 @@ static assert(uint.sizeof == 4);
             const bool ignore_boundary_check = IGNORE_BOUNDARY_CHECK) const nothrow {
         Element.ErrorCode inner_valid(const Document doc,
                 ErrorCallback error_callback = null) const nothrow {
-            import tagion.basic.tagionexceptions : TagionException;
+            import tagion.errors.tagionexceptions : TagionException;
 
             //const doc_full_size = doc.full_size; //LEB128.decode!uint(_data);
             bool checkElementBoundary(const ref Element elm) {
