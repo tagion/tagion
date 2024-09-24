@@ -668,13 +668,6 @@ extern (C) {
         return ERROR;
     }
 
-    export uint unlock_all_bills(){
-        if (__wallet_storage.wallet.isLoggedin()) {
-            return __wallet_storage.wallet.account.unlock_all_bills();
-        }
-        return ERROR;
-    }
-
     export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
