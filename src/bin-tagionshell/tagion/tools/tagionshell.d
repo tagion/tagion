@@ -143,17 +143,17 @@ T parseNumeric(T)(string str) @safe pure {
     static if ( is (T == float) ){
         if(str.startsWith("0x")){
             auto z = to!uint(str[2..$],16);
-            return *cast(float*)&z;
+            return z.to!float;
         }else{
-            return to!float(str);
+            return str.to!float;
         }
     }
     else static if ( is (T == double) ){
         if(str.startsWith("0x")){
             auto z = to!ulong(str[2..$],16);
-            return *cast(double*)&z;
+            return z.to!double;
         }else{
-            return to!double(str);
+            return str.to!double;
         }
     }
     else {

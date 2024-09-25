@@ -122,7 +122,7 @@ struct BIP39 {
             const bit_pos = i * MNEMONIC_BITS;
             const byte_pos = bit_pos / 8;
             const shift_pos = bit_pos % 8;
-            const bit_slice = (entropy_buf.peek!(uint, Endian.bigEndian)(byte_pos));
+            const bit_slice = (() @trusted => (entropy_buf.peek!(uint, Endian.bigEndian)(byte_pos)))();
             mnemonic_number = (bit_slice << shift_pos) >> normalize_mnemonic;
         }
         return result;
