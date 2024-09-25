@@ -668,6 +668,83 @@ extern (C) {
         return ERROR;
     }
 
+    export ulong get_stored_hirpcs_length() {
+        if (__wallet_storage.wallet.isLoggedin()) {
+            return __wallet_storage.wallet.account.hirpcs.length;
+        }
+        return 0;
+    }
+
+    export uint get_stored_hirpc(uint8_t* hirpcPtr, const uint32_t index) {
+        if (__wallet_storage.wallet.isLoggedin()) {
+            const hirpc = __wallet_storage.wallet.account.hirpcs[index];
+            const hirpcDocId = recyclerDoc.create(hirpc);
+            *hirpcPtr = cast(uint8_t) hirpcDocId;
+            return SUCCESS;
+        }
+        return ERROR;
+    }
+
+    export uint request_contract_status_check(uint8_t* hirpcPtr, uint32_t hirpcLen, uint8_t* requestPtr) {
+        import tagion.dart.DARTcrud : dartRead;
+
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
+        }
+
+        immutable hirpc = cast(immutable)(hirpcPtr[0 .. hirpcLen]);
+        auto dart_indicies = contractDARTIndices(__wallet_storage.wallet.net, Document(hirpc));
+        auto senderHiRPC = dartRead(dart_indicies);
+
+        const requestDocId = recyclerDoc.create(senderHiRPC.toDoc);
+        *requestPtr = cast(uint8_t) requestDocId;
+        return SUCCESS;
+    }
+
+    export uint unlock_bills_by_indicies(uint8_t* responsePtr, uint32_t responseLen) {
+        import tagion.hibon.HiBONException;
+        import tagion.dart.Recorder;
+        import tagion.hibon.HiBONRecord : isRecord;
+        import tagion.Keywords;
+        import std.algorithm : filter;
+
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
+        }
+        immutable response = cast(immutable)(responsePtr[0 .. responseLen]);
+        HiRPC hirpc = HiRPC(__wallet_storage.wallet.net);
+        try {
+            auto receiver = hirpc.receive(Document(response));
+            if (!receiver.isResponse) {
+                return ERROR;
+            }
+
+            const recorder_doc = receiver.message[Keywords.result].get!Document;
+            RecordFactory record_factory = RecordFactory(__wallet_storage.wallet.net);
+            const recorder = record_factory.recorder(recorder_doc);
+
+            // Collect all the dart indices from the recorder.
+            auto dart_indicies = recorder[].filter!(a => a.filed.isRecord!TagionBill).map!(a => a.dart_index).array;
+
+            foreach (dart_index; dart_indicies) {
+                // Remove the bill in the activated list.
+                __wallet_storage.wallet.account.unlock_bill_by_hash(dart_index);
+                // Remove the bill from the requested list.
+                __wallet_storage.wallet.account.remove_requested_by_hash(dart_index);
+            }
+
+            __wallet_storage.write;
+            version (NET_HACK) {
+                __wallet_storage.read;
+            }
+            return SUCCESS;
+        }
+        catch (HiBONException e) {
+            return ERROR;
+        }
+        return ERROR;
+    }
+
     export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
