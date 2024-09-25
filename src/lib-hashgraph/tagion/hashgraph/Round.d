@@ -152,7 +152,7 @@ class Round {
                 this[].retro.drop(1)
                     .filter!(r => r.events
                             .filter!(e => e !is null)
-                            .all!(e => e.witness.decided))
+                            .all!(e => e.witness.twisted))
                     .map!(r => r.number - number)
                     .any!(diff => diff > 1);
 
