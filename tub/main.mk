@@ -103,6 +103,7 @@ include $(DTUB)/testbench/unittest.mk
 include $(DTUB)/testbench/bdd.mk
 include $(DTUB)/testbench/test.mk
 include $(DTUB)/testbench/citest.mk
+#include $(DTUB)/testbench/nngtest.mk
 
 #
 # Install main tool
