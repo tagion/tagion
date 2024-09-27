@@ -643,26 +643,25 @@ extern (C) {
         return ERROR;
     }
 
-    export uint ulock_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
+    export uint unlock_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
 
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-
             auto contractDoc = Document(contractBuffer);
+            auto dart_indicies = contractDARTIndices(__wallet_storage.wallet.net, contractDoc);
 
-            // Contract inputs.
-            const messageTag = "$msg";
-            const paramsTag = "params";
+            foreach (dart_index; dart_indicies) {
+                // Remove the bill in the activated list.
+                __wallet_storage.wallet.account.unlock_bill_by_hash(dart_index);
+                // Remove the bill from the requested list.
+                __wallet_storage.wallet.account.remove_requested_by_hash(dart_index);
+            }
 
-            auto messageDoc = contractDoc[messageTag].get!Document;
-            auto paramsDoc = messageDoc[paramsTag].get!Document;
-            auto sContract = SignedContract(paramsDoc);
-
-            import std.algorithm;
-
-            sContract.contract.inputs.each!(hash => __wallet_storage.wallet.account.unlock_bill_by_hash(hash));
-
+            __wallet_storage.write;
+            version (NET_HACK) {
+                __wallet_storage.read;
+            }
             return SUCCESS;
         }
         return ERROR;
@@ -1103,7 +1102,7 @@ unittest {
 
     { // Ulock bills by contract
 
-        uint result = ulock_bills_by_contract(contract.ptr, contractLen);
+        uint result = unlock_bills_by_contract(contract.ptr, contractLen);
 
         // Check the result
         assert(result == 1, "Expected result to be 1");
