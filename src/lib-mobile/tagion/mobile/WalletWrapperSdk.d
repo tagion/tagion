@@ -649,9 +649,9 @@ extern (C) {
 
         if (__wallet_storage.wallet.isLoggedin()) {
             auto contractDoc = Document(contractBuffer);
-            auto dart_indicies = contractDARTIndices(__wallet_storage.wallet.net, contractDoc);
+            auto dart_indices = contractDARTIndices(__wallet_storage.wallet.net, contractDoc);
 
-            foreach (dart_index; dart_indicies) {
+            foreach (dart_index; dart_indices) {
                 // Remove the bill in the activated list.
                 __wallet_storage.wallet.account.unlock_bill_by_hash(dart_index);
                 // Remove the bill from the requested list.
@@ -692,15 +692,15 @@ extern (C) {
         }
 
         immutable hirpc = cast(immutable)(hirpcPtr[0 .. hirpcLen]);
-        auto dart_indicies = contractDARTIndices(__wallet_storage.wallet.net, Document(hirpc));
-        auto senderHiRPC = dartRead(dart_indicies);
+        auto dart_indices = contractDARTIndices(__wallet_storage.wallet.net, Document(hirpc));
+        auto senderHiRPC = dartRead(dart_indices);
 
         const requestDocId = recyclerDoc.create(senderHiRPC.toDoc);
         *requestPtr = cast(uint8_t) requestDocId;
         return SUCCESS;
     }
 
-    export uint unlock_bills_by_indicies(uint8_t* responsePtr, uint32_t responseLen) {
+    export uint unlock_bills_by_indices(uint8_t* responsePtr, uint32_t responseLen) {
         import tagion.hibon.HiBONException;
         import tagion.dart.Recorder;
         import tagion.hibon.HiBONRecord : isRecord;
@@ -723,9 +723,9 @@ extern (C) {
             const recorder = record_factory.recorder(recorder_doc);
 
             // Collect all the dart indices from the recorder.
-            auto dart_indicies = recorder[].filter!(a => a.filed.isRecord!TagionBill).map!(a => a.dart_index).array;
+            auto dart_indices = recorder[].filter!(a => a.filed.isRecord!TagionBill).map!(a => a.dart_index).array;
 
-            foreach (dart_index; dart_indicies) {
+            foreach (dart_index; dart_indices) {
                 // Remove the bill in the activated list.
                 __wallet_storage.wallet.account.unlock_bill_by_hash(dart_index);
                 // Remove the bill from the requested list.

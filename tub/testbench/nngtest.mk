@@ -19,29 +19,31 @@ TMP_NNGTEST:=$(TMP_FILE)
 
 nngtest-debug:
 	$(PRECMD)
-	@echo $(DC)
+	echo $(DC)
 
 nngtest-build: nng $(NNGTEST_DTESTS)
 
 $(NNGTEST_DTESTS):
 	$(PRECMD)
-	@echo -n "# building test: "$@
+	echo -n "# building test: "$@
 	$(DC) $(DFLAGS) -O -d -m64 -i -od=$(NNGTEST_DBIN) -of=$(NNGTEST_DBIN)/$(basename $(notdir $@)) $(addprefix -I,$(DINC)) $(addprefix -I,$(NNGTEST_INC)) $(addprefix -L,$(NNGTEST_DL)) $@
-	@echo " ...done"
+	echo " ...done"
 
 nngtest-pretest:
-	@echo ""
-	@echo "Logfile for details: $(NNGTEST_LOG)"
-	@echo "Running tests."
-	@echo "It will take about a minute. Be patient."
+	$(PRECMD)
+	echo ""
+	echo "Logfile for details: $(NNGTEST_LOG)"
+	echo "Running tests."
+	echo "It will take about a minute. Be patient."
 	rm -f $(NNGTEST_LOG)
 	mkdir -p $(dir $(NNGTEST_LOG))
 	cp -r $(NNG_ROOT)/tests/webapp $(NNGTEST_DBIN)
 	cp -r $(NNG_ROOT)/tests/ssl $(NNGTEST_DBIN)
 
 nngtest-posttest:
-	@echo "."
-	@grep -a '#TEST' $(NNGTEST_LOG) |grep -q ERROR && echo "There are errors. See nngtest.log" || echo "All passed!"
+	$(PRECMD)
+	echo "."
+	grep -a '#TEST' $(NNGTEST_LOG) |grep -q ERROR && echo "There are errors. See nngtest.log" || echo "All passed!"
 
 
 nngtest-test: nngtest-pretest $(NNGTEST_RUNTESTS) nngtest-posttest
