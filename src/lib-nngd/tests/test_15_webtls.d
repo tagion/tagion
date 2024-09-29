@@ -15,6 +15,9 @@ import std.process;
 import nngd;
 import nngtestutil;
 
+version(withtls)
+{
+
 static void api_handler1 ( WebData *req, WebData *rep, void* ctx ){
     try{
         thread_attachThis();
@@ -75,7 +78,7 @@ main()
             try { tls.set_version(nng_tls_version.NNG_TLS_1_2, nng_tls_version.NNG_TLS_1_2); log("TLS ver 1.2 1.2 ok"); } catch(Throwable e) { log("TLS ver 2.1 1.2 FAIL"); }
             try { tls.set_version(nng_tls_version.NNG_TLS_1_2, nng_tls_version.NNG_TLS_1_3); log("TLS ver 1.2 1.3 ok"); } catch(Throwable e) { log("TLS ver 2.1 1.3 FAIL"); }
 
-            tls.set_cert_key_file(wd~"/../../ssl/certkey.pem", null);
+            tls.set_cert_key_file(wd~"/ssl/certkey.pem", null);
         
         } catch(Throwable e) {
             error(dump_exception_recursive(e, "TLS config"));
@@ -83,7 +86,7 @@ main()
         
         try {
 
-            WebApp app = WebApp("myapp", "https://localhost:8089", parseJSON(`{"root_path":"`~wd~`/../../../webapp","static_path":"static"}`), null);
+            WebApp app = WebApp("myapp", "https://localhost:8089", parseJSON(`{"root_path":"`~wd~`/webapp","static_path":"static"}`), null);
             app.set_tls(&tls);
 
             app.route("/api/v1/test1/*",&api_handler1);
@@ -150,5 +153,11 @@ main()
    return populate_state(15, "TLS webserver tests");
 }
 
+} else { // version(withtls)
 
+int main(){
+    return populate_state(15, "[IGNORED] TLS webserver tests");
+}
+
+} // version(withtls)
 
