@@ -14,10 +14,6 @@ import std.exception;
 import nngd;
 import nngtestutil;
 
-version(withtls)
-{
-
-
 static const string cert =
  "-----BEGIN CERTIFICATE-----\n"
  ~"MIIDRzCCAi8CFCOIJGs6plMawgBYdDuCRV7UuJuyMA0GCSqGSIb3DQEBCwUAMF8x\n"
@@ -198,12 +194,4 @@ int main()
 }
 
 
-
-} else { // version(withtls)
-
-int main(){
-    return populate_state(17, "[IGNORED] TLS+TCP6 encrypted push-pull socket pair");
-}
-
-} // version(withtls)
 

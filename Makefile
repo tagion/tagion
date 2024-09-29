@@ -1,4 +1,4 @@
-MAKEFLAGS += --no-builtin-rules
+
 .SUFFIXES:
 .ONESHELL:
 

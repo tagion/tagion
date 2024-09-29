@@ -1,4 +1,4 @@
-SRC_DFILES=$(shell find $(DSRC) -name "*.d" -a -not -path "*/tests/*")
+SRC_DFILES=$(shell find $(DSRC) -name "*.d")
 BIN_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" )
 SRC_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/bin-*" -or -path "*/src/lib-*")
 

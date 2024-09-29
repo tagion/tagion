@@ -10,7 +10,7 @@ DCFLAGS=-O -d -m64 -i -debug -g -gf -gs -gx -dip1000
 DINC=nngd extern/libnng/libnng
 
 DTESTS=$(wildcard tests/test*.d)
-RUNTESTS=$(basename $(notdir $(DTESTS)))
+RUNTESTS=$(basename $(DTESTS))
 
 ifeq ($(NNG_WITH_MBEDTLS),ON)
 	DCFLAGS=-O -d -m64 -i -debug -g -version=withtls
@@ -31,7 +31,7 @@ extern:
 	$(MAKE) -C extern/
 
 $(DTESTS):
-	$(DC) $(DCFLAGS) -od=tests/build -of=tests/build/$(basename $(notdir $@)) ${addprefix -I,$(DINC)} -Itests ${addprefix -L,$(DLFLAGS)} $@
+	$(DC) $(DCFLAGS) -od=tests/build -of=tests/build/$(basename $@) ${addprefix -I,$(DINC)} -Itests ${addprefix -L,$(DLFLAGS)} $@
 
 mime:
 	@curl -s -K mime.list  |\
@@ -47,8 +47,6 @@ test: pretest $(RUNTESTS) posttest
 pretest:
 	@echo "It will take about a minute. Be patient."
 	rm -f logs/*
-	cp -r tests/webapp tests/build/
-	cp -r tests/ssl tests/build/
 
 posttest:
 	@echo "."

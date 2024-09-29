@@ -6,7 +6,6 @@ import core.thread;
 import std.datetime.systime;
 import std.uuid;
 import std.file;
-import std.path;
 import std.regex;
 import std.json;
 import std.exception;
@@ -90,10 +89,8 @@ main()
     int rc;
    
     try {
-        
-        const wd = dirName(thisExePath());
-        
-        WebApp app = WebApp("myapp", "http://localhost:8087", parseJSON(`{"root_path":"`~wd~`/webapp","static_path":"static"}`), null);
+
+        WebApp app = WebApp("myapp", "http://localhost:8087", parseJSON(`{"root_path":"`~getcwd()~`/webapp","static_path":"static"}`), null);
         
         app.route("/api/v1/test2/*",&api_handler2,["POST","GET"]);
         app.route("/api/v1/test1/*",&api_handler1,["GET"]);

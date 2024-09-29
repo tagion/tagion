@@ -16,7 +16,7 @@ $(TESTBENCH): DFLAGS+=$(DVERSION)=ONETOOL
 $(TESTBENCH): DFLAGS+=$(DVERSION)=BDD
 $(TESTBENCH): LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 $(TESTBENCH): DFILES::=$(BDD)/tagion/testbench/testbench.d
-$(TESTBENCH): $(shell find $(DSRC) -name "*.d" -a -not -path "*/tests/*" )
+$(TESTBENCH): $(shell find $(DSRC) -name "*.d")
 $(TESTBENCH): $(shell find $(BDD) -name "*.d")
 $(TESTBENCH): bddfiles
 ifdef ENABLE_WASMER
