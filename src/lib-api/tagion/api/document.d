@@ -3,7 +3,7 @@ module tagion.api.document;
 
 import tagion.api.errors;
 import tagion.hibon.Document;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import core.stdc.stdint;
 
 private enum DOCUMENT_ERROR_TEXT = "Document ErrorCode";
@@ -676,3 +676,4 @@ unittest {
     testGetFunc!(float)(21.1f, &tagion_document_get_float32); 
     testGetFunc!(double)(321.312312f, &tagion_document_get_float64);
 }
+

@@ -423,8 +423,8 @@ struct NNGMessage {
 alias nng_aio_cb = void function(void*);
 
 struct NNGAio {
-    // it is forced to be public and used directly
-    nng_aio* aio;
+    
+    private nng_aio* aio;
 
     @disable this();
 
@@ -451,8 +451,8 @@ struct NNGAio {
     // ---------- pointer prop
 
     // it is just a getter in pair to setter, not needed really, may be removed
-    @nogc @safe
-    @property nng_aio* pointer() {
+    @nogc @safe 
+    @property nng_aio* pointer() pure nothrow {
         return aio;
     }
 
@@ -1478,6 +1478,7 @@ enum nng_worker_state {
 }
 
 struct NNGPoolWorker {
+    
     int id;
     nng_worker_state state;
     NNGMessage msg;
@@ -1488,6 +1489,7 @@ struct NNGPoolWorker {
     void* context;
     File* logfile;
     nng_pool_callback cb;
+    
     this(int iid, void* icontext, File* ilog) {
         this.id = iid;
         this.context = icontext;
@@ -1531,16 +1533,16 @@ extern (C) void nng_pool_stateful(void* p) {
         return;
     case nng_worker_state.NONE:
         w.state = nng_worker_state.RECV;
-        nng_ctx_recv(w.ctx, w.aio.aio);
+        nng_ctx_recv(w.ctx, w.aio.pointer);
         break;
     case nng_worker_state.RECV:
         if (w.aio.result != nng_errno.NNG_OK) {
-            nng_ctx_recv(w.ctx, w.aio.aio);
+            nng_ctx_recv(w.ctx, w.aio.pointer);
             break;
         }
         rc = w.aio.get_msg(w.msg);
         if (rc != nng_errno.NNG_OK) {
-            nng_ctx_recv(w.ctx, w.aio.aio);
+            nng_ctx_recv(w.ctx, w.aio.pointer);
             break;
         }
         w.state = nng_worker_state.WAIT;
@@ -1561,7 +1563,7 @@ extern (C) void nng_pool_stateful(void* p) {
         finally {
             w.aio.set_msg(w.msg);
             w.state = nng_worker_state.SEND;
-            nng_ctx_send(w.ctx, w.aio.aio);
+            nng_ctx_send(w.ctx, w.aio.pointer);
         }
         break;
     case nng_worker_state.SEND:
@@ -1570,7 +1572,7 @@ extern (C) void nng_pool_stateful(void* p) {
             return;
         }
         w.state = nng_worker_state.RECV;
-        nng_ctx_recv(w.ctx, w.aio.aio);
+        nng_ctx_recv(w.ctx, w.aio.pointer);
         break;
     default:
         w.unlock();
@@ -1581,14 +1583,7 @@ extern (C) void nng_pool_stateful(void* p) {
 }
 
 struct NNGPool {
-    NNGSocket* sock;
-    void* context;
-    File _logfile;
-    File* logfile;
-    size_t nworkers;
-
-    NNGPoolWorker*[] workers;
-
+    
     @disable this();
 
     this(NNGSocket* isock, nng_pool_callback cb, size_t n, void* icontext, int logfd = -1) {
@@ -1632,6 +1627,17 @@ struct NNGPool {
             workers[i].wait();
         }
     }
+
+    private:
+
+    NNGSocket* sock;
+    void* context;
+    File _logfile;
+    File* logfile;
+    size_t nworkers;
+
+    NNGPoolWorker*[] workers;
+
 } // struct NNGPool
 
 // ------------------ WebApp classes
@@ -2304,15 +2310,6 @@ failure:
 } // static dir handler
 
 struct WebApp {
-    string name;
-    WebAppConfig config;
-    nng_http_server* server;
-    nng_aio* aio;
-    nng_url* url;
-    webhandler[string] routes;
-    string[string] staticroutes;
-    string[string][string] staticmime;
-    void* context;
 
     @disable this();
 
@@ -2390,7 +2387,7 @@ struct WebApp {
         enforce(rc == 0, "route handler add");
         staticroutes[urlpath] = path;
         staticmime[urlpath] = content_map;
-    }
+     }
 
     void route(string path, webhandler handler, string[] methods = ["GET"]) {
         int rc;
@@ -2485,6 +2482,16 @@ struct WebApp {
     }
 
 private:
+    
+    string name;
+    WebAppConfig config;
+    nng_http_server* server;
+    nng_aio* aio;
+    nng_url* url;
+    webhandler[string] routes;
+    string[string] staticroutes;
+    string[string][string] staticmime;
+    void* context;
 
     void init() {
         int rc;
@@ -2551,12 +2558,6 @@ static void webclientrouter(void* p) {
 }
 
 struct WebClient {
-    nng_http_client* cli;
-    nng_http_conn* conn;
-    nng_http_req* req;
-    nng_http_res* res;
-    nng_url* url;
-    bool connected;
 
     // constructor and connector are for future use woth streaming functions
     // for single transactions use static members (sync or async )
@@ -2899,6 +2900,15 @@ struct WebClient {
         nng_http_client_transact(cli, req, res, aio);
         return NNGAio(aio);
     }
+    
+    private:
+
+    nng_http_client* cli;
+    nng_http_conn* conn;
+    nng_http_req* req;
+    nng_http_res* res;
+    nng_url* url;
+    bool connected;
 }
 
 // WebSocket tools
@@ -3177,9 +3187,6 @@ struct WebSocketApp {
         return cast(void*)&this;
     }
 
-    void rmconn(WebSocket* c) {
-        conns = conns.remove!(x => x == c);
-    }
 
 private:
     nng_mtx* mtx;
@@ -3198,21 +3205,25 @@ private:
     nng_ws_onmessage onmessage;
     WebSocket*[] conns;
 
-        void accb ( void* ptr ){
-            int rv;
-            WebSocket *c;
-            nng_mtx_lock(mtx);
-            rv = nng_aio_result(accio);    
-            if(rv != 0){
-                nng_stream_listener_accept(sl, accio);
-                return;
-            }
-            s = cast(nng_stream*)nng_aio_get_output(accio, 0);
-            enforce(s != null, "Invalid stream pointer");
-            c = new WebSocket(cast(WebSocketApp*)self(), s, onconnect, onclose, onerror, onmessage, context, bufsize, keeptm, conntm);
-            enforce(c != null, "Invalid conn pointer");
-            conns ~= c;
+    void accb ( void* ptr ){
+        int rv;
+        WebSocket *c;
+        nng_mtx_lock(mtx);
+        rv = nng_aio_result(accio);    
+        if(rv != 0){
             nng_stream_listener_accept(sl, accio);
-            nng_mtx_unlock(mtx);
+            return;
         }
+        s = cast(nng_stream*)nng_aio_get_output(accio, 0);
+        enforce(s != null, "Invalid stream pointer");
+        c = new WebSocket(cast(WebSocketApp*)self(), s, onconnect, onclose, onerror, onmessage, context, bufsize, keeptm, conntm);
+        enforce(c != null, "Invalid conn pointer");
+        conns ~= c;
+        nng_stream_listener_accept(sl, accio);
+        nng_mtx_unlock(mtx);
+    }
+    
+    void rmconn(WebSocket* c) {
+        conns = conns.remove!(x => x == c);
+    }
 }

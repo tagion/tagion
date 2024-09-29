@@ -12,7 +12,7 @@ import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
 import std.typecons : Tuple;
 import std.typecons;
 import std.uni : toLower;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.hibon.Document;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;

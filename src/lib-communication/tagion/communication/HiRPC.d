@@ -8,7 +8,7 @@ import std.format;
 import std.traits : EnumMembers;
 import std.range;
 import tagion.basic.Types : Buffer;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey, Signature;
 import tagion.script.standardnames;

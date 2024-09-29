@@ -90,6 +90,8 @@ $(DBIN)/%.wasm: $(DSRC)/wasi/tests/%.d
 
 .PHONY: help-tauon
 
+help: help-tauon
+
 clean-tauon:
 	$(PRECMD)
 	$(call log.header, $@ :: clean)

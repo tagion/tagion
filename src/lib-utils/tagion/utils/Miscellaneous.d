@@ -7,7 +7,7 @@ import std.range;
 import std.exception;
 import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.errors.tagionexceptions : TagionException;
 
 enum HEX_SEPARATOR = '_';
 

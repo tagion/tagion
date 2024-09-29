@@ -4,7 +4,7 @@ module tagion.crypto.SecureNet;
 import std.range;
 import std.typecons : TypedefType;
 import std.traits;
-import tagion.basic.ConsensusExceptions;
+import tagion.errors.ConsensusExceptions;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Version : ver;
 public import tagion.crypto.SecureInterfaceNet;
@@ -61,7 +61,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.format;
     import std.string : representation;
-    import tagion.basic.ConsensusExceptions;
+    import tagion.errors.ConsensusExceptions;
     import tagion.crypto.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
 
@@ -336,7 +336,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     unittest { // StdSecureNet document
         import std.exception : assertThrown;
-        import tagion.basic.ConsensusExceptions : SecurityConsensusException;
+        import tagion.errors.ConsensusExceptions : SecurityConsensusException;
         import tagion.hibon.HiBON;
         import tagion.hibon.HiBONJSON;
 

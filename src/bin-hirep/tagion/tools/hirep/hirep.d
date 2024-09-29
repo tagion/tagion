@@ -10,7 +10,7 @@ import std.stdio;
 import std.conv : to;
 import std.algorithm;
 import tagion.basic.Types;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONFile : fread, fwrite;

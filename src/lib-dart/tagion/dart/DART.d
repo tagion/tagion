@@ -15,7 +15,7 @@ import std.traits : EnumMembers;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.basic : EnumText, isinit;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.communication.HiRPC : Callers, HiRPC, HiRPCMethod;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.dart.BlockFile : BlockFile;

@@ -22,7 +22,7 @@ import std.traits : FunctionTypeOf;
 import tagion.basic.Message;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Version : ver;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : Fingerprint;
 import tagion.dart.DARTBasic;
