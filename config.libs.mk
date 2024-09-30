@@ -2,7 +2,7 @@ LIBTAGION:=$(DLIB)/libtagion.$(LIBEXT)
 
 LIB_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/lib-*" )
 
-libtagion: DFLAGS+=$(OUTPUTDIR)=$(DOBJ)
+libtagion: DFLAGS+=$(DOUTDIR)=$(DOBJ)
 libtagion: DFLAGS+=$(FULLY_QUALIFIED)
 libtagion: DINC+=$(LIB_DINC)
 libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-behaviour/*" -a -not -path "*/lib-betterc/*"}

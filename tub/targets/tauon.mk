@@ -83,7 +83,7 @@ help-tauon:
 FUNC_EXIT_SCRIPT="$(DSRC)/lib-wasm/scripts/func_exit.pl"
 $(DBIN)/%.wasm: $(DSRC)/wasi/tests/%.d
 	$(PRECMD)
-	$(DC) $(DFLAGS) $(LIB) $(addprefix $(DVERSION)=,$(DVERSIONS)) $(addprefix -I,$(DINC)) $< $(OUTPUT)$@
+	$(DC) $(DFLAGS) $(LIB) $(addprefix $(DVERSION)=,$(DVERSIONS)) $(addprefix -I,$(DINC)) $< $(DOUT)$@
 	wasm2wat $@ -o $@.wat
 	perl $(FUNC_EXIT_SCRIPT) $@.wat > $@.replaced.wat
 	wat2wasm $@.replaced.wat -o $@

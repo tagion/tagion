@@ -45,7 +45,7 @@ $(UNITTEST_BIN): LDFLAGS+=$(LD_WASMER)
 endif
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
-	$(DC) $(UNITTEST_FLAGS) $(DRTFLAGS) $(call DO_COMPILE_FLAGS) ${sort ${filter %.d,$^}} $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DRTFLAGS) $(call DO_COMPILE_FLAGS) ${sort ${filter %.d,$^}} $(DOUT)$@
 
 .PHONY: unittest
 

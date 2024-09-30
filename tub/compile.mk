@@ -45,7 +45,7 @@ $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
 	$(call log.header, $*.$(OBJEXT) :: compile)
 	${call log.kvp, compile, $(MODE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $<  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $<  $(DOUT)$@
 
 #
 # Compile and link or split link
@@ -55,7 +55,7 @@ $(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
 	${call log.kvp, compile$(MODE)}
 	echo ${DFILES}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(DCOMPILE_ONLY)  $(DOUT)$@
 
 $(DLIB)/lib%.$(LIBEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
@@ -66,7 +66,7 @@ else
 $(DLIB)/%.$(LIBEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(DFILES) $(OUTPUT)$@
+	$(DC) $(call DO_COMPILE_FLAGS) $(DLIBTYPE) $(DFILES) $(DOUT)$@
 endif
 
 #
@@ -77,7 +77,7 @@ $(DOBJ)/bin%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
 	${call log.kvp, compile$(MODE)}
 	echo $(DFILES) > /tmp/$*_dfiles.mk
-	$(DC) $(DCOMPILE_ONLY) $(DDEBUG_FLAGS) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(OUTPUT)$@
+	$(DC) $(DCOMPILE_ONLY) $(DDEBUG_FLAGS) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(DOUT)$@
 
 $(DBIN)/%: $(DOBJ)/bin%.$(OBJEXT)
 	$(PRECMD)
@@ -90,7 +90,7 @@ $(DBIN)/%:
 	$(PRECMD)
 	$(call log.header, $* :: bin)
 	$(call log.env, DFILES, $(DFILES))
-	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(DFILES) $(OUTPUT)$@
+	$(DC) $(DINCIMPORT) $(call DO_COMPILE_FLAGS) $(DFILES) $(DOUT)$@
 endif
 endif
 	
