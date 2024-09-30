@@ -23,9 +23,16 @@ nngtest-build:  nng | $(NNGTEST_RUNTESTS)
 
 nngtest: | $(NNGTEST_DBIN)/.way $(NNGTEST_LOG)/.way
 
-nngtest: $(NNGTEST_LOGS)
+nngtest: $(NNGTEST_LOG) $(NNGTEST_LOGS)
 	$(PRECMD)
 	cat $(NNGTEST_LOGS) | grep -a '#TEST' | grep -i error && echo "There are errors. See log-files $(NNGTEST_LOG)\n" || echo "All passed!"
+
+$(NNGTEST_LOG):
+	$(PRECMD)
+	mkdir -p $(NNGTEST_DBIN)
+	mkdir -p $(NNGTEST_LOG)
+	cp -r $(NNGTEST_ROOT)/ssl $(NNGTEST_DBIN)
+	cp -r $(NNGTEST_ROOT)/webapp $(NNGTEST_DBIN)
 
 $(NNGTEST_LOG)/%.log: $(NNGTEST_DBIN)/%
 	$(PRECMD)
@@ -34,7 +41,7 @@ $(NNGTEST_LOG)/%.log: $(NNGTEST_DBIN)/%
 	grep -a '#TEST' $@ 
 
 $(NNGTEST_DBIN)/%: $(NNGTEST_ROOT)/%.d
-	$(PRECMD)	
+	$(PRECMD)
 	$(call log.header, Build $@)
 	$(DC) $(DFLAGS) $(addprefix -I,$(NNGTEST_INC)) $(LINKERFLAG)$(LIBNNG) $< $(NNGSRC) $(DOUT)$@ 
 	echo "Done $*"
@@ -47,7 +54,7 @@ clean-nngtest:
 	$(PRECMD)
 	${call log.header, $@ :: clean}
 	$(RMDIR) $(NNGTEST_DBIN)
-	$(RM) $(NNGTEST_LOGS)
+	$(RMDIR) $(NNGTEST_LOG)
 
 .PHONY: clean-nngtest
 
