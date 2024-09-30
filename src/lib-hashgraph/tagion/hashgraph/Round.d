@@ -139,6 +139,13 @@ class Round {
                             future_witness_masks
                             .take(10)
                     );
+                    __write(
+                            "%s Round %04d  twisted=%#s | %(%#s %)".replace(
+                            "#", node_size.to!string),
+                            _name, number,
+                            _valid_witness,
+                            list_majority_rounds.map!(r => BitMask(r.events.filter!(e => e !is null).filter!(e => e.witness.twisted).map!(e => e.node_id))).take(10)
+                    );
                 }
             }
             if (list_majority_rounds.empty) {
@@ -147,6 +154,36 @@ class Round {
             if (number_of_future_rounds < 4) {
                 return ret = false;
             }
+            bool check_decided() {
+                return (list_majority_rounds
+                .map!(r => r.events.filter!(e => e !is null).filter!(e => e.witness.twisted).count)
+                .filter!(c => isMajority(c, node_size))
+                .take(3)
+                .count) == 3;
+            }
+            version(none)
+            bool check_decided() {
+                BitMask decided_mask;
+                ubyte[] count;
+                count.length=node_size;
+                foreach(r; list_majority_rounds) {
+                    foreach(n; decided_mask.invert(node_size)[].filter!(n => r.events[n] !is null)) {
+                        const w=r.events[n].witness;
+                        if (w.weak) {
+                        //    decided_mask[n]=true;
+                            continue;
+                        }
+                        if (w.twisted) {
+                            decided_mask[n] =(++count[n] >= 3); 
+                        }
+                    }
+                }
+                __write("%s Round %04d count %(%d %)", _name, number, count);
+                //decided_mask +=decided_mask[].filter!(n => events[n] is null);
+                return isMajority(decided_mask, node_size);
+            }
+            const _all = check_decided;
+            version(none)
             const _all = _events.filter!(e => e !is null)
                 .all!(e => e.witness.decided) ||
                 this[].retro.drop(1)
@@ -534,7 +571,7 @@ class Round {
             auto witness_in_round = round_to_be_decided._events
                 .filter!(e => e !is null)
                 .map!(e => e.witness);
-            const _name = hashgraph.name;          
+            const _name = hashgraph.name;
             const new_completed = round_to_be_decided.completed(hashgraph);
             
             if (!new_completed) {
