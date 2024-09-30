@@ -151,6 +151,7 @@ class Round {
             if (list_majority_rounds.empty) {
                 return ret = false;
             }
+            version(none)
             if (number_of_future_rounds < 4) {
                 return ret = false;
             }
