@@ -12,74 +12,87 @@ import nngtestutil;
 
 
 const NSTEPS = 9;
+const NDIALS = 10;
 
 void sender_worker(string url)
 {
-    int k = 0;
-    string line;
-    int rc;
-    thread_attachThis();
-    rt_moduleTlsCtor();
-    log("SS: started for URL: " ~ url);
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-    s.sendtimeout = msecs(1000);
-    s.sendbuf = 4096;
-    while(1){
-        log("SS: to dial...");
-        rc = s.dial(url);
-        if(rc == 0) break;
-        log("SS: Dial error: %s",rc);
-        if(rc == nng_errno.NNG_ECONNREFUSED){
-            nng_sleep(msecs(100));
-            continue;
+    log("============ Sender worker");
+    try {
+        int k = 0;
+        string line;
+        int rc;
+        thread_attachThis();
+        rt_moduleTlsCtor();
+        log("SS: started for URL: " ~ url);
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        s.sendtimeout = msecs(1000);
+        s.sendbuf = 4096;
+        while(1){
+            log("SS: to dial...");
+            rc = s.dial(url);
+            if(rc == 0) break;
+            if(rc == nng_errno.NNG_ECONNREFUSED && k++ < NDIALS){
+                log("SS: Connection refused attempt %d", k);
+                nng_sleep(msecs(100));
+                continue;
+            }
+            error("SS: Dial error after %d attempts: %s", NDIALS, rc);
+            enforce(rc == 0);
         }
-        enforce(rc == 0);
-    }
-    log(nngtest_socket_properties(s,"sender"));
-    while(1){
-        line = format("%08d %s",k,randomUUID().toString());
-        if(k > NSTEPS) line = "END";
-        rc = s.send(line);
-        enforce(rc == 0);
-        log(format("SS sent [%03d]: %s",line.length,line));
-        k++;
-        nng_sleep(msecs(200));
-        if(k > NSTEPS+1) break;
-    }
-    log(" SS: bye!");
+        log(nngtest_socket_properties(s,"sender"));
+        k = 0;
+        while(1){
+            line = format("%08d %s",k,randomUUID().toString());
+            if(k > NSTEPS) line = "END";
+            rc = s.send(line);
+            enforce(rc == 0);
+            log(format("SS sent [%03d]: %s",line.length,line));
+            k++;
+            nng_sleep(msecs(200));
+            if(k > NSTEPS+1) break;
+        }
+        log(" SS: bye!");
+    } catch(Throwable e) {
+        error(dump_exception_recursive(e, "Sender worker"));
+    }        
 }
 
 
 void receiver_worker(string url)
 {
-    int rc;
-    thread_attachThis();
-    rt_moduleTlsCtor();
-    log("RR: started with URL: " ~ url);
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
-    s.recvtimeout = msecs(1000);
-    rc = s.listen(url);
-    enforce(rc == 0);
-    log(nngtest_socket_properties(s,"receiver"));
-    int k = 0;
-    bool _ok = false;
-    while(1){
-        if(k++ > NSTEPS + 3) break;
-        auto str = s.receive!string;
-        if(s.errno == 0){
-            log(format("RR recv [%03d]: %s", str.length, str));
-            if(str == "END"){
-                _ok = true;
-                break;
+    log("============ Receiver worker");
+    try {
+        int rc;
+        thread_attachThis();
+        rt_moduleTlsCtor();
+        log("RR: started with URL: " ~ url);
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
+        s.recvtimeout = msecs(1000);
+        rc = s.listen(url);
+        enforce(rc == 0);
+        log(nngtest_socket_properties(s,"receiver"));
+        int k = 0;
+        bool _ok = false;
+        while(1){
+            if(k++ > NSTEPS + 3) break;
+            auto str = s.receive!string;
+            if(s.errno == 0){
+                log(format("RR recv [%03d]: %s", str.length, str));
+                if(str == "END"){
+                    _ok = true;
+                    break;
+                }                
+            }else{
+                error("RR: Error string");
             }                
-        }else{
-            error("RR: Error string");
-        }                
-    }
-    if(!_ok){
-        error("Test stopped without normal end.");
-    }    
-    log(" RR: bye!");
+        }
+        if(!_ok){
+            error("Test stopped without normal end.");
+        }    
+        log(" RR: bye!");
+    } catch(Throwable e) {
+        error(dump_exception_recursive(e, "Receiver worker"));
+    }        
 }
 
 
