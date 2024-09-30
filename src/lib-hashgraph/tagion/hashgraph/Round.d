@@ -207,8 +207,9 @@ class Round {
                 _valid_witness &= BitMask(_events
                         .filter!(e => (e !is null))
                         .filter!(e => isMajority(e.witness.yes_votes, node_size)) 
-            .filter!(e => !e.witness.weak)
+           // .filter!(e => !e.witness.weak)
 .filter!(e => e.witness.twisted)
+.filter!(e => e.witness.entwine)
                         .map!(e => e.node_id));
                 __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
                         .to!string),
