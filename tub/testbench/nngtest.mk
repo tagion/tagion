@@ -19,20 +19,19 @@ NNGTEST_DTESTS=$(wildcard $(NNGTEST_ROOT)/test*.d)
 NNGTEST_RUNTESTS=$(addprefix $(NNGTEST_DBIN)/,$(basename $(notdir $(NNGTEST_DTESTS))))
 NNGTEST_LOGS=$(addprefix $(NNGTEST_LOG)/,$(notdir $(NNGTEST_DTESTS:.d=.log)))
 
-nngtest-build: $(NNGTEST_RUNTESTS) 
+nngtest-build:  nng | $(NNGTEST_RUNTESTS) 
 
 nngtest: | $(NNGTEST_DBIN)/.way $(NNGTEST_LOG)/.way
 
 nngtest: $(NNGTEST_LOGS)
+	$(PRECMD)
+	cat $(NNGTEST_LOGS) | grep -a '#TEST' | grep -i error && echo "There are errors. See log-files $(NNGTEST_LOG)\n" || echo "All passed!"
 
 $(NNGTEST_LOG)/%.log: $(NNGTEST_DBIN)/%
 	$(PRECMD)
 	$(call log.header, Running $<)
 	$< > $@  
-	echo "Produced $@"
-	grep -a '#TEST' $@ |grep -q ERROR && echo "There are errors. See nngtest.log"
-
-#|| echo "All passed!"
+	grep -a '#TEST' $@ 
 
 $(NNGTEST_DBIN)/%: $(NNGTEST_ROOT)/%.d
 	$(PRECMD)	
@@ -40,23 +39,7 @@ $(NNGTEST_DBIN)/%: $(NNGTEST_ROOT)/%.d
 	$(DC) $(DFLAGS) $(addprefix -I,$(NNGTEST_INC)) $(LINKERFLAG)$(LIBNNG) $< $(NNGSRC) $(DOUT)$@ 
 	echo "Done $*"
 
-nngtest-pretest:
-	$(PRECMD)
-	echo "It will take about a minute. Be patient."
-	rm -f $(NNGTEST_LOG)
-
-nngtest-posttest:
-	$(PRECMD)		
-	echo "."
-	grep -a '#TEST' $(NNGTEST_LOG) |grep -q ERROR && echo "There are errors. See nngtest.log" || echo "All passed!"
-
-
-nngtest-test: nngtest-pretest  nngtest-posttest
-
-
-.PHONY: nng nngtest-debug nngtest-build  nngtest-test nngtest-pretest nngtest-posttest
-
-#nngtest: nngtest-build nngtest-test
+.PHONY: nng nngtest-build  
 
 .PHONY: nngtest
 
@@ -65,6 +48,9 @@ clean-nngtest:
 	${call log.header, $@ :: clean}
 	$(RMDIR) $(NNGTEST_DBIN)
 	$(RM) $(NNGTEST_LOGS)
+
+.PHONY: clean-nngtest
+
 clean: clean-nngtest
 
 help-nngtest:
