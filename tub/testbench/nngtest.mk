@@ -19,7 +19,8 @@ NNGTEST_DTESTS=$(wildcard $(NNGTEST_ROOT)/test*.d)
 NNGTEST_RUNTESTS=$(addprefix $(NNGTEST_DBIN)/,$(basename $(notdir $(NNGTEST_DTESTS))))
 NNGTEST_LOGS=$(addprefix $(NNGTEST_LOG)/,$(notdir $(NNGTEST_DTESTS:.d=.log)))
 
-nngtest-build:  nng | $(NNGTEST_RUNTESTS) 
+nngtest-build: nng 
+	$(MAKE) $(NNGTEST_RUNTESTS)
 
 nngtest: | $(NNGTEST_DBIN)/.way $(NNGTEST_LOG)/.way
 
