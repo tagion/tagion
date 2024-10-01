@@ -54,7 +54,7 @@ main()
 {
     int rc;
     
-    const uri = "ws://127.0.0.1:8034";
+    const uri = "ws://127.0.0.1:31034";
 
     log("TEST ---------------------------------------------------  WS SERVER ");
 
@@ -63,7 +63,7 @@ main()
         WebSocketApp wsa = WebSocketApp(uri, &onaccept_handler, &onclose_handler, &onerror_handler, &onmessage_handler, null );
         wsa.start();
         nng_sleep(300.msecs);
-        auto res = executeShell("timeout 2 uwsc -i -s -t data.txt ws://127.0.0.1:8034 2>&1");
+        auto res = executeShell("timeout 2 uwsc -i -s -t data.txt ws://127.0.0.1:31034 2>&1");
         assert(res.status == 124);
         assert(indexOf(res.output,"Websocket connected") == 0);
         assert(indexOf(res.output,`"request":"12345"`) == 136);

@@ -24,8 +24,9 @@ nngtest-build: nng
 
 nngtest: | $(NNGTEST_DBIN)/.way $(NNGTEST_LOG)/.way
 
-nngtest: $(NNGTEST_LOG) $(NNGTEST_LOGS)
+nngtest: $(NNGTEST_LOG)
 	$(PRECMD)
+	$(MAKE) $(NNGTEST_LOGS)
 	cat $(NNGTEST_LOGS) | grep -a '#TEST' | grep -i error && echo "There are errors. See log-files $(NNGTEST_LOG)\n" || echo "All passed!"
 
 $(NNGTEST_LOG):
