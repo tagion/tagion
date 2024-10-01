@@ -123,7 +123,7 @@ alias check = Check!WasmBetterCException;
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
                 }
-                output.writeln(");");
+                output.writeln("); // Here");
             }
         }
 
@@ -564,7 +564,7 @@ alias check = Check!WasmBetterCException;
                                 case I32:
                                     return format("(%d)", a.get!int);
                                 case I64:
-                                    return format("(%dL)", a.get!long);
+                                    return format("(0x%xL)", a.get!long);
                                 case F32:
                                     const x = a.get!float;
                                     return format("(%a /* %s */)", x, x);
@@ -627,6 +627,7 @@ shared static this() {
     instr_fmt = [
         IR.LOCAL_GET: q{%1$s},
         IR.LOCAL_SET: q{%2$s=$1$s;},
+        /// 32 bits integer operations
         IR.I32_CLZ: q{wasm.clz(%s)},
         IR.I32_CTZ: q{wasm.ctz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},
@@ -656,6 +657,37 @@ shared static this() {
         IR.I32_GT_U: q{(uint(%2$s) > uint(%1$s))},
         IR.I32_GE_S: q{(%2$s >= %1$s)},
         IR.I32_GE_U: q{(uint(%2$s) >= uint(%1$s))},
+        /// 64 bits integer operations
+        IR.I64_CLZ: q{wasm.clz(%s)},
+        IR.I64_CTZ: q{wasm.ctz(%s)},
+        IR.I64_POPCNT: q{wasm.popcnt(%s)},
+        IR.I64_ADD: q{(%2$s + %1$s)},
+        IR.I64_SUB: q{(%2$s - %1$s)},
+        IR.I64_MUL: q{(%2$s * %1$s)},
+        IR.I64_DIV_S: q{wasm.div(%2$s, %1$s)},
+        IR.I64_DIV_U: q{wasm.div(ulong(%2$s), ulong(%1$s))},
+        IR.I64_REM_S: q{wasm.rem(%2$s, %1$s)},
+        IR.I64_REM_U: q{wasm.rem(ulong(%2$s), ulong(%1$s))},
+        IR.I64_AND: q{(%2$s & %1$s)},
+        IR.I64_OR: q{(%2$s | %1$s)},
+        IR.I64_XOR: q{(%2$s ^ %1$s)},
+        IR.I64_SHL: q{(%2$s << %1$s)},
+        IR.I64_SHR_S: q{(%2$s >> %1$s)},
+        IR.I64_SHR_U: q{(%2$s >>> %1$s)},
+        IR.I64_ROTL: q{wasm.rotl(%1$s, %2$s)},
+        IR.I64_ROTR: q{wasm.rotr(%1$s, %2$s)},
+        IR.I64_EQZ: q{(%1$s == 0)},
+        IR.I64_EQ: q{(%2$s == %1$s)},
+        IR.I64_NE: q{(%2$s != %1$s)},
+        IR.I64_LT_S: q{(%2$s < %1$s)},
+        IR.I64_LT_U: q{(ulong(%2$s) < ulong(%1$s))},
+        IR.I64_LE_S: q{(%2$s <= %1$s)},
+        IR.I64_LE_U: q{(ulong(%2$s) <= ulong(%1$s))},
+        IR.I64_GT_S: q{(%2$s > %1$s)},
+        IR.I64_GT_U: q{(ulong(%2$s) > ulong(%1$s))},
+        IR.I64_GE_S: q{(%2$s >= %1$s)},
+        IR.I64_GE_U: q{(ulong(%2$s) >= ulong(%1$s))},
+
 
     ];
 }
