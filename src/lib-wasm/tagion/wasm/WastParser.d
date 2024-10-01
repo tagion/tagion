@@ -422,11 +422,16 @@ struct WastParser {
                 r.check(ret == ParserStage.TYPE || ret == ParserStage.PARAM);
 
                 return stage;
-            case "assert_return":
             case "assert_return_nan":
+            case "assert_return":
                 r.check(stage == ParserStage.BASE);
                 Assert assert_type;
-                assert_type.method = Assert.Method.Return;
+                if (r.token == "assert_return_nan") {
+                    assert_type.method = Assert.Method.Return_nan;
+                }
+                else {
+                    assert_type.method = Assert.Method.Return;
+                }
                 assert_type.name = r.token;
                 r.nextToken;
                 FuncType func_type;

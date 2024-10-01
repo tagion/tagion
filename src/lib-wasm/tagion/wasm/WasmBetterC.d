@@ -103,7 +103,8 @@ alias check = Check!WasmBetterCException;
             auto invoke_expr = code_type[];
             output.writefln("%s// expr   %(%02X %)", indent, _assert.invoke);
             output.writefln("%s// result %(%02X %)", indent, _assert.result);
-            if (_assert.method is Assert.Method.Trap) {
+            with (Assert.Method) final switch (_assert.method) {
+            case Trap:
                 void assert_block(const string _indent) {
                     block(invoke_expr, ctx, _indent ~ spacer);
                     output.writefln("%s}", _indent);
@@ -113,18 +114,24 @@ alias check = Check!WasmBetterCException;
                 assert_block(indent ~ spacer);
                 output.writefln("%s)());", indent);
 
-            }
-            else if (_assert.result.length != 0) {
+                break;
+            case Return, Invalid, Return_nan:
                 block(invoke_expr, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
                 block(result_expr, ctx, indent, true);
-                output.writef("%sassert(%s == %s", indent, ctx.pop, ctx.pop);
+                if (_assert.method == Return_nan) {
+                    output.writef("%1$sassert(%2$s is %2$s.nan", indent, ctx.pop);
+                }
+                else {
+                    output.writef("%sassert(%s == %s", indent, ctx.pop, ctx.pop);
+                }
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
                 }
-                output.writeln("); // Here");
+                output.writeln(");");
             }
+
         }
 
         foreach (_assert; sec_assert.asserts) {
@@ -400,13 +407,20 @@ alias check = Check!WasmBetterCException;
         string[] locals;
         string[] stack;
         string peek() const pure nothrow @nogc {
+            if (stack.length == 0) {
+                return "Error stack is empty";
+            }
             return stack[$ - 1];
         }
 
         string pop() pure nothrow {
+            if (stack.length == 0) {
+                return "Error pop from an empty stack";
+            }
             scope (exit) {
                 stack.length--;
             }
+
             return peek;
         }
 
@@ -559,6 +573,8 @@ alias check = Check!WasmBetterCException;
                         break;
                     case CONST:
                         static string toText(const WasmArg a) {
+                            import std.math : isNaN, isInfinity;
+
                             with (Types) {
                                 switch (a.type) {
                                 case I32:
@@ -567,9 +583,21 @@ alias check = Check!WasmBetterCException;
                                     return format("(0x%xL)", a.get!long);
                                 case F32:
                                     const x = a.get!float;
+                                    if (x.isNaN) {
+                                        return "(float.nan)";
+                                    }
+                                    if (x.isInfinity) {
+                                        return "(float.infinity)";
+                                    }
                                     return format("(%a /* %s */)", x, x);
                                 case F64:
                                     const x = a.get!double;
+                                    if (x.isNaN) {
+                                        return "(double.nan)";
+                                    }
+                                    if (x.isInfinity) {
+                                        return "(double.infinite)";
+                                    }
                                     return format("(%a /* %s */)", x, x);
                                 default:
                                     assert(0);
@@ -627,7 +655,7 @@ shared static this() {
     instr_fmt = [
         IR.LOCAL_GET: q{%1$s},
         IR.LOCAL_SET: q{%2$s=$1$s;},
-        /// 32 bits integer operations
+        // 32 bits integer operations
         IR.I32_CLZ: q{wasm.clz(%s)},
         IR.I32_CTZ: q{wasm.ctz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},
@@ -688,6 +716,31 @@ shared static this() {
         IR.I64_GE_S: q{(%2$s >= %1$s)},
         IR.I64_GE_U: q{(ulong(%2$s) >= ulong(%1$s))},
 
+        IR.F32_EQ: q{(%2$s == %2$s},
+        IR.F32_NE: q{(%2$s != %2$s},
+        IR.F32_LT: q{(%2$s < %2$s},
+        IR.F32_GT: q{(%2$s > %2$s},
+        IR.F32_LE: q{(%2$s <= %2$s},
+        IR.F32_GE: q{(%2$s >= %2$s},
+        IR.F32_ABS: q{math.abs(%1$s)},
+        IR.F32_NEG: q{(-%1$s)},
+        IR.F32_CEIL: q{math.ceil(%1$s)},
+        IR.F32_FLOOR: q{math.floor(%1$s)},
+        IR.F32_TRUNC: q{math.trunc(%1$s)},
+        IR.F32_NEAREST: q{math.nearbyint(%1$s)},
+        IR.F32_SQRT: q{math.sqrt(%1$s)},
+        IR.F32_ADD: q{(%2$s + %1$s)},
+        IR.F32_SUB: q{(%2$s - %1$s)},
+        IR.F32_MUL: q{(%2$s * %1$s)},
+        IR.F32_DIV: q{(%2$s / %1$s)},
+        IR.F32_MIN: q{math.fmin(%2$s, %1$s)},
+        IR.F32_MAX: q{math.fmax(%2$s, %1$s)},
+        IR.F32_COPYSIGN: q{math.copysign(%2$s, %1$s)},
+        IR.F32_CONVERT_I32_S: q{cast(int)(%1$s)},
+        IR.F32_CONVERT_I32_U: q{cast(uint)(%1$s)},
+        IR.F32_CONVERT_I64_S: q{cast(long)(%1$s)},
+        IR.F32_CONVERT_I64_U: q{cast(ulong)(%1$s)},
+        IR.F32_DEMOTE_F64: q{cast(double)(%1$s)},
 
     ];
 }

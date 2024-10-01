@@ -10,7 +10,7 @@ struct Assert {
     enum Method {
         Return,
         Invalid,
-        //Return_nan, same as Return
+        Return_nan,
         Trap,
     }
 
