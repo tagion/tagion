@@ -5,6 +5,7 @@ module tagion.hashgraph.Round;
 
 import std.datetime; // Date, DateTime
 import std.algorithm;
+import std.exception : assumeWontThrow;
 import std.array : array;
 import std.conv;
 import std.format;
@@ -18,7 +19,8 @@ import std.typecons;
 import std.typecons : No;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
-import tagion.crypto.Types : Pubkey;
+import tagion.crypto.Types : Pubkey, Fingerprint;
+import tagion.crypto.SecureNet : HashNet;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic;
@@ -95,21 +97,23 @@ class Round {
         return _valid_witness;
     }
 
-    final Buffer pattern() const pure nothrow {
-        import tagion.utils.Miscellaneous;
-
-        auto fingerprints = _valid_witness[]
+   final Fingerprint pattern(const HashNet net) const pure nothrow  {
+        import std.algorithm;
+        auto result= assumeWontThrow(net.calcHash(_valid_witness[]
             .map!(n => _events[n])
             .filter!(e => e !is null)
-            .map!(e => cast(Buffer) e.fingerprint);
-        if (fingerprints.empty) {
-            return Buffer.init;
-        }
-        return xor(fingerprints);
-    }
+            .map!(e => cast(Buffer) e.fingerprint)
+            .array
+            .sort
+            .join));
+        //result.sort;
+    pragma(msg, "Pattern ", typeof(result));
+            //.sort!((a,b) => a < b);
+           return result; 
+    }   
 
-    final EpochVote epochVote(const long epoch_number) const pure nothrow {
-        return EpochVote(epoch_number, cast(uint)(_valid_witness.count), pattern);
+    final EpochVote epochVote(const HashNet net, const long epoch_number) const pure nothrow {
+        return EpochVote(epoch_number, cast(uint)(_valid_witness.count), pattern(net));
     }
 
     final bool completed(HashGraph hashgraph) pure nothrow {
@@ -227,7 +231,7 @@ class Round {
                         _name,
                         number,
                         _events.map!(e => (e is null) ? -1 : cast(int) e.witness.no_votes),
-                        pattern
+                        pattern(hashgraph.hirpc.net)
                 );
                 return ret = true;
             }
