@@ -190,6 +190,8 @@ jobs:
           export UNSHARE_NET=1
           export RELEASE=1
           make bddtest -j || make proper bddtest
+          sudo apt-get install uwsc
+          make nngtest-build nngtest -k -j
 
       - name: Report commit stage tests
         if: always()
@@ -199,6 +201,7 @@ jobs:
           ./build/${{ env.TARGET }}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/results >> $GITHUB_STEP_SUMMARY
           $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{env.TARGET}}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/commit/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results | grep "Test result success!"
+          (echo "<NNGTEST>" && grep -a '#TEST' logs/${{ env.TARGET }}/nngtest/*.log && echo "</NNGTEST>") >> $GITHUB_STEP_SUMMARY
 
       - name: Post run
         if: always()
