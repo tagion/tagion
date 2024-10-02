@@ -319,7 +319,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         h.scrap_depth = scrap_depth;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
-
+        refinement.queue = authorising.channel_queues[net.pubkey];
         authorising.add_channel(net.pubkey);
         TestGossipNet.online_states[net.pubkey] = true;
     }
