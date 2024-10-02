@@ -67,9 +67,8 @@ class EpochTestRefinement : StdRefinement {
 
 }
 
-//alias TestRefinement = NewTestRefinement;
 
-class NewTestRefinement : StdRefinement {
+class TestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
     static long last_epoch;
     static bool continue_on_error;
@@ -134,7 +133,7 @@ class NewTestRefinement : StdRefinement {
 
 }
 
-alias TestNetwork = TestNetworkT!NewTestRefinement;
+alias TestNetwork = TestNetworkT!TestRefinement;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
