@@ -190,7 +190,7 @@ jobs:
           export UNSHARE_NET=1
           export RELEASE=1
           make bddtest -j || make proper bddtest
-          sudo apt-get install uwsc
+          apt-get install uwsc
           make nngtest-build nngtest -k -j
 
       - name: Report commit stage tests
