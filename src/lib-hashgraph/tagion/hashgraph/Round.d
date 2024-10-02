@@ -151,7 +151,7 @@ class Round {
             if (list_majority_rounds.empty) {
                 return ret = false;
             }
-            version(none)
+            //version(none)
             if (number_of_future_rounds < 4) {
                 return ret = false;
             }
@@ -183,14 +183,14 @@ class Round {
                 //decided_mask +=decided_mask[].filter!(n => events[n] is null);
                 return isMajority(decided_mask, node_size);
             }
-            const _all = check_decided;
-            version(none)
+            //const _all = check_decided;
+            //version(none)
             const _all = _events.filter!(e => e !is null)
                 .all!(e => e.witness.decided) ||
                 this[].retro.drop(1)
                     .filter!(r => r.events
                             .filter!(e => e !is null)
-                            .all!(e => e.witness.twisted))
+                            .all!(e => !e.witness.weak))
                     .map!(r => r.number - number)
                     .any!(diff => diff > 1);
 
@@ -208,9 +208,9 @@ class Round {
                 _valid_witness &= BitMask(_events
                         .filter!(e => (e !is null))
                         .filter!(e => isMajority(e.witness.yes_votes, node_size)) 
-           // .filter!(e => !e.witness.weak)
-.filter!(e => e.witness.twisted)
-.filter!(e => e.witness.entwine)
+            .filter!(e => !e.witness.weak)
+//.filter!(e => e.witness.twisted)
+//.filter!(e => e.witness.entwine)
                         .map!(e => e.node_id));
                 __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
                         .to!string),
