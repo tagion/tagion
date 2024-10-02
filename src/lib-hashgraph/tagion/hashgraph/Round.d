@@ -113,10 +113,6 @@ class Round {
         return result;
     }
 
-    final EpochVote epochVote(const HashNet net, const long epoch_number) const pure nothrow {
-        return EpochVote(epoch_number, cast(uint)(_valid_witness.count), pattern(net));
-    }
-
     final bool completed(HashGraph hashgraph) pure nothrow {
         import tagion.utils.Term;
 
@@ -592,8 +588,9 @@ class Round {
 
         void check_received_round() {
             import tagion.utils.Term;
+
             if (round_to_be_decided) {
-            const _name = hashgraph.name;
+                const _name = hashgraph.name;
                 scope (exit) {
                     round_to_be_decided = null;
                 }
@@ -631,6 +628,16 @@ class Round {
                 collect_received_round(round_to_be_decided);
             }
 
+        }
+
+        final void epochVote() nothrow {
+            if (round_to_be_decided) {
+                const net = hashgraph.hirpc.net;
+                const epoch_number = round_to_be_decided.number; /// Should be the epoch number not the round number
+                const vote = EpochVote(epoch_number, cast(uint)(round_to_be_decided._valid_witness.count), round_to_be_decided
+                        .pattern(net));
+                hashgraph.refinement.queue.write(assumeWontThrow(vote.toDoc));
+            }
         }
 
         protected void collect_received_round(Round r)

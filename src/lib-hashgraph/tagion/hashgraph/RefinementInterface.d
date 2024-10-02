@@ -11,6 +11,7 @@ import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
 import tagion.utils.Queue;
+
 @safe:
 alias PayloadQueue = Queue!Document;
 
@@ -34,15 +35,15 @@ interface Refinement {
      *  
      * Returns: the transmission queue 
      */
-    PayloadQueue queue();
-   
+    PayloadQueue queue() nothrow;
+
     /** 
      * 
      * Params:
      *   _queue = the transmission queue used
      */
     void queue(PayloadQueue _queue);
-   
+
     version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure;
 
     version (OLD_ORDERING) static bool order_less(const Event a, const Event b, const(int) order_count) pure;
