@@ -49,7 +49,7 @@ struct FinishedEpoch {
 
 @safe
 class StdRefinement : Refinement {
-
+    PayloadQueue _queue;
     static Topic epoch_created = Topic("epoch_creator/epoch_created");
     version (BDD) {
         static Topic raw_epoch_events = Topic("epoch_creator/raw_epoch_events");
@@ -65,7 +65,13 @@ class StdRefinement : Refinement {
     pure nothrow
     in (this.hashgraph is null)
     do {
+        this._queue = new PayloadQueue;
         this.hashgraph = hashgraph;
+    }
+
+    @property
+    PayloadQueue queue() pure nothrow @nogc {
+        return _queue;
     }
 
     void setTasknames(TaskNames task_names) pure nothrow {

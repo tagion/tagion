@@ -10,7 +10,10 @@ import tagion.services.options : TaskNames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
-@safe
+import tagion.utils.Queue;
+@safe:
+alias PayloadQueue = Queue!Document;
+
 interface Refinement {
 
     void setOwner(HashGraph hashgraph);
@@ -27,7 +30,11 @@ interface Refinement {
     void epoch(Event[] events, const(Round) decided_round);
 
     void payload(immutable(EventPackage*) epack);
-
+    /**
+     *  
+     * Returns: the transmission queue 
+     */
+    PayloadQueue queue();
     version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure;
 
     version (OLD_ORDERING) static bool order_less(const Event a, const Event b, const(int) order_count) pure;
