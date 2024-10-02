@@ -63,14 +63,23 @@ class StdRefinement : Refinement {
 
     void setOwner(HashGraph hashgraph)
     pure nothrow
-    in (this.hashgraph is null)
+    in (this.hashgraph is null, "Refinement does already have a Graph")
     do {
-        this._queue = new PayloadQueue;
         this.hashgraph = hashgraph;
     }
 
     @property
-    PayloadQueue queue() pure nothrow @nogc {
+    void queue(PayloadQueue _queue) pure nothrow @nogc 
+    in(this._queue !is null, "The queue has already been added")
+    do {
+        this._queue = _queue;
+    }
+
+
+    @property
+    PayloadQueue queue() pure nothrow @nogc 
+    in(_queue !is null, "Queue is missing (add the queue) with the .queue method")
+    do {
         return _queue;
     }
 

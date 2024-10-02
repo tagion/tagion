@@ -42,7 +42,7 @@ struct HashGraphOptions {
     int max_epochs;
 }
 
-class TestRefinement : StdRefinement {
+class EpochTestRefinement : StdRefinement {
 
     struct Swap {
         Pubkey swap_out;
@@ -66,6 +66,8 @@ class TestRefinement : StdRefinement {
     }
 
 }
+
+//alias TestRefinement = NewTestRefinement;
 
 class NewTestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
@@ -157,11 +159,10 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
 
     Pubkey current;
 
-    alias ChannelQueue = Queue!Document;
     class TestGossipNet : GossipNet {
         import tagion.hashgraph.HashGraphBasic;
 
-        ChannelQueue[Pubkey] channel_queues;
+        PayloadQueue[Pubkey] channel_queues;
         sdt_t _current_time;
 
         static bool[Pubkey] online_states;
@@ -212,7 +213,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         }
 
         void add_channel(const Pubkey channel) {
-            channel_queues[channel] = new ChannelQueue;
+            channel_queues[channel] = new PayloadQueue;
         }
 
         void remove_channel(const Pubkey channel) {

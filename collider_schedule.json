@@ -75,7 +75,7 @@
     "hashgraph_test": {
       "args": ["5", "5000"],
       "envs": {},
-      "stages": ["hashgraph", "hashgraph_sync"],
+      "stages": ["hashgraph", "hashgraph_test"],
       "timeout": 0.0
     },
     "hashgraph_contributors": {
@@ -88,12 +88,6 @@
       "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"],
       "envs": {},
       "stages": ["none"],
-      "timeout": 0.0
-    },
-    "hashgraph_swap": {
-      "args": ["4", "500"],
-      "envs": {},
-      "stages": ["swap"],
       "timeout": 0.0
     },
     "tvm_betterc": {
