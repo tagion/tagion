@@ -78,6 +78,7 @@ class Round {
         Round _next;
         BitMask _valid_witness;
         BitMask _visit_node_mask; /// Mark if a node has been connected in this round
+        immutable(EpochVote)*[] _epoch_votes;
     }
     immutable int number;
 
@@ -107,10 +108,26 @@ class Round {
             .array
             .sort
             .join));
-        //result.sort;
-        pragma(msg, "Pattern ", typeof(result));
-        //.sort!((a,b) => a < b);
         return result;
+    }
+
+    @property
+    final const(immutable(EpochVote)*[]) epoch_votes() const pure nothrow @nogc {
+        return _epoch_votes;
+    }
+
+    protected void checkEpochVotes() pure nothrow {
+        import tagion.basic.Debug;
+        import tagion.hibon.HiBONJSON;
+
+        if (isMajority(_epoch_votes.filter!(evote => evote !is null).count, node_size)) {
+            auto witness_votes = _epoch_votes
+                .filter!(evote => evote !is null)
+                .map!(evote => uint(evote.votes))
+                .array;
+            witness_votes.sort;
+            __write("witness_votes %s", witness_votes);
+        }
     }
 
     final bool completed(HashGraph hashgraph) pure nothrow {
@@ -197,7 +214,8 @@ class Round {
     }
 
     final const(BitMask) witness_mask() const pure nothrow {
-        return BitMask(_events.filter!(e => e !is null)
+        return BitMask(_events
+                .filter!(e => e !is null)
                 .map!(e => e.node_id));
     }
 
@@ -217,6 +235,7 @@ class Round {
             number = 0;
         }
         _events = new Event[node_size];
+        _epoch_votes.length = node_size;
     }
 
     /**
@@ -240,10 +259,8 @@ class Round {
      *   event = the event to be added
      */
     package final void add(Event event) pure nothrow
-    in {
-        assert(event._witness, "The event id " ~ event.id.to!string ~ " added to the round should be a witness ");
-        assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
-    }
+    in (event._witness, "The event id " ~ event.id.to!string ~ " added to the round should be a witness ")
+    in (_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once")
     do {
         _events[event.node_id] = event;
         event._round = this;
@@ -630,14 +647,86 @@ class Round {
 
         }
 
+        private final void epochVote(Round r, immutable(EventPackage*) epack) nothrow
+        in (r !is null, "Should be called with allocated Round")
+        do {
+            import tagion.basic.Debug;
+            import tagion.hashgraph.HashGraphBasic : EpochVote;
+            import tagion.hibon.HiBONJSON;
+            import tagion.hibon.HiBONRecord : isRecord;
+            import tagion.hibon.Document : mut;
+            import std.exception;
+
+            if (epack.event_body.payload.isRecord!EpochVote) {
+                const node = hashgraph.node(epack.pubkey);
+                if (node && !r._epoch_votes[node.node_id]) {
+                    try {
+                        debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
+                        r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
+                        r.checkEpochVotes;
+                    }
+                    catch (Exception e) {
+                        log(e);
+                    }
+                }
+            }
+        }
+
         final void epochVote() nothrow {
             if (round_to_be_decided) {
                 const net = hashgraph.hirpc.net;
                 const epoch_number = round_to_be_decided.number; /// Should be the epoch number not the round number
-                const vote = EpochVote(epoch_number, cast(uint)(round_to_be_decided._valid_witness.count), round_to_be_decided
-                        .pattern(net));
+                const vote = EpochVote(epoch_number,
+                        cast(uint)(round_to_be_decided._valid_witness.count),
+                        round_to_be_decided.pattern(net));
                 hashgraph.refinement.queue.write(assumeWontThrow(vote.toDoc));
             }
+        }
+
+        final void checkEpochVotes(immutable(EventPackage*) epack) nothrow {
+            import tagion.basic.Debug;
+            import tagion.hashgraph.HashGraphBasic : EpochVote;
+            import tagion.hibon.HiBONJSON;
+            import tagion.hibon.HiBONRecord : isRecord;
+            import tagion.hibon.Document : mut;
+            import std.exception;
+
+            if (epack.event_body.payload.isRecord!EpochVote) {
+                try {
+                    immutable epoch_vote = new EpochVote(epack.event_body.payload);
+                    const node = hashgraph.node(epack.pubkey);
+                    __write("%12s rounds = %s epoch_number = %s", hashgraph.name, last_decided_round[].retro
+                        .filter!(r => r.number)
+                        .map!(r => r.number), epoch_vote.epoch_number);
+                    Round r;
+                    auto __rounds = last_decided_round[].retro.filter!(r => r.number == epoch_vote.epoch_number);
+                    if (__rounds.empty) {
+                        __write("%12s rounds = %s epoch_number = %s Reverse", hashgraph.name,
+                                last_decided_round[]
+                                .filter!(r => r.number)
+                                .map!(r => r.number), epoch_vote.epoch_number);
+                        auto ___rounds = last_decided_round[].retro.filter!(r => r.number == epoch_vote.epoch_number);
+
+                        if (!___rounds.empty) {
+                            r = ___rounds.front;
+                        }
+                    }
+                    else {
+                        r = __rounds.front;
+                    }
+                    if (r && node && !r._epoch_votes[node.node_id]) {
+                        debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
+                        r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
+                        r.checkEpochVotes;
+                    }
+                }
+                catch (Exception e) {
+                    log(e);
+                }
+            }
+            // if (round_to_be_decided) {
+            //epochVote(round_to_be_decided, epack);
+            //}
         }
 
         protected void collect_received_round(Round r)
