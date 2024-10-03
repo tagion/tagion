@@ -59,7 +59,7 @@ unittest { // Test of the altitude measure function
  */
 @nogc
 bool isMajority(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
-    return  (3 * voting > 2 * node_size);
+    return (3 * voting > 2 * node_size);
 }
 
 unittest {
@@ -69,11 +69,11 @@ unittest {
 
 }
 
-@nogc 
+@nogc
 bool isUndecided(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
     return (3 * voting <= 2 * node_size) && (3 * voting > node_size);
 }
-        
+
 @nogc
 bool isMajority(const(BitMask) mask, const size_t size) pure nothrow {
     return isMajority(mask.count, size);
@@ -352,7 +352,7 @@ static assert(isHiBONRecord!(immutable(EventPackage)));
 @recordType("$@EVote")
 struct EpochVote {
     @label(StdNames.epoch_number) long epoch_number; /// should always be zero
-    uint nodes;
+    uint votes;
     Fingerprint pattern;
     mixin HiBONRecord;
 }
