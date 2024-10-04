@@ -6,6 +6,7 @@ import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Round;
+import tagion.hibon.Document;
 import tagion.services.options : TaskNames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
