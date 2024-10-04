@@ -661,7 +661,7 @@ class Round {
                 const node = hashgraph.node(epack.pubkey);
                 if (node && !r._epoch_votes[node.node_id]) {
                     try {
-                        debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
+                        //        debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
                         r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
                         r.checkEpochVotes;
                     }
@@ -695,17 +695,21 @@ class Round {
                 try {
                     immutable epoch_vote = new EpochVote(epack.event_body.payload);
                     const node = hashgraph.node(epack.pubkey);
-                    __write("%12s rounds = %s epoch_number = %s", hashgraph.name, last_decided_round[].retro
-                        .filter!(r => r.number)
-                        .map!(r => r.number), epoch_vote.epoch_number);
-                    Round r;
                     auto __rounds = last_decided_round[].retro.filter!(r => r.number == epoch_vote.epoch_number);
+                    __write("%12s rounds = %s epoch_number = %s",
+                            hashgraph.name,
+                            last_decided_round[].retro.until!(r => r.number == epoch_vote.epoch_number)
+                                .map!(r => r.number),
+                            epoch_vote.epoch_number);
+                    Round r;
                     if (__rounds.empty) {
-                        __write("%12s rounds = %s epoch_number = %s Reverse", hashgraph.name,
+                        auto ___rounds = last_decided_round[].filter!(r => r.number == epoch_vote.epoch_number);
+                        __write("%12s rounds = %s epoch_number = %s Reverse",
+                                hashgraph.name,
                                 last_decided_round[]
-                                .filter!(r => r.number)
-                                .map!(r => r.number), epoch_vote.epoch_number);
-                        auto ___rounds = last_decided_round[].retro.filter!(r => r.number == epoch_vote.epoch_number);
+                                .until!(r => r.number == epoch_vote.epoch_number)
+                                .map!(r => r.number),
+                                epoch_vote.epoch_number);
 
                         if (!___rounds.empty) {
                             r = ___rounds.front;
@@ -715,7 +719,7 @@ class Round {
                         r = __rounds.front;
                     }
                     if (r && node && !r._epoch_votes[node.node_id]) {
-                        debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
+                        //debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
                         r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
                         r.checkEpochVotes;
                     }
@@ -724,9 +728,6 @@ class Round {
                     log(e);
                 }
             }
-            // if (round_to_be_decided) {
-            //epochVote(round_to_be_decided, epack);
-            //}
         }
 
         protected void collect_received_round(Round r)
