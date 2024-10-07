@@ -116,17 +116,18 @@ class Round {
         return _epoch_votes;
     }
 
-    protected void checkEpochVotes() pure nothrow {
+    protected void checkEpochVotes(const HashNet net) pure nothrow {
         import tagion.basic.Debug;
         import tagion.hibon.HiBONJSON;
 
         if (isMajority(_epoch_votes.filter!(evote => evote !is null).count, node_size)) {
-            auto witness_votes = _epoch_votes
+            const _pattern = pattern(net); 
+            auto ordered_epoch_votes = _epoch_votes
                 .filter!(evote => evote !is null)
-                .map!(evote => uint(evote.votes))
+                //.map!(evote => uint(evote.votes))
                 .array;
-            witness_votes.sort;
-            __write("witness_votes %s", witness_votes);
+            ordered_epoch_votes.sort!((a,b) => a.votes < b.votes);
+            __write("ordered_epoch_votes %s", ordered_epoch_votes.map!(e => e.votes));
         }
     }
 
@@ -663,7 +664,7 @@ class Round {
                     try {
                         //        debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
                         r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
-                        r.checkEpochVotes;
+                        r.checkEpochVotes(hashgraph.hirpc.net);
                     }
                     catch (Exception e) {
                         log(e);
@@ -721,7 +722,7 @@ class Round {
                     if (r && node && !r._epoch_votes[node.node_id]) {
                         //debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
                         r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
-                        r.checkEpochVotes;
+                        r.checkEpochVotes(hashgraph.hirpc.net);
                     }
                 }
                 catch (Exception e) {
