@@ -42,7 +42,7 @@ struct HashGraphOptions {
     int max_epochs;
 }
 
-class TestRefinement : StdRefinement {
+class EpochTestRefinement : StdRefinement {
 
     struct Swap {
         Pubkey swap_out;
@@ -67,7 +67,7 @@ class TestRefinement : StdRefinement {
 
 }
 
-class NewTestRefinement : StdRefinement {
+class TestRefinement : StdRefinement {
     static FinishedEpoch[string][long] epochs;
     static long last_epoch;
     static bool continue_on_error;
@@ -132,7 +132,7 @@ class NewTestRefinement : StdRefinement {
 
 }
 
-alias TestNetwork = TestNetworkT!NewTestRefinement;
+alias TestNetwork = TestNetworkT!TestRefinement;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
@@ -211,7 +211,9 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             return channel_queues[channel].empty;
         }
 
-        void add_channel(const Pubkey channel) {
+        void add_channel(const Pubkey channel)
+        in (!(channel in channel_queues), "Channel has ready been added")
+        do {
             channel_queues[channel] = new ChannelQueue;
         }
 
@@ -261,7 +263,10 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             uint count;
             bool stop;
 
-            const(Document) payload()  {
+            const(Document) payload() {
+                if (!_hashgraph.refinement.queue.empty) {
+                    return _hashgraph.refinement.queue.read;
+                }
                 auto h = new HiBON;
                 h["node"] = format("%s-%d", _hashgraph.name, count);
                 count++;
@@ -314,11 +319,11 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
+        refinement.queue = new PayloadQueue;
         auto h = new HashGraph(N, net, refinement, authorising, name);
         h.scrap_depth = scrap_depth;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
-
         authorising.add_channel(net.pubkey);
         TestGossipNet.online_states[net.pubkey] = true;
     }

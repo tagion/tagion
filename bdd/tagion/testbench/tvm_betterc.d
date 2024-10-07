@@ -24,6 +24,7 @@ int _main(string[] args) {
         wasm_testsuite_feature.ShouldLoadAwasmfileAndConvertItIntoBetterC(wasm_testsuite_feature.context[0]);
         wasm_testsuite_feature.ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt(
                 wasm_testsuite_feature.context[1]);
+        wasm_testsuite_feature.alternative=wast_file.baseName.stripExtension;
         auto wasm_testsuite_context = wasm_testsuite_feature.run();
     }
     return 0;

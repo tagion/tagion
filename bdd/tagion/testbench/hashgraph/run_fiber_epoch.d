@@ -95,7 +95,7 @@ int _main(string[] args) {
         import tagion.utils.pretend_safe_concurrency : register, thisTid;
 
         register("run_fiber_epoch", thisTid);
-        NewTestRefinement.continue_on_error = opts.continue_on_error;
+        TestRefinement.continue_on_error = opts.continue_on_error;
         auto hashgraph_fiber_feature = automation!(run_fiber_epoch);
         hashgraph_fiber_feature.RunPassiveFastHashgraph(opts, weights);
         hashgraph_fiber_feature.run;
@@ -113,7 +113,7 @@ int _main(string[] args) {
 class RunPassiveFastHashgraph {
     string[] node_names;
     //string module_path;
-    TestNetworkT!NewTestRefinement network;
+    TestNetworkT!TestRefinement network;
     //uint MAX_CALLS;
     //uint number_of_nodes = 5;
     const HashGraphOptions opts;
@@ -126,7 +126,7 @@ class RunPassiveFastHashgraph {
         //this.MAX_CALLS = MAX_CALLS;
         this.weights = weights;
 
-        network = new TestNetworkT!(NewTestRefinement)(node_names);
+        network = new TestNetworkT!(TestRefinement)(node_names);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 100);
         network.random = Random(opts.seed);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
@@ -167,9 +167,9 @@ class RunPassiveFastHashgraph {
                         node_channels);
             }
         }
-        while (NewTestRefinement.last_epoch < opts.max_epochs) {
+        while (TestRefinement.last_epoch < opts.max_epochs) {
             size_t channel_number;
-            if (NewTestRefinement.epochs.length > 0) {
+            if (TestRefinement.epochs.length > 0) {
                 channel_number = rnd.dice(weights);
             }
             else {

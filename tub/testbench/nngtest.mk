@@ -1,50 +1,54 @@
+.ONESHELL:
 #
 # Targets for NNG tests
 #
 NNG_DEBUG?=FALSE
 
-NNGTEST_DBIN?=$(DBIN)/nngtest
-NNGTEST_LOG?=$(DLOG)/nngtest.log
+NNGTEST_DBIN?=$(DBUILD)/nngtest
+NNGTEST_LOG?=$(DLOG)/nngtest
 NNG_ROOT?=$(REPOROOT)src/lib-nngd
 LIBNNG_ROOT?=$(REPOROOT)src/lib-libnng
 
+NNGSRC+=$(wildcard $(NNG_ROOT)/nngd/*.d)
+NNGSRC+=$(wildcard $(LIBNNG_ROOT)/libnng/*.d)
+NNGSRC+=$(NNGTEST_ROOT)/nngtestutil.d
+
 NNGTEST_INC?=$(NNG_ROOT) $(NNG_ROOT)/nngd $(NNG_ROOT)/tests $(LIBNNG_ROOT) $(LIBNNG_ROOT)/libnng
-NNGTEST_DTESTS=$(wildcard $(NNG_ROOT)/tests/test*.d)
-NNGTEST_RUNTESTS=$(basename $(notdir $(NNGTEST_DTESTS)))
+NNGTEST_ROOT=$(NNG_ROOT)/tests
+NNGTEST_DTESTS=$(wildcard $(NNGTEST_ROOT)/test*.d)
+NNGTEST_RUNTESTS=$(addprefix $(NNGTEST_DBIN)/,$(basename $(notdir $(NNGTEST_DTESTS))))
+NNGTEST_LOGS=$(addprefix $(NNGTEST_LOG)/,$(notdir $(NNGTEST_DTESTS:.d=.log)))
 
+nngtest-build: nng 
+	$(MAKE) $(NNGTEST_RUNTESTS)
 
-TMP_NNGTEST:=$(TMP_FILE)
+nngtest: | $(NNGTEST_DBIN)/.way $(NNGTEST_LOG)/.way
 
-nngtest-debug:
+nngtest: $(NNGTEST_LOG)
 	$(PRECMD)
-	@echo $(DC)
+	$(MAKE) $(NNGTEST_LOGS)
+	cat $(NNGTEST_LOGS) | grep -a '#TEST' | grep -i error && echo "There are errors. See log-files $(NNGTEST_LOG)\n" || echo "All passed!"
 
-nngtest-build: nng $(NNGTEST_DTESTS)
-
-$(NNGTEST_DTESTS):
+$(NNGTEST_LOG):
 	$(PRECMD)
-	$(DC) $(DFLAGS) -od=$(NNGTEST_DBIN) -of=$(NNGTEST_DBIN)/$(basename $@) $(addprefix -I,$(DINC)) $(addprefix -I,$(NNGTEST_INC)) -L$(dir $(LIBNNG)) -L-lnng $@
+	mkdir -p $(NNGTEST_DBIN)
+	mkdir -p $(NNGTEST_LOG)
+	cp -r $(NNGTEST_ROOT)/ssl $(NNGTEST_DBIN)
+	cp -r $(NNGTEST_ROOT)/webapp $(NNGTEST_DBIN)
 
-nngtest-pretest:
-	@echo "It will take about a minute. Be patient."
-	rm -f $(NNGTEST_LOG)
+$(NNGTEST_LOG)/%.log: $(NNGTEST_DBIN)/%
+	$(PRECMD)
+	$(call log.header, Running $<)
+	$< > $@  
+	grep -a '#TEST' $@ 
 
-nngtest-posttest:
-	@echo "."
-	@grep -a '#TEST' $(NNGTEST_LOG) |grep -q ERROR && echo "There are errors. See nngtest.log" || echo "All passed!"
+$(NNGTEST_DBIN)/%: $(NNGTEST_ROOT)/%.d
+	$(PRECMD)
+	$(call log.header, Build $@)
+	$(DC) $(DFLAGS) $(addprefix -I,$(NNGTEST_INC)) $(LINKERFLAG)$(LIBNNG) $< $(NNGSRC) $(DOUT)$@ 
+	echo "Done $*"
 
-
-nngtest-test: nngtest-pretest $(NNGTEST_RUNTESTS) nngtest-posttest
-
-.SILENT: $(NNGTEST_RUNTESTS)
-
-$(NNGTEST_RUNTESTS):
-	$(NNGTEST_BIN)/$@ >> $(NNGTEST_LOG)
-	@echo -n "."
-
-.PHONY: nng nngtest-debug nngtest-build $(NNGTEST_DTESTS) $(NNGTEST_RUNTESTS) nngtest-test nngtest-pretest nngtest-posttest
-
-nngtest: nngtest-build nngtest-test
+.PHONY: nng nngtest-build  
 
 .PHONY: nngtest
 
@@ -52,6 +56,9 @@ clean-nngtest:
 	$(PRECMD)
 	${call log.header, $@ :: clean}
 	$(RMDIR) $(NNGTEST_DBIN)
+	$(RMDIR) $(NNGTEST_LOG)
+
+.PHONY: clean-nngtest
 
 clean: clean-nngtest
 
@@ -63,7 +70,6 @@ help-nngtest:
 	${call log.help, "make env-nngtest", "List all nngtest parameters"}
 	${call log.help, "make nngtest", "Compiles/Links and runs the nngtests"}
 	${call log.help, "make nngtest-build", "Compiles/Links the nngtest"}
-	${call log.help, "make nngtest-test", "Run all nngtests"}
 	${call log.close}
 
 help: help-nngtest
@@ -71,11 +77,18 @@ help: help-nngtest
 env-nngtest:
 	$(PRECMD)
 	${call log.header, $@ :: env}
-	${call log.env, NNGTEST_DBIN, $(NNGTEST_DBIN)}
+	${call log.kvp, NNGTEST_DBIN, $(NNGTEST_DBIN)}
+	${call log.kvp, NNG_ROOT, $(NNG_ROOT)}
+	${call log.kvp, LIBNNG_ROOT, $(LIBNNG_ROOT)}
+	${call log.kvp, NNGTEST_ROOT, $(NNGTEST_ROOT)}
+	${call log.kvp, NNGTEST_LOG, $(NNGTEST_LOG)}
+	${call log.env, NNGTEST_INC, $(NNGTEST_INC)}
 	${call log.env, NNGTEST_FLAGS, $(NNGTEST_FLAGS)}
 	${call log.env, NNGTEST_DTESTS, $(NNGTEST_DTESTS)}
 	${call log.env, NNGTEST_RUNTESTS, $(NNGTEST_RUNTESTS)}
-	${call log.env, NNGTEST_LOG, $(NNGTEST_LOG)}
+	${call log.env, LIBNNG, $(LIBNNG)}
+	${call log.env, NNGSRC, $(NNGSRC)}
+	${call log.env, NNGTEST_LOGS, $(NNGTEST_LOGS)}
 	${call log.close}
 
 env: env-nngtest

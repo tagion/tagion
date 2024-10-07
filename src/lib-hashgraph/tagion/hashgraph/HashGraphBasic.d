@@ -353,6 +353,6 @@ static assert(isHiBONRecord!(immutable(EventPackage)));
 struct EpochVote {
     @label(StdNames.epoch_number) long epoch_number; /// should always be zero
     uint nodes;
-    Buffer pattern;
+    Fingerprint pattern;
     mixin HiBONRecord;
 }

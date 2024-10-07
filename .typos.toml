@@ -33,6 +33,8 @@ Thows = "Throws"
 responde = "respond"
 registerd = "registered"
 
+# Makefile
+DOUT = "DOUT"
 [default]
 extend-ignore-re = [
     # Ignore base64url encoded strings
