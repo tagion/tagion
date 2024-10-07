@@ -124,9 +124,9 @@ class Round {
             const _pattern = pattern(net); 
             auto ordered_epoch_votes = _epoch_votes
                 .filter!(evote => evote !is null)
-                //.map!(evote => uint(evote.votes))
                 .array;
-            ordered_epoch_votes.sort!((a,b) => a.votes < b.votes);
+            ordered_epoch_votes.sort!((a,b) => a.pattern < b.pattern);
+
             __write("ordered_epoch_votes %s", ordered_epoch_votes.map!(e => e.votes));
         }
     }
