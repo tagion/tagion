@@ -281,6 +281,9 @@ class Event {
             if (_father && _father.round.number == _round.number) {
                 _witness_seen_mask |= _father._witness_seen_mask;
             }
+            if (weak) {
+                return;
+            }
             auto previous_witness_events = _round.previous.events;
             if ((previous_witness_events[node_id]!is null) &&
                 !previous_witness_events[node_id].witness.weak) {
