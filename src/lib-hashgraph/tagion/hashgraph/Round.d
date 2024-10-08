@@ -116,18 +116,33 @@ class Round {
         return _epoch_votes;
     }
 
-    protected void checkEpochVotes(const HashNet net) pure nothrow {
+    protected void checkEpochVotes(const HashGraph hashgraph) pure nothrow {
         import tagion.basic.Debug;
         import tagion.hibon.HiBONJSON;
+        import tagion.utils.Term;
 
-        if (isMajority(_epoch_votes.filter!(evote => evote !is null).count, node_size)) {
-            const _pattern = pattern(net); 
-            auto ordered_epoch_votes = _epoch_votes
+        import std.algorithm;
+
+        if (isMajority(_epoch_votes.filter!(evote => evote !is null).count, node_size)
+                && node_size.iota.all!(n => ((_events[n] is null) && (_epoch_votes[n] is null) || (_epoch_votes[n])))) {
+            const _pattern = pattern(hashgraph.hirpc.net);
+            auto epoch_votes_count = _epoch_votes
                 .filter!(evote => evote !is null)
-                .array;
-            ordered_epoch_votes.sort!((a,b) => a.pattern < b.pattern);
-
-            __write("ordered_epoch_votes %s", ordered_epoch_votes.map!(e => e.votes));
+                .filter!(evote => _pattern == evote.pattern)
+                .count;
+            const _majority = isMajority(epoch_votes_count, node_size);
+            const color = _majority ? GREEN : RED;
+            const ok = _majority ? "Yes" : "No";
+            auto _votes = _epoch_votes
+                .filter!(evote => evote !is null)
+                .map!(evote => evote.votes);
+            const _first_vote = _votes.front;
+            const all_same = _votes.drop(1).all!(v => v == _first_vote);
+            const _same = all_same ? "Same" : YELLOW ~ "Diff";
+            __write("%s%12s Round %s %s count=%d %s%s ordered_epoch_votes %s %(%(%02x%) %)", color, hashgraph.name, number, ok, epoch_votes_count, _same, RESET, _epoch_votes
+                    .map!(e => (e is null) ? -1 : cast(int) e.votes),
+                    _epoch_votes.filter!(e => e !is null)
+                    .map!(e => e.owner[0 .. 8]));
         }
     }
 
@@ -664,7 +679,7 @@ class Round {
                     try {
                         //        debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
                         r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
-                        r.checkEpochVotes(hashgraph.hirpc.net);
+                        r.checkEpochVotes(hashgraph);
                     }
                     catch (Exception e) {
                         log(e);
@@ -679,7 +694,8 @@ class Round {
                 const epoch_number = round_to_be_decided.number; /// Should be the epoch number not the round number
                 const vote = EpochVote(epoch_number,
                         cast(uint)(round_to_be_decided._valid_witness.count),
-                        round_to_be_decided.pattern(net));
+                        round_to_be_decided.pattern(net),
+                        hashgraph.channel);
                 hashgraph.refinement.queue.write(assumeWontThrow(vote.toDoc));
             }
         }
@@ -697,20 +713,23 @@ class Round {
                     immutable epoch_vote = new EpochVote(epack.event_body.payload);
                     const node = hashgraph.node(epack.pubkey);
                     auto __rounds = last_decided_round[].retro.filter!(r => r.number == epoch_vote.epoch_number);
-                    __write("%12s rounds = %s epoch_number = %s",
-                            hashgraph.name,
-                            last_decided_round[].retro.until!(r => r.number == epoch_vote.epoch_number)
-                                .map!(r => r.number),
-                            epoch_vote.epoch_number);
-                    Round r;
-                    if (__rounds.empty) {
-                        auto ___rounds = last_decided_round[].filter!(r => r.number == epoch_vote.epoch_number);
-                        __write("%12s rounds = %s epoch_number = %s Reverse",
+                    version (none)
+                        __write("%12s rounds = %s epoch_number = %s",
                                 hashgraph.name,
-                                last_decided_round[]
+                                last_decided_round[].retro
                                 .until!(r => r.number == epoch_vote.epoch_number)
                                 .map!(r => r.number),
                                 epoch_vote.epoch_number);
+                    Round r;
+                    if (__rounds.empty) {
+                        auto ___rounds = last_decided_round[].filter!(r => r.number == epoch_vote.epoch_number);
+                        version (none)
+                            __write("%12s rounds = %s epoch_number = %s Reverse",
+                                    hashgraph.name,
+                                    last_decided_round[]
+                                    .until!(r => r.number == epoch_vote.epoch_number)
+                                    .map!(r => r.number),
+                                    epoch_vote.epoch_number);
 
                         if (!___rounds.empty) {
                             r = ___rounds.front;
@@ -722,7 +741,7 @@ class Round {
                     if (r && node && !r._epoch_votes[node.node_id]) {
                         //debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
                         r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
-                        r.checkEpochVotes(hashgraph.hirpc.net);
+                        r.checkEpochVotes(hashgraph);
                     }
                 }
                 catch (Exception e) {
