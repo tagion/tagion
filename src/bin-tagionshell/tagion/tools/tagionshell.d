@@ -31,6 +31,7 @@ import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONRecord : isRecord, GetLabel;
 import tagion.hibon.HiBONJSON : NotSupported, typeMap;
 import tagion.hibon.HiBONBase : Type;
+import tagion.hibon.HiBONtoText;
 import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex, Params;
 import tagion.dart.Recorder;
 import crud = tagion.dart.DARTcrud;
@@ -925,6 +926,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 const sysinfo_handler = handler_helper!sysinfo_handler_impl;
 void sysinfo_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     JSONValue data = parseJSON("{}");
+    data["options"] = opt.toJSON;
     data["memsize"] = getmemstatus();
     if(opt.cache_enabled){
         data["cache"] = parseJSON("{}");
@@ -983,6 +985,18 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
     if (reqpath.length > 0) {
         switch (reqpath[0]) {
+        case "wallet":
+            string res = "\r\n"; 
+            auto bills = wallet_interface.secure_wallet.account.bills ~ wallet_interface.secure_wallet.account.requested.values;
+            bills.sort!(q{a.time < b.time});
+            foreach (i, bill; bills) {
+                const bill_index = hash_net.dartIndex(bill);
+                res ~= wallet_interface.toText(hash_net, bill) ~ "\r\n";
+            }
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            rep.type = mime_type.TEXT;
+            rep.text = res;
+            break;
         case "bullseye":
             WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ "/json", null);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
@@ -1223,6 +1237,7 @@ int _main(string[] args) {
     add_v1_route(app, options.selftest_endpoint, selftest_handler, [HTTPMethod.GET], "self test results", [
         "/bullseye": "test bullseye endpoint",
         "/dart": "test dart request endpoint",
+        "/wallet": "test i2p wallet endpoint",
     ]);
     add_v1_route(app, options.lookup_endpoint~"/*", lookup_handler, [HTTPMethod.GET], "lookup by ID");
 
