@@ -31,7 +31,7 @@ struct ShellOptions {
     string selftest_endpoint = "/selftest";
     string version_endpoint = "/version";
     string lookup_endpoint = "/lookup";
-    string default_i2p_wallet = "./shell/wallet.json";
+    string default_i2p_wallet = "wallets/wallet1.json";
     string default_i2p_wallet_pin = "0001";
     string webroot="/tmp/webapp";
     string webstaticdir="static";
