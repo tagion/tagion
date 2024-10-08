@@ -163,6 +163,8 @@ class Round {
             const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
             const _name = __format("%s%12s @%d%s", level_color(number_of_future_rounds), hashgraph.name, level(
                     number_of_future_rounds), RESET);
+            BitMask not_decided_mask=BitMask(node_size.iota
+                .filter!(n => (_events[n] !is null) && !_events[n].witness.weak));
             scope (exit) {
                 if (ret) {
                     __write(
@@ -175,10 +177,22 @@ class Round {
                     );
                 }
             }
+            version(none)
             if (list_majority_rounds.empty) {
                 return ret = false;
             }
-            if (number_of_future_rounds < 4) {
+            version(none)    
+        if (number_of_future_rounds < 4) {
+                return ret = false;
+            }
+            foreach(r; list_majority_rounds.drop(1)) {
+                if (not_decided_mask.empty) {
+                    break;
+                }
+                not_decided_mask &= BitMask(not_decided_mask[]
+                .filter!(n => r.events[n] is null));
+            }
+            if (!not_decided_mask.empty && (number_of_future_rounds < 4)) {
                 return ret = false;
             }
             const _all = _events.filter!(e => e !is null)
