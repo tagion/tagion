@@ -34,6 +34,16 @@ struct AccountDetails {
 
     import std.algorithm : filter;
 
+    // This is a solution to the problem of displaying localy failed contracts in the history.
+    void remove_contract(const(Document) doc) {
+        import std.algorithm : remove, countUntil;
+
+        const index = hirpcs.countUntil(doc);
+        if (index >= 0) {
+            hirpcs = hirpcs.remove(index);
+        }
+    }
+
     void remove_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove, countUntil;
 
