@@ -34,7 +34,7 @@ struct AccountDetails {
 
     import std.algorithm : filter;
 
-    // This is a solution to the problem of displaying localy failed contracts in the history.
+    // This is a solution to the problem of displaying locally failed contracts in the history.
     void remove_contract(const(Document) doc) {
         import std.algorithm : remove, countUntil;
 
