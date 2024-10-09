@@ -116,6 +116,32 @@ struct AccountDetails {
                 .sum;
         }
 
+        ContractStatus check_status(const(DARTIndex)[] billsHashes, const(DARTIndex)[] inputs, const(TagionBill[]) outputs) {
+            import std.algorithm : countUntil;
+
+            // Look for input matches. Return 0 from func if found.
+            foreach (inputHash; inputs) {
+                const index = billsHashes.countUntil(inputHash);
+                if (index >= 0) {
+                    return ContractStatus.pending;
+                }
+            }
+            // Proceed if inputs are not matched.
+            // Look for outputs matches. Return 1 from func if found or 2 if not.
+            foreach (output; outputs) {
+                const index = billsHashes.countUntil(dartIndex(hash_net, output));
+                if (index >= 0) {
+                    return ContractStatus.succeeded;
+                }
+            }
+
+            if (billsHashes.length == 0) {
+                return ContractStatus.succeeded;
+            }
+
+            return ContractStatus.failed;
+        }
+
         /// Returns an input range with history
         private auto history_impl() {
             import tagion.communication.HiRPC;
@@ -142,13 +168,11 @@ struct AccountDetails {
             foreach (contract, pay_script; zip(contracts, pay_scripts)) {
                 TagionBill[] input_bills;
 
-                ContractStatus status = ContractStatus.pending;
                 foreach (input; contract.inputs) {
                     // If the input bill in the contract has been spent, the contract has succeeded
                     const used_index = used_bills_hash.countUntil(input);
                     if (used_index >= 0) {
                         input_bills ~= used_bills[used_index];
-                        status = ContractStatus.succeeded;
                         continue;
                     }
                     // Otherwise if it's still your bill then the contract is probably pending
@@ -158,7 +182,8 @@ struct AccountDetails {
                         input_bills ~= bills[index];
                     }
                 }
-                statuses ~= status;
+
+                statuses ~= check_status(bills_hash, contract.inputs, pay_script.outputs);
 
                 const in_sum = input_bills.map!(b => b.value).sum;
                 const out_sum = pay_script.outputs.map!(b => b.value).sum;
@@ -231,6 +256,7 @@ enum HistoryItemType {
 enum ContractStatus {
     pending = 0,
     succeeded = 1,
+    failed = 2,
 }
 
 struct HistoryItem {
