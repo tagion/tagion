@@ -142,12 +142,13 @@ struct AccountDetails {
             foreach (contract, pay_script; zip(contracts, pay_scripts)) {
                 TagionBill[] input_bills;
 
-                ContractStatus status = ContractStatus.succeeded;
+                ContractStatus status = ContractStatus.pending;
                 foreach (input; contract.inputs) {
                     // If the input bill in the contract has been spent, the contract has succeeded
                     const used_index = used_bills_hash.countUntil(input);
                     if (used_index >= 0) {
                         input_bills ~= used_bills[used_index];
+                        status = ContractStatus.succeeded;
                         continue;
                     }
                     // Otherwise if it's still your bill then the contract is probably pending
@@ -155,7 +156,6 @@ struct AccountDetails {
                     const index = bills_hash.countUntil(input);
                     if (index >= 0) {
                         input_bills ~= bills[index];
-                        status = ContractStatus.pending;
                     }
                 }
                 statuses ~= status;
@@ -229,8 +229,8 @@ enum HistoryItemType {
 }
 
 enum ContractStatus {
-    succeeded = 1,
     pending = 0,
+    succeeded = 1,
 }
 
 struct HistoryItem {
