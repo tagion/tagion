@@ -26,6 +26,13 @@ import tagion.script.standardnames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
+void __write(Args...)(string fmt, Args args) @trusted nothrow pure {
+    debug(HASHGRAPH) {
+        import tagion.basic.Debug : print = __write;
+        print(fmt, args);
+    }
+}
+
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
 

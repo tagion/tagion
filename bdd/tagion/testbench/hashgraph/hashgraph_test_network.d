@@ -77,7 +77,8 @@ class TestRefinement : StdRefinement {
             check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
         }
         first_epoch = true;
-        __write("%12s Round %04d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
+        import tagion.basic.Debug : print = __write;
+        print("%12s Round %04d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
         if (event_collection.length == 0) {
             return;
         }
