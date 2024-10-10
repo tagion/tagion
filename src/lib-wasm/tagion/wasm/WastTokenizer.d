@@ -95,9 +95,15 @@ struct WastTokenizer {
         import std.format;
 
         try {
+            import std.math : isNaN;
             const spec = singleSpec("%f");
             auto number = token;
-            return unformatValue!T(number, spec);
+            const x = unformatValue!T(number, spec);
+            if (isNaN(x) && (token[0]=='-')) {
+                /// unformatValue does not convert -nan with sign
+                return -T.nan;
+            }
+            return x;
         }
         catch (Exception e) {
             check(false, e.msg);

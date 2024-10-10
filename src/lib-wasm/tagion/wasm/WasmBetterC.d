@@ -8,7 +8,7 @@ import std.format;
 import std.range;
 import std.range.primitives : isOutputRange;
 import std.stdio;
-import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
+import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget, isFloatingPoint;
 import std.typecons : Tuple;
 import std.typecons;
 import std.uni : toLower;
@@ -121,7 +121,7 @@ alias check = Check!WasmBetterCException;
                 auto result_expr = result_type[];
                 block(result_expr, ctx, indent, true);
                 if (_assert.method == Return_nan) {
-                    output.writef("%1$sassert(%2$s is %2$s.nan", indent, ctx.pop);
+                    output.writef("%1$sassert(math.isnan(%2$s)", indent, ctx.pop);
                 }
                 else {
                     output.writef("%sassert(%s == %s", indent, ctx.pop, ctx.pop);
@@ -462,6 +462,11 @@ alias check = Check!WasmBetterCException;
         }
     }
 
+    static string sign(T)(T x) if(isFloatingPoint!T) {
+        import std.math : signbit;
+        return signbit(x)?"-":"";
+    }
+
     private const(ExprRange.IRElement) block(
             ref ExprRange expr,
             ref Context ctx,
@@ -571,7 +576,7 @@ alias check = Check!WasmBetterCException;
                         break;
                     case CONST:
                         static string toText(const WasmArg a) {
-                            import std.math : isNaN, isInfinity, signbit;
+                            import std.math : isNaN, isInfinity;
 
                             with (Types) {
                                 switch (a.type) {
@@ -582,19 +587,19 @@ alias check = Check!WasmBetterCException;
                                 case F32:
                                     const x = a.get!float;
                                     if (x.isNaN) {
-                                        return "(float.nan)";
+                                        return format("(%sfloat.nan)", sign(x));
                                     }
                                     if (x.isInfinity) {
-                                        return format("(%sfloat.infinity)",signbit(x)?"-":"");
+                                        return format("(%sfloat.infinity)",sign(x));
                                     }
-                                    return format("float(%a /* %s */)", x, x);
+                                    return format("float(%aF /* %s */)", x, x);
                                 case F64:
                                     const x = a.get!double;
                                     if (x.isNaN) {
-                                        return "(double.nan)";
+                                        return format("(%sdouble.nan)", sign(x));
                                     }
                                     if (x.isInfinity) {
-                                        return format("(%sdouble.infinite)", signbit(x)?"-":"");
+                                        return format("(%sdouble.infinite)", sign(x));
                                     }
                                     return format("double(%a /* %s */)", x, x);
                                 default:
@@ -720,7 +725,7 @@ shared static this() {
         IR.F32_GT: q{(%2$s > %2$s},
         IR.F32_LE: q{(%2$s <= %2$s},
         IR.F32_GE: q{(%2$s >= %2$s},
-        IR.F32_ABS: q{math.abs(%1$s)},
+        IR.F32_ABS: q{math.fabsf(%1$s)},
         IR.F32_NEG: q{(-%1$s)},
         IR.F32_CEIL: q{math.ceil(%1$s)},
         IR.F32_FLOOR: q{math.floor(%1$s)},
@@ -731,9 +736,9 @@ shared static this() {
         IR.F32_SUB: q{(%2$s - %1$s)},
         IR.F32_MUL: q{(%2$s * %1$s)},
         IR.F32_DIV: q{(%2$s / %1$s)},
-        IR.F32_MIN: q{math.fmin(%2$s, %1$s)},
-        IR.F32_MAX: q{math.fmax(%2$s, %1$s)},
-        IR.F32_COPYSIGN: q{math.copysign(%2$s, %1$s)},
+        IR.F32_MIN: q{wasm.fmin(%2$s, %1$s)},
+        IR.F32_MAX: q{wasm.fmax(%2$s, %1$s)},
+        IR.F32_COPYSIGN: q{math.copysignf(%2$s, %1$s)},
         IR.F32_CONVERT_I32_S: q{cast(int)(%1$s)},
         IR.F32_CONVERT_I32_U: q{cast(uint)(%1$s)},
         IR.F32_CONVERT_I64_S: q{cast(long)(%1$s)},

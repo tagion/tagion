@@ -41,6 +41,23 @@ T rem(T)(T x, T y) if (isIntegral!T) {
     return x % y;
 }
 
+T fmin(T)(T x, T y) if (isFloatingPoint!T) {
+    import std.math : isNaN;
+    if (isNaN(x) || isNaN(y)) {
+        return T.nan;
+    }
+    return (x < y)?x:y;
+}
+
+T fmax(T)(T x, T y) if (isFloatingPoint!T) {
+    import std.math : isNaN;
+    if (isNaN(x) || isNaN(y)) {
+        return T.nan;
+    }
+    return (x > y)?x:y;
+}
+
+
 void error(const bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
     import std.exception;
 
