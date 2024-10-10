@@ -22,6 +22,7 @@ import tagion.gossip.AddressBook;
 import tagion.gossip.GossipNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Refinement;
+import tagion.hashgraph.RefinementInterface : PayloadQueue;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONJSON;
@@ -37,8 +38,6 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.monitor.Monitor;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.script.common : SignedContract;
-
-alias PayloadQueue = Queue!Document;
 
 @safe
 struct EpochCreatorOptions {
@@ -98,7 +97,7 @@ struct EpochCreatorService {
         HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, gossip_net);
         hashgraph.scrap_depth = opts.scrap_depth;
 
-        PayloadQueue payload_queue = new PayloadQueue();
+        refinement.queue = new PayloadQueue();
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
@@ -110,16 +109,16 @@ struct EpochCreatorService {
             if (counter > 0) {
                 log.trace("Payloads in queue=%d", counter);
             }
-            if (payload_queue.empty) {
+            if (refinement.queue.empty) {
                 return Document();
             }
             counter--;
-            return payload_queue.read;
+            return refinement.queue.read;
         }
 
         void receivePayload(Payload, const(Document) pload) {
             pragma(msg, "fixme(cbr): Should we not just send the payload directly to the hashgraph");
-            payload_queue.write(pload);
+            refinement.queue.write(pload);
             counter++;
         }
 

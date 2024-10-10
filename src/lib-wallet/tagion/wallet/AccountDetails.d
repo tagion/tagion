@@ -34,6 +34,16 @@ struct AccountDetails {
 
     import std.algorithm : filter;
 
+    // This is a solution to the problem of displaying locally failed contracts in the history.
+    void remove_contract(const(Document) doc) {
+        import std.algorithm : remove, countUntil;
+
+        const index = hirpcs.countUntil(doc);
+        if (index >= 0) {
+            hirpcs = hirpcs.remove(index);
+        }
+    }
+
     void remove_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove, countUntil;
 
@@ -116,6 +126,32 @@ struct AccountDetails {
                 .sum;
         }
 
+        ContractStatus check_status(const(DARTIndex)[] billsHashes, const(DARTIndex)[] inputs, const(TagionBill[]) outputs) {
+            import std.algorithm : countUntil;
+
+            // Look for input matches. Return 0 from func if found.
+            foreach (inputHash; inputs) {
+                const index = billsHashes.countUntil(inputHash);
+                if (index >= 0) {
+                    return ContractStatus.pending;
+                }
+            }
+            // Proceed if inputs are not matched.
+            // Look for outputs matches. Return 1 from func if found or 2 if not.
+            foreach (output; outputs) {
+                const index = billsHashes.countUntil(dartIndex(hash_net, output));
+                if (index >= 0) {
+                    return ContractStatus.succeeded;
+                }
+            }
+
+            if (billsHashes.length == 0) {
+                return ContractStatus.succeeded;
+            }
+
+            return ContractStatus.failed;
+        }
+
         /// Returns an input range with history
         private auto history_impl() {
             import tagion.communication.HiRPC;
@@ -142,7 +178,6 @@ struct AccountDetails {
             foreach (contract, pay_script; zip(contracts, pay_scripts)) {
                 TagionBill[] input_bills;
 
-                ContractStatus status = ContractStatus.succeeded;
                 foreach (input; contract.inputs) {
                     // If the input bill in the contract has been spent, the contract has succeeded
                     const used_index = used_bills_hash.countUntil(input);
@@ -155,10 +190,10 @@ struct AccountDetails {
                     const index = bills_hash.countUntil(input);
                     if (index >= 0) {
                         input_bills ~= bills[index];
-                        status = ContractStatus.pending;
                     }
                 }
-                statuses ~= status;
+
+                statuses ~= check_status(bills_hash, contract.inputs, pay_script.outputs);
 
                 const in_sum = input_bills.map!(b => b.value).sum;
                 const out_sum = pay_script.outputs.map!(b => b.value).sum;
@@ -229,8 +264,9 @@ enum HistoryItemType {
 }
 
 enum ContractStatus {
-    succeeded = 1,
     pending = 0,
+    succeeded = 1,
+    failed = 2,
 }
 
 struct HistoryItem {

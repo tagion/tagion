@@ -197,13 +197,6 @@ class Event {
                 return cast(uint)(_voted_yes_mask.count);
             }
 
-            bool decided() {
-                const N = _round.node_size;
-                return isMajority(yes_votes, N) ||
-                    !isMajority(yes_votes + N - voters, N) ||
-                    isMajority(voters - yes_votes, N);
-            }
-
             uint voters() {
                 if (_round.next) {
                     return cast(uint) _round.next.events.filter!(e => e !is null).count;
@@ -228,7 +221,7 @@ class Event {
             }
 
             bool entwine()
-            in(_round.next, "This function can not called when the next round does not exists")
+            in (_round.next, "This function can not called when the next round does not exists")
             do {
                 return _round.next.events[node_id] && _round.next.events[node_id].witness.twisted;
             }
@@ -248,7 +241,7 @@ class Event {
          */
         private this() nothrow
         in (!_witness, "A witness can only be created once for an event")
-        
+
         do {
             _count++;
             _witness = this;
@@ -274,12 +267,15 @@ class Event {
 
         void vote(HashGraph hashgraph) nothrow
         in ((!hasVoted), "This witness has already voted")
-        
+
         do {
             hashgraph._rounds.set_round(this.outer);
             assert(_round.previous, "Round should have a previous round");
             if (_father && _father.round.number == _round.number) {
                 _witness_seen_mask |= _father._witness_seen_mask;
+            }
+            if (weak) {
+                return;
             }
             auto previous_witness_events = _round.previous.events;
             if ((previous_witness_events[node_id]!is null) &&
@@ -307,7 +303,7 @@ class Event {
 
     bool calc_strongly_seen(HashGraph hashgraph) const pure nothrow
     in (_father, "Calculation of strongly seen only makes sense if we have a father")
-    
+
     do {
         if (father_witness_is_leading) {
             return true;
@@ -353,7 +349,7 @@ class Event {
     */
     package final void witness_event() nothrow
     in (!_witness, "Witness has already been set")
-    
+
     out {
         assert(_witness, "Witness should be set");
     }
@@ -394,6 +390,8 @@ class Event {
             hashgraph.front_seat(this);
             view(this);
             hashgraph.refinement.payload(event_package);
+            //hashgraph.refinement.checkEpochVoting(event_package);
+            hashgraph._rounds.checkEpochVotes(event_package);
         }
 
         _mother = hashgraph.register(event_package.event_body.mother);
@@ -433,6 +431,8 @@ class Event {
                 new Witness;
                 _witness.vote(hashgraph);
                 hashgraph._rounds.check_decide_round;
+                hashgraph._rounds.epochVote;
+                hashgraph._rounds.check_received_round;
                 return;
             }
         }
@@ -457,7 +457,7 @@ class Event {
      */
     final package void disconnect(HashGraph hashgraph) nothrow @trusted
     in (!_mother, "Event with a mother can not be disconnected")
-    
+
     do {
         hashgraph.eliminate(fingerprint);
         if (_witness) {
@@ -497,14 +497,14 @@ class Event {
     @nogc pure nothrow final {
         void round_received(Round r)
         in (!_round_received, "Received round has been set")
-        
+
         do {
             _round_received = r;
         }
 
         package Witness witness()
         in (_witness, "Event is not a witness")
-        
+
         do {
             return _witness;
         }
@@ -564,7 +564,7 @@ class Event {
      * Returns: round
      */
         const(Round) round()
-        
+
         out (result) {
             assert(result, "Round must be set before this function is called");
         }
@@ -652,7 +652,7 @@ class Event {
 
         // is true if the event does not have a mother or a father
         bool isEva()
-        
+
         out (result) {
             if (result) {
                 assert(event_package.event_body.father is null);
