@@ -342,6 +342,7 @@ alias check = Check!WasmBetterCException;
 
     string function_name(const int index) {
         import std.string;
+
         const exp = getExport(index);
         if (exp == ExportType.init) {
             return format("func_%d", index);
@@ -463,9 +464,10 @@ alias check = Check!WasmBetterCException;
         }
     }
 
-    static string sign(T)(T x) if(isFloatingPoint!T) {
+    static string sign(T)(T x) if (isFloatingPoint!T) {
         import std.math : signbit;
-        return signbit(x)?"-":"";
+
+        return signbit(x) ? "-" : "";
     }
 
     private const(ExprRange.IRElement) block(
@@ -591,7 +593,7 @@ alias check = Check!WasmBetterCException;
                                         return format("(%sfloat.nan)", sign(x));
                                     }
                                     if (x.isInfinity) {
-                                        return format("(%sfloat.infinity)",sign(x));
+                                        return format("(%sfloat.infinity)", sign(x));
                                     }
                                     return format("float(%aF /* %s */)", x, x);
                                 case F64:
@@ -773,9 +775,29 @@ shared static this() {
         IR.F64_CONVERT_I64_U: q{cast(ulong)(%1$s)},
         //IR.F64_DEMOTE_F64: q{cast(double)(%1$s)},
         /// Conversion
-        IR.I64_EXTEND_I32_S : q{cast(long)(%1$s)},
-        IR.I64_EXTEND_I32_U : q{cast(long)(cast(uint)%1$s)},
-        IR.I32_WRAP_I64 : q{cast(int)(%1$s)},
+        IR.I64_EXTEND_I32_S: q{cast(long)(%1$s)},
+        IR.I64_EXTEND_I32_U: q{cast(long)(cast(uint)%1$s)},
+        IR.I32_WRAP_I64: q{cast(int)(%1$s)},
+        IR.I32_TRUNC_F32_S: q{wasm.trunc!int(%1$s)},
+        IR.I32_TRUNC_F32_U: q{wasm.trunc!uint(%1$s)},
+        IR.I32_TRUNC_F64_S: q{wasm.trunc!int(%1$s)},
+        IR.I32_TRUNC_F64_U: q{wasm.trunc!uint(%1$s)},
+        IR.I64_TRUNC_F32_S: q{wasm.trunc!long(%1$s)},
+        IR.I64_TRUNC_F32_U: q{wasm.trunc!ulong(%1$s)},
+        IR.I64_TRUNC_F64_S: q{wasm.trunc!long(%1$s)},
+        IR.I64_TRUNC_F64_U: q{wasm.trunc!ulong(%1$s)},
+
+        IR.F32_CONVERT_I32_S : q{cast(float)(%1$s)},
+        IR.F32_CONVERT_I32_U : q{cast(float)(cast(uint)%1$s)},
+        IR.F32_CONVERT_I64_S : q{cast(float)(%1$s)},
+        IR.F32_CONVERT_I64_U : q{cast(float)(cast(ulong)%1$s)},
+        IR.F64_CONVERT_I32_S : q{cast(double)(%1$s)},
+        IR.F64_CONVERT_I32_U : q{cast(double)(cast(uint)%1$s)},
+        IR.F64_CONVERT_I64_S : q{cast(double)(%1$s)},
+        IR.F64_CONVERT_I64_U : q{cast(double)(cast(ulong)%1$s)},
+
+        IR.F64_PROMOTE_F32 : q{cast(double)(%1$s)},
+        IR.F32_DEMOTE_F64 : q{cast(float)(%1$s)},
 
 
     ];
