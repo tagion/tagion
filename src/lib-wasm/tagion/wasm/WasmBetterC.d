@@ -775,6 +775,7 @@ shared static this() {
         /// Conversion
         IR.I64_EXTEND_I32_S : q{cast(long)(%1$s)},
         IR.I64_EXTEND_I32_U : q{cast(long)(cast(uint)%1$s)},
+        IR.I32_WRAP_I64 : q{cast(int)(%1$s)},
 
 
     ];
