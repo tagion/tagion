@@ -182,14 +182,6 @@ class Round {
                     );
                 }
             }
-            version (none)
-                if (list_majority_rounds.empty) {
-                    return ret = false;
-                }
-            version (none)
-                if (number_of_future_rounds < 4) {
-                    return ret = false;
-                }
             foreach (r; list_majority_rounds.drop(1)) {
                 if (not_decided_mask.empty) {
                     break;
@@ -200,21 +192,6 @@ class Round {
             if (!not_decided_mask.empty && (number_of_future_rounds < 4)) {
                 return ret = false;
             }
-
-            //const _all=true;
-            version (none) const _all = not_decided_mask[]
-                .filter!(n => _next._events[n]!is null)
-                .map!(n => _next._events[n].witness.yes_votes)
-                .all!(yes_votes => !isUndecided(yes_votes, node_size));
-
-            version (none) const _all = _events.filter!(e => e !is null)
-                .all!(e => e.witness.decided) ||
-                this[].retro.drop(1)
-                    .filter!(r => r.events
-                            .filter!(e => e !is null)
-                            .all!(e => !e.witness.weak))
-                    .map!(r => r.number - number)
-                    .any!(diff => diff > 1);
 
             __write("%s Round %04d     Dec   %(%2d %) => %(%d %) rounds=%d not_decided_mask=%#s  ".replace("#", node_size
                     .to!string),
@@ -262,10 +239,6 @@ class Round {
 
             const _all = approve_valid_witness;
             if (_all) {
-                version (none) const approve_valid_witness = _valid_witness.invert(node_size)[]
-                    .filter!(n => _events[n]!is null)
-                    .map!(n => _events[n].witness.yes_votes)
-                    .all!(yes_votes => !isUndecided(yes_votes, node_size));
 
                 __write("%s Round %04d     yes   %(%2d %) votes=%d".replace("#", node_size
                         .to!string),
