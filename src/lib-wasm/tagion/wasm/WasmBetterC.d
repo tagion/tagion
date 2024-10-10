@@ -341,11 +341,12 @@ alias check = Check!WasmBetterCException;
     }
 
     string function_name(const int index) {
+        import std.string;
         const exp = getExport(index);
         if (exp == ExportType.init) {
             return format("func_%d", index);
         }
-        return exp.name;
+        return exp.name.replace(".", "_");
     }
 
     static string param_name(const size_t index) {
@@ -771,6 +772,10 @@ shared static this() {
         IR.F64_CONVERT_I64_S: q{cast(long)(%1$s)},
         IR.F64_CONVERT_I64_U: q{cast(ulong)(%1$s)},
         //IR.F64_DEMOTE_F64: q{cast(double)(%1$s)},
+        /// Conversion
+        IR.I64_EXTEND_I32_S : q{cast(long)(%1$s)},
+        IR.I64_EXTEND_I32_U : q{cast(long)(cast(uint)%1$s)},
+
 
     ];
 }
