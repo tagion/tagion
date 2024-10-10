@@ -718,7 +718,7 @@ shared static this() {
         IR.I64_GT_U: q{(ulong(%2$s) > ulong(%1$s))},
         IR.I64_GE_S: q{(%2$s >= %1$s)},
         IR.I64_GE_U: q{(ulong(%2$s) >= ulong(%1$s))},
-
+        /// F32 32bits floatingpoint
         IR.F32_EQ: q{(%2$s == %2$s},
         IR.F32_NE: q{(%2$s != %2$s},
         IR.F32_LT: q{(%2$s < %2$s},
@@ -727,10 +727,10 @@ shared static this() {
         IR.F32_GE: q{(%2$s >= %2$s},
         IR.F32_ABS: q{math.fabsf(%1$s)},
         IR.F32_NEG: q{(-%1$s)},
-        IR.F32_CEIL: q{math.ceil(%1$s)},
-        IR.F32_FLOOR: q{math.floor(%1$s)},
-        IR.F32_TRUNC: q{math.trunc(%1$s)},
-        IR.F32_NEAREST: q{math.nearbyint(%1$s)},
+        IR.F32_CEIL: q{math.ceilf(%1$s)},
+        IR.F32_FLOOR: q{math.floorf(%1$s)},
+        IR.F32_TRUNC: q{math.truncf(%1$s)},
+        IR.F32_NEAREST: q{math.nearbyintf(%1$s)},
         IR.F32_SQRT: q{math.sqrt(%1$s)},
         IR.F32_ADD: q{(%2$s + %1$s)},
         IR.F32_SUB: q{(%2$s - %1$s)},
