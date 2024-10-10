@@ -599,7 +599,7 @@ alias check = Check!WasmBetterCException;
                                         return format("(%sdouble.nan)", sign(x));
                                     }
                                     if (x.isInfinity) {
-                                        return format("(%sdouble.infinite)", sign(x));
+                                        return format("(%sdouble.infinity)", sign(x));
                                     }
                                     return format("double(%a /* %s */)", x, x);
                                 default:
@@ -744,6 +744,33 @@ shared static this() {
         IR.F32_CONVERT_I64_S: q{cast(long)(%1$s)},
         IR.F32_CONVERT_I64_U: q{cast(ulong)(%1$s)},
         IR.F32_DEMOTE_F64: q{cast(double)(%1$s)},
+
+        /// F64 32bits floatingpoint
+        IR.F64_EQ: q{(%2$s == %2$s},
+        IR.F64_NE: q{(%2$s != %2$s},
+        IR.F64_LT: q{(%2$s < %2$s},
+        IR.F64_GT: q{(%2$s > %2$s},
+        IR.F64_LE: q{(%2$s <= %2$s},
+        IR.F64_GE: q{(%2$s >= %2$s},
+        IR.F64_ABS: q{math.fabs(%1$s)},
+        IR.F64_NEG: q{(-%1$s)},
+        IR.F64_CEIL: q{math.ceil(%1$s)},
+        IR.F64_FLOOR: q{math.floor(%1$s)},
+        IR.F64_TRUNC: q{math.trunc(%1$s)},
+        IR.F64_NEAREST: q{math.nearbyint(%1$s)},
+        IR.F64_SQRT: q{math.sqrt(%1$s)},
+        IR.F64_ADD: q{(%2$s + %1$s)},
+        IR.F64_SUB: q{(%2$s - %1$s)},
+        IR.F64_MUL: q{(%2$s * %1$s)},
+        IR.F64_DIV: q{(%2$s / %1$s)},
+        IR.F64_MIN: q{wasm.fmin(%2$s, %1$s)},
+        IR.F64_MAX: q{wasm.fmax(%2$s, %1$s)},
+        IR.F64_COPYSIGN: q{math.copysign(%2$s, %1$s)},
+        IR.F64_CONVERT_I32_S: q{cast(int)(%1$s)},
+        IR.F64_CONVERT_I32_U: q{cast(uint)(%1$s)},
+        IR.F64_CONVERT_I64_S: q{cast(long)(%1$s)},
+        IR.F64_CONVERT_I64_U: q{cast(ulong)(%1$s)},
+        //IR.F64_DEMOTE_F64: q{cast(double)(%1$s)},
 
     ];
 }
