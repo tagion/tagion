@@ -774,7 +774,7 @@ shared static this() {
         IR.F64_CONVERT_I64_S: q{cast(long)(%1$s)},
         IR.F64_CONVERT_I64_U: q{cast(ulong)(%1$s)},
         //IR.F64_DEMOTE_F64: q{cast(double)(%1$s)},
-        /// Conversion
+        // Conversions
         IR.I64_EXTEND_I32_S: q{cast(long)(%1$s)},
         IR.I64_EXTEND_I32_U: q{cast(long)(cast(uint)%1$s)},
         IR.I32_WRAP_I64: q{cast(int)(%1$s)},
@@ -798,6 +798,11 @@ shared static this() {
 
         IR.F64_PROMOTE_F32 : q{cast(double)(%1$s)},
         IR.F32_DEMOTE_F64 : q{cast(float)(%1$s)},
+
+        IR.I32_REINTERPRET_F32 : q{wasm.reinterpret32(%1$s)},
+        IR.F32_REINTERPRET_I32 : q{wasm.reinterpret32(%1$s)},
+        IR.I64_REINTERPRET_F64 : q{wasm.reinterpret64(%1$s)},
+        IR.F64_REINTERPRET_I64 : q{wasm.reinterpret64(%1$s)},
 
 
     ];
