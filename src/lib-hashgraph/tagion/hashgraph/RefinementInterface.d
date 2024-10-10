@@ -6,11 +6,16 @@ import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Round;
+import tagion.hibon.Document;
 import tagion.services.options : TaskNames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
-@safe
+import tagion.utils.Queue;
+
+@safe:
+alias PayloadQueue = Queue!Document;
+
 interface Refinement {
 
     void setOwner(HashGraph hashgraph);
@@ -27,9 +32,33 @@ interface Refinement {
     void epoch(Event[] events, const(Round) decided_round);
 
     void payload(immutable(EventPackage*) epack);
+    /**
+     *  
+     * Returns: the transmission queue 
+     */
+    PayloadQueue queue() nothrow;
 
-    version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure;
+    /** 
+     * 
+     * Params:
+     *   _queue = the transmission queue used
+     */
+    void queue(PayloadQueue _queue);
 
-    version (OLD_ORDERING) static bool order_less(const Event a, const Event b, const(int) order_count) pure;
+    /**
+     * Check if the evenpackage contains a epoch-vote 
+     * Params: 
+     *   epack = event package to be checked 
+     * Returns: true if the epoch was decided
+     */
+
+    bool checkEpochVoting(immutable(EventPackage*) epack);
+
+    version (NEW_ORDERING) static bool order_less(Event a, Event b,
+            const(Event[]) famous_witnesses,
+    const(Round) decided_round) pure;
+
+    version (OLD_ORDERING) static bool order_less(const Event a, const Event b,
+            const(int) order_count) pure;
 
 }

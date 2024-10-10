@@ -26,6 +26,13 @@ import tagion.script.standardnames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
+void __write(Args...)(string fmt, Args args) @trusted nothrow pure {
+    debug(HASHGRAPH) {
+        import tagion.basic.Debug : print = __write;
+        print(fmt, args);
+    }
+}
+
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
 
@@ -59,7 +66,7 @@ unittest { // Test of the altitude measure function
  */
 @nogc
 bool isMajority(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
-    return  (3 * voting > 2 * node_size);
+    return (3 * voting > 2 * node_size);
 }
 
 unittest {
@@ -69,11 +76,11 @@ unittest {
 
 }
 
-@nogc 
+@nogc
 bool isUndecided(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
     return (3 * voting <= 2 * node_size) && (3 * voting > node_size);
 }
-        
+
 @nogc
 bool isMajority(const(BitMask) mask, const size_t size) pure nothrow {
     return isMajority(mask.count, size);
@@ -352,7 +359,8 @@ static assert(isHiBONRecord!(immutable(EventPackage)));
 @recordType("$@EVote")
 struct EpochVote {
     @label(StdNames.epoch_number) long epoch_number; /// should always be zero
-    uint nodes;
-    Buffer pattern;
+    uint votes;
+    Fingerprint pattern;
+    Pubkey owner;
     mixin HiBONRecord;
 }

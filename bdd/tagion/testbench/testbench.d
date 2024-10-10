@@ -17,7 +17,6 @@ int main(string[] args) {
     import dart_test = tagion.testbench.dart_test;
     import double_spend = tagion.testbench.double_spend;
     import epoch_creator = tagion.testbench.epoch_creator;
-    import hashgraph_swap = tagion.testbench.hashgraph_swap;
     import hashgraph_test = tagion.testbench.hashgraph_test;
     import run_fiber_epoch = tagion.testbench.hashgraph.run_fiber_epoch;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
@@ -61,7 +60,6 @@ int main(string[] args) {
         dart_sync_stress,
         dart_service,
         hashgraph_test,
-        hashgraph_swap,
         tvm_betterc,
         epoch_creator,
         transcript_service,
