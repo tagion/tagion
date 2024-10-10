@@ -97,10 +97,10 @@
       "timeout": 0.0
     },
     "tvm_betterc": {
-      "args": ["i32.wast", "i64.wast", "f32_debug.wast"],
+      "args": ["i32.wast", "i64.wast", "f32.wast"],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
-        "imports": "wasm=foundation.wasm math=std.math",
+        "imports": "wasm=foundation.wasm math=core.stdc.math",
         "attributes": "@safe"
       },
       "stages": ["tvm", "commit"],
