@@ -131,7 +131,6 @@ alias check = Check!WasmBetterCException;
                 }
                 output.writeln(");");
             }
-
         }
 
         foreach (_assert; sec_assert.asserts) {
@@ -420,7 +419,6 @@ alias check = Check!WasmBetterCException;
             scope (exit) {
                 stack.length--;
             }
-
             return peek;
         }
 
@@ -573,7 +571,7 @@ alias check = Check!WasmBetterCException;
                         break;
                     case CONST:
                         static string toText(const WasmArg a) {
-                            import std.math : isNaN, isInfinity;
+                            import std.math : isNaN, isInfinity, signbit;
 
                             with (Types) {
                                 switch (a.type) {
@@ -587,18 +585,18 @@ alias check = Check!WasmBetterCException;
                                         return "(float.nan)";
                                     }
                                     if (x.isInfinity) {
-                                        return "(float.infinity)";
+                                        return format("(%sfloat.infinity)",signbit(x)?"-":"");
                                     }
-                                    return format("(%a /* %s */)", x, x);
+                                    return format("float(%a /* %s */)", x, x);
                                 case F64:
                                     const x = a.get!double;
                                     if (x.isNaN) {
                                         return "(double.nan)";
                                     }
                                     if (x.isInfinity) {
-                                        return "(double.infinite)";
+                                        return format("(%sdouble.infinite)", signbit(x)?"-":"");
                                     }
-                                    return format("(%a /* %s */)", x, x);
+                                    return format("double(%a /* %s */)", x, x);
                                 default:
                                     assert(0);
                                 }
@@ -655,7 +653,7 @@ shared static this() {
     instr_fmt = [
         IR.LOCAL_GET: q{%1$s},
         IR.LOCAL_SET: q{%2$s=$1$s;},
-        // 32 bits integer operations
+        /// 32 bits integer operations
         IR.I32_CLZ: q{wasm.clz(%s)},
         IR.I32_CTZ: q{wasm.ctz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},
