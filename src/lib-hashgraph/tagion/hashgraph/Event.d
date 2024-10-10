@@ -197,13 +197,6 @@ class Event {
                 return cast(uint)(_voted_yes_mask.count);
             }
 
-            bool decided() {
-                const N = _round.node_size;
-                return isMajority(yes_votes, N) ||
-                    !isMajority(yes_votes + N - voters, N) ||
-                    isMajority(voters - yes_votes, N);
-            }
-
             uint voters() {
                 if (_round.next) {
                     return cast(uint) _round.next.events.filter!(e => e !is null).count;

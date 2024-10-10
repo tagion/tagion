@@ -193,15 +193,10 @@ class Round {
                 return ret = false;
             }
 
-            __write("%s Round %04d     Dec   %(%2d %) => %(%d %) rounds=%d not_decided_mask=%#s  ".replace("#", node_size
+            __write("%s Round %04d     rounds=%d not_decided_mask=%#s  ".replace("#", node_size
                     .to!string),
                     _name,
                     number,
-                    _events.map!(e => (e is null) ? -1 : e.witness.decided),
-                    this[].retro
-                    .map!(r => r.events
-                        .filter!(e => e !is null)
-                        .all!(e => e.witness.decided)),
                     number_of_future_rounds,
                     not_decided_mask
             );
