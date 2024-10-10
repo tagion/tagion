@@ -731,7 +731,7 @@ shared static this() {
         IR.F32_FLOOR: q{math.floorf(%1$s)},
         IR.F32_TRUNC: q{math.truncf(%1$s)},
         IR.F32_NEAREST: q{math.nearbyintf(%1$s)},
-        IR.F32_SQRT: q{math.sqrt(%1$s)},
+        IR.F32_SQRT: q{math.sqrtf(%1$s)},
         IR.F32_ADD: q{(%2$s + %1$s)},
         IR.F32_SUB: q{(%2$s - %1$s)},
         IR.F32_MUL: q{(%2$s * %1$s)},
