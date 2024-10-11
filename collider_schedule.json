@@ -93,7 +93,8 @@
     "tvm_betterc": {
       "args": [
             "i32.wast", "i64.wast", "f32.wast", "f64.wast", "conversions.wast",
-            "int_literals.wast", "float_literals.wast"
+            "int_literals.wast", "float_literals.wast",
+            "f32_cmp.wast"
             ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
