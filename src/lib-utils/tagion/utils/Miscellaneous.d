@@ -115,7 +115,6 @@ template FitUnsigned(F) if (isFloatingPoint!F) {
 F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     import std.format;
     import std.uni : sicmp;
-import std.stdio;
     check(text.length > 0, "Can not convert an empty string");
     const negative = text[0] == '-';
     const pos=negative || (text[0] == '+');
@@ -139,11 +138,8 @@ import std.stdio;
                 enum mask = 0xC_0000_0000_0000L;
             }
             const signal_mask = convert!(U)(quiet.front) ;
-            writefln("%s", text);
-            writefln("signal_mask=%08x %08x", signal_mask, result.unsigned);
             result.unsigned &= ~(mask);
             result.unsigned |= signal_mask;
-            writefln("unsigned=%08x", result.unsigned);
         }
         return result.number;
     }
