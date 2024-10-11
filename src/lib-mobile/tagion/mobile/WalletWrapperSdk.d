@@ -655,7 +655,10 @@ extern (C) {
                 __wallet_storage.wallet.account.unlock_bill_by_hash(dart_index);
                 // Remove the bill from the requested list.
                 __wallet_storage.wallet.account.remove_requested_by_hash(dart_index);
+
             }
+
+            __wallet_storage.wallet.account.remove_contract(Document(contractBuffer));
 
             __wallet_storage.write;
             version (NET_HACK) {

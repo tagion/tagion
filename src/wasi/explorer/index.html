@@ -38,18 +38,46 @@
         var mlistsz = 0;
         const MLISTMAX = 100;
 
+
         $( document ).ready(function() {
             console.log("Websocket to setup on ", location.origin.replace(/^http/, 'ws'));
             wsinit();
+            walinit();
             $("#go").click(doit);    
             $("#isubmonitor").change(submonitor);
             $("#isubrecorder").change(submonitor);
             $("#isubtrt").change(submonitor);
             $("#iclearmon").click((e) => { $("#mlist").html(""); mlistsz = 0; });
-            $("#helpdoc > ul:eq(0) > li:eq(2) > pre:eq(0)").html(config.help_valid_indices);
-            $("#helpdoc > ul:eq(0) > li:eq(2) > pre:eq(1)").html(config.help_valid_pkeys);
         });
         
+        function walinit() {
+            var h = [];
+            $.ajax({
+                url: config.api_testwallet_endpoint,
+                type: "get",
+                success: function(data, status, xhr) {
+                    data.split(/\r?\n/)
+                        .map((x,i) => {
+                            h.push(x.split(/\s+/)[1]);    
+                        });
+                    config.help_valid_indices = h
+                        .map(a => [a,Math.random()])
+                        .sort((a,b) => {return a[1] < b[1] ? -1 : 1;})
+                        .slice(0,6)
+                        .map(a => a[0])
+                        .join("\r\n");
+                    $("#helpbox_indices").html(config.help_valid_indices);
+                    $("#helpbox.pkey").html(config.help_valid_pkeys);
+                },
+                error: function(data) {
+                    console.log("Error: ", data);
+                },
+                complete: function(data) {
+                }
+            });
+
+        }
+
         function wswait() {  
             if(ws){
                 if( ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.CLOSING ){
@@ -136,7 +164,9 @@
                 name: "#Name"
             }
             var id = "";
-            if ( query.match(/^@/) ) {
+            if ( query.match(/^\/info/) ) {
+                id = "info";
+            } else if ( query.match(/^@/) ) {
                 id = "index";
             } else if ( query.match(/^[0-9]+$/) ) {
                 id = "epoch";
@@ -151,6 +181,30 @@
             }
             console.log("Consider: ", id);
             $('body').addClass('busy');
+            if ( id == "info"){
+                console.log(config.api_version_endpoint);
+                $.ajax({
+                    url: config.api_version_endpoint,
+                    type: "get",
+                    success: function(data, status, xhr) {
+                        console.log(data);
+                        if ( data["0"] ) {
+                            $("#msg").html("Result for version info");
+                            $("#raw").html(data);
+                        } else {
+                            if($("#msg").html() == "")
+                                $("#msg").html("Empty result.");
+                        }
+                    },
+                    error: function(data) {
+                        console.log("Error: ", data);
+                    },
+                    complete: function(data) {
+                        $('body').removeClass('busy');
+                    }
+                });
+            }    
+
             if ( id == "index" ) {
                 console.log("B64:  ", btoa("\#\$Y:\*:"+query));
                 $.ajax({
@@ -253,14 +307,15 @@
     <div class="modal-body" id="helpdoc">
         <p>Enter the following query strings for test: </p>
         <ul>
+            <li> "/info" - for version info
             <li> "tagion" - for #name lookup
             <li> any number i.e. "12" - for epoch lookup
             <li> "@...." base64 buffer for Dart read on dartIndex or TRT read on pubKey (by context)
             <br/>valid indices: 
-            <pre>
+            <pre id="helpbox_indices">
             </pre>
             valid wallet pkey:
-            <pre>
+            <pre id="helpbox_pkey">
             </pre>
         </ul>
     </div>

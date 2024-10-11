@@ -197,13 +197,6 @@ class Event {
                 return cast(uint)(_voted_yes_mask.count);
             }
 
-            bool decided() {
-                const N = _round.node_size;
-                return isMajority(yes_votes, N) ||
-                    !isMajority(yes_votes + N - voters, N) ||
-                    isMajority(voters - yes_votes, N);
-            }
-
             uint voters() {
                 if (_round.next) {
                     return cast(uint) _round.next.events.filter!(e => e !is null).count;
@@ -280,6 +273,9 @@ class Event {
             assert(_round.previous, "Round should have a previous round");
             if (_father && _father.round.number == _round.number) {
                 _witness_seen_mask |= _father._witness_seen_mask;
+            }
+            if (weak) {
+                return;
             }
             auto previous_witness_events = _round.previous.events;
             if ((previous_witness_events[node_id]!is null) &&
@@ -394,6 +390,8 @@ class Event {
             hashgraph.front_seat(this);
             view(this);
             hashgraph.refinement.payload(event_package);
+            //hashgraph.refinement.checkEpochVoting(event_package);
+            hashgraph._rounds.checkEpochVotes(event_package);
         }
 
         _mother = hashgraph.register(event_package.event_body.mother);

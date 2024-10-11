@@ -77,7 +77,8 @@ class TestRefinement : StdRefinement {
             check(event_collection.all!(e => e.round_received !is null && e.round_received.number != long.init), "should have a round received");
         }
         first_epoch = true;
-        __write("%12s Round %04d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
+        import tagion.basic.Debug : print = __write;
+        print("%12s Round %04d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
         if (event_collection.length == 0) {
             return;
         }
@@ -253,7 +254,6 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
             { // Eva Event
                 immutable buf = cast(Buffer) _hashgraph.channel;
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
-                // writefln("NODE SIZE OF TEST HASHGRAPH %s", _hashgraph.node_size);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
                 if (Event.callbacks) {
                     Event.callbacks.connect(eva_event);

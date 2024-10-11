@@ -90,6 +90,7 @@ jobs:
 
           make clean
           rm -r *.callstack logs/ || echo "no logs"
+
   tauon-wasm:
     runs-on: CI
     steps:

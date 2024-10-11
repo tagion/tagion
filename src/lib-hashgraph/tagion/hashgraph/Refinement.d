@@ -69,16 +69,15 @@ class StdRefinement : Refinement {
     }
 
     @property
-    void queue(PayloadQueue _queue) pure nothrow @nogc 
-    in(this._queue !is null, "The queue has already been added")
+    void queue(PayloadQueue _queue) pure nothrow @nogc
+    in (this._queue !is null, "The queue has already been added")
     do {
         this._queue = _queue;
     }
 
-
     @property
-    PayloadQueue queue() pure nothrow @nogc 
-    in(_queue !is null, "Queue is missing (add the queue) with the .queue method")
+    PayloadQueue queue() pure nothrow @nogc
+    in (_queue !is null, "Queue is missing (add the queue) with the .queue method")
     do {
         return _queue;
     }
@@ -123,6 +122,19 @@ class StdRefinement : Refinement {
 
     void epack(immutable(EventPackage*) epack) {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
+    }
+
+    bool checkEpochVoting(immutable(EventPackage*) epack) const pure nothrow {
+        import tagion.basic.Debug;
+        import tagion.hashgraph.HashGraphBasic : EpochVote;
+        import tagion.hibon.HiBONJSON;
+        import std.exception;
+
+        if (epack.event_body.payload.isRecord!EpochVote) {
+            debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
+            return true;
+        }
+        return false;
     }
 
     version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
