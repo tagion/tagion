@@ -40,6 +40,17 @@ double reinterpret64(long x) {
 
     return result.f64;
 }
+
+
+auto snan(T)(T x) if(isIntegral!T) {
+    static if (T.sizeof == int.sizeof) {
+        return reinterpret32(x);
+    }
+    else {
+        return reinterpret64(x);
+    }
+}
+
 nothrow {
 
 

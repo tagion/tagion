@@ -598,7 +598,7 @@ alias check = Check!WasmBetterCException;
                                 case F32:
                                     const x = a.get!float;
                                     if (x.isNaN) {
-                                        return format("(%sfloat.nan)", sign(x));
+                                        return format("wasm.snan(0x%x)", a.as!int);
                                     }
                                     if (x.isInfinity) {
                                         return format("(%sfloat.infinity)", sign(x));
@@ -607,7 +607,7 @@ alias check = Check!WasmBetterCException;
                                 case F64:
                                     const x = a.get!double;
                                     if (x.isNaN) {
-                                        return format("(%sdouble.nan)", sign(x));
+                                        return format("wasm.snan(0x%x)", a.as!long);
                                     }
                                     if (x.isInfinity) {
                                         return format("(%sdouble.infinity)", sign(x));
