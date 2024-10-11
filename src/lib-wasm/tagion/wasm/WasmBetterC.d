@@ -819,13 +819,21 @@ shared static this() {
         IR.F32_REINTERPRET_I32 : q{wasm.reinterpret32(%1$s)},
         IR.I64_REINTERPRET_F64 : q{wasm.reinterpret64(%1$s)},
         IR.F64_REINTERPRET_I64 : q{wasm.reinterpret64(%1$s)},
-        // Compare i32
+        // Compare f32
         IR.F32_EQ : q{(%2$s == %1$s)},
         IR.F32_NE : q{(%2$s != %1$s)},
         IR.F32_LT : q{(%2$s < %1$s)},
         IR.F32_GT : q{(%2$s > %1$s)},
         IR.F32_LE : q{(%2$s <= %1$s)},
         IR.F32_GE : q{(%2$s >= %1$s)},
+
+        // Compare f64
+        IR.F64_EQ : q{(%2$s == %1$s)},
+        IR.F64_NE : q{(%2$s != %1$s)},
+        IR.F64_LT : q{(%2$s < %1$s)},
+        IR.F64_GT : q{(%2$s > %1$s)},
+        IR.F64_LE : q{(%2$s <= %1$s)},
+        IR.F64_GE : q{(%2$s >= %1$s)},
 
 
     ];
