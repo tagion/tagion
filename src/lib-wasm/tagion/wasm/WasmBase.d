@@ -706,6 +706,26 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
         }
     }
 
+    /**
+     * Same as get(T) but with now type check 
+     * Returns: The value in the register 
+    */
+    T as(T)() const nothrow {
+        alias BaseT = Unqual!T;
+        static if (is(BaseT == int) || is(BaseT == uint)) {
+            return cast(T) i32;
+        }
+        else static if (is(BaseT == long) || is(BaseT == ulong)) {
+            return cast(T) i64;
+        }
+        else static if (is(BaseT == float)) {
+            return f32;
+        }
+        else static if (is(BaseT == double)) {
+            return f64;
+        }
+    }
+
     @property Types type() const pure nothrow {
         return _type;
     }

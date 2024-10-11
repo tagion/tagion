@@ -3,6 +3,7 @@ module tagion.wasm.WastTokenizer;
 import std.traits;
 import tagion.basic.Debug;
 import tagion.utils.Miscellaneous : convert;
+
 enum Chars : char {
     NUL = '\0',
     SPACE = char(0x20),
@@ -84,17 +85,17 @@ struct WastTokenizer {
         return flag;
     }
 
-            enum hex_prefix = "0x";
+    enum hex_prefix = "0x";
     T get(T)() nothrow if (isIntegral!T) {
         import std.algorithm.comparison : min;
         import std.conv;
 
         try {
             const negative = (token[0] == '-');
-            if (token[negative .. min(hex_prefix.length+negative, $)] == hex_prefix) {
-                auto result= cast(T)(token[hex_prefix.length+negative .. $].to!(Unsigned!T)(16));
+            if (token[negative .. min(hex_prefix.length + negative, $)] == hex_prefix) {
+                auto result = cast(T)(token[hex_prefix.length + negative .. $].to!(Unsigned!T)(16));
                 if (negative) {
-                    result=-result;    
+                    result = -result;
                 }
                 return result;
             }
@@ -108,27 +109,30 @@ struct WastTokenizer {
 
     T get(T)() nothrow if (isFloatingPoint!T) {
         import std.format;
-        
+
         try {
+            return token.convert!T;
             import std.math : isNaN;
+
             const negative = token[0] == '-';
-            enum NaN="nan";
-            if (token[negative..$] == "infinity") {
-                return (negative)?-T.infinity:T.infinity;
+            enum NaN = "nan";
+            if (token[negative .. $] == "infinity") {
+                return (negative) ? -T.infinity : T.infinity;
             }
-            else if (token[negative..negative+NaN.length] == NaN) {
-               if ((token.length > negative+NaN.length) && token[negative+NaN.length] == ':') {
-                    size_t pos=negative+NaN.length;
-                    
+            else if (token[negative .. negative + NaN.length] == NaN) {
+                if ((token.length > negative + NaN.length) && token[negative + NaN.length] == ':') {
+                    size_t pos = negative + NaN.length;
+
                     union Overlap {
-                        T number=T.nan;
+                        T number = T.nan;
                         FitUnsigned!T unsigned;
                     }
+
                     Overlap result;
-                    const mask=token[pos..$].convert!(FitUnsigned!T);     
+                    const mask = token[pos .. $].convert!(FitUnsigned!T);
                     return result.number;
                 }
-                return (negative)?-T.nan:T.nan;
+                return (negative) ? -T.nan : T.nan;
             }
             const spec = singleSpec("%f");
             auto number = token;

@@ -13,10 +13,10 @@ import tagion.errors.tagionexceptions;
 @safe:
 
 enum Prefix {
-    hex="0x",
-    HEX="0X",
-    bin="0b",
-    BIN="0B",
+    hex = "0x",
+    HEX = "0X",
+    bin = "0b",
+    BIN = "0B",
 }
 
 enum HEX_SEPARATOR = '_';
@@ -66,38 +66,93 @@ class ConvertException : TagionException {
 
 alias check = Check!ConvertException;
 
-T convert(T)(const(char)[] text) if(isIntegral!T) {
+T convert(T)(const(char)[] text) if (isIntegral!T) {
     import std.format;
     import std.conv : to;
+    import std.uni : sicmp;
+
     check(text.length > 0, "Can not convert an empty string");
-    const negative=text[0] == '-';
+    const negative = text[0] == '-';
     static if (isUnsigned!T) {
         check(!negative, format("Negative number can not convert to %s", T.stringof));
     }
 
-    uint base=10;
-    text=text[negative..$];
-    if (text[0..min(Prefix.hex.length,$)] == Prefix.hex) {
-        base=16;
-        text=text[Prefix.hex.length..$];
+    uint base = 10;
+    text = text[negative .. $];
+    if (sicmp(text[0 .. min(Prefix.hex.length, $)], Prefix.hex) == 0) {
+        base = 16;
+        text = text[Prefix.hex.length .. $];
     }
-    else if (text[0..min(Prefix.bin.length,$)] == Prefix.bin) {
-        base=2;
-        text=text[Prefix.bin.length..$];
+    else if (sicmp(text[0 .. min(Prefix.bin.length, $)], Prefix.bin) == 0) {
+        base = 2;
+        text = text[Prefix.bin.length .. $];
     }
-    auto result=cast(T)(text.to!(Unsigned!T)(base));
+    auto result = cast(T)(text.to!(Unsigned!T)(base));
     if (isSigned!T && negative) {
-        result=-result;
+        result = -result;
     }
     return result;
 }
 
 unittest {
     assert("42".convert!uint == 42);
-    assert("42_000_000".convert!ulong == 42_000_000);
+    assert("42000000".convert!ulong == 42_000_000);
 
     assert("0xab".convert!int == 0xAB);
     assert("-0xab".convert!int == -0xAB);
+
+}
+
+template FitUnsigned(F) if (isFloatingPoint!F) {
+    static if (F.sizeof == uint.sizeof) {
+        alias FitUnsigned = uint;
+    }
+    else {
+        alias FitUnsigned = ulong;
+    }
+}
+
+F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
+    import std.format;
+    import std.uni : sicmp;
+import std.stdio;
+    check(text.length > 0, "Can not convert an empty string");
+    const negative = text[0] == '-';
+    const pos=negative || (text[0] == '+');
+    enum NaN = "nan";
+    enum Infinity = "infinity";
+    if (sicmp(text[pos .. min(pos + NaN.length, $)], NaN) == 0) {
+        auto quiet = text.splitter(':').drop(1);
+     alias U = FitUnsigned!F;
+        union Overlap {
+            F number;
+            U unsigned;
+        }
+
+        Overlap result;
+        result.number = (negative) ? -F.nan : F.nan;
+        if (!quiet.empty) {
+            static if(F.sizeof == uint.sizeof) {
+            enum mask = 0x0060_0000;
+            }
+            else {
+                enum mask = 0xC_0000_0000_0000L;
+            }
+            const signal_mask = convert!(U)(quiet.front) ;
+            writefln("%s", text);
+            writefln("signal_mask=%08x %08x", signal_mask, result.unsigned);
+            result.unsigned &= ~(mask);
+            result.unsigned |= signal_mask;
+            writefln("unsigned=%08x", result.unsigned);
+        }
+        return result.number;
+    }
+    if (sicmp(text[pos .. min(pos + Infinity.length, $)], Infinity) == 0) {
+        return (negative) ? -F.infinity : F.infinity;
+    }
+    const spec = singleSpec("%f");
+    const x = unformatValue!F(text, spec);
+    return x;
 
 }
 /++
