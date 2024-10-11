@@ -2,7 +2,7 @@ module tagion.wasm.WastTokenizer;
 
 import std.traits;
 import tagion.basic.Debug;
-
+import tagion.utils.Miscellaneous : convert;
 enum Chars : char {
     NUL = '\0',
     SPACE = char(0x20),
@@ -51,6 +51,15 @@ enum TokenType {
     }
 }
 
+template FitUnsigned(F) if (isFloatingPoint!F) {
+    static if (F.sizeof == uint.sizeof) {
+        alias FitUnsigned = uint;
+    }
+    else {
+        alias FitUnsigned = ulong;
+    }
+}
+
 @safe
 struct WastTokenizer {
     string toString() const pure nothrow @trusted {
@@ -61,7 +70,7 @@ struct WastTokenizer {
 
     }
 
-    void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
+    bool check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
         import std.exception : assumeWontThrow;
         import std.stdio;
 
@@ -72,14 +81,15 @@ struct WastTokenizer {
                 })());
 
         }
+        return flag;
     }
 
+            enum hex_prefix = "0x";
     T get(T)() nothrow if (isIntegral!T) {
         import std.algorithm.comparison : min;
         import std.conv;
 
         try {
-            enum hex_prefix = "0x";
             const negative = (token[0] == '-');
             if (token[negative .. min(hex_prefix.length+negative, $)] == hex_prefix) {
                 auto result= cast(T)(token[hex_prefix.length+negative .. $].to!(Unsigned!T)(16));
@@ -98,16 +108,31 @@ struct WastTokenizer {
 
     T get(T)() nothrow if (isFloatingPoint!T) {
         import std.format;
-
+        
         try {
             import std.math : isNaN;
+            const negative = token[0] == '-';
+            enum NaN="nan";
+            if (token[negative..$] == "infinity") {
+                return (negative)?-T.infinity:T.infinity;
+            }
+            else if (token[negative..negative+NaN.length] == NaN) {
+               if ((token.length > negative+NaN.length) && token[negative+NaN.length] == ':') {
+                    size_t pos=negative+NaN.length;
+                    
+                    union Overlap {
+                        T number=T.nan;
+                        FitUnsigned!T unsigned;
+                    }
+                    Overlap result;
+                    const mask=token[pos..$].convert!(FitUnsigned!T);     
+                    return result.number;
+                }
+                return (negative)?-T.nan:T.nan;
+            }
             const spec = singleSpec("%f");
             auto number = token;
             const x = unformatValue!T(number, spec);
-            if (isNaN(x) && (token[0]=='-')) {
-                /// unformatValue does not convert -nan with sign
-                return -T.nan;
-            }
             return x;
         }
         catch (Exception e) {
