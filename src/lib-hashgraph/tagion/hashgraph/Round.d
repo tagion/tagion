@@ -145,10 +145,6 @@ class Round {
         }
     }
 
-    bool coin_round_decide(const Buffer fingerprint) const pure nothrow {
-        return (fingerprint[15] & 0x8) == 0x8;
-    }
-
     final bool completed(HashGraph hashgraph) pure nothrow {
         import tagion.utils.Term;
 
