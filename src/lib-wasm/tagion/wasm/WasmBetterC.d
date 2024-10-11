@@ -448,11 +448,19 @@ alias check = Check!WasmBetterCException;
         void perform(const IR ir, const uint number_of_args) {
             switch (number_of_args) {
             case 1:
-                push(format(instr_fmt[ir], pop));
-                return;
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop));
+                    return;
+                }
+                push(format("Undefinded %s pop %s", ir, pop));
+                break;
             case 2:
-                push(format(instr_fmt[ir], pop, pop));
-                return;
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s", ir, pop, pop));
+                break;
             default:
                 check(0, format("Format argument %s not supported for %s", number_of_args, instrTable[ir].name));
             }
@@ -660,8 +668,16 @@ immutable string[IR] instr_fmt;
 shared static this() {
     instr_fmt = [
         IR.LOCAL_GET: q{%1$s},
-        IR.LOCAL_SET: q{%2$s=$1$s;},
-        /// 32 bits integer operations
+        IR.LOCAL_SET: q{%2$s=%1$s;},
+        // State 
+        IR.RETURN : q{%1$s}, 
+        // Const literals
+        IR.I32_CONST: q{/* const i32 */},
+        IR.I64_CONST: q{/* const i64 */},
+        IR.F32_CONST: q{/* const f32 */},
+        IR.F64_CONST: q{/* const f64 */},
+
+        // 32 bits integer operations
         IR.I32_CLZ: q{wasm.clz(%s)},
         IR.I32_CTZ: q{wasm.ctz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},

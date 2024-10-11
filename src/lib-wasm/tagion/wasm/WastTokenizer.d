@@ -80,8 +80,13 @@ struct WastTokenizer {
 
         try {
             enum hex_prefix = "0x";
-            if (token[0 .. min(hex_prefix.length, $)] == hex_prefix) {
-                return cast(T)(token[hex_prefix.length .. $].to!(Unsigned!T)(16));
+            const negative = (token[0] == '-');
+            if (token[negative .. min(hex_prefix.length+negative, $)] == hex_prefix) {
+                auto result= cast(T)(token[hex_prefix.length+negative .. $].to!(Unsigned!T)(16));
+                if (negative) {
+                    result=-result;    
+                }
+                return result;
             }
             return token.to!T;
         }
