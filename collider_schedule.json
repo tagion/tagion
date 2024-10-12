@@ -95,11 +95,11 @@
             "i32.wast", "i64.wast", "f32.wast", "f64.wast", "conversions.wast",
             "int_literals.wast", "float_literals.wast",
             "f32_cmp.wast", "f64_cmp.wast",
-            "int_exprs.wast", "float_exprs.wast"
+            "int_exprs.wast", "float_exprs.wast", "float_misc.wast"
             ],
       "envs": {
-        "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
-        "imports": "wasm=foundation.wasm math=core.stdc.math",
+        "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/math.d -g -unittest -main",
+        "imports": "wasm=foundation.wasm math=foundation.math",
         "attributes": "@safe"
       },
       "stages": ["tvm", "commit"],
