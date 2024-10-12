@@ -6,6 +6,16 @@ import std.traits;
 
 @safe:
 
+int equal(T)(T x, T y) {
+    import std.math : isNaN;
+    static if (isFloatingPoint!T) {
+        if (isNaN(x) || isNaN(y)) {
+            return x is y;
+        }
+    }
+    return x == y;
+}
+
 union b32 {
     int i32;
     float f32;

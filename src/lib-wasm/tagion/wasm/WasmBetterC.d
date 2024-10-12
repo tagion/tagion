@@ -124,7 +124,7 @@ alias check = Check!WasmBetterCException;
                     output.writef("%1$sassert(math.isnan(%2$s)", indent, ctx.pop);
                 }
                 else {
-                    output.writef("%sassert(%s == %s", indent, ctx.pop, ctx.pop);
+                    output.writef("%sassert(wasm.equal(%s, %s)", indent, ctx.pop, ctx.pop);
                 }
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
@@ -738,7 +738,7 @@ shared static this() {
         IR.I64_GE_S: q{(%2$s >= %1$s)},
         IR.I64_GE_U: q{(ulong(%2$s) >= ulong(%1$s))},
         /// F32 32bits floatingpoint
-        IR.F32_EQ: q{(%2$s == %2$s},
+        IR.F32_EQ: q{(%2$s is %2$s},
         IR.F32_NE: q{(%2$s != %2$s},
         IR.F32_LT: q{(%2$s < %2$s},
         IR.F32_GT: q{(%2$s > %2$s},
