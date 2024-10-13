@@ -107,6 +107,11 @@ struct WastTokenizer {
 
     }
 
+    string getText() nothrow {
+        check(type == TokenType.STRING, "Text string expected");
+        return token. stripQuotes;
+    }
+
     private string text;
     string token;
     uint line;
@@ -231,14 +236,6 @@ struct WastTokenizer {
 
         void trim() {
             nextUntil!q{a.isInvisible};
-            version (none)
-                while (!empty && text[pos].isInvisible) {
-                if (text[pos] == Chars.NEWLINE) {
-                    start_line_pos = pos + 1;
-                    line++;
-                }
-                pos++;
-            }
         }
 
         char currentChar() const {

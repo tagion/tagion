@@ -36,10 +36,12 @@ struct WastParser {
     alias Type = WasmSection.Type;
     alias Function = WasmSection.Function;
     alias Code = WasmSection.Code;
+    alias Memory = WasmSection.Memory;
     alias GlobalType = WasmSection.GlobalType;
     alias FuncType = WasmSection.FuncType;
     alias TypeIndex = WasmSection.TypeIndex;
     alias CodeType = WasmSection.CodeType;
+    alias DataType = WasmSection.DataType;
     alias ExportType = WasmSection.ExportType;
     alias CustomType = WasmSection.Custom;
 
@@ -367,23 +369,35 @@ struct WastParser {
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
                 label = r.token;
-
+                writef("Memory label = %s", label);  
                 r.nextToken;
                 if (r.type == TokenType.WORD) {
                     arg = r.token;
+                    writef("arg = %s", arg);
                     r.nextToken;
                 }
+                writefln("Type %s", r.type);
                 while (r.type == TokenType.BEGIN) {
                     parseModule(r, ParserStage.MEMORY);
                 }
                 return ParserStage.MEMORY;
             case "segment":
+                DataType data_type;
+                scope(exit) {
+                   writer.section!(Section.DATA).sectypes ~= data_type;
+                }
+                write("Segment "); 
+                r.check(stage == ParserStage.MEMORY);
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
-                label = r.token;
+                //label = r.token;
+                data_type.idx=r.get!int;
+                writef(" label %s ", data_type.idx);
                 r.nextToken;
-                r.check(r.type == TokenType.STRING);
-                arg = r.token;
+                //r.check(r.type == TokenType.STRING);
+                //arg = r.token;
+                data_type.base = r.getText; 
+                writefln("arg = %s",data_type.base);
                 r.nextToken;
                 break;
             case "export":

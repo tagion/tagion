@@ -902,7 +902,6 @@ static assert(isInputRange!ExprRange);
                     _level--;
                     break;
                 case ILLEGAL:
-
                     throw new WasmExprException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code), elm);
                     break;
                 case SYMBOL:

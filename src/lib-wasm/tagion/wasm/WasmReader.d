@@ -39,9 +39,11 @@ import tagion.wasm.WasmException;
         wasm_verbose("WASM '%s'", range.magic);
         wasm_verbose("VERSION %d", range.vernum);
         wasm_verbose("Index %d", range.index);
-
         while (!range.empty) {
             auto a = range.front;
+            scope(failure) {
+                wasm_verbose("Failure %s", a);    
+            }
             with (Section) {
                 final switch (a.section) {
                     foreach (E; EnumMembers!(Section)) {

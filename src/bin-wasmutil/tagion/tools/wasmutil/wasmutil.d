@@ -71,7 +71,7 @@ mixin Main!_main;
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
-
+    bool verbose_wasm;
     string inputfilename;
     string outputfilename;
     //bool print;
@@ -93,6 +93,7 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch, 
                 "gas|g", format("Inject gas counters: %s", inject_gas), &inject_gas,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
+                "w|wasm_verbose", "Verbose the wasm parser", &verbose_wasm,
                 "mod|m", "Modify import module name from ", &modify_from,
                 "to", "Modify import module name from ", &modify_to,
                 "imports|i", "Import list", &imports,
@@ -142,7 +143,10 @@ int _main(string[] args) {
             help;
             return 0;
         }
-
+        
+        if (verbose_wasm) {
+            wasm_verbose.mode = VerboseMode.STANDARD;
+        }
         foreach (file; args[1 .. $]) {
             with (FileExtension) {
                 switch (file.extension) {
