@@ -1,4 +1,3 @@
-/// HashGraph Round
 module tagion.hashgraph.Round;
 
 //import std.stdio;
@@ -78,7 +77,7 @@ class Round {
         Round _next;
         BitMask _valid_witness;
         BitMask _visit_node_mask; /// Mark if a node has been connected in this round
-        immutable(EpochVote)*[] _epoch_votes;
+        immutable(RoundVote)*[] _epoch_votes;
     }
     immutable int number;
 
@@ -112,11 +111,11 @@ class Round {
     }
 
     @property
-    final const(immutable(EpochVote)*[]) epoch_votes() const pure nothrow @nogc {
+    final const(immutable(RoundVote)*[]) epoch_votes() const pure nothrow @nogc {
         return _epoch_votes;
     }
 
-    protected void checkEpochVotes(const HashGraph hashgraph) pure nothrow {
+    protected void checkRoundVotes(const HashGraph hashgraph) pure nothrow {
         import tagion.basic.Debug;
         import tagion.hibon.HiBONJSON;
         import tagion.utils.Term;
@@ -710,19 +709,18 @@ class Round {
         in (r !is null, "Should be called with allocated Round")
         do {
             import tagion.basic.Debug;
-            import tagion.hashgraph.HashGraphBasic : EpochVote;
+            import tagion.hashgraph.HashGraphBasic : RoundVote;
             import tagion.hibon.HiBONJSON;
             import tagion.hibon.HiBONRecord : isRecord;
             import tagion.hibon.Document : mut;
             import std.exception;
 
-            if (epack.event_body.payload.isRecord!EpochVote) {
+            if (epack.event_body.payload.isRecord!RoundVote) {
                 const node = hashgraph.node(epack.pubkey);
                 if (node && !r._epoch_votes[node.node_id]) {
                     try {
-                        //        debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
-                        r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
-                        r.checkEpochVotes(hashgraph);
+                        r._epoch_votes[node.node_id] = new RoundVote(epack.event_body.payload.mut);
+                        r.checkRoundVotes(hashgraph);
                     }
                     catch (Exception e) {
                         log(e);
@@ -735,7 +733,7 @@ class Round {
             if (round_to_be_decided) {
                 const net = hashgraph.hirpc.net;
                 const epoch_number = round_to_be_decided.number; /// Should be the epoch number not the round number
-                const vote = EpochVote(epoch_number,
+                const vote = RoundVote(epoch_number,
                         cast(uint)(round_to_be_decided._valid_witness.count),
                         round_to_be_decided.pattern(net),
                         hashgraph.channel);
@@ -743,17 +741,17 @@ class Round {
             }
         }
 
-        final void checkEpochVotes(immutable(EventPackage*) epack) nothrow {
+        final void checkRoundVotes(immutable(EventPackage*) epack) nothrow {
             import tagion.basic.Debug;
-            import tagion.hashgraph.HashGraphBasic : EpochVote;
+            import tagion.hashgraph.HashGraphBasic : RoundVote;
             import tagion.hibon.HiBONJSON;
             import tagion.hibon.HiBONRecord : isRecord;
             import tagion.hibon.Document : mut;
             import std.exception;
 
-            if (epack.event_body.payload.isRecord!EpochVote) {
+            if (epack.event_body.payload.isRecord!RoundVote) {
                 try {
-                    immutable epoch_vote = new EpochVote(epack.event_body.payload);
+                    immutable epoch_vote = new RoundVote(epack.event_body.payload);
                     const node = hashgraph.node(epack.pubkey);
                     auto __rounds = last_decided_round[].retro.filter!(r => r.number == epoch_vote.epoch_number);
                     version (none)
@@ -782,9 +780,8 @@ class Round {
                         r = __rounds.front;
                     }
                     if (r && node && !r._epoch_votes[node.node_id]) {
-                        //debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
-                        r._epoch_votes[node.node_id] = new EpochVote(epack.event_body.payload.mut);
-                        r.checkEpochVotes(hashgraph);
+                        r._epoch_votes[node.node_id] = new RoundVote(epack.event_body.payload.mut);
+                        r.checkRoundVotes(hashgraph);
                     }
                 }
                 catch (Exception e) {

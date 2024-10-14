@@ -390,8 +390,7 @@ class Event {
             hashgraph.front_seat(this);
             view(this);
             hashgraph.refinement.payload(event_package);
-            //hashgraph.refinement.checkEpochVoting(event_package);
-            hashgraph._rounds.checkEpochVotes(event_package);
+            hashgraph._rounds.checkRoundVotes(event_package);
         }
 
         _mother = hashgraph.register(event_package.event_body.mother);
