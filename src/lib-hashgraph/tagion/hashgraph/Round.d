@@ -642,7 +642,8 @@ class Round {
                             round_to_be_decided = null;
                         }
                     }
-                    __write("%s %sRound %04d%s epoch %-(%s %) collected=0  votes=%#s yes=%d  "
+                    if (round_to_be_decided) {
+                    __write("%s %sRound %04d%s epoch %-(%s %)  votes=%#s yes=%d  "
                             .replace("#", round_to_be_decided.node_size.to!string),
                             _name,
                             RED,
@@ -652,6 +653,7 @@ class Round {
                             round_to_be_decided._valid_witness,
                             round_to_be_decided._valid_witness.count,
                     );
+                    }
                     return;
                 }
 
