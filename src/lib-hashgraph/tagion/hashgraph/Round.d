@@ -208,17 +208,6 @@ class Round {
                         .filter!(e => isMajority(e.witness.yes_votes, node_size))
                         .count
                 );
-                __write("%s Round %04d    Xyes   %(%2d %) votes=%d".replace("#", node_size
-                        .to!string),
-                        _name,
-                        number,
-                        _next._events
-                        .map!(e => (e is null) ? -1 : cast(int) e.witness.yes_votes),
-                        _next._events
-                        .filter!(e => (e !is null))
-                        .filter!(e => isMajority(e.witness.yes_votes, node_size))
-                        .count
-                );
                 __write("%s Round %04d     No    %(%2d %) pattern=%(%02x %)".replace("#", node_size
                         .to!string),
                         _name,
@@ -699,7 +688,6 @@ class Round {
                 if (node && !r._epoch_votes[node.node_id]) {
                     try {
                         r._epoch_votes[node.node_id] = new RoundVote(epack.event_body.payload.mut);
-                        //r.checkRoundVotes(hashgraph);
                     }
                     catch (Exception e) {
                         log(e);
@@ -733,24 +721,9 @@ class Round {
                     immutable epoch_vote = new RoundVote(epack.event_body.payload);
                     const node = hashgraph.node(epack.pubkey);
                     auto __rounds = last_decided_round[].retro.filter!(r => r.number == epoch_vote.epoch_number);
-                    version (none)
-                        __write("%12s rounds = %s epoch_number = %s",
-                                hashgraph.name,
-                                last_decided_round[].retro
-                                .until!(r => r.number == epoch_vote.epoch_number)
-                                .map!(r => r.number),
-                                epoch_vote.epoch_number);
                     Round r;
                     if (__rounds.empty) {
                         auto ___rounds = last_decided_round[].filter!(r => r.number == epoch_vote.epoch_number);
-                        version (none)
-                            __write("%12s rounds = %s epoch_number = %s Reverse",
-                                    hashgraph.name,
-                                    last_decided_round[]
-                                    .until!(r => r.number == epoch_vote.epoch_number)
-                                    .map!(r => r.number),
-                                    epoch_vote.epoch_number);
-
                         if (!___rounds.empty) {
                             r = ___rounds.front;
                         }
@@ -760,7 +733,6 @@ class Round {
                     }
                     if (r && node && !r._epoch_votes[node.node_id]) {
                         r._epoch_votes[node.node_id] = epoch_vote;
-                        //r.checkRoundVotes(hashgraph);
                     }
                 }
                 catch (Exception e) {
