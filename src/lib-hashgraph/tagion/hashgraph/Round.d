@@ -681,13 +681,16 @@ class Round {
                     .count;
                 const _majority = isMajority(epoch_votes_count, hashgraph.node_size);
 
-                __write("%s Round %04d%s round_voting %s",
+                __write("%s Round %04d%s round_voting %s same %s",
                         _name,
                         round_to_be_decided.number,
                         RESET,
                         round_to_be_decided
                         ._epoch_votes
-                        .map!(evote => (evote is null) ? -1 : cast(int) evote.votes));
+                        .map!(evote => (evote is null) ? -1 : cast(int) evote.votes),
+                        round_to_be_decided
+                        ._epoch_votes
+                        .map!(evote => (evote is null) ? -1 : const(int) (_pattern == evote.pattern)));
                 if (!_majority) {
                     const _all_has_voted = hashgraph.node_size.iota
                     .all!(n => ((round_to_be_decided._events[n] is null) && (round_to_be_decided._epoch_votes[n] is null) || (round_to_be_decided._epoch_votes[n] !is null)));
