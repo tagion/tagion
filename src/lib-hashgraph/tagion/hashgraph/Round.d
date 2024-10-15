@@ -99,16 +99,12 @@ class Round {
 
     final Fingerprint pattern(const HashNet net) const pure nothrow {
         import std.algorithm;
-
-        auto result = assumeWontThrow(net.calcHash(_valid_witness[]
-            .map!(n => _events[n])
-            .filter!(e => e !is null)
-            .filter!(e => _valid_witness[e.node_id])
-            .map!(e => cast(Buffer) e.fingerprint)
-            .array
-            .sort
-            .join));
-        return result;
+            import tagion.utils.Miscellaneous;
+            auto fingerprints = _valid_witness[]
+                .map!(n => _events[n])
+                .filter!(e => e !is null)
+            .map!(e => cast(Buffer) e.fingerprint);
+            return assumeWontThrow(net.calcHash(xor(fingerprints))); 
     }
 
     @property
