@@ -103,6 +103,7 @@ class Round {
         auto result = assumeWontThrow(net.calcHash(_valid_witness[]
             .map!(n => _events[n])
             .filter!(e => e !is null)
+            .filter!(e => _valid_witness[e.node_id])
             .map!(e => cast(Buffer) e.fingerprint)
             .array
             .sort
@@ -113,35 +114,6 @@ class Round {
     @property
     final const(immutable(RoundVote)*[]) epoch_votes() const pure nothrow @nogc {
         return _epoch_votes;
-    }
-
-    version (none) protected void checkRoundVotes(const HashGraph hashgraph) pure nothrow {
-        import tagion.basic.Debug;
-        import tagion.hibon.HiBONJSON;
-        import tagion.utils.Term;
-
-        import std.algorithm;
-
-        if (isMajority(_epoch_votes.filter!(evote => evote !is null).count, node_size)
-                && node_size.iota.all!(n => ((_events[n] is null) && (_epoch_votes[n] is null) || (_epoch_votes[n])))) {
-            const _pattern = pattern(hashgraph.hirpc.net);
-            auto epoch_votes_count = _epoch_votes
-                .filter!(evote => evote !is null)
-                .filter!(evote => _pattern == evote.pattern)
-                .count;
-            const _majority = isMajority(epoch_votes_count, node_size);
-            const color = _majority ? GREEN : RED;
-            const ok = _majority ? "Yes" : "No";
-            auto _votes = _epoch_votes
-                .filter!(evote => evote !is null)
-                .map!(evote => evote.votes);
-            const _first_vote = _votes.front;
-            const all_same = _votes.drop(1).all!(v => v == _first_vote);
-            const _same = all_same ? "Same" : YELLOW ~ "Diff";
-            __write("%s%12s Round %04d %s count=%d %s%s ordered_epoch_votes %s ", color, hashgraph.name, number, ok, epoch_votes_count, _same, RESET, _epoch_votes
-                    .map!(e => (e is null) ? -1 : cast(int) e.votes),
-            );
-        }
     }
 
     final bool completed(HashGraph hashgraph) pure nothrow {
@@ -626,39 +598,6 @@ class Round {
             );
             Event.view(witness_in_round.map!(w => w.outer));
             round_to_be_decided = _round_to_be_decided;
-            return;
-            string show(const Event e) {
-                if (e) {
-                    return format("%s%d%s", (round_to_be_decided._valid_witness[e.node_id]) ? GREEN : YELLOW, e
-                        .order, RESET);
-                }
-                return format("%sX %s", RED, RESET);
-            }
-
-            log("Round %04d decided", round_to_be_decided.number);
-            last_decided_round = round_to_be_decided;
-            round_to_be_decided.decide;
-            hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
-            log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
-                    hashgraph.statistics.future_majority_rounds);
-
-            if (!isMajority(round_to_be_decided._valid_witness.count,
-                    hashgraph.node_size)) {
-                __write("%12s %sRound %04d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
-
-                __write("%s %sRound %04d%s epoch %-(%s %) collected=0  votes=%#s yes=%d  "
-                        .replace("#", round_to_be_decided.node_size.to!string),
-                        _name,
-                        RED,
-                        round_to_be_decided.number,
-                        RESET,
-                        round_to_be_decided._events.map!(e => show(e)),
-                        round_to_be_decided._valid_witness,
-                        round_to_be_decided._valid_witness.count,
-                );
-                return;
-            }
-            collect_received_round(round_to_be_decided);
         }
 
         void check_received_round() {
@@ -703,6 +642,16 @@ class Round {
                             round_to_be_decided = null;
                         }
                     }
+                    __write("%s %sRound %04d%s epoch %-(%s %) collected=0  votes=%#s yes=%d  "
+                            .replace("#", round_to_be_decided.node_size.to!string),
+                            _name,
+                            RED,
+                            round_to_be_decided.number,
+                            RESET,
+                            round_to_be_decided._events.map!(e => show(e)),
+                            round_to_be_decided._valid_witness,
+                            round_to_be_decided._valid_witness.count,
+                    );
                     return;
                 }
 
@@ -718,7 +667,7 @@ class Round {
                 
                 if (!isMajority(round_to_be_decided._valid_witness.count,
                         hashgraph.node_size)) {
-                    __write("%12s %sRound %04d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
+                    __write("%s %sRound %04d%s Not collected", _name, RED, round_to_be_decided.number, RESET);
 
                     __write("%s %sRound %04d%s epoch %-(%s %) collected=0  votes=%#s yes=%d  "
                             .replace("#", round_to_be_decided.node_size.to!string),
