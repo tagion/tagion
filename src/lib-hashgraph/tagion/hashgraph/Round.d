@@ -689,6 +689,17 @@ class Round {
                         ._epoch_votes
                         .map!(evote => (evote is null) ? -1 : cast(int) evote.votes));
                 if (!_majority) {
+                    const _all_has_voted = hashgraph.node_size.iota
+                    .all!(n => ((round_to_be_decided._events[n] is null) && (round_to_be_decided._epoch_votes[n] is null) || (round_to_be_decided._epoch_votes[n] !is null)));
+                    if (_all_has_voted) {
+                        const _round_voters = round_to_be_decided._events.filter!(e => e !is null).count;
+                        if (isMajority(_round_voters, hashgraph.node_size)) {
+                            log("Round %04d skipped", round_to_be_decided.number);
+                            last_decided_round = round_to_be_decided;
+                            round_to_be_decided.decide;
+                            round_to_be_decided = null;
+                        }
+                    }
                     return;
                 }
 
@@ -701,7 +712,7 @@ class Round {
                 hashgraph.statistics.future_majority_rounds(count_majority_rounds(round_to_be_decided));
                 log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
                         hashgraph.statistics.future_majority_rounds);
-
+                
                 if (!isMajority(round_to_be_decided._valid_witness.count,
                         hashgraph.node_size)) {
                     __write("%12s %sRound %04d%s Not collected", hashgraph.name, RED, round_to_be_decided.number, RESET);
