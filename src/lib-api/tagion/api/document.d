@@ -501,7 +501,7 @@ unittest {
  *   time = pointer to the returned time
  * Returns: ErrorCode
  */
-int tagion_document_get_time(const Document.Element* element, int64_t* time) {
+int tagion_document_get_time(const Document.Element* element, long* time) {
     import tagion.utils.StdTime;
     try {
         *time = cast(long) element.get!sdt_t;
