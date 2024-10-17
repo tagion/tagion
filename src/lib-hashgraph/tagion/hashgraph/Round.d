@@ -719,7 +719,7 @@ class Round {
                     log("Round %04d skipped", _round_to_be_collected.number);
                     //_round_to_be_collected.decide;
                     _round_to_be_collected = _round_to_be_collected._next;
-                }
+                
                 __write("%s %sRound %04d%s %-(%s %)  votes=%#s yes=%d  "
                         .replace("#", _round_to_be_collected.node_size.to!string),
                         _name,
@@ -730,6 +730,7 @@ class Round {
                         _round_to_be_collected._valid_witness,
                         _round_to_be_collected._valid_witness.count,
                 );
+        }
             }
         }
 
