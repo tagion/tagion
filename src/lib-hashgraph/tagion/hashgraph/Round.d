@@ -449,7 +449,7 @@ class Round {
         Round round_to_be_decided;
         HashGraph hashgraph;
         Event[] last_witness_events;
-        //Round _last_collected_round;
+        Round _last_collected_round;
 
         @disable this();
 
@@ -620,12 +620,18 @@ class Round {
                     witness_in_round.walkLength
             );
             Event.view(witness_in_round.map!(w => w.outer));
-            round_to_be_decided = _round_to_be_decided;
+            
+            last_decided_round = round_to_be_decided = _round_to_be_decided;
+            if (!_last_collected_round) {
+                _last_collected_round = round_to_be_decided;
+            }
         }
 
-        void check_received_round() {
+        void check_received_round() 
+        //in(_last_collected_round, "Last collected round should be set before")
+         {
             import tagion.utils.Term;
-            auto _last_collected_round = round_to_be_decided;
+            //_last_collected_round = round_to_be_decided;
             if (_last_collected_round) {
                 const _name = hashgraph.name;
                 string show(const Event e) {
@@ -668,7 +674,7 @@ class Round {
                         log("Round %04d skipped", _last_collected_round.number);
                         //last_decided_round = _last_collected_round;
                         _last_collected_round.decide;
-                        round_to_be_decided=  null;
+                        //round_to_be_decided=  null;
                     }
                     if (_last_collected_round) {
                         __write("%s %sRound %04d%s epoch %-(%s %)  votes=%#s yes=%d  "
@@ -695,7 +701,8 @@ class Round {
                     collect_received_round(_last_collected_round);
                 }
                 __write("%s %sRound %04d%s Not collected", _name, RED, _last_collected_round.number, RESET);
-                round_to_be_decided = null;
+                //round_to_be_decided = null;
+                _last_collected_round = _last_collected_round._next;
             }
 
         }
