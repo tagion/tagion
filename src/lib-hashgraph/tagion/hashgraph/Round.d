@@ -262,16 +262,28 @@ class Round {
         _epoch_votes
             .filter!(evote => evote !is null)
             .each!(evote => votes[evote.pattern]++);
-        const voted = _events
-            .filter!(e => e !is null)
-            .filter!(e => _epoch_votes[e.node_id] !is null)
-            .count;
-        __write("%12s Round %04d %s missing_votes=%d isDecided=%(%(%d %), %)", hashgraph.name, number, votes.byValue, missing_votes, votes
-                .byValue.map!(vote => only(isMajority(vote, node_size), !isMajority(vote + missing_votes, node_size))));
+        const lead_voter = votes.byValue.maxElement;
+        __write("%12s Round %04s lead_voter=%d", hashgraph.name, number, lead_voter);
+        if (isMajority(lead_voter, node_size)) {
+            return true;
+        }
+        const total_voters = _events.filter!(e => e !is null).count;
+        const sum_voted = votes.byValue.sum;
+        __write("%12s Round %04s total=%d sum=%d lead_voter=%d", hashgraph.name, number, total_voters, sum_voted, lead_voter);
+        return !isMajority(lead_voter+total_voters-sum_voted, node_size);
+        const voters = _events.filter!(e => e !is null).count;
+        const voted = _epoch_votes.filter!(evote => evote !is null).count;
+        assert(voters >= voted, "Voters should be greater or equal to voted");
+        const missing_votes=voters-voted;
+        __write("%12s Round %04d %s voters=%d voted=%d isDecided=%(%(%d %), %)", 
+            hashgraph.name, number, 
+            votes.byValue,  
+            voters, 
+            voted, 
+            votes.byValue
+            .map!(vote => only(isMajority(vote, node_size), !isMajority(vote + missing_votes, node_size))));
         return votes.byValue
-            .any!(vote => isMajority(vote, node_size))
-            
-            || !isMajority(vote + missing_votes, node_size));
+            .any!(vote => isMajority(vote, node_size) || !isMajority(vote+missing_votes, node_size));
     }
 
     final const(BitMask) witness_mask() const pure nothrow {
@@ -459,7 +471,7 @@ class Round {
         Event[] last_witness_events;
         private {
             Round _last_decided_round;
-            Round _last_collected_round;
+            Round _round_to_be_collected;
         }
         @disable this();
 
@@ -483,7 +495,7 @@ class Round {
                 Event.scrapping = false;
             }
             _last_decided_round = null;
-            _last_collected_round = null;
+            _round_to_be_collected = null;
             local_erase(last_round);
         }
 
@@ -644,36 +656,36 @@ class Round {
             _last_decided_round = round_to_be_decided = _round_to_be_decided;
         }
 
-        void check_received_round()
-        //in (_last_collected_round, "Last collected round should be set before")
+        void checkToCollectRound()
+        //in (_round_to_be_collected, "Last collected round should be set before")
          {
-            if (!_last_collected_round || !_last_collected_round.decided) {
+            if (!_round_to_be_collected || !_round_to_be_collected.decided) {
                 return;
             }
             import tagion.utils.Term;
-            if (!_last_collected_round
+            if (!_round_to_be_collected
                     ._valid_witness[]
-                    .filter!(n => _last_collected_round._epoch_votes[n]!is null).empty) {
+                    .filter!(n => _round_to_be_collected._epoch_votes[n]!is null).empty) {
 
                 const _name = hashgraph.name;
                 string show(const Event e) {
                     if (e) {
-                        return format("%s%d%s", (_last_collected_round._valid_witness[e.node_id]) ? GREEN : YELLOW, e
+                        return format("%s%d%s", (_round_to_be_collected._valid_witness[e.node_id]) ? GREEN : YELLOW, e
                             .order, RESET);
                     }
                     return format("%sX %s", RED, RESET);
                 }
 
                 scope (exit) {
-                    if (!_last_collected_round) {
+                    if (!_round_to_be_collected) {
                         hashgraph._rounds.check_decide_round;
                         hashgraph._rounds.epochVote;
-                        hashgraph._rounds.check_received_round;
+                        hashgraph._rounds.checkToCollectRound;
                     }
                 }
 
-                const _pattern = _last_collected_round.pattern(hashgraph.hirpc.net);
-                const epoch_votes_count = _last_collected_round._epoch_votes
+                const _pattern = _round_to_be_collected.pattern(hashgraph.hirpc.net);
+                const epoch_votes_count = _round_to_be_collected._epoch_votes
                     .filter!(evote => evote !is null)
                     .filter!(evote => _pattern == evote.pattern)
                     .count;
@@ -681,69 +693,43 @@ class Round {
 
                 __write("%s Round %04d%s round_voting %s same %s majority=%s",
                         _name,
-                        _last_collected_round.number,
+                        _round_to_be_collected.number,
                         RESET,
-                        _last_collected_round
+                        _round_to_be_collected
                         ._epoch_votes
                         .map!(evote => (evote is null) ? -1 : cast(int) evote.votes),
-                        _last_collected_round
+                        _round_to_be_collected
                         ._epoch_votes
                         .map!(evote => (evote is null) ? -1 : const(int)(_pattern == evote.pattern)),
                         _majority
                 );
                 if (_majority) {
-                    log("Round %04d decided", _last_collected_round.number);
-                    //_last_collected_round.decide;
-                    hashgraph.statistics.future_majority_rounds(count_majority_rounds(_last_collected_round));
+                    log("Round %04d decided", _round_to_be_collected.number);
+                    //_round_to_be_collected.decide;
+                    hashgraph.statistics.future_majority_rounds(count_majority_rounds(_round_to_be_collected));
                     log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
                             hashgraph.statistics.future_majority_rounds);
-                    if (isMajority(_last_collected_round._valid_witness.count, hashgraph.node_size)) {
-                        collect_received_round(_last_collected_round);
+                    if (isMajority(_round_to_be_collected._valid_witness.count, hashgraph.node_size)) {
+                        collect_received_round(_round_to_be_collected);
                     }
-                    _last_collected_round = _last_collected_round._next;
+                    _round_to_be_collected = _round_to_be_collected._next;
                     return;
                 }
-                if (_last_collected_round.isDecided(hashgraph)) {
-                    log("Round %04d skipped", _last_collected_round.number);
-                    //_last_collected_round.decide;
-                    _last_collected_round = _last_collected_round._next;
+                if (_round_to_be_collected.isDecided(hashgraph)) {
+                    log("Round %04d skipped", _round_to_be_collected.number);
+                    //_round_to_be_collected.decide;
+                    _round_to_be_collected = _round_to_be_collected._next;
                 }
                 __write("%s %sRound %04d%s %-(%s %)  votes=%#s yes=%d  "
-                        .replace("#", _last_collected_round.node_size.to!string),
+                        .replace("#", _round_to_be_collected.node_size.to!string),
                         _name,
                         RED,
-                        _last_collected_round.number,
+                        _round_to_be_collected.number,
                         RESET,
-                        _last_collected_round._events.map!(e => show(e)),
-                        _last_collected_round._valid_witness,
-                        _last_collected_round._valid_witness.count,
+                        _round_to_be_collected._events.map!(e => show(e)),
+                        _round_to_be_collected._valid_witness,
+                        _round_to_be_collected._valid_witness.count,
                 );
-            }
-        }
-
-        version(none)
-        private final void epochVote(Round r, immutable(EventPackage*) epack) nothrow
-        in (r !is null, "Should be called with allocated Round")
-        do {
-            import tagion.basic.Debug;
-            import tagion.hashgraph.HashGraphBasic : RoundVote;
-            import tagion.hibon.HiBONJSON;
-            import tagion.hibon.HiBONRecord : isRecord;
-            import tagion.hibon.Document : mut;
-            import std.exception;
-            __write("Check receive epochVote");
-            if (epack.event_body.payload.isRecord!RoundVote) {
-                __write("epochVote %J", epack.event_body.payload);
-                const node = hashgraph.node(epack.pubkey);
-                assert(r._epoch_votes[node.node_id] is null, "EpochVote voted twice");
-                if (node && !r._epoch_votes[node.node_id]) {
-                    try {
-                        r._epoch_votes[node.node_id] = new RoundVote(epack.event_body.payload.mut);
-                    }
-                    catch (Exception e) {
-                        log(e);
-                    }
-                }
             }
         }
 
@@ -759,8 +745,8 @@ class Round {
                         round_to_be_decided.pattern(net),
                         hashgraph.channel);
                 hashgraph.refinement.queue.write(assumeWontThrow(vote.toDoc));
-                if (!_last_collected_round) {
-                    _last_collected_round = round_to_be_decided;
+                if (!_round_to_be_collected) {
+                    _round_to_be_collected = round_to_be_decided;
                 }
             }
         }
