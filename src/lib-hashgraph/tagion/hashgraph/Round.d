@@ -50,13 +50,28 @@ uint level(const size_t c) pure nothrow {
     if (c <= 15) {
         return 4;
     }
-    return 5;
+    if (c <= 30) {
+        return 5;
+    }
+    if (c <= 60) {
+        return 6;
+    }
+    if (c <= 120) {
+        return 7;
+    }
+    if (c <= 240) {
+        return 8;
+    }
+    if (c <= 500) {
+        return 9;
+    }
+     return 10;
 }
 
 string level_color(const size_t c) pure nothrow {
     import tagion.utils.Term;
 
-    return [GREEN, BLUE, YELLOW, MAGENTA, RED, BACKGROUND_RED][level(c)];
+    return [GREEN, BLUE, YELLOW, MAGENTA, RED, BACKGROUND_BLUE, BACKGROUND_MAGENTA, BACKGROUND_YELLOW, BACKGROUND_RED, BACKGROUND_CYAN][level(c)];
 }
 
 string show(const BitMask target, const BitMask mask, const size_t size) pure nothrow {
@@ -232,7 +247,7 @@ class Round {
         return false;
     }
 
-    final bool isDecided() const pure nothrow {
+    final bool isDecided(const HashGraph hashgraph) const pure nothrow {
         uint[Fingerprint] votes;
         _epoch_votes
             .filter!(evote => evote !is null)
@@ -241,8 +256,9 @@ class Round {
         .filter!(e => e !is null)
         .filter!(e => _epoch_votes[e.node_id] is null)
         .count;
+        __write("%12s Round %04d %s missing_votes=%d isDecided=%(%(%d %), %)", hashgraph.name, number, votes.byValue, missing_votes, votes.byValue.map!(vote => only(isMajority(vote, node_size), !isMajority(vote+missing_votes, node_size))));
         return votes.byValue
-            .any!(vote => isMajority(vote, node_size) && !isMajority(vote+missing_votes, node_size) );
+            .any!(vote => isMajority(vote, node_size) || !isMajority(vote+missing_votes, node_size) );
     }
 
     final const(BitMask) witness_mask() const pure nothrow {
@@ -622,7 +638,7 @@ class Round {
                     .count;
                 const _majority = isMajority(epoch_votes_count, hashgraph.node_size);
 
-                __write("%s Round %04d%s round_voting %s same %s",
+                __write("%s Round %04d%s round_voting %s same %s majority=%s",
                         _name,
                         round_to_be_decided.number,
                         RESET,
@@ -631,9 +647,11 @@ class Round {
                         .map!(evote => (evote is null) ? -1 : cast(int) evote.votes),
                         round_to_be_decided
                         ._epoch_votes
-                        .map!(evote => (evote is null) ? -1 : const(int)(_pattern == evote.pattern)));
+                        .map!(evote => (evote is null) ? -1 : const(int)(_pattern == evote.pattern)),
+                _majority
+                );
                 if (!_majority) {
-                    if (round_to_be_decided.isDecided) {
+                    if (round_to_be_decided.isDecided(hashgraph)) {
                             log("Round %04d skipped", round_to_be_decided.number);
                             last_decided_round = round_to_be_decided;
                             round_to_be_decided.decide;
