@@ -11,7 +11,7 @@ Install the required tools to build tagion
 ### Ubuntu
 
 ```bash
-apt-get install git autoconf build-essential libtool dub cmake
+apt-get install git build-essential dub cmake
 ```
 Download a D compiler ldc or dmd
 
