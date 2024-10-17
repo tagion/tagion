@@ -1,9 +1,10 @@
-module tagion.basic.ConsensusExceptions;
+module tagion.errors.ConsensusExceptions;
 
 @safe:
 
 import std.format : format;
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.errors.tagionexceptions : TagionException;
+import tagion.errors.categories;
 
 void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
 if (is(E : ConsensusException)) {
@@ -14,7 +15,7 @@ if (is(E : ConsensusException)) {
 
 enum ConsensusFailCode {
     NONE,
-    NO_MOTHER,
+    NO_MOTHER = ERRORS.HASHGRAPH,
     MOTHER_AND_FATHER_SAME_SIZE,
     MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME,
     // PACKAGE_SIZE_OVERFLOW,
@@ -40,7 +41,7 @@ enum ConsensusFailCode {
     HASHGRAPH_EVENT_INITIALIZE_SIZE,
     HASHGRAPH_DUPLICATE_WITNESS,
 
-    GOSSIPNET_EVENT_HAS_BEEN_CACHED,
+    GOSSIPNET_EVENT_HAS_BEEN_CACHED = ERRORS.GOSSIPNET,
     GOSSIPNET_ILLEGAL_EXCHANGE_STATE,
     GOSSIPNET_EXPECTED_EXCHANGE_STATE,
     GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE,
@@ -54,7 +55,7 @@ enum ConsensusFailCode {
     GOSSIPNET_FIRST_EVENT_MUST_BE_EVA,
     //    EVENT_MISSING_BODY,
 
-    SECURITY_SIGN_FAULT,
+    SECURITY_SIGN_FAULT = ERRORS.SECURITY,
     SECURITY_PUBLIC_KEY_CREATE_FAULT,
     SECURITY_PUBLIC_KEY_PARSE_FAULT,
     // SECURITY_DER_SIGNATURE_PARSE_FAULT,
@@ -80,20 +81,20 @@ enum ConsensusFailCode {
     SECURITY_MASK_VECTOR_IS_ZERO,
     SECURITY_MESSAGE_HASH_KEY,
 
-    CIPHER_DECRYPT_CRC_ERROR,
+    CIPHER_DECRYPT_CRC_ERROR = ERRORS.CIPHER,
     CIPHER_DECRYPT_ERROR,
 
-    DART_ARCHIVE_ALREADY_ADDED,
+    DART_ARCHIVE_ALREADY_ADDED = ERRORS.DART,
     DART_ARCHIVE_DOES_NOT_EXIST,
     DART_ARCHIVE_SECTOR_NOT_FOUND,
 
-    NETWORK_BAD_PACKAGE_TYPE,
+    NETWORK_BAD_PACKAGE_TYPE = ERRORS.NETWORK,
 
-    SCRIPTING_ENGINE_HiBON_FORMAT_FAULT,
+    SCRIPTING_ENGINE_HiBON_FORMAT_FAULT = ERRORS.TVM,
     SCRIPTING_ENGINE_DATA_VALIDATION_FAULT,
     SCRIPTING_ENGINE_SIGNATURE_FAULT,
 
-    SMARTSCRIPT_NO_SIGNATURE,
+    SMARTSCRIPT_NO_SIGNATURE = ERRORS.CREDENTIAL,
     SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS,
     SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING,
     SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT,
@@ -105,6 +106,16 @@ enum ConsensusFailCode {
     SMARTSCRIPT_NO_OUTPUT,
     SMARTSCRIPT_INVALID_OUTPUT
 
+}
+
+unittest {
+    import tagion.basic.testbasic;
+    import tagion.errors.categories;
+
+    const category_file = unitfile("consensus_errors.json");
+    version (UPDATE_ERROR_CATEGORIES)
+        category_file.fwrite!ConsensusFailCode;
+    category_file.check_errors!ConsensusFailCode;
 }
 
 class ConsensusException : TagionException {

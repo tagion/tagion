@@ -1,7 +1,7 @@
 /// Exception used in the wallet
 module tagion.wallet.WalletException;
 
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 /**
  * Exception type used in the Script package

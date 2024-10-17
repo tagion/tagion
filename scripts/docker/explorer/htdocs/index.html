@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tagion explorer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>    
+    <script>
+        let p = window.location.pathname.slice(1);
+        if(!(p.includes(".") || p.endsWith("/"))){
+            window.location = window.location.href + "/";
+        }
+    </script>
+    <style>
+        .loading { visibility:hidden; } 
+        body.busy .loading { visibility:visible !important; }
+        #mlist { font-family: monospace; font-size: 8pt; color: green; }
+        #mlist p { margin-bottom: 4px; word-break: break-all; line-height: 110%; }
+    </style>
+</head>
+<body>
+	<script type="module" defer>
+        import { WTagUtil } from "./wtag.js";
+        import config from "./wconfig.js";
+
+        var subm = {
+            monitor: false,
+            recorder: false,
+            trt: false
+        };
+
+        var ws = null;
+
+        var mlistsz = 0;
+        const MLISTMAX = 100;
+
+        $( document ).ready(function() {
+            console.log("Websocket to setup on ", location.origin.replace(/^http/, 'ws'));
+            wsinit();
+            $("#go").click(doit);    
+            $("#isubmonitor").change(submonitor);
+            $("#isubrecorder").change(submonitor);
+            $("#isubtrt").change(submonitor);
+            $("#iclearmon").click((e) => { $("#mlist").html(""); mlistsz = 0; });
+            $("#helpdoc > ul:eq(0) > li:eq(2) > pre:eq(0)").html(config.help_valid_indices);
+            $("#helpdoc > ul:eq(0) > li:eq(2) > pre:eq(1)").html(config.help_valid_pkeys);
+        });
+        
+        function wswait() {  
+            if(ws){
+                if( ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.CLOSING ){
+                    window.setTimeout(wswait, 100);      
+                }
+            }
+        }
+
+        function wsinit(){
+            if(ws){
+                wswait();
+                if(ws.readyState == WebSocket.OPEN){
+                    ws.close();
+                }
+            }
+            ws = new WebSocket(location.origin.replace(/^http/, 'ws') + config.ws_endpoint);
+            ws.onerror = console.error;
+            ws.onopen = () => {
+                console.log("[ON] Socket connected: ");
+            };
+            ws.onclose = () => {
+                console.log("[OFF] Socket disconnected: ");
+            };
+            ws.onmessage = wsmessage;
+        }
+        
+        function wsmessage(msg){
+            let a = msg.data.split("\0");
+            let jd = JSON.parse(a[1]);
+            $("#mlist").prepend("<p class='text-wrap text-break'>"+JSON.stringify(jd).replace(/,/g,", ")+"</p>");
+            mlistsz += 1;
+            if(mlistsz >= MLISTMAX){
+                $("#mlist").find('p:last').remove();
+                mlistsz -= 1;
+            }
+        }
+
+        function submonitor(e){
+            let csub = {
+                monitor: $("#isubmonitor").prop('checked'),
+                recorder: $("#isubrecorder").prop('checked'),
+                trt: $("#isubtrt").prop('checked')
+            };
+            let msg = [];
+            if(csub.monitor != subm.monitor){
+                console.log("ws sub: ", (csub.monitor?"subscribe":"unsubscribe")+"\0monitor")
+                msg.push((csub.monitor?"subscribe":"unsubscribe")+"\0monitor");
+            }
+            if(csub.recorder != subm.recorder){
+                console.log("ws sub: ",(csub.recorder?"subscribe":"unsubscribe")+"\0recorder");
+                msg.push((csub.recorder?"subscribe":"unsubscribe")+"\0recorder");
+            }
+            if(csub.trt != subm.trt){
+                console.log("ws sub: ",(csub.trt?"subscribe":"unsubscribe")+"\0trt_created");
+                msg.push((csub.trt?"subscribe":"unsubscribe")+"\0trt_created");
+            }
+            if(msg.length > 0){
+                if(ws.readyState != WebSocket.OPEN){
+                    wswait();
+                    wsinit();
+                }
+                msg.forEach( (x) => ws.send(x) );
+            }
+            subm = csub;
+        }
+
+        function doit(e){
+            let query = $("#ilookup").val().trim();
+            let opt = {
+                rawdh: $("#irawdh").prop('checked'),
+                table: $("#itable").prop('checked')
+            };
+            lookup(query, opt);
+        }
+            
+        function lookup(query, opt) {
+            console.log("lookup start with ", query, " opt: ", opt);
+            $("#tbl").html("<table class=\"table table-sm w-50\" align=\"center\"><tbody></tbody></table>");
+            $("#raw").html("");
+            $("#msg").html("");
+            const srcs = {
+                index: "dartIndex",
+                epoch: "Epoch number",
+                name: "#Name"
+            }
+            var id = "";
+            if ( query.match(/^\/info/) ) {
+                id = "info";
+            } else if ( query.match(/^@/) ) {
+                id = "index";
+            } else if ( query.match(/^[0-9]+$/) ) {
+                id = "epoch";
+                query = "\#\$epoch:i64:"+query;
+            } else if ( !query.match(/[@#:]/) ) {
+                id="name";
+                query = "\#name:"+query
+            } else {
+                console.log("Invalid query string: ", query);
+                $("#msg").html("Invalid query string");
+                return;
+            }
+            console.log("Consider: ", id);
+            $('body').addClass('busy');
+            if ( id == "info"){
+                console.log(config.api_version_endpoint);
+                $.ajax({
+                    url: config.api_version_endpoint,
+                    type: "get",
+                    success: function(data, status, xhr) {
+                        console.log(data);
+                        if ( data["0"] ) {
+                            $("#msg").html("Result for version info");
+                            $("#raw").html(data);
+                        } else {
+                            if($("#msg").html() == "")
+                                $("#msg").html("Empty result.");
+                        }
+                    },
+                    error: function(data) {
+                        console.log("Error: ", data);
+                    },
+                    complete: function(data) {
+                        $('body').removeClass('busy');
+                    }
+                });
+            }    
+
+            if ( id == "index" ) {
+                console.log("B64:  ", btoa("\#\$Y:\*:"+query));
+                $.ajax({
+                    url: config.api_lookup_endpount_trt+btoa("\#\$Y:\*:"+query),
+                    type: "get",
+                    success: function(data, status, xhr) {
+                        console.log("lookup trtindex done");
+                        console.log(data);
+                        if ( data["0"] ) {
+                            $("#msg").html("Result for <b>TRTRead</b> on <i>pubKey</i>");
+                            if(opt.table){ rendertable(WTagUtil.dehibonize(data)); }
+                            $("#raw").html(JSON.stringify( ((opt.rawdh)?WTagUtil.dehibonize(data):data), null, 2));
+                        } else {
+                            if($("#msg").html() == "")
+                                $("#msg").html("Empty result.");
+                        }
+                    },
+                    error: function(data) {
+                        console.log("Error: ", data);
+                    },
+                    complete: function(data) {
+                        $('body').removeClass('busy');
+                    }
+                });
+            }    
+            console.log("B64:   ", btoa(query));
+            $.ajax({
+                url: config.api_lookup_endpoint_dart+btoa(query),
+                type: "get",
+                success: function(data, status, xhr) {
+                    console.log("lookup "+id+" done");
+                    console.log(data);
+                    if ( data["0"] ) {
+                        $("#msg").html("Result for <b>dartRead</b> on <i>"+srcs[id]+"</i>");
+                        if(opt.table){ rendertable(WTagUtil.dehibonize(data)); }
+                        $("#raw").html(JSON.stringify(((opt.rawdh)?WTagUtil.dehibonize(data):data),null, 2));
+                    } else {                           
+                        if($("#msg").html() == "")
+                            $("#msg").html("Empty result.");
+                    }
+                },
+                error: function(data) {
+                    console.log("Error: ", data);
+                },
+                complete: function(data) {
+                    $('body').removeClass('busy');
+                }
+            });
+        }
+        
+        function rendertable(d){
+            var t = $("#tbl table > tbody:last");
+            console.log(d);
+            var p = null, pp = null;
+            var a = {};
+            if("$@" in d && d["$@"] == "Recorder"){                
+                if("0" in d) {
+                    p = d["0"];
+                    if("$a" in p){
+                        pp = p["$a"];
+                        if("$@" in pp)
+                            a["class"] = pp["$@"];
+                        if("$t" in pp)
+                            a["time"] = pp["$t"].toISOString();
+                        if("#$epoch" in pp)
+                            a["epoch"] = pp["#$epoch"];
+                        if("$eye" in pp)
+                            a["bullseye"] = pp["$eye"];
+                        if("globals" in pp){
+                            if("number_of_bills" in pp.globals)
+                                a["number_of_bills"] = pp.globals["number_of_bills"];
+                            if("brunt_bills" in pp.globals)
+                                a["brunt_bills"] = pp.globals["brunt_bills"];
+                        }
+                        if(a["class"] == "TGN")
+                            a["TGN"] = 1.0*pp["$V"]["$"] / 1e9;
+                        if("#name" in pp)
+                            a["#name"] = pp["#name"];
+                        if("current_epoch" in pp)
+                            a["current_epoch"] = pp["current_epoch"];
+                        if("indices" in pp)
+                            a["indices"] = pp["indices"].join("<br/>");
+                    }
+                }    
+            }else{
+                
+            }
+            for (const [key, value] of Object.entries(a)) {
+                t.append("<tr><td align='left' width='33%'>"+key+"</td><td align='left'>"+value+"</td></tr>");
+            }
+        }
+
+	</script>
+
+    <div class="modal fade" id="modalHelp" tabindex="-1" aria-labelledby="modatHelpTitle" style="display: none;" aria-hidden="true">
+    <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header">
+    <h1 class="modal-title fs-5" id="modalHelpTitle">Tagion explorer draft</h1>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body" id="helpdoc">
+        <p>Enter the following query strings for test: </p>
+        <ul>
+            <li> "/info" - for version info
+            <li> "tagion" - for #name lookup
+            <li> any number i.e. "12" - for epoch lookup
+            <li> "@...." base64 buffer for Dart read on dartIndex or TRT read on pubKey (by context)
+            <br/>valid indices: 
+            <pre>
+            </pre>
+            valid wallet pkey:
+            <pre>
+            </pre>
+        </ul>
+    </div>
+    <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    </div> </div> </div> </div>
+
+    <div class="d-flex flex-column w-75 vh-100 align-middle mx-auto pt-2">
+        <div>
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="lookup-tab" data-bs-toggle="tab" data-bs-target="#lookup-tab-pane" type="button" role="tab" aria-controls="lookup-tab-pane" aria-selected="true">Lookup</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monitor-tab" data-bs-toggle="tab" data-bs-target="#monitor-tab-pane" type="button" role="tab" aria-controls="monitor-tab-pane" aria-selected="false">Monitor</button>
+                </li>
+            </ul>        
+        </div>        
+        <div class="tab-content flex-grow-1" id="myTabContent">
+            <div class="tab-pane h-100 fade show active" id="lookup-tab-pane" role="tabpanel" aria-labelledby="lookup-tab" tabindex="0">
+            <div class=" d-flex flex-column h-100">
+                    <div class="mb-auto p-2 d-flex flex-row flex-nowrap justify-content-center">
+                        <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#modalHelp"> ? </button>
+                        <input id="ilookup" type="text" class="w-50 form-control" placeholder="@dartindex, @pubkey, epoch number or name string" aria-label="Lookup query"> 
+                        <button id="go" type="button" class="mx-2 btn btn-primary">Search</button>
+                    </div>
+                    <div class="mb-auto p-2 d-flex flex-row flex-nowrap justify-content-center">
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="irawdh" checked>
+                            <label class="form-check-label" for="irawdh">Dehibonize raw result</label>
+                        </div>    
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="itable" checked>
+                            <label class="form-check-label" for="itable">Render result table</label>
+                        </div>    
+                    </div>
+                    <div class="text-center loading">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="text-center" id="msg">
+                    </div>
+                    <div class="text-center my-2" id="tbl">
+                        <table class="table table-sm w-50 mt-4"  align="center"><tbody></tbody></table>
+                    </div>
+                    <div class="flex-grow-1 p-3 overflow-y-auto">
+                        <code >
+                        <pre id="raw">
+                             
+                        </pre>
+                        </code>
+                    </div>
+            </div>
+            </div>
+            <div class="tab-pane h-100 fade overflow-hidden" id="monitor-tab-pane" role="tabpanel" aria-labelledby="monitor-tab" tabindex="0">
+            <div class="h-100 container-fluid">
+                <div class="row">
+                <div class="col-12 p-2 d-flex flex-row flex-nowrap justify-content-center align-middle align-items-center">
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="isubmonitor">
+                            <label class="form-check-label" for="isubmonitor">Subscribe to monitor</label>
+                        </div>    
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="isubrecorder">
+                            <label class="form-check-label" for="isubrecorder">Subscribe to recorder</label>
+                        </div>    
+                        <div class="form-check form-switch form-check-inline">
+                            <input class="form-check-input" type="checkbox" role="switch" id="isubtrt">
+                            <label class="form-check-label" for="isubtrt">Subscribe to TRT</label>
+                        </div>    
+                        <button type="button" class="btn btn-primary" id="iclearmon"> Clear </button>
+                </div>
+                </div>
+                <div class="row h-100">
+                <div class="col-12 h-100 scrollable overflow-y-scroll position-relative">
+                    <div id="mlist" class="position-absolute position-absolute top-0 start-0">
+                    </div>
+                </div>
+                </div>
+            </div>    
+            </div>
+        </div>        
+    </div>
+</body>
+
+</html>
+
+
+
+

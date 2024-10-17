@@ -14,6 +14,9 @@ import std.exception;
 import nngd;
 import nngtestutil;
 
+version(withtls)
+{
+
 static const string cert =
  "-----BEGIN CERTIFICATE-----\n"
  ~"MIIDRzCCAi8CFCOIJGs6plMawgBYdDuCRV7UuJuyMA0GCSqGSIb3DQEBCwUAMF8x\n"
@@ -160,7 +163,7 @@ void receiver_worker(string url)
         if(k++ > NSTEPS + 3) break;
         sz = s.receivebuf(buf, buf.length);
         if(sz < 0 || sz == size_t.max){
-            error("REcv error: " ~ toString(s.m_errno));
+            error("REcv error: " ~ nng_errstr(s.errno));
             continue;
         }
         auto str = cast(string)buf[0..sz];
@@ -183,7 +186,7 @@ int main()
     log("Hello NNGD!");
     log("Simple push-pull test with byte buffers");
 
-    string uri = "tls+tcp://127.0.0.1:31201";
+    string uri = "tls+tcp://127.0.0.1:31207";
 
     auto tid01 = spawn(&receiver_worker, uri);
     Thread.sleep(100.msecs);
@@ -193,5 +196,10 @@ int main()
     return populate_state(10, "TLS encrypted push-pull socket pair");
 }
 
+} else { // version(withtls)
 
+int main(){
+    return populate_state(10, "[IGNORED] TLS encrypted push-pull socket pair");
+}
 
+} // version(withtls)

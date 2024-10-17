@@ -24,7 +24,7 @@ endif
 ifeq ($(COMPILER),gdc)
 DOPT    = -O2
 LINKERFLAG= -Xlinker
-OUTPUT  = -o
+DOUT  = -o
 HF      = -fintfc-file=
 DF      = -fdoc-file=
 NO_OBJ	= -fsyntax-only
@@ -32,7 +32,7 @@ DDOC_MACRO= -fdoc-inc=
 else ifeq ($(COMPILER),ldc)
 DOPT    = -O3
 LINKERFLAG= -L
-OUTPUT  = -of
+DOUT  = -of
 HF      = -Hf
 DF      = -Df
 DD      = -Dd
@@ -40,7 +40,7 @@ DDOC_MACRO=
 else
 DOPT    = -O
 LINKERFLAG=-L
-OUTPUT  = -of
+DOUT  = -of
 HF      = -Hf
 DF      = -Df
 DD      = -Dd
@@ -69,7 +69,7 @@ DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
 DINCIMPORT=-i
 DSTATICLIB=--lib
 DSHAREDLIB=--shared
-OUTPUTDIR = --od
+DOUTDIR = --od
 FULLY_QUALIFIED = -oq
 DDEBUG_DEFAULTLIB::=--link-defaultlib-debug
 DWARNERROR::=-w
@@ -93,7 +93,7 @@ DCOV ?=-cov
 DINCIMPORT=-i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
-OUTPUTDIR = -od
+DOUTDIR = -od
 CPP_FLAG := -P
 else
 DVERSION = -version
@@ -114,7 +114,7 @@ DIMPORTFILE=-J
 DINCIMPORT=-i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
-OUTPUTDIR = -od
+DOUTDIR = -od
 VERRORS=-verrors=context
 DWARNERROR::=-w
 DWARNINFO::=-wi
@@ -170,7 +170,7 @@ env-compiler:
 	${call log.kvp, COMPILER, $(COMPILER)}
 	${call log.kvp, ARCH, $(ARCH)}
 	${call log.kvp, MODEL, $(MODEL)}
-	${call log.kvp, OUTPUT, $(OUTPUT)}
+	${call log.kvp, DOUT, $(DOUT)}
 	${call log.kvp, HF, $(HF)}
 	${call log.kvp, DF, $(DF)}
 	${call log.kvp, NO_OBJ, $(NO_OBJ)}

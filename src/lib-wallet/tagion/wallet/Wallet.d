@@ -25,7 +25,7 @@ import std.range;
 
 
 import tagion.wallet.WalletException : WalletException;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 alias check = Check!(WalletException);
 
 

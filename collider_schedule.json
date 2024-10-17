@@ -75,7 +75,7 @@
     "hashgraph_test": {
       "args": ["5", "5000"],
       "envs": {},
-      "stages": ["hashgraph", "hashgraph_sync"],
+      "stages": ["hashgraph", "hashgraph_test"],
       "timeout": 0.0
     },
     "hashgraph_contributors": {
@@ -90,14 +90,8 @@
       "stages": ["none"],
       "timeout": 0.0
     },
-    "hashgraph_swap": {
-      "args": ["4", "500"],
-      "envs": {},
-      "stages": ["swap"],
-      "timeout": 0.0
-    },
     "tvm_betterc": {
-      "args": ["i32.wast"],
+      "args": ["i32.wast", "i64.wast"],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
         "imports": "wasm=foundation.wasm",
@@ -225,7 +219,7 @@
     },
     "run_fiber_epoch": {
       "args": [
-        "--rounds=1000",
+        "--rounds=3000",
         "-N7",
         "100,2",
         "-k",
@@ -234,7 +228,7 @@
       ],
       "envs": {},
       "stages": [
-        "fiber"
+        "fiber", "decided"
       ],
       "timeout": 0.0
     },

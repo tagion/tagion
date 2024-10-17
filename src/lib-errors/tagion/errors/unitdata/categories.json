@@ -1,0 +1,11 @@
+{
+    "CIPHER": 15000,
+    "CREDENTIAL": 16000,
+    "DART": 13000,
+    "GOSSIPNET": 12000,
+    "HASHGRAPH": 11000,
+    "HIBON": 10000,
+    "NETWORK": 17000,
+    "SECURITY": 14000,
+    "TVM": 18000
+}

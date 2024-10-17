@@ -9,7 +9,7 @@ import std.stdio;
 import std.traits : isSigned, isIntegral;
 import std.meta;
 import std.typecons : TypedefType;
-import tagion.basic.ConsensusExceptions : ConsensusException, GossipConsensusException, convertEnum;
+import tagion.errors.ConsensusExceptions : ConsensusException, GossipConsensusException, convertEnum;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText;
 import tagion.communication.HiRPC : HiRPC;
@@ -25,6 +25,13 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.standardnames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
+
+void __write(Args...)(string fmt, Args args) @trusted nothrow pure {
+    debug(HASHGRAPH) {
+        import tagion.basic.Debug : print = __write;
+        print(fmt, args);
+    }
+}
 
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
@@ -59,7 +66,7 @@ unittest { // Test of the altitude measure function
  */
 @nogc
 bool isMajority(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
-    return  (3 * voting > 2 * node_size);
+    return (3 * voting > 2 * node_size);
 }
 
 unittest {
@@ -69,11 +76,11 @@ unittest {
 
 }
 
-@nogc 
+@nogc
 bool isUndecided(T, S)(const T voting, const S node_size) pure nothrow if (allSatisfy!(isIntegral, T, S)) {
     return (3 * voting <= 2 * node_size) && (3 * voting > node_size);
 }
-        
+
 @nogc
 bool isMajority(const(BitMask) mask, const size_t size) pure nothrow {
     return isMajority(mask.count, size);
@@ -121,7 +128,7 @@ alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 ///
 struct EventBody {
     enum int eva_altitude = -77;
-    import tagion.basic.ConsensusExceptions;
+    import tagion.errors.ConsensusExceptions;
 
     protected alias check = Check!HashGraphConsensusException;
     import std.traits : OriginalType, Unqual, getSymbolsByUDA, hasMember;
@@ -202,7 +209,7 @@ struct EventPackage {
     @label(StdNames.owner) Pubkey pubkey;
     @label("$body") EventBody event_body;
 
-    import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
+    import tagion.errors.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
 
     protected alias consensus_check = ConsensusCheck!EventConsensusException;
 
@@ -349,10 +356,11 @@ static assert(isHiBONRecord!Wavefront);
 static assert(isHiBONRecord!(EventPackage));
 static assert(isHiBONRecord!(immutable(EventPackage)));
 
-@recordType("$@EVote")
-struct EpochVote {
+@recordType("$@RVote")
+struct RoundVote {
     @label(StdNames.epoch_number) long epoch_number; /// should always be zero
-    uint nodes;
-    Buffer pattern;
+    uint votes;
+    Fingerprint pattern;
+    Pubkey owner;
     mixin HiBONRecord;
 }

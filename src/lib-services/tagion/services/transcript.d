@@ -206,7 +206,7 @@ struct TranscriptService {
                         v.value.epoch.signs ~= single_vote.signed_bullseye;
                     }
                     else {
-                        import tagion.basic.ConsensusExceptions;
+                        import tagion.errors.ConsensusExceptions;
 
                         throw new ConsensusException(format("Bullseyes not the same on epoch %s", v
                                 .value.epoch

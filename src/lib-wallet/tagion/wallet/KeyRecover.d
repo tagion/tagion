@@ -10,7 +10,7 @@ import std.range : StoppingPolicy, indexed, iota, lockstep;
 import std.string : representation;
 import tagion.basic.Message;
 import tagion.basic.Types : Buffer;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.random.random;
 import tagion.hibon.Document : Document;

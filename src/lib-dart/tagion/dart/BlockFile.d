@@ -19,7 +19,7 @@ import std.traits;
 import std.typecons;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.basic : isinit;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.dart.BlockSegment;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;

@@ -36,7 +36,7 @@ import tagion.utils.Miscellaneous : cutHex;
 class HashGraph {
     enum default_scrap_depth = 10;
     int scrap_depth = default_scrap_depth;
-    import tagion.basic.ConsensusExceptions;
+    import tagion.errors.ConsensusExceptions;
 
     protected alias check = Check!HashGraphConsensusException;
     import tagion.logger.Statistic;
@@ -73,7 +73,7 @@ class HashGraph {
  * Get a map of all the nodes currently handled by the graph 
  * Returns: 
  */
-    const(Node[Pubkey]) nodes() const pure nothrow @nogc {
+    final const(Node[Pubkey]) nodes() const pure nothrow @nogc {
         return _nodes;
     }
 
@@ -414,7 +414,7 @@ class HashGraph {
     }
 
     const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides = null) {
-        if (state is ExchangeState.NONE ) {
+        if (state is ExchangeState.NONE) {
             return Wavefront(null, null, state);
         }
 
@@ -712,6 +712,10 @@ class HashGraph {
     @nogc
     const(SecureNet) net() const pure nothrow {
         return hirpc.net;
+    }
+
+    const(Node) node(Pubkey channel) const pure nothrow {
+        return assumeWontThrow(_nodes.get(channel, null));
     }
 
     package Node getNode(Pubkey channel) pure {

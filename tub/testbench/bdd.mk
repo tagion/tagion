@@ -4,7 +4,7 @@ TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
 BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
-ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
+ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" | tr '\n' ' '}
 
 BDD_MD_FILES=${shell find $(BDD)/tagion -name "*.md" -a -not -name "*.gen.md" -a -not -path "*/tagion/testbench/tvm/testsuite/*"}
 

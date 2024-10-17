@@ -150,6 +150,15 @@ struct DARTService {
             }
         }
 
+        void futureEye(dartFutureEyeRR req, immutable(RecordFactory.Recorder) recorder) {
+            log("Received future eye request with length=%s", recorder.length);
+
+            auto future_eye = db.futureEye(recorder);
+            log("Future bullseye is %(%02x%)", future_eye);
+
+            req.respond(future_eye);
+        }
+
         void bullseye(dartBullseyeRR req) @safe {
             auto eye = Fingerprint(db.bullseye);
             req.respond(eye);

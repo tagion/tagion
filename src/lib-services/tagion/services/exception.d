@@ -1,7 +1,7 @@
 /// Service Exceptions
 module tagion.services.exception;
 
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 /// tagion service exceptions
 @safe class ServiceException : TagionException {

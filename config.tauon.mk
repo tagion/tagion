@@ -7,6 +7,7 @@ TAUON_TESTS+=tauon_test.d
 TAUON_DINC+=$(TAUON_ROOT)
 
 TAUON_DINC+=$(DSRC)/lib-basic
+TAUON_DINC+=$(DSRC)/lib-errors
 TAUON_DINC+=$(DSRC)/lib-hibon
 TAUON_DINC+=$(DSRC)/lib-phobos
 TAUON_DINC+=$(DSRC)/lib-utils
@@ -23,8 +24,10 @@ TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/basic.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Message.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Types.d
 TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/Version.d
-TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/tagionexceptions.d
-TAUON_DFILES+=$(DSRC)/lib-basic/tagion/basic/ConsensusExceptions.d
+
+TAUON_DFILES+=$(DSRC)/lib-errors/tagion/errors/tagionexceptions.d
+TAUON_DFILES+=$(DSRC)/lib-errors/tagion/errors/ConsensusExceptions.d
+
 
 TAUON_DFILES+=$(DSRC)/lib-utils/tagion/utils/LEB128.d
 TAUON_DFILES+=$(DSRC)/lib-utils/tagion/utils/StdTime.d
