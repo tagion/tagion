@@ -130,12 +130,12 @@ class Round {
         return _epoch_votes;
     }
 
-    final bool completed(HashGraph hashgraph) pure nothrow {
+    final bool completed() pure nothrow {
         import tagion.utils.Term;
 
         if (majority) {
             auto list_majority_rounds =
-                this[].retro
+                this[]
                     .until!(r => !r.majority);
 
             const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
@@ -185,6 +185,7 @@ class Round {
                 }
                 return not_decided_mask.empty;
             }
+
             return approve_valid_witness;
         }
         return false;
@@ -491,8 +492,8 @@ class Round {
   * Number of round epoch in the rounder queue
   * Returns: size of the queue
    */
-            size_t length() {
-                return this[].walkLength;
+            version (none) size_t length() {
+                return this.__opSlice.walkLength;
             }
 
             bool isEventInLastDecidedRound(const(Event) event) {
@@ -539,7 +540,7 @@ class Round {
             }
 
             uint count_majority_rounds(const Round r) {
-                return cast(uint) r[].retro
+                return cast(uint) r[]
                     .until!(r => !r.majority)
                     .count;
             }
@@ -552,7 +553,7 @@ class Round {
             if (!_round_to_be_decided) {
                 return;
             }
-            const new_completed = _round_to_be_decided.completed(hashgraph);
+            const new_completed = _round_to_be_decided.completed;
             if (!new_completed) {
                 return;
             }
@@ -628,7 +629,7 @@ class Round {
                 try {
                     immutable epoch_vote = new RoundVote(epack.event_body.payload);
                     const node = hashgraph.node(epack.pubkey);
-                    auto __rounds = _round_to_be_collected[].retro.filter!(r => r.number == epoch_vote.epoch_number);
+                    auto __rounds = _round_to_be_collected[].filter!(r => r.number == epoch_vote.epoch_number);
                     if (!__rounds.empty) {
                         auto r = __rounds.front;
                         if (r && node && !r._epoch_votes[node.node_id]) {
@@ -649,7 +650,7 @@ class Round {
 
             auto witness_event_in_round = r._events.filter!(e => e !is null);
             const _name = format("%s%12s%s",
-                    level_color(r[].retro.drop(1)
+                    level_color(r[].drop(1)
                 .until!(r => !r.majority).count), hashgraph.name, RESET);
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
@@ -792,11 +793,11 @@ class Round {
                 }
 
                 void popBack() {
-                    round = round._next;
+                    round = round._previous;
                 }
 
                 void popFront() {
-                    round = round._previous;
+                    round = round._next;
                 }
 
                 Range save() {
@@ -811,5 +812,4 @@ class Round {
         static assert(isForwardRange!(Range!true));
         static assert(isBidirectionalRange!(Range!true));
     }
-
 }
