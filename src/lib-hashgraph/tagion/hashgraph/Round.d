@@ -126,7 +126,7 @@ class Round {
             .map!(n => _events[n])
             .filter!(e => e !is null)
             .map!(e => cast(Buffer) e.fingerprint);
-        return assumeWontThrow(net.calcHash(xor(fingerprints)));
+        return  assumeWontThrow(net.calcHash(xor(fingerprints)));
     }
 
     @property
@@ -632,7 +632,12 @@ class Round {
          {
             import tagion.utils.Term;
             //_last_collected_round = round_to_be_decided;
-            if (_last_collected_round) {
+            if (_last_collected_round 
+            
+            && !_last_collected_round
+            ._valid_witness[]
+            .filter!(n => _last_collected_round._epoch_votes[n] !is null).empty) {
+            
                 const _name = hashgraph.name;
                 string show(const Event e) {
                     if (e) {
@@ -649,7 +654,8 @@ class Round {
                         hashgraph._rounds.check_received_round;
                     }
                 }
-
+                
+                 
                 const _pattern = _last_collected_round.pattern(hashgraph.hirpc.net);
                 const epoch_votes_count = _last_collected_round._epoch_votes
                     .filter!(evote => evote !is null)
@@ -674,10 +680,11 @@ class Round {
                         log("Round %04d skipped", _last_collected_round.number);
                         //last_decided_round = _last_collected_round;
                         _last_collected_round.decide;
+                        _last_collected_round = _last_collected_round._next;
                         //round_to_be_decided=  null;
                     }
                     if (_last_collected_round) {
-                        __write("%s %sRound %04d%s epoch %-(%s %)  votes=%#s yes=%d  "
+                        __write("%s %sRound %04d%s %-(%s %)  votes=%#s yes=%d  "
                                 .replace("#", _last_collected_round.node_size.to!string),
                                 _name,
                                 RED,
@@ -692,7 +699,7 @@ class Round {
                 }
 
                 log("Round %04d decided", _last_collected_round.number);
-                last_decided_round = _last_collected_round;
+                //last_decided_round = _last_collected_round;
                 _last_collected_round.decide;
                 hashgraph.statistics.future_majority_rounds(count_majority_rounds(_last_collected_round));
                 log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,

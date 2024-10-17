@@ -98,7 +98,7 @@ do {
 
 @safe
 Buffer xor(Range)(Range range) pure if (isInputRange!Range && is(ElementType!Range : const(ubyte[])))
-in (!range.empty)
+in (!range.empty, "Can not take a xor of an empty range")
 do {
     import std.array : array;
     import std.range : tail;
