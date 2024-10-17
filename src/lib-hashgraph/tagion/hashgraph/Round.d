@@ -77,17 +77,6 @@ string level_color(const size_t c) pure nothrow {
     ][level(c)];
 }
 
-string show(const BitMask target, const BitMask mask, const size_t size) pure nothrow {
-    import tagion.utils.Term;
-    import tagion.basic.Debug : __format;
-
-    const diff = target ^ mask;
-    return size.iota.map!(n => __format("%s%d%s", diff[n] ? RED : WHITE, target[n], RESET)).join;
-}
-
-debug {
-    import std.array;
-}
 /// Handles the round information for the events in the Hashgraph
 class Round {
     //    bool erased;
@@ -639,11 +628,8 @@ class Round {
         }
 
         final void checkRoundVotes(immutable(EventPackage*) epack) nothrow {
-            import tagion.basic.Debug;
             import tagion.hashgraph.HashGraphBasic : RoundVote;
-            import tagion.hibon.HiBONJSON;
             import tagion.hibon.HiBONRecord : isRecord;
-            import tagion.hibon.Document : mut;
             import std.exception;
 
             if (epack.event_body.payload.isRecord!RoundVote) {
