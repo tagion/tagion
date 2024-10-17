@@ -571,25 +571,11 @@ class Round {
             if (!_round_to_be_decided) {
                 return;
             }
-            auto witness_in_round = _round_to_be_decided._events
-                .filter!(e => e !is null)
-                .map!(e => e.witness);
-            const _name = hashgraph.name;
             const new_completed = _round_to_be_decided.completed(hashgraph);
-
             if (!new_completed) {
                 return;
             }
-            __write(
-                    "%s %s%sRound %04d%s can be decided  witness=%d",
-                    _name,
-                    BOLD, GREEN,
-                    _round_to_be_decided.number,
-                    RESET,
-                    witness_in_round.walkLength
-            );
-            Event.view(witness_in_round.map!(w => w.outer));
-
+            Event.view(_round_to_be_decided._events.filter!(e => e !is null));
             _last_decided_round = round_to_be_decided = _round_to_be_decided;
         }
 
