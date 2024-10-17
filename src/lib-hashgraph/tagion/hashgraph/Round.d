@@ -134,15 +134,9 @@ class Round {
         import tagion.utils.Term;
 
         if (majority) {
-            bool ret;
             auto list_majority_rounds =
                 this[].retro
                     .until!(r => !r.majority);
-
-            auto future_witness_masks = list_majority_rounds
-                .map!(r => BitMask(r.node_size.iota.filter!(n => (r.events[n]!is null))));
-            _valid_witness = BitMask(node_size.iota
-                    .filter!(n => (_events[n]!is null) && !_events[n].witness.weak));
 
             const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
             BitMask not_decided_mask = BitMask(node_size.iota
@@ -155,8 +149,11 @@ class Round {
                     .filter!(n => r.events[n] is null));
             }
             if (!not_decided_mask.empty && (number_of_future_rounds < 4)) {
-                return ret = false;
+                return false;
             }
+
+            _valid_witness = BitMask(node_size.iota
+                    .filter!(n => (_events[n]!is null) && !_events[n].witness.weak));
 
             _valid_witness &= BitMask(_events
                     .filter!(e => (e !is null))
@@ -188,17 +185,12 @@ class Round {
                 }
                 return not_decided_mask.empty;
             }
-
-            const _all = approve_valid_witness;
-            if (_all) {
-
-                return ret = true;
-            }
+            return approve_valid_witness;
         }
         return false;
     }
 
-    final bool isDecided(const HashGraph hashgraph) const pure nothrow {
+    final bool isDecided() const pure nothrow {
         uint[Fingerprint] votes;
         _epoch_votes
             .filter!(evote => evote !is null)
@@ -604,7 +596,7 @@ class Round {
                     _round_to_be_collected = _round_to_be_collected._next;
                     return;
                 }
-                if (_round_to_be_collected.isDecided(hashgraph)) {
+                if (_round_to_be_collected.isDecided) {
                     _round_to_be_collected = _round_to_be_collected._next;
                 }
             }
