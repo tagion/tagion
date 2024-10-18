@@ -4,6 +4,7 @@ module tagion.json.JSONRecord;
 import std.meta : AliasSeq;
 import std.traits : hasMember;
 import tagion.errors.tagionexceptions;
+public import tagion.hibon.HiBONRecord : optional, exclude, GetLabel;
 
 @safe:
 /++
@@ -64,9 +65,13 @@ mixin template JSONRecord() {
             }
         }
 
-        foreach (i, m; this.tupleof) {
+        ValueLoop: foreach (i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(m);
+            enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
+            static if (exclude_flag) {
+                continue ValueLoop;
+            }
             static if (is(type == struct)) {
                 result[name] = m.toJSON;
             }
@@ -218,10 +223,19 @@ mixin template JSONRecord() {
         ParseLoop: foreach (i, ref member; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(member);
-            //            static if (!is(type == struct) || !is(type == class)) {
             static assert(is(type == struct) || is(type == enum) || isSupported!type,
                     format("Unsupported type %s for '%s' member", type.stringof, name));
 
+            enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
+            static if (exclude_flag) {
+                continue ParseLoop;
+            }
+            enum optional_flag = hasUDA!(this.tupleof[i], optional);
+            static if (optional_flag) {
+                if (!(name in json_value)) {
+                    continue ParseLoop;
+                }
+            }
             if (!set(member, json_value[name], name)) {
                 continue ParseLoop;
             }
@@ -447,3 +461,51 @@ unittest { // Check of support for associative array
 
 }
 
+unittest { /// Check @optional 
+    import std.stdio;
+    import std.exception : assertNotThrown, assertThrown;
+
+    static struct S {
+        int x;
+        @optional string name;
+        mixin JSONRecord;
+        mixin JSONConfig;
+    }
+
+    { // name is @optional
+        S s;
+        s.name = "old name";
+        // name has a @optional so it should not throw
+        assertNotThrown(s.parseJSON(`{ "x" : 42 }`));
+        assert(s.x == 42);
+        assert(s.name == "old name", "name should not change");
+        assertThrown(s.parseJSON(`{ "name" : "new name" }`));
+    }
+}
+
+unittest { /// Check @exclude 
+    import std.exception : assertNotThrown, assertThrown;
+
+    static struct S {
+        @exclude int x;
+        string name;
+        mixin JSONRecord;
+        mixin JSONConfig;
+    }
+
+    string json_text;
+    { // x is @exclude
+        S s1;
+        s1.x = 42;
+        s1.name = "old name";
+        json_text = s1.stringify;
+    }
+    { // convert to s2 from json text
+        S s2;
+        s2.x = 17;
+        s2.name = "other name";
+        assertNotThrown(s2.parseJSON(json_text));
+        assert(s2.name == "old name");
+        assert(s2.x == 17, "Should not change because of @exclude");
+    }
+}
