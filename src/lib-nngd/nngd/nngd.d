@@ -4,6 +4,9 @@ import core.memory;
 import core.time;
 import core.stdc.string;
 import core.stdc.stdlib;
+import core.thread;
+import core.sync.mutex;
+import core.stdc.errno;
 import std.conv;
 import std.string;
 import std.typecons;
@@ -18,6 +21,10 @@ import std.array;
 import std.utf;
 import std.mmfile;
 import std.uuid;
+import std.socket;
+import std.regex;
+import std.random;
+
 
 private import nngd.mime;
 private import libnng;
@@ -3227,3 +3234,495 @@ private:
         conns = conns.remove!(x => x == c);
     }
 }
+
+// WebSocketClient tools
+
+alias ws_client_handler = void function( string message );
+alias ws_client_handler_b = void function( ubyte[] message );
+
+// WebSocketClient states
+enum ws_state {
+    CLOSING, 
+    CLOSED, 
+    CONNECTING, 
+    OPEN
+};
+// WebSocketClient message types
+enum ws_opcode: ubyte {
+    CONTINUATION = 0x0,
+    TEXT_FRAME = 0x1,
+    BINARY_FRAME = 0x2,
+    CLOSE = 8,
+    PING = 9,
+    PONG = 0xa,
+};
+
+/*
+ 
+ WebSocket message structure
+
+ http://tools.ietf.org/html/rfc6455#section-5.2  Base Framing Protocol
+
+  0                   1                   2                   3
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ +-+-+-+-+-------+-+-------------+-------------------------------+
+ |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+ |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+ |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+ | |1|2|3|       |K|             |                               |
+ +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+ |     Extended payload length continued, if payload len == 127  |
+ + - - - - - - - - - - - - - - - +-------------------------------+
+ |                               |Masking-key, if MASK set to 1  |
+ +-------------------------------+-------------------------------+
+ | Masking-key (continued)       |          Payload Data         |
+ +-------------------------------- - - - - - - - - - - - - - - - +
+ :                     Payload Data continued ...                :
+ + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+ |                     Payload Data continued ...                |
+ +---------------------------------------------------------------+
+
+*/
+struct ws_header {
+    uint header_size;
+    bool fin;
+    bool mask;
+    ws_opcode opcode;
+    int N0;
+    ulong N;
+    ubyte[4] masking_key;
+};
+
+// WebSocketClient options with defaults
+struct ws_options {
+    int rxbuflimit = 4096;
+    int txbuflimit = 4096;
+    ulong rxtimeout = 3000;
+    ulong txtimeout = 3000;
+    ulong polltimeout = 100;
+    ulong pollbuffer = 1024;
+}
+
+/**
+ *  { urlparse } 
+ *  Simplified regexp-based URL parser  
+ *  Usage:
+ *      auto u = urlparse("http://server/path?key=val#anchor");
+ *      writeln(u.host);
+ *      writeln(u.toString);
+ */
+struct urlparse {
+    string scheme;
+    string host;
+    string user;
+    string password;
+    string port;
+    string[] path;
+    string[string] query;
+    string[] fragment;
+    this(string url){
+        auto r = ctRegex!(`^(?P<scheme>((http[s]?|ftp|ws[s]?):\/\/))?((?P<userpass>[^@]+@))?(?P<host>[^:\/]+)(:(?P<port>\d+))?(\/(?P<path>[^\?#]*))?(\?(?P<query>[^\?#]+))?(#(?P<fragment>.+))?$`);
+        auto m =  matchFirst(url,r);
+        scheme = m["scheme"];
+        if(!scheme.find(":").empty) scheme = scheme.split(":")[0];
+        host = m["host"];
+        auto up = m["userpass"].replace("@","").split(":");
+        user = (up.length > 0) ? up[0] : null;
+        password = (up.length > 1) ? up[1] : null;;
+        port = m["port"];
+        path = m["path"].split("/");
+        foreach(q; m["query"].split(",")){
+            auto t = q.split("=");
+            if(t[0] in query){
+                query[t[0]] ~= ", "~t[1];
+            } else {
+                query[t[0]] = t[1];
+            }
+        }
+        fragment = m["fragment"].split("#");
+    }
+    string toString(){
+        return ""
+            ~ "\r\nscheme   : " ~ scheme
+            ~ "\r\nhost     : " ~ host
+            ~ "\r\nport     : " ~ port
+            ~ "\r\nuser     : " ~ user
+            ~ "\r\npassword : " ~ password
+            ~ "\r\npath     : " ~ to!string(path)
+            ~ "\r\nquery    : " ~ to!string(query)
+            ~ "\r\nfragment : " ~ to!string(fragment)
+            ~ "\r\n";
+    }
+}
+// TODO: add query keys array aggregation
+unittest{
+    auto url = "https://user:qwerty@hostname.com:8080/a/b/?x=y,e=1,t=3#aa#bb";
+    auto u = urlparse(url);
+    assert( u.scheme == "https" );
+    assert( u.user == "user" );
+    assert( u.password == "qwerty" );
+    assert( u.host == "hostname.com" );
+    assert( u.port == "8080" );
+    assert( u.path == ["a","b",""] );
+    assert( u.query["x"] == "y" &&  u.query["e"] == "1" &&  u.query["t"] == "3" );
+    assert( u.fragment == ["aa","bb"] );
+}
+
+
+/**
+ *   { WebSocketClient }
+ *   Client class to handle websocket connection
+ *   Constructor:
+ *       WebSocketClient ( 
+ *           string URI to connect to,
+ *           string origin URI to connect from
+ *           ws_options struct to set options
+ *   Usage:
+ *      void onmsg( string msg ){
+ *          do_whatever(msg);
+ *      }
+ *      c = WebSocketClient("ws://server/path");
+ *      while(c.state != ws_state.CLOSED ){
+ *          c.poll();
+ *          c.dispatch(&onmsg);
+ *      }
+ *
+ */
+
+struct WebSocketClient {
+
+    @disable this();
+
+
+
+    private:
+        ws_state localstate;    
+        ubyte[4] masking_key;
+        ubyte[] rxbuf;
+        ubyte[] txbuf;
+        ubyte[] received_data;
+        
+        Socket sock;
+
+        Mutex rxmtx;
+        Mutex txmtx;
+        
+        bool use_mask;
+        bool is_rx_bad;
+        
+        ulong rxbuflimit, txbuflimit;
+        
+        string _url, _origin;
+        string _errstr;
+    
+        int connect(string host, string port ){
+            try {
+                auto address = getAddress(host, to!ushort(port));
+                sock = new Socket(AddressFamily.INET, SocketType.STREAM, ProtocolType.TCP);
+                sock.connect(address[0]);
+            } catch (SocketException e) {
+                _errstr = lastSocketError;
+                return -1;
+            } 
+            return 0;
+        }
+    
+        int openstate(string url, string origin){
+
+            int rc;
+            char[1024] buf;
+            
+            localstate = ws_state.CONNECTING;
+
+            scope(failure){
+                localstate = ws_state.CLOSED;
+                sock.close();
+            }
+            
+            enforce(url.length <= 512, "ERROR: url size limit exceeded");
+            enforce(origin.length <= 200, "ERROR: origin size limit exceeded");
+            auto u = urlparse(url);
+            if(u.port is null) u.port = "80";            
+            rc = connect(u.host, u.port);
+            enforce(rc == 0, "Could not connect: "~_errstr);
+            
+            string hello = format("GET /%s HTTP/1.1\r\n", join(u.path,"/"))
+            ~ "Upgrade: websocket\r\n" 
+            ~ "Connection: upgrade\r\n"
+            ~ "Host: localhost\r\n"
+            ;
+            if(origin !is null)
+                hello ~= format("Origin: %s\r\n", origin);
+            hello ~= "Pragma: no-cache\r\n"
+            ~ "Cache-Control: no-cache\r\n"
+            ~ "Sec-WebSocket-Version: 13\r\n"
+            ~ "Sec-WebSocket-Key: SYm6VzOfylrJSxV73JrbCw==\r\n"
+            ~ "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits\r\n"
+            ~ "\r\n";
+            
+            auto sent = sock.send(cast(ubyte[])hello.dup);
+            auto received = sock.receive(buf);
+            enforce(received > 0, "Invalid status response: " ~ lastSocketError); 
+            enforce(received > 8 && received < 1023 && !buf[0..received].find("\r\n\r\n").empty, "Invalid status string: "~buf[0 .. received]);
+            auto status = to!int(to!string(buf[8 .. 12]).strip);
+            enforce(status == 101, "Bad status: " ~ buf[8 .. 12]);
+            sock.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY, 1);            
+            sock.setOption(SocketOptionLevel.SOCKET, SocketOption.SNDBUF, opt.txbuflimit);
+            sock.setOption(SocketOptionLevel.SOCKET, SocketOption.RCVBUF, opt.rxbuflimit);
+
+            localstate = ws_state.OPEN;
+            return 0;
+        }
+
+        void send_data(ws_opcode type, ubyte[] msg ){
+            if( localstate == ws_state.CLOSING || localstate == ws_state.CLOSED )
+                return;
+            ubyte[] header;
+            ulong message_size = msg.length;
+            header.length = 2 + (message_size >= 126 ? 2 : 0) + (message_size >= 65536 ? 6 : 0) + (use_mask ? 4 : 0);
+            header[0] = 0x80 | type;
+            if(message_size < 126){
+                header[1] = (message_size & 0xff) | (use_mask ? 0x80 : 0);
+                if(use_mask){
+                    header[2] = masking_key[0];
+                    header[3] = masking_key[1];
+                    header[4] = masking_key[2];
+                    header[5] = masking_key[3];
+                }
+            } else if (message_size < 65536){
+                header[1] = 126 | (use_mask ? 0x80 : 0);
+                header[2] = (message_size >> 8) & 0xff;
+                header[3] = (message_size >> 0) & 0xff;
+                if (use_mask) {
+                    header[4] = masking_key[0];
+                    header[5] = masking_key[1];
+                    header[6] = masking_key[2];
+                    header[7] = masking_key[3];
+                }
+            } else {
+                header[1] = 127 | (use_mask ? 0x80 : 0);
+                header[2] = (message_size >> 56) & 0xff;
+                header[3] = (message_size >> 48) & 0xff;
+                header[4] = (message_size >> 40) & 0xff;
+                header[5] = (message_size >> 32) & 0xff;
+                header[6] = (message_size >> 24) & 0xff;
+                header[7] = (message_size >> 16) & 0xff;
+                header[8] = (message_size >>  8) & 0xff;
+                header[9] = (message_size >>  0) & 0xff;
+                if (use_mask) {
+                    header[10] = masking_key[0];
+                    header[11] = masking_key[1];
+                    header[12] = masking_key[2];
+                    header[13] = masking_key[3];
+                }
+            }
+            txmtx.lock_nothrow();
+            txbuf ~= header;
+            ulong offset = txbuf.length;
+            txbuf ~= msg;
+            if(use_mask){
+                for(auto i=0; i<message_size; ++i)
+                    txbuf[offset + i] ^= masking_key[i & 0x03];
+            }
+            txmtx.unlock_nothrow();
+        }
+
+        void dispatch_data(void delegate(ubyte[] message) cb){
+            if(is_rx_bad)
+                return;
+            while(true){
+                ws_header ws;
+                if(rxbuf.length < 2)
+                    return;
+                ws.fin = ((rxbuf[0] & 0x80) == 0x80);
+                ws.opcode = cast(ws_opcode)(rxbuf[0] & 0x0f);
+                ws.mask = ((rxbuf[1] & 0x80) == 0x80);
+                ws.N0 = rxbuf[1] & 0x7f;
+                ws.header_size = 2 + (ws.N0 == 126 ? 2 : 0) + (ws.N0 == 127 ? 8 : 0) + (ws.mask ? 4 : 0);
+                if(rxbuf.length < ws.header_size )
+                    return;
+                int i = 0;
+                if (ws.N0 < 126) {
+                    ws.N = ws.N0;
+                    i = 2;
+                }else if (ws.N0 == 126){
+                    ws.N = 0;
+                    ws.N |= (cast(ulong) rxbuf[2]) << 8;
+                    ws.N |= (cast(ulong) rxbuf[3]) << 0;
+                    i = 4;
+                }else if (ws.N0 == 127){
+                    ws.N = 0;
+                    ws.N |= (cast(ulong) rxbuf[2]) << 56;
+                    ws.N |= (cast(ulong) rxbuf[3]) << 48;
+                    ws.N |= (cast(ulong) rxbuf[4]) << 40;
+                    ws.N |= (cast(ulong) rxbuf[5]) << 32;
+                    ws.N |= (cast(ulong) rxbuf[6]) << 24;
+                    ws.N |= (cast(ulong) rxbuf[7]) << 16;
+                    ws.N |= (cast(ulong) rxbuf[8]) << 8;
+                    ws.N |= (cast(ulong) rxbuf[9]) << 0;
+                    i = 10;
+                    if(ws.N & cast(ulong)(0x80)){
+                        is_rx_bad = true;
+                        close();
+                        return;
+                    }
+                }
+                if(ws.mask){
+                    ws.masking_key[0] = (cast(ubyte) rxbuf[i+0]) << 0;
+                    ws.masking_key[1] = (cast(ubyte) rxbuf[i+1]) << 0;
+                    ws.masking_key[2] = (cast(ubyte) rxbuf[i+2]) << 0;
+                    ws.masking_key[3] = (cast(ubyte) rxbuf[i+3]) << 0;
+                }
+                if(rxbuf.length < ws.header_size+ws.N)
+                    return;
+                switch(ws.opcode){
+                    case ws_opcode.PING:
+                        if(ws.mask)
+                            for(int j=0; j < ws.N; ++j)
+                                rxbuf[i+ws.header_size] ^= ws.masking_key[j & 0x03];
+                        send_data(ws_opcode.PONG,rxbuf[ws.header_size .. ws.header_size + ws.N]);
+                        break;
+                    case ws_opcode.PONG:
+                        break;
+                    case ws_opcode.CLOSE:
+                        close();
+                        break;
+                    case ws_opcode.TEXT_FRAME:
+                    case ws_opcode.BINARY_FRAME:
+                    case ws_opcode.CONTINUATION:
+                        if(ws.mask)
+                            for(int j=0; j < ws.N; ++j)
+                                rxbuf[i+ws.header_size] ^= ws.masking_key[j & 0x03];
+                        received_data ~= rxbuf[ws.header_size .. ws.header_size + ws.N];
+                        if(ws.fin){
+                            cb(received_data);
+                            received_data.length = 0;
+                        }
+                        break;
+                    default:
+                        // LOG: Invalid opcode
+                        close();
+                        break;
+                }
+            }
+        }                
+    
+
+    public:
+
+    ws_options opt;
+    
+    this(string url, string origin = null, ws_options _opt = ws_options.init ){
+        int rc;
+        _url = url; 
+        _origin = origin;
+        localstate = ws_state.CLOSED;
+        opt = _opt;
+        rxmtx = new Mutex();
+        txmtx = new Mutex();
+        masking_key = [rndGen.uniform!ubyte, rndGen.uniform!ubyte, rndGen.uniform!ubyte, rndGen.uniform!ubyte];
+        use_mask = true;
+        rc = openstate(url, origin);
+        enforce(rc == 0, "Error connecting: "~url);
+    }
+
+    void poll(ulong timeout = 0){ // timeout in msecs
+        long rc;
+        ubyte[] rxbedpan = new ubyte[](opt.pollbuffer);
+        bool rgo = true, tgo = true;
+        if( timeout == 0 ) timeout = opt.polltimeout;
+        if(localstate == ws_state.CLOSED){
+            if(timeout > 0){
+                Thread.sleep(msecs(timeout));
+            }
+            return;
+        }
+        if(timeout > 0){
+            auto rset = new SocketSet;
+            auto tset = new SocketSet;
+            rset.add(sock);
+            if(txbuf.length > 0)
+                tset.add(sock);
+            auto sres = Socket.select(rset, tset, null, msecs(timeout));
+            if (sres < 1){
+                return;
+            }
+            rgo = rset.isSet(sock) == 1;
+            tgo = tset.isSet(sock) == 1;
+        }
+        if(tgo)
+        while(txbuf.length > 0){
+            txmtx.lock_nothrow();
+            auto rec = sock.send(txbuf);
+            if(rec > 0){
+                txbuf = txbuf[rec .. $];
+            } else {
+                if(!wouldHaveBlocked){
+                    sock.close();
+                    localstate = ws_state.CLOSED;
+                    // TODO: LOG: Connection error. connection closed
+                }
+            }
+            txmtx.unlock_nothrow();
+            if(rec <= 0)
+                break;
+        }
+        if(txbuf.length == 0 && localstate == ws_state.CLOSING){
+            sock.close();
+            localstate = ws_state.CLOSED;
+            return;
+        }
+        if(rgo)
+        while(true){
+            auto rec = sock.receive(rxbedpan);
+            if( rec > 0 ){
+                rxbuf ~= rxbedpan[0..rec];
+                if(rec == opt.pollbuffer)
+                    continue;
+            }
+            if(rec < 0 && !wouldHaveBlocked){
+                sock.close();
+                localstate = ws_state.CLOSED;
+                // TODO: LOG: Connection error. connection closed
+            }
+            break;
+        }
+    }
+
+    void send( string msg ){
+        send_data(ws_opcode.TEXT_FRAME, cast(ubyte[])msg.dup);
+    }
+
+    void send_b( ubyte[] msg ){
+        send_data(ws_opcode.BINARY_FRAME, msg);
+    }
+    
+    void send_b( string msg ){
+        send_data(ws_opcode.BINARY_FRAME, cast(ubyte[])msg.dup);
+    }
+
+    void send_ping(){
+        send_data(ws_opcode.PING, null);
+    }
+
+    void dispatch(ws_client_handler cb){
+        dispatch_data((ubyte[] message){cb((cast(string)(message)[0..$]));});
+    }
+    
+    void dispatch_b(ws_client_handler_b cb){
+        dispatch_data((ubyte[] message){cb(message);});
+    }
+
+    void close() {
+        if( localstate == ws_state.CLOSING || localstate == ws_state.CLOSED )
+            return;
+        localstate = ws_state.CLOSING;        
+    }
+
+    ws_state state() const {
+        return localstate;
+    }
+
+}
+
+

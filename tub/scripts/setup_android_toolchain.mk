@@ -1,5 +1,5 @@
 # tools directory
-TOOLS:=tools
+TOOLS:=$(abspath $(REPOROOT)/tools)
 
 LDC_VERSION:=1.37.0
 # TARGET_ARCH:=aarch64

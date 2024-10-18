@@ -38,21 +38,21 @@ help: help-platform
 all-platforms:
 	${foreach platform,$(PLATFORMS), $(MAKE) PLATFORM=$(platform) platform -k;}
 
+
 define platform.builder
 ${eval
-$1:
-	$(MAKE) PLATFORM=$1 platform
 
 $1-%:
-	$(MAKE) PLATFORM=$1 platform $$*
-
-# prober-$1:
-# 	$(MAKE) PLATFORM=$1 proper-platform
+	echo $$(LDC_HOST)
+	echo $(LDC_VERSION)
+	echo $(TOOLS)
+	echo $(MAKE) PLATFORM=$1 install-android-toolchain
+	echo $(MAKE) PLATFORM=$1 $$*
 
 }
 endef
 
-${foreach platform,$(PLATFORMS), ${call platform.builder, $(platform)}}
+${foreach platform,$(PLATFORMS), ${call platform.builder,$(platform)}}
 
 proper-platform:
 	$(PRECMD)

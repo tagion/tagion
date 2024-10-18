@@ -45,15 +45,6 @@ interface Refinement {
      */
     void queue(PayloadQueue _queue);
 
-    /**
-     * Check if the evenpackage contains a epoch-vote 
-     * Params: 
-     *   epack = event package to be checked 
-     * Returns: true if the epoch was decided
-     */
-
-    bool checkEpochVoting(immutable(EventPackage*) epack);
-
     version (NEW_ORDERING) static bool order_less(Event a, Event b,
             const(Event[]) famous_witnesses,
     const(Round) decided_round) pure;

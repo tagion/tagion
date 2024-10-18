@@ -767,7 +767,7 @@ int tagion_hibon_add_int32(const(HiBONT*) h, const char* key, const size_t key_l
 *   value = int64 to add
 * Returns: ErrorCode
 */
-int tagion_hibon_add_int64(const(HiBONT*) h, const char* key, const size_t key_len, int64_t value) {
+int tagion_hibon_add_int64(const(HiBONT*) h, const char* key, const size_t key_len, long value) {
     return add_T!int64_t(__traits(parameters));
 }
 
@@ -793,7 +793,7 @@ int tagion_hibon_add_uint32(const(HiBONT*) h, const char* key, const size_t key_
 *   value = uint64 to add
 * Returns: ErrorCode
 */
-int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint64_t value) {
+int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_len, ulong value) {
     return add_T!uint64_t(__traits(parameters));
 }
 

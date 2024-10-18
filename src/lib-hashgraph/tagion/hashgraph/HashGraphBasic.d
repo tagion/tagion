@@ -356,8 +356,8 @@ static assert(isHiBONRecord!Wavefront);
 static assert(isHiBONRecord!(EventPackage));
 static assert(isHiBONRecord!(immutable(EventPackage)));
 
-@recordType("$@EVote")
-struct EpochVote {
+@recordType("$@RVote")
+struct RoundVote {
     @label(StdNames.epoch_number) long epoch_number; /// should always be zero
     uint votes;
     Fingerprint pattern;

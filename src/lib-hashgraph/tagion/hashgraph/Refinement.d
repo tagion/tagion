@@ -124,19 +124,6 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    bool checkEpochVoting(immutable(EventPackage*) epack) const pure nothrow {
-        import tagion.basic.Debug;
-        import tagion.hashgraph.HashGraphBasic : EpochVote;
-        import tagion.hibon.HiBONJSON;
-        import std.exception;
-
-        if (epack.event_body.payload.isRecord!EpochVote) {
-            debug __write("EpochVote %s", assumeWontThrow(epack.event_body.payload.toPretty));
-            return true;
-        }
-        return false;
-    }
-
     version (NEW_ORDERING) static bool order_less(Event a, Event b, const(Event[]) famous_witnesses, const(Round) decided_round) pure {
         import std.bigint;
         import std.numeric : gcd;
