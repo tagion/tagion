@@ -14,7 +14,7 @@ import tagion.logger.Logger;
 import tagion.script.common : SignedContract;
 import tagion.services.messages;
 import tagion.services.codes;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 
 struct HiRPCVerifierOptions {

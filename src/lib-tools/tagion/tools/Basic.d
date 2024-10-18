@@ -12,7 +12,7 @@ import std.format;
 import std.array;
 
 import tagion.utils.Term;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONCommon;
 
 __gshared static bool __verbose_switch;
 __gshared static bool __dry_switch;

@@ -24,7 +24,7 @@ import tagion.logger.subscription;
 
 /// Options for the subscription service
 struct SubscriptionServiceOptions {
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONCommon;
 
     string tags; /// List of tags that should be enabled separated by a ','
     string address; /// The address which the service should publish events on

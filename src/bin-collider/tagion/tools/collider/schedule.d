@@ -18,19 +18,28 @@ import tagion.tools.Basic : dry_switch, verbose_switch, error;
 import tagion.tools.collider.BehaviourOptions;
 import tagion.tools.collider.trace : ScheduleTrace;
 import tagion.tools.toolsexception;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONCommon;
 import tagion.utils.envexpand;
 
-@safe
-struct RunUnit {
-    string[] stages;
+
+@safe:
+
+struct RunState {
     string[string] envs;
     string[] args;
     double timeout;
     mixin JSONCommon;
 }
 
-@safe
+struct RunUnit {
+    string[] stages;
+    string[string] envs;
+    string[] args;
+    double timeout;
+//    RunState _stages;
+    mixin JSONCommon;
+}
+
 struct Schedule {
     RunUnit[string] units;
     mixin JSONCommon;
@@ -63,7 +72,7 @@ enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
 enum BDD_RESULTS = "BDD_RESULTS";
 enum UNSHARE_NET = "UNSHARE_NET";
-@safe
+
 struct ScheduleRunner {
     Schedule schedule;
     const(string[]) stages;

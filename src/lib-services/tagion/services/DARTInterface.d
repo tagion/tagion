@@ -24,7 +24,7 @@ import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
 import tagion.dart.DARTBasic;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONCommon;
 
 import nngd;
 

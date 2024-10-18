@@ -31,7 +31,7 @@ import tagion.script.standardnames;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.services.exception;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONCommon;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
 import std.path : buildPath;

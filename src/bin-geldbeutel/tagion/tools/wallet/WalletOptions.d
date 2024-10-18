@@ -3,7 +3,7 @@ module tagion.tools.wallet.WalletOptions;
 import std.path;
 import tagion.basic.Types : FileExtension;
 import tagion.services.options;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONCommon;
 import tagion.wallet.KeyRecover : standard_questions;
 
 enum default_wallet_config_filename="wallet".setExtension(FileExtension.json);

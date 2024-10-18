@@ -28,7 +28,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.logger.ContractTracker;
 
 struct CollectorOptions {
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONCommon;
 
     mixin JSONCommon;
 }

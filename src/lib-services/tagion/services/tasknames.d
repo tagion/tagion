@@ -3,7 +3,7 @@ module tagion.services.tasknames;
 @safe
 struct TaskNames {
     private import std.traits;
-    private import tagion.utils.JSONCommon;
+    private import tagion.json.JSONCommon;
 
     string program = "tagion";
     string supervisor = "supervisor";

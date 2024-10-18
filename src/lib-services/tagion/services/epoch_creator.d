@@ -30,7 +30,7 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options : NetworkMode, TaskNames;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONCommon;
 import tagion.utils.Queue;
 import tagion.utils.Random;
 import tagion.utils.StdTime;

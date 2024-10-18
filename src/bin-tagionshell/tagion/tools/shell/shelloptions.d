@@ -3,7 +3,7 @@ module tagion.tools.shell.shelloptions;
 @safe:
 
 import tagion.services.options : contract_sock_addr;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONCommon;
 import std.format;
 
 enum mode0_prefix = "Node_%d_";

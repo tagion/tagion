@@ -23,7 +23,7 @@ import tagion.hibon.HiBONFile;
 @safe
 struct ReplicatorOptions {
     import std.format;
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONCommon;
 
     string folder_path = "./recorder";
     int new_file_interval = 10_000;

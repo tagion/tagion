@@ -102,7 +102,12 @@
         "imports": "wasm=foundation.wasm math=foundation.math",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "commit"],
+      "stages": ["tvm", "commit", "memory"],
+      "memory" : {
+        "args" : [
+            "memory_redundancy.wast"
+        ]
+      },
       "timeout": 0.0
     },
     "epoch_creator": {
