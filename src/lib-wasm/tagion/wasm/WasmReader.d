@@ -3,7 +3,7 @@ module tagion.wasm.WasmReader;
 import std.array : join;
 import std.bitmanip : Endian, peek, binread = read, binwrite = write;
 import std.conv : emplace, to;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, assumeWontThrow;
 import std.format;
 import std.format;
 import std.meta : AliasSeq;
@@ -41,8 +41,8 @@ import tagion.wasm.WasmException;
         wasm_verbose("Index %d", range.index);
         while (!range.empty) {
             auto a = range.front;
-            scope(failure) {
-                wasm_verbose("Failure %s", a);    
+            scope (failure) {
+                wasm_verbose("Failure %s", a);
             }
             with (Section) {
                 final switch (a.section) {
@@ -203,7 +203,27 @@ import tagion.wasm.WasmException;
                 this.data = data[index .. index + size];
             }
 
-            auto sec(Section S)() pure
+            string toString() const nothrow {
+                string info() @trusted {
+                    string section_info;
+                SectionCase:
+                    final switch (section) {
+                        static foreach (S; EnumMembers!Section) {
+                    case S:
+                            static if (S is Section.DATA) {
+                                //section_info=format("%s", sec!S);
+                                writefln("!! %s", sec!S.info);
+                            }
+                            break SectionCase;
+                        }
+                    }
+                    return format("Section %s %(%02x %) ", section, data);
+                }
+
+                return assumeWontThrow(info());
+            }
+
+            auto sec(Section S)() inout pure
             in {
                 assert(S is section);
             }
@@ -284,7 +304,15 @@ import tagion.wasm.WasmException;
                     return new SectionT(this);
                 }
 
-                @trusted override string toString() const {
+                final string info() const {
+                    string[] result;
+                    foreach (i, sec; opSlice.enumerate) {
+                        result ~= format("\t%3d %s", i, sec).idup;
+                    }
+                    return result.join("\n");
+                }
+
+                override string toString() const {
                     string[] result;
                     foreach (i, sec; opSlice.enumerate) {
                         result ~= format("\t%3d %s", i, sec).idup;
@@ -300,6 +328,10 @@ import tagion.wasm.WasmException;
                 immutable(ubyte[]) bytes;
                 const(Document) doc;
                 immutable(size_t) size;
+                final string info() const {
+                    return "<< Custom >>";
+                }
+
                 this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     name = Vector!char(data, index);
@@ -515,6 +547,10 @@ import tagion.wasm.WasmException;
 
             static class Start {
                 immutable(uint) idx; // Function index
+                final string info() const {
+                    return format("Start idx %d", idx);
+                }
+
                 this(immutable(ubyte[]) data) pure nothrow {
                     size_t u32_size;
                     idx = u32(data, u32_size);
