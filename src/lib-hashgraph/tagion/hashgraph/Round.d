@@ -1,7 +1,5 @@
 module tagion.hashgraph.Round;
 
-//import std.stdio;
-
 import std.datetime; // Date, DateTime
 import std.algorithm;
 import std.exception : assumeWontThrow;
@@ -428,7 +426,7 @@ class Round {
             last_round = new Round(null, hashgraph.node_size);
             last_witness_events.length = hashgraph.node_size;
         }
-    
+
         package void erase() {
             void local_erase(Round r) @trusted {
                 if (r !is null) {
@@ -451,7 +449,7 @@ class Round {
          * Sets the round which is the start round
          * Params:
          *   r = the round to start 
-         */ 
+         */
         void start_round(Round r) @nogc pure nothrow
         in (!_last_decided_round, "last_decided_round can only be set once")
         do {
@@ -577,7 +575,7 @@ class Round {
                 return cached_decided_count > total_limit;
             }
 
-    /** 
+            /** 
      * Counts the number of round from this round @r which has majority witnesses 
      * Params:
      *   r = the round to count from
@@ -662,7 +660,7 @@ class Round {
                     log.event(Event.topic, hashgraph.statistics.future_majority_rounds.stringof,
                             hashgraph.statistics.future_majority_rounds);
                     if (isMajority(_round_to_be_collected._valid_witness.count, hashgraph.node_size)) {
-                        collect_received_round(_round_to_be_collected);
+                        collectReceivedRound(_round_to_be_collected);
                     }
                     _round_to_be_collected = _round_to_be_collected._next;
                     return;
@@ -673,7 +671,12 @@ class Round {
             }
         }
 
-        
+        /**
+         * This function checks if the EventPackage is a RoundVote
+         * And added the round to the round_votes
+         * Params:
+         *   epack = the package to be checked 
+         */
         final void checkRoundVotes(immutable(EventPackage*) epack) nothrow {
             import tagion.hashgraph.HashGraphBasic : RoundVote;
             import tagion.hibon.HiBONRecord : isRecord;
@@ -697,7 +700,13 @@ class Round {
             }
         }
 
-        protected void collect_received_round(Round r)
+        /**
+         * Collected the votes in round r and reports it to the hashgraph
+         * by calling the hashgraph.epoch function
+         * Params:
+         *   r = round to be collected
+         */
+        protected void collectReceivedRound(Round r)
         in (r.decided, "The round should be decided before the round can be collected")
         do {
             import tagion.utils.Term;
@@ -795,13 +804,6 @@ class Round {
             hashgraph.epoch(event_collection, r);
 
         }
-
-        /**
-     * Call to collect and order the epoch
-     * Params:
-     *   r = decided round to collect events to produce the epoch
-     *   hashgraph = hashgraph which owns this round
-     */
 
         /**
          * Range from this round and down
