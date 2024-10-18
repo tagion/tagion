@@ -5,9 +5,9 @@ import std.meta : AliasSeq;
 import std.traits : hasMember;
 import tagion.errors.tagionexceptions;
 
+@safe:
 /++
  +/
-@safe
 class OptionException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
@@ -22,6 +22,7 @@ enum isJSONCommon(T) = is(T == struct) && hasMember!(T, "toJSON");
 mixin template JSONCommon() {
     import tagion.errors.tagionexceptions : Check;
     import tagion.json.JSONCommon : OptionException;
+    import tagion.hibon.HiBONRecord : optional, exclude, GetLabel;
 
     alias check = Check!OptionException;
     import std.conv : to;
@@ -239,7 +240,7 @@ static T load(T)(string config_file) if (__traits(hasMember, T, "load")) {
 import std.conv;
 import std.json : JSONType, JSONValue;
 
-JSONValue toJSONType(string str, JSONType type) @safe pure {
+JSONValue toJSONType(string str, JSONType type) pure {
     with (JSONType) final switch (type) {
     case float_:
         return JSONValue(str.to!float);
@@ -286,7 +287,7 @@ version (unittest) {
     import tagion.basic.Types : FileExtension;
     import basic = tagion.basic.basic;
 
-    const(basic.FileNames) fileId(T)(string prefix = null) @safe {
+    const(basic.FileNames) fileId(T)(string prefix = null) {
         return basic.fileId!T(FileExtension.json, prefix);
     }
 
@@ -298,7 +299,6 @@ version (unittest) {
 
 }
 
-@safe
 unittest {
     static struct OptS {
         bool _bool;
@@ -354,7 +354,6 @@ unittest {
 
 }
 
-@safe
 unittest { // JSONCommon with array types
     //    import std.stdio;
     static struct OptArray(T) {
@@ -427,7 +426,6 @@ unittest { // JSONCommon with array types
     }
 }
 
-@safe
 unittest { // Check of support for associative array
     static struct S {
         string[string] names;
@@ -448,3 +446,4 @@ unittest { // Check of support for associative array
     assert(s_result.names["Borge"] == "small");
 
 }
+
