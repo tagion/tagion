@@ -1,6 +1,6 @@
 module tagion.logger.LoggerOptions;
 
-import tagion.json.JSONCommon;
+import tagion.json.JSONRecord;
 
 struct LoggerOptions {
     string task_name; /// Name of the logger task

@@ -33,7 +33,7 @@ enum NetworkMode {
 @safe
 struct WaveOptions {
 
-    import tagion.json.JSONCommon;
+    import tagion.json.JSONRecord;
 
     /** Read node addresses from this files if it's defined
      *  Useful for development
@@ -70,7 +70,7 @@ public import tagion.services.nodeinterface : NodeInterfaceOptions;
 @safe
 struct Options {
     import std.json;
-    import tagion.json.JSONCommon;
+    import tagion.json.JSONRecord;
 
     WaveOptions wave;
     InputValidatorOptions inputvalidator;

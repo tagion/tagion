@@ -1,5 +1,5 @@
 /// JSON Interface for structs
-module tagion.json.JSONCommon;
+module tagion.json.JSONRecord;
 
 import std.meta : AliasSeq;
 import std.traits : hasMember;
@@ -21,7 +21,7 @@ enum isJSONCommon(T) = is(T == struct) && hasMember!(T, "toJSON");
  +/
 mixin template JSONCommon() {
     import tagion.errors.tagionexceptions : Check;
-    import tagion.json.JSONCommon : OptionException;
+    import tagion.json.JSONRecord : OptionException;
     import tagion.hibon.HiBONRecord : optional, exclude, GetLabel;
 
     alias check = Check!OptionException;

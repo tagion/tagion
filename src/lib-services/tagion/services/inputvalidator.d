@@ -26,7 +26,7 @@ import tagion.script.namerecords;
 import tagion.services.messages;
 import tagion.services.codes;
 import tagion.services.options : TaskNames;
-import tagion.json.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 
 import nngd;

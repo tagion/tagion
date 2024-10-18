@@ -18,7 +18,7 @@ import tagion.tools.Basic : dry_switch, verbose_switch, error;
 import tagion.tools.collider.BehaviourOptions;
 import tagion.tools.collider.trace : ScheduleTrace;
 import tagion.tools.toolsexception;
-import tagion.json.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.envexpand;
 
 

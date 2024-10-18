@@ -28,7 +28,7 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.services.replicator;
-import tagion.json.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Types;
 import tagion.trt.TRT;

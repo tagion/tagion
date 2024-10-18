@@ -44,7 +44,7 @@ struct NodeInterfaceOptions {
     string node_address = "tcp://[::1]:10700"; // Address
     uint compression_level = 6;
 
-    import tagion.json.JSONCommon;
+    import tagion.json.JSONRecord;
 
     mixin JSONCommon;
 }

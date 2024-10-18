@@ -2,7 +2,7 @@ module tagion.tools.collider.BehaviourOptions;
 import std.array : array, join, split;
 import std.process : environment, execute;
 import tagion.basic.Types : FileExtension;
-import tagion.json.JSONCommon;
+import tagion.json.JSONRecord;
 
 enum ONE_ARGS_ONLY = 2;
 enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
