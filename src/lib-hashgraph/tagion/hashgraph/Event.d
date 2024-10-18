@@ -430,7 +430,7 @@ class Event {
                 new Witness;
                 _witness.vote(hashgraph);
                 hashgraph._rounds.checkDecideRound;
-                hashgraph._rounds.epochVote;
+                hashgraph._rounds.roundVote;
                 hashgraph._rounds.checkToCollectRound;
                 return;
             }
