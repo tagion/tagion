@@ -1112,6 +1112,60 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
 }
 
+const util_handler = handler_helper!util_handler_impl;
+void util_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
+    string[] query_main = req.path.findSplitAfter((opt.shell_api_prefix ~ opt.util_endpoint).split("/")[1 .. $])[1];
+    string query_subject = query_main[0];
+    switch(query_subject){
+        case "hibon":
+            string todo = query_main[1];
+            switch(todo){
+                case "tojson":
+                    // expect post binary or get with b64 string, return json
+                    ubyte[] data;
+                    if( req.method == HTTPMethod.POST ){
+                        if( req.type != mime_type.BINARY ){
+                            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                            rep.text = "Invalid data type";
+                            return;
+                        }
+                        data = req.rawdata.dup;
+                    }else{
+                        if(query_main.length < 3){
+                            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                            rep.text = "Invalid data path";
+                            return;
+                        }
+                        data = cast(ubyte[])(Base64.decode(query_main[2]));
+                    }
+                    Document doc = Document(cast(immutable)data);
+                    rep.type = mime_type.JSON;
+                    rep.json = doc.toJSON;
+                    break;
+                case "fromjson":
+                    // expect post json return binary
+                    if(req.type != mime_type.JSON){
+                        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                        rep.text = "Invalid data type";
+                        return;
+                    }
+                    rep.type = mime_type.BINARY;
+                    rep.rawdata = cast(ubyte[])(req.json.toHiBON.serialize); 
+                    break;
+                default:                        
+                    rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                    rep.msg = "Invalid subject";
+                    return;
+            }
+            break;
+        default:
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "Invalid subject";
+            return;
+    }
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+}
+
 void versioninfo_handler(WebData* req, WebData* rep, void* _) nothrow {
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
     rep.text = imported!"tagion.tools.revision".revision_text;
@@ -1240,6 +1294,7 @@ int _main(string[] args) {
         "/wallet": "test i2p wallet endpoint",
     ]);
     add_v1_route(app, options.lookup_endpoint~"/*", lookup_handler, [HTTPMethod.GET], "lookup by ID");
+    add_v1_route(app, options.util_endpoint~"/*", util_handler, [HTTPMethod.POST, HTTPMethod.GET], "Utils like hibonutil");
 
     writeit(help_text.data);
     app.start();

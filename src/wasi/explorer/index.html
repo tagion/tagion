@@ -44,6 +44,7 @@
             wsinit();
             walinit();
             $("#go").click(doit);    
+            $("#isendrequest").click(sendrequest);
             $("#isubmonitor").change(submonitor);
             $("#isubrecorder").change(submonitor);
             $("#isubtrt").change(submonitor);
@@ -152,7 +153,87 @@
             };
             lookup(query, opt);
         }
+        
+
+        function sendrequest(){
+            var req = $("#requestbody").val().trim();
             
+            console.log("REQ: " + req);
+            
+            if(req == ""){
+                return;
+            }
+            
+            if ( req.startsWith("{") && req.endsWith("}" )) {
+                
+                $.ajax({
+                    url: config.api_util_endpoint + "/hibon/fromjson",
+                    type: "post",
+                    contentType: "application/json",
+                    data: req,
+                    processData: false,
+                    xhrFields: {
+                        responseType: "arraybuffer"
+                    },
+                    success: function(data, status, xhr) {
+                        processrequest(data);
+                    },
+                    error: function(data) {
+                        console.log("Error: ", data);
+                    }
+                });
+
+            } else {            
+                processrequest(Uint8Array.from(atob(req), c => c.charCodeAt(0)));
+            }
+        }    
+        
+        function processrequest(bytes) {
+            $('body').addClass('busy');
+            $.ajax({
+                url: config.api_hirpc_endpoint,
+                type: "post",
+                contentType: 'application/octet-stream',
+                data: bytes,
+                processData: false,
+                xhrFields: {
+                    responseType: "arraybuffer"
+                },
+                success: function(data, status, xhr) {
+                    console.log(typeof(data));
+                    var adata = btoa(new Uint8Array(data)
+                        .reduce((x, b) => x + String.fromCharCode(b), ''));
+                    $("#requestlink").html("");
+                    var bd = new Blob([data], {type: "application/octet-string"});
+                    var dlink = document.createElement('a');
+                    dlink.download = "response.hibon";
+                    dlink.href = window.URL.createObjectURL(bd);
+                    dlink.textContent = "[ Download HiBON result ]";
+                    $("#requestlink").append(dlink);
+                    $.ajax({
+                        url: config.api_util_endpoint + "/hibon/tojson",
+                        type: "post",
+                        contentType: "application/octet-stream",
+                        data: data,
+                        processData: false,
+                        success: function(data1, status, xhr) {
+                            console.log(data1);
+                            $("#requestresult").html(JSON.stringify( data1, null, 2));                                                        
+                        },
+                        error: function(data1) {
+                            console.log("Error: ", data1);
+                        }
+                    });
+                },    
+                error: function(data) {
+                    console.log("Error: ", data);
+                },
+                complete: function(data) {
+                    $('body').removeClass('busy');
+                }
+            });
+        }
+
         function lookup(query, opt) {
             console.log("lookup start with ", query, " opt: ", opt);
             $("#tbl").html("<table class=\"table table-sm w-50\" align=\"center\"><tbody></tbody></table>");
@@ -332,6 +413,9 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="monitor-tab" data-bs-toggle="tab" data-bs-target="#monitor-tab-pane" type="button" role="tab" aria-controls="monitor-tab-pane" aria-selected="false">Monitor</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="request-tab" data-bs-toggle="tab" data-bs-target="#request-tab-pane" type="button" role="tab" aria-controls="request-tab-pane" aria-selected="false">Request</button>
+                </li>
             </ul>        
         </div>        
         <div class="tab-content flex-grow-1" id="myTabContent">
@@ -364,7 +448,7 @@
                     </div>
                     <div class="flex-grow-1 p-3 overflow-y-auto">
                         <code >
-                        <pre id="raw">
+                        <pre id="raw" class="rawresult">
                              
                         </pre>
                         </code>
@@ -397,6 +481,29 @@
                 </div>
                 </div>
             </div>    
+            </div>
+            <div class="tab-pane h-100 fade overflow-hidden" id="request-tab-pane" role="tabpanel" aria-labelledby="request-tab" tabindex="0">
+            <div class="h-100 container-fluid">
+                <div class="row">
+                    <div class="col-8 p-2 offset-2 text-end">
+                        <div class="form-floating">
+                        <textarea class="form-control form-control-sm" id="requestbody" style="height: 32em" placeholder="HiRPC request in base64 or JSON here..."></textarea>
+                        <label for="requestbody" class="form-label">HiRPC request in base64 or JSON here...</label>
+                        </div>
+                        <button type="button" class="btn btn-primary m-2 align-right" id="isendrequest"> Send </button>
+                    </div>
+                </div>
+                <div class="row h-100">
+                    <div class="col-12 h-100 scrollable overflow-y-auto position-relative">
+                        <div id="requestlink" class="text-center"></div>
+                        <code >
+                        <pre id="requestresult" class="rawresult">
+                             
+                        </pre>
+                        </code>
+                    </div>
+                </div>
+            </div>
             </div>
         </div>        
     </div>
