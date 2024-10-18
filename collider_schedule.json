@@ -103,10 +103,12 @@
         "attributes": "@safe"
       },
       "stages": ["tvm", "commit", "memory"],
-      "memory" : {
-        "args" : [
-            "memory_redundancy.wast"
-        ]
+      "extend" : {
+        "memory" : {
+          "args" : [
+                "memory_redundancy.wast"
+            ]
+        }
       },
       "timeout": 0.0
     },
