@@ -79,7 +79,6 @@ string level_color(const size_t c) pure nothrow {
 
 /// Handles the round information for the events in the Hashgraph
 class Round {
-    //    bool erased;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
     protected {
@@ -93,7 +92,6 @@ class Round {
 
     private Event[] _events;
     protected bool _decided;
-    protected bool _voted;
     private void decide() pure nothrow @nogc
     in (!_decided, "A round should only be decided once")
     do {
@@ -102,12 +100,6 @@ class Round {
 
     final bool decided() const pure nothrow @nogc {
         return _decided;
-    }
-
-    private void doVoteEpoch() pure nothrow @nogc
-    in (!_voted, "Epoch has already voted")
-    do {
-        _voted = true;
     }
 
     final const(BitMask) valid_witness() const pure nothrow @nogc {
@@ -138,7 +130,6 @@ class Round {
                 this[]
                     .until!(r => !r.majority);
 
-            const number_of_future_rounds = cast(int) list_majority_rounds.walkLength;
             BitMask not_decided_mask = BitMask(node_size.iota
                     .filter!(n => (_events[n]!is null) && !_events[n].witness.weak));
             foreach (r; list_majority_rounds.drop(1)) {
@@ -148,6 +139,7 @@ class Round {
                 not_decided_mask &= BitMask(not_decided_mask[]
                     .filter!(n => r.events[n] is null));
             }
+            const number_of_future_rounds = list_majority_rounds.walkLength;
             if (!not_decided_mask.empty && (number_of_future_rounds < 4)) {
                 return false;
             }
@@ -203,12 +195,6 @@ class Round {
         const voters = _events.filter!(e => e !is null).count;
         const voted = votes.byValue.sum;
         return !isMajority(lead_voter + voters - voted, node_size);
-    }
-
-    final const(BitMask) witness_mask() const pure nothrow {
-        return BitMask(_events
-                .filter!(e => e !is null)
-                .map!(e => e.node_id));
     }
 
     /**
@@ -427,6 +413,10 @@ class Round {
         const(Round) last_decided_round() const pure nothrow @nogc {
             return _last_decided_round;
         }
+
+        const(Round) round_to_be_collected() const pure nothrow @nogc {
+            return _round_to_be_collected;
+        }
         /**
      * Sets the round for an event and creates an new round if needed
      * Params:
@@ -488,13 +478,6 @@ class Round {
         }
 
         @nogc final const pure nothrow {
-            /**
-  * Number of round epoch in the rounder queue
-  * Returns: size of the queue
-   */
-            version (none) size_t length() {
-                return this.__opSlice.walkLength;
-            }
 
             bool isEventInLastDecidedRound(const(Event) event) {
                 if (!_last_decided_round) {
@@ -546,7 +529,7 @@ class Round {
             }
         }
         enum rounds_beyond_limit = 3;
-        void check_decide_round() {
+        void checkDecideRound() {
             import tagion.utils.Term;
 
             auto _round_to_be_decided = _last_decided_round._next;
@@ -574,7 +557,7 @@ class Round {
 
                 scope (exit) {
                     if (!_round_to_be_collected) {
-                        hashgraph._rounds.check_decide_round;
+                        hashgraph._rounds.checkDecideRound;
                         hashgraph._rounds.epochVote;
                         hashgraph._rounds.checkToCollectRound;
                     }
@@ -604,8 +587,7 @@ class Round {
         }
 
         final void epochVote() nothrow {
-            if (round_to_be_decided && !round_to_be_decided._voted) {
-                round_to_be_decided.doVoteEpoch;
+            if (round_to_be_decided && !round_to_be_decided.decided) {
                 round_to_be_decided.decide;
                 const net = hashgraph.hirpc.net;
                 const epoch_number = round_to_be_decided.number; /// Should be the epoch number not the round number
