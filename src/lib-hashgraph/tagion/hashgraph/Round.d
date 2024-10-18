@@ -476,7 +476,7 @@ class Round {
      * Params:
      *   e = event
      */
-        void set_round(Event e) nothrow
+        void setNode(Event e) nothrow
         in {
             assert(!e._round, "Round has already been added");
             assert(last_round, "Base round must be created");

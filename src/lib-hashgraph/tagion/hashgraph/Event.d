@@ -269,7 +269,7 @@ class Event {
         in ((!hasVoted), "This witness has already voted")
 
         do {
-            hashgraph._rounds.set_round(this.outer);
+            hashgraph._rounds.setNode(this.outer);
             assert(_round.previous, "Round should have a previous round");
             if (_father && _father.round.number == _round.number) {
                 _witness_seen_mask |= _father._witness_seen_mask;
@@ -387,7 +387,7 @@ class Event {
                 Event.check(channel == _mother.channel,
                         ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
-            hashgraph.front_seat(this);
+            hashgraph.frontSeat(this);
             view(this);
             hashgraph.refinement.payload(event_package);
             hashgraph._rounds.checkRoundVotes(event_package);
@@ -435,7 +435,7 @@ class Event {
                 return;
             }
         }
-        hashgraph._rounds.set_round(this);
+        hashgraph._rounds.setNode(this);
     }
 
     Round maxRound() nothrow pure @nogc {
