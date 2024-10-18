@@ -43,7 +43,7 @@ import tagion.script.common : SignedContract;
 struct EpochCreatorOptions {
     uint timeout = 250; // timeout in msecs 
     uint scrap_depth = 10;
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 @safe

@@ -30,7 +30,7 @@ import tagion.logger.ContractTracker;
 struct CollectorOptions {
     import tagion.json.JSONRecord;
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /// Topic for rejected collector inputs;

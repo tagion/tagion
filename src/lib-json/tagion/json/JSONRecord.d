@@ -14,12 +14,12 @@ class OptionException : TagionException {
     }
 }
 
-enum isJSONCommon(T) = is(T == struct) && hasMember!(T, "toJSON");
+enum isJSONRecord(T) = is(T == struct) && hasMember!(T, "toJSON");
 
 /++
  mixin for implements a JSON interface for a struct
  +/
-mixin template JSONCommon() {
+mixin template JSONRecord() {
     import tagion.errors.tagionexceptions : Check;
     import tagion.json.JSONRecord : OptionException;
     import tagion.hibon.HiBONRecord : optional, exclude, GetLabel;
@@ -39,7 +39,7 @@ mixin template JSONCommon() {
     enum isSupportedArray(T) = isArray!T && isSupported!(ElementType!T);
     enum isSupportedAssociativeArray(T) = isAssociativeArray!T && is(KeyType!T == string) && isSupported!(ForeachType!T);
     enum isSupported(T) = isOneOf!(T, ArrayElementTypes) || isNumeric!T ||
-        isSupportedArray!T || isJSONCommon!T ||
+        isSupportedArray!T || isJSONRecord!T ||
         isSupportedAssociativeArray!T;
 
     /++
@@ -307,12 +307,12 @@ unittest {
         int _int;
         uint _uint;
         Color color;
-        mixin JSONCommon;
+        mixin JSONRecord;
         mixin JSONConfig;
     }
 
     OptS opt;
-    { // Simple JSONCommon check
+    { // Simple JSONRecord check
         opt._bool = true;
         opt._string = "text";
         // opt._double=4.2;
@@ -329,7 +329,7 @@ unittest {
     static struct OptMain {
         OptS sub_opt;
         int main_x;
-        mixin JSONCommon;
+        mixin JSONRecord;
         mixin JSONConfig;
     }
 
@@ -346,7 +346,7 @@ unittest {
         assert(opt_main == opt_loaded);
     }
 
-    { // Check for bad JSONCommon file
+    { // Check for bad JSONRecord file
         OptS opt_s;
         //immutable bad_filename = fileId!OptMain("bad").fullpath;
         assertThrown!JSONException(opt_s.load(main_filename));
@@ -354,17 +354,17 @@ unittest {
 
 }
 
-unittest { // JSONCommon with array types
+unittest { // JSONRecord with array types
     //    import std.stdio;
     static struct OptArray(T) {
         T[] list;
-        mixin JSONCommon;
+        mixin JSONRecord;
         mixin JSONConfig;
     }
 
     //alias StdType=AliasSeq!(bool, int, string, Color);
 
-    { // Check JSONCommon with array of booleans
+    { // Check JSONRecord with array of booleans
         alias OptA = OptArray!bool;
         OptA opt;
         opt.list = [true, false, false, true, false];
@@ -378,7 +378,7 @@ unittest { // JSONCommon with array types
         assert(opt_loaded == opt);
     }
 
-    { // Check JSONCommon with array of string
+    { // Check JSONRecord with array of string
         alias OptA = OptArray!string;
         OptA opt;
         opt.list = ["Hugo", "Borge", "Brian", "Johnny", "Sven Bendt"];
@@ -392,7 +392,7 @@ unittest { // JSONCommon with array types
         assert(opt_loaded == opt);
     }
 
-    { // Check JSONCommon with array of integers
+    { // Check JSONRecord with array of integers
         alias OptA = OptArray!int;
         OptA opt;
         opt.list = [42, -16, 117];
@@ -409,7 +409,7 @@ unittest { // JSONCommon with array types
     {
         static struct OptSub {
             string text;
-            mixin JSONCommon;
+            mixin JSONRecord;
         }
 
         alias OptA = OptArray!OptSub;
@@ -429,7 +429,7 @@ unittest { // JSONCommon with array types
 unittest { // Check of support for associative array
     static struct S {
         string[string] names;
-        mixin JSONCommon;
+        mixin JSONRecord;
     }
 
     S s;

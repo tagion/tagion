@@ -19,7 +19,7 @@ struct TaskNames {
     string trt = "trt";
     string node_interface = "node_interface";
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 
     /// Set a prefix for the default options
     this(const string prefix) pure {

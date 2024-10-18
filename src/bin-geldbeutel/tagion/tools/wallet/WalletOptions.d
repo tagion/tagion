@@ -60,6 +60,6 @@ struct WalletOptions {
         port = 10800;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
     mixin JSONConfig;
 }

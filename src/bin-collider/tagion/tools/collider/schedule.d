@@ -28,7 +28,7 @@ struct RunState {
     string[string] envs;
     string[] args;
     double timeout;
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 struct RunUnit {
@@ -37,12 +37,12 @@ struct RunUnit {
     string[] args;
     double timeout;
 //    RunState _stages;
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 struct Schedule {
     RunUnit[string] units;
-    mixin JSONCommon;
+    mixin JSONRecord;
     mixin JSONConfig;
     auto stages() const pure nothrow {
         return units

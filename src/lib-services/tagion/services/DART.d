@@ -44,7 +44,7 @@ struct DARTOptions {
         dart_filename = prefix ~ dart_filename;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /** 

@@ -46,7 +46,7 @@ struct NodeInterfaceOptions {
 
     import tagion.json.JSONRecord;
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 ///

@@ -44,7 +44,7 @@ import tagion.logger.ContractTracker;
 enum BUFFER_TIME_SECONDS = 30;
 
 struct TranscriptOptions {
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /**

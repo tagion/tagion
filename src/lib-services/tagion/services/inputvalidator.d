@@ -48,7 +48,7 @@ struct InputValidatorOptions {
         sock_addr = contract_sock_addr(prefix ~ "CONTRACT_");
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /** 

@@ -22,7 +22,7 @@ struct HiRPCVerifierOptions {
     bool send_rejected_hirpcs = false;
     /// Which task to send rejected document to;
     string rejected_hirpcs = "";
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /// HiRPC methods

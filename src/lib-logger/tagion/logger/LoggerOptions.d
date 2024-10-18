@@ -9,5 +9,5 @@ struct LoggerOptions {
     bool to_console; /// Will duplicate logger information to the console
     uint mask; /// Logger mask
     uint trunc_size; /// Struct size in bytes (if zero the logger file is not truncated)
-    mixin JSONCommon;
+    mixin JSONRecord;
 }

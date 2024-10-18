@@ -75,7 +75,7 @@ struct ShellOptions {
         return opts;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
     mixin JSONConfig;
 }
 

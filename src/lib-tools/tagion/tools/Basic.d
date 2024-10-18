@@ -151,7 +151,7 @@ mixin template Main(alias _main, string name = null) {
  *      override_options = a list of strings formattet a "some.member.key:value"
 */
 void set_override_options(T)(ref T local_options, string[] override_options)
-if(isJSONCommon!T) {
+if(isJSONRecord!T) {
     JSONValue json = local_options.toJSON;
 
     void set_val(JSONValue j, string[] _key, string val) {

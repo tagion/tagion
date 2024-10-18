@@ -46,7 +46,7 @@ struct DARTInterfaceOptions {
         sock_addr = contract_sock_addr(prefix ~ dart_prefix);
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 
 }
 

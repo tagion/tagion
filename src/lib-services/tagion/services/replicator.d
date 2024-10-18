@@ -36,7 +36,7 @@ struct ReplicatorOptions {
         // assumeWontThrow(buildPath(folder_path, prefix));
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 enum modify_log = "modify/replicator";
 

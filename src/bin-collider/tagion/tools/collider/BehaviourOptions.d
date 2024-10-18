@@ -64,6 +64,6 @@ struct BehaviourOptions {
         //        dbin_env = "DBIN";
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
     mixin JSONConfig;
 }

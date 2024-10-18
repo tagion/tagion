@@ -43,7 +43,7 @@ struct SubscriptionServiceOptions {
 
     uint sendtimeout = 1000;
     uint sendbufsize = 4096;
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 ///

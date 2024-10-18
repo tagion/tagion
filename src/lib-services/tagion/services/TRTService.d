@@ -51,7 +51,7 @@ struct TRTOptions {
         trt_filename = prefix ~ trt_filename;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 @safe
