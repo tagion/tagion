@@ -1,6 +1,7 @@
 module tagion.wasm.WastTokenizer;
 
 import std.traits;
+import std.range;
 import tagion.basic.Debug;
 import tagion.utils.Miscellaneous : convert;
 
@@ -76,8 +77,12 @@ struct WastTokenizer {
         import std.stdio;
 
         if (!flag) {
+            import tagion.utils.Term;
+            const _line=getLine;
             assumeWontThrow((() {
                     writefln("Error:%s %s:%s:%d:%d", msg, token, type, line, line_pos);
+                writefln("%s", _line);
+                writefln("%(%c%)%s^%s", Chars.SPACE.repeat(line_start_token_pos), RED, RESET);
                     writefln("%s:%d", file, code_line);
                 })());
 
@@ -109,7 +114,7 @@ struct WastTokenizer {
 
     string getText() nothrow {
         check(type == TokenType.STRING, "Text string expected");
-        return token. stripQuotes;
+        return token.stripQuotes;
     }
 
     private string text;
@@ -160,7 +165,11 @@ struct WastTokenizer {
             mixin(code);
         }
 
-        uint line_pos() const {
+        uint line_start_token_pos() const {
+            return line_pos - cast(uint)token.length;
+        }
+        
+    uint line_pos() const {
             return pos - start_line_pos;
         }
 
@@ -247,6 +256,12 @@ struct WastTokenizer {
 
         WastTokenizer save() {
             return this;
+        }
+        
+        string getLine() const @nogc {
+            import std.string;
+            const result=text[start_line_pos..$];
+            return result[0..result.indexOf('\n')];
         }
     }
 }

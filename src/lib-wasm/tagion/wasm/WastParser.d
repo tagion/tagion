@@ -308,7 +308,7 @@ struct WastParser {
             r.nextToken;
             bool not_ended;
             scope (exit) {
-                r.check(r.type == TokenType.END || not_ended);
+                r.check(r.type == TokenType.END || not_ended, "Missing end");
                 r.nextToken;
             }
             switch (r.token) {
