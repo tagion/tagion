@@ -229,7 +229,6 @@ int _main(string[] args) {
             wasmgas.modify;
         }
         immutable data_out = wasm_writer.serialize;
-        writefln("after data_out");
         if (__verbose_switch) {
             wasm_verbose.mode = VerboseMode.STANDARD;
         }

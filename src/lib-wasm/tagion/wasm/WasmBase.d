@@ -7,7 +7,7 @@ import std.format;
 import std.meta : AliasSeq;
 import std.range.primitives : isInputRange;
 import std.stdio;
-import std.traits : ConstOf, EnumMembers, ForeachType, Unqual, getUDAs, isAssociativeArray, isFunctionPointer;
+import std.traits;
 import std.typecons : Tuple;
 import std.uni : toLower;
 import tagion.wasm.WasmException;
@@ -484,6 +484,12 @@ enum Types : ubyte {
     @("f64") F64 = 0x7C, /// f64 valtype
 }
 
+enum DataMode : ubyte {
+    ACTIVE,
+    PASSIVE,
+    ACTIVE_INDEX,
+}
+
 template toWasmType(T) {
     static if (is(T == int)) {
         enum toWasmType = Types.I32;
@@ -585,7 +591,7 @@ enum IndexType : ubyte {
     }
 }
 
-T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
+T decode(T)(immutable(ubyte[]) data, ref size_t index) pure if (isIntegral!T && !is(T == enum)) {
     size_t byte_size;
     const leb128_index = LEB128.decode!T(data[index .. $]);
     scope (exit) {
@@ -598,6 +604,13 @@ alias u32 = decode!uint;
 alias u64 = decode!ulong;
 alias i32 = decode!int;
 alias i64 = decode!long;
+
+E decode(E)(immutable(ubyte[]) data, ref size_t index) pure if (is(E == enum)) {
+    alias T = OriginalType!E;
+    const value = decode!T(data, index);
+    check((value >= E.min) && (value <= E.max), format("Value %d out of range of %s", value, E.stringof));
+    return cast(E) value;
+}
 
 string secname(immutable Section s) @safe pure {
     return format("%s_sec", toLower(s.to!string));
@@ -770,19 +783,18 @@ static assert(isInputRange!ExprRange);
             return _types;
         }
 
-        IRElement dup() const pure scope nothrow{
+        IRElement dup() const pure scope nothrow {
             IRElement result;
-            result.code=code;
-            result.level=level;
-            result._warg=_warg;
-            result._wargs=_wargs.dup;
-            result._types=_types.dup;
-            return result;        
+            result.code = code;
+            result.level = level;
+            result._warg = _warg;
+            result._wargs = _wargs.dup;
+            result._types = _types.dup;
+            return result;
         }
 
-        version(none)
-        string toString() const pure {
-        
+        version (none) string toString() const pure {
+
         }
 
     }
@@ -893,8 +905,8 @@ static assert(isInputRange!ExprRange);
                             set(elm._warg, Types.F64);
                             break;
                         default:
-                            throw new WasmExprException(format("Instruction %s is not a const", 
-                            elm.code), elm);
+                            throw new WasmExprException(format("Instruction %s is not a const",
+                                    elm.code), elm);
                         }
                     }
                     break;
@@ -905,7 +917,8 @@ static assert(isInputRange!ExprRange);
                     throw new WasmExprException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code), elm);
                     break;
                 case SYMBOL:
-                    throw new WasmExprException(format("Is a symbol and it does not have an equivalent opcode %02x", elm.code), elm);
+                    throw new WasmExprException(format("Is a symbol and it does not have an equivalent opcode %02x", elm
+                            .code), elm);
                     break;
                 }
 

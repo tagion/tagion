@@ -1,5 +1,5 @@
 module tagion.wasm.WasmWriter;
-
+import tagion.basic.Debug;
 import std.bitmanip : nativeToLittleEndian;
 import std.outbuffer;
 import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
@@ -179,11 +179,16 @@ import tagion.wasm.WasmReader;
     struct WasmSection {
         mixin template Serialize() {
             final void serialize(ref OutBuffer bout) const {
-                alias MainType = typeof(this);
-                static if (hasMember!(MainType, "guess_size")) {
+                alias This = typeof(this);
+                static if (hasMember!(This, "guess_size")) {
                     bout.reserve(guess_size);
                 }
-                foreach (i, m; this.tupleof) {
+                SerializeLoop: foreach (i, m; this.tupleof) {
+                    static if (hasMember!(This, "excluded")) {
+                        if (excluded!(i)) {
+                            continue SerializeLoop;
+                        }
+                    }
                     alias T = typeof(m);
                     static if (is(T == struct) || is(T == class)) {
                         m.serialize(bout);
@@ -676,10 +681,26 @@ import tagion.wasm.WasmReader;
         alias Code = SectionT!(CodeType);
 
         struct DataType {
+            import std.range;
+            import tagion.basic.basic : basename;
+            DataMode mode;
             uint idx;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             string base;
+            bool excluded(const size_t tuple_index)() const pure nothrow {
+                with (DataMode) final switch (mode) {
+                case ACTIVE_INDEX:
+                    return false;
+                case ACTIVE:
+                    return FieldNameTuple!(DataType)[tuple_index] == basename!idx;
+                case PASSIVE:
+                    return only(basename!idx, basename!expr)
+                        .canFind(FieldNameTuple!(DataType)[tuple_index]);
+                }
+            }
+
             this(ref const(ReaderSecType!(Section.DATA)) d) {
+                mode = d.mode;
                 idx = d.idx;
                 expr = d.expr;
                 base = d.base;

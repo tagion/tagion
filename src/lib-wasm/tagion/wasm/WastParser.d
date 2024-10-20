@@ -369,7 +369,7 @@ struct WastParser {
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
                 label = r.token;
-                writef("Memory label = %s", label);  
+                writef("Memory label = %s", label);
                 r.nextToken;
                 if (r.type == TokenType.WORD) {
                     arg = r.token;
@@ -383,21 +383,16 @@ struct WastParser {
                 return ParserStage.MEMORY;
             case "segment":
                 DataType data_type;
-                scope(exit) {
-                   writer.section!(Section.DATA).sectypes ~= data_type;
+                scope (exit) {
+                    writer.section!(Section.DATA).sectypes ~= data_type;
                 }
-                write("Segment "); 
                 r.check(stage == ParserStage.MEMORY);
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
-                //label = r.token;
-                data_type.idx=r.get!int;
-                writef(" label %s ", data_type.idx);
+                data_type.mode = DataMode.PASSIVE;
+                data_type.idx = r.get!int;
                 r.nextToken;
-                //r.check(r.type == TokenType.STRING);
-                //arg = r.token;
-                data_type.base = r.getText; 
-                writefln("arg = %s",data_type.base);
+                data_type.base = r.getText;
                 r.nextToken;
                 break;
             case "export":

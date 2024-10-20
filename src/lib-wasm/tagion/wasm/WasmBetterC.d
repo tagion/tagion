@@ -1,5 +1,7 @@
 module tagion.wasm.WasmBetterC;
 
+import tagion.basic.Debug;
+
 import std.algorithm;
 import std.array;
 import std.array;
@@ -284,6 +286,7 @@ alias check = Check!WasmBetterCException;
     }
 
     ExportType getExport(const int idx) const { //pure nothrow {
+        __write("getExport _export %s", _export is null);
         const found = _export[].find!(exp => exp.idx == idx);
         if (found.empty) {
             return ExportType.init;
@@ -343,6 +346,7 @@ alias check = Check!WasmBetterCException;
     string function_name(const int index) {
         import std.string;
 
+        __write("function_name %d", index);
         const exp = getExport(index);
         if (exp == ExportType.init) {
             return format("func_%d", index);
@@ -670,7 +674,7 @@ shared static this() {
         IR.LOCAL_GET: q{%1$s},
         IR.LOCAL_SET: q{%2$s=%1$s;},
         // State 
-        IR.RETURN : q{%1$s}, 
+        IR.RETURN: q{%1$s},
         // Const literals
         IR.I32_CONST: q{/* const i32 */},
         IR.I64_CONST: q{/* const i64 */},
@@ -803,38 +807,37 @@ shared static this() {
         IR.I64_TRUNC_F64_S: q{wasm.trunc!long(%1$s)},
         IR.I64_TRUNC_F64_U: q{wasm.trunc!ulong(%1$s)},
 
-        IR.F32_CONVERT_I32_S : q{cast(float)(%1$s)},
-        IR.F32_CONVERT_I32_U : q{cast(float)(cast(uint)%1$s)},
-        IR.F32_CONVERT_I64_S : q{cast(float)(%1$s)},
-        IR.F32_CONVERT_I64_U : q{cast(float)(cast(ulong)%1$s)},
-        IR.F64_CONVERT_I32_S : q{cast(double)(%1$s)},
-        IR.F64_CONVERT_I32_U : q{cast(double)(cast(uint)%1$s)},
-        IR.F64_CONVERT_I64_S : q{cast(double)(%1$s)},
-        IR.F64_CONVERT_I64_U : q{cast(double)(cast(ulong)%1$s)},
+        IR.F32_CONVERT_I32_S: q{cast(float)(%1$s)},
+        IR.F32_CONVERT_I32_U: q{cast(float)(cast(uint)%1$s)},
+        IR.F32_CONVERT_I64_S: q{cast(float)(%1$s)},
+        IR.F32_CONVERT_I64_U: q{cast(float)(cast(ulong)%1$s)},
+        IR.F64_CONVERT_I32_S: q{cast(double)(%1$s)},
+        IR.F64_CONVERT_I32_U: q{cast(double)(cast(uint)%1$s)},
+        IR.F64_CONVERT_I64_S: q{cast(double)(%1$s)},
+        IR.F64_CONVERT_I64_U: q{cast(double)(cast(ulong)%1$s)},
 
-        IR.F64_PROMOTE_F32 : q{cast(double)(%1$s)},
-        IR.F32_DEMOTE_F64 : q{cast(float)(%1$s)},
+        IR.F64_PROMOTE_F32: q{cast(double)(%1$s)},
+        IR.F32_DEMOTE_F64: q{cast(float)(%1$s)},
 
-        IR.I32_REINTERPRET_F32 : q{wasm.reinterpret32(%1$s)},
-        IR.F32_REINTERPRET_I32 : q{wasm.reinterpret32(%1$s)},
-        IR.I64_REINTERPRET_F64 : q{wasm.reinterpret64(%1$s)},
-        IR.F64_REINTERPRET_I64 : q{wasm.reinterpret64(%1$s)},
+        IR.I32_REINTERPRET_F32: q{wasm.reinterpret32(%1$s)},
+        IR.F32_REINTERPRET_I32: q{wasm.reinterpret32(%1$s)},
+        IR.I64_REINTERPRET_F64: q{wasm.reinterpret64(%1$s)},
+        IR.F64_REINTERPRET_I64: q{wasm.reinterpret64(%1$s)},
         // Compare f32
-        IR.F32_EQ : q{(%2$s == %1$s)},
-        IR.F32_NE : q{(%2$s != %1$s)},
-        IR.F32_LT : q{(%2$s < %1$s)},
-        IR.F32_GT : q{(%2$s > %1$s)},
-        IR.F32_LE : q{(%2$s <= %1$s)},
-        IR.F32_GE : q{(%2$s >= %1$s)},
+        IR.F32_EQ: q{(%2$s == %1$s)},
+        IR.F32_NE: q{(%2$s != %1$s)},
+        IR.F32_LT: q{(%2$s < %1$s)},
+        IR.F32_GT: q{(%2$s > %1$s)},
+        IR.F32_LE: q{(%2$s <= %1$s)},
+        IR.F32_GE: q{(%2$s >= %1$s)},
 
         // Compare f64
-        IR.F64_EQ : q{(%2$s == %1$s)},
-        IR.F64_NE : q{(%2$s != %1$s)},
-        IR.F64_LT : q{(%2$s < %1$s)},
-        IR.F64_GT : q{(%2$s > %1$s)},
-        IR.F64_LE : q{(%2$s <= %1$s)},
-        IR.F64_GE : q{(%2$s >= %1$s)},
-
+        IR.F64_EQ: q{(%2$s == %1$s)},
+        IR.F64_NE: q{(%2$s != %1$s)},
+        IR.F64_LT: q{(%2$s < %1$s)},
+        IR.F64_GT: q{(%2$s > %1$s)},
+        IR.F64_LE: q{(%2$s <= %1$s)},
+        IR.F64_GE: q{(%2$s >= %1$s)},
 
     ];
 }

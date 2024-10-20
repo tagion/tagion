@@ -1,5 +1,7 @@
 module tagion.wasm.WasmReader;
 
+import tagion.basic.Debug;
+
 import std.array : join;
 import std.bitmanip : Endian, peek, binread = read, binwrite = write;
 import std.conv : emplace, to;
@@ -212,7 +214,8 @@ import tagion.wasm.WasmException;
                     case S:
                             static if (S is Section.DATA) {
                                 //section_info=format("%s", sec!S);
-                                writefln("!! %s", sec!S.info);
+                                //writefln("!! %s", sec!S.info);
+                                __write("!! %s", section);
                             }
                             break SectionCase;
                         }
@@ -307,6 +310,7 @@ import tagion.wasm.WasmException;
                 final string info() const {
                     string[] result;
                     foreach (i, sec; opSlice.enumerate) {
+                        __write("%s i=%d %s", __FUNCTION__, i, sec);
                         result ~= format("\t%3d %s", i, sec).idup;
                     }
                     return result.join("\n");
@@ -674,20 +678,38 @@ import tagion.wasm.WasmException;
                 immutable(ubyte[]) expr;
                 immutable(char[]) base; // init value
                 immutable(size_t) size;
+                immutable DataMode mode;
 
                 this(immutable(ubyte[]) data) pure {
                     size_t index;
-                    idx = u32(data, index);
-                    auto range = ExprRange(data[index .. $]);
-                    while (!range.empty) {
-                        const elm = range.front;
-                        if ((elm.code is IR.END) && (elm.level == 0)) {
+                    mode = decode!(DataMode)(data, index);
+                    uint _idx;
+                    immutable(ubyte)[] _data;
+                    void initialize() {
+                        final switch (mode) {
+                        case DataMode.ACTIVE_INDEX:
+                            _idx = u32(data, index);
+                            goto case;
+                        case DataMode.ACTIVE:
+                            auto range = ExprRange(data[index .. $]);
+                            while (!range.empty) {
+                                const elm = range.front;
+                                if ((elm.code is IR.END) && (elm.level == 0)) {
+                                    break;
+                                }
+                                range.popFront;
+                            }
+                            _data = range.data[0 .. range.index];
+                            index += range.index;
+                            break;
+                        case DataMode.PASSIVE:
                             break;
                         }
-                        range.popFront;
                     }
-                    expr = range.data[0 .. range.index];
-                    index += range.index;
+
+                    initialize;
+                    idx = _idx;
+                    expr = _data;
                     base = Vector!char(data, index);
                     size = index;
                 }
