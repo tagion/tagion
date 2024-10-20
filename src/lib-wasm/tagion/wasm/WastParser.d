@@ -88,7 +88,7 @@ struct WastParser {
                 result = r.token
                     .to!int
                     .ifThrown!ConvException(-1);
-                r.check(result >= 0);
+                r.check(result >= 0, "Local register expected");
             }
             return result;
         }
@@ -128,7 +128,7 @@ struct WastParser {
         ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
             r.check(r.type == TokenType.BEGIN);
             scope (exit) {
-                r.check(r.type == TokenType.END);
+                r.check(r.type == TokenType.END, "Expect an end ')'");
                 r.nextToken;
             }
             r.nextToken;
@@ -186,7 +186,6 @@ struct WastParser {
                     case CALL:
                         r.nextToken;
                         const idx = getFuncIdx();
-                        //writefln("CALL %s %d", r.token, idx);
                         label = r.token;
                         r.nextToken;
                         while (r.type == TokenType.BEGIN) {
@@ -250,7 +249,6 @@ struct WastParser {
                         default:
                             r.check(0, "Bad const instruction");
                         }
-                        //label = r.token;
                         r.nextToken;
                         break;
                     case END:
@@ -273,7 +271,7 @@ struct WastParser {
                         }
                         switch (instr.wast) {
                         case PseudoWastInstr.local:
-                            r.check(labels.length >= 1);
+                            r.check(labels.length >= 1, "Local types expected");
                             if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
                                 params[labels[0]] = cast(int) locals.length;
                                 locals ~= labels[1].getType;
