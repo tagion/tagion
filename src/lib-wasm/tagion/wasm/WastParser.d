@@ -37,6 +37,7 @@ struct WastParser {
     alias Function = WasmSection.Function;
     alias Code = WasmSection.Code;
     alias Memory = WasmSection.Memory;
+    alias MemoryType = WasmSection.MemoryType;
     alias GlobalType = WasmSection.GlobalType;
     alias FuncType = WasmSection.FuncType;
     alias TypeIndex = WasmSection.TypeIndex;
@@ -363,6 +364,10 @@ struct WastParser {
                 r.nextToken;
                 return ParserStage.RESULT;
             case "memory":
+                MemoryType memory_type;
+                scope(exit) {
+                    writer.section!(Section.MEMORY).sectypes ~= memory_type;
+                }
                 r.check(stage == ParserStage.MODULE);
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
@@ -373,6 +378,14 @@ struct WastParser {
                     arg = r.token;
                     writef("arg = %s", arg);
                     r.nextToken;
+                    memory_type.limit.lim = Limits.RANGE;
+                    memory_type.limit.to = arg.to!uint;
+                    memory_type.limit.from = label.to!uint;
+                    
+                }
+                else {
+                    memory_type.limit.lim = Limits.RANGE;
+                    memory_type.limit.to = label.to!uint;
                 }
                 writefln("Type %s", r.type);
                 while (r.type == TokenType.BEGIN) {
