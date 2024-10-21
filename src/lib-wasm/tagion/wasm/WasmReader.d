@@ -674,7 +674,7 @@ import tagion.wasm.WasmException;
             alias Code = SectionT!(CodeType);
 
             struct DataType {
-                immutable uint idx;
+                immutable uint memidx;
                 immutable(ubyte[]) expr;
                 immutable(char[]) base; // init value
                 immutable(size_t) size;
@@ -683,12 +683,12 @@ import tagion.wasm.WasmException;
                 this(immutable(ubyte[]) data) pure {
                     size_t index;
                     mode = decode!(DataMode)(data, index);
-                    uint _idx;
+                    uint _memidx;
                     immutable(ubyte)[] _data;
                     void initialize() {
                         final switch (mode) {
                         case DataMode.ACTIVE_INDEX:
-                            _idx = u32(data, index);
+                            _memidx = u32(data, index);
                             goto case;
                         case DataMode.ACTIVE:
                             auto range = ExprRange(data[index .. $]);
@@ -703,13 +703,15 @@ import tagion.wasm.WasmException;
                             index += range.index;
                             break;
                         case DataMode.PASSIVE:
+                            _memidx = u32(data, index);
                             break;
                         }
                     }
 
                     initialize;
-                    idx = _idx;
+                    memidx = _memidx;
                     expr = _data;
+                    __write("%s idx=%d data.length=%d index=%d", __FUNCTION__, memidx, data.length, index);
                     base = Vector!char(data, index);
                     size = index;
                 }

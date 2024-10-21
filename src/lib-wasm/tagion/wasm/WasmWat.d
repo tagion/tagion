@@ -260,13 +260,23 @@ alias check = Check!WatException;
 
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
-        //        auto _data=*mod[Section.DATA];
-        foreach (d; _data[]) {
-            output.writefln("%s(data (", indent);
-            auto expr = d[];
-            const local_indent = indent ~ spacer;
-            block(expr, local_indent ~ spacer);
-            output.writefln(`%s) "%s")`, local_indent, d.base);
+        foreach (idx, d; _data[].enumerate) {
+            output.writefln("%s", d);
+            output.writef("%s(data (;%d;) ", indent, idx);
+            final switch (d.mode) {
+            case DataMode.ACTIVE_INDEX:
+                goto case;
+            case DataMode.ACTIVE:
+                output.write(" (");
+                auto expr = d[];
+                const local_indent = indent ~ spacer;
+                block(expr, local_indent ~ spacer);
+                output.writef("%s)", local_indent);
+                break;
+            case DataMode.PASSIVE:
+                output.writef("(memory %d)", d.memidx); 
+            }
+            output.writefln(` "%s")`, d.base);
         }
     }
 

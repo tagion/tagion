@@ -401,7 +401,7 @@ struct WastParser {
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
                 data_type.mode = DataMode.PASSIVE;
-                data_type.idx = r.get!int;
+                data_type.memidx = r.get!int;
                 r.nextToken;
                 data_type.base = r.getText;
                 r.nextToken;

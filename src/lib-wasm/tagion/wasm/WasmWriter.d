@@ -683,8 +683,9 @@ import tagion.wasm.WasmReader;
         struct DataType {
             import std.range;
             import tagion.basic.basic : basename;
+
             DataMode mode;
-            uint idx;
+            uint memidx;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             string base;
             bool excluded(const size_t tuple_index)() const pure nothrow {
@@ -692,16 +693,16 @@ import tagion.wasm.WasmReader;
                 case ACTIVE_INDEX:
                     return false;
                 case ACTIVE:
-                    return FieldNameTuple!(DataType)[tuple_index] == basename!idx;
+                    return FieldNameTuple!(DataType)[tuple_index] == basename!memidx;
                 case PASSIVE:
-                    return only(basename!idx, basename!expr)
+                    return only(basename!expr)
                         .canFind(FieldNameTuple!(DataType)[tuple_index]);
                 }
             }
 
             this(ref const(ReaderSecType!(Section.DATA)) d) {
                 mode = d.mode;
-                idx = d.idx;
+                memidx = d.memidx;
                 expr = d.expr;
                 base = d.base;
             }
