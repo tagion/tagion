@@ -12,7 +12,7 @@ import tagion.replicator.RecorderBlock;
 import tagion.services.messages;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.basic.Types : FileExtension;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import std.path : buildPath, setExtension;
 import std.stdio;
 import std.format;

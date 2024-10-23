@@ -13,7 +13,7 @@ import std.exception : ifThrown;
 import core.stdc.stdio : printf;
 import tagion.basic.Message;
 import tagion.basic.Types : FileExtension, hasExtension;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONRecord : isHiBONRecord;

@@ -57,7 +57,7 @@ sequenceDiagram
     participant TRT_File
     participant DART_Service
     participant DART_File
-    tagionshell ->> DARTInterface: search request
+    tagionshell ->> DARTInterface: trt.dartRead request
     DARTInterface ->> TRT_Service: [if TRT enabled] send(trtHiRPCRR, document)
     TRT_Service ->> TRT_Service: convert document into trt_indices
     TRT_Service ->> TRT_File: loads(trt_indices)

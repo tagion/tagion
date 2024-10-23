@@ -5,7 +5,7 @@ import std.exception;
 import std.format;
 import std.conv;
 
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.errors.tagionexceptions : TagionException;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;

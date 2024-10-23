@@ -11,7 +11,7 @@ nothrow {
         if (val == 0) {
             return T.sizeof * 8;
         }
-        return 31 - bsr(val);
+        return T(T.sizeof*8-1) - T(bsr(val));
     }
 
     T ctz(T)(T val) if (isIntegral!T) {
@@ -24,7 +24,7 @@ nothrow {
 
 T div(T)(T x, T y) if (isIntegral!T) {
     static if (isSigned!T) {
-        error(!(x == T.min && y == -1), "Overflow");
+        error(!(x == T.min && y == T(-1)), "Overflow (%d / %d)", x, y);
     }
     error(y != 0, "Division with zero");
 
@@ -33,7 +33,8 @@ T div(T)(T x, T y) if (isIntegral!T) {
 
 T rem(T)(T x, T y) if (isIntegral!T) {
     static if (isSigned!T) {
-        error(!(x == T.min && y == -1), "Overflow");
+        if (x == T.min && y == T(-1)) return T(0);
+        error(!(x == T.min && y == T(-1)), "Overflow (%d %% %d)", x, y);
     }
     error(y != 0, "Division with zero");
 
@@ -47,6 +48,15 @@ void error(const bool flag, string msg, string file = __FILE__, size_t line = __
         throw new Exception(msg, file, line);
     }
 }
+
+void error(Args...)(const bool flag, string fmt, Args args, string file = __FILE__, size_t line = __LINE__) {
+    import std.exception;
+    import std.format;
+    if (!flag) {
+        throw new Exception(format(fmt, args), file, line);
+    }
+}
+
 
 void assert_trap(E)(lazy E expression, string msg = null, string file = __FILE__, size_t line = __LINE__) {
     import std.exception : assertThrown;

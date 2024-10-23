@@ -206,7 +206,7 @@ struct TranscriptService {
                         v.value.epoch.signs ~= single_vote.signed_bullseye;
                     }
                     else {
-                        import tagion.basic.ConsensusExceptions;
+                        import tagion.errors.ConsensusExceptions;
 
                         throw new ConsensusException(format("Bullseyes not the same on epoch %s", v
                                 .value.epoch
@@ -270,7 +270,7 @@ struct TranscriptService {
                 import std.datetime;
                 import tagion.utils.StdTime;
 
-                const max_time = sdt_t((SysTime(cast(long)epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
+                const max_time = sdt_t((SysTime(cast(const long)epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
                         .stdTime);
 
                 foreach (doc; tvm_contract_outputs.outputs) {

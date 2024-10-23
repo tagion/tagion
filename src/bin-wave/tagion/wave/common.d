@@ -9,7 +9,7 @@ import std.sumtype;
 import std.range;
 import std.algorithm;
 
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.services.options;

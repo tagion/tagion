@@ -128,7 +128,7 @@ int main()
     log("Hello NNGD!");
     log("Pool req-rep test in async mode");
 
-    string uri = "tcp://127.0.0.1:31200";
+    string uri = "tcp://127.0.0.1:31206";
     immutable string[] tags = ["TAG0", "TAG1", "TAG2", "TAG3"];
     try{ 
         worker_context ctx;

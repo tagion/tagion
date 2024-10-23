@@ -14,7 +14,8 @@ struct ShellOptions {
     string contract_addr_prefix = "CONTRACT_";
     string dart_addr_prefix = "DART_";
     string shell_uri = "http://0.0.0.0:8080";
-    string monitor_pub_uri = "tcp://127.0.0.1:8081";
+    string monitor_pub_uri = "tcp://0.0.0.0:8082";
+    string monitor_sub_uri = "tcp://127.0.0.1:8082";
     string recorder_subscription_tag = "recorder";
     string dart_subscription_task_prefix = "Node_0_";
     string trt_subscription_tag = "trt_created";
@@ -29,13 +30,18 @@ struct ShellOptions {
     string sysinfo_endpoint = "/sysinfo";
     string selftest_endpoint = "/selftest";
     string version_endpoint = "/version";
-    string default_i2p_wallet = "./wallets/wallet1.json";
+    string lookup_endpoint = "/lookup";
+    string util_endpoint = "/util";
+    string default_i2p_wallet = "wallets/wallet1.json";
     string default_i2p_wallet_pin = "0001";
+    string webroot="/tmp/webapp";
+    string webstaticdir="static";
     uint number_of_nodes = 5;
     uint sock_recvtimeout = 10000;
     uint sock_recvdelay = 10;
     uint sock_connectretry = 32;
     uint dartcache_size = 4096;
+    uint common_socket_delay = 500;
     double dartcache_ttl_msec = 30.0;
     string mode0_prefix = "Node_%d_";
     bool cache_enabled = false; // if to use caches
@@ -48,9 +54,7 @@ struct ShellOptions {
 
     void setDefault() nothrow {
         tagion_subscription_addr = contract_sock_addr("SUBSCRIPTION_");
-        version(TAGIONSHELL_WEB_SOCKET) {
-            ws_pub_uri = "ws://0.0.0.0:8080"~shell_api_prefix~"/subscribe";
-        }
+        ws_pub_uri = "ws://0.0.0.0:8080"~shell_api_prefix~"/subscribe";
     }
 
     /// Gives a new node address each time it is called

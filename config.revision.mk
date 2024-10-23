@@ -1,5 +1,5 @@
 REVISION_FILE?=$(DBUILD)/revision.mixin
-DFLAGS+=$(DIMPORTFILE)$(DBUILD)
+DIMPORTFILES+=$(DBUILD)
 
 GIT_BRANCH:=${shell git rev-parse --abbrev-ref HEAD}
 GIT_HASH:=${shell git rev-parse HEAD}

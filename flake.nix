@@ -51,8 +51,9 @@
         });
 
       devShells = forAllSystems (pkgs: {
-        # inherit (self.checks.${pkgs.system}.pre-commit-check) shellHook;
+
         default = pkgs.mkShell {
+          inherit (self.checks.${pkgs.system}.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
             self.packages.${pkgs.system}.default.buildInputs
             self.packages.${pkgs.system}.default.nativeBuildInputs
@@ -68,11 +69,11 @@
             dtools
             dfmt-pull.legacyPackages.${pkgs.system}.dlang-dfmt
             graphviz
-            dstep
             wasmer # wasm-executor
             clang # used for wasm compilation
             wabt # conversion between wat <-> wasm
           ]
+          ++ lib.optionals stdenv.isLinux [ dstep ]
           ++ lib.optionals stdenv.isx86_64 [ dmd ];
         };
       });

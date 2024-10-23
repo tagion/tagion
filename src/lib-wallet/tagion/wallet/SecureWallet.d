@@ -29,7 +29,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 
 import tagion.Keywords;
 import tagion.basic.Message;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.communication.HiRPC;
 import tagion.crypto.Cipher;
 import tagion.crypto.random.random;
@@ -465,6 +465,7 @@ struct SecureWallet(Net : SecureNet) {
      * Creates HiRPC to request an wallet update
      * Returns: The command to the the update
      */
+    deprecated("Hirpc search method is deprecated")
     const(HiRPC.Sender) getRequestUpdateWallet(HiRPC hirpc = HiRPC(null)) const {
         auto h = new HiBON;
         h = account.derivers.byKey.map!(p => cast(Buffer) p);
@@ -1036,7 +1037,7 @@ struct SecureWallet(Net : SecureNet) {
         import std.typecons;
 
         const pkey = _net.pubkey;
-        return cast(TypedefType!Pubkey)(pkey);
+        return cast(const(TypedefType!Pubkey))(pkey);
     }
 
     struct DeriverState {
@@ -1335,8 +1336,6 @@ unittest {
     // create the response containing the two output bills without the original locked bill.
     HiBON params = new HiBON;
 
-    import std.stdio;
-    import tagion.hibon.HiBONJSON;
 
     const bills_in_dart = bills ~ wallet.account.requested.byValue.array;
     foreach (i, bill; bills_in_dart) {
@@ -1773,6 +1772,7 @@ unittest {
 
     const dart_receiver = hirpc.receive(req);
 
+    pragma(msg, "deprecated search hirpc method");
     HiBON searchDB(Document owner_doc) {
         Buffer[] owner_pkeys;
         foreach (owner; owner_doc[]) {

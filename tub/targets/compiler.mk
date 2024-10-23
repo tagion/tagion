@@ -22,20 +22,28 @@ endif
 
 # Define flags for gdc other
 ifeq ($(COMPILER),gdc)
-DOPT	= -O2
+DOPT    = -O2
 LINKERFLAG= -Xlinker
-OUTPUT	= -o
-HF		= -fintfc-file=
-DF		= -fdoc-file=
+DOUT  = -o
+HF      = -fintfc-file=
+DF      = -fdoc-file=
 NO_OBJ	= -fsyntax-only
 DDOC_MACRO= -fdoc-inc=
-else
-DOPT	= -O
+else ifeq ($(COMPILER),ldc)
+DOPT    = -O3
 LINKERFLAG= -L
-OUTPUT	= -of
-HF		= -Hf
-DF		= -Df
-DD		= -Dd
+DOUT  = -of
+HF      = -Hf
+DF      = -Df
+DD      = -Dd
+DDOC_MACRO=
+else
+DOPT    = -O
+LINKERFLAG=-L
+DOUT  = -of
+HF      = -Hf
+DF      = -Df
+DD      = -Dd
 DDOC_MACRO=
 endif
 
@@ -61,11 +69,13 @@ DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
 DINCIMPORT=-i
 DSTATICLIB=--lib
 DSHAREDLIB=--shared
-OUTPUTDIR = --od
+DOUTDIR = --od
 FULLY_QUALIFIED = -oq
 DDEBUG_DEFAULTLIB::=--link-defaultlib-debug
 DWARNERROR::=-w
 DWARNINFO::=--wi
+CPP_FLAG := -P
+GEN_CPP_HEADER_FILE::=--HCf
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -83,7 +93,8 @@ DCOV ?=-cov
 DINCIMPORT=-i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
-OUTPUTDIR = -od
+DOUTDIR = -od
+CPP_FLAG := -P
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname
@@ -103,10 +114,11 @@ DIMPORTFILE=-J
 DINCIMPORT=-i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
-OUTPUTDIR = -od
+DOUTDIR = -od
 VERRORS=-verrors=context
 DWARNERROR::=-w
 DWARNINFO::=-wi
+GEN_CPP_HEADER_FILE::=-HCf
 endif
 
 DIP1000 := $(DIP)1000
@@ -124,9 +136,15 @@ DDEBUG_FLAGS+=$(DDEBUG)
 DDEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
 DDEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
 
+ifdef RELEASE
+DFLAGS+=$(RELEASE_DFLAGS)
+endif
+
 ifdef DEBUG_ENABLE
 DFLAGS+=$(DDEBUG_FLAGS)
 LDFLAGS+=$(LD_EXPORT_DYN)
+else
+LDFLAGS+=$(LD_STRIP)
 endif
 
 ifdef WARNINGS
@@ -152,7 +170,7 @@ env-compiler:
 	${call log.kvp, COMPILER, $(COMPILER)}
 	${call log.kvp, ARCH, $(ARCH)}
 	${call log.kvp, MODEL, $(MODEL)}
-	${call log.kvp, OUTPUT, $(OUTPUT)}
+	${call log.kvp, DOUT, $(DOUT)}
 	${call log.kvp, HF, $(HF)}
 	${call log.kvp, DF, $(DF)}
 	${call log.kvp, NO_OBJ, $(NO_OBJ)}
@@ -175,9 +193,12 @@ env-compiler:
 	${call log.kvp, DEXPORT_DYN, $(DEXPORT_DYN)}
 	${call log.kvp, DCOV, $(DCOV)}
 	${call log.kvp, DIMPORTFILE, $(DIMPORTFILE)}
+	${call log.line}
+	${call log.kvp, DEBUG_ENABLE, $(DEBUG_ENABLE)}
 	${call log.kvp, DDEBUG_FLAGS, "$(DDEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
-	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
+	${call log.kvp, DVERSIONS, "$(DVERSIONS)"}
+	${call log.kvp, DDEBUG_VERSIONS, "$(DDEBUG_VERSIONS)"}
 	${call log.close}
 
 env: env-compiler

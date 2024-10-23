@@ -17,7 +17,6 @@ int main(string[] args) {
     import dart_test = tagion.testbench.dart_test;
     import double_spend = tagion.testbench.double_spend;
     import epoch_creator = tagion.testbench.epoch_creator;
-    import hashgraph_swap = tagion.testbench.hashgraph_swap;
     import hashgraph_test = tagion.testbench.hashgraph_test;
     import run_fiber_epoch = tagion.testbench.hashgraph.run_fiber_epoch;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
@@ -43,6 +42,7 @@ int main(string[] args) {
     import wallet_test = tagion.testbench.testtools.wallet_test;
     import epoch_shutdown = tagion.testbench.services.epoch_shutdown;
     import node_interface = tagion.testbench.services.node_interface;
+    import remote_sample = tagion.testbench.e2e.remote_sample;
 
     alias alltools = AliasSeq!(
         collector,
@@ -60,7 +60,6 @@ int main(string[] args) {
         dart_sync_stress,
         dart_service,
         hashgraph_test,
-        hashgraph_swap,
         tvm_betterc,
         epoch_creator,
         transcript_service,
@@ -84,6 +83,7 @@ int main(string[] args) {
         wallet_test,
         epoch_shutdown,
         node_interface,
+        remote_sample,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

@@ -136,6 +136,8 @@ struct recordType {
     string code; /// This is mixed after the Document constructor
 }
 
+struct disableCTOR;
+
 struct disableSerialize;
 enum isSerializeDisabled(T) = hasUDA!(T, disableSerialize);
 /++
@@ -283,10 +285,10 @@ mixin template HiBONRecord(string CTOR = "") {
     //    import tagion.hibon.HiBONException : check;
     import tagion.basic.Message : message;
     import tagion.basic.basic : CastTo, basename;
-    import tagion.basic.tagionexceptions : Check;
+    import tagion.errors.tagionexceptions : Check;
     import tagion.hibon.HiBONException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, HiBONKeys, isSpecialKeyType,
-        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled;
+        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled,  disableCTOR;
     import tagion.hibon.HiBONBase : isKey, TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONSerialize;
@@ -368,6 +370,11 @@ mixin template HiBONRecord(string CTOR = "") {
                             set(index, e.toHiBON);
                         }
                     }
+                    else static if (isPointer!ElementT) {
+                        if (e !is null) {
+                            set(index, e.toDoc);
+                        }
+                    }
                     else static if (isInputRange!ElementT) {
                         set(index, toList(e));
                     }
@@ -423,7 +430,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         format("Label for %s can not be empty", default_name));
                 static if (!exclude_flag) {
                     static if (HiBON.Value.hasType!UnqualT) {
-                        hibon[name] = cast(BaseT) m;
+                        hibon[name] = ((x) @trusted => cast(BaseT) x)(m);
                     }
                     else static if (isHiBON!BaseT) {
                         hibon[name] = m.toHiBON;
@@ -450,6 +457,9 @@ mixin template HiBONRecord(string CTOR = "") {
                                     name, BaseT.stringof));
                             hibon[name] = cast(BaseT) m;
                         }
+                    }
+                    else static if (isPointer!BaseT) {
+                        hibon[name] = m.toDoc;
                     }
                     else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
                         alias BaseU = TypedefBase!(ForeachType!(UnqualT));
@@ -490,56 +500,18 @@ mixin template HiBONRecord(string CTOR = "") {
         mixin(CTOR);
     }
 
-    version (none) {
-        template GetKeyName(uint i) {
-            static if (hasUDA!(this.tupleof[i], label)) {
-                alias label = GetLabel!(this.tupleof[i]);
-                enum GetKeyName = label.name;
-            }
-            else {
-                enum GetKeyName = FieldNameTuple!This[i];
-            }
-        }
-
-        template GetTupleIndex(string name, size_t index = 0) {
-            static if (index == This.tupleof.length) {
-                enum GetTupleIndex = -1;
-            }
-            else static if (name == GetKeyName!index) {
-                enum GetTupleIndex = index;
-            }
-            else {
-                enum GetTupleIndex = GetTupleIndex!(name, index + 1);
-            }
-        }
-        /++
-     Returns:
-     A sorted list of Record keys
-     +/
-        protected static string[] _keys() pure nothrow {
-            import std.algorithm;
-            import tagion.hibon.HiBONBase : less_than;
-
-            string[] result;
-            static if (hasUDA!(This, recordType) && (getUDAs!(This, recordType)[0].name.length > 0)) {
-                result ~= TYPENAME;
-            }
-            static foreach (i; 0 .. Fields!(This).length) {
-                result ~= GetKeyName!i;
-            }
-            result.sort!((a, b) => less_than(a, b));
-
-            return result;
-        }
-
-        enum keys = _keys;
-    }
     mixin HiBONKeys;
     static if (!NO_DEFAULT_CTOR) {
         @safe this(const HiBON hibon) pure {
             this(Document(hibon.serialize));
         }
 
+        static if (CTOR.length is 0 && !hasUDA!(This, disableCTOR)) {
+            this(inout Fields!This args) pure nothrow inout {
+
+                this.tupleof = args;
+            }
+        }
         @safe this(const Document doc) pure {
             static if (HAS_TYPE) {
                 Check!HiBONRecordTypeException(doc.hasMember(TYPENAME), "Missing HiBON type");
@@ -568,7 +540,6 @@ mixin template HiBONRecord(string CTOR = "") {
                     alias UnqualU = Unqual!MemberU;
                     MemberU[] result;
                     if (doc.isArray) {
-                        //result.length = doc.length;
                         result = doc[].map!(e => e.get!MemberU).array;
                     }
                     else {
@@ -677,7 +648,6 @@ mixin template HiBONRecord(string CTOR = "") {
             enum do_verify = hasMember!(This, "verify") && isCallable!(verify); // && __traits(compiles, this.verify());
 
             static if (do_verify) {
-                //pragma(msg, "do_verify ", (functionAttributes!(this.verify) & FunctionAttribute.const_) == FunctionAttribute.const_, " Attribute ", functionAttributes!(this.verify), " pure_ ",FunctionAttribute.pure_);
                 static assert(__traits(compiles, this.verify()),
                         format("%s.verify() should be const pure nothrow", This.stringof));
                 scope (exit) {
@@ -772,6 +742,10 @@ mixin template HiBONRecord(string CTOR = "") {
                         else static if (is(BaseT == class)) {
                             const sub_doc = Document(doc[name].get!Document);
                             m = new BaseT(sub_doc);
+                        }
+                        else static if (isPointer!BaseT) {
+                            const sub_doc = Document(doc[name].get!Document);
+                            m = new PointerTarget!BaseT(sub_doc);
                         }
                         else static if (isInputRange!BaseT || isAssociativeArray!BaseT) {
                             Document sub_doc;
@@ -1797,4 +1771,70 @@ unittest {
     const hibon_serialize = s.toHiBON.serialize;
     assert(s_serialize == hibon_serialize);
 
+}
+
+unittest {
+    import std.typecons;
+    import std.format;
+    import std.range;
+
+    @recordType("RefS") 
+    static struct RefS {
+        string text;
+        int zoom;
+        mixin HiBONRecord;
+    }
+
+    static struct IS {
+        immutable(RefS)* refs;
+        mixin HiBONRecord;
+    }
+
+    { // Single pointer element
+        IS s;
+        s.refs = new RefS("text", 10);
+        const s_doc = s.toDoc;
+        const s_expected = IS(s_doc);
+        assert(s.serialize == s_expected.serialize);
+        auto h = s.toHiBON;
+        assert(s.serialize == h.serialize);
+        assert(s.toJSON == s_expected.toJSON);
+    }
+    static struct AS {
+        immutable(RefS)*[] refs;
+        mixin HiBONRecord;
+    }
+
+    { // Array of pointers
+        AS s;
+        const i = 3;
+        s.refs = 3.iota.map!(i => new immutable(RefS)(format("text_%d", i), i)).array;
+        const s_doc = s.toDoc;
+        const s_expected = AS(s_doc);
+        assert(s.serialize == s_expected.serialize);
+        auto h = s.toHiBON;
+        assert(s.serialize == h.serialize);
+        assert(s.toJSON == s_expected.toJSON);
+
+    }
+
+    { // Sparsed array of pointers
+        AS s;
+        const i = 3;
+        static immutable(RefS)* create(const int i) {
+            if ((i % 2) == 0) {
+                return new immutable(RefS)(format("text_%d", i), i);
+            }
+            return null;
+        }
+
+        s.refs = 3.iota.map!create.array;
+        const s_doc = s.toDoc;
+        const s_expected = AS(s_doc);
+        assert(s.serialize == s_expected.serialize);
+        auto h = s.toHiBON;
+        assert(s.serialize == h.serialize);
+        assert(s.toJSON == s_expected.toJSON);
+
+    }
 }

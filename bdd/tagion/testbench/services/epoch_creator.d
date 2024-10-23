@@ -34,8 +34,8 @@ import tagion.utils.pretend_safe_concurrency;
 enum feature = Feature(
             "EpochCreator service",
             [
-        "This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
-]);
+            "This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
+            ]);
 
 alias FeatureContext = Tuple!(
         SendPayloadAndCreateEpoch, "SendPayloadAndCreateEpoch",

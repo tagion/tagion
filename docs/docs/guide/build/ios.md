@@ -1,12 +1,13 @@
 # Cross compilling iOS
 
 Tagion libmobile is a subset of the tagion modules which can be cross compiled for iOS.
-Compilation for iOS is only supported with OSX as a host.
+Compilation for iOS is only supported with OSX/MacOS as a host.
 
 
 ## Setup
 
-1. Install build tools using brew
+1. Install build tools using brew  
+*Some tools like `make` are already distributed with OSX, but they're too old and will not work.*  
 
 ```
 brew install autoconf libtool m4 automake make pkg-config ldc
@@ -27,7 +28,7 @@ make DC=ldc2 PLATFORM=arm64-apple-ios libmobile
 ## Available platforms 
 
 :::info
-Cross compiling from one architecture to another is not supported
+Cross compiling from one architecture to another is not supported. Eg from x86-64 to arm64
 :::
 
 ```

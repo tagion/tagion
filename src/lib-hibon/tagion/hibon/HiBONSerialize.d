@@ -51,7 +51,7 @@ template isHiBONArray(T) {
     }
 }
 
-template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
+template SupportingFullSizeFunction(T, size_t i = 0) {
     import tagion.hibon.HiBONRecord : exclude, optional, isHiBONRecord;
     import std.traits;
 
@@ -73,6 +73,9 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
             enum InnerSupportFullSize = Ok;
 
         }
+        else static if (isPointer!U) {
+            enum InnerSupportFullSize = SupportingFullSizeFunction!(PointerTarget!U);
+        }
         else {
             enum InnerSupportFullSize = isHiBONArray!BaseU ||
                 isIntegral!BaseU;
@@ -87,11 +90,11 @@ template SupportingFullSizeFunction(T, size_t i = 0, bool _print = false) {
         //enum optional_flag = hasUDA!(T.tupleof[i], optional);
         enum exclude_flag = hasUDA!(T.tupleof[i], exclude);
         static if (exclude_flag) {
-            enum SupportingFullSizeFunction = SupportingFullSizeFunction!(T, i + 1, _print);
+            enum SupportingFullSizeFunction = SupportingFullSizeFunction!(T, i + 1);
         }
         else {
-            enum SupportingFullSizeFunction = InnerSupportFullSize!(Fields!T[i]) && SupportingFullSizeFunction!(T, i + 1, _print);
-
+            enum SupportingFullSizeFunction = InnerSupportFullSize!(Fields!T[i]) &&
+                SupportingFullSizeFunction!(T, i + 1);
         }
     }
 }
@@ -119,7 +122,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
             case E:
                     static if (isHiBONBaseType(E)) {
                         static if (only(INT32, INT64, UINT32, UINT64).canFind(type)) {
-                            return type_key_size + LEB128.calc_size(cast(BaseU) x);
+                            return type_key_size + LEB128.calc_size(cast(const BaseU) x);
                         }
                         else static if (type == TIME) {
                             return type_key_size + LEB128.calc_size(cast(ulong) x);
@@ -166,6 +169,12 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                             return type_key_size + array_size + LEB128.calc_size(array_size);
                         }
                     }
+                    else static if (isPointer!U) {
+                        if (x is null) {
+                            return type_key_size + ubyte.sizeof;
+                        }
+                        return type_key_size + full_size(*x);
+                    }
                     else static if (isHiBONRecord!BaseU) {
                         return type_key_size + x.full_size;
                     }
@@ -191,8 +200,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                     }
                 }
                 else {
-                    assert(0, format("%s HiBONType=%s not supported by %s Type=%s", T.stringof, type, __FUNCTION__, isHiBONBaseType(
-                            type)));
+                    assert(0, format("%s HiBONType=%s not supported by %s Type=%s",
+                            T.stringof, type, __FUNCTION__, isHiBONBaseType(type)));
                 }
             }
         }
@@ -208,7 +217,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     }
     static foreach (i; 0 .. T.tupleof.length) {
         {
-
             enum exclude_flag = hasUDA!(T.tupleof[i], exclude);
             enum filter_flag = hasUDA!(T.tupleof[i], filter);
             static if (!exclude_flag) {
@@ -236,6 +244,17 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     result += LEB128.calc_size(result);
     return result;
 }
+
+// Serialization invalid for some objects when compilling on alpine
+version (CRuntime_Musl)
+    version = OLD_HIBON_SERIALIZATION;
+    /// version flag added because new serialization causes crash on snapdragon gen 8 1
+    /// Do not remove
+else version (Android)
+    version = OLD_HIBON_SERIALIZATION;
+//
+else version (AArch64)
+    version = OLD_HIBON_SERIALIZATION;
 
 mixin template Serialize() {
     import std.algorithm;
@@ -301,14 +320,11 @@ mixin template Serialize() {
             }
         }
 
-
-        /// version flag added because new serialization causes crash on snapdragon gen 8 1
-        /// Do not remove
-        version(Android) {
+        version (OLD_HIBON_SERIALIZATION) {
             Buffer serialize() const pure @safe {
                 return this.toHiBON.serialize;
             }
-        } 
+        }
         else {
             Buffer serialize() const pure @safe
             out (ret) {

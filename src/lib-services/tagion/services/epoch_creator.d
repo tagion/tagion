@@ -2,7 +2,14 @@
 /// https://docs.tagion.org/docs/architecture/EpochCreator
 module tagion.services.epoch_creator;
 
-// tagion
+import core.time;
+
+import std.array;
+import std.algorithm;
+import std.exception : RangePrimitive, handle;
+import std.stdio;
+import std.typecons : No;
+
 import tagion.actor;
 import tagion.basic.Types;
 import tagion.basic.basic : isinit;
@@ -15,9 +22,11 @@ import tagion.gossip.AddressBook;
 import tagion.gossip.GossipNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Refinement;
+import tagion.hashgraph.RefinementInterface : PayloadQueue;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONJSON;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options : NetworkMode, TaskNames;
@@ -27,22 +36,13 @@ import tagion.utils.Random;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.monitor.Monitor;
-
-// core
-import core.time;
-
-// std
-import std.algorithm;
-import std.exception : RangePrimitive, handle;
-import std.stdio;
-import std.typecons : No;
-
-alias PayloadQueue = Queue!Document;
+import tagion.hibon.HiBONRecord : isRecord;
+import tagion.script.common : SignedContract;
 
 @safe
 struct EpochCreatorOptions {
     uint timeout = 250; // timeout in msecs 
-    uint scrap_depth = 100;
+    uint scrap_depth = 10;
     mixin JSONCommon;
 }
 
@@ -56,23 +56,26 @@ struct EpochCreatorService {
             immutable(TaskNames) task_names) {
 
         const net = new StdSecureNet(shared_net);
+        ActorHandle collector_handle = ActorHandle(task_names.collector);
 
         assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
 
         import tagion.hashgraph.Event : Event;
+
         Event.callbacks = new LogMonitorCallbacks();
-        version(BDD) {
-            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook.keys);
+        version (BDD) {
+            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook
+                    .keys);
         }
 
-        GossipNet gossip_net;
+        StdGossipNet gossip_net;
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL:
-            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout);
+            gossip_net = new EmulatorGossipNet(opts.timeout);
             break;
         case NetworkMode.LOCAL:
-            gossip_net = new NNGGossipNet(net.pubkey, opts.timeout, ActorHandle(task_names.node_interface));
+            gossip_net = new NNGGossipNet(opts.timeout, ActorHandle(task_names.node_interface));
             break;
         case NetworkMode.PUB:
             assert(0);
@@ -91,10 +94,10 @@ struct EpochCreatorService {
         auto refinement = new StdRefinement;
         refinement.setTasknames(task_names);
 
-        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
+        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, gossip_net);
         hashgraph.scrap_depth = opts.scrap_depth;
 
-        PayloadQueue payload_queue = new PayloadQueue();
+        refinement.queue = new PayloadQueue();
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
@@ -106,32 +109,32 @@ struct EpochCreatorService {
             if (counter > 0) {
                 log.trace("Payloads in queue=%d", counter);
             }
-            if (payload_queue.empty) {
+            if (refinement.queue.empty) {
                 return Document();
             }
             counter--;
-            return payload_queue.read;
+            return refinement.queue.read;
         }
 
         void receivePayload(Payload, const(Document) pload) {
-            payload_queue.write(pload);
+            pragma(msg, "fixme(cbr): Should we not just send the payload directly to the hashgraph");
+            refinement.queue.write(pload);
             counter++;
         }
 
-        void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
-            import std.array;
-            import tagion.hashgraph.HashGraphBasic;
-            import tagion.hibon.HiBONRecord : isRecord;
-            import tagion.script.common : SignedContract;
-
-            version (EPOCH_LOG) {
-                log.trace("Received wavefront");
+        void receiveWavefront_req(WavefrontReq req, const(Document) wave_doc) {
+            const receiver = HiRPC.Receiver(wave_doc);
+            if (receiver.isError) {
+                return;
             }
 
-            const receiver = HiRPC.Receiver(wave_doc);
+            const received_wave = (receiver.isMethod)
+                ? receiver.params!Wavefront(net) : receiver.result!Wavefront(net);
 
-            const received_wave = receiver.params!(Wavefront)(net);
+            debug (epoch_creator)
+                log("<- %s", received_wave.state);
 
+            // Filter out all signed contracts from the payload
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
@@ -144,25 +147,22 @@ struct EpochCreatorService {
                 .array;
 
             if (received_signed_contracts.length != 0) {
-                // log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
-                locate(task_names.collector).send(consensusContract(), received_signed_contracts);
+                collector_handle.send(consensusContract(), received_signed_contracts);
             }
-            scope (failure) {
-                log.fatal("WAVEFRONT\n%s\n", receiver.toPretty);
+
+            const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
+
+            if (receiver.isMethod) {
+                gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
             }
-            hashgraph.wavefront(
-                    receiver,
-                    currentTime,
-                    (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
-                    &payload);
         }
 
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
-            if (!init_tide) {
-                return;
+            if (init_tide) {
+                const sender = hashgraph.create_init_tide(payload, gossip_net.time);
+                gossip_net.send(hashgraph.select_channel, sender);
             }
-            hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
         while (!thisActor.stop && !hashgraph.areWeInGraph) {
@@ -170,13 +170,12 @@ struct EpochCreatorService {
                     opts.timeout.msecs,
                     &signal,
                     &ownerTerminated,
-                    &receiveWavefront,
+                    &receiveWavefront_req,
                     &unknown
             );
-            if (received) {
-                continue;
+            if (!received) {
+                timeout();
             }
-            timeout();
         }
 
         if (hashgraph.areWeInGraph) {
@@ -188,7 +187,7 @@ struct EpochCreatorService {
         }
         Topic inGraph = Topic("in_graph");
         log.event(inGraph, __FUNCTION__, Document());
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
     }
 
 }

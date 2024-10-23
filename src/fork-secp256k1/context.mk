@@ -52,7 +52,7 @@ endif
 $(DSRC_SECP256K1)/src/hash.h: $(SECP256K1_GIT_MODULE)
 $(DSRC_SECP256K1)/include/secp256k1_hash.h: $(DSRC_SECP256K1)/src/hash.h
 	$(PRECMD)
-	ln -s $< $@
+	ln -s $< $@ || true
 
 
 proper-secp256k1:

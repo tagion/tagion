@@ -26,7 +26,7 @@ import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
 import tagion.wallet.request;
 
-//import tagion.basic.tagionexceptions : check;
+//import tagion.errors.tagionexceptions : check;
 import std.range;
 import std.typecons;
 import tagion.communication.HiRPC;
@@ -94,7 +94,7 @@ struct WalletInterface {
     StdSecureWallet secure_wallet;
     Invoices payment_requests;
     Quiz quiz;
-    this(const WalletOptions options) {
+    this(const WalletOptions options) @safe {
         this.options = options;
     }
 
@@ -222,6 +222,7 @@ struct WalletInterface {
         return false;
     }
 
+    @safe
     bool generateSeedFromPassphrase(const(char[]) passphrase, const(char[]) pincode, const(char[]) salt = null) {
         auto tmp_secure_wallet = StdSecureWallet(passphrase, pincode, salt);
         if (!secure_wallet.wallet.isinit && secure_wallet.wallet.S != tmp_secure_wallet.wallet.S) {
@@ -523,6 +524,7 @@ struct WalletInterface {
     }
 
     enum update_tag = "update";
+
     void operate(Switch wallet_switch, const(string[]) args) {
         if (secure_wallet.isLoggedin) {
             with (wallet_switch) {

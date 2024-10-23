@@ -31,7 +31,7 @@ private {
 
     //import tagion.basic.basic;
     //    import std.stdio : writefln, writeln;
-    import tagion.basic.tagionexceptions : Check;
+    import tagion.errors.tagionexceptions : Check;
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
@@ -214,7 +214,7 @@ class DARTFile {
         mixin HiBONRecord!(q{
             this(const Index index, const(Fingerprint) fingerprint, const(DARTIndex) dart_index) {
                 this.index = index;
-                this.fingerprint = cast(Buffer)fingerprint;
+                this.fingerprint = (() @trusted => cast(Buffer)fingerprint)();
                 this.dart_index = dart_index;
 
             }
@@ -237,9 +237,6 @@ class DARTFile {
         enum dart_indicesName = GetLabel!(_dart_indices).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-
-            
-
                 .check(isRecord(doc), format("Document is not a %s", This.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new Index[KEY_SPAN];
@@ -767,7 +764,7 @@ class DARTFile {
 
         auto sorted_dart_indices = dart_indices
             .filter!(a => a.length !is 0)
-            .map!(a => DARTIndex(cast(Buffer) a))
+            .map!(a => DARTIndex(cast(const(Buffer)) a))
             .array
             .dup;
         sorted_dart_indices.sort;
@@ -1012,6 +1009,198 @@ class DARTFile {
                 // blockfile.block_chains.clear;
             }
         }
+        scope (failure) {
+            // On failure drop the BlockFile and reopen it
+            blockfile.close;
+            blockfile = BlockFile(filename);
+        }
+        return Fingerprint(new_root.fingerprint);
+    }
+
+    /// Wrapper function for the modify function.
+    Fingerprint futureEye(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No
+            .undo) {
+        if (undo) {
+            return futureEye!(Yes.undo)(modifyrecords);
+        }
+        else {
+            return futureEye!(No.undo)(modifyrecords);
+
+        }
+    }
+    
+    Fingerprint futureEye(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords)
+    in (blockfile.cache_empty, format("IN: THE CACHE MUST BE EMPTY WHEN PERFORMING NEW future check len=%s", blockfile
+            .cache_len))
+    do {
+        /** 
+         * Inner function for the modify function.
+         * Note that this function is recursive and called from itself. 
+         * Can be broken up into 3 sections. The first is for going through the branches
+         * In the sectors. Next section is for going through branches deeper than the sectors.
+         * The last section is responsible for actually doing the work with the archives.
+         * Params:
+         *   range = RimKeyRange to traverse with.
+         *   branch_index = The branch index to modify.
+         * Returns: 
+         */
+        .check(!blockfile.read_only, format("Can not call a %s on a read-only DART", __FUNCTION__));
+        Leave traverse_dart(Range)(Range range, const Index branch_index) @safe
+            if (isInputRange!Range)
+            out {
+            assert(range.empty, "Must have been through the whole range and therefore empty on return");
+        }
+        do {
+            // if the range is empty that means that nothing is located in it now. 
+            if (range.empty) {
+                return Leave.init;
+            }
+
+            /// First section for going through the Branches in the sectors.
+            Index erase_block_index;
+            scope (success) {
+                blockfile.dispose(erase_block_index);
+            }
+            Branches branches;
+            if (range.rim < RIMS_IN_SECTOR) {
+                if (branch_index !is Index.init) {
+                    branches = blockfile.load!Branches(branch_index);
+
+                    
+
+                    .check(branches.hasIndices,
+                        "DART failure within the sector rims the DART should contain a branch");
+                }
+
+                while (!range.empty) {
+                    auto sub_range = range.nextRim;
+                    immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
+                    branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
+                }
+                erase_block_index = Index(branch_index);
+
+                if (branches.empty) {
+                    return Leave.init;
+                }
+
+                return Leave(blockfile.save(branches).index,
+                    branches.fingerprint(this), DARTIndex.init);
+
+            }
+            // Section for going through branches that are not in the sectors.
+            else {
+                if (branch_index !is Index.init) {
+                    const doc = blockfile.cacheLoad(branch_index);
+                    if (Branches.isRecord(doc)) {
+                        branches = Branches(doc);
+                        while (!range.empty) {
+                            auto sub_range = range.nextRim;
+                            immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
+                            branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
+                        }
+                        // if the range is empty then we return a null leave.
+                        if (branches.empty) {
+                            return Leave.init;
+                        }
+
+                        if (branches.isSingle && range.rim >= RIMS_IN_SECTOR) {
+                            const single_leave = branches[].front;
+                            const buf = cacheLoad(single_leave.index);
+                            const single_doc = Document(buf);
+
+                            if (!Branches.isRecord(single_doc)) {
+                                return single_leave;
+                            }
+
+                        }
+                        return Leave(blockfile.save(branches).index, branches.fingerprint(this), DARTIndex
+                                .init);
+                    }
+                    else {
+                        // This is a standalone archive ("single").
+                        // DART does not store a branch this means that it contains a leave.
+                        // Leave means and archive
+                        // The new Archives is constructed to include the archive which is already in the DART
+                        auto current_archive = recorder.archive(doc, Archive.Type.ADD);
+                        scope (success) {
+                            // The archive is erased and it will be added again to the DART
+                            // if it not removed by and action in the record
+                            blockfile.dispose(branch_index);
+
+                        }
+                        auto sub_range = range.save.filter!(
+                            a => a.dart_index == current_archive.dart_index);
+
+                        if (sub_range.empty) {
+                            range.add(current_archive);
+                        }
+
+                    }
+                }
+                // If there is only one archive left, it means we have traversed to the bottom of the tree
+                // Therefore we must return the leave if it is an ADD.
+                if (range.oneLeft) {
+                    scope (exit) {
+                        range.popFront;
+                    }
+                    if (range.type == Archive.Type.ADD) {
+                        return Leave(
+                            blockfile.save(range.front.store).index,
+                            range.front.fingerprint, range.front.dart_index);
+                    }
+                    return Leave.init;
+                }
+                /// More than one archive is present. Meaning we have to traverse
+                /// Deeper into the tree.
+                while (!range.empty) {
+                    const rim_key = range.front.dart_index.rim_key(range.rim + 1);
+
+                    const leave = traverse_dart(range.nextRim, Index.init);
+                    branches[rim_key] = leave;
+                }
+                /// If the branch is empty we return a NULL leave.
+                if (branches.empty) {
+                    return Leave.init;
+                }
+                // If the branch isSingle then we have to move the branch / archives located in it upwards.
+                if (branches.isSingle) {
+                    const single_leave = branches[].front;
+                    const buf = cacheLoad(single_leave.index);
+                    const single_doc = Document(buf);
+
+                    if (!Branches.isRecord(single_doc)) {
+                        return single_leave;
+                    }
+
+                }
+                return Leave(
+                    blockfile.save(branches).index,
+                    branches.fingerprint(this), DARTIndex.init);
+            }
+
+        }
+
+        /// If our records is empty we return the previous fingerprint
+        if (modifyrecords.empty) {
+            return _fingerprint;
+        }
+
+        // This check ensures us that we never have multiple add and deletes on the
+        // same archive in the same recorder.
+        .check(modifyrecords.length <= 1 ||
+                    !modifyrecords[]
+                    .slide(2)
+                    .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
+                    .any,
+                    "cannot have multiple operations on same dart-index in one modify");
+
+        auto range = rimKeyRange!undo(modifyrecords);
+        auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
+
+        scope(success) {
+            blockfile.remove_disposed_and_added;
+        }
+
         scope (failure) {
             // On failure drop the BlockFile and reopen it
             blockfile.close;
@@ -1682,7 +1871,12 @@ unittest {
 
             saved_archives.bitsSet.each!(
                 n => recorder_B.add(net.fake_doc(random_table[n])));
+            const current_eye = dart_B.fingerprint;
+            const future_eye = dart_B.futureEye(recorder_B);
+            assert(future_eye != current_eye, "The bullseye was updated incorrectly");
+            assert(future_eye == dart_A.fingerprint, "Bullseyes were not the same");
             dart_B.modify(recorder_B);
+            assert(future_eye == dart_B.fingerprint);
             // dart_B.dump;
             assert(dart_A.fingerprint == dart_B.fingerprint);
         })();
@@ -2331,17 +2525,11 @@ unittest {
 
         }
         { // name record unittests
-            @recordType("name")
+            @recordType("name") 
             static struct NameRecord {
                 @label("#name") string name;
                 string data;
-
-                mixin HiBONRecord!(q{
-                    this(const string name, const string data) {
-                        this.name = name;
-                        this.data = data;
-                    }
-                });
+                mixin HiBONRecord;
             }
 
             {
@@ -2535,15 +2723,11 @@ unittest {
         auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (
                 () @trusted => cast(immutable) _net)());
     }
+    
     static struct HashDoc {
         @label("#name") string name;
         int number;
-        mixin HiBONRecord!(q{
-            this(string name, int n) {
-                this.name=name;
-                number=n;
-            }
-    });
+        mixin HiBONRecord;
     }
 
     { // Check the #name archives 

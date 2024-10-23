@@ -1,6 +1,6 @@
 module tagion.wasm.WasmException;
 
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 @safe:
 

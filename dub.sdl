@@ -33,6 +33,7 @@ importPaths "src/lib-services/"
 importPaths "src/lib-wasm/"
 importPaths "src/lib-trt/"
 importPaths "src/lib-nngd/"
+importPaths "src/lib-api/"
 
 importPaths "src/bin-blockutil"
 importPaths "src/bin-callstack"

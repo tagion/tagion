@@ -26,13 +26,17 @@ alias AppendBuffer = Appender!(ubyte[]);
 +/
 void binwrite(T)(ref scope AppendBuffer buffer, const T value) pure nothrow {
     import std.typecons : TypedefType;
+    import std.bitmanip : append;
 
     alias BaseT = TypedefType!(T);
     static if (T.sizeof == ubyte.sizeof) {
         buffer ~= value;
     }
+    else static if (isPointer!BaseT) {
+
+        //append!(BaseT, Endian.littleEndian)(buffer, *(cast(BaseT) value));
+    }
     else {
-        import std.bitmanip : append;
 
         append!(BaseT, Endian.littleEndian)(buffer, cast(BaseT) value);
     }
@@ -86,10 +90,9 @@ void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Ke
     import std.range;
     import traits = std.traits;
     import tagion.basic.Debug;
-
     alias BaseT = TypedefBase!T;
-    static if (!is(BaseT == T) && __traits(compiles, { auto x = cast(BaseT) val; })) {
-        auto x = cast(BaseT) val;
+    static if (!is(BaseT == T) && __traits(compiles, { auto x = cast(const(BaseT)) val; })) {
+        auto x = (() @trusted => cast(BaseT) val)();
     }
     else {
         alias x = val;
@@ -137,7 +140,7 @@ void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Ke
         buffer ~= LEB128.encode(cast(BaseT) x);
     }
     else static if (is(BaseT : const(sdt_t))) {
-        buffer ~= LEB128.encode(cast(TypedefType!sdt_t) x);
+        buffer ~= LEB128.encode(cast(const(TypedefType!sdt_t)) x);
     }
     else static if (isHiBONRecord!BaseT) {
         const start_index = buffer.data.length;
@@ -237,7 +240,17 @@ void build(bool preserve_flag = false, T, Key)(ref scope AppendBuffer buffer, Ke
         }
         emplace_buffer(buffer, start_index);
     }
+    else static if (isPointer!BaseT) {
+        //const start_index = buffer.data.length;
+        //auto x_target = (() @trusted => cast(PointerTarget!BaseT) *x)();
+        //buffer.binwrite(x_target);
+        buffer~= x.serialize;
+        //emplace_buffer(buffer, start_index);
+    }
     else {
+        if (isPointer!BaseT) {
+            __write("---BaseT %s", BaseT.stringof);
+        }
         buffer.binwrite(x);
     }
 }
@@ -857,8 +870,8 @@ bool is_key_valid(const(char[]) a) pure nothrow {
 }
 
 shared static this() @system {
-    uint little_endian=0x0000_0001;
-    uint* x=&little_endian;
+    uint little_endian = 0x0000_0001;
+    uint* x = &little_endian;
     assert(x[0] == 1, "Only supports little endian for now!");
 }
 ///

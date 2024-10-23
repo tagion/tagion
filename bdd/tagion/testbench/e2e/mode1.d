@@ -17,11 +17,12 @@ import tagion.tools.Basic;
 import tagion.tools.wallet.WalletOptions;
 import tagion.tools.wallet.WalletInterface;
 import tagion.services.options;
+import tagion.services.nodeinterface;
 import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
-import tagion.services.subscription : SubscriptionPayload;
+import tagion.logger.subscription;
 import tagion.testbench.tools.Environment : bddenv = env;
 import tagion.wave.mode0 : dummy_nodenets_for_testing;
 import tagion.dart.Recorder;
@@ -29,7 +30,6 @@ import tagion.dart.DART : DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.crypto.SecureNet;
 import tagion.hashgraph.Refinement;
-import tagion.tools.subscriber : Subscription;
 
 void kill_waves(Pid[] pids, Duration grace_time) {
     const begin_time = MonoTime.currTime;
@@ -78,9 +78,15 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     Options local_options;
     local_options.setDefault;
     local_options.trt.enable = false;
+    local_options.wave.number_of_nodes = number_of_nodes;
     local_options.wave.network_mode = NetworkMode.LOCAL;
     local_options.epoch_creator.timeout = 300; //msecs
-    local_options.subscription.tags = StdRefinement.epoch_created.name;
+    local_options.wave.prefix_format = "Mode1_%s_";
+    local_options.subscription.tags = 
+        [
+            StdRefinement.epoch_created.name, 
+            NodeInterfaceService.node_action_event.name,
+        ].join(",") ;
 
     enum base_port = 10_700;
 
@@ -169,6 +175,7 @@ Pid[] spawn_nodes(string dbin, string[] pins, const(string[]) node_data_paths) {
         auto pin_file = File(pin_path, "r");
 
         Pid pid = spawnProcess(cmd, workDir: node_path, stdin: pin_file);
+        Thread.sleep(300.msecs);
         writefln("Started %s", pid.processID);
         pids ~= pid;
     }
@@ -181,10 +188,12 @@ int _main(string[] args) {
     immutable program = args[0];
     uint number_of_nodes = 5;
     uint timeout_secs = 100;
+    long target_epoch = 5;
 
     auto main_args = getopt(args,
         "n|nodes", format("Amount of nodes to spawn (%s)", number_of_nodes), &number_of_nodes,
         "t|timeout", format("How long to run the test for in seconds (%s)", timeout_secs), &timeout_secs,
+        "e|epoch", format("The target epoch for all nodes (%s)", target_epoch), &target_epoch,
         "v|verbose", "Vebose switch", &__verbose_switch,
     );
 
@@ -208,7 +217,7 @@ int _main(string[] args) {
     auto node_opts = getMode1Options(number_of_nodes);
 
     auto feature = automation!(mixin(__MODULE__));
-    feature.Mode1NetworkStart(node_opts, timeout_secs.seconds);
+    feature.Mode1NetworkStart(node_opts, timeout_secs.seconds, target_epoch);
     feature.run;
 
     return 0;
@@ -235,11 +244,12 @@ class Mode1NetworkStart {
     const(Options)[] node_opts;
     Duration timeout;
 
-    enum expected_epoch = 5;
+    const long expected_epoch;
     
-    this(const(Options)[] node_opts, Duration timeout) {
+    this(const(Options)[] node_opts, Duration timeout, long target_epoch) {
         this.node_opts = node_opts;
         this.timeout = timeout;
+        this.expected_epoch = target_epoch;
     }
 
     Pid[] pids;
@@ -272,13 +282,13 @@ class Mode1NetworkStart {
         return result_ok;
     }
 
-    @When("all nodes have produced 5 epochs")
+    @When("all nodes have produced x epochs")
     Document epochs() {
-        Subscription[] subs;
+        SubscriptionHandle[] subs;
         long[] epochs;
 
         foreach(opt; node_opts) {
-            auto sub =  Subscription(opt.subscription.address, [StdRefinement.epoch_created.name]);
+            auto sub =  SubscriptionHandle(opt.subscription.address, [StdRefinement.epoch_created.name]);
             sub.dial;
             subs ~= sub;
             epochs ~= -1;
@@ -289,6 +299,7 @@ class Mode1NetworkStart {
         const begin_time = MonoTime.currTime;
         HiRPC hirpc = HiRPC(null);
 
+        writeln("Will wait for epoch ", expected_epoch);
         while(!epochs.all!(i => i >= expected_epoch) && MonoTime.currTime - begin_time <= timeout) {
             foreach(i, sub; subs) {
                 auto doc = sub.receive();
@@ -306,7 +317,8 @@ class Mode1NetworkStart {
             }
         }
 
-        check(epochs.all!(i => i >= expected_epoch), format("%s", epochs));
+        check(MonoTime.currTime - begin_time <= timeout, format("Timed out at %s after %s", timeout));
+        check(epochs.all!(i => i >= expected_epoch), format("%s wanted %s", epochs, expected_epoch));
 
         writefln("Nodes ended at epochs %s", epochs);
 

@@ -40,7 +40,7 @@ static unittest {
 
 }
 
-Unqual!T mut(T)(T buf) nothrow pure @nogc if (is(TypedefType!(T) : Buffer)) {
+Unqual!T mut(T)(T buf) nothrow pure @nogc @trusted if (is(TypedefType!(T) : Buffer)) {
     return Unqual!T(cast(Buffer) buf);
 }
 
@@ -63,6 +63,8 @@ enum FileExtension {
     epochdumpblock = ".epdmp", /// Epoch dump chain block file format
     text = ".txt",
     csv = ".csv", /// Comma-separated values
+    html = ".html", /// HTML text file
+    svg = ".svg",   /// Scalable vector graphics file
 }
 
 enum DOT = '.'; /// File extension separator
@@ -105,7 +107,7 @@ string encodeBase64(const(ubyte[]) data) pure nothrow {
     return result.idup;
 }
 
-string encodeBase64(T)(const(T) buf) pure nothrow if (isBufferTypedef!T) {
+string encodeBase64(T)(const(T) buf) pure nothrow @trusted if (isBufferTypedef!T) {
     return encodeBase64(cast(TypedefType!T) buf);
 }
 

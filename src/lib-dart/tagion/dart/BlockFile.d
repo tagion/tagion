@@ -19,7 +19,7 @@ import std.traits;
 import std.typecons;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.basic : isinit;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.dart.BlockSegment;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
@@ -441,7 +441,7 @@ class BlockFile {
      +      the file pointer in byte counts
      +/
     ulong index_to_seek(const Index index) const pure nothrow {
-        return BLOCK_SIZE * cast(ulong) index;
+        return BLOCK_SIZE * cast(const(ulong)) index;
     }
 
     protected void writeStatistic() {
@@ -661,6 +661,11 @@ class BlockFile {
             block_segment.write(this);
         }
 
+    }
+
+    void remove_disposed_and_added() {
+        block_chains.clear;
+        recycler.clear_to_be_recycled();
     }
 
     struct BlockSegmentRange {

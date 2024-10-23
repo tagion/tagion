@@ -11,7 +11,7 @@ import std.typecons : tuple;
 import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile, Index, check;
 import tagion.hibon.HiBONFile : fread, fwrite;
-import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
+import tagion.hibon.HiBONRecord;
 
 /** 
  * The segments used for the recycler.
@@ -99,6 +99,10 @@ struct Recycler {
         RecycleSegment*[] segments; /// The other way to sort. Sorted by segment size therefore allowing overlaps.
         RecycleSegment*[] to_be_recycled; /// RecycleSegments that are disposed and need to be added to the recycler.
     }
+    void clear_to_be_recycled() {
+        to_be_recycled = null;
+    }
+
     @disable this();
     this(BlockFile owner) pure nothrow
     in (owner !is null)
@@ -747,16 +751,10 @@ unittest {
 }
 
 version (unittest) {
-    @safe @recordType("D")
+    @safe @recordType("D") 
     static struct Data {
-
         string text;
-
-        mixin HiBONRecord!(q{
-            this(string text) {
-                this.text = text;
-            }
-        });
+        mixin HiBONRecord;
     }
 
 }

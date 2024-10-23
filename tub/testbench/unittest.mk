@@ -45,7 +45,7 @@ $(UNITTEST_BIN): LDFLAGS+=$(LD_WASMER)
 endif
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
-	$(DC) $(UNITTEST_FLAGS) $(DRTFLAGS) $(call DO_COMPILE_FLAGS) ${sort ${filter %.d,$^}} $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DRTFLAGS) $(call DO_COMPILE_FLAGS) ${sort ${filter %.d,$^}} $(DOUT)$@
 
 .PHONY: unittest
 
@@ -80,7 +80,7 @@ env-unittest:
 	${call log.env, UNITTEST_DOBJ, $(UNITTEST_DOBJ)}
 	${call log.env, UNITTEST_FLAGS, $(UNITTEST_FLAGS)}
 	${call log.env, UNITTEST_BIN, $(UNITTEST_BIN)}
-	${call log.env, UNITTEST_DFILES, $(UNITTEST_DFILES)}
+	# ${call log.env, UNITTEST_DFILES, $(UNITTEST_DFILES)}
 	${call log.close}
 
 env: env-unittest

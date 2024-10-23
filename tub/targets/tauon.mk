@@ -15,6 +15,7 @@ $(DLIB)/libtauon.a: DFLAGS+=--od=$(DOBJ)
 $(DLIB)/libtauon.a: DINC+=$(TAUON_DINC)
 $(DLIB)/libtauon.a: DFLAGS+=-d-debug
 $(DLIB)/libtauon.a: $(DLIB)/.way 
+$(DLIB)/libtauon.a: revision
 
 $(TAUON_BINS): $(DBIN)/.way
 
@@ -30,11 +31,14 @@ tauon-test: $(TAUON_BINS)
 tauon-test: DFLAGS+=-d-debug
 #tauon-test: DFLAGS+=-L-error-limit=100
 tauon-test: DFLAGS+=-L--no-entry
+tauon-test: DFLAGS+=-L--allow-undefined
 tauon-test: DFLAGS+=-L--lto-O2
 tauon-test: DFLAGS+=--O2
-tauon-test: DFLAGS+=-L--initial-memory=16777216
-tauon-test: DFLAGS+=-L--max-memory=67108864
+tauon-test: DFLAGS+=-L--initial-memory=134217728
+# tauon-test: DFLAGS+=-L--initial-heap=65536
+# tauon-test: DFLAGS+=-L--gc-sections
 tauon-test: DFLAGS+=--linker=$(WASMLD)
+
 #taupn-test: DFLAGS+=/home/carsten/work/tagion/tools/wasi-druntime/wasi-sdk-21.0/share/wasi-sysroot/lib/wasm32-wasi/crt1.o
 tauon-test: | $(DLIB)/.way 
 
@@ -45,37 +49,48 @@ env-tauon:
 	$(call log.kvp, TAUON_TEST_ROOT, $(TAUON_TEST_ROOT))
 	$(call log.kvp, LIBEXT, $(LIBEXT))
 	$(call log.kvp, WASI_SYSROOT, $(WASI_SYSROOT))
-	$(call log.env, TAUON_TESTS, $(TAUON_TESTS))
-	$(call log.env, TAUON_BINS, $(TAUON_BINS))
-	$(call log.env, TAUON_DINC, $(TAUON_DINC))
-	$(call log.env, TAUON_DFILES, $(TAUON_DFILES))
 	$(call log.close)
 
 .PHONY: env-tauon
 
 env: env-tauon
 
+files-tauon:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
+	$(call log.env, TAUON_TESTS, $(TAUON_TESTS))
+	$(call log.env, TAUON_BINS, $(TAUON_BINS))
+	$(call log.env, TAUON_DINC, $(TAUON_DINC))
+	$(call log.env, TAUON_DFILES, $(TAUON_DFILES))
+	$(call log.close)
 
-tauon-run: tauon-test
+.PHONY: files-tauon
+
+env-files: files-tauon
+
+
+tauon-run: wasi tauon-test
 	$(PRECMD)
 	$(foreach wasm,$(TAUON_BINS), wasmer $(wasm);)
 
 help-tauon:
 	$(PRECMD)
 	$(call log.header, $@ :: help)
-	$(call log.help, make tauon-test, Compile the tauon tests as .wasm)
-	$(call log.help, make clean-tauon, Cleans the tauon library)
+	$(call log.help, "make tauon-test", "Compile the tauon tests as .wasm")
+	$(call log.help, "make clean-tauon", "Cleans the tauon library")
 	$(call log.close)
 
 FUNC_EXIT_SCRIPT="$(DSRC)/lib-wasm/scripts/func_exit.pl"
 $(DBIN)/%.wasm: $(DSRC)/wasi/tests/%.d
 	$(PRECMD)
-	$(DC) $(DFLAGS) $(LIB) $(addprefix $(DVERSION)=,$(DVERSIONS)) $(addprefix -I,$(DINC)) $< $(OUTPUT)$@
+	$(DC) $(DFLAGS) $(LIB) $(addprefix $(DVERSION)=,$(DVERSIONS)) $(addprefix -I,$(DINC)) $< $(DOUT)$@
 	wasm2wat $@ -o $@.wat
 	perl $(FUNC_EXIT_SCRIPT) $@.wat > $@.replaced.wat
 	wat2wasm $@.replaced.wat -o $@
 
 .PHONY: help-tauon
+
+help: help-tauon
 
 clean-tauon:
 	$(PRECMD)

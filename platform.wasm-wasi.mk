@@ -92,8 +92,6 @@ env-wasm:
 	$(call log.kvp, WASMLD, $(WASMLD))
 	$(call log.kvp, WASI_SYSROOT, $(WASI_SYSROOT))
 	$(call log.kvp, LDC_RUNTIME_BUILD, $(LDC_RUNTIME_BUILD))
-	$(call log.env, WASI_LIB, $(WASI_LIB))
-	$(call log.env, WASI_DINC, $(WASI_DINC))
 	$(call log.env, WASI_DFLAGS, $(WASI_DFLAGS))
 	$(call log.env, WASI_LDFLAGS, $(WASI_LDFLAGS))
 	$(call log.close)
@@ -102,4 +100,12 @@ env-wasm:
 
 env: env-wasm
 
+files-wasm:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
+	$(call log.env, WASI_LIB, $(WASI_LIB))
+	$(call log.env, WASI_DINC, $(WASI_DINC))
+	$(call log.close)
+.PHONY: files-wasm
 
+env-files: files-wasm

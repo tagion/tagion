@@ -75,7 +75,7 @@
     "hashgraph_test": {
       "args": ["5", "5000"],
       "envs": {},
-      "stages": ["hashgraph", "acceptance"],
+      "stages": ["hashgraph", "hashgraph_test"],
       "timeout": 0.0
     },
     "hashgraph_contributors": {
@@ -90,14 +90,8 @@
       "stages": ["none"],
       "timeout": 0.0
     },
-    "hashgraph_swap": {
-      "args": ["4", "500"],
-      "envs": {},
-      "stages": ["swap"],
-      "timeout": 0.0
-    },
     "tvm_betterc": {
-      "args": ["i32.wast"],
+      "args": ["i32.wast", "i64.wast"],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
         "imports": "wasm=foundation.wasm",
@@ -158,7 +152,11 @@
     },
     "spam_double_spend": {
       "args": [],
-      "envs": {},
+      "envs": {
+            "WAIT_UNTIL_ALIVE" : "10",
+            "EPOCH_TIMEOUT" : "15", 
+            "CONTRACT_TIMEOUT" : "100" 
+      },
       "stages": ["acceptance", "spam_double_spend"],
       "timeout": 0.0
     },
@@ -170,7 +168,9 @@
     },
     "genesis_test": {
       "args": [],
-      "envs": {},
+      "envs": {
+            "EPOCH_TIMEOUT" : "100" 
+      },
       "stages": ["acceptance", "genesis"],
       "timeout": 0.0
     },
@@ -196,6 +196,9 @@
       "args": [],
       "envs": {
         "SHELL_URI": "http://0.0.0.0:4000",
+        "MR_PUB_URI": "tcp://0.0.0.0:4002",
+        "MR_SUB_URI": "tcp://127.0.0.1:4002",
+        "WS_PUB_URI": "ws://0.0.0.0:4000/api/v1/subscribe",
         "SUBSCRIPTION": "TRANSACTION_TEST_SUBSCRIPTION_",
         "PREFIX": "TRANSACTION_Node_%s_"
       },
@@ -215,9 +218,18 @@
       "timeout": 0.0
     },
     "run_fiber_epoch": {
-      "args": ["10000", "100,5,100,100,100"],
+      "args": [
+        "--rounds=1000",
+        "-N7",
+        "100,2",
+        "-k",
+        "-d"
+                    
+      ],
       "envs": {},
-      "stages": ["fiber"],
+      "stages": [
+        "fiber", "decided"
+      ],
       "timeout": 0.0
     },
     "mode1": {
@@ -260,6 +272,17 @@
       "args": [],
       "envs": {},
       "stages": ["node_interface", "commit"],
+      "timeout": 0.0
+    },
+    "remote_sample": {
+      "args": [],
+      "envs": {
+          "SHELL_ADDRESSES": "tcp://localhost:8080",
+          "NODE_DART_ADDRESSES" : "abstract://node0/DART_NEUEWELLE abstract://node1/DART_NEUEWELLE",
+          "NODE_INPUT_ADDRESSES" : "abstract://node0/CONTRACT_NEUEWELLE",
+          "NODE_SUBSCRIPTION_ADDRESSES": "abstract://node0/SUBSCRIPTION_NEUEWELLE"
+      },
+      "stages": ["remote"],
       "timeout": 0.0
     }
   }

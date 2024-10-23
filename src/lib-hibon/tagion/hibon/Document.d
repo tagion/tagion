@@ -5,8 +5,7 @@
 module tagion.hibon.Document;
 
 import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isNumeric, EnumMembers, Unqual, ForeachType,
-    isIntegral, hasMember, isArrayT = isArray, isAssociativeArray, OriginalType, isCallable;
+import std.traits;
 import core.exception : RangeError;
 import std.algorithm;
 import std.array : join;
@@ -23,8 +22,9 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.utils.StdTime;
 import tagion.basic.basic : isinit;
+import tagion.errors.categories : ERRORS;
 import LEB128 = tagion.utils.LEB128;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 public import tagion.hibon.HiBONJSON;
 
 import std.exception;
@@ -238,7 +238,7 @@ static assert(uint.sizeof == 4);
             const bool ignore_boundary_check = IGNORE_BOUNDARY_CHECK) const nothrow {
         Element.ErrorCode inner_valid(const Document doc,
                 ErrorCallback error_callback = null) const nothrow {
-            import tagion.basic.tagionexceptions : TagionException;
+            import tagion.errors.tagionexceptions : TagionException;
 
             //const doc_full_size = doc.full_size; //LEB128.decode!uint(_data);
             bool checkElementBoundary(const ref Element elm) {
@@ -547,7 +547,7 @@ static assert(uint.sizeof == 4);
         else {
             alias BaseT = TypedefType!T;
             static if (isIntegral!BaseT) {
-                size += LEB128.calc_size(cast(BaseT) x);
+                size += LEB128.calc_size(cast(const(BaseT)) x);
             }
             else {
                 size += BaseT.sizeof;
@@ -1009,7 +1009,7 @@ static assert(uint.sizeof == 4);
                 return cast(T) result;
             }
 
-            T get(T)() const if (is(T == enum)) {
+            T get(T)() if (is(T == enum)) {
                 alias EnumBaseT = OriginalType!T;
                 const x = get!EnumBaseT;
                 static if (EnumContinuousSequency!T) {
@@ -1032,9 +1032,14 @@ static assert(uint.sizeof == 4);
                 return cast(T) x;
             }
 
-            T get(T)() const
+            @trusted T get(T)() if (isPointer!T) {
+                const doc = get!Document;
+                alias Target=Unqual!(PointerTarget!T);
+                return new Target(doc);
+            }
 
-            if (!isHiBONRecord!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T) {
+            T get(T)() 
+            if (!isHiBONRecord!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T && !isPointer!T) {
                 enum E = Value.asType!T;
                 import std.format;
 
@@ -1065,6 +1070,27 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 return false;
+            }
+
+            /++
+             Assumes that the element is a document
+             Returns:
+               The element with the key
+             Throws:
+               If the element with the key is not found then a HiBONException is thrown
+               If the element is not a Document then a HiBONException is thrown
+
+
+             Example:
+               If getting a chain of document you can do this
+               ---
+               doc["$msg"]["params"]["data"].get!MyRecord
+               ---
+             
+             +/
+            Element opIndex(in string key) pure {
+                const doc = get!Document;
+                return doc[key];
             }
 
             /++
@@ -1271,7 +1297,7 @@ static assert(uint.sizeof == 4);
             /// Element error codes
             enum ErrorCode {
                 NONE, /// No errors
-                INVALID_NULL, /// Invalid null object
+                INVALID_NULL = ERRORS.HIBON, /// Invalid null object
                 //DOCUMENT_TYPE,  /// Warning document type
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION, /// Document can not be iterated because of a Document format fail
@@ -1345,7 +1371,7 @@ static assert(uint.sizeof == 4);
                     return KEY_INVALID;
                 }
 
-                if ((isNative(type) || (type is Type.DEFINED_ARRAY))) {
+                if (isNative(type) || (type is Type.DEFINED_ARRAY)) {
                     return ILLEGAL_TYPE;
                 }
                 if (size > data.length) {
@@ -1455,3 +1481,14 @@ unittest {
     immutable imu_doc = Document.init;
     Document doc = imu_doc.mut;
 }
+
+unittest {
+    import tagion.basic.testbasic;
+    import tagion.errors.categories;
+
+    const category_file = unitfile("hibon_errors.json");
+    version (UPDATE_ERROR_CATEGORIES)
+        category_file.fwrite!(Document.Element.ErrorCode);
+    category_file.check_errors!(Document.Element.ErrorCode);
+}
+

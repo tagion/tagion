@@ -67,7 +67,7 @@ void nobose(Args...)(string fmt, lazy Args args) {
 }
 
 @trusted
-void error(const Exception e) {
+void error(const Throwable e) {
     error(e.msg);
     if (verbose_switch) {
         stderr.writefln("%s", e);

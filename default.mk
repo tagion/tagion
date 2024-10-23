@@ -29,9 +29,6 @@ DVERSIONS+=REDBLACKTREE_SAFE_PROBLEM
 # By copying the securenet each time an operation is done
 DVERSIONS+=NET_HACK
 
-# Sets the inputvalidators NNG socket to be blocking
-DVERSIONS+=BLOCKING
-
 # Fix a randomly occurring RangeError on hashgraph startup
 # By filtering out empty events
 DVERSIONS+=EPOCH_FIX
@@ -56,7 +53,8 @@ DVERSIONS+=USE_GENESIS_EPOCH
 # NEW_ORDERING uses PseudoTime
 # OLD_ORDERING uses old simple method
 # DVERSIONS+=NEW_ORDERING 
-DVERSIONS+=OLD_ORDERING
+#DVERSIONS+=OLD_ORDERING
+DVERSIONS+=HASH_ORDERING
 
 # Flag for enabling printing in C-API
 # DVERIONS+=C_API_DEBUG
@@ -65,16 +63,8 @@ DVERSIONS+=OLD_ORDERING
 # see GossipNet
 # DVERSIONS+=RANDOM_DELAY
 
-# HashGraph.d not_used_channels turn on check of
-# node.state is ExchangeState.NONE. Mode1 does not function with this.
-# DVERSIONS=SEND_ALWAYS
-
 # Enable verbose epoch logging
 # DVERSIONS+=EPOCH_LOG
-
-# Enable websocket pub in shell. 
-# Currently causes the program not to stop properly in bddtests.
-# DVERSIONS+=TAGIONSHELL_WEB_SOCKET
 
 # # This enables a redundant check in dart to see if there are overlaps between segments 
 # DVERSIONS+=DART_RECYCLER_INVARIANT
@@ -93,3 +83,4 @@ DVERSIONS+=OLD_ORDERING
 INSTALL?=$(HOME)/bin
 
 #ENABLE_WASMER?=1
+#UNSHARE_NET=1

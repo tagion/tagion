@@ -10,7 +10,7 @@ env-dinc:
 	$(call log.close)
 
 .PHONY: env-dinc
-env: env-dinc
+files: env-dinc
 
 env-dfiles:
 	$(PRECMD)
@@ -20,7 +20,7 @@ env-dfiles:
 
 .PHONY: env-dfiles
 
-env: env-dfiles
+# env-files: env-dfiles
 
 env-tools:
 	$(PRECMD)
@@ -168,8 +168,13 @@ $(call DO_BIN,vergangenheit)
 #
 # Tagion virtual machine utility
 #
-$(DBIN)/tvmutil: libwasmer
+ifdef ENABLE_WASMER
 $(DBIN)/tvmutil: LDFLAGS+=$(LD_WASMER) 
+$(DBIN)/tvmutil: libwasmer
+else
+$(DBIN)/tvmutil: secp256k1
+$(DBIN)/tvmutil: LDFLAGS+=$(LD_SECP256K1) 
+endif
 $(DBIN)/tvmutil: DINC+=$(SRC_DINC)
 $(DBIN)/tvmutil: DFILES::=$(DSRC)/bin-tvmutil/tagion/tools/tvmutil/tvmutil.d
 $(call DO_BIN,tvmutil)
@@ -213,6 +218,21 @@ $(DBIN)/subscriber: DINC+=$(SRC_DINC)
 $(DBIN)/subscriber: DFILES::=$(DSRC)/bin-subscriber/tagion/tools/subscriber.d
 $(call DO_BIN,subscriber)
 
+ifdef ENABLE_NODEINTERFACEUTIL
+DVERSIONS+=nodeinterfaceutil
+LD_RAYLIB:=$(shell pkg-config --libs raylib)
+CPP_RAYLIB:=$(shell pkg-config --cflags raylib)
+
+$(DBIN)/nodeinterfaceutil: nng secp256k1
+$(DBIN)/nodeinterfaceutil: LDFLAGS+=$(LD_NNG) $(LD_SECP256K1) $(LD_RAYLIB)
+$(DBIN)/nodeinterfaceutil: DINC+=$(SRC_DINC)
+$(DBIN)/nodeinterfaceutil: DFLAGS+=$(CPP_FLAG)$(CPP_RAYLIB)
+$(DBIN)/nodeinterfaceutil: DFILES::=$(DSRC)/src/bin-nodeinterfaceutil/tagion/tools/nodeinterfaceutil/package.d
+
+$(DBIN)/tagion: LDFLAGS+=$(LD_RAYLIB)
+$(DBIN)/tagion: DFLAGS+=$(CPP_FLAG)$(CPP_RAYLIB)
+endif
+
 #
 # ONETOOL
 #
@@ -226,6 +246,7 @@ $(DBIN)/tagion: DFILES::=$(DSRC)/bin-tools/tagion/tools/tools.d
 $(DBIN)/tagion: DINC+=$(SRC_DINC)
 $(DBIN)/tagion: DVERSIONS+=ONETOOL
 $(call DO_BIN,tagion)
+
 
 #
 # Binary of BBD generator tool

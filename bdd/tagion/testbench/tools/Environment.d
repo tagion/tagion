@@ -2,7 +2,8 @@ module tagion.testbench.tools.Environment;
 
 import std.algorithm.iteration : map;
 import std.array;
-import std.ascii : toUpper;
+import std.uni;
+import std.string;
 import std.conv;
 import std.exception;
 import std.format;
@@ -66,7 +67,14 @@ enum Stage {
 
 @safe
 struct Environment {
-    enum platform = "x86_64-linux";
+
+    string platform() @trusted const {
+        string get_arch = execute(["uname", "-m"]).output.strip;
+        string get_os = cast(string)toLower(cast(char[])(execute(["uname"]).output.strip));
+
+        return environment.get("PLATFORM", get_arch ~ "-" ~ get_os);
+    }
+
     string dbin() const {
         return environment.get("DBIN", buildPath(reporoot, "build", platform, "bin"));
     }
@@ -128,12 +136,34 @@ struct Environment {
 
         assert(0, format("variable is not legal %s", test_stage));
     }
+
+    template opDispatch(string env) {
+        T opDispatch(T=string)() {
+            static T result;
+            static bool set;
+            if (!set) {
+                result=environment[env].to!T;
+                set=true;
+            }
+            return result;
+        }
+        T opDispatch(T)(T _default) {
+            static T result;
+            static bool set;
+            if (!set) {
+                result=environment.get(env, _default.to!string).to!T;
+                set=true;
+            }
+            return result;
+        }
+    }
 }
 
-immutable Environment env;
+static Environment env;
 
 import std.stdio;
 
 shared static this() {
     reporter = new Reporter;
 }
+

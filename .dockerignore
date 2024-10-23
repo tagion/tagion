@@ -1,0 +1,6 @@
+tools/
+build/
+docs/
+logs/
+src/fork-wasmer/
+local.mk

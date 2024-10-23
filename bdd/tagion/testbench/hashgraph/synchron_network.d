@@ -13,6 +13,7 @@ import std.path : buildPath;
 import std.path : extension, setExtension;
 import std.range;
 import std.stdio;
+import std.random;
 import std.typecons : Tuple;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.Types;
@@ -61,10 +62,11 @@ class StartNetworkWithNAmountOfNodes {
         (() @trusted { getrlimit(RLIMIT_STACK, &limit); })();
         writefln("RESOURCE LIMIT = %s", limit);
 
-        network = new TestNetwork(node_names);
+        network = new TestNetwork(node_names,  0);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
-        writeln(network.random);
+        pragma(msg, "fixme: change to collider random");
+        //writeln(network.random);
 
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
 
@@ -85,7 +87,7 @@ class StartNetworkWithNAmountOfNodes {
     @When("all nodes are sending ripples")
     Document ripples() {
         foreach (i; 0 .. MAX_CALLS) {
-            const channel_number = network.random.value(0, network.channels.length);
+            const channel_number = uniform(0, network.channels.length, network.random);
             const channel = network.channels[channel_number];
             auto current = network.networks[channel];
             (() @trusted { current.call; })();
@@ -112,7 +114,7 @@ class StartNetworkWithNAmountOfNodes {
             uint i = 0;
             while (i < MAX_CALLS) {
 
-                const channel_number = network.random.value(0, network.channels.length);
+                const channel_number = uniform(0, network.channels.length, network.random);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
@@ -127,9 +129,9 @@ class StartNetworkWithNAmountOfNodes {
                 // printStates(network);
                 i++;
             }
-            check(TestRefinement.epoch_events.length == node_names.length,
+            check(EpochTestRefinement.epoch_events.length == node_names.length,
                     format("Max calls %d reached, not all nodes have created epochs only %d",
-                    MAX_CALLS, TestRefinement.epoch_events.length));
+                    MAX_CALLS, EpochTestRefinement.epoch_events.length));
         }
 
         // compare ordering
@@ -156,7 +158,7 @@ class StartNetworkWithNAmountOfNodes {
         }
 
         // compare epochs
-        foreach (i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
+        foreach (i, compare_epoch; EpochTestRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                 .events
                 .map!(e => cast(Buffer) e.event_package.fingerprint)
@@ -167,7 +169,7 @@ class StartNetworkWithNAmountOfNodes {
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
             // writefln("%s", compare_events.map!(f => f.cutHex));
-            foreach (channel_epoch; TestRefinement.epoch_events.byKeyValue) {
+            foreach (channel_epoch; EpochTestRefinement.epoch_events.byKeyValue) {
                 // writefln("epoch: %s", i);
                 if (channel_epoch.value.length - 1 < i) {
                     break;
@@ -204,6 +206,7 @@ class StartNetworkWithNAmountOfNodes {
     @Then("stop the network")
     Document _network() {
         Pubkey[string] node_labels;
+        import tagion.hashgraphview.EventView;
         foreach (channel, _net; network.networks) {
             node_labels[_net._hashgraph.name] = channel;
         }

@@ -10,7 +10,7 @@ import std.format;
 import std.file : exists;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.basic : EnumText, basename;
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.errors.tagionexceptions : TagionException;
 import tagion.crypto.Types : Pubkey;
 import tagion.hibon.Document;
 import tagion.logger.Logger;
@@ -63,7 +63,7 @@ class LogMonitorCallbacks : BaseMonitorCallbacks {
 
 class FileMonitorCallbacks : BaseMonitorCallbacks {
     File out_file;
-    size_t[Pubkey] node_id_relocation;
+    uint[Pubkey] node_id_relocation;
     this(string file_name, uint nodes, Pubkey[] node_keys) {
         // the "a" creates the file as well
         out_file = File(file_name, "a");
@@ -71,7 +71,7 @@ class FileMonitorCallbacks : BaseMonitorCallbacks {
 
         import std.algorithm : sort;
         import std.range : enumerate;
-        foreach(i, k; node_keys.sort.enumerate) {
+        foreach(i, k; node_keys.sort.enumerate!uint) {
             this.node_id_relocation[k] = i;
         }
     }
@@ -84,7 +84,8 @@ class FileMonitorCallbacks : BaseMonitorCallbacks {
 
     override void _write_eventview(string _, const(Event) e) {
         try {
-            out_file.rawWrite(EventView(e, node_id_relocation[e.event_package.pubkey]).toDoc.serialize);
+            const node_id = node_id_relocation.get(e.event_package.pubkey, e.node_id); 
+            out_file.rawWrite(EventView(e, node_id).toDoc.serialize);
         } catch(Exception err) {
             log.error("Could not write monitor event, %s", err.message);
         }

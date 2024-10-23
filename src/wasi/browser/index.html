@@ -1,19 +1,31 @@
-<!-- <html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
 
-<!-- <body> -->
-<!-- <script src="app.js" type="module"></script> -->
-<!-- </body> -->
-
-<!-- </html> -->
-<html>
-
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>    
+    <style>
+        .loading { visibility:hidden; } 
+        body.busy .loading { visibility:visible !important; }
+    </style>
+</head>
 <body>
-	<script type="module">
-		import {Wasi} from "./wasi.js";
-		import {HiBON} from "./hibon.js";
-		import {Document} from "./document.js";
-		import {Wallet} from "./wallet.js";
-		(async () => {
+	<script type="module" defer>
+		import {Wasi} from "./browser/wasi.js";
+		import {HiBON} from "./browser/hibon.js";
+		import {Document} from "./browser/document.js";
+		import {Wallet} from "./browser/wallet.js";
+		
+        var winstance = null;
+        var wallet = null;
+        var pkey = null;
+        var pkey_encoded = null;
+
+        (async () => {
 
 			const wasi = new Wasi({
 				stdin: "stdio",
@@ -23,22 +35,46 @@
 				},
 				args: ["--my-arg"]
 			});
-
-			const {instance} = await WebAssembly.instantiateStreaming(fetch("tauon_test.wasm"), {
+            $('body').addClass('busy');
+            $('#go').addClass('disabled');
+			const {instance} = await WebAssembly.instantiateStreaming(fetch("browser/tauon_test.wasm"), {
 				"wasi_snapshot_preview1": wasi
 			});
 			wasi.instance = instance;
+            winstance = instance;
+            
+            /*
+            //const rt = instance.exports.rt_init();
+            //console.log("RT STATUS ", rt);
+            //instance.exports._start();
+            //instance.exports.gc_collect();
+            //instance.exports.gc_disable();
 
-			//const rt = instance.exports.rt_init();
-			console.log("RT STATUS ", rt);
+            let w = new Wallet(instance);
+            console.log("EXPORTS");
+            console.log(instance.exports);
 
-			let w = new Wallet(instance);
-			console.log(instance.exports);
+            w.createWallet("some passphrase", "1234");
+            const pkey = w.getPubkey();
 
-			w.createWallet("some passphrase", "1234");
-			const pkey = w.getPubkey();
+            const pkey_base64 = w.encodeBase64URL(pkey.ptr, pkey.len);
+            let h = new Wallet(instance);
 
-			const pkey_base64 = w.encodeBase64URL(pkey.ptr, pkey.len);
+            const account = w.getAccount();
+            const device = w.getDevice();
+            const recover = w.getRecoverGenerator();
+
+            h.readWallet(device.ptr, device.len, recover.ptr, recover.len, account.ptr, account.len);
+            */
+
+
+            $('body').removeClass('busy');
+            $('#go').removeClass('disabled');
+			wallet = new Wallet(instance);
+
+            $("#go").click(doit);
+            
+            
 
 			//			let h = new HiBON(instance);
 			//			h.addString("wowo", "haha");
@@ -66,8 +102,111 @@
 
 		})();
 
+        
+        function doit(e){
+            let pwd = $("#ipass").val();
+            let pin= $("#ipin").val();
+            let data= $("#idata").val();
+            let cmdopt = $("#icmd").val();
+
+            login(pin, pwd);
+            
+            if(cmdopt == "trt"){
+                trtread();
+            }
+            else if (cmdopt == "bullseye"){
+                bullseye();
+            }
+
+        }
+
+
+        function login(pin, pwd){
+			wallet.createWallet(pwd, pin);
+			const _pkey = wallet.getPubkey();
+			const _pkey_base64 = wallet.encodeBase64URL(_pkey.ptr, _pkey.len);
+            pkey = _pkey;
+            pkey_encoded = _pkey_base64;
+        }
+
+        // res is expected to be ArrayBuffer
+        function res2doc ( res ) {
+            const udata = new Uint8Array(res);
+            const ptr = winstance.exports.mymalloc(udata.byteLength);    
+            const memory = new Uint8Array(winstance.exports.memory.buffer);
+            memory.set(udata, ptr);
+            let d = new Document(winstance,ptr,udata.byteLength);
+            return d;
+        }
+
+
+        function trtread(){
+        
+            const trtreq = wallet.makeTRTRead();
+            const memory = new Uint8Array(winstance.exports.memory.buffer);
+            const trtreadBytes = memory.subarray(trtreq.ptr, trtreq.ptr + trtreq.len);
+
+
+            $.ajax({
+                url: "/shell/api/v1/hirpc",
+                type: "post",
+                data: trtreadBytes,
+                contentType: "application/octet-stream",
+                processData: false,
+                xhrFields: { responseType: 'arraybuffer'},
+                success: function(data, status, xhr) {
+                    let d = res2doc(data);
+                    let t = d.getText();
+                    $("#out").html(t);
+                }
+            });
+             
+        }
+
+        function bullseye(){
+            
+            $.ajax({
+                url: "/shell/api/v1/bullseye/hibon",
+                type: "get",
+                xhrFields: { responseType: 'arraybuffer'},
+                success: function(data, status, xhr) {
+                    let d = res2doc(data);
+                    let t = d.getText();
+                    $("#out").html(t);
+                }
+            });
+            
+        }
+
 
 	</script>
+
+
+    <div class="d-flex flex-column p-2 w-75 vh-100 align-middle mx-auto mt-2">
+        <div class="mb-auto p-2 d-flex flex-row flex-nowrap align-content-stretch">
+            <input id="ipin" type="text" class="mx-1 w-50 form-control" placeholder="Wallet pin" aria-label="Wallet pin"> 
+            <input id="ipass" type="text" class="mx-1 w-50  form-control" placeholder="Wallet password" aria-label="Wallet password"> 
+            <input id="idata" type="text" class="mx-1 form-control flex-grow-1" placeholder="Data" aria-label="Data..."> 
+            <select id="icmd" class="mx-1 form-select w-50">
+                <option selected>Choose...</option>
+                <option value="trt">TRTRead</option>
+                <option value="bullseye">Dart bullseye</option>
+            </select>
+            <button id="go" type="button" class="mx-2 btn btn-primary">Confirm</button>
+        </div>
+        <div class="text-center loading">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <div class="flex-grow-1 p-3">
+            <code >
+            <pre id="out">
+                {empty} 
+            </pre>
+            </code>
+        </div>
+    </div>
 </body>
 
 </html>

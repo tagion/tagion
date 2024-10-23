@@ -19,29 +19,30 @@ import tagion.logger;
 import tagion.services.messages;
 import tagion.utils.StdTime;
 
-
 interface GossipNet {
-    alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
-    alias SenderCallBack = const(HiRPC.Sender) delegate() @safe;
     const(sdt_t) time() const nothrow;
-
-    bool isValidChannel(const(Pubkey) channel) const nothrow;
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
     void send(Pubkey channel, const(HiRPC.Sender) sender);
-    Pubkey gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
-    Pubkey select_channel(const(ChannelFilter) channel_filter);
+    const(Pubkey)[] active_channels() nothrow;
+    ref Random random() pure nothrow;
 }
 
 abstract class StdGossipNet : GossipNet {
     private string[immutable(Pubkey)] addresses;
     private immutable(Pubkey)[] _pkeys;
-    immutable(Pubkey) mypk;
-    Random random;
+    Random _random;
 
-    this(const Pubkey mypk) {
-        this.random = Random(unpredictableSeed);
-        this.mypk = mypk;
+    this() {
+        this._random = Random(unpredictableSeed);
+    }
+
+    const(Pubkey)[] active_channels() nothrow {
+        return _pkeys;
+    }
+
+    ref Random random() pure nothrow {
+        return _random;
     }
 
     void add_channel(const Pubkey channel) {
@@ -66,37 +67,14 @@ abstract class StdGossipNet : GossipNet {
 
     const(sdt_t) time() const nothrow {
         import std.exception : assumeWontThrow;
+
         return assumeWontThrow(currentTime);
     }
 
-    bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        return (channel in addresses) !is null;
-    }
+    void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender);
 
-    Pubkey select_channel(const(ChannelFilter) channel_filter) {
-        import std.algorithm : filter;
-        import std.array;
-
-        assert(_pkeys.length > 1);
-        auto keys_to_send = _pkeys.filter!(n => channel_filter(n) && n != mypk); 
-        if (keys_to_send.empty) {
-            log("NO AVAILABLE TO SEND TO");
-            return Pubkey.init;
-        }
-        return choice(keys_to_send.array, random);
-    }
-
-    Pubkey gossip(
-            const(ChannelFilter) channel_filter,
-            const(SenderCallBack) sender) {
-        const send_channel = select_channel(channel_filter);
-        version (EPOCH_LOG) {
-            log.trace("Selected channel: %s", send_channel.encodeBase64);
-        }
-        if (send_channel.length) {
-            send(send_channel, sender());
-        }
-        return send_channel;
+    void send(Pubkey channel, const(HiRPC.Sender) sender) {
+        send(WavefrontReq(), channel, sender);
     }
 }
 
@@ -106,20 +84,20 @@ private void sleep(Duration dur) @trusted {
 
 class EmulatorGossipNet : StdGossipNet {
     uint delay;
-    this(const Pubkey mypk, uint avrg_delay_msecs) {
+    this(uint avrg_delay_msecs) {
         this.delay = avrg_delay_msecs;
-        super(mypk);
+        super();
     }
 
-    void send(Pubkey channel, const(HiRPC.Sender) sender) {
-
+    override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
         import tagion.utils.pretend_safe_concurrency;
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
-        version(RANDOM_DELAY) {
-            sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
-        } else {
+        version (RANDOM_DELAY) {
+            sleep((cast(int) uniform(0.5f, 1.5f, random) * delay).msecs);
+        }
+        else {
             sleep(delay.msecs);
         }
 
@@ -128,9 +106,10 @@ class EmulatorGossipNet : StdGossipNet {
             return;
         }
 
-        node_tid.send(ReceivedWavefront(), sender.toDoc);
+        node_tid.send(WavefrontReq(req.id), sender.toDoc);
         version (EPOCH_LOG) {
-            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender.toDoc.serialize.length);
+            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender
+                    .toDoc.serialize.length);
         }
     }
 }
@@ -138,14 +117,16 @@ class EmulatorGossipNet : StdGossipNet {
 class NNGGossipNet : StdGossipNet {
     uint delay;
     private ActorHandle nodeinterface;
-    this(const Pubkey mypk, uint avrg_delay_msecs, ActorHandle nodeinterface) {
+    this(uint avrg_delay_msecs, ActorHandle nodeinterface) {
+        this.random = Random(unpredictableSeed);
         this.nodeinterface = nodeinterface;
         this.delay = avrg_delay_msecs;
-        super(mypk);
+        super();
     }
-    void send(Pubkey channel, const(HiRPC.Sender) sender) {
-        sleep((cast(int)uniform(0.5f, 1.5f, random) * delay).msecs);
 
-        nodeinterface.send(NodeSend(), channel, cast(Document)sender.toDoc);
+    override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
+        sleep((cast(int) uniform(0.5f, 1.5f, random) * delay).msecs);
+
+        nodeinterface.send(WavefrontReq(req.id), channel, sender.toDoc);
     }
 }

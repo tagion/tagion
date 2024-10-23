@@ -23,20 +23,13 @@ import tagion.utils.StdTime;
 /**
  * Tagion bill
  */
-@recordType("TGN")
+@recordType("TGN") 
 struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; /// Time stamp
     @label(StdNames.owner) Pubkey owner; /// owner key
     @label(StdNames.nonce) @optional Buffer nonce; /// extra nonce 
-    mixin HiBONRecord!(
-            q{
-                this(const(TagionCurrency) value, const sdt_t time, Pubkey owner, Buffer nonce) pure nothrow {
-                    this.value = value;
-                    this.time = time;
-                    this.owner = owner;
-                    this.nonce = nonce;
-        }});
+    mixin HiBONRecord;
 }
 
 /** 
@@ -100,15 +93,10 @@ struct SignedContract {
  * Included in a contract to eventually be outputs in the DART
  * The sum of the value of the outputs should be less than the sum of inputs + fees
  */
-@recordType("pay")
+@recordType("pay") 
 struct PayScript {
     @label(StdNames.values) const(TagionBill)[] outputs; /// Outputs of the contract to be Stored in DART
-    mixin HiBONRecord!(
-        q{
-                this(const(TagionBill)[] outputs) pure nothrow {
-                    this.outputs = outputs;
-                }
-            });
+    mixin HiBONRecord;
 }
 
 unittest {
@@ -236,28 +224,20 @@ unittest {
 /**
  * The very first epoch
  */
-@recordType("$@G")
+@recordType("$@G") 
 struct GenesisEpoch {
     @label(StdNames.epoch) long epoch_number; /// should always be zero
     Pubkey[] nodes; /// Initial nodes
     Document testamony; /// blabber
     @label(StdNames.time) sdt_t time; /// Time of consensus for the epoch
     TagionGlobals globals; /// global statistics
-    mixin HiBONRecord!(q{
-        this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time, const(TagionGlobals) globals) {
-            this.epoch_number = epoch_number;
-            this.nodes = nodes;
-            this.testamony = testamony;
-            this.time = time;
-            this.globals = globals;
-        }
-    });
+    mixin HiBONRecord;
 }
 
 /**
  * Epoch
  */
-@recordType("$@E")
+@recordType("$@E") 
 struct Epoch {
     @label(StdNames.epoch) long epoch_number; /// The epoch number
     @label(StdNames.time) sdt_t time; /// Time stamp
@@ -277,7 +257,7 @@ struct Epoch {
             const(Signature)[] signs,
             Pubkey[] active,
             Pubkey[] deactive,
-            const(TagionGlobals) globals) 
+            const(TagionGlobals) globals) pure nothrow 
         {
             this.epoch_number = epoch_number;
             this.time = time;
@@ -298,36 +278,24 @@ alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
  * Name record to get the current epoch
  * The record is updated on each epoch
  */
-@recordType("$@Tagion")
+@recordType("$@Tagion")  
 struct TagionHead {
     @label(StdNames.domain_name) string name = TagionDomain; /// Default name should always be "tagion"
     long current_epoch;
-    mixin HiBONRecord!(q{
-        this(const(string) name, const(long) current_epoch) {
-            this.name = name;
-            this.current_epoch = current_epoch;
-        }
-
-    });
+    mixin HiBONRecord;
 }
 
 /**
  * Global tagion statistics
  */
+
 struct TagionGlobals {
     @label("total") BigNumber total; /// The sum of value at the epoch
     @label("total_burned") BigNumber total_burned; /// Burned this epoch
     @label("number_of_bills") long number_of_bills; /// Total number of bills this epoch
     @label("burnt_bills") long burnt_bills; /// Number of bills spent this epoch
 
-    mixin HiBONRecord!(q{
-        this(const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
-            this.total = total;
-            this.total_burned = total_burned;
-            this.number_of_bills = number_of_bills;
-            this.burnt_bills = burnt_bills;
-        }
-    });
+    mixin HiBONRecord;
 }
 
 /**
@@ -360,30 +328,20 @@ version(RESERVED_ARCHIVES_FIX) {
 /**
  * Output which did not reach consensus at this epoch
  */
-@recordType("$@Locked")
+@recordType("$@Locked") 
 struct LockedArchives {
     @label(StdNames.locked_epoch) long epoch_number; ///
     @label("outputs") const(DARTIndex)[] locked_outputs; ///
-    mixin HiBONRecord!(q{
-        this(long epoch_number, const(DARTIndex)[] locked_outputs) pure nothrow {
-            this.epoch_number = epoch_number;
-            this.locked_outputs = locked_outputs;
-        }
-    });
+    mixin HiBONRecord;
 }
 } else {
 pragma(msg, "Why is Locked not reserved?");
 ///
-@recordType("@Locked")
+@recordType("@Locked") 
 struct LockedArchives {
     @label(StdNames.locked_epoch) long epoch_number;
     @label("outputs") const(DARTIndex)[] locked_outputs;
-    mixin HiBONRecord!(q{
-        this(long epoch_number, const(DARTIndex)[] locked_outputs) pure nothrow {
-            this.epoch_number = epoch_number;
-            this.locked_outputs = locked_outputs;
-        }
-    });
+    mixin HiBONRecord;
 }
 }
 
@@ -419,6 +377,62 @@ struct Active {
     }
 }
 
+@recordType("wasm")
+struct WasmScript {
+    Buffer code;
+}
+
+// Test that the record types didn't change
+unittest {
+    import std.path;
+    import std.file;
+    import std.string;
+    import std.stdio;
+    import tagion.basic.basic;
+    import tagion.hibon.HiBONFile;
+    import tagion.crypto.SecureNet;
+    import tagion.hibon.HiBON;
+
+    string records_file = unitfile("common_records.hibon");
+    if(records_file.exists) {
+        records_file.remove;
+    }
+    mkdirRecurse(records_file.dirName);
+    File fout = File(records_file, "a");
+
+    SecureNet net = new StdSecureNet();
+    net.generateKeyPair("common_records_test");
+
+    sdt_t time = sdt_t(638_402_115_766_852_971);
+    TagionBill tagion_bill = TagionBill( 123.TGN, time, net.pubkey, []);
+    PayScript payscript = PayScript([tagion_bill]);
+    Contract contract = Contract([dartIndex(net, tagion_bill)], [], payscript.toDoc);
+    // We use a hardcorded signature because we dont want the signature to affect the different
+    Signature signature = new ubyte[](64);
+    SignedContract s_contract = SignedContract([signature], contract);
+    fwrite(fout, s_contract);
+
+    HiBON testamony_h = new HiBON;
+    testamony_h["text"] = "Hi Tagion";
+    Document testamony = Document(testamony_h);
+
+    TagionGlobals globals = TagionGlobals(BigNumber(100_000), BigNumber(100_000), 10, 10);
+    GenesisEpoch genesis_epoch = GenesisEpoch(0, [net.pubkey], testamony, time, globals);
+    fwrite(fout, genesis_epoch);
+
+    Fingerprint bullseye = net.calcHash(testamony);
+    Epoch epoch = Epoch(long(10), time, bullseye, bullseye, s_contract.signs, [net.pubkey], [net.pubkey], globals);
+    fwrite(fout, epoch);
+
+    TagionHead head = TagionHead(TagionDomain, long(1));
+    fwrite(fout, head);
+
+    ConsensusVoting c_voting = ConsensusVoting(long(2), net.pubkey, s_contract.signs[0]);
+    fwrite(fout, c_voting);
+
+    LockedArchives locked_archives = LockedArchives(long(3), [dartIndex(net, testamony)]);
+    fwrite(fout, locked_archives);
+}
 version (WITHOUT_PAYMENT) {
     struct HashString {
         string name;

@@ -9,7 +9,7 @@ private import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 import tagion.crypto.random.random;
 import std.algorithm;
 import std.array;
-import tagion.basic.ConsensusExceptions;
+import tagion.errors.ConsensusExceptions;
 
 enum SECP256K1 : uint {
     FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
@@ -160,7 +160,7 @@ class NativeSecp256k1 {
     @trusted
     final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
-    const(ubyte[]) pubkey) const pure
+            scope const(ubyte[]) pubkey) const pure
     in (seckey.length == SECKEY_SIZE)
     in (pubkey.length == PUBKEY_SIZE)
     do {

@@ -125,15 +125,11 @@ unittest {
     import tagion.utils.StdTime;
 
     const net = new StdHashNet;
+    
     static struct DARTKey(T) {
         @label("#key") T key;
         int x;
-        mixin HiBONRecord!(q{
-            this(T key, int x) {
-                this.key=key;
-                this.x=x;
-            }
-        });
+        mixin HiBONRecord;
     }
 
     auto dartKeyT(T)(T key, int x) {
@@ -209,7 +205,7 @@ do {
 
 Fingerprint binaryHash(const(HashNet) net, scope const(Fingerprint) h1, scope const(
         Fingerprint) h2) {
-    return Fingerprint(binaryHash(net, cast(Buffer) h1, cast(Buffer) h2));
+    return Fingerprint(binaryHash(net, cast(const(Buffer)) h1, cast(const(Buffer)) h2));
 }
 /**
 

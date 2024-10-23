@@ -2,7 +2,7 @@
 module tagion.crypto.SecureInterfaceNet;
 
 import std.typecons : TypedefType;
-import tagion.basic.ConsensusExceptions : Check, ConsensusFailCode, SecurityConsensusException;
+import tagion.errors.ConsensusExceptions : Check, ConsensusFailCode, SecurityConsensusException;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.crypto.Types : Fingerprint, Pubkey, Signature;
 import tagion.hibon.Document : Document;
@@ -84,7 +84,7 @@ interface SecureNet : HashNet {
     void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey);
     const(SecureNet) derive(const(ubyte[]) tweak_code) const;
     const(SecureNet) derive(B)(const B tweak_code) const if (isBufferType!B) {
-        return derive(cast(TypedefType!B) tweak_code);
+        return derive(cast(const(TypedefType!B)) tweak_code);
     }
 
     Pubkey derivePubkey(const(ubyte[]) tweak_code);

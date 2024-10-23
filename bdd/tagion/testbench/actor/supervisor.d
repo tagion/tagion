@@ -14,7 +14,7 @@ import std.stdio;
 import std.typecons : Tuple;
 import tagion.actor.actor;
 import tagion.actor.exceptions : TaskFailure;
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.errors.tagionexceptions : TagionException;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import tagion.testbench.tools.Environment;

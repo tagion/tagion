@@ -1,3 +1,92 @@
+# Changelog for Epoch 2278693 .. 2844845
+
+**Hashgraph consensus changes**
+
+**DockerFile**
+We've created a small alpine based docker image to use for deploying of mode1 test networks.
+This image also allows to create a small single statically linked tagion executable for easier distribution.
+
+**NNG Websocket fixes**
+Fixed a case where nng websocket workers would cause the process to not exit properly
+
+**C-API**
+We've fixed some issues in the c-api functions and
+created integration tests for most functions in the dart programming language.
+
+
+# Changelog for Epoch 2094264 .. 2278693
+
+**Node interface**
+We refactered the nodeinterface and made the communication simpler by only keeping connections open until a HiRPC result or error is exchanged.
+This way we don't have to associate a connections with a public key, we know when to close the connection and the protocol is extensible for uses such as DART synchronization.
+We also removed the breaking waves. The state is now in the communication and not internal.
+The response patterns now look like this.
+
+```
+method SHARP -> result COHERRENT | result RIPPLE
+method TIDAL WAVE -> error | method FIRST WAVE
+method FIRST WAVE -> error | result SECOND WAVE
+* -> error  
+```
+
+All of the connections are now stored in an LRU cache, so if too many connections are opened at once they'll be pushed out of the queue and closed.
+
+**Envelope refactoring**
+The envelope implementation has been cleaned up and some unnecessary allocations have been removed. The nodeinterface also now uses the envelope format for transportation.
+
+**Shell explorer**
+A basic shell explorer has been created, which is able to lookup different types of archives in the database, as well as public keys from the TRT.
+
+**C-API updates**
+The C-API has been updated and new more low-level functions have been specified / created. 
+Generally we are moving in a direction where we are striving to keep the least amount of state in the API. Therefore the only state held now is for the SecureNet which contains the key-pair. For all other information such as accounting it is up to the one using the API to handle.
+
+# Changelog for Epoch 2010300 .. 2094264
+
+**Simplified HiBON Record Constructors**  
+HiBONRecord now automatically creates a constructor instead of having to explicitly create on for each struct.
+
+**Dartutil**  
+The dartutil can now take multiple dart files as an argument.
+eg. making it easier to check the bullseye for multiple dart files.  
+
+To get the bullseye of all dart files in you directory you can do
+```
+dartutil --eye *.drt
+```
+
+**HiRPC tool**  
+We added documentation for the hirpc command line tool.
+This tool has proven to be really handy, so we're keeping it :D
+
+# Changelog for Epoch 1924336.. 2010300
+
+**NNG MIME Map**  
+The default MIME type file handler for NNG's HTTP module did not work with the WebAssembly (.wasm) file extension, so we extended it with all content types from the official IANA list.
+
+**Subscriber Tool**  
+The subscriber tool can now subscribe to multiple addresses and output all events to a single stream.
+
+**Extended Document Element Index Handler**  
+When indexing multiple nested serialized HiBON documents, the expression can now be simplified.  
+What would previously be written as:
+```
+doc["$msg"].getDocument["params"].getDocument["data"].getMyRecord
+```
+
+Can now be written as:
+```
+doc["$msg"]["params"]["data"].getMyRecord
+```
+
+**Node Interface Utility**  
+We created a visualization tool for P2P communication, which will help with debugging and optimizing network communication.
+
+**Fixed Deprecations for Upcoming Compiler Versions**  
+In DMD pre-release 2.109.0, multiple fixes were made to casts that were not correctly marked as unsafe in `@safe` code.
+We've updated our code, and it should now be compatible with these fixes.  
+The officially targeted compiler is 2.107.1, but everything should still work with newer and older compilers.
+
 # Changelog for epoch 1909372 .. 1924336
 
 **Transaction Verification TIP**  

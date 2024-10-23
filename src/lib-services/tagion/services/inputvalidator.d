@@ -5,12 +5,13 @@ module tagion.services.inputvalidator;
 @safe:
 
 import core.time;
-import nngd;
+
 import std.algorithm : remove;
 import std.conv : to;
 import std.format;
 import std.socket;
 import std.stdio;
+
 import tagion.actor;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
@@ -27,6 +28,8 @@ import tagion.services.codes;
 import tagion.services.options : TaskNames;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
+
+import nngd;
 
 struct InputValidatorOptions {
     string sock_addr;
@@ -58,9 +61,9 @@ struct InputValidatorService {
     static Topic rejected = Topic("reject/inputvalidator");
 
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
-    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) __task_names) @trusted {
+    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
         HiRPC hirpc = HiRPC(net);
-        ActorHandle hirpc_verifier_handle = ActorHandle(__task_names.hirpc_verifier);
+        ActorHandle hirpc_verifier_handle = ActorHandle(task_names.hirpc_verifier);
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
 
@@ -95,8 +98,7 @@ struct InputValidatorService {
         ReceiveBuffer buf;
         buf.max_size = opts.sock_recv_buf;
 
-        const listening = sock.listen(opts.sock_addr, nonblock:
-                true);
+        const listening = sock.listen(opts.sock_addr, nonblock: true);
         scope (exit) {
             sock.close();
         }
@@ -109,10 +111,7 @@ struct InputValidatorService {
 
             throw new ServiceError(format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening)));
         }
-        const recv = (scope void[] b) @trusted {
-            // 
-            return cast(ptrdiff_t) sock.receivebuf(cast(ubyte[]) b, 0, false);
-        };
+
         setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
             // Check for control signal
@@ -126,66 +125,36 @@ struct InputValidatorService {
                 continue;
             }
 
-            version (BLOCKING) {
-                scope (failure) {
-                    reject(ServiceCode.internal);
-                }
-                auto result_buf = sock.receive!Buffer;
-                if (sock.m_errno != nng_errno.NNG_OK) {
-                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
-                        log.error(nng_errstr(sock.m_errno));
-                    }
-                    continue;
-                }
-                if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
-                    if (result_buf.length > 0) {
-                        reject(ServiceCode.timeout);
-                    }
-                    else {
-                        continue;
-                    }
-                }
-                if (sock.m_errno != nng_errno.NNG_OK) {
-                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
-                        log.error(nng_errstr(sock.m_errno));
-                    }
-                    continue;
-                }
-                if (result_buf.length <= 0) {
-                    reject(ServiceCode.internal);
-                    continue;
-                }
-
-                Document doc = result_buf;
+            scope (failure) {
+                reject(ServiceCode.internal);
             }
-            else {
-                scope (failure) {
-                    reject(ServiceCode.internal);
+            auto result_buf = sock.receive!Buffer;
+            if (sock.errno != nng_errno.NNG_OK) {
+                if (sock.errno != nng_errno.NNG_ETIMEDOUT) {
+                    log.error(nng_errstr(sock.errno));
                 }
-                auto result_buf = buf(recv);
-                if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
-                    if (result_buf.data.length > 0) {
-                        reject(ServiceCode.internal);
-                    }
-                    else {
-                        continue;
-                    }
-                }
-                if (sock.m_errno != nng_errno.NNG_OK) {
-                    if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
-                        log.error(nng_errstr(sock.m_errno));
-                    }
-                    continue;
-                }
-
-                // Fixme ReceiveBuffer .size doesn't always return correct length
-                if (result_buf.data.size <= 0) {
-                    reject(ServiceCode.buf);
-                    continue;
-                }
-
-                Document doc = result_buf.data.idup;
+                continue;
             }
+            if (sock.errno == nng_errno.NNG_ETIMEDOUT) {
+                if (result_buf.length > 0) {
+                    reject(ServiceCode.timeout);
+                }
+                else {
+                    continue;
+                }
+            }
+            if (sock.errno != nng_errno.NNG_OK) {
+                if (sock.errno != nng_errno.NNG_ETIMEDOUT) {
+                    log.error(nng_errstr(sock.errno));
+                }
+                continue;
+            }
+            if (result_buf.length <= 0) {
+                reject(ServiceCode.internal);
+                continue;
+            }
+
+            Document doc = result_buf;
 
             if (!doc.isInorder) {
                 reject(ServiceCode.buf);

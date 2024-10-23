@@ -5,6 +5,8 @@ import core.time;
 import std.file;
 import std.path : buildPath, setExtension;
 import std.stdio;
+import std.conv;
+import std.process : environment;
 import tagion.GlobalSignals;
 import tagion.actor;
 import tagion.basic.Types : FileExtension;
@@ -35,11 +37,13 @@ int _main(string[] args) {
     string config_file = buildPath(module_path, "tagionwave.json");
 
     scope Options local_options = Options.defaultOptions;
+    local_options.wave.number_of_nodes = 5;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.trt.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "Genesis_Node_%s_";
-    local_options.subscription.address = contract_sock_addr("GENESIS_SUBSCRIPTION");
+    // Don't start the subscription service because we want to use the test thread for subscription
+    local_options.subscription.enable = false;
     local_options.save(config_file);
 
     import std.algorithm;
@@ -66,7 +70,7 @@ int _main(string[] args) {
     foreach (i; 0 .. 2) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-            iota(0, 5)
+                iota(0, 5)
                 .map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5)
                 .map!(n => format("%danswer%d", i, n)).array,
@@ -124,9 +128,9 @@ int _main(string[] args) {
     NodeSettings[] node_settings;
     foreach (opt, key; zip(node_opts, keys)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            key,
-            opt.task_names.epoch_creator, // Address
+                opt.task_names.epoch_creator, // Name
+                key,
+                opt.task_names.epoch_creator, // Address
         );
     }
 
@@ -144,9 +148,9 @@ int _main(string[] args) {
     /// FIXME: Duplicate generate genesis_epoch
     const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
     const genesis = createGenesis(
-        node_settings,
-        Document(testamony), 
-        globals,
+            node_settings,
+            Document(testamony),
+            globals,
     );
 
     recorder.insert(genesis, Archive.Type.ADD);
@@ -181,12 +185,12 @@ int _main(string[] args) {
     immutable neuewelle_args = [
         "genesis_test", config_file
     ]; // ~ args;
-    auto tid = spawn(&wrap_neuewelle, neuewelle_args);
+    Tid tid = spawn(&wrap_neuewelle, neuewelle_args);
+    string test_task_name = "genesis_testing";
+    register(test_task_name, thisTid);
+    log.registerSubscriptionTask(test_task_name);
 
     Thread.sleep(15.seconds);
-    auto name = "genesis_testing";
-    register(name, thisTid);
-    log.registerSubscriptionTask(name);
 
     auto feature = automation!(genesis_test);
     feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch);

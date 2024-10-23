@@ -2,57 +2,59 @@
 
 ## In Progress
 
-### CLI testing
-Description: Create proposal for how to test CLI-tools
-[X] Create proposal
-[] Create HiREP tests based on documentation
-
-Assignee: ib
-
-### Hashgraph Consensus bug
-Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
-
-- [X] Create callback array and reassign pointer on fiber switch
-- [] Show all errors for multi-view. (having problems with this)
-- [X] Create Event overload (CBR)
-- [] Investigate Youngest Son Ancestor impl.
-- [] profit?
-
 ### Wallet 
-Description: simplify the wallet logic so that there is only one way to do everything
+Description: simplify the wallet interface so that there is only one way to do everything
 
 ### Hashgraph monitor updates
 Tasks: 
 - [X] Remove old events that are older than X round received. 
-- [] Document the hashgraph monitor widget. `docs/docs/gui-tools/hashgraph_viewer.md` 
-Assignee: yr
-### NNG test flow
-Description: Extend the CI-pipeline for github.com/tagion/nng to automatically build and execute tests
-
+- [ ] Document the hashgraph monitor widget. `docs/docs/gui-tools/hashgraph_viewer.md` 
 Assignee: yr
 
-### Tagion API library
-- [X]: Create document API
-- []: create HiBON api
-- []: create wallet api
 
-
-### Implement wavefront for nodeinterface
-description: nodes should be able to communicate p2p on a half-duplex communication using the wavefront protocol
-
-tasks:
-    - [x]: make nng_stream aio tasks convenient to use with std.concurrency
-    - [x]: associate in/out-comming connections with public keys
-    - [ ]: handle breaking waves
-    - [ ]: tests, tests, tests...
-
+### Distributed nodes test
+Setup tests for multiple distributed nodes
+- [ ] Setup tool to start distribute test network
+- [ ] Implement a remote monitor tool for the distribute network
 Assignee: lr
 
-### Epoch shutdown test
-description: Test the synchronized mode0 epch stop, where all nodes stop at a specific epoch
-assignee: lr
+### Gitlab ci trigger
+Make a script to trigger the gitlab app ci when the native mobile libraries have been built
+Assignee: lr
+
+### DART dry run function
+A function which calculates the bullseye on a recorder 
+- [ ] Implement in a unittest
+Assignee: pr
+
+### Epoch Voting
+- [ ] Test asynchronity of the hashgraph by the amount of nodes
+- [ ] Integration test
+- [ ] Longitudinal test (Mode 1)
+
+### Dump of epoch 
+Implement a switch in tagionwave to enable trace dump of the wavefront.
+
+### Telegram wavefront
+Logger checker via Telegram.
+
 
 ## Backlog
+
+### Logger topics
+Logger topics enable switch (Remote).
+ 
+
+### Hashgraph node swapping
+Description: Enable a new node to join the graph
+- [ ] Enable a node to follow the graph and build the consensus with out participating
+- [ ] Detection when the join node can join the network
+- [ ] Implement consensus joining
+Assignee: cbr
+
+
+### Tauon was test build fails
+Description: Linking of wasm tauon test file fails after 91fd2e09c560530a8ffd19292e82dedc1b5e2d08 or 4999f813071e64f8eda78e98e3b649958f5b52bf because of missing _start function. I've tried reverting both commits individually but it didn't change anything. Also they both seem unrelated.
 
 ### Subscription API implementation
 Description: Provide external API for subscribing and querying data in the system as in [Subscription API proposal](https://docs.tagion.org/tips/3)
@@ -60,9 +62,7 @@ Labels: [Tracing]
 
 ### Envelope communication
 Description: 
-
 Create functionalitiy in wallet to serialize to Envelope.
-
 Create functionality for shell to accept Envelope.
 
 ### Mirror Node proposal
@@ -70,87 +70,59 @@ Description: Create Query nodes which can be used for both sending and receiving
 
 
 ### HiBON Document max-size check test 
-We should make sure that we have check for max-size/out-of-memory
+Description: We should make sure that we have check for max-size/out-of-memory
 For all external Documents
 Like the inputvalidator...
 
-Test should also be made for NNG buffer overrun!
 
 ### Daily operational test
-description: Add a github ci script which activates the operational test once a day
+Description: Add a github ci script which activates the operational test once a day
 Assignee: lr
 
-## Done
-### Hashgraph viewer
-Description: Be able in frontend via query parameter or other in order to specify tagionshell url for websocket that it should connect to.
-
-Assignee: yr
-
-### Envelope on shell
-Description: The shell should be able to accept a envelope package.
-
-[X] - Create function in CLI-wallet to serialize to envelope.
-[X] - Shell to deserialize to HiRPC hibon based on if it receives an Envelope
-
-Assignee: yr
-### Implement "not" flag in HiREP
-
-Description:
-The not flag should implement similar function as the `grep -v` or like the `find . -not ...`.
-This it should filter out all which matches the pattern.
-
-Assignee: ib
-### Contract storage behaviour test
-Description: 
-
-DONE
-Scenario: Proper contract
-* Given a network
-* Given a correctly signed contract
-* When the contract is sent to the network and goes through
-* Then the contract should be saved in the TRT 
-
-DONE
-Scenario: Invalid contract
-* Given a network
-* Given a incorrect contract which fails in the Transcript
-* When the contract is sent to the network 
-* Then it should be rejected
-* Then the contract should not be stored in the TRT
-
-[X] - Add function in SecureWallet.d which takes contract and produces hirpc for trt.dartRead of the contract hash.
-[X] - Check functions should show the amount and expected amount on error.
-
-Labels: [Tracing, TRT]
-
-Assignee: ib
-
-
-### Logging of events in android
-Description: Open a file with the `WalletWrapperSdk path()` function which can be printed to the log in flutter later.
-[x] - Create DEBUG_ANDROID flag instead of WRITE_LOGS
-[x] - Check if debug symbols on android libmobile. Are they compiled in?
-Old serialization enabled in android fixed the problem.
-
-Assignee: ab
-### Wasmer execution engine prototype
-Description: Integrate Wasmer as a simple execution engine for WASM smart contracts
-
-Setup the build flow for libwasmer
-
-Implement the interface from D to C of libwasmer.
-
-Initial TVM cli tool.
-
-Assignee: cbr
-
-### Types filtering in hirep 
+### Types filtering in hirep
 Description: hirep have --types arg, but it's not implemented yet.
 
-- [] - Implement --type filtering in hirep.
-- [] - Write bdd test for this feature
+- [ ] - Implement --type filtering in hirep.
+- [ ] - Write bdd test for this feature
 
-Assignee: ib
+# Update recorderchain documentation
+Description: the current recorderchain tool documentation is for a previous version of the tool
+
+---
+
+## Done
+
+### Tagion API library
+- [X] Create document API
+- [x] create HiBON api
+- [x] create wallet api
+
+### Hashgraph Consensus bug
+Description: After very many epochs a consensus bug is incurred where the epochs are not the same. One node gets behind and seems to stop communcating for a period of time.
+
+- [X] Create callback array and reassign pointer on fiber switch
+- [X] Show all errors for multi-view. (having problems with this)
+- [X] Create Event overload (CBR)
+
+### NNG test flow
+Description: Extend the CI-pipeline for github.com/tagion/nng to automatically build and execute tests
+Assignee: yr
+
+### Fix Mode1 test
+Description: Mode1 test doesn't work with other than 5 nodes
+Assignee: lr
+
+### C-api fixes
+- [x] check error text is set
+~- [ ] check rt_init exported functions on android~ This is insignifant and we decided not to spend time on this now. Currently just use start_rt
+- [x] add hibon override/delete key functions
+Assignee: lr
+
+## Merge wavefront
+Description: Merge the changes to the hashgraph with changes to the wavefront and ensure that all tests pass.
+Assignee: lr, cbr
+
+---
 
 ## Template
 ### Task Title
@@ -166,4 +138,3 @@ Labels (optional): [Label 1], [Label 2]
 Priority (optional): High/Medium/Low
 
 Due Date: YYYY-MM-DD
-

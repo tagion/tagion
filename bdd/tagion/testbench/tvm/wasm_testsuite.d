@@ -48,7 +48,8 @@ class ShouldConvertswastfileTestsuiteToWasmFileFormat {
 
     @Given("a wast testsuite file")
     Document file() {
-        writefln("%s", __FUNCTION__);
+        writeln;
+        writefln("Tokenize %s", wast_file);
         immutable wast_text = wast_file.readText;
         tokenizer = WastTokenizer(wast_text);
         return result_ok;
@@ -65,7 +66,7 @@ class ShouldConvertswastfileTestsuiteToWasmFileFormat {
     @Then("write the wasm-binary data of to a #wasm-file")
     Document wasmfile() {
         wasm_file = buildPath(env.bdd_results, wast_file.baseName.setExtension("wasm"));
-        writefln("wasm file %s", wasm_file);
+        writefln("Generate %s", wasm_file);
         wasm_file.fwrite(writer.serialize);
         return result_ok;
     }
@@ -85,15 +86,15 @@ class ShouldLoadAwasmfileAndConvertItIntoBetterC {
 
     @Given("the testsuite file in #wasm-file format")
     Document wasmfileFormat() @trusted {
-        writefln("%s", __FUNCTION__);
+        writefln("Read %s", wasm_file);
         immutable data = cast(immutable(ubyte)[]) wasm_file.fread;
         reader = WasmReader(data);
         return result_ok;
     }
 
-    @Then("convert the #wasm-file into betteC #dlang-file format")
+    @Then("convert the #wasm-file into betterC #dlang-file format")
     Document dlangfileFormat() {
-        writefln("betterc_file=%s", betterc_file);
+        writefln("Transpile to %s", betterc_file);
         auto fout = File(betterc_file, "w");
         scope (exit) {
             fout.close;
@@ -130,6 +131,7 @@ class ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt {
 
         cmd = [cmd, betterc_file, format("-of=%s", test_file)].join(" ");
         auto pid = spawnShell(cmd);
+        writefln("Compile %s", test_file);
         writefln("%s", cmd);
         const ret = wait(pid);
         check(ret == 0, format("Compilation of %s failed", betterc_file));
@@ -138,7 +140,7 @@ class ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt {
 
     @Then("execute the unittest file and check that all unittests parses.")
     Document run_test() @trusted {
-        writefln("test_file %s", test_file);
+        writefln("Execute %s", test_file);
         auto pid = spawnShell(test_file);
         const ret = wait(pid);
         check(ret == 0, format("Test %s failed (see logfile)", test_file));

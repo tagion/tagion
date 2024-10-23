@@ -1,5 +1,15 @@
 # Architecture
 
+## Actor
+
+Tagion core's services are various actor's
+An actor is a task that is able to send and receive messages from other tasks.
+The actors have a hierarchical structure where the owner of an actor is called a supervisor and the actor owned by the supervisor is called a child.
+
+When an actor fails the error is sent to the to the supervisor if the error is deemed unrecoverable the supervisor can decide to restart the supervision tree.
+
+child stops when a supervisor sends a STOP signal to the child and the child sends an END when it stops if an error occurs in the child the error (Exception) should be sent to the supervisor.
+
 ## Description of the services in a node
 A node consist of the following services.
 
@@ -30,16 +40,16 @@ The socket address, and thereby the visibility can be changed in the tagionwave 
 
 
 | [Input Validator](/docs/architecture/InputValidator.md) | [Dart Interface](/docs/architecture/DartInterface.md) | [Subscription](/docs/architecture/LoggerSubscription.md) | [Node Interface](/docs/architecture/NodeInterface.md) |
-| -                                                            | -                                                          | -                                                             | -                                                          |
-| Write                                                        | Read-only                                                  | Pub                                                           | Half-duplex p2p wavefront communication                    |
-| **HiRPC methods**                                            | ..                                                         | ..                                                            | ..                                                         |
-| "submit"                                                     | "search"                                                   | "log"                                                         |
-|                                                              | "dartCheckRead"                                            |
-|                                                              | "dartRead"                                                 |
-|                                                              | "dartRim"                                                  |
-|                                                              | "dartBullseye"                                             |
-| **NNG Socket type**                                          | ..                                                         | ..                                                            | ..                                                         |
-| REPLY                                                        | REPLY                                                      | PUBLISH                                                       | ???                                                        |
+| -                                                       | -                                                     | -                                                        | -                                                     |
+| Write                                                   | Read-only                                             | Pub                                                      | Half-duplex p2p wavefront communication               |
+| **HiRPC methods**                                       | ..                                                    | ..                                                       | ..                                                    |
+| "submit"                                                | "search"                                              | "log"                                                    |
+|                                                         | "dartCheckRead"                                       |
+|                                                         | "dartRead"                                            |
+|                                                         | "dartRim"                                             |
+|                                                         | "dartBullseye"                                        |
+| **NNG Socket type**                                     | ..                                                    | ..                                                       | ..                                                    |
+| REPLY                                                   | REPLY                                                 | PUBLISH                                                  | ???                                                   |
 
 
 ## Data Message flow

@@ -4,7 +4,7 @@ TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
 BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
-ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
+ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" | tr '\n' ' '}
 
 BDD_MD_FILES=${shell find $(BDD)/tagion -name "*.md" -a -not -name "*.gen.md" -a -not -path "*/tagion/testbench/tvm/testsuite/*"}
 
@@ -94,9 +94,6 @@ env-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
-	${call log.env, BDD_DFILES, $(BDD_DFILES)}
-	${call log.env, BDD_D_FILES, $(BDD_D_FILES)}
-	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
 	${call log.env, TESTENV, $(TESTENV)}
 	${call log.kvp, TESTMAIN, $(TESTMAIN)}
 	${call log.kvp, TESTPROGRAM, $(TESTPROGRAM)}
@@ -106,7 +103,17 @@ env-bdd:
 
 .PHONY: env-bdd
 
-env: env-bdd
+files-bdd:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.env, BDD_DFILES, $(BDD_DFILES)}
+	${call log.env, BDD_D_FILES, $(BDD_D_FILES)}
+	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
+	${call log.close}
+
+.PHONY: files-bdd
+
+env-files: files-bdd
 
 list-bdd:
 	$(PRECMD)

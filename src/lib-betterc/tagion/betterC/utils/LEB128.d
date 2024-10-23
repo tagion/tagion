@@ -8,7 +8,7 @@ import std.format;
 import traits = std.traits : isIntegral, isSigned, isUnsigned;
 import std.typecons;
 
-//import tagion.basic.tagionexceptions;
+//import tagion.errors.tagionexceptions;
 import std.algorithm.comparison : min;
 import std.algorithm.iteration : map, sum;
 import tagion.betterC.utils.Bailout;

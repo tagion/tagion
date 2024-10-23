@@ -39,10 +39,10 @@ struct NetworkNameRecord {
 struct NetworkNodeRecord {
     enum State {
         STERILE,
-        LOCKED,
-        PROSPECT,
-        STANDBY,
         ACTIVE,
+        STANDBY,
+        PROSPECT,
+        LOCKED,
     }
 
     @label(StdNames.nodekey) Pubkey channel; /// Node public key

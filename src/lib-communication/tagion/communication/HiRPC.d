@@ -1,13 +1,14 @@
 /** 
-* HiBON Remote Pprocedure Call
+* HiBON Remote Procedure Call
 */
 module tagion.communication.HiRPC;
 
 import std.exception : assumeWontThrow;
 import std.format;
 import std.traits : EnumMembers;
+import std.range;
 import tagion.basic.Types : Buffer;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey, Signature;
 import tagion.script.standardnames;
@@ -70,14 +71,18 @@ struct HiRPC {
             return assumeWontThrow(full_name.splitter('.').retro.front);
         }
 
+        string domain() pure const nothrow {
+            return assumeWontThrow(full_name.split('.').dropBack(1).join('.'));
+        }
+
         void name(string name) pure nothrow @nogc {
             full_name = name;
         }
 
-        string entity() pure const nothrow  {
-            foreach_reverse(i, c; full_name) {
-                if(c == '.') {
-                    return full_name[0..i];
+        string entity() pure const nothrow {
+            foreach_reverse (i, c; full_name) {
+                if (c == '.') {
+                    return full_name[0 .. i];
                 }
             }
             return string.init;
@@ -322,6 +327,21 @@ struct HiRPC {
                 return _message.method;
             }
 
+            ///
+            @trusted
+            uint getId() nothrow pure const {
+                final switch (type) {
+                case Type.method:
+                    return _message.method.id;
+                case Type.result:
+                    return _message.response.id;
+                case Type.error:
+                    return _message.error.id;
+                case Type.none:
+                    return uint.init;
+                }
+            }
+
             @trusted
             bool isRecord(T)() const {
                 with (Type) {
@@ -407,16 +427,19 @@ struct HiRPC {
             return T(args, method.params);
         }
 
+        ///
         Document params() const {
             check(type is Type.method, format("Message type %s expected not %s", Type.method, type));
             return method.params;
         }
 
+        ///
         const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
             check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
-            return T(response.result, args);
+            return T(args, response.result);
         }
 
+        ///
         Document result() const {
             check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
 
@@ -431,7 +454,11 @@ struct HiRPC {
 
     alias check = Check!HiRPCException;
     const SecureNet net;
+    string domain = null;
 
+    const(HiRPC) relabel(string domain) const pure nothrow {
+        return HiRPC(net, domain);
+    }
     /**
      * Generate a random id 
      * Returns: random id
@@ -465,12 +492,13 @@ struct HiRPC {
      * Returns: 
      */
     immutable(Sender) action(string method, const Document params, const uint id = uint.max) const {
+        import std.algorithm;
         Method message;
         message.id = (id is uint.max) ? generateId : id;
         if (!params.empty) {
             message.params = params;
         }
-        message.name = method;
+        message.name = only(domain, method).filter!(str => !str.empty).join(".");
         message.params = params;
         auto sender = Sender(net, message);
         return sender;
@@ -581,6 +609,7 @@ unittest {
         params["test"] = 42;
         // Create a send method name func_name and argument params
         const sender = hirpc.action(func_name, params);
+        assert(sender.params == Document(params));
         // Sender with bad credentials
         const invalid_sender = bad_hirpc.action(func_name, params, sender.method.id);
 
@@ -609,6 +638,7 @@ unittest {
             auto hibon = new HiBON;
             hibon["x"] = 42;
             const send_back = hirpc.result(receiver, hibon);
+            assert(send_back.result == Document(hibon));
             const result = ResultStruct(send_back.response.result);
             assert(result.x is 42);
         }
@@ -661,11 +691,53 @@ unittest {
             }
         }
         // writefln("recever.verified=%s", recever.verified);
+        {
+            const method = hirpc.action("id", Document(), 8);
+            const re_method = hirpc.receive(method);
+            assert(re_method.getId == 8);
+
+            const res = hirpc.result(re_method, Document());
+            const re_res = hirpc.receive(res);
+            assert(re_res.getId == 8);
+
+            const err = hirpc.error(3, "bad");
+            const re_err = hirpc.receive(err);
+            assert(re_err.getId == 3);
+
+            HiRPC.Receiver empty;
+            assert(empty.getId == 0);
+        }
     }
+
+    {
+        const hirpc = HiRPC(null);
+        {
+            const sender = hirpc.action("action");
+            assert(sender.method.name == "action");
+            assert(sender.method.full_name == "action");
+            assert(sender.method.domain.empty);
+        }
+        const hirpc1 = hirpc.relabel("domain");
+        {
+            const sender = hirpc1.action("action");
+            assert(sender.method.name == "action");
+            assert(sender.method.full_name == "domain.action");
+            assert(sender.method.domain == "domain");
+        }
+        const hirpc2 = hirpc.relabel("newdomain");
+        {
+            const sender = hirpc2.action("action");
+            assert(sender.method.name == "action");
+            assert(sender.method.full_name == "newdomain.action");
+            assert(sender.method.domain == "newdomain");
+        }
+    }
+
 }
 
 /// A good HiRPC result with no additional data.
 @safe @disableSerialize
+@disableCTOR
 @recordType("OK")
 struct ResultOk {
     mixin HiBONRecord!();

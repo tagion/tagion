@@ -5,6 +5,8 @@ import core.time;
 import std.file;
 import std.path : buildPath, setExtension;
 import std.stdio;
+import std.process : environment;
+import std.conv : to;
 import tagion.GlobalSignals;
 import tagion.basic.Types : FileExtension;
 import tagion.behaviour.Behaviour;
@@ -36,7 +38,7 @@ int _main(string[] args) {
     local_options.trt.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "Spam_DoubleSpend_Node_%s_";
-    local_options.subscription.address = contract_sock_addr("SPAM_SUBSCRIPTION");
+    local_options.subscription.enable = false;
 
     local_options.save(config_file);
 
@@ -154,7 +156,6 @@ int _main(string[] args) {
     Thread.sleep(15.seconds);
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
-
     auto feature = automation!(spam_double_spend);
     feature.SpamOneNodeUntil10EpochsHaveOccurred(node_opts, wallets[0], wallets[1]);
     feature.SpamMultipleNodesUntil10EpochsHaveOccurred(node_opts, wallets[2], wallets[3]);

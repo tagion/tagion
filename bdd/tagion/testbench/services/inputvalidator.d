@@ -72,7 +72,7 @@ class SendADocumentToTheSocket {
         rc = sock.send(doc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
         Document received = sock.receive!Buffer;
-        check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
+        check(sock.errno == 0, format("Failed to receive %s", nng_errstr(sock.errno)));
         check(received.length != 0, "Received empty doc");
         auto receiver = hirpc.receive(received);
         check(receiver.isResponse, "Expected an error");
@@ -126,7 +126,7 @@ class SendNoneHiRPC {
         rc = sock.send(hibon.serialize);
         check(rc == 0, format("Failed to send %s", rc));
         Document received = sock.receive!Buffer;
-        check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
+        check(sock.errno == 0, format("Failed to receive %s", nng_errstr(sock.errno)));
         check(received.length != 0, "Received empty buffer");
         check(received !is Document.init, "Received empty document");
         HiRPC hirpc = HiRPC(null);
@@ -185,7 +185,7 @@ class SendPartialHiBON {
         rc = sock.send(partial_buf);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
         Document received = sock.receive!Buffer;
-        check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
+        check(sock.errno == 0, format("Failed to receive %s", nng_errstr(sock.errno)));
         check(received.length != 0, "Received empty doc");
         auto receiver = hirpc.receive(received);
         check(receiver.isError, "Expected an error");
@@ -245,7 +245,7 @@ class SendBigContract {
         rc = sock.send(to_send);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
         Document received = sock.receive!Buffer;
-        check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
+        check(sock.errno == 0, format("Failed to receive %s", nng_errstr(sock.errno)));
         check(received.length != 0, "Received empty doc");
         auto receiver = hirpc.receive(received);
         writefln(receiver.toPretty);

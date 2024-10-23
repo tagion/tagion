@@ -8,11 +8,12 @@ import tagion.crypto.random.random;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
+///
 @safe
 struct Cipher {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.digest.crc : crc64ECMAOf;
-    import tagion.basic.ConsensusExceptions : ConsensusException, ConsensusFailCode, SecurityConsensusException;
+    import tagion.errors.ConsensusExceptions : ConsensusException, ConsensusFailCode, SecurityConsensusException;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.crypto.SecureNet : check;
     import tagion.crypto.random.random;
@@ -30,7 +31,8 @@ struct Cipher {
         mixin HiBONRecord;
     }
 
-    static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
+    ///
+    static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, Document msg) {
 
         scope ubyte[32] secret_key_alloc;
         scope ubyte[] secret_key = secret_key_alloc;
@@ -68,6 +70,7 @@ struct Cipher {
         return encrypt(net, net.pubkey, msg);
     }
 
+    ///
     static const(Document) decrypt(const(SecureNet) net, const(CipherDocument) cipher_doc) {
         scope sharedECCKey = net.ECDHSecret(cipher_doc.cipherPubkey);
         auto clearmsg = new ubyte[cipher_doc.ciphermsg.length];
@@ -83,6 +86,7 @@ struct Cipher {
         return result;
     }
 
+    ///
     unittest {
         import std.algorithm.searching : all, any;
         import tagion.basic.Types : FileExtension;
@@ -102,10 +106,10 @@ struct Cipher {
         hibon["text"] = some_secret_message;
         const secret_doc = Document(hibon);
 
-        { // Encrypt and Decrypt secrte message
+        { // Encrypt and Decrypt secret message
             auto dummy_net = new StdSecureNet;
-            const secret_cipher_doc = Cipher.encrypt(dummy_net, net.pubkey, secret_doc);
-            const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
+            auto secret_cipher_doc = Cipher.encrypt(dummy_net, net.pubkey, secret_doc).serialize;
+            const encrypted_doc = Cipher.decrypt(net, CipherDocument(Document(secret_cipher_doc)));
             assert(encrypted_doc["text"].get!string == some_secret_message);
             assert(secret_doc.data == encrypted_doc.data);
         }

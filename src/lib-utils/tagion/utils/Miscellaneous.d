@@ -7,7 +7,7 @@ import std.range;
 import std.exception;
 import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.errors.tagionexceptions : TagionException;
 
 enum HEX_SEPARATOR = '_';
 
@@ -97,13 +97,14 @@ do {
 }
 
 @safe
-Buffer xor(Range)(scope Range range) pure if (isInputRange!Range && is(ElementType!Range : const(ubyte[])))
-in (!range.empty)
+Buffer xor(Range)(Range range) pure if (isInputRange!Range && is(ElementType!Range : const(ubyte[])))
+in (!range.empty, "Can not take a xor of an empty range")
 do {
     import std.array : array;
     import std.range : tail;
 
-    scope result = new ubyte[range.front.length];
-    range.each!((rhs) => xor(result, result, rhs));
-    return result.idup;
+    auto result = new ubyte[range.front.length];
+    range
+        .each!(b => result[] ^= b[]);
+    return (() @trusted => assumeUnique(result))();
 }

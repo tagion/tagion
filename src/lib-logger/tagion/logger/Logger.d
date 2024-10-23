@@ -27,6 +27,8 @@ enum LogLevel {
 }
 
 private static Tid logger_tid; /// In multi-threading mode this Tid is used
+private static Tid logger_subscription_tid;
+
 
 /// Logger used one for each thread
 @safe
@@ -38,7 +40,7 @@ static struct Logger {
         string _task_name; /// The name of the task using the logger
         uint[] masks; /// Logger mask stack
         __gshared string logger_task_name; /// Logger task name
-        __gshared Tid logger_subscription_tid;
+        __gshared string logger_subscription_task_name;
     }
 
     /// Get task_name
@@ -111,12 +113,18 @@ is ready and has been started correctly
 
     @trusted
     void registerSubscriptionTask(string task_name) {
-        logger_subscription_tid = locate(task_name);
+        logger_subscription_task_name = task_name;
+        locateLoggerSubscriptionTask();
     }
 
-    @trusted
-    bool isLoggerSubRegistered() nothrow {
+    bool isLoggerSubRegistered() const nothrow {
         return logger_subscription_tid !is Tid.init;
+    }
+
+    private void locateLoggerSubscriptionTask() @trusted const nothrow {
+        if (!isLoggerSubRegistered) {
+            logger_subscription_tid = locate(logger_subscription_task_name);
+        }
     }
 
     /**
@@ -212,7 +220,7 @@ is ready and has been started correctly
                         import std.stdio;
 
                         assumeWontThrow({
-                            stderr.writefln("\t%s:%s: %s", task_name, level, text);
+                            stderr.writefln("\t%s:%s: Format expression did throw", task_name, level);
                             stderr.writefln("%s", e);
                         }());
                     }
@@ -224,6 +232,7 @@ is ready and has been started correctly
     /// Conditional subscription logging
     @trusted
     void event(ref Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
+        locateLoggerSubscriptionTask();
         // report(LogLevel.INFO, "%s|%s| %s", topic.name, identifier, data.toPretty);
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
@@ -358,7 +367,7 @@ final synchronized class SubscriptionMask {
 
     @trusted
     void subscribe(string topic) {
-        if (thisTid == log.logger_subscription_tid) {
+        if (thisTid == logger_subscription_tid) {
             _registered_topics[topic] = Subscribed.yes;
             return;
         }
@@ -371,7 +380,7 @@ final synchronized class SubscriptionMask {
 
     @trusted
     void unsubscribe(string topic) {
-        if (thisTid == log.logger_subscription_tid) {
+        if (thisTid == logger_subscription_tid) {
             _registered_topics[topic] = Subscribed.no;
             return;
         }

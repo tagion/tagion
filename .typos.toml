@@ -33,10 +33,13 @@ Thows = "Throws"
 responde = "respond"
 registerd = "registered"
 
+# Makefile
+DOUT = "DOUT"
 [default]
 extend-ignore-re = [
     # Ignore base64url encoded strings
     "@.*=",
+    "@.*",
     # Ignore hex values
     "0x.*",
 ]
@@ -51,4 +54,5 @@ extend-exclude = [
     "*.wast",
     "src/lib-behaviour/tagion/behaviour/unitdata/",
     "*.svg",
+    "*.excalidraw"
 ]

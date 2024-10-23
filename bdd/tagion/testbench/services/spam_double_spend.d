@@ -25,6 +25,7 @@ import tagion.tools.wallet.WalletInterface;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
 import tagion.wallet.request;
 import tagion.wallet.SecureWallet : SecureWallet;
+import tagion.wave.mode0;
 
 import core.thread;
 import core.time;
@@ -34,8 +35,6 @@ import std.range;
 import std.stdio;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
-enum CONTRACT_TIMEOUT = 40;
-enum EPOCH_TIMEOUT = 15;
 
 enum feature = Feature(
             "Spam the network with the same contracts until we know it does not go through.",
@@ -92,25 +91,22 @@ class SpamOneNodeUntil10EpochsHaveOccurred {
         log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe("epoch_creator/epoch_created");
 
-        long epoch_number;
-
-        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
+        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
         check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
-        epoch_number = FinishedEpoch(epoch_before[1]).epoch;
-
+        long epoch_number = FinishedEpoch(epoch_before[1]).epoch;
         long current_epoch_number;
 
         while (current_epoch_number < epoch_number + 10) {
             sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
-            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
+            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
             check(current_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
             current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
             writefln("epoch_number %s, CURRENT EPOCH %s", epoch_number, current_epoch_number);
         }
 
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
+        (() @trusted => Thread.sleep(env.CONTRACT_TIMEOUT!uint.seconds))();
         return result_ok;
     }
 
@@ -130,75 +126,19 @@ class SpamOneNodeUntil10EpochsHaveOccurred {
 
         return result_ok;
     }
-
-    // @Then("check that the bullseye is the same across all nodes.")
-    // Document nodes() {
-    //     import tagion.dart.DARTBasic;
-    //     import tagion.dart.DARTFile;
-    //     import tagion.Keywords;
-    //     import tagion.basic.Types;
-
-    //     Buffer[] eyes;
-    //     foreach(opt; opts) {
-    //         auto bullseye_sender = dartBullseye();
-    //         auto hirpc_bullseye_receiver = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender, wallet1_hirpc);
-    //         check(!hirpc_bullseye_receiver.isError, format("senddarthirpc received error: %s", hirpc_bullseye_receiver.toPretty));
-    //         auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
-    //         auto bullseye = hirpc_message[DARTFile.Params.bullseye].get!Buffer;
-    //         eyes ~= bullseye;
-    //     }
-
-    //     import tagion.hibon.HiBONtoText;
-
-    //     writefln("%s", eyes);
-    //     foreach(eye; eyes) {
-    //         check(eye == eyes[0], "bullseyes not the same across nodes");
-    //     }
-
-    //     return result_ok;
-    // }
-
 }
 
 import tagion.actor;
 
 @safe
 struct SpamWorker {
-    import tagion.hashgraph.Refinement;
-
     void task(immutable(Options) opts, immutable(SecureNet) net, immutable(SignedContract) signed_contract) {
-
         HiRPC hirpc = HiRPC(net);
 
-        setState(Ctrl.ALIVE);
-
-        writefln("registrering subscription mask %s", thisActor.task_name);
-        log.registerSubscriptionTask(thisActor.task_name);
-        submask.subscribe(StdRefinement.epoch_created);
-        long epoch_number;
-
-        while (!thisActor.stop && epoch_number is long.init) {
-            writefln("WAITING FOR RECEIVE");
-            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
-            writefln("AFTER RECEIVE %s", epoch_before);
-            if (epoch_before[0].task_name == opts.task_names.epoch_creator) {
-                epoch_number = FinishedEpoch(epoch_before[1]).epoch;
-            }
-        }
-
-        long current_epoch_number;
-        while (!thisActor.stop && current_epoch_number < epoch_number + 10) {
+        runTimeout(100.msecs, {
             sendHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), hirpc);
-            (() @trusted => Thread.sleep(100.msecs))();
-
-            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
-            if (current_epoch[0].task_name != opts.task_names.epoch_creator) {
-                current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
-                writefln("epoch_number %s, CURRENT EPOCH %s", epoch_number, current_epoch_number);
-            }
-        }
-        submask.unsubscribe(StdRefinement.epoch_created);
-        thisActor.stop = true;
+            log("sent contract");
+        });
     }
 
 }
@@ -240,18 +180,48 @@ class SpamMultipleNodesUntil10EpochsHaveOccurred {
 
     @When("i continue to send the same contract with n delay to multiple nodes.")
     Document multipleNodes() @trusted {
+        import tagion.hashgraph.Refinement : FinishedEpoch, StdRefinement;
+
         ActorHandle[] handles;
+        submask.subscribe(StdRefinement.epoch_created);
 
         foreach (i, opt; opts) {
-            handles ~= spawn!SpamWorker(format("spam_worker%s", i), cast(immutable) opt, cast(immutable) wallet1.net, cast(
-                    immutable) signed_contract);
+            handles ~= spawn!SpamWorker(format("spam_worker%s", i),
+                    cast(immutable) opt,
+                    cast(immutable) wallet1.net,
+                    cast(immutable) signed_contract
+                );
         }
+
         writefln("waiting for alive");
-        waitforChildren(Ctrl.ALIVE, 5.seconds);
+        waitforChildren(Ctrl.ALIVE, env.WAIT_UNTIL_ALIVE!uint.seconds);
+
+        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
+        check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
+        long epoch_number = FinishedEpoch(epoch_before[1]).epoch;
+        long current_epoch_number;
+
+        auto node1_opts = opts[1];
+        while (current_epoch_number < epoch_number + 10) {
+            sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+            (() @trusted => Thread.sleep(100.msecs))();
+
+            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
+            check(current_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
+            current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
+            writefln("epoch_number %s, CURRENT EPOCH %s", epoch_number, current_epoch_number);
+        }
+
+        foreach(handle; handles) {
+            handle.send(Sig.STOP);
+        }
+
+        submask.unsubscribe(StdRefinement.epoch_created);
+
         writefln("waiting for end");
         waitforChildren(Ctrl.END);
 
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
+        (() @trusted => Thread.sleep(env.CONTRACT_TIMEOUT!uint.seconds))();
         return result_ok;
     }
 
@@ -259,13 +229,16 @@ class SpamMultipleNodesUntil10EpochsHaveOccurred {
     Document beRejected() {
         auto node1_opts = opts[1];
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, node1_opts.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, node1_opts.dart_interface.sock_addr, wallet2_hirpc);
+        const expected_amount1 = start_amount1 - amount - fee;
+        const expected_amount2 = start_amount2 + amount;
+        TagionCurrency wallet1_amount;
+        TagionCurrency wallet2_amount;
+
+        wallet1_amount = getWalletUpdateAmount(wallet1, node1_opts.dart_interface.sock_addr, wallet1_hirpc);
+        wallet2_amount = getWalletUpdateAmount(wallet2, node1_opts.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
-        const expected_amount1 = start_amount1 - amount - fee;
-        const expected_amount2 = start_amount2 + amount;
         check(wallet1_amount == expected_amount1, format(
                 "wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
         check(wallet2_amount == expected_amount2, format(
@@ -273,32 +246,4 @@ class SpamMultipleNodesUntil10EpochsHaveOccurred {
 
         return result_ok;
     }
-
-    // @Then("check that the bullseye is the same across all nodes.")
-    // Document allNodes() {
-    //     import tagion.dart.DARTBasic;
-    //     import tagion.dart.DARTFile;
-    //     import tagion.Keywords;
-    //     import tagion.basic.Types;
-
-    //     Buffer[] eyes;
-    //     foreach(opt; opts) {
-    //         auto bullseye_sender = dartBullseye();
-    //         auto hirpc_bullseye_receiver = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender, wallet1_hirpc);
-    //         check(!hirpc_bullseye_receiver.isError, format("senddarthirpc received error: %s", hirpc_bullseye_receiver.toPretty));
-    //         auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
-    //         auto bullseye = hirpc_message[DARTFile.Params.bullseye].get!Buffer;
-    //         eyes ~= bullseye;
-    //     }
-
-    //     import tagion.hibon.HiBONtoText;
-
-    //     writefln("%s", eyes);
-    //     foreach(eye; eyes) {
-    //         check(eye == eyes[0], "bullseyes not the same across nodes");
-    //     }
-
-    //     return result_ok;
-    // }
-
 }

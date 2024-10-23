@@ -377,6 +377,7 @@ if (isActor!A) {
         return ActorHandle(name);
     }
     catch (Exception e) {
+        log(e);
         assert(0, format("Exception: %s", e.msg));
     }
 }

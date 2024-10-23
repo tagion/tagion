@@ -6,7 +6,7 @@ import std.algorithm.iteration : map, sum;
 import std.format;
 import traits = std.traits : isIntegral, isSigned, isUnsigned;
 import std.typecons;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 @safe:
 @nogc

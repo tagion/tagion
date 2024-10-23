@@ -7,7 +7,6 @@ DFILES_NATIVESECP256K1=${shell find $(DSRC)/lib-crypto -name "*.d"}
 env-crypto:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
-	$(call log.env, CRYPTO_DFILES,$(CRYPTO_DFILES))
 	$(call log.kvp, LCRYPTO_ROOT,$(LCRYPTO_ROOT))
 	$(call log.kvp, LCRYPTO_PACKAGE,$(LCRYPTO_PACKAGE))
 	$(call log.close)
@@ -15,6 +14,16 @@ env-crypto:
 .PHONY: env-crypto
 
 env: env-crypto
+
+files-crypto:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
+	$(call log.env, CRYPTO_DFILES,$(CRYPTO_DFILES))
+	$(call log.close)
+
+.PHONY: files-crypto
+
+env-files: files-crypto
 
 help-crypto:
 	$(PRECMD)

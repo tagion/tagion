@@ -6,12 +6,13 @@ module tagion.services.DARTInterface;
 
 import core.time;
 import core.thread;
-import nngd;
+
 import std.array;
 import std.algorithm : map, canFind, startsWith;
 import std.stdio;
 import std.format;
 import std.exception : assumeWontThrow;
+
 import tagion.actor;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
@@ -22,9 +23,10 @@ import tagion.services.codes;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
-// import tagion.dart.DART;
 import tagion.dart.DARTBasic;
 import tagion.utils.JSONCommon;
+
+import nngd;
 
 struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
@@ -163,7 +165,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 }
 
 import tagion.services.exception;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;

@@ -33,6 +33,7 @@ int _main(string[] args) {
     local_options.dart.folder_path = buildPath(module_path);
     local_options.trt.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
+    local_options.subscription.enable = false;
     local_options.epoch_creator.timeout = 500;
     local_options.save(config_file);
 
@@ -151,7 +152,7 @@ int _main(string[] args) {
 
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    Thread.sleep(5.seconds);
+    Thread.sleep(15.seconds);
     writeln("going to run test");
 
     const task_name = "send_contract_tester";

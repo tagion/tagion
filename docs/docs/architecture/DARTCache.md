@@ -12,43 +12,6 @@ The cache should contain the following.
 
 It is very important that the archives received from the replicator log always are checked if they are in the cache and updated. This is to ensure that we do not show information in the cache which is not in the actual dart.
 
-## HiRPC.search
-```json
-{
-    "$@": "HiRPC",
-    "$Y": [
-        "*",
-        "@ss9OlT-gJvLzf0Ry09aYghIAWbiiXOzbH6mXMU0WNaI="
-    ],
-    "$msg": {
-        "id": [
-            "u32",
-            1351920343
-        ],
-        "method": "search",
-        "params": [
-            [
-                "*",
-                "@TWFzxC7p7Tcw1aHC5CN2gNPSqi7dq7Z798o2WKCApgs="
-            ],
-            [
-                "*",
-                "@jkqA36nxWCBLUTI0mJU_vgYuVmOHAKuy0xmy-_sEIYY="
-            ]
-        ]
-    },
-    "$sign": [
-        "*",
-        "@NgUxEXyCAZNQq6BxHz3bZcowrNha6W-eDMHpJ_O7wC6TTNbBQ6OvpUsKvyceNrBcbfTEz6Ve2P9Gq9LspJ64yg=="
-    ]
-}
-```
-Where the params are the pubkeys of the TagionBills "$Y".
-The above returns a HiRPC.Receiver containing all the bills that match the pubkeys. 
-The cache logic is as follows.
-
-Check the cache if the any bills pubkeys match the bills in cache pubkeys that are of `Archive.Type.ADD`. For the pubkeys who could not be found in the cache ask the dart with the same request removing the pubkeys that were found in the cache.
-
 ## HiRPC.checkRead
 ```json
 {
@@ -82,7 +45,8 @@ Check the cache if the any bills pubkeys match the bills in cache pubkeys that a
     ]
 }
 ```
-The following command gives dart_indices and returns all the indices that were not found in the database. In other words we return all the DART_indices back to the client where they could not be found in the dart. This means if all the users tagionbills are in the dart. We return an empty hirpc.checkRead response. This command is much faster than the hirpc.search and should be preferred any time it can.
+
+The following command gives dart_indices and returns all the indices that were not found in the database. In other words we return all the DART_indices back to the client where they could not be found in the dart. This means if all the users tagionbills are in the dart. We return an empty hirpc.checkRead response.
 
 Cache logic.
 Check the cache if any of the dart_indices marked as Archive.Type.ADD match. For all matches we remove the dartindex from our response.

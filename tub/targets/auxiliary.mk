@@ -10,11 +10,10 @@ env-auxiliary:
 	${call log.kvp, DC, $(DC)}
 	${call log.kvp, PRECMD, $(PRECMD)}
 	${call log.kvp, SHARED, $(SHARED)}
-	${call log.kvp, SPLIT_LINK, $(SPLIT_LINK)}
+	${call log.kvp, SPLIT_LINKER, $(SPLIT_LINKER)}
 	${call log.kvp, DLLEXT, $(DLLEXT)}
 	${call log.kvp, STAEXT, $(STAEXT)}
 	${call log.kvp, OBJEXT, $(OBJEXT)}
-	${call log.kvp, LDC2_BIN, $(LDC2_BIN)}
 	${call log.close}
 
 env: env-auxiliary
