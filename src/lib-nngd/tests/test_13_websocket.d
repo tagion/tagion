@@ -11,6 +11,8 @@ import std.regex;
 import std.json;
 import std.exception;
 import std.process;
+import std.algorithm;
+import std.array;
 
 import nngd;
 import nngtestutil;
@@ -23,7 +25,7 @@ void onaccept_handler ( WebSocket *ws, void *ctx ){
 
 void onmessage_handler ( WebSocket *ws, ubyte[] data, void *ctx ){
     log("===> ONMESSAGE handler:");
-    log("RECV: ",cast(string)data);
+    log("RECV: " ~ cast(string)data);
     try{
         JSONValue jdata;
         int i;
@@ -33,7 +35,7 @@ void onmessage_handler ( WebSocket *ws, ubyte[] data, void *ctx ){
             jdata["index"] = i;
             jdata["request"] = cast(string)data;
             auto js = jdata.toString();
-            log("SENT: ", js);
+            log("SENT: " ~ js);
             ws.send(cast(ubyte[])js.dup);
         }
     } catch(Throwable e) {
@@ -49,6 +51,12 @@ void onerror_handler(WebSocket *ws, int err, void *ctx ){
     log("===> ONERROR handler: " ~ to!string(err));
 }
 
+string[] received;
+
+void client_handler( string msg ){
+    received ~= msg;
+}
+
 int
 main()
 {
@@ -59,15 +67,24 @@ main()
     log("TEST ---------------------------------------------------  WS SERVER ");
 
     try{
-        std.file.write("data.txt", "12345");
         WebSocketApp wsa = WebSocketApp(uri, &onaccept_handler, &onclose_handler, &onerror_handler, &onmessage_handler, null );
         wsa.start();
         nng_sleep(300.msecs);
-        auto res = executeShell("timeout 2 uwsc -i -s -t data.txt ws://127.0.0.1:31034 2>&1");
-        assert(res.status == 124);
-        assert(indexOf(res.output,"Websocket connected") == 0);
-        assert(indexOf(res.output,`"request":"12345"`) == 136);
-        nng_sleep(2000.msecs);
+        auto st = timestamp();
+        WebSocketClient wc = WebSocketClient(uri);
+        while(wc.state != ws_state.CLOSED){
+            nng_sleep(300.msecs);
+            wc.send("ping");
+            wc.poll();
+            wc.dispatch(&client_handler);
+            auto et = timestamp();
+            if( et - st > 2.0 ) break;
+        }
+        auto jres = received.map!(parseJSON).array();
+        assert((jres[0]["hello"]).str == "ws");
+        assert((jres[1]["index"]).integer == 0);
+        assert((jres[8]["index"]).integer == 7);
+        nng_sleep(1000.msecs);
         wsa.stop;
     } catch(Throwable e) {
         error(dump_exception_recursive(e, "Main"));

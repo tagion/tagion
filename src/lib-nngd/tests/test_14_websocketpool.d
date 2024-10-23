@@ -11,6 +11,8 @@ import std.regex;
 import std.json;
 import std.exception;
 import std.process;
+import std.algorithm;
+import std.array;
 
 import nngd;
 import nngtestutil;
@@ -89,6 +91,12 @@ void onerror_handler(WebSocket *ws, int err, void *ctx ){
     log("===> ONERROR handler: " ~ ws.sid ~ " : " ~ to!string(err));
 }
 
+string[] received;
+
+void client_handler( string msg ){
+    received ~= msg;
+}
+
 int
 main()
 {
@@ -102,11 +110,22 @@ main()
         WebSocketApp wsa = WebSocketApp(uri, &onaccept_handler, &onclose_handler, &onerror_handler, &onmessage_handler, null );
         wsa.start();
         nng_sleep(300.msecs);
-        auto res = executeShell("timeout 2 uwsc -i -s -t data.txt ws://127.0.0.1:31035 2>&1");
-        assert(res.status == 124);
-        assert(indexOf(res.output,"Websocket connected") == 0);
-        assert(indexOf(res.output,`hello`) == 127);
-        nng_sleep(2000.msecs);
+        WebSocketClient wc = WebSocketClient(uri);
+        wc.send("hello");
+        auto st = timestamp();
+        while(wc.state != ws_state.CLOSED){
+            nng_sleep(300.msecs);
+            wc.poll();
+            wc.dispatch(&client_handler);
+            auto et = timestamp();
+            if( et - st > 2.0 ) break;
+        }
+        auto jres = parseJSON(received[0]);
+        assert(jres["hello"].str == "ws");
+        assert(received[1].endsWith("TICK: 0"));
+        assert(received[20].endsWith("TICK: 18"));
+        nng_sleep(500.msecs);
+        wsa.stop();
     } catch(Throwable e) {
         error(dump_exception_recursive(e, "Main"));
     }        

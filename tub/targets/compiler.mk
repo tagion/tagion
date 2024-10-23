@@ -202,3 +202,9 @@ env-compiler:
 	${call log.close}
 
 env: env-compiler
+
+DC_VERSION_NUMBER=${shell $(DC) --version | $(DTUB)/tool_version.pl}
+
+test34:
+	echo $(DC_VERSION_NUMBER) 
+

@@ -3428,7 +3428,6 @@ struct WebSocketClient {
         }
     
         int openstate(string url, string origin){
-
             int rc;
             char[1024] buf;
             
@@ -3449,8 +3448,8 @@ struct WebSocketClient {
             string hello = format("GET /%s HTTP/1.1\r\n", join(u.path,"/"))
             ~ "Upgrade: websocket\r\n" 
             ~ "Connection: upgrade\r\n"
-            ~ "Host: localhost\r\n"
             ;
+            hello ~= (u.port == "80") ? format("Host: %s\r\n",u.host) : format("Host: %s:%s\r\n",u.host,u.port);
             if(origin !is null)
                 hello ~= format("Origin: %s\r\n", origin);
             hello ~= "Pragma: no-cache\r\n"
@@ -3581,6 +3580,7 @@ struct WebSocketClient {
                             for(int j=0; j < ws.N; ++j)
                                 rxbuf[i+ws.header_size] ^= ws.masking_key[j & 0x03];
                         send_data(ws_opcode.PONG,rxbuf[ws.header_size .. ws.header_size + ws.N]);
+                        rxbuf = rxbuf[ws.header_size + ws.N .. $];
                         break;
                     case ws_opcode.PONG:
                         break;
@@ -3597,6 +3597,7 @@ struct WebSocketClient {
                         if(ws.fin){
                             cb(received_data);
                             received_data.length = 0;
+                            rxbuf = rxbuf[ws.header_size + ws.N .. $];
                         }
                         break;
                     default:
@@ -3607,7 +3608,6 @@ struct WebSocketClient {
             }
         }                
     
-
     public:
 
     ws_options opt;
