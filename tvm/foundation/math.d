@@ -3,14 +3,9 @@ module foundation.math;
 public import core.stdc.math;
 import cmath=core.stdc.math;
 import std.math : isNaN,signbit;
+import std.traits;
 @safe:
 @nogc nothrow:
-
-union b32 {
-    int i32;
-    float f32;
-}
-
 
 float fabsf(float x) {
     if (isNaN(x)) {
@@ -21,4 +16,21 @@ float fabsf(float x) {
     }
     return cmath.fabsf(x);
 }
-    
+
+int equal(T)(T x, T y) if (isNumeric!T) {
+    static if (isFloatingPoint!T) {
+        if (isNaN(x) || isNaN(y)) {
+            return x is y;
+        }
+    }
+    return x == y;
+}
+
+T add(T)(T x, T y) if (isFloatingPoint!T) {
+    if (isNaN(x) || isNaN(y)) {
+        return T.nan;
+    }
+    return x + y;
+}
+
+

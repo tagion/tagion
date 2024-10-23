@@ -6,6 +6,7 @@ import std.array;
 import std.range;
 import std.traits;
 import std.exception;
+import std.string : representation;
 import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.errors.tagionexceptions;
@@ -73,12 +74,17 @@ T convert(T)(const(char)[] text) if (isIntegral!T) {
 
     check(text.length > 0, "Can not convert an empty string");
     const negative = text[0] == '-';
+    const pos = negative || (text[0] == '+');
     static if (isUnsigned!T) {
         check(!negative, format("Negative number can not convert to %s", T.stringof));
     }
 
     uint base = 10;
-    text = text[negative .. $];
+    text = text[pos .. $]
+        .representation
+        .map!(c => cast(const(char)) c)
+        .filter!(c => c != '_')
+        .array;
     if (sicmp(text[0 .. min(Prefix.hex.length, $)], Prefix.hex) == 0) {
         base = 16;
         text = text[Prefix.hex.length .. $];
@@ -115,14 +121,20 @@ template FitUnsigned(F) if (isFloatingPoint!F) {
 F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     import std.format;
     import std.uni : sicmp;
+
     check(text.length > 0, "Can not convert an empty string");
     const negative = text[0] == '-';
-    const pos=negative || (text[0] == '+');
-    enum NaN = "nan";
-    enum Infinity = "infinity";
+    const pos = negative || (text[0] == '+');
+    enum {
+        NaN = "nan",
+        Infinity = "infinity",
+        Inf = "inf",
+        Canonical = "canonical",
+        Arithmetic = "arithmetic",
+    }
     if (sicmp(text[pos .. min(pos + NaN.length, $)], NaN) == 0) {
         auto quiet = text.splitter(':').drop(1);
-     alias U = FitUnsigned!F;
+        alias U = FitUnsigned!F;
         union Overlap {
             F number;
             U unsigned;
@@ -131,19 +143,25 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
         Overlap result;
         result.number = (negative) ? -F.nan : F.nan;
         if (!quiet.empty) {
-            static if(F.sizeof == uint.sizeof) {
-            enum mask = 0x0060_0000;
+            static if (F.sizeof == uint.sizeof) {
+                enum mask = 0x0060_0000;
             }
             else {
                 enum mask = 0xC_0000_0000_0000L;
             }
-            const signal_mask = convert!(U)(quiet.front) ;
-            result.unsigned &= ~(mask);
-            result.unsigned |= signal_mask;
+            if (sicmp(quiet.front, Arithmetic) == 0) {
+                result.unsigned &= ~(mask);
+                result.unsigned |= 0x20_0000;
+            }
+            else if (sicmp(quiet.front, Canonical) != 0) {
+                const signal_mask = convert!(U)(quiet.front);
+                result.unsigned &= ~(mask);
+                result.unsigned |= signal_mask;
+            }
         }
         return result.number;
     }
-    if (sicmp(text[pos .. min(pos + Infinity.length, $)], Infinity) == 0) {
+    if ((sicmp(text, Inf) == 0) || (sicmp(text, Infinity) == 0)) {
         return (negative) ? -F.infinity : F.infinity;
     }
     const spec = singleSpec("%f");

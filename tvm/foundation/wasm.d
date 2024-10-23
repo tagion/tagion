@@ -1,20 +1,10 @@
 module foundation.wasm;
 
 import core.bitop : bsf, bsr;
-public import core.bitop : popcnt;
+public import core.bitop : popcnt, rol, ror;
 import std.traits;
 
 @safe:
-
-int equal(T)(T x, T y) {
-    import std.math : isNaN;
-    static if (isFloatingPoint!T) {
-        if (isNaN(x) || isNaN(y)) {
-            return x is y;
-        }
-    }
-    return x == y;
-}
 
 union b32 {
     int i32;
@@ -51,8 +41,7 @@ double reinterpret64(long x) {
     return result.f64;
 }
 
-
-auto snan(T)(T x) if(isIntegral!T) {
+auto snan(T)(T x) if (isIntegral!T) {
     static if (T.sizeof == int.sizeof) {
         return reinterpret32(x);
     }
@@ -62,8 +51,6 @@ auto snan(T)(T x) if(isIntegral!T) {
 }
 
 nothrow {
-
-
     T clz(T)(T val) if (isIntegral!T) {
         if (val == 0) {
             return T.sizeof * 8;
@@ -76,6 +63,16 @@ nothrow {
             return T.sizeof * 8;
         }
         return bsf(val);
+    }
+
+    T rotl(T)(T x, T y) if (isUnsigned!T) {
+        enum mask = uint(T.sizeof * 8 - 1);
+        return rol(x, (cast(uint) y) & mask);
+    }
+
+    T rotr(T)(T x, T y) if (isUnsigned!T) {
+        enum mask = uint(T.sizeof * 8 - 1);
+        return ror(x, (cast(uint) y) & mask);
     }
 }
 
@@ -127,8 +124,8 @@ T trunc(T, F)(F _from) if (isIntegral!T && isFloatingPoint!F) {
     else {
         enum int_max = cast(T)((ulong.max << (T.sizeof * 8 - isSigned!T - F.mant_dig)) & T.max);
     }
-    error((_from >= T.min) && (_from <= int_max) || (abs(_from) < 1.0), 
-    format("overflow %a int_max=%x", _from, int_max));
+    error((_from >= T.min) && (_from <= int_max) || (abs(_from) < 1.0),
+            format("overflow %a int_max=%x", _from, int_max));
     return cast(T) _from;
 }
 

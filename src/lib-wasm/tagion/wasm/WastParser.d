@@ -14,6 +14,7 @@ import tagion.wasm.WasmException;
 import tagion.wasm.WasmWriter;
 import tagion.wasm.WastAssert;
 import tagion.wasm.WastTokenizer;
+import tagion.basic.basic : isinit;
 
 @safe
 struct WastParser {
@@ -260,9 +261,13 @@ struct WastParser {
                         throw new WasmException("Undefined instruction %s", r.token);
                         break;
                     case SYMBOL:
+                        __write("SYMBOL %s %s", r.token, r.type);
                         r.nextToken;
+                        __write("LABEL %s %s", r.token, r.type);
+                        __write("instr %s", instr);
+                        __write("instr.push %d instr.pops %d", instr.push, instr.pops);
                         string[] labels;
-                        for (uint i = 0; (instr.push == uint.max) ? r.type == TokenType.WORD : i < instr.push; i++) {
+                        for (uint i = 0; r.type == TokenType.WORD; i++) {
                             labels ~= r.token;
                             r.nextToken;
                         }
@@ -272,7 +277,8 @@ struct WastParser {
                         }
                         switch (instr.wast) {
                         case PseudoWastInstr.local:
-                            r.check(labels.length >= 1, "Local types expected");
+                            __write("labels %s", labels);
+                            //r.check(labels.length >= instr.pops, format("Function %d takes %d arguments but only");
                             if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
                                 params[labels[0]] = cast(int) locals.length;
                                 locals ~= labels[1].getType;
@@ -288,6 +294,7 @@ struct WastParser {
 
             }
             else {
+                assert(0, "Something is wrong");
                 r.check(false);
             }
             return stage;
@@ -330,7 +337,7 @@ struct WastParser {
                 parseModule(r, ParserStage.TYPE);
                 return stage;
             case "func": // Example (func $name (param ...) (result i32) )
-
+                //__write("-- FUNC %s %s", r.token, r.type);
                 return parseTypeSection(r, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
@@ -365,7 +372,7 @@ struct WastParser {
                 return ParserStage.RESULT;
             case "memory":
                 MemoryType memory_type;
-                scope(exit) {
+                scope (exit) {
                     writer.section!(Section.MEMORY).sectypes ~= memory_type;
                 }
                 r.check(stage == ParserStage.MODULE);
@@ -381,7 +388,7 @@ struct WastParser {
                     memory_type.limit.lim = Limits.RANGE;
                     memory_type.limit.to = arg.to!uint;
                     memory_type.limit.from = label.to!uint;
-                    
+
                 }
                 else {
                     memory_type.limit.lim = Limits.RANGE;
@@ -411,15 +418,17 @@ struct WastParser {
                 scope (exit) {
                     writer.section!(Section.EXPORT).sectypes ~= export_type;
                 }
-                r.check(stage == ParserStage.MODULE);
+                r.check(stage == ParserStage.MODULE || stage == ParserStage.FUNC);
 
                 r.nextToken;
                 r.check(r.type == TokenType.STRING);
                 export_type.name = r.token.stripQuotes;
-                r.nextToken;
-                r.check(r.type == TokenType.WORD);
+                if (stage != ParserStage.FUNC) {
+                    r.nextToken;
+                    r.check(r.type == TokenType.WORD);
+                    export_type.idx = func_idx.get(r.token, -1);
+                }
                 export_type.desc = IndexType.FUNC;
-                export_type.idx = func_idx.get(r.token, -1);
                 r.check(export_type.idx >= 0);
 
                 r.nextToken;
@@ -580,18 +589,25 @@ struct WastParser {
 
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
+        r.check(stage < ParserStage.FUNC);
+        auto type_section = writer.section!(Section.TYPE);
+
+        const type_idx = cast(int) type_section.sectypes.length;
         //writeln("Function code");
+        WastTokenizer export_tokenizer;
         scope (exit) {
+            if (!export_tokenizer.isinit) {
+                parseModule(export_tokenizer, ParserStage.FUNC);
+
+                auto export_type = &writer.section!(Section.EXPORT).sectypes[$ - 1];
+                export_type.idx = func_idx[export_type.name] = type_idx;
+            }
             const type_index = cast(uint) writer.section!(Section.CODE).sectypes.length;
             writer.section!(Section.FUNCTION).sectypes ~= TypeIndex(type_index);
             writer.section!(Section.CODE).sectypes ~= code_type;
             //writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes.length);
         }
 
-        r.check(stage < ParserStage.FUNC);
-        auto type_section = writer.section!(Section.TYPE);
-
-        const type_idx = cast(int) type_section.sectypes.length;
         FuncType func_type;
         func_type.type = Types.FUNC;
         scope int[string] params;
@@ -601,7 +617,15 @@ struct WastParser {
         }
 
         r.nextToken;
-        if (r.type == TokenType.WORD) {
+        if (r.type == TokenType.BEGIN) {
+            export_tokenizer = r.save;
+            while (!r.empty && (r.type != TokenType.END)) {
+                r.nextToken;
+            }
+            check(r.type == TokenType.END, "End expected");
+            r.nextToken;
+        }
+        else if (r.type == TokenType.WORD) {
             func_idx[r.token] = type_idx;
             r.nextToken;
         }

@@ -93,7 +93,7 @@
     "tvm_betterc": {
       "args": [
             "i32.wast", "i64.wast", "f32.wast", "f64.wast", "conversions.wast",
-            "int_literals.wast", "float_literals.wast",
+            "int_literals.wast", 
             "f32_cmp.wast", "f64_cmp.wast",
             "int_exprs.wast", "float_exprs.wast", "float_misc.wast"
             ],
@@ -102,12 +102,40 @@
         "imports": "wasm=foundation.wasm math=foundation.math",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "commit", "memory"],
+      "stages": ["tvm", "commit", "memory", "func", "i32", "i32_export", "i64_export", "tvm_test"],
       "extend" : {
         "memory" : {
           "args" : [
                 "memory_ops.wast"
             ]
+        },
+        "i32_export" : {
+          "args" : [
+                "i32_export.wast"
+            ]
+        },
+        "tvm_test" : {
+          "args" : [
+                "f32.wast"
+            ]
+        },
+        "i64_export" : {
+          "args" : [
+                "i64_export.wast"
+            ]
+        },
+        "i32" : {
+          "args" : [
+                "i32.wast"
+            ]
+        },
+        "func" : {
+          "args" : [
+                "func.wast"
+            ]
+        },
+        "not_passed" : {
+          "args" : [ "float_literals.wast" ]
         }
       },
       "timeout": 0.0

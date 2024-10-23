@@ -126,7 +126,7 @@ alias check = Check!WasmBetterCException;
                     output.writef("%1$sassert(math.isnan(%2$s)", indent, ctx.pop);
                 }
                 else {
-                    output.writef("%sassert(wasm.equal(%s, %s)", indent, ctx.pop, ctx.pop);
+                    output.writef("%sassert(math.equal(%s, %s)", indent, ctx.pop, ctx.pop);
                 }
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
@@ -698,8 +698,8 @@ shared static this() {
         IR.I32_SHL: q{(%2$s << %1$s)},
         IR.I32_SHR_S: q{(%2$s >> %1$s)},
         IR.I32_SHR_U: q{(%2$s >>> %1$s)},
-        IR.I32_ROTL: q{wasm.rotl(%1$s, %2$s)},
-        IR.I32_ROTR: q{wasm.rotr(%1$s, %2$s)},
+        IR.I32_ROTL: q{wasm.rotl(uint(%2$s), uint(%1$s))},
+        IR.I32_ROTR: q{wasm.rotr(uint(%2$s), uint(%1$s))},
         IR.I32_EQZ: q{(%1$s == 0)},
         IR.I32_EQ: q{(%2$s == %1$s)},
         IR.I32_NE: q{(%2$s != %1$s)},
@@ -728,8 +728,8 @@ shared static this() {
         IR.I64_SHL: q{(%2$s << %1$s)},
         IR.I64_SHR_S: q{(%2$s >> %1$s)},
         IR.I64_SHR_U: q{(%2$s >>> %1$s)},
-        IR.I64_ROTL: q{wasm.rotl(%1$s, %2$s)},
-        IR.I64_ROTR: q{wasm.rotr(%1$s, %2$s)},
+        IR.I64_ROTL: q{wasm.rotl(ulong(%2$s), ulong(%1$s))},
+        IR.I64_ROTR: q{wasm.rotr(ulong(%2$s), ulong(%1$s))},
         IR.I64_EQZ: q{(%1$s == 0)},
         IR.I64_EQ: q{(%2$s == %1$s)},
         IR.I64_NE: q{(%2$s != %1$s)},
@@ -755,7 +755,7 @@ shared static this() {
         IR.F32_TRUNC: q{math.truncf(%1$s)},
         IR.F32_NEAREST: q{math.nearbyintf(%1$s)},
         IR.F32_SQRT: q{math.sqrtf(%1$s)},
-        IR.F32_ADD: q{(%2$s + %1$s)},
+        IR.F32_ADD: q{math.add(%2$s,%1$s)},
         IR.F32_SUB: q{(%2$s - %1$s)},
         IR.F32_MUL: q{(%2$s * %1$s)},
         IR.F32_DIV: q{(%2$s / %1$s)},
@@ -797,6 +797,12 @@ shared static this() {
         // Conversions
         IR.I64_EXTEND_I32_S: q{cast(long)(%1$s)},
         IR.I64_EXTEND_I32_U: q{cast(long)(cast(uint)%1$s)},
+        IR.I32_EXTEND8_S: q{cast(int)(cast(byte)%1$s)},
+        IR.I32_EXTEND16_S: q{cast(int)(cast(short)%1$s)},
+        IR.I64_EXTEND8_S: q{cast(long)(cast(byte)%1$s)},
+        IR.I64_EXTEND16_S: q{cast(long)(cast(short)%1$s)},
+        IR.I64_EXTEND32_S: q{cast(long)(cast(int)%1$s)},
+
         IR.I32_WRAP_I64: q{cast(int)(%1$s)},
         IR.I32_TRUNC_F32_S: q{wasm.trunc!int(%1$s)},
         IR.I32_TRUNC_F32_U: q{wasm.trunc!uint(%1$s)},
@@ -838,6 +844,7 @@ shared static this() {
         IR.F64_GT: q{(%2$s > %1$s)},
         IR.F64_LE: q{(%2$s <= %1$s)},
         IR.F64_GE: q{(%2$s >= %1$s)},
+        // Extend 
 
     ];
 }

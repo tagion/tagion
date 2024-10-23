@@ -90,7 +90,7 @@ int _main(string[] args) {
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch, 
+                "version", "display the version", &version_switch,
                 "gas|g", format("Inject gas counters: %s", inject_gas), &inject_gas,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "w|wasm_verbose", "Verbose the wasm parser", &verbose_wasm,
@@ -143,7 +143,7 @@ int _main(string[] args) {
             help;
             return 0;
         }
-        
+
         if (verbose_wasm) {
             wasm_verbose.mode = VerboseMode.STANDARD;
         }
@@ -213,8 +213,6 @@ int _main(string[] args) {
                 wasm_writer = new WasmWriter;
                 auto wast_parser = WastParser(wasm_writer);
                 wast_parser.parse(tokenizer);
-                writefln("Before wasmwrite");
-                writefln("wasm_writer=%(%02X %)", wasm_writer.serialize);
                 break;
             default:
                 check(0, format("File extensions %s not valid for input file (only %-(%s, %))",

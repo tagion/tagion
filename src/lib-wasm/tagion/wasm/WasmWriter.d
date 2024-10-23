@@ -626,7 +626,7 @@ import tagion.wasm.WasmReader;
 
             static Local[] toLocals(scope const(Types[]) types) pure nothrow {
                 Local[] result;
-                void compact(const(Types[]) _types) {
+                void compact(scope const(Types[]) _types) {
                     if (_types.length) {
                         const count = cast(uint) _types.count(_types[0]);
                         result ~= Local(count, _types[0]);
@@ -634,6 +634,7 @@ import tagion.wasm.WasmReader;
                     }
                 }
 
+                compact(types);
                 return result;
 
             }

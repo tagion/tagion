@@ -2,17 +2,17 @@
 
 (module
   (func $i32.no_fold_cmp_s_offset (param $x i32) (param $y i32) (result i32)
-    (i32.lt_s (i32.add (get_local $x) (i32.const 1)) (i32.add (get_local $y) (i32.const 1))))
+    (i32.lt_s (i32.add (local.get $x) (i32.const 1)) (i32.add (local.get $y) (i32.const 1))))
   (export "i32.no_fold_cmp_s_offset" $i32.no_fold_cmp_s_offset)
   (func $i32.no_fold_cmp_u_offset (param $x i32) (param $y i32) (result i32)
-    (i32.lt_u (i32.add (get_local $x) (i32.const 1)) (i32.add (get_local $y) (i32.const 1))))
+    (i32.lt_u (i32.add (local.get $x) (i32.const 1)) (i32.add (local.get $y) (i32.const 1))))
   (export "i32.no_fold_cmp_u_offset" $i32.no_fold_cmp_u_offset)
 
   (func $i64.no_fold_cmp_s_offset (param $x i64) (param $y i64) (result i32)
-    (i64.lt_s (i64.add (get_local $x) (i64.const 1)) (i64.add (get_local $y) (i64.const 1))))
+    (i64.lt_s (i64.add (local.get $x) (i64.const 1)) (i64.add (local.get $y) (i64.const 1))))
   (export "i64.no_fold_cmp_s_offset" $i64.no_fold_cmp_s_offset)
   (func $i64.no_fold_cmp_u_offset (param $x i64) (param $y i64) (result i32)
-    (i64.lt_u (i64.add (get_local $x) (i64.const 1)) (i64.add (get_local $y) (i64.const 1))))
+    (i64.lt_u (i64.add (local.get $x) (i64.const 1)) (i64.add (local.get $y) (i64.const 1))))
   (export "i64.no_fold_cmp_u_offset" $i64.no_fold_cmp_u_offset)
 )
 
@@ -25,7 +25,7 @@
 
 (module
   (func $i64.no_fold_wrap_extend_s (param $x i64) (result i64)
-    (i64.extend_s/i32 (i32.wrap/i64 (get_local $x))))
+    (i64.extend_s/i32 (i32.wrap/i64 (local.get $x))))
   (export "i64.no_fold_wrap_extend_s" $i64.no_fold_wrap_extend_s)
 )
 
@@ -36,7 +36,7 @@
 
 (module
   (func $i64.no_fold_wrap_extend_u (param $x i64) (result i64)
-    (i64.extend_u/i32 (i32.wrap/i64 (get_local $x))))
+    (i64.extend_u/i32 (i32.wrap/i64 (local.get $x))))
   (export "i64.no_fold_wrap_extend_u" $i64.no_fold_wrap_extend_u)
 )
 
@@ -46,17 +46,17 @@
 
 (module
   (func $i32.no_fold_shl_shr_s (param $x i32) (result i32)
-    (i32.shr_s (i32.shl (get_local $x) (i32.const 1)) (i32.const 1)))
+    (i32.shr_s (i32.shl (local.get $x) (i32.const 1)) (i32.const 1)))
   (export "i32.no_fold_shl_shr_s" $i32.no_fold_shl_shr_s)
   (func $i32.no_fold_shl_shr_u (param $x i32) (result i32)
-    (i32.shr_u (i32.shl (get_local $x) (i32.const 1)) (i32.const 1)))
+    (i32.shr_u (i32.shl (local.get $x) (i32.const 1)) (i32.const 1)))
   (export "i32.no_fold_shl_shr_u" $i32.no_fold_shl_shr_u)
 
   (func $i64.no_fold_shl_shr_s (param $x i64) (result i64)
-    (i64.shr_s (i64.shl (get_local $x) (i64.const 1)) (i64.const 1)))
+    (i64.shr_s (i64.shl (local.get $x) (i64.const 1)) (i64.const 1)))
   (export "i64.no_fold_shl_shr_s" $i64.no_fold_shl_shr_s)
   (func $i64.no_fold_shl_shr_u (param $x i64) (result i64)
-    (i64.shr_u (i64.shl (get_local $x) (i64.const 1)) (i64.const 1)))
+    (i64.shr_u (i64.shl (local.get $x) (i64.const 1)) (i64.const 1)))
   (export "i64.no_fold_shl_shr_u" $i64.no_fold_shl_shr_u)
 )
 
@@ -69,17 +69,17 @@
 
 (module
   (func $i32.no_fold_shr_s_shl (param $x i32) (result i32)
-    (i32.shl (i32.shr_s (get_local $x) (i32.const 1)) (i32.const 1)))
+    (i32.shl (i32.shr_s (local.get $x) (i32.const 1)) (i32.const 1)))
   (export "i32.no_fold_shr_s_shl" $i32.no_fold_shr_s_shl)
   (func $i32.no_fold_shr_u_shl (param $x i32) (result i32)
-    (i32.shl (i32.shr_u (get_local $x) (i32.const 1)) (i32.const 1)))
+    (i32.shl (i32.shr_u (local.get $x) (i32.const 1)) (i32.const 1)))
   (export "i32.no_fold_shr_u_shl" $i32.no_fold_shr_u_shl)
 
   (func $i64.no_fold_shr_s_shl (param $x i64) (result i64)
-    (i64.shl (i64.shr_s (get_local $x) (i64.const 1)) (i64.const 1)))
+    (i64.shl (i64.shr_s (local.get $x) (i64.const 1)) (i64.const 1)))
   (export "i64.no_fold_shr_s_shl" $i64.no_fold_shr_s_shl)
   (func $i64.no_fold_shr_u_shl (param $x i64) (result i64)
-    (i64.shl (i64.shr_u (get_local $x) (i64.const 1)) (i64.const 1)))
+    (i64.shl (i64.shr_u (local.get $x) (i64.const 1)) (i64.const 1)))
   (export "i64.no_fold_shr_u_shl" $i64.no_fold_shr_u_shl)
 )
 
@@ -92,17 +92,17 @@
 
 (module
   (func $i32.no_fold_div_s_mul (param $x i32) (result i32)
-    (i32.mul (i32.div_s (get_local $x) (i32.const 6)) (i32.const 6)))
+    (i32.mul (i32.div_s (local.get $x) (i32.const 6)) (i32.const 6)))
   (export "i32.no_fold_div_s_mul" $i32.no_fold_div_s_mul)
   (func $i32.no_fold_div_u_mul (param $x i32) (result i32)
-    (i32.mul (i32.div_u (get_local $x) (i32.const 6)) (i32.const 6)))
+    (i32.mul (i32.div_u (local.get $x) (i32.const 6)) (i32.const 6)))
   (export "i32.no_fold_div_u_mul" $i32.no_fold_div_u_mul)
 
   (func $i64.no_fold_div_s_mul (param $x i64) (result i64)
-    (i64.mul (i64.div_s (get_local $x) (i64.const 6)) (i64.const 6)))
+    (i64.mul (i64.div_s (local.get $x) (i64.const 6)) (i64.const 6)))
   (export "i64.no_fold_div_s_mul" $i64.no_fold_div_s_mul)
   (func $i64.no_fold_div_u_mul (param $x i64) (result i64)
-    (i64.mul (i64.div_u (get_local $x) (i64.const 6)) (i64.const 6)))
+    (i64.mul (i64.div_u (local.get $x) (i64.const 6)) (i64.const 6)))
   (export "i64.no_fold_div_u_mul" $i64.no_fold_div_u_mul)
 )
 
@@ -115,17 +115,17 @@
 
 (module
   (func $i32.no_fold_mul_div_s (param $x i32) (result i32)
-    (i32.div_s (i32.mul (get_local $x) (i32.const 6)) (i32.const 6)))
+    (i32.div_s (i32.mul (local.get $x) (i32.const 6)) (i32.const 6)))
   (export "i32.no_fold_mul_div_s" $i32.no_fold_mul_div_s)
   (func $i32.no_fold_mul_div_u (param $x i32) (result i32)
-    (i32.div_u (i32.mul (get_local $x) (i32.const 6)) (i32.const 6)))
+    (i32.div_u (i32.mul (local.get $x) (i32.const 6)) (i32.const 6)))
   (export "i32.no_fold_mul_div_u" $i32.no_fold_mul_div_u)
 
   (func $i64.no_fold_mul_div_s (param $x i64) (result i64)
-    (i64.div_s (i64.mul (get_local $x) (i64.const 6)) (i64.const 6)))
+    (i64.div_s (i64.mul (local.get $x) (i64.const 6)) (i64.const 6)))
   (export "i64.no_fold_mul_div_s" $i64.no_fold_mul_div_s)
   (func $i64.no_fold_mul_div_u (param $x i64) (result i64)
-    (i64.div_u (i64.mul (get_local $x) (i64.const 6)) (i64.const 6)))
+    (i64.div_u (i64.mul (local.get $x) (i64.const 6)) (i64.const 6)))
   (export "i64.no_fold_mul_div_u" $i64.no_fold_mul_div_u)
 )
 
@@ -138,11 +138,11 @@
 
 (module
   (func $i32.no_fold_div_s_2 (param $x i32) (result i32)
-    (i32.div_s (get_local $x) (i32.const 2)))
+    (i32.div_s (local.get $x) (i32.const 2)))
   (export "i32.no_fold_div_s_2" $i32.no_fold_div_s_2)
 
   (func $i64.no_fold_div_s_2 (param $x i64) (result i64)
-    (i64.div_s (get_local $x) (i64.const 2)))
+    (i64.div_s (local.get $x) (i64.const 2)))
   (export "i64.no_fold_div_s_2" $i64.no_fold_div_s_2)
 )
 
@@ -153,11 +153,11 @@
 
 (module
   (func $i32.no_fold_rem_s_2 (param $x i32) (result i32)
-    (i32.rem_s (get_local $x) (i32.const 2)))
+    (i32.rem_s (local.get $x) (i32.const 2)))
   (export "i32.no_fold_rem_s_2" $i32.no_fold_rem_s_2)
 
   (func $i64.no_fold_rem_s_2 (param $x i64) (result i64)
-    (i64.rem_s (get_local $x) (i64.const 2)))
+    (i64.rem_s (local.get $x) (i64.const 2)))
   (export "i64.no_fold_rem_s_2" $i64.no_fold_rem_s_2)
 )
 
@@ -168,17 +168,17 @@
 
 (module
   (func $i32.div_s_3 (param $x i32) (result i32)
-    (i32.div_s (get_local $x) (i32.const 3)))
+    (i32.div_s (local.get $x) (i32.const 3)))
   (export "i32.div_s_3" $i32.div_s_3)
   (func $i32.div_u_3 (param $x i32) (result i32)
-    (i32.div_u (get_local $x) (i32.const 3)))
+    (i32.div_u (local.get $x) (i32.const 3)))
   (export "i32.div_u_3" $i32.div_u_3)
 
   (func $i64.div_s_3 (param $x i64) (result i64)
-    (i64.div_s (get_local $x) (i64.const 3)))
+    (i64.div_s (local.get $x) (i64.const 3)))
   (export "i64.div_s_3" $i64.div_s_3)
   (func $i64.div_u_3 (param $x i64) (result i64)
-    (i64.div_u (get_local $x) (i64.const 3)))
+    (i64.div_u (local.get $x) (i64.const 3)))
   (export "i64.div_u_3" $i64.div_u_3)
 )
 
@@ -195,17 +195,17 @@
 
 (module
   (func $i32.div_s_5 (param $x i32) (result i32)
-    (i32.div_s (get_local $x) (i32.const 5)))
+    (i32.div_s (local.get $x) (i32.const 5)))
   (export "i32.div_s_5" $i32.div_s_5)
   (func $i32.div_u_5 (param $x i32) (result i32)
-    (i32.div_u (get_local $x) (i32.const 5)))
+    (i32.div_u (local.get $x) (i32.const 5)))
   (export "i32.div_u_5" $i32.div_u_5)
 
   (func $i64.div_s_5 (param $x i64) (result i64)
-    (i64.div_s (get_local $x) (i64.const 5)))
+    (i64.div_s (local.get $x) (i64.const 5)))
   (export "i64.div_s_5" $i64.div_s_5)
   (func $i64.div_u_5 (param $x i64) (result i64)
-    (i64.div_u (get_local $x) (i64.const 5)))
+    (i64.div_u (local.get $x) (i64.const 5)))
   (export "i64.div_u_5" $i64.div_u_5)
 )
 
@@ -222,17 +222,17 @@
 
 (module
   (func $i32.div_s_7 (param $x i32) (result i32)
-    (i32.div_s (get_local $x) (i32.const 7)))
+    (i32.div_s (local.get $x) (i32.const 7)))
   (export "i32.div_s_7" $i32.div_s_7)
   (func $i32.div_u_7 (param $x i32) (result i32)
-    (i32.div_u (get_local $x) (i32.const 7)))
+    (i32.div_u (local.get $x) (i32.const 7)))
   (export "i32.div_u_7" $i32.div_u_7)
 
   (func $i64.div_s_7 (param $x i64) (result i64)
-    (i64.div_s (get_local $x) (i64.const 7)))
+    (i64.div_s (local.get $x) (i64.const 7)))
   (export "i64.div_s_7" $i64.div_s_7)
   (func $i64.div_u_7 (param $x i64) (result i64)
-    (i64.div_u (get_local $x) (i64.const 7)))
+    (i64.div_u (local.get $x) (i64.const 7)))
   (export "i64.div_u_7" $i64.div_u_7)
 )
 
@@ -249,17 +249,17 @@
 
 (module
   (func $i32.rem_s_3 (param $x i32) (result i32)
-    (i32.rem_s (get_local $x) (i32.const 3)))
+    (i32.rem_s (local.get $x) (i32.const 3)))
   (export "i32.rem_s_3" $i32.rem_s_3)
   (func $i32.rem_u_3 (param $x i32) (result i32)
-    (i32.rem_u (get_local $x) (i32.const 3)))
+    (i32.rem_u (local.get $x) (i32.const 3)))
   (export "i32.rem_u_3" $i32.rem_u_3)
 
   (func $i64.rem_s_3 (param $x i64) (result i64)
-    (i64.rem_s (get_local $x) (i64.const 3)))
+    (i64.rem_s (local.get $x) (i64.const 3)))
   (export "i64.rem_s_3" $i64.rem_s_3)
   (func $i64.rem_u_3 (param $x i64) (result i64)
-    (i64.rem_u (get_local $x) (i64.const 3)))
+    (i64.rem_u (local.get $x) (i64.const 3)))
   (export "i64.rem_u_3" $i64.rem_u_3)
 )
 
@@ -276,17 +276,17 @@
 
 (module
   (func $i32.rem_s_5 (param $x i32) (result i32)
-    (i32.rem_s (get_local $x) (i32.const 5)))
+    (i32.rem_s (local.get $x) (i32.const 5)))
   (export "i32.rem_s_5" $i32.rem_s_5)
   (func $i32.rem_u_5 (param $x i32) (result i32)
-    (i32.rem_u (get_local $x) (i32.const 5)))
+    (i32.rem_u (local.get $x) (i32.const 5)))
   (export "i32.rem_u_5" $i32.rem_u_5)
 
   (func $i64.rem_s_5 (param $x i64) (result i64)
-    (i64.rem_s (get_local $x) (i64.const 5)))
+    (i64.rem_s (local.get $x) (i64.const 5)))
   (export "i64.rem_s_5" $i64.rem_s_5)
   (func $i64.rem_u_5 (param $x i64) (result i64)
-    (i64.rem_u (get_local $x) (i64.const 5)))
+    (i64.rem_u (local.get $x) (i64.const 5)))
   (export "i64.rem_u_5" $i64.rem_u_5)
 )
 
@@ -303,17 +303,17 @@
 
 (module
   (func $i32.rem_s_7 (param $x i32) (result i32)
-    (i32.rem_s (get_local $x) (i32.const 7)))
+    (i32.rem_s (local.get $x) (i32.const 7)))
   (export "i32.rem_s_7" $i32.rem_s_7)
   (func $i32.rem_u_7 (param $x i32) (result i32)
-    (i32.rem_u (get_local $x) (i32.const 7)))
+    (i32.rem_u (local.get $x) (i32.const 7)))
   (export "i32.rem_u_7" $i32.rem_u_7)
 
   (func $i64.rem_s_7 (param $x i64) (result i64)
-    (i64.rem_s (get_local $x) (i64.const 7)))
+    (i64.rem_s (local.get $x) (i64.const 7)))
   (export "i64.rem_s_7" $i64.rem_s_7)
   (func $i64.rem_u_7 (param $x i64) (result i64)
-    (i64.rem_u (get_local $x) (i64.const 7)))
+    (i64.rem_u (local.get $x) (i64.const 7)))
   (export "i64.rem_u_7" $i64.rem_u_7)
 )
 
