@@ -5,7 +5,7 @@ public import core.bitop : popcnt, rol, ror;
 import std.traits;
 
 @safe:
-
+@nogc nothrow {
 union b32 {
     int i32;
     float f32;
@@ -41,6 +41,21 @@ double reinterpret64(long x) {
     return result.f64;
 }
 
+auto snan2(T)(T x) if (isIntegral!T) {
+    static if (T.sizeof == int.sizeof) {
+        b32 result;
+        result.f32 = T.nan;
+        result.i32 |= x;
+        return result.f32;
+    }
+    else {
+        b64 result;
+        result.f64 = T.nan;
+        result.i64 |= x;
+        return result.f64;
+    }
+}
+
 auto snan(T)(T x) if (isIntegral!T) {
     static if (T.sizeof == int.sizeof) {
         return reinterpret32(x);
@@ -50,7 +65,6 @@ auto snan(T)(T x) if (isIntegral!T) {
     }
 }
 
-nothrow {
     T clz(T)(T val) if (isIntegral!T) {
         if (val == 0) {
             return T.sizeof * 8;
