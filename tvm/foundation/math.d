@@ -1,9 +1,10 @@
 module foundation.math;
 
 public import core.stdc.math;
-import cmath=core.stdc.math;
-import std.math : isNaN,signbit;
+import cmath = core.stdc.math;
+import std.math : isNaN, signbit;
 import std.traits;
+
 @safe:
 @nogc nothrow:
 
@@ -26,24 +27,60 @@ int equal(T)(T x, T y) if (isNumeric!T) {
     return x == y;
 }
 
-T add(T)(T x, T y) @trusted if (isFloatingPoint!T) {
-    if (isNaN(x) || isNaN(y)) {
-        import wasm=foundation.wasm;
-        import core.stdc.stdio;
-        wasm.b32 x_b32, y_b32, nan_new, nan_raw;
-        nan_raw.f32=float.nan;
-        x_b32.f32=x;
-        y_b32.f32=y;
-        printf("x_b32=%08x y_b32=%08x\n", x_b32.i32, y_b32.i32);
-        printf("arith bit %08x\n", (x_b32.i32 | y_b32.i32) & 0x20_0000);
-        printf("nan=%08x %08x\n", nan_new.i32, uint(1) << 22);
-        nan_new.f32 = wasm.snan(nan_raw.i32 | ((x_b32.i32 | y_b32.i32)) );
-        printf("nan_new=%08x\n", nan_new.i32);
+T add(T)(T x, T y) => arithmetic!("+")(x, y);
+T sub(T)(T x, T y) => arithmetic!("-")(x, y);
+T mul(T)(T x, T y) => arithmetic!("*")(x, y);
+T div(T)(T x, T y) => arithmetic!("/")(x, y);
 
-        //return wasm.snan(0x20_0000);
-        return T.nan;
-    }
-    return x + y;
+unittest {
+    float x, y;
+    const z = arithmetic!("+")(x, y);
+    const z0 = add(x, y);
 }
 
+T arithmetic(string op, T)(T x, T y) @trusted if (isFloatingPoint!T) {
+    import wasm = foundation.wasm;
 
+    wasm.Float!float result;
+    if (x.isNaN || y.isNaN) {
+        import core.stdc.stdio;
+
+        if (x.isNaN) {
+            result.f = x;
+        }
+        if (y.isNaN) {
+            wasm.Float!T y_map;
+            y_map.f = y;
+
+            result.i |= y_map.i;
+
+        }
+    }
+    else {
+        mixin("result.f=x" ~ op ~ "y;");
+    }
+    if (result.f.isNaN && signbit(result.f)) {
+        result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+
+    }
+    return result.f;
+}
+
+T min(T)(T x, T y) @trusted if (isFloatingPoint!T) {
+    import wasm = foundation.wasm;
+    if (x.isNaN || y.isNaN) {
+    wasm.Float!float result;
+
+        if (x.isNaN) {
+            result.f = x;
+        }
+        if (y.isNaN) {
+            wasm.Float!T y_map;
+            y_map.f = y;
+            result.i |= y_map.i;
+        }
+        result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+        return result.f;
+    }
+    return (x<y)?x:y;
+}

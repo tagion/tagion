@@ -6,64 +6,70 @@ import std.traits;
 
 @safe:
 @nogc nothrow {
-union b32 {
-    int i32;
-    float f32;
-}
+    union b32 {
+        int i32;
+        float f32;
+    }
 
-int reinterpret32(float x) {
-    b32 result;
-    result.f32 = x;
-    return result.i32;
-}
-
-float reinterpret32(int x) {
-    b32 result;
-    result.i32 = x;
-    return result.f32;
-}
-
-union b64 {
-    long i64;
-    double f64;
-}
-
-long reinterpret64(double x) {
-    b64 result;
-    result.f64 = x;
-    return result.i64;
-}
-
-double reinterpret64(long x) {
-    b64 result;
-    result.i64 = x;
-
-    return result.f64;
-}
-
-auto snan2(T)(T x) if (isIntegral!T) {
-    static if (T.sizeof == int.sizeof) {
+    int reinterpret32(float x) {
         b32 result;
-        result.f32 = T.nan;
-        result.i32 |= x;
+        result.f32 = x;
+        return result.i32;
+    }
+
+    float reinterpret32(int x) {
+        b32 result;
+        result.i32 = x;
         return result.f32;
     }
-    else {
+
+    union b64 {
+        long i64;
+        double f64;
+    }
+
+    long reinterpret64(double x) {
         b64 result;
-        result.f64 = T.nan;
-        result.i64 |= x;
+        result.f64 = x;
+        return result.i64;
+    }
+
+    double reinterpret64(long x) {
+        b64 result;
+        result.i64 = x;
+
         return result.f64;
     }
-}
 
-auto snan(T)(T x) if (isIntegral!T) {
-    static if (T.sizeof == int.sizeof) {
-        return reinterpret32(x);
+    template FloatAsInt(F) if (isFloatingPoint!F) {
+        static if (F.sizeof == int.sizeof) {
+            alias FloatAsInt = int;
+        }
+        else {
+            alias FloatAsInt = long;
+        }
     }
-    else {
-        return reinterpret64(x);
+
+    union Float(F) {
+        F f;
+        FloatAsInt!F i;
     }
-}
+
+    F snan2(F, T)(T x) if (isFloatingPoint!F && is(T == FloatAsInt!F)) {
+        Float!F result;
+        result.f = F.nan;
+        result.i |= x;
+        return result.f;
+    }
+
+    auto snan(T)(T x) if (isIntegral!T) {
+        static if (T.sizeof == int.sizeof) {
+            return reinterpret32(x);
+        }
+        else {
+            return reinterpret64(x);
+        }
+    }
 
     T clz(T)(T val) if (isIntegral!T) {
         if (val == 0) {

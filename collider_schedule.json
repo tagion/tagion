@@ -116,7 +116,7 @@
         },
         "tvm_test" : {
           "args" : [
-                "f32_export_1.wast"
+                "f32_export.wast"
             ]
         },
         "i64_export" : {
