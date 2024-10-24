@@ -32,12 +32,6 @@ T sub(T)(T x, T y) => arithmetic!("-")(x, y);
 T mul(T)(T x, T y) => arithmetic!("*")(x, y);
 T div(T)(T x, T y) => arithmetic!("/")(x, y);
 
-unittest {
-    float x, y;
-    const z = arithmetic!("+")(x, y);
-    const z0 = add(x, y);
-}
-
 T arithmetic(string op, T)(T x, T y) @trusted if (isFloatingPoint!T) {
     import wasm = foundation.wasm;
 
@@ -61,7 +55,6 @@ T arithmetic(string op, T)(T x, T y) @trusted if (isFloatingPoint!T) {
     }
     if (result.f.isNaN && signbit(result.f)) {
         result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
-
     }
     return result.f;
 }
@@ -84,3 +77,49 @@ T min(T)(T x, T y) @trusted if (isFloatingPoint!T) {
     }
     return (x<y)?x:y;
 }
+
+
+T max(T)(T x, T y) @trusted if (isFloatingPoint!T) {
+    import wasm = foundation.wasm;
+    if (x.isNaN || y.isNaN) {
+    wasm.Float!float result;
+
+        if (x.isNaN) {
+            result.f = x;
+        }
+        if (y.isNaN) {
+            wasm.Float!T y_map;
+            y_map.f = y;
+            result.i |= y_map.i;
+        }
+        result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+        return result.f;
+    }
+    return (x>y)?x:y;
+}
+
+T sqrt(T)(T x) => func!"sqrt"(x);
+
+T func(string name, T)(T x) @trusted if (isFloatingPoint!T) {
+    import wasm = foundation.wasm;
+    wasm.Float!float result;
+    if (x.isNaN) {
+
+        if (x.isNaN) {
+            result.f = x;
+        }
+        result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+        return result.f;
+    }
+    static if (is(T == float)) {
+    mixin("result.f=cmath."~name~"f(x);");
+    }
+    else {
+        mixin("result.f=cmath."~name~"(x);");
+    }
+    if (result.f.isNaN && signbit(result.f)) {
+        result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+    }
+    return result.f;
+}
+
