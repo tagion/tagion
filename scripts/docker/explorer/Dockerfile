@@ -20,7 +20,6 @@ fi
 RUN make install INSTALL=/usr/local/bin/ DC=ldc2
 
 # Final image
-USER root
 FROM alpine:20240606
 WORKDIR /usr/local/
 ENV NODE_NUMBER=0
