@@ -1052,7 +1052,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 const lookup_handler = handler_helper!lookup_handler_impl;
 void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     string query_subject = req.path[$ - 2];
-    string query_str = cast(immutable(char)[])(Base64.decode(req.path[$ - 1]));
+    string query_str = cast(immutable(char)[])(Base64URL.decode(req.path[$ - 1]));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     int rc;
     int attempts = 0;
@@ -1136,7 +1136,7 @@ void util_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                             rep.text = "Invalid data path";
                             return;
                         }
-                        data = cast(ubyte[])(Base64.decode(query_main[2]));
+                        data = cast(ubyte[])(Base64URL.decode(query_main[2]));
                     }
                     Document doc = Document(cast(immutable)data);
                     rep.type = mime_type.JSON;

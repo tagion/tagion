@@ -3392,10 +3392,9 @@ unittest{
 struct WebSocketClient {
 
     @disable this();
-
-
-
+    
     private:
+        
         ws_state localstate;    
         ubyte[4] masking_key;
         ubyte[] rxbuf;
@@ -3689,27 +3688,27 @@ struct WebSocketClient {
         }
     }
 
-    void send( string msg ){
-        send_data(ws_opcode.TEXT_FRAME, cast(ubyte[])msg.dup);
+    void send(T)( T msg ) if(is(T == string))
+    {
+        send_data(ws_opcode.TEXT_FRAME, cast(ubyte[])msg);
     }
-
-    void send_b( ubyte[] msg ){
+    
+    void send(T)( T msg ) if(is(T == ubyte[]))
+    {
         send_data(ws_opcode.BINARY_FRAME, msg);
     }
     
-    void send_b( string msg ){
-        send_data(ws_opcode.BINARY_FRAME, cast(ubyte[])msg.dup);
-    }
-
     void send_ping(){
         send_data(ws_opcode.PING, null);
     }
 
-    void dispatch(ws_client_handler cb){
+    void dispatch(F)(F cb) if(is(F == ws_client_handler))
+    {
         dispatch_data((ubyte[] message){cb((cast(string)(message)[0..$]));});
     }
     
-    void dispatch_b(ws_client_handler_b cb){
+    void dispatch(F)(F cb) if(is(F == ws_client_handler_b))
+    {
         dispatch_data((ubyte[] message){cb(message);});
     }
 
