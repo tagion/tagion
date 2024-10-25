@@ -38,18 +38,54 @@
         var mlistsz = 0;
         const MLISTMAX = 100;
 
+        var docprefix = $(location)
+            .attr("pathname")
+            .trim()
+            .replace(/\/static.*$/gm,"")
+            .replace(/^\//gm,"")
+            .replace(/\/$/gm,"");
+        docprefix = "/" + docprefix;    
+
         $( document ).ready(function() {
+            console.log("PF: ", docprefix);
             console.log("Websocket to setup on ", location.origin.replace(/^http/, 'ws'));
             wsinit();
+            walinit();
             $("#go").click(doit);    
+            $("#isendrequest").click(sendrequest);
             $("#isubmonitor").change(submonitor);
             $("#isubrecorder").change(submonitor);
             $("#isubtrt").change(submonitor);
             $("#iclearmon").click((e) => { $("#mlist").html(""); mlistsz = 0; });
-            $("#helpdoc > ul:eq(0) > li:eq(2) > pre:eq(0)").html(config.help_valid_indices);
-            $("#helpdoc > ul:eq(0) > li:eq(2) > pre:eq(1)").html(config.help_valid_pkeys);
         });
         
+        function walinit() {
+            var h = [];
+            $.ajax({
+                url: docprefix + config.api_testwallet_endpoint,
+                type: "get",
+                success: function(data, status, xhr) {
+                    data.split(/\r?\n/)
+                        .map((x,i) => {
+                            h.push(x.split(/\s+/)[1]);    
+                        });
+                    config.help_valid_indices = h
+                        .map(a => [a,Math.random()])
+                        .sort((a,b) => {return a[1] < b[1] ? -1 : 1;})
+                        .slice(0,6)
+                        .map(a => a[0])
+                        .join("\r\n");
+                    $("#helpbox_indices").html(config.help_valid_indices);
+                    $("#helpbox.pkey").html(config.help_valid_pkeys);
+                },
+                error: function(data) {
+                    console.log("Error: ", data);
+                },
+                complete: function(data) {
+                }
+            });
+        }
+
         function wswait() {  
             if(ws){
                 if( ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.CLOSING ){
@@ -65,7 +101,7 @@
                     ws.close();
                 }
             }
-            ws = new WebSocket(location.origin.replace(/^http/, 'ws') + config.ws_endpoint);
+            ws = new WebSocket(location.origin.replace(/^http/, 'ws') + docprefix + config.ws_endpoint);
             ws.onerror = console.error;
             ws.onopen = () => {
                 console.log("[ON] Socket connected: ");
@@ -124,7 +160,86 @@
             };
             lookup(query, opt);
         }
+
+        function sendrequest(){
+            var req = $("#requestbody").val().trim();
             
+            console.log("REQ: " + req);
+            
+            if(req == ""){
+                return;
+            }
+            
+            if ( req.startsWith("{") && req.endsWith("}" )) {
+                
+                $.ajax({
+                    url: docprefix + config.api_util_endpoint + "/hibon/fromjson",
+                    type: "post",
+                    contentType: "application/json",
+                    data: req,
+                    processData: false,
+                    xhrFields: {
+                        responseType: "arraybuffer"
+                    },
+                    success: function(data, status, xhr) {
+                        processrequest(data);
+                    },
+                    error: function(data) {
+                        console.log("Error: ", data);
+                    }
+                });
+
+            } else {            
+                processrequest(Uint8Array.from(WTagUtil.base64URLdecode(req), c => c.charCodeAt(0)));
+            }
+        }    
+        
+        function processrequest(bytes) {
+            $('body').addClass('busy');
+            $.ajax({
+                url: docprefix + config.api_hirpc_endpoint,
+                type: "post",
+                contentType: 'application/octet-stream',
+                data: bytes,
+                processData: false,
+                xhrFields: {
+                    responseType: "arraybuffer"
+                },
+                success: function(data, status, xhr) {
+                    console.log(typeof(data));
+                    var adata = WTagUtil.base64URLencode(new Uint8Array(data)
+                        .reduce((x, b) => x + String.fromCharCode(b), ''));
+                    $("#requestlink").html("");
+                    var bd = new Blob([data], {type: "application/octet-string"});
+                    var dlink = document.createElement('a');
+                    dlink.download = "response.hibon";
+                    dlink.href = window.URL.createObjectURL(bd);
+                    dlink.textContent = "[ Download HiBON result ]";
+                    $("#requestlink").append(dlink);
+                    $.ajax({
+                        url: docprefix + config.api_util_endpoint + "/hibon/tojson",
+                        type: "post",
+                        contentType: "application/octet-stream",
+                        data: data,
+                        processData: false,
+                        success: function(data1, status, xhr) {
+                            console.log(data1);
+                            $("#requestresult").html(JSON.stringify( data1, null, 2));                                                        
+                        },
+                        error: function(data1) {
+                            console.log("Error: ", data1);
+                        }
+                    });
+                },    
+                error: function(data) {
+                    console.log("Error: ", data);
+                },
+                complete: function(data) {
+                    $('body').removeClass('busy');
+                }
+            });
+        }
+
         function lookup(query, opt) {
             console.log("lookup start with ", query, " opt: ", opt);
             $("#tbl").html("<table class=\"table table-sm w-50\" align=\"center\"><tbody></tbody></table>");
@@ -154,9 +269,8 @@
             console.log("Consider: ", id);
             $('body').addClass('busy');
             if ( id == "info"){
-                console.log(config.api_version_endpoint);
                 $.ajax({
-                    url: config.api_version_endpoint,
+                    url: docprefix + config.api_version_endpoint,
                     type: "get",
                     success: function(data, status, xhr) {
                         console.log(data);
@@ -178,9 +292,11 @@
             }    
 
             if ( id == "index" ) {
+                console.log("RAW:  ", "\#\$Y:\*:"+query);
+                console.log("B64:  ", WTagUtil.base64URLencode("\#\$Y:\*:"+query));
                 console.log("B64:  ", btoa("\#\$Y:\*:"+query));
                 $.ajax({
-                    url: config.api_lookup_endpount_trt+btoa("\#\$Y:\*:"+query),
+                    url: config.api_lookup_endpount_trt+WTagUtil.base64URLencode("\#\$Y:\*:"+query),
                     type: "get",
                     success: function(data, status, xhr) {
                         console.log("lookup trtindex done");
@@ -202,9 +318,11 @@
                     }
                 });
             }    
-            console.log("B64:   ", btoa(query));
+            console.log("RAW:   ", query);
+            console.log("B64:   ", WTagUtil.base64URLencode(query));
+            console.log("B64:  ", btoa(query));
             $.ajax({
-                url: config.api_lookup_endpoint_dart+btoa(query),
+                url: docprefix + config.api_lookup_endpoint_dart+WTagUtil.base64URLencode(query),
                 type: "get",
                 success: function(data, status, xhr) {
                     console.log("lookup "+id+" done");
@@ -268,7 +386,6 @@
                 t.append("<tr><td align='left' width='33%'>"+key+"</td><td align='left'>"+value+"</td></tr>");
             }
         }
-
 	</script>
 
     <div class="modal fade" id="modalHelp" tabindex="-1" aria-labelledby="modatHelpTitle" style="display: none;" aria-hidden="true">
@@ -284,10 +401,10 @@
             <li> any number i.e. "12" - for epoch lookup
             <li> "@...." base64 buffer for Dart read on dartIndex or TRT read on pubKey (by context)
             <br/>valid indices: 
-            <pre>
+            <pre id="helpbox_indices">
             </pre>
             valid wallet pkey:
-            <pre>
+            <pre id="helpbox_pkey">
             </pre>
         </ul>
     </div>
@@ -303,6 +420,9 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="monitor-tab" data-bs-toggle="tab" data-bs-target="#monitor-tab-pane" type="button" role="tab" aria-controls="monitor-tab-pane" aria-selected="false">Monitor</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="request-tab" data-bs-toggle="tab" data-bs-target="#request-tab-pane" type="button" role="tab" aria-controls="request-tab-pane" aria-selected="false">Request</button>
                 </li>
             </ul>        
         </div>        
@@ -336,7 +456,7 @@
                     </div>
                     <div class="flex-grow-1 p-3 overflow-y-auto">
                         <code >
-                        <pre id="raw">
+                        <pre id="raw" class="rawresult">
                              
                         </pre>
                         </code>
@@ -369,6 +489,29 @@
                 </div>
                 </div>
             </div>    
+            </div>
+            <div class="tab-pane h-100 fade overflow-hidden" id="request-tab-pane" role="tabpanel" aria-labelledby="request-tab" tabindex="0">
+            <div class="h-100 container-fluid">
+                <div class="row">
+                    <div class="col-8 p-2 offset-2 text-end">
+                        <div class="form-floating">
+                        <textarea class="form-control form-control-sm" id="requestbody" style="height: 32em" placeholder="HiRPC request in base64URL or JSON here..."></textarea>
+                        <label for="requestbody" class="form-label">HiRPC request in base64 or JSON here...</label>
+                        </div>
+                        <button type="button" class="btn btn-primary m-2 align-right" id="isendrequest"> Send </button>
+                    </div>
+                </div>
+                <div class="row h-100">
+                    <div class="col-12 h-100 scrollable overflow-y-auto position-relative">
+                        <div id="requestlink" class="text-center"></div>
+                        <code >
+                        <pre id="requestresult" class="rawresult">
+                             
+                        </pre>
+                        </code>
+                    </div>
+                </div>
+            </div>
             </div>
         </div>        
     </div>

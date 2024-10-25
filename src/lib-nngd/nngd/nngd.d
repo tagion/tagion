@@ -3392,10 +3392,9 @@ unittest{
 struct WebSocketClient {
 
     @disable this();
-
-
-
+    
     private:
+        
         ws_state localstate;    
         ubyte[4] masking_key;
         ubyte[] rxbuf;
@@ -3428,7 +3427,6 @@ struct WebSocketClient {
         }
     
         int openstate(string url, string origin){
-
             int rc;
             char[1024] buf;
             
@@ -3449,8 +3447,8 @@ struct WebSocketClient {
             string hello = format("GET /%s HTTP/1.1\r\n", join(u.path,"/"))
             ~ "Upgrade: websocket\r\n" 
             ~ "Connection: upgrade\r\n"
-            ~ "Host: localhost\r\n"
             ;
+            hello ~= (u.port == "80") ? format("Host: %s\r\n",u.host) : format("Host: %s:%s\r\n",u.host,u.port);
             if(origin !is null)
                 hello ~= format("Origin: %s\r\n", origin);
             hello ~= "Pragma: no-cache\r\n"
@@ -3581,6 +3579,7 @@ struct WebSocketClient {
                             for(int j=0; j < ws.N; ++j)
                                 rxbuf[i+ws.header_size] ^= ws.masking_key[j & 0x03];
                         send_data(ws_opcode.PONG,rxbuf[ws.header_size .. ws.header_size + ws.N]);
+                        rxbuf = rxbuf[ws.header_size + ws.N .. $];
                         break;
                     case ws_opcode.PONG:
                         break;
@@ -3597,6 +3596,7 @@ struct WebSocketClient {
                         if(ws.fin){
                             cb(received_data);
                             received_data.length = 0;
+                            rxbuf = rxbuf[ws.header_size + ws.N .. $];
                         }
                         break;
                     default:
@@ -3607,7 +3607,6 @@ struct WebSocketClient {
             }
         }                
     
-
     public:
 
     ws_options opt;
@@ -3689,27 +3688,27 @@ struct WebSocketClient {
         }
     }
 
-    void send( string msg ){
-        send_data(ws_opcode.TEXT_FRAME, cast(ubyte[])msg.dup);
+    void send(T)( T msg ) if(is(T == string))
+    {
+        send_data(ws_opcode.TEXT_FRAME, cast(ubyte[])msg);
     }
-
-    void send_b( ubyte[] msg ){
+    
+    void send(T)( T msg ) if(is(T == ubyte[]))
+    {
         send_data(ws_opcode.BINARY_FRAME, msg);
     }
     
-    void send_b( string msg ){
-        send_data(ws_opcode.BINARY_FRAME, cast(ubyte[])msg.dup);
-    }
-
     void send_ping(){
         send_data(ws_opcode.PING, null);
     }
 
-    void dispatch(ws_client_handler cb){
+    void dispatch(F)(F cb) if(is(F == ws_client_handler))
+    {
         dispatch_data((ubyte[] message){cb((cast(string)(message)[0..$]));});
     }
     
-    void dispatch_b(ws_client_handler_b cb){
+    void dispatch(F)(F cb) if(is(F == ws_client_handler_b))
+    {
         dispatch_data((ubyte[] message){cb(message);});
     }
 
