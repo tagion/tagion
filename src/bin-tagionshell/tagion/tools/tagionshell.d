@@ -1111,10 +1111,11 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                 break;
         }
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    }
     catch (Throwable e) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
         rep.type = mime_type.TEXT;
-        rep.text = dump_exception_recursive(e, "lookup endpoint", ExceptionFormat.PLAIN));
+        rep.text = dump_exception_recursive(e, "lookup endpoint", ExceptionFormat.PLAIN);
     }
 }
 
