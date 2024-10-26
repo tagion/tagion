@@ -145,19 +145,20 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
         if (!quiet.empty) {
             static if (F.sizeof == uint.sizeof) {
                 enum mask = 0x0060_0000;
+                enum arithmetic_mask = 0x0020_0000;
                 enum exp_mask = 0x7Fc0_0000;
             }
             else {
                 enum mask = 0xC_0000_0000_0000L;
+                enum arithmetic_mask = 0x4_0000_0000_0000L;
                 enum exp_mask = 0x7FE0_0000_0000_0000L;
             }
+            result.unsigned &= ~(mask);
             if (sicmp(quiet.front, Arithmetic) == 0) {
-                result.unsigned &= ~(mask);
-                result.unsigned |= 0x20_0000;
+                result.unsigned |= arithmetic_mask;
             }
-            else if (sicmp(quiet.front, Canonical) != 0) {
+            else {
                 const signal_mask = convert!(U)(quiet.front);
-                result.unsigned &= ~(mask);
                 result.unsigned |= signal_mask;
             }
         }

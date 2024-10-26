@@ -611,7 +611,7 @@ alias check = Check!WasmBetterCException;
                                 case F64:
                                     const x = a.get!double;
                                     if (x.isNaN) {
-                                        return format("wasm.snan(0x%x)", a.as!long);
+                                        return format("wasm.snan2!double(0x%x)", a.as!long);
                                     }
                                     if (x.isInfinity) {
                                         return format("(%sdouble.infinity)", sign(x));
@@ -751,9 +751,9 @@ shared static this() {
         IR.F32_ABS: q{math.fabsf(%1$s)},
         IR.F32_NEG: q{(-%1$s)},
         IR.F32_CEIL: q{math.ceilf(%1$s)},
-        IR.F32_FLOOR: q{math.floorf(%1$s)},
-        IR.F32_TRUNC: q{math.truncf(%1$s)},
-        IR.F32_NEAREST: q{math.nearbyintf(%1$s)},
+        IR.F32_FLOOR: q{math.floor(%1$s)},
+        IR.F32_TRUNC: q{math.trunc(%1$s)},
+        IR.F32_NEAREST: q{math.nearest(%1$s)},
         IR.F32_SQRT: q{math.sqrt(%1$s)},
         IR.F32_ADD: q{math.add(%2$s,%1$s)},
         IR.F32_SUB: q{math.sub(%2$s, %1$s)},
@@ -780,14 +780,14 @@ shared static this() {
         IR.F64_CEIL: q{math.ceil(%1$s)},
         IR.F64_FLOOR: q{math.floor(%1$s)},
         IR.F64_TRUNC: q{math.trunc(%1$s)},
-        IR.F64_NEAREST: q{math.nearbyint(%1$s)},
+        IR.F64_NEAREST: q{math.nearest(%1$s)},
         IR.F64_SQRT: q{math.sqrt(%1$s)},
         IR.F64_ADD: q{math.add(%2$s, %1$s)},
         IR.F64_SUB: q{math.sub(%2$s, %1$s)},
         IR.F64_MUL: q{math.mul(%2$s, %1$s)},
         IR.F64_DIV: q{math.div(%2$s,  %1$s)},
-        IR.F64_MIN: q{wasm.fmin(%2$s, %1$s)},
-        IR.F64_MAX: q{wasm.fmax(%2$s, %1$s)},
+        IR.F64_MIN: q{math.min(%2$s, %1$s)},
+        IR.F64_MAX: q{math.max(%2$s, %1$s)},
         IR.F64_COPYSIGN: q{math.copysign(%2$s, %1$s)},
         IR.F64_CONVERT_I32_S: q{cast(int)(%1$s)},
         IR.F64_CONVERT_I32_U: q{cast(uint)(%1$s)},

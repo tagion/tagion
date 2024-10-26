@@ -35,7 +35,7 @@ T div(T)(T x, T y) => arithmetic!("/")(x, y);
 T arithmetic(string op, T)(T x, T y) @trusted if (isFloatingPoint!T) {
     import wasm = foundation.wasm;
 
-    wasm.Float!float result;
+    wasm.Float!T result;
     if (x.isNaN || y.isNaN) {
         import core.stdc.stdio;
 
@@ -61,8 +61,9 @@ T arithmetic(string op, T)(T x, T y) @trusted if (isFloatingPoint!T) {
 
 T min(T)(T x, T y) @trusted if (isFloatingPoint!T) {
     import wasm = foundation.wasm;
+
     if (x.isNaN || y.isNaN) {
-    wasm.Float!float result;
+        wasm.Float!T result;
 
         if (x.isNaN) {
             result.f = x;
@@ -75,14 +76,14 @@ T min(T)(T x, T y) @trusted if (isFloatingPoint!T) {
         result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
         return result.f;
     }
-    return (x<y)?x:y;
+    return (x < y) ? x : y;
 }
-
 
 T max(T)(T x, T y) @trusted if (isFloatingPoint!T) {
     import wasm = foundation.wasm;
+
     if (x.isNaN || y.isNaN) {
-    wasm.Float!float result;
+        wasm.Float!T result;
 
         if (x.isNaN) {
             result.f = x;
@@ -95,14 +96,19 @@ T max(T)(T x, T y) @trusted if (isFloatingPoint!T) {
         result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
         return result.f;
     }
-    return (x>y)?x:y;
+    return (x > y) ? x : y;
 }
 
 T sqrt(T)(T x) => func!"sqrt"(x);
+T floor(T)(T x) => func!"floor"(x);
+T ceil(T)(T x) => func!"ceil"(x);
+T trunc(T)(T x) => func!"trunc"(x);
+T nearest(T)(T x) => func!"nearbyint"(x);
 
 T func(string name, T)(T x) @trusted if (isFloatingPoint!T) {
     import wasm = foundation.wasm;
-    wasm.Float!float result;
+
+    wasm.Float!T result;
     if (x.isNaN) {
 
         if (x.isNaN) {
@@ -112,14 +118,13 @@ T func(string name, T)(T x) @trusted if (isFloatingPoint!T) {
         return result.f;
     }
     static if (is(T == float)) {
-    mixin("result.f=cmath."~name~"f(x);");
+        mixin("result.f=cmath." ~ name ~ "f(x);");
     }
     else {
-        mixin("result.f=cmath."~name~"(x);");
+        mixin("result.f=cmath." ~ name ~ "(x);");
     }
     if (result.f.isNaN && signbit(result.f)) {
         result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
     }
     return result.f;
 }
-

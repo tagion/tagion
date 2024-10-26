@@ -55,7 +55,7 @@ import std.traits;
         FloatAsInt!F i;
     }
 
-    F snan2(F, T)(T x) if (isFloatingPoint!F && is(T == FloatAsInt!F)) {
+    F snan2(F, T)(T x) if (isFloatingPoint!F) {
         Float!F result;
         result.f = F.nan;
         result.i |= x;
