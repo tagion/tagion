@@ -108,7 +108,8 @@
             "args": [
                 "i32.wast", "i64.wast",   "conversions.wast",
                 "int_literals.wast", "int_exprs.wast",
-                 "f32_export.wast", "f64_export.wast"
+                 "f32_export.wast", "f64_export.wast",
+                 "f32_cmp_export.wast", "f64_cmp_export.wast"
             ],
         },
         "memory" : {
@@ -123,7 +124,7 @@
         },
         "tvm_test" : {
           "args" : [
-                "f64_export.wast"
+                "f64_cmp_export.wast"
             ]
         },
         "i64_export" : {
