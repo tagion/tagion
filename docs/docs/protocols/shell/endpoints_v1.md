@@ -22,11 +22,9 @@
 * _dart_  - Expect the *"@....."* query string to create the DART read request with DARTcrud. String should be base64URL encoded. (yes, twice base64 is not a bug)
 * _trt_ - Expect the *"#$Y:\*:@....."* query string to create the TRT read request with DARTcrud. String should be base64URL encoded.
 * _transaction_ - not implemented yet
-* _record_ - not implemented yet
-|
+* _record_ - not implemented yet|
 | /util/[subject]/[method]/[data] | GET<br/>POST | application/json<br/>application/octet-stream | application/json<br/>application/octet-stream | Several tools which does not affect the node kernel, just for formatting, conversion or validation. Implemented subjects and methods:\
 * subject = _hibon_ 
     - method = _fromjson_ - Expect the application/json POST data and perform HiBONJSON conversion and validation. Returns the binary serialized document.
-    - method = _tojson_ - Expect the application/octet-stream POST data or base64URL GET data and perform Document validation. Returns the JSON serialized Document.
-|
+    - method = _tojson_ - Expect the application/octet-stream POST data or base64URL GET data and perform Document validation. Returns the JSON serialized Document.|
 
