@@ -11,8 +11,11 @@ import std.traits;
 import std.typecons : Tuple;
 import std.uni : toLower;
 import tagion.wasm.WasmException;
+import tagion.basic.basic : isinit;
 
 import LEB128 = tagion.utils.LEB128;
+
+@safe:
 
 enum VerboseMode {
     NONE,
@@ -86,7 +89,7 @@ enum VerboseMode {
 
 static Verbose wasm_verbose;
 
-static this() {
+static this() @trusted {
     wasm_verbose.fout = stdout;
 }
 
@@ -380,17 +383,17 @@ protected immutable(Instr[IR]) generate_instrTable() {
             }
         }
     }
-    return assumeUnique(result);
+    return (() @trusted => assumeUnique(result))();
 }
 
 shared static this() {
     instrTable = generate_instrTable;
-    immutable(IR[string]) generateLookupTable() {
+    immutable(IR[string]) generateLookupTable() @safe {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
             result[instr.name] = ir;
         }
-        return assumeUnique(result);
+        return (() @trusted => assumeUnique(result))();
     }
 
     irLookupTable = generateLookupTable;
@@ -426,7 +429,7 @@ shared static this() {
         return assumeUnique(result);
     }
 
-    instrWastLookup = generated_instrWastLookup;
+    instrWastLookup = (() @trusted => generated_instrWastLookup)();
 }
 
 enum IR_TRUNC_SAT : ubyte {
@@ -541,7 +544,7 @@ template toDType(Types t) {
     }
 }
 
-@safe static string typesName(const Types type) pure {
+static string typesName(const Types type) pure {
     import std.conv : to;
     import std.uni : toLower;
 
@@ -553,7 +556,7 @@ template toDType(Types t) {
     }
 }
 
-@safe static Types getType(const string name) pure {
+static Types getType(const string name) pure {
     import std.traits;
 
     switch (name) {
