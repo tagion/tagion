@@ -22,7 +22,7 @@ enum VerboseMode {
     STANDARD
 }
 
-@safe struct Verbose {
+struct Verbose {
     VerboseMode mode;
     string indent;
     File fout;
@@ -571,7 +571,6 @@ static Types getType(const string name) pure {
     }
 }
 
-@safe
 unittest {
     assert("f32".getType == Types.F32);
     assert("empty".getType == Types.EMPTY);
@@ -586,7 +585,7 @@ enum IndexType : ubyte {
     @("global") GLOBAL = 0x03, /// global gt:globaltype
 }
 
-@safe static string indexName(const IndexType idx) pure {
+static string indexName(const IndexType idx) pure {
     import std.conv : to;
     import std.uni : toLower;
 
@@ -619,7 +618,7 @@ E decode(E)(immutable(ubyte[]) data, ref size_t index) pure if (is(E == enum)) {
     return cast(E) value;
 }
 
-string secname(immutable Section s) @safe pure {
+string secname(immutable Section s) pure {
     return format("%s_sec", toLower(s.to!string));
 }
 
@@ -663,7 +662,7 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
         .all!(name => all_members.canFind(name));
 }
 
-@safe struct WasmArg {
+struct WasmArg {
     protected {
         Types _type;
         union {
@@ -753,7 +752,7 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
 }
 
 static assert(isInputRange!ExprRange);
-@safe struct ExprRange {
+struct ExprRange {
     immutable(ubyte[]) data;
 
     protected {
