@@ -128,7 +128,7 @@ struct WastParser {
         }
         // writefln("%s %s", __FUNCTION__, params.dup);
         ParserStage innerInstr(ref WastTokenizer r, const ParserStage parse_stage, const Instr prev_instr=Instr.init) {
-            r.check(r.type == TokenType.BEGIN, format("Stage %s %s", prev_instr));
+            r.check(r.type == TokenType.BEGIN, format("Stage %s %s", parse_stage, prev_instr));
             scope (exit) {
                 r.check(r.type == TokenType.END, "Expect an end ')'");
                 r.nextToken;

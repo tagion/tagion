@@ -11,11 +11,8 @@ import std.traits;
 import std.typecons : Tuple;
 import std.uni : toLower;
 import tagion.wasm.WasmException;
-import tagion.basic.basic : isinit;
 
 import LEB128 = tagion.utils.LEB128;
-
-@safe:
 
 enum VerboseMode {
     NONE,
@@ -89,7 +86,7 @@ enum VerboseMode {
 
 static Verbose wasm_verbose;
 
-static this() @trusted {
+static this() {
     wasm_verbose.fout = stdout;
 }
 
@@ -383,17 +380,17 @@ protected immutable(Instr[IR]) generate_instrTable() {
             }
         }
     }
-    return (() @trusted => assumeUnique(result))();
+    return assumeUnique(result);
 }
 
 shared static this() {
     instrTable = generate_instrTable;
-    immutable(IR[string]) generateLookupTable() @safe {
+    immutable(IR[string]) generateLookupTable() {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
             result[instr.name] = ir;
         }
-        return (() @trusted => assumeUnique(result))();
+        return assumeUnique(result);
     }
 
     irLookupTable = generateLookupTable;
@@ -429,7 +426,7 @@ shared static this() {
         return assumeUnique(result);
     }
 
-    instrWastLookup = (() @trusted => generated_instrWastLookup)();
+    instrWastLookup = generated_instrWastLookup;
 }
 
 enum IR_TRUNC_SAT : ubyte {
