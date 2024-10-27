@@ -11,8 +11,11 @@ import std.traits;
 import std.typecons : Tuple;
 import std.uni : toLower;
 import tagion.wasm.WasmException;
+import tagion.basic.basic : isinit;
 
 import LEB128 = tagion.utils.LEB128;
+
+@safe:
 
 enum VerboseMode {
     NONE,
@@ -86,7 +89,7 @@ enum VerboseMode {
 
 static Verbose wasm_verbose;
 
-static this() {
+static this() @trusted {
     wasm_verbose.fout = stdout;
 }
 
@@ -366,6 +369,8 @@ enum PseudoWastInstr {
     table = "table",
     case_ = "case",
     memory_size = "memory_size",
+    then = "then",
+    else_ = "else",
 }
 
 protected immutable(Instr[IR]) generate_instrTable() {
@@ -378,17 +383,17 @@ protected immutable(Instr[IR]) generate_instrTable() {
             }
         }
     }
-    return assumeUnique(result);
+    return (() @trusted => assumeUnique(result))();
 }
 
 shared static this() {
     instrTable = generate_instrTable;
-    immutable(IR[string]) generateLookupTable() {
+    immutable(IR[string]) generateLookupTable() @safe {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
             result[instr.name] = ir;
         }
-        return assumeUnique(result);
+        return (() @trusted => assumeUnique(result))();
     }
 
     irLookupTable = generateLookupTable;
@@ -413,6 +418,8 @@ shared static this() {
         setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
+        setPseudo(PseudoWastInstr.then, IRType.SYMBOL, 0, 1);
+        setPseudo(PseudoWastInstr.else_, IRType.SYMBOL, 0, 1);
 
         result["i32.select"] = instrTable[IR.SELECT];
         result["i64.select"] = instrTable[IR.SELECT];
@@ -422,7 +429,7 @@ shared static this() {
         return assumeUnique(result);
     }
 
-    instrWastLookup = generated_instrWastLookup;
+    instrWastLookup = (() @trusted => generated_instrWastLookup)();
 }
 
 enum IR_TRUNC_SAT : ubyte {

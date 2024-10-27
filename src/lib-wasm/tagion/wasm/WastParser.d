@@ -127,8 +127,8 @@ struct WastParser {
             return -1;
         }
         // writefln("%s %s", __FUNCTION__, params.dup);
-        ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
-            r.check(r.type == TokenType.BEGIN);
+        ParserStage innerInstr(ref WastTokenizer r, const ParserStage parse_stage, const Instr prev_instr=Instr.init) {
+            r.check(r.type == TokenType.BEGIN, format("Stage %s %s", prev_instr));
             scope (exit) {
                 r.check(r.type == TokenType.END, "Expect an end ')'");
                 r.nextToken;
@@ -148,19 +148,39 @@ struct WastParser {
                         wasmexpr(irLookupTable[instr.name]);
                         break;
                     case BLOCK:
+                        __write("Block %s", r);
                         string arg;
                         r.nextToken;
-                        if (r.type == TokenType.WORD) {
-                            //r.check(r.type == TokenType.WORD);
-                            label = r.token;
+                        const ir = irLookupTable[instr.name];
+                        with (IR) switch (ir) {
+                        case IF:
                             r.nextToken;
-                        }
-                        if (r.type == TokenType.WORD) {
-                            arg = r.token;
-                            r.nextToken;
-                        }
-                        while (r.type == TokenType.BEGIN) {
-                            innerInstr(r, ParserStage.CODE);
+                            if (r.type == TokenType.BEGIN) {
+                                innerInstr(r, ParserStage.CODE);
+                            }
+                            innerInstr(r, ParserStage.CODE, instr);
+                            __write("After if %s", r);
+                            break;
+                        case SYMBOL:
+                            if (instr.wast == PseudoWastInstr.then) {
+                                check(prev_instr.wast == instrTable[IF].wast, "If expected before then");
+                                r.nextToken;
+                            }
+                            break;
+                        default:
+                             
+                            if (r.type == TokenType.WORD) {
+                                //r.check(r.type == TokenType.WORD);
+                                label = r.token;
+                                r.nextToken;
+                            }
+                            if (r.type == TokenType.WORD) {
+                                arg = r.token;
+                                r.nextToken;
+                            }
+                            while (r.type == TokenType.BEGIN) {
+                                innerInstr(r, ParserStage.CODE);
+                            }
                         }
                         return stage;
                     case BRANCH:

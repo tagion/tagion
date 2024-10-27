@@ -121,6 +121,7 @@ template FitUnsigned(F) if (isFloatingPoint!F) {
 F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     import std.format;
     import std.uni : sicmp;
+    import std.stdio;
 
     check(text.length > 0, "Can not convert an empty string");
     const negative = text[0] == '-';
@@ -143,6 +144,7 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
         Overlap result;
         result.number = (negative) ? -F.nan : F.nan;
         if (!quiet.empty) {
+            writefln("%s %s", __FUNCTION__, quiet);
             static if (F.sizeof == uint.sizeof) {
                 enum mask = 0x0060_0000;
                 enum arithmetic_mask = 0x0020_0000;
@@ -157,7 +159,7 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
             if (sicmp(quiet.front, Arithmetic) == 0) {
                 result.unsigned |= arithmetic_mask;
             }
-            else {
+            else if (sicmp(quiet.front, Canonical) != 0) {
                 const signal_mask = convert!(U)(quiet.front);
                 result.unsigned |= signal_mask;
             }
