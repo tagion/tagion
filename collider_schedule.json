@@ -124,7 +124,7 @@
         },
         "tvm_test" : {
           "args" : [
-                "float_exprs_export.wast"
+                "i32.wast"
             ]
         },
         "i64_export" : {

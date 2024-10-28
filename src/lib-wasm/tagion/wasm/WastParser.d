@@ -63,6 +63,8 @@ struct WastParser {
         IMPORT,
         MEMORY,
         EXPECTED,
+        LOOP,  /// Loop begin
+        BLOCK, /// Block begin
         END,
         UNDEFINED,
     }
@@ -161,7 +163,9 @@ struct WastParser {
                     final switch (instr.irtype) {
                     case CODE:
                         r.nextToken;
+                        __write("Instr %s", instr);
                         foreach (i; 0 .. instr.pops) {
+                            
                             innerInstr(r, ParserStage.CODE);
                         }
                         wasmexpr(irLookupTable[instr.name]);
@@ -190,6 +194,30 @@ struct WastParser {
                                 innerInstr(r, ParserStage.CODE, instrWastLookup[PseudoWastInstr.then]);
                             }
                             break;
+                        case LOOP:
+                            if (r.type == TokenType.WORD) {
+                                label = r.token;
+                                r.nextToken;
+                                __write("label=%s", label);
+                            }
+                            auto result_params = result(r);
+                            while (r.type == TokenType.BEGIN) {
+                                innerInstr(r, ParserStage.LOOP);
+                            }
+                            break;
+
+                        case BLOCK:
+                            if (r.type == TokenType.WORD) {
+                                label = r.token;
+                                r.nextToken;
+                                __write("label=%s", label);
+                            }
+                            auto result_params = result(r);
+                            while (r.type == TokenType.BEGIN) {
+                                innerInstr(r, ParserStage.BLOCK);
+                            }
+                            break;
+
                         default:
 
                             if (r.type == TokenType.WORD) {
@@ -212,17 +240,24 @@ struct WastParser {
                             label = r.token;
                             r.nextToken;
                         }
+                        auto result_params = result(r);
                         while (r.type == TokenType.BEGIN) {
                             innerInstr(r, ParserStage.CODE);
                         }
                         break;
                     case BRANCH_IF:
                         r.nextToken;
-                        innerInstr(r, ParserStage.CODE);
-                        r.check(r.type == TokenType.WORD);
-                        label = r.token;
-                        r.nextToken;
-                        if (r.type == TokenType.BEGIN) {
+                        //innerInstr(r, ParserStage.CODE);
+                        //r.check(r.type == TokenType.WORD);
+                        if (r.type == TokenType.WORD) {
+                            label = r.token;
+                            r.nextToken;
+                        }
+                        auto result_params = result(r);
+                        
+                        //label = r.token;
+                        //r.nextToken;
+                        while (r.type == TokenType.BEGIN) {
                             innerInstr(r, ParserStage.CODE);
                         }
                         break;
@@ -357,7 +392,7 @@ struct WastParser {
                             locals ~= labels.map!(l => l.getType).array;
                             break;
                         default:
-
+                        
                         }
                     }
                 }
@@ -648,12 +683,22 @@ struct WastParser {
                     }
                 }
                 return ParserStage.PARAM;
-            case "result":
+             case "result":
                 r.check(stage == ParserStage.FUNC);
-                while (r.type != TokenType.END) {
+                r.nextToken;
+               // r.check(r.type == TokenType.WORD);
+               if (r.type == TokenType.WORD) {
+                    auto wasm_type=r.token.getType;
+                    r.check(r.token.getType !is Types.EMPTY);
+                    func_type.results ~= wasm_type;
+                        
                     r.nextToken;
-                    func_type.results ~= r.token.getType;
                 }
+
+                //arg = r.token;
+                //func_type.results = [r.token.getType];
+                //r.check(r.token.getType !is Types.EMPTY);
+                //r.nextToken;
                 return ParserStage.RESULT;
             default:
                 not_ended = true;

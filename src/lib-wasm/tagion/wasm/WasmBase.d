@@ -161,7 +161,7 @@ enum IR : ubyte {
         @Instr("return", "return", 1, IRType.CODE, 1)                    RETURN              = 0x0F, ///  return
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
         @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, 1) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
-        @Instr("drop", "drop", 1, IRType.CODE, 1)                   DROP                = 0x1A, ///  drop
+        @Instr("drop", "drop", 1, IRType.CODE)                   DROP                = 0x1A, ///  drop
         @Instr("select", "select", 1, IRType.CODE, 3, 1)              SELECT              = 0x1B, ///  select
         @Instr("local.get", "local.get", 1, IRType.LOCAL, 0, 1)          LOCAL_GET           = 0x20, ///  local.get x:localidx
         @Instr("local.set", "local.set", 1, IRType.LOCAL, 1)             LOCAL_SET           = 0x21, ///  local.set x:localidx
