@@ -153,7 +153,7 @@ enum IR : ubyte {
         @Instr("if", "if", 1, IRType.BLOCK, 1)                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "else", 0, IRType.END)                       ELSE                = 0x05, ///  else
+        @Instr("else", "(;else;)", 0, IRType.END)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH, 1)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH_IF, 1)                BR_IF               = 0x0D, ///  br_if l:labelidx
@@ -408,7 +408,7 @@ shared static this() {
             }
         }
         void setPseudo(const PseudoWastInstr pseudo, const IRType ir_type, const uint pushs = 0, const uint pops = 0) {
-            result[pseudo] = Instr("<" ~ pseudo ~ ">", pseudo, uint.max, ir_type, pops, pushs);
+            result[pseudo] = Instr("(;" ~ pseudo ~ ";)", pseudo, uint.max, ir_type, pops, pushs);
         }
 
         setPseudo(PseudoWastInstr.invoke, IRType.CALL, 0, 1);
@@ -420,7 +420,7 @@ shared static this() {
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
         setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATMENT, 0, 1);
-        setPseudo(PseudoWastInstr.else_, IRType.SYMBOL, 0, 1);
+        setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATMENT, 0, 1);
 
         result["i32.select"] = instrTable[IR.SELECT];
         result["i64.select"] = instrTable[IR.SELECT];

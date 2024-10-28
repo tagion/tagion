@@ -127,7 +127,7 @@ struct WastParser {
             return -1;
         }
         // writefln("%s %s", __FUNCTION__, params.dup);
-        ParserStage innerInstr(ref WastTokenizer r, const ParserStage parse_stage, const Instr prev_instr=Instr.init) {
+        ParserStage innerInstr(ref WastTokenizer r, const ParserStage parse_stage, const Instr prev_instr = Instr.init) {
             r.check(r.type == TokenType.BEGIN, format("Stage %s %s", parse_stage, prev_instr));
             scope (exit) {
                 r.check(r.type == TokenType.END, "Expect an end ')'");
@@ -137,8 +137,24 @@ struct WastParser {
             r.check(r.type == TokenType.WORD);
             const instr = instrWastLookup.get(r.token, Instr.init);
             if (!prev_instr.isinit) {
-                __write("Prev %s : %s", prev_instr, instr); 
+                __write("Prev %s : %s", prev_instr, instr);
             }
+            const(Types)[] result(ref WastTokenizer result_token) {
+                auto _r = result_token.save;
+                _r.check(_r.type == TokenType.BEGIN);
+                _r.nextToken;
+                Types[] result_types;
+                if (_r.token == "result") {
+                    for (_r.nextToken; _r.type != TokenType.END; _r.nextToken) {
+                        result_types ~= _r.token.getType;
+
+                    }
+                    _r.nextToken;
+                    result_token = _r;
+                }
+                return result_types;
+            }
+
             string label;
             if (instr !is Instr.init) {
                 with (IRType) {
@@ -158,16 +174,24 @@ struct WastParser {
                         with (IR) switch (ir) {
                         case IF: // (if (expression) (then statement) [(else statement)])
                             __write("Before expression %s", r);
-                            check(r.type == TokenType.BEGIN, "If expression expected '('");
-                              innerInstr(r, ParserStage.CODE);
-                            __write("Before then %s", r);
-//                            check(r.type == TokenType.BEGIN, "Then statment expected '('");
 
-                              innerInstr(r, ParserStage.CODE, instr);
+                            if (r.type == TokenType.WORD) {
+                                label = r.token;
+                                r.nextToken;
+                                __write("label=%s", label);
+                            }
+                            auto result_params = result(r);
+                            check(r.type == TokenType.BEGIN, "If expression expected '('");
+                            innerInstr(r, ParserStage.CODE);
+                            __write("Before then %s", r);
+                            innerInstr(r, ParserStage.CODE, instr);
                             __write("After if %s", r);
+                            if (r.type == TokenType.BEGIN) {
+                                innerInstr(r, ParserStage.CODE, instrWastLookup[PseudoWastInstr.then]);
+                            }
                             break;
                         default:
-                             
+
                             if (r.type == TokenType.WORD) {
                                 //r.check(r.type == TokenType.WORD);
                                 label = r.token;
@@ -281,15 +305,30 @@ struct WastParser {
                         break;
                     case SYMBOL_STATMENT:
                         __write("SYMBOL_STATMENT %s", instr);
-                        if (instr.wast == PseudoWastInstr.then) {
+                        switch (instr.wast) {
+                        case PseudoWastInstr.then:
                             check(prev_instr.wast == instrTable[IR.IF].wast, "If expected before then");
-                            
+                            r.nextToken;
+                            __write("::Then %s", r);
+                            while (r.type == TokenType.BEGIN) {
+
+                                innerInstr(r, ParserStage.CODE, instr);
+                            }
+                            break;
+                        case PseudoWastInstr.else_:
+                            check(prev_instr.wast == PseudoWastInstr.then, "then expected before else");
 
                             r.nextToken;
-                            if (r.type == TokenType.BEGIN) {
-                                goto case CODE;
+                            __write("::Else %s", r);
+                            while (r.type == TokenType.BEGIN) {
+
+                                innerInstr(r, ParserStage.CODE, instr);
                             }
+                            break;
+                        default:
+                            r.check(0, "Unexpected instruction %s", instr.wast);
                         }
+                        __write("End of SYMBOL_STATMENT %s", r);
                         break;
                     case SYMBOL:
                         __write("SYMBOL %s %s", r.token, r.type);
@@ -344,6 +383,7 @@ struct WastParser {
         if (r.type == TokenType.BEGIN) {
             string label;
             string arg;
+            Types[] result_types;
             r.nextToken;
             bool not_ended;
             scope (exit) {
@@ -396,10 +436,19 @@ struct WastParser {
                 return ParserStage.PARAM;
             case "result":
                 r.check(stage == ParserStage.FUNC);
+                version (none) {
+                    result_types = null;
+                    for (r.nextToken; r.type != TokenType.END; r.nextToken) {
+                        arg = r.token; /// Should be removed (now result_types is used instead)
+                        result_types ~= r.token.getType;
+                    }
+                    //r.nextToken;
+                }
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
                 arg = r.token;
                 r.nextToken;
+
                 return ParserStage.RESULT;
             case "memory":
                 MemoryType memory_type;
@@ -601,13 +650,10 @@ struct WastParser {
                 return ParserStage.PARAM;
             case "result":
                 r.check(stage == ParserStage.FUNC);
-                r.nextToken;
-                r.check(r.type == TokenType.WORD);
-
-                //arg = r.token;
-                func_type.results = [r.token.getType];
-                r.check(r.token.getType !is Types.EMPTY);
-                r.nextToken;
+                while (r.type != TokenType.END) {
+                    r.nextToken;
+                    func_type.results ~= r.token.getType;
+                }
                 return ParserStage.RESULT;
             default:
                 not_ended = true;
