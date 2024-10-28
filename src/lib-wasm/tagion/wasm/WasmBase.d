@@ -11,15 +11,18 @@ import std.traits;
 import std.typecons : Tuple;
 import std.uni : toLower;
 import tagion.wasm.WasmException;
+import tagion.basic.basic : isinit;
 
 import LEB128 = tagion.utils.LEB128;
+
+@safe:
 
 enum VerboseMode {
     NONE,
     STANDARD
 }
 
-@safe struct Verbose {
+struct Verbose {
     VerboseMode mode;
     string indent;
     File fout;
@@ -86,7 +89,7 @@ enum VerboseMode {
 
 static Verbose wasm_verbose;
 
-static this() {
+static this() @trusted {
     wasm_verbose.fout = stdout;
 }
 
@@ -149,7 +152,7 @@ enum IR : ubyte {
         @Instr("if", "if", 1, IRType.BLOCK, 1)                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "else", 0, IRType.END)                       ELSE                = 0x05, ///  else
+        @Instr("else", "(;else;)", 0, IRType.END)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH, 1)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH_IF, 1)                BR_IF               = 0x0D, ///  br_if l:labelidx
@@ -160,7 +163,7 @@ enum IR : ubyte {
         @Instr("drop", "drop", 1, IRType.CODE, 1)                   DROP                = 0x1A, ///  drop
         @Instr("select", "select", 1, IRType.CODE, 3, 1)              SELECT              = 0x1B, ///  select
         @Instr("local.get", "local.get", 1, IRType.LOCAL, 0, 1)          LOCAL_GET           = 0x20, ///  local.get x:localidx
-        @Instr("local.set", "set_local", 1, IRType.LOCAL, 1)             LOCAL_SET           = 0x21, ///  local.set x:localidx
+        @Instr("local.set", "local.set", 1, IRType.LOCAL, 1)             LOCAL_SET           = 0x21, ///  local.set x:localidx
         @Instr("local.tee", "tee_local", 1, IRType.LOCAL, 1, 1)          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
         @Instr("global.get", "get_global", 1, IRType.GLOBAL, 1, 0)        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
         @Instr("global.set", "set_global", 1, IRType.GLOBAL, 0, 1)        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
@@ -366,6 +369,8 @@ enum PseudoWastInstr {
     table = "table",
     case_ = "case",
     memory_size = "memory_size",
+    then = "then",
+    else_ = "else",
 }
 
 protected immutable(Instr[IR]) generate_instrTable() {
@@ -378,17 +383,17 @@ protected immutable(Instr[IR]) generate_instrTable() {
             }
         }
     }
-    return assumeUnique(result);
+    return (() @trusted => assumeUnique(result))();
 }
 
 shared static this() {
     instrTable = generate_instrTable;
-    immutable(IR[string]) generateLookupTable() {
+    immutable(IR[string]) generateLookupTable() @safe {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
             result[instr.name] = ir;
         }
-        return assumeUnique(result);
+        return (() @trusted => assumeUnique(result))();
     }
 
     irLookupTable = generateLookupTable;
@@ -402,7 +407,7 @@ shared static this() {
             }
         }
         void setPseudo(const PseudoWastInstr pseudo, const IRType ir_type, const uint pushs = 0, const uint pops = 0) {
-            result[pseudo] = Instr("<" ~ pseudo ~ ">", pseudo, uint.max, ir_type, pops, pushs);
+            result[pseudo] = Instr("(;" ~ pseudo ~ ";)", pseudo, uint.max, ir_type, pops, pushs);
         }
 
         setPseudo(PseudoWastInstr.invoke, IRType.CALL, 0, 1);
@@ -413,6 +418,8 @@ shared static this() {
         setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
+        //setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATMENT, 0, 1);
+        //setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATMENT, 0, 1);
 
         result["i32.select"] = instrTable[IR.SELECT];
         result["i64.select"] = instrTable[IR.SELECT];
@@ -422,7 +429,7 @@ shared static this() {
         return assumeUnique(result);
     }
 
-    instrWastLookup = generated_instrWastLookup;
+    instrWastLookup = (() @trusted => generated_instrWastLookup)();
 }
 
 enum IR_TRUNC_SAT : ubyte {
@@ -537,7 +544,7 @@ template toDType(Types t) {
     }
 }
 
-@safe static string typesName(const Types type) pure {
+static string typesName(const Types type) pure {
     import std.conv : to;
     import std.uni : toLower;
 
@@ -549,7 +556,7 @@ template toDType(Types t) {
     }
 }
 
-@safe static Types getType(const string name) pure {
+static Types getType(const string name) pure {
     import std.traits;
 
     switch (name) {
@@ -564,7 +571,6 @@ template toDType(Types t) {
     }
 }
 
-@safe
 unittest {
     assert("f32".getType == Types.F32);
     assert("empty".getType == Types.EMPTY);
@@ -579,7 +585,7 @@ enum IndexType : ubyte {
     @("global") GLOBAL = 0x03, /// global gt:globaltype
 }
 
-@safe static string indexName(const IndexType idx) pure {
+static string indexName(const IndexType idx) pure {
     import std.conv : to;
     import std.uni : toLower;
 
@@ -612,7 +618,7 @@ E decode(E)(immutable(ubyte[]) data, ref size_t index) pure if (is(E == enum)) {
     return cast(E) value;
 }
 
-string secname(immutable Section s) @safe pure {
+string secname(immutable Section s) pure {
     return format("%s_sec", toLower(s.to!string));
 }
 
@@ -647,7 +653,7 @@ interface InterfaceModuleT(T...) {
     mixin(code);
 }
 
-version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M == class)) {
+version (none) bool isWasmModule(alias M)() if (is(M == struct) || is(M == class)) {
     import std.algorithm;
 
     enum all_members = [__traits(allMembers, M)];
@@ -656,7 +662,7 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
         .all!(name => all_members.canFind(name));
 }
 
-@safe struct WasmArg {
+struct WasmArg {
     protected {
         Types _type;
         union {
@@ -746,7 +752,7 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
 }
 
 static assert(isInputRange!ExprRange);
-@safe struct ExprRange {
+struct ExprRange {
     immutable(ubyte[]) data;
 
     protected {
