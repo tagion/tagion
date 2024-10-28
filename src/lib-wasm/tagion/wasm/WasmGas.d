@@ -139,6 +139,7 @@ struct WasmGas {
                         assert(0, format("Illegal opcode %02X", elm.code));
                         break;
                     case SYMBOL:
+                    case SYMBOL_STATMENT:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }
                 }

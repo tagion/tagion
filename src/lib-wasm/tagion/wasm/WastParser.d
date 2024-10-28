@@ -136,6 +136,9 @@ struct WastParser {
             r.nextToken;
             r.check(r.type == TokenType.WORD);
             const instr = instrWastLookup.get(r.token, Instr.init);
+            if (!prev_instr.isinit) {
+                __write("Prev %s : %s", prev_instr, instr); 
+            }
             string label;
             if (instr !is Instr.init) {
                 with (IRType) {
@@ -153,19 +156,15 @@ struct WastParser {
                         r.nextToken;
                         const ir = irLookupTable[instr.name];
                         with (IR) switch (ir) {
-                        case IF:
-                            r.nextToken;
-                            if (r.type == TokenType.BEGIN) {
-                                innerInstr(r, ParserStage.CODE);
-                            }
-                            innerInstr(r, ParserStage.CODE, instr);
+                        case IF: // (if (expression) (then statement) [(else statement)])
+                            __write("Before expression %s", r);
+                            check(r.type == TokenType.BEGIN, "If expression expected '('");
+                              innerInstr(r, ParserStage.CODE);
+                            __write("Before then %s", r);
+//                            check(r.type == TokenType.BEGIN, "Then statment expected '('");
+
+                              innerInstr(r, ParserStage.CODE, instr);
                             __write("After if %s", r);
-                            break;
-                        case SYMBOL:
-                            if (instr.wast == PseudoWastInstr.then) {
-                                check(prev_instr.wast == instrTable[IF].wast, "If expected before then");
-                                r.nextToken;
-                            }
                             break;
                         default:
                              
@@ -279,6 +278,18 @@ struct WastParser {
                         break;
                     case ILLEGAL:
                         throw new WasmException("Undefined instruction %s", r.token);
+                        break;
+                    case SYMBOL_STATMENT:
+                        __write("SYMBOL_STATMENT %s", instr);
+                        if (instr.wast == PseudoWastInstr.then) {
+                            check(prev_instr.wast == instrTable[IR.IF].wast, "If expected before then");
+                            
+
+                            r.nextToken;
+                            if (r.type == TokenType.BEGIN) {
+                                goto case CODE;
+                            }
+                        }
                         break;
                     case SYMBOL:
                         __write("SYMBOL %s %s", r.token, r.type);

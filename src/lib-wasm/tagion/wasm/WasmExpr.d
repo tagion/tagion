@@ -136,6 +136,7 @@ struct WasmExpr {
                 assert(0, format("Illegal opcode %02X", ir));
                 break;
             case SYMBOL:
+            case SYMBOL_STATMENT:
                 assert(0, "Symbol opcode and it does not have an equivalent opcode");
             }
         }

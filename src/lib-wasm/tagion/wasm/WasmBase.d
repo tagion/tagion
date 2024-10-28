@@ -126,6 +126,7 @@ enum IRType {
     END, /// Block end instruction
     PREFIX, /// Prefix for two byte extension
     SYMBOL, /// This is extra instruction which does not have an equivalent wasm opcode
+    SYMBOL_STATMENT, /// This is extra instruction which does not have an opcode (like then)
     ILLEGAL, /// Illegal instructions
 }
 
@@ -418,7 +419,7 @@ shared static this() {
         setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
-        setPseudo(PseudoWastInstr.then, IRType.SYMBOL, 0, 1);
+        setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATMENT, 0, 1);
         setPseudo(PseudoWastInstr.else_, IRType.SYMBOL, 0, 1);
 
         result["i32.select"] = instrTable[IR.SELECT];
@@ -923,6 +924,7 @@ struct ExprRange {
                     throw new WasmExprException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code), elm);
                     break;
                 case SYMBOL:
+                case SYMBOL_STATMENT:
                     throw new WasmExprException(format("Is a symbol and it does not have an equivalent opcode %02x", elm
                             .code), elm);
                     break;

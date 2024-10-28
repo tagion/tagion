@@ -634,6 +634,7 @@ alias check = Check!WasmBetterCException;
                         output.writefln("Error: Illegal instruction %02X", elm.code);
                         return elm;
                     case SYMBOL:
+                    case SYMBOL_STATMENT:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }
                 }

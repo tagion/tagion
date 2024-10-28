@@ -393,6 +393,7 @@ alias check = Check!WatException;
                 case ILLEGAL:
                     throw new WatException(format("Illegal instruction %02X", elm.code));
                 case SYMBOL:
+                case SYMBOL_STATMENT:
                     assert(0, "Symbol opcode and it does not have an equivalent opcode");
                 }
             }
