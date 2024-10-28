@@ -9,7 +9,7 @@
 | /hirpc/[nocache] | POST | application/octet-stream | application/octet-stream | HiRPC request to be sent to the kernel as-is. Request should be of valid HiRPC receive method. If method is **dartRead** the cache may be used if it is enable in the shell and not *nocache*in path. Method **submit** is deprecated. Method **faucet** is a successor of the */invoice2pay* endpoint.  |
 | /dart/[nocache] | POST |  |  | Alias for */hirpc*. Deprecated. |
 | /contract | POST |  |  | Alias for */hirpc*. Deprecated.  |
-| /invoice2pay | POST  | application/octet-stream | application/octet-stream | This endpoint is for testing/presentation only. Expected the HiBON document with valid invoice to be instantly payed from the default wallet configured in the selected node. The signed contract is created and sent to kernel. Response HiBON is returned. |
+| /invoice2pay | POST  | application/octet-stream | application/octet-stream | This endpoint is for testing/presentation only. Expected the HiBON document with valid invoice to be instantly paid from the default wallet configured in the selected node. The signed contract is created and sent to kernel. Response HiBON is returned. |
 
 ## non-HiRPC endpoints
 

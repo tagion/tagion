@@ -69,24 +69,20 @@ import nngd;
 }
 
 enum feature = Feature(
-            "Test of the NNG wrapper",
-            [
-            "This feature test of NNG sockets and services.",
-            "NNG source: https://github.com/nanomsg/nng"
-            ]);
+            "Test of the NNG wrapper.",
+            ["This Feature test of NNG sockets and services.",
+            "NNG source: https://github.com/nanomsg/nng"]);
 
 alias FeatureContext = Tuple!(
-        ShouldSendAndReceiveByteBuffers, "ShouldSendAndReceiveByteBuffers",
-        //ShouldSendAndReceiveStrings, "ShouldSendAndReceiveByteStrings",
-        //ShouldUseIpcTransports, "ShouldUseIpcTransports",
+        PushpullSocketShouldSendAndReceiveByteBuffer, "PushpullSocketShouldSendAndReceiveByteBuffer",
         FeatureGroup*, "result"
 );
 
 static string testroot;
 
-@safe @Scenario("push-pull socket should send and receive byte buffers",
+@safe @Scenario("push-pull socket should send and receive byte buffer.",
         [])
-final class ShouldSendAndReceiveByteBuffers {
+class PushpullSocketShouldSendAndReceiveByteBuffer {
     
     shared NNGTest test;
     string uri;    
@@ -181,25 +177,24 @@ final class ShouldSendAndReceiveByteBuffers {
         }
     }
 
-    @Given("Workers")
-    Document spawn_workers() @trusted {
+    @Given("a receiver and a sender worker has been spawn.")
+    Document spawn_worker() @trusted {
         workers ~= spawn(&receiver_worker, this.uri, this.test);
         workers ~= spawn(&sender_worker, this.uri, this.test);
         return result_ok;
     }
     
-    @When("Wait for workers to complete conversation")
-    Document waitForWorkers() {
+    @When("wait until the worker has completed the conversation.")
+    Document conversation() {
         (() @trusted => thread_joinAll())();
         return result_ok;
     }
 
-    @Then("Expect no errors")
-    Document checkErrors() {
+    @Then("check that communication has passed with out errors.")
+    Document errors() {
         auto e = test.errors;
         check( e is null , e );
         return result_ok;
     }
 
 }
-
