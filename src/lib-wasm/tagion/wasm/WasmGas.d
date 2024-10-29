@@ -67,14 +67,16 @@ struct WasmGas {
             uint gas_count;
             while (!expr.empty) {
                 const elm = expr.front;
-                const instr = instrTable.get(elm.code, illegalInstr);
-                gas_count += instr.cost;
+                gas_count += elm.instr.cost;
                 expr.popFront;
                 with (IRType) {
-                    final switch (instr.irtype) {
+                    final switch (elm.instr.irtype) {
                     case PREFIX:
                     case CODE:
                         wasmexpr(elm.code);
+                        break;
+                    case CODE_EXTEND:
+                        wasmexpr(elm.code, elm.instr.opcode); 
                         break;
                     case BLOCK:
                         wasmexpr(elm.code, elm.types[0]);

@@ -274,7 +274,7 @@ alias check = Check!WatException;
                 output.writef("%s)", local_indent);
                 break;
             case DataMode.PASSIVE:
-                output.writef("(memory %d)", d.memidx); 
+                output.writef("(memory %d)", d.memidx);
             }
             output.writefln(` "%s")`, d.base);
         }
@@ -302,20 +302,20 @@ alias check = Check!WatException;
 
         while (!expr.empty) {
             const elm = expr.front;
-            const instr = instrTable.get(elm.code, illegalInstr);
             expr.popFront;
             with (IRType) {
-                final switch (instr.irtype) {
+                final switch (elm.instr.irtype) {
                 case CODE:
-                    output.writefln("%s%s", indent, instr.name);
+                case CODE_EXTEND:
+                    output.writefln("%s%s", indent, elm.instr.name);
                     break;
                 case PREFIX:
-                    output.writefln("%s%s", indent, instr.name);
+                    output.writefln("%s%s", indent, elm.instr.name);
                     break;
                 case BLOCK:
                     block_comment = format(";; block %d", block_count);
                     block_count++;
-                    output.writefln("%s%s%s %s", indent, instr.name,
+                    output.writefln("%s%s%s %s", indent, elm.instr.name,
                             block_result_type(elm.types[0]), block_comment);
                     const end_elm = block(expr, indent ~ spacer, level + 1);
                     const end_instr = instrTable[end_elm.code];
@@ -332,7 +332,7 @@ alias check = Check!WatException;
                     break;
                 case BRANCH:
                 case BRANCH_IF:
-                    output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                    output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;
                 case BRANCH_TABLE:
                     static string branch_table(const(WasmArg[]) args) {
@@ -343,25 +343,25 @@ alias check = Check!WatException;
                         return result;
                     }
 
-                    output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
+                    output.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
                     break;
                 case CALL:
-                    output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                    output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;
                 case CALL_INDIRECT:
-                    output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
+                    output.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
                     break;
                 case LOCAL:
-                    output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
+                    output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                     break;
                 case GLOBAL:
-                    output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
+                    output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                     break;
                 case MEMORY:
-                    output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.wargs));
+                    output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
                     break;
                 case MEMOP:
-                    output.writefln("%s%s", indent, instr.name);
+                    output.writefln("%s%s", indent, elm.instr.name);
                     break;
                 case CONST:
                     static string toText(const WasmArg a) {
@@ -386,7 +386,7 @@ alias check = Check!WatException;
                         assert(0);
                     }
 
-                    output.writefln("%s%s %s", indent, instr.name, toText(elm.warg));
+                    output.writefln("%s%s %s", indent, elm.instr.name, toText(elm.warg));
                     break;
                 case END:
                     return elm;

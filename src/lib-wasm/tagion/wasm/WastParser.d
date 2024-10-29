@@ -147,6 +147,8 @@ struct WastParser {
                         }
                         wasmexpr(irLookupTable[instr.name]);
                         break;
+                    case CODE_EXTEND:
+                        assert(0, "Not implemented yet");
                     case BLOCK:
                         string arg;
                         r.nextToken;

@@ -110,6 +110,7 @@ enum Section : ubyte {
 
 enum IRType {
     CODE, /// Simple instruction with no argument
+    CODE_EXTEND, /// Extended instruction with an opcode argument
     BLOCK, /// Block instruction
     //    BLOCK_IF,      /// Block for [IF] ELSE END
     //   BLOCK_ELSE,    /// Block for IF [ELSE] END
@@ -138,7 +139,7 @@ struct Instr {
     IRType irtype;
     uint pops; // Number of pops from the stack
     uint push; // Number of values pushed
-    bool extend; // Extended
+    uint opcode; // Extended opcode argument
 }
 
 enum ubyte[] magic = [0x00, 0x61, 0x73, 0x6D];
@@ -337,15 +338,17 @@ enum IR : ubyte {
         @Instr("i64.reinterpret_f64", "i64.reinterpret/f64", 1, IRType.CODE, 1, 1) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
         @Instr("f32.reinterpret_i32", "f32.reinterpret/i32", 1, IRType.CODE, 1, 1) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
         @Instr("f64.reinterpret_i64", "f64.reinterpret/i64", 1, IRType.CODE, 1, 1) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
-        @Instr("truct_sat", "truct_sat", 1, IRType.CODE, 1, 1, true)     TRUNC_SAT           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
+        @Instr("truct_sat", "(;truct_sat;)", 1, IRType.CODE, 1, 1, true)     TRUNC_SAT           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
             // dfmt on
 
 }
 
-Instr getInstr(IR ir)() {
-    enum code = format!q{enum result = getUDAs!(%s, Instr)[0];}(ir.stringof);
-    mixin(code);
-    return result;
+bool extendedOperation(const IR ir) pure nothrow @nogc {
+    return ir == IR.TRUNC_SAT;
+}
+
+Instr getInstr(alias E)() {
+    return getUDAs!(E, Instr)[0];
 }
 
 static unittest {
@@ -356,8 +359,17 @@ static unittest {
 }
 
 shared static immutable(Instr[IR]) instrTable;
+shared static immutable(Instr[IR_EXTEND]) instrExtenedTable;
 shared static immutable(IR[string]) irLookupTable;
 shared static immutable(Instr[string]) instrWastLookup;
+
+immutable(Instr)* lookup(Table, I)(Table table, I ir) if (is(I==enum)) {
+    immutable(Instr)* result = ir in table;
+    if (result) {
+        return result;
+    }
+    return &illegalInstr;
+}
 
 enum PseudoWastInstr {
     invoke = "invoke",
@@ -378,8 +390,19 @@ protected immutable(Instr[IR]) generate_instrTable() {
     with (IR) {
         static foreach (E; EnumMembers!IR) {
             {
-                enum code = format!q{result[%1$s]=getUDAs!(%1$s, Instr)[0];}(E.stringof);
-                mixin(code);
+                result[E] = getInstr!E;
+            }
+        }
+    }
+    return (() @trusted => assumeUnique(result))();
+}
+
+protected immutable(Instr[IR_EXTEND]) generate_instrExtenedTable() {
+    Instr[IR_EXTEND] result;
+    with (IR_EXTEND) {
+        static foreach (E; EnumMembers!IR_EXTEND) {
+            {
+                result[E] = getInstr!E;
             }
         }
     }
@@ -388,6 +411,7 @@ protected immutable(Instr[IR]) generate_instrTable() {
 
 shared static this() {
     instrTable = generate_instrTable;
+    instrExtenedTable = generate_instrExtenedTable;
     immutable(IR[string]) generateLookupTable() @safe {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
@@ -401,6 +425,12 @@ shared static this() {
     immutable(Instr[string]) generated_instrWastLookup() {
         Instr[string] result;
         static foreach (ir; EnumMembers!IR) {
+            {
+                enum instr = getInstr!ir;
+                result[instr.wast] = instr;
+            }
+        }
+        static foreach (ir; EnumMembers!IR_EXTEND) {
             {
                 enum instr = getInstr!ir;
                 result[instr.wast] = instr;
@@ -432,22 +462,22 @@ shared static this() {
     instrWastLookup = (() @trusted => generated_instrWastLookup)();
 }
 
-enum IR_TRUNC_SAT : ubyte {
-    @Instr("i32.trunc_sat_f32_s", "i32.trunc_sat_f32_s", 3, IRType.CODE, 1, 1) I32_F32_S,
-    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE, 1, 1) I32_F32_U,
-    @Instr("i32.trunc_sat_f64_s", "i32.trunc_sat_f64_s", 3, IRType.CODE, 1, 1) I32_F64_S,
-    @Instr("i32.trunc_sat_f64_u", "i32.trunc_sat_f64_u", 3, IRType.CODE, 1, 1) I32_F64_U,
-    @Instr("i64.trunc_sat_f32_s", "i64.trunc_sat_f32_s", 3, IRType.CODE, 1, 1) I64_F32_S,
-    @Instr("i64.trunc_sat_f32_u", "i64.trunc_sat_f32_u", 3, IRType.CODE, 1, 1) I64_F32_U,
-    @Instr("i64.trunc_sat_f64_s", "i64.trunc_sat_f64_s", 3, IRType.CODE, 1, 1) I64_F64_S,
-    @Instr("i64.trunc_sat_f64_u", "i64.trunc_sat_f64_u", 3, IRType.CODE, 1, 1) I64_F64_U,
+enum IR_EXTEND : uint {
+    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE, 1, 1, 0x00) I32_TRUNC_SAT_F32_S,
+    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE, 1, 1, 0x01) I32_TRUNC_SAT_F32_U,
+    @Instr("i32.trunc_sat_f64_s", "i32.trunc_sat_f64_s", 3, IRType.CODE, 1, 1, 0x02) I32_TRUNC_SAT_F64_S,
+    @Instr("i32.trunc_sat_f64_u", "i32.trunc_sat_f64_u", 3, IRType.CODE, 1, 1, 0x03) I32_TRUNC_SAT_F64_U,
+    @Instr("i64.trunc_sat_f32_s", "i64.trunc_sat_f32_s", 3, IRType.CODE, 1, 1, 0x04) I64_TRUNC_SAT_F32_S,
+    @Instr("i64.trunc_sat_f32_u", "i64.trunc_sat_f32_u", 3, IRType.CODE, 1, 1, 0x05) I64_TRUNC_SAT_F32_U,
+    @Instr("i64.trunc_sat_f64_s", "i64.trunc_sat_f64_s", 3, IRType.CODE, 1, 1, 0x06) I64_TRUNC_SAT_F64_S,
+    @Instr("i64.trunc_sat_f64_u", "i64.trunc_sat_f64_u", 3, IRType.CODE, 1, 1, 0x07) I64_TRUNC_SAT_F64_U,
 }
 
 version (none) {
-    shared static immutable(string[IR_TRUNC_SAT]) trunc_sat_mnemonic;
+    shared static immutable(string[IR_EXTEND]) trunc_sat_mnemonic;
 
     shared static this() {
-        with (IR_TRUNC_SAT) {
+        with (IR_EXTEND) {
             trunc_sat_mnemonic = [
                 I32_F32_S: "i32.trunc_sat_f32_s",
                 I32_F32_U: "i32.trunc_sat_f32_u",
@@ -769,6 +799,7 @@ struct ExprRange {
     struct IRElement {
         IR code;
         int level;
+        immutable(Instr)* instr;
         private {
             WasmArg _warg;
             WasmArg[] _wargs;
@@ -798,11 +829,6 @@ struct ExprRange {
             result._types = _types.dup;
             return result;
         }
-
-        version (none) string toString() const pure {
-
-        }
-
     }
 
     this(immutable(ubyte[]) data) pure {
@@ -838,11 +864,15 @@ struct ExprRange {
         if (index < data.length) {
             elm.code = cast(IR) data[index];
             elm._types = null;
-            const instr = instrTable.get(elm.code, illegalInstr);
+            elm.instr = instrTable.lookup(elm.code);
             index += IR.sizeof;
             with (IRType) {
-                final switch (instr.irtype) {
+                final switch (elm.instr.irtype) {
                 case CODE:
+                    break;
+                case CODE_EXTEND:
+                    const opcode_arg = decode!IR_EXTEND(data, index);
+                    elm.instr = instrExtenedTable.lookup(opcode_arg);
                     break;
                 case PREFIX:
                     elm._warg = int(data[index]); // Extended insructions
@@ -952,6 +982,7 @@ struct ExprRange {
         }
 
     }
+
     void popFront() pure {
         set_front(current, _index);
     }

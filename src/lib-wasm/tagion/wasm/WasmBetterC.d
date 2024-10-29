@@ -512,22 +512,23 @@ alias check = Check!WasmBetterCException;
         const(ExprRange.IRElement) innerBlock(ref ExprRange expr, const(string) indent, const uint level) {
             while (!expr.empty) {
                 const elm = expr.front;
-                const instr = instrTable[elm.code];
+                //const instr = instrTable[elm.code];
                 expr.popFront;
 
                 with (IRType) {
-                    final switch (instr.irtype) {
+                    final switch (elm.instr.irtype) {
                     case CODE:
-                        output.writefln("%s// %s", indent, instr.name);
-                        ctx.perform(elm.code, instr.pops);
+                    case CODE_EXTEND:
+                        output.writefln("%s// %s", indent, elm.instr.name);
+                        ctx.perform(elm.code, elm.instr.pops);
                         break;
                     case PREFIX:
-                        output.writefln("%s%s", indent, instr.name);
+                        output.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case BLOCK:
                         block_comment = format(";; block %d", block_count);
                         block_count++;
-                        output.writefln("%s%s%s %s", indent, instr.name,
+                        output.writefln("%s%s%s %s", indent, elm.instr.name,
                                 block_result_type(elm.types[0]), block_comment);
                         const end_elm = innerBlock(expr, indent ~ spacer, level + 1);
                         const end_instr = instrTable[end_elm.code];
@@ -544,7 +545,7 @@ alias check = Check!WasmBetterCException;
                         break;
                     case BRANCH:
                     case BRANCH_IF:
-                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case BRANCH_TABLE:
                         static string branch_table(const(WasmArg[]) args) {
@@ -555,13 +556,13 @@ alias check = Check!WasmBetterCException;
                             return result;
                         }
 
-                        output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
+                        output.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
                         break;
                     case CALL:
                         scope (exit) {
                             calls++;
                         }
-                        output.writefln("%s// %s %s", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s// %s %s", indent, elm.instr.name, elm.warg.get!uint);
                         const func_idx = elm.warg.get!uint;
                         const function_header = wasmstream.get!(Section.TYPE)[func_idx];
                         const function_call = format("%s(%-(%s,%))", function_name(func_idx), ctx.pops(function_header
@@ -574,20 +575,20 @@ alias check = Check!WasmBetterCException;
                         output.writefln("%s%s%s;", indent, set_result, function_call);
                         break;
                     case CALL_INDIRECT:
-                        output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case LOCAL:
-                        output.writefln("%s// %s %d", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s// %s %d", indent, elm.instr.name, elm.warg.get!uint);
                         ctx.push(elm.code, elm.warg.get!uint);
                         break;
                     case GLOBAL:
-                        output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case MEMORY:
-                        output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.wargs));
+                        output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
                         break;
                     case MEMOP:
-                        output.writefln("%s%s", indent, instr.name);
+                        output.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case CONST:
                         static string toText(const WasmArg a) {
@@ -625,7 +626,7 @@ alias check = Check!WasmBetterCException;
                         }
 
                         const value = toText(elm.warg);
-                        output.writefln("%s// %s %s", indent, instr.name, value);
+                        output.writefln("%s// %s %s", indent, elm.instr.name, value);
                         ctx.push(value);
                         break;
                     case END:
