@@ -462,15 +462,15 @@ shared static this() {
     instrWastLookup = (() @trusted => generated_instrWastLookup)();
 }
 
-enum IR_EXTEND : uint {
-    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE, 1, 1, 0x00) I32_TRUNC_SAT_F32_S,
-    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE, 1, 1, 0x01) I32_TRUNC_SAT_F32_U,
-    @Instr("i32.trunc_sat_f64_s", "i32.trunc_sat_f64_s", 3, IRType.CODE, 1, 1, 0x02) I32_TRUNC_SAT_F64_S,
-    @Instr("i32.trunc_sat_f64_u", "i32.trunc_sat_f64_u", 3, IRType.CODE, 1, 1, 0x03) I32_TRUNC_SAT_F64_U,
-    @Instr("i64.trunc_sat_f32_s", "i64.trunc_sat_f32_s", 3, IRType.CODE, 1, 1, 0x04) I64_TRUNC_SAT_F32_S,
-    @Instr("i64.trunc_sat_f32_u", "i64.trunc_sat_f32_u", 3, IRType.CODE, 1, 1, 0x05) I64_TRUNC_SAT_F32_U,
-    @Instr("i64.trunc_sat_f64_s", "i64.trunc_sat_f64_s", 3, IRType.CODE, 1, 1, 0x06) I64_TRUNC_SAT_F64_S,
-    @Instr("i64.trunc_sat_f64_u", "i64.trunc_sat_f64_u", 3, IRType.CODE, 1, 1, 0x07) I64_TRUNC_SAT_F64_U,
+enum IR_EXTEND : ubyte {
+    @Instr("i32.trunc_sat_f32_s", "i32.trunc_sat_f32_s", 3, IRType.CODE_EXTEND, 1, 1, 0x00) I32_TRUNC_SAT_F32_S,
+    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, 1, 1, 0x01) I32_TRUNC_SAT_F32_U,
+    @Instr("i32.trunc_sat_f64_s", "i32.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, 1, 1, 0x02) I32_TRUNC_SAT_F64_S,
+    @Instr("i32.trunc_sat_f64_u", "i32.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, 1, 1, 0x03) I32_TRUNC_SAT_F64_U,
+    @Instr("i64.trunc_sat_f32_s", "i64.trunc_sat_f32_s", 3, IRType.CODE_EXTEND, 1, 1, 0x04) I64_TRUNC_SAT_F32_S,
+    @Instr("i64.trunc_sat_f32_u", "i64.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, 1, 1, 0x05) I64_TRUNC_SAT_F32_U,
+    @Instr("i64.trunc_sat_f64_s", "i64.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, 1, 1, 0x06) I64_TRUNC_SAT_F64_S,
+    @Instr("i64.trunc_sat_f64_u", "i64.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, 1, 1, 0x07) I64_TRUNC_SAT_F64_U,
 }
 
 version (none) {

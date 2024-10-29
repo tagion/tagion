@@ -98,7 +98,7 @@ import std.traits;
 
 T div(T)(T x, T y) if (isIntegral!T) {
     static if (isSigned!T) {
-        error(!(x == T.min || y == T(-1)), "Overflow (%d / %d)", x, y);
+        error(!(x == T.min && y == T(-1)), "Overflow (%d / %d)", x, y);
     }
     error(y != 0, "Division with zero");
 
@@ -107,7 +107,7 @@ T div(T)(T x, T y) if (isIntegral!T) {
 
 T rem(T)(T x, T y) if (isIntegral!T) {
     static if (isSigned!T) {
-        if (x == T.min || y == T(-1))
+        if (x == T.min && y == T(-1))
             return T(0);
     }
     error(y != 0, "Division with zero");

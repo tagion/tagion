@@ -296,6 +296,8 @@ struct WastParser {
 
             }
             else {
+                __write("instr %s token=%s", instr, r);
+                __write("instrWastLookup=%s", instrWastLookup.keys);
                 assert(0, "Something is wrong");
                 r.check(false);
             }
