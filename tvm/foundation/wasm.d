@@ -96,21 +96,8 @@ import std.traits;
     }
 }
 
-T div(T)(T x, T y) @trusted if (isIntegral!T) {
-            import core.stdc.stdio;
-    static if (T.sizeof == long.sizeof) {
-            printf("div T=%s %lx /%lx x= %ld y=%ld\n", T.stringof.ptr, x, y,x,y);
-            printf("(x == T.min) %d  || (y == T(-1)) %d\n", x == T.min, y == T(-1));
-            printf("!((x == T.min) || (y == T(-1))) %d\n", !(x == T.min || y == T(-1)));
-    }
-    else {
-            printf("div T=%s %x /%x x= %d y=%d\n", T.stringof.ptr, x, y,x,y);
-            printf("(x == T.min) %d  || (y == T(-1)) %d\n", x == T.min, y == T(-1));
-            printf("!((x == T.min) || (y == T(-1))) %d\n", !(x == T.min || y == T(-1)));
-     }
-    printf("isSigned!T %d\n", isSigned!T);
+T div(T)(T x, T y) if (isIntegral!T) {
     static if (isSigned!T) {
-        printf("Inside error check %s\n", T.stringof.ptr);
         error(!(x == T.min || y == T(-1)), "Overflow (%d / %d)", x, y);
     }
     error(y != 0, "Division with zero");
