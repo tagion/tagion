@@ -875,14 +875,14 @@ shared static this() {
 
     ];
     instr_extend_fmt = [
-        IR_EXTEND.I32_TRUNC_SAT_F32_S: q{%1$s},
-        IR_EXTEND.I32_TRUNC_SAT_F32_U: q{%1$s},
-        IR_EXTEND.I32_TRUNC_SAT_F64_S: q{%1$s},
-        IR_EXTEND.I32_TRUNC_SAT_F64_U: q{%1$s},
-        IR_EXTEND.I64_TRUNC_SAT_F32_S: q{%1$s},
-        IR_EXTEND.I64_TRUNC_SAT_F32_U: q{%1$s},
-        IR_EXTEND.I64_TRUNC_SAT_F64_S: q{%1$s},
-        IR_EXTEND.I64_TRUNC_SAT_F64_U: q{%1$s},
+        IR_EXTEND.I32_TRUNC_SAT_F32_S: q{wasm.trunc_sat!(int,float)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F32_U: q{wasm.trunc_sat!(uint,float)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F64_S: q{wasm.trunc_sat!(int,double)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F64_U: q{wasm.trunc_sat!(uint,double)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F32_S: q{wasm.trunc_sat!(long,float)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F32_U: q{wasm.trunc_sat!(ulong,float)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F64_S: q{wasm.trunc_sat!(long,double)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F64_U: q{wasm.trunc_sat!(ulong,double)(%1$s)},
     ];
 }
 

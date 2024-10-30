@@ -192,9 +192,11 @@ T trunc(T, F)(F _from) if (isIntegral!T && isFloatingPoint!F) {
 T trunc_sat(T, F)(F _from) @trusted if (isIntegral!T && isFloatingPoint!F) {
     import std.math : abs;
     import std.format;
+    /*
     mixin IntegralTruncLimits!(T, F); 
     error((_from >= min_int) && (_from < max_int) || (abs(_from) < 1.0),
             format("overflow %a [%a..%a]", _from, min_int, max_int));
+    */
     return cast(T) _from;
 }
 
