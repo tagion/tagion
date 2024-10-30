@@ -120,7 +120,7 @@ template FitUnsigned(F) if (isFloatingPoint!F) {
 F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     import std.format;
     import std.uni : sicmp;
-import std.stdio;
+
     check(text.length > 0, "Can not convert an empty string");
     const negative = text[0] == '-';
     const pos = negative || (text[0] == '+');
@@ -141,7 +141,8 @@ import std.stdio;
 
         Overlap result;
         result.number = (negative) ? -F.nan : F.nan;
-        if (!quiet.empty) {
+        if (!quiet.empty && (sicmp(quiet.front, Canonical) != 0)) {
+
             static if (F.sizeof == uint.sizeof) {
                 enum mask = 0x0060_0000;
                 enum arithmetic_mask = 0x0020_0000;
@@ -151,10 +152,11 @@ import std.stdio;
                 enum arithmetic_mask = 0x4_0000_0000_0000L;
             }
             result.unsigned &= ~(mask);
+
             if (sicmp(quiet.front, Arithmetic) == 0) {
                 result.unsigned |= arithmetic_mask;
             }
-            else if (sicmp(quiet.front, Canonical) != 0) {
+            else {
                 const signal_mask = convert!(U)(quiet.front);
                 result.unsigned |= signal_mask;
             }
@@ -162,7 +164,6 @@ import std.stdio;
         return result.number;
     }
     if ((sicmp(text, Inf) == 0) || (sicmp(text, Infinity) == 0)) {
-        writefln("text %s", text);
         return (negative) ? -F.infinity : F.infinity;
     }
     const spec = singleSpec("%f");
@@ -171,6 +172,38 @@ import std.stdio;
 
 }
 
+unittest {
+    import std.math;
+
+    void convert_test(F)() {
+        {
+            const x1 = "nan".convert!F;
+            assert(x1.isNaN);
+            const x2 = "nan:arithmetic".convert!F;
+            assert(x2.isNaN);
+            const x3 = "nan:0x8889".convert!F;
+            assert(x3.isNaN);
+            const x4 = "nan:canonical".convert!F;
+            assert(x4.isNaN);
+        }
+        {
+            const y1 = "inf".convert!F;
+            assert(y1 == F.infinity);
+            const y2 = "infinity".convert!F;
+            assert(y2 == F.infinity);
+        }
+        {
+            const y = "-inf".convert!F;
+            assert(y == -F.infinity);
+            const x = "-nan".convert!F;
+            assert(x.isNaN);
+            assert(x.signbit);
+        }
+    }
+
+    convert_test!float;
+    convert_test!double;
+}
 /++
  + Converts on the first part of the buffer to a Hex string
  + Used for debugging
@@ -187,5 +220,3 @@ string cutHex(BUF)(BUF buf) pure if (isBufferType!BUF) {
     enum LEN = ulong.sizeof;
     return format!"%(%02x%)"(buf[0 .. min(LEN, buf.length)]);
 }
-
-
