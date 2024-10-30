@@ -94,6 +94,8 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
+          path: 'tech',
+          routeBasePath: 'tech',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
@@ -140,13 +142,8 @@ const config = {
             label: 'Docs',
           },
           {to: '/tips', label: 'TIPs', position: 'left'},
-          {to: '/blog', label: 'blog', position: 'left'},
+          {href: 'https://tagion.medium.com', label: 'Blog', position: 'left'},
           {to: '/changelog', label: 'Changelog', position: 'right'},
-          {
-            href: 'https://ddoc.tagion.org',
-            label: 'Ddoc',
-            position: 'right',
-          },
           {
             href: 'https://github.com/tagion/tagion',
             label: 'GitHub',
@@ -158,7 +155,7 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: 'Tech Documentation',
             items: [
               {
                 label: 'Getting Started',
