@@ -22,7 +22,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.logger.Logger : log;
 import tagion.script.standardnames;
 import tagion.script.namerecords;
-import tagion.utils.Miscellaneous : cutHex;
+//import tagion.utils.convert : cutHex;
 import tagion.utils.Result;
 
 /++

@@ -24,7 +24,7 @@ import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.logger.Logger : log;
 import tagion.services.options;
 import tagion.utils.BitMask;
-import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.convert : cutHex;
 import tagion.utils.StdTime;
 import tagion.behaviour.BehaviourException : check, BehaviourException;
 

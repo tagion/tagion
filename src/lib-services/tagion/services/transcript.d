@@ -105,8 +105,6 @@ struct TranscriptService {
     }
 
     void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
-        import tagion.utils.Miscellaneous : cutHex;
-
         const epoch_number = res.id;
 
         votes[epoch_number].epoch.bullseye = bullseye;

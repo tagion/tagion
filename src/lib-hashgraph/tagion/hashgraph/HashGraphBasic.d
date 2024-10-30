@@ -34,7 +34,7 @@ void __write(Args...)(string fmt, Args args) @trusted nothrow pure {
 }
 
 enum minimum_nodes = 3;
-import tagion.utils.Miscellaneous : cutHex;
+//import tagion.utils.convert : cutHex;
 
 @nogc
 T highest(T)(T a, T b) pure nothrow if (isSigned!(T)) {

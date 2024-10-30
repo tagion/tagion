@@ -1464,7 +1464,7 @@ unittest {
     import std.typecons;
     import tagion.basic.basic : forceRemove;
     import tagion.hibon.HiBONJSON : toPretty;
-    import tagion.utils.Miscellaneous : cutHex;
+    import tagion.utils.convert : cutHex;
     import tagion.utils.Random;
 
     auto net = new DARTFakeNet;

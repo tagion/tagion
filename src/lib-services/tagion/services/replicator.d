@@ -10,7 +10,7 @@ import tagion.dart.Recorder : RecordFactory;
 import tagion.logger.Logger;
 import tagion.replicator.RecorderBlock;
 import tagion.services.messages;
-import tagion.utils.Miscellaneous : cutHex;
+//import tagion.utils.convert : cutHex;
 import tagion.basic.Types : FileExtension;
 import tagion.errors.tagionexceptions;
 import std.path : buildPath, setExtension;

@@ -3,7 +3,7 @@ module tagion.wasm.WastTokenizer;
 import std.traits;
 import std.range;
 import tagion.basic.Debug;
-import tagion.utils.Miscellaneous : convert;
+import tagion.utils.convert : convert;
 
 enum Chars : char {
     NUL = '\0',

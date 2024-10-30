@@ -10,7 +10,8 @@ import tagion.tools.toolsexception;
 
 DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONtoText;
-    import misc = tagion.utils.Miscellaneous;
+    import convert = tagion.utils.convert;
+    import tagion.utils.convert : Prefix;
     import std.base64;
     import std.algorithm;
     import std.array : split;
@@ -26,7 +27,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
         return DARTIndex(Base64URL.decode(str[1 .. $]).idup);
     }
     else if (isHexPrefix(str)) {
-        return DARTIndex(misc.decode(str[hex_prefix.length .. $]));
+        return DARTIndex(convert.decode(str[Prefix.hex.length .. $]));
     }
     else if (str.canFind(":")) {
 
@@ -85,7 +86,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
         return net.dartKey(name, list[1].idup);
     }
 
-    return DARTIndex(misc.decode(str));
+    return DARTIndex(convert.decode(str));
 }
 
 immutable(Buffer) binaryHash(const(HashNet) net, scope const(ubyte[]) h1, scope const(ubyte[]) h2)

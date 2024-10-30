@@ -180,26 +180,40 @@ mixin template IntegralTruncLimits(T, F) if (isIntegral!T && isFloatingPoint!F) 
     }
  }
 
-T trunc(T, F)(F _from) if (isIntegral!T && isFloatingPoint!F) {
+T trunc(T, F)(F x) if (isIntegral!T && isFloatingPoint!F) {
     import std.math : abs;
     import std.format;
     mixin IntegralTruncLimits!(T, F); 
-    error((_from >= min_int) && (_from < max_int) || (abs(_from) < 1.0),
-            format("overflow %a [%a..%a]", _from, min_int, max_int));
-    return cast(T) _from;
+    error((x >= min_int) && (x < max_int) || (abs(x) < 1.0),
+            format("overflow %a [%a..%a]", x, min_int, max_int));
+    return cast(T) x;
 }
 
-T trunc_sat(T, F)(F _from) @trusted if (isIntegral!T && isFloatingPoint!F) {
-    import std.math : abs;
-    import std.format;
-    /*
+T trunc_sat(T, F)(F x) @trusted if (isIntegral!T && isFloatingPoint!F) {
+    import std.math : isNaN;
     mixin IntegralTruncLimits!(T, F); 
-    error((_from >= min_int) && (_from < max_int) || (abs(_from) < 1.0),
-            format("overflow %a [%a..%a]", _from, min_int, max_int));
-    */
-    return cast(T) _from;
+    if (x < min_int) {
+        return T.min;
+    }
+    if (x >= max_int) {
+        return T.max;
+    }
+    if (x.isNaN) {
+        return T.init;
+    }
+    return cast(T) x;
 }
 
+double promote(float x) {
+    import std.math : isNaN;
+    if (x.isNaN) {
+         Float!double snan;
+         snan.f=x;
+        return snan.f;
+        //return snan2!double((cast(long)snan.i));
+    }
+    return cast(double)x;
+}
 
 
 void error(const bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
