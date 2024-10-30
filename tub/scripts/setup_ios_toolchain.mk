@@ -1,19 +1,10 @@
-# IOS_PLATFORMS           += arm64-apple-ios-simulator
-# IOS_PLATFORMS           += arm64-apple-ios
-# IOS_PLATFORMS           += x86_64-apple-ios-simulator
-# IOS_PLATFORMS           += x86_64-apple-ios
-
 # tools directory
 TOOLS:=$(abspath $(REPOROOT)/tools)
 
 LDC_VERSION:=1.37.0
 
-# Host. This is the compiler that will be used to compile the code.
 LDC_HOST:=ldc2-${LDC_VERSION}-osx-universal
 LDC_HOST_TAR:=$(LDC_HOST).tar.xz
-
-# Target. This is the compiler that will be used to compile the code for the target platform.
-# LDC_TARGET:=ldc2-${LDC_VERSION}$(TARGET_ARCH)-apple-ios
 
 install-ios-toolchain: $(TOOLS)/.way
 install-ios-toolchain: $(LDC_HOST)
