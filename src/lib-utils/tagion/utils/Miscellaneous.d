@@ -157,7 +157,7 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
             if (sicmp(quiet.front, Arithmetic) == 0) {
                 result.unsigned |= arithmetic_mask;
             }
-            else {
+            else if (sicmp(quiet.front, Canonical) != 0) {
                 const signal_mask = convert!(U)(quiet.front);
                 result.unsigned |= signal_mask;
             }

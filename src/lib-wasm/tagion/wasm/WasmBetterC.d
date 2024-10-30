@@ -471,6 +471,28 @@ alias check = Check!WasmBetterCException;
 
         }
 
+        void perform(const IR_EXTEND ir, const uint number_of_args) {
+            switch (number_of_args) {
+            case 1:
+                if (ir in instr_extend_fmt) {
+                    push(format(instr_extend_fmt[ir], pop));
+                    return;
+                }
+                push(format("Undefinded %s pop %s", ir, pop));
+                break;
+            case 2:
+                if (ir in instr_extend_fmt) {
+                    push(format(instr_extend_fmt[ir], pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s", ir, pop, pop));
+                break;
+            default:
+                check(0, format("Format argument %s not supported for %s", number_of_args, instrExtenedTable[ir].name));
+            }
+
+        }
+
         void push(const IR ir, const uint local_idx) pure nothrow {
             push(locals[local_idx]);
         }
@@ -518,9 +540,12 @@ alias check = Check!WasmBetterCException;
                 with (IRType) {
                     final switch (elm.instr.irtype) {
                     case CODE:
-                    case CODE_EXTEND:
                         output.writefln("%s// %s", indent, elm.instr.name);
                         ctx.perform(elm.code, elm.instr.pops);
+                        break;
+                    case CODE_EXTEND:
+                        output.writefln("%s// %s", indent, elm.instr.name);
+                        ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
                         break;
                     case PREFIX:
                         output.writefln("%s%s", indent, elm.instr.name);
@@ -669,6 +694,7 @@ alias check = Check!WasmBetterCException;
 }
 
 immutable string[IR] instr_fmt;
+immutable string[IR_EXTEND] instr_extend_fmt;
 
 shared static this() {
     instr_fmt = [
@@ -847,6 +873,16 @@ shared static this() {
         IR.F64_GE: q{(%2$s >= %1$s)},
         // Extend 
 
+    ];
+    instr_extend_fmt = [
+        IR_EXTEND.I32_TRUNC_SAT_F32_S: q{%1$s},
+        IR_EXTEND.I32_TRUNC_SAT_F32_U: q{%1$s},
+        IR_EXTEND.I32_TRUNC_SAT_F64_S: q{%1$s},
+        IR_EXTEND.I32_TRUNC_SAT_F64_U: q{%1$s},
+        IR_EXTEND.I64_TRUNC_SAT_F32_S: q{%1$s},
+        IR_EXTEND.I64_TRUNC_SAT_F32_U: q{%1$s},
+        IR_EXTEND.I64_TRUNC_SAT_F64_S: q{%1$s},
+        IR_EXTEND.I64_TRUNC_SAT_F64_U: q{%1$s},
     ];
 }
 

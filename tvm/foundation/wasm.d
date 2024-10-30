@@ -133,20 +133,72 @@ T fmax(T)(T x, T y) if (isFloatingPoint!T) {
     return (x > y) ? x : y;
 }
 
-T trunc(T, F)(F _from) if (isIntegral!T && isFloatingPoint!F) {
-    import std.format;
-    import std.math;
-
-    static if (is(F == double) && (T.sizeof == int.sizeof)) {
-        enum int_max = T.max;
+mixin template IntegralTruncLimits(T, F) if (isIntegral!T && isFloatingPoint!F) {
+    static if (is(F == double)) {
+        static if (T.sizeof == int.sizeof) {
+            static if (isSigned!T) {
+                enum max_int = 0x1p+31;
+                enum min_int = -0x1.000_0000_1FFF_FFp+31;
+            }
+            else {
+                enum max_int = 0x1p+32;
+                enum min_int = 0x0p+0;
+            }
+        }
+        else {
+            static if (isSigned!T) {
+                enum max_int = 0x1p+63;
+                enum min_int = -0x1p+63;
+            }
+            else {
+                enum max_int = 0x1p+64;
+                enum min_int = 0x0p+0; 
+            }
+        }
     }
     else {
-        enum int_max = cast(T)((ulong.max << (T.sizeof * 8 - isSigned!T - F.mant_dig)) & T.max);
+        static if (T.sizeof == int.sizeof) {
+            static if (isSigned!T) {
+                enum max_int = 0x1p+31f;
+                enum min_int = -0x1p+31F;
+            }
+            else {
+                enum max_int = 0x1p+32F-1.0F;
+                enum min_int = 0x0p+0F;
+            }
+        }
+        else {
+            static if (isSigned!T) {
+                enum max_int = 0x1p+63F-1.0F;
+                enum min_int = -0x1p+63F;
+            }
+            else {
+                enum max_int = 0x1p+64F-1.0F;
+                enum min_int = 0x1p+0F;
+            }
+        }
     }
-    error((_from >= T.min) && (_from <= int_max) || (abs(_from) < 1.0),
-            format("overflow %a int_max=%x", _from, int_max));
+ }
+
+T trunc(T, F)(F _from) if (isIntegral!T && isFloatingPoint!F) {
+    import std.math : abs;
+    import std.format;
+    mixin IntegralTruncLimits!(T, F); 
+    error((_from >= min_int) && (_from < max_int) || (abs(_from) < 1.0),
+            format("overflow %a [%a..%a]", _from, min_int, max_int));
     return cast(T) _from;
 }
+
+T trunc_sat(T, F)(F _from) @trusted if (isIntegral!T && isFloatingPoint!F) {
+    import std.math : abs;
+    import std.format;
+    mixin IntegralTruncLimits!(T, F); 
+    error((_from >= min_int) && (_from < max_int) || (abs(_from) < 1.0),
+            format("overflow %a [%a..%a]", _from, min_int, max_int));
+    return cast(T) _from;
+}
+
+
 
 void error(const bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
     import std.exception;

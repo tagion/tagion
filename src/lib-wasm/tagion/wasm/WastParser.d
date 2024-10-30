@@ -135,171 +135,167 @@ struct WastParser {
             }
             r.nextToken;
             r.check(r.type == TokenType.WORD);
-            const instr = instrWastLookup.get(r.token, Instr.init);
+            const instr = instrWastLookup.get(r.token, illegalInstr);
             string label;
-            if (instr !is Instr.init) {
-                with (IRType) {
-                    final switch (instr.irtype) {
-                    case CODE:
-                        r.nextToken;
-                        foreach (i; 0 .. instr.pops) {
-                            innerInstr(r, ParserStage.CODE);
-                        }
-                        wasmexpr(irLookupTable[instr.name]);
-                        break;
-                    case CODE_EXTEND:
-                        assert(0, "Not implemented yet");
-                    case BLOCK:
-                        string arg;
-                        r.nextToken;
-                        if (r.type == TokenType.WORD) {
-                            //r.check(r.type == TokenType.WORD);
-                            label = r.token;
-                            r.nextToken;
-                        }
-                        if (r.type == TokenType.WORD) {
-                            arg = r.token;
-                            r.nextToken;
-                        }
-                        while (r.type == TokenType.BEGIN) {
-                            innerInstr(r, ParserStage.CODE);
-                        }
-                        return stage;
-                    case BRANCH:
-                        r.nextToken;
-                        if (r.type == TokenType.WORD) {
-                            label = r.token;
-                            r.nextToken;
-                        }
-                        while (r.type == TokenType.BEGIN) {
-                            innerInstr(r, ParserStage.CODE);
-                        }
-                        break;
-                    case BRANCH_IF:
-                        r.nextToken;
+            with (IRType) {
+                final switch (instr.irtype) {
+                case CODE:
+                    r.nextToken;
+                    foreach (i; 0 .. instr.pops) {
                         innerInstr(r, ParserStage.CODE);
-                        r.check(r.type == TokenType.WORD);
+                    }
+                    wasmexpr(irLookupTable[instr.name]);
+                    break;
+                case CODE_EXTEND:
+                    r.nextToken;
+                    foreach (i; 0 .. instr.pops) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    wasmexpr(IR.EXNEND, instr.opcode);
+                    break;
+                case BLOCK:
+                    string arg;
+                    r.nextToken;
+                    if (r.type == TokenType.WORD) {
+                        //r.check(r.type == TokenType.WORD);
                         label = r.token;
                         r.nextToken;
-                        if (r.type == TokenType.BEGIN) {
-                            innerInstr(r, ParserStage.CODE);
-                        }
-                        break;
-                    case BRANCH_TABLE:
-                        break;
-                    case CALL:
+                    }
+                    if (r.type == TokenType.WORD) {
+                        arg = r.token;
                         r.nextToken;
-                        const idx = getFuncIdx();
+                    }
+                    while (r.type == TokenType.BEGIN) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    return stage;
+                case BRANCH:
+                    r.nextToken;
+                    if (r.type == TokenType.WORD) {
                         label = r.token;
                         r.nextToken;
-                        while (r.type == TokenType.BEGIN) {
-                            innerInstr(r, ParserStage.CODE);
-                        }
-                        wasmexpr(IR.CALL, idx);
-                        break;
-                    case CALL_INDIRECT:
-                        break;
-                    case LOCAL:
-                        r.nextToken;
-                        label = r.token;
-                        r.check(r.type == TokenType.WORD);
-                        const local_idx = getLocal(r.token);
-                        wasmexpr(irLookupTable[instr.name], local_idx);
-                        r.nextToken;
-                        foreach (i; 0 .. instr.pops) {
-                            innerInstr(r, ParserStage.CODE);
-                        }
-                        break;
-                    case GLOBAL:
-                        r.nextToken;
-                        label = r.token;
-                        r.check(r.type == TokenType.WORD);
-                        r.nextToken;
-                        break;
-                    case MEMORY:
+                    }
+                    while (r.type == TokenType.BEGIN) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    break;
+                case BRANCH_IF:
+                    r.nextToken;
+                    innerInstr(r, ParserStage.CODE);
+                    r.check(r.type == TokenType.WORD);
+                    label = r.token;
+                    r.nextToken;
+                    if (r.type == TokenType.BEGIN) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    break;
+                case BRANCH_TABLE:
+                    break;
+                case CALL:
+                    r.nextToken;
+                    const idx = getFuncIdx();
+                    label = r.token;
+                    r.nextToken;
+                    while (r.type == TokenType.BEGIN) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    wasmexpr(IR.CALL, idx);
+                    break;
+                case CALL_INDIRECT:
+                    break;
+                case LOCAL:
+                    r.nextToken;
+                    label = r.token;
+                    r.check(r.type == TokenType.WORD);
+                    const local_idx = getLocal(r.token);
+                    wasmexpr(irLookupTable[instr.name], local_idx);
+                    r.nextToken;
+                    foreach (i; 0 .. instr.pops) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    break;
+                case GLOBAL:
+                    r.nextToken;
+                    label = r.token;
+                    r.check(r.type == TokenType.WORD);
+                    r.nextToken;
+                    break;
+                case MEMORY:
 
+                    r.nextToken;
+                    for (uint i = 0; (i < 2) && (r.type == TokenType.WORD); i++) {
+                        label = r.token; // Fix this later
                         r.nextToken;
-                        for (uint i = 0; (i < 2) && (r.type == TokenType.WORD); i++) {
-                            label = r.token; // Fix this later
-                            r.nextToken;
-                        }
-                        foreach (i; 0 .. instr.pops) {
-                            innerInstr(r, ParserStage.CODE);
-                        }
+                    }
+                    foreach (i; 0 .. instr.pops) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    break;
+                case MEMOP:
+                    r.nextToken;
+                    foreach (i; 0 .. instr.pops) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    break;
+                case CONST:
+                    r.nextToken;
+                    r.check(r.type == TokenType.WORD);
+                    const ir = irLookupTable[instr.name];
+                    with (IR) switch (ir) {
+                    case I32_CONST:
+                        wasmexpr(ir, r.get!int);
                         break;
-                    case MEMOP:
+                    case I64_CONST:
+                        wasmexpr(ir, r.get!long);
+                        break;
+                    case F32_CONST:
+                        wasmexpr(ir, r.get!float);
+                        break;
+                    case F64_CONST:
+                        wasmexpr(ir, r.get!double);
+                        break;
+                    default:
+                        r.check(0, "Bad const instruction");
+                    }
+                    r.nextToken;
+                    break;
+                case END:
+                    break;
+                case PREFIX:
+                    break;
+                case ILLEGAL:
+                    throw new WasmException("Undefined instruction %s", r.token);
+                    break;
+                case SYMBOL:
+                    __write("SYMBOL %s %s", r.token, r.type);
+                    r.nextToken;
+                    __write("LABEL %s %s", r.token, r.type);
+                    __write("instr %s", instr);
+                    __write("instr.push %d instr.pops %d", instr.push, instr.pops);
+                    string[] labels;
+                    for (uint i = 0; r.type == TokenType.WORD; i++) {
+                        labels ~= r.token;
                         r.nextToken;
-                        foreach (i; 0 .. instr.pops) {
-                            innerInstr(r, ParserStage.CODE);
-                        }
-                        break;
-                    case CONST:
-                        r.nextToken;
-                        r.check(r.type == TokenType.WORD);
-                        const ir = irLookupTable[instr.name];
-                        with (IR) switch (ir) {
-                        case I32_CONST:
-                            wasmexpr(ir, r.get!int);
-                            break;
-                        case I64_CONST:
-                            wasmexpr(ir, r.get!long);
-                            break;
-                        case F32_CONST:
-                            wasmexpr(ir, r.get!float);
-                            break;
-                        case F64_CONST:
-                            wasmexpr(ir, r.get!double);
-                            break;
-                        default:
-                            r.check(0, "Bad const instruction");
-                        }
-                        r.nextToken;
-                        break;
-                    case END:
-                        break;
-                    case PREFIX:
-                        break;
-                    case ILLEGAL:
-                        throw new WasmException("Undefined instruction %s", r.token);
-                        break;
-                    case SYMBOL:
-                        __write("SYMBOL %s %s", r.token, r.type);
-                        r.nextToken;
-                        __write("LABEL %s %s", r.token, r.type);
-                        __write("instr %s", instr);
-                        __write("instr.push %d instr.pops %d", instr.push, instr.pops);
-                        string[] labels;
-                        for (uint i = 0; r.type == TokenType.WORD; i++) {
-                            labels ~= r.token;
-                            r.nextToken;
-                        }
-                        for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
-                            innerInstr(r, ParserStage.CODE);
+                    }
+                    for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
+                        innerInstr(r, ParserStage.CODE);
 
-                        }
-                        switch (instr.wast) {
-                        case PseudoWastInstr.local:
-                            __write("labels %s", labels);
-                            //r.check(labels.length >= instr.pops, format("Function %d takes %d arguments but only");
-                            if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
-                                params[labels[0]] = cast(int) locals.length;
-                                locals ~= labels[1].getType;
-                                break;
-                            }
-                            locals ~= labels.map!(l => l.getType).array;
+                    }
+                    switch (instr.wast) {
+                    case PseudoWastInstr.local:
+                        __write("labels %s", labels);
+                        //r.check(labels.length >= instr.pops, format("Function %d takes %d arguments but only");
+                        if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
+                            params[labels[0]] = cast(int) locals.length;
+                            locals ~= labels[1].getType;
                             break;
-                        default:
-
                         }
+                        locals ~= labels.map!(l => l.getType).array;
+                        break;
+                    default:
+
                     }
                 }
-
-            }
-            else {
-                __write("instr %s token=%s", instr, r);
-                __write("instrWastLookup=%s", instrWastLookup.keys);
-                assert(0, "Something is wrong");
-                r.check(false);
             }
             return stage;
         }

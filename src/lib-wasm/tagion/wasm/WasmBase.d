@@ -338,13 +338,9 @@ enum IR : ubyte {
         @Instr("i64.reinterpret_f64", "i64.reinterpret_f64", 1, IRType.CODE, 1, 1) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
         @Instr("f32.reinterpret_i32", "f32.reinterpret_i32", 1, IRType.CODE, 1, 1) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
         @Instr("f64.reinterpret_i64", "f64.reinterpret_i64", 1, IRType.CODE, 1, 1) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
-        @Instr("truct_sat", "(;truct_sat;)", 1, IRType.CODE, 1, 1, true)     TRUNC_SAT           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
+        @Instr("(;extended;)", "(;extended;)", 1, IRType.CODE_EXTEND, 1, 1, true)     EXNEND           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
             // dfmt on
 
-}
-
-bool extendedOperation(const IR ir) pure nothrow @nogc {
-    return ir == IR.TRUNC_SAT;
 }
 
 Instr getInstr(alias E)() {
@@ -363,7 +359,7 @@ shared static immutable(Instr[IR_EXTEND]) instrExtenedTable;
 shared static immutable(IR[string]) irLookupTable;
 shared static immutable(Instr[string]) instrWastLookup;
 
-immutable(Instr)* lookup(Table, I)(Table table, I ir) if (is(I==enum)) {
+immutable(Instr)* lookup(Table, I)(Table table, I ir) if (is(I == enum)) {
     immutable(Instr)* result = ir in table;
     if (result) {
         return result;
@@ -471,25 +467,6 @@ enum IR_EXTEND : ubyte {
     @Instr("i64.trunc_sat_f32_u", "i64.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, 1, 1, 0x05) I64_TRUNC_SAT_F32_U,
     @Instr("i64.trunc_sat_f64_s", "i64.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, 1, 1, 0x06) I64_TRUNC_SAT_F64_S,
     @Instr("i64.trunc_sat_f64_u", "i64.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, 1, 1, 0x07) I64_TRUNC_SAT_F64_U,
-}
-
-version (none) {
-    shared static immutable(string[IR_EXTEND]) trunc_sat_mnemonic;
-
-    shared static this() {
-        with (IR_EXTEND) {
-            trunc_sat_mnemonic = [
-                I32_F32_S: "i32.trunc_sat_f32_s",
-                I32_F32_U: "i32.trunc_sat_f32_u",
-                I32_F64_S: "i32.trunc_sat_f64_s",
-                I32_F64_U: "i32.trunc_sat_f64_u",
-                I64_F32_S: "i64.trunc_sat_f32_s",
-                I64_F32_U: "i64.trunc_sat_f32_u",
-                I64_F64_S: "i64.trunc_sat_f64_s",
-                I64_F64_U: "i64.trunc_sat_f64_u",
-            ];
-        }
-    }
 }
 
 unittest {
