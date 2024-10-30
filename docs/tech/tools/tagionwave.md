@@ -1,7 +1,7 @@
 # tagionwave [Tagion full-node]
 
 tagionwave/neuewelle is the tagion node program.
-Currently only mode0 is supported [network modes](/docs/architecture/network_modes)
+Currently only mode0 is supported [network modes](/tech/architecture/network_modes)
 
 ```bash
 Help information for tagion wave program
@@ -71,9 +71,9 @@ echo 10000 > /tmp/epoch_shutdown$(pgrep neuewelle)
 
 ### Missing dartfile ./Node_0_dart.drt
 This mean that the nodes nodes could not find a dart database. 
-For testing the database should be created with the boot tool [Initialize DART](/docs/guide/network_setup/initialize_dart) or with the helper script `create_wallets.sh`
+For testing the database should be created with the boot tool [Initialize DART](/tech/guide/network_setup/initialize_dart) or with the helper script `create_wallets.sh`
 
 
 ### DATABASES must be booted with same bullseye - Abort
-This means that the databases were not synchronized. Mode0 does not automatically synchronize the databases on startup. It can be synchronized with [dartutil](/docs/tools/blockutil).  
+This means that the databases were not synchronized. Mode0 does not automatically synchronize the databases on startup. It can be synchronized with [dartutil](/tech/tools/blockutil).  
 To prevent this from happening, you can make sure that the network is stopped synchronously by setting the epoch number as explained above.

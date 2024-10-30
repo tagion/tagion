@@ -15,7 +15,7 @@ import styles from './index.module.css';
 //         <div className={styles.buttons}>
 //           <Link
 //             className="button button--secondary button--lg"
-//             to="/docs/guide">
+//             to="/tech/guide">
 //             Getting Started
 //           </Link>
 //         </div>
@@ -32,12 +32,12 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/guide">
+            to="/tech/guide">
             Tech Documentation
           </Link>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/api"
+            to="/tech/api"
             style={{ marginLeft: '10px' }}> {/* Add spacing between buttons */}
             Governance Documentation
           </Link>

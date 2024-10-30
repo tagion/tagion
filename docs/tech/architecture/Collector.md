@@ -3,15 +3,15 @@
 The service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 
 Input:
-  - A Contract-NC (No Consensus) received from [HiRPC Verifier](/docs/architecture/HiRPCVerifier.md) Service.
-  - Contract-C received from [Epoch Creator](/docs/architecture/EpochCreator.md) Service.
+  - A Contract-NC (No Consensus) received from [HiRPC Verifier](/tech/architecture/HiRPCVerifier.md) Service.
+  - Contract-C received from [Epoch Creator](/tech/architecture/EpochCreator.md) Service.
 
 Request:
-  - Request and retrieve archives from the [DART](/docs/architecture/DART.md) Service.
+  - Request and retrieve archives from the [DART](/tech/architecture/DART.md) Service.
 
 Output:
-  - A Contract-S (A Signed Contract) and archives sent to [TVM](/docs/architecture/TVM.md). 
-  - A Contract-SC (A Signed Consensus Contract) and archives sent to [TVM](/docs/architecture/TVM.md). 
+  - A Contract-S (A Signed Contract) and archives sent to [TVM](/tech/architecture/TVM.md). 
+  - A Contract-SC (A Signed Consensus Contract) and archives sent to [TVM](/tech/architecture/TVM.md). 
 
  The service does the following:
 

@@ -1,5 +1,5 @@
 /// Interface for the Peer to Peer communication
-/// https://docs.tagion.org/docs/architecture/NodeInterface
+/// https://docs.tagion.org/tech/architecture/NodeInterface
 module tagion.services.nodeinterface;
 
 @safe:

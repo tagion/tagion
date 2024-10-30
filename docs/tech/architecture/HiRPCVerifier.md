@@ -10,7 +10,7 @@ Input:
 > - A [HiRPC](https://www.hibon.org/posts/hirpc/).Receiver received from byte package 
 
 Output:  
-> - A [HiBON](https://www.hibon.org/posts/hibon/) Document sent to [Collector](/docs/architecture/Collector.md) Service.
+> - A [HiBON](https://www.hibon.org/posts/hibon/) Document sent to [Collector](/tech/architecture/Collector.md) Service.
 
 The service does the following:
 

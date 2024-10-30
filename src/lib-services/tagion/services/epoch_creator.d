@@ -1,5 +1,5 @@
 /// Service for creating epochs
-/// https://docs.tagion.org/docs/architecture/EpochCreator
+/// https://docs.tagion.org/tech/architecture/EpochCreator
 module tagion.services.epoch_creator;
 
 import core.time;

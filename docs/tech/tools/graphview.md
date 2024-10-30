@@ -54,9 +54,9 @@ graphview Node_00_graph.hibon -s200:332 --order index.svg
 ```
 
 ## Large graph generation 
-Because the graph takes a hibon-stream the command [hirep](/docs/tools/hirep) can be used to grep out events.
+Because the graph takes a hibon-stream the command [hirep](/tech/tools/hirep) can be used to grep out events.
 
-First see how many events are in the HiBONRange with [hibonutil](/docs/tools/hibonutil):
+First see how many events are in the HiBONRange with [hibonutil](/tech/tools/hibonutil):
 
 ```
 hirep -r event_view Node_00_graph.hibon|hibonutil -ct|wc -l
@@ -80,5 +80,5 @@ graphview Node_00_graph.hibon -s642:656 --order index.svg
 ```
 graphview *_graph.hibon -s4..6 index.html
 ```
-<iframe src="/docs/figs/graphview_example_2.html" title="Graphview html example"></iframe>
+<iframe src="/tech/figs/graphview_example_2.html" title="Graphview html example"></iframe>
 

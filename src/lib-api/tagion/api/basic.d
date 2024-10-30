@@ -75,7 +75,7 @@ int tagion_basic_encode_base64url(
 
 /**
 
-  Calculate the [dartindex](https://docs.tagion.org/docs/protocols/dart/dartindex) for a Document
+  Calculate the [dartindex](https://docs.tagion.org/tech/protocols/dart/dartindex) for a Document
   The dartindex is what is used to reference the document in the DART database
   
   Params:

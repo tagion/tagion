@@ -49,7 +49,7 @@ The `--flat-disable` switch is an old format and should not be used anymore.
 
 **Display an inspect the DART file**
 
-The .drt file is a block-file so the [blockutil](/docs/tools/blockutil) can also be used to inspect the file.
+The .drt file is a block-file so the [blockutil](/tech/tools/blockutil) can also be used to inspect the file.
 
 
 ## Inspect Bullseye
@@ -96,7 +96,7 @@ EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
 .... continued
 ```
 
-The numbers in `[number]` is the blockfile index (in decimal) which can be read via the [blockutil](/docs/tools/blockutil).
+The numbers in `[number]` is the blockfile index (in decimal) which can be read via the [blockutil](/tech/tools/blockutil).
 
 The rim-key are shown as `| XX` and rim-key (in hexadecimal).
 

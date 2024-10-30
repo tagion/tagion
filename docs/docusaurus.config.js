@@ -2,7 +2,7 @@
 // `@type` JSDoc annotations allow editor autocompletion and type checking
 // (when paired with `@ts-check`).
 // There are various equivalent ways to declare your Docusaurus config.
-// See: https://docusaurus.io/docs/api/docusaurus-config
+// See: https://docusaurus.io/tech/api/docusaurus-config
 
 import {themes as prismThemes} from 'prism-react-renderer';
 
@@ -24,7 +24,7 @@ const config = {
         path: 'tips',
         id: "TIPS",
         // Simple use-case: string editUrl
-        editUrl: 'https://github.com/tagion/tagion/edit/master/docs/',
+        editUrl: 'https://github.com/tagion/tagion/edit/master/tech/',
         editLocalizedFiles: false,
         blogTitle: 'Tagion Improvement Proposals',
         blogDescription: 'Blog',
@@ -99,13 +99,13 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/tagion/tagion/tree/master/docs/',
+            'https://github.com/tagion/tagion/tree/master/tech/',
         },
         // blog: {
         //   showReadingTime: true,
         //   // Please change this to your repo.
         //   // Remove this to remove the "edit this page" links.
-        //   editUrl: 'https://github.com/tagion/tagion/tree/master/docs/',
+        //   editUrl: 'https://github.com/tagion/tagion/tree/master/tech/',
         // },
         pages: {
         },
@@ -159,7 +159,7 @@ const config = {
             items: [
               {
                 label: 'Getting Started',
-                to: '/docs/guide',
+                to: '/tech/guide',
               },
               {
                 label: 'HiBON',

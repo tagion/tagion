@@ -1,7 +1,7 @@
 # tagionboot (stiefel)
 
 tagionboot is a tool to bootstrap a DART.
-For more comprehensive guides and usage checkout [network_setup](/docs/guide/network_setup/initialize_genesis_epoch)
+For more comprehensive guides and usage checkout [network_setup](/tech/guide/network_setup/initialize_genesis_epoch)
 and the [create_wallets script](https://github.com/tagion/tagion/blob/current/scripts/create_wallets.sh)
 
 The alias name for this tool is `stiefel`, which is the German word for boot :boot:
@@ -36,7 +36,7 @@ cat *.hibon | stiefel -a -p Node_1,@Ajamo1PW0Ux3GiPPOZHkwXC0Cbq6nX3bOVNXW-vBa5kF
 dartutil dart.drt -m dart_recorder.hibon
 ```
 
-### Create a [TRT](/docs/architecture/TRT) dart
+### Create a [TRT](/tech/architecture/TRT) dart
 
 ```
 dartutil -I trt.drt

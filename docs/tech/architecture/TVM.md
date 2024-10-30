@@ -7,13 +7,13 @@ The outputs produced by the contract are send to the Transcript Service.
 
 Input: 
 
-- A Contract-S (Signed) and DART archives received from the [Collector](/docs/architecture/Collector) Service.
-- A Contract-SC (Signed Consensus) and DART archives received from the [Collector](/docs/architecture/Collector) Service.
+- A Contract-S (Signed) and DART archives received from the [Collector](/tech/architecture/Collector) Service.
+- A Contract-SC (Signed Consensus) and DART archives received from the [Collector](/tech/architecture/Collector) Service.
 
 Output:
 
-- A Contract-SC (Signed Consensus) that is compliant with Consensus Rules sent to the [Epoch Creator](/docs/architecture/EpochCreator) Service.
-- The draft output and input DART archives is sent to [Transcript](/docs/architecture/Transcript) Service.
+- A Contract-SC (Signed Consensus) that is compliant with Consensus Rules sent to the [Epoch Creator](/tech/architecture/EpochCreator) Service.
+- The draft output and input DART archives is sent to [Transcript](/tech/architecture/Transcript) Service.
 
 The service does the following:
 

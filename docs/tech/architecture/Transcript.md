@@ -3,14 +3,14 @@
 This service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 
 Input:
-  - Receives an Epoch list containing ordered events from the [Epoch Creator](/docs/architecture/EpochCreator).
-  - Receives all Draft outputs archives from the [TVM](/docs/architecture/TVM).
+  - Receives an Epoch list containing ordered events from the [Epoch Creator](/tech/architecture/EpochCreator).
+  - Receives all Draft outputs archives from the [TVM](/tech/architecture/TVM).
 
 Request:
-  - Request to all the inputs archives from the [DART](/docs/architecture/DART).
+  - Request to all the inputs archives from the [DART](/tech/architecture/DART).
 
 Output:
-  - A DART-recorder is sent to the [DART](/docs/architecture/DART)
+  - A DART-recorder is sent to the [DART](/tech/architecture/DART)
 
 This services performs the following:
 ```{r, eval=FALSE,tidy=FALSE}

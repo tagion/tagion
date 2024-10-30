@@ -38,15 +38,15 @@ The read-only dart command **DART(ro)** is defined as `dartBullseye`, `dartRim` 
 All archives in the database has a unique hash-value called fingerprint.
 
 Input:
-  - Recorder is received from the [Transcript](/docs/architecture/Transcript.md) Service.
-  - Undo-instruction is received from the [Transcript](/docs/architecture/Transcript.md) Service.
-  - Recorder rewind is received from the [Replicator](/docs/architecture/Replicator.md) Service.
+  - Recorder is received from the [Transcript](/tech/architecture/Transcript.md) Service.
+  - Undo-instruction is received from the [Transcript](/tech/architecture/Transcript.md) Service.
+  - Recorder rewind is received from the [Replicator](/tech/architecture/Replicator.md) Service.
 
 Request:
-  - **DART(ro)** commands from the [Node Interface](/docs/architecture/NodeInterface.md)) Service.
+  - **DART(ro)** commands from the [Node Interface](/tech/architecture/NodeInterface.md)) Service.
 
 Output:
-  - Last Recoder is sent to the [Replicator](/docs/architecture/Replicator.md) Service. 
+  - Last Recoder is sent to the [Replicator](/tech/architecture/Replicator.md) Service. 
 
 
 ### DART Start up

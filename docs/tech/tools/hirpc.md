@@ -21,10 +21,10 @@ hirpc [<option>...]
 
 The '--dartindex' flag is used for the dartRead and dartCheckRead methods.  
 It takes a list of dartIndices in the same format as the `dartutil --read` flag.  
-To better understand the dartIndex and namerecords you can read the [dartindex](https://docs.tagion.org/docs/protocols/dart/dartindex) page.  
+To better understand the dartIndex and namerecords you can read the [dartindex](https://docs.tagion.org/tech/protocols/dart/dartindex) page.  
 
 
-The '--method' flag takes a single name argument as the method name, it should be on of the ones described in [Public HiRPC methods](https://docs.tagion.org/docs/protocols/hirpcmethods), and can optionally take `trt.` entity prefix.  
+The '--method' flag takes a single name argument as the method name, it should be on of the ones described in [Public HiRPC methods](https://docs.tagion.org/tech/protocols/hirpcmethods), and can optionally take `trt.` entity prefix.  
 
 
 ## Sending the requests

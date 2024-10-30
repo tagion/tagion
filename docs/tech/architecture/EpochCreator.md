@@ -3,12 +3,12 @@
 This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch.
 
 Input:
-  - A Contract-SC (Signed Consensus) is received from the [TVM](/docs/architecture/TVM.md) Service. 
-  - Wavefront packages received from the [Node Interface](/docs/architecture/NodeInterface.md) Service.
+  - A Contract-SC (Signed Consensus) is received from the [TVM](/tech/architecture/TVM.md) Service. 
+  - Wavefront packages received from the [Node Interface](/tech/architecture/NodeInterface.md) Service.
 
 Output:
-  - Wavefront packages is sent to the [Node Interface](/docs/architecture/NodeInterface.md) Service.
-  - Epoch list is sent to the [Transcript services](/docs/architecture/Transcript.md).
+  - Wavefront packages is sent to the [Node Interface](/tech/architecture/NodeInterface.md) Service.
+  - Epoch list is sent to the [Transcript services](/tech/architecture/Transcript.md).
 
 The diagram below shows the possible information send from and to the Epoch Creator service.
 

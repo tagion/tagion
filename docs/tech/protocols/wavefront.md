@@ -18,7 +18,7 @@ The wavefront record communicated between nodes is defined here.
 
 The hirpc protocol is described here https://hibon.org/posts/hirpc
 
-Each hirpc package is put in an [Envelope](/docs/protocols/envelope) which takes care of compression and encryption.
+Each hirpc package is put in an [Envelope](/tech/protocols/envelope) which takes care of compression and encryption.
 
 **Communication rules between a pair nodes**
 

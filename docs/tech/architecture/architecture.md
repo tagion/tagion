@@ -14,32 +14,32 @@ child stops when a supervisor sends a STOP signal to the child and the child se
 A node consist of the following services.
 
 
-* [tagionwave](/docs/tools/tagionwave) is the main task responsible all the service
+* [tagionwave](/tech/tools/tagionwave) is the main task responsible all the service
 - Main services
 	- Supervisor manages all the other services
-    - [Input Validator](/docs/architecture/InputValidator.md) This service handle the data-stream input to the network.
-    - [HiRPC Verifier](/docs/architecture/HiRPCVerifier.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
-	- [Collector](/docs/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
-	- [TVM](/docs/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs and sending new contracts to the Epoch Creator.
-	- [Transcript](/docs/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
-	- [Epoch Creator](/docs/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
-	- [DART](/docs/architecture/DART.md "Distributed Archive of Random Transactions") service is responsible for executing data-base instruction and read/write to the physical file system.
-	- [DART Interface](/docs/architecture/DartInterface.md) handles outside read requests to the dart
-    - [TRT](/docs/architecture/TRT.md) "Transaction reverse table" stores a copy of the owner to bill relationship.
-	- [Replicator](/docs/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
-	- [Node Interface](/docs/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
+    - [Input Validator](/tech/architecture/InputValidator.md) This service handle the data-stream input to the network.
+    - [HiRPC Verifier](/tech/architecture/HiRPCVerifier.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
+	- [Collector](/tech/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
+	- [TVM](/tech/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs and sending new contracts to the Epoch Creator.
+	- [Transcript](/tech/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
+	- [Epoch Creator](/tech/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
+	- [DART](/tech/architecture/DART.md "Distributed Archive of Random Transactions") service is responsible for executing data-base instruction and read/write to the physical file system.
+	- [DART Interface](/tech/architecture/DartInterface.md) handles outside read requests to the dart
+    - [TRT](/tech/architecture/TRT.md) "Transaction reverse table" stores a copy of the owner to bill relationship.
+	- [Replicator](/tech/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
+	- [Node Interface](/tech/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
 
 * Support services
-	- [Logger](/docs/architecture/Logger.md) takes care of handling the logger information for all the services.
-	- [Logger Subscription](/docs/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
-	- [Monitor](/docs/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
+	- [Logger](/tech/architecture/Logger.md) takes care of handling the logger information for all the services.
+	- [Logger Subscription](/tech/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
+	- [Monitor](/tech/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
 ## Connection types
 By default all of these sockets are private, ie. they are linux abstract sockets and can only by accessed on the same machine.
 The socket address, and thereby the visibility can be changed in the tagionwave config file.
 
 
-| [Input Validator](/docs/architecture/InputValidator.md) | [Dart Interface](/docs/architecture/DartInterface.md) | [Subscription](/docs/architecture/LoggerSubscription.md) | [Node Interface](/docs/architecture/NodeInterface.md) |
+| [Input Validator](/tech/architecture/InputValidator.md) | [Dart Interface](/tech/architecture/DartInterface.md) | [Subscription](/tech/architecture/LoggerSubscription.md) | [Node Interface](/tech/architecture/NodeInterface.md) |
 | -                                                       | -                                                     | -                                                        | -                                                     |
 | Write                                                   | Read-only                                             | Pub                                                      | Half-duplex p2p wavefront communication               |
 | **HiRPC methods**                                       | ..                                                    | ..                                                       | ..                                                    |

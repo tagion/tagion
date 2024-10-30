@@ -4,7 +4,7 @@ title: contract
 
 # Tagion Contract definitions
 
-A contract is defined as a [HiRPC](https://www.hibon.org/posts/hirpc) with the [`submit`](/docs/protocols/hirpcmethods#submit) method and a SignedContract as the only parameter
+A contract is defined as a [HiRPC](https://www.hibon.org/posts/hirpc) with the [`submit`](/tech/protocols/hirpcmethods#submit) method and a SignedContract as the only parameter
 
 ## Smart contract Method
 

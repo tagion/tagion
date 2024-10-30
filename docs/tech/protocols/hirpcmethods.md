@@ -5,7 +5,7 @@ By default all of these sockets are private, ie. they are linux abstract sockets
 The socket address, and thereby the vissibillity can be changed in the tagionwave config file.
 
 
-| [Input Validator](/docs/architecture/InputValidator)       | [Dart Interface](/docs/architecture/DartInterface) | [Subscription](/docs/architecture/LoggerSubscription) | [Node Interface](/docs/architecture/NodeInterface) |
+| [Input Validator](/tech/architecture/InputValidator)       | [Dart Interface](/tech/architecture/DartInterface) | [Subscription](/tech/architecture/LoggerSubscription) | [Node Interface](/tech/architecture/NodeInterface) |
 | -                                                          | -                                                  | -                                                     | -                                                  |
 | Write                                                      | Read-only                                          | Pub                                                   | Half-duplex p2p wavefront communication            |
 | **Default shell endpoint**                                 | ..                                                 |                                                       |                                                    |
@@ -54,7 +54,7 @@ or
 ## Read methods (DART(ro) + friends)
 
 :::info
-Since these methods all take what we call a DARTIndex as parameter, it is useful to know what exactly the [dartindex protocol](/docs/protocols/dart/dartindex) is.
+Since these methods all take what we call a DARTIndex as parameter, it is useful to know what exactly the [dartindex protocol](/tech/protocols/dart/dartindex) is.
 :::
 
 ### dartCheckRead
