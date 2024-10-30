@@ -13,7 +13,7 @@
 
 ## non-HiRPC endpoints
 
--
+
 | Endpoint | Method | Content type | Response type | Description |
 | :-------- | :--------: | :--------: | :--------: | :-------- |
 | /version | GET |  | text/plain | Tagionshell version and build info. |
