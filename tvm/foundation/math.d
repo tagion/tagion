@@ -7,7 +7,7 @@ import std.traits;
 import foundation.error;
 
 @safe:
-nothrow  @nogc {
+nothrow @nogc {
     template FloatAsInt(F) if (isFloatingPoint!F) {
         static if (F.sizeof == int.sizeof) {
             alias FloatAsInt = int;
@@ -17,15 +17,54 @@ nothrow  @nogc {
         }
     }
 
-    union Float(F) {
+    union Float(F) if (isFloatingPoint!F) {
+        static if (F.sizeof == int.sizeof) {
+            alias I = int;
+            alias U = uint;
+            enum mask = 0x0060_0000;
+        }
+        else {
+            alias I = long;
+            alias U = ulong;
+            enum mask = 0xC_0000_0000_0000L;
+        }
+        enum mant_mask = (U(1) << F.mant_dig) - 1;
+        enum exp_mask = I.max & (~mant_mask);
+        enum arithmetic_mask = mant_mask >> 1;
+        enum canonical_mask = mant_mask & (~arithmetic_mask);
         F f;
-        FloatAsInt!F i;
+        I i;
     }
 
     F snan(F, T)(T x) if (isFloatingPoint!F) {
         Float!F result;
         result.f = F.nan;
-        result.i |= x;
+
+        result.i |= x & (~result.mask);
+        return result.f;
+    }
+
+    int reinterpret32(float x) {
+        Float!float result;
+        result.f = x;
+        return result.i;
+    }
+
+    float reinterpret32(int x) {
+        Float!float result;
+        result.i = x;
+        return result.f;
+    }
+
+    long reinterpret64(double x) {
+        Float!double result;
+        result.f = x;
+        return result.i;
+    }
+
+    double reinterpret64(long x) {
+        Float!double result;
+        result.i = x;
         return result.f;
     }
 
@@ -42,7 +81,10 @@ nothrow  @nogc {
     int equal(T)(T x, T y) if (isNumeric!T) {
         static if (isFloatingPoint!T) {
             if (isNaN(x) || isNaN(y)) {
-                return x is y;
+                Float!T float_x, float_y;
+                float_x.f = x;
+                float_y.f = y;
+                return float_x.i is float_y.i;
             }
         }
         return x == y;
@@ -243,7 +285,7 @@ float demote(double x) {
         Float!double snan;
         snan.f = x;
         Float!float result;
-        result.i = cast(int)((snan.i & 0xfff8_0000_0000_0000L) >> 29) & 0x7FFF_FFFF;
+        result.i = cast(int)(snan.i >> 29) & 0x7FFF_FFFF;
         writefln("result %a %08x %s", result.f, result.i, result.f.signbit);
         return result.f;
     }

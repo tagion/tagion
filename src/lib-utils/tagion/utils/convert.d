@@ -108,13 +108,23 @@ unittest {
 
 }
 
-template FitUnsigned(F) if (isFloatingPoint!F) {
-    static if (F.sizeof == uint.sizeof) {
-        alias FitUnsigned = uint;
+union Float(F) if (isFloatingPoint!F) {
+    static if (F.sizeof == int.sizeof) {
+        alias I = int;
+        alias U = uint;
+        enum mask = 0x0060_0000;
     }
     else {
-        alias FitUnsigned = ulong;
+        alias I = long;
+        alias U = ulong;
+        enum mask = 0xC_0000_0000_0000L;
     }
+    enum mant_mask = (U(1) << F.mant_dig) - 1;
+    enum exp_mask = I.max & (~mant_mask);
+    enum arithmetic_mask = mant_mask >> 1;
+    enum canonical_mask = mant_mask & (~arithmetic_mask);
+    F number;
+    I raw;
 }
 
 F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
@@ -133,13 +143,9 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     }
     if (sicmp(text[pos .. min(pos + NaN.length, $)], NaN) == 0) {
         auto quiet = text.splitter(':').drop(1);
-        alias U = FitUnsigned!F;
-        union Overlap {
-            F number;
-            U unsigned;
-        }
+        alias Number=Float!F;
 
-        Overlap result;
+        Number result;
         result.number = (negative) ? -F.nan : F.nan;
         if (!quiet.empty && (sicmp(quiet.front, Canonical) != 0)) {
 
@@ -151,14 +157,14 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
                 enum mask = 0xC_0000_0000_0000L;
                 enum arithmetic_mask = 0x4_0000_0000_0000L;
             }
-            result.unsigned &= ~(mask);
+            result.raw &= ~(mask);
 
             if (sicmp(quiet.front, Arithmetic) == 0) {
-                result.unsigned |= arithmetic_mask;
+                result.raw |= arithmetic_mask;
             }
             else {
-                const signal_mask = convert!(U)(quiet.front);
-                result.unsigned |= signal_mask;
+                const signal_mask = convert!(Number.U)(quiet.front);
+                result.raw |= signal_mask;
             }
         }
         return result.number;
@@ -176,7 +182,7 @@ unittest {
     import std.math;
 
     void convert_test(F)() {
-        {
+        { // Canonical and Arithmetic nan types
             const x1 = "nan".convert!F;
             assert(x1.isNaN);
             const x2 = "nan:arithmetic".convert!F;
@@ -186,13 +192,13 @@ unittest {
             const x4 = "nan:canonical".convert!F;
             assert(x4.isNaN);
         }
-        {
+        { // infinity
             const y1 = "inf".convert!F;
             assert(y1 == F.infinity);
             const y2 = "infinity".convert!F;
             assert(y2 == F.infinity);
         }
-        {
+        { // -infinity
             const y = "-inf".convert!F;
             assert(y == -F.infinity);
             const x = "-nan".convert!F;
@@ -203,6 +209,17 @@ unittest {
 
     convert_test!float;
     convert_test!double;
+
+    { // nan with signal information
+        Float!float x1;
+        x1.number = "nan:0x200000".convert!float;
+        assert(x1.raw == 0x7fa0_0000);
+    }
+    { // ditto with -nan
+        Float!float x1;
+        x1.number = "-nan:0x200000".convert!float;
+        assert(x1.raw == 0xffa0_0000);
+    }
 }
 /++
  + Converts on the first part of the buffer to a Hex string

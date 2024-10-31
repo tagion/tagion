@@ -126,7 +126,7 @@ alias check = Check!WasmBetterCException;
                     output.writef("%1$sassert(math.isnan(%2$s)", indent, ctx.pop);
                 }
                 else {
-                    output.writef("%sassert(math.equal(%s, %s)", indent, ctx.pop, ctx.pop);
+                    output.writef("%sassert(%s is %s", indent, ctx.pop, ctx.pop);
                 }
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
@@ -628,7 +628,7 @@ alias check = Check!WasmBetterCException;
                                 case F32:
                                     const x = a.get!float;
                                     if (x.isNaN) {
-                                        return format("math.snan!float(0x%x)", a.as!int & 0x3F_FFFF);
+                                        return format("math.snan!float(0x%x)", a.as!uint);
                                     }
                                     if (x.isInfinity) {
                                         return format("(%sfloat.infinity)", sign(x));
@@ -850,10 +850,10 @@ shared static this() {
 
         IR.F64_PROMOTE_F32: q{math.promote(%1$s)},
 
-        IR.I32_REINTERPRET_F32: q{wasm.reinterpret32(%1$s)},
-        IR.F32_REINTERPRET_I32: q{wasm.reinterpret32(%1$s)},
-        IR.I64_REINTERPRET_F64: q{wasm.reinterpret64(%1$s)},
-        IR.F64_REINTERPRET_I64: q{wasm.reinterpret64(%1$s)},
+        IR.I32_REINTERPRET_F32: q{math.reinterpret32(%1$s)},
+        IR.F32_REINTERPRET_I32: q{math.reinterpret32(%1$s)},
+        IR.I64_REINTERPRET_F64: q{math.reinterpret64(%1$s)},
+        IR.F64_REINTERPRET_I64: q{math.reinterpret64(%1$s)},
         // Compare f32
         IR.F32_EQ: q{(%2$s == %1$s)},
         IR.F32_NE: q{(%2$s != %1$s)},
