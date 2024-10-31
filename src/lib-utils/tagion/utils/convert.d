@@ -220,6 +220,13 @@ unittest {
         x1.number = "-nan:0x200000".convert!float;
         assert(x1.raw == 0xffa0_0000);
     }
+    import std.stdio;
+    writefln("arithmetic_mask=%08x", Float!float.arithmetic_mask);
+    writefln("arithmetic_mask=%016x", Float!double.arithmetic_mask);
+    writefln("canonical_mask=%08x", Float!float.canonical_mask);
+    writefln("canonical_mask=%016x", Float!double.canonical_mask);
+    writefln("mant_mask_mask=%08x", Float!float.mant_mask_mask);
+    writefln("mant_mask_mask=%016x", Float!double.mant_mask_mask);
 }
 /++
  + Converts on the first part of the buffer to a Hex string
