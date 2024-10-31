@@ -628,7 +628,7 @@ alias check = Check!WasmBetterCException;
                                 case F32:
                                     const x = a.get!float;
                                     if (x.isNaN) {
-                                        return format("wasm.snan2!float(0x%x)", a.as!int & 0x3F_FFFF);
+                                        return format("math.snan!float(0x%x)", a.as!int & 0x3F_FFFF);
                                     }
                                     if (x.isInfinity) {
                                         return format("(%sfloat.infinity)", sign(x));
@@ -637,7 +637,7 @@ alias check = Check!WasmBetterCException;
                                 case F64:
                                     const x = a.get!double;
                                     if (x.isNaN) {
-                                        return format("wasm.snan2!double(0x%x)", a.as!long);
+                                        return format("math.snan!double(0x%x)", a.as!long);
                                     }
                                     if (x.isInfinity) {
                                         return format("(%sdouble.infinity)", sign(x));
@@ -793,7 +793,7 @@ shared static this() {
         IR.F32_CONVERT_I32_U: q{cast(uint)(%1$s)},
         IR.F32_CONVERT_I64_S: q{cast(long)(%1$s)},
         IR.F32_CONVERT_I64_U: q{cast(ulong)(%1$s)},
-        IR.F32_DEMOTE_F64: q{cast(double)(%1$s)},
+        IR.F32_DEMOTE_F64: q{math.demote(%1$s)},
 
         /// F64 32bits floatingpoint
         IR.F64_EQ: q{(%2$s == %2$s},
@@ -820,7 +820,6 @@ shared static this() {
         IR.F64_CONVERT_I32_U: q{cast(uint)(%1$s)},
         IR.F64_CONVERT_I64_S: q{cast(long)(%1$s)},
         IR.F64_CONVERT_I64_U: q{cast(ulong)(%1$s)},
-        //IR.F64_DEMOTE_F64: q{cast(double)(%1$s)},
         // Conversions
         IR.I64_EXTEND_I32_S: q{cast(long)(%1$s)},
         IR.I64_EXTEND_I32_U: q{cast(long)(cast(uint)%1$s)},
@@ -831,14 +830,14 @@ shared static this() {
         IR.I64_EXTEND32_S: q{cast(long)(cast(int)%1$s)},
 
         IR.I32_WRAP_I64: q{cast(int)(%1$s)},
-        IR.I32_TRUNC_F32_S: q{wasm.trunc!(int,float)(%1$s)},
-        IR.I32_TRUNC_F32_U: q{wasm.trunc!(uint,float)(%1$s)},
-        IR.I32_TRUNC_F64_S: q{wasm.trunc!(int,double)(%1$s)},
-        IR.I32_TRUNC_F64_U: q{wasm.trunc!(uint,double)(%1$s)},
-        IR.I64_TRUNC_F32_S: q{wasm.trunc!(long,float)(%1$s)},
-        IR.I64_TRUNC_F32_U: q{wasm.trunc!(ulong,float)(%1$s)},
-        IR.I64_TRUNC_F64_S: q{wasm.trunc!(long,double)(%1$s)},
-        IR.I64_TRUNC_F64_U: q{wasm.trunc!(ulong,double)(%1$s)},
+        IR.I32_TRUNC_F32_S: q{math.trunc!(int,float)(%1$s)},
+        IR.I32_TRUNC_F32_U: q{math.trunc!(uint,float)(%1$s)},
+        IR.I32_TRUNC_F64_S: q{math.trunc!(int,double)(%1$s)},
+        IR.I32_TRUNC_F64_U: q{math.trunc!(uint,double)(%1$s)},
+        IR.I64_TRUNC_F32_S: q{math.trunc!(long,float)(%1$s)},
+        IR.I64_TRUNC_F32_U: q{math.trunc!(ulong,float)(%1$s)},
+        IR.I64_TRUNC_F64_S: q{math.trunc!(long,double)(%1$s)},
+        IR.I64_TRUNC_F64_U: q{math.trunc!(ulong,double)(%1$s)},
 
         IR.F32_CONVERT_I32_S: q{cast(float)(%1$s)},
         IR.F32_CONVERT_I32_U: q{cast(float)(cast(uint)%1$s)},
@@ -849,8 +848,7 @@ shared static this() {
         IR.F64_CONVERT_I64_S: q{cast(double)(%1$s)},
         IR.F64_CONVERT_I64_U: q{cast(double)(cast(ulong)%1$s)},
 
-        IR.F64_PROMOTE_F32: q{cast(double)(%1$s)},
-        IR.F32_DEMOTE_F64: q{cast(float)(%1$s)},
+        IR.F64_PROMOTE_F32: q{math.promote(%1$s)},
 
         IR.I32_REINTERPRET_F32: q{wasm.reinterpret32(%1$s)},
         IR.F32_REINTERPRET_I32: q{wasm.reinterpret32(%1$s)},
@@ -875,14 +873,14 @@ shared static this() {
 
     ];
     instr_extend_fmt = [
-        IR_EXTEND.I32_TRUNC_SAT_F32_S: q{wasm.trunc_sat!(int,float)(%1$s)},
-        IR_EXTEND.I32_TRUNC_SAT_F32_U: q{wasm.trunc_sat!(uint,float)(%1$s)},
-        IR_EXTEND.I32_TRUNC_SAT_F64_S: q{wasm.trunc_sat!(int,double)(%1$s)},
-        IR_EXTEND.I32_TRUNC_SAT_F64_U: q{wasm.trunc_sat!(uint,double)(%1$s)},
-        IR_EXTEND.I64_TRUNC_SAT_F32_S: q{wasm.trunc_sat!(long,float)(%1$s)},
-        IR_EXTEND.I64_TRUNC_SAT_F32_U: q{wasm.trunc_sat!(ulong,float)(%1$s)},
-        IR_EXTEND.I64_TRUNC_SAT_F64_S: q{wasm.trunc_sat!(long,double)(%1$s)},
-        IR_EXTEND.I64_TRUNC_SAT_F64_U: q{wasm.trunc_sat!(ulong,double)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F32_U: q{math.trunc_sat!(uint,float)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F64_S: q{math.trunc_sat!(int,double)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F64_U: q{math.trunc_sat!(uint,double)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F32_S: q{math.trunc_sat!(long,float)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F32_U: q{math.trunc_sat!(ulong,float)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F64_S: q{math.trunc_sat!(long,double)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F64_U: q{math.trunc_sat!(ulong,double)(%1$s)},
     ];
 }
 

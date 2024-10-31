@@ -98,7 +98,7 @@
             "int_exprs.wast", "float_exprs.wast", "float_misc.wast"
             ],
       "envs": {
-        "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/math.d -g -unittest -main",
+        "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
         "imports": "wasm=foundation.wasm math=foundation.math",
         "attributes": "@safe"
       },
