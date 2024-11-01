@@ -1,5 +1,5 @@
 /// Service for publishing event subscription
-/// https://docs.tagion.org/docs/architecture/LoggerSubscription
+/// https://docs.tagion.org/tech/architecture/LoggerSubscription
 module tagion.services.subscription;
 @safe:
 
@@ -24,7 +24,7 @@ import tagion.logger.subscription;
 
 /// Options for the subscription service
 struct SubscriptionServiceOptions {
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONRecord;
 
     string tags; /// List of tags that should be enabled separated by a ','
     string address; /// The address which the service should publish events on
@@ -43,7 +43,7 @@ struct SubscriptionServiceOptions {
 
     uint sendtimeout = 1000;
     uint sendbufsize = 4096;
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 ///

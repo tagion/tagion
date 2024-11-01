@@ -2,7 +2,7 @@
 
 (module
   (func $f64.no_contraction (param $x f64) (param $y f64) (param $z f64) (result f64)
-    (f64.add (f64.mul (get_local $x) (get_local $y)) (get_local $z)))
+    (f64.add (f64.mul (local.get $x) (local.get $y)) (local.get $z)))
   (export "f64.no_contraction" $f64.no_contraction)
 )
 
@@ -16,11 +16,11 @@
 
 (module
   (func $f32.no_fma (param $x f32) (param $y f32) (param $z f32) (result f32)
-    (f32.add (f32.mul (get_local $x) (get_local $y)) (get_local $z)))
+    (f32.add (f32.mul (local.get $x) (local.get $y)) (local.get $z)))
   (export "f32.no_fma" $f32.no_fma)
 
   (func $f64.no_fma (param $x f64) (param $y f64) (param $z f64) (result f64)
-    (f64.add (f64.mul (get_local $x) (get_local $y)) (get_local $z)))
+    (f64.add (f64.mul (local.get $x) (local.get $y)) (local.get $z)))
   (export "f64.no_fma" $f64.no_fma)
 )
 
@@ -39,11 +39,11 @@
 
 (module
   (func $f32.no_fold_add_zero (param $x f32) (result f32)
-    (f32.add (get_local $x) (f32.const 0.0)))
+    (f32.add (local.get $x) (f32.const 0.0)))
   (export "f32.no_fold_add_zero" $f32.no_fold_add_zero)
 
   (func $f64.no_fold_add_zero (param $x f64) (result f64)
-    (f64.add (get_local $x) (f64.const 0.0)))
+    (f64.add (local.get $x) (f64.const 0.0)))
   (export "f64.no_fold_add_zero" $f64.no_fold_add_zero)
 )
 
@@ -54,11 +54,11 @@
 
 (module
   (func $f32.no_fold_zero_sub (param $x f32) (result f32)
-    (f32.sub (f32.const 0.0) (get_local $x)))
+    (f32.sub (f32.const 0.0) (local.get $x)))
   (export "f32.no_fold_zero_sub" $f32.no_fold_zero_sub)
 
   (func $f64.no_fold_zero_sub (param $x f64) (result f64)
-    (f64.sub (f64.const 0.0) (get_local $x)))
+    (f64.sub (f64.const 0.0) (local.get $x)))
   (export "f64.no_fold_zero_sub" $f64.no_fold_zero_sub)
 )
 
@@ -69,11 +69,11 @@
 
 (module
   (func $f32.no_fold_mul_zero (param $x f32) (result f32)
-    (f32.mul (get_local $x) (f32.const 0.0)))
+    (f32.mul (local.get $x) (f32.const 0.0)))
   (export "f32.no_fold_mul_zero" $f32.no_fold_mul_zero)
 
   (func $f64.no_fold_mul_zero (param $x f64) (result f64)
-    (f64.mul (get_local $x) (f64.const 0.0)))
+    (f64.mul (local.get $x) (f64.const 0.0)))
   (export "f64.no_fold_mul_zero" $f64.no_fold_mul_zero)
 )
 
@@ -88,11 +88,11 @@
 
 (module
   (func $f32.no_fold_zero_div (param $x f32) (result f32)
-    (f32.div (f32.const 0.0) (get_local $x)))
+    (f32.div (f32.const 0.0) (local.get $x)))
   (export "f32.no_fold_zero_div" $f32.no_fold_zero_div)
 
   (func $f64.no_fold_zero_div (param $x f64) (result f64)
-    (f64.div (f64.const 0.0) (get_local $x)))
+    (f64.div (f64.const 0.0) (local.get $x)))
   (export "f64.no_fold_zero_div" $f64.no_fold_zero_div)
 )
 
@@ -107,11 +107,11 @@
 
 (module
   (func $f32.no_fold_eq_self (param $x f32) (result i32)
-    (f32.eq (get_local $x) (get_local $x)))
+    (f32.eq (local.get $x) (local.get $x)))
   (export "f32.no_fold_eq_self" $f32.no_fold_eq_self)
 
   (func $f64.no_fold_eq_self (param $x f64) (result i32)
-    (f64.eq (get_local $x) (get_local $x)))
+    (f64.eq (local.get $x) (local.get $x)))
   (export "f64.no_fold_eq_self" $f64.no_fold_eq_self)
 )
 
@@ -122,11 +122,11 @@
 
 (module
   (func $f32.no_fold_ne_self (param $x f32) (result i32)
-    (f32.ne (get_local $x) (get_local $x)))
+    (f32.ne (local.get $x) (local.get $x)))
   (export "f32.no_fold_ne_self" $f32.no_fold_ne_self)
 
   (func $f64.no_fold_ne_self (param $x f64) (result i32)
-    (f64.ne (get_local $x) (get_local $x)))
+    (f64.ne (local.get $x) (local.get $x)))
   (export "f64.no_fold_ne_self" $f64.no_fold_ne_self)
 )
 
@@ -137,11 +137,11 @@
 
 (module
   (func $f32.no_fold_sub_self (param $x f32) (result f32)
-    (f32.sub (get_local $x) (get_local $x)))
+    (f32.sub (local.get $x) (local.get $x)))
   (export "f32.no_fold_sub_self" $f32.no_fold_sub_self)
 
   (func $f64.no_fold_sub_self (param $x f64) (result f64)
-    (f64.sub (get_local $x) (get_local $x)))
+    (f64.sub (local.get $x) (local.get $x)))
   (export "f64.no_fold_sub_self" $f64.no_fold_sub_self)
 )
 
@@ -154,11 +154,11 @@
 
 (module
   (func $f32.no_fold_div_3 (param $x f32) (result f32)
-    (f32.div (get_local $x) (f32.const 3.0)))
+    (f32.div (local.get $x) (f32.const 3.0)))
   (export "f32.no_fold_div_3" $f32.no_fold_div_3)
 
   (func $f64.no_fold_div_3 (param $x f64) (result f64)
-    (f64.div (get_local $x) (f64.const 3.0)))
+    (f64.div (local.get $x) (f64.const 3.0)))
   (export "f64.no_fold_div_3" $f64.no_fold_div_3)
 )
 
@@ -177,11 +177,11 @@
 
 (module
   (func $f32.no_distribute (param $x f32) (param $y f32) (param $z f32) (result f32)
-    (f32.add (f32.mul (get_local $x) (get_local $z)) (f32.mul (get_local $y) (get_local $z))))
+    (f32.add (f32.mul (local.get $x) (local.get $z)) (f32.mul (local.get $y) (local.get $z))))
   (export "f32.no_distribute" $f32.no_distribute)
 
   (func $f64.no_distribute (param $x f64) (param $y f64) (param $z f64) (result f64)
-    (f64.add (f64.mul (get_local $x) (get_local $z)) (f64.mul (get_local $y) (get_local $z))))
+    (f64.add (f64.mul (local.get $x) (local.get $z)) (f64.mul (local.get $y) (local.get $z))))
   (export "f64.no_distribute" $f64.no_distribute)
 )
 
@@ -200,11 +200,11 @@
 
 (module
   (func $f32.no_reassociate_add (param $x f32) (param $y f32) (param $z f32) (param $w f32) (result f32)
-    (f32.add (f32.add (f32.add (get_local $x) (get_local $y)) (get_local $z)) (get_local $w)))
+    (f32.add (f32.add (f32.add (local.get $x) (local.get $y)) (local.get $z)) (local.get $w)))
   (export "f32.no_reassociate_add" $f32.no_reassociate_add)
 
   (func $f64.no_reassociate_add (param $x f64) (param $y f64) (param $z f64) (param $w f64) (result f64)
-    (f64.add (f64.add (f64.add (get_local $x) (get_local $y)) (get_local $z)) (get_local $w)))
+    (f64.add (f64.add (f64.add (local.get $x) (local.get $y)) (local.get $z)) (local.get $w)))
   (export "f64.no_reassociate_add" $f64.no_reassociate_add)
 )
 
@@ -223,11 +223,11 @@
 
 (module
   (func $f32.no_reassociate_mul (param $x f32) (param $y f32) (param $z f32) (param $w f32) (result f32)
-    (f32.mul (f32.mul (f32.mul (get_local $x) (get_local $y)) (get_local $z)) (get_local $w)))
+    (f32.mul (f32.mul (f32.mul (local.get $x) (local.get $y)) (local.get $z)) (local.get $w)))
   (export "f32.no_reassociate_mul" $f32.no_reassociate_mul)
 
   (func $f64.no_reassociate_mul (param $x f64) (param $y f64) (param $z f64) (param $w f64) (result f64)
-    (f64.mul (f64.mul (f64.mul (get_local $x) (get_local $y)) (get_local $z)) (get_local $w)))
+    (f64.mul (f64.mul (f64.mul (local.get $x) (local.get $y)) (local.get $z)) (local.get $w)))
   (export "f64.no_reassociate_mul" $f64.no_reassociate_mul)
 )
 
@@ -246,11 +246,11 @@
 
 (module
   (func $f32.no_fold_div_0 (param $x f32) (result f32)
-    (f32.div (get_local $x) (f32.const 0.0)))
+    (f32.div (local.get $x) (f32.const 0.0)))
   (export "f32.no_fold_div_0" $f32.no_fold_div_0)
 
   (func $f64.no_fold_div_0 (param $x f64) (result f64)
-    (f64.div (get_local $x) (f64.const 0.0)))
+    (f64.div (local.get $x) (f64.const 0.0)))
   (export "f64.no_fold_div_0" $f64.no_fold_div_0)
 )
 
@@ -273,11 +273,11 @@
 
 (module
   (func $f32.no_fold_div_neg0 (param $x f32) (result f32)
-    (f32.div (get_local $x) (f32.const -0.0)))
+    (f32.div (local.get $x) (f32.const -0.0)))
   (export "f32.no_fold_div_neg0" $f32.no_fold_div_neg0)
 
   (func $f64.no_fold_div_neg0 (param $x f64) (result f64)
-    (f64.div (get_local $x) (f64.const -0.0)))
+    (f64.div (local.get $x) (f64.const -0.0)))
   (export "f64.no_fold_div_neg0" $f64.no_fold_div_neg0)
 )
 
@@ -300,13 +300,13 @@
 
 (module
   (func $f32.no_fold_to_hypot (param $x f32) (param $y f32) (result f32)
-    (f32.sqrt (f32.add (f32.mul (get_local $x) (get_local $x))
-                       (f32.mul (get_local $y) (get_local $y)))))
+    (f32.sqrt (f32.add (f32.mul (local.get $x) (local.get $x))
+                       (f32.mul (local.get $y) (local.get $y)))))
   (export "f32.no_fold_to_hypot" $f32.no_fold_to_hypot)
 
   (func $f64.no_fold_to_hypot (param $x f64) (param $y f64) (result f64)
-    (f64.sqrt (f64.add (f64.mul (get_local $x) (get_local $x))
-                       (f64.mul (get_local $y) (get_local $y)))))
+    (f64.sqrt (f64.add (f64.mul (local.get $x) (local.get $x))
+                       (f64.mul (local.get $y) (local.get $y)))))
   (export "f64.no_fold_to_hypot" $f64.no_fold_to_hypot)
 )
 
@@ -325,7 +325,7 @@
 
 (module
   (func $f32.no_approximate_reciprocal (param $x f32) (param $y f32) (result f32)
-    (f32.div (f32.const 1.0) (get_local $x)))
+    (f32.div (f32.const 1.0) (local.get $x)))
   (export "f32.no_approximate_reciprocal" $f32.no_approximate_reciprocal)
 )
 
@@ -339,7 +339,7 @@
 
 (module
   (func $f32.no_approximate_reciprocal_sqrt (param $x f32) (param $y f32) (result f32)
-    (f32.div (f32.const 1.0) (f32.sqrt (get_local $x))))
+    (f32.div (f32.const 1.0) (f32.sqrt (local.get $x))))
   (export "f32.no_approximate_reciprocal_sqrt" $f32.no_approximate_reciprocal_sqrt)
 )
 
@@ -353,7 +353,7 @@
 
 (module
   (func $f32.no_approximate_sqrt_reciprocal (param $x f32) (param $y f32) (result f32)
-    (f32.sqrt (f32.div (f32.const 1.0) (get_local $x))))
+    (f32.sqrt (f32.div (f32.const 1.0) (local.get $x))))
   (export "f32.no_approximate_sqrt_reciprocal" $f32.no_approximate_sqrt_reciprocal)
 )
 
@@ -367,19 +367,19 @@
 
 (module
   (func $i32.no_fold_f32_s (param i32) (result i32)
-    (i32.trunc_s/f32 (f32.convert_s/i32 (get_local 0))))
+    (i32.trunc_s/f32 (f32.convert_s/i32 (local.get 0))))
   (export "i32.no_fold_f32_s" $i32.no_fold_f32_s)
 
   (func $i32.no_fold_f32_u (param i32) (result i32)
-    (i32.trunc_u/f32 (f32.convert_u/i32 (get_local 0))))
+    (i32.trunc_u/f32 (f32.convert_u/i32 (local.get 0))))
   (export "i32.no_fold_f32_u" $i32.no_fold_f32_u)
 
   (func $i64.no_fold_f64_s (param i64) (result i64)
-    (i64.trunc_s/f64 (f64.convert_s/i64 (get_local 0))))
+    (i64.trunc_s/f64 (f64.convert_s/i64 (local.get 0))))
   (export "i64.no_fold_f64_s" $i64.no_fold_f64_s)
 
   (func $i64.no_fold_f64_u (param i64) (result i64)
-    (i64.trunc_u/f64 (f64.convert_u/i64 (get_local 0))))
+    (i64.trunc_u/f64 (f64.convert_u/i64 (local.get 0))))
   (export "i64.no_fold_f64_u" $i64.no_fold_f64_u)
 )
 

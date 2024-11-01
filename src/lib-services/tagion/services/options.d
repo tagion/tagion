@@ -33,7 +33,7 @@ enum NetworkMode {
 @safe
 struct WaveOptions {
 
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONRecord;
 
     /** Read node addresses from this files if it's defined
      *  Useful for development
@@ -48,7 +48,7 @@ struct WaveOptions {
     // The program stops if an actor taskfailure reaches the top thread
     bool fail_fast = true;
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 public import tagion.services.tasknames : TaskNames;
@@ -70,7 +70,7 @@ public import tagion.services.nodeinterface : NodeInterfaceOptions;
 @safe
 struct Options {
     import std.json;
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONRecord;
 
     WaveOptions wave;
     InputValidatorOptions inputvalidator;
@@ -85,7 +85,7 @@ struct Options {
     NodeInterfaceOptions node_interface;
 
     TaskNames task_names;
-    mixin JSONCommon;
+    mixin JSONRecord;
     mixin JSONConfig;
     this(ref inout(Options) opt) inout pure nothrow @trusted {
         foreach (i, ref inout member; opt.tupleof) {

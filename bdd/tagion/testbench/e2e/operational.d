@@ -27,7 +27,7 @@ import tagion.testbench.tools.Environment;
 import tagion.tools.Basic : Main, __verbose_switch;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions : WalletOptions;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.StdTime;
 import tagion.wallet.AccountDetails;
 import tagion.wallet.request;

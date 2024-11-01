@@ -7,19 +7,22 @@ import std.format;
 import std.meta : AliasSeq;
 import std.range.primitives : isInputRange;
 import std.stdio;
-import std.traits : ConstOf, EnumMembers, ForeachType, Unqual, getUDAs, isAssociativeArray, isFunctionPointer;
+import std.traits;
 import std.typecons : Tuple;
 import std.uni : toLower;
 import tagion.wasm.WasmException;
+import tagion.basic.basic : isinit;
 
 import LEB128 = tagion.utils.LEB128;
+
+@safe:
 
 enum VerboseMode {
     NONE,
     STANDARD
 }
 
-@safe struct Verbose {
+struct Verbose {
     VerboseMode mode;
     string indent;
     File fout;
@@ -86,7 +89,7 @@ enum VerboseMode {
 
 static Verbose wasm_verbose;
 
-static this() {
+static this() @trusted {
     wasm_verbose.fout = stdout;
 }
 
@@ -107,6 +110,7 @@ enum Section : ubyte {
 
 enum IRType {
     CODE, /// Simple instruction with no argument
+    CODE_EXTEND, /// Extended instruction with an opcode argument
     BLOCK, /// Block instruction
     //    BLOCK_IF,      /// Block for [IF] ELSE END
     //   BLOCK_ELSE,    /// Block for IF [ELSE] END
@@ -135,7 +139,7 @@ struct Instr {
     IRType irtype;
     uint pops; // Number of pops from the stack
     uint push; // Number of values pushed
-    bool extend; // Extended
+    uint opcode; // Extended opcode argument
 }
 
 enum ubyte[] magic = [0x00, 0x61, 0x73, 0x6D];
@@ -149,7 +153,7 @@ enum IR : ubyte {
         @Instr("if", "if", 1, IRType.BLOCK, 1)                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "else", 0, IRType.END)                       ELSE                = 0x05, ///  else
+        @Instr("else", "(;else;)", 0, IRType.END)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH, 1)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH_IF, 1)                BR_IF               = 0x0D, ///  br_if l:labelidx
@@ -159,8 +163,8 @@ enum IR : ubyte {
         @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, 1) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
         @Instr("drop", "drop", 1, IRType.CODE, 1)                   DROP                = 0x1A, ///  drop
         @Instr("select", "select", 1, IRType.CODE, 3, 1)              SELECT              = 0x1B, ///  select
-        @Instr("local.get", "get_local", 1, IRType.LOCAL, 0, 1)          LOCAL_GET           = 0x20, ///  local.get x:localidx
-        @Instr("local.set", "set_local", 1, IRType.LOCAL, 1)             LOCAL_SET           = 0x21, ///  local.set x:localidx
+        @Instr("local.get", "local.get", 1, IRType.LOCAL, 0, 1)          LOCAL_GET           = 0x20, ///  local.get x:localidx
+        @Instr("local.set", "local.set", 1, IRType.LOCAL, 1)             LOCAL_SET           = 0x21, ///  local.set x:localidx
         @Instr("local.tee", "tee_local", 1, IRType.LOCAL, 1, 1)          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
         @Instr("global.get", "get_global", 1, IRType.GLOBAL, 1, 0)        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
         @Instr("global.set", "set_global", 1, IRType.GLOBAL, 0, 1)        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
@@ -304,45 +308,43 @@ enum IR : ubyte {
         @Instr("f64.max", "f64.max", 1, IRType.CODE, 2, 1)             F64_MAX             = 0xA5, ///  f64.max
         @Instr("f64.copysign", "f64.copysign", 1, IRType.CODE, 2, 1)        F64_COPYSIGN        = 0xA6, ///  f64.copysign
 
-        @Instr("i32.wrap_i64", "i32.wrap/i64", 1, IRType.CODE, 1, 1)        I32_WRAP_I64        = 0xA7, ///  i32.wrap_i64
-        @Instr("i32.trunc_f32_s", "i32.trunc_s/f32", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_S     = 0xA8, ///  i32.trunc_f32_s
-        @Instr("i32.trunc_f32_u", "i32.trunc_u/f32", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_U     = 0xA9, ///  i32.trunc_f32_u
-        @Instr("i32.trunc_f64_s", "i32.trunc_s/f64", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_S     = 0xAA, ///  i32.trunc_f64_s
-        @Instr("i32.trunc_f64_u", "i32.trunc_u/f64", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_U     = 0xAB, ///  i32.trunc_f64_u
-        @Instr("i64.extend_i32_s", "i64.extend_s/i32", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_S    = 0xAC, ///  i64.extend_i32_s
-        @Instr("i64.extend_i32_u", "i64.extend_u/i32", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_U    = 0xAD, ///  i64.extend_i32_u
+        @Instr("i32.wrap_i64", "i32.wrap_i64", 1, IRType.CODE, 1, 1)        I32_WRAP_I64        = 0xA7, ///  i32.wrap_i64
+        @Instr("i32.trunc_f32_s", "i32.trunc_f32_s", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_S     = 0xA8, ///  i32.trunc_f32_s
+        @Instr("i32.trunc_f32_u", "i32.trunc_f32_u", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_U     = 0xA9, ///  i32.trunc_f32_u
+        @Instr("i32.trunc_f64_s", "i32.trunc_f64_s", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_S     = 0xAA, ///  i32.trunc_f64_s
+        @Instr("i32.trunc_f64_u", "i32.trunc_f64_u", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_U     = 0xAB, ///  i32.trunc_f64_u
+        @Instr("i64.extend_i32_s", "i64.extend_i32_s", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_S    = 0xAC, ///  i64.extend_i32_s
+        @Instr("i64.extend_i32_u", "i64.extend_i32_u", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_U    = 0xAD, ///  i64.extend_i32_u
         @Instr("i32.extend8_s", "i32.extend8_s", 1, IRType.CODE, 1, 1)       I32_EXTEND8_S       = 0xC0, ///  i32.extend8_s
         @Instr("i32.extend16_s", "i32.extend16_s", 1, IRType.CODE, 1, 1)      I32_EXTEND16_S      = 0xC1, ///  i32.extend16_s
         @Instr("i64.extend8_s", "i64.extend8_s", 1, IRType.CODE, 1, 1)       I64_EXTEND8_S       = 0xC2, ///  i64.extend8_s
         @Instr("i64.extend16_s", "i64.extend16_s", 1, IRType.CODE, 1, 1)      I64_EXTEND16_S      = 0xC3, ///  i64.extend16_s
         @Instr("i64.extend32_s", "i64.extend32_s", 1, IRType.CODE, 1, 1)      I64_EXTEND32_S     = 0xC4, ///  i64.extend32_s
-        @Instr("i64.trunc_f32_s", "i64.trunc_s/f32", 1, IRType.CODE, 1, 1)     I64_TRUNC_F32_S     = 0xAE, ///  i64.trunc_f32_s
-        @Instr("i64.trunc_f32_u", "i64.trunc_u/f32", 1, IRType.CODE, 1, 1)     I64_TRUNC_F32_U     = 0xAF, ///  i64.trunc_f32_u
-        @Instr("i64.trunc_f64_s", "i64.trunc_s/f64", 1, IRType.CODE, 1, 1)     I64_TRUNC_F64_S     = 0xB0, ///  i64.trunc_f64_s
-        @Instr("i64.trunc_f64_u", "i64.trunc_u/f64", 1, IRType.CODE, 1, 1)     I64_TRUNC_F64_U     = 0xB1, ///  i64.trunc_f64_u
-        @Instr("f32.convert_i32_s", "f32.convert_s/i32", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_S   = 0xB2, ///  f32.convert_i32_s
-        @Instr("f32.convert_i32_u", "f32.convert_u/i32", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_U   = 0xB3, ///  f32.convert_i32_u
-        @Instr("f32.convert_i64_s", "f32.convert_s/i64", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_S   = 0xB4, ///  f32.convert_i64_s
-        @Instr("f32.convert_i64_u", "f32.convert_u/i64", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_U   = 0xB5, ///  f32.convert_i64_u
-        @Instr("f32.demote_f64", "f32.demote/f64", 1, IRType.CODE, 1, 1)      F32_DEMOTE_F64      = 0xB6, ///  f32.demote_f64
-        @Instr("f64.convert_i32_s", "f64.convert_s/i32", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_S   = 0xB7, ///  f64.convert_i32_s
-        @Instr("f64.convert_i32_u", "f64.convert_u/i32", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_U   = 0xB8, ///  f64.convert_i32_u
-        @Instr("f64.convert_i64_s", "f64.convert_s/i64", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_S   = 0xB9, ///  f64.convert_i64_s
-        @Instr("f64.convert_i64_u", "f64.convert_u/i64", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_U   = 0xBA, ///  f64.convert_i64_u
-        @Instr("f64.promote_f32", "f64.promote/f32", 1, IRType.CODE, 1, 1)     F64_PROMOTE_F32     = 0xBB, ///  f64.promote_f32
-        @Instr("i32.reinterpret_f32", "i32.reinterpret/f32", 1, IRType.CODE, 1, 1) I32_REINTERPRET_F32 = 0xBC, ///  i32.reinterpret_f32
-        @Instr("i64.reinterpret_f64", "i64.reinterpret/f64", 1, IRType.CODE, 1, 1) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
-        @Instr("f32.reinterpret_i32", "f32.reinterpret/i32", 1, IRType.CODE, 1, 1) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
-        @Instr("f64.reinterpret_i64", "f64.reinterpret/i64", 1, IRType.CODE, 1, 1) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
-        @Instr("truct_sat", "truct_sat", 1, IRType.CODE, 1, 1, true)     TRUNC_SAT           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
+        @Instr("i64.trunc_f32_s", "i64.trunc_f32_s", 1, IRType.CODE, 1, 1)     I64_TRUNC_F32_S     = 0xAE, ///  i64.trunc_f32_s
+        @Instr("i64.trunc_f32_u", "i64.trunc_f32_u", 1, IRType.CODE, 1, 1)     I64_TRUNC_F32_U     = 0xAF, ///  i64.trunc_f32_u
+        @Instr("i64.trunc_f64_s", "i64.trunc_f64_s", 1, IRType.CODE, 1, 1)     I64_TRUNC_F64_S     = 0xB0, ///  i64.trunc_f64_s
+        @Instr("i64.trunc_f64_u", "i64.trunc_f64_u", 1, IRType.CODE, 1, 1)     I64_TRUNC_F64_U     = 0xB1, ///  i64.trunc_f64_u
+        @Instr("f32.convert_i32_s", "f32.convert_i32_s", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_S   = 0xB2, ///  f32.convert_i32_s
+        @Instr("f32.convert_i32_u", "f32.convert_i32_u", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_U   = 0xB3, ///  f32.convert_i32_u
+        @Instr("f32.convert_i64_s", "f32.convert_i64_s", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_S   = 0xB4, ///  f32.convert_i64_s
+        @Instr("f32.convert_i64_u", "f32.convert_i64_u", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_U   = 0xB5, ///  f32.convert_i64_u
+        @Instr("f32.demote_f64", "f32.demote_f64", 1, IRType.CODE, 1, 1)      F32_DEMOTE_F64      = 0xB6, ///  f32.demote_f64
+        @Instr("f64.convert_i32_s", "f64.convert_i32_s", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_S   = 0xB7, ///  f64.convert_i32_s
+        @Instr("f64.convert_i32_u", "f64.convert_i32_u", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_U   = 0xB8, ///  f64.convert_i32_u
+        @Instr("f64.convert_i64_s", "f64.convert_i64_s", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_S   = 0xB9, ///  f64.convert_i64_s
+        @Instr("f64.convert_i64_u", "f64.convert_i64_u", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_U   = 0xBA, ///  f64.convert_i64_u
+        @Instr("f64.promote_f32", "f64.promote_f32", 1, IRType.CODE, 1, 1)     F64_PROMOTE_F32     = 0xBB, ///  f64.promote_f32
+        @Instr("i32.reinterpret_f32", "i32.reinterpret_f32", 1, IRType.CODE, 1, 1) I32_REINTERPRET_F32 = 0xBC, ///  i32.reinterpret_f32
+        @Instr("i64.reinterpret_f64", "i64.reinterpret_f64", 1, IRType.CODE, 1, 1) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
+        @Instr("f32.reinterpret_i32", "f32.reinterpret_i32", 1, IRType.CODE, 1, 1) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
+        @Instr("f64.reinterpret_i64", "f64.reinterpret_i64", 1, IRType.CODE, 1, 1) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
+        @Instr("(;extended;)", "(;extended;)", 1, IRType.CODE_EXTEND, 1, 1, true)     EXNEND           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
             // dfmt on
 
 }
 
-Instr getInstr(IR ir)() {
-    enum code = format!q{enum result = getUDAs!(%s, Instr)[0];}(ir.stringof);
-    mixin(code);
-    return result;
+Instr getInstr(alias E)() {
+    return getUDAs!(E, Instr)[0];
 }
 
 static unittest {
@@ -353,8 +355,17 @@ static unittest {
 }
 
 shared static immutable(Instr[IR]) instrTable;
+shared static immutable(Instr[IR_EXTEND]) instrExtenedTable;
 shared static immutable(IR[string]) irLookupTable;
 shared static immutable(Instr[string]) instrWastLookup;
+
+immutable(Instr)* lookup(Table, I)(Table table, I ir) if (is(I == enum)) {
+    immutable(Instr)* result = ir in table;
+    if (result) {
+        return result;
+    }
+    return &illegalInstr;
+}
 
 enum PseudoWastInstr {
     invoke = "invoke",
@@ -366,6 +377,8 @@ enum PseudoWastInstr {
     table = "table",
     case_ = "case",
     memory_size = "memory_size",
+    then = "then",
+    else_ = "else",
 }
 
 protected immutable(Instr[IR]) generate_instrTable() {
@@ -373,22 +386,34 @@ protected immutable(Instr[IR]) generate_instrTable() {
     with (IR) {
         static foreach (E; EnumMembers!IR) {
             {
-                enum code = format!q{result[%1$s]=getUDAs!(%1$s, Instr)[0];}(E.stringof);
-                mixin(code);
+                result[E] = getInstr!E;
             }
         }
     }
-    return assumeUnique(result);
+    return (() @trusted => assumeUnique(result))();
+}
+
+protected immutable(Instr[IR_EXTEND]) generate_instrExtenedTable() {
+    Instr[IR_EXTEND] result;
+    with (IR_EXTEND) {
+        static foreach (E; EnumMembers!IR_EXTEND) {
+            {
+                result[E] = getInstr!E;
+            }
+        }
+    }
+    return (() @trusted => assumeUnique(result))();
 }
 
 shared static this() {
     instrTable = generate_instrTable;
-    immutable(IR[string]) generateLookupTable() {
+    instrExtenedTable = generate_instrExtenedTable;
+    immutable(IR[string]) generateLookupTable() @safe {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
             result[instr.name] = ir;
         }
-        return assumeUnique(result);
+        return (() @trusted => assumeUnique(result))();
     }
 
     irLookupTable = generateLookupTable;
@@ -401,8 +426,14 @@ shared static this() {
                 result[instr.wast] = instr;
             }
         }
+        static foreach (ir; EnumMembers!IR_EXTEND) {
+            {
+                enum instr = getInstr!ir;
+                result[instr.wast] = instr;
+            }
+        }
         void setPseudo(const PseudoWastInstr pseudo, const IRType ir_type, const uint pushs = 0, const uint pops = 0) {
-            result[pseudo] = Instr("<" ~ pseudo ~ ">", pseudo, uint.max, ir_type, pops, pushs);
+            result[pseudo] = Instr("(;" ~ pseudo ~ ";)", pseudo, uint.max, ir_type, pops, pushs);
         }
 
         setPseudo(PseudoWastInstr.invoke, IRType.CALL, 0, 1);
@@ -413,6 +444,8 @@ shared static this() {
         setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
+        //setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATMENT, 0, 1);
+        //setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATMENT, 0, 1);
 
         result["i32.select"] = instrTable[IR.SELECT];
         result["i64.select"] = instrTable[IR.SELECT];
@@ -422,37 +455,18 @@ shared static this() {
         return assumeUnique(result);
     }
 
-    instrWastLookup = generated_instrWastLookup;
+    instrWastLookup = (() @trusted => generated_instrWastLookup)();
 }
 
-enum IR_TRUNC_SAT : ubyte {
-    @Instr("i32.trunc_sat_f32_s", "i32.trunc_sat_f32_s", 3, IRType.CODE, 1, 1) I32_F32_S,
-    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE, 1, 1) I32_F32_U,
-    @Instr("i32.trunc_sat_f64_s", "i32.trunc_sat_f64_s", 3, IRType.CODE, 1, 1) I32_F64_S,
-    @Instr("i32.trunc_sat_f64_u", "i32.trunc_sat_f64_u", 3, IRType.CODE, 1, 1) I32_F64_U,
-    @Instr("i64.trunc_sat_f32_s", "i64.trunc_sat_f32_s", 3, IRType.CODE, 1, 1) I64_F32_S,
-    @Instr("i64.trunc_sat_f32_u", "i64.trunc_sat_f32_u", 3, IRType.CODE, 1, 1) I64_F32_U,
-    @Instr("i64.trunc_sat_f64_s", "i64.trunc_sat_f64_s", 3, IRType.CODE, 1, 1) I64_F64_S,
-    @Instr("i64.trunc_sat_f64_u", "i64.trunc_sat_f64_u", 3, IRType.CODE, 1, 1) I64_F64_U,
-}
-
-version (none) {
-    shared static immutable(string[IR_TRUNC_SAT]) trunc_sat_mnemonic;
-
-    shared static this() {
-        with (IR_TRUNC_SAT) {
-            trunc_sat_mnemonic = [
-                I32_F32_S: "i32.trunc_sat_f32_s",
-                I32_F32_U: "i32.trunc_sat_f32_u",
-                I32_F64_S: "i32.trunc_sat_f64_s",
-                I32_F64_U: "i32.trunc_sat_f64_u",
-                I64_F32_S: "i64.trunc_sat_f32_s",
-                I64_F32_U: "i64.trunc_sat_f32_u",
-                I64_F64_S: "i64.trunc_sat_f64_s",
-                I64_F64_U: "i64.trunc_sat_f64_u",
-            ];
-        }
-    }
+enum IR_EXTEND : ubyte {
+    @Instr("i32.trunc_sat_f32_s", "i32.trunc_sat_f32_s", 3, IRType.CODE_EXTEND, 1, 1, 0x00) I32_TRUNC_SAT_F32_S,
+    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, 1, 1, 0x01) I32_TRUNC_SAT_F32_U,
+    @Instr("i32.trunc_sat_f64_s", "i32.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, 1, 1, 0x02) I32_TRUNC_SAT_F64_S,
+    @Instr("i32.trunc_sat_f64_u", "i32.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, 1, 1, 0x03) I32_TRUNC_SAT_F64_U,
+    @Instr("i64.trunc_sat_f32_s", "i64.trunc_sat_f32_s", 3, IRType.CODE_EXTEND, 1, 1, 0x04) I64_TRUNC_SAT_F32_S,
+    @Instr("i64.trunc_sat_f32_u", "i64.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, 1, 1, 0x05) I64_TRUNC_SAT_F32_U,
+    @Instr("i64.trunc_sat_f64_s", "i64.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, 1, 1, 0x06) I64_TRUNC_SAT_F64_S,
+    @Instr("i64.trunc_sat_f64_u", "i64.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, 1, 1, 0x07) I64_TRUNC_SAT_F64_U,
 }
 
 unittest {
@@ -482,6 +496,12 @@ enum Types : ubyte {
     @("i64") I64 = 0x7E, /// i64 valtype
     @("f32") F32 = 0x7D, /// f32 valtype
     @("f64") F64 = 0x7C, /// f64 valtype
+}
+
+enum DataMode : ubyte {
+    ACTIVE,
+    PASSIVE,
+    ACTIVE_INDEX,
 }
 
 template toWasmType(T) {
@@ -531,7 +551,7 @@ template toDType(Types t) {
     }
 }
 
-@safe static string typesName(const Types type) pure {
+static string typesName(const Types type) pure {
     import std.conv : to;
     import std.uni : toLower;
 
@@ -543,7 +563,7 @@ template toDType(Types t) {
     }
 }
 
-@safe static Types getType(const string name) pure {
+static Types getType(const string name) pure {
     import std.traits;
 
     switch (name) {
@@ -558,7 +578,6 @@ template toDType(Types t) {
     }
 }
 
-@safe
 unittest {
     assert("f32".getType == Types.F32);
     assert("empty".getType == Types.EMPTY);
@@ -573,7 +592,7 @@ enum IndexType : ubyte {
     @("global") GLOBAL = 0x03, /// global gt:globaltype
 }
 
-@safe static string indexName(const IndexType idx) pure {
+static string indexName(const IndexType idx) pure {
     import std.conv : to;
     import std.uni : toLower;
 
@@ -585,7 +604,7 @@ enum IndexType : ubyte {
     }
 }
 
-T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
+T decode(T)(immutable(ubyte[]) data, ref size_t index) pure if (isIntegral!T && !is(T == enum)) {
     size_t byte_size;
     const leb128_index = LEB128.decode!T(data[index .. $]);
     scope (exit) {
@@ -599,7 +618,14 @@ alias u64 = decode!ulong;
 alias i32 = decode!int;
 alias i64 = decode!long;
 
-string secname(immutable Section s) @safe pure {
+E decode(E)(immutable(ubyte[]) data, ref size_t index) pure if (is(E == enum)) {
+    alias T = OriginalType!E;
+    const value = decode!T(data, index);
+    check((value >= E.min) && (value <= E.max), format("Value %d out of range of %s", value, E.stringof));
+    return cast(E) value;
+}
+
+string secname(immutable Section s) pure {
     return format("%s_sec", toLower(s.to!string));
 }
 
@@ -634,7 +660,7 @@ interface InterfaceModuleT(T...) {
     mixin(code);
 }
 
-version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M == class)) {
+version (none) bool isWasmModule(alias M)() if (is(M == struct) || is(M == class)) {
     import std.algorithm;
 
     enum all_members = [__traits(allMembers, M)];
@@ -643,7 +669,7 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
         .all!(name => all_members.canFind(name));
 }
 
-@safe struct WasmArg {
+struct WasmArg {
     protected {
         Types _type;
         union {
@@ -706,6 +732,26 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
         }
     }
 
+    /**
+     * Same as get(T) but with now type check 
+     * Returns: The value in the register 
+    */
+    T as(T)() const nothrow {
+        alias BaseT = Unqual!T;
+        static if (is(BaseT == int) || is(BaseT == uint)) {
+            return cast(T) i32;
+        }
+        else static if (is(BaseT == long) || is(BaseT == ulong)) {
+            return cast(T) i64;
+        }
+        else static if (is(BaseT == float)) {
+            return f32;
+        }
+        else static if (is(BaseT == double)) {
+            return f64;
+        }
+    }
+
     @property Types type() const pure nothrow {
         return _type;
     }
@@ -713,7 +759,7 @@ version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M ==
 }
 
 static assert(isInputRange!ExprRange);
-@safe struct ExprRange {
+struct ExprRange {
     immutable(ubyte[]) data;
 
     protected {
@@ -730,6 +776,7 @@ static assert(isInputRange!ExprRange);
     struct IRElement {
         IR code;
         int level;
+        immutable(Instr)* instr;
         private {
             WasmArg _warg;
             WasmArg[] _wargs;
@@ -750,21 +797,15 @@ static assert(isInputRange!ExprRange);
             return _types;
         }
 
-        IRElement dup() const pure scope nothrow{
+        IRElement dup() const pure scope nothrow {
             IRElement result;
-            result.code=code;
-            result.level=level;
-            result._warg=_warg;
-            result._wargs=_wargs.dup;
-            result._types=_types.dup;
-            return result;        
+            result.code = code;
+            result.level = level;
+            result._warg = _warg;
+            result._wargs = _wargs.dup;
+            result._types = _types.dup;
+            return result;
         }
-
-        version(none)
-        string toString() const pure {
-        
-        }
-
     }
 
     this(immutable(ubyte[]) data) pure {
@@ -800,11 +841,15 @@ static assert(isInputRange!ExprRange);
         if (index < data.length) {
             elm.code = cast(IR) data[index];
             elm._types = null;
-            const instr = instrTable.get(elm.code, illegalInstr);
+            elm.instr = instrTable.lookup(elm.code);
             index += IR.sizeof;
             with (IRType) {
-                final switch (instr.irtype) {
+                final switch (elm.instr.irtype) {
                 case CODE:
+                    break;
+                case CODE_EXTEND:
+                    const opcode_arg = decode!IR_EXTEND(data, index);
+                    elm.instr = instrExtenedTable.lookup(opcode_arg);
                     break;
                 case PREFIX:
                     elm._warg = int(data[index]); // Extended insructions
@@ -873,8 +918,8 @@ static assert(isInputRange!ExprRange);
                             set(elm._warg, Types.F64);
                             break;
                         default:
-                            throw new WasmExprException(format("Instruction %s is not a const", 
-                            elm.code), elm);
+                            throw new WasmExprException(format("Instruction %s is not a const",
+                                    elm.code), elm);
                         }
                     }
                     break;
@@ -882,11 +927,11 @@ static assert(isInputRange!ExprRange);
                     _level--;
                     break;
                 case ILLEGAL:
-
                     throw new WasmExprException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code), elm);
                     break;
                 case SYMBOL:
-                    throw new WasmExprException(format("Is a symbol and it does not have an equivalent opcode %02x", elm.code), elm);
+                    throw new WasmExprException(format("Is a symbol and it does not have an equivalent opcode %02x", elm
+                            .code), elm);
                     break;
                 }
 
@@ -914,6 +959,7 @@ static assert(isInputRange!ExprRange);
         }
 
     }
+
     void popFront() pure {
         set_front(current, _index);
     }

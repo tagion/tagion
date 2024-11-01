@@ -71,7 +71,7 @@ mixin Main!_main;
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
-
+    bool verbose_wasm;
     string inputfilename;
     string outputfilename;
     //bool print;
@@ -90,9 +90,10 @@ int _main(string[] args) {
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch, 
+                "version", "display the version", &version_switch,
                 "gas|g", format("Inject gas counters: %s", inject_gas), &inject_gas,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
+                "w|wasm_verbose", "Verbose the wasm parser", &verbose_wasm,
                 "mod|m", "Modify import module name from ", &modify_from,
                 "to", "Modify import module name from ", &modify_to,
                 "imports|i", "Import list", &imports,
@@ -143,6 +144,9 @@ int _main(string[] args) {
             return 0;
         }
 
+        if (verbose_wasm) {
+            wasm_verbose.mode = VerboseMode.STANDARD;
+        }
         foreach (file; args[1 .. $]) {
             with (FileExtension) {
                 switch (file.extension) {
@@ -209,8 +213,6 @@ int _main(string[] args) {
                 wasm_writer = new WasmWriter;
                 auto wast_parser = WastParser(wasm_writer);
                 wast_parser.parse(tokenizer);
-                writefln("Before wasmwrite");
-                writefln("wasm_writer=%(%02X %)", wasm_writer.serialize);
                 break;
             default:
                 check(0, format("File extensions %s not valid for input file (only %-(%s, %))",
@@ -225,7 +227,6 @@ int _main(string[] args) {
             wasmgas.modify;
         }
         immutable data_out = wasm_writer.serialize;
-        writefln("after data_out");
         if (__verbose_switch) {
             wasm_verbose.mode = VerboseMode.STANDARD;
         }

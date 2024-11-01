@@ -1,5 +1,7 @@
 module tagion.wasm.WasmBetterC;
 
+import tagion.basic.Debug;
+
 import std.algorithm;
 import std.array;
 import std.array;
@@ -8,7 +10,7 @@ import std.format;
 import std.range;
 import std.range.primitives : isOutputRange;
 import std.stdio;
-import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
+import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget, isFloatingPoint;
 import std.typecons : Tuple;
 import std.typecons;
 import std.uni : toLower;
@@ -103,27 +105,33 @@ alias check = Check!WasmBetterCException;
             auto invoke_expr = code_type[];
             output.writefln("%s// expr   %(%02X %)", indent, _assert.invoke);
             output.writefln("%s// result %(%02X %)", indent, _assert.result);
-            if (_assert.method is Assert.Method.Trap) {
+            with (Assert.Method) final switch (_assert.method) {
+            case Trap:
                 void assert_block(const string _indent) {
                     block(invoke_expr, ctx, _indent ~ spacer);
                     output.writefln("%s}", _indent);
                 }
 
-                output.writefln("%swasm.assert_trap((() {", indent);
+                output.writefln("%serror.assert_trap((() {", indent);
                 assert_block(indent ~ spacer);
                 output.writefln("%s)());", indent);
 
-            }
-            else if (_assert.result.length != 0) {
+                break;
+            case Return, Invalid, Return_nan:
                 block(invoke_expr, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
                 block(result_expr, ctx, indent, true);
-                output.writef("%sassert(%s == %s", indent, ctx.pop, ctx.pop);
+                if (_assert.method == Return_nan) {
+                    output.writef("%1$sassert(math.isnan(%2$s)", indent, ctx.pop);
+                }
+                else {
+                    output.writef("%sassert(%s is %s", indent, ctx.pop, ctx.pop);
+                }
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
                 }
-                output.writeln("); // Here");
+                output.writeln(");");
             }
         }
 
@@ -278,6 +286,7 @@ alias check = Check!WasmBetterCException;
     }
 
     ExportType getExport(const int idx) const { //pure nothrow {
+        __write("getExport _export %s", _export is null);
         const found = _export[].find!(exp => exp.idx == idx);
         if (found.empty) {
             return ExportType.init;
@@ -335,11 +344,14 @@ alias check = Check!WasmBetterCException;
     }
 
     string function_name(const int index) {
+        import std.string;
+
+        __write("function_name %d", index);
         const exp = getExport(index);
         if (exp == ExportType.init) {
             return format("func_%d", index);
         }
-        return exp.name;
+        return exp.name.replace(".", "_");
     }
 
     static string param_name(const size_t index) {
@@ -400,10 +412,16 @@ alias check = Check!WasmBetterCException;
         string[] locals;
         string[] stack;
         string peek() const pure nothrow @nogc {
+            if (stack.length == 0) {
+                return "Error stack is empty";
+            }
             return stack[$ - 1];
         }
 
         string pop() pure nothrow {
+            if (stack.length == 0) {
+                return "Error pop from an empty stack";
+            }
             scope (exit) {
                 stack.length--;
             }
@@ -434,13 +452,43 @@ alias check = Check!WasmBetterCException;
         void perform(const IR ir, const uint number_of_args) {
             switch (number_of_args) {
             case 1:
-                push(format(instr_fmt[ir], pop));
-                return;
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop));
+                    return;
+                }
+                push(format("Undefinded %s pop %s", ir, pop));
+                break;
             case 2:
-                push(format(instr_fmt[ir], pop, pop));
-                return;
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s", ir, pop, pop));
+                break;
             default:
                 check(0, format("Format argument %s not supported for %s", number_of_args, instrTable[ir].name));
+            }
+
+        }
+
+        void perform(const IR_EXTEND ir, const uint number_of_args) {
+            switch (number_of_args) {
+            case 1:
+                if (ir in instr_extend_fmt) {
+                    push(format(instr_extend_fmt[ir], pop));
+                    return;
+                }
+                push(format("Undefinded %s pop %s", ir, pop));
+                break;
+            case 2:
+                if (ir in instr_extend_fmt) {
+                    push(format(instr_extend_fmt[ir], pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s", ir, pop, pop));
+                break;
+            default:
+                check(0, format("Format argument %s not supported for %s", number_of_args, instrExtenedTable[ir].name));
             }
 
         }
@@ -448,6 +496,12 @@ alias check = Check!WasmBetterCException;
         void push(const IR ir, const uint local_idx) pure nothrow {
             push(locals[local_idx]);
         }
+    }
+
+    static string sign(T)(T x) if (isFloatingPoint!T) {
+        import std.math : signbit;
+
+        return signbit(x) ? "-" : "";
     }
 
     private const(ExprRange.IRElement) block(
@@ -480,22 +534,26 @@ alias check = Check!WasmBetterCException;
         const(ExprRange.IRElement) innerBlock(ref ExprRange expr, const(string) indent, const uint level) {
             while (!expr.empty) {
                 const elm = expr.front;
-                const instr = instrTable[elm.code];
+                //const instr = instrTable[elm.code];
                 expr.popFront;
 
                 with (IRType) {
-                    final switch (instr.irtype) {
+                    final switch (elm.instr.irtype) {
                     case CODE:
-                        output.writefln("%s// %s", indent, instr.name);
-                        ctx.perform(elm.code, instr.pops);
+                        output.writefln("%s// %s", indent, elm.instr.name);
+                        ctx.perform(elm.code, elm.instr.pops);
+                        break;
+                    case CODE_EXTEND:
+                        output.writefln("%s// %s", indent, elm.instr.name);
+                        ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
                         break;
                     case PREFIX:
-                        output.writefln("%s%s", indent, instr.name);
+                        output.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case BLOCK:
                         block_comment = format(";; block %d", block_count);
                         block_count++;
-                        output.writefln("%s%s%s %s", indent, instr.name,
+                        output.writefln("%s%s%s %s", indent, elm.instr.name,
                                 block_result_type(elm.types[0]), block_comment);
                         const end_elm = innerBlock(expr, indent ~ spacer, level + 1);
                         const end_instr = instrTable[end_elm.code];
@@ -512,7 +570,7 @@ alias check = Check!WasmBetterCException;
                         break;
                     case BRANCH:
                     case BRANCH_IF:
-                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case BRANCH_TABLE:
                         static string branch_table(const(WasmArg[]) args) {
@@ -523,13 +581,13 @@ alias check = Check!WasmBetterCException;
                             return result;
                         }
 
-                        output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
+                        output.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
                         break;
                     case CALL:
                         scope (exit) {
                             calls++;
                         }
-                        output.writefln("%s// %s %s", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s// %s %s", indent, elm.instr.name, elm.warg.get!uint);
                         const func_idx = elm.warg.get!uint;
                         const function_header = wasmstream.get!(Section.TYPE)[func_idx];
                         const function_call = format("%s(%-(%s,%))", function_name(func_idx), ctx.pops(function_header
@@ -542,23 +600,25 @@ alias check = Check!WasmBetterCException;
                         output.writefln("%s%s%s;", indent, set_result, function_call);
                         break;
                     case CALL_INDIRECT:
-                        output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case LOCAL:
-                        output.writefln("%s// %s %d", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s// %s %d", indent, elm.instr.name, elm.warg.get!uint);
                         ctx.push(elm.code, elm.warg.get!uint);
                         break;
                     case GLOBAL:
-                        output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case MEMORY:
-                        output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.wargs));
+                        output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
                         break;
                     case MEMOP:
-                        output.writefln("%s%s", indent, instr.name);
+                        output.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case CONST:
                         static string toText(const WasmArg a) {
+                            import std.math : isNaN, isInfinity;
+
                             with (Types) {
                                 switch (a.type) {
                                 case I32:
@@ -567,10 +627,22 @@ alias check = Check!WasmBetterCException;
                                     return format("(0x%xL)", a.get!long);
                                 case F32:
                                     const x = a.get!float;
-                                    return format("(%a /* %s */)", x, x);
+                                    if (x.isNaN) {
+                                        return format("math.snan!float(0x%x)", a.as!uint);
+                                    }
+                                    if (x.isInfinity) {
+                                        return format("(%sfloat.infinity)", sign(x));
+                                    }
+                                    return format("float(%aF /* %s */)", x, x);
                                 case F64:
                                     const x = a.get!double;
-                                    return format("(%a /* %s */)", x, x);
+                                    if (x.isNaN) {
+                                        return format("math.snan!double(0x%x)", a.as!long);
+                                    }
+                                    if (x.isInfinity) {
+                                        return format("(%sdouble.infinity)", sign(x));
+                                    }
+                                    return format("double(%a /* %s */)", x, x);
                                 default:
                                     assert(0);
                                 }
@@ -579,7 +651,7 @@ alias check = Check!WasmBetterCException;
                         }
 
                         const value = toText(elm.warg);
-                        output.writefln("%s// %s %s", indent, instr.name, value);
+                        output.writefln("%s// %s %s", indent, elm.instr.name, value);
                         ctx.push(value);
                         break;
                     case END:
@@ -622,12 +694,21 @@ alias check = Check!WasmBetterCException;
 }
 
 immutable string[IR] instr_fmt;
+immutable string[IR_EXTEND] instr_extend_fmt;
 
 shared static this() {
     instr_fmt = [
         IR.LOCAL_GET: q{%1$s},
-        IR.LOCAL_SET: q{%2$s=$1$s;},
-        /// 32 bits integer operations
+        IR.LOCAL_SET: q{%2$s=%1$s;},
+        // State 
+        IR.RETURN: q{%1$s},
+        // Const literals
+        IR.I32_CONST: q{/* const i32 */},
+        IR.I64_CONST: q{/* const i64 */},
+        IR.F32_CONST: q{/* const f32 */},
+        IR.F64_CONST: q{/* const f64 */},
+
+        // 32 bits integer operations
         IR.I32_CLZ: q{wasm.clz(%s)},
         IR.I32_CTZ: q{wasm.ctz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},
@@ -644,8 +725,8 @@ shared static this() {
         IR.I32_SHL: q{(%2$s << %1$s)},
         IR.I32_SHR_S: q{(%2$s >> %1$s)},
         IR.I32_SHR_U: q{(%2$s >>> %1$s)},
-        IR.I32_ROTL: q{wasm.rotl(%1$s, %2$s)},
-        IR.I32_ROTR: q{wasm.rotr(%1$s, %2$s)},
+        IR.I32_ROTL: q{wasm.rotl(uint(%2$s), uint(%1$s))},
+        IR.I32_ROTR: q{wasm.rotr(uint(%2$s), uint(%1$s))},
         IR.I32_EQZ: q{(%1$s == 0)},
         IR.I32_EQ: q{(%2$s == %1$s)},
         IR.I32_NE: q{(%2$s != %1$s)},
@@ -664,9 +745,9 @@ shared static this() {
         IR.I64_ADD: q{(%2$s + %1$s)},
         IR.I64_SUB: q{(%2$s - %1$s)},
         IR.I64_MUL: q{(%2$s * %1$s)},
-        IR.I64_DIV_S: q{wasm.div(%2$s, %1$s)},
+        IR.I64_DIV_S: q{wasm.div(long(%2$s), long(%1$s))},
         IR.I64_DIV_U: q{wasm.div(ulong(%2$s), ulong(%1$s))},
-        IR.I64_REM_S: q{wasm.rem(%2$s, %1$s)},
+        IR.I64_REM_S: q{wasm.rem(long(%2$s), long(%1$s))},
         IR.I64_REM_U: q{wasm.rem(ulong(%2$s), ulong(%1$s))},
         IR.I64_AND: q{(%2$s & %1$s)},
         IR.I64_OR: q{(%2$s | %1$s)},
@@ -674,8 +755,8 @@ shared static this() {
         IR.I64_SHL: q{(%2$s << %1$s)},
         IR.I64_SHR_S: q{(%2$s >> %1$s)},
         IR.I64_SHR_U: q{(%2$s >>> %1$s)},
-        IR.I64_ROTL: q{wasm.rotl(%1$s, %2$s)},
-        IR.I64_ROTR: q{wasm.rotr(%1$s, %2$s)},
+        IR.I64_ROTL: q{wasm.rotl(ulong(%2$s), ulong(%1$s))},
+        IR.I64_ROTR: q{wasm.rotr(ulong(%2$s), ulong(%1$s))},
         IR.I64_EQZ: q{(%1$s == 0)},
         IR.I64_EQ: q{(%2$s == %1$s)},
         IR.I64_NE: q{(%2$s != %1$s)},
@@ -687,8 +768,119 @@ shared static this() {
         IR.I64_GT_U: q{(ulong(%2$s) > ulong(%1$s))},
         IR.I64_GE_S: q{(%2$s >= %1$s)},
         IR.I64_GE_U: q{(ulong(%2$s) >= ulong(%1$s))},
+        /// F32 32bits floatingpoint
+        IR.F32_EQ: q{(%2$s is %2$s},
+        IR.F32_NE: q{(%2$s != %2$s},
+        IR.F32_LT: q{(%2$s < %2$s},
+        IR.F32_GT: q{(%2$s > %2$s},
+        IR.F32_LE: q{(%2$s <= %2$s},
+        IR.F32_GE: q{(%2$s >= %2$s},
+        IR.F32_ABS: q{math.fabsf(%1$s)},
+        IR.F32_NEG: q{(-%1$s)},
+        IR.F32_CEIL: q{math.ceilf(%1$s)},
+        IR.F32_FLOOR: q{math.floor(%1$s)},
+        IR.F32_TRUNC: q{math.trunc(%1$s)},
+        IR.F32_NEAREST: q{math.nearest(%1$s)},
+        IR.F32_SQRT: q{math.sqrt(%1$s)},
+        IR.F32_ADD: q{math.add(%2$s,%1$s)},
+        IR.F32_SUB: q{math.sub(%2$s, %1$s)},
+        IR.F32_MUL: q{math.mul(%2$s, %1$s)},
+        IR.F32_DIV: q{math.div(%2$s, %1$s)},
+        IR.F32_MIN: q{math.min(%2$s, %1$s)},
+        IR.F32_MAX: q{math.max(%2$s, %1$s)},
+        IR.F32_COPYSIGN: q{math.copysignf(%2$s, %1$s)},
+        IR.F32_CONVERT_I32_S: q{cast(int)(%1$s)},
+        IR.F32_CONVERT_I32_U: q{cast(uint)(%1$s)},
+        IR.F32_CONVERT_I64_S: q{cast(long)(%1$s)},
+        IR.F32_CONVERT_I64_U: q{cast(ulong)(%1$s)},
+        IR.F32_DEMOTE_F64: q{math.demote(%1$s)},
 
+        /// F64 32bits floatingpoint
+        IR.F64_EQ: q{(%2$s == %2$s},
+        IR.F64_NE: q{(%2$s != %2$s},
+        IR.F64_LT: q{(%2$s < %2$s},
+        IR.F64_GT: q{(%2$s > %2$s},
+        IR.F64_LE: q{(%2$s <= %2$s},
+        IR.F64_GE: q{(%2$s >= %2$s},
+        IR.F64_ABS: q{math.fabs(%1$s)},
+        IR.F64_NEG: q{(-%1$s)},
+        IR.F64_CEIL: q{math.ceil(%1$s)},
+        IR.F64_FLOOR: q{math.floor(%1$s)},
+        IR.F64_TRUNC: q{math.trunc(%1$s)},
+        IR.F64_NEAREST: q{math.nearest(%1$s)},
+        IR.F64_SQRT: q{math.sqrt(%1$s)},
+        IR.F64_ADD: q{math.add(%2$s, %1$s)},
+        IR.F64_SUB: q{math.sub(%2$s, %1$s)},
+        IR.F64_MUL: q{math.mul(%2$s, %1$s)},
+        IR.F64_DIV: q{math.div(%2$s,  %1$s)},
+        IR.F64_MIN: q{math.min(%2$s, %1$s)},
+        IR.F64_MAX: q{math.max(%2$s, %1$s)},
+        IR.F64_COPYSIGN: q{math.copysign(%2$s, %1$s)},
+        IR.F64_CONVERT_I32_S: q{cast(int)(%1$s)},
+        IR.F64_CONVERT_I32_U: q{cast(uint)(%1$s)},
+        IR.F64_CONVERT_I64_S: q{cast(long)(%1$s)},
+        IR.F64_CONVERT_I64_U: q{cast(ulong)(%1$s)},
+        // Conversions
+        IR.I64_EXTEND_I32_S: q{cast(long)(%1$s)},
+        IR.I64_EXTEND_I32_U: q{cast(long)(cast(uint)%1$s)},
+        IR.I32_EXTEND8_S: q{cast(int)(cast(byte)%1$s)},
+        IR.I32_EXTEND16_S: q{cast(int)(cast(short)%1$s)},
+        IR.I64_EXTEND8_S: q{cast(long)(cast(byte)%1$s)},
+        IR.I64_EXTEND16_S: q{cast(long)(cast(short)%1$s)},
+        IR.I64_EXTEND32_S: q{cast(long)(cast(int)%1$s)},
 
+        IR.I32_WRAP_I64: q{cast(int)(%1$s)},
+        IR.I32_TRUNC_F32_S: q{math.trunc!(int,float)(%1$s)},
+        IR.I32_TRUNC_F32_U: q{math.trunc!(uint,float)(%1$s)},
+        IR.I32_TRUNC_F64_S: q{math.trunc!(int,double)(%1$s)},
+        IR.I32_TRUNC_F64_U: q{math.trunc!(uint,double)(%1$s)},
+        IR.I64_TRUNC_F32_S: q{math.trunc!(long,float)(%1$s)},
+        IR.I64_TRUNC_F32_U: q{math.trunc!(ulong,float)(%1$s)},
+        IR.I64_TRUNC_F64_S: q{math.trunc!(long,double)(%1$s)},
+        IR.I64_TRUNC_F64_U: q{math.trunc!(ulong,double)(%1$s)},
+
+        IR.F32_CONVERT_I32_S: q{cast(float)(%1$s)},
+        IR.F32_CONVERT_I32_U: q{cast(float)(cast(uint)%1$s)},
+        IR.F32_CONVERT_I64_S: q{cast(float)(%1$s)},
+        IR.F32_CONVERT_I64_U: q{cast(float)(cast(ulong)%1$s)},
+        IR.F64_CONVERT_I32_S: q{cast(double)(%1$s)},
+        IR.F64_CONVERT_I32_U: q{cast(double)(cast(uint)%1$s)},
+        IR.F64_CONVERT_I64_S: q{cast(double)(%1$s)},
+        IR.F64_CONVERT_I64_U: q{cast(double)(cast(ulong)%1$s)},
+
+        IR.F64_PROMOTE_F32: q{math.promote(%1$s)},
+
+        IR.I32_REINTERPRET_F32: q{math.reinterpret32(%1$s)},
+        IR.F32_REINTERPRET_I32: q{math.reinterpret32(%1$s)},
+        IR.I64_REINTERPRET_F64: q{math.reinterpret64(%1$s)},
+        IR.F64_REINTERPRET_I64: q{math.reinterpret64(%1$s)},
+        // Compare f32
+        IR.F32_EQ: q{(%2$s == %1$s)},
+        IR.F32_NE: q{(%2$s != %1$s)},
+        IR.F32_LT: q{(%2$s < %1$s)},
+        IR.F32_GT: q{(%2$s > %1$s)},
+        IR.F32_LE: q{(%2$s <= %1$s)},
+        IR.F32_GE: q{(%2$s >= %1$s)},
+
+        // Compare f64
+        IR.F64_EQ: q{(%2$s == %1$s)},
+        IR.F64_NE: q{(%2$s != %1$s)},
+        IR.F64_LT: q{(%2$s < %1$s)},
+        IR.F64_GT: q{(%2$s > %1$s)},
+        IR.F64_LE: q{(%2$s <= %1$s)},
+        IR.F64_GE: q{(%2$s >= %1$s)},
+        // Extend 
+
+    ];
+    instr_extend_fmt = [
+        IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F32_U: q{math.trunc_sat!(uint,float)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F64_S: q{math.trunc_sat!(int,double)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F64_U: q{math.trunc_sat!(uint,double)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F32_S: q{math.trunc_sat!(long,float)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F32_U: q{math.trunc_sat!(ulong,float)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F64_S: q{math.trunc_sat!(long,double)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F64_U: q{math.trunc_sat!(ulong,double)(%1$s)},
     ];
 }
 

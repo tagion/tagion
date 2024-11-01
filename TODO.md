@@ -8,7 +8,7 @@ Description: simplify the wallet interface so that there is only one way to do e
 ### Hashgraph monitor updates
 Tasks: 
 - [X] Remove old events that are older than X round received. 
-- [ ] Document the hashgraph monitor widget. `docs/docs/gui-tools/hashgraph_viewer.md` 
+- [ ] Document the hashgraph monitor widget. `docs/tech/gui-tools/hashgraph_viewer.md` 
 Assignee: yr
 
 

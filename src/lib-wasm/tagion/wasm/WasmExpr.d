@@ -16,16 +16,21 @@ struct WasmExpr {
     }
 
     ref WasmExpr opCall(Args...)(const IR ir, Args args) {
-        immutable instr = instrTable.get(ir, illegalInstr);
+        auto instr = instrTable.lookup(ir); 
         bout.write(cast(ubyte) ir);
-        immutable irtype = instr.irtype;
         with (IRType) {
-            final switch (irtype) {
+            final switch (instr.irtype) {
             case PREFIX:
             case CODE:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
-                // No args
+                break;
+            case CODE_EXTEND:
+                assert(Args.length == 1,
+                        format("Instruction %s should have one extended opcode arguments", instr.name));
+                static if ((Args.length == 1) && isIntegral!(Args[0])) {
+                    bout.write(encode(args[0]));  
+                }
                 break;
             case BLOCK, BRANCH, BRANCH_IF, CALL, LOCAL, GLOBAL:
                 assert(Args.length == 1,

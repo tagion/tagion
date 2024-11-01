@@ -1,5 +1,5 @@
 module tagion.wasm.WasmWriter;
-
+import tagion.basic.Debug;
 import std.bitmanip : nativeToLittleEndian;
 import std.outbuffer;
 import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
@@ -179,11 +179,16 @@ import tagion.wasm.WasmReader;
     struct WasmSection {
         mixin template Serialize() {
             final void serialize(ref OutBuffer bout) const {
-                alias MainType = typeof(this);
-                static if (hasMember!(MainType, "guess_size")) {
+                alias This = typeof(this);
+                static if (hasMember!(This, "guess_size")) {
                     bout.reserve(guess_size);
                 }
-                foreach (i, m; this.tupleof) {
+                SerializeLoop: foreach (i, m; this.tupleof) {
+                    static if (hasMember!(This, "excluded")) {
+                        if (excluded!(i)) {
+                            continue SerializeLoop;
+                        }
+                    }
                     alias T = typeof(m);
                     static if (is(T == struct) || is(T == class)) {
                         m.serialize(bout);
@@ -621,7 +626,7 @@ import tagion.wasm.WasmReader;
 
             static Local[] toLocals(scope const(Types[]) types) pure nothrow {
                 Local[] result;
-                void compact(const(Types[]) _types) {
+                void compact(scope const(Types[]) _types) {
                     if (_types.length) {
                         const count = cast(uint) _types.count(_types[0]);
                         result ~= Local(count, _types[0]);
@@ -629,6 +634,7 @@ import tagion.wasm.WasmReader;
                     }
                 }
 
+                compact(types);
                 return result;
 
             }
@@ -676,11 +682,28 @@ import tagion.wasm.WasmReader;
         alias Code = SectionT!(CodeType);
 
         struct DataType {
-            uint idx;
+            import std.range;
+            import tagion.basic.basic : basename;
+
+            DataMode mode;
+            uint memidx;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             string base;
+            bool excluded(const size_t tuple_index)() const pure nothrow {
+                with (DataMode) final switch (mode) {
+                case ACTIVE_INDEX:
+                    return false;
+                case ACTIVE:
+                    return FieldNameTuple!(DataType)[tuple_index] == basename!memidx;
+                case PASSIVE:
+                    return only(basename!expr)
+                        .canFind(FieldNameTuple!(DataType)[tuple_index]);
+                }
+            }
+
             this(ref const(ReaderSecType!(Section.DATA)) d) {
-                idx = d.idx;
+                mode = d.mode;
+                memidx = d.memidx;
                 expr = d.expr;
                 base = d.base;
             }

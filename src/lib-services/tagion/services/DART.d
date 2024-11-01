@@ -25,7 +25,7 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.tasknames;
 import tagion.services.replicator;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
 import tagion.services.DARTInterface : accepted_dart_methods;
@@ -44,7 +44,7 @@ struct DARTOptions {
         dart_filename = prefix ~ dart_filename;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /** 

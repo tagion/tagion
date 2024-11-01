@@ -109,7 +109,7 @@ struct Environment {
 
     const(uint) getSeed() const {
         import std.bitmanip : binread = read;
-        import tagion.utils.Miscellaneous;
+        import tagion.utils.convert;
 
         auto buf = decode(seed).dup;
         return buf.binread!uint;

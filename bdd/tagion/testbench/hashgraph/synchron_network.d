@@ -29,7 +29,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.testbench.hashgraph.hashgraph_test_network;
 import tagion.testbench.tools.Environment;
-import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.convert : cutHex;
 
 enum feature = Feature(
             "Bootstrap of hashgraph",

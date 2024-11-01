@@ -30,7 +30,6 @@ import tagion.utils.StdTime;
 // debug
 import tagion.basic.Debug;
 import tagion.hibon.HiBONJSON;
-import tagion.utils.Miscellaneous : cutHex;
 
 @safe:
 

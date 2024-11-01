@@ -94,7 +94,7 @@ struct Cipher {
         import tagion.crypto.SecureNet;
         import tagion.hibon.Document : Document;
         import tagion.hibon.HiBON : HiBON;
-        import tagion.utils.Miscellaneous : decode;
+        import tagion.utils.convert : decode;
 
         immutable passphrase = "Secret pass word";
         auto net = new StdSecureNet; /// Only works with ECDSA for now 

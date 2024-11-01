@@ -21,7 +21,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONtoText;
 import tagion.basic.Version;
-
+import tagion.utils.convert : Prefix;
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
 
@@ -336,7 +336,7 @@ HiBON toHiBON(scope const JSONValue json) {
             const text = jvalue.str;
             ulong result;
             if (isHexPrefix(text)) {
-                result = text[hex_prefix.length .. $].to!ulong(16);
+                result = text[Prefix.hex.length .. $].to!ulong(16);
             }
             else {
                 result = text.to!UnqualT;

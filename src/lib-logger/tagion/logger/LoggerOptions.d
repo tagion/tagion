@@ -1,6 +1,6 @@
 module tagion.logger.LoggerOptions;
 
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 
 struct LoggerOptions {
     string task_name; /// Name of the logger task
@@ -9,5 +9,5 @@ struct LoggerOptions {
     bool to_console; /// Will duplicate logger information to the console
     uint mask; /// Logger mask
     uint trunc_size; /// Struct size in bytes (if zero the logger file is not truncated)
-    mixin JSONCommon;
+    mixin JSONRecord;
 }

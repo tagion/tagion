@@ -1,5 +1,5 @@
 /// New Service for Transcript responsible for creating recorder for DART 
-/// [DART Documentation](https://docs.tagion.org/docs/architecture/transcript)
+/// [DART Documentation](https://docs.tagion.org/tech/architecture/transcript)
 module tagion.services.trans;
 
 import core.time;
@@ -31,7 +31,7 @@ import tagion.script.standardnames;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.services.exception;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
 import std.path : buildPath;

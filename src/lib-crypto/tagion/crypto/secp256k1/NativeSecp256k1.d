@@ -348,7 +348,7 @@ class NativeSecp256k1 {
 
 version (unittest) {
     import std.string : representation;
-    import tagion.utils.Miscellaneous : decode;
+    import tagion.utils.convert : decode;
 
     const(ubyte[]) sha256(scope const(ubyte[]) data) {
         import std.digest;

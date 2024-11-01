@@ -1,10 +1,10 @@
 (module
-  (func $eq (param $x f64) (param $y f64) (result i32) (f64.eq (get_local $x) (get_local $y)))
-  (func $ne (param $x f64) (param $y f64) (result i32) (f64.ne (get_local $x) (get_local $y)))
-  (func $lt (param $x f64) (param $y f64) (result i32) (f64.lt (get_local $x) (get_local $y)))
-  (func $le (param $x f64) (param $y f64) (result i32) (f64.le (get_local $x) (get_local $y)))
-  (func $gt (param $x f64) (param $y f64) (result i32) (f64.gt (get_local $x) (get_local $y)))
-  (func $ge (param $x f64) (param $y f64) (result i32) (f64.ge (get_local $x) (get_local $y)))
+  (func $eq (param $x f64) (param $y f64) (result i32) (f64.eq (local.get $x) (local.get $y)))
+  (func $ne (param $x f64) (param $y f64) (result i32) (f64.ne (local.get $x) (local.get $y)))
+  (func $lt (param $x f64) (param $y f64) (result i32) (f64.lt (local.get $x) (local.get $y)))
+  (func $le (param $x f64) (param $y f64) (result i32) (f64.le (local.get $x) (local.get $y)))
+  (func $gt (param $x f64) (param $y f64) (result i32) (f64.gt (local.get $x) (local.get $y)))
+  (func $ge (param $x f64) (param $y f64) (result i32) (f64.ge (local.get $x) (local.get $y)))
 
   (export "eq" $eq)
   (export "ne" $ne)

@@ -1,5 +1,5 @@
 /// Service for verifying contracts
-/// https://docs.tagion.org/docs/architecture/HiRPCVerifier
+/// https://docs.tagion.org/tech/architecture/HiRPCVerifier
 module tagion.services.hirpc_verifier;
 
 import std.stdio;
@@ -14,7 +14,7 @@ import tagion.logger.Logger;
 import tagion.script.common : SignedContract;
 import tagion.services.messages;
 import tagion.services.codes;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 
 struct HiRPCVerifierOptions {
@@ -22,7 +22,7 @@ struct HiRPCVerifierOptions {
     bool send_rejected_hirpcs = false;
     /// Which task to send rejected document to;
     string rejected_hirpcs = "";
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /// HiRPC methods

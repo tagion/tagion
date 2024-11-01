@@ -18,22 +18,31 @@ import tagion.tools.Basic : dry_switch, verbose_switch, error;
 import tagion.tools.collider.BehaviourOptions;
 import tagion.tools.collider.trace : ScheduleTrace;
 import tagion.tools.toolsexception;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.envexpand;
+import tagion.basic.basic : isinit;
 
-@safe
+@safe:
+
+struct RunState {
+    @optional string[string] envs;
+    @optional string[] args;
+    @optional double timeout;
+    mixin JSONRecord;
+}
+
 struct RunUnit {
     string[] stages;
     string[string] envs;
     string[] args;
     double timeout;
-    mixin JSONCommon;
+    @optional RunState[string] extend;
+    mixin JSONRecord;
 }
 
-@safe
 struct Schedule {
     RunUnit[string] units;
-    mixin JSONCommon;
+    mixin JSONRecord;
     mixin JSONConfig;
     auto stages() const pure nothrow {
         return units
@@ -63,7 +72,7 @@ enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
 enum BDD_RESULTS = "BDD_RESULTS";
 enum UNSHARE_NET = "UNSHARE_NET";
-@safe
+
 struct ScheduleRunner {
     Schedule schedule;
     const(string[]) stages;
@@ -75,10 +84,10 @@ struct ScheduleRunner {
     this(
             ref Schedule schedule,
             const(string[]) stages,
-            const uint jobs,
-            const BehaviourOptions opts,
-            const bool cov_enable,
-            ScheduleTrace report = null) pure nothrow
+    const uint jobs,
+    const BehaviourOptions opts,
+    const bool cov_enable,
+    ScheduleTrace report = null) pure nothrow
     in (jobs > 0)
     in (stages.length > 0)
     do {
@@ -128,7 +137,8 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
-           .kill(pid); //.ifThrown!ProcessException;
+            
+                .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {
             // ignore
@@ -170,8 +180,8 @@ struct ScheduleRunner {
                 const ptrdiff_t job_index,
                 const SysTime time,
                 const(char[][]) cmd,
-                const(string) log_filename,
-                const(string[string]) env) {
+        const(string) log_filename,
+        const(string[string]) env) {
             static uint job_count;
             scope (exit) {
                 job_count++;
@@ -188,7 +198,6 @@ struct ScheduleRunner {
                 auto _stdin = (() @trusted => stdin)();
 
                 Pid pid;
-
 
                 if (!cov_enable) {
                     pid = spawnProcess(cmd, _stdin, fout, fout, env);
@@ -242,9 +251,20 @@ struct ScheduleRunner {
                         auto env = environment.toAA;
                         schedule_list.front.unit.envs.byKeyValue
                             .each!(e => env[e.key] = envExpand(e.value, env));
+                        string[] unit_args =
+                            schedule_list.front.unit.args.dup;
+                        const extend = schedule_list.front.unit.extend
+                            .get(schedule_list.front.stage, RunState.init);
+                        if (!extend.isinit) {
+                            if (!extend.args.empty) {
+                                unit_args = extend.args.dup;
+                            }
+                            extend.envs.byKeyValue
+                                .each!(e => env[e.key] = envExpand(e.value, env));
+                        }
                         const(char[])[] cmd = args ~
                             schedule_list.front.name ~
-                            schedule_list.front.unit.args
+                            unit_args
                                 .map!(arg => envExpand(arg, env))
                                 .array;
                         setEnv(env, schedule_list.front.stage);
@@ -252,12 +272,12 @@ struct ScheduleRunner {
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
 
                         const unshare_net = (UNSHARE_NET in env) !is null;
-                        if(unshare_net) {
+                        if (unshare_net) {
                             cmd = ["bwrap", "--unshare-net", "--dev-bind", "/", "/"] ~ cmd;
                         }
 
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                                schedule_list.front.name).setExtension("log");
+                        schedule_list.front.name).setExtension("log");
                         batch(job_index, time, cmd, log_filename, env);
                         schedule_list.popFront;
                     }

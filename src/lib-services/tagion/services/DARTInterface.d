@@ -1,5 +1,5 @@
 /// Service which exposes dart reads over a socket
-/// https://docs.tagion.org/docs/architecture/DartInterface
+/// https://docs.tagion.org/tech/architecture/DartInterface
 module tagion.services.DARTInterface;
  
 @safe:
@@ -24,7 +24,7 @@ import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
 import tagion.dart.DARTBasic;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 
 import nngd;
 
@@ -46,7 +46,7 @@ struct DARTInterfaceOptions {
         sock_addr = contract_sock_addr(prefix ~ dart_prefix);
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 
 }
 

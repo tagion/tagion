@@ -26,7 +26,7 @@ import tagion.script.namerecords;
 import tagion.services.messages;
 import tagion.services.codes;
 import tagion.services.options : TaskNames;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 
 import nngd;
@@ -48,7 +48,7 @@ struct InputValidatorOptions {
         sock_addr = contract_sock_addr(prefix ~ "CONTRACT_");
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /** 

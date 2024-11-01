@@ -1,5 +1,5 @@
 /// Service for creating epochs
-/// https://docs.tagion.org/docs/architecture/EpochCreator
+/// https://docs.tagion.org/tech/architecture/EpochCreator
 module tagion.services.epoch_creator;
 
 import core.time;
@@ -30,7 +30,7 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options : NetworkMode, TaskNames;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.Queue;
 import tagion.utils.Random;
 import tagion.utils.StdTime;
@@ -43,7 +43,7 @@ import tagion.script.common : SignedContract;
 struct EpochCreatorOptions {
     uint timeout = 250; // timeout in msecs 
     uint scrap_depth = 10;
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 @safe
