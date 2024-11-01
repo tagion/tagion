@@ -53,15 +53,6 @@ enum TokenType {
     }
 }
 
-template FitUnsigned(F) if (isFloatingPoint!F) {
-    static if (F.sizeof == uint.sizeof) {
-        alias FitUnsigned = uint;
-    }
-    else {
-        alias FitUnsigned = ulong;
-    }
-}
-
 @safe
 struct WastTokenizer {
     string toString() const pure nothrow @trusted {
