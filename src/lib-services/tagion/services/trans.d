@@ -1,5 +1,5 @@
 /// New Service for Transcript responsible for creating recorder for DART 
-/// [DART Documentation](https://docs.tagion.org/docs/architecture/transcript)
+/// [DART Documentation](https://docs.tagion.org/tech/architecture/transcript)
 module tagion.services.trans;
 
 import core.time;

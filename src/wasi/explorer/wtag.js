@@ -67,4 +67,19 @@ export class WTagUtil {
         return data;
     }
 
+    static base64URLdecode(str) {
+        const base64Encoded = str.replace(/-/g, '+').replace(/_/g, '/');
+        const padding = str.length % 4 === 0 ? '' : '='.repeat(4 - (str.length % 4));
+        const base64WithPadding = base64Encoded + padding;
+        return atob(base64WithPadding)
+    }
+
+    static base64URLencode(str) {
+        const bstr = btoa(str)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+        return bstr + (bstr.length % 4 === 0 ? '' : '='.repeat(4 - (bstr.length % 4)));
+    }
+
 }

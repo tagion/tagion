@@ -85,6 +85,7 @@ main()
         assert((jres[1]["index"]).integer == 0);
         assert((jres[8]["index"]).integer == 7);
         nng_sleep(1000.msecs);
+        wc.close;
         wsa.stop;
     } catch(Throwable e) {
         error(dump_exception_recursive(e, "Main"));

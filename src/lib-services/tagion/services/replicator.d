@@ -1,5 +1,5 @@
 /// The replicator creates a backup of all dart transactions
-/// https://docs.tagion.org/docs/architecture/Replicator
+/// https://docs.tagion.org/tech/architecture/Replicator
 module tagion.services.replicator;
 
 import tagion.actor;

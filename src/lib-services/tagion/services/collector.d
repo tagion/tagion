@@ -1,5 +1,5 @@
 /// The collector collects & verifies the inputs in a contract
-/// https://docs.tagion.org/docs/architecture/Collector
+/// https://docs.tagion.org/tech/architecture/Collector
 module tagion.services.collector;
 @safe:
 

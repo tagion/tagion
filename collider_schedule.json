@@ -344,6 +344,12 @@
       },
       "stages": ["remote"],
       "timeout": 0.0
+    },
+    "nng_test": {
+      "args": [],
+      "envs": {},
+      "stages": ["nng"],
+      "timeout": 0.0
     }
   }
 }
