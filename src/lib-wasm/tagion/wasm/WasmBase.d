@@ -355,7 +355,7 @@ static unittest {
 }
 
 shared static immutable(Instr[IR]) instrTable;
-shared static immutable(Instr[IR_EXTEND]) instrExtenedTable;
+shared static immutable(Instr[IR_EXTEND]) interExtendedTable;
 shared static immutable(IR[string]) irLookupTable;
 shared static immutable(Instr[string]) instrWastLookup;
 
@@ -393,7 +393,7 @@ protected immutable(Instr[IR]) generate_instrTable() {
     return (() @trusted => assumeUnique(result))();
 }
 
-protected immutable(Instr[IR_EXTEND]) generate_instrExtenedTable() {
+protected immutable(Instr[IR_EXTEND]) generate_interExtendedTable() {
     Instr[IR_EXTEND] result;
     with (IR_EXTEND) {
         static foreach (E; EnumMembers!IR_EXTEND) {
@@ -407,7 +407,7 @@ protected immutable(Instr[IR_EXTEND]) generate_instrExtenedTable() {
 
 shared static this() {
     instrTable = generate_instrTable;
-    instrExtenedTable = generate_instrExtenedTable;
+    interExtendedTable = generate_interExtendedTable;
     immutable(IR[string]) generateLookupTable() @safe {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
@@ -444,8 +444,8 @@ shared static this() {
         setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
-        //setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATMENT, 0, 1);
-        //setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATMENT, 0, 1);
+        //setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATEMENT, 0, 1);
+        //setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATEMENT, 0, 1);
 
         result["i32.select"] = instrTable[IR.SELECT];
         result["i64.select"] = instrTable[IR.SELECT];
@@ -849,7 +849,7 @@ struct ExprRange {
                     break;
                 case CODE_EXTEND:
                     const opcode_arg = decode!IR_EXTEND(data, index);
-                    elm.instr = instrExtenedTable.lookup(opcode_arg);
+                    elm.instr = interExtendedTable.lookup(opcode_arg);
                     break;
                 case PREFIX:
                     elm._warg = int(data[index]); // Extended insructions

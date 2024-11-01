@@ -488,7 +488,7 @@ alias check = Check!WasmBetterCException;
                 push(format("Undefinded %s pops %s %s", ir, pop, pop));
                 break;
             default:
-                check(0, format("Format argument %s not supported for %s", number_of_args, instrExtenedTable[ir].name));
+                check(0, format("Format argument %s not supported for %s", number_of_args, interExtendedTable[ir].name));
             }
 
         }
@@ -869,7 +869,7 @@ shared static this() {
         IR.F64_GT: q{(%2$s > %1$s)},
         IR.F64_LE: q{(%2$s <= %1$s)},
         IR.F64_GE: q{(%2$s >= %1$s)},
-        // Extend 
+        // Extended 
 
     ];
     instr_extend_fmt = [
