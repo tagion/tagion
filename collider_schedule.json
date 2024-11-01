@@ -92,17 +92,16 @@
     },
     "tvm_betterc": {
       "args": [
-            "i32.wast", "i64.wast", "f32.wast", "f64.wast", "conversions.wast",
-            "int_literals.wast", 
-            "f32_cmp.wast", "f64_cmp.wast",
-            "int_exprs.wast", "float_exprs.wast", "float_misc.wast"
-            ],
+          "i32.wast", "i64.wast",   
+          "int_literals.wast", "int_exprs.wast",
+          "f32_cmp_export.wast", "f64_cmp_export.wast"
+      ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
-        "imports": "wasm=foundation.wasm math=foundation.math",
+        "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new", "commit", "memory", "func", "i32", "f32_export", "i64_export", "tvm_test"],
+      "stages": ["tvm", "tvm_new", "commit", "memory", "func", "i32", "f32_export", "i64_export", "tvm_test", "tvm_test1"],
       "extend" : {
         "tvm_new" : {
             "args": [
@@ -111,6 +110,19 @@
                  "f32_export.wast", "f64_export.wast",
                  "f32_cmp_export.wast", "f64_cmp_export.wast"
             ],
+        },
+        "tvm_old" : {
+            "args": [
+                "i32.wast", "i64.wast", "f32.wast", "f64.wast", "conversions.wast",
+                "int_literals.wast", 
+                "f32_cmp.wast", "f64_cmp.wast",
+                "int_exprs.wast", "float_exprs.wast", "float_misc.wast"
+            ],
+        },
+        "tvm_test1" : {
+          "args" : [
+                "f32_export.wast"
+            ]
         },
         "memory" : {
           "args" : [

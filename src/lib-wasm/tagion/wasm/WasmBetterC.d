@@ -112,7 +112,7 @@ alias check = Check!WasmBetterCException;
                     output.writefln("%s}", _indent);
                 }
 
-                output.writefln("%swasm.assert_trap((() {", indent);
+                output.writefln("%serror.assert_trap((() {", indent);
                 assert_block(indent ~ spacer);
                 output.writefln("%s)());", indent);
 

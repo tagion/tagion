@@ -119,7 +119,7 @@ union Float(F) if (isFloatingPoint!F) {
         alias U = ulong;
         enum mask = 0xC_0000_0000_0000L;
     }
-    enum mant_mask = (U(1) << F.mant_dig) - 1;
+    enum mant_mask = (U(1) << (F.mant_dig - 1)) - 1;
     enum exp_mask = I.max & (~mant_mask);
     enum arithmetic_mask = mant_mask >> 1;
     enum canonical_mask = mant_mask & (~arithmetic_mask);
@@ -143,7 +143,7 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     }
     if (sicmp(text[pos .. min(pos + NaN.length, $)], NaN) == 0) {
         auto quiet = text.splitter(':').drop(1);
-        alias Number=Float!F;
+        alias Number = Float!F;
 
         Number result;
         result.number = (negative) ? -F.nan : F.nan;
@@ -221,12 +221,23 @@ unittest {
         assert(x1.raw == 0xffa0_0000);
     }
     import std.stdio;
+
     writefln("arithmetic_mask=%08x", Float!float.arithmetic_mask);
     writefln("arithmetic_mask=%016x", Float!double.arithmetic_mask);
     writefln("canonical_mask=%08x", Float!float.canonical_mask);
     writefln("canonical_mask=%016x", Float!double.canonical_mask);
-    writefln("mant_mask_mask=%08x", Float!float.mant_mask_mask);
-    writefln("mant_mask_mask=%016x", Float!double.mant_mask_mask);
+    writefln("mant_mask=%08x", Float!float.mant_mask);
+    writefln("mant_mask=%016x", Float!double.mant_mask);
+    writefln("exp_mask=%08x", Float!float.exp_mask);
+    writefln("exp_mask=%016x", Float!double.exp_mask);
+    writefln("mant_dig=%d %x", float.mant_dig, int(1) << (float.mant_dig - 1));
+    writefln("mant_dig=%d %x", double.mant_dig, long(1) << (double.mant_dig - 1));
+    Float!float xnan;
+    xnan.number = float.nan;
+    writefln("nan=%08x", xnan.raw);
+    xnan.number = "nan:canonical".convert!float;
+    writefln("nan:canonical=%08x", xnan.raw);
+
 }
 /++
  + Converts on the first part of the buffer to a Hex string

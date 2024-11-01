@@ -28,7 +28,7 @@ nothrow @nogc {
             alias U = ulong;
             enum mask = 0xC_0000_0000_0000L;
         }
-        enum mant_mask = (U(1) << F.mant_dig) - 1;
+        enum mant_mask = (U(1) << (F.mant_dig - 1)) - 1;
         enum exp_mask = I.max & (~mant_mask);
         enum arithmetic_mask = mant_mask >> 1;
         enum canonical_mask = mant_mask & (~arithmetic_mask);
@@ -36,11 +36,16 @@ nothrow @nogc {
         I i;
     }
 
-    F snan(F, T)(T x) if (isFloatingPoint!F) {
+    import core.stdc.stdio;
+
+    F snan(F, T)(T x) @trusted if (isFloatingPoint!F) {
         Float!F result;
         result.f = F.nan;
-
-        result.i |= x & (~result.mask);
+        printf("result.canonical_mask=%08x\n", result.canonical_mask, result.i);
+        printf("result.arithmetic_mask=%08x\n", result.arithmetic_mask, result.i);
+        printf("result.mant_mask=%08x x=%08x\n", result.mant_mask, result.i);
+        printf("result.exp_mask=%08x\n", result.exp_mask, result.i);
+        result.i |= x | result.canonical_mask;
         return result.f;
     }
 
@@ -50,9 +55,12 @@ nothrow @nogc {
         return result.i;
     }
 
-    float reinterpret32(int x) {
+    import core.stdc.stdio;
+
+    float reinterpret32(int x) @trusted {
         Float!float result;
         result.i = x;
+        printf("%s result=%08x %a\n", __FUNCTION__.ptr, result.i, result.f);
         return result.f;
     }
 
@@ -96,17 +104,14 @@ nothrow @nogc {
     T div(T)(T x, T y) => arithmetic!("/")(x, y);
 
     T arithmetic(string op, T)(T x, T y) @trusted if (isFloatingPoint!T) {
-        import wasm = foundation.wasm;
-
-        wasm.Float!T result;
+        alias Number = Float!T;
+        Number result;
         if (x.isNaN || y.isNaN) {
-            import core.stdc.stdio;
-
             if (x.isNaN) {
                 result.f = x;
             }
             if (y.isNaN) {
-                wasm.Float!T y_map;
+                Number y_map;
                 y_map.f = y;
 
                 result.i |= y_map.i;
@@ -117,46 +122,44 @@ nothrow @nogc {
             mixin("result.f=x" ~ op ~ "y;");
         }
         if (result.f.isNaN && signbit(result.f)) {
-            result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
         }
         return result.f;
     }
 
     T min(T)(T x, T y) @trusted if (isFloatingPoint!T) {
-        import wasm = foundation.wasm;
-
         if (x.isNaN || y.isNaN) {
-            wasm.Float!T result;
+            alias Number = Float!T;
+            Number result;
 
             if (x.isNaN) {
                 result.f = x;
             }
             if (y.isNaN) {
-                wasm.Float!T y_map;
+                Float!T y_map;
                 y_map.f = y;
                 result.i |= y_map.i;
             }
-            result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
             return result.f;
         }
         return (x < y) ? x : y;
     }
 
     T max(T)(T x, T y) @trusted if (isFloatingPoint!T) {
-        import wasm = foundation.wasm;
-
         if (x.isNaN || y.isNaN) {
-            wasm.Float!T result;
+            alias Number = Float!T;
+            Number result;
 
             if (x.isNaN) {
                 result.f = x;
             }
             if (y.isNaN) {
-                wasm.Float!T y_map;
+                Number y_map;
                 y_map.f = y;
                 result.i |= y_map.i;
             }
-            result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
             return result.f;
         }
         return (x > y) ? x : y;
@@ -169,15 +172,14 @@ nothrow @nogc {
     T nearest(T)(T x) => func!"nearbyint"(x);
 
     T func(string name, T)(T x) @trusted if (isFloatingPoint!T) {
-        import wasm = foundation.wasm;
-
-        wasm.Float!T result;
+        alias Number = Float!T;
+        Number result;
         if (x.isNaN) {
 
             if (x.isNaN) {
                 result.f = x;
             }
-            result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
             return result.f;
         }
         static if (is(T == float)) {
@@ -187,7 +189,7 @@ nothrow @nogc {
             mixin("result.f=cmath." ~ name ~ "(x);");
         }
         if (result.f.isNaN && signbit(result.f)) {
-            result.i &= (wasm.FloatAsInt!T(1) << (T.sizeof * 8 - 1)) - 1;
+            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
         }
         return result.f;
     }
