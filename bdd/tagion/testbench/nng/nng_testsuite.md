@@ -4,19 +4,19 @@ NNG source: https://github.com/nanomsg/nng
 
 `tagion.testbench.nng.nng_testsuite`
 
-### Scenario: push-pull socket should send and receive byte buffer.
+### Scenario: NNG embedded multithread testsuite.
 
-`PushpullSocketShouldSendAndReceiveByteBuffer`
+`MultithreadedNNGTestSuiteWrapper`
 
-*Given* a receiver and a sender worker has been spawn.
+*Given* Multithreaded Test Suite instantince.
 
-`spawn_worker`
+`create`
 
-*When* wait until the worker has completed the conversation.
+*When* wait until the Multithreaded Test Suite work over tests.
 
-`conversation`
+`runtests`
 
-*Then* check that communication has passed with out errors.
+*Then* check that teste has passed without errors.
 
 `errors`
 

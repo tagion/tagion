@@ -11,7 +11,7 @@ import nngd;
 
 const _testclass = "nngd.nngtests.nng_test01_pushpull_buffer";
 
-class nng_test01_pushpull_buffer : NNGTest {
+@trusted class nng_test01_pushpull_buffer : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }    
 

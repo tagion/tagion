@@ -7,7 +7,7 @@ import nngd;
 const _testclass = "nngd.nngtests.nng_test00_template";
 
 
-class nng_test00_template : NNGTest {
+@trusted class nng_test00_template : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }    
 

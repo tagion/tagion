@@ -12,7 +12,7 @@ import nngd;
 
 const _testclass = "nngd.nngtests.nng_test03_pushpull_transport";
 
-class nng_test03_pushpull_transport : NNGTest {
+@trusted class nng_test03_pushpull_transport : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }    
 

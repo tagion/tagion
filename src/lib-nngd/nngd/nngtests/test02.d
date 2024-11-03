@@ -12,7 +12,7 @@ import nngd;
 
 const _testclass = "nngd.nngtests.nng_test02_pushpull_string";
 
-class nng_test02_pushpull_string : NNGTest {
+@trusted class nng_test02_pushpull_string : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }    
 

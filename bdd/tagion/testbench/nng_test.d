@@ -16,10 +16,10 @@ mixin Main!(_main);
 
 int _main(string[] args) {
     
-    nng_testsuite.testroot = buildPath(env.reporoot, "src", "lib-nngd", "tests");
+    nng_testsuite.testroot = buildPath(env.reporoot, "src", "lib-nngd", "nngd", "nngtests");
 
     auto nng_feature = automation!(nng_testsuite)();
-    nng_feature.PushpullSocketShouldSendAndReceiveByteBuffer("tcp://127.0.0.1:31000");
+    nng_feature.MultithreadedNNGTestSuiteWrapper();
 
     auto nng_context = nng_feature.run();
     return 0;

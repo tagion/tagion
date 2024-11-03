@@ -1,3 +1,5 @@
+module nngd.testsuite;
+
 import std.stdio;
 import std.conv;
 import std.string;
@@ -14,9 +16,7 @@ import std.process: environment;
 import std.parallelism;
 
 import nngd;
-import nngtests;
-
-
+import nngd.nngtests;
 
 static string dump_exception_recursive(Throwable ex, string tag = "") {
     string[] res; 
@@ -88,14 +88,14 @@ enum nngtestflag : uint {
     SETENV  = 2
 }
 
-class NNGTest {
-        void log(A...)(string fmt, A a){
+@trusted class NNGTest {
+        void log(A...)(string fmt, A a) @trusted {
             if(!(flags & nngtestflag.DEBUG) || logfile is null) return;
             logfile.writefln("%.6f "~fmt,timestamp,a);
             logfile.flush();
         }
 
-        void error(A...)(string fmt, A a){
+        void error(A...)(string fmt, A a) @trusted {
             _errors ~= format(fmt, a);
             if(!(flags & nngtestflag.DEBUG) || logfile is null) return;
             logfile.writefln("%.6f "~fmt,timestamp,a);
@@ -113,15 +113,15 @@ class NNGTest {
             }
         }
         
-        string[] run() { return []; }
+        string[] run() @trusted { return []; }
         
-        string errors(){
+        string errors() @trusted {
             return this._errors.empty() ? null :  "ERRORS: " ~  this._errors.join("\n");
         }
 
-        string[] geterrors() { return _errors; }
+        string[] geterrors() @trusted { return _errors; }
 
-        void seterrors ( string[] e ) { _errors ~= e; }
+        void seterrors ( string[] e ) @trusted { _errors ~= e; }
 
     private:
         
@@ -130,18 +130,18 @@ class NNGTest {
         string[] _errors;
 }
 
-class NNGTestSuite : NNGTest {
+@trusted class NNGTestSuite : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }
     
-    override string[] run() {
+    override string[] run() @trusted {
         string[] res = []; 
-        static foreach(i,t; nngtests.testlist){
+        static foreach(i,t; nngd.nngtests.testlist){
             mixin("auto t"~to!string(i)~" = new "~t~"(this.logfile, this.flags);");
             mixin("auto task"~to!string(i)~" = task(&(t"~to!string(i)~".run));");
             mixin("task"~to!string(i)~".executeInNewThread();");
         }
-        static foreach(i,t; nngtests.testlist){
+        static foreach(i,t; nngd.nngtests.testlist){
             mixin("res ~= task"~to!string(i)~".yieldForce;");
             mixin("this.seterrors(t"~to!string(i)~".geterrors());");
         }

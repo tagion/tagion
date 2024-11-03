@@ -13,7 +13,7 @@ import nngd;
 
 const _testclass = "nngd.nngtests.nng_test04_pubsub";
 
-class nng_test04_pubsub : NNGTest {
+@trusted class nng_test04_pubsub : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }    
 
