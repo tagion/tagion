@@ -12,6 +12,9 @@ DINC=nngd extern/libnng/libnng
 DTESTS=$(wildcard tests/test*.d)
 RUNTESTS=$(basename $(notdir $(DTESTS)))
 
+TESTBENCH=testnng.d
+BINTESTBENCH=./build/$(basename $(notdir $(TESTBENCH)))
+
 ifeq ($(NNG_WITH_MBEDTLS),ON)
 	DCFLAGS=-O -d -m64 -i -debug -g -version=withtls
 	DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -Lextern/libnng/extern/mbedtls/build/target/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
@@ -21,8 +24,16 @@ else
 endif
 
 
-all: extern mime lib buildtest
+all: extern mime lib testbench
 	@echo "All done!"
+
+testbench: $(BINTESTBENCH)
+
+$(BINTESTBENCH):
+	$(DC) $(DCFLAGS) -od=build/ -of=$@ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $(TESTBENCH)
+
+runtest: testbench
+	$(BINTESTBENCH) && echo "All passed!" || echo "Tests failed, see log" 
 
 buildtest: $(DTESTS)
 
@@ -76,4 +87,4 @@ clean-extern:
 proper-extern:
 	$(MAKE) proper -C extern/
 
-.PHONY: all extern mime lib clean $(DTESTS) $(RUNTESTS)
+.PHONY: all extern mime lib clean $(TESTBENCH) testbench runtest $(DTESTS) $(RUNTESTS)
