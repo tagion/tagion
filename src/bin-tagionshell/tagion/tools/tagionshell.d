@@ -40,6 +40,7 @@ import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
+import tagion.utils.convert;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.tools.shell.shelloptions;
@@ -140,10 +141,11 @@ string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat k
     return join(res, "\r\n");
 }
 
+
 T parseNumeric(T)(string str) @safe pure {
     static if (is(T == float)) {
-        if (str.startsWith("0x")) {
-            auto z = to!uint(str[2 .. $], 16);
+        if (str.startsWith(cast(string)(Prefix.hex))) {
+            auto z = to!uint(str[Prefix.hex.length .. $], 16);
             return z.to!float;
         }
         else {
@@ -151,15 +153,8 @@ T parseNumeric(T)(string str) @safe pure {
         }
     }
     else static if (is(T == double)) {
-        // used isFloatingPoint!T instead because takes (float, double and real)
-        if (str.startsWith("0x")) {
-            pragma(msg, "Shell: Should it be hex-float notation instead (This in converts integer numbers)");
-            /*
-             * I have made a convert function tagion.utils.convert which convert ieee754 stand numbers 
-             *(nan/(canonical and algorithm) and inf)
-             * I know it's not need here just to be consistency 
-             */
-            auto z = to!ulong(str[2 .. $], 16);
+        if (str.startsWith(cast(string)(Prefix.hex))) {
+            auto z = to!ulong(str[Prefix.hex.length .. $], 16);
             return z.to!double;
         }
         else {
@@ -460,8 +455,7 @@ void ws_on_message(WebSocket* ws, ubyte[] data, void* ctx) {
 */
 int query_socket_once(string addr, uint timeout, uint delay, uint retries, const ubyte[] request, out immutable(ubyte)[] reply) {
     int rc;
-    pragma(msg, "Shell: len and doclen is not used");
-    size_t len = 0, doclen = 0, attempts = 0;
+    size_t attempts = 0;
     const stime = timestamp();
     NNGMessage msg = NNGMessage(0);
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -594,8 +588,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             docbuf
             );
             if (rc != nng_errno.NNG_OK) {
-                pragma(msg, "Shell: Could you use name for this 99 and 600 because it's not clear what those error numbers represent");
-                if (rc > 99 && rc < 600) {
+                if (rc >= nng_http_status.min && rc <= nng_http_status.max) {
                     rep.status = cast(nng_http_status) rc;
                     writeit("hirpc_handler: ", full_method, " query: ", rep.status);
                 }
@@ -734,8 +727,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             docbuf
     );
     if (rc != 0) {
-        pragma(msg, "Shell: Same here maybe just make check-function with name that explains what it does");
-        if (rc > 99 && rc < 600) {
+        if (rc >= nng_http_status.min && rc <= nng_http_status.max) {
             rep.status = cast(nng_http_status) rc;
             writeit("hirpc_handler: query: ", rep.status);
         }
@@ -816,8 +808,6 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 const i2p_handler = handler_helper!i2p_handler_impl;
 deprecated("Should use faucet request in hirpc handler")
 void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
-    pragma(msg, "Shell: the rc variable is not used");
-    int rc;
     if (req.type != mime_type.BINARY) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.text = "invalid data type";
@@ -957,8 +947,6 @@ void sysinfo_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
 const selftest_handler = handler_helper!selftest_handler_impl;
 void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
-    pragma(msg, "Shell: rc is not used");
-    int rc;
     WalletOptions options;
     auto wallet_config_file = opt.default_i2p_wallet;
     if (wallet_config_file.exists) {
@@ -1068,13 +1056,17 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     }
 }
 
+enum LAST = 1;
+enum PRENULTIMATE = 2;
+
 const lookup_handler = handler_helper!lookup_handler_impl;
 void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
-    pragma(msg, "Shell: What is the number 2 is the extension of some file (if so the used std.path rep.path.stripExtension)");
-    string query_subject = req.path[$ - 2];
-    pragma(msg, "Shell: Why the number 1? in [$-1] which character has the length 1");
-    string query_str = cast(string)(Base64URL.decode(req.path[$ - 1]));
+    string query_subject = req.path[$ - PRENULTIMATE];
+    string query_str = cast(string)(Base64URL.decode(req.path[$ - LAST]));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    scope (exit) {
+        s.close();
+    }
     int rc;
     int attempts = 0;
     while (!abort) {
@@ -1082,10 +1074,6 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         if (rc == 0)
             break;
         enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
-    }
-    pragma(msg,"Shell: It is recommended that the scope(exit) is place just after the resource allocations (just after NNGSocket s = ..)"); 
-    scope (exit) {
-        s.close();
     }
     try {
         switch (query_subject) {
@@ -1141,6 +1129,8 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     }
 }
 
+enum PATH_SHOULD_HAVE_DATA = 3;
+
 const util_handler = handler_helper!util_handler_impl;
 void util_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     string[] query_main = req.path.findSplitAfter((opt.shell_api_prefix ~ opt.util_endpoint).split("/")[1 .. $])[1];
@@ -1161,8 +1151,7 @@ void util_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                 data = req.rawdata.dup;
             }
             else {
-                pragma(msg, "Shell: Why 3 what does this mean");
-                if (query_main.length < 3) {
+                if (query_main.length < PATH_SHOULD_HAVE_DATA) {
                     rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
                     rep.text = "Invalid data path";
                     return;
@@ -1280,8 +1269,7 @@ int _main(string[] args) {
 
     auto ds_tid = spawn(&dart_worker, options);
 
-    pragma(msg, "Shell: should we move this to an options?");
-    ws_devices = new shared(WSCache)(null, 512, 0); // TODO: hardcoded session cache size -> options
+    ws_devices = new shared(WSCache)(null, options.websocket_cache_size, 0); 
     WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_close, &ws_on_error, &ws_on_message, cast(
             void*)&options);
     wsa.start();
@@ -1299,9 +1287,9 @@ int _main(string[] args) {
     }
 
     isz = getmemstatus();
-    pragma(msg, "Shell: Maybe we should move this up so it's easy to read that is't an exit scope for the main function");
     scope (exit) {
         Thread.sleep(msecs(options.common_socket_delay));
+        pragma(msg, "fixme: a workaround to give nng threads some time to stop correctly");
         pragma(msg, "fixme: investigate if we need this or can move it to the app. logic. Bad behaviour to have sleep in exit scopes");
     }
 
