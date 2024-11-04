@@ -41,12 +41,8 @@ nothrow @nogc {
     F snan(F, T)(T x) @trusted if (isFloatingPoint!F) {
         Float!F result;
         result.f = F.nan;
-        printf("result.canonical_mask=%08x\n", result.canonical_mask, result.i);
-        printf("result.arithmetic_mask=%08x\n", result.arithmetic_mask, result.i);
-        printf("result.mant_mask=%08x x=%08x\n", result.mant_mask, result.i);
-        printf("result.exp_mask=%08x\n", result.exp_mask, result.i);
         result.i |= x | result.canonical_mask;
-        printf("result.i=%08x\n", result.i);
+        printf("result.i=%016x\n", result.i);
        
         return result.f;
     }
@@ -183,19 +179,11 @@ nothrow @nogc {
         alias Number = Float!T;
         Number result;
         if (x.isNaN) {
-            printf("isNaN %s %a\n", name.ptr, x);
             result.f=x;
             if (x.signbit) {
                 return -result.f;
             }
-
-            //if (x.isNaN) {
-            //    result.f = x;
-            //}
-            //result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
-            return result.f;
         }
-            printf("%s %a\n", name.ptr, x);
         static if (is(T == float)) {
             mixin("result.f=cmath." ~ name ~ "f(x);");
         }
@@ -282,12 +270,15 @@ T trunc_sat(T, F)(F x) @trusted if (isIntegral!T && isFloatingPoint!F) {
     return cast(T) x;
 }
 
-double promote(float x) {
+double promote(float x) @trusted {
     import std.math : isNaN;
-
+import core.stdc.stdio;
     if (x.isNaN) {
         Float!double snan;
         snan.f = x;
+        if (signbit(x)) {
+            return -snan.f;
+        }
         return snan.f;
     }
     return cast(double) x;
