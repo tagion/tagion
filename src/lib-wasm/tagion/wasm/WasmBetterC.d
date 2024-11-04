@@ -777,7 +777,7 @@ shared static this() {
         IR.F32_GE: q{(%2$s >= %2$s},
         IR.F32_ABS: q{math.fabsf(%1$s)},
         IR.F32_NEG: q{(-%1$s)},
-        IR.F32_CEIL: q{math.ceilf(%1$s)},
+        IR.F32_CEIL: q{math.ceil(%1$s)},
         IR.F32_FLOOR: q{math.floor(%1$s)},
         IR.F32_TRUNC: q{math.trunc(%1$s)},
         IR.F32_NEAREST: q{math.nearest(%1$s)},

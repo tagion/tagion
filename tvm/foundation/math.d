@@ -46,6 +46,8 @@ nothrow @nogc {
         printf("result.mant_mask=%08x x=%08x\n", result.mant_mask, result.i);
         printf("result.exp_mask=%08x\n", result.exp_mask, result.i);
         result.i |= x | result.canonical_mask;
+        printf("result.i=%08x\n", result.i);
+       
         return result.f;
     }
 
@@ -181,13 +183,19 @@ nothrow @nogc {
         alias Number = Float!T;
         Number result;
         if (x.isNaN) {
-
-            if (x.isNaN) {
-                result.f = x;
+            printf("isNaN %s %a\n", name.ptr, x);
+            result.f=x;
+            if (x.signbit) {
+                return -result.f;
             }
-            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
+
+            //if (x.isNaN) {
+            //    result.f = x;
+            //}
+            //result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
             return result.f;
         }
+            printf("%s %a\n", name.ptr, x);
         static if (is(T == float)) {
             mixin("result.f=cmath." ~ name ~ "f(x);");
         }
