@@ -557,10 +557,6 @@
 (assert_return (invoke "f64.promote_f32" (f32.const 0x1.8f867ep+125)) (f64.const 6.6382536710104395e+37))
 (assert_return (invoke "f64.promote_f32" (f32.const inf)) (f64.const inf))
 (assert_return (invoke "f64.promote_f32" (f32.const -inf)) (f64.const -inf))
-;; ?? nan:canonical -> double.inf
-(assert_return (invoke "f64.promote_f32" (f32.const inf)) (f64.const nan))
-(assert_return (invoke "f64.promote_f32" (f32.const nan:canonical)) (f64.const nan:canonical))
-;; ??
 (assert_return (invoke "f64.promote_f32" (f32.const nan)) (f64.const nan:canonical))
 (assert_return (invoke "f64.promote_f32" (f32.const nan:0x200000)) (f64.const nan:arithmetic))
 (assert_return (invoke "f64.promote_f32" (f32.const -nan)) (f64.const nan:canonical))

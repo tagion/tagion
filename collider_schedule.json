@@ -121,7 +121,7 @@
         },
         "tvm_test1" : {
           "args" : [
-                "conversions.wast"
+                "conversions_debug.wast"
             ]
         },
         "memory" : {
