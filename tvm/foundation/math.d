@@ -127,7 +127,7 @@ nothrow @nogc {
         return result.f;
     }
 
-    T min(T)(T x, T y) @trusted if (isFloatingPoint!T) {
+    T min(T)(T x, T y) if (isFloatingPoint!T) {
         if (x.isNaN || y.isNaN) {
             alias Number = Float!T;
             Number result;
@@ -146,7 +146,7 @@ nothrow @nogc {
         return (x < y) ? x : y;
     }
 
-    T max(T)(T x, T y) @trusted if (isFloatingPoint!T) {
+    T max(T)(T x, T y) if (isFloatingPoint!T) {
         if (x.isNaN || y.isNaN) {
             alias Number = Float!T;
             Number result;
