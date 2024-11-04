@@ -143,6 +143,9 @@ nothrow @nogc {
             result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
             return result.f;
         }
+        if ((x == T(0)) && (y == T(0))) {
+            return signbit(x)?x:y;
+        }
         return (x < y) ? x : y;
     }
 
@@ -161,6 +164,9 @@ nothrow @nogc {
             }
             result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
             return result.f;
+        }
+        if ((x == T(0)) && (y == T(0))) {
+            return signbit(y)?x:y;
         }
         return (x > y) ? x : y;
     }
