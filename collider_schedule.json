@@ -136,7 +136,7 @@
         },
         "tvm_test" : {
           "args" : [
-                "conversions_debug.wast"
+                "conversions.wast"
             ]
         },
         "i64_export" : {
