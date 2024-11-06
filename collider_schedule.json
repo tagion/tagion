@@ -121,7 +121,7 @@
         },
         "tvm_test1" : {
           "args" : [
-                "f64_export.wast"
+                "conversions.wast"
             ]
         },
         "memory" : {

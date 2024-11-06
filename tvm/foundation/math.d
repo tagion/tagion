@@ -23,6 +23,21 @@ void print_debug(F)(const F result, const F x, const F y, const F expected, stri
             _result.i, _x.i, _y.i, _expected.i);
 }
 
+void print_debug(F, I)(const F result, const I x,  const F expected, string msg) {
+    import std.stdio;
+    import std.string;
+    import std.conv;
+
+    alias Number = Float!F;
+    Number _result,   _expected;
+    _result.f = result;
+    _expected.f = expected;
+    writefln("%s result=%0#x x=%0#x expected=%0#x"
+            .replace("#", (F.sizeof * 2).to!string),
+            msg,
+            _result.i, x,  _expected.i);
+}
+
 @safe:
 nothrow @nogc {
     template FloatAsInt(F) if (isFloatingPoint!F) {
@@ -153,7 +168,7 @@ nothrow @nogc {
             Float!F result;
             //result.f = F.nan;
 
-            result.i = (x | result.exp_mask) & (~result.sign_mask);
+            result.i = (x | result.exp_mask); // & (~result.sign_mask);
             return result.f;
         }
 
