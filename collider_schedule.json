@@ -107,7 +107,7 @@
             "args": [
                 "i32.wast", "i64.wast", "conversions.wast",
                 "int_literals.wast", "int_exprs.wast",
-                 "f32_export.wast", "f64_export.wast",
+                 "f32.wast", "f64.wast",
                  "f32_cmp_export.wast", "f64_cmp_export.wast"
             ],
         },

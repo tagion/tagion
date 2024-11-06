@@ -142,33 +142,12 @@ nothrow @nogc {
         return false;
     }
 
-    version (none) @trusted
-    unittest {
-        static void test_isNaNs(F)() {
-            F x, y, result;
-            {
-                x = F(1);
-                y = snan!F();
-                const is_nans = isNaNs(x, y, result);
-                //assert(isNaNs(x, y, result));
-                printf("result.i=%016x is_nans=%d\n", result.i, is_nans);
-                printf("result.i=%016x\n", result.i & result.canonical_mask);
-                printf("isCanonical(result.f) %d\n", isCanonical(result.f));
-                //assert(isCanonical(result.f));
-            }
-        }
-
-        test_isNaNs!(float)();
-    }
-
     import core.stdc.stdio;
 
-    F snan(F, T)(T x = 0) @trusted if (isFloatingPoint!F) {
+    F snan(F, T)(T x = 0) if (isFloatingPoint!F) {
         if (x & Float!F.mant_mask) {
             Float!F result;
-            //result.f = F.nan;
-
-            result.i = (x | result.exp_mask); // & (~result.sign_mask);
+            result.i = (x | result.exp_mask);
             return result.f;
         }
 
