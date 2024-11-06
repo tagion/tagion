@@ -92,9 +92,10 @@
     },
     "tvm_betterc": {
       "args": [
-          "i32.wast", "i64.wast",   
+          "i32.wast", "i64.wast", "conversions.wast",
           "int_literals.wast", "int_exprs.wast",
-          "f32_cmp_export.wast", "f64_cmp_export.wast"
+          "f32.wast", "f64.wast",
+          "f32_cmp.wast", "f64_cmp.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -108,7 +109,7 @@
                 "i32.wast", "i64.wast", "conversions.wast",
                 "int_literals.wast", "int_exprs.wast",
                  "f32.wast", "f64.wast",
-                 "f32_cmp_export.wast", "f64_cmp_export.wast"
+                 "f32_cmp.wast", "f64_cmp.wast"
             ],
         },
         "tvm_old" : {
