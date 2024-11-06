@@ -116,6 +116,20 @@ const config = {
     ],
   ],
 
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'gov',
+        path: 'gov',
+        routeBasePath: 'gov',
+        sidebarPath: './sidebars.js',
+        sidebarPath: './sidebarsGov.js',
+      },
+    ],
+
+  ],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({

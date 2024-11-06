@@ -37,7 +37,7 @@ function HomepageHeader() {
           </Link>
           <Link
             className="button button--secondary button--lg"
-            to="/tech/api"
+            to="/gov/intro"
             style={{ marginLeft: '10px' }}> {/* Add spacing between buttons */}
             Governance Documentation
           </Link>
