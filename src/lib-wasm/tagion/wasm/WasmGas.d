@@ -73,10 +73,11 @@ struct WasmGas {
                     final switch (elm.instr.irtype) {
                     case PREFIX:
                     case CODE:
+                    case CODE_TYPE:
                         wasmexpr(elm.code);
                         break;
                     case CODE_EXTEND:
-                        wasmexpr(elm.code, elm.instr.opcode); 
+                        wasmexpr(elm.code, elm.instr.opcode);
                         break;
                     case BLOCK:
                         wasmexpr(elm.code, elm.types[0]);

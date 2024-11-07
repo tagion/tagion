@@ -153,6 +153,27 @@ struct WastParser {
                     }
                     wasmexpr(IR.EXNEND, instr.opcode);
                     break;
+                case CODE_TYPE:
+                    r.nextToken;
+                    writefln("%s %s", CODE_TYPE, r);
+                    if (r.type == TokenType.BEGIN) {
+                        auto r_return = r.save;
+                        r_return.nextToken;
+                        if (r_return.token == "result") {
+                            r_return.nextToken;
+                            r_return.check(r_return.type == TokenType.WORD);
+                            label = r_return.token;
+                            r_return.nextToken;
+                            r_return.check(r_return.type == TokenType.END);
+                            r_return.nextToken;
+                            r = r_return;
+                        }
+                    }
+                    foreach (i; 0 .. instr.pops) {
+                        innerInstr(r, ParserStage.CODE);
+                    }
+                    wasmexpr(irLookupTable[instr.name]);
+                    break;
                 case BLOCK:
                     string arg;
                     r.nextToken;

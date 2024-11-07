@@ -351,7 +351,7 @@ alias check = Check!WasmBetterCException;
         if (exp == ExportType.init) {
             return format("func_%d", index);
         }
-        return exp.name.replace(".", "_");
+        return exp.name.replace(".", "_").replace("-","_");
     }
 
     static string param_name(const size_t index) {
@@ -465,6 +465,13 @@ alias check = Check!WasmBetterCException;
                 }
                 push(format("Undefinded %s pops %s %s", ir, pop, pop));
                 break;
+            case 3:
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop, pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s %s", ir, pop, pop, pop));
+                break;
             default:
                 check(0, format("Format argument %s not supported for %s", number_of_args, instrTable[ir].name));
             }
@@ -540,6 +547,7 @@ alias check = Check!WasmBetterCException;
                 with (IRType) {
                     final switch (elm.instr.irtype) {
                     case CODE:
+                    case CODE_TYPE:
                         output.writefln("%s// %s", indent, elm.instr.name);
                         ctx.perform(elm.code, elm.instr.pops);
                         break;
@@ -869,8 +877,8 @@ shared static this() {
         IR.F64_GT: q{(%2$s > %1$s)},
         IR.F64_LE: q{(%2$s <= %1$s)},
         IR.F64_GE: q{(%2$s >= %1$s)},
-        // Extended 
-
+        //  
+        IR.SELECT: q{((%1$s)?%3$s:%2$s)},
     ];
     instr_extend_fmt = [
         IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},

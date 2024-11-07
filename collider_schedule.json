@@ -96,7 +96,7 @@
           "int_literals.wast", "int_exprs.wast",
           "f32.wast", "f64.wast",
           "f32_cmp.wast", "f64_cmp.wast",
-          "float_misc.wast"
+          "float_misc.wast", "select.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -123,7 +123,7 @@
         },
         "tvm_test1" : {
           "args" : [
-                "float_misc.wast"
+                "select.wast"
             ]
         },
         "memory" : {
