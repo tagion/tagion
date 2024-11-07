@@ -155,7 +155,6 @@ struct WastParser {
                     break;
                 case CODE_TYPE:
                     r.nextToken;
-                    writefln("%s %s", CODE_TYPE, r);
                     if (r.type == TokenType.BEGIN) {
                         auto r_return = r.save;
                         r_return.nextToken;
