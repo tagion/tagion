@@ -158,7 +158,7 @@ const config = {
           },
           {to: '/gov/intro', label: 'Gov', position: 'left'},
           {to: '/tips', label: 'TIPs', position: 'left'},
-          {href: 'https://tagion.medium.com', label: 'Blog', position: 'left'},
+       // {href: 'https://tagion.medium.com', label: 'Blog', position: 'left'},
           {to: '/changelog', label: 'Changelog', position: 'right'},
           {
             href: 'https://github.com/tagion/tagion',
@@ -174,8 +174,8 @@ const config = {
             title: 'Tech Documentation',
             items: [
               {
-                label: 'Getting Started',
-                to: '/tech/guide',
+                 label: 'Concept paper',
+                to: 'https://www.tagion.org/resources/tagion-whitepaper.pdf',
               },
               {
                 label: 'HiBON',
@@ -216,7 +216,7 @@ const config = {
                 href: 'https://github.com/tagion/tagion',
               },
               {
-                label: 'Tagion',
+                label: 'Main Website',
                 href: 'https://www.tagion.org',
               },
             ],
