@@ -208,21 +208,22 @@ const config = {
             title: 'More',
             items: [
               {
-                label: 'Blog',
+                label: 'Tagion Website',
+                href: 'https://www.tagion.org',
+              },
+              {
+                label: 'Tagion Blog',
                 href: 'https://tagion.medium.com',
               },
               {
-                label: 'GitHub',
-                href: 'https://github.com/tagion/tagion',
+                label: 'Decard Website',
+                href: 'https://decard.io',
               },
-              {
-                label: 'Main Website',
-                href: 'https://www.tagion.org',
-              },
+              
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Tagion.org, Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Decard AG, Built with Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,
