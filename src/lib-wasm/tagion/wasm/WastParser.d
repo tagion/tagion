@@ -72,11 +72,16 @@ struct WastParser {
         Types type;
     }
 
+    struct FunctionContext {
+        int[string] params;
+    }
+
     private ParserStage parseInstr(ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
             ref const(FuncType) func_type,
-            ref scope int[string] params) {
+            ref scope FunctionContext func_ctx) {
+        //  ref scope int[string] params) {
         import std.outbuffer;
         import tagion.wasm.WasmExpr;
 
@@ -85,7 +90,7 @@ struct WastParser {
         auto bout = new OutBuffer;
         auto wasmexpr = WasmExpr(bout);
         int getLocal(string text) @trusted {
-            int result = params[r.token].ifThrown!RangeError(int(-1));
+            int result = func_ctx.params[r.token].ifThrown!RangeError(int(-1));
             if (result < 0) {
                 result = r.token
                     .to!int
@@ -127,26 +132,26 @@ struct WastParser {
             return -1;
         }
 
-        // writefln("%s %s", __FUNCTION__, params.dup);
+        // writefln("%s %s", __FUNCTION__, func.params.dup);
         ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
             static const(Types)[] getReturns(ref WastTokenizer r) nothrow {
                 Types[] results;
-                    if (r.type == TokenType.BEGIN) {
-                auto r_return = r.save;
-                r_return.nextToken;
+                if (r.type == TokenType.BEGIN) {
+                    auto r_return = r.save;
+                    r_return.nextToken;
 
-                if (r_return.token == "result") {
-                    r_return.nextToken;
-                    while (r_return.type == TokenType.WORD) {
-                        r_return.check(r_return.type == TokenType.WORD);
-                        results~= r_return.token.getType;
+                    if (r_return.token == "result") {
                         r_return.nextToken;
+                        while (r_return.type == TokenType.WORD) {
+                            r_return.check(r_return.type == TokenType.WORD);
+                            results ~= r_return.token.getType;
+                            r_return.nextToken;
+                        }
+                        r_return.check(r_return.type == TokenType.END);
+                        r_return.nextToken;
+                        r = r_return;
                     }
-                    r_return.check(r_return.type == TokenType.END);
-                    r_return.nextToken;
-                    r = r_return;
                 }
-            }
                 return results;
             }
 
@@ -177,21 +182,21 @@ struct WastParser {
                     break;
                 case CODE_TYPE:
                     r.nextToken;
-                    const wasm_returns=getReturns(r);
-                    version(none)
-                    if (r.type == TokenType.BEGIN) {
-                        auto r_return = r.save;
-                        r_return.nextToken;
-                        if (r_return.token == "result") {
+                    const wasm_returns = getReturns(r);
+                    version (none)
+                        if (r.type == TokenType.BEGIN) {
+                            auto r_return = r.save;
                             r_return.nextToken;
-                            r_return.check(r_return.type == TokenType.WORD);
-                            label = r_return.token;
-                            r_return.nextToken;
-                            r_return.check(r_return.type == TokenType.END);
-                            r_return.nextToken;
-                            r = r_return;
+                            if (r_return.token == "result") {
+                                r_return.nextToken;
+                                r_return.check(r_return.type == TokenType.WORD);
+                                label = r_return.token;
+                                r_return.nextToken;
+                                r_return.check(r_return.type == TokenType.END);
+                                r_return.nextToken;
+                                r = r_return;
+                            }
                         }
-                    }
                     foreach (i; 0 .. instr.pops) {
                         innerInstr(r, ParserStage.CODE);
                     }
@@ -205,12 +210,12 @@ struct WastParser {
                         label = r.token;
                         r.nextToken;
                     }
-                    const wasm_returns=getReturns(r);
-                    version(none)
-                    if (r.type == TokenType.WORD) {
-                        arg = r.token;
-                        r.nextToken;
-                    }
+                    const wasm_returns = getReturns(r);
+                    version (none)
+                        if (r.type == TokenType.WORD) {
+                            arg = r.token;
+                            r.nextToken;
+                        }
                     while (r.type == TokenType.BEGIN) {
                         innerInstr(r, ParserStage.CODE);
                     }
@@ -332,7 +337,7 @@ struct WastParser {
                         __write("labels %s", labels);
                         //r.check(labels.length >= instr.pops, format("Function %d takes %d arguments but only");
                         if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
-                            params[labels[0]] = cast(int) locals.length;
+                            func_ctx.params[labels[0]] = cast(int) locals.length;
                             locals ~= labels[1].getType;
                             break;
                         }
@@ -492,8 +497,9 @@ struct WastParser {
                 arg2 = r.token;
                 r.nextToken;
                 FuncType func_type;
-                scope int[string] params;
-                const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type, params);
+                FunctionContext func_ctx;
+                //scope int[string] params;
+                const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type, func_ctx);
                 r.check(ret == ParserStage.TYPE || ret == ParserStage.PARAM);
 
                 return stage;
@@ -512,11 +518,12 @@ struct WastParser {
                 FuncType func_type;
                 CodeType code_invoke;
                 CodeType code_result;
-                scope int[string] params;
+                FunctionContext func_ctx;
+                //scope int[string] params;
                 // Invoke call
-                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
+                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
                 if (r.type == TokenType.BEGIN) {
-                    parseInstr(r, ParserStage.EXPECTED, code_result, func_type, params);
+                    parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
                 }
                 assert_type.invoke = code_invoke.serialize;
                 assert_type.result = code_result.serialize;
@@ -531,9 +538,10 @@ struct WastParser {
                 r.nextToken;
                 FuncType func_type;
                 CodeType code_invoke;
-                scope int[string] params;
+                FunctionContext func_ctx;
+                //scope int[string] params;
                 // Invoke call
-                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
+                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
                 assert_type.invoke = code_invoke.serialize;
 
                 r.check(r.type == TokenType.STRING);
@@ -569,7 +577,7 @@ struct WastParser {
             ref WastTokenizer r,
             const ParserStage stage,
             ref FuncType func_type,
-            ref scope int[string] params) {
+            ref scope FunctionContext func_ctx) {
         if (r.type == TokenType.BEGIN) {
             //string label;
             string arg;
@@ -602,7 +610,7 @@ struct WastParser {
                         r.nextToken;
 
                         r.check(r.type == TokenType.WORD);
-                        params[label] = cast(int) func_type.params.length;
+                        func_ctx.params[label] = cast(int) func_type.params.length;
                         func_type.params ~= r.token.getType;
                         r.check(r.token.getType !is Types.EMPTY);
                         r.nextToken;
@@ -656,7 +664,7 @@ struct WastParser {
 
         FuncType func_type;
         func_type.type = Types.FUNC;
-        scope int[string] params;
+         FunctionContext func_ctx;
         //scope Types[] locals;
         scope (exit) {
             type_section.sectypes ~= func_type;
@@ -680,7 +688,7 @@ struct WastParser {
         uint only_one_type_allowed;
         do {
             rewined = r.save;
-            arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type, params);
+            arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type, func_ctx);
 
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
@@ -691,7 +699,7 @@ struct WastParser {
             r = rewined;
         }
         while (r.type == TokenType.BEGIN) {
-            const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, params);
+            const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
             r.check(ret == ParserStage.FUNC_BODY);
         }
         return ParserStage.FUNC;
