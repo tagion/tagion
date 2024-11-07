@@ -122,7 +122,7 @@
         },
         "tvm_test1" : {
           "args" : [
-                "conversions.wast"
+                "i64.wast"
             ]
         },
         "memory" : {

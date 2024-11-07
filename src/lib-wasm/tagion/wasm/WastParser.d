@@ -264,7 +264,7 @@ struct WastParser {
                 case PREFIX:
                     break;
                 case ILLEGAL:
-                    throw new WasmException("Undefined instruction %s", r.token);
+                    throw new WasmException(format("Undefined instruction %s", r.token));
                     break;
                 case SYMBOL:
                     __write("SYMBOL %s %s", r.token, r.type);
