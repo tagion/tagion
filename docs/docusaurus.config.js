@@ -144,6 +144,7 @@ const config = {
       image: 'img/tagion-social-card.jpg',
       navbar: {
         logo: {
+          href: 'https://tagion.org',
           alt: 'Tagion logo',
           src: 'img/logo.svg',
           srcDark: 'img/logo-dark.svg',
@@ -153,8 +154,9 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Docs',
+            label: 'Tech',
           },
+          {to: '/gov/intro', label: 'Gov', position: 'left'},
           {to: '/tips', label: 'TIPs', position: 'left'},
           {href: 'https://tagion.medium.com', label: 'Blog', position: 'left'},
           {to: '/changelog', label: 'Changelog', position: 'right'},
