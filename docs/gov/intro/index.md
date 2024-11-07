@@ -2,8 +2,13 @@
 sidebar_position: 1
 ---
 
-# Welcome to the Governance-Site of Tagion
+# Introduction
 
-Here we will outline what Governance means to this project, what is already in place, what the current stewards envision, and how you can participate!
+Welcome to the governance documentation-pages of the Tagion network. 
 
-Stay tuned!
+This documentation is continuous work in progress as is governance. Because, to us, the terms means simultaneously the structure AND processes relating to managing a decentralised system.
+ And we want you to feel invited to contribute!
+
+Here, we will outline what Governance means to this project, what is already in place, what the current stewards envision, and how you get involved. 
+
+We will communicate any mayor changes to this in our Discord server. For the moment, stay tuned!
