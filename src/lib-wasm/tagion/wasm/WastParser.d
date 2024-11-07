@@ -126,8 +126,30 @@ struct WastParser {
 
             return -1;
         }
+
         // writefln("%s %s", __FUNCTION__, params.dup);
         ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
+            static const(Types)[] getReturns(ref WastTokenizer r) nothrow {
+                Types[] results;
+                    if (r.type == TokenType.BEGIN) {
+                auto r_return = r.save;
+                r_return.nextToken;
+
+                if (r_return.token == "result") {
+                    r_return.nextToken;
+                    while (r_return.type == TokenType.WORD) {
+                        r_return.check(r_return.type == TokenType.WORD);
+                        results~= r_return.token.getType;
+                        r_return.nextToken;
+                    }
+                    r_return.check(r_return.type == TokenType.END);
+                    r_return.nextToken;
+                    r = r_return;
+                }
+            }
+                return results;
+            }
+
             r.check(r.type == TokenType.BEGIN);
             scope (exit) {
                 r.check(r.type == TokenType.END, "Expect an end ')'");
@@ -155,6 +177,8 @@ struct WastParser {
                     break;
                 case CODE_TYPE:
                     r.nextToken;
+                    const wasm_returns=getReturns(r);
+                    version(none)
                     if (r.type == TokenType.BEGIN) {
                         auto r_return = r.save;
                         r_return.nextToken;

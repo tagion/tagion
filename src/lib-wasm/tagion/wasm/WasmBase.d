@@ -552,19 +552,19 @@ template toDType(Types t) {
     }
 }
 
-static string typesName(const Types type) pure {
+static string typesName(const Types type) pure nothrow {
     import std.conv : to;
     import std.uni : toLower;
 
     final switch (type) {
         static foreach (E; EnumMembers!Types) {
     case E:
-            return toLower(E.to!string);
+            return assumeWontThrow(toLower(E.to!string));
         }
     }
 }
 
-static Types getType(const string name) pure {
+static Types getType(const string name) pure nothrow {
     import std.traits;
 
     switch (name) {

@@ -351,7 +351,7 @@ alias check = Check!WasmBetterCException;
         if (exp == ExportType.init) {
             return format("func_%d", index);
         }
-        return exp.name.replace(".", "_").replace("-","_");
+        return exp.name.replace(".", "_").replace("-", "_");
     }
 
     static string param_name(const size_t index) {
@@ -567,9 +567,11 @@ alias check = Check!WasmBetterCException;
                         const end_instr = instrTable[end_elm.code];
                         output.writefln("%s%s", indent, end_instr.name);
                         //return end_elm;
+                        if (end_elm.code is IR.BLOCK) {
 
+                        }
                         // const end_elm=block_elm(elm);
-                        if (end_elm.code is IR.ELSE) {
+                        else if (end_elm.code is IR.ELSE) {
                             const endif_elm = innerBlock(expr, indent ~ spacer, level + 1);
                             const endif_instr = instrTable[endif_elm.code];
                             output.writefln("%s%s %s count=%d", indent,
@@ -577,6 +579,9 @@ alias check = Check!WasmBetterCException;
                         }
                         break;
                     case BRANCH:
+                        output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
+
+                        break;
                     case BRANCH_IF:
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                         break;
