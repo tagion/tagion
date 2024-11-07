@@ -205,6 +205,8 @@ struct WastParser {
                         label = r.token;
                         r.nextToken;
                     }
+                    const wasm_returns=getReturns(r);
+                    version(none)
                     if (r.type == TokenType.WORD) {
                         arg = r.token;
                         r.nextToken;

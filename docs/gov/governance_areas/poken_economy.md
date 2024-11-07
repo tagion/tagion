@@ -2,7 +2,7 @@
 
 more info about this coming soon. 
 
-pleass bear with us while we code
+please bear with us while we code
 
 In the meantime, you find the current version of our "tokenomics" described here: 
 
