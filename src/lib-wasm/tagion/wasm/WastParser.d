@@ -83,18 +83,23 @@ struct WastParser {
         return ctx.blocks.get(token, token.to!int);
     }
 
-    private ParserStage parseInstr(ref WastTokenizer r,
+    private ParserStage parseInstr(
+            ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
             ref const(FuncType) func_type,
             ref FunctionContext func_ctx) {
-        import std.outbuffer;
         import tagion.wasm.WasmExpr;
+
+        static WasmExpr createWasmExpr() {
+            import std.outbuffer;
+
+            auto bout = new OutBuffer;
+            return WasmExpr(bout);
+        }
 
         immutable number_of_func_arguments = func_type.params.length;
         scope immutable(Types)[] locals = func_type.params;
-        auto bout = new OutBuffer;
-        auto wasmexpr = WasmExpr(bout);
         int getLocal(string text) @trusted {
             int result = func_ctx.params[r.token].ifThrown!RangeError(int(-1));
             if (result < 0) {
@@ -138,8 +143,7 @@ struct WastParser {
             return -1;
         }
 
-        // writefln("%s %s", __FUNCTION__, func.params.dup);
-        ParserStage innerInstr(ref WastTokenizer r, ParserStage instr_stage) @safe {
+        ParserStage innerInstr(ref WasmExpr wasmexpr, ref WastTokenizer r, ParserStage instr_stage) @safe {
             static const(Types)[] getReturns(ref WastTokenizer r) @safe nothrow {
                 Types[] results;
                 if (r.type == TokenType.BEGIN) {
@@ -175,14 +179,14 @@ struct WastParser {
                 case CODE:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     wasmexpr(irLookupTable[instr.name]);
                     break;
                 case CODE_EXTEND:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     wasmexpr(IR.EXNEND, instr.opcode);
                     break;
@@ -204,7 +208,7 @@ struct WastParser {
                             }
                         }
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     wasmexpr(irLookupTable[instr.name]);
                     break;
@@ -220,7 +224,7 @@ struct WastParser {
                     func_ctx.blk_idx++;
                     const wasm_returns = getReturns(r);
                     while (r.type == TokenType.BEGIN) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     return stage;
                 case BRANCH:
@@ -239,17 +243,17 @@ struct WastParser {
                         assert(0, format("Illegal token %s in %s", r.token, BRANCH));
                     }
                     while (r.type == TokenType.BEGIN) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     break;
                 case BRANCH_IF:
                     r.nextToken;
-                    innerInstr(r, ParserStage.CODE);
+                    innerInstr(wasmexpr,r, ParserStage.CODE);
                     r.check(r.type == TokenType.WORD);
                     label = r.token;
                     r.nextToken;
                     if (r.type == TokenType.BEGIN) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     break;
                 case BRANCH_TABLE:
@@ -260,7 +264,7 @@ struct WastParser {
                     label = r.token;
                     r.nextToken;
                     while (r.type == TokenType.BEGIN) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     wasmexpr(IR.CALL, idx);
                     break;
@@ -274,7 +278,7 @@ struct WastParser {
                     wasmexpr(irLookupTable[instr.name], local_idx);
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     break;
                 case GLOBAL:
@@ -291,13 +295,13 @@ struct WastParser {
                         r.nextToken;
                     }
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     break;
                 case MEMOP:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     break;
                 case CONST:
@@ -341,7 +345,7 @@ struct WastParser {
                         r.nextToken;
                     }
                     for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
-                        innerInstr(r, ParserStage.CODE);
+                        innerInstr(wasmexpr,r, ParserStage.CODE);
 
                     }
                     switch (instr.wast) {
@@ -363,10 +367,11 @@ struct WastParser {
             return stage;
         }
 
+        auto wasmexpr = createWasmExpr;
         scope (exit) {
             code_type = CodeType(locals[number_of_func_arguments .. $], wasmexpr.serialize);
         }
-        return innerInstr(r, stage);
+        return innerInstr(wasmexpr, r, stage);
     }
 
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
