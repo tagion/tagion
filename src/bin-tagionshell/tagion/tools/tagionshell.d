@@ -867,7 +867,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     if (doc.isRecord!(HiRPC.Sender)) {
         const receiver = HiRPC(null).receive(doc);
 
-        if (!(receiver.method.name == "faucet")) {
+        if (receiver.method.name != "faucet") {
             rep.text = "Invalid method name";
             rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
             return;
@@ -1056,13 +1056,12 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     }
 }
 
-enum LAST = 1;
 enum PRENULTIMATE = 2;
 
 const lookup_handler = handler_helper!lookup_handler_impl;
 void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     string query_subject = req.path[$ - PRENULTIMATE];
-    string query_str = cast(string)(Base64URL.decode(req.path[$ - LAST]));
+    string query_str = cast(string)(Base64URL.decode(req.path[$ - 1]));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     scope (exit) {
         s.close();
@@ -1080,6 +1079,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         case "dart":
             DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
             rc = s.send(crud.dartRead([drtindex]).toDoc.serialize);
+            pragma(msg, "fixme: tagionshell change the buffer size to an enum");
             ubyte[4096] buf;
             size_t len = s.receivebuf(buf, buf.length);
             if (len == size_t.max && s.errno != 0) {

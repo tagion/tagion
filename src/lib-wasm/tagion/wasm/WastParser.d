@@ -73,15 +73,20 @@ struct WastParser {
     }
 
     struct FunctionContext {
-        int[string] params;
+        int[string] params; /// Parameter names
+        int[string] blocks; /// Block labels 
+        int blk_idx;
     }
+
+        static int blockIndex(ref const FunctionContext ctx, string token) pure  {
+            return ctx.blocks.get(token, token.to!int);
+        }
 
     private ParserStage parseInstr(ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
             ref const(FuncType) func_type,
-            ref scope FunctionContext func_ctx) {
-        //  ref scope int[string] params) {
+            ref FunctionContext func_ctx) {
         import std.outbuffer;
         import tagion.wasm.WasmExpr;
 
@@ -133,8 +138,8 @@ struct WastParser {
         }
 
         // writefln("%s %s", __FUNCTION__, func.params.dup);
-        ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
-            static const(Types)[] getReturns(ref WastTokenizer r) nothrow {
+        ParserStage innerInstr(ref WastTokenizer r, const ParserStage) @safe {
+            static const(Types)[] getReturns(ref WastTokenizer r) @safe nothrow {
                 Types[] results;
                 if (r.type == TokenType.BEGIN) {
                     auto r_return = r.save;
@@ -208,20 +213,28 @@ struct WastParser {
                     if (r.type == TokenType.WORD) {
                         //r.check(r.type == TokenType.WORD);
                         label = r.token;
+                        func_ctx.blocks[label] = func_ctx.blk_idx;
                         r.nextToken;
                     }
+                    func_ctx.blk_idx++;
                     const wasm_returns = getReturns(r);
-                    version (none)
-                        if (r.type == TokenType.WORD) {
-                            arg = r.token;
-                            r.nextToken;
-                        }
                     while (r.type == TokenType.BEGIN) {
                         innerInstr(r, ParserStage.CODE);
                     }
                     return stage;
                 case BRANCH:
                     r.nextToken;
+                    switch (r.token) { 
+                    case getInstr!(IR.BR).wast:
+                        const blk_idx=blockIndex(func_ctx, r.token); 
+                        wasmexpr(IR.BR, blk_idx);
+                        r.nextToken;
+                        
+                        break;
+                    default:
+                        assert(0, format("Illegal token %s in %s", r.token, BRANCH));
+                    }
+                    version(none)
                     if (r.type == TokenType.WORD) {
                         label = r.token;
                         r.nextToken;
@@ -664,7 +677,7 @@ struct WastParser {
 
         FuncType func_type;
         func_type.type = Types.FUNC;
-         FunctionContext func_ctx;
+        FunctionContext func_ctx;
         //scope Types[] locals;
         scope (exit) {
             type_section.sectypes ~= func_type;
