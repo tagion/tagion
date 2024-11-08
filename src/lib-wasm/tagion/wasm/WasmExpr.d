@@ -16,12 +16,13 @@ struct WasmExpr {
     }
 
     ref WasmExpr opCall(Args...)(const IR ir, Args args) {
-        auto instr = instrTable.lookup(ir); 
+        auto instr = instrTable.lookup(ir);
         bout.write(cast(ubyte) ir);
         with (IRType) {
             final switch (instr.irtype) {
             case PREFIX:
             case CODE:
+            case CODE_TYPE:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
                 break;
@@ -29,7 +30,7 @@ struct WasmExpr {
                 assert(Args.length == 1,
                         format("Instruction %s should have one extended opcode arguments", instr.name));
                 static if ((Args.length == 1) && isIntegral!(Args[0])) {
-                    bout.write(encode(args[0]));  
+                    bout.write(encode(args[0]));
                 }
                 break;
             case BLOCK, BRANCH, BRANCH_IF, CALL, LOCAL, GLOBAL:

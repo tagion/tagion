@@ -307,6 +307,7 @@ alias check = Check!WatException;
                 final switch (elm.instr.irtype) {
                 case CODE:
                 case CODE_EXTEND:
+                case CODE_TYPE:
                     output.writefln("%s%s", indent, elm.instr.name);
                     break;
                 case PREFIX:

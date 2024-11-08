@@ -111,6 +111,7 @@ enum Section : ubyte {
 enum IRType {
     CODE, /// Simple instruction with no argument
     CODE_EXTEND, /// Extended instruction with an opcode argument
+    CODE_TYPE, /// Instrunction with return type conversion (like select)
     BLOCK, /// Block instruction
     //    BLOCK_IF,      /// Block for [IF] ELSE END
     //   BLOCK_ELSE,    /// Block for IF [ELSE] END
@@ -162,7 +163,7 @@ enum IR : ubyte {
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
         @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, 1) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
         @Instr("drop", "drop", 1, IRType.CODE, 1)                   DROP                = 0x1A, ///  drop
-        @Instr("select", "select", 1, IRType.CODE, 3, 1)              SELECT              = 0x1B, ///  select
+        @Instr("select", "select", 1, IRType.CODE_TYPE, 3, 1)              SELECT              = 0x1B, ///  select
         @Instr("local.get", "local.get", 1, IRType.LOCAL, 0, 1)          LOCAL_GET           = 0x20, ///  local.get x:localidx
         @Instr("local.set", "local.set", 1, IRType.LOCAL, 1)             LOCAL_SET           = 0x21, ///  local.set x:localidx
         @Instr("local.tee", "tee_local", 1, IRType.LOCAL, 1, 1)          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
@@ -212,7 +213,7 @@ enum IR : ubyte {
         @Instr("i32.ge_s", "i32.ge_s", 1, IRType.CODE, 2, 1)            I32_GE_S            = 0x4E, ///  i32.ge_s
         @Instr("i32.ge_u", "i32.ge_u", 1, IRType.CODE, 2, 1)            I32_GE_U            = 0x4F, ///  i32.ge_u
 
-        @Instr("i64.eqz", "i64.eqz", 1, IRType.CODE, 2, 1)             I64_EQZ             = 0x50, ///  i64.eqz
+        @Instr("i64.eqz", "i64.eqz", 1, IRType.CODE, 1, 1)             I64_EQZ             = 0x50, ///  i64.eqz
         @Instr("i64.eq", "i64.eq", 1, IRType.CODE, 2, 1)              I64_EQ              = 0x51, ///  i64.eq
         @Instr("i64.ne", "i64.ne", 1, IRType.CODE, 2, 1)              I64_NE              = 0x52, ///  i64.ne
         @Instr("i64.lt_s", "i64.lt_s", 1, IRType.CODE, 2, 1)                  I64_LT_S            = 0x53, ///  i64.lt_s
@@ -355,7 +356,7 @@ static unittest {
 }
 
 shared static immutable(Instr[IR]) instrTable;
-shared static immutable(Instr[IR_EXTEND]) instrExtenedTable;
+shared static immutable(Instr[IR_EXTEND]) interExtendedTable;
 shared static immutable(IR[string]) irLookupTable;
 shared static immutable(Instr[string]) instrWastLookup;
 
@@ -393,7 +394,7 @@ protected immutable(Instr[IR]) generate_instrTable() {
     return (() @trusted => assumeUnique(result))();
 }
 
-protected immutable(Instr[IR_EXTEND]) generate_instrExtenedTable() {
+protected immutable(Instr[IR_EXTEND]) generate_interExtendedTable() {
     Instr[IR_EXTEND] result;
     with (IR_EXTEND) {
         static foreach (E; EnumMembers!IR_EXTEND) {
@@ -407,7 +408,7 @@ protected immutable(Instr[IR_EXTEND]) generate_instrExtenedTable() {
 
 shared static this() {
     instrTable = generate_instrTable;
-    instrExtenedTable = generate_instrExtenedTable;
+    interExtendedTable = generate_interExtendedTable;
     immutable(IR[string]) generateLookupTable() @safe {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
@@ -444,8 +445,8 @@ shared static this() {
         setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
-        //setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATMENT, 0, 1);
-        //setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATMENT, 0, 1);
+        //setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATEMENT, 0, 1);
+        //setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATEMENT, 0, 1);
 
         result["i32.select"] = instrTable[IR.SELECT];
         result["i64.select"] = instrTable[IR.SELECT];
@@ -551,19 +552,19 @@ template toDType(Types t) {
     }
 }
 
-static string typesName(const Types type) pure {
+static string typesName(const Types type) pure nothrow {
     import std.conv : to;
     import std.uni : toLower;
 
     final switch (type) {
         static foreach (E; EnumMembers!Types) {
     case E:
-            return toLower(E.to!string);
+            return assumeWontThrow(toLower(E.to!string));
         }
     }
 }
 
-static Types getType(const string name) pure {
+static Types getType(const string name) pure nothrow {
     import std.traits;
 
     switch (name) {
@@ -846,10 +847,11 @@ struct ExprRange {
             with (IRType) {
                 final switch (elm.instr.irtype) {
                 case CODE:
+                case CODE_TYPE:
                     break;
                 case CODE_EXTEND:
                     const opcode_arg = decode!IR_EXTEND(data, index);
-                    elm.instr = instrExtenedTable.lookup(opcode_arg);
+                    elm.instr = interExtendedTable.lookup(opcode_arg);
                     break;
                 case PREFIX:
                     elm._warg = int(data[index]); // Extended insructions

@@ -351,7 +351,7 @@ alias check = Check!WasmBetterCException;
         if (exp == ExportType.init) {
             return format("func_%d", index);
         }
-        return exp.name.replace(".", "_");
+        return exp.name.replace(".", "_").replace("-", "_");
     }
 
     static string param_name(const size_t index) {
@@ -465,6 +465,13 @@ alias check = Check!WasmBetterCException;
                 }
                 push(format("Undefinded %s pops %s %s", ir, pop, pop));
                 break;
+            case 3:
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop, pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s %s", ir, pop, pop, pop));
+                break;
             default:
                 check(0, format("Format argument %s not supported for %s", number_of_args, instrTable[ir].name));
             }
@@ -488,7 +495,7 @@ alias check = Check!WasmBetterCException;
                 push(format("Undefinded %s pops %s %s", ir, pop, pop));
                 break;
             default:
-                check(0, format("Format argument %s not supported for %s", number_of_args, instrExtenedTable[ir].name));
+                check(0, format("Format argument %s not supported for %s", number_of_args, interExtendedTable[ir].name));
             }
 
         }
@@ -540,6 +547,7 @@ alias check = Check!WasmBetterCException;
                 with (IRType) {
                     final switch (elm.instr.irtype) {
                     case CODE:
+                    case CODE_TYPE:
                         output.writefln("%s// %s", indent, elm.instr.name);
                         ctx.perform(elm.code, elm.instr.pops);
                         break;
@@ -559,9 +567,11 @@ alias check = Check!WasmBetterCException;
                         const end_instr = instrTable[end_elm.code];
                         output.writefln("%s%s", indent, end_instr.name);
                         //return end_elm;
+                        if (end_elm.code is IR.BLOCK) {
 
+                        }
                         // const end_elm=block_elm(elm);
-                        if (end_elm.code is IR.ELSE) {
+                        else if (end_elm.code is IR.ELSE) {
                             const endif_elm = innerBlock(expr, indent ~ spacer, level + 1);
                             const endif_instr = instrTable[endif_elm.code];
                             output.writefln("%s%s %s count=%d", indent,
@@ -569,6 +579,9 @@ alias check = Check!WasmBetterCException;
                         }
                         break;
                     case BRANCH:
+                        output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
+
+                        break;
                     case BRANCH_IF:
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                         break;
@@ -777,7 +790,7 @@ shared static this() {
         IR.F32_GE: q{(%2$s >= %2$s},
         IR.F32_ABS: q{math.fabsf(%1$s)},
         IR.F32_NEG: q{(-%1$s)},
-        IR.F32_CEIL: q{math.ceilf(%1$s)},
+        IR.F32_CEIL: q{math.ceil(%1$s)},
         IR.F32_FLOOR: q{math.floor(%1$s)},
         IR.F32_TRUNC: q{math.trunc(%1$s)},
         IR.F32_NEAREST: q{math.nearest(%1$s)},
@@ -869,8 +882,8 @@ shared static this() {
         IR.F64_GT: q{(%2$s > %1$s)},
         IR.F64_LE: q{(%2$s <= %1$s)},
         IR.F64_GE: q{(%2$s >= %1$s)},
-        // Extend 
-
+        //  
+        IR.SELECT: q{((%1$s)?%3$s:%2$s)},
     ];
     instr_extend_fmt = [
         IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},

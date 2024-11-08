@@ -116,6 +116,20 @@ const config = {
     ],
   ],
 
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'gov',
+        path: 'gov',
+        routeBasePath: 'gov',
+        sidebarPath: './sidebars.js',
+        sidebarPath: './sidebarsGov.js',
+      },
+    ],
+
+  ],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
@@ -130,6 +144,7 @@ const config = {
       image: 'img/tagion-social-card.jpg',
       navbar: {
         logo: {
+          href: 'https://tagion.org',
           alt: 'Tagion logo',
           src: 'img/logo.svg',
           srcDark: 'img/logo-dark.svg',
@@ -139,10 +154,11 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Docs',
+            label: 'Tech',
           },
+          {to: '/gov/intro', label: 'Gov', position: 'left'},
           {to: '/tips', label: 'TIPs', position: 'left'},
-          {href: 'https://tagion.medium.com', label: 'Blog', position: 'left'},
+       // {href: 'https://tagion.medium.com', label: 'Blog', position: 'left'},
           {to: '/changelog', label: 'Changelog', position: 'right'},
           {
             href: 'https://github.com/tagion/tagion',
@@ -158,8 +174,8 @@ const config = {
             title: 'Tech Documentation',
             items: [
               {
-                label: 'Getting Started',
-                to: '/tech/guide',
+                 label: 'Concept paper',
+                to: 'https://www.tagion.org/resources/tagion-whitepaper.pdf',
               },
               {
                 label: 'HiBON',
@@ -192,21 +208,22 @@ const config = {
             title: 'More',
             items: [
               {
-                label: 'Blog',
+                label: 'Tagion Website',
+                href: 'https://www.tagion.org',
+              },
+              {
+                label: 'Tagion Blog',
                 href: 'https://tagion.medium.com',
               },
               {
-                label: 'GitHub',
-                href: 'https://github.com/tagion/tagion',
+                label: 'Decard Website',
+                href: 'https://decard.io',
               },
-              {
-                label: 'Tagion',
-                href: 'https://www.tagion.org',
-              },
+              
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Tagion.org, Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Decard AG, Built with Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,

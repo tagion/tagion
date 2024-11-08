@@ -6,6 +6,38 @@ import std.math : isNaN, signbit;
 import std.traits;
 import foundation.error;
 
+void print_debug(F)(const F result, const F x, const F y, const F expected, string msg) {
+    import std.stdio;
+    import std.string;
+    import std.conv;
+
+    alias Number = Float!F;
+    Number _result, _x, _y, _expected;
+    _result.f = result;
+    _x.f = x;
+    _y.f = y;
+    _expected.f = expected;
+    writefln("%s result=%0#x x=%0#x y=%0#x expected=%0#x"
+            .replace("#", (F.sizeof * 2).to!string),
+            msg,
+            _result.i, _x.i, _y.i, _expected.i);
+}
+
+void print_debug(F, I)(const F result, const I x,  const F expected, string msg) {
+    import std.stdio;
+    import std.string;
+    import std.conv;
+
+    alias Number = Float!F;
+    Number _result,   _expected;
+    _result.f = result;
+    _expected.f = expected;
+    writefln("%s result=%0#x x=%0#x expected=%0#x"
+            .replace("#", (F.sizeof * 2).to!string),
+            msg,
+            _result.i, x,  _expected.i);
+}
+
 @safe:
 nothrow @nogc {
     template FloatAsInt(F) if (isFloatingPoint!F) {
@@ -28,6 +60,7 @@ nothrow @nogc {
             alias U = ulong;
             enum mask = 0xC_0000_0000_0000L;
         }
+        enum sign_mask = (U(1) << (F.sizeof * 8 - 1));
         enum mant_mask = (U(1) << (F.mant_dig - 1)) - 1;
         enum exp_mask = I.max & (~mant_mask);
         enum arithmetic_mask = mant_mask >> 1;
@@ -36,17 +69,96 @@ nothrow @nogc {
         I i;
     }
 
+    bool isCanonical(F)(F x) @trusted if (isFloatingPoint!F) {
+        if (x.isNaN) {
+            Float!F result;
+            result.f = x;
+            printf("result.i & result.canonical_mask =%016x\n",
+                    result.i);
+            return (result.i & result.mant_mask) == result.canonical_mask;
+        }
+        return false;
+    }
+
+    unittest {
+        float x = float.nan;
+        assert(x.isCanonical);
+    }
+
+    /**
+     * |       x        |      y        | result         |
+     * | -------------- | ------------- | -------------- | 
+     * | nan:canonical  | number        | nan:canonical  |
+     * | number         | nan:canonical | nan:canonical  | 
+     * | nan:arithmetic | dofn't care   | nan:arithmetic | 
+     * | don't care     | nan:arithmetic| nan:arithmetic | 
+     * else return false
+     
+
+     * Params:
+     *   x = 
+     *   y = 
+     *   result = 
+     * Returns: 
+     */
+    bool isNaNs(F)(F x, F y, ref F result) if (isFloatingPoint!F) {
+        if (x.isNaN || y.isNaN) {
+            alias Number = Float!F;
+            Number _result;
+            scope (exit) {
+                _result.i &= ~(Number.sign_mask);
+                result = _result.f;
+            }
+            if (x.isNaN && !x.isCanonical) {
+                _result.f = x;
+                return true;
+            }
+            if (y.isNaN && !y.isCanonical) {
+                _result.f = y;
+                return true;
+            }
+            _result.f = F.nan;
+            _result.i |= Number.canonical_mask;
+            return true;
+        }
+        return false;
+    }
+
+    bool isNaNs(F)(ref F x) if(isFloatingPoint!F) {
+        if (x.isNaN) {
+            alias Number = Float!F;
+            Number result;
+            scope (exit) {
+                result.i &= ~(Number.sign_mask);
+                x = result.f;
+            }
+            if (x.isCanonical) {
+                result.f = F.nan;
+                result.i |= result.canonical_mask;
+            }
+            result.f = x;
+            return true;
+        }
+        return false;
+    }
+
     import core.stdc.stdio;
 
-    F snan(F, T)(T x) @trusted if (isFloatingPoint!F) {
-        Float!F result;
-        result.f = F.nan;
-        printf("result.canonical_mask=%08x\n", result.canonical_mask, result.i);
-        printf("result.arithmetic_mask=%08x\n", result.arithmetic_mask, result.i);
-        printf("result.mant_mask=%08x x=%08x\n", result.mant_mask, result.i);
-        printf("result.exp_mask=%08x\n", result.exp_mask, result.i);
-        result.i |= x | result.canonical_mask;
-        return result.f;
+    F snan(F, T)(T x = 0) if (isFloatingPoint!F) {
+        if (x & Float!F.mant_mask) {
+            Float!F result;
+            result.i = (x | result.exp_mask);
+            return result.f;
+        }
+
+        return F.nan;
+    }
+
+    unittest {
+        Float!float x;
+        x.f = snan!float(0x7fa0_0000);
+        assert(x.i == 0x7fa0_0000);
+
     }
 
     int reinterpret32(float x) {
@@ -60,7 +172,6 @@ nothrow @nogc {
     float reinterpret32(int x) @trusted {
         Float!float result;
         result.i = x;
-        printf("%s result=%08x %a\n", __FUNCTION__.ptr, result.i, result.f);
         return result.f;
     }
 
@@ -103,66 +214,38 @@ nothrow @nogc {
     T mul(T)(T x, T y) => arithmetic!("*")(x, y);
     T div(T)(T x, T y) => arithmetic!("/")(x, y);
 
-    T arithmetic(string op, T)(T x, T y) @trusted if (isFloatingPoint!T) {
-        alias Number = Float!T;
-        Number result;
-        if (x.isNaN || y.isNaN) {
-            if (x.isNaN) {
-                result.f = x;
-            }
-            if (y.isNaN) {
-                Number y_map;
-                y_map.f = y;
+    import core.stdc.stdio;
 
-                result.i |= y_map.i;
-
-            }
+    F arithmetic(string op, F)(F x, F y) @trusted if (isFloatingPoint!F) {
+        F result;
+        if (isNaNs(x, y, result)) {
+            return result;
         }
-        else {
-            mixin("result.f=x" ~ op ~ "y;");
-        }
-        if (result.f.isNaN && signbit(result.f)) {
-            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
-        }
-        return result.f;
+        mixin("result=x" ~ op ~ "y;");
+        isNaNs(result);
+        return result;
     }
 
-    T min(T)(T x, T y) @trusted if (isFloatingPoint!T) {
-        if (x.isNaN || y.isNaN) {
-            alias Number = Float!T;
-            Number result;
-
-            if (x.isNaN) {
-                result.f = x;
+    F min(F)(F x, F y) if (isFloatingPoint!F) {
+        F result;
+        if (!isNaNs(x, y, result)) {
+            if ((x == F(0)) && (y == F(0))) {
+                return signbit(x) ? x : y;
             }
-            if (y.isNaN) {
-                Float!T y_map;
-                y_map.f = y;
-                result.i |= y_map.i;
-            }
-            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
-            return result.f;
+            result = (x < y) ? x : y;
         }
-        return (x < y) ? x : y;
+        return result;
     }
 
-    T max(T)(T x, T y) @trusted if (isFloatingPoint!T) {
-        if (x.isNaN || y.isNaN) {
-            alias Number = Float!T;
-            Number result;
-
-            if (x.isNaN) {
-                result.f = x;
+    F max(F)(F x, F y) if (isFloatingPoint!F) {
+        F result;
+        if (!isNaNs(x, y, result)) {
+            if ((x == F(0)) && (y == F(0))) {
+                return signbit(y) ? x : y;
             }
-            if (y.isNaN) {
-                Number y_map;
-                y_map.f = y;
-                result.i |= y_map.i;
-            }
-            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
-            return result.f;
+            result = (x > y) ? x : y;
         }
-        return (x > y) ? x : y;
+        return result;
     }
 
     T sqrt(T)(T x) => func!"sqrt"(x);
@@ -171,27 +254,19 @@ nothrow @nogc {
     T trunc(T)(T x) => func!"trunc"(x);
     T nearest(T)(T x) => func!"nearbyint"(x);
 
-    T func(string name, T)(T x) @trusted if (isFloatingPoint!T) {
-        alias Number = Float!T;
-        Number result;
-        if (x.isNaN) {
-
-            if (x.isNaN) {
-                result.f = x;
-            }
-            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
-            return result.f;
+    F func(string name, F)(F x) @trusted if (isFloatingPoint!F) {
+        if (isNaNs(x)) {
+            return x;
         }
+        F result;
         static if (is(T == float)) {
-            mixin("result.f=cmath." ~ name ~ "f(x);");
+            mixin("result=cmath." ~ name ~ "f(x);");
         }
         else {
-            mixin("result.f=cmath." ~ name ~ "(x);");
+            mixin("result=cmath." ~ name ~ "(x);");
         }
-        if (result.f.isNaN && signbit(result.f)) {
-            result.i &= (Number.U(1) << (T.sizeof * 8 - 1)) - 1;
-        }
-        return result.f;
+        isNaNs(result);
+        return result;
     }
 
     mixin template IntegralTruncLimits(T, F) if (isIntegral!T && isFloatingPoint!F) {
@@ -268,13 +343,25 @@ T trunc_sat(T, F)(F x) @trusted if (isIntegral!T && isFloatingPoint!F) {
     return cast(T) x;
 }
 
-double promote(float x) {
+double promote(float x) @trusted {
     import std.math : isNaN;
+    import core.stdc.stdio;
 
     if (x.isNaN) {
-        Float!double snan;
-        snan.f = x;
-        return snan.f;
+        Float!float x_nan, y;
+        x_nan.f = x;
+        y.f = snan!float(0x7fc0_0000);
+        Float!double result;
+        //result.i = long(x_nan.i) << 13+8+8;
+        result.i = long(x_nan.i) << 29;
+        result.i |= result.exp_mask;
+
+        printf("x=%08x result=%016lx %08x\n", x_nan.i, result.i, y.i);
+        //result.i |= result.exp_mask;
+        if (signbit(x)) {
+            return -result.f;
+        }
+        return result.f;
     }
     return cast(double) x;
 }

@@ -32,6 +32,7 @@ TAUON_DFILES+=$(DSRC)/lib-errors/tagion/errors/ConsensusExceptions.d
 TAUON_DFILES+=$(DSRC)/lib-utils/tagion/utils/LEB128.d
 TAUON_DFILES+=$(DSRC)/lib-utils/tagion/utils/StdTime.d
 TAUON_DFILES+=$(DSRC)/lib-utils/tagion/utils/Miscellaneous.d
+TAUON_DFILES+=$(DSRC)/lib-utils/tagion/utils/convert.d
 TAUON_DFILES+=$(DSRC)/lib-utils/tagion/utils/Gene.d
 
 TAUON_DFILES+=$(DSRC)/lib-hibon/tagion/hibon/Document.d
