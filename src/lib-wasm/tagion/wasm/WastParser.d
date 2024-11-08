@@ -59,6 +59,7 @@ struct WastParser {
         FUNC_BODY,
         CODE,
         END_FUNC,
+        BREAK,
         EXPORT,
         IMPORT,
         MEMORY,
@@ -78,9 +79,9 @@ struct WastParser {
         int blk_idx;
     }
 
-        static int blockIndex(ref const FunctionContext ctx, string token) pure  {
-            return ctx.blocks.get(token, token.to!int);
-        }
+    static int blockIndex(ref const FunctionContext ctx, string token) pure {
+        return ctx.blocks.get(token, token.to!int);
+    }
 
     private ParserStage parseInstr(ref WastTokenizer r,
             const ParserStage stage,
@@ -138,7 +139,7 @@ struct WastParser {
         }
 
         // writefln("%s %s", __FUNCTION__, func.params.dup);
-        ParserStage innerInstr(ref WastTokenizer r, const ParserStage) @safe {
+        ParserStage innerInstr(ref WastTokenizer r, ParserStage instr_stage) @safe {
             static const(Types)[] getReturns(ref WastTokenizer r) @safe nothrow {
                 Types[] results;
                 if (r.type == TokenType.BEGIN) {
@@ -208,7 +209,7 @@ struct WastParser {
                     wasmexpr(irLookupTable[instr.name]);
                     break;
                 case BLOCK:
-                    string arg;
+                    writefln("Block %s", r);
                     r.nextToken;
                     if (r.type == TokenType.WORD) {
                         //r.check(r.type == TokenType.WORD);
@@ -223,21 +224,19 @@ struct WastParser {
                     }
                     return stage;
                 case BRANCH:
-                    r.nextToken;
-                    switch (r.token) { 
+                    //  r.nextToken;
+                    writefln("IR.BR %s token=%s", getInstr!(IR.BR), r);
+                    switch (r.token) {
                     case getInstr!(IR.BR).wast:
-                        const blk_idx=blockIndex(func_ctx, r.token); 
+                        r.nextToken;
+                        const blk_idx = blockIndex(func_ctx, r.token);
+                        writefln("Branch %d %s", blk_idx, r);
                         wasmexpr(IR.BR, blk_idx);
                         r.nextToken;
-                        
+                        //                        r.check(r.type == TokenType.END); 
                         break;
                     default:
                         assert(0, format("Illegal token %s in %s", r.token, BRANCH));
-                    }
-                    version(none)
-                    if (r.type == TokenType.WORD) {
-                        label = r.token;
-                        r.nextToken;
                     }
                     while (r.type == TokenType.BEGIN) {
                         innerInstr(r, ParserStage.CODE);

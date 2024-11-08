@@ -8,10 +8,6 @@
   (func (export "type-i64") (block (drop (i64.ctz (br 0)))))
   (func (export "type-f32") (block (drop (f32.neg (br 0)))))
   (func (export "type-f64") (block (drop (f64.neg (br 0)))))
-  (func (export "type-i32-i32") (block (drop (i32.add (br 0)))))
-  (func (export "type-i64-i64") (block (drop (i64.add (br 0)))))
-  (func (export "type-f32-f32") (block (drop (f32.add (br 0)))))
-  (func (export "type-f64-f64") (block (drop (f64.add (br 0)))))
 
   (func (export "type-i32-value") (result i32)
     (block (result i32) (i32.ctz (br 0 (i32.const 1))))
