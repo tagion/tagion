@@ -44,6 +44,7 @@ int main(string[] args) {
     import node_interface = tagion.testbench.services.node_interface;
     import remote_sample = tagion.testbench.e2e.remote_sample;
     import nng_test = tagion.testbench.nng_test;
+    import godcontract = tagion.testbench.testnetwork.godcontract;
 
     alias alltools = AliasSeq!(
         collector,
@@ -86,6 +87,7 @@ int main(string[] args) {
         node_interface,
         remote_sample,
         nng_test,
+        godcontract,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

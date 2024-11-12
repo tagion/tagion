@@ -24,6 +24,12 @@ import tagion.basic.basic : isinit;
 
 @safe:
 
+struct Depend {
+    @optional string[] started;
+    @optional string[] ended;
+    mixin JSONRecord;
+}
+
 struct RunState {
     @optional string[string] envs;
     @optional string[] args;
@@ -33,10 +39,12 @@ struct RunState {
 
 struct RunUnit {
     string[] stages;
-    string[string] envs;
-    string[] args;
-    double timeout;
+    @optional string[string] envs;
+    @optional string[] args;
+    @optional double timeout;
     @optional RunState[string] extend;
+    @optional Depend depend;
+    @optional bool background;
     mixin JSONRecord;
 }
 
@@ -137,7 +145,9 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
+
             
+
                 .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {

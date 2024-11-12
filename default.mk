@@ -88,5 +88,5 @@ INSTALL?=$(HOME)/bin
 
 # God Contract only for test purpose
 # Enables to send dart-modify directly to the network
-# DVERSION+=GOD_COMNTRACT
+# DVERSION+=GOD_CONTRACT
 

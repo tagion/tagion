@@ -361,7 +361,7 @@ int main(string[] args) {
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
                 "s|schedule", format(
-                "Execution schedule Default: '%s'", options.schedule_file), &options.schedule_file,
+                    "Execution schedule Default: '%s'", options.schedule_file), &options.schedule_file,
                 "r|run", "Runs the test in the schedule", &run_stages,
                 "S", "Rewrite the schedule file", &schedule_rewrite,
                 "j|jobs", format(
@@ -410,7 +410,11 @@ int main(string[] args) {
 
         if (schedule_write_proto) {
             Schedule schedule;
-            auto run_unit = RunUnit(["example"], ["WORKDIR": "$(HOME)/work"], ["-f$WORKDIR"], 0.0);
+            auto run_unit = RunUnit(
+                    ["example"],
+                    ["WORKDIR": "$(HOME)/work"],
+                    ["-f$WORKDIR"],
+                    0.0);
 
             schedule.units["collider_test"] = run_unit;
             schedule.save(options.schedule_file);

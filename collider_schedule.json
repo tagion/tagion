@@ -352,6 +352,19 @@
       "envs": {},
       "stages": ["nng"],
       "timeout": 0.0
+    },
+    "test_net" : {
+        "args" : [],
+        "envs" : {},
+        "stages" : ["test_net"],
+        "background" : true,
+        "timeout" : 0.0
+    },
+    "godcontract": {
+      "depend" : {
+         "started" : ["test_net"]
+      },
+      "stages" : ["godcontract"]
     }
   }
 }
