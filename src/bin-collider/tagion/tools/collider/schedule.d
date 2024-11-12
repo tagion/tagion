@@ -64,16 +64,22 @@ struct Schedule {
     }
 }
 
-alias Runner = Tuple!(
-        //  ProcessPipes, "pipe",
-        Pid, "pid",
-        File, "fout",
-        RunUnit, "unit",
-        string, "name",
-        string, "stage",
-        SysTime, "time",
-        long, "jobid",
-);
+struct Stage {
+    RunUnit unit;
+    string name;
+    string stage;
+    bool done;
+}
+
+struct Runner {
+    Pid pid;
+    File fout;
+    RunUnit unit;
+    string name;
+    string stage;
+    SysTime time;
+    long jobid;
+}
 
 enum TEST_STAGE = "TEST_STAGE";
 enum COLLIDER_ROOT = "COLLIDER_ROOT";
@@ -172,12 +178,12 @@ struct ScheduleRunner {
     }
 
     int run(scope const(char[])[] args) {
-        alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage", bool : "done");
+        //alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage", bool, "done");
         auto schedule_list = stages
             .map!(stage => schedule.units
                     .byKeyValue
                     .filter!(unit => unit.value.stages.canFind(stage))
-                    .map!(unit => Stage(unit.value, unit.key, stage)))
+                    .map!(unit => new Stage(unit.value, unit.key, stage)))
             .joiner;
         if (schedule_list.empty) {
             error("None of the stage %s available", stages);
@@ -288,7 +294,7 @@ struct ScheduleRunner {
 
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                         schedule_list.front.name).setExtension("log");
-                        batch( job_index, time, cmd, log_filename, env);
+                        batch(job_index, time, cmd, log_filename, env);
                         schedule_list.popFront;
                     }
                     catch (Exception e) {
