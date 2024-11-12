@@ -172,7 +172,7 @@ struct ScheduleRunner {
     }
 
     int run(scope const(char[])[] args) {
-        alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage");
+        alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage", bool : "done");
         auto schedule_list = stages
             .map!(stage => schedule.units
                     .byKeyValue
@@ -185,7 +185,7 @@ struct ScheduleRunner {
             return 1;
         }
         auto runners = new Runner[jobs];
-
+        Runner[] background;
         void batch(
                 const ptrdiff_t job_index,
                 const SysTime time,
@@ -221,10 +221,7 @@ struct ScheduleRunner {
             // For some reason the drt cov flags don't work when spawned as a process 
             // so we just run it in a shell
             pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
-
-            writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
-                    pid.processID);
-            runners[job_index] = Runner(
+            auto runner = Runner(
                     pid,
                     fout,
                     schedule_list.front.unit,
@@ -233,6 +230,10 @@ struct ScheduleRunner {
                     time,
                     job_index
             );
+
+            writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
+                    pid.processID);
+            runners[job_index] = runner;
         }
 
         void terminate(ref Runner runner) {
@@ -287,7 +288,7 @@ struct ScheduleRunner {
 
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                         schedule_list.front.name).setExtension("log");
-                        batch(job_index, time, cmd, log_filename, env);
+                        batch( job_index, time, cmd, log_filename, env);
                         schedule_list.popFront;
                     }
                     catch (Exception e) {
