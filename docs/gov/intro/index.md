@@ -26,7 +26,7 @@ For this purpose, our ["Manifesto"](./manifesto) sets out the values and ambitio
 
 :::note[The _Tagion Governance Manifesto_]
 
-The first comprehensive content published on these pages will be our **Manifesto** - <br>
+The first comprehensive content published on these pages will be our **Manifesto** -
 it will be submitted for feedback on Discord first. Join us there to contribute before we 'set it into stone'.
 
 :::
