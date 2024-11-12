@@ -96,6 +96,7 @@ const config = {
           sidebarPath: './sidebars.js',
           path: 'tech',
           routeBasePath: 'tech',
+          //showLastUpdateTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
@@ -123,6 +124,7 @@ const config = {
         id: 'gov',
         path: 'gov',
         routeBasePath: 'gov',
+        showLastUpdateTime: true,
         sidebarPath: './sidebars.js',
         sidebarPath: './sidebarsGov.js',
       },
