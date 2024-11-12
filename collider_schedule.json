@@ -123,7 +123,7 @@
         },
         "tvm_test1" : {
           "args" : [
-                "br.wast"
+                "nested_block_value.wast"
             ]
         },
         "memory" : {
