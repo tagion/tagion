@@ -24,10 +24,10 @@ The word "decentralisation" here refers to a network in which no entity can impo
 Practically, this is not true yet. But the current network stewards at Decard have bond themselves to make this vision a reality as soon as possible.
 For this purpose, our ["Manifesto"](./manifesto) sets out the values and ambitions for Tagion, as guiding principles throughout the development process. 
 
-:::note [The Tagion Governance Manifesto]
+:::note[The Tagion Governance _Manifesto_]
 
-The first comprehensive content published on these pages will be our **Manifesto** - it will be submitted for feedback on Discord first. 
-Join us there to get a snak-preview and contribute before we set it into stone.
+The first comprehensive content published on these pages will be our **Manifesto** - 
+it will be submitted for feedback on Discord first. Join us there to contribute before we 'set it into stone'.
 
 :::
 
@@ -40,10 +40,16 @@ As the name indicates, this phase is not open to external parties who might be e
 
 ### Limited Release
 
+This second phase will see the network being extended to nodes operated by partners and vetted community members. The onboarding process will be "by invitation" only and strictly controlled by Decard to ensure security and quick support shall something not go to plan. In this phase, the governance here developed will be tested and improved in an safe environment. The results will be published here as our "Working Paper", ready for tests and verificatoin "in the wild", which will happen in the following phase.
+
 ### Curated Release
+
+With this third phase, the network will already feel as decentralised as commonly understood. We imagine an oboarding process that does not require the input or permission by any entity. The governance system established in the Working Paper will ensure security and coherence of the network. However, for safety and unforseen events, Decard together with an eveloving community council will retain special priviledges and can intervene if deemed necessary for the sustainabilty of the network and the adherence to the pricnciples set out in the manifesto. 
 
 ### Singularity
 
+This last stage is not so much a phase as point in time: it occurs when all priviledges in the network are relinquished and only the rules of the then firmly established governance system are followed. 
+From here on, the network is truely decentralised in the sense set out in the manifesto. 
 
 
 ## Glossary
@@ -52,4 +58,4 @@ These documentation pages also contain a glossary where we will record induvidua
 
 ## Stay tuned!
 
-We will communicate any mayor changes to this in our Discord server. For the moment, stay tuned!
+We will communicate any mayor updates and publications on these pages through our Discord channels. For the moment, join us there and stay tuned!
