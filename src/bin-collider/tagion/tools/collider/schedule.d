@@ -145,7 +145,9 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
+
             
+
                 .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {
@@ -192,6 +194,7 @@ struct ScheduleRunner {
         const(string[string]) env) {
             static uint job_count;
             scope (exit) {
+                showEnv(env, schedule_list.front.unit);
                 job_count++;
             }
             if (dry_switch) {
@@ -200,49 +203,36 @@ struct ScheduleRunner {
                 writefln("%d] %-(%s %)", job_count, cmd);
                 writefln("Log file %s", log_filename);
                 writefln("Unit = %s", schedule_list.front.unit.toJSON.toPrettyString);
+                return;
             }
-            else {
-                auto fout = File(log_filename, "w");
-                scope (exit) {
-                    fout.close;
+            auto fout = File(log_filename, "w");
+            auto _stdin = (() @trusted => stdin)();
 
-                }
-                auto _stdin = (() @trusted => stdin)();
+            Pid pid;
+            import std.conv;
 
-                Pid pid;
-                /**
-                if (!cov_enable) {
-                    pid = spawnProcess(cmd, _stdin, fout, fout, env);
-                }
-                else {
-                */
-                import std.conv;
-
-                string cov_flags;
-                if (cov_enable) {
-                    const cov_path
-                        = buildPath(environment.get(BDD_LOG, "logs"), "cov", job_index.to!string).relativePath;
-                    cov_flags = format(" --DRT-covopt=\"dstpath:%s merge:1\"", cov_path);
-                    mkdirRecurse(cov_path);
-                }
-                // For some reason the drt cov flags don't work when spawned as a process 
-                // so we just run it in a shell
-                pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
-                // }
-
-                writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
-                        pid.processID);
-                runners[job_index] = Runner(
-                        pid,
-                        fout,
-                        schedule_list.front.unit,
-                        schedule_list.front.name,
-                        schedule_list.front.stage,
-                        time,
-                        job_index
-                );
+            string cov_flags;
+            if (cov_enable) {
+                const cov_path
+                    = buildPath(environment.get(BDD_LOG, "logs"), "cov", job_index.to!string).relativePath;
+                cov_flags = format(" --DRT-covopt=\"dstpath:%s merge:1\"", cov_path);
+                mkdirRecurse(cov_path);
             }
-            showEnv(env, schedule_list.front.unit);
+            // For some reason the drt cov flags don't work when spawned as a process 
+            // so we just run it in a shell
+            pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
+
+            writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
+                    pid.processID);
+            runners[job_index] = Runner(
+                    pid,
+                    fout,
+                    schedule_list.front.unit,
+                    schedule_list.front.name,
+                    schedule_list.front.stage,
+                    time,
+                    job_index
+            );
         }
 
         void terminate(ref Runner runner) {
@@ -262,6 +252,9 @@ struct ScheduleRunner {
             if (!schedule_list.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 if (job_index >= 0) {
+                    scope (exit) {
+                        runners[job_index].fout.close;
+                    }
                     try {
                         auto time = Clock.currTime;
                         auto env = environment.toAA;
