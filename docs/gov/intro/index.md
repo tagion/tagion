@@ -24,6 +24,13 @@ The word "decentralisation" here refers to a network in which no entity can impo
 Practically, this is not true yet. But the current network stewards at Decard have bond themselves to make this vision a reality as soon as possible.
 For this purpose, our ["Manifesto"](./manifesto) sets out the values and ambitions for Tagion, as guiding principles throughout the development process. 
 
+:::note [The Tagion Governance Manifesto]
+
+The first comprehensive content published on these pages will be our **Manifesto** - it will be submitted for feedback on Discord first. 
+Join us there to get a snak-preview and contribute before we set it into stone.
+
+:::
+
 At the time of writing (find date of last update on bottom right of all pages), the Tagion network is distributed acorss several nodes, but they are all on Decard servers and operate in what we call "Mode 1". Once the next technical milestone is achieved and nodes that fall out of synchronisation can catch up with the consensus state of the network automatically, a huge step towards decentralization is achieved. Our dev-team calls that "Mode 2" and you can find more information on these terms in their [Tech documentation](https://docs.tagion.org/tech/architecture/network_modes). 
 In terms of governance, this is where the "release phases" of the network will start. The first of these is the 
 
