@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Introduction
 
-Welcome to the governance documentation-pages of the Tagion network. 
+Welcome to the governance documentation-pages of the Tagion network.    
 These pages will be continuously updated as our network matures. 
 
 Governance, to us, simultaneously means the structure AND processes of managing a decentralised system.
