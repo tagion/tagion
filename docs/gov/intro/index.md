@@ -5,22 +5,18 @@ sidebar_position: 1
 # Introduction
 
 Welcome to the governance documentation-pages of the Tagion network. 
-
 These pages will be continuously updated as our network matures. 
 
 Governance, to us, simultaneously means the structure AND processes of managing a decentralised system.
-And structure and process will change in step with the stage release of our network - and with your input. 
-
+And structure and process will change in step with the staged release of our network - see below - and with your input:   
 Please feel invited to contribute! For the time being, this happens on Discord (join [here](https://discord.gg/wE4AA64a)).
 
-To break up our ideas and make them easier to follow, we have structured the governance of our network into four interdependent areas (see menu). 
-The structure and process of each of those will have effects and consequences on all other, directly or indirectly. 
-
-Also, most of the elements here described will be implemented in stages along with the technical development of the network and its staged release from the stewardship of [Decard](https://www.tagion.org/about/). 
+To break up our ideas and make them easier to follow, we have structured the governance of our network into four interdependent areas. 
+The structure and process of each of those will have effects and consequences on all other, directly or indirectly. Navigate them through in the menu. 
 
 ## Release phases of Tagion
 The word "decentralisation" here refers to a network in which no entity can impose it's will and interest on the rest of the network.
-Practically, this is not true yet. But the current network stewards at Decard have bond themselves to make this vision a reality as soon as possible.
+Practically, this is not true yet. But the current network stewards at  [Decard](https://www.tagion.org/about/) have bound themselves to make this vision a reality as soon as possible.
 For this purpose, our ["Manifesto"](./manifesto) sets out the values and ambitions for Tagion, as guiding principles throughout the development process. 
 
 :::note[The _Tagion Governance Manifesto_]
