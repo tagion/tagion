@@ -19,7 +19,6 @@ The structure and process of each of those will have effects and consequences on
 Also, most of the elements here described will be implemented in stages along with the technical development of the network and its staged release from the stewardship of [Decard](https://www.tagion.org/about/). 
 
 ## Release phases of Tagion
-
 The word "decentralisation" here refers to a network in which no entity can impose it's will and interest on the rest of the network.
 Practically, this is not true yet. But the current network stewards at Decard have bond themselves to make this vision a reality as soon as possible.
 For this purpose, our ["Manifesto"](./manifesto) sets out the values and ambitions for Tagion, as guiding principles throughout the development process. 
