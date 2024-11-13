@@ -20,7 +20,8 @@ libmobile: DFLAGS+=-i
 libmobile: DFLAGS+=$(GEN_CPP_HEADER_FILE)=$(DLIB)/libmobile.h
 libmobile: DINC+=$(LIB_DINC)
 libmobile: LIBS+=$(LIBSECP256K1_STATIC)
-libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
+libmobile: DFILES:=${shell find $(DSRC)/ \( -path "*/lib-mobile/*" -o -path "*/lib-api/*" \) -a -name "*.d"}
+libmobile: DFILES+=$(DSRC)/lib-tools/tagion/tools/revision.d
 
 $(LIBMOBILE): revision
 $(LIBMOBILE): secp256k1

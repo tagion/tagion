@@ -68,13 +68,13 @@ extern (C) {
     }
 
     version(unittest) { } else
-    export const(char)* tagion_revision() {
+    export const(char)* _tagion_revision() {
         return revision_text.toStringz;
     }
     
     // Staritng d-runtime
     version(unittest) { } else
-    export static int64_t start_rt() {
+    export static int64_t _start_rt() {
         if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
             __runtimeStatus = DrtStatus.STARTED;
             return rt_init;
@@ -84,7 +84,7 @@ extern (C) {
 
     // Terminating d-runtime
     version(unittest) { } else
-    export static int64_t stop_rt() {
+    export static int64_t _stop_rt() {
         if (__runtimeStatus is DrtStatus.STARTED) {
             __runtimeStatus = DrtStatus.TERMINATED;
             return rt_term;
