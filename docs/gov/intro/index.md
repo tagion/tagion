@@ -12,21 +12,22 @@ And structure and process will change in step with the staged release of our net
 Please feel invited to contribute! For the time being, this happens on Discord (join [here](https://discord.gg/wE4AA64a)).
 
 To break up our ideas and make them easier to follow, we have structured the governance of our network into four interdependent areas. 
-The structure and process of each of those will have effects and consequences on all other, directly or indirectly. Navigate them through in the menu. 
+The structure and process of each of those will have effects and consequences on all other, directly or indirectly.  
+Navigate them through the menu. 
 
 ## Phased decentralisation of Tagion
 The word "decentralisation" here refers to a network in which no entity can impose it's will and interest on the rest of the network.
-Practically, this is not true yet. But the current network stewards at  [Decard](https://www.tagion.org/about/) have bound themselves to make this vision a reality as soon as possible.
+Practically, Tagion does not meet this criterium yet. But the current network stewards at  [Decard](https://www.tagion.org/about/) have bound themselves to make this vision a reality as soon as possible.
 For this purpose, our ["Manifesto"](./manifesto) sets out the values and ambitions for Tagion, as guiding principles throughout the development process. 
 
 :::note[The _Tagion Governance Manifesto_]
 
 The first comprehensive content published on these pages will be our **Manifesto** -   
-it will be submitted for feedback on Discord first. Join us there to contribute before we `set it into stone`.
+it will be submitted for feedback on Discord first. Join us there to contribute before we set it `into stone`.
 
 :::
 
-At the time of writing (find date of last update on bottom right of all pages), the Tagion network is distributed across several nodes, but they are all on Decard servers and operate in what we call "Mode 1". Once the next technical milestone is achieved and nodes that fall out of synchronisation can catch up with the consensus state of the network automatically, a huge step towards decentralization is achieved. Our dev-team calls that "Mode 2" and you can find more information on these terms in their [Tech documentation](https://docs.tagion.org/tech/architecture/network_modes). 
+At the time of writing (find a timestamps of lastest updates on the bottom of all pages), the Tagion network is distributed across several nodes, but they are all on Decard servers and operate in what we call "Mode 1". Once the next technical milestone is achieved and nodes that fall out of synchronisation can catch up with the consensus state of the network automatically, a huge step towards decentralization is achieved. Technically, we call that "Mode 2" and you can find more information on these terms in the [Tech documentation](https://docs.tagion.org/tech/architecture/network_modes).  
 In terms of governance, this is where the "release phases" of the network will start. The first of these is the 
 
 ### 1.Closed Release
