@@ -29,6 +29,7 @@ const _testclass = "nngd.nngtests.nng_test04_pubsub";
         }
         foreach(w; workers)
             w.join();
+        log(_testclass ~ ": Bye!");
         return [];
     }
     

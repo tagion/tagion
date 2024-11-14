@@ -26,6 +26,8 @@ const _testclass = "nngd.nngtests.nng_test03_pushpull_transport";
             foreach(w; workers)
                 w.join();
         }
+        log("BB");
+        log(_testclass ~ ": Bye!");
         return [];
     }
     

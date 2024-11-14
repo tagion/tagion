@@ -77,11 +77,14 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         assert(0);
     }
 
+
+    // TODO: explain in comment
     enum nng_flag {
         NNG_FLAG_ALLOC = 1,
         NNG_FLAG_NONBLOCK = 2
     }
 
+    private
     T* ptr(T)(T[] arr) {
         return arr.length == 0 ? null : &arr[0];
     }
@@ -183,7 +186,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         NNG_AF_IPC = 2,
         NNG_AF_INET = 3,
         NNG_AF_INET6 = 4,
-        NNG_AF_ZT = 5, // ZeroTier
+        NNG_AF_ZT = 5, // TODO: ZeroTier
         NNG_AF_ABSTRACT = 6
     };
 

@@ -83,10 +83,18 @@ static uint rot3 ( uint data ) { return ( data << 3 )&( data >> 29 ); }
 static uint mkrot3 ( uint data ) { return data ^ rot3(data); }
 static bool chkrot3 ( uint data, uint chk ) { return (chk ^ rot3(data)) == data; }
 
+static string[] __errors;
+
+static void nngtest_error(A...)(string fmt, A a) @trusted {
+    __errors ~= format(fmt, a);
+}
+
 enum nngtestflag : uint {
     DEBUG   = 1,
     SETENV  = 2
 }
+
+alias runtest = string[] delegate () @trusted; 
 
 @trusted class NNGTest {
         void log(A...)(string fmt, A a) @trusted {
@@ -113,6 +121,10 @@ enum nngtestflag : uint {
             }
         }
         
+        auto self(){
+            return this;
+        }
+        
         string[] run() @trusted { return []; }
         
         string errors() @trusted {
@@ -123,29 +135,58 @@ enum nngtestflag : uint {
 
         void seterrors ( string[] e ) @trusted { _errors ~= e; }
 
-    private:
+        File* getlogfile() { return this.logfile; } 
+
+    protected:
         
-        File *logfile;                
+        File* logfile;                
         uint flags;
         string[] _errors;
 }
 
 @trusted class NNGTestSuite : NNGTest {
     
-    this(Args...)(auto ref Args args) { super(args); }
+    this(Args...)(auto ref Args args) { this.todo = -1; super(args); }
     
+    string[] runonce( int testno ) {
+        this.todo = testno;
+        auto res = this.run();
+        this.todo = -1;
+        return res;
+    }
+
     override string[] run() @trusted {
         string[] res = []; 
+        mixin("auto pool = new TaskPool(4);");
         static foreach(i,t; nngd.nngtests.testlist){
-            mixin("auto t"~to!string(i)~" = new "~t~"(this.logfile, this.flags);");
-            mixin("auto task"~to!string(i)~" = task(&(t"~to!string(i)~".run));");
-            mixin("task"~to!string(i)~".executeInNewThread();");
+           mixin(
+           "if( this.todo < 0 || this.todo == "~to!string(i)~" ) { \n" ~
+           "auto t"~to!string(i)~" = new "~t~"(this.logfile, this.flags); \n" ~
+           "this.tests[\""~to!string(i)~"\"] = cast(NNGTest*)&(t"~to!string(i)~"); \n" ~
+           "auto task"~to!string(i)~" = task(&(t"~to!string(i)~".run)); \n" ~
+           "pool.put(task"~to!string(i)~"); \n" ~
+           "} \n"
+           );
         }
+        mixin("pool.finish(true);");
+        mixin("pool.stop;");
         static foreach(i,t; nngd.nngtests.testlist){
-            mixin("res ~= task"~to!string(i)~".yieldForce;");
-            mixin("this.seterrors(t"~to!string(i)~".geterrors());");
+            mixin(
+            "if( this.todo < 0 || this.todo == "~to!string(i)~" ) { \n" ~
+            "this.seterrors(this.tests[\""~to!string(i)~"\"].geterrors()); \n" ~
+            "} \n"
+            );
         }
+        
+        if(!__errors.empty){
+            this.seterrors(__errors);
+        }
+
         return res;       
     }
+
+    private:
+        int todo;
+        NNGTest*[string] tests;
 }
 
