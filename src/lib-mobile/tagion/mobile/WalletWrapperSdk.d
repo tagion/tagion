@@ -67,12 +67,14 @@ extern (C) {
         DART_UPDATE_REQUIRED = 16,
     }
 
+    deprecated("_tagion_revision is deprecated, use tagion_revision from tagion api basic instead")
     version(unittest) { } else
     export const(char)* _tagion_revision() {
         return revision_text.toStringz;
     }
     
     // Staritng d-runtime
+    deprecated("_start_rt is deprecated, use _start_rt from tagion api basic instead")
     version(unittest) { } else
     export static int64_t _start_rt() {
         if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
@@ -83,6 +85,7 @@ extern (C) {
     }
 
     // Terminating d-runtime
+    deprecated("_stop_rt is deprecated, use _stop_rt from tagion api basic instead")
     version(unittest) { } else
     export static int64_t _stop_rt() {
         if (__runtimeStatus is DrtStatus.STARTED) {
@@ -94,6 +97,7 @@ extern (C) {
 
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
+    deprecated("wallet_storage_init is deprecated, will no longer be supported")
     export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
         const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
         if (directoryPath.length > 0) {
@@ -107,10 +111,13 @@ extern (C) {
     }
 
     // Check if wallet was already created.
+    deprecated("wallet_check_exist is deprecated, will no longer be supported")
     export uint wallet_check_exist() {
         return __wallet_storage.isWalletExist();
     }
 
+    // Create a new wallet.
+    deprecated("wallet_create is deprecated, will no longer be supported")
     export uint wallet_create(
             const uint8_t* pincodePtr,
             const uint32_t pincodeLen,
@@ -145,6 +152,8 @@ extern (C) {
         return SUCCESS;
     }
 
+    // Login to the wallet.
+    deprecated("wallet_login is deprecated, will no longer be supported")
     export uint wallet_login(const uint8_t* pincodePtr, const uint32_t pincodeLen) nothrow {
 
         // Restore data from ponters.
@@ -163,6 +172,8 @@ extern (C) {
         return ERROR;
     }
 
+    // Logout from the wallet.
+    deprecated("wallet_logout is deprecated, will no longer be supported")
     export uint wallet_logout() nothrow {
         if (__wallet_storage.wallet.isLoggedin()) {
             __wallet_storage.wallet.logout();
@@ -173,10 +184,14 @@ extern (C) {
         return ERROR;
     }
 
+    // Check if wallet is logged in.
+    deprecated("wallet_check_login is deprecated, will no longer be supported")
     export uint wallet_check_login() {
         return __wallet_storage.wallet.isLoggedin();
     }
 
+    // Delete wallet.
+    deprecated("wallet_delete is deprecated, will no longer be supported")
     export uint wallet_delete() {
         // Try to remove wallet file.
         if (__wallet_storage !is null && __wallet_storage.remove()) {
@@ -189,6 +204,8 @@ extern (C) {
         return ERROR;
     }
 
+    // Validate pincode.
+    deprecated("validate_pin is deprecated, will no longer be supported")
     export uint validate_pin(const uint8_t* pincodePtr, const uint32_t pincodeLen) {
         // Restore data from ponters.
         const pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
@@ -200,6 +217,8 @@ extern (C) {
     }
 
     // TODO: Get info if it's possible to change a pincode without providing a current one.
+    // Change pincode.
+    deprecated("change_pin is deprecated, will no longer be supported")
     export uint change_pin(
             const uint8_t* pincodePtr,
             const uint32_t pincodeLen,
@@ -223,6 +242,8 @@ extern (C) {
         return ERROR;
     }
 
+    // Get the fee for the transaction.
+    deprecated("get_fee is deprecated, will no longer be supported")
     export uint get_fee(const double amount, double* fees) {
         TagionCurrency tgn_fees;
         scope (exit) {
@@ -233,6 +254,8 @@ extern (C) {
         return can_pay.value ? 1 : 0;
     }
 
+    // Create a new invoice.
+    deprecated("create_invoice is deprecated, will no longer be supported")
     export uint create_nft_contract(
             uint32_t* signedContractPtr,
             uint8_t* nftPtr,
@@ -288,6 +311,8 @@ extern (C) {
         return ERROR;
     }
 
+    // Create a new contract.
+    deprecated("create_contract is deprecated, will no longer be supported")
     export uint create_contract(
             uint32_t* contractPtr,
             const uint8_t* invoicePtr,
@@ -344,6 +369,8 @@ extern (C) {
         return PAYMENT_ERROR;
     }
 
+    // Create a new invoice.
+    deprecated("create_invoice is deprecated, will no longer be supported")
     export uint create_invoice(
             uint8_t* invoicePtr,
             const double amount,
@@ -370,6 +397,8 @@ extern (C) {
         return ERROR;
     }
 
+    // Create a new invoice.
+    deprecated("create_invoice is deprecated, will no longer be supported")
     export uint request_trt_update(uint8_t* requestPtr) {
         if (!__wallet_storage.wallet.isLoggedin()) {
         
@@ -381,6 +410,7 @@ extern (C) {
         return SUCCESS;
     }
 
+    deprecated("update_trt_response is deprecated, will no longer be supported")
     export uint update_trt_response(uint8_t* responsePtr, uint32_t responseLen, uint8_t* requestPtr) {
         import tagion.hibon.HiBONException;
 
@@ -420,6 +450,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("update_dart_response is deprecated, will no longer be supported")
     export uint update_dart_response(uint8_t* responsePtr, uint32_t responseLen) {
         import tagion.hibon.HiBONException;
 
@@ -451,6 +482,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("request_update is deprecated, will no longer be supported")
     export uint request_update(uint8_t* requestPtr) {
 
         if (!__wallet_storage.wallet.isLoggedin()) {
@@ -463,6 +495,7 @@ extern (C) {
         return SUCCESS;
     }
 
+    deprecated("update_response is deprecated, will no longer be supported")
     export uint update_response(uint8_t* responsePtr, uint32_t responseLen) {
         import tagion.hibon.HiBONException;
 
@@ -492,7 +525,7 @@ extern (C) {
         return ERROR;
     }
 
-    // export void toPretty(uint8_t* docPtr, uint32_t responseLen, char* resultPtr, uint32_t* resultLen) {
+    deprecated("toPretty is deprecated, will no longer be supported")
     export void toPretty(uint8_t* docPtr, uint32_t responseLen, uint8_t* resultPtr) {
         immutable res = cast(immutable)(docPtr[0 .. responseLen]);
         Document doc = Document(res);
@@ -510,24 +543,28 @@ extern (C) {
         // *resultLen = cast(uint32_t) result.length;
     }
 
+    deprecated("get_locked_balance is deprecated, will no longer be supported")
     @safe
     export double get_locked_balance() {
         const balance = __wallet_storage.wallet.locked_balance();
         return balance.value;
     }
 
+    deprecated("get_balance is deprecated, will no longer be supported")
     @safe
     export double get_balance() {
         const balance = __wallet_storage.wallet.available_balance();
         return balance.value;
     }
 
+    deprecated("get_total_balance is deprecated, will no longer be supported")
     @safe
     export double get_total_balance() {
         const balance = __wallet_storage.wallet.total_balance();
         return balance.value;
     }
 
+    deprecated("get_public_key is deprecated, will no longer be supported")
     export uint get_public_key(uint8_t* pubkeyPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
             const pubkey = __wallet_storage.wallet.getPublicKey();
@@ -544,6 +581,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("get_derivers_state is deprecated, will no longer be supported")
     export uint get_derivers_state(uint8_t* deriversStatePtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
             const deriversState = __wallet_storage.wallet.getDeriversState();
@@ -560,6 +598,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("get_account is deprecated, will no longer be supported")
     export uint get_account(uint8_t* accountPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
 
@@ -571,7 +610,7 @@ extern (C) {
         }
         return ERROR;
     }
-
+    deprecated("get_account is deprecated, will no longer be supported")
     export uint get_backup(uint8_t* backupPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
             const encrAccount = __wallet_storage.wallet.getEncrAccount();
@@ -591,6 +630,7 @@ extern (C) {
      *   backupLen = 
      * Returns: 
      */
+    deprecated("set_backup is deprecated, will no longer be supported")
     export uint set_backup(const uint8_t* backupPtr, const uint32_t backupLen) {
 
         immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
@@ -631,6 +671,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("add_bill is deprecated, will no longer be supported")
     export uint add_bill(const uint8_t* billPtr, const uint32_t billLen) {
 
         immutable billBuffer = cast(immutable)(billPtr[0 .. billLen]);
@@ -643,6 +684,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("unlock_bills_by_contract is deprecated, will no longer be supported")
     export uint unlock_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
 
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
@@ -669,6 +711,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("get_stored_hirpcs_length is deprecated, will no longer be supported")
     export ulong get_stored_hirpcs_length() {
         if (__wallet_storage.wallet.isLoggedin()) {
             return __wallet_storage.wallet.account.hirpcs.length;
@@ -676,6 +719,7 @@ extern (C) {
         return 0;
     }
 
+    deprecated("get_stored_hirpc is deprecated, will no longer be supported")
     export uint get_stored_hirpc(uint8_t* hirpcPtr, const uint32_t index) {
         if (__wallet_storage.wallet.isLoggedin()) {
             const hirpc = __wallet_storage.wallet.account.hirpcs[index];
@@ -686,6 +730,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("request_contract_status_check is deprecated, will no longer be supported")
     export uint request_contract_status_check(uint8_t* hirpcPtr, uint32_t hirpcLen, uint8_t* requestPtr) {
         import tagion.dart.DARTcrud : dartRead;
 
@@ -702,6 +747,7 @@ extern (C) {
         return SUCCESS;
     }
 
+    deprecated("unlock_bills_by_indices is deprecated, will no longer be supported")
     export uint unlock_bills_by_indices(uint8_t* responsePtr, uint32_t responseLen) {
         import tagion.hibon.HiBONException;
         import tagion.dart.Recorder;
@@ -746,6 +792,7 @@ extern (C) {
         return ERROR;
     }
 
+    deprecated("check_contract_payment is deprecated, will no longer be supported")
     export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
@@ -801,6 +848,7 @@ extern (C) {
 
     static sdt_t dummy_time;
     // DUMMY FUNCTION
+    deprecated("get_history is deprecated, will no longer be supported")
     uint get_history(uint from, uint count, uint32_t* historyId) {
         assert(__wallet_storage !is null, "The Wallet storage was not initialised");
 
