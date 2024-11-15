@@ -2,6 +2,7 @@ module nngd.nngtests;
 
 public {
     
+    import nngd.nngtests.testdata;
     import nngd.nngtests.test00;
     import nngd.nngtests.test01;
     import nngd.nngtests.test02;
@@ -11,6 +12,8 @@ public {
     import nngd.nngtests.test06;
     import nngd.nngtests.test07;
     import nngd.nngtests.test08;
+    import nngd.nngtests.test09;
+    import nngd.nngtests.test10;
     
     static immutable string[] testlist = (){
         return [ 
@@ -22,7 +25,9 @@ public {
             nngd.nngtests.test05._testclass,
             nngd.nngtests.test06._testclass,
             nngd.nngtests.test07._testclass,
-            nngd.nngtests.test08._testclass
+            nngd.nngtests.test08._testclass,
+            nngd.nngtests.test09._testclass,
+            nngd.nngtests.test10._testclass
         ];    
     }();
 
