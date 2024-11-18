@@ -80,7 +80,7 @@ struct Stage {
     string stage;
     Lap lap;
     bool hasEnded() pure nothrow @nogc {
-    return lap >= Lap.timedout;
+        return lap >= Lap.timedout;
     }
 
 }
@@ -147,9 +147,9 @@ unittest {
     assert(c.take(repeat_task).walkLength == repeat_task);
         c.take(repeat_task).filter!(s => s.name == "C").each!(s => s.lap=Lap.stopped);
     assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["A", "B","D"]));
-        c.take(repeat_task).filter!(s => s.name == "A").each!(s => s.lap=Lap.stopped);
+        c.take(repeat_task).filter!(s => s.name == "A").each!(s => s.lap=Lap.timedout);
     assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["B","D"]));
-        c.take(repeat_task).filter!(s => s.name == "B" ).each!(s => s.lap=Lap.stopped);
+        c.take(repeat_task).filter!(s => s.name == "B" ).each!(s => s.lap=Lap.failed);
     assert(!c.empty); 
     c.front.lap=Lap.stopped;
     assert(c.empty); 
@@ -268,8 +268,8 @@ struct ScheduleRunner {
         }
         auto runners = new Runner[jobs];
         Runner[] background;
-        auto schedule_queue = cycle(schedule_list); 
         void batch(
+                Stage* stage,
                 const ptrdiff_t job_index,
                 const SysTime time,
                 const(char[][]) cmd,
@@ -277,7 +277,7 @@ struct ScheduleRunner {
         const(string[string]) env) {
             static uint job_count;
             scope (exit) {
-                showEnv(env, schedule_queue.front.unit);
+                showEnv(env, stage.unit);
                 //schedule_queue.front.done = true;
                 job_count++;
             }
@@ -286,7 +286,7 @@ struct ScheduleRunner {
                 writefln("%-(%s%)", '#'.repeat(max(min(line_length, 30), 80)));
                 writefln("%d] %-(%s %)", job_count, cmd);
                 writefln("Log file %s", log_filename);
-                writefln("Unit = %s", schedule_queue.front.unit.toJSON.toPrettyString);
+                writefln("Unit = %s", stage.unit.toJSON.toPrettyString);
                 return;
             }
             auto fout = File(log_filename, "w");
@@ -305,17 +305,21 @@ struct ScheduleRunner {
             // For some reason the drt cov flags don't work when spawned as a process 
             // so we just run it in a shell
             pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
-            schedule_queue.front.lap = Lap.started;
+            stage.lap = Lap.started;
             auto runner = Runner(
                     pid,
                     fout,
-                    schedule_queue.front,
+                    stage, 
                     time,
                     job_index
             );
 
             writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
                     pid.processID);
+            if (runners[job_index] !is Runner.init) {
+                runners[job_index].fout.close;
+            }
+            writefln("---> %s", runner.stage.lap);
             runners[job_index] = runner;
         }
 
@@ -333,10 +337,12 @@ struct ScheduleRunner {
             "\\",
         ];
 
+        auto schedule_queue = cycle(schedule_list); 
         while (!schedule_queue.empty || runners.any!(r => r.pid !is r.pid.init)) {
             if (!schedule_queue.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 if (job_index >= 0) {
+                    version(none)
                     scope (exit) {
                         runners[job_index].fout.close;
                     }
@@ -372,7 +378,7 @@ struct ScheduleRunner {
 
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                         schedule_queue.front.name).setExtension("log");
-                        batch(job_index, time, cmd, log_filename, env);
+                        batch(schedule_queue.front, job_index, time, cmd, log_filename, env);
                         schedule_queue.popFront;
                     }
                     catch (Exception e) {
