@@ -1,1 +1,4 @@
-UNITTEST_DFILES+=$(DSRC)/bin-hibonutil/tagion/tools/samplehibon.d
+
+
+UNITTEST_DFILES+=$(shell find $(DSRC)/bin-hibonutil/ -name "*.d")
+

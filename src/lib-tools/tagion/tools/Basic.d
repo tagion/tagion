@@ -82,6 +82,7 @@ void error(const Throwable e) nothrow {
 
 void error(Args...)(string fmt, lazy Args args) @trusted nothrow {
     import std.format;
+
     assumeWontThrow(stderr.writefln("%sError: %s%s", RED, format(fmt, args), RESET));
 }
 
@@ -136,14 +137,17 @@ int forceSymLink(const SubTools sub_tools) {
 
 mixin template Main(alias _main, string name = null) {
     import std.traits : fullyQualifiedName;
+    import tagion.basic.Version : not_unittest;
 
-    version (ONETOOL) {
-        enum alternative_name = name;
-        enum main_name = fullyQualifiedName!_main;
-    }
-    else {
-        int main(string[] args) {
-            return _main(args);
+    static if (not_unittest) {
+        version (ONETOOL) {
+            enum alternative_name = name;
+            enum main_name = fullyQualifiedName!_main;
+        }
+        else {
+            int main(string[] args) {
+                return _main(args);
+            }
         }
     }
 }
@@ -155,8 +159,7 @@ mixin template Main(alias _main, string name = null) {
  *      local_options = A struct with a json common mixin
  *      override_options = a list of strings formattet a "some.member.key:value"
 */
-void set_override_options(T)(ref T local_options, string[] override_options)
-if(isJSONRecord!T) {
+void set_override_options(T)(ref T local_options, string[] override_options) if (isJSONRecord!T) {
     JSONValue json = local_options.toJSON;
 
     void set_val(JSONValue j, string[] _key, string val) {

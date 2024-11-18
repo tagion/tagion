@@ -83,31 +83,35 @@ struct Runner {
 
 auto cycle(R)(R r) if (isInputRange!R && is(ElementType!R == Stage*)) {
     static struct Range {
-        R r;
-        R cycle_r;
-        bool done;
+        Stage*[] stages;
+        size_t index;
         this(R r) {
-            this.r = this.cycle_r = r;
+            this.stages= r.array;
         }
 
         bool empty() pure nothrow {
-            return cycle_r.empty;
+            return front is null;
         }
 
         Stage* front() {
-            return cycle_r.front;
+            if ((index < stages.length) && stages[index].done) {
+                popFront;
+            }
+            if (index >= stages.length) {//stages[index].done) {
+                return null;
+            }
+            return stages[index];
         }
 
         void popFront() {
-            if (cycle_r.empty) {
-                cycle_r = r;
+            index++; 
+            if (index >= stages.length) {
+                index = 0;
             }
-            while (!cycle_r.empty && cycle_r.front.done) {
-                cycle_r.popFront;
+            while ((index < stages.length) && stages[index].done) {
+                    index++;
             }
-            done = cycle_r.empty;
         }
-
     }
 
     return Range(r);
@@ -123,7 +127,35 @@ unittest {
 
     auto c = cycle(stages);
     writeln("!!!!!!!!!!!!!! Schedule unittest");
-    writefln("%s", c.take(10).map!(s => tuple(s.name, s.done)));
+    const repeat_task=2*stages.length;
+    writefln("%s", c.take(repeat_task).map!(s => tuple(s.name, s.done)));
+    assert(c.take(repeat_task).walkLength == repeat_task);
+    foreach(ref s; c.take(repeat_task)) {
+        writefln("c.name=%s c.done=%s", s.name, s.done);
+    }
+        c.take(repeat_task).filter!(s => s.name == "C").each!(s => s.done=true);
+    writefln("%s", c.take(repeat_task).map!(s => s.name).array.sort.uniq);
+    assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["A", "B","D"]));
+    writeln("---- ---- ----");
+    foreach(s; c.take(repeat_task)) {
+        writefln("c.name=%s c.done=%s", s.name, s.done);
+    }
+        c.take(repeat_task).filter!(s => s.name == "A").each!(s => s.done=true);
+    assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["B","D"]));
+    writeln("---- ---- ----");
+    foreach(s; c.take(repeat_task)) {
+        writefln("c.name=%s c.done=%s", s.name, s.done);
+    }
+    writefln("%s", c.take(repeat_task).map!(s => tuple(s.name, s.done)));
+        c.take(repeat_task).filter!(s => s.name == "B" ).each!(s => s.done=true);
+    //assert(c.empty);
+    writefln("%s", c.take(repeat_task).map!(s => tuple(s.name, s.done)));
+    writefln("c.front =%s", c.front.name);
+    assert(!c.empty); 
+    c.front.done=true;
+    writefln("c.empty=%s", c.empty);
+   
+    assert(c.empty); 
 }
 
 enum TEST_STAGE = "TEST_STAGE";
