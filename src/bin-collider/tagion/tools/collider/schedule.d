@@ -126,35 +126,15 @@ unittest {
     ];
 
     auto c = cycle(stages);
-    writeln("!!!!!!!!!!!!!! Schedule unittest");
     const repeat_task=2*stages.length;
-    writefln("%s", c.take(repeat_task).map!(s => tuple(s.name, s.done)));
     assert(c.take(repeat_task).walkLength == repeat_task);
-    foreach(ref s; c.take(repeat_task)) {
-        writefln("c.name=%s c.done=%s", s.name, s.done);
-    }
         c.take(repeat_task).filter!(s => s.name == "C").each!(s => s.done=true);
-    writefln("%s", c.take(repeat_task).map!(s => s.name).array.sort.uniq);
     assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["A", "B","D"]));
-    writeln("---- ---- ----");
-    foreach(s; c.take(repeat_task)) {
-        writefln("c.name=%s c.done=%s", s.name, s.done);
-    }
         c.take(repeat_task).filter!(s => s.name == "A").each!(s => s.done=true);
     assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["B","D"]));
-    writeln("---- ---- ----");
-    foreach(s; c.take(repeat_task)) {
-        writefln("c.name=%s c.done=%s", s.name, s.done);
-    }
-    writefln("%s", c.take(repeat_task).map!(s => tuple(s.name, s.done)));
         c.take(repeat_task).filter!(s => s.name == "B" ).each!(s => s.done=true);
-    //assert(c.empty);
-    writefln("%s", c.take(repeat_task).map!(s => tuple(s.name, s.done)));
-    writefln("c.front =%s", c.front.name);
     assert(!c.empty); 
     c.front.done=true;
-    writefln("c.empty=%s", c.empty);
-   
     assert(c.empty); 
 }
 
