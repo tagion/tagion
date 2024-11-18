@@ -24,7 +24,7 @@ import nngd.nngtests;
 version (unittest) {
 }
 else {
-    pragma(msg, "This breakes the unittest so it's disabled")
+    pragma(msg, "This breakes the unittest so it's disabled");
     alias writefile = std.file.write;
 
     static string dump_exception_recursive(Throwable ex, string tag = "") {

@@ -2,7 +2,7 @@ module nngd.nngtests;
 version (unittest) {
 }
 else {
-    pragma(msg, "This breakes the unittest so it's disabled")
+    pragma(msg, "This breakes the unittest so it's disabled");
 
     public {
 

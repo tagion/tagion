@@ -13,7 +13,7 @@ import nngd;
 version (unittest) {
 }
 else {
-    pragma(msg, "This breakes the unittest so it's disabled")
+    pragma(msg, "This breakes the unittest so it's disabled");
 
     const _testclass = "nngd.nngtests.nng_test03_pushpull_transport";
 
