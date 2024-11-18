@@ -251,7 +251,7 @@ struct ScheduleRunner {
         }
         auto runners = new Runner[jobs];
         Runner[] background;
-        auto schedule_queue = schedule_list.filter!(r => !r.done).cycle;
+        auto schedule_queue = cycle(schedule_list); 
         void batch(
                 const ptrdiff_t job_index,
                 const SysTime time,
@@ -356,7 +356,6 @@ struct ScheduleRunner {
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                         schedule_queue.front.name).setExtension("log");
                         batch(job_index, time, cmd, log_filename, env);
-                        writefln("name %s done=%s", schedule_queue.front.name, schedule_queue.front.done);
                         schedule_queue.popFront;
                     }
                     catch (Exception e) {
