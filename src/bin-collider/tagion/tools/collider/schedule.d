@@ -81,6 +81,51 @@ struct Runner {
     long jobid;
 }
 
+auto cycle(R)(R r) if (isInputRange!R && is(ElementType!R == Stage*)) {
+    static struct Range {
+        R r;
+        R cycle_r;
+        bool done;
+        this(R r) {
+            this.r = this.cycle_r = r;
+        }
+
+        bool empty() pure nothrow {
+            return cycle_r.empty;
+        }
+
+        Stage* front() {
+            return cycle_r.front;
+        }
+
+        void popFront() {
+            if (cycle_r.empty) {
+                cycle_r = r;
+            }
+            while (!cycle_r.empty && cycle_r.front.done) {
+                cycle_r.popFront;
+            }
+            done = cycle_r.empty;
+        }
+
+    }
+
+    return Range(r);
+}
+
+unittest {
+    auto stages = [
+        new Stage(RunUnit.init, "A"),
+        new Stage(RunUnit.init, "B"),
+        new Stage(RunUnit.init, "C"),
+        new Stage(RunUnit.init, "D")
+    ];
+
+    auto c = cycle(stages);
+    writeln("!!!!!!!!!!!!!! Schedule unittest");
+    writefln("%s", c.take(10).map!(s => tuple(s.name, s.done)));
+}
+
 enum TEST_STAGE = "TEST_STAGE";
 enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
@@ -184,7 +229,9 @@ struct ScheduleRunner {
                     .byKeyValue
                     .filter!(unit => unit.value.stages.canFind(stage))
                     .map!(unit => new Stage(unit.value, unit.key, stage)))
-            .joiner;
+            .joiner
+            .array;
+
         if (schedule_list.empty) {
             error("None of the stage %s available", stages);
             error("Available stages %s", schedule.stages);
@@ -192,6 +239,7 @@ struct ScheduleRunner {
         }
         auto runners = new Runner[jobs];
         Runner[] background;
+        auto schedule_queue = schedule_list.filter!(r => !r.done).cycle;
         void batch(
                 const ptrdiff_t job_index,
                 const SysTime time,
@@ -200,7 +248,8 @@ struct ScheduleRunner {
         const(string[string]) env) {
             static uint job_count;
             scope (exit) {
-                showEnv(env, schedule_list.front.unit);
+                showEnv(env, schedule_queue.front.unit);
+                schedule_queue.front.done = true;
                 job_count++;
             }
             if (dry_switch) {
@@ -208,7 +257,7 @@ struct ScheduleRunner {
                 writefln("%-(%s%)", '#'.repeat(max(min(line_length, 30), 80)));
                 writefln("%d] %-(%s %)", job_count, cmd);
                 writefln("Log file %s", log_filename);
-                writefln("Unit = %s", schedule_list.front.unit.toJSON.toPrettyString);
+                writefln("Unit = %s", schedule_queue.front.unit.toJSON.toPrettyString);
                 return;
             }
             auto fout = File(log_filename, "w");
@@ -221,7 +270,7 @@ struct ScheduleRunner {
             if (cov_enable) {
                 const cov_path
                     = buildPath(environment.get(BDD_LOG, "logs"), "cov", job_index.to!string).relativePath;
-                cov_flags = format(" --DRT-covopt=\"dstpath:%s merge:1\"", cov_path);
+                cov_flags = format(` --DRT-covopt="dstpath:%s merge:1"`, cov_path);
                 mkdirRecurse(cov_path);
             }
             // For some reason the drt cov flags don't work when spawned as a process 
@@ -230,9 +279,9 @@ struct ScheduleRunner {
             auto runner = Runner(
                     pid,
                     fout,
-                    schedule_list.front.unit,
-                    schedule_list.front.name,
-                    schedule_list.front.stage,
+                    schedule_queue.front.unit,
+                    schedule_queue.front.name,
+                    schedule_queue.front.stage,
                     time,
                     job_index
             );
@@ -255,8 +304,8 @@ struct ScheduleRunner {
             "\\",
         ];
 
-        while (!schedule_list.empty || runners.any!(r => r.pid !is r.pid.init)) {
-            if (!schedule_list.empty) {
+        while (!schedule_queue.empty || runners.any!(r => r.pid !is r.pid.init)) {
+            if (!schedule_queue.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 if (job_index >= 0) {
                     scope (exit) {
@@ -265,12 +314,12 @@ struct ScheduleRunner {
                     try {
                         auto time = Clock.currTime;
                         auto env = environment.toAA;
-                        schedule_list.front.unit.envs.byKeyValue
+                        schedule_queue.front.unit.envs.byKeyValue
                             .each!(e => env[e.key] = envExpand(e.value, env));
                         string[] unit_args =
-                            schedule_list.front.unit.args.dup;
-                        const extend = schedule_list.front.unit.extend
-                            .get(schedule_list.front.stage, RunState.init);
+                            schedule_queue.front.unit.args.dup;
+                        const extend = schedule_queue.front.unit.extend
+                            .get(schedule_queue.front.stage, RunState.init);
                         if (!extend.isinit) {
                             if (!extend.args.empty) {
                                 unit_args = extend.args.dup;
@@ -279,11 +328,11 @@ struct ScheduleRunner {
                                 .each!(e => env[e.key] = envExpand(e.value, env));
                         }
                         const(char[])[] cmd = args ~
-                            schedule_list.front.name ~
+                            schedule_queue.front.name ~
                             unit_args
                                 .map!(arg => envExpand(arg, env))
                                 .array;
-                        setEnv(env, schedule_list.front.stage);
+                        setEnv(env, schedule_queue.front.stage);
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
 
@@ -293,9 +342,10 @@ struct ScheduleRunner {
                         }
 
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                        schedule_list.front.name).setExtension("log");
+                        schedule_queue.front.name).setExtension("log");
                         batch(job_index, time, cmd, log_filename, env);
-                        schedule_list.popFront;
+                        writefln("name %s done=%s", schedule_queue.front.name, schedule_queue.front.done);
+                        schedule_queue.popFront;
                     }
                     catch (Exception e) {
                         error(e);
