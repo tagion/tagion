@@ -64,19 +64,36 @@ struct Schedule {
     }
 }
 
+enum Lap {
+    none,
+    started,
+    paused,
+    timedout,
+    failed,
+    stopped,
+}
+
+
 struct Stage {
     RunUnit unit;
     string name;
     string stage;
-    bool done;
+    Lap lap;
+    bool hasEnded() pure nothrow @nogc {
+    return lap >= Lap.timedout;
+    }
+
 }
 
 struct Runner {
     Pid pid;
     File fout;
+    Stage* stage;
+/*
     RunUnit unit;
     string name;
     string stage;
+*/
     SysTime time;
     long jobid;
 }
@@ -94,7 +111,7 @@ auto cycle(R)(R r) if (isInputRange!R && is(ElementType!R == Stage*)) {
         }
 
         Stage* front() {
-            if ((index < stages.length) && stages[index].done) {
+            if ((index < stages.length) && stages[index].hasEnded) {
                 popFront;
             }
             if (index >= stages.length) {//stages[index].done) {
@@ -108,7 +125,7 @@ auto cycle(R)(R r) if (isInputRange!R && is(ElementType!R == Stage*)) {
             if (index >= stages.length) {
                 index = 0;
             }
-            while ((index < stages.length) && stages[index].done) {
+            while ((index < stages.length) && stages[index].hasEnded) {
                     index++;
             }
         }
@@ -128,13 +145,13 @@ unittest {
     auto c = cycle(stages);
     const repeat_task=2*stages.length;
     assert(c.take(repeat_task).walkLength == repeat_task);
-        c.take(repeat_task).filter!(s => s.name == "C").each!(s => s.done=true);
+        c.take(repeat_task).filter!(s => s.name == "C").each!(s => s.lap=Lap.stopped);
     assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["A", "B","D"]));
-        c.take(repeat_task).filter!(s => s.name == "A").each!(s => s.done=true);
+        c.take(repeat_task).filter!(s => s.name == "A").each!(s => s.lap=Lap.stopped);
     assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["B","D"]));
-        c.take(repeat_task).filter!(s => s.name == "B" ).each!(s => s.done=true);
+        c.take(repeat_task).filter!(s => s.name == "B" ).each!(s => s.lap=Lap.stopped);
     assert(!c.empty); 
-    c.front.done=true;
+    c.front.lap=Lap.stopped;
     assert(c.empty); 
 }
 
@@ -261,7 +278,7 @@ struct ScheduleRunner {
             static uint job_count;
             scope (exit) {
                 showEnv(env, schedule_queue.front.unit);
-                schedule_queue.front.done = true;
+                //schedule_queue.front.done = true;
                 job_count++;
             }
             if (dry_switch) {
@@ -288,12 +305,11 @@ struct ScheduleRunner {
             // For some reason the drt cov flags don't work when spawned as a process 
             // so we just run it in a shell
             pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
+            schedule_queue.front.lap = Lap.started;
             auto runner = Runner(
                     pid,
                     fout,
-                    schedule_queue.front.unit,
-                    schedule_queue.front.name,
-                    schedule_queue.front.stage,
+                    schedule_queue.front,
                     time,
                     job_index
             );
@@ -305,6 +321,7 @@ struct ScheduleRunner {
 
         void terminate(ref Runner runner) {
             this.stopped(runner);
+            runner.stage.lap = Lap.stopped;
             runner = Runner.init;
         }
 
@@ -363,6 +380,7 @@ struct ScheduleRunner {
                         runners[job_index].fout.writeln("Error: %s", e.msg);
                         runners[job_index].fout.close;
                         kill(runners[job_index].pid);
+                        runners[job_index].stage.lap = Lap.failed; 
                         runners[job_index] = Runner.init;
                     }
                 }
