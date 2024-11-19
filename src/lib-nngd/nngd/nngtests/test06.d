@@ -16,7 +16,7 @@ import nngd;
 version (unittest) {
 }
 else {
-    pragma(msg, "This breakes the unittest so it's disabled");
+    pragma(msg, "This breaks the unittest so it's disabled");
 
     const _testclass = "nngd.nngtests.nng_test06_message";
 
