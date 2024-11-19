@@ -73,7 +73,6 @@ enum Lap {
     stopped,
 }
 
-
 struct Job {
     RunUnit unit;
     string name;
@@ -82,18 +81,21 @@ struct Job {
     bool hasEnded() pure nothrow @nogc {
         return lap >= Lap.timedout;
     }
+
     bool isActive() pure nothrow @nogc {
         return lap !is Lap.none;
     }
 
-
+    bool notActiveBackground() pure nothrow @nogc {
+        return (lap is Lap.none) && unit.background;
+    }
 }
 
 struct Runner {
     Pid pid;
     File fout;
     Job* stage;
-/*
+    /*
     RunUnit unit;
     string name;
     string stage;
@@ -102,38 +104,37 @@ struct Runner {
     long jobid;
 }
 
-     struct JobCycle {
-        Job*[] stages;
-        size_t index;
-        this(Job*[] r) pure nothrow {
-            stages= r;
-        }
-
-        bool empty() pure nothrow {
-            return front is null;
-        }
-
-        Job* front() pure nothrow {
-            if ((index < stages.length) && stages[index].isActive) {
-                popFront;
-            }
-            if (index >= stages.length) {//stages[index].done) {
-                return null;
-            }
-            return stages[index];
-        }
-
-        void popFront() pure nothrow {
-            index++; 
-            if (index >= stages.length) {
-                index = 0;
-            }
-            while ((index < stages.length) && stages[index].isActive) {
-                    index++;
-            }
-        }
+struct JobCycle {
+    Job*[] stages;
+    size_t index;
+    this(Job*[] r) pure nothrow {
+        stages = r;
     }
 
+    bool empty() pure nothrow {
+        return front is null;
+    }
+
+    Job* front() pure nothrow {
+        if ((index < stages.length) && stages[index].isActive) {
+            popFront;
+        }
+        if (index >= stages.length) { //stages[index].done) {
+            return null;
+        }
+        return stages[index];
+    }
+
+    void popFront() pure nothrow {
+        index++;
+        if (index >= stages.length) {
+            index = 0;
+        }
+        while ((index < stages.length) && stages[index].isActive) {
+            index++;
+        }
+    }
+}
 
 unittest {
     Job*[] stages;
@@ -144,45 +145,46 @@ unittest {
         new Job(RunUnit.init, "C"),
         new Job(RunUnit.init, "D")
     ];
-    */
-
-    {
-        auto c=JobCycle(stages);
+    */{
+        auto c = JobCycle(stages);
         assert(c.empty);
         c.popFront;
         assert(c.empty);
 
     }
     {
-      stages = [
-        new Job(RunUnit.init, "A"),
+        stages = [
+            new Job(RunUnit.init, "A"),
         ];
-        auto c=JobCycle(stages);
+        auto c = JobCycle(stages);
         assert(!c.empty);
-        c.front.lap =Lap.stopped;
+        c.front.lap = Lap.stopped;
         assert(c.empty);
         c.popFront;
         assert(c.empty);
     }
     {
-      stages = [
-        new Job(RunUnit.init, "A"),
-        new Job(RunUnit.init, "B"),
-        new Job(RunUnit.init, "C"),
-        new Job(RunUnit.init, "D")
-    ];
-    auto c = JobCycle(stages);
-    const repeat_task=2*stages.length;
-    assert(c.take(repeat_task).walkLength == repeat_task);
-        c.take(repeat_task).filter!(s => s.name == "C").each!(s => s.lap=Lap.stopped);
-    assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["A", "B","D"]));
-        c.take(repeat_task).filter!(s => s.name == "A").each!(s => s.lap=Lap.timedout);
-    assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["B","D"]));
-        c.take(repeat_task).filter!(s => s.name == "B" ).each!(s => s.lap=Lap.failed);
-    assert(!c.empty); 
-    c.front.lap=Lap.stopped;
-    assert(c.empty); 
-    assert(c.front is null);
+        stages = [
+            new Job(RunUnit.init, "A"),
+            new Job(RunUnit.init, "B"),
+            new Job(RunUnit.init, "C"),
+            new Job(RunUnit.init, "D")
+        ];
+        auto c = JobCycle(stages);
+        const repeat_task = 2 * stages.length;
+        assert(c.take(repeat_task).walkLength == repeat_task);
+        c.take(repeat_task).filter!(s => s.name == "C")
+            .each!(s => s.lap = Lap.stopped);
+        assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["A", "B", "D"]));
+        c.take(repeat_task).filter!(s => s.name == "A")
+            .each!(s => s.lap = Lap.timedout);
+        assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["B", "D"]));
+        c.take(repeat_task).filter!(s => s.name == "B")
+            .each!(s => s.lap = Lap.failed);
+        assert(!c.empty);
+        c.front.lap = Lap.stopped;
+        assert(c.empty);
+        assert(c.front is null);
     }
 }
 
@@ -256,7 +258,8 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
-            .kill(pid); //.ifThrown!ProcessException;
+            
+                .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {
             // ignore
@@ -306,7 +309,6 @@ struct ScheduleRunner {
             static uint job_count;
             scope (exit) {
                 showEnv(env, stage.unit);
-                //job_queue.front.done = true;
                 job_count++;
             }
             if (dry_switch) {
@@ -337,17 +339,22 @@ struct ScheduleRunner {
             auto runner = Runner(
                     pid,
                     fout,
-                    stage, 
+                    stage,
                     time,
                     job_index
             );
 
             writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
                     pid.processID);
-            if (runners[job_index] !is Runner.init) {
-                runners[job_index].fout.close;
+            if (stage.notActiveBackground) {
+                background ~= runner;
             }
-            runners[job_index] = runner;
+            else {
+                if (runners[job_index]!is Runner.init) {
+                    runners[job_index].fout.close;
+                }
+                runners[job_index] = runner;
+            }
         }
 
         void terminate(ref Runner runner) {
@@ -372,11 +379,11 @@ struct ScheduleRunner {
             "🕛",
         ];
 
-        auto job_queue = JobCycle(job_list); 
+        auto job_queue = JobCycle(job_list);
         while (!job_queue.empty || runners.any!(r => r.pid !is r.pid.init)) {
             if (!job_queue.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
-                if (job_index >= 0) {
+                if ((job_index >= 0) || job_queue.front.notActiveBackground) {
                     try {
                         auto time = Clock.currTime;
                         auto env = environment.toAA;
@@ -417,7 +424,7 @@ struct ScheduleRunner {
                         runners[job_index].fout.writeln("Error: %s", e.msg);
                         runners[job_index].fout.close;
                         kill(runners[job_index].pid);
-                        runners[job_index].stage.lap = Lap.failed; 
+                        runners[job_index].stage.lap = Lap.failed;
                         runners[job_index] = Runner.init;
                     }
                 }
@@ -428,14 +435,15 @@ struct ScheduleRunner {
                 .filter!(r => tryWait(r.pid).terminated)
                 .each!((ref r) => terminate(r));
             progress("%-(%s %) Running jobs %s",
-                    runners.filter!(r => r.pid !is r.pid.init)
+                    runners
+                    .filter!(r => r.pid !is r.pid.init)
                     .count
                     .iota
-                    .map!(i => progress_meter[(tick+i) % progress_meter.length]),
-                    runners
-                    .enumerate
-                    .filter!(r => r.value.pid !is r.value.pid.init)
-                    .map!(r => r.index),
+                    .map!(i => progress_meter[(tick + i) % progress_meter.length]),
+            runners
+                .enumerate
+                .filter!(r => r.value.pid !is r.value.pid.init)
+                .map!(r => r.index),
             );
             tick++;
             sleep(100.msecs);
