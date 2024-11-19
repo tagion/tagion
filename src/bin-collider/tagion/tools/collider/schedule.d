@@ -80,13 +80,14 @@ struct Job {
     RunUnit unit;
     string name;
     string stage;
+    File fout;
     protected {
         string _log_filename;
         Lap _lap;
     }
 
     pure nothrow {
-        void log_filename(string filename)@nogc
+        void log_filename(string filename) @nogc
         in (_log_filename is null, "Log filename has already been set")
         do {
             _log_filename = filename;
@@ -107,18 +108,18 @@ struct Job {
             }
         }
 
-        void lap(Lap lap_level)@nogc
-        in (checkLap(lap_level), 
-    assumeWontThrow(format("Can't change lap from %s to %s", _lap, lap_level)))
+        void lap(Lap lap_level)
+        in (checkLap(lap_level),
+            assumeWontThrow(format("Can't change lap from %s to %s", _lap, lap_level)))
         do {
             _lap = lap_level;
         }
 
-        string log_filename() const @nogc{
+        string log_filename() const @nogc {
             return _log_filename;
         }
 
-        Lap lap() const @nogc{
+        Lap lap() const @nogc {
             return _lap;
         }
 
@@ -138,15 +139,15 @@ struct Job {
 
 struct Runner {
     Pid pid;
-    File fout;
+    //   File fout;
     Job* stage;
-    /*
-    RunUnit unit;
-    string name;
-    string stage;
-*/
     SysTime time;
     long jobid;
+    void close() {
+        if (stage) {
+            stage.fout.close;
+        }
+    }
 }
 
 struct JobCycle {
@@ -183,14 +184,7 @@ struct JobCycle {
 
 unittest {
     Job*[] stages;
-    /*
-    auto stages = [
-        new Job(RunUnit.init, "A"),
-        new Job(RunUnit.init, "B"),
-        new Job(RunUnit.init, "C"),
-        new Job(RunUnit.init, "D")
-    ];
-    */{
+    {
         auto c = JobCycle(stages);
         assert(c.empty);
         c.popFront;
@@ -202,8 +196,8 @@ unittest {
             new Job(RunUnit.init, "A"),
         ];
         auto c = JobCycle(stages);
-        c.front.lap=Lap.started;
         assert(!c.empty);
+        c.front.lap = Lap.started;
         c.front.lap = Lap.stopped;
         assert(c.empty);
         c.popFront;
@@ -370,7 +364,7 @@ struct ScheduleRunner {
                 writefln("Unit = %s", stage.unit.toJSON.toPrettyString);
                 return;
             }
-            auto fout = File(stage.log_filename, "w");
+            stage.fout = File(stage.log_filename, "w");
             auto _stdin = (() @trusted => stdin)();
 
             Pid pid;
@@ -385,11 +379,10 @@ struct ScheduleRunner {
             }
             // For some reason the drt cov flags don't work when spawned as a process 
             // so we just run it in a shell
-            pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
+            pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, stage.fout, stage.fout, env);
             stage.lap = Lap.started;
             auto runner = Runner(
-                    pid,
-                    fout,
+                    pid, //fout,
                     stage,
                     time,
                     job_index
@@ -405,7 +398,7 @@ struct ScheduleRunner {
                 writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
                         pid.processID);
                 if (runners[job_index]!is Runner.init) {
-                    runners[job_index].fout.close;
+                    runners[job_index].close;
                 }
                 runners[job_index] = runner;
             }
@@ -475,8 +468,8 @@ struct ScheduleRunner {
                     }
                     catch (Exception e) {
                         error(e);
-                        runners[job_index].fout.writeln("Error: %s", e.msg);
-                        runners[job_index].fout.close;
+                        runners[job_index].stage.fout.writeln("Error: %s", e.msg);
+                        runners[job_index].close;
                         kill(runners[job_index].pid);
                         runners[job_index].stage.lap = Lap.failed;
                         runners[job_index] = Runner.init;
