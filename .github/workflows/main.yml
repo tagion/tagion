@@ -165,7 +165,47 @@ jobs:
           make clean
           rm -r *.callstack build logs/ || echo "no logs"
           rm -- *.lst
+  
+  nngtest:
+    runs-on: CI
+    timeout-minutes: 5
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
 
+      - name: pull
+        run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore .
+      
+      - name: Run NNG tests
+        run: |
+          export DC=${{ env.DC }}
+          export TEST_STAGE=commit
+          export TESTBENCH_FLAGS=--silent 
+          export UNSHARE_NET=1
+          export RELEASE=1
+          #echo ${{ secrets.USERPWD }} |sudo -S apt-get install -y uwsc
+          make nngtest-build -k -j
+          make nngtest -k -j
+
+      - name: Report commit stage tests
+        if: always()
+        run: |
+          sleep 3
+          RESULT=$(grep -a '#TEST' logs/${{ env.TARGET }}/nngtest/*.log | grep -i error && echo "There are errors. See log-files at logs/${{ env.TARGET }}/nngtest." || echo "All passed!")
+          echo -e "### NNG test passed: \n $RESULT" >> $GITHUB_STEP_SUMMARY
+            
+      - name: Post run
+        if: always()
+        run: |
+          mkdir -p ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/${{ env.TARGET }}/nngtest ${{ env.ARTIFACT_DIR }}
+          make clean
+          rm -r *.callstack logs/ || echo "no logs"
 
   commit_stage:
     runs-on: CI
@@ -191,8 +231,6 @@ jobs:
           export UNSHARE_NET=1
           export RELEASE=1
           make bddtest -j || make proper bddtest
-          #echo ${{ secrets.USERPWD }} |sudo -S apt-get install -y uwsc
-          make nngtest-build nngtest -k -j
 
       - name: Report commit stage tests
         if: always()
@@ -202,7 +240,6 @@ jobs:
           ./build/${{ env.TARGET }}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/results >> $GITHUB_STEP_SUMMARY
           $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{env.TARGET}}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/commit/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results | grep "Test result success!"
-          (echo "<NNGTEST>" && grep -a '#TEST' logs/${{ env.TARGET }}/nngtest/*.log && echo "</NNGTEST>") >> $GITHUB_STEP_SUMMARY
 
       - name: Post run
         if: always()
@@ -217,7 +254,7 @@ jobs:
   acceptance_stage:
     runs-on: CD
     timeout-minutes: 12
-    needs: [commit_stage, unittest, build]
+    needs: [nngtest, commit_stage, unittest, build]
     strategy: 
       fail-fast: false
       matrix:
