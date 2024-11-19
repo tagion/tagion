@@ -74,7 +74,7 @@ enum Lap {
 }
 
 
-struct Stage {
+struct Job {
     RunUnit unit;
     string name;
     string stage;
@@ -82,13 +82,17 @@ struct Stage {
     bool hasEnded() pure nothrow @nogc {
         return lap >= Lap.timedout;
     }
+    bool isActive() pure nothrow @nogc {
+        return lap !is Lap.none;
+    }
+
 
 }
 
 struct Runner {
     Pid pid;
     File fout;
-    Stage* stage;
+    Job* stage;
 /*
     RunUnit unit;
     string name;
@@ -98,20 +102,19 @@ struct Runner {
     long jobid;
 }
 
-auto cycle(R)(R r) if (isInputRange!R && is(ElementType!R == Stage*)) {
-    static struct Range {
-        Stage*[] stages;
+     struct JobCycle {
+        Job*[] stages;
         size_t index;
-        this(R r) {
-            this.stages= r.array;
+        this(Job*[] r) pure nothrow {
+            stages= r;
         }
 
         bool empty() pure nothrow {
             return front is null;
         }
 
-        Stage* front() {
-            if ((index < stages.length) && stages[index].hasEnded) {
+        Job* front() pure nothrow {
+            if ((index < stages.length) && stages[index].isActive) {
                 popFront;
             }
             if (index >= stages.length) {//stages[index].done) {
@@ -120,29 +123,55 @@ auto cycle(R)(R r) if (isInputRange!R && is(ElementType!R == Stage*)) {
             return stages[index];
         }
 
-        void popFront() {
+        void popFront() pure nothrow {
             index++; 
             if (index >= stages.length) {
                 index = 0;
             }
-            while ((index < stages.length) && stages[index].hasEnded) {
+            while ((index < stages.length) && stages[index].isActive) {
                     index++;
             }
         }
     }
 
-    return Range(r);
-}
 
 unittest {
+    Job*[] stages;
+    /*
     auto stages = [
-        new Stage(RunUnit.init, "A"),
-        new Stage(RunUnit.init, "B"),
-        new Stage(RunUnit.init, "C"),
-        new Stage(RunUnit.init, "D")
+        new Job(RunUnit.init, "A"),
+        new Job(RunUnit.init, "B"),
+        new Job(RunUnit.init, "C"),
+        new Job(RunUnit.init, "D")
     ];
+    */
 
-    auto c = cycle(stages);
+    {
+        auto c=JobCycle(stages);
+        assert(c.empty);
+        c.popFront;
+        assert(c.empty);
+
+    }
+    {
+      stages = [
+        new Job(RunUnit.init, "A"),
+        ];
+        auto c=JobCycle(stages);
+        assert(!c.empty);
+        c.front.lap =Lap.stopped;
+        assert(c.empty);
+        c.popFront;
+        assert(c.empty);
+    }
+    {
+      stages = [
+        new Job(RunUnit.init, "A"),
+        new Job(RunUnit.init, "B"),
+        new Job(RunUnit.init, "C"),
+        new Job(RunUnit.init, "D")
+    ];
+    auto c = JobCycle(stages);
     const repeat_task=2*stages.length;
     assert(c.take(repeat_task).walkLength == repeat_task);
         c.take(repeat_task).filter!(s => s.name == "C").each!(s => s.lap=Lap.stopped);
@@ -153,6 +182,8 @@ unittest {
     assert(!c.empty); 
     c.front.lap=Lap.stopped;
     assert(c.empty); 
+    assert(c.front is null);
+    }
 }
 
 enum TEST_STAGE = "TEST_STAGE";
@@ -225,10 +256,7 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
-
-            
-
-                .kill(pid); //.ifThrown!ProcessException;
+            .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {
             // ignore
@@ -252,16 +280,16 @@ struct ScheduleRunner {
     }
 
     int run(scope const(char[])[] args) {
-        //alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage", bool, "done");
-        auto schedule_list = stages
+        //alias Job = Tuple!(RunUnit, "unit", string, "name", string, "stage", bool, "done");
+        auto job_list = stages
             .map!(stage => schedule.units
                     .byKeyValue
                     .filter!(unit => unit.value.stages.canFind(stage))
-                    .map!(unit => new Stage(unit.value, unit.key, stage)))
+                    .map!(unit => new Job(unit.value, unit.key, stage)))
             .joiner
             .array;
 
-        if (schedule_list.empty) {
+        if (job_list.empty) {
             error("None of the stage %s available", stages);
             error("Available stages %s", schedule.stages);
             return 1;
@@ -269,7 +297,7 @@ struct ScheduleRunner {
         auto runners = new Runner[jobs];
         Runner[] background;
         void batch(
-                Stage* stage,
+                Job* stage,
                 const ptrdiff_t job_index,
                 const SysTime time,
                 const(char[][]) cmd,
@@ -278,7 +306,7 @@ struct ScheduleRunner {
             static uint job_count;
             scope (exit) {
                 showEnv(env, stage.unit);
-                //schedule_queue.front.done = true;
+                //job_queue.front.done = true;
                 job_count++;
             }
             if (dry_switch) {
@@ -319,7 +347,6 @@ struct ScheduleRunner {
             if (runners[job_index] !is Runner.init) {
                 runners[job_index].fout.close;
             }
-            writefln("---> %s", runner.stage.lap);
             runners[job_index] = runner;
         }
 
@@ -329,32 +356,36 @@ struct ScheduleRunner {
             runner = Runner.init;
         }
 
-        uint count;
+        uint tick;
         static immutable progress_meter = [
-            "|",
-            "/",
-            "-",
-            "\\",
+            "🕐",
+            "🕑",
+            "🕒",
+            "🕓",
+            "🕔",
+            "🕕",
+            "🕖",
+            "🕗",
+            "🕘",
+            "🕙",
+            "🕚",
+            "🕛",
         ];
 
-        auto schedule_queue = cycle(schedule_list); 
-        while (!schedule_queue.empty || runners.any!(r => r.pid !is r.pid.init)) {
-            if (!schedule_queue.empty) {
+        auto job_queue = JobCycle(job_list); 
+        while (!job_queue.empty || runners.any!(r => r.pid !is r.pid.init)) {
+            if (!job_queue.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 if (job_index >= 0) {
-                    version(none)
-                    scope (exit) {
-                        runners[job_index].fout.close;
-                    }
                     try {
                         auto time = Clock.currTime;
                         auto env = environment.toAA;
-                        schedule_queue.front.unit.envs.byKeyValue
+                        job_queue.front.unit.envs.byKeyValue
                             .each!(e => env[e.key] = envExpand(e.value, env));
                         string[] unit_args =
-                            schedule_queue.front.unit.args.dup;
-                        const extend = schedule_queue.front.unit.extend
-                            .get(schedule_queue.front.stage, RunState.init);
+                            job_queue.front.unit.args.dup;
+                        const extend = job_queue.front.unit.extend
+                            .get(job_queue.front.stage, RunState.init);
                         if (!extend.isinit) {
                             if (!extend.args.empty) {
                                 unit_args = extend.args.dup;
@@ -363,11 +394,11 @@ struct ScheduleRunner {
                                 .each!(e => env[e.key] = envExpand(e.value, env));
                         }
                         const(char[])[] cmd = args ~
-                            schedule_queue.front.name ~
+                            job_queue.front.name ~
                             unit_args
                                 .map!(arg => envExpand(arg, env))
                                 .array;
-                        setEnv(env, schedule_queue.front.stage);
+                        setEnv(env, job_queue.front.stage);
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
 
@@ -377,9 +408,9 @@ struct ScheduleRunner {
                         }
 
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                        schedule_queue.front.name).setExtension("log");
-                        batch(schedule_queue.front, job_index, time, cmd, log_filename, env);
-                        schedule_queue.popFront;
+                        job_queue.front.name).setExtension("log");
+                        batch(job_queue.front, job_index, time, cmd, log_filename, env);
+                        job_queue.popFront;
                     }
                     catch (Exception e) {
                         error(e);
@@ -396,14 +427,17 @@ struct ScheduleRunner {
                 .filter!(r => r.pid !is r.pid.init)
                 .filter!(r => tryWait(r.pid).terminated)
                 .each!((ref r) => terminate(r));
-            progress("%s Running jobs %s",
-                    progress_meter[count % progress_meter.length],
+            progress("%-(%s %) Running jobs %s",
+                    runners.filter!(r => r.pid !is r.pid.init)
+                    .count
+                    .iota
+                    .map!(i => progress_meter[(tick+i) % progress_meter.length]),
                     runners
                     .enumerate
                     .filter!(r => r.value.pid !is r.value.pid.init)
                     .map!(r => r.index),
             );
-            count++;
+            tick++;
             sleep(100.msecs);
         }
         progress("Done");

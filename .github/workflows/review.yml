@@ -13,7 +13,7 @@ jobs:
   create_pull_request:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Get week number
         id: week-number
         run: echo "week=$(date +'%U')" >> $GITHUB_OUTPUT
