@@ -12,6 +12,7 @@ import std.range;
 import std.stdio;
 import std.traits;
 import std.path;
+import std.exception : assumeWontThrow;
 import std.typecons : Tuple, tuple;
 import tagion.hibon.HiBONJSON;
 import tagion.tools.Basic : dry_switch, verbose_switch, error;
@@ -79,17 +80,59 @@ struct Job {
     RunUnit unit;
     string name;
     string stage;
-    Lap lap;
-    bool hasEnded() pure nothrow @nogc {
-        return lap >= Lap.timedout;
+    protected {
+        string _log_filename;
+        Lap _lap;
     }
 
-    bool isActive() pure nothrow @nogc {
-        return lap !is Lap.none;
-    }
+    pure nothrow {
+        void log_filename(string filename)@nogc
+        in (_log_filename is null, "Log filename has already been set")
+        do {
+            _log_filename = filename;
+        }
 
-    bool notActiveBackground() pure nothrow @nogc {
-        return (lap is Lap.none) && unit.background;
+        bool checkLap(const Lap lap_level) const @nogc {
+            final switch (_lap) {
+            case Lap.none:
+                return lap_level is Lap.started;
+            case Lap.started:
+                return lap_level > _lap;
+            case Lap.paused:
+                return lap_level >= _lap;
+            case Lap.timedout:
+            case Lap.failed:
+            case Lap.stopped:
+                return (_lap > Lap.none) && (_lap <= Lap.paused);
+            }
+        }
+
+        void lap(Lap lap_level)@nogc
+        in (checkLap(lap_level), 
+    assumeWontThrow(format("Can't change lap from %s to %s", _lap, lap_level)))
+        do {
+            _lap = lap_level;
+        }
+
+        string log_filename() const @nogc{
+            return _log_filename;
+        }
+
+        Lap lap() const @nogc{
+            return _lap;
+        }
+
+        bool hasEnded() const @nogc {
+            return lap >= Lap.timedout;
+        }
+
+        bool isActive() const @nogc {
+            return lap !is Lap.none;
+        }
+
+        bool notActiveBackground() const @nogc {
+            return (lap is Lap.none) && unit.background;
+        }
     }
 }
 
@@ -159,6 +202,7 @@ unittest {
             new Job(RunUnit.init, "A"),
         ];
         auto c = JobCycle(stages);
+        c.front.lap=Lap.started;
         assert(!c.empty);
         c.front.lap = Lap.stopped;
         assert(c.empty);
@@ -173,6 +217,11 @@ unittest {
             new Job(RunUnit.init, "D")
         ];
         auto c = JobCycle(stages);
+        stages[0].lap = Lap.started;
+        stages[1].lap = Lap.paused;
+        stages[2].lap = Lap.paused;
+        stages[3].lap = Lap.started;
+
         const repeat_task = 2 * stages.length;
         assert(c.take(repeat_task).walkLength == repeat_task);
         c.take(repeat_task).filter!(s => s.name == "C")
@@ -259,6 +308,9 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
+
+            
+
                 .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {
@@ -304,7 +356,6 @@ struct ScheduleRunner {
                 const ptrdiff_t job_index,
                 const SysTime time,
                 const(char[][]) cmd,
-        const(string) log_filename,
         const(string[string]) env) {
             static uint job_count;
             scope (exit) {
@@ -315,11 +366,11 @@ struct ScheduleRunner {
                 const line_length = cmd.map!(c => c.length).sum;
                 writefln("%-(%s%)", '#'.repeat(max(min(line_length, 30), 80)));
                 writefln("%d] %-(%s %)", job_count, cmd);
-                writefln("Log file %s", log_filename);
+                writefln("Log file %s", stage.log_filename);
                 writefln("Unit = %s", stage.unit.toJSON.toPrettyString);
                 return;
             }
-            auto fout = File(log_filename, "w");
+            auto fout = File(stage.log_filename, "w");
             auto _stdin = (() @trusted => stdin)();
 
             Pid pid;
@@ -345,7 +396,7 @@ struct ScheduleRunner {
             );
 
             if (stage.notActiveBackground) {
-                writefln("%s%d] %-(%s %) # background_runners pid=%d%s", 
+                writefln("%s%d] %-(%s %) # background_runners pid=%d%s",
                         BLUE, background_runners.length, cmd,
                         pid.processID, RESET);
                 background_runners ~= runner;
@@ -417,9 +468,9 @@ struct ScheduleRunner {
                             cmd = ["bwrap", "--unshare-net", "--dev-bind", "/", "/"] ~ cmd;
                         }
 
-                        const log_filename = buildNormalizedPath(env[BDD_RESULTS],
+                        job_queue.front.log_filename = buildNormalizedPath(env[BDD_RESULTS],
                         job_queue.front.name).setExtension("log");
-                        batch(job_queue.front, job_index, time, cmd, log_filename, env);
+                        batch(job_queue.front, job_index, time, cmd, env);
                         job_queue.popFront;
                     }
                     catch (Exception e) {
@@ -451,8 +502,8 @@ struct ScheduleRunner {
             tick++;
             sleep(100.msecs);
         }
-        foreach(r; background_runners.filter!(j => j.pid !is j.pid.init)) {
-            kill(r.pid); 
+        foreach (r; background_runners.filter!(j => j.pid !is j.pid.init)) {
+            kill(r.pid);
             terminate(r);
         }
         progress("Done");
