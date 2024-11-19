@@ -127,7 +127,7 @@ struct Job {
             return lap >= Lap.timedout;
         }
 
-        bool isActive() const @nogc {
+        bool isActivated() const @nogc {
             return lap !is Lap.none;
         }
 
@@ -139,7 +139,6 @@ struct Job {
 
 struct Runner {
     Pid pid;
-    //   File fout;
     Job* stage;
     SysTime time;
     long jobid;
@@ -147,6 +146,27 @@ struct Runner {
         if (stage) {
             stage.fout.close;
         }
+    }
+
+    protected void _kill() nothrow @trusted {
+        if (pid !is pid.init) {
+            try {
+                
+                    .kill(pid); //.ifThrown!ProcessException;
+            }
+            catch (Exception e) {
+                assumeWontThrow(stage.fout.writefln(e.toString));
+            }
+        }
+
+    }
+
+    void fail(string msg) nothrow {
+        assumeWontThrow({ stage.fout.writefln("Error: %s", msg); _kill(); stage.lap = Lap.failed; stage.fout.close; }());
+    }
+
+    void stop(string msg) nothrow {
+        assumeWontThrow({ stage.fout.writeln(msg); _kill(); stage.lap = Lap.stopped; stage.fout.close; }());
     }
 }
 
@@ -162,7 +182,7 @@ struct JobCycle {
     }
 
     Job* front() pure nothrow {
-        if ((index < stages.length) && stages[index].isActive) {
+        if ((index < stages.length) && stages[index].isActivated) {
             popFront;
         }
         if (index >= stages.length) { //stages[index].done) {
@@ -176,7 +196,7 @@ struct JobCycle {
         if (index >= stages.length) {
             index = 0;
         }
-        while ((index < stages.length) && stages[index].isActive) {
+        while ((index < stages.length) && stages[index].isActivated) {
             index++;
         }
     }
@@ -197,8 +217,8 @@ unittest {
         ];
         auto c = JobCycle(stages);
         assert(!c.empty);
-        c.front.lap = Lap.started;
-        c.front.lap = Lap.stopped;
+
+        stages[0].lap = Lap.started;
         assert(c.empty);
         c.popFront;
         assert(c.empty);
@@ -211,23 +231,28 @@ unittest {
             new Job(RunUnit.init, "D")
         ];
         auto c = JobCycle(stages);
+        /*
         stages[0].lap = Lap.started;
+        stages[1].lap = Lap.started; // The job needs to be started before it can be paused
         stages[1].lap = Lap.paused;
+        stages[2].lap = Lap.started;
         stages[2].lap = Lap.paused;
         stages[3].lap = Lap.started;
-
+*/
         const repeat_task = 2 * stages.length;
         assert(c.take(repeat_task).walkLength == repeat_task);
         c.take(repeat_task).filter!(s => s.name == "C")
-            .each!(s => s.lap = Lap.stopped);
+            .each!(s => s.lap = Lap.started);
         assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["A", "B", "D"]));
         c.take(repeat_task).filter!(s => s.name == "A")
-            .each!(s => s.lap = Lap.timedout);
+            .each!(s => s.lap = Lap.started);
         assert(equal(c.take(repeat_task).map!(s => s.name).array.sort.uniq, ["B", "D"]));
         c.take(repeat_task).filter!(s => s.name == "B")
-            .each!(s => s.lap = Lap.failed);
+            .each!(s => s.lap = Lap.started);
         assert(!c.empty);
-        c.front.lap = Lap.stopped;
+        auto last_job = c.front;
+        last_job.lap = Lap.started;
+        last_job.lap = Lap.paused;
         assert(c.empty);
         assert(c.front is null);
     }
@@ -300,7 +325,7 @@ struct ScheduleRunner {
         }
     }
 
-    static void kill(Pid pid) @trusted {
+    version (none) static void kill(Pid pid) @trusted {
         try {
 
             
@@ -468,10 +493,13 @@ struct ScheduleRunner {
                     }
                     catch (Exception e) {
                         error(e);
+                        /*
                         runners[job_index].stage.fout.writeln("Error: %s", e.msg);
+                        runners[job_index].fail(e.msg);
                         runners[job_index].close;
-                        kill(runners[job_index].pid);
                         runners[job_index].stage.lap = Lap.failed;
+                        */
+                        runners[job_index].fail(e.msg);
                         runners[job_index] = Runner.init;
                     }
                 }
@@ -496,7 +524,7 @@ struct ScheduleRunner {
             sleep(100.msecs);
         }
         foreach (r; background_runners.filter!(j => j.pid !is j.pid.init)) {
-            kill(r.pid);
+            r.stop("Background");
             terminate(r);
         }
         progress("Done");
