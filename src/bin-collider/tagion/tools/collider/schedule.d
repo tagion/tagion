@@ -22,6 +22,8 @@ import tagion.json.JSONRecord;
 import tagion.utils.envexpand;
 import tagion.basic.basic : isinit;
 
+import tagion.utils.Term;
+
 @safe:
 
 struct Depend {
@@ -233,7 +235,6 @@ struct ScheduleRunner {
 
     void progress(Args...)(const string fmt, Args args) @trusted {
         if (!opts.silent) {
-            import tagion.utils.Term;
 
             writef(CLEAREOL ~ fmt ~ "\r", args);
             stdout.flush;
@@ -258,7 +259,6 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
-            
                 .kill(pid); //.ifThrown!ProcessException;
         }
         catch (ProcessException e) {
@@ -298,7 +298,7 @@ struct ScheduleRunner {
             return 1;
         }
         auto runners = new Runner[jobs];
-        Runner[] background;
+        Runner[] background_runners;
         void batch(
                 Job* stage,
                 const ptrdiff_t job_index,
@@ -344,12 +344,15 @@ struct ScheduleRunner {
                     job_index
             );
 
-            writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
-                    pid.processID);
             if (stage.notActiveBackground) {
-                background ~= runner;
+                writefln("%s%d] %-(%s %) # background_runners pid=%d%s", 
+                        BLUE, background_runners.length, cmd,
+                        pid.processID, RESET);
+                background_runners ~= runner;
             }
             else {
+                writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
+                        pid.processID);
                 if (runners[job_index]!is Runner.init) {
                     runners[job_index].fout.close;
                 }
@@ -447,6 +450,10 @@ struct ScheduleRunner {
             );
             tick++;
             sleep(100.msecs);
+        }
+        foreach(r; background_runners.filter!(j => j.pid !is j.pid.init)) {
+            kill(r.pid); 
+            terminate(r);
         }
         progress("Done");
         return 0;
