@@ -95,6 +95,19 @@ struct TranscriptService {
         sdt_t epoch_time;
     }
 
+    struct Vote {
+        const(ConsensusVoting)[] votes;
+        RecordFactory.Recorder recorder;
+        long epoch_number;
+
+        this(RecordFactory.Recorder recorder, long epoch_number) {
+            this.recorder = recorder;
+            this.epoch_number = epoch_number;
+        }
+    }
+
+    Vote[] votes;
+
     void produceContract(producedContract, immutable(ContractProduct)* product) {
         log("received ContractProduct");
         logContractStatus(product.contract.sign_contract.contract, ContractStatusCode.produced, "Received produced contract");
@@ -249,10 +262,8 @@ struct TranscriptService {
             last_consensus_epoch +=1;
             recorder.insert(non_voted_epoch, Archive.Type.ADD);
 
-            // Votes new_vote;
-            // new_vote.epoch = non_voted_epoch;
-            // new_vote.locked_archives = outputs;
-            // votes[non_voted_epoch.epoch_number] = new_vote;
+            Vote new_vote = Vote(recorder.dup, res.id);
+            votes ~= new_vote;
 
             auto req = dartModifyRR(res.id);
 
