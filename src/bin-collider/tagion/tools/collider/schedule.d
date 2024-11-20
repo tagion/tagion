@@ -348,18 +348,6 @@ struct ScheduleRunner {
         }
     }
 
-    version (none) static void kill(Pid pid) @trusted {
-        try {
-
-            
-
-                .kill(pid); //.ifThrown!ProcessException;
-        }
-        catch (ProcessException e) {
-            // ignore
-        }
-    }
-
     void showEnv(const(string[string]) env, const(RunUnit) unit) {
         if (verbose_switch) {
             writeln("Environment:");
@@ -377,7 +365,6 @@ struct ScheduleRunner {
     }
 
     int run(scope const(char[])[] args) {
-        //alias Job = Tuple!(RunUnit, "unit", string, "name", string, "stage", bool, "done");
         import std.algorithm : filter;
 
         auto job_list = stages

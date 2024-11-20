@@ -310,7 +310,6 @@ int main(string[] args) {
             if (schedule_rewrite) {
                 schedule.save(options.schedule_file);
             }
-            //   Check_reports_switch = true;
         }
 
         check_reports_switch = Check_reports_switch || check_reports_switch;
