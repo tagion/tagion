@@ -92,11 +92,6 @@ struct Job {
     RunUnit unit;
     File fout;
     protected State state;
-    //mixin HiBONRecord;
-    version (none) protected {
-        @label("log") string _log_filename;
-        @label("lap") Lap _lap;
-    }
     this(ref RunUnit unit, string name, string stage) pure nothrow {
         this.unit = unit;
         this.state.name = name;
@@ -108,7 +103,7 @@ struct Job {
         assumeWontThrow(format("Can't change lap from %s to %s", state.lap, lap_level)))
     do {
         state.lap = lap_level;
-        state.filename.setExtension(state.stage ~ FileExtension.hibon).fwrite(state);
+        state.filename.setExtension(FileExtension.hibon).fwrite(state);
     }
 
     pure nothrow {
@@ -332,13 +327,13 @@ struct ScheduleRunner {
         }
     }
 
-    void setEnv(ref string[string] env, string stage) {
-        if (stage) {
-            env[TEST_STAGE] = stage;
+    void setEnv(ref string[string] env, const(Job*) job) {
+        if (job.stage) {
+            env[TEST_STAGE] = job.stage;
         }
         if (COLLIDER_ROOT in env) {
-            env[BDD_LOG] = buildNormalizedPath(env[COLLIDER_ROOT], stage);
-            env[BDD_RESULTS] = buildNormalizedPath(env[COLLIDER_ROOT], stage, "results");
+            env[BDD_LOG] = buildNormalizedPath(env[COLLIDER_ROOT], job.stage);
+            env[BDD_RESULTS] = buildNormalizedPath(env[COLLIDER_ROOT], job.stage, "results", job.name);
             if (!env[BDD_LOG].exists) {
                 env[BDD_LOG].mkdirRecurse;
             }
@@ -489,7 +484,7 @@ struct ScheduleRunner {
                             unit_args
                                 .map!(arg => envExpand(arg, env))
                                 .array;
-                        setEnv(env, job_queue.front.stage);
+                        setEnv(env, job_queue.front);
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
 
