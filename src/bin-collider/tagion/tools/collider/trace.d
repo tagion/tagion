@@ -37,15 +37,15 @@ class TraceCallBacks : ScheduleTrace {
     }
 
     void started(const ref Runner runner) {
-        writefln("Runner %s started %s", runner.jobid, runner.stage.name);
+        writefln("Runner %s started %s", runner.jobid, runner.job.name);
     }
 
     void stopped(const ref Runner runner) {
-        writefln("Runner %s stopped %s", runner.jobid, runner.stage.name);
+        writefln("Runner %s stopped %s", runner.jobid, runner.job.name);
     }
 
     void timeout(const ref Runner runner) {
-        writefln("Runner %s timeout %s", runner.jobid, runner.stage.name);
+        writefln("Runner %s timeout %s", runner.jobid, runner.job.name);
     }
 
 }

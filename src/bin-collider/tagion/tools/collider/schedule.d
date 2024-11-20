@@ -15,6 +15,7 @@ import std.path;
 import std.exception : assumeWontThrow;
 import std.typecons : Tuple, tuple;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
 import tagion.tools.Basic : dry_switch, verbose_switch, error;
 import tagion.tools.collider.BehaviourOptions;
 import tagion.tools.collider.trace : ScheduleTrace;
@@ -77,13 +78,19 @@ enum Lap {
 }
 
 struct Job {
-    RunUnit unit;
+    @exclude RunUnit unit;
     string name;
     string stage;
-    File fout;
+    @exclude File fout;
+    //mixin HiBONRecord;
     protected {
-        string _log_filename;
-        Lap _lap;
+        @label("log") string _log_filename;
+        @label("lap") Lap _lap;
+    }
+    this(ref  RunUnit unit, string name, string stage) pure nothrow {
+        this.unit = unit;
+        this.name = name;
+        this.stage = stage;
     }
 
     pure nothrow {
@@ -139,42 +146,44 @@ struct Job {
 
 struct Runner {
     Pid pid;
-    Job* stage;
+    Job* job;
     SysTime time;
     long jobid;
     void close() {
-        if (stage) {
-            stage.fout.close;
+        if (job) {
+            job.fout.close;
         }
     }
 
     protected void _kill() nothrow @trusted {
         if (pid !is pid.init) {
             try {
+
                 
+
                     .kill(pid); //.ifThrown!ProcessException;
             }
             catch (Exception e) {
-                assumeWontThrow(stage.fout.writefln(e.toString));
+                assumeWontThrow(job.fout.writefln(e.toString));
             }
         }
 
     }
 
     void fail(string msg) nothrow {
-        assumeWontThrow({ stage.fout.writefln("Error: %s", msg); _kill(); stage.lap = Lap.failed; stage.fout.close; }());
+        assumeWontThrow({ job.fout.writefln("Error: %s", msg); _kill(); job.lap = Lap.failed; job.fout.close; }());
     }
 
     void stop(string msg) nothrow {
-        assumeWontThrow({ stage.fout.writeln(msg); _kill(); stage.lap = Lap.stopped; stage.fout.close; }());
+        assumeWontThrow({ job.fout.writeln(msg); _kill(); job.lap = Lap.stopped; job.fout.close; }());
     }
 }
 
 struct JobCycle {
-    Job*[] stages;
+    Job*[] jobs;
     size_t index;
     this(Job*[] r) pure nothrow {
-        stages = r;
+        jobs = r;
     }
 
     bool empty() pure nothrow {
@@ -182,64 +191,59 @@ struct JobCycle {
     }
 
     Job* front() pure nothrow {
-        if ((index < stages.length) && stages[index].isActivated) {
+        if ((index < jobs.length) && jobs[index].isActivated) {
             popFront;
         }
-        if (index >= stages.length) { //stages[index].done) {
+        if (index >= jobs.length) { //jobs[index].done) {
             return null;
         }
-        return stages[index];
+        return jobs[index];
     }
 
     void popFront() pure nothrow {
         index++;
-        if (index >= stages.length) {
+        if (index >= jobs.length) {
             index = 0;
         }
-        while ((index < stages.length) && stages[index].isActivated) {
+        while ((index < jobs.length) && jobs[index].isActivated) {
             index++;
         }
     }
 }
 
 unittest {
-    Job*[] stages;
+    import std.algorithm : filter;
+
+    Job*[] jobs;
     {
-        auto c = JobCycle(stages);
+        auto c = JobCycle(jobs);
         assert(c.empty);
         c.popFront;
         assert(c.empty);
 
     }
+    RunUnit unit;
     {
-        stages = [
-            new Job(RunUnit.init, "A"),
+        jobs = [
+            new Job(unit, "A", null),
         ];
-        auto c = JobCycle(stages);
+        auto c = JobCycle(jobs);
         assert(!c.empty);
 
-        stages[0].lap = Lap.started;
+        jobs[0].lap = Lap.started;
         assert(c.empty);
         c.popFront;
         assert(c.empty);
     }
     {
-        stages = [
-            new Job(RunUnit.init, "A"),
-            new Job(RunUnit.init, "B"),
-            new Job(RunUnit.init, "C"),
-            new Job(RunUnit.init, "D")
+        jobs = [
+            new Job(unit, "A", null),
+            new Job(unit, "B", null),
+            new Job(unit, "C", null),
+            new Job(unit, "D", null)
         ];
-        auto c = JobCycle(stages);
-        /*
-        stages[0].lap = Lap.started;
-        stages[1].lap = Lap.started; // The job needs to be started before it can be paused
-        stages[1].lap = Lap.paused;
-        stages[2].lap = Lap.started;
-        stages[2].lap = Lap.paused;
-        stages[3].lap = Lap.started;
-*/
-        const repeat_task = 2 * stages.length;
+        auto c = JobCycle(jobs);
+        const repeat_task = 2 * jobs.length;
         assert(c.take(repeat_task).walkLength == repeat_task);
         c.take(repeat_task).filter!(s => s.name == "C")
             .each!(s => s.lap = Lap.started);
@@ -355,6 +359,8 @@ struct ScheduleRunner {
 
     int run(scope const(char[])[] args) {
         //alias Job = Tuple!(RunUnit, "unit", string, "name", string, "stage", bool, "done");
+        import std.algorithm : filter;
+
         auto job_list = stages
             .map!(stage => schedule.units
                     .byKeyValue
@@ -431,7 +437,7 @@ struct ScheduleRunner {
 
         void terminate(ref Runner runner) {
             this.stopped(runner);
-            runner.stage.lap = Lap.stopped;
+            runner.job.lap = Lap.stopped;
             runner = Runner.init;
         }
 
@@ -493,12 +499,6 @@ struct ScheduleRunner {
                     }
                     catch (Exception e) {
                         error(e);
-                        /*
-                        runners[job_index].stage.fout.writeln("Error: %s", e.msg);
-                        runners[job_index].fail(e.msg);
-                        runners[job_index].close;
-                        runners[job_index].stage.lap = Lap.failed;
-                        */
                         runners[job_index].fail(e.msg);
                         runners[job_index] = Runner.init;
                     }
