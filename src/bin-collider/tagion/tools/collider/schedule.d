@@ -23,6 +23,8 @@ import tagion.tools.toolsexception;
 import tagion.json.JSONRecord;
 import tagion.utils.envexpand;
 import tagion.basic.basic : isinit;
+import tagion.basic.Types : FileExtension;
+import tagion.hibon.HiBONFile : fread, fwrite;
 
 import tagion.utils.Term;
 
@@ -77,37 +79,47 @@ enum Lap {
     stopped,
 }
 
+@recordType("ColliderState")
 struct State {
     string name;
     string stage;
     string filename;
     Lap lap;
+    mixin HiBONRecord;
 }
-
 
 struct Job {
     RunUnit unit;
     File fout;
     protected State state;
     //mixin HiBONRecord;
-    version(none)
-    protected {
+    version (none) protected {
         @label("log") string _log_filename;
         @label("lap") Lap _lap;
     }
-    this(ref  RunUnit unit, string name, string stage) pure nothrow {
+    this(ref RunUnit unit, string name, string stage) pure nothrow {
         this.unit = unit;
         this.state.name = name;
         this.state.stage = stage;
+    }
+
+    void lap(Lap lap_level)
+    in (checkLap(lap_level),
+        assumeWontThrow(format("Can't change lap from %s to %s", state.lap, lap_level)))
+    do {
+        state.lap = lap_level;
+        state.filename.setExtension(state.stage ~ FileExtension.hibon).fwrite(state);
     }
 
     pure nothrow {
         string name() const @nogc {
             return state.name;
         }
+
         string stage() const @nogc {
             return state.stage;
         }
+
         void log_filename(string filename) @nogc
         in (state.filename is null, "Log filename has already been set")
         do {
@@ -127,13 +139,6 @@ struct Job {
             case Lap.stopped:
                 return (state.lap > Lap.none) && (state.lap <= Lap.paused);
             }
-        }
-
-        void lap(Lap lap_level)
-        in (checkLap(lap_level),
-            assumeWontThrow(format("Can't change lap from %s to %s", state.lap, lap_level)))
-        do {
-            state.lap = lap_level;
         }
 
         string log_filename() const @nogc {

@@ -27,6 +27,7 @@ import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
 import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONRecord : isRecord;
 import tagion.tools.Basic;
 import tagion.tools.collider.BehaviourOptions;
 import tagion.tools.collider.schedule;
@@ -275,24 +276,27 @@ int check_reports(string[] paths) {
         foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth)
                 .filter!(f => f.isFile)) {
             try {
-                const feature_group = report_file.fread!FeatureGroup;
-                const feature_test_code = testCode(feature_group);
-                feature_count.update(feature_test_code);
-                if (show(feature_test_code)) {
-                    writefln("Trace file %s", report_file);
-                }
+                const doc = report_file.fread;
+                if (doc.isRecord!FeatureGroup) {
+                    const feature_group = FeatureGroup(doc);
+                    const feature_test_code = testCode(feature_group);
+                    feature_count.update(feature_test_code);
+                    if (show(feature_test_code)) {
+                        writefln("Trace file %s", report_file);
+                    }
 
-                report(feature_test_code, feature_group.info.property.description);
-                const show_scenario = feature_test_code == TestCode.error
-                    || feature_test_code == TestCode.started;
-                foreach (scenario_group; feature_group.scenarios) {
-                    const scenario_test_code = testCode(scenario_group);
-                    scenario_count.update(scenario_test_code);
-                    if (show_scenario) {
-                        report(scenario_test_code, "\t%s", scenario_group.info.property
-                                .description);
-                        foreach (err; getBDDErrors(scenario_group)) {
-                            report(scenario_test_code, "\t\t%s", err.msg);
+                    report(feature_test_code, feature_group.info.property.description);
+                    const show_scenario = feature_test_code == TestCode.error
+                        || feature_test_code == TestCode.started;
+                    foreach (scenario_group; feature_group.scenarios) {
+                        const scenario_test_code = testCode(scenario_group);
+                        scenario_count.update(scenario_test_code);
+                        if (show_scenario) {
+                            report(scenario_test_code, "\t%s", scenario_group.info.property
+                                    .description);
+                            foreach (err; getBDDErrors(scenario_group)) {
+                                report(scenario_test_code, "\t\t%s", err.msg);
+                            }
                         }
                     }
                 }
