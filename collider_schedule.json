@@ -1,5 +1,13 @@
 {
   "units": {
+    "collider_test": {
+      "args": ["-f$WORKDIR"],
+      "envs": {
+        "WORKDIR": "$(HOME)/work"
+      },
+      "stages": ["example"],
+      "timeout": 0.0
+    },
     "receive_epoch": {
       "args": [],
       "envs": {},
@@ -184,14 +192,6 @@
       "args": [],
       "envs": {},
       "stages": ["transaction_service", "services"],
-      "timeout": 0.0
-    },
-    "collider_test": {
-      "args": ["-f$WORKDIR"],
-      "envs": {
-        "WORKDIR": "$(HOME)/work"
-      },
-      "stages": ["example"],
       "timeout": 0.0
     },
     "dart_service": {
