@@ -81,7 +81,7 @@ int _main(string[] args) {
     foreach (result; result_files) {
         const doc=result.fread;
         if (doc.isRecord!FeatureGroup) {
-            featuregroups ~= fread!FeatureGroup(doc);
+            featuregroups ~= FeatureGroup(doc);
         }
     }
 
