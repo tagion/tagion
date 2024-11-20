@@ -42,7 +42,6 @@ env-dirs:
 	$(call log.kvp, BDD, $(BDD))
 	$(call log.kvp, BDD_LOG, $(BDD_LOG))
 	$(call log.kvp, TRUNK, $(TRUNK))
-	$(call log.kvp, BDD_RESULTS, $(BDD_RESULTS))
 	$(call log.kvp, DLOGCOV, $(DLOGCOV))
 	$(call log.kvp, TESTLOG, $(TESTLOG))
 	$(call log.kvp, FUND, $(FUND))
