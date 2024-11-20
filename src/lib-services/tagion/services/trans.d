@@ -240,21 +240,19 @@ struct TranscriptService {
                 TagionDomain,
                 res.id,
             );
-            immutable(DARTIndex)[] locked_indices = recorder[]
-                .filter!(a => a.type == Archive.Type.ADD)
-                .map!(a => net.dartIndex(a.filed))
-                .array;
-
-            LockedArchives outputs = LockedArchives(res.id, locked_indices);
-
 
             last_head = new_head;
             last_globals = new_globals;
 
-            Votes new_vote;
-            new_vote.epoch = non_voted_epoch;
-            new_vote.locked_archives = outputs;
-            votes[non_voted_epoch.epoch_number] = new_vote;
+            non_voted_epoch.previous = previous_epoch;
+            previous_epoch = net.calcHash(non_voted_epoch);
+            last_consensus_epoch +=1;
+            recorder.insert(non_voted_epoch, Archive.Type.ADD);
+
+            // Votes new_vote;
+            // new_vote.epoch = non_voted_epoch;
+            // new_vote.locked_archives = outputs;
+            // votes[non_voted_epoch.epoch_number] = new_vote;
 
             auto req = dartModifyRR(res.id);
 

@@ -62,7 +62,11 @@ public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
 public import tagion.services.inputvalidator : InputValidatorOptions;
 public import tagion.services.replicator : ReplicatorOptions;
 public import tagion.services.subscription : SubscriptionServiceOptions;
+version(NEW_TRANSCRIPT) {
+public import tagion.services.trans : TranscriptOptions;
+} else {
 public import tagion.services.transcript : TranscriptOptions;
+}
 public import tagion.services.TRTService : TRTOptions;
 public import tagion.services.nodeinterface : NodeInterfaceOptions;
 
