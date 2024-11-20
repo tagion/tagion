@@ -29,7 +29,7 @@ it will be submitted for feedback on Discord first. Join us there to contribute 
 
 At the time of writing (find a timestamps of latest updates on the bottom of all pages), the Tagion network is distributed across several nodes, but they are all on Decard servers and operate in what we call "Mode 1" on the technical side -   
 and **pre-release** in terms of governance.  
-Once the next technical milestone is achieved and nodes that fall out of synchronisation can catch up with the consensus state of the network automatically, a huge step towards decentralization is achieved. Technically, we call that "Mode 2" and you can find more information on these terms in the [Tech documentation](https://docs.tagion.org/tech/architecture/network_modes).  
+Once the next technical milestone is achieved and nodes that fall out of synchronisation can catch up with the consensus state of the network automatically, a huge step towards decentralization is achieved. Technically, we call that "Mode 2" and you can find more information on these "modes" in the [Tech documentation](https://docs.tagion.org/tech/architecture/network_modes).  
 In terms of governance, this is where the "release phases" of the network will start. The first of these is the 
 
 ### 1. Closed Release
