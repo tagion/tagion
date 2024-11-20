@@ -99,14 +99,11 @@ struct TranscriptService {
         const(ConsensusVoting)[] votes;
         RecordFactory.Recorder recorder;
         long epoch_number;
+        Fingerprint future_bullseye;
 
-        this(RecordFactory.Recorder recorder, long epoch_number) {
-            this.recorder = recorder;
-            this.epoch_number = epoch_number;
-        }
     }
 
-    Vote[] votes;
+    Vote[long] votes;
 
     void produceContract(producedContract, immutable(ContractProduct)* product) {
         log("received ContractProduct");
@@ -123,6 +120,24 @@ struct TranscriptService {
         import tagion.utils.Term;
 
         log("%sEpoch round: %d time %s%s", BLUE, last_epoch_number, epoch_time, RESET);
+
+        // check for votes. All other stuff will just be saved in an array. We will not process future epochs before the first one can be completely finished.
+        immutable(ConsensusVoting)[] received_votes = epacks
+            .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
+            .map!(epack => immutable(ConsensusVoting)(epack.event_body.payload))
+            .array;
+
+        foreach(v; received_votes) {
+            if (votes.get(v.epoch, Vote.init) !is Vote.init) {
+                votes[v.epoch].votes ~= v;
+            }
+            else {
+                log("VOTE IS INIT");
+            }
+        }
+        // if the new number of votes is majority. We can allow further processing of the next epoch, and add the votes to the next epoch.
+
+        
 
         auto signed_contracts = epacks
             .filter!(epack => epack.event_body.payload.isRecord!SignedContract)
@@ -262,28 +277,34 @@ struct TranscriptService {
             last_consensus_epoch +=1;
             recorder.insert(non_voted_epoch, Archive.Type.ADD);
 
-            Vote new_vote = Vote(recorder.dup, res.id);
-            votes ~= new_vote;
 
-            auto req = dartModifyRR(res.id);
+            // TODO: ADD PREVIOUS VOTES FROM PREVIOUS EPOCH HERE AND BULLSEYE
 
+            Vote new_vote;
+            new_vote.recorder = recorder.dup;
+            votes[res.id] = new_vote;
+
+            // we do not directly add the epoch here. Instead we calculate the future eye. Majority of the nodes then have to agree of this future eye before it is processed to the database. Until then no other epochs will be created / added.
+
+            auto req = dartFutureEyeRR(res.id);
             dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
+            // auto req = dartModifyRR(res.id);
 
     }
-    void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
-        // ignore for now
+
+    void receiveFutureEye(dartFutureEyeRR.Response res, Fingerprint future_bullseye) {
+        // add our own vote to the consensus vote
+        const epoch_number = res.id;
+        votes[epoch_number].future_bullseye = future_bullseye;
+
+        ConsensusVoting own_vote = ConsensusVoting(
+            epoch_number,
+            net.pubkey,
+            net.sign(future_bullseye),
+        );
+
+        epoch_creator_handle.send(Payload(), own_vote.toDoc);
         return; 
-        // const epoch_number = res.id;
-
-        // votes[epoch_number].epoch.bullseye = bullseye;
-
-        // ConsensusVoting own_vote = ConsensusVoting(
-        //         epoch_number,
-        //         net.pubkey,
-        //         net.sign(bullseye)
-        // );
-
-        // epoch_creator_handle.send(Payload(), own_vote.toDoc);
     }
 
 
@@ -333,7 +354,7 @@ struct TranscriptService {
         }
         log("Booting with globals: %s\n last_head: %s", last_globals.toPretty, last_head.toPretty);
 
-        run(&epoch, &produceContract, &createRecorder, &receiveBullseye);
+        run(&epoch, &produceContract, &createRecorder, &receiveFutureEye);
     }
 
 }
