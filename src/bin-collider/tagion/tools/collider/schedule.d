@@ -77,57 +77,71 @@ enum Lap {
     stopped,
 }
 
-struct Job {
-    @exclude RunUnit unit;
+struct State {
     string name;
     string stage;
-    @exclude File fout;
+    string filename;
+    Lap lap;
+}
+
+
+struct Job {
+    RunUnit unit;
+    File fout;
+    protected State state;
     //mixin HiBONRecord;
+    version(none)
     protected {
         @label("log") string _log_filename;
         @label("lap") Lap _lap;
     }
     this(ref  RunUnit unit, string name, string stage) pure nothrow {
         this.unit = unit;
-        this.name = name;
-        this.stage = stage;
+        this.state.name = name;
+        this.state.stage = stage;
     }
 
     pure nothrow {
+        string name() const @nogc {
+            return state.name;
+        }
+        string stage() const @nogc {
+            return state.stage;
+        }
         void log_filename(string filename) @nogc
-        in (_log_filename is null, "Log filename has already been set")
+        in (state.filename is null, "Log filename has already been set")
         do {
-            _log_filename = filename;
+            state.filename = filename;
         }
 
         bool checkLap(const Lap lap_level) const @nogc {
-            final switch (_lap) {
+            final switch (state.lap) {
             case Lap.none:
                 return lap_level is Lap.started;
             case Lap.started:
-                return lap_level > _lap;
+                return lap_level > state.lap;
             case Lap.paused:
-                return lap_level >= _lap;
+                return lap_level >= state.lap;
             case Lap.timedout:
             case Lap.failed:
             case Lap.stopped:
-                return (_lap > Lap.none) && (_lap <= Lap.paused);
+                return (state.lap > Lap.none) && (state.lap <= Lap.paused);
             }
         }
 
         void lap(Lap lap_level)
         in (checkLap(lap_level),
-            assumeWontThrow(format("Can't change lap from %s to %s", _lap, lap_level)))
+            assumeWontThrow(format("Can't change lap from %s to %s", state.lap, lap_level)))
         do {
-            _lap = lap_level;
+            state.lap = lap_level;
         }
 
         string log_filename() const @nogc {
-            return _log_filename;
+            return state.filename;
         }
 
         Lap lap() const @nogc {
-            return _lap;
+            return state.lap;
         }
 
         bool hasEnded() const @nogc {
