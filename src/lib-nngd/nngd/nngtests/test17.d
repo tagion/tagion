@@ -1,4 +1,4 @@
-module nngd.nngtests.test10;
+module nngd.nngtests.test17;
 
 import std.stdio;
 import std.concurrency;
@@ -18,22 +18,27 @@ import core.thread.osthread;
 import nngd;
 import nngd.nngtests.testdata;
 
-const _testclass = "nngd.nngtests.nng_test10_tls";
+const _testclass = "nngd.nngtests.nng_test17_tls6";
 
-@trusted class nng_test10_tls : NNGTest {
+@trusted class nng_test17_tls6 : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }    
 
     override string[] run(){
-        log("NNG test 10: TLS");
+        log("NNG test 17: TLS6");
         version(withtls)
         {
-            this.uri = "tls+tcp://127.0.0.1:31010";
+            string server_uri = "tls+tcp6://[::]:31017";
+            string client_uri = "tls+tcp6://[::1]:31017";
+            this.localuri = server_uri;
             workers ~= new Thread(&(this.receiver_worker)).start();
+            Thread.sleep(msecs(100));
+            this.localuri = client_uri;
             workers ~= new Thread(&(this.sender_worker)).start();
+            Thread.sleep(msecs(100));
             foreach(w; workers)
                 w.join();
-        } version(withtls)
+        } //version(withtls)
         log(_testclass ~ ": Bye!");
         return [];
     }
@@ -45,6 +50,7 @@ const _testclass = "nngd.nngtests.nng_test10_tls";
             const NMSGS = 32;
             uint k = 0;
             int rc;
+            string uri = this.localuri.dup;
             try{
                 thread_attachThis();
                 rt_moduleTlsCtor();
@@ -104,6 +110,7 @@ const _testclass = "nngd.nngtests.nng_test10_tls";
             uint k = 0;
             int rc;
             bool _ok = false;
+            string uri = this.localuri.dup;
             try{
                 thread_attachThis();
                 rt_moduleTlsCtor();
@@ -150,7 +157,7 @@ const _testclass = "nngd.nngtests.nng_test10_tls";
 
     private:
         Thread[] workers;
-        string uri;
+        string localuri;
 
 }
 

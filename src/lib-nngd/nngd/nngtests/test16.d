@@ -1,45 +1,47 @@
-module nngd.nngtests.test03;
+module nngd.nngtests.test16;
 
 import std.stdio;
 import std.concurrency;
 import std.exception;
 import std.json;
 import std.format;
-import std.conv;
 import core.thread;
 import core.thread.osthread;
 import nngd;
 
-const _testclass = "nngd.nngtests.nng_test03_pushpull_transport";
+const _testclass = "nngd.nngtests.nng_test16_tcp6";
 
-@trusted class nng_test03_pushpull_transport : NNGTest {
+@trusted class nng_test16_tcp6 : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }    
 
     override string[] run(){
-        log("NNG test 03: pushpull send use transport");
-        string[3] transports = ["tcp://127.0.0.1:31003", "ipc:///tmp/testnng.ipc", "inproc://testnng"];
-        foreach(urlt; transports){
-            this.uri = urlt;
-            workers ~= new Thread(&(this.receiver_worker)).start();
-            workers ~= new Thread(&(this.sender_worker)).start();
-            foreach(w; workers)
-                w.join();
-        }
-        log("BB");
+        log("NNG test 16: TCP6");
+        auto server_uri = "tcp6://[::]:31016";
+        auto client_uri = "tcp6://[::1]:31016";
+        this.localuri = server_uri;
+        workers ~= new Thread(&(this.receiver_worker)).start();
+        Thread.sleep(msecs(100));
+        this.localuri = client_uri;
+        workers ~= new Thread(&(this.sender_worker)).start();
+        Thread.sleep(msecs(100));
+        foreach(w; workers)
+            w.join();
         log(_testclass ~ ": Bye!");
         return [];
     }
     
+
     void sender_worker() @trusted {
         const NDIALS = 32;
-        const NMSGS = 12;
+        const NMSGS = 32;
         uint k = 0;
         int rc;
+        string uri = this.localuri.dup;
         try{
             thread_attachThis();
             rt_moduleTlsCtor();
-            log("SS: Conncting to " ~ uri);
+            log("SS: Connecting to " ~ uri);
             NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
             s.sendtimeout = msecs(1000);
             s.sendbuf = 4096;
@@ -63,9 +65,9 @@ const _testclass = "nngd.nngtests.nng_test03_pushpull_transport";
             while(++k < NMSGS){
                 auto line = format(`{"msg": %d, "check": %d, "time": %f}`,
                     k, mkrot3(k), timestamp());
-                if(k == NMSGS-1) line = "END";    
                 log(line);   
-                rc = s.send!string(line);
+                auto sbuf = cast(ubyte[])line.dup;
+                rc = s.send!(ubyte[])(sbuf);
                 enforce(rc == 0);
                 log("SS: sent: " ~ line);
                 nng_sleep(msecs(100));
@@ -78,9 +80,13 @@ const _testclass = "nngd.nngtests.nng_test03_pushpull_transport";
 
     void receiver_worker() @trusted {
         const NDIALS = 32;
+        const NMSGS = 32;
+        const BSIZE = 4096;
+        ubyte[BSIZE] rbuf; 
         uint k = 0;
         int rc;
-        bool _ok = false;
+        size_t sz = rbuf.length;
+        string uri = this.localuri.dup;
         try{
             thread_attachThis();
             rt_moduleTlsCtor();
@@ -89,19 +95,22 @@ const _testclass = "nngd.nngtests.nng_test03_pushpull_transport";
             rc = s.listen(uri);
             enforce(rc == 0, "RR: Error listening socket");
             while(1){
-                auto str = s.receive!string();;
-                if(s.errno == 0){
-                    log("RR: GOT["~(to!string(str.length))~"]: >"~str~"<");
-                    if(str == "END"){
-                        _ok = true;
-                        break;
-                    }
-                }else{
-                    error("RR: Error string: " ~ nng_errstr(s.errno));
-                }                    
-            }
-            if(!_ok){
-                error("RR: Test stopped without normal end.");
+                sz = s.receivebuf(rbuf, rbuf.length);
+                if(sz < 0 || sz == size_t.max){
+                    error("REcv error: " ~ nng_errstr(s.errno));
+                    continue;
+                }
+                auto line = cast(string)rbuf[0..sz];
+                log("RR: received: " ~ line);
+                auto jdata = parseJSON(line);
+                k = cast(uint)(jdata["msg"].integer);
+                auto c = cast(uint)(jdata["check"].integer);
+                if(!chkrot3(k,c)){
+                    error("Invalid message data: " ~ line);
+                    continue;
+                }
+                if(k >= NMSGS-1)
+                    break;
             }
         } catch(Throwable e) {
             error(dump_exception_recursive(e, "RR: Receiver worker"));
@@ -110,7 +119,9 @@ const _testclass = "nngd.nngtests.nng_test03_pushpull_transport";
     
     private:
         Thread[] workers;
-        string uri;
+        string localuri;
 
 }
+
+
 

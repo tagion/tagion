@@ -18,141 +18,134 @@ import core.thread;
 import core.thread.osthread;
 import nngd;
 
-version (unittest) {
+const _testclass = "nngd.nngtests.nng_test08_pool";
+
+string rndstr(size_t len = 32) @trusted {
+    string s, buf;
+    do {
+        buf = cast(string)(Base64.encode(cast(const(ubyte)[])"/dev/urandom".read(512)));
+        s ~= buf[0..(min(buf.length,len-s.length))];
+    }while(s.length < len);
+    return s[0..len];
 }
-else {
-    pragma(msg, "This breaks the unittest so it's disabled");
 
-    const _testclass = "nngd.nngtests.nng_test08_pool";
+struct worker_context {
+    int id;
+    string name;
+    void* cptr;
+}
 
-    string rndstr(size_t len = 32) @trusted {
-        string s, buf;
-        do {
-            buf = cast(string)(Base64.encode(cast(const(ubyte)[]) "/dev/urandom".read(512)));
-            s ~= buf[0 .. (min(buf.length, len - s.length))];
-        }
-        while (s.length < len);
-        return s[0 .. len];
-    }
 
-    struct worker_context {
-        int id;
-        string name;
-        void* cptr;
-    }
+@trusted class nng_test08_pool : NNGTest {
+    
+    this(Args...)(auto ref Args args) { super(args); }    
 
-    @trusted class nng_test08_pool : NNGTest {
+    override string[] run(){
+        log("NNG test 08: nng worker pool");
+        this.uri = "tcp://127.0.0.1:31008";
+        immutable string[] tags = ["TAG0", "TAG1", "TAG2", "TAG3"];
+        try{ 
+            auto self_ = self;
 
-        this(Args...)(auto ref Args args) {
-            super(args);
-        }
+            worker_context ctx;
+            ctx.id = 1;
+            ctx.name = "Context name";
+            ctx.cptr = &self_;
+            
+            NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
+            s.sendtimeout = msecs(5000);
+            s.recvtimeout = msecs(5000);
+            s.sendbuf = 65536;
 
-        override string[] run() {
-            log("NNG test 08: nng worker pool");
-            this.uri = "tcp://127.0.0.1:31008";
-            immutable string[] tags = ["TAG0", "TAG1", "TAG2", "TAG3"];
-            try {
-                auto self_ = self;
+            NNGPool pool = NNGPool(&s, &this.server_callback, 8, &ctx, this.logfile);
+            pool.init();
 
-                worker_context ctx;
-                ctx.id = 1;
-                ctx.name = "Context name";
-                ctx.cptr = &self_;
+            auto rc = s.listen(uri);
+            enforce(rc == 0);
 
-                NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
-                s.sendtimeout = msecs(5000);
-                s.recvtimeout = msecs(5000);
-                s.sendbuf = 65536;
-
-                NNGPool pool = NNGPool(&s, &this.server_callback, 8, &ctx, this.logfile.fileno());
-                pool.init();
-
-                auto rc = s.listen(uri);
-                enforce(rc == 0);
-
-                foreach (t; tags) {
-                    this.tag = t;
-                    workers ~= new Thread(&(this.client_worker)).start();
-                    Thread.sleep(msecs(100));
-                }
-                foreach (w; workers)
-                    w.join();
-                log("PLANNING SHUTDOWN");
-                pool.shutdown();
+            foreach(t; tags){
+                this.localtag = t.dup;
+                workers ~= new Thread(&(this.client_worker)).start();
+                Thread.sleep(msecs(10));
             }
-            catch (Throwable e) {
-                error(dump_exception_recursive(e, "Main: " ~ _testclass));
-            }
-            log(_testclass ~ ": Bye!");
-            log("Passed!");
-            return [];
+            foreach(w; workers)
+                w.join();
+            Thread.sleep(msecs(100));
+            pool.shutdown();
+        } catch(Throwable e) {
+            error(dump_exception_recursive(e, "Main: " ~ _testclass));
         }
-
+        log("post d1");
+        log(_testclass ~ ": Bye!");
+        log("Passed!");
+        return [];
+    }
+    
+    
     private:
-
+        
         Thread[] workers;
         string uri;
-        string tag;
+        string localtag;
 
-        static void server_callback(NNGMessage* msg, void* ctx) @trusted {
-            try {
-                auto cnt = cast(worker_context*) ctx;
-                auto obj = cast(nng_test08_pool*) cnt.cptr;
+        static void server_callback(NNGMessage *msg, void *ctx) @trusted
+        {
+            try{
+                auto cnt = cast(worker_context*)ctx;
+                auto obj = cast(nng_test08_pool*)cnt.cptr;
 
                 obj.log("SERVER CALLBACK");
-                if (msg is null) {
+                if(msg is null){ 
                     obj.log("No message received");
                     return;
-                }
-                if (msg.length < 1) {
+                }    
+                if(msg.length < 1){
                     obj.log("Empty message received");
                     return;
                 }
                 auto s = msg.body_trim!string();
-                obj.log("SERVER CONTEXT NAME: " ~ cnt.name);
-                obj.log("SERVER GOT: " ~ s[0 .. min(s.length, 48)]);
+                obj.log("SERVER CONTEXT NAME: "~cnt.name);
+                obj.log("SERVER GOT: " ~ s[0..min(s.length,48)]);
                 msg.clear();
-                if (indexOf(s, "What time is it?") == 0) {
+                if(indexOf(s,"What time is it?") == 0){
                     obj.log("Going to send time");
-                    msg.body_append(cast(ubyte[])(format("It`s %f o`clock." ~ " DATA: ", timestamp()) ~ rndstr(uniform(4096, 32768))));
-                }
-                else if (indexOf(s, "Swamp me!") == 0) {
+                    msg.body_append(cast(ubyte[])(format("It`s %f o`clock." ~ " DATA: ",timestamp()) ~ rndstr(uniform(4096,32768))));
+                }else if(indexOf(s,"Swamp me!") == 0){    
                     size_t bsz = 1048576;
                     string buf = rndstr(bsz);
                     msg.length = bsz + 32;
                     msg.body_prepend(cast(ubyte[])("BIG DATA: " ~ buf));
                     obj.log("SERVER: BData set");
-                }
-                else if (indexOf(s, "Break!") == 0) {
+                }else if(indexOf(s,"Break!") == 0){
                     obj.log("SERVER: Let's fool around!");
                     obj.log("Error condition emulated!");
-                }
-                else {
+                }else{
                     obj.log("Going to stop sender");
-                    msg.body_append(cast(ubyte[]) "END");
+                    msg.body_append(cast(ubyte[])"END");
                 }
-            }
-            catch (Throwable e) {
+            } catch(Throwable e) {
                 nngtest_error(dump_exception_recursive(e, "Server callback"));
-            }
+            }    
         }
 
         // REQ
-        void client_worker() @trusted {
+        void client_worker() @trusted
+        {
             const NDIALS = 32;
             const NMSGS = 32;
-            try {
+            try{
                 int rc;
+                string tag = this.localtag.dup;
+                Thread.sleep(msecs(100));
                 string line, str;
                 int k = 0;
                 NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
                 s.recvtimeout = msecs(5000);
-                while (++k < NDIALS) {
-                    log("REQ(" ~ tag ~ "): to dial...");
+                while( ++k < NDIALS ){
+                    log("REQ("~tag~"): to dial...");
                     rc = s.dial(uri);
-                    if (rc == 0)
-                        break;
-                    if (rc == nng_errno.NNG_ECONNREFUSED) {
+                    if(rc == 0) break;
+                    if(rc == nng_errno.NNG_ECONNREFUSED){
                         log("SS: Connection refused attempt %d", k);
                         nng_sleep(msecs(100));
                         continue;
@@ -160,48 +153,42 @@ else {
                     error("SS: Dial error after %d attempts: %d", NDIALS, rc);
                     enforce(rc == 0);
                 }
-                if (s.state is nng_socket_state.NNG_STATE_CONNECTED) {
+                if(s.state is nng_socket_state.NNG_STATE_CONNECTED){
                     log("SS:  connected with : " ~ nng_errstr(s.errno));
-                }
-                else {
+                }else{
                     enforce(false, "SS: connection timed out");
                 }
                 k = 0;
-                while (true) {
+                while(true){
                     k++;
-                    if (k > NMSGS) {
+                    if(k > NMSGS){
                         line = "Maybe that's enough?";
-                    }
-                    else if (k % 16 == 0) {
+                    } else if(k % 16 == 0) {
                         line = "Swamp me!";
-                    }
-                    else if (k % 21 == 0) {
+                    } else if(k % 21 == 0) {
                         line = "Break!";
-                    }
-                    else {
-                        line = format("What time is it? :: from(%s)[%d]", tag, k);
-                    }
-                    auto pl = rndstr(uniform(4096, 32768));
-                    rc = s.send!string(line ~ " DATA: " ~ pl);
+                    } else {    
+                        line = format("What time is it? :: from(%s)[%d]", tag,k);            
+                    }    
+                    auto pl = rndstr(uniform(4096,32768));    
+                    rc = s.send!string(line~" DATA: "~pl);
                     enforce(rc == 0);
-                    log("REQ(" ~ tag ~ "): SENT: " ~ line[0 .. min(line.length, 48)]);
+                    log("REQ("~tag~"): SENT: " ~ line[0..min(line.length,48)]);
                     str = s.receive!string();
-                    if (s.errno == 0) {
-                        log(format("REQ(" ~ tag ~ ") RECV [%03d]: %s", str.length, str[0 .. min(str.length, 48)]));
-                    }
-                    else {
-                        log("REQ(" ~ tag ~ "): Error string: " ~ nng_errstr(s.errno));
-                    }
-                    if (str == "END")
+                    if(s.errno == 0){
+                        log(format("REQ("~tag~") RECV [%03d]: %s", str.length, str[0..min(str.length,48)]));
+                    }else{
+                        log("REQ("~tag~"): Error string: " ~ nng_errstr(s.errno));
+                    }    
+                    if(str == "END")
                         break;
                 }
                 s.close();
-                log("REQ(" ~ tag ~ "): bye!");
-            }
-            catch (Throwable e) {
+                log("REQ("~tag~"): bye!");
+            } catch(Throwable e) {
                 error(dump_exception_recursive(e, "Client worker"));
-            }
+            }    
         }
 
-    }
 }
+

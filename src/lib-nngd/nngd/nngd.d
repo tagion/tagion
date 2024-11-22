@@ -1533,7 +1533,7 @@ struct NNGPoolWorker {
     File* logfile;
     nng_pool_callback cb;
     
-    this(int iid, void* icontext, File* ilog) {
+    this(int iid, void* icontext, File* ilog = null) {
         this.id = iid;
         this.context = icontext;
         this.logfile = ilog;
@@ -1597,9 +1597,8 @@ extern (C) void nng_pool_stateful(void* p) {
         }
         catch (Exception e) {
             if (w.logfile !is null) {
-                auto f = *(w.logfile);
-                f.write(format("Error in pool callback: [%d:%s] %s\n", e.line, e.file, e.msg));
-                f.flush();
+                w.logfile.write(format("Error in pool callback: [%d:%s] %s\n", e.line, e.file, e.msg));
+                w.logfile.flush();
             }
             w.msg.clear();
         }
@@ -1629,20 +1628,13 @@ struct NNGPool {
     
     @disable this();
 
-    this(NNGSocket* isock, nng_pool_callback cb, size_t n, void* icontext, int logfd = -1) {
+    this(NNGSocket* isock, nng_pool_callback cb, size_t n, void* icontext, File* ilog = null) {
         enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
         enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
         enforce(cb != null);
         sock = isock;
         context = icontext;
-        if (logfd == -1) {
-            logfile = null;
-        }
-        else {
-            _logfile = File("/dev/null", "wt");
-            _logfile.fdopen(logfd, "wt");
-            logfile = &_logfile;
-        }
+        logfile = ilog;
         nworkers = n;
         for (auto i = 0; i < n; i++) {
             NNGPoolWorker* w = new NNGPoolWorker(i, context, logfile);
@@ -1675,7 +1667,6 @@ struct NNGPool {
 
     NNGSocket* sock;
     void* context;
-    File _logfile;
     File* logfile;
     size_t nworkers;
 
@@ -3273,8 +3264,8 @@ private:
 
 // WebSocketClient tools
 
-alias ws_client_handler = void function( string message );
-alias ws_client_handler_b = void function( ubyte[] message );
+alias ws_client_handler = void function( string, void* );
+alias ws_client_handler_b = void function( ubyte[], void* );
 
 // WebSocketClient states
 enum ws_state {
@@ -3449,6 +3440,8 @@ struct WebSocketClient {
         
         string _url, _origin;
         string _errstr;
+
+        void* context;
     
         int connect(string host, string port ){
             try {
@@ -3561,7 +3554,7 @@ struct WebSocketClient {
             txmtx.unlock_nothrow();
         }
 
-        void dispatch_data(void delegate(ubyte[] message) cb){
+        void dispatch_data(void delegate(ubyte[] message, void* ctx) cb){
             if(is_rx_bad)
                 return;
             while(true){
@@ -3630,7 +3623,7 @@ struct WebSocketClient {
                                 rxbuf[i+ws.header_size] ^= ws.masking_key[j & 0x03];
                         received_data ~= rxbuf[ws.header_size .. ws.header_size + ws.N];
                         if(ws.fin){
-                            cb(received_data);
+                            cb(received_data,context);
                             received_data.length = 0;
                             rxbuf = rxbuf[ws.header_size + ws.N .. $];
                         }
@@ -3647,12 +3640,13 @@ struct WebSocketClient {
 
     ws_options opt;
     
-    this(string url, string origin = null, ws_options _opt = ws_options.init ){
+    this(string url, void* _context = null, string origin = null, ws_options _opt = ws_options.init){
         int rc;
         _url = url; 
         _origin = origin;
         localstate = ws_state.CLOSED;
         opt = _opt;
+        context = _context;
         rxmtx = new Mutex();
         txmtx = new Mutex();
         masking_key = [rndGen.uniform!ubyte, rndGen.uniform!ubyte, rndGen.uniform!ubyte, rndGen.uniform!ubyte];
@@ -3738,14 +3732,16 @@ struct WebSocketClient {
         send_data(ws_opcode.PING, null);
     }
 
+    pragma(msg, "fixme: check and optimize dispatch templates, see test13");
+
     void dispatch(F)(F cb) if(is(F == ws_client_handler))
     {
-        dispatch_data((ubyte[] message){cb((cast(string)(message)[0..$]));});
+        dispatch_data((ubyte[] message, void* ctx){cb((cast(string)(message)[0..$]), context);});
     }
     
     void dispatch(F)(F cb) if(is(F == ws_client_handler_b))
     {
-        dispatch_data((ubyte[] message){cb(message);});
+        dispatch_data((ubyte[] message, void* ctx){cb(message, context);});
     }
 
     void close() {
