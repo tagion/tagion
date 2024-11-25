@@ -9,11 +9,11 @@ These pages will be continuously updated as our network matures.
 
 Governance, to us, simultaneously means the structure and processes of managing a decentralised system - including the procedures through which decisions are made, and rules are established. Governance thus steers an organization, community, or, in this case, our decentralised network, Tagion. 
 
-To break up our ideas and make them easier to follow, we have structured the governance of our network into four [interdependent areas] (./governance_areas). 
+To break up our ideas and make them easier to follow, we have structured the governance of our network into four [interdependent areas](./governance_areas). 
 The structure and process of each of those will have effects and consequences on all others, directly or indirectly.
 
 
-In the end, we seek to establish robust, decentralised procedures that allow the network’s evolution to be guided by the collective will of its "community" (the meaning of this and other terms will be specified in the glossary). As a whole this shall guarantee that the  network’s trajectory remains aligned with the aspirations and principles laid out in our ["Manifesto"](./manifesto).
+In the end, we seek to establish robust, decentralised procedures that allow the network’s evolution to be guided by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). As a whole this shall guarantee that the  network’s trajectory remains aligned with the aspirations and principles laid out in our ["Manifesto"](./manifesto).
 
 :::note[The _Tagion Governance Manifesto_]
 
