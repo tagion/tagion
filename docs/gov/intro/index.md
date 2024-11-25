@@ -7,18 +7,13 @@ sidebar_position: 1
 Welcome to the governance documentation-pages of the Tagion network.    
 These pages will be continuously updated as our network matures. 
 
-Governance, to us, simultaneously means the structure AND processes of managing a decentralised system.
-And structure and process will change in step with the staged release of our network - see below - and with your input:   
-Please feel invited to contribute! For the time being, this happens on Discord (join [here](https://discord.gg/wE4AA64a)).
+Governance, to us, simultaneously means the structure AND processes of managing a decentralised system - including the procedures through which decisions are made, and rules are established. Governance thus steers an organization, community, or, in this case, our decentralized network,Tagion. 
 
-To break up our ideas and make them easier to follow, we have structured the governance of our network into four interdependent areas. 
-The structure and process of each of those will have effects and consequences on all other, directly or indirectly.  
-Navigate them through the menu. 
+To break up our ideas and make them easier to follow, we have structured the governance of our network into four interdependent areas (see menu on left hand side). 
+The structure and process of each of those will have effects and consequences on all other, directly or indirectly. .)
 
-## Phased decentralisation of Tagion
-The word "decentralisation" here refers to a network in which no entity can impose it's will and interest on the rest of the network.
-Practically, Tagion does not meet this criterium yet. But the current network stewards at  [Decard](https://www.tagion.org/about/) have bound themselves to make this vision a reality as soon as possible.
-For this purpose, our ["Manifesto"](./manifesto) sets out the values and ambitions for Tagion, as guiding principles throughout the development process. 
+
+In the end, we seek to establish robust, decentralized procedures that allow the network’s evolution to be guided by the collective will of its "community" (the meaning of this and other terms will be specified in the glossary). As a whole this shall guarantee that the  network’s trajectory remains aligned with the aspirations and principles laid out in our ["Manifesto"](./manifesto).
 
 :::note[The _Tagion Governance Manifesto_]
 
@@ -27,10 +22,18 @@ it will be submitted for feedback on Discord first. Join us there to contribute 
 
 :::
 
-At the time of writing (find a timestamps of latest updates on the bottom of all pages), the Tagion network is distributed across several nodes, but they are all on Decard servers and operate in what we call "Mode 1" on the technical side -   
-and **pre-release** in terms of governance.  
-Once the next technical milestone is achieved and nodes that fall out of synchronisation can catch up with the consensus state of the network automatically, a huge step towards decentralization is achieved. Technically, we call that "Mode 2" and you can find more information on these "modes" in the [Tech documentation](https://docs.tagion.org/tech/architecture/network_modes).  
-In terms of governance, this is where the "release phases" of the network will start. The first of these is the 
+This also means that the governance structure and process will not be established up-front, by dictate from the founders, but will be co-developed, tested and refined with our stakeholder community. Because the word "decentralisation", for us, refers to a network in which no entity can impose it's will and interest on the rest of the users and participants.
+
+Practically, Tagion does not meet this criterium yet. So the governance will evolve in step with the different stages of releasing the network - from the stewardship of its [Decard](https://www.tagion.org/about/) into full decentralisation.
+
+
+## Phased decentralisation of Tagion
+
+At the time of writing (find a timestamps of latest updates on the bottom of all pages), the Tagion network is distributed across several nodes, but they are all on Decard's servers and operate in what we call "Mode 1" on the technical side - and **Pre-Release** in terms of governance.
+
+Once the next technical milestone is achieved and nodes that fall out of synchronisation can catch up with the consensus state of the network automatically, a huge step towards decentralization is achieved. Technically, we call that "Mode 2" (you can find more information on these "modes" in the [Tech documentation](https://docs.tagion.org/tech/architecture/network_modes)).  
+
+In terms of governance, this is where the four "release phases" of the network will start.
 
 ### 1. Closed Release
 
@@ -56,4 +59,4 @@ These documentation pages also contain a glossary where we will record induvidua
 
 ## Stay tuned!
 
-We will communicate any mayor updates and publications on these pages through our Discord channels. For the moment, join us there and stay tuned!
+We will communicate any mayor updates and publications on these pages through our Discord channels. Please feel invited to join and contribute [here](https://discord.gg/wE4AA64a).
