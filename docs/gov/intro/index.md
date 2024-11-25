@@ -24,7 +24,7 @@ it will be submitted for feedback on [Discord](https://discord.gg/wE4AA64a) firs
 
 This also means that the governance structure and process will not be established up-front, by dictate from the founders, but will be co-developed, tested and refined with our stakeholder community. Because the word "decentralisation", for us, refers to a network in which no entity can impose it's will and interest on the rest of the users and participants.
 
-Practically, Tagion does not meet this criterium yet. So the governance will evolve in step with the different stages of releasing the network - from the stewardship of its [Decard](https://www.tagion.org/about/) into full decentralisation.
+Practically, Tagion and its underlying technology do not meet this criterium yet. So the governance will evolve, step by step, with the different stages of releasing the network - from the stewardship of [Decard](https://www.tagion.org/about/) into full decentralisation.
 
 
 ## Phased decentralisation of Tagion
