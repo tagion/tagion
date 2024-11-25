@@ -8,12 +8,15 @@ import std.file : exists, mkdirRecurse;
 import std.format;
 import std.path : buildNormalizedPath, setExtension;
 import std.process;
+import process = std.process;
 import std.range;
 import std.stdio;
 import std.traits;
 import std.path;
 import std.exception : assumeWontThrow;
 import std.typecons : Tuple, tuple;
+import std.conv;
+
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.tools.Basic : dry_switch, verbose_switch, error;
@@ -25,6 +28,7 @@ import tagion.utils.envexpand;
 import tagion.basic.basic : isinit;
 import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.basic.Debug;
 
 import tagion.utils.Term;
 
@@ -39,7 +43,7 @@ struct Depend {
 struct RunState {
     @optional string[string] envs;
     @optional string[] args;
-    @optional double timeout;
+    //   @optional double timeout;
     mixin JSONRecord;
 }
 
@@ -102,6 +106,9 @@ struct Job {
     in (checkLap(lap_level),
         assumeWontThrow(format("Can't change lap from %s to %s", state.lap, lap_level)))
     do {
+        if (lap_level > lap.started) {
+            return;
+        }
         state.lap = lap_level;
         state.filename.setExtension(FileExtension.hibon).fwrite(state);
     }
@@ -131,8 +138,10 @@ struct Job {
                 return lap_level >= state.lap;
             case Lap.timedout:
             case Lap.failed:
-            case Lap.stopped:
                 return (state.lap > Lap.none) && (state.lap <= Lap.paused);
+            case Lap.stopped:
+                return (state.lap > Lap.none);
+
             }
         }
 
@@ -155,6 +164,7 @@ struct Job {
         bool notActiveBackground() const @nogc {
             return (lap is Lap.none) && unit.background;
         }
+
     }
 }
 
@@ -169,13 +179,10 @@ struct Runner {
         }
     }
 
-    protected void _kill() nothrow @trusted {
+    protected void kill() nothrow @trusted {
         if (pid !is pid.init) {
             try {
-
-                
-
-                    .kill(pid); //.ifThrown!ProcessException;
+                process.kill(pid); //.ifThrown!ProcessException;
             }
             catch (Exception e) {
                 assumeWontThrow(job.fout.writefln(e.toString));
@@ -185,11 +192,23 @@ struct Runner {
     }
 
     void fail(string msg) nothrow {
-        assumeWontThrow({ job.fout.writefln("Error: %s", msg); _kill(); job.lap = Lap.failed; job.fout.close; }());
+        assumeWontThrow({ job.fout.writefln("Error: %s", msg); kill(); job.lap = Lap.failed; job.fout.close; }());
     }
 
     void stop(string msg) nothrow {
-        assumeWontThrow({ job.fout.writeln(msg); _kill(); job.lap = Lap.stopped; job.fout.close; }());
+        assumeWontThrow({ job.fout.writeln(msg); kill(); job.lap = Lap.stopped; job.fout.close; }());
+    }
+
+    void checkTimeOut(const SysTime current_time) {
+        if ((job !is null) && (job.state.lap is Lap.started) && (job.unit.timeout > 0.0)) {
+            const running_time = current_time - time;
+            if (running_time.total!"msecs" > (job.unit.timeout * 1000)) {
+                __write("TIMEOUT %s", running_time);
+                kill();
+                job.lap = Lap.timedout;
+            }
+
+        }
     }
 }
 
@@ -460,11 +479,12 @@ struct ScheduleRunner {
 
         auto job_queue = JobCycle(job_list);
         while (!job_queue.empty || runners.any!(r => r.pid !is r.pid.init)) {
+            auto time = Clock.currTime;
             if (!job_queue.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 if ((job_index >= 0) || job_queue.front.notActiveBackground) {
                     try {
-                        auto time = Clock.currTime;
+                        // job_queue.front.starttime = time;
                         auto env = environment.toAA;
                         job_queue.front.unit.envs.byKeyValue
                             .each!(e => env[e.key] = envExpand(e.value, env));
@@ -523,6 +543,7 @@ struct ScheduleRunner {
             );
             tick++;
             sleep(100.msecs);
+            runners.each!(run => run.checkTimeOut(time));
         }
         foreach (r; background_runners.filter!(j => j.pid !is j.pid.init)) {
             r.stop("Background");

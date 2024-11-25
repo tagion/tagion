@@ -6,12 +6,15 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
 import tagion.tools.Basic;
+import core.thread;
+import core.time;
+import std.stdio;
 
 mixin Main!(_main);
 
 int _main(string[] args) {
-    
-//    nng_testsuite.testroot = buildPath(env.reporoot, "src", "lib-nngd", "nngd", "nngtests");
+
+    //    nng_testsuite.testroot = buildPath(env.reporoot, "src", "lib-nngd", "nngd", "nngtests");
 
     auto feature = automation!(mixin(__MODULE__))();
     //nng_feature.MultithreadedNNGTestSuiteWrapper();
@@ -40,6 +43,10 @@ class RequestNetworkRunningInTestmode {
 
     @Given("that a test network is running.")
     Document running() {
+        foreach (i; 0 .. 10) {
+            writefln("Sleep %d", i);
+            Thread.sleep(1000.msecs);
+        }
         return Document();
     }
 
@@ -85,4 +92,3 @@ class RemoveOneOrMoreOfTheArchivesAddToTheDART {
     }
 
 }
-
