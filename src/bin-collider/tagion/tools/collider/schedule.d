@@ -35,15 +35,13 @@ import tagion.utils.Term;
 @safe:
 
 struct Depend {
-    @optional string[] started;
-    @optional string[] ended;
+    @optional Lap[string] stages;
     mixin JSONRecord;
 }
 
 struct RunState {
     @optional string[string] envs;
     @optional string[] args;
-    //   @optional double timeout;
     mixin JSONRecord;
 }
 

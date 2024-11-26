@@ -361,7 +361,10 @@
         "timeout" : 0.0
     },
     "godcontract": {
-      "timeout": 3.0,
+      "depend" : {
+         "test_net" : "started"
+      },
+      "timeout" : 3.0,
       "stages" : ["godcontract"]
     }
   }
