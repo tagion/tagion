@@ -220,7 +220,7 @@ int tagion_get_pub_key(const(securenet_t*) root_net, uint8_t** pubkey_ptr, size_
             return ErrorCode.error; // TODO: better message
         }
         StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
-        const pubkey = _net.getPubkey;
+        const pubkey = _net.pubkey;
         *pubkey_ptr = cast(uint8_t*) &pubkey[0];
         *pubkey_len = pubkey.length;
     } catch(Exception e) {
