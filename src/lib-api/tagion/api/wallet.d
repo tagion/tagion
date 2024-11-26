@@ -212,6 +212,24 @@ unittest {
     assert(false_securenet.securenet is null, "should not have created a securenet");
 }
 
+/// Get the public key
+int tagion_get_pub_key(const(securenet_t*) root_net, uint8_t** pubkey_ptr, size_t* pubkey_len) {
+    try {
+        if (root_net.magic_byte != MAGIC.SECURENET) {
+            set_error_text = "root_net is invalid";
+            return ErrorCode.error; // TODO: better message
+        }
+        StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
+        const pubkey = _net.getPubkey;
+        *pubkey_ptr = cast(uint8_t*) &pubkey[0];
+        *pubkey_len = pubkey.length;
+    } catch(Exception e) {
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
 /// Sign a message
 int tagion_sign_message (
     const(securenet_t*) root_net,
