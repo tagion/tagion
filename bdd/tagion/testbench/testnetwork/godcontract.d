@@ -40,9 +40,8 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("Request network running in test-mode",
         [])
 class RequestNetworkRunningInTestmode {
-    import core.thread;
     @Given("that a test network is running.")
-    Document running() {
+    Document running()  @trusted {
         
         foreach (i; 0 .. 10) {
             writefln("Sleep %d", i);
