@@ -858,7 +858,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     TagionBill[] to_pay;
     import tagion.hibon.HiBONRecord;
 
-    if (doc.isInorder) {
+    if (!doc.isInorder) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.text = "invalid document: ";
         writeln("i2p: invalid document");
