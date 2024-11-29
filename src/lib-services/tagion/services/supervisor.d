@@ -22,7 +22,11 @@ import tagion.services.hirpc_verifier;
 import tagion.services.inputvalidator;
 import tagion.services.options;
 import tagion.services.replicator;
+version(NEW_TRANSCRIPT) {
+    import tagion.services.trans;
+} else {
 import tagion.services.transcript;
+}
 import tagion.services.TRTService;
 import tagion.services.nodeinterface;
 import tagion.services.messages;

@@ -56,6 +56,7 @@ extern (C) {
         return BAD_RESULT;
     }
     /// Creating Document by ubyte array
+    deprecated("create_doc is deprecated, will no longer be supported")
     export uint32_t create_doc(const uint8_t* data_ptr, const uint32_t len) {
         immutable(ubyte)[] data = cast(immutable(ubyte)[]) data_ptr[0 .. len];
         auto doc = Document(data);
@@ -67,6 +68,7 @@ extern (C) {
     }
 
     /// Deleting the specific Document
+    deprecated("delete_doc_by_id is deprecated, will no longer be supported")
     export void delete_doc_by_id(const uint32_t id) {
         if (id !is BAD_RESULT) {
             recyclerDoc.erase(id);
@@ -74,6 +76,7 @@ extern (C) {
     }
 
     /// Getting the int value from Document by integer index
+    deprecated("doc_get_int_by_id is deprecated, use tagion.api.document instead")
     export int32_t doc_get_int_by_id(const uint32_t doc_id, const uint32_t index) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             return recyclerDoc(doc_id)[index].get!int;
@@ -81,6 +84,7 @@ extern (C) {
         return BAD_RESULT;
     }
 
+    deprecated("doc_get_int_by_id_ is deprecated, use tagion.api.document instead")
     export int32_t doc_get_int_by_id_(const uint32_t doc_id, const uint32_t index, int* result) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             *result = recyclerDoc(doc_id)[index].get!int;
@@ -90,6 +94,7 @@ extern (C) {
     }
 
     /// Getting the int value from Document by string key
+    deprecated("doc_get_int_by_key is deprecated, use tagion.api.document instead")
     export int32_t doc_get_int_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
@@ -98,6 +103,7 @@ extern (C) {
         return BAD_RESULT;
     }
     /// Getting the ulong value from Document by string key
+    deprecated("doc_get_ulong_by_key is deprecated, use tagion.api.document instead")
     export uint64_t doc_get_ulong_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
@@ -106,6 +112,7 @@ extern (C) {
         return BAD_RESULT;
     }
     /// Getting the long value from Document by string key
+    deprecated("doc_get_long_by_key is deprecated, use tagion.api.document instead")
     export int64_t doc_get_long_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
@@ -115,6 +122,7 @@ extern (C) {
     }
     /// Getting the string value from Document by index
     /// It uses UF-16 codding
+    deprecated("doc_get_str_by_id is deprecated, use tagion.api.document instead")
     export const(char*) doc_get_str_by_id(const uint32_t doc_id, const uint32_t index) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             string str = recyclerDoc(doc_id)[index].get!string;
@@ -123,6 +131,7 @@ extern (C) {
         return null;
     }
 
+    deprecated("doc_get_str_by_id_ is deprecated, use tagion.api.document instead")
     export uint32_t doc_get_str_by_id_(const uint32_t doc_id, const uint32_t index, const(char)** result_str, uint32_t* result_len) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             string str = recyclerDoc(doc_id)[index].get!string;
@@ -136,6 +145,7 @@ extern (C) {
 
     /// getting the string value from Document by string key
     /// It uses UF-16 codding
+    deprecated("doc_get_str_by_key is deprecated, use tagion.api.document instead")
     export const(char*) doc_get_str_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
@@ -147,6 +157,7 @@ extern (C) {
 
     /// return doc as json
     /// It uses UF-16 codding
+    deprecated("doc_as_json is deprecated, use tagion.api.document instead")
     export const(char*) doc_as_json(const uint32_t doc_id) {
         auto doc = recyclerDoc(doc_id);
         const json = doc.toJSON.toString();
@@ -155,6 +166,7 @@ extern (C) {
 
     /// Getting the Document value from Document by index
     /// It uses UF-16 codding
+    deprecated("doc_get_docLen_by_id is deprecated, will no longer be supported")
     export uint64_t doc_get_docLen_by_id(const uint32_t doc_id, const uint32_t index) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             const doc = recyclerDoc(doc_id)[index].get!Document;
@@ -165,6 +177,7 @@ extern (C) {
 
     /// getting the Document value from Document by string key
     /// It uses UF-16 codding
+    deprecated("doc_get_docLen_by_key is deprecated, will no longer be supported")
     export uint64_t doc_get_docLen_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
@@ -176,6 +189,7 @@ extern (C) {
 
     /// Getting the Document value from Document by index
     /// It uses UF-16 codding
+    deprecated("doc_get_docPtr_by_id is deprecated, will no longer be supported")
     export uint8_t* doc_get_docPtr_by_id(const uint32_t doc_id, const uint32_t index) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             const doc = recyclerDoc(doc_id)[index].get!Document;
@@ -186,6 +200,7 @@ extern (C) {
 
     /// getting the Document value from Document by string key
     /// It uses UF-16 codding
+    deprecated("doc_get_docPtr_by_key is deprecated, will no longer be supported")
     export uint8_t* doc_get_docPtr_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
@@ -197,6 +212,7 @@ extern (C) {
 
     /// getting the Document value
     /// It uses UF-16 codding
+    deprecated("get_docLen is deprecated, will no longer be supported")
     export uint64_t get_docLen(const uint32_t doc_id) {
         const doc = recyclerDoc(doc_id);
         return doc.serialize.length;
@@ -204,11 +220,13 @@ extern (C) {
 
     /// getting the Document value
     /// It uses UF-16 codding
+    deprecated("get_docPtr is deprecated, will no longer be supported")
     export uint8_t* get_docPtr(const uint32_t doc_id) {
         const doc = recyclerDoc(doc_id);
         return cast(ubyte*) doc.serialize.ptr;
     }
 
+    deprecated("doc_get_bufferLen_by_id is deprecated, use tagion.api.document instead")
     export uint64_t doc_get_bufferLen_by_id(const uint32_t doc_id, const uint32_t index) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             const buf = recyclerDoc(doc_id)[index].get!Buffer;
@@ -217,6 +235,7 @@ extern (C) {
         return BAD_RESULT;
     }
 
+    deprecated("doc_get_bufferLen_by_key is deprecated, use tagion.api.document instead")
     export uint64_t doc_get_bufferLen_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
@@ -226,6 +245,7 @@ extern (C) {
         return BAD_RESULT;
     }
 
+    deprecated("doc_get_bufferPtr_by_id is deprecated, use tagion.api.document instead")
     export uint8_t* doc_get_bufferPtr_by_id(const uint32_t doc_id, const uint32_t index) {
         if (recyclerDoc(doc_id).hasMember(index)) {
             const doc = recyclerDoc(doc_id)[index].get!Buffer;
@@ -234,6 +254,7 @@ extern (C) {
         return null;
     }
 
+    deprecated("doc_get_bufferPtr_by_key is deprecated, use tagion.api.document instead")
     export uint8_t* doc_get_bufferPtr_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         immutable key = cast(immutable)(key_str[0 .. len]);
         if (recyclerDoc(doc_id).hasMember(key)) {
@@ -243,6 +264,7 @@ extern (C) {
         return null;
     }
 
+    deprecated("doc_get_memberCount is deprecated, will no longer be supported")
     export uint64_t doc_get_memberCount(const uint32_t doc_id) {
         return recyclerDoc(doc_id).length;
     }

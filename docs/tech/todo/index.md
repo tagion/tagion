@@ -18,25 +18,31 @@ Setup tests for multiple distributed nodes
 - [ ] Implement a remote monitor tool for the distribute network
 Assignee: lr
 
-### Gitlab ci trigger
-Make a script to trigger the gitlab app ci when the native mobile libraries have been built
-Assignee: lr
+### NNG BDD 
+Move the NNG-test to the collider BDD test-frame work
+- [ ] The current test program will be executed directly via a bdd test
+Assignee: yr
 
-### DART dry run function
-A function which calculates the bullseye on a recorder 
-- [ ] Implement in a unittest
-Assignee: pr
+### God-contract
+Setup contract which can directly delete and write to the database 
+This function will be used in the testnet only. 
+- [ ] Implement a contract which can call a dartModify on the DART
+Assignee: cr 
+
+### Add background task to the collider
+Collider should be extended to be able to start background process.
+- [ ] Add timeout to the test task.
+- [ ] Add task dependency between the tasks.
+- [ ] Add backout task which can be used by other tests.
+Assignee: cr 
 
 ### Epoch Voting
-- [ ] Test asynchronity of the hashgraph by the amount of nodes
+- [X] Test asynchronity of the hashgraph by the amount of nodes
 - [ ] Integration test
 - [ ] Longitudinal test (Mode 1)
 
 ### Dump of epoch 
 Implement a switch in tagionwave to enable trace dump of the wavefront.
-
-### Telegram wavefront
-Logger checker via Telegram.
 
 
 ## Backlog
@@ -81,16 +87,28 @@ Assignee: lr
 
 ### Types filtering in hirep
 Description: hirep have --types arg, but it's not implemented yet.
-
 - [ ] - Implement --type filtering in hirep.
 - [ ] - Write bdd test for this feature
 
 # Update recorderchain documentation
 Description: the current recorderchain tool documentation is for a previous version of the tool
 
+### Telegram wavefront
+Logger checker via Telegram.
+
 ---
 
 ## Done
+
+### Gitlab ci trigger
+Make a script to trigger the gitlab app ci when the native mobile libraries have been built
+Assignee: lr
+
+### DART dry run function
+A function which calculates the bullseye on a recorder 
+- [X] Implement in a unittest
+Assignee: pr
+
 
 ### Tagion API library
 - [X] Create document API

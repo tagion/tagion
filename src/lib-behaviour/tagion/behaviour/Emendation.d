@@ -101,9 +101,6 @@ unittest {
     string[] errors;
     auto feature = parser(feature_byline, errors);
     feature.emendation("test.emendation");
-    version (behaviour_unitdata)
-        "/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
-
     const expected_feature = bdd_filename.setExtension(FileExtension.hibon).fread!FeatureGroup;
     assert(feature.toDoc == expected_feature.toDoc);
 }

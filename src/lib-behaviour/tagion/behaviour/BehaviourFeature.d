@@ -72,7 +72,7 @@ struct Info(alias Property) {
     Property property; /// The property is a Feature, Scenario or an Action
     string name; /// Name of the function member, scenario call or feature module
     Document result; /// The result after execution of the property (See BehaviourResult)
-        
+
     mixin HiBONRecord!();
 }
 
@@ -110,6 +110,7 @@ struct ScenarioGroup {
  * Contains all the scenario groups and information of the Feature
  */
 @safe
+@recordType("Feature")
 struct FeatureGroup {
     @optional string alternative;
     Info!Feature info; /// Information of the Feature

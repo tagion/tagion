@@ -858,7 +858,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     TagionBill[] to_pay;
     import tagion.hibon.HiBONRecord;
 
-    if (doc.isInorder) {
+    if (!doc.isInorder) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.text = "invalid document: ";
         writeln("i2p: invalid document");
@@ -1057,6 +1057,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 }
 
 enum PRENULTIMATE = 2;
+enum HIRPC_BUF_SIZE = 4096;
 
 const lookup_handler = handler_helper!lookup_handler_impl;
 void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
@@ -1079,8 +1080,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         case "dart":
             DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
             rc = s.send(crud.dartRead([drtindex]).toDoc.serialize);
-            pragma(msg, "fixme: tagionshell change the buffer size to an enum");
-            ubyte[4096] buf;
+            ubyte[HIRPC_BUF_SIZE] buf;
             size_t len = s.receivebuf(buf, buf.length);
             if (len == size_t.max && s.errno != 0) {
                 rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
@@ -1095,7 +1095,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         case "trt":
             DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
             rc = s.send(crud.trtdartRead([drtindex]).toDoc.serialize);
-            ubyte[4096] buf;
+            ubyte[HIRPC_BUF_SIZE] buf;
             size_t len = s.receivebuf(buf, buf.length);
             if (len == size_t.max && s.errno != 0) {
                 rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;

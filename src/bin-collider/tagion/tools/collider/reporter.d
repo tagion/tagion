@@ -79,7 +79,10 @@ int _main(string[] args) {
 
     FeatureGroup[] featuregroups;
     foreach (result; result_files) {
-        featuregroups ~= fread!FeatureGroup(result);
+        const doc=result.fread;
+        if (doc.isRecord!FeatureGroup) {
+            featuregroups ~= FeatureGroup(doc);
+        }
     }
 
     auto outstring = appender!string;

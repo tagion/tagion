@@ -13,6 +13,7 @@ const _testclass = "nngd.nngtests.nng_test00_template";
 
     override string[] run(){
         log("NNG test template");
+        log(_testclass ~ ": Bye!");
         return [];
     }
     

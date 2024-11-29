@@ -22,6 +22,7 @@ const _testclass = "nngd.nngtests.nng_test01_pushpull_buffer";
         workers ~= new Thread(&(this.sender_worker)).start();
         foreach(w; workers)
             w.join();
+        log(_testclass ~ ": Bye!");
         return [];
     }
     

@@ -84,3 +84,9 @@ INSTALL?=$(HOME)/bin
 
 #ENABLE_WASMER?=1
 #UNSHARE_NET=1
+
+
+# God Contract only for test purpose
+# Enables to send dart-modify directly to the network
+# DVERSION+=GOD_CONTRACT
+

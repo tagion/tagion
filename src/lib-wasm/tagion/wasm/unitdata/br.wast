@@ -8,10 +8,6 @@
   (func (export "type-i64") (block (drop (i64.ctz (br 0)))))
   (func (export "type-f32") (block (drop (f32.neg (br 0)))))
   (func (export "type-f64") (block (drop (f64.neg (br 0)))))
-  (func (export "type-i32-i32") (block (drop (i32.add (br 0)))))
-  (func (export "type-i64-i64") (block (drop (i64.add (br 0)))))
-  (func (export "type-f32-f32") (block (drop (f32.add (br 0)))))
-  (func (export "type-f64-f64") (block (drop (f64.add (br 0)))))
 
   (func (export "type-i32-value") (result i32)
     (block (result i32) (i32.ctz (br 0 (i32.const 1))))
@@ -204,13 +200,13 @@
 
   (func (export "nested-br-value") (result i32)
     (i32.add
-      (i32.const 1)
+      (i32.const 1) ;; Value 1
       (block (result i32)
         (drop (i32.const 2))
         (drop
           (block (result i32)
             (drop (i32.const 4))
-            (br 0 (br 1 (i32.const 8)))
+            (br 0 (br 1 (i32.const 8))) ;; Value 2 
           )
         )
         (i32.const 16)
@@ -259,5 +255,8 @@
 (assert_return (invoke "as-call-mid") (i32.const 13))
 (assert_return (invoke "as-call-last") (i32.const 14))
 (assert_return (invoke "as-call-all") (i32.const 15))
+;; 
+
+(assert_return (invoke "nested-br-value") (i32.const 9))
 
 

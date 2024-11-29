@@ -9,7 +9,7 @@ import tagion.utils.LEB128;
 
 @safe
 struct WasmExpr {
-    protected OutBuffer bout;
+    OutBuffer bout;
     @disable this();
     this(OutBuffer bout) pure nothrow {
         this.bout = bout;
@@ -146,6 +146,15 @@ struct WasmExpr {
             }
         }
         return this;
+    }
+
+
+    void append(const WasmExpr e) pure nothrow {
+        bout.write(e.bout.toBytes);         
+    }
+
+    bool opEquals(const WasmExpr e) const pure nothrow @nogc {
+        return bout is e.bout;
     }
 
     immutable(ubyte[]) serialize() const pure nothrow {
