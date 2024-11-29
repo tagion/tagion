@@ -31,7 +31,10 @@ private import libnng;
 
 import std.stdio;
 
-@safe
+/**
+*   Returns array pointer or null
+*/
+private @safe
 T* ptr(T)(T[] arr, size_t off = 0) pure nothrow {
     return arr.length == 0 ? null : &arr[off];
 }
@@ -45,6 +48,9 @@ void nng_sleep(Duration val) nothrow {
     nng_msleep(cast(nng_duration) val.total!"msecs");
 }
 
+/**
+*   Render nng_sockaddr to human readableform
+*/
 string toString(nng_sockaddr a) {
     string s = "<ADDR:UNKNOWN>";
     switch (a.s_family) {
@@ -107,15 +113,41 @@ enum nng_property_base {
     NNG_BASE_LISTENER
 }
 
+/**
+*   {NNGMessage}
+*   Dynamically constructed structure to serialize everything for NNG transport
+*   Contains header and body buffers which may be composed and decomposed separately
+*   Properties:
+*       - pointer: to access internal nng_msg pointer
+*       - bodyptr: toaccess the body pointer
+*       - headerptr: to access the header pointer
+*       - lengthL message length
+*       - header_length: header length
+*   Methods:
+*       - constructor: accept the buffer size to allocate initially    
+*       - body_append/body_prepend (template): add part to the body end or begin
+*       - body_chop (template): remove and return part from the end of body
+*       - body_trim (template): remove and return part from the beginnning of body
+*       - header_append/header_prepend (template): add part to the header end or begin
+*       - header_chop (template): remove and return part from the end of header
+*       - header_trim (template): remove and return part from the beginnning of header
+*
+*/
+
 struct NNGMessage {
 
     @disable this();
-
+    /**
+    * Copy creator     
+    */
     this(ref return scope NNGMessage src) {
         auto rc = nng_msg_dup(&msg, src.pointer);
         enforce(rc == 0);
     }
 
+    /**
+    * Copy creator based on internal message pointer  
+    */
     this(nng_msg* msgref) {
         if (msgref is null) {
             auto rc = nng_msg_alloc(&msg, 0);
@@ -126,6 +158,9 @@ struct NNGMessage {
         }
     }
 
+    /**
+    * Creator? param: inition allocation size  
+    */
     this(size_t size) {
         auto rc = nng_msg_alloc(&msg, size);
         enforce(rc == 0);
@@ -135,11 +170,17 @@ struct NNGMessage {
         nng_msg_free(msg);
     }
 
+    /**
+    * Message pointer getter   
+    */
     @nogc @safe
     @property nng_msg* pointer() nothrow {
         return msg;
     }
 
+    /**
+    * Message pointer setter   
+    */
     @nogc
     @property void pointer(nng_msg* p) nothrow {
         if (p !is null) {
@@ -150,22 +191,38 @@ struct NNGMessage {
         }
     }
 
+    /**
+    * Body pointer getter   
+    */
     @nogc @safe
     @property void* bodyptr() nothrow {
         return nng_msg_body(msg);
     }
 
+    /**
+    * Header pointer getter   
+    */
     @nogc @safe
     @property void* headerptr() nothrow {
         return nng_msg_header(msg);
     }
 
+    /**
+    *  Message andheader length getters 
+    */
     @property size_t length() @safe const nothrow { return nng_msg_len(msg); }
     @property void length( size_t sz ) @safe { auto rc = nng_msg_realloc(msg, sz); enforce(rc == 0); }
     @property size_t header_length() @safe const nothrow { return nng_msg_header_len(msg); }
     
+    /**
+    * Clear message   
+    */
     void clear() { nng_msg_clear(msg); }
 
+    /**
+    * Append ubyte array or unsigned to the body
+    * Returns zero or error code
+    */
     int body_append(T)(const(T) data) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
@@ -195,6 +252,10 @@ struct NNGMessage {
         }
     }
 
+    /**
+    * Prepend body with the ubyte array or unsigned
+    * Returns zero or error code
+    */
     int body_prepend(T)(const(T) data) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
@@ -226,6 +287,10 @@ struct NNGMessage {
         }
     }
 
+    /**
+    * Extract and remove ubyte array of given size or unsigned from the body end
+    * Returns tempalte type
+    */
     T body_chop(T)(size_t size = 0) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             if (size == 0)
@@ -260,6 +325,10 @@ struct NNGMessage {
         }
     }
 
+    /**
+    * Extract and remove ubyte array of given size or unsigned from the body beginning
+    * Returns template type
+    */
     T body_trim(T)(size_t size = 0) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             if (size == 0)
@@ -296,6 +365,9 @@ struct NNGMessage {
 
     // TODO: body structure map
 
+    /**
+    * For header same as for body
+    */
     int header_append(T)(const(T) data) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
@@ -324,6 +396,9 @@ struct NNGMessage {
         }
     }
 
+    /**
+    * For header same as for body
+    */
     int header_prepend(T)(const(T) data) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
@@ -353,6 +428,9 @@ struct NNGMessage {
         }
     }
 
+    /**
+    * For header same as for body
+    */
     T header_chop(T)(size_t size = 0) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             if (size == 0)
@@ -387,6 +465,9 @@ struct NNGMessage {
         }
     }
 
+    /**
+    * For header same as for body
+    */
     T header_trim(T)(size_t size = 0) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
             if (size == 0)
@@ -430,14 +511,50 @@ struct NNGMessage {
 alias nng_aio_cb = void function(void*);
 alias nng_aio_dg_cb = void delegate(void*);
 
+/**
+*   {NNGAio}
+*   Async IO poller for many purposes.
+*   Contains the NNGMessage payload and optional context pointer.
+*   General usage - inter-thread communication.
+*   Properties:
+*       - pointer: to read the internal nng_aio pointer    
+*       - pointer: to set the nng_aio pointer to external one
+*       - context: to read the stored context
+*       - count: number of bytes transfwred by the AIO operation   
+*       - result: result of the AIO operation - zero or error code
+*       - timeout: to set teh poll timeout
+*   Methods:    
+*       - constructor
+*           -- callback pointer: function or delegate void (void*)
+*           -- argument pointer: to be sent to callback
+*           -- context pointer: to store and retrieve  
+*       - realloc: same agruments as constructor - to reuse and rearm aio
+*       - begin: begin postponed AIO aopertion
+*       - wait: block until AIO success or error or timeout
+*       - sleep: performs an asynchronous "sleep", causing the callback for aio to be executed after delay
+*       - abort: abort immediately, return error as result but call callback
+*       - cancel: like abort with predefined error NNG_ECANCELED
+*       - stop: like cancel but prevent callback from calling, except it is already running
+*       - get_msg: extract NNGMessage passed to the AIO 
+*       - set_msg: push NNGMessage to aio before start operation
+*       - clear_msg: clear stored NNGMessage
+*       TODO: implement [get/set] input/output/iov
+*/
 struct NNGAio {
     private nng_aio* aio;
     private void* pcontext;
 
     @disable this();
 
+    /**
+    * Creator for both function and delegate callbacks
+    * Param:
+    *   - callback pointer
+    *   - callback argument pointer
+    *   - context pointer to store
+    */
     this(T)(T cb, void* arg, void* ctx = null) {
-        pcontext = context;
+        pcontext = ctx;
         static if(is(T == typeof(null))){
             auto rc = nng_aio_alloc(&aio, null, null);
             enforce(rc == 0);
@@ -454,6 +571,9 @@ struct NNGAio {
 
     }
 
+    /**
+    * Creator to copy internal nng_aio structure 
+    */
     this(nng_aio* src) {
         enforce(src !is null);
         pointer(src);
@@ -461,9 +581,12 @@ struct NNGAio {
 
     ~this() {
         nng_aio_free(aio);
-        context = null;
+        pcontext = null;
     }
 
+    /**
+    * Realloc and reuse object
+    */
     void realloc(T)(T cb, void* arg, void* ctx = null) {
         nng_aio_free(aio);
         pcontext = ctx;
@@ -484,12 +607,19 @@ struct NNGAio {
     // ---------- pointer prop
 
     // it is just a getter in pair to setter, not needed really, may be removed
+    /**
+    * Internal pointer getter 
+    */
     @nogc @safe 
     @property nng_aio* pointer() pure nothrow {
         return aio;
     }
 
     // TODO: to be double checked regarding the package protection and public pointer
+    pragma(msg,"fixme: double check NNGAio pointer regarding the package protection and public pointer");
+    /**
+    * Internal pointer setter 
+    */
     @nogc
     @property void pointer(nng_aio* p) {
         if (p !is null) {
@@ -502,11 +632,17 @@ struct NNGAio {
         }
     }
 
+    /**
+    * Context getter 
+    */
     @nogc @safe 
     @property void* context() pure nothrow {
         return pcontext;
     }    
 
+    /**
+    * Context setter 
+    */
     @nogc
     @property void context(void* p){
         pcontext = p;
@@ -514,16 +650,25 @@ struct NNGAio {
 
     // ---------- status prop
 
+    /**
+    * Returns count of bytes transferred through AIO  
+    */
     @nogc @safe
     @property size_t count() nothrow {
         return nng_aio_count(aio);
     }
 
+    /**
+    * Returns AIO status - zero or error code 
+    */
     @nogc @safe
     @property nng_errno result() nothrow {
         return cast(nng_errno) nng_aio_result(aio);
     }
 
+    /**
+    * Set AIO timeout 
+    */
     @nogc @safe
     @property void timeout(Duration val) nothrow {
         nng_aio_set_timeout(aio, cast(nng_duration) val.total!"msecs");
@@ -535,22 +680,28 @@ struct NNGAio {
         return nng_aio_begin(aio);
     }
 
+    /**
+    * Poller wait 
+    */
     void wait() {
         nng_aio_wait(aio);
     }
 
+    /**
+    * Poller sleep 
+    */
     void sleep(Duration val) {
         nng_sleep_aio(cast(nng_duration) val.total!"msecs", aio);
     }
 
-    /*
+    /**
         = no callback
     */
     void abort(nng_errno err) {
         nng_aio_abort(aio, cast(int) err);
     }
 
-    /*
+    /**
         = callback
     */
     void finish(nng_errno err) {
@@ -562,7 +713,7 @@ struct NNGAio {
         nng_aio_defer(aio, cancelcb, arg);
     }
 
-    /*
+    /**
         = abort(NNG_CANCELLED)
         = no callback
         = no wait for abort and callback complete
@@ -571,7 +722,7 @@ struct NNGAio {
         nng_aio_cancel(aio);
     }
 
-    /*
+    /**
         = abort(NNG_CANCELLED)
         = no callback
         = wait for abort and callback complete
@@ -582,6 +733,9 @@ struct NNGAio {
 
     // ---------- messages
 
+    /**
+    * Get NNGMessage after AIO  
+    */
     nng_errno get_msg(ref NNGMessage msg) {
         auto err = this.result();
         if (err != nng_errno.NNG_OK)
@@ -596,10 +750,16 @@ struct NNGAio {
         }
     }
 
+    /**
+    * Set NNGMessage to transfer to AIO 
+    */
     void set_msg(ref NNGMessage msg) {
         nng_aio_set_msg(aio, msg.pointer);
     }
 
+    /**
+    * Clear message slot 
+    */
     void clear_msg() {
         nng_aio_set_msg(aio, null);
     }
@@ -607,10 +767,96 @@ struct NNGAio {
     // TODO: IOV and context input-output parameters
 } // struct NNGAio
 
+/**
+*   {NNGSocket}
+*   The main socket wrapper
+*   Socket may be created of one of the above described types
+*   Most types has dialer-listener pairs: PUSH/PULL, REQ/REP, PUB/SUB...
+*   Methods:
+*       - constructor
+*           -- type
+*           -- raw flag (see NNG doc)
+*       - close: close socket, wait for status changes 
+*
+*       @setup listener
+*       - listen: bind listener to URL (addres, port, proto etc) (listener_create + listener_start)
+*           -- URL like "tcp://...", "ipc://...", "udp://...", "ws://...."
+*           -- nonblock flag (see NNG doc)
+*       - listener_create: create but not start ( for aio and tls )
+*           -- URL
+*       - listener_set_tls: attach the prepared NNGTLS
+*       - listener_start: do listen 
+*
+*       @setup dialer
+*       - dial: try connect to remote lustener (dialer_create + dialer_start)
+*           -- URL
+*           -- nonblock flag
+*       - dialer_create
+*           -- URL
+*       - dialer_set_tls: attach the prepared NNGTLS
+*       - dialer_start: do dial
+*   
+*       @setup sbscription ( for SUB only )    
+*       - subscribe 
+*           -- tag
+*       - unsubscribe
+*           -- tag
+*       - clear_subscriptions: unsubscribe all   
+*       - subscriptions: return list of subscriptions    
+*   
+*       @send&receive
+*       - sendmsg          
+*           -- NNGMessage message
+*       - send(template): send any type or array    
+*       - sendaio: async send with poller 
+*           -- NNGAio with previously added NNGMessage
+*       - receivebuf
+*           -- ubute[] buffer               
+*           -- size
+*       - receivemsg
+*           -- NNGMessage
+*       - reveive (template): receive any type or array
+*       - receiveaio: async receive with wait poller
+*       
+*   Properties:   
+*   
+*       - state: curent state like NEW, ERROR, CONNECTED...
+*       - errno: last error
+*       - type: socket type
+*       - name: socket name  
+*       - raw:  raw flag
+*   
+*   NNG properties:
+*   
+*       There are dozens properties of several scopes - socket, listener, dialer, protocol, etc.
+*       See NNG docs.
+*       Currently implemented;
+*           - proto
+*           - protoname
+*           - peer
+*           - peername
+*           - recvbuf
+*           - sendbuf
+*           - recvfd
+*           - recvtimeout
+*           - sendtimeout
+*           - locaddr
+*           - remaddr
+*           - url
+*           - maxttl
+*           - recvmaxsz
+*           - reconnmint
+*           - reconnmaxt
+*   
+*/
+
 struct NNGSocket {
 
     @disable this();
 
+    /**
+    * Creator. Param: socket type 
+    */
     this(nng_socket_type itype, bool iraw = false) @trusted nothrow {
         int rc;
         m_type = itype;
@@ -683,6 +929,9 @@ struct NNGSocket {
 
     } // this
 
+    /**
+    * Terminate, wait and close 
+    */
     int close() @safe nothrow {
         int rc;
         m_errno = cast(nng_errno) 0;
@@ -705,6 +954,11 @@ struct NNGSocket {
 
     // setup listener
 
+    /**
+    *   Create listener
+    *   Param:   URL
+    *   Returns: zero or error code
+    */
     int listener_create(const(string) url) {
         m_errno = cast(nng_errno) 0;
         if (m_state == nng_socket_state.NNG_STATE_CREATED) {
@@ -721,6 +975,9 @@ struct NNGSocket {
     }        
     
     version(withtls) {
+        /**
+        * Add NNGTLS to listener 
+        */
         int listener_set_tls ( NNGTLS* tls ) {
             if(!m_has_listener)
                 return -1;
@@ -736,6 +993,9 @@ struct NNGSocket {
         }
     }
 
+    /**
+    *  Start listener
+    */
     int listener_start( const bool nonblock = false ) @safe {
         m_errno = cast(nng_errno)0;
         if(!m_has_listener)
@@ -752,6 +1012,9 @@ struct NNGSocket {
         return -1;
     }
 
+    /**
+    * Create and start listener  
+    */
     int listen ( const(string) url, const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED) {
@@ -769,6 +1032,9 @@ struct NNGSocket {
 
     // setup subscriber
 
+    /**
+    * Subscribe SUB socket to tag  
+    */
     int subscribe(string tag) @safe nothrow {
         if (m_subscriptions.canFind(tag))
             return 0;
@@ -778,6 +1044,9 @@ struct NNGSocket {
         return m_errno;
     }
 
+    /**
+    *  Unsubscribe SUB socket from tag 
+    */
     int unsubscribe(string tag) @safe nothrow {
         long i = m_subscriptions.countUntil(tag);
         if (i < 0)
@@ -788,6 +1057,9 @@ struct NNGSocket {
         return m_errno;
     }
 
+    /**
+    * Unsubscrbe all subscribed   
+    */
     int clearsubscribe() @safe nothrow {
         long i;
         foreach (tag; m_subscriptions) {
@@ -802,12 +1074,18 @@ struct NNGSocket {
         return 0;
     }
 
+    /**
+    *  Returns list of subscriptions
+    */
     string[] subscriptions() @safe nothrow {
         return m_subscriptions;
     }
 
     // setup dialer
 
+    /**
+    * Create dialer   
+    */
     int dialer_create(const(string) url) nothrow {
         m_errno = cast(nng_errno) 0;
         if (m_state == nng_socket_state.NNG_STATE_CREATED) {
@@ -824,6 +1102,9 @@ struct NNGSocket {
     }        
     
     version(withtls) {
+        /**
+        * Assign NNGTLS to dialer   
+        */
         int dialer_set_tls ( NNGTLS* tls ) {
             if(!m_has_dialer)
                 return -1;
@@ -839,6 +1120,9 @@ struct NNGSocket {
         }
     }
 
+    /**
+    * Start dialer   
+    */
     int dialer_start( const bool nonblock = false ) @safe nothrow {
         m_errno = cast(nng_errno)0;
         if(!m_has_dialer)
@@ -855,6 +1139,9 @@ struct NNGSocket {
         return -1;
     }
 
+    /**
+    * Create and start dialer   
+    */
     int dial ( const(string) url, const bool nonblock = false ) @trusted nothrow {
         m_errno = nng_errno.NNG_OK;
         if(m_state == nng_socket_state.NNG_STATE_CREATED) {
@@ -872,6 +1159,10 @@ struct NNGSocket {
 
     // send & receive TODO: Serialization for objects and structures - see protobuf or hibon?
 
+    /**
+    * Send NNGMessage   
+    * Returns zero or error code
+    */
     int sendmsg(ref NNGMessage msg, bool nonblock = false) @safe {
         m_errno = nng_errno.NNG_OK;
         if (m_state == nng_socket_state.NNG_STATE_CONNECTED) {
@@ -884,6 +1175,10 @@ struct NNGSocket {
         return -1;
     }
 
+    /**
+    * Send any array type  
+    * Returns zero or error code
+    */
     @trusted
     int send(T)(const(T) data, bool nonblock = false) if (isArray!T) {
         alias U = ForeachType!T;
@@ -900,6 +1195,10 @@ struct NNGSocket {
         return -1;
     }
 
+    /**
+    * Send NNGMessage with AIO 
+    * Returns zero or error code
+    */
     int sendaio(ref NNGAio aio) @safe {
         m_errno = nng_errno.init;
         if (m_state == nng_socket_state.NNG_STATE_CONNECTED) {
@@ -912,7 +1211,7 @@ struct NNGSocket {
         return -1;
     }
 
-    /*
+    /**
         Receives a data buffer of the max size data.length 
         Params:
             data = preallocated buffer
@@ -939,7 +1238,7 @@ struct NNGSocket {
         return size_t.max;
     }
 
-    /*
+    /**
         Receives NNGMessage 
         Params:
             nonblock = set the non blocking mode
@@ -958,7 +1257,7 @@ struct NNGSocket {
         return -1;
     }
 
-    /*
+    /**
         Receives a data type (castable to byte array) as postallocated buffer
         Params:
             nonblock = set the non blocking mode
@@ -982,6 +1281,10 @@ struct NNGSocket {
         return T.init;
     }
 
+    /**
+    * Receive NNGMessage with AIO  
+    * Returns zero or error code
+    */
     int receiveaio(ref NNGAio aio) @safe {
         m_errno = nng_errno.init;
         if (m_state == nng_socket_state.NNG_STATE_CONNECTED) {
@@ -1098,6 +1401,7 @@ struct NNGSocket {
     @property void reconnmaxt(Duration val) { setopt_duration(NNG_OPT_RECONNMAXT, val); }
 
     // TODO: NNG_OPT_IPC_*, NNG_OPT_WS_*  
+    pragma(msg,"TODO: Implement NNG_OPT_IPC_*, NNG_OPT_WS_* properties");
 private:
 
     nng_socket_type m_type;
@@ -1446,6 +1750,11 @@ private:
     } // nothrow
 } // struct Socket
 
+/**
+*   {NNGURL}
+*   Wrapper over nng_url_parse function to represent the URL parts 
+*/
+
 @safe
 struct NNGURL {
     string rawurl;
@@ -1520,8 +1829,14 @@ enum nng_worker_state {
     SEND = 4
 }
 
+/**
+*   {NNGPoolWorker}
+*   Worker implements the state machine to process requests coming from the NNGPool instance through (pool socket -> nng_ctx -> worker state)
+*   Not to direct use
+*   May be declared as private or module scope
+*/
+
 struct NNGPoolWorker {
-    
     int id;
     nng_worker_state state;
     NNGMessage msg;
@@ -1564,6 +1879,9 @@ struct NNGPoolWorker {
     }
 } // struct NNGPoolWorker
 
+/**
+*   NNGPool state machine callback switching between SEND-RECV-WAIT states
+*/
 extern (C) void nng_pool_stateful(void* p) {
     if (p is null)
         return;
@@ -1624,10 +1942,33 @@ extern (C) void nng_pool_stateful(void* p) {
     w.unlock();
 }
 
+/**
+*   {NNGPool}
+*   Connection pool to implement multithreaded REQ/REP socket server
+*   Pool creates the set of NNGPoolWorker instances containing shared state machines and associate its nng context with socket
+*   Methods:
+*       - constructor
+*           -- socket pointer: shoud be nng_socket_type.NNG_SOCKET_REP but may be extended 
+*           -- callback: receiving message and context - void function(NNGMessage*, void*);
+*           -- number of workers           
+*           -- void* context to pass into callback
+*           -- file to forward log messages to
+*       - init: initialize workers state machines
+*       - shutdown    
+*/
+
 struct NNGPool {
     
     @disable this();
-
+    /**
+    * Creator
+    * Param:
+    *   - socket pointer
+    *   - callback
+    *   - number of workers
+    *   - context pointer
+    *   - file object to send logs
+    */
     this(NNGSocket* isock, nng_pool_callback cb, size_t n, void* icontext, File* ilog = null) {
         enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
         enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
@@ -1646,6 +1987,9 @@ struct NNGPool {
         }
     }
 
+    /**
+    * Init state machine (switch to initial state)
+    */
     void init() {
         enforce(nworkers > 0);
         for (auto i = 0; i < nworkers; i++) {
@@ -1653,6 +1997,9 @@ struct NNGPool {
         }
     }
 
+    /**
+    * Stop state machine and wait
+    */
     void shutdown() {
         enforce(nworkers > 0);
         for (auto i = 0; i < nworkers; i++) {
@@ -1723,10 +2070,14 @@ const string[] nng_http_req_headers = [
     "Warning"
 ];
 
+/**
+*   {nng_find_mime_type}
+*   Find mime map in the static and custom map tables
+*/
 string nng_find_mime_type(string fname, const string[string] custom_map = null) {
     const default_mime = "application/octet-stream";
     const ext = extension(baseName(fname));
-    // TODO: add libmagic support to detect mime by magic numbers
+    pragma(msg,"TODO: add libmagic support to detect mime by magic numbers");
     if (ext in custom_map) {
         return custom_map[ext];
     }
@@ -1774,6 +2125,7 @@ version(withtls) {
     }
 
     /**
+    *   {MMGTLS}
     *   NNG TLS config implementation
     *   - create it in server or client mode
     *   - set CA certifivate if needed (from file or string)
@@ -1836,7 +2188,7 @@ version(withtls) {
         }
     
     // TODO: check why this two excluded from the lib
-    /*
+    /**
         void set_pass ( string ipass ) {
             auto rc = nng_tls_config_pass(tls, ipass.toStringz());
             enforce(rc == 0);
@@ -1921,6 +2273,26 @@ struct WebAppConfig {
     }
 }
 
+/**
+*   {WebData}
+*   Object to store all HTTP request-reply data and pass between handlers and server
+*   Attributes:
+*       - route: route name in the server route table (R)
+*       - rawuri: full URL string (R)
+*       - uri: URL hostname (R)
+*       - method: GET, POST, etc (R)
+*       - type: content-type (R/W)
+*       - length: size of request data (R)
+*       - path: array with URL path splitted by slashes (R)
+*       - param: srting[string] http param list like ?key=value (R)
+*       - headers: srting[string] http headers (R/W)
+*       - rawdtata: ubyte[] POST data of binary types (R/W)
+*       - json: POST data of json type (R/W)
+*       - text: POST data of text-like types (R/W)
+*       - status: enum http_status  (W)
+*
+*/
+
 struct WebData {
     string route;
     string rawuri;
@@ -1937,6 +2309,9 @@ struct WebData {
     http_status status = http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;
     string msg;
 
+    /**
+    * Clear data
+    */
     void clear() {
         route = null;
         rawuri = null;
@@ -1954,6 +2329,9 @@ struct WebData {
         json = null;
     }
 
+    /**
+    * Jsonify data
+    */
     JSONValue toJSON(string tag = null) nothrow {
         try {
             return JSONValue([
@@ -1980,6 +2358,9 @@ struct WebData {
         }
     }
 
+    /**
+    * Stringify data
+    */
     string toString() const nothrow {
         try {
             return format(`
@@ -2010,12 +2391,19 @@ struct WebData {
         }
     }
 
+    /**
+    * Parse nng_http_req and fill the structure
+    */
     void parse_req(nng_http_req* req) {
         enforce(req !is null);
+        // TBD:
     }
 
     // TODO: find the way to list all headers
 
+    /**
+    * Parse nng_http_res and fill data
+    */
     void parse_res(nng_http_res* res) {
         enforce(res != null);
         clear();
@@ -2040,6 +2428,9 @@ struct WebData {
         enforce(hlength == length);
     }
 
+    /**
+    * Convert to nng_http_req
+    */
     nng_http_req* export_req() {
         nng_http_req* req;
         nng_url* url;
@@ -2073,6 +2464,9 @@ struct WebData {
         return req;
     }
 
+    /**
+    * Convert to nng_http_res
+    */
     nng_http_res* export_res() {
         char[512] buf;
         nng_http_res* res;
@@ -2125,6 +2519,9 @@ struct WebData {
 alias webhandler = void function(WebData*, WebData*, void*);
 
 //----------------
+/**
+* Internal callback to extract WebData from AIO and fingd proper handler
+*/
 void webrouter(nng_aio* aio) {
 
     int rc;
@@ -2146,7 +2543,7 @@ void webrouter(nng_aio* aio) {
 
     const char* t1 = "NODATA";
 
-    // TODO: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.
+    pragma(msg, "fixme: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.");
 
     srep.type = "text/plain";
     srep.text = "No result";
@@ -2210,6 +2607,9 @@ failure:
 } // router handler
 
 // ------------------------------------------
+/**
+* Internal callback for static routes 
+*/
 void webstatichandler(nng_aio* aio) {
 
     int rc;
@@ -2342,6 +2742,34 @@ failure:
     nng_aio_finish(aio, rc);
     nng_free(sbuf, 4096);
 } // static dir handler
+
+
+/**
+*   {WebApp}
+*   Web server application based on nng_http_* inspired by Flask   
+*   Methods
+*   - constructor, parameters:
+*       -- server name to identify instance 
+*       -- server url (http or https) 
+*       -- json config or WebAppConfig object, attributes
+*           --- root_path: file path to root dir 
+*           --- static_url: relative url path to static assests
+*           --- static_path: file path to the assets
+*           --- template_url: relative url path to the templates (for render_template, not implemented)  
+*           --- template_path: file path to the templates (for render_template, not implemented)
+*           --- directory index: string[] with index variants, default index.html
+*           --- mime_map: string[string] overrides MIME mapping between file extension and type
+*       -- void* context: context to pass as is into every handler calls, for example this pointer to use inside class instance
+*   - start - run the webserver listener and thread pool
+*   - stop - terminate the server thread pool
+*   - set_tls - assign the previously prepared NNGTLS object
+*   - route - register route handler, parameters
+*       -- path: relative to the root, if ends with "*" then default directory handler will be assigned, else function endpoint handler
+*       -- handler: - pointer to void function(WebData*, WebData*, void*);
+*       -- methods: array of ['GET','POST','PUT','DELETE',...] http methods to be accepted
+*       Handler should check the WebData request object and fill the WebData reply object    
+*
+*/
 
 struct WebApp {
 
@@ -2540,7 +2968,7 @@ private:
 
         staticroute(config.prefix_url ~ "/" ~ config.static_url ~ "/", buildPath(config.root_path, config.static_path), config
                 .static_map);
-        /*
+        /**
         nng_http_handler *hs;
         rc = nng_http_handler_alloc_directory(&hs, toStringz(config.prefix_url~"/"~config.static_path), buildPath(config.root_path, config.static_url).toStringz());
         enforce(rc==0, "static handler alloc");
@@ -2647,6 +3075,15 @@ struct WebClient {
     }
 
     // static sync get
+    /**
+    *   Static client GET method (synchronous)
+    *   Param:
+    *       - URL 
+    *       - headers
+    *       - timeout
+    *       - optional pointer to NNGTLS
+    *   Returns: WebData
+    */
     static WebData get ( string uri, string[string] headers, Duration timeout = 30000.msecs, void* ptls = null ) { 
         int rc;
         nng_http_client* cli;
@@ -2704,6 +3141,15 @@ struct WebClient {
     }
 
     // static sync post
+    /**
+    *   Static client POST method (synchronous)
+    *   Param:
+    *       - URL 
+    *       - headers
+    *       - timeout
+    *       - optional pointer to NNGTLS
+    *   Returns: WebData
+    */
     static WebData post ( string uri, const ubyte[] data, const string[string] headers, Duration timeout = 30000.msecs, void *ptls = null ) 
     {
         int rc;
@@ -2764,6 +3210,17 @@ struct WebClient {
     }
 
     // static async get
+    /**
+    *   Static client GET method (asynchronous)
+    *   Param:
+    *       - URL 
+    *       - headers
+    *       - handler callback - void function (Webdata*, void* context)
+    *       - timeout
+    *       - context
+    *       - optional pointer to NNGTLS
+    *   Returns: NNGAio
+    */
     static NNGAio get_async ( string uri, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null, void *ptls = null ) 
     {
         int rc;
@@ -2814,6 +3271,17 @@ struct WebClient {
     }
 
     // static async post
+    /**
+    *   Static client POST method (asynchronous)
+    *   Param:
+    *       - URL 
+    *       - headers
+    *       - handler callback - void function (Webdata*, void* context)
+    *       - timeout
+    *       - context
+    *       - optional pointer to NNGTLS
+    *   Returns: NNGAio
+    */
     static NNGAio post_async ( string uri, const ubyte[] data, const string[string] headers, const webclienthandler handler, Duration timeout = 30000.msecs, void *context = null, void *ptls = null ) 
     {
         int rc;
@@ -2959,6 +3427,7 @@ alias nng_ws_onmessage = void function(WebSocket*, ubyte[], void*);
  *  Methods:      
  *      send(ubyte[])    
  */
+pragma(msg,"fixme:consider  make this class module scope or private");
 struct WebSocket {
     string sid;
     WebSocketApp* app;
@@ -3284,32 +3753,32 @@ enum ws_opcode: ubyte {
     PONG = 0xa,
 };
 
-/*
- 
- WebSocket message structure
-
- http://tools.ietf.org/html/rfc6455#section-5.2  Base Framing Protocol
-
-  0                   1                   2                   3
-  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- +-+-+-+-+-------+-+-------------+-------------------------------+
- |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
- |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
- |N|V|V|V|       |S|             |   (if payload len==126/127)   |
- | |1|2|3|       |K|             |                               |
- +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
- |     Extended payload length continued, if payload len == 127  |
- + - - - - - - - - - - - - - - - +-------------------------------+
- |                               |Masking-key, if MASK set to 1  |
- +-------------------------------+-------------------------------+
- | Masking-key (continued)       |          Payload Data         |
- +-------------------------------- - - - - - - - - - - - - - - - +
- :                     Payload Data continued ...                :
- + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
- |                     Payload Data continued ...                |
- +---------------------------------------------------------------+
-
-*/
+/**
+ * 
+ * WebSocket message structure
+ * 
+ * http://tools.ietf.org/html/rfc6455#section-5.2  Base Framing Protocol
+ *
+ *  0                   1                   2                   3
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ * +-+-+-+-+-------+-+-------------+-------------------------------+
+ * |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+ * |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+ * |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+ * | |1|2|3|       |K|             |                               |
+ * +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+ * |     Extended payload length continued, if payload len == 127  |
+ * + - - - - - - - - - - - - - - - +-------------------------------+
+ * |                               |Masking-key, if MASK set to 1  |
+ * +-------------------------------+-------------------------------+
+ * | Masking-key (continued)       |          Payload Data         |
+ * +-------------------------------- - - - - - - - - - - - - - - - +
+ * :                     Payload Data continued ...                :
+ * + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+ * |                     Payload Data continued ...                |
+ * +---------------------------------------------------------------+
+ *
+ */
 struct ws_header {
     uint header_size;
     bool fin;
