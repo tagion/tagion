@@ -248,7 +248,7 @@ jobs:
   acceptance_stage:
     runs-on: CD
     timeout-minutes: 12
-    needs: [nngtest, commit_stage, unittest, build]
+    needs: [commit_stage, unittest, build]
     strategy: 
       fail-fast: false
       matrix:
