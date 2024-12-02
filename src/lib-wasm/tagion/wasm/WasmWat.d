@@ -332,7 +332,7 @@ alias check = Check!WatException;
                     }
                     break;
                 case BRANCH:
-                case BRANCH_IF:
+//                case BRANCH_IF:
                     output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;
                 case BRANCH_TABLE:

@@ -580,10 +580,11 @@ alias check = Check!WasmBetterCException;
                         break;
                     case BRANCH:
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
-
+/*
                         break;
                     case BRANCH_IF:
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
+*/
                         break;
                     case BRANCH_TABLE:
                         static string branch_table(const(WasmArg[]) args) {

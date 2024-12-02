@@ -296,6 +296,7 @@ struct WastParser {
                         innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     break;
+                    /*
                 case BRANCH_IF:
                     r.nextToken;
                     innerInstr(wasmexpr,r, ParserStage.CODE);
@@ -306,6 +307,7 @@ struct WastParser {
                         innerInstr(wasmexpr,r, ParserStage.CODE);
                     }
                     break;
+*/
                 case BRANCH_TABLE:
                     break;
                 case CALL:
