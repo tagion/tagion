@@ -673,13 +673,14 @@ version (none) bool isWasmModule(alias M)() if (is(M == struct) || is(M == class
 
 struct WasmArg {
     protected {
-        Types _type;
         union {
             @(Types.I32) int i32;
             @(Types.I64) long i64;
             @(Types.F32) float f32;
             @(Types.F64) double f64;
         }
+
+        Types _type;
     }
 
     static WasmArg undefine() pure nothrow {
@@ -777,15 +778,20 @@ struct ExprRange {
 
     struct IRElement {
         enum IRArgType : ubyte {
-            None,
+            NONE,
+            DATA,
+            WARG,
+            WARGS,
+            TYPES,
+            INDEX,
         }
 
         int level;
         immutable(Instr)* instr;
-        immutable(ubyte)[] data;
         private union {
+            immutable(ubyte)[] data;
             WasmArg _warg;
-            WasmArg[] _wargs;
+            const(WasmArg)[] _wargs;
             const(Types)[] _types;
             int typeidx;
         }
@@ -795,6 +801,7 @@ struct ExprRange {
         }
 
         IR code;
+        IRArgType argtype;
         this(const IR code, const int level = 0) pure nothrow {
             this.level = level;
             this.code = code;
@@ -805,15 +812,23 @@ struct ExprRange {
         enum unreachable = IRElement(IR.UNREACHABLE);
 
         const(WasmArg) warg() @trusted const pure nothrow {
+
             return _warg;
         }
 
-        const(WasmArg[]) wargs() @trusted const pure nothrow {
+        const(WasmArg[]) wargs() @trusted const pure nothrow
+        in (argtype is IRArgType.WARGS, "WasmArg array expected")
+        do {
             return _wargs;
         }
 
         const(Types[]) types() @trusted const pure nothrow {
             return _types;
+        }
+
+        void wargs(const(WasmArg)[] args) @trusted pure nothrow {
+            argtype = IRArgType.WARGS;
+            _wargs = args;
         }
 
         version (none) const(IRElement) dup() const pure nothrow {
@@ -897,15 +912,12 @@ struct ExprRange {
                 case BRANCH_TABLE:
                     //size_t vec_size;
                     const len = u32(data, index) + 1;
-                    void __set() @trusted {
-                        elm._wargs = new WasmArg[len];
+                    auto _wargs = new WasmArg[len];
 
-                        foreach (ref a; elm._wargs) {
-                            a = u32(data, index);
-                        }
+                    foreach (ref a; _wargs) {
+                        a = u32(data, index);
                     }
-
-                    __set;
+                    elm.wargs = _wargs;
                     break;
                 case CALL:
                     // callidx
@@ -927,15 +939,14 @@ struct ExprRange {
                     break;
                 case MEMORY:
                     // offset
-                    void __set() @trusted {
 
-                        elm._wargs = new WasmArg[2];
-                        set(elm._wargs[0], Types.I32);
-                        // align
-                        set(elm._wargs[1], Types.I32);
-                    }
+                    auto _wargs = new WasmArg[2];
+                    set(_wargs[0], Types.I32);
+                    // align
+                    set(_wargs[1], Types.I32);
 
-                    __set;
+                    elm.wargs = _wargs;
+
                     break;
                 case MEMOP:
                     index++;
