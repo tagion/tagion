@@ -826,6 +826,11 @@ struct ExprRange {
             return _types;
         }
 
+        void warg(WasmArg arg) @trusted pure nothrow {
+            argtype = IRArgType.WARG;
+            _warg = arg;
+        }
+
         void wargs(const(WasmArg)[] args) @trusted pure nothrow {
             argtype = IRArgType.WARGS;
             _wargs = args;
@@ -848,20 +853,21 @@ struct ExprRange {
     }
 
     @safe protected void set_front(ref IRElement elm, ref size_t index) pure {
-        @trusted void set(ref WasmArg warg, const Types type) pure nothrow {
+        WasmArg get(const Types type) @trusted pure nothrow {
+            WasmArg result;
             with (Types) {
                 switch (type) {
                 case I32:
-                    warg = i32(data, index);
+                    result = i32(data, index);
                     break;
                 case I64:
-                    warg = i64(data, index);
+                    result = i64(data, index);
                     break;
                 case F32:
-                    warg = data.binpeek!(float, Endian.littleEndian)(&index);
+                    result = data.binpeek!(float, Endian.littleEndian)(&index);
                     break;
                 case F64:
-                    warg = data.binpeek!(double, Endian.littleEndian)(&index);
+                    result = data.binpeek!(double, Endian.littleEndian)(&index);
                     break;
                 default:
                     assumeWontThrow({
@@ -870,6 +876,7 @@ struct ExprRange {
                     });
                 }
             }
+            return result;
         }
 
         if (index < data.length) {
@@ -906,7 +913,7 @@ struct ExprRange {
                 case BRANCH:
                     //                case BRANCH_IF:
                     // branchidx
-                    set(elm._warg, Types.I32);
+                    elm.warg = get(Types.I32);
                     _level++;
                     break;
                 case BRANCH_TABLE:
@@ -921,11 +928,11 @@ struct ExprRange {
                     break;
                 case CALL:
                     // callidx
-                    set(elm._warg, Types.I32);
+                    elm.warg = get(Types.I32);
                     break;
                 case CALL_INDIRECT:
                     // typeidx
-                    set(elm._warg, Types.I32);
+                    elm.warg = get(Types.I32);
                     scope (exit) {
                         index += ubyte.sizeof;
                     }
@@ -935,15 +942,15 @@ struct ExprRange {
                     break;
                 case LOCAL, GLOBAL:
                     // localidx globalidx
-                    set(elm._warg, Types.I32);
+                    elm.warg = get(Types.I32);
                     break;
                 case MEMORY:
                     // offset
 
                     auto _wargs = new WasmArg[2];
-                    set(_wargs[0], Types.I32);
+                    _wargs[0] = get(Types.I32);
                     // align
-                    set(_wargs[1], Types.I32);
+                    _wargs[1] = get(Types.I32);
 
                     elm.wargs = _wargs;
 
@@ -955,16 +962,16 @@ struct ExprRange {
                     with (IR) {
                         switch (elm.code) {
                         case I32_CONST:
-                            set(elm._warg, Types.I32);
+                            elm.warg = get(Types.I32);
                             break;
                         case I64_CONST:
-                            set(elm._warg, Types.I64);
+                            elm.warg = get(Types.I64);
                             break;
                         case F32_CONST:
-                            set(elm._warg, Types.F32);
+                            elm.warg = get(Types.F32);
                             break;
                         case F64_CONST:
-                            set(elm._warg, Types.F64);
+                            elm.warg = get(Types.F64);
                             break;
                         default:
                             throw new WasmExprException(format("Instruction %s is not a const",
