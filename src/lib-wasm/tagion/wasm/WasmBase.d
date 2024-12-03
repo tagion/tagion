@@ -793,7 +793,7 @@ struct ExprRange {
             WasmArg _warg;
             const(WasmArg)[] _wargs;
             const(Types)[] _types;
-            int typeidx;
+            uint typeidx;
         }
 
         void clear() @trusted @nogc pure nothrow {
@@ -811,8 +811,9 @@ struct ExprRange {
 
         enum unreachable = IRElement(IR.UNREACHABLE);
 
-        const(WasmArg) warg() @trusted const pure nothrow {
-
+        const(WasmArg) warg() @trusted const pure nothrow
+        in (argtype is IRArgType.WARG, "WasmArg expected")
+        do {
             return _warg;
         }
 
@@ -836,14 +837,14 @@ struct ExprRange {
             _wargs = args;
         }
 
-        version (none) const(IRElement) dup() const pure nothrow {
-            IRElement result;
-            result.code = code;
-            result.level = level;
-            result._warg = _warg;
-            result._wargs = (() @trusted => cast(WasmArg[]) _wargs)();
-            result._types = _types;
-            return result;
+        void types(const(ubyte)[] _data) @trusted pure nothrow {
+            argtype = IRArgType.TYPES;
+            _types = cast(const(Types)[]) _data;
+        }
+
+        void idx(const uint _idx) @trusted pure nothrow {
+            argtype = IRArgType.INDEX;
+            typeidx = _idx;
         }
     }
 
@@ -853,7 +854,7 @@ struct ExprRange {
     }
 
     @safe protected void set_front(ref IRElement elm, ref size_t index) pure {
-        WasmArg get(const Types type) @trusted pure nothrow {
+        WasmArg get(const Types type) pure nothrow {
             WasmArg result;
             with (Types) {
                 switch (type) {
@@ -870,10 +871,7 @@ struct ExprRange {
                     result = data.binpeek!(double, Endian.littleEndian)(&index);
                     break;
                 default:
-                    assumeWontThrow({
-                        wasm_exception = new WasmException(format(
-                            "Assembler argument type not valid as an argument %s", type));
-                    });
+                    assert(0, "Illegal assembler argument");
                 }
             }
             return result;
@@ -899,19 +897,17 @@ struct ExprRange {
                     index += ubyte.sizeof;
                     break;
                 case BLOCK:
-                    version (none)
-                        if (isNotType(data[index])) {
-
+                    scope (exit) {
+                        _level++;
+                    }
+                    if (isNotType(data[index])) {
+                        elm.idx = u32(data, index);
                         break;
                     }
-                    (() @trusted =>
-                            elm._types = [cast(Types) data[index]])();
+                    elm.types = data[index .. index + 1];
                     index += Types.sizeof;
-                    _level++;
-
                     break;
                 case BRANCH:
-                    //                case BRANCH_IF:
                     // branchidx
                     elm.warg = get(Types.I32);
                     _level++;
@@ -945,15 +941,8 @@ struct ExprRange {
                     elm.warg = get(Types.I32);
                     break;
                 case MEMORY:
-                    // offset
-
-                    auto _wargs = new WasmArg[2];
-                    _wargs[0] = get(Types.I32);
-                    // align
-                    _wargs[1] = get(Types.I32);
-
-                    elm.wargs = _wargs;
-
+                    // [ offset, align ]
+                    elm.wargs = [get(Types.I32), get(Types.I32)];
                     break;
                 case MEMOP:
                     index++;
