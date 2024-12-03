@@ -793,11 +793,7 @@ struct ExprRange {
             WasmArg _warg;
             const(WasmArg)[] _wargs;
             const(Types)[] _types;
-            uint typeidx;
-        }
-
-        void clear() @trusted @nogc pure nothrow {
-            _types = null;
+            uint _typeidx;
         }
 
         IR code;
@@ -811,40 +807,50 @@ struct ExprRange {
 
         enum unreachable = IRElement(IR.UNREACHABLE);
 
-        const(WasmArg) warg() @trusted const pure nothrow
-        in (argtype is IRArgType.WARG, "WasmArg expected")
-        do {
-            return _warg;
-        }
+        pure nothrow {
+            const(WasmArg) warg() @trusted const
+            in (argtype is IRArgType.WARG, "WasmArg expected")
+            do {
+                return _warg;
+            }
 
-        const(WasmArg[]) wargs() @trusted const pure nothrow
-        in (argtype is IRArgType.WARGS, "WasmArg array expected")
-        do {
-            return _wargs;
-        }
+            const(WasmArg[]) wargs() @trusted const
+            in (argtype is IRArgType.WARGS, "WasmArg array expected")
+            do {
+                return _wargs;
+            }
 
-        const(Types[]) types() @trusted const pure nothrow {
-            return _types;
-        }
+            const(Types[]) types() @trusted const
+            in (argtype is IRArgType.TYPES, "Types array expected")
+            do {
+                return _types;
+            }
 
-        void warg(WasmArg arg) @trusted pure nothrow {
-            argtype = IRArgType.WARG;
-            _warg = arg;
-        }
+            int idx() @trusted const
+            in (argtype is IRArgType.INDEX, "Typeidx expected")
+            do {
+                return _typeidx;
+            }
 
-        void wargs(const(WasmArg)[] args) @trusted pure nothrow {
-            argtype = IRArgType.WARGS;
-            _wargs = args;
-        }
+            void warg(WasmArg arg) @trusted {
+                argtype = IRArgType.WARG;
+                _warg = arg;
+            }
 
-        void types(const(ubyte)[] _data) @trusted pure nothrow {
-            argtype = IRArgType.TYPES;
-            _types = cast(const(Types)[]) _data;
-        }
+            void wargs(const(WasmArg)[] args) @trusted {
+                argtype = IRArgType.WARGS;
+                _wargs = args;
+            }
 
-        void idx(const uint _idx) @trusted pure nothrow {
-            argtype = IRArgType.INDEX;
-            typeidx = _idx;
+            void types(const(ubyte)[] _data) @trusted {
+                argtype = IRArgType.TYPES;
+                _types = cast(const(Types)[]) _data;
+            }
+
+            void idx(const uint _idx) @trusted {
+                argtype = IRArgType.INDEX;
+                _typeidx = _idx;
+            }
         }
     }
 
@@ -879,8 +885,6 @@ struct ExprRange {
 
         if (index < data.length) {
             elm.code = cast(IR) data[index];
-            elm.clear;
-            //elm._types = null;
             elm.instr = instrTable.lookup(elm.code);
             index += IR.sizeof;
             with (IRType) {
