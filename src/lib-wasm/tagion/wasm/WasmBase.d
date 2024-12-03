@@ -113,10 +113,7 @@ enum IRType {
     CODE_EXTEND, /// Extended instruction with an opcode argument
     CODE_TYPE, /// Instrunction with return type conversion (like select)
     BLOCK, /// Block instruction
-    //    BLOCK_IF,      /// Block for [IF] ELSE END
-    //   BLOCK_ELSE,    /// Block for IF [ELSE] END
     BRANCH, /// Branch jump instruction
-  //  BRANCH_IF, /// Conditional branch jump instruction
     BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
     CALL_INDIRECT, /// Indirect subroutine call
@@ -499,6 +496,10 @@ enum Types : ubyte {
     @("f64") F64 = 0x7C, /// f64 valtype
 }
 
+bool isNotType(const ubyte x) @nogc pure nothrow {
+    return (x & Types.EMPTY) !is Types.EMPTY;
+}
+
 enum DataMode : ubyte {
     ACTIVE,
     PASSIVE,
@@ -778,10 +779,12 @@ struct ExprRange {
         IR code;
         int level;
         immutable(Instr)* instr;
+        immutable(ubyte)[] data;
         private {
             WasmArg _warg;
             WasmArg[] _wargs;
             const(Types)[] _types;
+            int typeidx;
         }
 
         enum unreachable = IRElement(IR.UNREACHABLE);
@@ -798,13 +801,14 @@ struct ExprRange {
             return _types;
         }
 
-        IRElement dup() const pure scope nothrow {
+        version(none)
+        const(IRElement) dup() const pure  nothrow {
             IRElement result;
             result.code = code;
             result.level = level;
             result._warg = _warg;
-            result._wargs = _wargs.dup;
-            result._types = _types.dup;
+            result._wargs = (() @trusted => cast(WasmArg[])_wargs)();
+            result._types = _types;
             return result;
         }
     }
@@ -814,7 +818,7 @@ struct ExprRange {
         set_front(current, _index);
     }
 
-    @safe protected void set_front(ref scope IRElement elm, ref size_t index) pure {
+    @safe protected void set_front(ref IRElement elm, ref size_t index) pure {
         @trusted void set(ref WasmArg warg, const Types type) pure nothrow {
             with (Types) {
                 switch (type) {
@@ -858,9 +862,15 @@ struct ExprRange {
                     index += ubyte.sizeof;
                     break;
                 case BLOCK:
+                    version(none)
+                    if (isNotType(data[index])) {
+
+                        break;
+                    }
                     elm._types = [cast(Types) data[index]];
                     index += Types.sizeof;
                     _level++;
+
                     break;
                 case BRANCH:
 //                case BRANCH_IF:
