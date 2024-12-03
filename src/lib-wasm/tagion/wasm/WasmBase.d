@@ -776,7 +776,6 @@ struct ExprRange {
     }
 
     struct IRElement {
-        IR code;
         int level;
         immutable(Instr)* instr;
         immutable(ubyte)[] data;
@@ -785,6 +784,13 @@ struct ExprRange {
             WasmArg[] _wargs;
             const(Types)[] _types;
             int typeidx;
+        }
+        IR code;
+        this(const IR code, const int level = 0) pure nothrow {
+            this.level = level;
+            this.code = code;
+            instr = null;
+            data = null;
         }
 
         enum unreachable = IRElement(IR.UNREACHABLE);
@@ -801,13 +807,12 @@ struct ExprRange {
             return _types;
         }
 
-        version(none)
-        const(IRElement) dup() const pure  nothrow {
+        version (none) const(IRElement) dup() const pure nothrow {
             IRElement result;
             result.code = code;
             result.level = level;
             result._warg = _warg;
-            result._wargs = (() @trusted => cast(WasmArg[])_wargs)();
+            result._wargs = (() @trusted => cast(WasmArg[]) _wargs)();
             result._types = _types;
             return result;
         }
@@ -862,8 +867,8 @@ struct ExprRange {
                     index += ubyte.sizeof;
                     break;
                 case BLOCK:
-                    version(none)
-                    if (isNotType(data[index])) {
+                    version (none)
+                        if (isNotType(data[index])) {
 
                         break;
                     }
@@ -873,7 +878,7 @@ struct ExprRange {
 
                     break;
                 case BRANCH:
-//                case BRANCH_IF:
+                    //                case BRANCH_IF:
                     // branchidx
                     set(elm._warg, Types.I32);
                     _level++;
