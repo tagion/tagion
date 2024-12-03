@@ -776,15 +776,24 @@ struct ExprRange {
     }
 
     struct IRElement {
+        enum IRArgType : ubyte {
+            None,
+        }
+
         int level;
         immutable(Instr)* instr;
         immutable(ubyte)[] data;
-        private {
+        private union {
             WasmArg _warg;
             WasmArg[] _wargs;
             const(Types)[] _types;
             int typeidx;
         }
+
+        void clear() @trusted @nogc pure nothrow {
+            _types = null;
+        }
+
         IR code;
         this(const IR code, const int level = 0) pure nothrow {
             this.level = level;
@@ -795,15 +804,15 @@ struct ExprRange {
 
         enum unreachable = IRElement(IR.UNREACHABLE);
 
-        const(WasmArg) warg() const pure nothrow {
+        const(WasmArg) warg() @trusted const pure nothrow {
             return _warg;
         }
 
-        const(WasmArg[]) wargs() const pure nothrow {
+        const(WasmArg[]) wargs() @trusted const pure nothrow {
             return _wargs;
         }
 
-        const(Types[]) types() const pure nothrow {
+        const(Types[]) types() @trusted const pure nothrow {
             return _types;
         }
 
@@ -850,7 +859,8 @@ struct ExprRange {
 
         if (index < data.length) {
             elm.code = cast(IR) data[index];
-            elm._types = null;
+            elm.clear;
+            //elm._types = null;
             elm.instr = instrTable.lookup(elm.code);
             index += IR.sizeof;
             with (IRType) {
@@ -872,7 +882,8 @@ struct ExprRange {
 
                         break;
                     }
-                    elm._types = [cast(Types) data[index]];
+                    (() @trusted =>
+                            elm._types = [cast(Types) data[index]])();
                     index += Types.sizeof;
                     _level++;
 
@@ -886,10 +897,15 @@ struct ExprRange {
                 case BRANCH_TABLE:
                     //size_t vec_size;
                     const len = u32(data, index) + 1;
-                    elm._wargs = new WasmArg[len];
-                    foreach (ref a; elm._wargs) {
-                        a = u32(data, index);
+                    void __set() @trusted {
+                        elm._wargs = new WasmArg[len];
+
+                        foreach (ref a; elm._wargs) {
+                            a = u32(data, index);
+                        }
                     }
+
+                    __set;
                     break;
                 case CALL:
                     // callidx
@@ -911,10 +927,15 @@ struct ExprRange {
                     break;
                 case MEMORY:
                     // offset
-                    elm._wargs = new WasmArg[2];
-                    set(elm._wargs[0], Types.I32);
-                    // align
-                    set(elm._wargs[1], Types.I32);
+                    void __set() @trusted {
+
+                        elm._wargs = new WasmArg[2];
+                        set(elm._wargs[0], Types.I32);
+                        // align
+                        set(elm._wargs[1], Types.I32);
+                    }
+
+                    __set;
                     break;
                 case MEMOP:
                     index++;
