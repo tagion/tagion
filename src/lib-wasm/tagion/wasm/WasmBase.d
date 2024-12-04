@@ -792,8 +792,8 @@ struct ExprRange {
             immutable(ubyte)[] data;
             WasmArg _warg;
             const(WasmArg)[] _wargs;
-            const(Types)[] _types;
             uint _typeidx;
+            const(Types)[] _types;
         }
 
         IR code;
