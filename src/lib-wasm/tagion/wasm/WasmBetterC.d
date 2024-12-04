@@ -449,8 +449,8 @@ alias check = Check!WasmBetterCException;
             return stack.empty;
         }
 
-        void perform(const IR ir, const uint number_of_args) {
-            switch (number_of_args) {
+        void perform(const IR ir, const(Types[]) args) {
+            switch (args.length) {
             case 1:
                 if (ir in instr_fmt) {
                     push(format(instr_fmt[ir], pop));
@@ -473,13 +473,13 @@ alias check = Check!WasmBetterCException;
                 push(format("Undefinded %s pops %s %s %s", ir, pop, pop, pop));
                 break;
             default:
-                check(0, format("Format argument %s not supported for %s", number_of_args, instrTable[ir].name));
+                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, instrTable[ir].name));
             }
 
         }
 
-        void perform(const IR_EXTEND ir, const uint number_of_args) {
-            switch (number_of_args) {
+        void perform(const IR_EXTEND ir, const(Types[]) args) {
+            switch (args.length) {
             case 1:
                 if (ir in instr_extend_fmt) {
                     push(format(instr_extend_fmt[ir], pop));
@@ -495,7 +495,7 @@ alias check = Check!WasmBetterCException;
                 push(format("Undefinded %s pops %s %s", ir, pop, pop));
                 break;
             default:
-                check(0, format("Format argument %s not supported for %s", number_of_args, interExtendedTable[ir].name));
+                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, interExtendedTable[ir].name));
             }
 
         }
@@ -580,7 +580,7 @@ alias check = Check!WasmBetterCException;
                         break;
                     case BRANCH:
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
-/*
+                        /*
                         break;
                     case BRANCH_IF:
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);

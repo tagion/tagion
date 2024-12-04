@@ -98,10 +98,10 @@ struct WastParser {
         int blk_idx;
 
         void push(const Types t) pure nothrow {
-            stack~=t;
+            stack ~= t;
         }
-    
-        Types pop() pure  {
+
+        Types pop() pure {
             if (stack.length == 0) {
                 throw new WasmException("Block stack empty");
             }
@@ -244,7 +244,7 @@ struct WastParser {
                 final switch (instr.irtype) {
                 case CODE:
                     r.nextToken;
-                    foreach (i; 0 .. instr.pops) {
+                    foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
 
@@ -252,7 +252,7 @@ struct WastParser {
                     break;
                 case CODE_EXTEND:
                     r.nextToken;
-                    foreach (i; 0 .. instr.pops) {
+                    foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     wasmexpr(IR.EXNEND, instr.opcode);
@@ -274,7 +274,7 @@ struct WastParser {
                                 r = r_return;
                             }
                         }
-                    foreach (i; 0 .. instr.pops) {
+                    foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     wasmexpr(irLookupTable[instr.name]);
@@ -356,7 +356,7 @@ struct WastParser {
                     const local_idx = getLocal(r.token);
                     wasmexpr(irLookupTable[instr.name], local_idx);
                     r.nextToken;
-                    foreach (i; 0 .. instr.pops) {
+                    foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     break;
@@ -373,13 +373,13 @@ struct WastParser {
                         label = r.token; // Fix this later
                         r.nextToken;
                     }
-                    foreach (i; 0 .. instr.pops) {
+                    foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     break;
                 case MEMOP:
                     r.nextToken;
-                    foreach (i; 0 .. instr.pops) {
+                    foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     break;
@@ -427,7 +427,7 @@ struct WastParser {
                         labels ~= r.token;
                         r.nextToken;
                     }
-                    for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
+                    for (uint i = 0; (instr.pops.length == 0) ? r.type == TokenType.BEGIN : i < instr.pops.length; i++) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
 
                     }
