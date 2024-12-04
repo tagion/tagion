@@ -4,7 +4,7 @@ import core.exception : RangeError;
 import std.algorithm;
 import std.array;
 import std.conv;
-import std.exception : ifThrown;
+import std.exception;
 import std.format;
 import std.stdio;
 import std.traits;
@@ -88,43 +88,47 @@ struct WastParser {
     struct Block {
         int idx;
         const(Types)[] types;
+        string label;
     }
 
     struct FunctionContext {
         int[string] params; /// Parameter names
-        int[string] blocks; /// Block labels 
-        Block[] black_stack;
+        Block[] block_stack;
+        Types[] stack;
         int blk_idx;
-        void push(const int idx) pure nothrow {
-            black_stack ~= Block(idx);
+
+        void block_push(const int idx) pure nothrow {
+            block_stack ~= Block(idx);
         }
 
-        void push(const(Types[]) types) pure nothrow {
-            black_stack ~= Block(blk_idx++, types);
+        void block_push(const(Types[]) types, string label) pure nothrow {
+            block_stack ~= Block(blk_idx++, types, label);
         }
 
-        Block pop() pure {
-            if (black_stack.length == 0) {
+        Block block_pop() pure {
+            if (block_stack.length == 0) {
                 throw new WasmException("Label stack empty");
             }
             scope (exit) {
-                black_stack.length--;
+                block_stack.length--;
             }
-            return black_stack[$ - 1];
+            return block_stack[$ - 1];
         }
 
-        Block peek(const int idx) const pure {
-            if (idx >= black_stack.length) {
-                throw new WasmException(
-                        format("Label index %d out of range, label stack size %d", idx, black_stack.length)
-                );
+        Block block_peek(const int idx) const pure nothrow {
+            if ((idx >= block_stack.length) || (idx < 0)) {
+                return Block(-1);
             }
-            return black_stack[$ - 1];
+            return block_stack[$ - idx - 1];
         }
-    }
 
-    static int blockIndex(ref const FunctionContext ctx, string token) pure {
-        return ctx.blocks.get(token, token.to!int);
+        Block block_peek(string token) const pure nothrow {
+            int idx = assumeWontThrow(
+                    token.to!int
+                    .ifThrown(cast(int) block_stack.countUntil!(b => b.label == token))
+                    .ifThrown(-1));
+            return block_peek(idx);
+        }
     }
 
     private ParserStage parseInstr(
@@ -263,17 +267,14 @@ struct WastParser {
                 case BLOCK:
                     writefln("Block %s", r);
                     r.nextToken;
+                    label = null;
                     if (r.type == TokenType.WORD) {
-                        //r.check(r.type == TokenType.WORD);
                         label = r.token;
-                        func_ctx.blocks[label] = func_ctx.blk_idx;
                         r.nextToken;
                     }
                     scope (success) {
-                        func_ctx.pop;
+                        func_ctx.block_pop;
                     }
-                    //(func_ctx.blk_idx);
-                    //func_ctx.blk_idx++;
                     const wasm_results = getReturns(r);
                     writefln("  Results %s", wasm_results);
                     if (wasm_results.length == 0) {
@@ -285,27 +286,32 @@ struct WastParser {
                     else {
                         wasmexpr(irLookupTable[instr.name], 42);
                     }
-                    func_ctx.push(wasm_results);
+                    func_ctx.block_push(wasm_results, label);
                     while (r.type == TokenType.BEGIN) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
 
                     return stage;
                 case BRANCH:
-                    //  r.nextToken;
                     writefln("IR.BR %s token=%s", getInstr!(IR.BR), r);
                     switch (r.token) {
                     case getInstr!(IR.BR).wast:
                         r.nextToken;
-                        const blk_idx = blockIndex(func_ctx, r.token);
-                        writefln("Branch %d %s", blk_idx, r);
-                        while (r.type == TokenType.BEGIN) {
-                            innerInstr(wasmexpr, r, ParserStage.CODE);
-                        }
+                        writefln("BR index %s", r);
+                        const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
-                        wasmexpr(IR.BR, blk_idx);
-                        //return ParserStage.BREAK; 
-                        //                        r.check(r.type == TokenType.END); 
+                        uint count;
+                        while (r.type == TokenType.BEGIN) {
+                            writefln(" == %s", r.token);
+                            innerInstr(wasmexpr, r, ParserStage.CODE);
+                            count++;
+                        }
+                        writefln("Branch %s %s count=%d", blk, r, count);
+                        check(blk.types.length == count,
+                                format("Branch expect %-(%s %) but got %s arguments", blk
+                                .types.map!(t => typesName(t)), count));
+                        //r.nextToken;
+                        wasmexpr(IR.BR, blk.idx);
                         break;
                     default:
                         assert(0, format("Illegal token %s in %s", r.token, BRANCH));
@@ -314,18 +320,6 @@ struct WastParser {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     break;
-                    /*
-                case BRANCH_IF:
-                    r.nextToken;
-                    innerInstr(wasmexpr,r, ParserStage.CODE);
-                    r.check(r.type == TokenType.WORD);
-                    label = r.token;
-                    r.nextToken;
-                    if (r.type == TokenType.BEGIN) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
-                    }
-                    break;
-*/
                 case BRANCH_TABLE:
                     break;
                 case CALL:
