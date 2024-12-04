@@ -20,11 +20,11 @@ import tagion.basic.basic : isinit;
 
 class WastParserException : WasmException {
     WastTokenizer tokenizer;
-    this(string msg, 
-    ref WastTokenizer tokenizer, 
-string file = __FILE__, 
-    size_t line = __LINE__) pure nothrow {
-        this.tokenizer = tokenizer;         
+    this(string msg,
+            ref WastTokenizer tokenizer,
+            string file = __FILE__,
+            size_t line = __LINE__) pure nothrow {
+        this.tokenizer = tokenizer;
         super(msg, file, line);
     }
 }
@@ -85,33 +85,41 @@ struct WastParser {
         Types type;
     }
 
+    struct Block {
+        int idx;
+        const(Types)[] types;
+    }
+
     struct FunctionContext {
         int[string] params; /// Parameter names
         int[string] blocks; /// Block labels 
-        int[] label_stack;
+        Block[] black_stack;
         int blk_idx;
         void push(const int idx) pure nothrow {
-            label_stack ~=idx;
+            black_stack ~= Block(idx);
         }
-        void push() pure nothrow {
-            label_stack ~= blk_idx++;
+
+        void push(const(Types[]) types) pure nothrow {
+            black_stack ~= Block(blk_idx++, types);
         }
-        int pop() pure {
-            if (label_stack.length == 0) {
-                throw new WasmException("Label stack empty"); 
+
+        Block pop() pure {
+            if (black_stack.length == 0) {
+                throw new WasmException("Label stack empty");
             }
-            scope(exit) {
-                label_stack.length--;
+            scope (exit) {
+                black_stack.length--;
             }
-            return label_stack[$-1];
+            return black_stack[$ - 1];
         }
-        int peek(const int idx) const pure {
-            if (idx >= label_stack.length) {
+
+        Block peek(const int idx) const pure {
+            if (idx >= black_stack.length) {
                 throw new WasmException(
-            format("Label index %d out of range, label stack size %d", idx, label_stack.length)
-    ); 
+                        format("Label index %d out of range, label stack size %d", idx, black_stack.length)
+                );
             }
-            return label_stack[$-1];
+            return black_stack[$ - 1];
         }
     }
 
@@ -179,7 +187,7 @@ struct WastParser {
             return -1;
         }
 
-        auto func_wasmexpr=createWasmExpr;
+        auto func_wasmexpr = createWasmExpr;
         ParserStage innerInstr(ref WasmExpr wasmexpr, ref WastTokenizer r, ParserStage instr_stage) @safe {
             static const(Types)[] getReturns(ref WastTokenizer r) @safe nothrow {
                 Types[] results;
@@ -207,7 +215,7 @@ struct WastParser {
                 r.check(r.type == TokenType.END, "Expect an end ')'");
                 r.nextToken;
                 if (func_wasmexpr != wasmexpr) {
-                   func_wasmexpr.append(wasmexpr); 
+                    func_wasmexpr.append(wasmexpr);
                 }
             }
             r.nextToken;
@@ -219,14 +227,14 @@ struct WastParser {
                 case CODE:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     wasmexpr(irLookupTable[instr.name]);
                     break;
                 case CODE_EXTEND:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     wasmexpr(IR.EXNEND, instr.opcode);
                     break;
@@ -248,7 +256,7 @@ struct WastParser {
                             }
                         }
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     wasmexpr(irLookupTable[instr.name]);
                     break;
@@ -261,17 +269,27 @@ struct WastParser {
                         func_ctx.blocks[label] = func_ctx.blk_idx;
                         r.nextToken;
                     }
-                    func_ctx.push;
-                    scope(success) {
+                    scope (success) {
                         func_ctx.pop;
                     }
                     //(func_ctx.blk_idx);
                     //func_ctx.blk_idx++;
-                    const wasm_returns = getReturns(r);
-                    while (r.type == TokenType.BEGIN) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                    const wasm_results = getReturns(r);
+                    writefln("  Results %s", wasm_results);
+                    if (wasm_results.length == 0) {
+                        wasmexpr(irLookupTable[instr.name]);
                     }
-                    
+                    else if (wasm_results.length == 1) {
+                        wasmexpr(irLookupTable[instr.name], wasm_results[0]);
+                    }
+                    else {
+                        wasmexpr(irLookupTable[instr.name], 42);
+                    }
+                    func_ctx.push(wasm_results);
+                    while (r.type == TokenType.BEGIN) {
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
+                    }
+
                     return stage;
                 case BRANCH:
                     //  r.nextToken;
@@ -293,7 +311,7 @@ struct WastParser {
                         assert(0, format("Illegal token %s in %s", r.token, BRANCH));
                     }
                     while (r.type == TokenType.BEGIN) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     break;
                     /*
@@ -316,7 +334,7 @@ struct WastParser {
                     label = r.token;
                     r.nextToken;
                     while (r.type == TokenType.BEGIN) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     wasmexpr(IR.CALL, idx);
                     break;
@@ -330,7 +348,7 @@ struct WastParser {
                     wasmexpr(irLookupTable[instr.name], local_idx);
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     break;
                 case GLOBAL:
@@ -347,13 +365,13 @@ struct WastParser {
                         r.nextToken;
                     }
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     break;
                 case MEMOP:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
                     break;
                 case CONST:
@@ -397,7 +415,7 @@ struct WastParser {
                         r.nextToken;
                     }
                     for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
-                        innerInstr(wasmexpr,r, ParserStage.CODE);
+                        innerInstr(wasmexpr, r, ParserStage.CODE);
 
                     }
                     switch (instr.wast) {
@@ -704,10 +722,10 @@ struct WastParser {
                 writefln("2. Result %d:%s token %s", r.line, r.getLine, r);
                 r.check(stage == ParserStage.FUNC);
                 r.nextToken;
-                while(r.type != TokenType.END) {
-                    immutable type= r.token.getType;
+                while (r.type != TokenType.END) {
+                    immutable type = r.token.getType;
                     check(type !is Types.EMPTY, "Data type expected");
-                func_type.results ~= type;
+                    func_type.results ~= type;
                     r.nextToken;
                 }
                 //r.check(r.type == TokenType.WORD);
