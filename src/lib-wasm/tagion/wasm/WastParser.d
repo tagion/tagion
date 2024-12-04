@@ -94,8 +94,22 @@ struct WastParser {
     struct FunctionContext {
         int[string] params; /// Parameter names
         Block[] block_stack;
-        Types[] stack;
+        const(Types)[] stack;
         int blk_idx;
+
+        void push(const Types t) pure nothrow {
+            stack~=t;
+        }
+    
+        Types pop() pure  {
+            if (stack.length == 0) {
+                throw new WasmException("Block stack empty");
+            }
+            scope (exit) {
+                stack.length--;
+            }
+            return stack[$ - 1];
+        }
 
         void block_push(const int idx) pure nothrow {
             block_stack ~= Block(idx);
@@ -107,7 +121,7 @@ struct WastParser {
 
         Block block_pop() pure {
             if (block_stack.length == 0) {
-                throw new WasmException("Label stack empty");
+                throw new WasmException("Block stack empty");
             }
             scope (exit) {
                 block_stack.length--;
@@ -233,6 +247,7 @@ struct WastParser {
                     foreach (i; 0 .. instr.pops) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
                     }
+
                     wasmexpr(irLookupTable[instr.name]);
                     break;
                 case CODE_EXTEND:
@@ -374,15 +389,19 @@ struct WastParser {
                     const ir = irLookupTable[instr.name];
                     with (IR) switch (ir) {
                     case I32_CONST:
+                        func_ctx.push(Types.I32);
                         wasmexpr(ir, r.get!int);
                         break;
                     case I64_CONST:
+                        func_ctx.push(Types.I64);
                         wasmexpr(ir, r.get!long);
                         break;
                     case F32_CONST:
+                        func_ctx.push(Types.F32);
                         wasmexpr(ir, r.get!float);
                         break;
                     case F64_CONST:
+                        func_ctx.push(Types.F64);
                         wasmexpr(ir, r.get!double);
                         break;
                     default:
