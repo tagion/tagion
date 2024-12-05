@@ -173,22 +173,22 @@ struct WastParser {
 
         immutable number_of_func_arguments = func_type.params.length;
         scope immutable(Types)[] locals = func_type.params;
-        int getLocal(string text) @trusted {
-            int result = func_ctx.params[r.token].ifThrown!RangeError(int(-1));
+        int getLocal(ref const(WastTokenizer) tokenizer) @trusted {
+            int result = func_ctx.params[tokenizer.token].ifThrown!RangeError(int(-1));
             if (result < 0) {
-                result = r.token
+                result = tokenizer.token
                     .to!int
                     .ifThrown!ConvException(-1);
-                r.check(result >= 0, "Local register expected");
+                tokenizer.check(result >= 0, "Local register expected");
             }
             return result;
         }
 
         Types getLocalType(const int idx) {
             if (idx >= 0) {
-                if (idx < func_type.params.length) {
-                    return func_type.params[idx];
-                }
+                //if (idx < func_type.params.length) {
+                    return locals[idx];
+                
             }
             return Types.EMPTY;
         }
@@ -377,7 +377,7 @@ struct WastParser {
                     r.nextToken;
                     label = r.token;
                     r.check(r.type == TokenType.WORD);
-                    const local_idx = getLocal(r.token);
+                    const local_idx = getLocal(r);
                     wasmexpr(irLookupTable[instr.name], local_idx);
                     const local_type=getLocalType(local_idx);
                     r.nextToken;
