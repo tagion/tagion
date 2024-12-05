@@ -101,14 +101,25 @@ struct WastParser {
             stack ~= t;
         }
 
+        void push(const(Types[]) t) pure nothrow {
+            stack ~= t;
+        }
+
         Types pop() pure {
             if (stack.length == 0) {
-                throw new WasmException("Block stack empty");
+                throw new WasmException("Stack empty");
             }
             scope (exit) {
                 stack.length--;
             }
             return stack[$ - 1];
+        }
+
+        Types peek(const int idx = 0) const pure {
+            if ((idx >= stack.length) || (idx < 0)) {
+                throw new WasmException("Stack empty");
+            }
+            return stack[$ - idx - 1];
         }
 
         void block_push(const int idx) pure nothrow {
@@ -173,6 +184,14 @@ struct WastParser {
             return result;
         }
 
+        Types getLocalType(const int idx) {
+            if (idx >= 0) {
+                if (idx < func_type.params.length) {
+                    return func_type.params[idx];
+                }
+            }
+            return Types.EMPTY;
+        }
         int getFuncIdx() @trusted {
             int innerFunc(string text) {
                 int result = func_idx[text].ifThrown!RangeError(int(-1));
@@ -244,17 +263,20 @@ struct WastParser {
                 final switch (instr.irtype) {
                 case CODE:
                     r.nextToken;
-                    foreach (i; 0 .. instr.pops.length) {
+                    foreach (type; instr.pops) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
+                        func_ctx.pop;
                     }
-
+                    func_ctx.push(instr.pushs);
                     wasmexpr(irLookupTable[instr.name]);
                     break;
                 case CODE_EXTEND:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
+                        func_ctx.pop;
                     }
+                    func_ctx.push(instr.pushs);
                     wasmexpr(IR.EXNEND, instr.opcode);
                     break;
                 case CODE_TYPE:
@@ -276,7 +298,9 @@ struct WastParser {
                         }
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
+                        func_ctx.pop;
                     }
+                    func_ctx.push(instr.pushs);
                     wasmexpr(irLookupTable[instr.name]);
                     break;
                 case BLOCK:
@@ -355,9 +379,13 @@ struct WastParser {
                     r.check(r.type == TokenType.WORD);
                     const local_idx = getLocal(r.token);
                     wasmexpr(irLookupTable[instr.name], local_idx);
+                    const local_type=getLocalType(local_idx);
                     r.nextToken;
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
+                    }
+                    if (instr.pushs.length) {
+                        func_ctx.push(local_type);
                     }
                     break;
                 case GLOBAL:
@@ -421,7 +449,7 @@ struct WastParser {
                     r.nextToken;
                     __write("LABEL %s %s", r.token, r.type);
                     __write("instr %s", instr);
-                    __write("instr.push %d instr.pops %d", instr.push, instr.pops);
+                    __write("instr.pushs %s instr.pops %s", instr.pushs, instr.pops);
                     string[] labels;
                     for (uint i = 0; r.type == TokenType.WORD; i++) {
                         labels ~= r.token;

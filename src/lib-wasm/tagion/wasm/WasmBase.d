@@ -136,7 +136,7 @@ struct Instr {
     uint cost;
     IRType irtype;
     Types[] pops; // Number of pops from the stack
-    Types[] push; // Number of values pushed
+    Types[] pushs; // Number of values pushed
     uint opcode; // Extended opcode argument
 }
 
