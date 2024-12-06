@@ -98,7 +98,6 @@ struct WasmGas {
                         bout.write(block_bout);
                         break;
                     case BRANCH:
-                    case BRANCH_IF:
                         wasmexpr(elm.code, elm.warg.get!uint);
                         break;
                     case BRANCH_TABLE:

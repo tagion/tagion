@@ -63,7 +63,7 @@ struct WastTokenizer {
 
     }
 
-    bool check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
+    bool check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
         import std.exception : assumeWontThrow;
         import std.stdio;
 

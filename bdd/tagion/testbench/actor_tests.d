@@ -15,20 +15,18 @@ debug = actor;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    if (env.stage == Stage.commit) {
-        // See if an taskfailure sent to an actor can be will send up to the owner
-        automation!taskfailure.run;
+    // See if an taskfailure sent to an actor can be will send up to the owner
+    automation!taskfailure.run;
 
-        // Request child handle and see if we can send something to it
-        automation!handler.run;
+    // Request child handle and see if we can send something to it
+    automation!handler.run;
 
-        // Sending messages between supervisor & children
-        automation!message.run;
+    // Sending messages between supervisor & children
+    automation!message.run;
 
-        // Supervisor with failing child
-        version (none)
-            automation!supervisor.run;
-    }
+    // Supervisor with failing child
+    version (none)
+        automation!supervisor.run;
 
     return 0;
 }

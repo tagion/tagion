@@ -7,11 +7,13 @@ import std.range.primitives : isOutputRange;
 import std.stdio;
 import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
 import std.typecons : Tuple;
+import std.algorithm;
 import std.uni : toLower;
 import tagion.errors.tagionexceptions;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 import tagion.wasm.WasmReader;
+import tagion.basic.Debug;
 
 @safe class WatException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
@@ -286,15 +288,26 @@ alias check = Check!WatException;
         string block_comment;
         uint block_count;
         uint count;
-        static string block_result_type()(const Types t) {
+         string block_result_type()(const ref ExprRange.IRElement elm) { 
+            with(ExprRange.IRElement.IRArgType) {
+                assert(elm.argtype is TYPES || elm.argtype is INDEX,
+                "Invalid block type");
+                if (elm.argtype is INDEX) {
+                const x=wasmstream.get!(Section.TYPE);
+                    const sec_type=wasmstream.get!(Section.TYPE);
+                    const func_type=sec_type[elm.idx];
+                    return format(" (result %-(%s %))",  
+                    func_type.results.map!(r => typesName(r)));
+                }
+            }
             with (Types) {
-                switch (t) {
+                switch (elm.types[0]) {
                 case I32, I64, F32, F64, FUNCREF:
-                    return format(" (result %s)", typesName(t));
+                    return format(" (result %s)", typesName(elm.types[0]));
                 case EMPTY:
                     return null;
                 default:
-                    check(0, format("Block Illegal result type %s for a block", t));
+                    check(0, format("Block Illegal result type %s for a block", elm.types[0]));
                 }
             }
             assert(0);
@@ -317,7 +330,7 @@ alias check = Check!WatException;
                     block_comment = format(";; block %d", block_count);
                     block_count++;
                     output.writefln("%s%s%s %s", indent, elm.instr.name,
-                            block_result_type(elm.types[0]), block_comment);
+                            block_result_type(elm), block_comment);
                     const end_elm = block(expr, indent ~ spacer, level + 1);
                     const end_instr = instrTable[end_elm.code];
                     output.writefln("%s%s", indent, end_instr.name);
@@ -332,7 +345,7 @@ alias check = Check!WatException;
                     }
                     break;
                 case BRANCH:
-                case BRANCH_IF:
+//                case BRANCH_IF:
                     output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;
                 case BRANCH_TABLE:

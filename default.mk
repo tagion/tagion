@@ -80,7 +80,7 @@ DVERSIONS+=HASH_ORDERING
 # Runs a stopwatch on all unittest modules
 # DVERSIONS+=UNIT_STOPWATCH
 
-INSTALL?=$(HOME)/bin
+INSTALL?=$(HOME)/.local/bin
 
 #ENABLE_WASMER?=1
 #UNSHARE_NET=1
