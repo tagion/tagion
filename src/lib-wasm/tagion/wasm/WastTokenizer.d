@@ -2,6 +2,8 @@ module tagion.wasm.WastTokenizer;
 
 import std.traits;
 import std.range;
+import std.format;
+import std.exception : assumeWontThrow;
 import tagion.basic.Debug;
 import tagion.utils.convert : convert;
 
@@ -64,7 +66,6 @@ struct WastTokenizer {
     }
 
     bool check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
-        import std.exception : assumeWontThrow;
         import std.stdio;
 
         if (!flag) {
@@ -80,6 +81,11 @@ struct WastTokenizer {
 
         }
         return flag;
+    }
+
+    void expect(const TokenType t, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
+        check(type is t, assumeWontThrow(format("Expected %s but got %s", t, token)));
+
     }
 
     enum hex_prefix = "0x";

@@ -122,6 +122,13 @@ struct WastParser {
             return stack[$ - idx - 1];
         }
 
+        void drop(const size_t n) pure {
+            if (stack.length < n) {
+                throw new WasmException("Stack underflow");
+            }
+            stack.length -= n;
+        }
+
         void block_push(const int idx) pure nothrow {
             block_stack ~= Block(idx);
         }
@@ -164,6 +171,19 @@ struct WastParser {
             ref FunctionContext func_ctx) {
         import tagion.wasm.WasmExpr;
 
+        bool ignore_error;
+        void parser_check(ref const(WastTokenizer) tokenizer,
+                const bool flag,
+                string msg = null,
+                string file = __FILE__,
+                const size_t code_line = __LINE__) nothrow {
+            if (ignore_error) {
+                return;
+            }
+            tokenizer.check(flag, msg, file, code_line);
+            //ignore_error=(r.type != TokenType.BEGIN) && flag;
+        }
+
         static WasmExpr createWasmExpr() {
             import std.outbuffer;
 
@@ -186,12 +206,11 @@ struct WastParser {
 
         Types getLocalType(const int idx) {
             if (idx >= 0) {
-                //if (idx < func_type.params.length) {
-                    return locals[idx];
-                
+                return locals[idx];
             }
             return Types.EMPTY;
         }
+
         int getFuncIdx() @trusted {
             int innerFunc(string text) {
                 int result = func_idx[text].ifThrown!RangeError(int(-1));
@@ -247,34 +266,39 @@ struct WastParser {
                 return results;
             }
 
-            r.check(r.type == TokenType.BEGIN);
+            r.expect(TokenType.BEGIN);
             scope (exit) {
-                r.check(r.type == TokenType.END, "Expect an end ')'");
+                r.expect(TokenType.END, "Expect an end ')'");
                 r.nextToken;
                 if (func_wasmexpr != wasmexpr) {
                     func_wasmexpr.append(wasmexpr);
                 }
             }
             r.nextToken;
-            r.check(r.type == TokenType.WORD);
+            r.expect(TokenType.WORD);
             const instr = instrWastLookup.get(r.token, illegalInstr);
             string label;
             with (IRType) {
                 final switch (instr.irtype) {
                 case CODE:
                     r.nextToken;
-                    foreach (type; instr.pops) {
+                    const sp = func_ctx.stack.length;
+
+                    while (sp + instr.pops.length > func_ctx.stack.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
-                        func_ctx.pop;
                     }
+                    r.check(instr.pops == func_ctx.stack[sp .. $],
+                    format("Type mismatch %s %s", instr.pops, func_ctx.stack[sp .. $]));
+                    func_ctx.drop(instr.pops.length);
                     func_ctx.push(instr.pushs);
                     wasmexpr(irLookupTable[instr.name]);
                     break;
                 case CODE_EXTEND:
                     r.nextToken;
-                    foreach (i; 0 .. instr.pops.length) {
+                    const sp = func_ctx.stack.length;
+
+                    while (sp + instr.pops.length > func_ctx.stack.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
-                        func_ctx.pop;
                     }
                     func_ctx.push(instr.pushs);
                     wasmexpr(IR.EXNEND, instr.opcode);
@@ -376,10 +400,10 @@ struct WastParser {
                 case LOCAL:
                     r.nextToken;
                     label = r.token;
-                    r.check(r.type == TokenType.WORD);
+                    r.expect(TokenType.WORD);
                     const local_idx = getLocal(r);
                     wasmexpr(irLookupTable[instr.name], local_idx);
-                    const local_type=getLocalType(local_idx);
+                    const local_type = getLocalType(local_idx);
                     r.nextToken;
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
@@ -391,7 +415,7 @@ struct WastParser {
                 case GLOBAL:
                     r.nextToken;
                     label = r.token;
-                    r.check(r.type == TokenType.WORD);
+                    r.expect(TokenType.WORD);
                     r.nextToken;
                     break;
                 case MEMORY:
@@ -413,7 +437,7 @@ struct WastParser {
                     break;
                 case CONST:
                     r.nextToken;
-                    r.check(r.type == TokenType.WORD);
+                    r.expect(TokenType.WORD);
                     const ir = irLookupTable[instr.name];
                     with (IR) switch (ir) {
                     case I32_CONST:
