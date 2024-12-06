@@ -341,6 +341,7 @@ struct WastParser {
                     const wasm_results = getReturns(r);
                     writefln("  Results %s", wasm_results);
                     if (wasm_results.length == 0) {
+                        writefln("No result args");
                         wasmexpr(irLookupTable[instr.name]);
                     }
                     else if (wasm_results.length == 1) {
@@ -349,6 +350,7 @@ struct WastParser {
                     else {
                         wasmexpr(irLookupTable[instr.name], 42);
                     }
+                    writefln("Before block push %s", wasm_results);
                     func_ctx.block_push(wasm_results, label);
                     while (r.type == TokenType.BEGIN) {
                         innerInstr(wasmexpr, r, ParserStage.CODE);
