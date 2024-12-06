@@ -171,6 +171,7 @@ struct WastParser {
             return WasmExpr(bout);
         }
 
+        immutable number_of_func_arguments = func_type.params.length;
         scope immutable(Types)[] locals = func_type.params;
         int getLocal(ref const(WastTokenizer) tokenizer) @trusted {
             int result = func_ctx.params[tokenizer.token].ifThrown!RangeError(int(-1));
@@ -185,6 +186,7 @@ struct WastParser {
 
         Types getLocalType(const int idx) {
             if (idx >= 0) {
+                //if (idx < func_type.params.length) {
                     return locals[idx];
                 
             }
