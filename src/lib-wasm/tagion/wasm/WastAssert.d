@@ -26,6 +26,9 @@ struct Assert {
         return cast(Types[]) types;
     }
 
+    void results(const(Types[]) t) pure nothrow @trusted {
+        types=(cast(const(ubyte[]))t).idup;
+    }
     mixin HiBONRecord;
     void serialize(ref OutBuffer bout) const {
         bout.write(toDoc.serialize);

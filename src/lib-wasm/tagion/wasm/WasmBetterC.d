@@ -117,18 +117,25 @@ alias check = Check!WasmBetterCException;
                 output.writefln("%s)());", indent);
 
                 break;
-            case Return, Invalid, Return_nan:
+            case Return_nan:
                 block(invoke_expr, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
                 block(result_expr, ctx, indent, true);
-
-                if (_assert.method == Return_nan) {
-                    output.writef("%1$sassert(math.isnan(%2$s)", indent, ctx.pop);
+                    output.writef(`%1$sassert(math.isnan(%2$s)`, indent, ctx.pop);
+                if (_assert.message.length) {
+                    output.writef(`, "%s"`, _assert.message);
                 }
-                else {
-                    output.writef("%sassert(%s is %s", indent, ctx.pop, ctx.pop);
-                }
+                output.writeln(");");
+            break;
+            case Return, Invalid:
+                block(invoke_expr, ctx, indent, true);
+                auto result_type = CodeType(_assert.result);
+                auto result_expr = result_type[];
+                Context ctx_results;
+                block(result_expr, ctx_results, indent, true);
+                
+                    output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
                 }

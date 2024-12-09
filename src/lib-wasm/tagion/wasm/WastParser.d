@@ -688,9 +688,11 @@ struct WastParser {
                 //scope int[string] params;
                 // Invoke call
                 parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
-                if (r.type == TokenType.BEGIN) {
+                while (r.type == TokenType.BEGIN) {
                     parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
                 }
+                writefln("func_ctx.stack=%s", func_ctx.stack);
+                assert_type.results=func_ctx.stack;
                 assert_type.invoke = code_invoke.serialize;
                 assert_type.result = code_result.serialize;
                 wast_assert.asserts ~= assert_type;
