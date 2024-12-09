@@ -305,25 +305,15 @@ struct WastParser {
                     break;
                 case CODE_TYPE:
                     r.nextToken;
-                    //const wasm_returns = getReturns(r);
-                    version (none)
-                        if (r.type == TokenType.BEGIN) {
-                            auto r_return = r.save;
-                            r_return.nextToken;
-                            if (r_return.token == "result") {
-                                r_return.nextToken;
-                                r_return.check(r_return.type == TokenType.WORD);
-                                label = r_return.token;
-                                r_return.nextToken;
-                                r_return.check(r_return.type == TokenType.END);
-                                r_return.nextToken;
-                                r = r_return;
-                            }
-                        }
-                    foreach (i; 0 .. instr.pops.length) {
-                        innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
-                        func_ctx.pop;
+                    auto wasm_results = getReturns(r);
+                    if (wasm_results.empty) {
+                        wasm_results = block_results;
                     }
+                    const sp = func_ctx.stack.length;
+                    while (sp + instr.pops.length > func_ctx.stack.length) {
+                        innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE);
+                    }
+                    func_ctx.drop(instr.pops.length);
                     func_ctx.push(instr.pushs);
                     wasmexpr(irLookupTable[instr.name]);
                     break;
