@@ -248,8 +248,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
 // Serialization invalid for some objects when compilling on alpine
 version (CRuntime_Musl)
     version = OLD_HIBON_SERIALIZATION;
-    /// version flag added because new serialization causes crash on snapdragon gen 8 1
-    /// Do not remove
+/// version flag added because new serialization causes crash on snapdragon gen 8 1
+/// Do not remove
 else version (Android)
     version = OLD_HIBON_SERIALIZATION;
 //
@@ -289,6 +289,7 @@ mixin template Serialize() {
                 }
                 else {
                     enum exclude_flag = hasUDA!(This.tupleof[index], exclude);
+                    enum optional_flag = hasUDA!(This.tupleof[index], optional);
                     enum filter_flag = hasUDA!(This.tupleof[index], filter);
                     enum preserve_flag = hasUDA!(This.tupleof[index], preserve);
                     static if (filter_flag) {
@@ -300,6 +301,14 @@ mixin template Serialize() {
                                     return;
                                 }
                             }
+                        }
+                    }
+                    static if (optional_flag) {
+                        import tagion.hibon.HiBONRecord : filter;
+
+                        alias filterFun = unaryFun!(filter.Initialized.code);
+                        if (!filterFun(this.tupleof[index])) {
+                            return;
                         }
                     }
                     static if (preserve_flag) {

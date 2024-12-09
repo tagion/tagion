@@ -317,6 +317,19 @@ struct WastParser {
                     func_ctx.push(instr.pushs);
                     wasmexpr(irLookupTable[instr.name]);
                     break;
+                case RETURN:
+                    r.nextToken;
+                    const sp = func_ctx.stack.length;
+
+                    while (sp + func_type.results.length > func_ctx.stack.length) {
+                        innerInstr(wasmexpr, r, func_type.results, ParserStage.CODE);
+                    }
+                    //r.check(func_type.results == func_ctx.stack[sp .. $],
+                    //format("Type mismatch %s %s", func_type.results, func_ctx.stack[sp .. $]));
+                    func_ctx.drop(func_type.results.length);
+                    //func_ctx.push(instr.pushs);
+                    wasmexpr(irLookupTable[instr.name]);
+                    break;
                 case BLOCK:
                     writefln("Block %s", r);
                     r.nextToken;

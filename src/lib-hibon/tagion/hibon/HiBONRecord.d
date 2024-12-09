@@ -288,7 +288,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.errors.tagionexceptions : Check;
     import tagion.hibon.HiBONException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, HiBONKeys, isSpecialKeyType,
-        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled,  disableCTOR;
+        label, exclude, optional, GetLabel, filter, fixed, inspect, preserve, isSerializeDisabled, disableCTOR;
     import tagion.hibon.HiBONBase : isKey, TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONSerialize;
@@ -424,6 +424,12 @@ mixin template HiBONRecord(string CTOR = "") {
                                 continue MemberLoop;
                             }
                         }
+                    }
+                }
+                static if (optional_flag) {
+                    alias filterFun = unaryFun!(filter.Initialized.code);
+                    if (!filterFun(this.tupleof[i])) {
+                        continue MemberLoop;
                     }
                 }
                 static assert(name.length > 0,
@@ -679,7 +685,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                    else {
+                else {
                         enum name = default_name;
                     }
                     static assert(name.length > 0,
@@ -1778,7 +1784,7 @@ unittest {
     import std.format;
     import std.range;
 
-    @recordType("RefS") 
+    @recordType("RefS")
     static struct RefS {
         string text;
         int zoom;
