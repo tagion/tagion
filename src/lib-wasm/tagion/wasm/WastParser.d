@@ -244,7 +244,10 @@ struct WastParser {
         }
 
         auto func_wasmexpr = createWasmExpr;
-        ParserStage innerInstr(ref WasmExpr wasmexpr, ref WastTokenizer r, const(Types[]) block_results, ParserStage instr_stage) @safe {
+        ParserStage innerInstr(ref WasmExpr wasmexpr, 
+            ref WastTokenizer r, 
+            const(Types[]) block_results, 
+            ParserStage instr_stage) @safe {
             static const(Types)[] getReturns(ref WastTokenizer r) @safe nothrow {
                 Types[] results;
                 if (r.type == TokenType.BEGIN) {
@@ -368,16 +371,18 @@ struct WastParser {
                         writefln("BR index %s", r);
                         const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
-                        uint count;
+                        const sp=func_ctx.stack.length;
+                            //uint count;
                         while (r.type == TokenType.BEGIN) {
-                            writefln(" == %s", r.token);
+                            writefln(" == %s sp=%d size=%d blk=%d block_results=%d", r.token, sp, func_ctx.stack.length, blk.types.length, block_results.length);
                             innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
-                            count++;
+                            //count++;
                         }
-                        writefln("Branch %s %s count=%d", blk, r, count);
-                        check(blk.types.length == count,
-                                format("Branch expect %-(%s %) but got %s arguments", blk
-                                .types.map!(t => typesName(t)), count));
+                        writefln("Branch %s %s ", blk, r);
+                        const number_of_args=func_ctx.stack.length-sp;
+                        check(block_results.length == number_of_args, 
+                                format("Branch expect %-(%s %) but got %s arguments",block_results 
+                                .map!(t => typesName(t)), number_of_args));
                         //r.nextToken;
                         wasmexpr(IR.BR, blk.idx);
                         break;
