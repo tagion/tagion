@@ -244,10 +244,10 @@ struct WastParser {
         }
 
         auto func_wasmexpr = createWasmExpr;
-        ParserStage innerInstr(ref WasmExpr wasmexpr, 
-            ref WastTokenizer r, 
-            const(Types[]) block_results, 
-            ParserStage instr_stage) @safe {
+        ParserStage innerInstr(ref WasmExpr wasmexpr,
+                ref WastTokenizer r,
+                const(Types[]) block_results,
+        ParserStage instr_stage) @safe {
             static const(Types)[] getReturns(ref WastTokenizer r) @safe nothrow {
                 Types[] results;
                 if (r.type == TokenType.BEGIN) {
@@ -313,10 +313,14 @@ struct WastParser {
                         wasm_results = block_results;
                     }
                     const sp = func_ctx.stack.length;
-                    while (sp + instr.pops.length > func_ctx.stack.length) {
-                        innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE);
+                    bool breakout;
+                    while (r.type == TokenType.BEGIN) {
+                        const sub_stage = innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE);
+                        breakout |= (sub_stage == ParserStage.END);
                     }
-                    func_ctx.drop(instr.pops.length);
+                    if (!breakout) {
+                        func_ctx.drop(instr.pops.length);
+                    }
                     func_ctx.push(instr.pushs);
                     wasmexpr(irLookupTable[instr.name]);
                     break;
@@ -371,20 +375,19 @@ struct WastParser {
                         writefln("BR index %s", r);
                         const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
-                        const sp=func_ctx.stack.length;
-                            //uint count;
+                        const sp = func_ctx.stack.length;
                         while (r.type == TokenType.BEGIN) {
-                            writefln(" == %s sp=%d size=%d blk=%d block_results=%d", r.token, sp, func_ctx.stack.length, blk.types.length, block_results.length);
+                            writefln(" == %s sp=%d size=%d blk=%d block_results=%d", r.token, sp, func_ctx.stack
+                                    .length, blk.types.length, block_results.length);
                             innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
-                            //count++;
                         }
                         writefln("Branch %s %s ", blk, r);
-                        const number_of_args=func_ctx.stack.length-sp;
-                        check(block_results.length == number_of_args, 
-                                format("Branch expect %-(%s %) but got %s arguments",block_results 
+                        const number_of_args = func_ctx.stack.length - sp;
+                        check(block_results.length == number_of_args,
+                                format("Branch expect %-(%s %) but got %s arguments", block_results
                                 .map!(t => typesName(t)), number_of_args));
-                        //r.nextToken;
                         wasmexpr(IR.BR, blk.idx);
+                        instr_stage = ParserStage.END;
                         break;
                     default:
                         assert(0, format("Illegal token %s in %s", r.token, BRANCH));
@@ -509,7 +512,7 @@ struct WastParser {
                     }
                 }
             }
-            return stage;
+            return instr_stage;
         }
 
         scope (exit) {
@@ -697,7 +700,7 @@ struct WastParser {
                     parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
                 }
                 writefln("func_ctx.stack=%s", func_ctx.stack);
-                assert_type.results=func_ctx.stack;
+                assert_type.results = func_ctx.stack;
                 assert_type.invoke = code_invoke.serialize;
                 assert_type.result = code_result.serialize;
                 wast_assert.asserts ~= assert_type;
