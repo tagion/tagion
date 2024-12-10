@@ -101,6 +101,7 @@ alias check = Check!WasmBetterCException;
         const sec_assert = SectionAssert(doc);
         void innerAssert(const Assert _assert, const string indent) {
             Context ctx;
+            const(FuncType) func_void;
             auto code_type = CodeType(_assert.invoke);
             auto invoke_expr = code_type[];
             output.writefln("%s// expr   %(%02X %)", indent, _assert.invoke);
@@ -108,7 +109,7 @@ alias check = Check!WasmBetterCException;
             with (Assert.Method) final switch (_assert.method) {
             case Trap:
                 void assert_block(const string _indent) {
-                    block(invoke_expr, ctx, _indent ~ spacer);
+                    block(invoke_expr, func_void, ctx, _indent ~ spacer);
                     output.writefln("%s}", _indent);
                 }
 
@@ -118,24 +119,24 @@ alias check = Check!WasmBetterCException;
 
                 break;
             case Return_nan:
-                block(invoke_expr, ctx, indent, true);
+                block(invoke_expr, func_void, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
-                block(result_expr, ctx, indent, true);
-                    output.writef(`%1$sassert(math.isnan(%2$s)`, indent, ctx.pop);
+                block(result_expr, func_void, ctx, indent, true);
+                output.writef(`%1$sassert(math.isnan(%2$s)`, indent, ctx.pop);
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
                 }
                 output.writeln(");");
-            break;
+                break;
             case Return, Invalid:
-                block(invoke_expr, ctx, indent, true);
+                block(invoke_expr, func_void, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
                 Context ctx_results;
-                block(result_expr, ctx_results, indent, true);
-                
-                    output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
+                block(result_expr, func_void, ctx_results, indent, true);
+
+                output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
                 }
@@ -279,10 +280,11 @@ alias check = Check!WasmBetterCException;
     alias Global = Sections[Section.GLOBAL];
     void global_sec(ref const(Global) _global) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (i, g; _global[].enumerate) {
             output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
             auto expr = g[];
-            block(expr, ctx, indent ~ spacer);
+            block(expr, func_void, ctx, indent ~ spacer);
             output.writefln("%s))", indent);
         }
     }
@@ -310,11 +312,12 @@ alias check = Check!WasmBetterCException;
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
             auto expr = e[];
             const local_indent = indent ~ spacer;
-            block(expr, ctx, local_indent ~ spacer);
+            block(expr, func_void, ctx, local_indent ~ spacer);
             output.writef("%s) func", local_indent);
             foreach (f; e.funcs) {
                 output.writef(" %d", f);
@@ -404,7 +407,7 @@ alias check = Check!WasmBetterCException;
             output.writeln(")");
         }
 
-        block(expr, ctx, local_indent);
+        block(expr, func_type, ctx, local_indent);
         output.writefln("%s}\n", indent);
     }
 
@@ -418,11 +421,12 @@ alias check = Check!WasmBetterCException;
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (d; _data[]) {
             output.writefln("%s(data (", indent);
             auto expr = d[];
             const local_indent = indent ~ spacer;
-            block(expr, ctx, local_indent ~ spacer);
+            block(expr, func_void, ctx, local_indent ~ spacer);
             output.writefln(`%s) "%s")`, local_indent, d.base);
         }
     }
@@ -531,7 +535,8 @@ alias check = Check!WasmBetterCException;
     }
 
     private const(ExprRange.IRElement) block(
-            ref ExprRange expr,//ref const(FuncType) func_type,
+            ref ExprRange expr,
+            ref const(FuncType) func_type,
             ref Context ctx,
             const(string) indent,
             const bool no_return = false) {
@@ -579,7 +584,8 @@ alias check = Check!WasmBetterCException;
                         break;
                     case RETURN:
                         output.writefln("%s// %s", indent, elm.instr.name);
-                        ctx.perform(elm.code, elm.instr.pops);
+
+                        ctx.perform(elm.code, func_type.results);
                         break;
                     case PREFIX:
                         output.writefln("%s%s", indent, elm.instr.name);
