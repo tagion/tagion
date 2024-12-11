@@ -1,5 +1,5 @@
 
-                module tagion.testbench.services.dart_syncronization;
+                module tagion.testbench.services.dart_Synchronization;
                 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -8,7 +8,7 @@ import tagion.testbench.tools.Environment;
 
 
                 enum feature = Feature(
-                    "is a service that syncronizes the DART database with another one.",
+                    "is a service that synchronizes the DART database with another one.",
                     ["It should be used on node start up to ensure that local database is up-to-date.",
 "In this test scenario we require that the remote database is static (not updated)."]);
                 
@@ -64,8 +64,8 @@ FeatureGroup*, "result"
                         return Document();
                     }
                 
-                @Then("we run the syncronization.")
-                Document theSyncronization() {
+                @Then("we run the synchronization.")
+                Document theSynchronization() {
                         return Document();
                     }
                 

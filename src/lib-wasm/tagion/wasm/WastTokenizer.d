@@ -83,6 +83,44 @@ struct WastTokenizer {
         return flag;
     }
 
+    void error(Exception e) nothrow {
+        this.e = e;
+        check(false, e.msg, e.file, e.line);
+    }
+
+    /**
+    * This is used to drops all scope '( ... )' in case of parse error
+    */
+    void dropScopes() pure nothrow {
+        if (!empty && (type !is TokenType.END)) {
+            do {
+                nextToken;
+            }
+            while (type !is TokenType.BEGIN && !empty);
+            //version(none)
+            if (type is TokenType.BEGIN) {
+                nextToken;
+                dropScopes;
+            }
+        }
+    }
+
+    unittest {
+        import std.stdio;
+        import std.algorithm;
+
+        const text = "( word1 ( word2 ( word3 ) ( word3 word5 ) ) )";
+        {
+            auto r = WastTokenizer(text);
+            r.nextToken;
+            r.nextToken;
+            r.nextToken;
+            writefln("dropScopes %s ", r.map!(t => t.token));
+            r.dropScopes;
+            writefln("dropScopes %s ", r.map!(t => t.token));
+        }
+    }
+
     void expect(const TokenType t, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
         check(type is t, assumeWontThrow(format("Expected %s but got %s", t, token)));
 
@@ -118,8 +156,10 @@ struct WastTokenizer {
     private string text;
     string token;
     uint line;
+    uint begin_pos;
     uint pos;
     uint start_line_pos;
+    Exception e;
     @nogc pure nothrow {
         this(string text) {
             line = 1;
@@ -128,7 +168,7 @@ struct WastTokenizer {
         }
 
         bool empty() const {
-            return pos >= text.length;
+            return begin_pos >= text.length;
         }
 
         const(WastTokenizer) front() const {
@@ -155,9 +195,8 @@ struct WastTokenizer {
 
             enum code = format(q{
                 alias goUntil=(%1$s) => %2$s; 
-                while(!empty && goUntil(text[pos])) {
-                next;
-                  // empty
+                while((pos < text.length) && goUntil(text[pos])) {
+                    next;
                 }
             }, paramName, fun);
             mixin(code);
@@ -199,7 +238,7 @@ struct WastTokenizer {
 
         void popFront() {
             trim;
-            const begin_pos = pos;
+            begin_pos = pos;
             with (Chars) {
                 switch (currentChar) {
                 case PARENTHESES_BEGIN:

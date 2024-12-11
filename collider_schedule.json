@@ -111,7 +111,7 @@
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new", "commit", "memory", "func", "i32", "i64", "f32_export", "i64_export", "tvm_test", "tvm_test1", "select", "int_literals"],
+      "stages": ["tvm", "tvm_new", "commit", "memory", "func", "i32", "i64", "f32_export", "i64_export", "tvm_test", "tvm_test1", "select", "int_literals", "float_exprs"],
       "extend" : {
         "tvm_new" : {
             "args": [
@@ -149,9 +149,9 @@
                 "memory_ops.wast"
             ]
         },
-        "f32_export" : {
+        "float_exprs" : {
           "args" : [
-                "f32_export.wast"
+                "float_exprs.wast"
             ]
         },
         "tvm_test" : {
