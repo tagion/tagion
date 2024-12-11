@@ -1,5 +1,3 @@
-
-
 export DFORMAT?=dfmt
 
 # The .editorconfig is placed in the REPOROOT
@@ -53,10 +51,14 @@ env: env-format
 %.d.tmp: %.d
 	$(PRECMD)
 	$(DFORMAT) $(DFORMAT_FLAGS) $< >$@
-	size=`stat -c%s $@ 2>/dev/null`
+	# Detect platform and use appropriate stat command
+	if [ "$(shell uname)" = "Darwin" ]; then \
+		size=`stat -f%z $@ 2>/dev/null || echo 0`; \
+	else \
+		size=`stat -c%s $@ 2>/dev/null || echo 0`; \
+	fi; \
 	echo "$@ size $stat" > /tmp/$(F@).log
 	if [ $$size -ne 0 ]; then
 	cp -a $@ $<
 	fi
 	$(RM) $@
-
