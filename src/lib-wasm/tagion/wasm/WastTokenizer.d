@@ -148,7 +148,6 @@ struct WastTokenizer {
     }
 
     void expect(const TokenType t, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
-        __write("CHECK %s", t);
         check(type is t, assumeWontThrow(format("Expected %s but got %s", t, type)), file, code_line);
 
     }

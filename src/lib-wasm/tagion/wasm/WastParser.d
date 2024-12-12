@@ -207,9 +207,7 @@ struct WastParser {
         }
 
         Types getLocalType(const int idx) {
-            __write("getLocalType %d", idx);
             check(idx >= 0 && idx < locals.length, format("Local register index %d is not available", idx));
-            __write("after getLocalType");
             return locals[idx];
         }
 
@@ -412,13 +410,10 @@ struct WastParser {
                         break;
                     case LOCAL:
                         r.nextToken;
-                        //label = r.token;
-                        __write("Check expect word %s", r.type);
                         r.expect(TokenType.WORD);
                         const local_idx = getLocal(r);
                         writefln("local_idx=%d", local_idx);
                         const local_type = getLocalType(local_idx);
-                        __write("After local_type");
                         r.nextToken;
                         writefln("POPS %s", instr.pops);
                         foreach (i; 0 .. instr.pops.length) {
