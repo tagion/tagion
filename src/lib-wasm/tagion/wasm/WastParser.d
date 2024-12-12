@@ -685,9 +685,7 @@ struct WastParser {
                 arg2 = r.token;
                 r.nextToken;
                 FuncType func_type;
-                FunctionContext func_ctx;
-                //scope int[string] params;
-                const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type, func_ctx);
+                const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type);
                 r.check(ret == ParserStage.TYPE || ret == ParserStage.PARAM);
 
                 return stage;
@@ -766,10 +764,8 @@ struct WastParser {
     private ParserStage parseFuncArgs(
             ref WastTokenizer r,
             const ParserStage stage,
-            ref FuncType func_type,
-            ref scope FunctionContext func_ctx) {
+            ref FuncType func_type) {
         if (r.type == TokenType.BEGIN) {
-            //string label;
             string arg;
             r.nextToken;
             bool not_ended;
@@ -800,7 +796,6 @@ struct WastParser {
                         r.nextToken;
 
                         r.expect(TokenType.WORD);
-                        //func_ctx.params[label] = cast(int) func_type.params.length;
                         func_type.param_names[label] = cast(int) func_type.params.length;
                         const get_type = r.token.getType;
                         func_type.params ~= get_type;
@@ -887,7 +882,7 @@ struct WastParser {
         uint only_one_type_allowed;
         do {
             rewined = r.save;
-            arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type, func_ctx);
+            arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
 
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
