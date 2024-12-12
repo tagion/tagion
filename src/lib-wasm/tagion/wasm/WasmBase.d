@@ -36,13 +36,13 @@ struct Verbose {
         }
     }
 
-    void print(Args...)(string fmt, lazy Args args) {
+    void print(Args...)(string fmt, lazy Args args) @trusted {
         if (mode !is VerboseMode.NONE) {
             fout.writef(fmt, args);
         }
     }
 
-    void println(Args...)(string fmt, lazy Args args) {
+    void println(Args...)(string fmt, lazy Args args) @trusted {
         if (mode !is VerboseMode.NONE) {
             fout.writefln(fmt, args);
         }

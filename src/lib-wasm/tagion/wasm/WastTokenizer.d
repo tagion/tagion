@@ -7,6 +7,7 @@ import std.exception : assumeWontThrow;
 import tagion.basic.Debug;
 import tagion.utils.convert : convert;
 import tagion.basic.Debug;
+import tagion.wasm.WasmBase;
 
 enum Chars : char {
     NUL = '\0',
@@ -78,6 +79,7 @@ struct WastTokenizer {
                     writefln("%s", _line);
                     writefln("%(%c%)%s^%s", Chars.SPACE.repeat(line_start_token_pos), RED, RESET);
                     writefln("%s:%d", file, code_line);
+                    wasm_verbose.println("%s", e);
                 })());
         }
         return flag;
@@ -146,7 +148,7 @@ struct WastTokenizer {
     }
 
     void expect(const TokenType t, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
-        check(type is t, assumeWontThrow(format("Expected %s but got %s", t, token)));
+        check(type is t, assumeWontThrow(format("Expected %s but got %s", t, token)), file, code_line);
 
     }
 
@@ -231,7 +233,7 @@ struct WastTokenizer {
         }
 
         uint line_pos() const {
-            return pos - start_line_pos;
+            return begin_pos - start_line_pos;
         }
 
         TokenType type() const {
