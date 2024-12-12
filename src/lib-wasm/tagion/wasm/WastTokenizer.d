@@ -6,6 +6,7 @@ import std.format;
 import std.exception : assumeWontThrow;
 import tagion.basic.Debug;
 import tagion.utils.convert : convert;
+import tagion.basic.Debug;
 
 enum Chars : char {
     NUL = '\0',
@@ -92,32 +93,56 @@ struct WastTokenizer {
     * This is used to drops all scope '( ... )' in case of parse error
     */
     void dropScopes() pure nothrow {
-        if (!empty && (type !is TokenType.END)) {
-            do {
-                nextToken;
-            }
-            while (type !is TokenType.BEGIN && !empty);
-            //version(none)
+        void innerScope() nothrow {
             if (type is TokenType.BEGIN) {
                 nextToken;
-                dropScopes;
+                while (!empty && type !is TokenType.END) {
+                    nextToken;
+                    innerScope;
+                }
+                nextToken;
+                innerScope;
             }
         }
+
+        while (!empty && type !is TokenType.BEGIN && type !is TokenType.END) {
+            nextToken;
+        }
+        innerScope;
     }
 
     unittest {
         import std.stdio;
         import std.algorithm;
 
-        const text = "( word1 ( word2 ( word3 ) ( word3 word5 ) ) )";
+        const text = "( word1 ( word2 ( word3 ) ( word4 word5 ) ) )";
         {
             auto r = WastTokenizer(text);
             r.nextToken;
-            r.nextToken;
-            r.nextToken;
-            writefln("dropScopes %s ", r.map!(t => t.token));
+            assert(r.token == "word1");
             r.dropScopes;
-            writefln("dropScopes %s ", r.map!(t => t.token));
+            assert(equal(r.map!(t => t.token), [")"]));
+        }
+        {
+            auto r = WastTokenizer(text);
+            iota(3).each!(n => r.nextToken);
+            assert(r.token == "word2");
+            r.dropScopes;
+            assert(equal(r.map!(t => t.token), [")", ")"]));
+        }
+        {
+            auto r = WastTokenizer(text);
+            iota(5).each!(n => r.nextToken);
+            assert(r.token == "word3");
+            r.dropScopes;
+            assert(equal(r.map!(t => t.token), [")", "(", "word4", "word5", ")", ")", ")"]));
+        }
+        {
+            auto r = WastTokenizer(text);
+            iota(8).each!(n => r.nextToken);
+            assert(r.token == "word4");
+            r.dropScopes;
+            assert(equal(r.map!(t => t.token), [")", ")", ")"]));
         }
     }
 
