@@ -45,6 +45,7 @@ int main(string[] args) {
     import remote_sample = tagion.testbench.e2e.remote_sample;
     import nng_test = tagion.testbench.nng_test;
     import godcontract = tagion.testbench.testnetwork.godcontract;
+    import dart_synchronization = tagion.testbench.services.dart_synchronization;
 
     alias alltools = AliasSeq!(
         collector,
@@ -88,6 +89,7 @@ int main(string[] args) {
         remote_sample,
         nng_test,
         godcontract,
+        dart_synchronization,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
