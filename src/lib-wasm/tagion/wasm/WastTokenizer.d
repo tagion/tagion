@@ -79,7 +79,6 @@ struct WastTokenizer {
                     writefln("%(%c%)%s^%s", Chars.SPACE.repeat(line_start_token_pos), RED, RESET);
                     writefln("%s:%d", file, code_line);
                 })());
-
         }
         return flag;
     }

@@ -171,16 +171,18 @@ struct WastParser {
             ref FunctionContext func_ctx) {
         import tagion.wasm.WasmExpr;
 
-        bool ignore_error;
+        bool got_error;
+        scope (exit) {
+            if (got_error) {
+                r.dropScopes;
+            }
+        }
         void parser_check(ref const(WastTokenizer) tokenizer,
                 const bool flag,
                 string msg = null,
                 string file = __FILE__,
                 const size_t code_line = __LINE__) nothrow {
-            if (ignore_error) {
-                return;
-            }
-            tokenizer.check(flag, msg, file, code_line);
+            got_error |= tokenizer.check(flag, msg, file, code_line);
             //ignore_error=(r.type != TokenType.BEGIN) && flag;
         }
 
@@ -216,7 +218,7 @@ struct WastParser {
                 if (result < 0) {
                     result = text.to!int
                         .ifThrown!ConvException(-1);
-                    r.check(result >= 0, format("Invalid function %s name or index", text));
+                    parser_check(r, result >= 0, format("Invalid function %s name or index", text));
                 }
                 return result;
             }
@@ -237,7 +239,7 @@ struct WastParser {
             default:
                 // empty
             }
-            r.check(0, format("Export %s is not defined", r.token));
+            parser_check(r, 0, format("Export %s is not defined", r.token));
 
             return -1;
         }
@@ -290,7 +292,7 @@ struct WastParser {
                         while (sp + instr.pops.length > func_ctx.stack.length) {
                             innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                         }
-                        r.check(instr.pops == func_ctx.stack[sp .. $],
+                        parser_check(r, instr.pops == func_ctx.stack[sp .. $],
                         format("Type mismatch %s %s", instr.pops, func_ctx.stack[sp .. $]));
                         func_ctx.drop(instr.pops.length);
                         func_ctx.push(instr.pushs);
@@ -468,7 +470,7 @@ struct WastParser {
                             wasmexpr(ir, r.get!double);
                             break;
                         default:
-                            r.check(0, "Bad const instruction");
+                            parser_check(r, 0, "Bad const instruction");
                         }
                         r.nextToken;
                         break;
@@ -486,7 +488,7 @@ struct WastParser {
                         __write("instr %s", instr);
                         __write("instr.pushs %s instr.pops %s", instr.pushs, instr.pops);
                         string[] labels;
-                        for (uint i = 0; r.type == TokenType.WORD; i++) {
+                        while (r.type == TokenType.WORD) {
                             labels ~= r.token;
                             r.nextToken;
                         }
@@ -512,6 +514,7 @@ struct WastParser {
             }
             catch (Exception e) {
                 r.error(e);
+                r.dropScopes;
             }
             return instr_stage;
         }
