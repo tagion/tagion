@@ -41,7 +41,7 @@ As the name indicates, this phase is not open to external parties who might be e
 
 ### 2. Limited Release
 
-This second phase will see the network being extended to nodes operated by partners and vetted community members. The onboarding process will be "by invitation" only and strictly controlled by Decard to ensure security and quick support shall something not go to plan. In this phase, the governance here developed will be tested and improved in a safe environment. The results will be published here as our "Working Paper", ready for tests and verification "in the wild", which will happen in phase 3.
+This second phase will see the network being extended to nodes operated by partners and vetted community members. The onboarding process will be "by invitation" only and strictly controlled by Decard to ensure security and, shall something not go to plan, provide quick support. During this phase, the governance here developed will be tested and improved in a safe environment. The results will be published here as our "Working Paper", ready for tests and verification "in the wild", which will happen in phase 3.
 
 ### 3. Curated Release
 
