@@ -92,11 +92,11 @@ struct WastParser {
     }
 
     struct FunctionContext {
-        int[string] params; /// Parameter names
+        //int[string] params; /// Parameter names
         Block[] block_stack;
         const(Types)[] stack;
         const(Types)[] locals;
-        int[string] local_vars;
+        int[string] local_names;
         int blk_idx;
 
         void push(const Types t) pure nothrow {
@@ -203,7 +203,7 @@ struct WastParser {
 
         immutable number_of_func_arguments = func_type.params.length;
         int getLocal(ref const(WastTokenizer) tokenizer) @trusted {
-            int result = func_ctx.params[tokenizer.token].ifThrown!RangeError(int(-1));
+            int result = func_ctx.local_names[tokenizer.token].ifThrown!RangeError(int(-1));
             if (result < 0) {
                 result = tokenizer.token
                     .to!int
@@ -508,7 +508,7 @@ struct WastParser {
                                 __write("locals %s", func_ctx.locals);
                             }
                             if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
-                                func_ctx.params[labels[0]] = cast(int) func_ctx.locals.length;
+                                func_ctx.local_names[labels[0]] = cast(int) func_ctx.locals.length;
                                 func_ctx.locals ~= labels[1].getType;
                                 break;
                             }
@@ -799,10 +799,12 @@ struct WastParser {
                         const label = r.token;
                         r.nextToken;
 
-                        r.check(r.type == TokenType.WORD);
-                        func_ctx.params[label] = cast(int) func_type.params.length;
-                        func_type.params ~= r.token.getType;
-                        r.check(r.token.getType !is Types.EMPTY);
+                        r.expect(TokenType.WORD);
+                        //func_ctx.params[label] = cast(int) func_type.params.length;
+                        func_type.param_names[label] = cast(int) func_type.params.length;
+                        const get_type = r.token.getType;
+                        func_type.params ~= get_type;
+                        r.check(get_type !is Types.EMPTY);
                         r.nextToken;
                     }
                     while (r.type == TokenType.WORD && r.token.getType !is Types.EMPTY) {
@@ -896,6 +898,11 @@ struct WastParser {
             r = rewined;
         }
         while (r.type == TokenType.BEGIN) {
+            FunctionContext _func_ctx;
+            _func_ctx.local_names = func_type.param_names;
+            _func_ctx.locals = func_type.params;
+            func_ctx.locals = func_type.params;
+            func_ctx.local_names = func_type.param_names;
             const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
             r.check(ret == ParserStage.FUNC_BODY);
         }
