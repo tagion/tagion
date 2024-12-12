@@ -95,6 +95,8 @@ struct WastParser {
         int[string] params; /// Parameter names
         Block[] block_stack;
         const(Types)[] stack;
+        const(Types)[] locals;
+        int[string] local_vars;
         int blk_idx;
 
         void push(const Types t) pure nothrow {
@@ -161,6 +163,12 @@ struct WastParser {
                     .ifThrown(-1));
             return block_peek(idx);
         }
+
+        Types localType(const int idx) {
+            check(idx >= 0 && idx < locals.length, format("Local register index %d is not available", idx));
+            return locals[idx];
+        }
+
     }
 
     private ParserStage parseInstr(
@@ -171,6 +179,7 @@ struct WastParser {
             ref FunctionContext func_ctx) {
         import tagion.wasm.WasmExpr;
 
+        func_ctx.locals = func_type.params;
         bool got_error;
         scope (exit) {
             if (got_error) {
@@ -183,7 +192,6 @@ struct WastParser {
                 string file = __FILE__,
                 const size_t code_line = __LINE__) nothrow {
             got_error |= tokenizer.check(flag, msg, file, code_line);
-            //ignore_error=(r.type != TokenType.BEGIN) && flag;
         }
 
         static WasmExpr createWasmExpr() {
@@ -194,7 +202,6 @@ struct WastParser {
         }
 
         immutable number_of_func_arguments = func_type.params.length;
-        scope immutable(Types)[] locals = func_type.params;
         int getLocal(ref const(WastTokenizer) tokenizer) @trusted {
             int result = func_ctx.params[tokenizer.token].ifThrown!RangeError(int(-1));
             if (result < 0) {
@@ -204,11 +211,6 @@ struct WastParser {
                 tokenizer.check(result >= 0, "Local register expected");
             }
             return result;
-        }
-
-        Types getLocalType(const int idx) {
-            check(idx >= 0 && idx < locals.length, format("Local register index %d is not available", idx));
-            return locals[idx];
         }
 
         int getFuncIdx() @trusted {
@@ -411,11 +413,15 @@ struct WastParser {
                     case LOCAL:
                         r.nextToken;
                         r.expect(TokenType.WORD);
+                        writefln("POPS %s FUNC %s RESULTS %s LOCALS %s",
+                                instr.pops,
+                                func_type.params,
+                                func_type.results,
+                                func_ctx.locals);
                         const local_idx = getLocal(r);
                         writefln("local_idx=%d", local_idx);
-                        const local_type = getLocalType(local_idx);
+                        const local_type = func_ctx.localType(local_idx);
                         r.nextToken;
-                        writefln("POPS %s", instr.pops);
                         foreach (i; 0 .. instr.pops.length) {
                             innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                         }
@@ -498,12 +504,15 @@ struct WastParser {
                         switch (instr.wast) {
                         case PseudoWastInstr.local:
                             __write("labels %s", labels);
+                            scope (exit) {
+                                __write("locals %s", func_ctx.locals);
+                            }
                             if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
-                                func_ctx.params[labels[0]] = cast(int) locals.length;
-                                locals ~= labels[1].getType;
+                                func_ctx.params[labels[0]] = cast(int) func_ctx.locals.length;
+                                func_ctx.locals ~= labels[1].getType;
                                 break;
                             }
-                            locals ~= labels.map!(l => l.getType).array;
+                            func_ctx.locals ~= labels.map!(l => l.getType).array;
                             break;
                         default:
                             // Empty
@@ -520,7 +529,7 @@ struct WastParser {
         }
 
         scope (exit) {
-            code_type = CodeType(locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
+            code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
         }
         return innerInstr(func_wasmexpr, r, func_type.results, stage);
 
