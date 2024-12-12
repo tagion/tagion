@@ -705,8 +705,6 @@ struct WastParser {
                 CodeType code_invoke;
                 CodeType code_result;
                 FunctionContext func_ctx;
-                //scope int[string] params;
-                // Invoke call
                 parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
                 while (r.type == TokenType.BEGIN) {
                     parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
@@ -727,8 +725,6 @@ struct WastParser {
                 FuncType func_type;
                 CodeType code_invoke;
                 FunctionContext func_ctx;
-                //scope int[string] params;
-                // Invoke call
                 parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
                 assert_type.invoke = code_invoke.serialize;
 
@@ -858,8 +854,6 @@ struct WastParser {
 
         FuncType func_type;
         func_type.type = Types.FUNC;
-        FunctionContext func_ctx;
-        //scope Types[] locals;
         scope (exit) {
             type_section.sectypes ~= func_type;
         }
@@ -893,9 +887,7 @@ struct WastParser {
             r = rewined;
         }
         while (r.type == TokenType.BEGIN) {
-            FunctionContext _func_ctx;
-            _func_ctx.local_names = func_type.param_names;
-            _func_ctx.locals = func_type.params;
+            FunctionContext func_ctx;
             func_ctx.locals = func_type.params;
             func_ctx.local_names = func_type.param_names;
             const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
