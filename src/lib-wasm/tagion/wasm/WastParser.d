@@ -207,8 +207,9 @@ struct WastParser {
         }
 
         Types getLocalType(const int idx) {
+            __write("getLocalType %d", idx);
             check(idx >= 0 && idx < locals.length, format("Local register index %d is not available", idx));
-
+            __write("after getLocalType");
             return locals[idx];
         }
 
@@ -249,6 +250,13 @@ struct WastParser {
                 ref WastTokenizer r,
                 const(Types[]) block_results,
         ParserStage instr_stage) @safe nothrow {
+            scope (exit) {
+                r.expect(TokenType.END, "Expect an end ')'");
+                r.nextToken;
+                if (func_wasmexpr != wasmexpr) {
+                    func_wasmexpr.append(wasmexpr);
+                }
+            }
             try {
                 static const(Types)[] getReturns(ref WastTokenizer r) @safe nothrow {
                     Types[] results;
@@ -272,13 +280,7 @@ struct WastParser {
                 }
 
                 r.expect(TokenType.BEGIN);
-                scope (exit) {
-                    r.expect(TokenType.END, "Expect an end ')'");
-                    r.nextToken;
-                    if (func_wasmexpr != wasmexpr) {
-                        func_wasmexpr.append(wasmexpr);
-                    }
-                }
+
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 const instr = instrWastLookup.get(r.token, illegalInstr);
@@ -410,12 +412,13 @@ struct WastParser {
                         break;
                     case LOCAL:
                         r.nextToken;
-                        label = r.token;
+                        //label = r.token;
+                        __write("Check expect word %s", r.type);
                         r.expect(TokenType.WORD);
                         const local_idx = getLocal(r);
-                        wasmexpr(irLookupTable[instr.name], local_idx);
                         writefln("local_idx=%d", local_idx);
                         const local_type = getLocalType(local_idx);
+                        __write("After local_type");
                         r.nextToken;
                         writefln("POPS %s", instr.pops);
                         foreach (i; 0 .. instr.pops.length) {
@@ -424,6 +427,7 @@ struct WastParser {
                         if (instr.pushs.length) {
                             func_ctx.push(local_type);
                         }
+                        wasmexpr(irLookupTable[instr.name], local_idx);
                         break;
                     case GLOBAL:
                         r.nextToken;
@@ -513,6 +517,7 @@ struct WastParser {
                 }
             }
             catch (Exception e) {
+                __write("--- Exception");
                 r.error(e);
                 r.dropScopes;
             }

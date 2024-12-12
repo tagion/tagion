@@ -77,7 +77,7 @@ struct WastTokenizer {
             assumeWontThrow((() {
                     writefln("Error:%s %s:%s:%d:%d", msg, token, type, line, line_pos);
                     writefln("%s", _line);
-                    writefln("%(%c%)%s^%s", Chars.SPACE.repeat(line_start_token_pos), RED, RESET);
+                    writefln("%(%c%)%s^%s", Chars.SPACE.repeat(line_pos), RED, RESET);
                     writefln("%s:%d", file, code_line);
                     wasm_verbose.println("%s", e);
                 })());
@@ -148,7 +148,8 @@ struct WastTokenizer {
     }
 
     void expect(const TokenType t, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
-        check(type is t, assumeWontThrow(format("Expected %s but got %s", t, token)), file, code_line);
+        __write("CHECK %s", t);
+        check(type is t, assumeWontThrow(format("Expected %s but got %s", t, type)), file, code_line);
 
     }
 
@@ -226,10 +227,6 @@ struct WastTokenizer {
                 }
             }, paramName, fun);
             mixin(code);
-        }
-
-        uint line_start_token_pos() const {
-            return line_pos - cast(uint) token.length;
         }
 
         uint line_pos() const {
