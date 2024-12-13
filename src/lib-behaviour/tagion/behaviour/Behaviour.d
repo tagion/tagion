@@ -185,7 +185,6 @@ unittest { //
     import tagion.basic.basic : unitfile;
     import Module = tagion.behaviour.BehaviourUnittest;
     import tagion.hibon.HiBONFile : fread;
-    import tagion.hibon.HiBONFile : fwrite;
 
     enum filename = mangle!(FunctionTypeOf!(getFeature!Module))("unittest")
             .unitfile
