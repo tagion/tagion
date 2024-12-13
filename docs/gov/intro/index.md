@@ -4,27 +4,25 @@ sidebar_position: 1
 
 # Introduction
 
-Welcome to the governance documentation-pages of the Tagion network.    
-These pages will be continuously updated as our network matures. 
+Welcome to the governance documentation-pages of the Tagion network.
 
-Governance, to us, simultaneously means the structure and processes of managing a decentralised system - including the procedures through which decisions are made, and rules are established. Governance thus steers an organization, community, or, in this case, our decentralised network, Tagion. 
+On these pages you find the current state of ideas and deliberation. Colored flags will alert you to the parts that are deemed certain, and, on the other hand, those that are hotly debated (in our Discord channels). Everything else is to be considered a proposal or only preliminary formulated. 
 
-To break up our ideas and make them easier to follow, we have structured the governance of our network into four [interdependent areas](./governance_areas). 
-The structure and process of each of those will have effects and consequences on all others, directly or indirectly.
-
-
-In the end, we seek to establish robust, decentralised procedures that allow the network’s evolution to be guided by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). As a whole this shall guarantee that the  network’s trajectory remains aligned with the aspirations and principles laid out in our ["Manifesto"](./manifesto).
+We chose to publish this because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). Only the values and guiding principles of the Tagion ["Manifesto"](./manifesto) should be adhered to at all times. 
 
 :::note[The _Tagion Governance Manifesto_]
 
-The first comprehensive content published on these pages will be our **Manifesto** -   
-it will be submitted for feedback on [Discord](https://discord.gg/wE4AA64a) first. Join us there to contribute before we set it `into stone`.
+The first comprehensive content published on these pages will be our **Manifesto** -
+a draft has been submitted for feedback on [Discord](https://discord.gg/wE4AA64a) first. Join us there to contribute before we set it `into stone`.
 
 :::
 
-This also means that the governance structure and process will not be established up-front, by dictate from the founders, but will be co-developed, tested and refined with our stakeholders. Because when we use the word "decentralised" above, we mean a system in which no entity can impose its will and interest on the rest of the users and participants.
+Because governance, to us, simultaneously means the structure and processes of managing a decentralised system - including but not limited to the procedures through which decisions are made, and rules are established - this documentation is structured into four [interdependent areas](./governance_areas). The ideas and process of each of those will have effects and consequences on all others, directly or indirectly, so sometimes you will have to follow links to different sections or the glossary in order to get the full picture. 
 
-Practically, Tagion and its underlying technology do not meet this criterion yet. So the governance will evolve, step by step, with the different stages of releasing the network - from the stewardship of [Decard](https://www.tagion.org/about/) into full decentralisation.
+As our manifesto says, we use the word "decentralised" to mean a system in which no entity can impose its will and interest on the rest of the users and participants. This also means that the governance of a decentralised system cannot be established up-front, by dictate from the founders, but will have to be co-developed, tested and refined with its stakeholders. 
+
+Practically, Tagion and its underlying technology do not meet this criterion of decentralisation yet. So the governance will evolve, step by step, with the different stages of releasing the network from the stewardship of [Decard](https://www.tagion.org/about/) into full decentralisation.
+
 
 
 ## Phased decentralisation of Tagion
@@ -37,11 +35,11 @@ In terms of governance, this is where the four "release phases" of the network w
 
 ### 1. Closed Release
 
-As the name indicates, this phase is not open to external parties who might be eager to operate a node themselves. However, already during this phase the code of our nodes is publicly available on github and the Tech documentation allows savvy operators to set it up, test and audit it. In due time, a new version of nodes will allow more interested parties to run nodes that connect to the network as mirrors, but not participate in the consensus. 
+From here, the network nodres will be distributed across different servers in different locations. But, as the name indicates, this phase is not open to external parties who might be eager to operate a node. However, already during this phase the code of our nodes is publicly available on github and the Tech documentation allows savvy operators to set it up, test and audit it. In due time, a new version of nodes will allow more interested parties to run nodes that connect to the network as mirrors, but not participate in the consensus. 
 
 ### 2. Limited Release
 
-This second phase will see the network being extended to nodes operated by partners and vetted community members. The onboarding process will be "by invitation" only and strictly controlled by Decard to ensure security and quick support shall something not go to plan. In this phase, the governance here developed will be tested and improved in a safe environment. The results will be published here as our "Working Paper", ready for tests and verification "in the wild", which will happen in phase 3.
+This second phase will see the network being extended to nodes operated by partners and vetted community members. The onboarding process will be "by invitation" only and strictly controlled by Decard to ensure security and, shall something not go to plan, provide quick support. During this phase, the governance here developed will be tested and improved in a safe environment. The results will be published here as our "Working Paper", ready for tests and verification "in the wild", which will happen in phase 3.
 
 ### 3. Curated Release
 

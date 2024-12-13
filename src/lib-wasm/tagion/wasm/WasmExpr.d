@@ -23,6 +23,7 @@ struct WasmExpr {
             case PREFIX:
             case CODE:
             case CODE_TYPE:
+            case RETURN:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
                 break;
@@ -33,9 +34,11 @@ struct WasmExpr {
                     bout.write(encode(args[0]));
                 }
                 break;
-            case BLOCK, BRANCH,  CALL, LOCAL, GLOBAL:
+            case BRANCH, CALL, LOCAL, GLOBAL:
                 assert(Args.length == 1,
                         format("Instruction %s only one argument expected", instr.name));
+                goto case;
+            case BLOCK:
                 static if (Args.length == 1) {
                     assert(isIntegral!(Args[0]), format("Args idx must be an integer for %s not %s",
                             instr.name, Args[0].stringof));
@@ -148,9 +151,8 @@ struct WasmExpr {
         return this;
     }
 
-
     void append(const WasmExpr e) pure nothrow {
-        bout.write(e.bout.toBytes);         
+        bout.write(e.bout.toBytes);
     }
 
     bool opEquals(const WasmExpr e) const pure nothrow @nogc {

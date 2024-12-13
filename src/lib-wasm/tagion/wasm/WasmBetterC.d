@@ -101,6 +101,7 @@ alias check = Check!WasmBetterCException;
         const sec_assert = SectionAssert(doc);
         void innerAssert(const Assert _assert, const string indent) {
             Context ctx;
+            const(FuncType) func_void;
             auto code_type = CodeType(_assert.invoke);
             auto invoke_expr = code_type[];
             output.writefln("%s// expr   %(%02X %)", indent, _assert.invoke);
@@ -108,7 +109,7 @@ alias check = Check!WasmBetterCException;
             with (Assert.Method) final switch (_assert.method) {
             case Trap:
                 void assert_block(const string _indent) {
-                    block(invoke_expr, ctx, _indent ~ spacer);
+                    block(invoke_expr, func_void, ctx, _indent ~ spacer);
                     output.writefln("%s}", _indent);
                 }
 
@@ -117,17 +118,25 @@ alias check = Check!WasmBetterCException;
                 output.writefln("%s)());", indent);
 
                 break;
-            case Return, Invalid, Return_nan:
-                block(invoke_expr, ctx, indent, true);
+            case Return_nan:
+                block(invoke_expr, func_void, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
-                block(result_expr, ctx, indent, true);
-                if (_assert.method == Return_nan) {
-                    output.writef("%1$sassert(math.isnan(%2$s)", indent, ctx.pop);
+                block(result_expr, func_void, ctx, indent, true);
+                output.writef(`%1$sassert(math.isnan(%2$s)`, indent, ctx.pop);
+                if (_assert.message.length) {
+                    output.writef(`, "%s"`, _assert.message);
                 }
-                else {
-                    output.writef("%sassert(%s is %s", indent, ctx.pop, ctx.pop);
-                }
+                output.writeln(");");
+                break;
+            case Return, Invalid:
+                block(invoke_expr, func_void, ctx, indent, true);
+                auto result_type = CodeType(_assert.result);
+                auto result_expr = result_type[];
+                Context ctx_results;
+                block(result_expr, func_void, ctx_results, indent, true);
+
+                output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
                 }
@@ -271,10 +280,11 @@ alias check = Check!WasmBetterCException;
     alias Global = Sections[Section.GLOBAL];
     void global_sec(ref const(Global) _global) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (i, g; _global[].enumerate) {
             output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
             auto expr = g[];
-            block(expr, ctx, indent ~ spacer);
+            block(expr, func_void, ctx, indent ~ spacer);
             output.writefln("%s))", indent);
         }
     }
@@ -302,11 +312,12 @@ alias check = Check!WasmBetterCException;
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
             auto expr = e[];
             const local_indent = indent ~ spacer;
-            block(expr, ctx, local_indent ~ spacer);
+            block(expr, func_void, ctx, local_indent ~ spacer);
             output.writef("%s) func", local_indent);
             foreach (f; e.funcs) {
                 output.writef(" %d", f);
@@ -339,8 +350,19 @@ alias check = Check!WasmBetterCException;
         assert(0);
     }
 
+    static string dType(const(Types[]) types) {
+        if (types.empty) {
+            return dType(Types.EMPTY);
+        }
+        if (types.length == 1) {
+            return dType(types[0]);
+        }
+        return format("Tuple!(%-(%s, %))", types);
+    }
+
     static string return_type(const(Types[]) types) {
-        return (types.length == 1) ? dType(types[0]) : "void";
+        return dType(types);
+        //return (types.length == 1) ? dType(types[0]) : "void";
     }
 
     string function_name(const int index) {
@@ -366,14 +388,14 @@ alias check = Check!WasmBetterCException;
     private void output_function(const(TypeIndex) func, const(CodeType) code_type) {
         Context ctx;
         auto expr = code_type[];
-        const function_header = wasmstream.get!(Section.TYPE)[func.idx];
-        const x = return_type(function_header.results);
+        const func_type = wasmstream.get!(Section.TYPE)[func.idx];
+        //const x = return_type(func_type.results);
         output.writefln("%s%s %s (%s) {",
                 indent,
-                return_type(function_header.results),
+                return_type(func_type.results),
                 function_name(func.idx),
-                function_params(function_header.params));
-        ctx.locals = iota(function_header.params.length).map!(idx => param_name(idx)).array;
+                function_params(func_type.params));
+        ctx.locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
         const local_indent = indent ~ spacer;
         if (!code_type.locals.empty) {
             output.writef("%s(local", local_indent);
@@ -385,7 +407,7 @@ alias check = Check!WasmBetterCException;
             output.writeln(")");
         }
 
-        block(expr, ctx, local_indent);
+        block(expr, func_type, ctx, local_indent);
         output.writefln("%s}\n", indent);
     }
 
@@ -399,11 +421,12 @@ alias check = Check!WasmBetterCException;
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (d; _data[]) {
             output.writefln("%s(data (", indent);
             auto expr = d[];
             const local_indent = indent ~ spacer;
-            block(expr, ctx, local_indent ~ spacer);
+            block(expr, func_void, ctx, local_indent ~ spacer);
             output.writefln(`%s) "%s")`, local_indent, d.base);
         }
     }
@@ -513,6 +536,7 @@ alias check = Check!WasmBetterCException;
 
     private const(ExprRange.IRElement) block(
             ref ExprRange expr,
+            ref const(FuncType) func_type,
             ref Context ctx,
             const(string) indent,
             const bool no_return = false) {
@@ -538,7 +562,10 @@ alias check = Check!WasmBetterCException;
             return format("result_%d", calls);
         }
 
-        const(ExprRange.IRElement) innerBlock(ref ExprRange expr, const(string) indent, const uint level) {
+        const(ExprRange.IRElement) innerBlock(
+                ref ExprRange expr,
+                const(string) indent,
+                const uint level) {
             while (!expr.empty) {
                 const elm = expr.front;
                 //const instr = instrTable[elm.code];
@@ -554,6 +581,11 @@ alias check = Check!WasmBetterCException;
                     case CODE_EXTEND:
                         output.writefln("%s// %s", indent, elm.instr.name);
                         ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
+                        break;
+                    case RETURN:
+                        output.writefln("%s// %s", indent, elm.instr.name);
+
+                        ctx.perform(elm.code, func_type.results);
                         break;
                     case PREFIX:
                         output.writefln("%s%s", indent, elm.instr.name);

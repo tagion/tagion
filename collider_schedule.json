@@ -111,7 +111,7 @@
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new", "commit", "memory", "func", "i32", "f32_export", "i64_export", "tvm_test", "tvm_test1"],
+      "stages": ["tvm", "tvm_new", "commit", "memory", "func", "i32", "i64", "f32_export", "i64_export", "tvm_test", "tvm_test1", "select", "int_literals", "float_exprs"],
       "extend" : {
         "tvm_new" : {
             "args": [
@@ -129,6 +129,16 @@
                 "int_exprs.wast", "float_exprs.wast", "float_misc.wast"
             ],
         },
+        "int_literals" : {
+          "args" : [
+                "int_literals_2.wast"
+            ]
+        },
+        "select" : {
+          "args" : [
+                "select.wast"
+            ]
+        },
         "tvm_test1" : {
           "args" : [
                 "nested_block_value.wast"
@@ -139,9 +149,9 @@
                 "memory_ops.wast"
             ]
         },
-        "f32_export" : {
+        "float_exprs" : {
           "args" : [
-                "f32_export.wast"
+                "float_exprs.wast"
             ]
         },
         "tvm_test" : {
@@ -152,6 +162,11 @@
         "i64_export" : {
           "args" : [
                 "i64_export.wast"
+            ]
+        },
+        "i64" : {
+          "args" : [
+                "i64.wast"
             ]
         },
         "i32" : {
@@ -366,6 +381,10 @@
       },
       "timeout" : 3.0,
       "stages" : ["godcontract"]
+    },
+    "dart_synchronization": {
+      "timeout" : 3.0,
+      "stages" : ["dart_synchronization"]
     }
   }
 }

@@ -36,13 +36,13 @@ struct Verbose {
         }
     }
 
-    void print(Args...)(string fmt, lazy Args args) {
+    void print(Args...)(string fmt, lazy Args args) @trusted {
         if (mode !is VerboseMode.NONE) {
             fout.writef(fmt, args);
         }
     }
 
-    void println(Args...)(string fmt, lazy Args args) {
+    void println(Args...)(string fmt, lazy Args args) @trusted {
         if (mode !is VerboseMode.NONE) {
             fout.writefln(fmt, args);
         }
@@ -112,6 +112,7 @@ enum IRType {
     CODE, /// Simple instruction with no argument
     CODE_EXTEND, /// Extended instruction with an opcode argument
     CODE_TYPE, /// Instrunction with return type conversion (like select)
+    RETURN,
     BLOCK, /// Block instruction
     BRANCH, /// Branch jump instruction
     BRANCH_TABLE, /// Branch table jump instruction
@@ -156,7 +157,7 @@ enum IR : ubyte {
         @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
         @Instr("br_table", "br_table", 1, IRType.BRANCH_TABLE)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
-        @Instr("return", "return", 1, IRType.CODE, [Types.EMPTY])                    RETURN              = 0x0F, ///  return
+        @Instr("return", "return", 1, IRType.RETURN)                    RETURN              = 0x0F, ///  return
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
         @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
         @Instr("drop", "drop", 1, IRType.CODE, [Types.EMPTY])                   DROP                = 0x1A, ///  drop
@@ -891,6 +892,7 @@ struct ExprRange {
                 final switch (elm.instr.irtype) {
                 case CODE:
                 case CODE_TYPE:
+                case RETURN:
                     break;
                 case CODE_EXTEND:
                     const opcode_arg = decode!IR_EXTEND(data, index);

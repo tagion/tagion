@@ -2,8 +2,7 @@ module tagion.wasm.WasmWriter;
 import tagion.basic.Debug;
 import std.bitmanip : nativeToLittleEndian;
 import std.outbuffer;
-import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
-    TemplateArgsOf, PointerTarget, getUDAs, isPointer, ConstOf, ForeachType, FieldNameTuple;
+import std.traits;
 import std.algorithm;
 import std.array : join;
 import std.exception : assumeUnique;
@@ -18,6 +17,7 @@ import LEB128 = tagion.utils.LEB128;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 import tagion.wasm.WasmReader;
+import tagion.hibon.HiBONRecord : exclude;
 
 @safe class WasmWriter {
 
@@ -178,17 +178,15 @@ import tagion.wasm.WasmReader;
 
     struct WasmSection {
         mixin template Serialize() {
+            import tagion.hibon.HiBONRecord : exclude;
+
             final void serialize(ref OutBuffer bout) const {
                 alias This = typeof(this);
                 static if (hasMember!(This, "guess_size")) {
                     bout.reserve(guess_size);
                 }
                 SerializeLoop: foreach (i, m; this.tupleof) {
-                    static if (hasMember!(This, "excluded")) {
-                        if (excluded!(i)) {
-                            continue SerializeLoop;
-                        }
-                    }
+                    enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                     alias T = typeof(m);
                     static if (is(T == struct) || is(T == class)) {
                         m.serialize(bout);
@@ -226,7 +224,7 @@ import tagion.wasm.WasmReader;
                             }
                         }
                     else {
-                            static assert(0, format("Type %s is not supported", T.stringof));
+                            static assert(exclude_flag, format("Type %s is not supported", T.stringof));
                         }
                     }
                 }
@@ -319,6 +317,7 @@ import tagion.wasm.WasmReader;
             Types type;
             immutable(Types)[] params;
             immutable(Types)[] results;
+            @exclude int[string] param_names;
             size_t guess_size() const pure nothrow {
                 return params.length + results.length + uint.sizeof * 2 + Types.sizeof;
             }

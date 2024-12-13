@@ -74,6 +74,7 @@ struct WasmGas {
                     case PREFIX:
                     case CODE:
                     case CODE_TYPE:
+                    case RETURN:
                         wasmexpr(elm.code);
                         break;
                     case CODE_EXTEND:
