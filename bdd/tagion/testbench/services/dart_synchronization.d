@@ -11,6 +11,9 @@ import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import std.exception;
 import tagion.crypto.Types : Fingerprint;
+import std.format;
+import tagion.testbench.tools.Environment;
+import std.path : buildPath;
 
 enum feature = Feature(
             "is a service that synchronizes the DART database with another one.",
@@ -32,11 +35,22 @@ class IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye {
     DART local_db;
     DART remote_db;
     Fingerprint remote_b;
+    const local_db_name = "local_db.drt";
+    const remote_db_name = "remote_db.drt";
+    string local_db_path;
+    string remote_db_path;
 
     @Given("we have a local database.")
     Document localDatabase() {
         auto net = new StdSecureNet;
-        local_db = new DART(net, "local_db.drt");
+        
+        local_db_path = buildPath(env.bdd_log, __MODULE__, local_db_name);
+
+        if(local_db_path.exists){
+            local_db_path.remove;
+        }
+        DART.create(local_db_path, net);
+        local_db = new DART(net, local_db_path);
         return result_ok;
     }
 
@@ -47,14 +61,20 @@ class IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye {
         import std.random;
         import std.datetime.stopwatch;
         import tagion.hibon.HiBONRecord;
-        import std.format;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
         import tagion.utils.Term;
 
         const number_of_archives = 10000;
         const bundle_size = 1000;
         auto net = new StdSecureNet;
-        remote_db = new DART(net, "remote_db.drt");
+
+        remote_db_path = buildPath(env.bdd_log, __MODULE__, remote_db_name);
+        
+        if(remote_db_path.exists){
+            remote_db_path.remove;
+        }
+        DART.create(remote_db_path, net);
+        remote_db = new DART(net, remote_db_path);
 
         static struct TestDoc {
             string text;
@@ -86,17 +106,16 @@ class IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye {
 
     @When("we read the bullseye from the remote database.")
     Document remoteDatabase() {
-        remote_b = Fingerprint(remote_db.bullseye);
+        remote_b = remote_db.bullseye;
         return result_ok;
     }
 
     @Then("we check that the remote database is different from the local one.")
     Document localOne() {
-        auto local_b = Fingerprint(local_db.bullseye);
-        // remote_b != local_b; write result to Doc.
+        const local_b = local_db.bullseye;
+        check(remote_b != local_b, format("bullseyes do not match for remote db %s and local db %s", remote_b, local_b));
         return result_ok;
     }
-
 }
 
 @safe @Scenario("is to synchronize the local database.",
@@ -133,6 +152,8 @@ class IsToSynchronizeTheLocalDatabase {
 mixin Main!(_main);
 
 int _main(string[] args) {
+    auto module_path = buildPath(env.bdd_log, __MODULE__);
+    mkdirRecurse(module_path);
     auto dart_synchronization_feature = automation!(tagion.testbench.services.dart_synchronization);
     DARTOptions opts; // specify a path.
     dart_synchronization_feature.IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye;
