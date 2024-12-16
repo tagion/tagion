@@ -104,15 +104,29 @@
           "int_literals.wast", "int_exprs.wast",
           "f32.wast", "f64.wast",
           "f32_cmp.wast", "f64_cmp.wast",
-          "float_misc.wast", "select.wast"
+          "float_misc.wast", "select.wast",
+          "i32_export.wast", "i64_export.wast", "conversions_export.wast", 
+          "int_literals_export.wast", "int_exprs_export.wast",
+          "f32_export.wast", "f64_export.wast",
+          "f32_cmp_export.wast", "f64_cmp_export.wast",
+          "float_misc_export.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new", "commit", "memory", "func", "i32", "i64", "f32_export", "i64_export", "tvm_test", "tvm_test1", "select", "int_literals", "float_exprs"],
+      "stages": ["tvm", "tvm_new", "tvm_old", "tvm_export", "commit", "memory", "func", "i32", "i64", "f32_export", "i64_export", "tvm_test", "tvm_test1", "select", "int_literals", "float_exprs"],
       "extend" : {
+        "tvm_export" : {
+            "args": [
+                "i32_export.wast", "i64_export.wast", "conversions_export.wast", 
+                "int_literals_export.wast", "int_exprs_export.wast",
+                "f32_export.wast", "f64_export.wast",
+                "f32_cmp_export.wast", "f64_cmp_export.wast",
+                "float_misc_export.wast"
+            ],
+        },
         "tvm_new" : {
             "args": [
                 "i32.wast", "i64.wast", "conversions.wast",
@@ -123,10 +137,7 @@
         },
         "tvm_old" : {
             "args": [
-                "i32.wast", "i64.wast", "f32.wast", "f64.wast", "conversions.wast",
-                "int_literals.wast", 
-                "f32_cmp.wast", "f64_cmp.wast",
-                "int_exprs.wast", "float_exprs.wast", "float_misc.wast"
+                "i32_export.wast", 
             ],
         },
         "int_literals" : {
@@ -156,7 +167,7 @@
         },
         "tvm_test" : {
           "args" : [
-                "conversions.wast"
+                "conversions_export.wast"
             ]
         },
         "i64_export" : {

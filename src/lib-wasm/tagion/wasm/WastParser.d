@@ -92,7 +92,6 @@ struct WastParser {
     }
 
     struct FunctionContext {
-        //int[string] params; /// Parameter names
         Block[] block_stack;
         const(Types)[] stack;
         const(Types)[] locals;
@@ -176,10 +175,11 @@ struct WastParser {
             const ParserStage stage,
             ref CodeType code_type,
             ref const(FuncType) func_type,
-            ref FunctionContext func_ctx) {
+            ref FunctionContext func_ctx,
+            const(size_t[]) call_line) {
         import tagion.wasm.WasmExpr;
 
-        func_ctx.locals = func_type.params;
+       // func_ctx.locals = func_type.params;
         bool got_error;
         scope (exit) {
             if (got_error) {
@@ -249,7 +249,7 @@ struct WastParser {
         ParserStage innerInstr(ref WasmExpr wasmexpr,
                 ref WastTokenizer r,
                 const(Types[]) block_results,
-        ParserStage instr_stage) @safe nothrow {
+        ParserStage instr_stage, const(size_t[]) call_line) @safe nothrow {
             scope (exit) {
                 r.expect(TokenType.END, "Expect an end ')'");
                 r.nextToken;
@@ -292,7 +292,7 @@ struct WastParser {
                         const sp = func_ctx.stack.length;
 
                         while (sp + instr.pops.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
                         }
                         parser_check(r, instr.pops == func_ctx.stack[sp .. $],
                         format("Type mismatch %s %s", instr.pops, func_ctx.stack[sp .. $]));
@@ -305,7 +305,7 @@ struct WastParser {
                         const sp = func_ctx.stack.length;
 
                         while (sp + instr.pops.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
                         }
                         func_ctx.push(instr.pushs);
                         wasmexpr(IR.EXNEND, instr.opcode);
@@ -319,7 +319,7 @@ struct WastParser {
                         const sp = func_ctx.stack.length;
                         bool breakout;
                         while (r.type == TokenType.BEGIN) {
-                            const sub_stage = innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE);
+                            const sub_stage = innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE, call_line~__LINE__);
                             breakout |= (sub_stage == ParserStage.END);
                         }
                         if (!breakout) {
@@ -332,7 +332,7 @@ struct WastParser {
                         r.nextToken;
                         const sp = func_ctx.stack.length;
                         while (sp + func_type.results.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, func_type.results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, func_type.results, ParserStage.CODE, call_line~__LINE__);
                         }
                         func_ctx.drop(func_type.results.length);
                         wasmexpr(irLookupTable[instr.name]);
@@ -363,7 +363,7 @@ struct WastParser {
                         writefln("Before block push %s", wasm_results);
                         func_ctx.block_push(wasm_results, label);
                         while (r.type == TokenType.BEGIN) {
-                            innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE, call_line~__LINE__);
                         }
 
                         return stage;
@@ -379,7 +379,7 @@ struct WastParser {
                             while (r.type == TokenType.BEGIN) {
                                 writefln(" == %s sp=%d size=%d blk=%d block_results=%d", r.token, sp, func_ctx.stack
                                         .length, blk.types.length, block_results.length);
-                                innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                                innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
                             }
                             writefln("Branch %s %s ", blk, r);
                             const number_of_args = func_ctx.stack.length - sp;
@@ -393,7 +393,7 @@ struct WastParser {
                             assert(0, format("Illegal token %s in %s", r.token, BRANCH));
                         }
                         while (r.type == TokenType.BEGIN) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
                         }
                         break;
                     case BRANCH_TABLE:
@@ -404,7 +404,7 @@ struct WastParser {
                         label = r.token;
                         r.nextToken;
                         while (r.type == TokenType.BEGIN) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
                         }
                         wasmexpr(IR.CALL, idx);
                         break;
@@ -412,6 +412,7 @@ struct WastParser {
                         break;
                     case LOCAL:
                         r.nextToken;
+                        __write("LINE %d:%s", r.line, r.getLine);
                         r.expect(TokenType.WORD);
                         writefln("POPS %s FUNC %s RESULTS %s LOCALS %s",
                                 instr.pops,
@@ -423,7 +424,7 @@ struct WastParser {
                         const local_type = func_ctx.localType(local_idx);
                         r.nextToken;
                         foreach (i; 0 .. instr.pops.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
                         }
                         if (instr.pushs.length) {
                             func_ctx.push(local_type);
@@ -444,13 +445,13 @@ struct WastParser {
                             r.nextToken;
                         }
                         foreach (i; 0 .. instr.pops.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
                         }
                         break;
                     case MEMOP:
                         r.nextToken;
                         foreach (i; 0 .. instr.pops.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
                         }
                         break;
                     case CONST:
@@ -498,14 +499,15 @@ struct WastParser {
                             r.nextToken;
                         }
                         for (uint i = 0; (instr.pops.length == 0) ? r.type == TokenType.BEGIN : i < instr.pops.length; i++) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
 
                         }
                         switch (instr.wast) {
                         case PseudoWastInstr.local:
                             __write("labels %s", labels);
+                            __write("LOCAL %d:%s : token = %s", r.line, r.getLine, r);
                             scope (exit) {
-                                __write("locals %s", func_ctx.locals);
+                                __write("EXIT locals %s ptr=%x line=%s", func_ctx, &func_ctx, call_line);
                             }
                             if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
                                 func_ctx.local_names[labels[0]] = cast(int) func_ctx.locals.length;
@@ -529,9 +531,11 @@ struct WastParser {
         }
 
         scope (exit) {
+            __write("EXIT %s ctx=%s ptr=%x line=%s", __FUNCTION__, func_ctx, &func_ctx, call_line);
             code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
         }
-        return innerInstr(func_wasmexpr, r, func_type.results, stage);
+        __write("!!! %s param=%s result=%s ctx=%s ptr=%x line=%s", __FUNCTION__, func_type.params, func_type.results, func_ctx, &func_ctx, call_line);
+        return innerInstr(func_wasmexpr, r, func_type.results, stage, call_line~__LINE__);
 
     }
 
@@ -568,7 +572,7 @@ struct WastParser {
                 return stage;
             case "func": // Example (func $name (param ...) (result i32) )
                 //__write("-- FUNC %s %s", r.token, r.type);
-                return parseTypeSection(r, stage);
+                return parseTypeSection(r, stage, [__LINE__]);
             case "param": // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
@@ -596,14 +600,6 @@ struct WastParser {
             case "result":
                 r.check(stage == ParserStage.FUNC);
                 writefln("Result %d:%s token %s", r.line, r.getLine, r);
-                version (none) {
-                    result_types = null;
-                    for (r.nextToken; r.type != TokenType.END; r.nextToken) {
-                        arg = r.token; /// Should be removed (now result_types is used instead)
-                        result_types ~= r.token.getType;
-                    }
-                    //r.nextToken;
-                }
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
                 arg = r.token;
@@ -705,9 +701,9 @@ struct WastParser {
                 CodeType code_invoke;
                 CodeType code_result;
                 FunctionContext func_ctx;
-                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
+                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx, [__LINE__]);
                 while (r.type == TokenType.BEGIN) {
-                    parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
+                    parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx, [__LINE__]);
                 }
                 writefln("func_ctx.stack=%s", func_ctx.stack);
                 assert_type.results = func_ctx.stack;
@@ -725,7 +721,7 @@ struct WastParser {
                 FuncType func_type;
                 CodeType code_invoke;
                 FunctionContext func_ctx;
-                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
+                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx, [__LINE__]);
                 assert_type.invoke = code_invoke.serialize;
 
                 r.check(r.type == TokenType.STRING);
@@ -831,7 +827,7 @@ struct WastParser {
         return ParserStage.UNDEFINED;
     }
 
-    private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
+    private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage, const(size_t[]) call_line) {
         CodeType code_type;
         r.check(stage < ParserStage.FUNC);
         auto type_section = writer.section!(Section.TYPE);
@@ -890,7 +886,11 @@ struct WastParser {
             FunctionContext func_ctx;
             func_ctx.locals = func_type.params;
             func_ctx.local_names = func_type.param_names;
-            const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+            __write("%s Call parseInstr func_type.params=%s ctx=%s ptr=%x line=%s", 
+            __FUNCTION__,
+        func_type.params, func_ctx, &func_ctx,call_line);
+            __write("Call line %d:%s", r.line, r.getLine);
+            const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx, call_line~__LINE__);
             r.check(ret == ParserStage.FUNC_BODY);
         }
         return ParserStage.FUNC;
