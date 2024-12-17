@@ -170,6 +170,54 @@ struct WastParser {
 
     }
 
+    static void setLocal(ref WastTokenizer tokenizer, ref FunctionContext func_ctx) {
+        auto r = tokenizer.save;
+        bool innerLocal() {
+            if (r.type == TokenType.BEGIN) {
+                r.nextToken;
+                if (r.token == "local") {
+                    r.nextToken;
+                    if (r.token.getType == Types.EMPTY) {
+                        const name = r.token;
+                        r.nextToken;
+                        const wasm_type = r.token.getType;
+                        check(wasm_type != Types.EMPTY, format("Invalid type %s", r.token));
+                        r.nextToken;
+                        func_ctx.local_names[name] = cast(int) func_ctx.locals.length;
+                        func_ctx.locals ~= wasm_type;
+                    }
+                    else {
+                        while (r.token.getType != Types.EMPTY) {
+                            func_ctx.locals ~= r.token.getType;
+                            r.nextToken;
+                        }
+                    }
+                    r.expect(TokenType.END);
+                    r.nextToken;
+                    tokenizer = r;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        while (innerLocal) {
+            // empty
+        }
+    }
+
+    unittest {
+        {
+            FunctionContext func_ctx;
+            const text = "(local i32) (local i32 f32) (local $x f64) (none_local xxx)";
+            auto r = WastTokenizer(text);
+            setLocal(r, func_ctx);
+            assert(equal(func_ctx.locals, [Types.I32, Types.I32, Types.F32, Types.F64]));
+            assert(func_ctx.local_names["$x"] == 3);
+            assert(equal(r.map!(t => t.token), ["(", "none_local", "xxx", ")"]));
+        }
+    }
+
     private ParserStage parseInstr(
             ref WastTokenizer r,
             const ParserStage stage,
@@ -179,7 +227,7 @@ struct WastParser {
             const(size_t[]) call_line) {
         import tagion.wasm.WasmExpr;
 
-       // func_ctx.locals = func_type.params;
+        // func_ctx.locals = func_type.params;
         bool got_error;
         scope (exit) {
             if (got_error) {
@@ -292,7 +340,7 @@ struct WastParser {
                         const sp = func_ctx.stack.length;
 
                         while (sp + instr.pops.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
                         }
                         parser_check(r, instr.pops == func_ctx.stack[sp .. $],
                         format("Type mismatch %s %s", instr.pops, func_ctx.stack[sp .. $]));
@@ -305,7 +353,7 @@ struct WastParser {
                         const sp = func_ctx.stack.length;
 
                         while (sp + instr.pops.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
                         }
                         func_ctx.push(instr.pushs);
                         wasmexpr(IR.EXNEND, instr.opcode);
@@ -319,7 +367,7 @@ struct WastParser {
                         const sp = func_ctx.stack.length;
                         bool breakout;
                         while (r.type == TokenType.BEGIN) {
-                            const sub_stage = innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE, call_line~__LINE__);
+                            const sub_stage = innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE, call_line ~ __LINE__);
                             breakout |= (sub_stage == ParserStage.END);
                         }
                         if (!breakout) {
@@ -332,7 +380,7 @@ struct WastParser {
                         r.nextToken;
                         const sp = func_ctx.stack.length;
                         while (sp + func_type.results.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, func_type.results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, func_type.results, ParserStage.CODE, call_line ~ __LINE__);
                         }
                         func_ctx.drop(func_type.results.length);
                         wasmexpr(irLookupTable[instr.name]);
@@ -363,7 +411,7 @@ struct WastParser {
                         writefln("Before block push %s", wasm_results);
                         func_ctx.block_push(wasm_results, label);
                         while (r.type == TokenType.BEGIN) {
-                            innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE, call_line ~ __LINE__);
                         }
 
                         return stage;
@@ -379,7 +427,7 @@ struct WastParser {
                             while (r.type == TokenType.BEGIN) {
                                 writefln(" == %s sp=%d size=%d blk=%d block_results=%d", r.token, sp, func_ctx.stack
                                         .length, blk.types.length, block_results.length);
-                                innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                                innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
                             }
                             writefln("Branch %s %s ", blk, r);
                             const number_of_args = func_ctx.stack.length - sp;
@@ -393,7 +441,7 @@ struct WastParser {
                             assert(0, format("Illegal token %s in %s", r.token, BRANCH));
                         }
                         while (r.type == TokenType.BEGIN) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
                         }
                         break;
                     case BRANCH_TABLE:
@@ -404,7 +452,7 @@ struct WastParser {
                         label = r.token;
                         r.nextToken;
                         while (r.type == TokenType.BEGIN) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
                         }
                         wasmexpr(IR.CALL, idx);
                         break;
@@ -424,7 +472,7 @@ struct WastParser {
                         const local_type = func_ctx.localType(local_idx);
                         r.nextToken;
                         foreach (i; 0 .. instr.pops.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
                         }
                         if (instr.pushs.length) {
                             func_ctx.push(local_type);
@@ -445,13 +493,13 @@ struct WastParser {
                             r.nextToken;
                         }
                         foreach (i; 0 .. instr.pops.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
                         }
                         break;
                     case MEMOP:
                         r.nextToken;
                         foreach (i; 0 .. instr.pops.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
                         }
                         break;
                     case CONST:
@@ -488,6 +536,8 @@ struct WastParser {
                         throw new WasmException(format("Undefined instruction %s", r.token));
                         break;
                     case SYMBOL:
+                        check(0, "Pseudo instruction not allowed");
+                        /++
                         __write("SYMBOL %s %s", r.token, r.type);
                         r.nextToken;
                         __write("LABEL %s %s", r.token, r.type);
@@ -499,9 +549,10 @@ struct WastParser {
                             r.nextToken;
                         }
                         for (uint i = 0; (instr.pops.length == 0) ? r.type == TokenType.BEGIN : i < instr.pops.length; i++) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line~__LINE__);
+                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE, call_line ~ __LINE__);
 
                         }
+                        pragma(msg, "LOCAL definitions should be defined before the expression body");
                         switch (instr.wast) {
                         case PseudoWastInstr.local:
                             __write("labels %s", labels);
@@ -519,7 +570,9 @@ struct WastParser {
                         default:
                             // Empty
                         }
+               ++/
                     }
+
                 }
             }
             catch (Exception e) {
@@ -534,8 +587,9 @@ struct WastParser {
             __write("EXIT %s ctx=%s ptr=%x line=%s", __FUNCTION__, func_ctx, &func_ctx, call_line);
             code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
         }
+        setLocal(r, func_ctx);
         __write("!!! %s param=%s result=%s ctx=%s ptr=%x line=%s", __FUNCTION__, func_type.params, func_type.results, func_ctx, &func_ctx, call_line);
-        return innerInstr(func_wasmexpr, r, func_type.results, stage, call_line~__LINE__);
+        return innerInstr(func_wasmexpr, r, func_type.results, stage, call_line ~ __LINE__);
 
     }
 
@@ -886,11 +940,11 @@ struct WastParser {
             FunctionContext func_ctx;
             func_ctx.locals = func_type.params;
             func_ctx.local_names = func_type.param_names;
-            __write("%s Call parseInstr func_type.params=%s ctx=%s ptr=%x line=%s", 
-            __FUNCTION__,
-        func_type.params, func_ctx, &func_ctx,call_line);
+            __write("%s Call parseInstr func_type.params=%s ctx=%s ptr=%x line=%s",
+                    __FUNCTION__,
+                    func_type.params, func_ctx, &func_ctx, call_line);
             __write("Call line %d:%s", r.line, r.getLine);
-            const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx, call_line~__LINE__);
+            const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx, call_line ~ __LINE__);
             r.check(ret == ParserStage.FUNC_BODY);
         }
         return ParserStage.FUNC;
