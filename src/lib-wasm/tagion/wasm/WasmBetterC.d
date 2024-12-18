@@ -562,61 +562,56 @@ alias check = Check!WasmBetterCException;
             return format("result_%d", calls);
         }
 
+        import std.outbuffer;
+
         const(ExprRange.IRElement) innerBlock(
+                OutBuffer bout,
                 ref ExprRange expr,
                 const(string) indent,
                 const uint level) {
             while (!expr.empty) {
                 const elm = expr.front;
-                //const instr = instrTable[elm.code];
                 expr.popFront;
 
                 with (IRType) {
                     final switch (elm.instr.irtype) {
                     case CODE:
                     case CODE_TYPE:
-                        output.writefln("%s// %s", indent, elm.instr.name);
+                        bout.writefln("%s// %s", indent, elm.instr.name);
                         ctx.perform(elm.code, elm.instr.pops);
                         break;
                     case CODE_EXTEND:
-                        output.writefln("%s// %s", indent, elm.instr.name);
+                        bout.writefln("%s// %s", indent, elm.instr.name);
                         ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
                         break;
                     case RETURN:
-                        output.writefln("%s// %s", indent, elm.instr.name);
+                        bout.writefln("%s// %s", indent, elm.instr.name);
 
                         ctx.perform(elm.code, func_type.results);
                         break;
                     case PREFIX:
-                        output.writefln("%s%s", indent, elm.instr.name);
+                        bout.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case BLOCK:
                         block_comment = format(";; block %d", block_count);
                         block_count++;
-                        output.writefln("%s%s%s %s", indent, elm.instr.name,
+                        bout.writefln("%s%s%s %s", indent, elm.instr.name,
                                 block_result_type(elm.types[0]), block_comment);
-                        const end_elm = innerBlock(expr, indent ~ spacer, level + 1);
+                        const end_elm = innerBlock(bout, expr, indent ~ spacer, level + 1);
                         const end_instr = instrTable[end_elm.code];
-                        output.writefln("%s%s", indent, end_instr.name);
-                        //return end_elm;
+                        bout.writefln("%s%s", indent, end_instr.name);
                         if (end_elm.code is IR.BLOCK) {
 
                         }
-                        // const end_elm=block_elm(elm);
                         else if (end_elm.code is IR.ELSE) {
-                            const endif_elm = innerBlock(expr, indent ~ spacer, level + 1);
+                            const endif_elm = innerBlock(bout, expr, indent ~ spacer, level + 1);
                             const endif_instr = instrTable[endif_elm.code];
-                            output.writefln("%s%s %s count=%d", indent,
+                            bout.writefln("%s%s %s count=%d", indent,
                                     endif_instr.name, block_comment, count);
                         }
                         break;
                     case BRANCH:
-                        output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
-                        /*
-                        break;
-                    case BRANCH_IF:
-                        output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
-*/
+                        bout.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case BRANCH_TABLE:
                         static string branch_table(const(WasmArg[]) args) {
@@ -627,13 +622,13 @@ alias check = Check!WasmBetterCException;
                             return result;
                         }
 
-                        output.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
+                        bout.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
                         break;
                     case CALL:
                         scope (exit) {
                             calls++;
                         }
-                        output.writefln("%s// %s %s", indent, elm.instr.name, elm.warg.get!uint);
+                        bout.writefln("%s// %s %s", indent, elm.instr.name, elm.warg.get!uint);
                         const func_idx = elm.warg.get!uint;
                         const function_header = wasmstream.get!(Section.TYPE)[func_idx];
                         const function_call = format("%s(%-(%s,%))", function_name(func_idx), ctx.pops(function_header
@@ -643,23 +638,23 @@ alias check = Check!WasmBetterCException;
                             set_result = format("const %s=", result_name);
                             ctx.push(result_name);
                         }
-                        output.writefln("%s%s%s;", indent, set_result, function_call);
+                        bout.writefln("%s%s%s;", indent, set_result, function_call);
                         break;
                     case CALL_INDIRECT:
-                        output.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
+                        bout.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case LOCAL:
-                        output.writefln("%s// %s %d", indent, elm.instr.name, elm.warg.get!uint);
+                        bout.writefln("%s// %s %d", indent, elm.instr.name, elm.warg.get!uint);
                         ctx.push(elm.code, elm.warg.get!uint);
                         break;
                     case GLOBAL:
-                        output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
+                        bout.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case MEMORY:
-                        output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
+                        bout.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
                         break;
                     case MEMOP:
-                        output.writefln("%s%s", indent, elm.instr.name);
+                        bout.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case CONST:
                         static string toText(const WasmArg a) {
@@ -697,13 +692,13 @@ alias check = Check!WasmBetterCException;
                         }
 
                         const value = toText(elm.warg);
-                        output.writefln("%s// %s %s", indent, elm.instr.name, value);
+                        bout.writefln("%s// %s %s", indent, elm.instr.name, value);
                         ctx.push(value);
                         break;
                     case END:
                         return elm;
                     case ILLEGAL:
-                        output.writefln("Error: Illegal instruction %02X", elm.code);
+                        bout.writefln("Error: Illegal instruction %02X", elm.code);
                         return elm;
                     case SYMBOL:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
@@ -713,7 +708,9 @@ alias check = Check!WasmBetterCException;
             return ExprRange.IRElement(IR.END, level);
         }
 
+        auto bout = new OutBuffer;
         scope (exit) {
+            output.write(bout.toString);
             if (!no_return && (ctx.stack.length > 0)) {
                 output.writefln("%sreturn %s;", indent, ctx.pop);
             }
@@ -721,7 +718,7 @@ alias check = Check!WasmBetterCException;
                     .stack
                     .length));
         }
-        return innerBlock(expr, indent, 0);
+        return innerBlock(bout, expr, indent, 0);
     }
 
     Output serialize() {
