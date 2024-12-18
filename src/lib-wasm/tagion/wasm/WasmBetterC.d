@@ -534,7 +534,7 @@ alias check = Check!WasmBetterCException;
         return signbit(x) ? "-" : "";
     }
 
-    private const(ExprRange.IRElement) block(
+    private void block(
             ref ExprRange expr,
             ref const(FuncType) func_type,
             ref Context ctx,
@@ -542,7 +542,7 @@ alias check = Check!WasmBetterCException;
             const bool no_return = false) {
         string block_comment;
         uint block_count;
-        uint count;
+        //uint count;
         uint calls;
         static string block_result_type()(const Types t) {
             with (Types) {
@@ -564,11 +564,26 @@ alias check = Check!WasmBetterCException;
 
         import std.outbuffer;
 
-        const(ExprRange.IRElement) innerBlock(
+        enum BlockKind {
+            END,
+            BREAK,
+            ELSE,
+            ELSE_IF,
+            WHILE,
+            LOOP,
+            ERROR,
+        }
+
+        static struct Block {
+            const(ExprRange.IRElement) instr;
+            BlockKind kind;
+        }
+
+        const(BlockKind) innerBlock(
                 OutBuffer bout,
                 ref ExprRange expr,
                 const(string) indent,
-                const uint level) {
+                Block*[] blocks) {
             while (!expr.empty) {
                 const elm = expr.front;
                 expr.popFront;
@@ -597,17 +612,22 @@ alias check = Check!WasmBetterCException;
                         block_count++;
                         bout.writefln("%s%s%s %s", indent, elm.instr.name,
                                 block_result_type(elm.types[0]), block_comment);
-                        const end_elm = innerBlock(bout, expr, indent ~ spacer, level + 1);
-                        const end_instr = instrTable[end_elm.code];
-                        bout.writefln("%s%s", indent, end_instr.name);
-                        if (end_elm.code is IR.BLOCK) {
-
-                        }
-                        else if (end_elm.code is IR.ELSE) {
-                            const endif_elm = innerBlock(bout, expr, indent ~ spacer, level + 1);
-                            const endif_instr = instrTable[endif_elm.code];
-                            bout.writefln("%s%s %s count=%d", indent,
-                                    endif_instr.name, block_comment, count);
+                        auto block = new Block(elm);
+                        const block_type = innerBlock(bout, expr, indent ~ spacer, blocks ~ block);
+                        final switch (block_type) {
+                        case BlockKind.END:
+                            break;
+                        case BlockKind.BREAK:
+                            break;
+                        case BlockKind.ELSE:
+                            break;
+                        case BlockKind.ELSE_IF:
+                            break;
+                        case BlockKind.WHILE:
+                            break;
+                        case BlockKind.LOOP:
+                            break;
+                        case BlockKind.ERROR:
                         }
                         break;
                     case BRANCH:
@@ -631,8 +651,8 @@ alias check = Check!WasmBetterCException;
                         bout.writefln("%s// %s %s", indent, elm.instr.name, elm.warg.get!uint);
                         const func_idx = elm.warg.get!uint;
                         const function_header = wasmstream.get!(Section.TYPE)[func_idx];
-                        const function_call = format("%s(%-(%s,%))", function_name(func_idx), ctx.pops(function_header
-                                .params.length));
+                        const function_call = format("%s(%-(%s,%))",
+                                function_name(func_idx), ctx.pops(function_header.params.length));
                         string set_result;
                         if (function_header.results.length) {
                             set_result = format("const %s=", result_name);
@@ -696,16 +716,25 @@ alias check = Check!WasmBetterCException;
                         ctx.push(value);
                         break;
                     case END:
-                        return elm;
+                        if (blocks.length > 0) {
+                            const block_kind=blocks[$-1].kind;
+                            if (block_kind == BlockKind.BREAK) {
+                                bout.writeln("%s} while(false);", indent);
+                                return BlockKind.END;
+                            }
+                            return BlockKind.END;
+                        }
+                        check(0, "Block 'end' without and begin");
+                        assert(0); 
                     case ILLEGAL:
                         bout.writefln("Error: Illegal instruction %02X", elm.code);
-                        return elm;
+                        return BlockKind.ERROR;
                     case SYMBOL:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }
                 }
             }
-            return ExprRange.IRElement(IR.END, level);
+            return BlockKind.END;
         }
 
         auto bout = new OutBuffer;
@@ -714,11 +743,12 @@ alias check = Check!WasmBetterCException;
             if (!no_return && (ctx.stack.length > 0)) {
                 output.writefln("%sreturn %s;", indent, ctx.pop);
             }
-            check(no_return || (ctx.stack.length == 0), format("Stack size is %d but the stack should be empty on return", ctx
-                    .stack
-                    .length));
+            check(no_return || (ctx.stack.length == 0),
+                    format("Stack size is %d but the stack should be empty on return",
+                    ctx.stack.length));
         }
-        return innerBlock(bout, expr, indent, 0);
+        Block*[] blocks;
+        innerBlock(bout, expr, indent, blocks);
     }
 
     Output serialize() {
