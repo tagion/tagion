@@ -206,7 +206,7 @@ auto automation(alias M)() if (isFeature!M) {
     static struct FeatureFactory {
         string alternative;
         FeatureContext context;
-        void opDispatch(string scenario_name, Args...)(Args args) {
+        auto opDispatch(string scenario_name, Args...)(Args args) {
             import std.algorithm.searching : countUntil;
 
             enum tuple_index = [FeatureContext.fieldNames]
@@ -215,7 +215,7 @@ auto automation(alias M)() if (isFeature!M) {
                     format("Scenario '%s' does not exists. Possible scenarios is\n%s",
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
             alias _Scenario = FeatureContext.Types[tuple_index];
-            context[tuple_index] = new _Scenario(args);
+            return context[tuple_index] = new _Scenario(args);
         }
 
         bool create(Args...)(string regex_text, Args args) {
