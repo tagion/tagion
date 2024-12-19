@@ -277,6 +277,11 @@ struct WastParser {
             return -1;
         }
 
+        scope (exit) {
+            if (got_error) {
+                r.dropScopes;
+            }
+        }
         import tagion.wasm.WasmExpr;
         static WasmExpr createWasmExpr() {
             import std.outbuffer;
@@ -288,14 +293,6 @@ struct WastParser {
 
 
         // func_ctx.locals = func_type.params;
-        scope (exit) {
-            if (stage is ParserStage.FUNC_BODY) {
-                func_wasmexpr(IR.END);
-            }   
-            if (got_error) {
-                r.dropScopes;
-            }
-        }
         ParserStage innerInstr(ref WasmExpr wasmexpr,
                 ref WastTokenizer r,
                 const(Types[]) block_results,
@@ -328,7 +325,11 @@ struct WastParser {
                     }
                     return results;
                 }
-
+                scope(exit) {
+                    if (instr_stage == ParserStage.FUNC_BODY) {
+                        wasmexpr(IR.END);
+                    }
+                }
                 r.expect(TokenType.BEGIN);
 
                 r.nextToken;
