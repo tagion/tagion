@@ -224,30 +224,6 @@ struct WastParser {
             ref CodeType code_type,
             ref const(FuncType) func_type,
             ref FunctionContext func_ctx) {
-        import tagion.wasm.WasmExpr;
-
-        // func_ctx.locals = func_type.params;
-        bool got_error;
-        scope (exit) {
-            if (got_error) {
-                r.dropScopes;
-            }
-        }
-        void parser_check(ref const(WastTokenizer) tokenizer,
-                const bool flag,
-                string msg = null,
-                string file = __FILE__,
-                const size_t code_line = __LINE__) nothrow {
-            got_error |= tokenizer.check(flag, msg, file, code_line);
-        }
-
-        static WasmExpr createWasmExpr() {
-            import std.outbuffer;
-
-            auto bout = new OutBuffer;
-            return WasmExpr(bout);
-        }
-
         immutable number_of_func_arguments = func_type.params.length;
         int getLocal(ref const(WastTokenizer) tokenizer) @trusted {
             int result = func_ctx.local_names[tokenizer.token].ifThrown!RangeError(int(-1));
@@ -258,6 +234,15 @@ struct WastParser {
                 tokenizer.check(result >= 0, "Local register expected");
             }
             return result;
+        }
+        bool got_error;
+
+        void parser_check(ref const(WastTokenizer) tokenizer,
+                const bool flag,
+                string msg = null,
+                string file = __FILE__,
+                const size_t code_line = __LINE__) nothrow {
+            got_error |= tokenizer.check(flag, msg, file, code_line);
         }
 
         int getFuncIdx() @trusted {
@@ -292,7 +277,25 @@ struct WastParser {
             return -1;
         }
 
+        import tagion.wasm.WasmExpr;
+        static WasmExpr createWasmExpr() {
+            import std.outbuffer;
+
+            auto bout = new OutBuffer;
+            return WasmExpr(bout);
+        }
         auto func_wasmexpr = createWasmExpr;
+
+
+        // func_ctx.locals = func_type.params;
+        scope (exit) {
+            if (stage is ParserStage.FUNC_BODY) {
+                func_wasmexpr(IR.END);
+            }   
+            if (got_error) {
+                r.dropScopes;
+            }
+        }
         ParserStage innerInstr(ref WasmExpr wasmexpr,
                 ref WastTokenizer r,
                 const(Types[]) block_results,
@@ -827,6 +830,27 @@ struct WastParser {
         return ParserStage.UNDEFINED;
     }
 
+    private ParserStage parseFuncBody(
+            ref WastTokenizer r,
+            const ParserStage stage,
+            ref CodeType code_type,
+            FuncType func_type) {
+        r.check(stage is ParserStage.FUNC_BODY, "ParserStage should be a function body");
+        version (none)
+            scope (exit) {
+                wasmexpr(IR.END);
+            }
+        FunctionContext func_ctx;
+        func_ctx.locals = func_type.params;
+        func_ctx.local_names = func_type.param_names;
+        ParserStage result;
+        while (r.type == TokenType.BEGIN) {
+            result = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+        }
+        return result;
+        //    r.check(ret == ParserStage.FUNC_BODY);
+    }
+
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
         r.check(stage < ParserStage.FUNC);
@@ -877,19 +901,20 @@ struct WastParser {
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
         while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
-        //auto result_r=r.save;
         if ((arg_stage != ParserStage.TYPE) &&
                 (arg_stage != ParserStage.RESULT) ||
                 (arg_stage == ParserStage.UNDEFINED)) {
             r = rewined;
         }
-        while (r.type == TokenType.BEGIN) {
-            FunctionContext func_ctx;
-            func_ctx.locals = func_type.params;
-            func_ctx.local_names = func_type.param_names;
-            const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
-            r.check(ret == ParserStage.FUNC_BODY);
-        }
+        return parseFuncBody(r, ParserStage.FUNC_BODY, code_type, func_type);
+        version (none)
+            while (r.type == TokenType.BEGIN) {
+                FunctionContext func_ctx;
+                func_ctx.locals = func_type.params;
+                func_ctx.local_names = func_type.param_names;
+                const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+                r.check(ret == ParserStage.FUNC_BODY);
+            }
         return ParserStage.FUNC;
     }
 
