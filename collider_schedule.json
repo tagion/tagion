@@ -142,7 +142,7 @@
         },
         "int_literals" : {
           "args" : [
-                "int_literals_2.wast"
+                "int_literals.wast"
             ]
         },
         "select" : {

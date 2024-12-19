@@ -393,6 +393,7 @@ struct WastParser {
                         }
                         scope (success) {
                             func_ctx.block_pop;
+                            wasmexpr(IR.END);
                         }
                         const wasm_results = getReturns(r);
                         if (wasm_results.length == 0) {
@@ -452,15 +453,8 @@ struct WastParser {
                         break;
                     case LOCAL:
                         r.nextToken;
-                        __write("LINE %d:%s", r.line, r.getLine);
                         r.expect(TokenType.WORD);
-                        writefln("POPS %s FUNC %s RESULTS %s LOCALS %s",
-                                instr.pops,
-                                func_type.params,
-                                func_type.results,
-                                func_ctx.locals);
                         const local_idx = getLocal(r);
-                        writefln("local_idx=%d", local_idx);
                         const local_type = func_ctx.localType(local_idx);
                         r.nextToken;
                         foreach (i; 0 .. instr.pops.length) {
@@ -713,7 +707,6 @@ struct WastParser {
                 while (r.type == TokenType.BEGIN) {
                     parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
                 }
-                writefln("func_ctx.stack=%s", func_ctx.stack);
                 assert_type.results = func_ctx.stack;
                 assert_type.invoke = code_invoke.serialize;
                 assert_type.result = code_result.serialize;
@@ -810,7 +803,6 @@ struct WastParser {
                 }
                 return ParserStage.PARAM;
             case "result":
-                writefln("2. Result %d:%s token %s", r.line, r.getLine, r);
                 r.check(stage == ParserStage.FUNC);
                 r.nextToken;
                 while (r.type != TokenType.END) {
@@ -895,10 +887,6 @@ struct WastParser {
             FunctionContext func_ctx;
             func_ctx.locals = func_type.params;
             func_ctx.local_names = func_type.param_names;
-            __write("%s Call parseInstr func_type.params=%s ctx=%s ptr=%x",
-                    __FUNCTION__,
-                    func_type.params, func_ctx, &func_ctx);
-            __write("Call line %d:%s", r.line, r.getLine);
             const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
             r.check(ret == ParserStage.FUNC_BODY);
         }
