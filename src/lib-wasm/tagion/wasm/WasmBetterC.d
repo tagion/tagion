@@ -769,7 +769,7 @@ alias check = Check!WasmBetterCException;
                         ctx.push(value);
                         break;
                     case END:
-                        bout.writefln("Block %s", blocks.length);
+                        bout.writefln("//Block %s", blocks.length);
                         if (blocks.length > 0) {
                             const block_kind = blocks[$ - 1].kind;
                             if (block_kind == BlockKind.BREAK) {
