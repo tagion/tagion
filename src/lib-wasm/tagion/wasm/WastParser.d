@@ -222,7 +222,7 @@ struct WastParser {
     private ParserStage _parseInstr(
             ref WastTokenizer r,
             const ParserStage stage,
-            ref WasmExpr func_wasmexpr,//ref CodeType code_type,
+            ref WasmExpr func_wasmexpr, //ref CodeType code_type,
             ref const(FuncType) func_type,
             ref FunctionContext func_ctx) {
         int getLocal(ref const(WastTokenizer) tokenizer) @trusted {
@@ -329,13 +329,14 @@ struct WastParser {
                     }
                     return results;
                 }
-               version(none) 
-                scope (exit) {
-                    if (instr_stage == ParserStage.FUNC_BODY) {
-                        wasmexpr(IR.NOP);
-                        wasmexpr(IR.END);
+
+                version (none)
+                    scope (exit) {
+                        if (instr_stage == ParserStage.FUNC_BODY) {
+                            wasmexpr(IR.NOP);
+                            wasmexpr(IR.END);
+                        }
                     }
-                }
                 r.expect(TokenType.BEGIN);
 
                 r.nextToken;
@@ -569,24 +570,23 @@ struct WastParser {
 
         auto func_wasmexpr = createWasmExpr;
         scope (exit) {
-            
+
             code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
             writefln("code_type=%s", code_type);
         }
         __write("Instr %s %s", func_type, stage);
         if (stage is ParserStage.FUNC_BODY) {
-        ParserStage result;
-        uint count;
-        while (r.type == TokenType.BEGIN) {
-            result = _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
-            __write("FUNC_BODY count=%d token %s func_wasmexpr=%(%02x %)", count, r, func_wasmexpr.serialize);
-            count++;
-            //r.expect(TokenType.END);
+            ParserStage result;
+            uint count;
+            while (r.type == TokenType.BEGIN) {
+                result = _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+                __write("FUNC_BODY count=%d token %s func_wasmexpr=%(%02x %)", count, r, func_wasmexpr.serialize);
+                count++;
+                //r.expect(TokenType.END);
+            }
+            return result;
         }
-            func_wasmexpr(IR.END);
-        return result;
-        }
-            return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+        return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
         //return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
 
