@@ -14,6 +14,7 @@ import tagion.wasm.WasmException;
 import tagion.wasm.WasmWriter;
 import tagion.wasm.WastAssert;
 import tagion.wasm.WastTokenizer;
+import tagion.wasm.WasmExpr;
 import tagion.basic.basic : isinit;
 
 @safe:
@@ -221,10 +222,9 @@ struct WastParser {
     private ParserStage _parseInstr(
             ref WastTokenizer r,
             const ParserStage stage,
-            ref CodeType code_type,
+            ref WasmExpr func_wasmexpr,//ref CodeType code_type,
             ref const(FuncType) func_type,
             ref FunctionContext func_ctx) {
-        immutable number_of_func_arguments = func_type.params.length;
         int getLocal(ref const(WastTokenizer) tokenizer) @trusted {
             int result = func_ctx.local_names[tokenizer.token].ifThrown!RangeError(int(-1));
             if (result < 0) {
@@ -235,6 +235,7 @@ struct WastParser {
             }
             return result;
         }
+
         bool got_error;
 
         void parser_check(ref const(WastTokenizer) tokenizer,
@@ -282,15 +283,18 @@ struct WastParser {
                 r.dropScopes;
             }
         }
-        import tagion.wasm.WasmExpr;
-        static WasmExpr createWasmExpr() {
-            import std.outbuffer;
+        version (none) {
+            import tagion.wasm.WasmExpr;
 
-            auto bout = new OutBuffer;
-            return WasmExpr(bout);
+            static WasmExpr createWasmExpr() {
+                import std.outbuffer;
+
+                auto bout = new OutBuffer;
+                return WasmExpr(bout);
+            }
+
+            auto func_wasmexpr = createWasmExpr;
         }
-        auto func_wasmexpr = createWasmExpr;
-
 
         // func_ctx.locals = func_type.params;
         ParserStage innerInstr(ref WasmExpr wasmexpr,
@@ -325,7 +329,8 @@ struct WastParser {
                     }
                     return results;
                 }
-                scope(exit) {
+
+                scope (exit) {
                     if (instr_stage == ParserStage.FUNC_BODY) {
                         wasmexpr(IR.END);
                     }
@@ -538,9 +543,10 @@ struct WastParser {
             return instr_stage;
         }
 
-        scope (exit) {
-            code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
-        }
+        version (none)
+            scope (exit) {
+                code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
+            }
         setLocal(r, func_ctx);
         return innerInstr(func_wasmexpr, r, func_type.results, stage);
 
@@ -552,24 +558,29 @@ struct WastParser {
             ref CodeType code_type,
             ref const(FuncType) func_type,
             ref FunctionContext func_ctx) {
-        import tagion.wasm.WasmExpr;
+        immutable number_of_func_arguments = func_type.params.length;
         static WasmExpr createWasmExpr() {
             import std.outbuffer;
 
             auto bout = new OutBuffer;
             return WasmExpr(bout);
         }
-        version(none) {
+
         auto func_wasmexpr = createWasmExpr;
         scope (exit) {
             code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
         }
         __write("Instr %s", func_type);
-}
-        return _parseInstr(r, stage, code_type, func_type, func_ctx);
+        if (stage !is ParserStage.FUNC_BODY) {
+            return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+        }
+        ParserStage result;
+        while (r.type == TokenType.BEGIN) {
+            result = _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+        }
+        return result;
+        //return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
- 
-
 
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
         if (r.type == TokenType.COMMENT) {
@@ -869,11 +880,14 @@ struct WastParser {
         FunctionContext func_ctx;
         func_ctx.locals = func_type.params;
         func_ctx.local_names = func_type.param_names;
-        ParserStage result;
-        while (r.type == TokenType.BEGIN) {
-            result = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+        return parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+        version (none) {
+            ParserStage result;
+            while (r.type == TokenType.BEGIN) {
+                result = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+            }
+            return result;
         }
-        return result;
         //    r.check(ret == ParserStage.FUNC_BODY);
     }
 
