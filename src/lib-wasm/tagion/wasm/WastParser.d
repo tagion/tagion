@@ -218,7 +218,7 @@ struct WastParser {
         }
     }
 
-    private ParserStage parseInstr(
+    private ParserStage _parseInstr(
             ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
@@ -545,6 +545,31 @@ struct WastParser {
         return innerInstr(func_wasmexpr, r, func_type.results, stage);
 
     }
+
+    private ParserStage parseInstr(
+            ref WastTokenizer r,
+            const ParserStage stage,
+            ref CodeType code_type,
+            ref const(FuncType) func_type,
+            ref FunctionContext func_ctx) {
+        import tagion.wasm.WasmExpr;
+        static WasmExpr createWasmExpr() {
+            import std.outbuffer;
+
+            auto bout = new OutBuffer;
+            return WasmExpr(bout);
+        }
+        version(none) {
+        auto func_wasmexpr = createWasmExpr;
+        scope (exit) {
+            code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
+        }
+        __write("Instr %s", func_type);
+}
+        return _parseInstr(r, stage, code_type, func_type, func_ctx);
+    }
+ 
+
 
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
         if (r.type == TokenType.COMMENT) {
