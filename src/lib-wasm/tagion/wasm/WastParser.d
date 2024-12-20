@@ -329,9 +329,10 @@ struct WastParser {
                     }
                     return results;
                 }
-
+               version(none) 
                 scope (exit) {
                     if (instr_stage == ParserStage.FUNC_BODY) {
+                        wasmexpr(IR.NOP);
                         wasmexpr(IR.END);
                     }
                 }
@@ -568,17 +569,24 @@ struct WastParser {
 
         auto func_wasmexpr = createWasmExpr;
         scope (exit) {
+            
             code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
+            writefln("code_type=%s", code_type);
         }
-        __write("Instr %s", func_type);
-        if (stage !is ParserStage.FUNC_BODY) {
-            return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
-        }
+        __write("Instr %s %s", func_type, stage);
+        if (stage is ParserStage.FUNC_BODY) {
         ParserStage result;
+        uint count;
         while (r.type == TokenType.BEGIN) {
             result = _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+            __write("FUNC_BODY count=%d token %s func_wasmexpr=%(%02x %)", count, r, func_wasmexpr.serialize);
+            count++;
+            //r.expect(TokenType.END);
         }
+            func_wasmexpr(IR.END);
         return result;
+        }
+            return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
         //return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
 
