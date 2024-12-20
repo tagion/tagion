@@ -164,7 +164,7 @@ enum IR : ubyte {
         @Instr("select", "select", 1, IRType.CODE_TYPE, [Types.EMPTY, Types.EMPTY, Types.EMPTY], [Types.EMPTY])  SELECT              = 0x1B, ///  select
         @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.EMPTY])          LOCAL_GET           = 0x20, ///  local.get x:localidx
         @Instr("local.set", "local.set", 1, IRType.LOCAL, [Types.EMPTY])             LOCAL_SET           = 0x21, ///  local.set x:localidx
-        @Instr("local.tee", "tee_local", 1, IRType.LOCAL, [Types.EMPTY], [Types.EMPTY])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
+        @Instr("local.tee", "local.tee", 1, IRType.LOCAL, [Types.EMPTY], [Types.EMPTY])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
         @Instr("global.get", "get_global", 1, IRType.GLOBAL, [Types.EMPTY])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
         @Instr("global.set", "set_global", 1, IRType.GLOBAL, [], [Types.EMPTY])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
 

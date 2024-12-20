@@ -254,7 +254,6 @@ alias check = Check!WatException;
                 }
                 output.writeln(")");
             }
-
             block(expr, local_indent);
             output.writefln("%s)", indent);
         }
@@ -400,7 +399,6 @@ alias check = Check!WatException;
                         }
                         assert(0);
                     }
-
                     output.writefln("%s%s %s", indent, elm.instr.name, toText(elm.warg));
                     break;
                 case END:

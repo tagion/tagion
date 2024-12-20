@@ -8,6 +8,9 @@ import tagion.basic.Debug;
 import tagion.utils.convert : convert;
 import tagion.basic.Debug;
 import tagion.wasm.WasmBase;
+import std.array;
+import std.algorithm;
+import std.conv : to;
 
 enum Chars : char {
     NUL = '\0',
@@ -28,6 +31,8 @@ enum TokenType {
     WORD,
     STRING,
 }
+
+enum token_types = [EnumMembers!TokenType].map!(e => e.to!string).array;
 
 @safe @nogc pure nothrow {
     bool isWordChar(const char ch) {
@@ -172,6 +177,12 @@ struct WastTokenizer {
         }
         return T.init;
 
+    }
+
+    bool opDispatch(string TYPE)() const pure nothrow @nogc if (token_types.canFind(TYPE)) {
+        enum code = format(q{const t=TokenType.%s}, TYPE);
+        mixin(code);
+        return r.type == t;
     }
 
     string getText() nothrow {
@@ -321,7 +332,11 @@ struct WastTokenizer {
             import std.string;
 
             const result = text[start_line_pos .. $];
-            return result[0 .. result.indexOf('\n')];
+            const eol = result.indexOf('\n');
+            if (eol < 0) {
+                return result[0 .. $];
+            }
+            return result[0 .. eol];
         }
     }
 }
