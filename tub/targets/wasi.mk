@@ -28,10 +28,10 @@ env: env-wasi
 help-wasi:
 	$(PRECMD)
 	$(call log.header, $@ :: help)
-	$(call log.kvp, "make wasi", "Prebuild druntime")
-	$(call log.kvp, "make wasi-<tag>", "Execute the make <tag> on the wasi-druntime")
-	$(call log.kvp, "make wasi-run", "Will run the simple test program")
-	$(call log.kvp, "make proper-wasi", "Will remove wasi-druntime for the build")
+	$(call log.help, "make wasi", "Prebuild druntime")
+	$(call log.help, "make wasi-<tag>", "Execute the make <tag> on the wasi-druntime")
+	$(call log.help, "make wasi-run", "Will run the simple test program")
+	$(call log.help, "make proper-wasi", "Will remove wasi-druntime for the build")
 	$(call log.close)
 
 .PHONY: help-wasi

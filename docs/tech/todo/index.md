@@ -5,18 +5,70 @@
 ### Wallet 
 Description: simplify the wallet interface so that there is only one way to do everything
 
-### Hashgraph monitor updates
-Tasks: 
-- [X] Remove old events that are older than X round received. 
-- [ ] Document the hashgraph monitor widget. `docs/tech/gui-tools/hashgraph_viewer.md` 
-Assignee: yr
 
+### Epoch Voting
+- [X] Test asynchronity of the hashgraph by the amount of nodes
+- [ ] Integration test
+- [ ] Longitudinal test (Mode 1)
+
+
+### DART Synchonization services
+- [ ] Synchronize a static remote DART to a local DART
+- [ ] Synchronize a more static DART's with the same data to one local DART
+- [ ] Subscribe to a recorder from one trusted noded.
+- [ ] Iterate until until the DART has been synchronize to the common bullseye 
+Assignee: al
+
+### TVM CLI
+- [X] Simple instructions (WASM)
+- [ ] Block jump instructions.
+- [ ] Memory instructions.
+Assignee: cbr
+
+
+## Planned in Q1-25
+
+### Hashgraph node swapping
+Description: Enable a new node to join the graph
+- [ ] Enable a node to follow the graph and build the consensus with out participating
+- [ ] Detection when the join node can join the network
+- [ ] Implement consensus joining
+- [ ] Join the active node epoch generation
+Assignee: cbr
+
+### Network Name record
+- [ ] Connect the nodes via the Name records.
+- [ ] Change the node connection information.
+Assignee: lr
 
 ### Distributed nodes test
 Setup tests for multiple distributed nodes
 - [ ] Setup tool to start distribute test network
 - [ ] Implement a remote monitor tool for the distribute network
 Assignee: lr
+
+### Tauon library for rules contract
+Implement the initial library for the contract rules.
+
+### Update the DART-hash function to BLAKE3.
+
+## Backlog
+
+### Hashgraph monitor updates
+Tasks: 
+- [X] Remove old events that are older than X round received. 
+- [ ] Document the hashgraph monitor widget. `docs/tech/gui-tools/hashgraph_viewer.md` 
+Assignee: yr
+
+### Add background task to the collider
+Collider should be extended to be able to start background process.
+- [ ] Add timeout to the test task.
+- [ ] Add task dependency between the tasks.
+- [ ] Add backout task which can be used by other tests.
+Assignee: cr 
+
+### Dump of epoch 
+Implement a switch in tagionwave to enable trace dump of the wavefront.
 
 ### NNG BDD 
 Move the NNG-test to the collider BDD test-frame work
@@ -29,34 +81,8 @@ This function will be used in the testnet only.
 - [ ] Implement a contract which can call a dartModify on the DART
 Assignee: cr 
 
-### Add background task to the collider
-Collider should be extended to be able to start background process.
-- [ ] Add timeout to the test task.
-- [ ] Add task dependency between the tasks.
-- [ ] Add backout task which can be used by other tests.
-Assignee: cr 
-
-### Epoch Voting
-- [X] Test asynchronity of the hashgraph by the amount of nodes
-- [ ] Integration test
-- [ ] Longitudinal test (Mode 1)
-
-### Dump of epoch 
-Implement a switch in tagionwave to enable trace dump of the wavefront.
-
-
-## Backlog
-
 ### Logger topics
 Logger topics enable switch (Remote).
- 
-
-### Hashgraph node swapping
-Description: Enable a new node to join the graph
-- [ ] Enable a node to follow the graph and build the consensus with out participating
-- [ ] Detection when the join node can join the network
-- [ ] Implement consensus joining
-Assignee: cbr
 
 
 ### Tauon was test build fails
@@ -108,7 +134,6 @@ Assignee: lr
 A function which calculates the bullseye on a recorder 
 - [X] Implement in a unittest
 Assignee: pr
-
 
 ### Tagion API library
 - [X] Create document API

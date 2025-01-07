@@ -90,31 +90,30 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
     }
 
     // ------------------------------------- typedefs
-    pragma(msg, "NNG: ; is not need in D after a struct {}  ; <- This not needed");
     struct nng_ctx {
         uint id;
-    };
+    }
     struct nng_dialer {
         uint id;
-    };
+    }
     struct nng_listener {
         uint id;
-    };
+    }
     struct nng_pipe {
         uint id;
-    };
+    }
     struct nng_socket {
         uint id;
-    };
+    }
 
     alias nng_duration = int;
 
     struct nng_msg {
-    };
+    }
     struct nng_stat {
-    };
+    }
     struct nng_aio {
-    };
+    }
 
     alias NNG_PIPE_INITIALIZER = Alias!(nng_pipe(0));
     alias NNG_SOCKET_INITIALIZER = Alias!(nng_socket(0));
@@ -129,12 +128,12 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
     struct nng_sockaddr_inproc {
         ushort sa_family;
         char[NNG_MAXADDRLEN] sa_name;
-    };
+    }
 
     struct nng_sockaddr_path {
         ushort sa_family;
         char[NNG_MAXADDRLEN] sa_path;
-    };
+    }
 
     alias nng_sockaddr_ipc = nng_sockaddr_path;
 
@@ -143,31 +142,31 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         ushort sa_port;
         ubyte[16] sa_addr;
         uint sa_scope;
-    };
+    }
 
     struct nng_sockaddr_in {
         ushort sa_family;
         ushort sa_port;
         uint sa_addr;
-    };
+    }
 
     struct nng_sockaddr_zt {
         ushort sa_family;
         ulong sa_nwid;
         ulong sa_nodeid;
         uint sa_port;
-    };
+    }
 
     struct nng_sockaddr_abstract {
         ushort sa_family;
         ushort sa_len; // will be 0 - 107 max.
         ubyte[107] sa_name; // 108 linux/windows, without leading NUL
-    };
+    }
 
     struct nng_sockaddr_storage {
         ushort sa_family;
         ulong[16] sa_pad;
-    };
+    }
 
     union nng_sockaddr {
         ushort s_family;
@@ -178,7 +177,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         nng_sockaddr_zt s_zt;
         nng_sockaddr_abstract s_abstract;
         nng_sockaddr_storage s_storage;
-    };
+    }
     enum nng_sockaddr_family {
         NNG_AF_NONE = 65535,
         NNG_AF_UNSPEC = 0,
@@ -188,12 +187,12 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         NNG_AF_INET6 = 4,
         NNG_AF_ZT = 5, // TODO: ZeroTier
         NNG_AF_ABSTRACT = 6
-    };
+    }
 
     struct nng_iov {
         void* iov_buf;
         size_t iov_len;
-    };
+    }
 
     struct nng_url {
         char* u_rawurl; // never NULL
@@ -206,14 +205,14 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         char* u_query; // without '?', will be NULL if not specified
         char* u_fragment; // without '#', will be NULL if not specified
         char* u_requri; // includes query and fragment, "" if not specified
-    };
+    }
 
     // -- internals
 
     struct nni_list_node {
-    };
+    }
     struct nni_list {
-    };
+    }
 
     enum nni_type {
         NNI_TYPE_OPAQUE,
@@ -227,7 +226,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         NNI_TYPE_STRING,
         NNI_TYPE_SOCKADDR,
         NNI_TYPE_POINTER
-    };
+    }
 
     // ------------------------------------- common functions
 
@@ -243,11 +242,11 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
 
     alias nng_time = ulong;
     struct nng_thread {
-    };
+    }
     struct nng_mtx {
-    };
+    }
     struct nng_cv {
-    };
+    }
 
     nng_time nng_clock();
     void nng_msleep(nng_duration);
@@ -320,7 +319,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         int o_short; // Short option (no clustering!)
         int o_val; // Value stored on a good parse (>0)
         bool o_arg; // Option takes an argument if true
-    };
+    }
 
     int nng_opts_parse(int argc, const char** argv,
             const nng_optspec* opts, int* val, char** optarg, int* optidx);
@@ -549,11 +548,11 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
     // ------------------------------------- stream functions TODO:
 
     struct nng_stream {
-    };
+    }
     struct nng_stream_dialer {
-    };
+    }
     struct nng_stream_listener {
-    };
+    }
 
     void nng_stream_free(nng_stream*);
     void nng_stream_close(nng_stream*);
@@ -750,7 +749,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         NNG_HTTP_STATUS_LOOP_DETECTED = 508,
         NNG_HTTP_STATUS_NOT_EXTENDED = 510,
         NNG_HTTP_STATUS_NETWORK_AUTH_REQUIRED = 511,
-    };
+    }
 
     enum nng_mime_type : string {
         TEXT = "text/plain",
@@ -764,21 +763,21 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         GIF = "image/gif",
         PNG = "image/png",
         BINARY = "application/octet-stream"
-    };
+    }
 
     // http structures
     struct nng_http_server {
-    };
+    }
     struct nng_http_req {
-    };
+    }
     struct nng_http_res {
-    };
+    }
     struct nng_http_conn {
-    };
+    }
     struct nng_http_handler {
-    };
+    }
     struct nng_http_client {
-    };
+    }
 
     // http url api
     int nng_url_parse(nng_url**, const char*);
@@ -880,7 +879,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         WS_CLOSE = 0x8,
         WS_PING = 0x9,
         WS_PONG = 0xA
-    };
+    }
 
     enum nng_ws_reason {
         WS_CLOSE_NORMAL_CLOSE = 1000,
@@ -892,13 +891,13 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         WS_CLOSE_TOO_BIG = 1009,
         WS_CLOSE_NO_EXTENSION = 1010,
         WS_CLOSE_INTERNAL = 1011
-    };
+    }
 
     struct ws_header {
         nni_list_node node;
         char* name;
         char* value;
-    };
+    }
 
     struct ws_frame {
         nni_list_node node;
@@ -914,14 +913,14 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         ubyte* adata;
         ubyte* buf;
         nng_aio* aio;
-    };
+    }
 
     struct nni_ws {
-    };
+    }
     struct nni_ws_dialer {
-    };
+    }
     struct nni_ws_listener {
-    };
+    }
 
     // --- functions
 
@@ -930,21 +929,21 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         enum nng_tls_mode {
             NNG_TLS_MODE_CLIENT = 0,
             NNG_TLS_MODE_SERVER = 1,
-        };
+        }
         enum nng_tls_auth_mode {
             NNG_TLS_AUTH_MODE_NONE = 0,
             NNG_TLS_AUTH_MODE_OPTIONAL = 1,
             NNG_TLS_AUTH_MODE_REQUIRED = 2,
-        };
+        }
         enum nng_tls_version {
             NNG_TLS_1_0 = 0x301,
             NNG_TLS_1_1 = 0x302,
             NNG_TLS_1_2 = 0x303,
             NNG_TLS_1_3 = 0x304
-        };
+        }
 
         struct nng_tls_config {
-        };
+        }
 
         // http tls api
         int nng_tls_config_alloc(nng_tls_config**, nng_tls_mode);
