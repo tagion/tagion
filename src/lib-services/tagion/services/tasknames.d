@@ -18,6 +18,7 @@ struct TaskNames {
     string dart_interface = "dartinterface";
     string trt = "trt";
     string node_interface = "node_interface";
+    string dart_synchronization = "dart_synchronization";
 
     mixin JSONRecord;
 
