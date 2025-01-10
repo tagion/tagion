@@ -10,7 +10,7 @@ On these pages you find the current state of ideas and deliberation. Colored fla
 
 We chose to publish this because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). Only the values and guiding principles of the Tagion ["Manifesto"](./manifesto) should be adhered to at all times. 
 
-:::note[The _Tagion Governance Manifesto_]
+:::tip[The _Tagion Governance Manifesto_]
 
 Our **Manifesto** is the first approved and foundational element of the Tagion governance - download it as a PDF, or read it online [here](./manifesto). 
 Going forward, you will be able to easily identify all approved elements through the menu. Everything else on these pages is considered a proposal only - and open for discussion. 
