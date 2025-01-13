@@ -6,7 +6,7 @@ sidebar_position: 1.5
 
 
 _Written by Decard (decard.io), the initial steward of the Tagion network
-January 10, 2025_
+January 10, 2025_ (Download Manifesto as [PDF](https://www.tagion.org/resources/tagion-manifesto.pdf))
 
 
 
