@@ -12,7 +12,7 @@ We chose to publish this because we want the evolution of the network to be shap
 
 :::tip[The _Tagion Governance Manifesto_]
 
-Our **Manifesto** is the first approved and foundational element of the Tagion governance - download it as a PDF, or read it online [here](./manifesto). 
+Our **Manifesto** is the first approved and foundational element of the Tagion governance - download it as a [PD]F(https://www.tagion.org/resources/tagion-manifesto.pdf), or read it online [here](./manifesto). 
 Going forward, you will be able to easily identify all approved elements through the menu. Everything else on these pages is considered a proposal only - and open for discussion. 
 
 :::
