@@ -79,6 +79,15 @@ DVERSIONS+=HASH_ORDERING
 
 # Runs a stopwatch on all unittest modules
 # DVERSIONS+=UNIT_STOPWATCH
+# This can also be enable via the environment UNIT_STOPWATCH
+# export UNIT_STOPWARCH 1
+# The unittest can also be selected by a list of modules
+# Ex. 
+# export UNIT_MODULE tagion.hibon.Document
+# Or
+# make unittest UNIT_MODULE+=tagion.hibon.Document UNIT_MODULE+=tagion.hibon.HiBON
+# Or just add the local.mk
+
 
 INSTALL?=$(HOME)/.local/bin
 

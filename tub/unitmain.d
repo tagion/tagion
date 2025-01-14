@@ -12,29 +12,39 @@ shared static this()
 UnitTestResult customModuleUnitTester()
 {
     import std.stdio;
-    version(UNIT_STOPWATCH) import std.datetime.stopwatch;
-    version(UNIT_STOPWATCH) StopWatch sw;
+    import std.algorithm.searching : canFind;
+    import std.array : split;
+    import std.datetime.stopwatch;
+    StopWatch sw;
 
     string UNIT_MODULE = environment.get("UNIT_MODULE");
 
     // Do the same thing as the default moduleUnitTester:
     UnitTestResult result;
+    const unit_module_list=UNIT_MODULE.split(" ");
+    version(UINT_STOPWATCH) {
+        enum unit_verbose = true;
+    }
+    else {
+        const unit_verbose = environment.get("UNIT_STOPWATCH") !is string.init;
+    }
     foreach (m; ModuleInfo)
     {
         if (m)
         {
             auto fp = m.unitTest;
 
-            if(UNIT_MODULE !is string.init && UNIT_MODULE != m.name) {
+            if (UNIT_MODULE !is string.init && !unit_module_list.canFind(m.name)) {
                 continue;
             }
 
             if (fp)
             {
-                version(UNIT_STOPWATCH) sw.reset;
-                version(UNIT_STOPWATCH) sw.start;
+                if (unit_verbose) {
+                    sw.reset;
+                    sw.start;
+                }
                 ++result.executed;
-                /* stderr.writefln("Running %s", m.name); */
 
                 try
                 {
@@ -45,7 +55,9 @@ UnitTestResult customModuleUnitTester()
                 {
                     writeln(e);
                 }
-                version(UNIT_STOPWATCH) stderr.writefln("%s: %s", m.name, sw.peek);
+                if (unit_verbose) {
+                    stderr.writefln("%s: %s", m.name, sw.peek);
+                }
             }
         }
     }

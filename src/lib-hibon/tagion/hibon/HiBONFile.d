@@ -155,7 +155,7 @@ struct HiBONRange {
             }
             const doc_size = LEB128.decode!size_t(buf);
             const buf_size=doc_size.size+doc_size.value;
-            check(buf_size <= max_size, format("The read buffer size is %d max size is set to %d", buf_size, max_size));
+            check((buf_size <= max_size) || (max_size == 0), format("The read buffer size is %d max size is set to %d", buf_size, max_size));
             buf.length = buf_size;
             file.rawRead(buf[doc_size.size .. $]);
             doc = Document(buf.idup);
