@@ -5,7 +5,8 @@ import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.DARTRemoteSynchronizer;
 import tagion.crypto.Types : Fingerprint;
-import tagion.testbench.tools.Environment;
+// This should not be include in the code it only for test
+//import tagion.testbench.tools.Environment;
 import tagion.services.DARTInterface;
 import tagion.services.TRTService;
 import tagion.services.options : TaskNames;
@@ -36,7 +37,10 @@ struct DARTSynchronization {
     void task(shared(StdSecureNet) shared_net, string dst_dart_path, string src_sock_addr) {
         // setState(Ctrl.ALIVE);
         try {
-            immutable journal_path = buildPath(env.bdd_log, __MODULE__, dst_dart_path.baseName.stripExtension);
+            // env.bdd_log is only for test 
+            // The Options should be used instead
+            //immutable journal_path = buildPath(env.bdd_log, __MODULE__, dst_dart_path.baseName.stripExtension);
+            immutable journal_path = buildPath("/tmp", __MODULE__, dst_dart_path.baseName.stripExtension);
             writefln("Build journal path %s", journal_path);
             if (journal_path.exists) {
                 journal_path.rmdirRecurse;
