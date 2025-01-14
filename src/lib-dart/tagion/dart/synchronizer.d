@@ -148,14 +148,11 @@ abstract class StdSynchronizer : Synchronizer {
 
 @safe
 class JournalSynchronizer : StdSynchronizer {
-    import std.stdio : File;
-    import tagion.hibon.HiBONFile : fwrite;
     protected {
-        //BlockFile journalfile; /// The actives is stored in this journal file. Which later can be run via the replay function
-        File journalfile;
+        BlockFile journalfile; /// The actives is stored in this journal file. Which later can be run via the replay function
         Index index; /// Current block index
     }
-    this(File journalfile, const uint chunk_size = 0x400) {
+    this(BlockFile journalfile, const uint chunk_size = 0x400) {
         this.journalfile = journalfile;
         super(chunk_size);
     }
@@ -167,15 +164,12 @@ class JournalSynchronizer : StdSynchronizer {
         */
     void record(const RecordFactory.Recorder recorder) @safe {
         if (!recorder.empty) {
-            journalfile.fwrite(recorder);
-            version(none) {
             const journal = const(DART.Journal)(recorder, index);
             const allocated = journalfile.save(journal.toDoc);
             index = Index(allocated.index);
             journalfile.root_index = index;
             scope (exit) {
                 journalfile.store;
-            }
             }
         }
     }
