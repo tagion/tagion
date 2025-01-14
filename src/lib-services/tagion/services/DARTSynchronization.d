@@ -71,11 +71,12 @@ private:
             ushort sector = cast(ushort)(_rim << 8);
             verbose("Sector %04x", sector);
             immutable journal_filename = format("%s.%04x.dart_journal.hibon", journal_basename, sector);
-            BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
+            //BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
 
-            auto journalfile = BlockFile(journal_filename);
+
+            auto journalfile = File(journal_filename, "w");
             scope (exit) {
-                if (!journalfile.empty) {
+                if (journalfile.size > 0) {
                     journal_filenames ~= journal_filename;
                     verbose("Journalfile %s", journal_filename);
                     nobose("%s#%s", YELLOW, RESET);
