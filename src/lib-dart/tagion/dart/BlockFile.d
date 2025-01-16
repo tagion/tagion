@@ -35,14 +35,6 @@ import tagion.logger.Logger;
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
 enum BLOCK_SIZE = 0x80;
 
-version (unittest) {
-    import basic = tagion.basic.basic;
-
-    const(basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
-        return basic.fileId!T(FileExtension.dart, prefix);
-    }
-}
-
 extern (C) {
     int ftruncate(int fd, long length);
 }
@@ -880,3 +872,13 @@ class BlockFile {
 
     }
 }
+
+version (unittest) {
+    import basic = tagion.basic.basic;
+
+    package const(basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
+        return basic.fileId!T(FileExtension.block, prefix);
+    }
+}
+
+

@@ -168,6 +168,9 @@ class JournalSynchronizer : StdSynchronizer {
     void record(const RecordFactory.Recorder recorder) @safe {
         if (!recorder.empty) {
             journalfile.fwrite(recorder);
+            import std.stdio;
+                import tagion.hibon.HiBONJSON;
+            writefln("journalfile %s recorder %s", journalfile, recorder.toPretty);
             version(none) {
             const journal = const(DART.Journal)(recorder, index);
             const allocated = journalfile.save(journal.toDoc);
