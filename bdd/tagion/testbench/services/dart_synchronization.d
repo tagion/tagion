@@ -13,7 +13,7 @@ import std.exception;
 import tagion.crypto.Types : Fingerprint;
 import std.format;
 import tagion.testbench.tools.Environment;
-import std.path : buildPath;
+import std.path : buildPath, baseName, stripExtension;
 import tagion.actor;
 import tagion.services.DARTInterface;
 import tagion.services.DARTSynchronization;
@@ -155,9 +155,13 @@ class IsToSynchronizeTheLocalDatabase {
                 TaskNames()),
                 TaskNames().dart_interface))();
 
+        DARTSyncOptions dart_sync_opts;
+        dart_sync_opts.journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
+                .baseName.stripExtension);
+
         dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
-                TaskNames()
-                .dart_synchronization,
+                TaskNames().dart_synchronization,
+                cast(immutable) dart_sync_opts,
                 cast(shared) net,
                 local_db_path,
                 interface_opts.sock_addr))();

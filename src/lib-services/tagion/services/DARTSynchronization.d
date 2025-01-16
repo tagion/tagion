@@ -30,6 +30,13 @@ import std.path : baseName, buildPath, dirName, setExtension, stripExtension;
 import std.file;
 import std.stdio;
 import core.time;
+import tagion.json.JSONRecord;
+
+struct DARTSyncOptions{
+    string journal_path;
+
+    mixin JSONRecord;
+}
 
 /// Represents a DART Synchronization Service responsible for database sync tasks.
 @safe
@@ -40,21 +47,18 @@ struct DARTSynchronization {
     }
 
     /// Entry point for the synchronization task.
-    void task(shared(StdSecureNet) shared_net, string dst_dart_path, string src_sock_addr) {
-
-        immutable journal_path = buildPath(env.bdd_log, __MODULE__, dst_dart_path
-                .baseName.stripExtension);
-        if (journal_path.exists) {
-            journal_path.rmdirRecurse;
+    void task(immutable(DARTSyncOptions) opts, shared(StdSecureNet) shared_net, string dst_dart_path, string src_sock_addr) {
+        if (opts.journal_path.exists) {
+            opts.journal_path.rmdirRecurse;
         }
-        journal_path.mkdirRecurse;
+        opts.journal_path.mkdirRecurse;
 
         enforce(dst_dart_path.exists, "DART does not exist");
         auto net = new StdSecureNet(shared_net);
         auto dest_db = new DART(net, dst_dart_path);
 
         void sync(dartSyncRR req) @safe {
-            immutable journal_filenames = synchronize(journal_path, dest_db, src_sock_addr);
+            immutable journal_filenames = synchronize(opts.journal_path, dest_db, src_sock_addr);
             req.respond(journal_filenames);
         }
 

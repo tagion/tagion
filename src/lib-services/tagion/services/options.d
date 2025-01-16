@@ -69,6 +69,7 @@ public import tagion.services.transcript : TranscriptOptions;
 }
 public import tagion.services.TRTService : TRTOptions;
 public import tagion.services.nodeinterface : NodeInterfaceOptions;
+public import tagion.services.DARTSynchronization : DARTSyncOptions;
 
 /// All options for neuewelle
 @safe
@@ -87,6 +88,7 @@ struct Options {
     LoggerOptions logger;
     TRTOptions trt;
     NodeInterfaceOptions node_interface;
+    DARTSyncOptions sync;
 
     TaskNames task_names;
     mixin JSONRecord;
