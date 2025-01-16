@@ -11,6 +11,9 @@ RELEASE_DFLAGS+=$(DOPT)
 # Enable all debug flags
 DEBUG_ENABLE?=1
 
+# Debug symbols added
+# SYMBOLS_ENABLE=1
+
 # ERROR || INFO || undef
 # enable informational 
 WARNINGS?=INFO

@@ -338,8 +338,10 @@ struct HiBONRangeArray {
 
 static assert(isBidirectionalRange!HiBONRangeArray);
 static assert(isRandomAccessRange!HiBONRangeArray);
+static assert(isForwardRange!HiBONRangeArray);
 
 unittest {
+    import std.range;
     { /// Empty HiBON-stream
         auto fout = File(deleteme, "w");
         fout.close;
@@ -375,5 +377,30 @@ unittest {
         assert(r[0] == S(17).toDoc);
     }
 
+    { /// HiBON stream with two element
+        auto fout = File(deleteme, "w");
+        fout.fwrite(S(17));
+        fout.fwrite(S(42));
+        fout.close;
+        scope (success) {
+            deleteme.remove;
+        }
+        auto fin = File(deleteme, "r");
+        scope (exit) {
+            fin.close;
+        }
+        auto r = HiBONRangeArray(fin);
+        auto r_retro=r.retro;
+        assert(r.front == S(17).toDoc);
+        assert(!r.empty);
+        r.popFront;
+        assert(r.front == S(42).toDoc);
+        assert(!r.empty);
+        r.popFront;
+        assert(r.empty);
+        assert(r[0] == S(17).toDoc);
+        assert(r[1] == S(42).toDoc);
+        writefln("--> %-(%s %)", r_retro.map!(doc => doc.toPretty));
+    }
 
 }
