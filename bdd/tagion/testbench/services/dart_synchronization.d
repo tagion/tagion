@@ -24,6 +24,7 @@ import tagion.utils.pretend_safe_concurrency : receive, receiveOnly, receiveTime
 import core.time;
 import std.stdio;
 import tagion.dart.DARTcrud : dartBullseye, dartCheckRead, dartRead;
+import tagion.testbench.actor.util;
 
 enum feature = Feature(
         "is a service that synchronizes the DART database with another one.",
@@ -101,7 +102,7 @@ class IsToSynchronizeTheLocalDatabase {
         import tagion.dart.DARTFakeNet : DARTFakeNet;
         import tagion.utils.Term;
 
-        const number_of_archives = 10_000;
+        const number_of_archives = 10;
         const bundle_size = 1000;
 
         auto remote_db_path = buildPath(env.bdd_log, __MODULE__, remote_db_name);
@@ -154,7 +155,15 @@ class IsToSynchronizeTheLocalDatabase {
                 TaskNames()),
                 TaskNames().dart_interface))();
 
+        dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
+                TaskNames()
+                .dart_synchronization,
+                cast(shared) net,
+                local_db_path,
+                interface_opts.sock_addr))();
+
         waitforChildren(Ctrl.ALIVE, 3.seconds);
+
         return result_ok;
     }
 
@@ -165,17 +174,18 @@ class IsToSynchronizeTheLocalDatabase {
 
     @Then("we run the synchronization.")
     Document theSynchronization() {
-        auto net = new StdSecureNet;
-        net.generateKeyPair("one two three");
+        
+        // Sync.
+        auto dart_sync = dartSyncRR();
+        (() @trusted => dart_sync_handle.send(dart_sync))();
+        immutable journal_filenames = immutable(DARTSynchronization.ReplayFiles)(
+            receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
 
-        dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
-                TaskNames()
-                .dart_synchronization,
-                cast(shared) net,
-                local_db_path,
-                interface_opts.sock_addr))();
+        // Replay.
+        auto dart_replay = dartReplayRR();
+        dart_sync_handle.send(dart_replay, journal_filenames);
+        auto result = receiveOnlyTimeout!(dart_replay.Response, bool)[1];
 
-        waitforChildren(Ctrl.ALIVE, 3.seconds);
         return result_ok;
     }
 
@@ -190,7 +200,10 @@ class IsToSynchronizeTheLocalDatabase {
         dart_sync_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);
     }
+}
 
+void func(Args...)(Args args) {
+    pragma(msg, "our custom func ", Args);
 }
 
 mixin Main!(_main);

@@ -37,9 +37,10 @@ class DARTRemoteSynchronizer : JournalSynchronizer {
         
             rc = socket.send!(immutable(ubyte[]))(request_doc.serialize);
             enforce(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-
-            writefln("Query send doc: ", request_doc.toPretty);
             
+            // check here if we got any data. if dont just yield.
+            // next step is to add a timeout.
+
             auto receivedBytes = socket.receive!(immutable(ubyte[]))();
             return Document(receivedBytes);
         }
