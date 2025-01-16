@@ -619,6 +619,9 @@ received = the HiRPC received package
        
         foreach(doc; HiBONRange(journalfile)) {
             auto action_recorder=recorder(doc);
+            import tagion.hibon.HiBONJSON;
+            import tagion.basic.Debug;
+            __write("replay %s", doc.toPretty);
             modify(action_recorder);
         }
         version(none)
@@ -732,13 +735,13 @@ received = the HiRPC received package
                     auto dart_A = new DART(net, filename_A, No.read_only, from, to);
                     auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                     string[] journal_filenames;
+                        version(none)
                     scope (success) {
                         // writefln("Exit scope");
                         dart_A.close;
                         dart_B.close;
                         filename_A.remove;
                         filename_B.remove;
-                        version(none)
                         foreach (journal_filename; journal_filenames) {
                             journal_filename.remove;
                         }
