@@ -307,8 +307,11 @@ int _main(string[] args) {
                             writefln("%s", text_output);
                             continue loop_hibon_stream;
                         }
-                        inputfilename.setExtension(FileExtension.text).fwrite(text_output);
-
+                        string text_filename = inputfilename.stripExtension;
+                        if (no > 0) {
+                            text_filename = format("%s_%d", text_filename, no);
+                        }
+                        text_filename.setExtension(FileExtension.text).fwrite(text_output);
                         continue loop_hibon_stream;
                     }
                     if (stream_output) {
