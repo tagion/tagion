@@ -9,14 +9,16 @@ import std.exception : assumeUnique;
 import std.stdio : File;
 import std.typecons : No;
 import std.format;
+import std.range.primitives;
 
+@safe:
 /++
  Serialize the hibon and writes it a file
  Params:
  filename = is the name of the file
  hibon = is the HiBON object
  +/
-@safe void fwrite(const(char[]) filename, const HiBON hibon) {
+void fwrite(const(char[]) filename, const HiBON hibon) {
     file.write(filename, hibon.serialize);
 }
 
@@ -26,11 +28,11 @@ import std.format;
  filename = is the name of the file
  hibon = is the HiBON object
  +/
-@safe void fwrite(const(char[]) filename, const Document doc) {
+void fwrite(const(char[]) filename, const Document doc) {
     file.write(filename, doc.serialize);
 }
 
-@safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
+void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
     fwrite(filename, rec.toDoc);
 }
 
@@ -52,13 +54,11 @@ import std.format;
     return doc;
 }
 
-@safe
 T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
     const doc = filename.fread;
     return T(doc, args);
 }
 
-@safe
 Document fread(ref File file, const size_t max_size = 0) {
     import LEB128 = tagion.utils.LEB128;
     import std.format;
@@ -78,23 +78,19 @@ Document fread(ref File file, const size_t max_size = 0) {
     return (() @trusted => Document(assumeUnique(data)))();
 }
 
-@safe
 T fread(T)(ref File file) if (isHiBONRecord!T) {
     const doc = file.fread;
     return T(doc);
 }
 
-@safe
 void fwrite(ref File file, const Document doc) {
     file.rawWrite(doc.serialize);
 }
 
-@safe
 void fwrite(T)(ref File file, const T rec) if (isHiBONRecord!T) {
     fwrite(file, rec.toDoc);
 }
 
-@safe
 unittest {
     import std.file : deleteme, remove;
 
@@ -119,18 +115,17 @@ unittest {
     }
 }
 
-@safe
 struct HiBONRange {
-    File file;
+    private File file;
     enum default_max_size = 0x100_0000;
     size_t max_size;
-    this(File file, const size_t max_size=default_max_size) {
+    this(File file, const size_t max_size = default_max_size) {
         this.file = file;
-        this.max_size=max_size;
+        this.max_size = max_size;
         popFront;
     }
 
-    Document doc;
+    //Document doc;
     private ubyte[] buf;
     @property
     bool empty() pure const {
@@ -138,15 +133,22 @@ struct HiBONRange {
     }
 
     @property
-    Document front() pure nothrow const @nogc {
-        return doc;
+    Document front() pure nothrow const {
+        return Document(buf.idup);
+    }
+
+    T get(T)() const {
+        if (buf.empty) {
+            return T.init;
+        }
+        return T(front);
     }
 
     void popFront() {
         if (!empty) {
             buf.length = LEB128.DataSize!size_t;
-            foreach(pos; 0..buf.length) {
-                if (file.rawRead(buf[pos..pos+1]).length == 0) {
+            foreach (pos; 0 .. buf.length) {
+                if (file.rawRead(buf[pos .. pos + 1]).length == 0) {
                     break;
                 }
                 if ((buf[pos] & 0x80) == 0) {
@@ -154,11 +156,224 @@ struct HiBONRange {
                 }
             }
             const doc_size = LEB128.decode!size_t(buf);
-            const buf_size=doc_size.size+doc_size.value;
+            const buf_size = doc_size.size + doc_size.value;
             check((buf_size <= max_size) || (max_size == 0), format("The read buffer size is %d max size is set to %d", buf_size, max_size));
             buf.length = buf_size;
             file.rawRead(buf[doc_size.size .. $]);
-            doc = Document(buf.idup);
+            //doc = Document(buf.idup);
         }
     }
+
+    private this(const size_t max_size) pure nothrow {
+        this.max_size = max_size;
+    }
+}
+
+version (unittest) {
+    import tagion.hibon.HiBONRecord;
+    import std.stdio;
+    import std.file;
+    import tagion.hibon.HiBONJSON;
+    import std.algorithm;
+
+    private struct S {
+        int x;
+        mixin HiBONRecord;
+    }
+}
+
+unittest {
+    { /// Empty HiBON-stream
+        auto fout = File(deleteme, "w");
+        fout.close;
+        scope (success) {
+            deleteme.remove;
+        }
+        auto fin = File(deleteme, "r");
+        scope (exit) {
+            fin.close;
+        }
+        auto r = HiBONRange(fin);
+        assert(r.empty);
+    }
+
+    { /// HiBON stream with one element
+        auto fout = File(deleteme, "w");
+        fout.fwrite(S(17));
+        fout.close;
+        scope (success) {
+            deleteme.remove;
+        }
+        auto fin = File(deleteme, "r");
+        scope (exit) {
+            fin.close;
+        }
+        auto r = HiBONRange(fin);
+        assert(r.front == S(17).toDoc);
+
+        assert(r.get!S == S(17));
+        assert(!r.empty);
+        r.popFront;
+        assert(r.empty);
+    }
+
+    { /// HiBON stream with two element
+        auto fout = File(deleteme, "w");
+        fout.fwrite(S(17));
+        fout.fwrite(S(42));
+        fout.close;
+        scope (success) {
+            deleteme.remove;
+        }
+        auto fin = File(deleteme, "r");
+        scope (exit) {
+            fin.close;
+        }
+        auto r = HiBONRange(fin);
+        assert(r.front == S(17).toDoc);
+        assert(!r.empty);
+        r.popFront;
+        assert(r.front == S(42).toDoc);
+        assert(!r.empty);
+        r.popFront;
+        assert(r.empty);
+    }
+}
+
+static assert(isInputRange!HiBONRange);
+
+struct HiBONRangeArray {
+    private {
+        File file;
+        size_t index;
+        ubyte[] buf;
+    }
+
+    const size_t[] indices;
+    this(File file) {
+        this.file = file;
+        indices = initialize_indices;
+    }
+
+    private const(size_t[]) initialize_indices() {
+        size_t[] _indices;
+        while (true) {
+            const tell = file.tell;
+            const buf_size = bufSize;
+            if (buf_size == 0) {
+                return _indices;
+            }
+            _indices ~= tell;
+            file.seek(tell + buf_size);
+        }
+        assert(0);
+    }
+
+    private size_t bufSize() {
+        ubyte[LEB128.DataSize!size_t] local_buf;
+        const len_buf = file.rawRead(local_buf);
+        if (len_buf.length == 0) {
+            return 0;
+        }
+        const len = LEB128.decode!size_t(len_buf);
+        return len.size + len.value;
+    }
+
+    private const(ubyte[]) getBuffer(const size_t i) {
+        if (i < indices.length) {
+            file.seek(indices[i]);
+            const buf_size = bufSize;
+            if (buf.length < buf_size) {
+                buf.length = buf_size;
+            }
+            file.seek(indices[i]);
+            return file.rawRead(buf[0 .. buf_size]);
+        }
+        return null;
+    }
+
+    T get(T)() if (isHiBONRecord!T) {
+        if (empty) {
+            return T.init;
+        }
+        return T(front);
+    }
+
+    @property
+    bool empty() pure const nothrow @nogc {
+        return index >= indices.length;
+    }
+
+    @property
+    Document front() {
+        if (index < indices.length) {
+            return Document(getBuffer(index).idup);
+        }
+        return Document.init;
+    }
+
+    alias back = front;
+    void popFront() {
+        if (!empty) {
+            index++;
+        }
+    }
+
+    void popBack() {
+        index--;
+    }
+
+    HiBONRangeArray save() pure nothrow {
+        return this;
+    }
+
+    Document opIndex(const size_t i) {
+        return Document(getBuffer(i).idup);
+    }
+
+    size_t length() const pure nothrow @nogc {
+        return indices.length;
+    }
+}
+
+static assert(isBidirectionalRange!HiBONRangeArray);
+static assert(isRandomAccessRange!HiBONRangeArray);
+
+unittest {
+    { /// Empty HiBON-stream
+        auto fout = File(deleteme, "w");
+        fout.close;
+        scope (success) {
+            deleteme.remove;
+        }
+        auto fin = File(deleteme, "r");
+        scope (exit) {
+            fin.close;
+        }
+        auto r = HiBONRangeArray(fin);
+        assert(r.empty);
+    }
+
+    { /// HiBON stream with one element
+        auto fout = File(deleteme, "w");
+        fout.fwrite(S(17));
+        fout.close;
+        scope (success) {
+            deleteme.remove;
+        }
+        auto fin = File(deleteme, "r");
+        scope (exit) {
+            fin.close;
+        }
+        auto r = HiBONRangeArray(fin);
+        assert(r.front == S(17).toDoc);
+
+        assert(r.get!S == S(17));
+        assert(!r.empty);
+        r.popFront;
+        assert(r.empty);
+        assert(r[0] == S(17).toDoc);
+    }
+
+
 }
