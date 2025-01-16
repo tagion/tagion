@@ -738,6 +738,7 @@ received = the HiRPC received package
                         dart_B.close;
                         filename_A.remove;
                         filename_B.remove;
+                        version(none)
                         foreach (journal_filename; journal_filenames) {
                             journal_filename.remove;
                         }
@@ -1239,5 +1240,3 @@ received = the HiRPC received package
     }
 
 }
-
-
