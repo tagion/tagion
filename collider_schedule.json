@@ -125,7 +125,7 @@
                 "f32_export.wast", "f64_export.wast",
                 "f32_cmp_export.wast", "f64_cmp_export.wast",
                 "float_misc_export.wast"
-            ],
+            ]
         },
         "tvm_new" : {
             "args": [
@@ -133,12 +133,12 @@
                 "int_literals.wast", "int_exprs.wast",
                  "f32.wast", "f64.wast",
                  "f32_cmp.wast", "f64_cmp.wast"
-            ],
+            ]
         },
         "tvm_old" : {
             "args": [
-                "i32_export.wast", 
-            ],
+                "i32_export.wast" 
+            ]
         },
         "int_literals" : {
           "args" : [
@@ -152,7 +152,7 @@
         },
         "tvm_test1" : {
           "args" : [
-                "nested_block_value.wast"
+                "br_block.wast"
             ]
         },
         "memory" : {
