@@ -474,10 +474,7 @@ const(DARTIndex)[] contractDARTIndices(const HashNet net, const(Document) doc) {
     const contract = SignedContract(params).contract;
     const payment = PayScript(contract.script);
     const result = contract.inputs ~ payment.outputs.map!(output => net.dartIndex(output)).array;
-    pragma(msg, "Contract inputs ", typeof(contract.inputs));
-    pragma(msg, "payment output ", typeof(payment.outputs.map!(output => net.dartIndex(output)).array));
     return result;
-    // return only(contract.inputs, payment.outputs.map!(output => net.dartIndex(output))).array;
 }
 
 unittest {
