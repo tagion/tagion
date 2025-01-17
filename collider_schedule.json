@@ -112,7 +112,7 @@
           "float_misc_export.wast"
       ],
       "envs": {
-        "DCOMPILE": "ldc2 -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
+        "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error",
         "attributes": "@safe"
       },
