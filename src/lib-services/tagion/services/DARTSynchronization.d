@@ -5,7 +5,8 @@ import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.DARTRemoteSynchronizer;
 import tagion.crypto.Types : Fingerprint;
-import tagion.testbench.tools.Environment;
+// This should not be include in the code it only for test
+//import tagion.testbench.tools.Environment;
 import tagion.services.DARTInterface;
 import tagion.services.TRTService;
 import tagion.services.options : TaskNames;
@@ -21,55 +22,66 @@ import tagion.tools.Basic : nobose, noboseln, verbose;
 import tagion.utils.Term;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor;
+import tagion.services.messages;
 
-import std.exception : enforce;
+import std.exception : enforce, assumeUnique;
 import std.format;
 import std.path : baseName, buildPath, dirName, setExtension, stripExtension;
 import std.file;
 import std.stdio;
 import core.time;
+import tagion.json.JSONRecord;
+
+struct DARTSyncOptions{
+    string journal_path;
+
+    mixin JSONRecord;
+}
 
 /// Represents a DART Synchronization Service responsible for database sync tasks.
 @safe
 struct DARTSynchronization {
+
+    struct ReplayFiles {
+        string[] files;
+    }
+
     /// Entry point for the synchronization task.
-    void task(shared(StdSecureNet) shared_net, string dst_dart_path, string src_sock_addr) {
-        // setState(Ctrl.ALIVE);
-        try {
-            immutable journal_path = buildPath(env.bdd_log, __MODULE__, dst_dart_path.baseName.stripExtension);
-            writefln("Build journal path %s", journal_path);
-            if (journal_path.exists) {
-                journal_path.rmdirRecurse;
-            }
-            journal_path.mkdirRecurse;
-
-            enforce(dst_dart_path.exists, "DART does not exist");
-            auto net = new StdSecureNet(shared_net);
-            auto dest_db = new DART(net, dst_dart_path);
-            writefln("Open destination %s", dst_dart_path);
-
-            synchronize(journal_path, dest_db, src_sock_addr);
-            
-            writefln("Synchronization completed successfully");
-        } catch (Exception e) {
-            writefln("Synchronization failed: %s", e.msg);
+    void task(immutable(DARTSyncOptions) opts, shared(StdSecureNet) shared_net, string dst_dart_path, string src_sock_addr) {
+        if (opts.journal_path.exists) {
+            opts.journal_path.rmdirRecurse;
         }
-        run();
+        opts.journal_path.mkdirRecurse;
+
+        enforce(dst_dart_path.exists, "DART does not exist");
+        auto net = new StdSecureNet(shared_net);
+        auto dest_db = new DART(net, dst_dart_path);
+
+        void sync(dartSyncRR req) @safe {
+            immutable journal_filenames = synchronize(opts.journal_path, dest_db, src_sock_addr);
+            req.respond(journal_filenames);
+        }
+
+        void replay(dartReplayRR req, immutable(ReplayFiles) files) @safe {
+            replayWithFiles(dest_db, files);
+            req.respond(true);
+        }
+
+        run(&sync, &replay);
     }
 
 private:
-    string[] synchronize(string journal_basename, DART destination, string src_sock_addr) {
+    immutable(string[]) synchronize(string journal_basename, DART destination, string src_sock_addr) {
         string[] journal_filenames;
         uint count;
         enum line_width = 32;
-    
+
         foreach (ushort _rim; 0 .. ubyte.max + 1) {
             ushort sector = cast(ushort)(_rim << 8);
-            verbose("Sector %04x", sector);
             immutable journal_filename = format("%s.%04x.dart_journal.hibon", journal_basename, sector);
             BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
-
             auto journalfile = BlockFile(journal_filename);
+
             scope (exit) {
                 if (!journalfile.empty) {
                     journal_filenames ~= journal_filename;
@@ -86,16 +98,22 @@ private:
                 journalfile.close;
             }
             auto synch = new DARTRemoteSynchronizer(journalfile, destination, src_sock_addr);
-
-            auto destination_synchronizer = destination.synchronizer(synch, Rims([cast(ubyte) _rim]));
+            auto destination_synchronizer = destination.synchronizer(synch, Rims([
+                    cast(ubyte) _rim
+                ]));
             while (!destination_synchronizer.empty) {
                 (() @trusted { destination_synchronizer.call; })();
             }
         }
-        noboseln("Replay journal filenames");
-        verbose("Replay journal filenames");
-        count = 0;
-        foreach (journal_filename; journal_filenames) {
+
+        return (() @trusted => assumeUnique(journal_filenames))();
+    }
+
+    void replayWithFiles(DART destination, immutable(ReplayFiles) journal_filenames) {
+        uint count = 0;
+        enum line_width = 32;
+
+        foreach (journal_filename; journal_filenames.files) {
             destination.replay(journal_filename);
             verbose("Replay %s", journal_filename);
             nobose("%s*%s", GREEN, RESET);
@@ -105,6 +123,5 @@ private:
             }
         }
         noboseln("\n%d journal files has been synchronized", count);
-        return journal_filenames;
     }
 }
