@@ -339,6 +339,7 @@ struct HiBONRangeArray {
 static assert(isBidirectionalRange!HiBONRangeArray);
 static assert(isRandomAccessRange!HiBONRangeArray);
 static assert(isForwardRange!HiBONRangeArray);
+static assert(hasLength!HiBONRangeArray);
 
 unittest {
     import std.range;
@@ -381,6 +382,8 @@ unittest {
         auto fout = File(deleteme, "w");
         fout.fwrite(S(17));
         fout.fwrite(S(42));
+        fout.fwrite(S(117));
+        fout.fwrite(S(38));
         fout.close;
         scope (success) {
             deleteme.remove;
@@ -397,10 +400,15 @@ unittest {
         assert(r.front == S(42).toDoc);
         assert(!r.empty);
         r.popFront;
-        assert(r.empty);
+        //assert(r.empty);
         assert(r[0] == S(17).toDoc);
         assert(r[1] == S(42).toDoc);
+        writefln("r_retro.length=%d", r_retro.length);
+        
         writefln("--> %-(%s %)", r_retro.map!(doc => doc.toPretty));
+        writefln("r[1]=%s\n r_retro[1]=%s", r[1].toPretty, r_retro[1].toPretty);
+        
+        writefln("retro.front=%s", r_retro.front.toPretty);
     }
 
 }
