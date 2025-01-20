@@ -18,9 +18,6 @@ import tagion.basic.basic : EnumText, isinit;
 import tagion.errors.tagionexceptions : Check;
 import tagion.communication.HiRPC : Callers, HiRPC, HiRPCMethod;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
-
-//import tagion.dart.BlockFile : BlockFile;
-//import tagion.dart.BlockFile : Index;
 import tagion.dart.DARTBasic : DARTIndex, KEY_SPAN, Params, Queries;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTRim;
@@ -32,7 +29,6 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, label, recordType;
 
-//version = TEST_DISABLED;
 /**
  * Calculates the to-angle on the angle circle 
  * Params:
@@ -428,45 +424,6 @@ received = the HiRPC received package
         return hirpc.error(received, message, 22);
     }
 
-    /** 
- * Recorder journal
- */
-    version (none) @recordType("Journal")
-    struct Journal {
-        Index index;
-        RecordFactory.Recorder recorder;
-        enum indexName = GetLabel!(index).name;
-        enum recorderName = GetLabel!(recorder).name;
-        /**
-         * Creator of the Journal recorder
-         * Params:
-         *   manufactor = Recorder factory
-         *   doc = Journal document
-         */
-        this(RecordFactory manufactor, const Document doc) {
-            import tagion.logger.Logger;
-
-            
-
-            .check(isRecord(doc), format("Document is not a %s", This.stringof));
-            index = doc[indexName].get!Index;
-            const recorder_doc = doc[recorderName].get!Document;
-            recorder = manufactor.recorder(recorder_doc);
-        }
-        /** 
-         * Ditto
-         * Params:
-         *   recorder = DART recorder
-         *   index = index number
-         */
-        this(const RecordFactory.Recorder recorder, const Index index) const pure nothrow @nogc {
-            this.recorder = recorder;
-            this.index = index;
-        }
-
-        mixin HiBONRecord!"{}";
-    }
-
     /**
      * Creates a synchronization fiber from a synchroizer 
      * Params:
@@ -621,23 +578,8 @@ received = the HiRPC received package
 
         foreach (doc; HiBONRangeArray(journalfile).retro) {
             auto action_recorder = recorder(doc);
-            import tagion.hibon.HiBONJSON;
-            import tagion.basic.Debug;
-
-            __write("replay %s", doc.toPretty);
             modify(action_recorder);
         }
-        version (none)
-            for (Index index = journalfile.masterBlock.root_index; index != Index.init;) {
-                immutable data = journalfile.load(index);
-                const doc = Document(data);
-
-                auto journal_replay = Journal(manufactor, doc);
-                index = journal_replay.index;
-                auto action_recorder = recorder;
-                action_recorder.insert(journal_replay.recorder.archives[]);
-                modify(action_recorder);
-            }
 
     }
 
@@ -730,8 +672,7 @@ received = the HiRPC received package
 
                 ];
                 // writefln("Test 0.0");
-                //foreach (test_no; 0 .. 3) {
-                foreach (test_no; 2 .. 3) {
+                foreach (test_no; 0 .. 3) {
                     DARTFile.create(filename_A, net);
                     DARTFile.create(filename_B, net);
                     RecordFactory.Recorder recorder_B;
@@ -740,16 +681,16 @@ received = the HiRPC received package
                     auto dart_A = new DART(net, filename_A, No.read_only, from, to);
                     auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                     string[] journal_filenames;
-                        scope (success) {
-                            // writefln("Exit scope");
-                            dart_A.close;
-                            dart_B.close;
-                            filename_A.remove;
-                            filename_B.remove;
-                            foreach (journal_filename; journal_filenames) {
-                                journal_filename.remove;
-                            }
+                    scope (success) {
+                        // writefln("Exit scope");
+                        dart_A.close;
+                        dart_B.close;
+                        filename_A.remove;
+                        filename_B.remove;
+                        foreach (journal_filename; journal_filenames) {
+                            journal_filename.remove;
                         }
+                    }
 
                     switch (test_no) {
                     case 0:
@@ -781,7 +722,6 @@ received = the HiRPC received package
                         journal_filenames ~= journal_filename;
                         //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                         auto journalfile = File(journal_filename, "w");
-                        writefln("write journal_filename=%s", journal_filename);
                         auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                         // D!(sector, "%x");
@@ -790,15 +730,14 @@ received = the HiRPC received package
                         }
                     }
                     foreach (journal_filename; journal_filenames) {
-                        writefln("replay journal_filename=%s", journal_filename);
                         dart_A.replay(journal_filename);
                     }
                     //writefln("dart_A.dump");
                     //dart_A.dump;
                     //writefln("dart_B.dump");
                     //dart_B.dump;
-                    writefln("dart_A.fingerprint=%(%02x%)", dart_A.fingerprint);
-                    writefln("dart_B.fingerprint=%(%02x%)", dart_B.fingerprint);
+                    //writefln("dart_A.fingerprint=%(%02x%)", dart_A.fingerprint);
+                    //writefln("dart_B.fingerprint=%(%02x%)", dart_B.fingerprint);
 
                     assert(dart_A.fingerprint == dart_B.fingerprint);
                     if (test_no == 0) {
@@ -809,7 +748,7 @@ received = the HiRPC received package
                     }
                 }
             }
-            
+
             { // Single element different sectors
                 //
                 // writefln("Test 0.1");
@@ -861,7 +800,7 @@ received = the HiRPC received package
                 assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
-            
+
             { // Synchronization of an empty DART 
                 // from DART A against DART B with ONE archive when DART A is empty
                 DARTFile.create(filename_A, net);
@@ -896,7 +835,6 @@ received = the HiRPC received package
                 foreach (sector; dart_A.sectors) {
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
-                    //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = File(journal_filename, "w");
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
@@ -916,7 +854,7 @@ received = the HiRPC received package
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
-            
+
             { // Synchronization of an empty DART
                 // from DART A against DART B when DART A is empty
                 // writefln("Test 1");
@@ -954,7 +892,6 @@ received = the HiRPC received package
                 foreach (sector; dart_A.sectors) {
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
-                    //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = File(journal_filename, "w");
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
@@ -1006,7 +943,6 @@ received = the HiRPC received package
                 foreach (sector; dart_A.sectors) {
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
-                    //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = File(journal_filename, "w");
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
@@ -1060,7 +996,6 @@ received = the HiRPC received package
                 foreach (sector; dart_A.sectors) {
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
-                    //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = File(journal_filename, "w");
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
@@ -1114,7 +1049,6 @@ received = the HiRPC received package
                 foreach (sector; dart_A.sectors) {
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
-                    //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = File(journal_filename, "w");
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
@@ -1168,7 +1102,6 @@ received = the HiRPC received package
                 foreach (sector; dart_A.sectors) {
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
-                    //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = File(journal_filename, "w");
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
@@ -1221,7 +1154,6 @@ received = the HiRPC received package
                 foreach (sector; dart_A.sectors) {
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
-                    //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     while (!dart_A_synchronizer.empty) {
