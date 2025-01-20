@@ -133,8 +133,10 @@ endif
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
 DDEBUG_FLAGS+=$(DDEBUG)
+ifdef SYMBOLS_ENABLE
 DDEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
 DDEBUG_FLAGS+=$(DDEBUG_DEFAULTLIB)
+endif
 
 ifdef RELEASE
 DFLAGS+=$(RELEASE_DFLAGS)
