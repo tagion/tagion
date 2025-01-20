@@ -32,6 +32,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, label, recordType;
 
+//version = TEST_DISABLED;
 /**
  * Calculates the to-angle on the angle circle 
  * Params:
@@ -618,7 +619,7 @@ received = the HiRPC received package
         }
         // Adding and Removing archives
 
-        foreach (doc; HiBONRange(journalfile)) {
+        foreach (doc; HiBONRangeArray(journalfile).retro) {
             auto action_recorder = recorder(doc);
             import tagion.hibon.HiBONJSON;
             import tagion.basic.Debug;
@@ -739,7 +740,6 @@ received = the HiRPC received package
                     auto dart_A = new DART(net, filename_A, No.read_only, from, to);
                     auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                     string[] journal_filenames;
-                    version (none)
                         scope (success) {
                             // writefln("Exit scope");
                             dart_A.close;
@@ -809,7 +809,8 @@ received = the HiRPC received package
                     }
                 }
             }
-            version (TEST_DISABLED) { // Single element different sectors
+            
+            { // Single element different sectors
                 //
                 // writefln("Test 0.1");
                 DARTFile.create(filename_A, net);
@@ -860,7 +861,8 @@ received = the HiRPC received package
                 assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
-            version (TEST_DISABLED) { // Synchronization of an empty DART 
+            
+            { // Synchronization of an empty DART 
                 // from DART A against DART B with ONE archive when DART A is empty
                 DARTFile.create(filename_A, net);
                 DARTFile.create(filename_B, net);
@@ -914,7 +916,8 @@ received = the HiRPC received package
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
-            version (TEST_DISABLED) { // Synchronization of an empty DART
+            
+            { // Synchronization of an empty DART
                 // from DART A against DART B when DART A is empty
                 // writefln("Test 1");
 
@@ -972,7 +975,7 @@ received = the HiRPC received package
 
             }
 
-            version (TEST_DISABLED) { // Synchronization of a DART A which is a subset of DART B
+            { // Synchronization of a DART A which is a subset of DART B
                 // writefln("Test 2");
                 DARTFile.create(filename_A, net);
                 DARTFile.create(filename_B, net);
@@ -1025,7 +1028,7 @@ received = the HiRPC received package
 
             }
 
-            version (TEST_DISABLED) { // Synchronization of a DART A where DART A is a superset of DART B
+            { // Synchronization of a DART A where DART A is a superset of DART B
                 // writefln("Test 3");
                 DARTFile.create(filename_A, net);
                 DARTFile.create(filename_B, net);
@@ -1079,7 +1082,7 @@ received = the HiRPC received package
 
             }
 
-            version (TEST_DISABLED) { // Synchronization of a DART A where DART A is complementary of DART B
+            { // Synchronization of a DART A where DART A is complementary of DART B
                 // writefln("Test 4");
                 DARTFile.create(filename_A, net);
                 DARTFile.create(filename_B, net);
@@ -1133,7 +1136,7 @@ received = the HiRPC received package
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
 
-            version (TEST_DISABLED) { // Synchronization of a DART A where DART A of DART B has common data
+            { // Synchronization of a DART A where DART A of DART B has common data
                 // writefln("Test 5");
                 DARTFile.create(filename_A, net);
                 DARTFile.create(filename_B, net);

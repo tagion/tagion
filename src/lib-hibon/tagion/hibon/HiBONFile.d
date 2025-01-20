@@ -119,7 +119,7 @@ struct HiBONRange {
     private File file;
     enum default_max_size = 0x100_0000;
     size_t max_size;
-    this(File file, const size_t max_size = default_max_size) {
+    this(ref File file, const size_t max_size = default_max_size) {
         this.file = file;
         this.max_size = max_size;
         popFront;
@@ -247,10 +247,11 @@ struct HiBONRangeArray {
         File file;
         size_t index;
         ubyte[] buf;
+        bool the_first = true;
     }
 
     const size_t[] indices;
-    this(File file) {
+    this(ref File file) {
         this.file = file;
         indices = initialize_indices;
     }
@@ -312,7 +313,14 @@ struct HiBONRangeArray {
         return Document.init;
     }
 
-    alias back = front;
+    @property back() {
+        if (the_first && index < indices.length) {
+            index = indices.length - 1;
+            the_first = false;
+        }
+        return front;
+    }
+
     void popFront() {
         if (!empty) {
             index++;
@@ -343,6 +351,7 @@ static assert(hasLength!HiBONRangeArray);
 
 unittest {
     import std.range;
+
     { /// Empty HiBON-stream
         auto fout = File(deleteme, "w");
         fout.close;
@@ -393,7 +402,7 @@ unittest {
             fin.close;
         }
         auto r = HiBONRangeArray(fin);
-        auto r_retro=r.retro;
+        auto r_retro = r.retro;
         assert(r.front == S(17).toDoc);
         assert(!r.empty);
         r.popFront;
@@ -403,12 +412,8 @@ unittest {
         //assert(r.empty);
         assert(r[0] == S(17).toDoc);
         assert(r[1] == S(42).toDoc);
-        writefln("r_retro.length=%d", r_retro.length);
-        
-        writefln("--> %-(%s %)", r_retro.map!(doc => doc.toPretty));
-        writefln("r[1]=%s\n r_retro[1]=%s", r[1].toPretty, r_retro[1].toPretty);
-        
-        writefln("retro.front=%s", r_retro.front.toPretty);
+        assert(r_retro[1] == S(117).toDoc);
+        assert(equal(r_retro.map!(e => S(e).x), [38, 117, 42, 17]));
     }
 
 }
