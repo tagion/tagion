@@ -259,7 +259,7 @@ struct HiBONRangeArray {
     private const(size_t[]) initialize_indices() {
         size_t[] _indices;
         while (true) {
-            const tell = file.tell;
+            const tell = cast(size_t)file.tell;
             const buf_size = bufSize;
             if (buf_size == 0) {
                 return _indices;
