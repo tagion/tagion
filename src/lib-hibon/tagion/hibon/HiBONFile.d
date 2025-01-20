@@ -245,7 +245,7 @@ static assert(isInputRange!HiBONRange);
 struct HiBONRangeArray {
     private {
         File file;
-        ulong index;
+        uint index;
         ubyte[] buf;
         bool the_first = true;
     }
@@ -280,7 +280,7 @@ struct HiBONRangeArray {
         return len.size + len.value;
     }
 
-    private const(ubyte[]) getBuffer(const size_t i) {
+    private const(ubyte[]) getBuffer(const uint i) {
         if (i < indices.length) {
             file.seek(indices[i]);
             const buf_size = bufSize;
@@ -315,7 +315,7 @@ struct HiBONRangeArray {
 
     @property back() {
         if (the_first && index < indices.length) {
-            index = indices.length - 1;
+            index = cast(uint)(indices.length - 1);
             the_first = false;
         }
         return front;
@@ -336,7 +336,7 @@ struct HiBONRangeArray {
     }
 
     Document opIndex(const size_t i) {
-        return Document(getBuffer(i).idup);
+        return Document(getBuffer(cast(uint)i).idup);
     }
 
     size_t length() const pure nothrow @nogc {
