@@ -245,21 +245,21 @@ static assert(isInputRange!HiBONRange);
 struct HiBONRangeArray {
     private {
         File file;
-        size_t index;
+        ulong index;
         ubyte[] buf;
         bool the_first = true;
     }
 
-    const size_t[] indices;
+    const ulong[] indices;
     this(ref File file) {
         this.file = file;
         indices = initialize_indices;
     }
 
-    private const(size_t[]) initialize_indices() {
-        size_t[] _indices;
+    private const(ulong[]) initialize_indices() {
+        ulong[] _indices;
         while (true) {
-            const tell = cast(size_t)file.tell;
+            const tell = file.tell;
             const buf_size = bufSize;
             if (buf_size == 0) {
                 return _indices;
