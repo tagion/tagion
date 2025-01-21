@@ -218,16 +218,16 @@ struct WastTokenizer {
     uint pos;
     uint start_line_pos;
     Exception e;
-        void nextToken() pure {
-            takeNextToken;
-            //check(error_count < max_errors, format("Error count exceeds %d", max_errors));
-        }
+    void nextToken() pure {
+        takeNextToken;
+        //check(error_count < max_errors, format("Error count exceeds %d", max_errors));
+    }
 
     @nogc pure nothrow {
-        this(string text, const uint max_errors=10) {
+        this(string text, const uint max_errors = 10) {
             line = 1;
             this.text = text;
-            this.max_errors=max_errors;
+            this.max_errors = max_errors;
             popFront;
         }
 

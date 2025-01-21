@@ -277,14 +277,14 @@ struct WastParser {
                 ref WastTokenizer r,
                 const(Types[]) block_results,
                 ParserStage instr_stage) @safe nothrow {
-            scope (exit) {
-                r.expect(TokenType.END, "Expect an end ')'");
-                assumeWontThrow(r.nextToken);
-                if (func_wasmexpr != wasmexpr) {
-                    func_wasmexpr.append(wasmexpr);
-                }
-            }
             try {
+                scope (exit) {
+                    r.expect(TokenType.END, "Expect an end ')'");
+                    r.nextToken;
+                    if (func_wasmexpr != wasmexpr) {
+                        func_wasmexpr.append(wasmexpr);
+                    }
+                }
                 static const(Types)[] getReturns(ref WastTokenizer r) @safe {
                     Types[] results;
                     if (r.type == TokenType.BEGIN) {
@@ -537,17 +537,15 @@ struct WastParser {
 
         auto func_wasmexpr = createWasmExpr;
         scope (exit) {
-
             code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
-            writefln("code_type=%s", code_type);
         }
-        __write("Instr %s %s", func_type, stage);
+        //__write("Instr %s %s", func_type, stage);
         if (stage is ParserStage.FUNC_BODY) {
             ParserStage result;
             uint count;
             while (r.type == TokenType.BEGIN) {
                 result = _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
-                __write("FUNC_BODY count=%d token %s func_wasmexpr=%(%02x %)", count, r, func_wasmexpr.serialize);
+                //__write("FUNC_BODY count=%d token %s func_wasmexpr=%(%02x %)", count, r, func_wasmexpr.serialize);
                 count++;
             }
             return result;
