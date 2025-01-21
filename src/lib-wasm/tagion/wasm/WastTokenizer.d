@@ -77,7 +77,7 @@ enum token_types = [EnumMembers!TokenType].map!(e => e.to!string).array;
 
 struct WastTokenizer {
     uint error_count;
-    uint max_error;
+    uint max_errors;
     string toString() const pure nothrow @trusted {
         import std.exception : assumeWontThrow;
         import std.format;
@@ -122,18 +122,18 @@ struct WastTokenizer {
     void dropScopes() pure nothrow {
         void innerScope() nothrow {
             if (type is TokenType.BEGIN) {
-                nextToken;
+                takeNextToken;
                 while (!empty && type !is TokenType.END) {
-                    nextToken;
+                    takeNextToken;
                     innerScope;
                 }
-                nextToken;
+                takeNextToken;
                 innerScope;
             }
         }
 
         while (!empty && type !is TokenType.BEGIN && type !is TokenType.END) {
-            nextToken;
+            takeNextToken;
         }
         innerScope;
     }
@@ -218,10 +218,16 @@ struct WastTokenizer {
     uint pos;
     uint start_line_pos;
     Exception e;
+        void nextToken() pure nothrow {
+            takeNextToken;
+            //check(error_count < max_errors, format("Error count exceeds %d", max_errors));
+        }
+
     @nogc pure nothrow {
-        this(string text) {
+        this(string text, const uint max_errors=10) {
             line = 1;
             this.text = text;
+            this.max_errors=max_errors;
             popFront;
         }
 
@@ -327,7 +333,7 @@ struct WastTokenizer {
         }
 
         // Like popFront exception that it skips the Comment token
-        void nextToken() {
+        private void takeNextToken() {
             do {
                 popFront;
             }
