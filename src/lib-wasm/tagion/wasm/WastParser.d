@@ -279,13 +279,13 @@ struct WastParser {
                 ParserStage instr_stage) @safe nothrow {
             scope (exit) {
                 r.expect(TokenType.END, "Expect an end ')'");
-                r.nextToken;
+                assumeWontThrow(r.nextToken);
                 if (func_wasmexpr != wasmexpr) {
                     func_wasmexpr.append(wasmexpr);
                 }
             }
             try {
-                static const(Types)[] getReturns(ref WastTokenizer r) @safe nothrow {
+                static const(Types)[] getReturns(ref WastTokenizer r) @safe {
                     Types[] results;
                     if (r.type == TokenType.BEGIN) {
                         auto r_return = r.save;

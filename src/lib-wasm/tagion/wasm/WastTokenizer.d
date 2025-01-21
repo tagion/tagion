@@ -218,7 +218,7 @@ struct WastTokenizer {
     uint pos;
     uint start_line_pos;
     Exception e;
-        void nextToken() pure nothrow {
+        void nextToken() pure {
             takeNextToken;
             //check(error_count < max_errors, format("Error count exceeds %d", max_errors));
         }
