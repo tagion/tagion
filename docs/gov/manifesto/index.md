@@ -5,8 +5,7 @@ sidebar_position: 1.5
 # The Tagion Manifesto
 
 
-_Written by Decard (decard.io), the initial steward of the Tagion network
-January 10, 2025_ (Download Manifesto as [PDF](https://www.tagion.org/resources/tagion-manifesto.pdf))
+_Written by Decard (decard.io), the initial steward of the Tagion network, published on January 10, 2025_ (Download Manifesto as [PDF](https://www.tagion.org/resources/tagion-manifesto.pdf))
 
 
 
