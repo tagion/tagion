@@ -5,8 +5,6 @@ import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.DARTRemoteSynchronizer;
 import tagion.crypto.Types : Fingerprint;
-// This should not be include in the code it only for test
-//import tagion.testbench.tools.Environment;
 import tagion.services.DARTInterface;
 import tagion.services.TRTService;
 import tagion.services.options : TaskNames;
@@ -32,8 +30,22 @@ import std.stdio;
 import core.time;
 import tagion.json.JSONRecord;
 
-struct DARTSyncOptions{
+struct DARTSyncOptions {
+    // import tagion.services.options : contract_sock_addr;
+
+    // uint socket_timeout_mil = 1000;
+    // uint socket_attempts_mil = 30_000;
+    // string dart_prefix = "DART_";
+    // string src_sock_addr;
     string journal_path;
+
+    // void setDefault() nothrow {
+    //     src_sock_addr = contract_sock_addr(dart_prefix);
+    // }
+
+    // void setPrefix(string prefix) nothrow {
+    //     src_sock_addr = contract_sock_addr(prefix ~ dart_prefix);
+    // }
 
     mixin JSONRecord;
 }
@@ -57,6 +69,11 @@ struct DARTSynchronization {
         auto net = new StdSecureNet(shared_net);
         auto dest_db = new DART(net, dst_dart_path);
 
+        void compare(dartCompareRR req) @safe {
+            immutable result = shouldSync(net, dest_db, src_sock_addr);
+            req.respond(result);
+        }
+
         void sync(dartSyncRR req) @safe {
             immutable journal_filenames = synchronize(opts.journal_path, dest_db, src_sock_addr);
             req.respond(journal_filenames);
@@ -67,10 +84,34 @@ struct DARTSynchronization {
             req.respond(true);
         }
 
-        run(&sync, &replay);
+        run(&compare, &sync, &replay);
     }
 
 private:
+    immutable(bool) shouldSync(const SecureNet net, DART destination, string src_sock_addr) {
+
+        import nngd;
+
+        NNGSocket socket = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        scope (exit)
+            socket.close();
+        socket.recvtimeout = SOCKET_TIMEOUT;
+        enforce(socket.dial(src_sock_addr) == 0, "Failed to dial remote socket");
+
+        HiRPC hirpc = HiRPC(net);
+        auto bullseyeSender = dartBullseye(hirpc).toDoc;
+        enforce(socket.send!(immutable(ubyte[]))(bullseyeSender.serialize) == 0,
+            "Failed to send bullseye request");
+
+        auto receivedBytes = socket.receive!(immutable(ubyte[]))();
+        const receivedDoc = Document(receivedBytes);
+        auto response = hirpc.receive(receivedDoc);
+        auto message = response.message[Keywords.result].get!Document;
+        const remoteIndex = message[Params.bullseye].get!DARTIndex;
+
+        return remoteIndex == destination.bullseye;
+    }
+
     immutable(string[]) synchronize(string journal_basename, DART destination, string src_sock_addr) {
         string[] journal_filenames;
         uint count;
@@ -81,9 +122,11 @@ private:
             immutable journal_filename = format("%s.%04x.dart_journal.hibon", journal_basename, sector);
             BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
             auto journalfile = BlockFile(journal_filename);
+            // auto journalfile = File(journal_filename, "w");
 
             scope (exit) {
                 if (!journalfile.empty) {
+                // if (journalfile.size > 0) {
                     journal_filenames ~= journal_filename;
                     verbose("Journalfile %s", journal_filename);
                     nobose("%s#%s", YELLOW, RESET);

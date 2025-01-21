@@ -69,7 +69,8 @@ class IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye {
 class IsToSynchronizeTheLocalDatabase {
 
     Fingerprint remote_b;
-    ActorHandle dart_handle;
+    ActorHandle local_dart_handle;
+    ActorHandle remote_dart_handle;
     ActorHandle dart_interface_handle;
     ActorHandle dart_sync_handle;
     DARTInterfaceOptions interface_opts;
@@ -91,6 +92,7 @@ class IsToSynchronizeTheLocalDatabase {
         auto net = new StdSecureNet;
         net.generateKeyPair("dartnet very secret");
         DART.create(local_db_path, net);
+
         return result_ok;
     }
 
@@ -140,7 +142,7 @@ class IsToSynchronizeTheLocalDatabase {
             remote_dart.modify(recorder);
         }
 
-        dart_handle = (() @trusted => spawn!DARTService(
+        remote_dart_handle = (() @trusted => spawn!DARTService(
                 TaskNames().dart,
                 cast(immutable) DARTOptions(null, remote_db_path),
                 TaskNames(),
@@ -173,41 +175,49 @@ class IsToSynchronizeTheLocalDatabase {
 
     @When("the local database is not up-to-date.")
     Document notUptodate() {
-        return Document();
+        auto dart_compare = dartCompareRR();
+        (() @trusted => dart_sync_handle.send(dart_compare))();
+        immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
+
+        check(!result, "the local database is not up-to-date");
+        writefln("Is local database not up to date %s", result);
+
+        return result_ok;
     }
 
     @Then("we run the synchronization.")
     Document theSynchronization() {
-        
-        // Sync.
+
         auto dart_sync = dartSyncRR();
         (() @trusted => dart_sync_handle.send(dart_sync))();
         immutable journal_filenames = immutable(DARTSynchronization.ReplayFiles)(
             receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
 
-        // Replay.
         auto dart_replay = dartReplayRR();
         dart_sync_handle.send(dart_replay, journal_filenames);
         auto result = receiveOnlyTimeout!(dart_replay.Response, bool)[1];
 
+        check(result, "Database has been synchronized.");
         return result_ok;
     }
 
     @Then("we check that bullseyes match.")
     Document bullseyesMatch() {
-        return Document();
+        auto dart_compare = dartCompareRR();
+        (() @trusted => dart_sync_handle.send(dart_compare))();
+        immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
+
+        check(result, "bullseyes match");
+        writefln("Check that bullseyes match %s", result);
+        return result_ok;
     }
 
     void stopActor() {
-        dart_handle.send(Sig.STOP);
+        remote_dart_handle.send(Sig.STOP);
         dart_interface_handle.send(Sig.STOP);
         dart_sync_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);
     }
-}
-
-void func(Args...)(Args args) {
-    pragma(msg, "our custom func ", Args);
 }
 
 mixin Main!(_main);

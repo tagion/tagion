@@ -27,42 +27,6 @@ class DARTRemoteSynchronizer : JournalSynchronizer {
         super(journalFile);
     }
 
-    // const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request) {
-    //     Document send_remote_request(const Document request_doc) {
-    //         NNGSocket socket = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    //         scope (exit)
-    //             socket.close();
-
-    //         socket.recvtimeout = SOCKET_TIMEOUT;
-
-    //         int rc;
-    //         rc = socket.dial(src_sock_addr);
-    //         enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
-
-    //         rc = socket.send!(immutable(ubyte[]))(request_doc.serialize);
-    //         enforce(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-
-    //         auto receivedBytes = socket.receive!(immutable(ubyte[]))();
-    //         // in a while loop we check receivedBytes for any data. if empty - just yield.
-    //         // add a timeout to exclude infinite yielding.
-
-    //         bool stop;
-    //         while (!stop) {
-    //             receiveTimeout(Duration.zero, (Stop _) { stop = true; });
-    //             if (receivedBytes.length == 0) {
-    //                 (() @trusted { fiber.yield; })();
-    //             }
-    //         }
-    //         return Document(receivedBytes);
-    //     }
-
-    //     immutable request_doc = request.toDoc;
-    //     // (() @trusted { fiber.yield; })();
-    //     const response_doc = send_remote_request(request_doc);
-    //     const received = destination.hirpc.receive(response_doc);
-    //     return received;
-    // }
-
     const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request) {
         /// Sends a remote request and returns the received document.
         /// Handles socket communication with a timeout and ensures resources are cleaned up.
