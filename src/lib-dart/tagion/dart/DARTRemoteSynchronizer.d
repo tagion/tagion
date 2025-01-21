@@ -21,7 +21,7 @@ enum ATTEMPTS_TIMEOUT = 30_000.msecs;
 class DARTRemoteSynchronizer : JournalSynchronizer {
     protected DART destination;
     string src_sock_addr;
-    this(BlockFile journalFile, DART destination, string src_sock_addr) {
+    this(File journalFile, DART destination, string src_sock_addr){
         this.destination = destination;
         this.src_sock_addr = src_sock_addr;
         super(journalFile);

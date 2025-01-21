@@ -2781,7 +2781,15 @@ unittest {
             // dart_reload.dump;
             assert(equal(recorder_change[].map!(a => a.filed), reload_recorder[].map!(a => a.filed)));
         }
-
     }
-
 }
+
+version (unittest) {
+    import basic = tagion.basic.basic;
+    import tagion.basic.Types : FileExtension;
+    package const(basic.FileNames) fileId(T = DARTFile)(string prefix = null) @safe {
+        return basic.fileId!T(FileExtension.dart, prefix);
+    }
+}
+
+
