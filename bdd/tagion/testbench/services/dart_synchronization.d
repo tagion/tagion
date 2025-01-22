@@ -158,6 +158,7 @@ class IsToSynchronizeTheLocalDatabase {
                 TaskNames().dart_interface))();
 
         DARTSyncOptions dart_sync_opts;
+        dart_sync_opts.src_sock_addr = interface_opts.sock_addr;
         dart_sync_opts.journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
                 .baseName.stripExtension);
 
@@ -165,8 +166,7 @@ class IsToSynchronizeTheLocalDatabase {
                 TaskNames().dart_synchronization,
                 cast(immutable) dart_sync_opts,
                 cast(shared) net,
-                local_db_path,
-                interface_opts.sock_addr))();
+                local_db_path))();
 
         waitforChildren(Ctrl.ALIVE, 3.seconds);
 
@@ -180,7 +180,7 @@ class IsToSynchronizeTheLocalDatabase {
         immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
 
         check(!result, "the local database is not up-to-date");
-        writefln("Is local database not up to date %s", result);
+        writefln("Is local database up to date %s", result);
 
         return result_ok;
     }
