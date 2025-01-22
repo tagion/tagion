@@ -171,7 +171,7 @@ struct WastParser {
                         const name = r.token;
                         r.nextToken;
                         const wasm_type = r.token.getType;
-                        tokenizer.check(wasm_type != Types.EMPTY, format("Invalid type %s", r.token));
+                        tokenizer.valid(wasm_type != Types.EMPTY, format("Invalid type %s", r.token));
                         r.nextToken;
                         func_ctx.local_names[name] = cast(int) func_ctx.locals.length;
                         func_ctx.locals ~= wasm_type;
@@ -220,7 +220,7 @@ struct WastParser {
                 result = tokenizer.token
                     .to!int
                     .ifThrown!ConvException(-1);
-                tokenizer.check(result >= 0, "Local register expected");
+                tokenizer.valid(result >= 0, "Local register expected");
             }
             return result;
         }
@@ -276,8 +276,11 @@ struct WastParser {
         ParserStage innerInstr(ref WasmExpr wasmexpr,
                 ref WastTokenizer r,
                 const(Types[]) block_results,
-                ParserStage instr_stage) @safe nothrow {
-            try {
+                ParserStage instr_stage) @safe {
+            //try {
+                scope(failure) {
+                    r.dropScopes;
+                }
                 scope (exit) {
                     r.expect(TokenType.END, "Expect an end ')'");
                     r.nextToken;
@@ -313,30 +316,47 @@ struct WastParser {
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 const instr = instrWastLookup.get(r.token, illegalInstr);
+                __write("instr %s", instr);
                 string label;
                 with (IRType) {
                     final switch (instr.irtype) {
                     case CODE:
                         r.nextToken;
-                        const sp = func_ctx.stack.length;
-
-                        while (sp + instr.pops.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                        //const sp = func_ctx.stack.length;
+                        
+                        while (r.BEGIN) {
+                            instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                         }
-                        parser_check(r, instr.pops == func_ctx.stack[sp .. $],
+                        version(none)
+                        while (sp + instr.pops.length > func_ctx.stack.length) {
+                            instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                            
+                            __write("%s Stage=%s", instr.irtype, stage);
+                            if (instr_stage == ParserStage.BREAK) {
+                                break;
+                            }
+                        }
+                        /*
+                        if (instr_stage == ParserStage.BREAK) {
+                        func_ctx.drop(instr.pops.length);
+                        }
+                        else {
+                            parser_check(r, instr.pops == func_ctx.stack[sp .. $],
                                 format("Type mismatch %s %s", instr.pops, func_ctx.stack[sp .. $]));
                         func_ctx.drop(instr.pops.length);
                         func_ctx.push(instr.pushs);
+                        }
+                        */
                         wasmexpr(irLookupTable[instr.name]);
                         break;
                     case CODE_EXTEND:
                         r.nextToken;
-                        const sp = func_ctx.stack.length;
+                        //const sp = func_ctx.stack.length;
 
-                        while (sp + instr.pops.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                        while (r.BEGIN) {
+                            instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                         }
-                        func_ctx.push(instr.pushs);
+                        //func_ctx.push(instr.pushs);
                         wasmexpr(IR.EXNEND, instr.opcode);
                         break;
                     case CODE_TYPE:
@@ -345,25 +365,27 @@ struct WastParser {
                         if (wasm_results.empty) {
                             wasm_results = block_results;
                         }
-                        const sp = func_ctx.stack.length;
-                        bool breakout;
-                        while (r.type == TokenType.BEGIN) {
-                            const sub_stage = innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE);
-                            breakout |= (sub_stage == ParserStage.END);
+                        //const sp = func_ctx.stack.length;
+                        //bool breakout;
+                        while (r.BEGIN) {
+                            instr_stage = innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE);
+                            //breakout |= (sub_stage == ParserStage.END);
                         }
+                        version(none) {
                         if (!breakout) {
                             func_ctx.drop(instr.pops.length);
                         }
                         func_ctx.push(instr.pushs);
+                        }
                         wasmexpr(irLookupTable[instr.name]);
                         break;
                     case RETURN:
                         r.nextToken;
-                        const sp = func_ctx.stack.length;
-                        while (sp + func_type.results.length > func_ctx.stack.length) {
-                            innerInstr(wasmexpr, r, func_type.results, ParserStage.CODE);
+                        //const sp = func_ctx.stack.length;
+                        while (r.BEGIN) {
+                            instr_stage=innerInstr(wasmexpr, r, func_type.results, ParserStage.CODE);
                         }
-                        func_ctx.drop(func_type.results.length);
+                        //func_ctx.drop(func_type.results.length);
                         wasmexpr(irLookupTable[instr.name]);
                         break;
                     case BLOCK:
@@ -400,17 +422,19 @@ struct WastParser {
                             const blk = func_ctx.block_peek(r.token);
                             r.nextToken;
                             const sp = func_ctx.stack.length;
+                                __write("BRANCH BEGIN");
+                            instr_stage = ParserStage.BREAK;
                             while (r.type == TokenType.BEGIN) {
                                 writefln(" == %s sp=%d size=%d blk=%d block_results=%d", r.token, sp, func_ctx.stack
                                         .length, blk.types.length, block_results.length);
-                                innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                                instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                             }
+                            __write("After br begin %s", r);
                             const number_of_args = func_ctx.stack.length - sp;
                             check(block_results.length == number_of_args,
                                     format("Branch expect %-(%s %) but got %s arguments", block_results
                                     .map!(t => typesName(t)), number_of_args));
                             wasmexpr(IR.BR, blk.idx);
-                            instr_stage = ParserStage.END;
                             break;
                         default:
                             assert(0, format("Illegal token %s in %s", r.token, BRANCH));
@@ -508,11 +532,13 @@ struct WastParser {
                     }
 
                 }
+                    /*
             }
             catch (Exception e) {
                 r.error(e);
                 r.dropScopes;
             }
+                        */
             return instr_stage;
         }
 
@@ -561,16 +587,15 @@ struct WastParser {
         if (r.type == TokenType.BEGIN) {
             string label;
             string arg;
-            Types[] result_types;
             r.nextToken;
             bool not_ended;
             scope (exit) {
-                r.check(r.type == TokenType.END || not_ended, "Missing end");
+                r.valid(r.type == TokenType.END || not_ended, "Missing end");
                 r.nextToken;
             }
             switch (r.token) {
             case "module":
-                r.check(stage < ParserStage.MODULE, "Module expected");
+                r.valid(stage < ParserStage.MODULE, "Module expected");
                 r.nextToken;
                 while (r.type == TokenType.BEGIN) {
                     parseModule(r, ParserStage.MODULE);
@@ -598,7 +623,7 @@ struct WastParser {
                     }
                 }
                 else {
-                    r.check(stage == ParserStage.FUNC, "Only allowed inside a function scope");
+                    r.valid(stage == ParserStage.FUNC, "Only allowed inside a function scope");
 
                     if (r.type == TokenType.WORD && r.token.getType is Types.EMPTY) {
                         label = r.token;
@@ -613,7 +638,7 @@ struct WastParser {
                 }
                 return ParserStage.PARAM;
             case "result":
-                r.check(stage == ParserStage.FUNC, "Result only allowed inside function declaration");
+                r.valid(stage == ParserStage.FUNC, "Result only allowed inside function declaration");
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 arg = r.token;
@@ -624,7 +649,7 @@ struct WastParser {
                 scope (exit) {
                     writer.section!(Section.MEMORY).sectypes ~= memory_type;
                 }
-                r.check(stage == ParserStage.MODULE, "Memory statement only allowed after memory");
+                r.valid(stage == ParserStage.MODULE, "Memory statement only allowed after memory");
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 label = r.token;
@@ -653,7 +678,7 @@ struct WastParser {
                 scope (exit) {
                     writer.section!(Section.DATA).sectypes ~= data_type;
                 }
-                r.check(stage == ParserStage.MEMORY, "Memory section expected");
+                r.valid(stage == ParserStage.MEMORY, "Memory section expected");
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 data_type.mode = DataMode.PASSIVE;
@@ -667,7 +692,7 @@ struct WastParser {
                 scope (exit) {
                     writer.section!(Section.EXPORT).sectypes ~= export_type;
                 }
-                r.check(stage == ParserStage.MODULE || stage == ParserStage.FUNC, "Function or module stage expected");
+                r.valid(stage == ParserStage.MODULE || stage == ParserStage.FUNC, "Function or module stage expected");
 
                 r.nextToken;
                 r.expect(TokenType.STRING);
@@ -678,7 +703,7 @@ struct WastParser {
                     export_type.idx = func_idx.get(r.token, -1);
                 }
                 export_type.desc = IndexType.FUNC;
-                r.check(export_type.idx >= 0, "Export index should be positive or zero");
+                r.valid(export_type.idx >= 0, "Export index should be positive or zero");
 
                 r.nextToken;
                 return ParserStage.EXPORT;
@@ -696,12 +721,12 @@ struct WastParser {
                 r.nextToken;
                 FuncType func_type;
                 const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type);
-                r.check(ret == ParserStage.TYPE || ret == ParserStage.PARAM, "Import state only allowed inside type or param");
+                r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM, "Import state only allowed inside type or param");
 
                 return stage;
             case "assert_return_nan":
             case "assert_return":
-                r.check(stage == ParserStage.BASE, "Assert not allowed here");
+                r.valid(stage == ParserStage.BASE, "Assert not allowed here");
                 Assert assert_type;
                 if (r.token == "assert_return_nan") {
                     assert_type.method = Assert.Method.Return_nan;
@@ -725,7 +750,7 @@ struct WastParser {
                 wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
             case "assert_trap":
-                r.check(stage == ParserStage.BASE, "Assert not allowed here");
+                r.valid(stage == ParserStage.BASE, "Assert not allowed here");
                 Assert assert_type;
                 assert_type.method = Assert.Method.Trap;
                 assert_type.name = r.token;
@@ -743,7 +768,7 @@ struct WastParser {
                 r.nextToken;
                 return ParserStage.ASSERT;
             case "assert_invalid":
-                r.check(stage == ParserStage.BASE, "Assert not allowed here");
+                r.valid(stage == ParserStage.BASE, "Assert not allowed here");
                 r.nextToken;
                 parseModule(r, ParserStage.ASSERT);
                 r.expect(TokenType.STRING);
@@ -775,7 +800,7 @@ struct WastParser {
             r.nextToken;
             bool not_ended;
             scope (exit) {
-                r.check(r.type == TokenType.END || not_ended, "Expected ended");
+                r.valid(r.type == TokenType.END || not_ended, "Expected ended");
                 r.nextToken;
             }
             switch (r.token) {
@@ -793,7 +818,7 @@ struct WastParser {
                     }
                 }
                 else {
-                    r.check(stage == ParserStage.FUNC, "Only allowed inside a function");
+                    r.valid(stage == ParserStage.FUNC, "Only allowed inside a function");
 
                     if (r.type == TokenType.WORD && r.token.getType is Types.EMPTY) {
                         const label = r.token;
@@ -803,7 +828,7 @@ struct WastParser {
                         func_type.param_names[label] = cast(int) func_type.params.length;
                         const get_type = r.token.getType;
                         func_type.params ~= get_type;
-                        r.check(get_type !is Types.EMPTY, "Illegal type");
+                        r.valid(get_type !is Types.EMPTY, "Illegal type");
                         r.nextToken;
                     }
                     while (r.type == TokenType.WORD && r.token.getType !is Types.EMPTY) {
@@ -814,7 +839,7 @@ struct WastParser {
                 }
                 return ParserStage.PARAM;
             case "result":
-                r.check(stage == ParserStage.FUNC, "Result only allowed inside a function declartion");
+                r.valid(stage == ParserStage.FUNC, "Result only allowed inside a function declartion");
                 r.nextToken;
                 while (r.type != TokenType.END) {
                     immutable type = r.token.getType;
@@ -837,7 +862,7 @@ struct WastParser {
             const ParserStage stage,
             ref CodeType code_type,
             FuncType func_type) {
-        r.check(stage is ParserStage.FUNC_BODY, "ParserStage should be a function body");
+        r.valid(stage is ParserStage.FUNC_BODY, "ParserStage should be a function body");
         FunctionContext func_ctx;
         func_ctx.locals = func_type.params;
         func_ctx.local_names = func_type.param_names;
@@ -846,7 +871,7 @@ struct WastParser {
 
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
-        r.check(stage < ParserStage.FUNC, "Should been outside function decleration");
+        r.valid(stage < ParserStage.FUNC, "Should been outside function decleration");
         auto type_section = writer.section!(Section.TYPE);
 
         const type_idx = cast(int) type_section.sectypes.length;
@@ -905,7 +930,7 @@ struct WastParser {
                 func_ctx.locals = func_type.params;
                 func_ctx.local_names = func_type.param_names;
                 const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
-                r.check(ret == ParserStage.FUNC_BODY);
+                r.valid(ret == ParserStage.FUNC_BODY);
             }
         return ParserStage.FUNC;
     }

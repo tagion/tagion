@@ -88,7 +88,7 @@ struct WastTokenizer {
 
     void check(const bool flag, string msg, string file = __FILE__, const size_t code_line = __LINE__) pure {
         if (!flag) {
-            throw new WastTokenizerException(msg, this, file, code_line);
+            throw e=new WastTokenizerException(msg, this, file, code_line);
         }
     }
 
@@ -122,18 +122,18 @@ struct WastTokenizer {
     void dropScopes() pure nothrow {
         void innerScope() nothrow {
             if (type is TokenType.BEGIN) {
-                takeNextToken;
+                takeToken;
                 while (!empty && type !is TokenType.END) {
-                    takeNextToken;
+                    takeToken;
                     innerScope;
                 }
-                takeNextToken;
+                takeToken;
                 innerScope;
             }
         }
 
         while (!empty && type !is TokenType.BEGIN && type !is TokenType.END) {
-            takeNextToken;
+            takeToken;
         }
         innerScope;
     }
@@ -219,8 +219,8 @@ struct WastTokenizer {
     uint start_line_pos;
     Exception e;
     void nextToken() pure {
-        takeNextToken;
-        //check(error_count < max_errors, format("Error count exceeds %d", max_errors));
+        takeToken;
+        check(error_count < max_errors, format("Error count exceeds %d", max_errors));
     }
 
     @nogc pure nothrow {
@@ -333,7 +333,7 @@ struct WastTokenizer {
         }
 
         // Like popFront exception that it skips the Comment token
-        private void takeNextToken() {
+        private void takeToken() {
             do {
                 popFront;
             }
