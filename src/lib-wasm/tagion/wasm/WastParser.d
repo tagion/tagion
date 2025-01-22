@@ -83,44 +83,10 @@ struct WastParser {
 
     struct FunctionContext {
         Block[] block_stack;
-        //const(Types)[] stack;
         const(Types)[] locals;
         int[string] local_names;
         int blk_idx;
 
-        version(none) {
-        void push(const Types t) pure nothrow {
-            stack ~= t;
-        }
-
-        void push(const(Types[]) t) pure nothrow {
-            stack ~= t;
-        }
-
-        Types pop() pure {
-            if (stack.length == 0) {
-                throw new WasmException("Stack empty");
-            }
-            scope (exit) {
-                stack.length--;
-            }
-            return stack[$ - 1];
-        }
-
-        Types peek(const int idx = 0) const pure {
-            if ((idx >= stack.length) || (idx < 0)) {
-                throw new WasmException("Stack empty");
-            }
-            return stack[$ - idx - 1];
-        }
-
-        void drop(const size_t n) pure {
-            if (stack.length < n) {
-                throw new WasmException("Stack underflow");
-            }
-            stack.length -= n;
-        }
-    }
         void block_push(const int idx) pure nothrow {
             block_stack ~= Block(idx);
         }
@@ -323,41 +289,16 @@ struct WastParser {
                     final switch (instr.irtype) {
                     case CODE:
                         r.nextToken;
-                        //const sp = func_ctx.stack.length;
-                        
                         while (r.BEGIN) {
                             instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                         }
-                        version(none)
-                        while (sp + instr.pops.length > func_ctx.stack.length) {
-                            instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
-                            
-                            __write("%s Stage=%s", instr.irtype, stage);
-                            if (instr_stage == ParserStage.BREAK) {
-                                break;
-                            }
-                        }
-                        /*
-                        if (instr_stage == ParserStage.BREAK) {
-                        func_ctx.drop(instr.pops.length);
-                        }
-                        else {
-                            parser_check(r, instr.pops == func_ctx.stack[sp .. $],
-                                format("Type mismatch %s %s", instr.pops, func_ctx.stack[sp .. $]));
-                        func_ctx.drop(instr.pops.length);
-                        func_ctx.push(instr.pushs);
-                        }
-                        */
                         wasmexpr(irLookupTable[instr.name]);
                         break;
                     case CODE_EXTEND:
                         r.nextToken;
-                        //const sp = func_ctx.stack.length;
-
                         while (r.BEGIN) {
                             instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                         }
-                        //func_ctx.push(instr.pushs);
                         wasmexpr(IR.EXNEND, instr.opcode);
                         break;
                     case CODE_TYPE:
@@ -366,27 +307,17 @@ struct WastParser {
                         if (wasm_results.empty) {
                             wasm_results = block_results;
                         }
-                        //const sp = func_ctx.stack.length;
-                        //bool breakout;
                         while (r.BEGIN) {
                             instr_stage = innerInstr(wasmexpr, r, wasm_results, ParserStage.CODE);
                             //breakout |= (sub_stage == ParserStage.END);
-                        }
-                        version(none) {
-                        if (!breakout) {
-                            func_ctx.drop(instr.pops.length);
-                        }
-                        func_ctx.push(instr.pushs);
                         }
                         wasmexpr(irLookupTable[instr.name]);
                         break;
                     case RETURN:
                         r.nextToken;
-                        //const sp = func_ctx.stack.length;
                         while (r.BEGIN) {
                             instr_stage=innerInstr(wasmexpr, r, func_type.results, ParserStage.CODE);
                         }
-                        //func_ctx.drop(func_type.results.length);
                         wasmexpr(irLookupTable[instr.name]);
                         break;
                     case BLOCK:
@@ -422,15 +353,9 @@ struct WastParser {
                             r.nextToken;
                             const blk = func_ctx.block_peek(r.token);
                             r.nextToken;
-                                /*
-                            const sp = func_ctx.stack.length;
-                                __write("BRANCH BEGIN");
-                            */
-                            instr_stage = ParserStage.BREAK;
                             while (r.BEGIN) {
                                 instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                             }
-                            __write("After br begin %s", r);
                             wasmexpr(IR.BR, blk.idx);
                             break;
                         default:
