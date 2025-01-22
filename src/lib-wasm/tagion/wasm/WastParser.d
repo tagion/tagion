@@ -83,11 +83,12 @@ struct WastParser {
 
     struct FunctionContext {
         Block[] block_stack;
-        const(Types)[] stack;
+        //const(Types)[] stack;
         const(Types)[] locals;
         int[string] local_names;
         int blk_idx;
 
+        version(none) {
         void push(const Types t) pure nothrow {
             stack ~= t;
         }
@@ -119,7 +120,7 @@ struct WastParser {
             }
             stack.length -= n;
         }
-
+    }
         void block_push(const int idx) pure nothrow {
             block_stack ~= Block(idx);
         }
@@ -421,19 +422,15 @@ struct WastParser {
                             r.nextToken;
                             const blk = func_ctx.block_peek(r.token);
                             r.nextToken;
+                                /*
                             const sp = func_ctx.stack.length;
                                 __write("BRANCH BEGIN");
+                            */
                             instr_stage = ParserStage.BREAK;
-                            while (r.type == TokenType.BEGIN) {
-                                writefln(" == %s sp=%d size=%d blk=%d block_results=%d", r.token, sp, func_ctx.stack
-                                        .length, blk.types.length, block_results.length);
+                            while (r.BEGIN) {
                                 instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                             }
                             __write("After br begin %s", r);
-                            const number_of_args = func_ctx.stack.length - sp;
-                            check(block_results.length == number_of_args,
-                                    format("Branch expect %-(%s %) but got %s arguments", block_results
-                                    .map!(t => typesName(t)), number_of_args));
                             wasmexpr(IR.BR, blk.idx);
                             break;
                         default:
@@ -466,9 +463,6 @@ struct WastParser {
                         foreach (i; 0 .. instr.pops.length) {
                             innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                         }
-                        if (instr.pushs.length) {
-                            func_ctx.push(local_type);
-                        }
                         wasmexpr(irLookupTable[instr.name], local_idx);
                         break;
                     case GLOBAL:
@@ -500,19 +494,15 @@ struct WastParser {
                         const ir = irLookupTable[instr.name];
                         with (IR) switch (ir) {
                         case I32_CONST:
-                            func_ctx.push(Types.I32);
                             wasmexpr(ir, r.get!int);
                             break;
                         case I64_CONST:
-                            func_ctx.push(Types.I64);
                             wasmexpr(ir, r.get!long);
                             break;
                         case F32_CONST:
-                            func_ctx.push(Types.F32);
                             wasmexpr(ir, r.get!float);
                             break;
                         case F64_CONST:
-                            func_ctx.push(Types.F64);
                             wasmexpr(ir, r.get!double);
                             break;
                         default:
@@ -744,7 +734,7 @@ struct WastParser {
                 while (r.type == TokenType.BEGIN) {
                     parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
                 }
-                assert_type.results = func_ctx.stack;
+                //assert_type.results = func_ctx.stack;
                 assert_type.invoke = code_invoke.serialize;
                 assert_type.result = code_result.serialize;
                 wast_assert.asserts ~= assert_type;
