@@ -290,13 +290,13 @@ struct WastParser {
                 }
                 static const(Types)[] getReturns(ref WastTokenizer r) @safe {
                     Types[] results;
-                    if (r.type == TokenType.BEGIN) {
+                    if (r.BEGIN) {
                         auto r_return = r.save;
                         r_return.nextToken;
 
                         if (r_return.token == "result") {
                             r_return.nextToken;
-                            while (r_return.type == TokenType.WORD) {
+                            while (r_return.WORD) {
                                 r_return.expect(TokenType.WORD);
                                 results ~= r_return.token.getType;
                                 r_return.nextToken;
@@ -448,10 +448,10 @@ struct WastParser {
                     case CALL:
                         r.nextToken;
                         const idx = getFuncIdx();
-                        label = r.token;
+                        //label = r.token;
                         r.nextToken;
-                        while (r.type == TokenType.BEGIN) {
-                            innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
+                        while (r.BEGIN) {
+                            instr_stage=innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                         }
                         wasmexpr(IR.CALL, idx);
                         break;
