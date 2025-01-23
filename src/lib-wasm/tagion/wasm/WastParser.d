@@ -807,10 +807,11 @@ struct WastParser {
                 parseModule(export_tokenizer, ParserStage.FUNC);
 
                 auto export_type = &writer.section!(Section.EXPORT).sectypes[$ - 1];
+                __write("export_type %s", *export_type);
                 export_type.idx = func_idx[export_type.name] = type_idx;
             }
-            const type_index = cast(uint) writer.section!(Section.CODE).sectypes.length;
-            writer.section!(Section.FUNCTION).sectypes ~= TypeIndex(type_index);
+            //const type_index = cast(uint) writer.section!(Section.CODE).sectypes.length;
+            writer.section!(Section.FUNCTION).sectypes ~= TypeIndex(type_idx);
             writer.section!(Section.CODE).sectypes ~= code_type;
             //writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes.length);
         }
