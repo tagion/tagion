@@ -788,7 +788,9 @@ struct WastParser {
         CodeType code_type;
         r.valid(stage < ParserStage.FUNC, "Should been outside function decleration");
         auto type_section = writer.section!(Section.TYPE);
-
+        string func_name;
+        FuncType func_type;
+        func_type.type = Types.FUNC;
         const type_idx = cast(int) type_section.sectypes.length;
         WastTokenizer export_tokenizer;
         scope (exit) {
@@ -804,11 +806,9 @@ struct WastParser {
             //writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes.length);
         }
 
-        FuncType func_type;
-        func_type.type = Types.FUNC;
-        scope (exit) {
-            type_section.sectypes ~= func_type;
-        }
+            scope (exit) {
+                type_section.sectypes ~= func_type;
+            }
 
         r.nextToken;
         if (r.BEGIN) {
