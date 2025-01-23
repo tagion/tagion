@@ -188,16 +188,20 @@ import tagion.hibon.HiBONRecord : exclude;
     int typeIdx(const Types type, const(Types[]) params, const(Types[]) results) const pure nothrow {
         import std.algorithm;
 
-        return cast(int) mod[Section.TYPE].sectypes
-            .countUntil!(t => (t.type == type) &&
-                    equal(params, t.params) &&
-                    equal(results, t.results));
+        auto type_sec = mod[Section.TYPE];
+        if (type_sec) {
+            return cast(int) type_sec.sectypes
+                .countUntil!(t => (t.type == type) &&
+                        equal(params, t.params) &&
+                        equal(results, t.results));
+        }
+        return -1;
     }
 
     int createTypeIdx(ref WasmSection.FuncType func_type) pure nothrow {
         auto type_idx = typeIdx(func_type.type, func_type.params, func_type.results);
         if (type_idx < 0) {
-            type_idx = cast(int) mod[Section.TYPE].sectypes.length;
+            type_idx = cast(int) section!(Section.TYPE).sectypes.length;
             mod[Section.TYPE].sectypes ~= func_type;
         }
         return type_idx;
