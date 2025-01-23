@@ -794,9 +794,9 @@ struct WastParser {
         string func_name;
         FuncType func_type;
         func_type.type = Types.FUNC;
-        const type_idx = cast(int) type_section.sectypes.length;
         WastTokenizer export_tokenizer;
         scope (exit) {
+        const type_idx = cast(int) type_section.sectypes.length;
             type_section.sectypes ~= func_type;
             if (func_name) {
                 func_idx[func_name] = type_idx;
