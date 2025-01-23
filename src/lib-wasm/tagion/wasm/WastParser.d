@@ -797,6 +797,7 @@ struct WastParser {
         func_type.type = Types.FUNC;
         WastTokenizer export_tokenizer;
         scope (exit) {
+           __write("func_type %s", func_type); 
             auto type_section = writer.section!(Section.TYPE);
             const type_idx = cast(int) type_section.sectypes.length;
             type_section.sectypes ~= func_type;
@@ -819,10 +820,10 @@ struct WastParser {
         r.nextToken;
         if (r.BEGIN) {
             export_tokenizer = r.save;
-            while (!r.empty && (r.type != TokenType.END)) {
+            while (!r.empty && (!r.END)) {
                 r.nextToken;
             }
-            check(r.type == TokenType.END, "End expected");
+            check(r.END, "End expected");
             r.nextToken;
         }
         else if (r.WORD) {
