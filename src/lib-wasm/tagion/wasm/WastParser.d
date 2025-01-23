@@ -482,6 +482,9 @@ struct WastParser {
             code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
         }
         //__write("Instr %s %s", func_type, stage);
+        scope (exit) {
+            func_wasmexpr(IR.END);
+        }
         if (stage is ParserStage.FUNC_BODY) {
             ParserStage result;
             uint count;
@@ -794,6 +797,9 @@ struct WastParser {
         const type_idx = cast(int) type_section.sectypes.length;
         WastTokenizer export_tokenizer;
         scope (exit) {
+            if (func_name) {
+                func_idx[func_name] = type_idx;
+            }
             if (!export_tokenizer.isinit) {
                 parseModule(export_tokenizer, ParserStage.FUNC);
 
@@ -820,7 +826,8 @@ struct WastParser {
             r.nextToken;
         }
         else if (r.WORD) {
-            func_idx[r.token] = type_idx;
+            func_name = r.token;
+            //func_idx[r.token] = type_idx;
             r.nextToken;
         }
         ParserStage arg_stage;
