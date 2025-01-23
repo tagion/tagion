@@ -797,13 +797,12 @@ struct WastParser {
         func_type.type = Types.FUNC;
         WastTokenizer export_tokenizer;
         scope (exit) {
-            const type_idx = writer.createTypeIdx(func_type);
+            auto type_section = writer.section!(Section.TYPE);
+            const type_idx = cast(int) type_section.sectypes.length;
+            type_section.sectypes ~= func_type;
             if (func_name) {
                 func_idx[func_name] = type_idx;
             }
-            //auto type_section = writer.section!(Section.TYPE);
-            //const type_idx = cast(int) type_section.sectypes.length;
-            //type_section.sectypes ~= func_type;
             if (!export_tokenizer.isinit) {
                 parseModule(export_tokenizer, ParserStage.FUNC);
 
