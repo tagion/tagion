@@ -5,6 +5,8 @@ import std.conv : emplace, to;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.format;
 import std.meta : AliasSeq;
+import std.algorithm : canFind, map;
+import std.array;
 import std.range.primitives : isInputRange;
 import std.stdio;
 import std.traits;
@@ -86,6 +88,8 @@ struct Verbose {
     }
 
 }
+
+enum section_names = [EnumMembers!Section].map!(e => e.to!string).array;
 
 static Verbose wasm_verbose;
 

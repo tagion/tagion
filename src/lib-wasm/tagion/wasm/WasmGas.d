@@ -42,23 +42,27 @@ struct WasmGas {
      the index of the inserted sectype
      +/
     uint inject(SecType)(SecType sectype) {
-        uint idx;
         enum SectionId = WasmWriter.fromSecType!SecType;
-        if (writer.mod[SectionId] is null) {
-            idx = 0;
-            writer.mod[SectionId] = new WasmWriter.WasmSection.SectionT!SecType;
-            writer.mod[SectionId].sectypes = [sectype];
-        }
-        else {
-            idx = cast(uint)(writer.mod[SectionId].sectypes.length);
-            writer.mod[SectionId].sectypes ~= sectype;
+        //uint idx;
+        const idx = cast(uint) writer.section!(SectionId).sectypes.length;
+        writer.section!(SectionId).sectypes ~= sectype;
+        version (none) {
+            if (writer.mod[SectionId] is null) {
+                idx = 0;
+                writer.mod[SectionId] = new WasmWriter.WasmSection.SectionT!SecType;
+                writer.mod[SectionId].sectypes = [sectype];
+            }
+            else {
+                idx = cast(uint)(writer.mod[SectionId].sectypes.length);
+                writer.mod[SectionId].sectypes ~= sectype;
+            }
         }
         return idx;
     }
 
     alias InjectGas = void delegate(scope OutBuffer bout, const uint gas);
     package void perform_gas_inject(InjectGas inject_gas) {
-        auto code_sec = writer.mod[Section.CODE];
+        auto code_sec = writer.section!(Section.CODE);
 
         alias GasResult = Tuple!(uint, "gas", IR, "irtype");
 
@@ -177,7 +181,7 @@ struct WasmGas {
             global_type = GlobalType(global_desc, expr);
         }
         const global_idx = inject(global_type);
-        const type_sec = writer.mod[Section.TYPE];
+        const type_sec = writer.section!(Section.TYPE);
         const gas_count_func_idx = cast(uint)((type_sec is null) ? 0 : type_sec.sectypes.length);
         // writefln("func_sec.sectypes=%s", func_sec.sectypes);
 

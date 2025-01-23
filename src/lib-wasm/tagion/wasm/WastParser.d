@@ -25,7 +25,8 @@ struct WastParser {
     private void writeCustomAssert() {
         if (wast_assert !is SectionAssert.init) {
             auto _custom = new CustomType("assert", wast_assert.toDoc);
-            writer.mod[Section.CUSTOM].list[Section.DATA] ~= _custom;
+            auto custom_sec = writer.section!(Section.CUSTOM);
+            custom_sec.list[Section.DATA] ~= _custom;
         }
     }
 
@@ -217,13 +218,14 @@ struct WastParser {
             case TokenType.WORD:
                 return innerFunc(r.token);
             case TokenType.STRING:
-                if (writer.mod[Section.EXPORT]!is null) {
-                    auto export_found = writer.mod[Section.EXPORT].sectypes
-                        .find!(exp => exp.name == r.token.stripQuotes);
-                    if (!export_found.empty) {
-                        return export_found.front.idx;
-                    }
+                // if (writer.section!(Section.EXPORT)!is null) {
+                auto export_found = writer.section!(Section.EXPORT)
+                    .sectypes
+                    .find!(exp => exp.name == r.token.stripQuotes);
+                if (!export_found.empty) {
+                    return export_found.front.idx;
                 }
+                //}
 
                 break;
             default:
@@ -790,12 +792,12 @@ struct WastParser {
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
         r.valid(stage < ParserStage.FUNC, "Should been outside function decleration");
-        auto type_section = writer.section!(Section.TYPE);
         string func_name;
         FuncType func_type;
         func_type.type = Types.FUNC;
         WastTokenizer export_tokenizer;
         scope (exit) {
+            auto type_section = writer.section!(Section.TYPE);
             const type_idx = cast(int) type_section.sectypes.length;
             type_section.sectypes ~= func_type;
             if (func_name) {
