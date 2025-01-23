@@ -797,6 +797,7 @@ struct WastParser {
         const type_idx = cast(int) type_section.sectypes.length;
         WastTokenizer export_tokenizer;
         scope (exit) {
+            type_section.sectypes ~= func_type;
             if (func_name) {
                 func_idx[func_name] = type_idx;
             }
@@ -811,10 +812,10 @@ struct WastParser {
             writer.section!(Section.CODE).sectypes ~= code_type;
             //writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes.length);
         }
-
-            scope (exit) {
-                type_section.sectypes ~= func_type;
-            }
+version(none)
+        scope (exit) {
+            type_section.sectypes ~= func_type;
+        }
 
         r.nextToken;
         if (r.BEGIN) {
@@ -827,7 +828,6 @@ struct WastParser {
         }
         else if (r.WORD) {
             func_name = r.token;
-            //func_idx[r.token] = type_idx;
             r.nextToken;
         }
         ParserStage arg_stage;
