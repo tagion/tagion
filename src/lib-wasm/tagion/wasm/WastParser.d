@@ -796,7 +796,7 @@ struct WastParser {
         func_type.type = Types.FUNC;
         WastTokenizer export_tokenizer;
         scope (exit) {
-        const type_idx = cast(int) type_section.sectypes.length;
+            const type_idx = cast(int) type_section.sectypes.length;
             type_section.sectypes ~= func_type;
             if (func_name) {
                 func_idx[func_name] = type_idx;
@@ -811,10 +811,6 @@ struct WastParser {
             writer.section!(Section.FUNCTION).sectypes ~= TypeIndex(type_index);
             writer.section!(Section.CODE).sectypes ~= code_type;
             //writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes.length);
-        }
-version(none)
-        scope (exit) {
-            type_section.sectypes ~= func_type;
         }
 
         r.nextToken;
