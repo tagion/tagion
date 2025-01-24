@@ -107,7 +107,7 @@ private:
         enum line_width = 32;
 
         foreach (ushort _rim; 0 .. ubyte.max + 1) {
-            ushort sector = cast(ushort)(_rim << 8);
+            const sector = cast(ushort)(_rim << 8);
             immutable journal_filename = format("%s.%04x.dart_journal.hibon", opts.journal_path, sector);
             auto journalfile = File(journal_filename, "w");
             scope (exit) {
