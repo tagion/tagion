@@ -36,7 +36,10 @@ import tagion.hibon.HiBONRecord : exclude;
     private Modules mod;
     template section(Section Sec) {
         static if (Sec is Section.CUSTOM) {
-            final ref WasmSection.CustomList section() pure nothrow {
+            final WasmSection.CustomList section() pure nothrow {
+                if (!mod[Sec]) {
+                    mod[Sec] = new WasmSection.CustomList();
+                }
                 return mod[Sec];
             }
         }
@@ -336,7 +339,7 @@ import tagion.hibon.HiBONRecord : exclude;
             mixin Serialize;
         }
 
-        struct CustomList {
+        static class CustomList {
             Custom[][EnumMembers!(Section).length + 1] list;
             void add(_ReaderCustom)(const size_t sec_index, const(_ReaderCustom) s) {
                 list[sec_index] ~= new Custom(s);
