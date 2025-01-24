@@ -33,12 +33,21 @@ import tagion.hibon.HiBONRecord : exclude;
 
     alias ReaderSecType(Section sec) = TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
 
-    Modules mod;
-    Sections[Sec] section(Section Sec)() {
-        if (!mod[Sec]) {
-            mod[Sec] = new Sections[Sec];
+    private Modules mod;
+    template section(Section Sec) {
+        static if (Sec is Section.CUSTOM) {
+            final ref WasmSection.CustomList section() pure nothrow {
+                return mod[Sec];
+            }
         }
-        return mod[Sec];
+        else {
+            final Sections[Sec] section() pure nothrow {
+                if (!mod[Sec]) {
+                    mod[Sec] = new Sections[Sec];
+                }
+                return mod[Sec];
+            }
+        }
     }
 
     this(ref const(WasmReader) reader) {
@@ -176,6 +185,28 @@ import tagion.hibon.HiBONRecord : exclude;
         return output.toBytes.idup;
     }
 
+    int typeIdx(const Types type, const(Types[]) params, const(Types[]) results) const pure nothrow {
+        import std.algorithm;
+
+        auto type_sec = mod[Section.TYPE];
+        if (type_sec) {
+            return cast(int) type_sec.sectypes
+                .countUntil!(t => (t.type == type) &&
+                        equal(params, t.params) &&
+                        equal(results, t.results));
+        }
+        return -1;
+    }
+
+    int createTypeIdx(ref WasmSection.FuncType func_type) pure nothrow {
+        auto type_idx = typeIdx(func_type.type, func_type.params, func_type.results);
+        if (type_idx < 0) {
+            type_idx = cast(int) section!(Section.TYPE).sectypes.length;
+            mod[Section.TYPE].sectypes ~= func_type;
+        }
+        return type_idx;
+    }
+
     struct WasmSection {
         mixin template Serialize() {
             import tagion.hibon.HiBONRecord : exclude;
@@ -223,7 +254,7 @@ import tagion.hibon.HiBONRecord : exclude;
                                         format("Array type %s is not supported", T.stringof));
                             }
                         }
-                    else {
+                        else {
                             static assert(exclude_flag, format("Type %s is not supported", T.stringof));
                         }
                     }

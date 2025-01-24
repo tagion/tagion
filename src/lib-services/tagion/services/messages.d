@@ -61,6 +61,7 @@ alias dartModifyRR = Request!("dartModify", immutable(long)); // dartModify Requ
 alias dartFutureEyeRR = Request!("dartFutureEye", immutable(long)); // dartFuture eye request
 alias dartHiRPCRR = Request!"dartHiRPCRequest"; // dartCRUD HiRPC commands: [dartRead, dartCheckRead, dartRim]
 
+alias dartCompareRR = Request!"dartCompare";
 alias dartSyncRR = Request!"dartSync";
 alias dartReplayRR = Request!"dartReplay";
 

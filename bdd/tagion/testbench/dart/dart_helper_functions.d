@@ -6,12 +6,11 @@ import std.algorithm : each;
 import std.format;
 import std.random : MinstdRand0, randomShuffle;
 import std.range;
-import std.stdio : writefln, writeln;
+import std.stdio : writefln, writeln, File;
 import tagion.Keywords;
 import tagion.basic.basic : isinit;
 import tagion.basic.testbasic : tempfile;
 import tagion.communication.HiRPC;
-import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTFakeNet;
@@ -189,8 +188,8 @@ static class TestSynchronizer : JournalSynchronizer {
     this(string journal_filename, DART owner, DART foreign_dart) @safe {
         this.foreign_dart = foreign_dart;
         this.owner = owner;
-        auto _journalfile = BlockFile(journal_filename);
-        super(_journalfile);
+        auto file = File(journal_filename, "w");
+        super(file);
     }
 
     //
@@ -238,7 +237,7 @@ void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
     foreach (sector; SectorRange(from, to)) {
         immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
         journal_filenames ~= journal_filename;
-        BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+        //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
         auto synch = new TestSynchronizer(journal_filename, db2, db1);
 
         auto db2_synchronizer = db2.synchronizer(synch, Rims(sector));

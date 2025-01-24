@@ -10,7 +10,7 @@ import std.file : exists, readText, fwrite = write;
 import std.format;
 import std.getopt;
 import std.json;
-import std.path : extension, setExtension;
+import std.path : extension, setExtension, stripExtension;
 import std.range : only;
 import std.range;
 import std.stdio;
@@ -20,7 +20,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONFile : fread;
+import tagion.hibon.HiBONFile : fread, HiBONRange;
 import tagion.hibon.HiBONtoText : decodeBase64, encodeBase64;
 import tagion.tools.Basic;
 import tagion.tools.revision;
@@ -165,19 +165,19 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] [<in-file>...]", program),
-                    "",
-                    "Where:",
-                    "<in-file>           Is an input file in .json or .hibon format",
-                    "",
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] [<in-file>...]", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
-                    main_args.options);
+            ].join("\n"),
+            main_args.options);
             return 0;
         }
         if (output_hash || output_dartindex) {
@@ -270,50 +270,68 @@ int _main(string[] args) {
             }
             switch (inputfilename.extension) {
             case FileExtension.hibon:
-                Document doc = fread(inputfilename);
-
-                if (!ignore) {
-                    const error_code = doc.valid(
-                            (
-                            const(Document) sub_doc,
-                            const Document.Element.ErrorCode error_code,
-                            const(Document.Element) current, const(
-                            Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; },
-                            reserved_flag);
-                    if (error_code !is Document.Element.ErrorCode.NONE) {
-                        stderr.writefln("Error: Document errorcode %s", error_code);
-                        return 1;
-                    }
+                auto fin = File(inputfilename, "r");
+                scope (exit) {
+                    fin.close;
                 }
-                if (output_base64 || output_hex) {
-                    Buffer stream = doc.serialize;
-                    if (output_hash) {
-                        stream = net.rawCalcHash(stream);
-                    }
-                    else if (output_dartindex) {
-                        stream = cast(Buffer) net.dartIndex(doc);
-                    }
+            loop_hibon_stream: foreach (no, doc; HiBONRange(fin).enumerate) {
+                    verbose("%d: doc-size=%d", no, doc.full_size);
 
-                    const text_output = (output_hex) ? format("%(%02x%)", stream) : stream.encodeBase64;
+                    if (!ignore) {
+                        const error_code = doc.valid(
+                                (
+                                const(Document) sub_doc,
+                                const Document.Element.ErrorCode error_code,
+                                const(Document.Element) current, const(
+                                Document.Element) previous) nothrow{
+                            assumeWontThrow(writefln("%s", current));
+                            return true;
+                        },
+                                reserved_flag);
+                        if (error_code !is Document.Element.ErrorCode.NONE) {
+                            stderr.writefln("Error: Document errorcode %s", error_code);
+                            return 1;
+                        }
+                    }
+                    if (output_base64 || output_hex) {
+                        Buffer stream = doc.serialize;
+                        if (output_hash) {
+                            stream = net.rawCalcHash(stream);
+                        }
+                        else if (output_dartindex) {
+                            stream = cast(Buffer) net.dartIndex(doc);
+                        }
+
+                        const text_output = (output_hex) ? format("%(%02x%)", stream) : stream.encodeBase64;
+                        if (standard_output) {
+                            writefln("%s", text_output);
+                            continue loop_hibon_stream;
+                        }
+                        string text_filename = inputfilename.stripExtension;
+                        if (no > 0) {
+                            text_filename = format("%s_%d", text_filename, no);
+                        }
+                        text_filename.setExtension(FileExtension.text).fwrite(text_output);
+                        continue loop_hibon_stream;
+                    }
+                    if (stream_output) {
+                        stdout.rawWrite(doc.serialize);
+                        continue loop_hibon_stream;
+                    }
+                    auto json = doc.toJSON;
+                    auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
                     if (standard_output) {
-                        writefln("%s", text_output);
-                        continue loop_files;
+                        writefln("%s", json_stringify);
+                        continue loop_hibon_stream;
                     }
-                    inputfilename.setExtension(FileExtension.text).fwrite(text_output);
-
-                    continue loop_files;
+                    string json_filename = inputfilename.stripExtension;
+                    if (no > 0) {
+                        json_filename = format("%s_%d", json_filename, no);
+                    }
+                    json_filename = json_filename.setExtension(FileExtension.json);
+                    verbose("write %s", json_filename);
+                    json_filename.fwrite(json_stringify);
                 }
-                if (stream_output) {
-                    stdout.rawWrite(doc.serialize);
-                    continue loop_files;
-                }
-                auto json = doc.toJSON;
-                auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
-                if (standard_output) {
-                    writefln("%s", json_stringify);
-                    continue loop_files;
-                }
-                inputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
                 break;
             case FileExtension.json:
                 string text;
@@ -383,5 +401,3 @@ int _main(string[] args) {
     }
     return 0;
 }
-
-

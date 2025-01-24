@@ -8,9 +8,22 @@ import tagion.basic.Debug;
 import tagion.utils.convert : convert;
 import tagion.basic.Debug;
 import tagion.wasm.WasmBase;
+import tagion.wasm.WasmException;
 import std.array;
 import std.algorithm;
 import std.conv : to;
+
+@safe:
+class WastTokenizerException : WasmException {
+    WastTokenizer tokenizer;
+    this(string msg,
+            ref WastTokenizer tokenizer,
+            string file = __FILE__,
+            size_t line = __LINE__) pure nothrow {
+        this.tokenizer = tokenizer;
+        super(msg, file, line);
+    }
+}
 
 enum Chars : char {
     NUL = '\0',
@@ -34,7 +47,7 @@ enum TokenType {
 
 enum token_types = [EnumMembers!TokenType].map!(e => e.to!string).array;
 
-@safe @nogc pure nothrow {
+@nogc pure nothrow {
     bool isWordChar(const char ch) {
         with (Chars) {
             return (ch > SPACE) && (ch < DEL) &&
@@ -62,8 +75,9 @@ enum token_types = [EnumMembers!TokenType].map!(e => e.to!string).array;
     }
 }
 
-@safe
 struct WastTokenizer {
+    uint error_count;
+    uint max_errors;
     string toString() const pure nothrow @trusted {
         import std.exception : assumeWontThrow;
         import std.format;
@@ -72,10 +86,17 @@ struct WastTokenizer {
 
     }
 
-    bool check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
+    void check(const bool flag, string msg, string file = __FILE__, const size_t code_line = __LINE__) pure {
+        if (!flag) {
+            throw e=new WastTokenizerException(msg, this, file, code_line);
+        }
+    }
+
+    bool valid(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
         import std.stdio;
 
         if (!flag) {
+            error_count++;
             import tagion.utils.Term;
 
             const _line = getLine;
@@ -92,7 +113,7 @@ struct WastTokenizer {
 
     void error(Exception e) nothrow {
         this.e = e;
-        check(false, e.msg, e.file, e.line);
+        valid(false, e.msg, e.file, e.line);
     }
 
     /**
@@ -101,18 +122,18 @@ struct WastTokenizer {
     void dropScopes() pure nothrow {
         void innerScope() nothrow {
             if (type is TokenType.BEGIN) {
-                nextToken;
+                takeToken;
                 while (!empty && type !is TokenType.END) {
-                    nextToken;
+                    takeToken;
                     innerScope;
                 }
-                nextToken;
+                takeToken;
                 innerScope;
             }
         }
 
         while (!empty && type !is TokenType.BEGIN && type !is TokenType.END) {
-            nextToken;
+            takeToken;
         }
         innerScope;
     }
@@ -152,8 +173,8 @@ struct WastTokenizer {
         }
     }
 
-    void expect(const TokenType t, string file = __FILE__, const size_t code_line = __LINE__) const nothrow {
-        check(type is t, assumeWontThrow(format("Expected %s but got %s", t, type)), file, code_line);
+    void expect(const TokenType t, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
+        valid(type is t, assumeWontThrow(format("Expected %s but got %s", t, type)), file, code_line);
 
     }
 
@@ -163,7 +184,7 @@ struct WastTokenizer {
             return token.convert!T;
         }
         catch (Exception e) {
-            check(false, e.msg);
+            valid(false, e.msg);
         }
         return T.init;
     }
@@ -173,7 +194,7 @@ struct WastTokenizer {
             return token.convert!T;
         }
         catch (Exception e) {
-            check(false, e.msg);
+            valid(false, e.msg);
         }
         return T.init;
 
@@ -186,7 +207,7 @@ struct WastTokenizer {
     }
 
     string getText() nothrow {
-        check(type == TokenType.STRING, "Text string expected");
+        valid(type == TokenType.STRING, "Text string expected");
         return token.stripQuotes;
     }
 
@@ -197,10 +218,16 @@ struct WastTokenizer {
     uint pos;
     uint start_line_pos;
     Exception e;
+    void nextToken() pure {
+        takeToken;
+        check(error_count < max_errors, format("Error count exceeds %d", max_errors));
+    }
+
     @nogc pure nothrow {
-        this(string text) {
+        this(string text, const uint max_errors = 10) {
             line = 1;
             this.text = text;
+            this.max_errors = max_errors;
             popFront;
         }
 
@@ -251,18 +278,18 @@ struct WastTokenizer {
                 switch (token[0]) {
                 case NUL:
                     return TokenType.EOF;
-                    case PARENTHESES_BEGIN:
+                case PARENTHESES_BEGIN:
                     if (token.length > 1 && token[1] == SEMICOLON) {
                         return TokenType.COMMENT;
                     }
                     return TokenType.BEGIN;
-                    case PARENTHESES_END:
+                case PARENTHESES_END:
                     return TokenType.END;
-                    case SEMICOLON:
+                case SEMICOLON:
                     return TokenType.COMMENT;
-                    case DOUBLE_QUOTE:
+                case DOUBLE_QUOTE:
                     return TokenType.STRING;
-                    default:
+                default:
                     return TokenType.WORD;
                 }
             }
@@ -306,7 +333,7 @@ struct WastTokenizer {
         }
 
         // Like popFront exception that it skips the Comment token
-        void nextToken() {
+        private void takeToken() {
             do {
                 popFront;
             }
