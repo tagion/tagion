@@ -156,7 +156,7 @@ class JournalSynchronizer : StdSynchronizer {
         File journalfile;
         Index index; /// Current block index
     }
-    this(File journalfile, const uint chunk_size = 0x400) {
+    this(ref File journalfile, const uint chunk_size = 0x400) {
         this.journalfile = journalfile;
         super(chunk_size);
     }

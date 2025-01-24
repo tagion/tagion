@@ -46,17 +46,6 @@ struct WasmGas {
         //uint idx;
         const idx = cast(uint) writer.section!(SectionId).sectypes.length;
         writer.section!(SectionId).sectypes ~= sectype;
-        version (none) {
-            if (writer.mod[SectionId] is null) {
-                idx = 0;
-                writer.mod[SectionId] = new WasmWriter.WasmSection.SectionT!SecType;
-                writer.mod[SectionId].sectypes = [sectype];
-            }
-            else {
-                idx = cast(uint)(writer.mod[SectionId].sectypes.length);
-                writer.mod[SectionId].sectypes ~= sectype;
-            }
-        }
         return idx;
     }
 
