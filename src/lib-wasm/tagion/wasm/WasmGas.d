@@ -32,7 +32,7 @@ struct WasmGas {
     alias Code = WasmWriter.WasmSection.Code;
     alias GlobalType = WasmWriter.WasmSection.GlobalType;
     alias FuncType = WasmWriter.WasmSection.FuncType;
-    alias TypeIndex = WasmWriter.WasmSection.TypeIndex;
+    alias FuncIndex = WasmWriter.WasmSection.FuncIndex;
     alias CodeType = WasmWriter.WasmSection.CodeType;
     alias ExportType = WasmWriter.WasmSection.ExportType;
 
@@ -187,7 +187,7 @@ struct WasmGas {
             FuncType func_type = FuncType(Types.FUNC, [Types.I32], null);
             const type_idx = inject(func_type);
 
-            TypeIndex func_index = TypeIndex(type_idx);
+            FuncIndex func_index = FuncIndex(type_idx);
             const func_idx = inject(func_index);
 
             CodeType code_type;
@@ -223,7 +223,7 @@ struct WasmGas {
             /+
              Inject the function header index to the set_gas_gauge
              +/
-            TypeIndex func_index = TypeIndex(type_idx); //Types.FUNC, [Types.I32], null);
+            FuncIndex func_index = FuncIndex(type_idx); //Types.FUNC, [Types.I32], null);
             const func_idx = inject(func_index);
             /+
              Inject the function body to the set_gas_gauge
@@ -259,7 +259,7 @@ struct WasmGas {
             FuncType func_type=FuncType(Types.FUNC, null, [Types.I32]);
             const type_idx=inject(func_type);
 
-            TypeIndex func_index=TypeIndex(type_idx); //Types.FUNC, [Types.I32], null);
+            FuncIndex func_index=FuncIndex(type_idx); //Types.FUNC, [Types.I32], null);
             const func_idx=inject(func_index);
 
             CodeType code_type;

@@ -44,7 +44,7 @@ struct WastParser {
     alias MemoryType = WasmSection.MemoryType;
     alias GlobalType = WasmSection.GlobalType;
     alias FuncType = WasmSection.FuncType;
-    alias TypeIndex = WasmSection.TypeIndex;
+    alias FuncIndex = WasmSection.FuncIndex;
     alias CodeType = WasmSection.CodeType;
     alias DataType = WasmSection.DataType;
     alias ExportType = WasmSection.ExportType;
@@ -205,7 +205,7 @@ struct WastParser {
 
         int getFuncIdx() @trusted {
             int innerFunc(string text) {
-                int result = func_idx[text].ifThrown!RangeError(int(-1));
+                int result = func_lookup[text].ifThrown!RangeError(int(-1));
                 if (result < 0) {
                     result = text.to!int
                         .ifThrown!ConvException(-1);
@@ -285,7 +285,7 @@ struct WastParser {
             r.nextToken;
             r.expect(TokenType.WORD);
             const instr = instrWastLookup.get(r.token, illegalInstr);
-            __write("instr %s", instr);
+            //__write("instr %s", instr);
             string label;
             with (IRType) {
                 final switch (instr.irtype) {
@@ -372,13 +372,12 @@ struct WastParser {
                     break;
                 case CALL:
                     r.nextToken;
-                    const idx = getFuncIdx();
-                    //label = r.token;
+                    const func_idx = getFuncIdx();
                     r.nextToken;
                     while (r.BEGIN) {
                         instr_stage = innerInstr(wasmexpr, r, block_results, ParserStage.CODE);
                     }
-                    wasmexpr(IR.CALL, idx);
+                    wasmexpr(IR.CALL, func_idx);
                     break;
                 case CALL_INDIRECT:
                     break;
@@ -620,7 +619,7 @@ struct WastParser {
                 if (stage != ParserStage.FUNC) {
                     r.nextToken;
                     r.expect(TokenType.WORD);
-                    export_type.idx = func_idx.get(r.token, -1);
+                    export_type.idx = func_lookup.get(r.token, -1);
                 }
                 export_type.desc = IndexType.FUNC;
                 r.valid(export_type.idx >= 0, "Export index should be positive or zero");
@@ -798,12 +797,18 @@ struct WastParser {
         WastTokenizer export_tokenizer;
         scope (exit) {
             __write("func_type %s", func_type);
-            auto type_section = writer.section!(Section.TYPE);
-            const type_idx = cast(int) type_section.sectypes.length;
-            type_section.sectypes ~= func_type;
+            //auto type_section = writer.section!(Section.TYPE);
+            //const type_idx = cast(int) type_section.sectypes.length;
+            //type_section.sectypes ~= func_type;
+            const func_idx_ = cast(uint) writer.section!(Section.CODE).sectypes.length;
+            const type_idx = writer.createTypeIdx(func_type);
+            writer.section!(Section.FUNCTION).sectypes ~= FuncIndex(type_idx);
+            writer.section!(Section.CODE).sectypes ~= code_type;
+            __write("func_name=%s type_idx=%d func_lookup", func_name, type_idx, func_idx_);
             if (export_tokenizer.isinit) {
                 if (func_name) {
-                    func_idx[func_name] = type_idx;
+                    r.check(!(func_name in func_lookup), format("Export of %s function has already been declared", func_name));
+                    func_lookup[func_name] = func_idx_;
                 }
             }
             else {
@@ -811,11 +816,8 @@ struct WastParser {
 
                 auto export_type = &writer.section!(Section.EXPORT).sectypes[$ - 1];
                 __write("export_type %s", *export_type);
-                export_type.idx = func_idx[export_type.name] = type_idx;
+                export_type.idx = func_lookup[export_type.name] = func_idx_;
             }
-            //const type_index = cast(uint) writer.section!(Section.CODE).sectypes.length;
-            writer.section!(Section.FUNCTION).sectypes ~= TypeIndex(type_idx);
-            writer.section!(Section.CODE).sectypes ~= code_type;
             //writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes.length);
         }
 
@@ -852,7 +854,7 @@ struct WastParser {
     }
 
     private {
-        int[string] func_idx;
+        int[string] func_lookup;
     }
     void parse(ref WastTokenizer tokenizer) {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {

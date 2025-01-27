@@ -8,7 +8,6 @@ import std.array;
 import std.conv : to;
 import std.format;
 import std.range;
-import std.range.primitives : isOutputRange;
 import std.stdio;
 import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget, isFloatingPoint;
 import std.typecons : Tuple;
@@ -40,7 +39,7 @@ alias check = Check!WasmBetterCException;
     alias ImportType = WasmReader.WasmRange.WasmSection.ImportType;
     alias ExportType = WasmReader.WasmRange.WasmSection.ExportType;
     alias FuncType = WasmReader.WasmRange.WasmSection.FuncType;
-    alias TypeIndex = WasmReader.WasmRange.WasmSection.TypeIndex;
+    alias FuncIndex = WasmReader.WasmRange.WasmSection.FuncIndex;
     alias CodeType = WasmReader.WasmRange.WasmSection.CodeType;
 
     alias Limit = WasmReader.Limit;
@@ -201,23 +200,23 @@ alias check = Check!WasmBetterCException;
     void type_sec(ref const(Type) _type) {
         version (none)
             foreach (i, t; _type[].enumerate) {
-            output.writef("%s(type (;%d;) (%s", indent, i, typesName(t.type));
-            if (t.params.length) {
-                output.write(" (param");
-                foreach (p; t.params) {
-                    output.writef(" %s", typesName(p));
+                output.writef("%s(type (;%d;) (%s", indent, i, typesName(t.type));
+                if (t.params.length) {
+                    output.write(" (param");
+                    foreach (p; t.params) {
+                        output.writef(" %s", typesName(p));
+                    }
+                    output.write(")");
                 }
-                output.write(")");
-            }
-            if (t.results.length) {
-                output.write(" (result");
-                foreach (r; t.results) {
-                    output.writef(" %s", typesName(r));
+                if (t.results.length) {
+                    output.write(" (result");
+                    foreach (r; t.results) {
+                        output.writef(" %s", typesName(r));
+                    }
+                    output.write(")");
                 }
-                output.write(")");
+                output.writeln("))");
             }
-            output.writeln("))");
-        }
     }
 
     alias Import = Sections[Section.IMPORT];
@@ -383,15 +382,15 @@ alias check = Check!WasmBetterCException;
                 param_name(type.index))));
     }
 
-    private void output_function(const(TypeIndex) func, const(CodeType) code_type) {
+    private void output_function(const int func_idx, const(FuncIndex) type, const(CodeType) code_type) {
         Context ctx;
         auto expr = code_type[];
-        const func_type = wasmstream.get!(Section.TYPE)[func.idx];
+        const func_type = wasmstream.get!(Section.TYPE)[type.idx];
         //const x = return_type(func_type.results);
         output.writefln("%s%s %s (%s) {",
                 indent,
                 return_type(func_type.results),
-                function_name(func.idx),
+                function_name(func_idx),
                 function_params(func_type.params));
         ctx.locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
         const local_indent = indent ~ spacer;
@@ -411,8 +410,9 @@ alias check = Check!WasmBetterCException;
 
     alias Code = Sections[Section.CODE];
     @trusted void code_sec(ref const(Code) _code) {
-        foreach (f, c; lockstep(_function[], _code[], StoppingPolicy.requireSameLength)) {
-            output_function(f, c);
+        auto func_indices = iota(cast(int) _function[].walkLength);
+        foreach (func_idx, f, c; lockstep(func_indices, _function[], _code[], StoppingPolicy.requireSameLength)) {
+            output_function(func_idx, f, c);
         }
     }
 
@@ -703,7 +703,8 @@ alias check = Check!WasmBetterCException;
                         }
                         bout.writefln("%s// %s %s", indent, elm.instr.name, elm.warg.get!uint);
                         const func_idx = elm.warg.get!uint;
-                        const function_header = wasmstream.get!(Section.TYPE)[func_idx];
+                        const type_idx = wasmstream.get!(Section.FUNCTION)[func_idx].idx;
+                        const function_header = wasmstream.get!(Section.TYPE)[type_idx];
                         const function_call = format("%s(%-(%s,%))",
                                 function_name(func_idx), ctx.pops(function_header.params.length));
                         string set_result;

@@ -114,6 +114,9 @@ import tagion.hibon.HiBONRecord : exclude;
         }
 
         final void custom_sec(ref ConstOf!(ReaderCustom) sec) {
+            if (!mod[Section.CUSTOM]) {
+                mod[Section.CUSTOM] = new WasmSection.CustomList;
+            }
             mod[Section.CUSTOM].add(previous_sec, sec);
         }
 
@@ -541,7 +544,7 @@ import tagion.hibon.HiBONRecord : exclude;
 
         alias Import = SectionT!(ImportType);
 
-        struct TypeIndex {
+        struct FuncIndex {
             uint idx;
             this(const uint typeidx) {
                 this.idx = typeidx;
@@ -554,7 +557,7 @@ import tagion.hibon.HiBONRecord : exclude;
             mixin Serialize;
         }
 
-        alias Function = SectionT!(TypeIndex);
+        alias Function = SectionT!(FuncIndex);
 
         struct TableType {
             Types type;
