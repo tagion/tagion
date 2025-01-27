@@ -796,15 +796,10 @@ struct WastParser {
         func_type.type = Types.FUNC;
         WastTokenizer export_tokenizer;
         scope (exit) {
-            __write("func_type %s", func_type);
-            //auto type_section = writer.section!(Section.TYPE);
-            //const type_idx = cast(int) type_section.sectypes.length;
-            //type_section.sectypes ~= func_type;
             const func_idx_ = cast(uint) writer.section!(Section.CODE).sectypes.length;
             const type_idx = writer.createTypeIdx(func_type);
             writer.section!(Section.FUNCTION).sectypes ~= FuncIndex(type_idx);
             writer.section!(Section.CODE).sectypes ~= code_type;
-            __write("func_name=%s type_idx=%d func_lookup", func_name, type_idx, func_idx_);
             if (export_tokenizer.isinit) {
                 if (func_name) {
                     r.check(!(func_name in func_lookup), format("Export of %s function has already been declared", func_name));
@@ -813,12 +808,9 @@ struct WastParser {
             }
             else {
                 parseModule(export_tokenizer, ParserStage.FUNC);
-
                 auto export_type = &writer.section!(Section.EXPORT).sectypes[$ - 1];
-                __write("export_type %s", *export_type);
                 export_type.idx = func_lookup[export_type.name] = func_idx_;
             }
-            //writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes.length);
         }
 
         r.nextToken;
