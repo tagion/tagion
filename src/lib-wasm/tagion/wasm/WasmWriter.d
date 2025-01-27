@@ -148,9 +148,12 @@ import tagion.hibon.HiBONRecord : exclude;
             }
         }
 
+        const custom_sec = mod[Section.CUSTOM];
         foreach (E; EnumMembers!Section) {
-            foreach (const sec; mod[Section.CUSTOM].list[previous_sec]) {
-                output_custom(sec);
+            if (custom_sec) {
+                foreach (const sec; custom_sec.list[previous_sec]) {
+                    output_custom(sec);
+                }
             }
             static if (E !is Section.CUSTOM) {
                 if (mod[E]!is null) {
@@ -163,8 +166,10 @@ import tagion.hibon.HiBONRecord : exclude;
             }
             previous_sec = E;
         }
-        foreach (const sec; mod[Section.CUSTOM].list[previous_sec]) {
-            output_custom(sec);
+        if (custom_sec) {
+            foreach (const sec; custom_sec.list[previous_sec]) {
+                output_custom(sec);
+            }
         }
         previous_sec = Section.CUSTOM;
         auto output = new OutBuffer;
