@@ -105,7 +105,7 @@
     (block (result i32) (call $f (br 0 (i32.const 15))))
   )
 
- (func (export "as-local.set-value") (result i32) (local f32)
+  (func (export "as-local.set-value") (result i32) (local f32)
     (block (result i32) (local.set 0 (br 0 (i32.const 17))) (i32.const -1))
   )
   (func (export "as-local.tee-value") (result i32) (local i32)

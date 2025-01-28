@@ -131,7 +131,7 @@ struct WastParser {
     static void setLocal(ref WastTokenizer tokenizer, ref FunctionContext func_ctx) {
         auto r = tokenizer.save;
         bool innerLocal() {
-            if (r.type == TokenType.BEGIN) {
+            if (r.BEGIN) {
                 r.nextToken;
                 if (r.token == "local") {
                     r.nextToken;
@@ -218,15 +218,12 @@ struct WastParser {
             case TokenType.WORD:
                 return innerFunc(r.token);
             case TokenType.STRING:
-                // if (writer.section!(Section.EXPORT)!is null) {
                 auto export_found = writer.section!(Section.EXPORT)
                     .sectypes
                     .find!(exp => exp.name == r.token.stripQuotes);
                 if (!export_found.empty) {
                     return export_found.front.idx;
                 }
-                //}
-
                 break;
             default:
                 // empty
@@ -246,7 +243,6 @@ struct WastParser {
                 ref WastTokenizer r,
                 const(Types[]) block_results,
                 ParserStage instr_stage) @safe {
-            //try {
             scope (failure) {
                 r.dropScopes;
             }
@@ -401,7 +397,7 @@ struct WastParser {
                 case MEMORY:
 
                     r.nextToken;
-                    for (uint i = 0; (i < 2) && (r.type == TokenType.WORD); i++) {
+                    for (uint i = 0; (i < 2) && (r.WORD); i++) {
                         label = r.token; // Fix this later
                         r.nextToken;
                     }
@@ -449,13 +445,6 @@ struct WastParser {
                 }
 
             }
-            /*
-            }
-            catch (Exception e) {
-                r.error(e);
-                r.dropScopes;
-            }
-                        */
             return instr_stage;
         }
 
@@ -489,7 +478,7 @@ struct WastParser {
         if (stage is ParserStage.FUNC_BODY) {
             ParserStage result;
             uint count;
-            while (r.type == TokenType.BEGIN) {
+            while (r.BEGIN) {
                 result = _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
                 count++;
             }
@@ -500,37 +489,36 @@ struct WastParser {
     }
 
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
-        if (r.type == TokenType.COMMENT) {
+        if (r.COMMENT) {
             r.nextToken;
         }
-        if (r.type == TokenType.BEGIN) {
+        if (r.BEGIN) {
             string label;
             string arg;
             r.nextToken;
             bool not_ended;
             scope (exit) {
-                r.valid(r.type == TokenType.END || not_ended, "Missing end");
+                r.valid(r.END || not_ended, "Missing end");
                 r.nextToken;
             }
             switch (r.token) {
             case "module":
                 r.valid(stage < ParserStage.MODULE, "Module expected");
                 r.nextToken;
-                while (r.type == TokenType.BEGIN) {
+                while (r.BEGIN) {
                     parseModule(r, ParserStage.MODULE);
 
                 }
                 return ParserStage.MODULE;
             case "type":
                 r.nextToken;
-                if (r.type == TokenType.WORD) {
+                if (r.WORD) {
                     label = r.token;
                     r.nextToken;
                 }
                 parseModule(r, ParserStage.TYPE);
                 return stage;
             case "func": // Example (func $name (param ...) (result i32) )
-                //__write("-- FUNC %s %s", r.token, r.type);
                 return parseTypeSection(r, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
@@ -544,13 +532,13 @@ struct WastParser {
                 else {
                     r.valid(stage == ParserStage.FUNC, "Only allowed inside a function scope");
 
-                    if (r.type == TokenType.WORD && r.token.getType is Types.EMPTY) {
+                    if (r.WORD && r.token.getType is Types.EMPTY) {
                         label = r.token;
                         r.nextToken;
 
                         r.expect(TokenType.WORD);
                     }
-                    while (r.type == TokenType.WORD && r.token.getType !is Types.EMPTY) {
+                    while (r.WORD && r.token.getType !is Types.EMPTY) {
                         arg = r.token;
                         r.nextToken;
                     }
@@ -574,7 +562,7 @@ struct WastParser {
                 label = r.token;
                 writef("Memory label = %s", label);
                 r.nextToken;
-                if (r.type == TokenType.WORD) {
+                if (r.WORD) {
                     arg = r.token;
                     writef("arg = %s", arg);
                     r.nextToken;
@@ -588,7 +576,7 @@ struct WastParser {
                     memory_type.limit.to = label.to!uint;
                 }
                 writefln("Type %s", r.type);
-                while (r.type == TokenType.BEGIN) {
+                while (r.BEGIN) {
                     parseModule(r, ParserStage.MEMORY);
                 }
                 return ParserStage.MEMORY;
@@ -660,7 +648,7 @@ struct WastParser {
                 CodeType code_result;
                 FunctionContext func_ctx;
                 parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
-                while (r.type == TokenType.BEGIN) {
+                while (r.BEGIN) {
                     parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
                 }
                 //assert_type.results = func_ctx.stack;
@@ -695,7 +683,7 @@ struct WastParser {
                 r.nextToken;
                 return ParserStage.ASSERT;
             default:
-                if (r.type == TokenType.COMMENT) {
+                if (r.COMMENT) {
                     r.nextToken;
                     return ParserStage.COMMENT;
                 }
@@ -704,7 +692,7 @@ struct WastParser {
                 return ParserStage.UNDEFINED;
             }
         }
-        if (r.type == TokenType.COMMENT) {
+        if (r.COMMENT) {
             r.nextToken;
         }
         return ParserStage.END;
@@ -796,20 +784,20 @@ struct WastParser {
         func_type.type = Types.FUNC;
         WastTokenizer export_tokenizer;
         scope (exit) {
-            const func_idx_ = cast(uint) writer.section!(Section.CODE).sectypes.length;
+            const func_idx = cast(uint) writer.section!(Section.CODE).sectypes.length;
             const type_idx = writer.createTypeIdx(func_type);
             writer.section!(Section.FUNCTION).sectypes ~= FuncIndex(type_idx);
             writer.section!(Section.CODE).sectypes ~= code_type;
             if (export_tokenizer.isinit) {
                 if (func_name) {
                     r.check(!(func_name in func_lookup), format("Export of %s function has already been declared", func_name));
-                    func_lookup[func_name] = func_idx_;
+                    func_lookup[func_name] = func_idx;
                 }
             }
             else {
                 parseModule(export_tokenizer, ParserStage.FUNC);
                 auto export_type = &writer.section!(Section.EXPORT).sectypes[$ - 1];
-                export_type.idx = func_lookup[export_type.name] = func_idx_;
+                export_type.idx = func_lookup[export_type.name] = func_idx;
             }
         }
 

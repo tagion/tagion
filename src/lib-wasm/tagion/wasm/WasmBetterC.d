@@ -363,6 +363,13 @@ alias check = Check!WasmBetterCException;
         //return (types.length == 1) ? dType(types[0]) : "void";
     }
 
+    string dType(ref const ExprRange.IRElement elm) {
+        if (elm.argtype == ExprRange.IRElement.IRArgType.TYPES) {
+            return dType(elm.types);
+        }
+        return dType(wasmstream.get!(Section.TYPE)[elm.idx].results);
+    }
+
     string function_name(const int index) {
         import std.string;
 
@@ -637,13 +644,16 @@ alias check = Check!WasmBetterCException;
                         bout.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case BLOCK:
-                        block_comment = format(";; block %d", block_count);
+                        block_comment = format(";; block %d %s", block_count, dType(elm));
                         block_count++;
-                        bout.writefln("%s%s%s %s", indent, elm.instr.name,
-                                block_result_type(elm.types[0]), block_comment);
+                        //bout.writefln("BLOCK elm.arhtype=%s", elm.argtype);
+
+                        //bout.writefln("%s%s%s %s", indent, elm.instr.name,
+                        //        block_result_type(elm.types[0]), block_comment);
+                        bout.writefln("%s{ %s", indent, block_comment);
                         auto block = new Block(elm);
                         innerBlock(bout, expr, indent ~ spacer, blocks ~ block);
-                        bout.writefln("// Block kind %s", *block);
+                        bout.writefln("} // Block kind %s", *block);
                         final switch (block.kind) {
                         case BlockKind.END:
                             bout.writefln("%s{", indent);
