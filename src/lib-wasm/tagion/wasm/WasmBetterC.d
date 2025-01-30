@@ -20,7 +20,8 @@ import tagion.wasm.WasmException;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WastAssert;
 
-@safe class WasmBetterCException : WasmException {
+@safe:
+class WasmBetterCException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
     }
@@ -28,11 +29,11 @@ import tagion.wasm.WastAssert;
 
 alias check = Check!WasmBetterCException;
 
-@safe WasmBetterC!(Output) wasmBetterC(Output)(WasmReader wasmreader, Output output) {
+WasmBetterC!(Output) wasmBetterC(Output)(WasmReader wasmreader, Output output) {
     return new WasmBetterC!(Output)(wasmreader, output);
 }
 
-@safe class WasmBetterC(Output) : WasmReader.InterfaceModule {
+class WasmBetterC(Output) : WasmReader.InterfaceModule {
     alias Sections = WasmReader.Sections;
     //alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
     //alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
@@ -811,8 +812,8 @@ alias check = Check!WasmBetterCException;
                 output.writefln("%sreturn %s;", indent, ctx.pop);
             }
             check(no_return || (ctx.stack.length == 0),
-                    format("Stack size is %d but the stack should be empty on return",
-                    ctx.stack.length));
+                    format("Stack size is %d but the stack should be empty on return %s",
+                    ctx.stack.length, ctx.stack));
         }
         Block*[] blocks;
         auto expr_list = expr;
