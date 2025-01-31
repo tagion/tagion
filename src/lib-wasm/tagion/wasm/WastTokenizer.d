@@ -203,12 +203,6 @@ struct WastTokenizer {
 
     }
 
-    bool opDispatch(string TYPE)() const pure nothrow @nogc if (token_types.canFind(TYPE)) {
-        enum code = format(q{enum t = TokenType.%s;}, TYPE);
-        mixin(code);
-        return type == t;
-    }
-
     string getText() nothrow {
         valid(type == TokenType.STRING, "Text string expected");
         return token.stripQuotes;
