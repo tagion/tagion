@@ -343,7 +343,6 @@ struct WastTokenizer {
                     if (!empty && text[pos] == SEMICOLON) {
                         next;
                         takeMatch(End_Comment);
-                        //nextUntil!q{a != Chars.PARENTHESES_END};
                         next;
                     }
                     break;

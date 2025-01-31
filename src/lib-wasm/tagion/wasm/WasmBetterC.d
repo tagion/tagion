@@ -480,6 +480,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
         void perform(const IR ir, const(Types[]) args) {
             switch (args.length) {
+            case 0:
+                return;
             case 1:
                 if (ir in instr_fmt) {
                     push(format(instr_fmt[ir], pop));
