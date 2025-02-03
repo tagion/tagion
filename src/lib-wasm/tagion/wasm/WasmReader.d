@@ -466,8 +466,8 @@ import tagion.wasm.WasmException;
 
             alias Import = SectionT!(ImportType);
 
-            struct TypeIndex {
-                immutable(uint) idx;
+            struct FuncIndex {
+                immutable(uint) idx; /// Function index 
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
@@ -476,7 +476,7 @@ import tagion.wasm.WasmException;
                 }
             }
 
-            alias Function = SectionT!(TypeIndex);
+            alias Function = SectionT!(FuncIndex);
 
             struct TableType {
                 immutable(Types) type;

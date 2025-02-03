@@ -45,6 +45,9 @@ enum TokenType {
     STRING,
 }
 
+enum Begin_Comment ="(;";
+enum End_Comment =";)";
+
 enum token_types = [EnumMembers!TokenType].map!(e => e.to!string).array;
 
 @nogc pure nothrow {
@@ -88,7 +91,7 @@ struct WastTokenizer {
 
     void check(const bool flag, string msg, string file = __FILE__, const size_t code_line = __LINE__) pure {
         if (!flag) {
-            throw e=new WastTokenizerException(msg, this, file, code_line);
+            throw e = new WastTokenizerException(msg, this, file, code_line);
         }
     }
 
@@ -200,12 +203,6 @@ struct WastTokenizer {
 
     }
 
-    bool opDispatch(string TYPE)() const pure nothrow @nogc if (token_types.canFind(TYPE)) {
-        enum code = format(q{enum t = TokenType.%s;}, TYPE);
-        mixin(code);
-        return type == t;
-    }
-
     string getText() nothrow {
         valid(type == TokenType.STRING, "Text string expected");
         return token.stripQuotes;
@@ -254,13 +251,47 @@ struct WastTokenizer {
             return Chars.NUL;
         }
 
+        bool takeMatch(string match) {
+            string nextPart() {
+                if (match.length + pos > text.length) {
+                    return null;
+                }
+                return text[pos .. pos + match.length];
+            }
+
+            while (pos < text.length) {
+                next;
+                if (nextPart == match) {
+                    pos+=match.length;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        unittest {
+
+            const text = "xxx \n xxyzk";
+            {
+                auto r = WastTokenizer(text);
+                const test = r.takeMatch("zzz");
+                assert(!test);
+            }
+            {
+                auto r = WastTokenizer(text);
+                const test = r.takeMatch("xyz");
+                assert(test);
+                assert(r.text[r.pos..$] == "k");
+            }
+        }
+
         void nextUntil(string fun, string paramName = "a")() {
             import std.format;
 
             enum code = format(q{
                 alias goUntil=(%1$s) => %2$s; 
                 while((pos < text.length) && goUntil(text[pos])) {
-                    next;
+                     next;
                 }
             }, paramName, fun);
             mixin(code);
@@ -305,7 +336,7 @@ struct WastTokenizer {
                     next;
                     if (!empty && text[pos] == SEMICOLON) {
                         next;
-                        nextUntil!q{a != Chars.PARENTHESES_END};
+                        takeMatch(End_Comment);
                         next;
                     }
                     break;
