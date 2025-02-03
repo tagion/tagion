@@ -11,6 +11,9 @@ RELEASE_DFLAGS+=$(DOPT)
 # Enable all debug flags
 DEBUG_ENABLE?=1
 
+# Debug symbols added
+# SYMBOLS_ENABLE=1
+
 # ERROR || INFO || undef
 # enable informational 
 WARNINGS?=INFO
@@ -79,8 +82,23 @@ DVERSIONS+=HASH_ORDERING
 
 # Runs a stopwatch on all unittest modules
 # DVERSIONS+=UNIT_STOPWATCH
+# This can also be enable via the environment UNIT_STOPWATCH
+# export UNIT_STOPWARCH 1
+# The unittest can also be selected by a list of modules
+# Ex. 
+# export UNIT_MODULE tagion.hibon.Document
+# Or
+# make unittest UNIT_MODULE+=tagion.hibon.Document UNIT_MODULE+=tagion.hibon.HiBON
+# Or just add the local.mk
 
-INSTALL?=$(HOME)/bin
+
+INSTALL?=$(HOME)/.local/bin
 
 #ENABLE_WASMER?=1
 #UNSHARE_NET=1
+
+
+# God Contract only for test purpose
+# Enables to send dart-modify directly to the network
+# DVERSION+=GOD_CONTRACT
+

@@ -58,6 +58,11 @@ alias dartCheckReadRR = Request!("dartCheckRead", immutable(long)); // dartCheck
 alias dartRimRR = Request!"dartRim"; // dartRim Request
 alias dartBullseyeRR = Request!"dartBullseye"; // dartBullseye Request
 alias dartModifyRR = Request!("dartModify", immutable(long)); // dartModify Request
+alias dartFutureEyeRR = Request!("dartFutureEye", immutable(long)); // dartFuture eye request
 alias dartHiRPCRR = Request!"dartHiRPCRequest"; // dartCRUD HiRPC commands: [dartRead, dartCheckRead, dartRim]
+
+alias dartCompareRR = Request!"dartCompare";
+alias dartSyncRR = Request!"dartSync";
+alias dartReplayRR = Request!"dartReplay";
 
 alias EpochShutdown = Msg!"epoch_shutdown"; // Tell the transcript to stop at a specific epoch

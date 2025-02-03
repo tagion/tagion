@@ -32,7 +32,7 @@ struct WasmGas {
     alias Code = WasmWriter.WasmSection.Code;
     alias GlobalType = WasmWriter.WasmSection.GlobalType;
     alias FuncType = WasmWriter.WasmSection.FuncType;
-    alias TypeIndex = WasmWriter.WasmSection.TypeIndex;
+    alias FuncIndex = WasmWriter.WasmSection.FuncIndex;
     alias CodeType = WasmWriter.WasmSection.CodeType;
     alias ExportType = WasmWriter.WasmSection.ExportType;
 
@@ -42,23 +42,16 @@ struct WasmGas {
      the index of the inserted sectype
      +/
     uint inject(SecType)(SecType sectype) {
-        uint idx;
         enum SectionId = WasmWriter.fromSecType!SecType;
-        if (writer.mod[SectionId] is null) {
-            idx = 0;
-            writer.mod[SectionId] = new WasmWriter.WasmSection.SectionT!SecType;
-            writer.mod[SectionId].sectypes = [sectype];
-        }
-        else {
-            idx = cast(uint)(writer.mod[SectionId].sectypes.length);
-            writer.mod[SectionId].sectypes ~= sectype;
-        }
+        //uint idx;
+        const idx = cast(uint) writer.section!(SectionId).sectypes.length;
+        writer.section!(SectionId).sectypes ~= sectype;
         return idx;
     }
 
     alias InjectGas = void delegate(scope OutBuffer bout, const uint gas);
     package void perform_gas_inject(InjectGas inject_gas) {
-        auto code_sec = writer.mod[Section.CODE];
+        auto code_sec = writer.section!(Section.CODE);
 
         alias GasResult = Tuple!(uint, "gas", IR, "irtype");
 
@@ -67,14 +60,18 @@ struct WasmGas {
             uint gas_count;
             while (!expr.empty) {
                 const elm = expr.front;
-                const instr = instrTable.get(elm.code, illegalInstr);
-                gas_count += instr.cost;
+                gas_count += elm.instr.cost;
                 expr.popFront;
                 with (IRType) {
-                    final switch (instr.irtype) {
+                    final switch (elm.instr.irtype) {
                     case PREFIX:
                     case CODE:
+                    case CODE_TYPE:
+                    case RETURN:
                         wasmexpr(elm.code);
+                        break;
+                    case CODE_EXTEND:
+                        wasmexpr(elm.code, elm.instr.opcode);
                         break;
                     case BLOCK:
                         wasmexpr(elm.code, elm.types[0]);
@@ -95,7 +92,6 @@ struct WasmGas {
                         bout.write(block_bout);
                         break;
                     case BRANCH:
-                    case BRANCH_IF:
                         wasmexpr(elm.code, elm.warg.get!uint);
                         break;
                     case BRANCH_TABLE:
@@ -174,7 +170,7 @@ struct WasmGas {
             global_type = GlobalType(global_desc, expr);
         }
         const global_idx = inject(global_type);
-        const type_sec = writer.mod[Section.TYPE];
+        const type_sec = writer.section!(Section.TYPE);
         const gas_count_func_idx = cast(uint)((type_sec is null) ? 0 : type_sec.sectypes.length);
         // writefln("func_sec.sectypes=%s", func_sec.sectypes);
 
@@ -191,7 +187,7 @@ struct WasmGas {
             FuncType func_type = FuncType(Types.FUNC, [Types.I32], null);
             const type_idx = inject(func_type);
 
-            TypeIndex func_index = TypeIndex(type_idx);
+            FuncIndex func_index = FuncIndex(type_idx);
             const func_idx = inject(func_index);
 
             CodeType code_type;
@@ -227,7 +223,7 @@ struct WasmGas {
             /+
              Inject the function header index to the set_gas_gauge
              +/
-            TypeIndex func_index = TypeIndex(type_idx); //Types.FUNC, [Types.I32], null);
+            FuncIndex func_index = FuncIndex(type_idx); //Types.FUNC, [Types.I32], null);
             const func_idx = inject(func_index);
             /+
              Inject the function body to the set_gas_gauge
@@ -263,7 +259,7 @@ struct WasmGas {
             FuncType func_type=FuncType(Types.FUNC, null, [Types.I32]);
             const type_idx=inject(func_type);
 
-            TypeIndex func_index=TypeIndex(type_idx); //Types.FUNC, [Types.I32], null);
+            FuncIndex func_index=FuncIndex(type_idx); //Types.FUNC, [Types.I32], null);
             const func_idx=inject(func_index);
 
             CodeType code_type;

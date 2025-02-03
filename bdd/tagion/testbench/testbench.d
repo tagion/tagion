@@ -17,7 +17,6 @@ int main(string[] args) {
     import dart_test = tagion.testbench.dart_test;
     import double_spend = tagion.testbench.double_spend;
     import epoch_creator = tagion.testbench.epoch_creator;
-    import hashgraph_swap = tagion.testbench.hashgraph_swap;
     import hashgraph_test = tagion.testbench.hashgraph_test;
     import run_fiber_epoch = tagion.testbench.hashgraph.run_fiber_epoch;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
@@ -44,6 +43,9 @@ int main(string[] args) {
     import epoch_shutdown = tagion.testbench.services.epoch_shutdown;
     import node_interface = tagion.testbench.services.node_interface;
     import remote_sample = tagion.testbench.e2e.remote_sample;
+    import nng_test = tagion.testbench.nng_test;
+    import godcontract = tagion.testbench.testnetwork.godcontract;
+    import dart_synchronization = tagion.testbench.services.dart_synchronization;
 
     alias alltools = AliasSeq!(
         collector,
@@ -61,7 +63,6 @@ int main(string[] args) {
         dart_sync_stress,
         dart_service,
         hashgraph_test,
-        hashgraph_swap,
         tvm_betterc,
         epoch_creator,
         transcript_service,
@@ -86,6 +87,9 @@ int main(string[] args) {
         epoch_shutdown,
         node_interface,
         remote_sample,
+        nng_test,
+        godcontract,
+        dart_synchronization,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

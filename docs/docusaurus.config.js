@@ -2,7 +2,7 @@
 // `@type` JSDoc annotations allow editor autocompletion and type checking
 // (when paired with `@ts-check`).
 // There are various equivalent ways to declare your Docusaurus config.
-// See: https://docusaurus.io/docs/api/docusaurus-config
+// See: https://docusaurus.io/tech/api/docusaurus-config
 
 import {themes as prismThemes} from 'prism-react-renderer';
 
@@ -18,51 +18,51 @@ const config = {
         '@docusaurus/theme-mermaid',
         'docusaurus-theme-github-codeblock',
     ],
-  plugins: [
-    ['@docusaurus/plugin-content-blog',
-      {
-        path: 'tips',
-        id: "TIPS",
-        // Simple use-case: string editUrl
-        editUrl: 'https://github.com/tagion/tagion/edit/master/docs/',
-        editLocalizedFiles: false,
-        blogTitle: 'Tagion Improvement Proposals',
-        blogDescription: 'Blog',
-        blogSidebarCount: 5,
-        blogSidebarTitle: 'All TIPs',
-        routeBasePath: 'tips',
-        include: ['**/*.{md,mdx}'],
-        exclude: [
-          '**/_*.{js,jsx,ts,tsx,md,mdx}',
-          '**/_*/**',
-          '**/*.test.{js,jsx,ts,tsx}',
-          '**/__tests__/**',
-        ],
-        postsPerPage: 10,
-        blogListComponent: '@theme/BlogListPage',
-        blogPostComponent: '@theme/BlogPostPage',
-        blogTagsListComponent: '@theme/BlogTagsListPage',
-        blogTagsPostsComponent: '@theme/BlogTagsPostsPage',
-        truncateMarker: /<!--\s*(truncate)\s*-->/,
-        showReadingTime: true,
-        feedOptions: {
-          type: 'rss',
-          title: 'TIPs',
-          description: 'Tagion Improvement proposals',
-          copyright: 'tagion',
-          language: undefined,
-          createFeedItems: async (params) => {
-            const {blogPosts, defaultCreateFeedItems, ...rest} = params;
-            return defaultCreateFeedItems({
-              // keep only the 10 most recent blog posts in the feed
-              blogPosts: blogPosts.filter((item, index) => index < 10),
-              ...rest,
-            });
-          },
-        },
-      },
-        ]
-  ],
+  // plugins: [
+  //   ['@docusaurus/plugin-content-blog',
+  //     {
+  //       path: 'tips',
+  //       id: "TIPS",
+  //       // Simple use-case: string editUrl
+  //       editUrl: 'https://github.com/tagion/tagion/edit/master/tech/',
+  //       editLocalizedFiles: false,
+  //       blogTitle: 'Tagion Improvement Proposals',
+  //       blogDescription: 'Blog',
+  //       blogSidebarCount: 5,
+  //       blogSidebarTitle: 'All TIPs',
+  //       routeBasePath: 'tips',
+  //       include: ['**/*.{md,mdx}'],
+  //       exclude: [
+  //         '**/_*.{js,jsx,ts,tsx,md,mdx}',
+  //         '**/_*/**',
+  //         '**/*.test.{js,jsx,ts,tsx}',
+  //         '**/__tests__/**',
+  //       ],
+  //       postsPerPage: 10,
+  //       blogListComponent: '@theme/BlogListPage',
+  //       blogPostComponent: '@theme/BlogPostPage',
+  //       blogTagsListComponent: '@theme/BlogTagsListPage',
+  //       blogTagsPostsComponent: '@theme/BlogTagsPostsPage',
+  //       truncateMarker: /<!--\s*(truncate)\s*-->/,
+  //       showReadingTime: true,
+  //       feedOptions: {
+  //         type: 'rss',
+  //         title: 'TIPs',
+  //         description: 'Tagion Improvement proposals',
+  //         copyright: 'tagion',
+  //         language: undefined,
+  //         createFeedItems: async (params) => {
+  //           const {blogPosts, defaultCreateFeedItems, ...rest} = params;
+  //           return defaultCreateFeedItems({
+  //             // keep only the 10 most recent blog posts in the feed
+  //             blogPosts: blogPosts.filter((item, index) => index < 10),
+  //             ...rest,
+  //           });
+  //         },
+  //       },
+  //     },
+  //       ]
+  // ],
 
   // Set the production url of your site here
   url: 'https://docs.tagion.org',
@@ -94,16 +94,19 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
+          path: 'tech',
+          routeBasePath: 'tech',
+          //showLastUpdateTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/tagion/tagion/tree/master/docs/',
+            'https://github.com/tagion/tagion/tree/master/tech/',
         },
         // blog: {
         //   showReadingTime: true,
         //   // Please change this to your repo.
         //   // Remove this to remove the "edit this page" links.
-        //   editUrl: 'https://github.com/tagion/tagion/tree/master/docs/',
+        //   editUrl: 'https://github.com/tagion/tagion/tree/master/tech/',
         // },
         pages: {
         },
@@ -112,6 +115,21 @@ const config = {
         },
       }),
     ],
+  ],
+
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'gov',
+        path: 'gov',
+        routeBasePath: 'gov',
+        showLastUpdateTime: true,
+        sidebarPath: './sidebars.js',
+        sidebarPath: './sidebarsGov.js',
+      },
+    ],
+
   ],
 
   themeConfig:
@@ -128,6 +146,7 @@ const config = {
       image: 'img/tagion-social-card.jpg',
       navbar: {
         logo: {
+          href: 'https://tagion.org',
           alt: 'Tagion logo',
           src: 'img/logo.svg',
           srcDark: 'img/logo-dark.svg',
@@ -137,16 +156,12 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Docs',
+            label: 'Tech',
           },
-          {to: '/tips', label: 'TIPs', position: 'left'},
-          {to: '/blog', label: 'blog', position: 'left'},
+          {to: '/gov/intro', label: 'Gov', position: 'left'},
+          {to: '/tech/tips/0', label: 'TIPs', position: 'left'},
+       // {href: 'https://tagion.medium.com', label: 'Blog', position: 'left'},
           {to: '/changelog', label: 'Changelog', position: 'right'},
-          {
-            href: 'https://ddoc.tagion.org',
-            label: 'Ddoc',
-            position: 'right',
-          },
           {
             href: 'https://github.com/tagion/tagion',
             label: 'GitHub',
@@ -158,11 +173,11 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: 'Tech Documentation',
             items: [
               {
-                label: 'Getting Started',
-                to: '/docs/guide',
+                 label: 'Concept paper',
+                to: 'https://www.tagion.org/resources/tagion-whitepaper.pdf',
               },
               {
                 label: 'HiBON',
@@ -195,21 +210,22 @@ const config = {
             title: 'More',
             items: [
               {
-                label: 'Blog',
+                label: 'Tagion Website',
+                href: 'https://www.tagion.org',
+              },
+              {
+                label: 'Tagion Blog',
                 href: 'https://tagion.medium.com',
               },
               {
-                label: 'GitHub',
-                href: 'https://github.com/tagion/tagion',
+                label: 'Decard Website',
+                href: 'https://decard.io',
               },
-              {
-                label: 'Tagion',
-                href: 'https://www.tagion.org',
-              },
+              
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Tagion.org, Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Decard AG, Built with Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,

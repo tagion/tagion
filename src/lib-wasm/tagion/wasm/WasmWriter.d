@@ -1,9 +1,8 @@
 module tagion.wasm.WasmWriter;
-
+import tagion.basic.Debug;
 import std.bitmanip : nativeToLittleEndian;
 import std.outbuffer;
-import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
-    TemplateArgsOf, PointerTarget, getUDAs, isPointer, ConstOf, ForeachType, FieldNameTuple;
+import std.traits;
 import std.algorithm;
 import std.array : join;
 import std.exception : assumeUnique;
@@ -18,6 +17,7 @@ import LEB128 = tagion.utils.LEB128;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 import tagion.wasm.WasmReader;
+import tagion.hibon.HiBONRecord : exclude;
 
 @safe class WasmWriter {
 
@@ -33,12 +33,24 @@ import tagion.wasm.WasmReader;
 
     alias ReaderSecType(Section sec) = TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
 
-    Modules mod;
-    Sections[Sec] section(Section Sec)() {
-        if (!mod[Sec]) {
-            mod[Sec] = new Sections[Sec];
+    private Modules mod;
+    template section(Section Sec) {
+        static if (Sec is Section.CUSTOM) {
+            final WasmSection.CustomList section() pure nothrow {
+                if (!mod[Sec]) {
+                    mod[Sec] = new WasmSection.CustomList();
+                }
+                return mod[Sec];
+            }
         }
-        return mod[Sec];
+        else {
+            final Sections[Sec] section() pure nothrow {
+                if (!mod[Sec]) {
+                    mod[Sec] = new Sections[Sec];
+                }
+                return mod[Sec];
+            }
+        }
     }
 
     this(ref const(WasmReader) reader) {
@@ -102,6 +114,9 @@ import tagion.wasm.WasmReader;
         }
 
         final void custom_sec(ref ConstOf!(ReaderCustom) sec) {
+            if (!mod[Section.CUSTOM]) {
+                mod[Section.CUSTOM] = new WasmSection.CustomList;
+            }
             mod[Section.CUSTOM].add(previous_sec, sec);
         }
 
@@ -136,9 +151,12 @@ import tagion.wasm.WasmReader;
             }
         }
 
+        const custom_sec = mod[Section.CUSTOM];
         foreach (E; EnumMembers!Section) {
-            foreach (const sec; mod[Section.CUSTOM].list[previous_sec]) {
-                output_custom(sec);
+            if (custom_sec) {
+                foreach (const sec; custom_sec.list[previous_sec]) {
+                    output_custom(sec);
+                }
             }
             static if (E !is Section.CUSTOM) {
                 if (mod[E]!is null) {
@@ -151,8 +169,10 @@ import tagion.wasm.WasmReader;
             }
             previous_sec = E;
         }
-        foreach (const sec; mod[Section.CUSTOM].list[previous_sec]) {
-            output_custom(sec);
+        if (custom_sec) {
+            foreach (const sec; custom_sec.list[previous_sec]) {
+                output_custom(sec);
+            }
         }
         previous_sec = Section.CUSTOM;
         auto output = new OutBuffer;
@@ -176,14 +196,39 @@ import tagion.wasm.WasmReader;
         return output.toBytes.idup;
     }
 
+    int typeIdx(const Types type, const(Types[]) params, const(Types[]) results) const pure nothrow {
+        import std.algorithm;
+
+        auto type_sec = mod[Section.TYPE];
+        if (type_sec) {
+            return cast(int) type_sec.sectypes
+                .countUntil!(t => (t.type == type) &&
+                        equal(params, t.params) &&
+                        equal(results, t.results));
+        }
+        return -1;
+    }
+
+    int createTypeIdx(ref WasmSection.FuncType func_type) pure nothrow {
+        auto type_idx = typeIdx(func_type.type, func_type.params, func_type.results);
+        if (type_idx < 0) {
+            type_idx = cast(int) section!(Section.TYPE).sectypes.length;
+            mod[Section.TYPE].sectypes ~= func_type;
+        }
+        return type_idx;
+    }
+
     struct WasmSection {
         mixin template Serialize() {
+            import tagion.hibon.HiBONRecord : exclude;
+
             final void serialize(ref OutBuffer bout) const {
-                alias MainType = typeof(this);
-                static if (hasMember!(MainType, "guess_size")) {
+                alias This = typeof(this);
+                static if (hasMember!(This, "guess_size")) {
                     bout.reserve(guess_size);
                 }
-                foreach (i, m; this.tupleof) {
+                SerializeLoop: foreach (i, m; this.tupleof) {
+                    enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                     alias T = typeof(m);
                     static if (is(T == struct) || is(T == class)) {
                         m.serialize(bout);
@@ -220,8 +265,8 @@ import tagion.wasm.WasmReader;
                                         format("Array type %s is not supported", T.stringof));
                             }
                         }
-                    else {
-                            static assert(0, format("Type %s is not supported", T.stringof));
+                        else {
+                            static assert(exclude_flag, format("Type %s is not supported", T.stringof));
                         }
                     }
                 }
@@ -302,7 +347,7 @@ import tagion.wasm.WasmReader;
             mixin Serialize;
         }
 
-        struct CustomList {
+        static class CustomList {
             Custom[][EnumMembers!(Section).length + 1] list;
             void add(_ReaderCustom)(const size_t sec_index, const(_ReaderCustom) s) {
                 list[sec_index] ~= new Custom(s);
@@ -314,6 +359,7 @@ import tagion.wasm.WasmReader;
             Types type;
             immutable(Types)[] params;
             immutable(Types)[] results;
+            @exclude int[string] param_names;
             size_t guess_size() const pure nothrow {
                 return params.length + results.length + uint.sizeof * 2 + Types.sizeof;
             }
@@ -498,7 +544,7 @@ import tagion.wasm.WasmReader;
 
         alias Import = SectionT!(ImportType);
 
-        struct TypeIndex {
+        struct FuncIndex {
             uint idx;
             this(const uint typeidx) {
                 this.idx = typeidx;
@@ -511,7 +557,7 @@ import tagion.wasm.WasmReader;
             mixin Serialize;
         }
 
-        alias Function = SectionT!(TypeIndex);
+        alias Function = SectionT!(FuncIndex);
 
         struct TableType {
             Types type;
@@ -621,7 +667,7 @@ import tagion.wasm.WasmReader;
 
             static Local[] toLocals(scope const(Types[]) types) pure nothrow {
                 Local[] result;
-                void compact(const(Types[]) _types) {
+                void compact(scope const(Types[]) _types) {
                     if (_types.length) {
                         const count = cast(uint) _types.count(_types[0]);
                         result ~= Local(count, _types[0]);
@@ -629,6 +675,7 @@ import tagion.wasm.WasmReader;
                     }
                 }
 
+                compact(types);
                 return result;
 
             }
@@ -676,11 +723,28 @@ import tagion.wasm.WasmReader;
         alias Code = SectionT!(CodeType);
 
         struct DataType {
-            uint idx;
+            import std.range;
+            import tagion.basic.basic : basename;
+
+            DataMode mode;
+            uint memidx;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             string base;
+            bool excluded(const size_t tuple_index)() const pure nothrow {
+                with (DataMode) final switch (mode) {
+                case ACTIVE_INDEX:
+                    return false;
+                case ACTIVE:
+                    return FieldNameTuple!(DataType)[tuple_index] == basename!memidx;
+                case PASSIVE:
+                    return only(basename!expr)
+                        .canFind(FieldNameTuple!(DataType)[tuple_index]);
+                }
+            }
+
             this(ref const(ReaderSecType!(Section.DATA)) d) {
-                idx = d.idx;
+                mode = d.mode;
+                memidx = d.memidx;
                 expr = d.expr;
                 base = d.base;
             }

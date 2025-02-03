@@ -25,7 +25,7 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.tasknames;
 import tagion.services.replicator;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
 import tagion.services.DARTInterface : accepted_dart_methods;
@@ -44,7 +44,7 @@ struct DARTOptions {
         dart_filename = prefix ~ dart_filename;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /** 
@@ -148,6 +148,15 @@ struct DARTService {
             if (trt_enable) {
                 trt_handle.send(trtModify(), recorder);
             }
+        }
+
+        void futureEye(dartFutureEyeRR req, immutable(RecordFactory.Recorder) recorder) {
+            log("Received future eye request with length=%s", recorder.length);
+
+            auto future_eye = db.futureEye(recorder);
+            log("Future bullseye is %(%02x%)", future_eye);
+
+            req.respond(future_eye);
         }
 
         void bullseye(dartBullseyeRR req) @safe {

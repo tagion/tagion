@@ -109,7 +109,7 @@ struct Environment {
 
     const(uint) getSeed() const {
         import std.bitmanip : binread = read;
-        import tagion.utils.Miscellaneous;
+        import tagion.utils.convert;
 
         auto buf = decode(seed).dup;
         return buf.binread!uint;
@@ -143,6 +143,15 @@ struct Environment {
             static bool set;
             if (!set) {
                 result=environment[env].to!T;
+                set=true;
+            }
+            return result;
+        }
+        T opDispatch(T)(T _default) {
+            static T result;
+            static bool set;
+            if (!set) {
+                result=environment.get(env, _default.to!string).to!T;
                 set=true;
             }
             return result;

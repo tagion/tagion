@@ -3,7 +3,7 @@ module tagion.services.tasknames;
 @safe
 struct TaskNames {
     private import std.traits;
-    private import tagion.utils.JSONCommon;
+    private import tagion.json.JSONRecord;
 
     string program = "tagion";
     string supervisor = "supervisor";
@@ -18,8 +18,9 @@ struct TaskNames {
     string dart_interface = "dartinterface";
     string trt = "trt";
     string node_interface = "node_interface";
+    string dart_synchronization = "dart_synchronization";
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 
     /// Set a prefix for the default options
     this(const string prefix) pure {

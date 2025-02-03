@@ -15,7 +15,8 @@ module tagion.hibon.HiBONtoText;
 
 import std.format;
 import tagion.hibon.HiBONException;
-import misc = tagion.utils.Miscellaneous;
+import convert = tagion.utils.convert;
+import tagion.utils.convert: Prefix;
 import std.base64;
 import std.typecons : TypedefType;
 import tagion.basic.Types : encodeBase64;
@@ -24,10 +25,6 @@ import tagion.hibon.HiBONRecord;
 
 public import tagion.basic.Types;
 
-enum {
-    hex_prefix = "0x",
-    HEX_PREFIX = "0X"
-}
 
 string encodeBase64(const(Document) doc) pure {
     return encodeBase64(doc.data);
@@ -39,9 +36,9 @@ if (isHiBONRecord!T) {
 }
 
 @nogc bool isHexPrefix(const(char[]) str) pure nothrow {
-    if (str.length >= hex_prefix.length) {
-        return (str[0 .. hex_prefix.length] == hex_prefix)
-            || (str[0 .. HEX_PREFIX.length] == HEX_PREFIX);
+    if (str.length >= Prefix.hex.length) {
+        return (str[0 .. Prefix.hex.length] == Prefix.hex)
+            || (str[0 .. Prefix.HEX.length] == Prefix.HEX);
     }
     return false;
 }
@@ -55,9 +52,9 @@ immutable(ubyte[]) decode(const(char[]) str) pure {
         return Base64URL.decode(str[1 .. $]);
     }
     else if (isHexPrefix(str)) {
-        return misc.decode(str[hex_prefix.length .. $]);
+        return convert.decode(str[Prefix.hex.length .. $]);
     }
-    return misc.decode(str);
+    return convert.decode(str);
 }
 
 Document decodeBase64(const(char[]) str) pure {

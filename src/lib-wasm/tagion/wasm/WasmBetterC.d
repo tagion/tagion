@@ -1,25 +1,27 @@
 module tagion.wasm.WasmBetterC;
 
+import tagion.basic.Debug;
+
 import std.algorithm;
 import std.array;
 import std.array;
 import std.conv : to;
 import std.format;
 import std.range;
-import std.range.primitives : isOutputRange;
 import std.stdio;
-import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
+import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget, isFloatingPoint;
 import std.typecons : Tuple;
 import std.typecons;
 import std.uni : toLower;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.hibon.Document;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WastAssert;
 
-@safe class WasmBetterCException : WasmException {
+@safe:
+class WasmBetterCException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
     }
@@ -27,18 +29,18 @@ import tagion.wasm.WastAssert;
 
 alias check = Check!WasmBetterCException;
 
-@safe WasmBetterC!(Output) wasmBetterC(Output)(WasmReader wasmreader, Output output) {
+WasmBetterC!(Output) wasmBetterC(Output)(WasmReader wasmreader, Output output) {
     return new WasmBetterC!(Output)(wasmreader, output);
 }
 
-@safe class WasmBetterC(Output) : WasmReader.InterfaceModule {
+class WasmBetterC(Output) : WasmReader.InterfaceModule {
     alias Sections = WasmReader.Sections;
     //alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
     //alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
     alias ImportType = WasmReader.WasmRange.WasmSection.ImportType;
     alias ExportType = WasmReader.WasmRange.WasmSection.ExportType;
     alias FuncType = WasmReader.WasmRange.WasmSection.FuncType;
-    alias TypeIndex = WasmReader.WasmRange.WasmSection.TypeIndex;
+    alias FuncIndex = WasmReader.WasmRange.WasmSection.FuncIndex;
     alias CodeType = WasmReader.WasmRange.WasmSection.CodeType;
 
     alias Limit = WasmReader.Limit;
@@ -99,27 +101,42 @@ alias check = Check!WasmBetterCException;
         const sec_assert = SectionAssert(doc);
         void innerAssert(const Assert _assert, const string indent) {
             Context ctx;
+            const(FuncType) func_void;
             auto code_type = CodeType(_assert.invoke);
             auto invoke_expr = code_type[];
             output.writefln("%s// expr   %(%02X %)", indent, _assert.invoke);
             output.writefln("%s// result %(%02X %)", indent, _assert.result);
-            if (_assert.method is Assert.Method.Trap) {
+            with (Assert.Method) final switch (_assert.method) {
+            case Trap:
                 void assert_block(const string _indent) {
-                    block(invoke_expr, ctx, _indent ~ spacer);
+                    block(invoke_expr, func_void, ctx, _indent ~ spacer);
                     output.writefln("%s}", _indent);
                 }
 
-                output.writefln("%swasm.assert_trap((() {", indent);
+                output.writefln("%serror.assert_trap((() {", indent);
                 assert_block(indent ~ spacer);
                 output.writefln("%s)());", indent);
 
-            }
-            else if (_assert.result.length != 0) {
-                block(invoke_expr, ctx, indent, true);
+                break;
+            case Return_nan:
+                block(invoke_expr, func_void, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
-                block(result_expr, ctx, indent, true);
-                output.writef("%sassert(%s == %s", indent, ctx.pop, ctx.pop);
+                block(result_expr, func_void, ctx, indent, true);
+                output.writef(`%1$sassert(math.isnan(%2$s)`, indent, ctx.pop);
+                if (_assert.message.length) {
+                    output.writef(`, "%s"`, _assert.message);
+                }
+                output.writeln(");");
+                break;
+            case Return, Invalid:
+                block(invoke_expr, func_void, ctx, indent, true);
+                auto result_type = CodeType(_assert.result);
+                auto result_expr = result_type[];
+                Context ctx_results;
+                block(result_expr, func_void, ctx_results, indent, true);
+
+                output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
                 if (_assert.message.length) {
                     output.writef(`, "%s"`, _assert.message);
                 }
@@ -184,23 +201,23 @@ alias check = Check!WasmBetterCException;
     void type_sec(ref const(Type) _type) {
         version (none)
             foreach (i, t; _type[].enumerate) {
-            output.writef("%s(type (;%d;) (%s", indent, i, typesName(t.type));
-            if (t.params.length) {
-                output.write(" (param");
-                foreach (p; t.params) {
-                    output.writef(" %s", typesName(p));
+                output.writef("%s(type (;%d;) (%s", indent, i, typesName(t.type));
+                if (t.params.length) {
+                    output.write(" (param");
+                    foreach (p; t.params) {
+                        output.writef(" %s", typesName(p));
+                    }
+                    output.write(")");
                 }
-                output.write(")");
-            }
-            if (t.results.length) {
-                output.write(" (result");
-                foreach (r; t.results) {
-                    output.writef(" %s", typesName(r));
+                if (t.results.length) {
+                    output.write(" (result");
+                    foreach (r; t.results) {
+                        output.writef(" %s", typesName(r));
+                    }
+                    output.write(")");
                 }
-                output.write(")");
+                output.writeln("))");
             }
-            output.writeln("))");
-        }
     }
 
     alias Import = Sections[Section.IMPORT];
@@ -263,10 +280,11 @@ alias check = Check!WasmBetterCException;
     alias Global = Sections[Section.GLOBAL];
     void global_sec(ref const(Global) _global) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (i, g; _global[].enumerate) {
             output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
             auto expr = g[];
-            block(expr, ctx, indent ~ spacer);
+            block(expr, func_void, ctx, indent ~ spacer);
             output.writefln("%s))", indent);
         }
     }
@@ -293,11 +311,12 @@ alias check = Check!WasmBetterCException;
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
             auto expr = e[];
             const local_indent = indent ~ spacer;
-            block(expr, ctx, local_indent ~ spacer);
+            block(expr, func_void, ctx, local_indent ~ spacer);
             output.writef("%s) func", local_indent);
             foreach (f; e.funcs) {
                 output.writef(" %d", f);
@@ -330,16 +349,36 @@ alias check = Check!WasmBetterCException;
         assert(0);
     }
 
+    static string dType(const(Types[]) types) {
+        if (types.empty) {
+            return dType(Types.EMPTY);
+        }
+        if (types.length == 1) {
+            return dType(types[0]);
+        }
+        return format("Tuple!(%-(%s, %))", types);
+    }
+
     static string return_type(const(Types[]) types) {
-        return (types.length == 1) ? dType(types[0]) : "void";
+        return dType(types);
+        //return (types.length == 1) ? dType(types[0]) : "void";
+    }
+
+    string dType(ref const ExprRange.IRElement elm) {
+        if (elm.argtype == ExprRange.IRElement.IRArgType.TYPES) {
+            return dType(elm.types);
+        }
+        return dType(wasmstream.get!(Section.TYPE)[elm.idx].results);
     }
 
     string function_name(const int index) {
+        import std.string;
+
         const exp = getExport(index);
         if (exp == ExportType.init) {
             return format("func_%d", index);
         }
-        return exp.name;
+        return exp.name.replace(".", "_").replace("-", "_");
     }
 
     static string param_name(const size_t index) {
@@ -351,17 +390,17 @@ alias check = Check!WasmBetterCException;
                 param_name(type.index))));
     }
 
-    private void output_function(const(TypeIndex) func, const(CodeType) code_type) {
+    private void output_function(const int func_idx, const(FuncIndex) type, const(CodeType) code_type) {
         Context ctx;
         auto expr = code_type[];
-        const function_header = wasmstream.get!(Section.TYPE)[func.idx];
-        const x = return_type(function_header.results);
+        const func_type = wasmstream.get!(Section.TYPE)[type.idx];
+        //const x = return_type(func_type.results);
         output.writefln("%s%s %s (%s) {",
                 indent,
-                return_type(function_header.results),
-                function_name(func.idx),
-                function_params(function_header.params));
-        ctx.locals = iota(function_header.params.length).map!(idx => param_name(idx)).array;
+                return_type(func_type.results),
+                function_name(func_idx),
+                function_params(func_type.params));
+        ctx.locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
         const local_indent = indent ~ spacer;
         if (!code_type.locals.empty) {
             output.writef("%s(local", local_indent);
@@ -373,25 +412,27 @@ alias check = Check!WasmBetterCException;
             output.writeln(")");
         }
 
-        block(expr, ctx, local_indent);
+        block(expr, func_type, ctx, local_indent);
         output.writefln("%s}\n", indent);
     }
 
     alias Code = Sections[Section.CODE];
     @trusted void code_sec(ref const(Code) _code) {
-        foreach (f, c; lockstep(_function[], _code[], StoppingPolicy.requireSameLength)) {
-            output_function(f, c);
+        auto func_indices = iota(cast(int) _function[].walkLength);
+        foreach (func_idx, f, c; lockstep(func_indices, _function[], _code[], StoppingPolicy.requireSameLength)) {
+            output_function(func_idx, f, c);
         }
     }
 
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
         Context ctx;
+        const(FuncType) func_void;
         foreach (d; _data[]) {
             output.writefln("%s(data (", indent);
             auto expr = d[];
             const local_indent = indent ~ spacer;
-            block(expr, ctx, local_indent ~ spacer);
+            block(expr, func_void, ctx, local_indent ~ spacer);
             output.writefln(`%s) "%s")`, local_indent, d.base);
         }
     }
@@ -400,10 +441,16 @@ alias check = Check!WasmBetterCException;
         string[] locals;
         string[] stack;
         string peek() const pure nothrow @nogc {
+            if (stack.length == 0) {
+                return "Error stack is empty";
+            }
             return stack[$ - 1];
         }
 
         string pop() pure nothrow {
+            if (stack.length == 0) {
+                return "Error pop from an empty stack";
+            }
             scope (exit) {
                 stack.length--;
             }
@@ -431,16 +478,55 @@ alias check = Check!WasmBetterCException;
             return stack.empty;
         }
 
-        void perform(const IR ir, const uint number_of_args) {
-            switch (number_of_args) {
+        void perform(const IR ir, const(Types[]) args) {
+            switch (args.length) {
+            case 0:
+                return;
             case 1:
-                push(format(instr_fmt[ir], pop));
-                return;
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop));
+                    return;
+                }
+                push(format("Undefinded %s pop %s", ir, pop));
+                break;
             case 2:
-                push(format(instr_fmt[ir], pop, pop));
-                return;
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s", ir, pop, pop));
+                break;
+            case 3:
+                if (ir in instr_fmt) {
+                    push(format(instr_fmt[ir], pop, pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s %s", ir, pop, pop, pop));
+                break;
             default:
-                check(0, format("Format argument %s not supported for %s", number_of_args, instrTable[ir].name));
+                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, instrTable[ir].name));
+            }
+
+        }
+
+        void perform(const IR_EXTEND ir, const(Types[]) args) {
+            switch (args.length) {
+            case 1:
+                if (ir in instr_extend_fmt) {
+                    push(format(instr_extend_fmt[ir], pop));
+                    return;
+                }
+                push(format("Undefinded %s pop %s", ir, pop));
+                break;
+            case 2:
+                if (ir in instr_extend_fmt) {
+                    push(format(instr_extend_fmt[ir], pop, pop));
+                    return;
+                }
+                push(format("Undefinded %s pops %s %s", ir, pop, pop));
+                break;
+            default:
+                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, interExtendedTable[ir].name));
             }
 
         }
@@ -450,14 +536,20 @@ alias check = Check!WasmBetterCException;
         }
     }
 
-    private const(ExprRange.IRElement) block(
+    static string sign(T)(T x) if (isFloatingPoint!T) {
+        import std.math : signbit;
+
+        return signbit(x) ? "-" : "";
+    }
+
+    private void block(
             ref ExprRange expr,
+            ref const(FuncType) func_type,
             ref Context ctx,
             const(string) indent,
             const bool no_return = false) {
         string block_comment;
         uint block_count;
-        uint count;
         uint calls;
         static string block_result_type()(const Types t) {
             with (Types) {
@@ -477,42 +569,135 @@ alias check = Check!WasmBetterCException;
             return format("result_%d", calls);
         }
 
-        const(ExprRange.IRElement) innerBlock(ref ExprRange expr, const(string) indent, const uint level) {
+        import std.outbuffer;
+
+        enum BlockKind {
+            END,
+            BREAK,
+            BREAK_N,
+            ELSE,
+            ELSE_IF,
+            WHILE,
+            LOOP,
+            ERROR,
+        }
+
+        static struct Block {
+            const(ExprRange.IRElement) instr;
+            BlockKind _kind;
+            const(BlockKind) kind() const pure nothrow {
+                return _kind;
+            }
+
+            void kind(const BlockKind k) pure nothrow {
+                if (_kind < k) {
+                    _kind = k;
+                }
+            }
+        }
+
+        void innerBlock(
+                OutBuffer bout,
+                ref ExprRange expr,
+                const(string) indent,
+                Block*[] blocks) {
+            string block_label(const size_t label_n) {
+                return format("block_%d", label_n);
+            }
+
+            string results(const(Types[]) args) {
+                if (args.length == 0) {
+                    return null;
+                }
+                if (args.length == 1) {
+                    return ctx.peek;
+                }
+                bout.writefln("// Results args=%s stack=%s", args, ctx.stack);
+                check(args.length <= ctx.stack.length,
+                        format("Elements in the stack is %d but the function return arguments is %d",
+                        args.length, ctx.stack.length));
+                return format("%s(%-(%s, %))", dType(args), args.length.iota.map!(n => ctx.stack[$ - 1 - n]));
+            }
+
             while (!expr.empty) {
                 const elm = expr.front;
-                const instr = instrTable[elm.code];
+                bout.writefln("/* %s */", elm.instr.irtype);
                 expr.popFront;
-
+                bout.writefln("/* %s, %s */", elm.instr.irtype, expr.front.instr.irtype);
                 with (IRType) {
-                    final switch (instr.irtype) {
+                    final switch (elm.instr.irtype) {
                     case CODE:
-                        output.writefln("%s// %s", indent, instr.name);
-                        ctx.perform(elm.code, instr.pops);
+                    case CODE_TYPE:
+                        bout.writefln("%s// %s", indent, elm.instr.name);
+                        ctx.perform(elm.code, elm.instr.pops);
+                        break;
+                    case CODE_EXTEND:
+                        bout.writefln("%s// %s", indent, elm.instr.name);
+                        ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
+                        break;
+                    case RETURN:
+                        bout.writefln("%s// %s  <-RETURN  .. %s", indent, elm.instr.name, expr.front.code);
+
+                        //ctx.perform(elm.code, func_type.results);
+                        bout.writefln("// Function results %s", func_type.results);
+                        bout.writefln("%s%s %s;", indent, elm.instr.name, results(func_type.results));
+                        bout.writefln("// After return");
                         break;
                     case PREFIX:
-                        output.writefln("%s%s", indent, instr.name);
+                        bout.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case BLOCK:
-                        block_comment = format(";; block %d", block_count);
+                        block_comment = format(";; block %d %s", block_count, dType(elm));
                         block_count++;
-                        output.writefln("%s%s%s %s", indent, instr.name,
-                                block_result_type(elm.types[0]), block_comment);
-                        const end_elm = innerBlock(expr, indent ~ spacer, level + 1);
-                        const end_instr = instrTable[end_elm.code];
-                        output.writefln("%s%s", indent, end_instr.name);
-                        //return end_elm;
+                        //bout.writefln("BLOCK elm.arhtype=%s", elm.argtype);
 
-                        // const end_elm=block_elm(elm);
-                        if (end_elm.code is IR.ELSE) {
-                            const endif_elm = innerBlock(expr, indent ~ spacer, level + 1);
-                            const endif_instr = instrTable[endif_elm.code];
-                            output.writefln("%s%s %s count=%d", indent,
-                                    endif_instr.name, block_comment, count);
+                        //bout.writefln("%s%s%s %s", indent, elm.instr.name,
+                        //        block_result_type(elm.types[0]), block_comment);
+                        bout.writefln("%s{ %s", indent, block_comment);
+                        auto block = new Block(elm);
+                        innerBlock(bout, expr, indent ~ spacer, blocks ~ block);
+                        bout.writefln("} // Block kind %s", *block);
+                        final switch (block.kind) {
+                        case BlockKind.END:
+                            bout.writefln("%s{", indent);
+                            break;
+                        case BlockKind.BREAK:
+                            bout.writefln("%sdo {", indent);
+                            break;
+                        case BlockKind.BREAK_N:
+                            break;
+                        case BlockKind.ELSE:
+                            break;
+                        case BlockKind.ELSE_IF:
+                            break;
+                        case BlockKind.WHILE:
+                            break;
+                        case BlockKind.LOOP:
+                            break;
+                        case BlockKind.ERROR:
                         }
                         break;
                     case BRANCH:
-                    case BRANCH_IF:
-                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                        bout.writefln("// BRANCH %s", elm.code);
+
+                        if (elm.code is IR.BR) {
+                            const lth = elm.warg.get!uint;
+                            check(lth < blocks.length, format(
+                                    "Label number of %d exceeds the block stack for max %d", lth, blocks.length));
+                            //bout.writefln("elm=%s warg=%s", elm, elm.warg.get!int);
+
+                            if (lth == 0) {
+                                blocks[lth].kind = BlockKind.BREAK;
+                                bout.writefln("%sbreak;", indent);
+                                break;
+                            }
+                            const label_n = blocks.length - lth;
+                            blocks[label_n].kind = BlockKind.BREAK_N;
+                            bout.writefln("%sbreak %s;", indent, block_label(label_n));
+                            break;
+                        }
+                        bout.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
+
                         break;
                     case BRANCH_TABLE:
                         static string branch_table(const(WasmArg[]) args) {
@@ -523,54 +708,69 @@ alias check = Check!WasmBetterCException;
                             return result;
                         }
 
-                        output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
+                        bout.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
                         break;
                     case CALL:
                         scope (exit) {
                             calls++;
                         }
-                        output.writefln("%s// %s %s", indent, instr.name, elm.warg.get!uint);
+                        bout.writefln("%s// %s %s", indent, elm.instr.name, elm.warg.get!uint);
                         const func_idx = elm.warg.get!uint;
-                        const function_header = wasmstream.get!(Section.TYPE)[func_idx];
-                        const function_call = format("%s(%-(%s,%))", function_name(func_idx), ctx.pops(function_header
-                                .params.length));
+                        const type_idx = wasmstream.get!(Section.FUNCTION)[func_idx].idx;
+                        const function_header = wasmstream.get!(Section.TYPE)[type_idx];
+                        const function_call = format("%s(%-(%s,%))",
+                                function_name(func_idx), ctx.pops(function_header.params.length));
                         string set_result;
                         if (function_header.results.length) {
                             set_result = format("const %s=", result_name);
                             ctx.push(result_name);
                         }
-                        output.writefln("%s%s%s;", indent, set_result, function_call);
+                        bout.writefln("%s%s%s;", indent, set_result, function_call);
                         break;
                     case CALL_INDIRECT:
-                        output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
+                        bout.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case LOCAL:
-                        output.writefln("%s// %s %d", indent, instr.name, elm.warg.get!uint);
+                        bout.writefln("%s// %s %d", indent, elm.instr.name, elm.warg.get!uint);
                         ctx.push(elm.code, elm.warg.get!uint);
                         break;
                     case GLOBAL:
-                        output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
+                        bout.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case MEMORY:
-                        output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.wargs));
+                        bout.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
                         break;
                     case MEMOP:
-                        output.writefln("%s%s", indent, instr.name);
+                        bout.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case CONST:
                         static string toText(const WasmArg a) {
+                            import std.math : isNaN, isInfinity;
+
                             with (Types) {
                                 switch (a.type) {
                                 case I32:
                                     return format("(%d)", a.get!int);
                                 case I64:
-                                    return format("(%dL)", a.get!long);
+                                    return format("(0x%xL)", a.get!long);
                                 case F32:
                                     const x = a.get!float;
-                                    return format("(%a /* %s */)", x, x);
+                                    if (x.isNaN) {
+                                        return format("math.snan!float(0x%x)", a.as!uint);
+                                    }
+                                    if (x.isInfinity) {
+                                        return format("(%sfloat.infinity)", sign(x));
+                                    }
+                                    return format("float(%aF /* %s */)", x, x);
                                 case F64:
                                     const x = a.get!double;
-                                    return format("(%a /* %s */)", x, x);
+                                    if (x.isNaN) {
+                                        return format("math.snan!double(0x%x)", a.as!long);
+                                    }
+                                    if (x.isInfinity) {
+                                        return format("(%sdouble.infinity)", sign(x));
+                                    }
+                                    return format("double(%a /* %s */)", x, x);
                                 default:
                                     assert(0);
                                 }
@@ -579,31 +779,48 @@ alias check = Check!WasmBetterCException;
                         }
 
                         const value = toText(elm.warg);
-                        output.writefln("%s// %s %s", indent, instr.name, value);
+                        bout.writefln("%s// %s %s", indent, elm.instr.name, value);
                         ctx.push(value);
                         break;
                     case END:
-                        return elm;
+                        bout.writefln("//Block %s", blocks.length);
+                        if (blocks.length > 0) {
+                            const block_kind = blocks[$ - 1].kind;
+                            if (block_kind == BlockKind.BREAK) {
+                                bout.writeln("%s} while(false);", indent);
+                                //return BlockKind.END;
+                            }
+                            //return BlockKind.END;
+                        }
+                        //check(0, "Block 'end' without and begin");
+                        //assert(0);
+                        return;
                     case ILLEGAL:
-                        output.writefln("Error: Illegal instruction %02X", elm.code);
-                        return elm;
+                        bout.writefln("Error: Illegal instruction %02X", elm.code);
+                        break;
+                        //return BlockKind.ERROR;
                     case SYMBOL:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }
                 }
             }
-            return ExprRange.IRElement(IR.END, level);
+            //return BlockKind.END;
         }
 
+        auto bout = new OutBuffer;
         scope (exit) {
+            output.write(bout.toString);
             if (!no_return && (ctx.stack.length > 0)) {
                 output.writefln("%sreturn %s;", indent, ctx.pop);
             }
-            check(no_return || (ctx.stack.length == 0), format("Stack size is %d but the stack should be empty on return", ctx
-                    .stack
-                    .length));
+            check(no_return || (ctx.stack.length == 0),
+                    format("Stack size is %d but the stack should be empty on return %s",
+                    ctx.stack.length, ctx.stack));
         }
-        return innerBlock(expr, indent, 0);
+        Block*[] blocks;
+        auto expr_list = expr;
+        bout.writefln("// List %s", expr_list.map!(e => e.code));
+        innerBlock(bout, expr, indent, blocks);
     }
 
     Output serialize() {
@@ -613,7 +830,7 @@ alias check = Check!WasmBetterCException;
         attributes.each!(attr => output.writefln("%s:", attr));
         //indent = spacer;
         scope (exit) {
-            output.writeln("// end");
+            output.writeln("// end ---");
         }
         wasmstream(this);
         return output;
@@ -622,11 +839,21 @@ alias check = Check!WasmBetterCException;
 }
 
 immutable string[IR] instr_fmt;
+immutable string[IR_EXTEND] instr_extend_fmt;
 
 shared static this() {
     instr_fmt = [
         IR.LOCAL_GET: q{%1$s},
-        IR.LOCAL_SET: q{%2$s=$1$s;},
+        IR.LOCAL_SET: q{%2$s=%1$s;},
+        // State 
+        IR.RETURN: q{%1$s},
+        // Const literals
+        IR.I32_CONST: q{/* const i32 */},
+        IR.I64_CONST: q{/* const i64 */},
+        IR.F32_CONST: q{/* const f32 */},
+        IR.F64_CONST: q{/* const f64 */},
+
+        // 32 bits integer operations
         IR.I32_CLZ: q{wasm.clz(%s)},
         IR.I32_CTZ: q{wasm.ctz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},
@@ -643,8 +870,8 @@ shared static this() {
         IR.I32_SHL: q{(%2$s << %1$s)},
         IR.I32_SHR_S: q{(%2$s >> %1$s)},
         IR.I32_SHR_U: q{(%2$s >>> %1$s)},
-        IR.I32_ROTL: q{wasm.rotl(%1$s, %2$s)},
-        IR.I32_ROTR: q{wasm.rotr(%1$s, %2$s)},
+        IR.I32_ROTL: q{wasm.rotl(uint(%2$s), uint(%1$s))},
+        IR.I32_ROTR: q{wasm.rotr(uint(%2$s), uint(%1$s))},
         IR.I32_EQZ: q{(%1$s == 0)},
         IR.I32_EQ: q{(%2$s == %1$s)},
         IR.I32_NE: q{(%2$s != %1$s)},
@@ -656,7 +883,149 @@ shared static this() {
         IR.I32_GT_U: q{(uint(%2$s) > uint(%1$s))},
         IR.I32_GE_S: q{(%2$s >= %1$s)},
         IR.I32_GE_U: q{(uint(%2$s) >= uint(%1$s))},
+        /// 64 bits integer operations
+        IR.I64_CLZ: q{wasm.clz(%s)},
+        IR.I64_CTZ: q{wasm.ctz(%s)},
+        IR.I64_POPCNT: q{wasm.popcnt(%s)},
+        IR.I64_ADD: q{(%2$s + %1$s)},
+        IR.I64_SUB: q{(%2$s - %1$s)},
+        IR.I64_MUL: q{(%2$s * %1$s)},
+        IR.I64_DIV_S: q{wasm.div(long(%2$s), long(%1$s))},
+        IR.I64_DIV_U: q{wasm.div(ulong(%2$s), ulong(%1$s))},
+        IR.I64_REM_S: q{wasm.rem(long(%2$s), long(%1$s))},
+        IR.I64_REM_U: q{wasm.rem(ulong(%2$s), ulong(%1$s))},
+        IR.I64_AND: q{(%2$s & %1$s)},
+        IR.I64_OR: q{(%2$s | %1$s)},
+        IR.I64_XOR: q{(%2$s ^ %1$s)},
+        IR.I64_SHL: q{(%2$s << %1$s)},
+        IR.I64_SHR_S: q{(%2$s >> %1$s)},
+        IR.I64_SHR_U: q{(%2$s >>> %1$s)},
+        IR.I64_ROTL: q{wasm.rotl(ulong(%2$s), ulong(%1$s))},
+        IR.I64_ROTR: q{wasm.rotr(ulong(%2$s), ulong(%1$s))},
+        IR.I64_EQZ: q{(%1$s == 0)},
+        IR.I64_EQ: q{(%2$s == %1$s)},
+        IR.I64_NE: q{(%2$s != %1$s)},
+        IR.I64_LT_S: q{(%2$s < %1$s)},
+        IR.I64_LT_U: q{(ulong(%2$s) < ulong(%1$s))},
+        IR.I64_LE_S: q{(%2$s <= %1$s)},
+        IR.I64_LE_U: q{(ulong(%2$s) <= ulong(%1$s))},
+        IR.I64_GT_S: q{(%2$s > %1$s)},
+        IR.I64_GT_U: q{(ulong(%2$s) > ulong(%1$s))},
+        IR.I64_GE_S: q{(%2$s >= %1$s)},
+        IR.I64_GE_U: q{(ulong(%2$s) >= ulong(%1$s))},
+        /// F32 32bits floatingpoint
+        IR.F32_EQ: q{(%2$s is %2$s},
+        IR.F32_NE: q{(%2$s != %2$s},
+        IR.F32_LT: q{(%2$s < %2$s},
+        IR.F32_GT: q{(%2$s > %2$s},
+        IR.F32_LE: q{(%2$s <= %2$s},
+        IR.F32_GE: q{(%2$s >= %2$s},
+        IR.F32_ABS: q{math.fabsf(%1$s)},
+        IR.F32_NEG: q{(-%1$s)},
+        IR.F32_CEIL: q{math.ceil(%1$s)},
+        IR.F32_FLOOR: q{math.floor(%1$s)},
+        IR.F32_TRUNC: q{math.trunc(%1$s)},
+        IR.F32_NEAREST: q{math.nearest(%1$s)},
+        IR.F32_SQRT: q{math.sqrt(%1$s)},
+        IR.F32_ADD: q{math.add(%2$s,%1$s)},
+        IR.F32_SUB: q{math.sub(%2$s, %1$s)},
+        IR.F32_MUL: q{math.mul(%2$s, %1$s)},
+        IR.F32_DIV: q{math.div(%2$s, %1$s)},
+        IR.F32_MIN: q{math.min(%2$s, %1$s)},
+        IR.F32_MAX: q{math.max(%2$s, %1$s)},
+        IR.F32_COPYSIGN: q{math.copysignf(%2$s, %1$s)},
+        IR.F32_CONVERT_I32_S: q{cast(int)(%1$s)},
+        IR.F32_CONVERT_I32_U: q{cast(uint)(%1$s)},
+        IR.F32_CONVERT_I64_S: q{cast(long)(%1$s)},
+        IR.F32_CONVERT_I64_U: q{cast(ulong)(%1$s)},
+        IR.F32_DEMOTE_F64: q{math.demote(%1$s)},
 
+        /// F64 32bits floatingpoint
+        IR.F64_EQ: q{(%2$s == %2$s},
+        IR.F64_NE: q{(%2$s != %2$s},
+        IR.F64_LT: q{(%2$s < %2$s},
+        IR.F64_GT: q{(%2$s > %2$s},
+        IR.F64_LE: q{(%2$s <= %2$s},
+        IR.F64_GE: q{(%2$s >= %2$s},
+        IR.F64_ABS: q{math.fabs(%1$s)},
+        IR.F64_NEG: q{(-%1$s)},
+        IR.F64_CEIL: q{math.ceil(%1$s)},
+        IR.F64_FLOOR: q{math.floor(%1$s)},
+        IR.F64_TRUNC: q{math.trunc(%1$s)},
+        IR.F64_NEAREST: q{math.nearest(%1$s)},
+        IR.F64_SQRT: q{math.sqrt(%1$s)},
+        IR.F64_ADD: q{math.add(%2$s, %1$s)},
+        IR.F64_SUB: q{math.sub(%2$s, %1$s)},
+        IR.F64_MUL: q{math.mul(%2$s, %1$s)},
+        IR.F64_DIV: q{math.div(%2$s,  %1$s)},
+        IR.F64_MIN: q{math.min(%2$s, %1$s)},
+        IR.F64_MAX: q{math.max(%2$s, %1$s)},
+        IR.F64_COPYSIGN: q{math.copysign(%2$s, %1$s)},
+        IR.F64_CONVERT_I32_S: q{cast(int)(%1$s)},
+        IR.F64_CONVERT_I32_U: q{cast(uint)(%1$s)},
+        IR.F64_CONVERT_I64_S: q{cast(long)(%1$s)},
+        IR.F64_CONVERT_I64_U: q{cast(ulong)(%1$s)},
+        // Conversions
+        IR.I64_EXTEND_I32_S: q{cast(long)(%1$s)},
+        IR.I64_EXTEND_I32_U: q{cast(long)(cast(uint)%1$s)},
+        IR.I32_EXTEND8_S: q{cast(int)(cast(byte)%1$s)},
+        IR.I32_EXTEND16_S: q{cast(int)(cast(short)%1$s)},
+        IR.I64_EXTEND8_S: q{cast(long)(cast(byte)%1$s)},
+        IR.I64_EXTEND16_S: q{cast(long)(cast(short)%1$s)},
+        IR.I64_EXTEND32_S: q{cast(long)(cast(int)%1$s)},
+
+        IR.I32_WRAP_I64: q{cast(int)(%1$s)},
+        IR.I32_TRUNC_F32_S: q{math.trunc!(int,float)(%1$s)},
+        IR.I32_TRUNC_F32_U: q{math.trunc!(uint,float)(%1$s)},
+        IR.I32_TRUNC_F64_S: q{math.trunc!(int,double)(%1$s)},
+        IR.I32_TRUNC_F64_U: q{math.trunc!(uint,double)(%1$s)},
+        IR.I64_TRUNC_F32_S: q{math.trunc!(long,float)(%1$s)},
+        IR.I64_TRUNC_F32_U: q{math.trunc!(ulong,float)(%1$s)},
+        IR.I64_TRUNC_F64_S: q{math.trunc!(long,double)(%1$s)},
+        IR.I64_TRUNC_F64_U: q{math.trunc!(ulong,double)(%1$s)},
+
+        IR.F32_CONVERT_I32_S: q{cast(float)(%1$s)},
+        IR.F32_CONVERT_I32_U: q{cast(float)(cast(uint)%1$s)},
+        IR.F32_CONVERT_I64_S: q{cast(float)(%1$s)},
+        IR.F32_CONVERT_I64_U: q{cast(float)(cast(ulong)%1$s)},
+        IR.F64_CONVERT_I32_S: q{cast(double)(%1$s)},
+        IR.F64_CONVERT_I32_U: q{cast(double)(cast(uint)%1$s)},
+        IR.F64_CONVERT_I64_S: q{cast(double)(%1$s)},
+        IR.F64_CONVERT_I64_U: q{cast(double)(cast(ulong)%1$s)},
+
+        IR.F64_PROMOTE_F32: q{math.promote(%1$s)},
+
+        IR.I32_REINTERPRET_F32: q{math.reinterpret32(%1$s)},
+        IR.F32_REINTERPRET_I32: q{math.reinterpret32(%1$s)},
+        IR.I64_REINTERPRET_F64: q{math.reinterpret64(%1$s)},
+        IR.F64_REINTERPRET_I64: q{math.reinterpret64(%1$s)},
+        // Compare f32
+        IR.F32_EQ: q{(%2$s == %1$s)},
+        IR.F32_NE: q{(%2$s != %1$s)},
+        IR.F32_LT: q{(%2$s < %1$s)},
+        IR.F32_GT: q{(%2$s > %1$s)},
+        IR.F32_LE: q{(%2$s <= %1$s)},
+        IR.F32_GE: q{(%2$s >= %1$s)},
+
+        // Compare f64
+        IR.F64_EQ: q{(%2$s == %1$s)},
+        IR.F64_NE: q{(%2$s != %1$s)},
+        IR.F64_LT: q{(%2$s < %1$s)},
+        IR.F64_GT: q{(%2$s > %1$s)},
+        IR.F64_LE: q{(%2$s <= %1$s)},
+        IR.F64_GE: q{(%2$s >= %1$s)},
+        //  
+        IR.SELECT: q{((%1$s)?%3$s:%2$s)},
+    ];
+    instr_extend_fmt = [
+        IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F32_U: q{math.trunc_sat!(uint,float)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F64_S: q{math.trunc_sat!(int,double)(%1$s)},
+        IR_EXTEND.I32_TRUNC_SAT_F64_U: q{math.trunc_sat!(uint,double)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F32_S: q{math.trunc_sat!(long,float)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F32_U: q{math.trunc_sat!(ulong,float)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F64_S: q{math.trunc_sat!(long,double)(%1$s)},
+        IR_EXTEND.I64_TRUNC_SAT_F64_U: q{math.trunc_sat!(ulong,double)(%1$s)},
     ];
 }
 

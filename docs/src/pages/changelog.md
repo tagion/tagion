@@ -293,7 +293,7 @@ So you enable them directly from your nixosConfiguration by providing "github:ta
 We have created a new documentation webpage that is built using [docusaurus](https://docusaurus.io/). See [https://docs.tagion.org](https://docs.tagion.org) for more info. The DDOC documentation has also been moved to a subpage on `/ddoc/tagion`. This also allows the search-box to support searching across all documentation. Currently there is a problem with the statically generated sites for ddoc in the search box, which requires the client to refresh the page when entering a ddoc page (thanks react :-) ).
 
 **Subscription tool**
-Initial work on the [subscription tool](https://docs.tagion.org/docs/tools/subscriber) has begun, and the tool now works where you are able to subscribe to various tags.
+Initial work on the [subscription tool](https://docs.tagion.org/tech/tools/subscriber) has begun, and the tool now works where you are able to subscribe to various tags.
 
 **Async startup of nodes**
 For years we have had problems with booting the hashgraph in a asynchronous way regarding the boot of the hashgraph. This is due to that you somehow have to start a graph by only knowing the other nodes addresses which is rather difficult. This has now been fixed so that each node may be booted with n delay in between. This change also allowed us to remove the Locator.d which was necessary before.
@@ -302,7 +302,7 @@ For years we have had problems with booting the hashgraph in a asynchronous way 
 The initial mode1 network boot succeeded this week. Lots of work have been going into cleaning up the interfaces and making the new `NNGGossipnet`, and together with the above change regarding async booting the mode1, network can now successfully start and produce epochs.
 You are even able to shutdown various nodes and the graph will continue running and produce epochs as long as 2/3 of the nodes are still online.
 
-See more information about different modes [here](/docs/architecture/network_modes).
+See more information about different modes [here](/tech/architecture/network_modes).
 
 **TVM standard library (Tauon)**
 We have begun work on the standard library for Tauon ( *named after the elementary particle [tau/tauon](https://en.wikipedia.org/wiki/Tau_(particle))*). The thing that makes the Tauon difficult to do is that is has to be executable from WASM which means most of DRuntime is not supported. We are therefore working on adding / removing features from druntime until that we are able to compile all functionality that we would like. Currently we are as an example able to run the following example in WASM/WASI:

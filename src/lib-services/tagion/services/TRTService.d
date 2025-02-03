@@ -1,5 +1,5 @@
 /// Transaction reverse table service using a DART
-/// https://docs.tagion.org/docs/architecture/TRT
+/// https://docs.tagion.org/tech/architecture/TRT
 module tagion.services.TRTService;
 import tagion.services.options : TaskNames;
 
@@ -28,7 +28,7 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.services.replicator;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Types;
 import tagion.trt.TRT;
@@ -51,7 +51,7 @@ struct TRTOptions {
         trt_filename = prefix ~ trt_filename;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 @safe

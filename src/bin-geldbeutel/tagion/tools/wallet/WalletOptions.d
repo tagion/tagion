@@ -3,7 +3,7 @@ module tagion.tools.wallet.WalletOptions;
 import std.path;
 import tagion.basic.Types : FileExtension;
 import tagion.services.options;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.wallet.KeyRecover : standard_questions;
 
 enum default_wallet_config_filename="wallet".setExtension(FileExtension.json);
@@ -60,6 +60,6 @@ struct WalletOptions {
         port = 10800;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
     mixin JSONConfig;
 }

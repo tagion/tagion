@@ -2,8 +2,8 @@ module tagion.tools.dartutil.synchronize;
 
 import std.file : remove;
 import std.format;
+import std.stdio : File;
 import tagion.communication.HiRPC;
-import tagion.dart.BlockFile;
 import tagion.dart.DART;
 import tagion.dart.DARTRim;
 import tagion.dart.synchronizer;
@@ -15,7 +15,7 @@ import tagion.utils.Term;
 class DARTUtilSynchronizer : JournalSynchronizer {
     protected DART source;
     protected DART destination;
-    this(BlockFile journalfile, DART destination, DART source) {
+    this(File journalfile, DART destination, DART source) {
         this.source = source;
         this.destination = destination;
         super(journalfile);
@@ -66,11 +66,11 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
         ushort sector = cast(ushort)(_rim << 8);
         verbose("Sector %04x", sector);
         immutable journal_filename = format("%s.%04x.dart_journal", journal_basename, sector);
-        BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
+        //BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
 
-        auto journalfile = BlockFile(journal_filename);
+        auto journalfile = File(journal_filename, "r");
         scope (exit) {
-            if (!journalfile.empty) {
+            if (journalfile.size > 0) {
                 journal_filenames ~= journal_filename;
                 verbose("Journalfile %s", journal_filename);
                 nobose("%s#%s", YELLOW, RESET);

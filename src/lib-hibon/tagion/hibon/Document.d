@@ -22,8 +22,9 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.utils.StdTime;
 import tagion.basic.basic : isinit;
+import tagion.errors.categories : ERRORS;
 import LEB128 = tagion.utils.LEB128;
-import tagion.basic.tagionexceptions : Check;
+import tagion.errors.tagionexceptions : Check;
 public import tagion.hibon.HiBONJSON;
 
 import std.exception;
@@ -237,7 +238,7 @@ static assert(uint.sizeof == 4);
             const bool ignore_boundary_check = IGNORE_BOUNDARY_CHECK) const nothrow {
         Element.ErrorCode inner_valid(const Document doc,
                 ErrorCallback error_callback = null) const nothrow {
-            import tagion.basic.tagionexceptions : TagionException;
+            import tagion.errors.tagionexceptions : TagionException;
 
             //const doc_full_size = doc.full_size; //LEB128.decode!uint(_data);
             bool checkElementBoundary(const ref Element elm) {
@@ -1296,7 +1297,7 @@ static assert(uint.sizeof == 4);
             /// Element error codes
             enum ErrorCode {
                 NONE, /// No errors
-                INVALID_NULL, /// Invalid null object
+                INVALID_NULL = ERRORS.HIBON, /// Invalid null object
                 //DOCUMENT_TYPE,  /// Warning document type
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION, /// Document can not be iterated because of a Document format fail
@@ -1480,3 +1481,14 @@ unittest {
     immutable imu_doc = Document.init;
     Document doc = imu_doc.mut;
 }
+
+unittest {
+    import tagion.basic.testbasic;
+    import tagion.errors.categories;
+
+    const category_file = unitfile("hibon_errors.json");
+    version (UPDATE_ERROR_CATEGORIES)
+        category_file.fwrite!(Document.Element.ErrorCode);
+    category_file.check_errors!(Document.Element.ErrorCode);
+}
+

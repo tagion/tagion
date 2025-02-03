@@ -1,5 +1,5 @@
 /// The replicator creates a backup of all dart transactions
-/// https://docs.tagion.org/docs/architecture/Replicator
+/// https://docs.tagion.org/tech/architecture/Replicator
 module tagion.services.replicator;
 
 import tagion.actor;
@@ -10,9 +10,9 @@ import tagion.dart.Recorder : RecordFactory;
 import tagion.logger.Logger;
 import tagion.replicator.RecorderBlock;
 import tagion.services.messages;
-import tagion.utils.Miscellaneous : cutHex;
+//import tagion.utils.convert : cutHex;
 import tagion.basic.Types : FileExtension;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import std.path : buildPath, setExtension;
 import std.stdio;
 import std.format;
@@ -23,7 +23,7 @@ import tagion.hibon.HiBONFile;
 @safe
 struct ReplicatorOptions {
     import std.format;
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONRecord;
 
     string folder_path = "./recorder";
     int new_file_interval = 10_000;
@@ -36,7 +36,7 @@ struct ReplicatorOptions {
         // assumeWontThrow(buildPath(folder_path, prefix));
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 enum modify_log = "modify/replicator";
 

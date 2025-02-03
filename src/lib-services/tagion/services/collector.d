@@ -1,5 +1,5 @@
 /// The collector collects & verifies the inputs in a contract
-/// https://docs.tagion.org/docs/architecture/Collector
+/// https://docs.tagion.org/tech/architecture/Collector
 module tagion.services.collector;
 @safe:
 
@@ -28,9 +28,9 @@ import tagion.hibon.HiBONJSON;
 import tagion.logger.ContractTracker;
 
 struct CollectorOptions {
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONRecord;
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /// Topic for rejected collector inputs;

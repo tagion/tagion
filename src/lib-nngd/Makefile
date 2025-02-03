@@ -1,6 +1,6 @@
 .SUFFIXES:
 .ONESHELL:
-.NOTPARALLEL:
+#.NOTPARALLEL:
 
 # default is ON
 NNG_WITH_MBEDTLS?=ON
@@ -10,7 +10,10 @@ DCFLAGS=-O -d -m64 -i -debug -g -gf -gs -gx -dip1000
 DINC=nngd extern/libnng/libnng
 
 DTESTS=$(wildcard tests/test*.d)
-RUNTESTS=$(basename $(DTESTS))
+RUNTESTS=$(basename $(notdir $(DTESTS)))
+
+TESTBENCH=testnng.d
+BINTESTBENCH=./build/$(basename $(notdir $(TESTBENCH)))
 
 ifeq ($(NNG_WITH_MBEDTLS),ON)
 	DCFLAGS=-O -d -m64 -i -debug -g -version=withtls
@@ -21,8 +24,16 @@ else
 endif
 
 
-all: extern mime lib buildtest
+all: extern mime lib testbench
 	@echo "All done!"
+
+testbench: $(BINTESTBENCH)
+
+$(BINTESTBENCH):
+	$(DC) $(DCFLAGS) -od=build/ -of=$@ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $(TESTBENCH)
+
+runtest: testbench
+	$(BINTESTBENCH) && echo "All passed!" || echo "Tests failed, see log" 
 
 buildtest: $(DTESTS)
 
@@ -31,7 +42,7 @@ extern:
 	$(MAKE) -C extern/
 
 $(DTESTS):
-	$(DC) $(DCFLAGS) -od=tests/build -of=tests/build/$(basename $@) ${addprefix -I,$(DINC)} -Itests ${addprefix -L,$(DLFLAGS)} $@
+	$(DC) $(DCFLAGS) -od=tests/build -of=tests/build/$(basename $(notdir $@)) ${addprefix -I,$(DINC)} -Itests ${addprefix -L,$(DLFLAGS)} $@
 
 mime:
 	@curl -s -K mime.list  |\
@@ -47,14 +58,18 @@ test: pretest $(RUNTESTS) posttest
 pretest:
 	@echo "It will take about a minute. Be patient."
 	rm -f logs/*
+	cp -r tests/webapp tests/build/
+	cp -r tests/ssl tests/build/
 
 posttest:
-	@grep -q ERROR logs/runtest.log && echo "There are errors. See runtest.log" || echo "All passed!"
+	@echo "."
+	@grep -a '#TEST' logs/runtest.log |grep -q ERROR && echo "There are errors. See runtest.log" || echo "All passed!"
 
 .SILENT: $(RUNTESTS)
 
 $(RUNTESTS):
-	tests/build/$@ >> logs/runtest.log
+	NNG_DEBUG=TRUE tests/build/$@ >> logs/runtest.log
+	@echo -n "."
 
 clean: clean-extern clean-local
 
@@ -72,4 +87,4 @@ clean-extern:
 proper-extern:
 	$(MAKE) proper -C extern/
 
-.PHONY: all extern mime lib clean $(DTESTS) $(RUNTESTS)
+.PHONY: all extern mime lib clean $(TESTBENCH) testbench runtest $(DTESTS) $(RUNTESTS)

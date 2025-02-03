@@ -13,7 +13,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONtoText;
 import tagion.hibon.HiBONRecord;
 import tagion.wallet.WalletException;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 import nngd;
 
@@ -51,7 +51,7 @@ HiRPC.Receiver sendKernelHiRPC(string address, HiRPC.Sender contract, HiRPC hirp
     check(rc == 0, format("Could not dial address %s: %s", address, nng_errstr(rc)));
 
     rc = sock.send(contract.toDoc.serialize);
-    check(sock.m_errno == nng_errno.NNG_OK, format("NNG_ERRNO %d", sock.m_errno));
+    check(sock.errno == nng_errno.NNG_OK, format("NNG_ERRNO %d", sock.errno));
     check(rc == 0, format("Could not send bill to network %s", nng_errstr(rc)));
 
     const response_data = sock.receive!Buffer;

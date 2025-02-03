@@ -3,7 +3,7 @@ module tagion.api.document;
 
 import tagion.api.errors;
 import tagion.hibon.Document;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import core.stdc.stdint;
 
 private enum DOCUMENT_ERROR_TEXT = "Document ErrorCode";
@@ -501,7 +501,7 @@ unittest {
  *   time = pointer to the returned time
  * Returns: ErrorCode
  */
-int tagion_document_get_time(const Document.Element* element, int64_t* time) {
+int tagion_document_get_time(const Document.Element* element, long* time) {
     import tagion.utils.StdTime;
     try {
         *time = cast(long) element.get!sdt_t;
@@ -676,3 +676,4 @@ unittest {
     testGetFunc!(float)(21.1f, &tagion_document_get_float32); 
     testGetFunc!(double)(321.312312f, &tagion_document_get_float64);
 }
+

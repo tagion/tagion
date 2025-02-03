@@ -219,6 +219,41 @@ int tagion_hibon_get_text(const(HiBONT*) instance, int text_format, char** str, 
     return ErrorCode.none;
 }
 
+int tagion_hibon_json_to_hibon(HiBONT* instance, const char* str, size_t str_len) {
+    import tagion.hibon.HiBONJSON;
+    try{
+        if (instance is null || instance.magic_byte != MAGIC_HIBON) {
+            set_error_text = INVALID_HIBON_INSTANCE;
+            return ErrorCode.error;
+        }
+        const json = cast(immutable)str[0..str_len];
+        instance.hibon = cast(void*) json.toHiBON;
+    }
+    catch(Exception e){
+        last_error = e;
+        return ErrorCode.exception;
+    }
+    return ErrorCode.none;
+}
+
+unittest {
+    HiBONT h;
+    int status = tagion_hibon_create(&h);
+    assert(status == ErrorCode.none, "could not create hibon");
+    string key = "some_key";
+    string value = "some_value";
+    status = tagion_hibon_add_string(&h, &key[0], key.length, &value[0], value.length);
+    HiBON hibon = cast(HiBON) h.hibon;
+    scope const doc = Document(hibon);
+
+    HiBONT h1;
+    int status1 = tagion_hibon_create(&h1);
+    assert(status1 == ErrorCode.none, "could not create hibon");
+    string json = doc.toJSON.toString;
+    status = tagion_hibon_json_to_hibon(&h1, &json[0], json.length);
+    assert(status1 == ErrorCode.none);
+}
+
 /** 
  * Convert a hibon to a document
  * Params:
@@ -767,7 +802,7 @@ int tagion_hibon_add_int32(const(HiBONT*) h, const char* key, const size_t key_l
 *   value = int64 to add
 * Returns: ErrorCode
 */
-int tagion_hibon_add_int64(const(HiBONT*) h, const char* key, const size_t key_len, int64_t value) {
+int tagion_hibon_add_int64(const(HiBONT*) h, const char* key, const size_t key_len, long value) {
     return add_T!int64_t(__traits(parameters));
 }
 
@@ -793,7 +828,7 @@ int tagion_hibon_add_uint32(const(HiBONT*) h, const char* key, const size_t key_
 *   value = uint64 to add
 * Returns: ErrorCode
 */
-int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_len, uint64_t value) {
+int tagion_hibon_add_uint64(const(HiBONT*) h, const char* key, const size_t key_len, ulong value) {
     return add_T!uint64_t(__traits(parameters));
 }
 

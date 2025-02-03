@@ -31,7 +31,7 @@ private {
 
     //import tagion.basic.basic;
     //    import std.stdio : writefln, writeln;
-    import tagion.basic.tagionexceptions : Check;
+    import tagion.errors.tagionexceptions : Check;
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
@@ -1464,7 +1464,7 @@ unittest {
     import std.typecons;
     import tagion.basic.basic : forceRemove;
     import tagion.hibon.HiBONJSON : toPretty;
-    import tagion.utils.Miscellaneous : cutHex;
+    import tagion.utils.convert : cutHex;
     import tagion.utils.Random;
 
     auto net = new DARTFakeNet;
@@ -2781,7 +2781,15 @@ unittest {
             // dart_reload.dump;
             assert(equal(recorder_change[].map!(a => a.filed), reload_recorder[].map!(a => a.filed)));
         }
-
     }
-
 }
+
+version (unittest) {
+    import basic = tagion.basic.basic;
+    import tagion.basic.Types : FileExtension;
+    package const(basic.FileNames) fileId(T = DARTFile)(string prefix = null) @safe {
+        return basic.fileId!T(FileExtension.dart, prefix);
+    }
+}
+
+

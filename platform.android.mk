@@ -121,7 +121,7 @@ env: env-android
 help-android:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${call log.help, "https://docs.tagion.org/docs/guide/build/android", "View help guide for this target"}
+	${call log.help, "https://docs.tagion.org/tech/guide/build/android", "View help guide for this target"}
 	${call log.help, "make env-android", "Will list the current setting"}
 	${call log.help, "make help-android", "This will show how to change tagion platform change"}
 	${call log.help, "make install-android-toolchain", "Installs the android ndk and configured ldc compiler"}

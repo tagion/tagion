@@ -3,7 +3,7 @@ module tagion.tools.shell.shelloptions;
 @safe:
 
 import tagion.services.options : contract_sock_addr;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import std.format;
 
 enum mode0_prefix = "Node_%d_";
@@ -31,7 +31,8 @@ struct ShellOptions {
     string selftest_endpoint = "/selftest";
     string version_endpoint = "/version";
     string lookup_endpoint = "/lookup";
-    string default_i2p_wallet = "./shell/wallet.json";
+    string util_endpoint = "/util";
+    string default_i2p_wallet = "wallets/wallet1.json";
     string default_i2p_wallet_pin = "0001";
     string webroot="/tmp/webapp";
     string webstaticdir="static";
@@ -41,6 +42,7 @@ struct ShellOptions {
     uint sock_connectretry = 32;
     uint dartcache_size = 4096;
     uint common_socket_delay = 500;
+    uint websocket_cache_size = 512;
     double dartcache_ttl_msec = 30.0;
     string mode0_prefix = "Node_%d_";
     bool cache_enabled = false; // if to use caches
@@ -74,7 +76,7 @@ struct ShellOptions {
         return opts;
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
     mixin JSONConfig;
 }
 

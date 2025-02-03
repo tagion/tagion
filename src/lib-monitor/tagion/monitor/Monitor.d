@@ -10,7 +10,7 @@ import std.format;
 import std.file : exists;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.basic : EnumText, basename;
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.errors.tagionexceptions : TagionException;
 import tagion.crypto.Types : Pubkey;
 import tagion.hibon.Document;
 import tagion.logger.Logger;

@@ -191,6 +191,7 @@ unittest { //
             .setExtension(FileExtension.hibon);
     const feature = getFeature!(Module);
     const expected = filename.fread!FeatureGroup;
+
     assert(feature.toDoc == expected.toDoc);
 }
 
@@ -205,7 +206,7 @@ auto automation(alias M)() if (isFeature!M) {
     static struct FeatureFactory {
         string alternative;
         FeatureContext context;
-        void opDispatch(string scenario_name, Args...)(Args args) {
+        auto opDispatch(string scenario_name, Args...)(Args args) {
             import std.algorithm.searching : countUntil;
 
             enum tuple_index = [FeatureContext.fieldNames]
@@ -214,7 +215,7 @@ auto automation(alias M)() if (isFeature!M) {
                     format("Scenario '%s' does not exists. Possible scenarios is\n%s",
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
             alias _Scenario = FeatureContext.Types[tuple_index];
-            context[tuple_index] = new _Scenario(args);
+            return context[tuple_index] = new _Scenario(args);
         }
 
         bool create(Args...)(string regex_text, Args args) {
@@ -237,7 +238,6 @@ auto automation(alias M)() if (isFeature!M) {
                                     format("Arguments %s does not match construct of %s",
                                     Args.stringof, _Scenario.stringof));
                         }
-                        // return true;
                     }
                 }
             default:
@@ -256,7 +256,6 @@ auto automation(alias M)() if (isFeature!M) {
                 {
                     alias _Scenario = FeatureContext.Types[tuple_index];
                     enum scenario_property = getScenario!_Scenario;
-                    //                    enum compiles = __traits(compiles, new _Scenario(args));
                     if (!scenario_property.description.matchFirst(search_regex).empty ||
                             scenario_property.comments.any!(c => !c.matchFirst(search_regex).empty)) {
                         return tuple_index;
@@ -264,15 +263,6 @@ auto automation(alias M)() if (isFeature!M) {
                 }
             }
             return -1;
-        }
-
-        version (none) auto find(string regex_text)() {
-            import std.regex;
-
-            enum tuple_index = find_scenario(regex_text);
-            static assert(tuple_index >= 0, format("Scenario description with '%s' not found in %s", regex_text, FeatureContext
-                    .stringof));
-            return FeatureContext.Types[tuple_index];
         }
 
         @safe
@@ -397,7 +387,7 @@ const(BehaviourError)[] getBDDErrors(const(ScenarioGroup) scenarioGroup) {
     return errors;
 }
 
-///Examples: Show how to use the automation function and the hasError on a feature group
+/// Examples: Show how to use the automation function and the hasError on a feature group
 @safe
 unittest {
     import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;

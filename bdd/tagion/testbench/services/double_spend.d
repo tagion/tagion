@@ -671,7 +671,11 @@ class BillAge {
     Document constant() {
 
         import std.datetime;
-        import tagion.services.transcript : BUFFER_TIME_SECONDS;
+        version(NEW_TRANSCRIPT) {
+            import tagion.services.trans;
+        } else {
+            import tagion.services.transcript : BUFFER_TIME_SECONDS;
+        }
         import tagion.utils.StdTime;
 
         amount = 100.TGN;

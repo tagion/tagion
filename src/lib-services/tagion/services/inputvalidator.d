@@ -26,7 +26,7 @@ import tagion.script.namerecords;
 import tagion.services.messages;
 import tagion.services.codes;
 import tagion.services.options : TaskNames;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 
 import nngd;
@@ -48,7 +48,7 @@ struct InputValidatorOptions {
         sock_addr = contract_sock_addr(prefix ~ "CONTRACT_");
     }
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /** 
@@ -129,13 +129,13 @@ struct InputValidatorService {
                 reject(ServiceCode.internal);
             }
             auto result_buf = sock.receive!Buffer;
-            if (sock.m_errno != nng_errno.NNG_OK) {
-                if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
-                    log.error(nng_errstr(sock.m_errno));
+            if (sock.errno != nng_errno.NNG_OK) {
+                if (sock.errno != nng_errno.NNG_ETIMEDOUT) {
+                    log.error(nng_errstr(sock.errno));
                 }
                 continue;
             }
-            if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
+            if (sock.errno == nng_errno.NNG_ETIMEDOUT) {
                 if (result_buf.length > 0) {
                     reject(ServiceCode.timeout);
                 }
@@ -143,9 +143,9 @@ struct InputValidatorService {
                     continue;
                 }
             }
-            if (sock.m_errno != nng_errno.NNG_OK) {
-                if (sock.m_errno != nng_errno.NNG_ETIMEDOUT) {
-                    log.error(nng_errstr(sock.m_errno));
+            if (sock.errno != nng_errno.NNG_OK) {
+                if (sock.errno != nng_errno.NNG_ETIMEDOUT) {
+                    log.error(nng_errstr(sock.errno));
                 }
                 continue;
             }

@@ -1,5 +1,5 @@
 /// Interface for the Peer to Peer communication
-/// https://docs.tagion.org/docs/architecture/NodeInterface
+/// https://docs.tagion.org/tech/architecture/NodeInterface
 module tagion.services.nodeinterface;
 
 @safe:
@@ -44,9 +44,9 @@ struct NodeInterfaceOptions {
     string node_address = "tcp://[::1]:10700"; // Address
     uint compression_level = 6;
 
-    import tagion.utils.JSONCommon;
+    import tagion.json.JSONRecord;
 
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 ///

@@ -4,7 +4,7 @@ TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
 BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
-ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
+ALL_BDD_REPORTS=${shell find $(BDD_LOG) -name "*.hibon" | tr '\n' ' '}
 
 BDD_MD_FILES=${shell find $(BDD)/tagion -name "*.md" -a -not -name "*.gen.md" -a -not -path "*/tagion/testbench/tvm/testsuite/*"}
 
@@ -53,7 +53,7 @@ test-%: run-%
 	$(PRECMD)
 	${call log.header, $* :: test bdd}
 	$(DBIN)/tagion hibonutil -p $(ALL_BDD_REPORTS)
-	$(COLLIDER) -c $(BDD_RESULTS)
+	$(COLLIDER) -c $(BDD_LOG)
 
 ddd-%:
 	$(PRECMD)
@@ -70,7 +70,7 @@ $(TESTENV): $(DBIN)
 
 .PHONY: $(TESTENV)
 
-bddinit: testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
+bddinit: testbench $(BDD_LOG)/.way bddenv
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
@@ -79,7 +79,7 @@ bddinit: testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 bddreport: 
 	$(PRECMD)
 	$(DBIN)/tagion hibonutil -p $(ALL_BDD_REPORTS)
-	$(COLLIDER) -cv $(BDD_RESULTS)
+	$(COLLIDER) -cv $(BDD_LOG)
 
 .PHONY: bddreport
 
@@ -146,7 +146,7 @@ help: help-bdd
 
 clean-reports:
 	$(PRECMD)
-	$(RMDIR) $(BDD_RESULTS)
+	$(RMDIR) $(BDD_LOG)
 
 # Delete all files related to bdd
 clean-bdd: clean-bddtest clean-reports

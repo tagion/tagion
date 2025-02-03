@@ -9,27 +9,36 @@ import tagion.utils.LEB128;
 
 @safe
 struct WasmExpr {
-    protected OutBuffer bout;
+    OutBuffer bout;
     @disable this();
     this(OutBuffer bout) pure nothrow {
         this.bout = bout;
     }
 
     ref WasmExpr opCall(Args...)(const IR ir, Args args) {
-        immutable instr = instrTable.get(ir, illegalInstr);
+        auto instr = instrTable.lookup(ir);
         bout.write(cast(ubyte) ir);
-        immutable irtype = instr.irtype;
         with (IRType) {
-            final switch (irtype) {
+            final switch (instr.irtype) {
             case PREFIX:
             case CODE:
+            case CODE_TYPE:
+            case RETURN:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
-                // No args
                 break;
-            case BLOCK, BRANCH, BRANCH_IF, CALL, LOCAL, GLOBAL:
+            case CODE_EXTEND:
+                assert(Args.length == 1,
+                        format("Instruction %s should have one extended opcode arguments", instr.name));
+                static if ((Args.length == 1) && isIntegral!(Args[0])) {
+                    bout.write(encode(args[0]));
+                }
+                break;
+            case BRANCH, CALL, LOCAL, GLOBAL:
                 assert(Args.length == 1,
                         format("Instruction %s only one argument expected", instr.name));
+                goto case;
+            case BLOCK:
                 static if (Args.length == 1) {
                     assert(isIntegral!(Args[0]), format("Args idx must be an integer for %s not %s",
                             instr.name, Args[0].stringof));
@@ -140,6 +149,14 @@ struct WasmExpr {
             }
         }
         return this;
+    }
+
+    void append(const WasmExpr e) pure nothrow {
+        bout.write(e.bout.toBytes);
+    }
+
+    bool opEquals(const WasmExpr e) const pure nothrow @nogc {
+        return bout is e.bout;
     }
 
     immutable(ubyte[]) serialize() const pure nothrow {

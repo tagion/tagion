@@ -9,7 +9,7 @@ import std.stdio;
 import std.algorithm;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.basic : isinit;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.crypto.SecureNet;
 import tagion.dart.Recorder;
 import tagion.hibon.Document;

@@ -2,11 +2,12 @@ LIBTAGION:=$(DLIB)/libtagion.$(LIBEXT)
 
 LIB_DINC=$(shell find $(DSRC) -maxdepth 1 -type d -path "*/src/lib-*" )
 
-libtagion: DFLAGS+=$(OUTPUTDIR)=$(DOBJ)
+libtagion: DFLAGS+=$(DOUTDIR)=$(DOBJ)
 libtagion: DFLAGS+=$(FULLY_QUALIFIED)
 libtagion: DINC+=$(LIB_DINC)
 libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-behaviour/*" -a -not -path "*/lib-betterc/*"}
 libtagion: $(LIBTAGION) $(DFILES)
+libtagion: revision
 
 clean-libtagion:
 	$(RM) $(LIBTAGION)
@@ -20,7 +21,8 @@ libmobile: DFLAGS+=$(GEN_CPP_HEADER_FILE)=$(DLIB)/libmobile.h
 libmobile: DINC+=$(LIB_DINC)
 libmobile: SECP256K1_SHARED=
 libmobile: LIBS+=$(LIBSECP256K1_STATIC)
-libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
+libmobile: DFILES:=${shell find $(DSRC)/ \( -path "*/lib-mobile/*" -o -path "*/lib-api/*" \) -a -name "*.d"}
+libmobile: DFILES+=$(DSRC)/lib-tools/tagion/tools/revision.d
 
 $(LIBMOBILE): revision
 $(LIBMOBILE): secp256k1

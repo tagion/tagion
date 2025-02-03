@@ -1,5 +1,5 @@
 /// Service for Transcript responsible for creating recorder for DART 
-/// [DART Documentation](https://docs.tagion.org/docs/architecture/transcript)
+/// [DART Documentation](https://docs.tagion.org/tech/architecture/transcript)
 module tagion.services.transcript;
 
 @safe:
@@ -33,7 +33,7 @@ import tagion.script.standardnames;
 import tagion.services.messages;
 import tagion.services.options : TaskNames;
 import tagion.services.exception;
-import tagion.utils.JSONCommon;
+import tagion.json.JSONRecord;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
 import std.path : buildPath;
@@ -44,7 +44,7 @@ import tagion.logger.ContractTracker;
 enum BUFFER_TIME_SECONDS = 30;
 
 struct TranscriptOptions {
-    mixin JSONCommon;
+    mixin JSONRecord;
 }
 
 /**
@@ -105,8 +105,6 @@ struct TranscriptService {
     }
 
     void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
-        import tagion.utils.Miscellaneous : cutHex;
-
         const epoch_number = res.id;
 
         votes[epoch_number].epoch.bullseye = bullseye;
@@ -206,7 +204,7 @@ struct TranscriptService {
                         v.value.epoch.signs ~= single_vote.signed_bullseye;
                     }
                     else {
-                        import tagion.basic.ConsensusExceptions;
+                        import tagion.errors.ConsensusExceptions;
 
                         throw new ConsensusException(format("Bullseyes not the same on epoch %s", v
                                 .value.epoch

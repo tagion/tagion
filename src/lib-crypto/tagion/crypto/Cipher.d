@@ -13,7 +13,7 @@ import tagion.hibon.HiBONRecord;
 struct Cipher {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.digest.crc : crc64ECMAOf;
-    import tagion.basic.ConsensusExceptions : ConsensusException, ConsensusFailCode, SecurityConsensusException;
+    import tagion.errors.ConsensusExceptions : ConsensusException, ConsensusFailCode, SecurityConsensusException;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.crypto.SecureNet : check;
     import tagion.crypto.random.random;
@@ -94,7 +94,7 @@ struct Cipher {
         import tagion.crypto.SecureNet;
         import tagion.hibon.Document : Document;
         import tagion.hibon.HiBON : HiBON;
-        import tagion.utils.Miscellaneous : decode;
+        import tagion.utils.convert : decode;
 
         immutable passphrase = "Secret pass word";
         auto net = new StdSecureNet; /// Only works with ECDSA for now 

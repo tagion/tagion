@@ -12,7 +12,7 @@ import std.algorithm;
 import std.exception;
 import std.string;
 
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.basic.Types;
 import tagion.crypto.Types : Pubkey;
 import tagion.dart.DART : DART;
@@ -22,7 +22,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.logger.Logger : log;
 import tagion.script.standardnames;
 import tagion.script.namerecords;
-import tagion.utils.Miscellaneous : cutHex;
+//import tagion.utils.convert : cutHex;
 import tagion.utils.Result;
 
 /++

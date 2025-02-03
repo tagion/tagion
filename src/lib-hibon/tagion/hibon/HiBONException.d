@@ -1,6 +1,6 @@
 module tagion.hibon.HiBONException;
 
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 
 @safe:
 /++

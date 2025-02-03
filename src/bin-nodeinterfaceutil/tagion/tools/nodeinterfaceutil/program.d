@@ -291,7 +291,7 @@ void subscription_handle_worker(string address) {
             try {
                 receiveTimeout(Duration.zero, (Stop _) { stop = true; } );
 
-                if(sock.m_state !is nng_socket_state.NNG_STATE_CONNECTED) {
+                if(sock.state !is nng_socket_state.NNG_STATE_CONNECTED) {
                     rc = sock.dial(address);
                     if(rc != nng_errno.NNG_OK) {
                         Thread.sleep(200.msecs);

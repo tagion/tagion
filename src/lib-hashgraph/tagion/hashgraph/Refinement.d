@@ -49,7 +49,7 @@ struct FinishedEpoch {
 
 @safe
 class StdRefinement : Refinement {
-
+    PayloadQueue _queue;
     static Topic epoch_created = Topic("epoch_creator/epoch_created");
     version (BDD) {
         static Topic raw_epoch_events = Topic("epoch_creator/raw_epoch_events");
@@ -63,9 +63,23 @@ class StdRefinement : Refinement {
 
     void setOwner(HashGraph hashgraph)
     pure nothrow
-    in (this.hashgraph is null)
+    in (this.hashgraph is null, "Refinement does already have a Graph")
     do {
         this.hashgraph = hashgraph;
+    }
+
+    @property
+    void queue(PayloadQueue _queue) pure nothrow @nogc
+    in (this._queue !is null, "The queue has already been added")
+    do {
+        this._queue = _queue;
+    }
+
+    @property
+    PayloadQueue queue() pure nothrow @nogc
+    in (_queue !is null, "Queue is missing (add the queue) with the .queue method")
+    do {
+        return _queue;
     }
 
     void setTasknames(TaskNames task_names) pure nothrow {

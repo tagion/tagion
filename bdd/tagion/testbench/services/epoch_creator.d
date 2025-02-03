@@ -28,7 +28,7 @@ import tagion.services.options : NetworkMode;
 import tagion.script.namerecords : NetworkNodeRecord;
 import tagion.testbench.actor.util;
 import tagion.testbench.tools.Environment;
-import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.convert : cutHex;
 import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(

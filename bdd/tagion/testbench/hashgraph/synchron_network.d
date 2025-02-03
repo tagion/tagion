@@ -29,7 +29,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.testbench.hashgraph.hashgraph_test_network;
 import tagion.testbench.tools.Environment;
-import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.convert : cutHex;
 
 enum feature = Feature(
             "Bootstrap of hashgraph",
@@ -129,9 +129,9 @@ class StartNetworkWithNAmountOfNodes {
                 // printStates(network);
                 i++;
             }
-            check(TestRefinement.epoch_events.length == node_names.length,
+            check(EpochTestRefinement.epoch_events.length == node_names.length,
                     format("Max calls %d reached, not all nodes have created epochs only %d",
-                    MAX_CALLS, TestRefinement.epoch_events.length));
+                    MAX_CALLS, EpochTestRefinement.epoch_events.length));
         }
 
         // compare ordering
@@ -158,7 +158,7 @@ class StartNetworkWithNAmountOfNodes {
         }
 
         // compare epochs
-        foreach (i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
+        foreach (i, compare_epoch; EpochTestRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                 .events
                 .map!(e => cast(Buffer) e.event_package.fingerprint)
@@ -169,7 +169,7 @@ class StartNetworkWithNAmountOfNodes {
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
             // writefln("%s", compare_events.map!(f => f.cutHex));
-            foreach (channel_epoch; TestRefinement.epoch_events.byKeyValue) {
+            foreach (channel_epoch; EpochTestRefinement.epoch_events.byKeyValue) {
                 // writefln("epoch: %s", i);
                 if (channel_epoch.value.length - 1 < i) {
                     break;

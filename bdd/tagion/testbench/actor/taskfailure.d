@@ -9,7 +9,7 @@ import std.stdio;
 import std.typecons : Tuple;
 import tagion.actor.actor;
 import tagion.actor.exceptions;
-import tagion.basic.tagionexceptions;
+import tagion.errors.tagionexceptions;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import tagion.testbench.tools.Environment;
