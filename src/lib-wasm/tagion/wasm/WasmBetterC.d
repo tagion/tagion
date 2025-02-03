@@ -109,7 +109,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             with (Assert.Method) final switch (_assert.method) {
             case Trap:
                 void assert_block(const string _indent) {
-                    block(invoke_expr, func_void, ctx, _indent ~ spacer);
+                    block(invoke_expr, func_void, ctx, _indent ~ spacer, true);
                     output.writefln("%s}", _indent);
                 }
 
@@ -596,6 +596,19 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
         }
 
+        string results(const(Types[]) args) {
+            if (args.length == 0) {
+                return null;
+            }
+            if (args.length == 1) {
+                return ctx.peek;
+            }
+            check(args.length <= ctx.stack.length,
+                    format("Elements in the stack is %d but the function return arguments is %d",
+                    args.length, ctx.stack.length));
+            return format("%s(%-(%s, %))", dType(args), args.length.iota.map!(n => ctx.stack[$ - 1 - n]));
+        }
+
         void innerBlock(
                 OutBuffer bout,
                 ref ExprRange expr,
@@ -603,20 +616,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 Block*[] blocks) {
             string block_label(const size_t label_n) {
                 return format("block_%d", label_n);
-            }
-
-            string results(const(Types[]) args) {
-                if (args.length == 0) {
-                    return null;
-                }
-                if (args.length == 1) {
-                    return ctx.peek;
-                }
-                bout.writefln("// Results args=%s stack=%s", args, ctx.stack);
-                check(args.length <= ctx.stack.length,
-                        format("Elements in the stack is %d but the function return arguments is %d",
-                        args.length, ctx.stack.length));
-                return format("%s(%-(%s, %))", dType(args), args.length.iota.map!(n => ctx.stack[$ - 1 - n]));
             }
 
             while (!expr.empty) {
@@ -810,12 +809,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         auto bout = new OutBuffer;
         scope (exit) {
             output.write(bout.toString);
-            if (!no_return && (ctx.stack.length > 0)) {
+            if (!no_return && (ctx.stack.length == func_type.results.length) && (ctx.stack.length > 0)) {
                 output.writefln("%sreturn %s;", indent, ctx.pop);
             }
+
             check(no_return || (ctx.stack.length == 0),
-                    format("Stack size is %d but the stack should be empty on return %s",
-                    ctx.stack.length, ctx.stack));
+                    format("Stack size is %d but the stack should be empty on return %s (no_return %s result=%s)",
+                    ctx.stack.length, ctx.stack, no_return, func_type.results));
         }
         Block*[] blocks;
         auto expr_list = expr;
