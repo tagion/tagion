@@ -8,14 +8,14 @@ https://github.com/tagion/tagion-visual-hashgraph
 * /hashgraph-d/src - example of the websocket backend
 * /hashgraph-d/hashgraph-monitor - example of the frontend
 
-## Howto build
+## How to build
 
 - cd hashgraph-app 
 - `npm install` to init package dependencies
 - `npm run build` to build package
 - use `dist/hashgraph.js`, `dist/hashgraph.js.map`, `assets/hashgraph.css` to deploy
 
-## Hosto use
+## How to use
 
 ```
     <link rel="stylesheet" href=".../hashgraph.css"/>
