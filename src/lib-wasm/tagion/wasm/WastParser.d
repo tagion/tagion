@@ -746,7 +746,7 @@ struct WastParser {
                 }
                 return ParserStage.PARAM;
             case "result":
-                r.valid(stage == ParserStage.FUNC, "Result only allowed inside a function declartion");
+                r.valid(stage == ParserStage.FUNC, "Result only allowed inside a function declaration");
                 r.nextToken;
                 while (r.type != TokenType.END) {
                     immutable type = r.token.getType;
@@ -778,7 +778,7 @@ struct WastParser {
 
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
-        r.valid(stage < ParserStage.FUNC, "Should been outside function decleration");
+        r.valid(stage < ParserStage.FUNC, "Should been outside function declaration");
         string func_name;
         FuncType func_type;
         func_type.type = Types.FUNC;
