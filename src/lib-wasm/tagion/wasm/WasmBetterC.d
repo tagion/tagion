@@ -470,6 +470,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             assert(0);
         }
 
+        string[] pops() pure nothrow {
+            scope (exit) {
+                stack = null;
+            }
+            return stack;
+        }
+
         void push(string value) pure nothrow {
             stack ~= value;
         }
@@ -607,6 +614,17 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     format("Elements in the stack is %d but the function return arguments is %d",
                     args.length, ctx.stack.length));
             return format("%s(%-(%s, %))", dType(args), args.length.iota.map!(n => ctx.stack[$ - 1 - n]));
+        }
+
+        string results_value() {
+            if (func_type.results.length == 1) {
+                return ctx.pop;
+            }
+            if (func_type.results.length) {
+                return format("%s(%-%(%s, %))", dType(func_type.results), ctx.pops);
+            }
+
+            return null;
         }
 
         void innerBlock(
@@ -810,7 +828,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         scope (exit) {
             output.write(bout.toString);
             if (!no_return && (ctx.stack.length == func_type.results.length) && (ctx.stack.length > 0)) {
-                output.writefln("%sreturn %s;", indent, ctx.pop);
+                output.writefln("%sreturn %s;", indent, results_value);
             }
 
             check(no_return || (ctx.stack.length == 0),
