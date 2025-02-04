@@ -135,12 +135,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 auto result_expr = result_type[];
                 Context ctx_results;
                 block(result_expr, func_void, ctx_results, indent, true);
-
-                output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
-                if (_assert.message.length) {
-                    output.writef(`, "%s"`, _assert.message);
+                check(ctx.stack.length == ctx_results.stack.length,
+                        "Number of values in the assert statement does not match");
+                if (ctx.stack.length) {
+                    output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
+                    if (_assert.message.length) {
+                        output.writef(`, "%s"`, _assert.message);
+                    }
+                    output.writeln(");");
                 }
-                output.writeln(");");
             }
         }
 
@@ -670,16 +673,16 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
                         //bout.writefln("%s%s%s %s", indent, elm.instr.name,
                         //        block_result_type(elm.types[0]), block_comment);
-                        bout.writefln("%s{ %s", indent, block_comment);
+                        bout.writefln("%sdo { // %s", indent, block_comment);
                         auto block = new Block(elm);
                         innerBlock(bout, expr, indent ~ spacer, blocks ~ block);
-                        bout.writefln("} // Block kind %s", *block);
+                        //bout.writefln("} // Block kind %s", *block);
                         final switch (block.kind) {
                         case BlockKind.END:
-                            bout.writefln("%s{", indent);
+                            bout.writefln("%s}", indent);
                             break;
                         case BlockKind.BREAK:
-                            bout.writefln("%sdo {", indent);
+                            bout.writefln("%s} while(false);", indent);
                             break;
                         case BlockKind.BREAK_N:
                             break;
@@ -702,7 +705,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             check(lth < blocks.length, format(
                                     "Label number of %d exceeds the block stack for max %d", lth, blocks.length));
                             //bout.writefln("elm=%s warg=%s", elm, elm.warg.get!int);
-
+                            scope (success) {
+                                while (!expr.empty && expr.front.instr.opcode != IR.END) {
+                                    bout.writefln("%s// %s", indent, *(expr.front.instr));
+                                    expr.popFront;
+                                }
+                            }
                             if (lth == 0) {
                                 blocks[lth].kind = BlockKind.BREAK;
                                 bout.writefln("%sbreak;", indent);

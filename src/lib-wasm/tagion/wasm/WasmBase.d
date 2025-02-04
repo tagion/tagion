@@ -143,6 +143,11 @@ struct Instr {
     Types[] pops; // Number of pops from the stack
     Types[] pushs; // Number of values pushed
     uint opcode; // Extended opcode argument
+    string toString() const pure {
+        return format("%s %s cost=%d %s ->%s", name, irtype, cost,
+                pops, pushs);
+
+    }
 }
 
 enum ubyte[] magic = [0x00, 0x61, 0x73, 0x6D];
