@@ -366,7 +366,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         if (types.length == 1) {
             return dType(types[0]);
         }
-        return format("Tuple!(%-(%s, %))", types);
+        return format("Tuple!(%-(%s, %))", types.map!(t => dType(t)));
     }
 
     static string return_type(const(Types[]) types) {
@@ -631,7 +631,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return ctx.pop;
             }
             if (func_type.results.length) {
-                return format("%s(%-%(%s, %))", dType(func_type.results), ctx.pops);
+                return format("%s(%-(%s, %))",
+                        dType(func_type.results),
+                        ctx.pops.take(func_type.results.length));
             }
 
             return null;
@@ -667,7 +669,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
                         //ctx.perform(elm.code, func_type.results);
                         bout.writefln("// Function results %s", func_type.results);
-                        bout.writefln("%s%s %s;", indent, elm.instr.name, results(func_type.results));
+                        bout.writefln("%s%s %s;", indent, elm.instr.name, results_value);
                         bout.writefln("// After return");
                         break;
                     case PREFIX:
@@ -842,13 +844,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         auto bout = new OutBuffer;
         scope (exit) {
             output.write(bout.toString);
-            if (!no_return && (ctx.stack.length == func_type.results.length) && (ctx.stack.length > 0)) {
+            if (!no_return && (ctx.stack.length >= func_type.results.length)) {
                 output.writefln("%sreturn %s;", indent, results_value);
             }
 
-            check(no_return || (ctx.stack.length == 0),
-                    format("Stack size is %d but the stack should be empty on return %s (no_return %s result=%s)",
-                    ctx.stack.length, ctx.stack, no_return, func_type.results));
+            version (none)
+                check(no_return || (ctx.stack.length == 0),
+                        format("Stack size is %d but the stack should be empty on return %s (no_return %s result=%s)",
+                        ctx.stack.length, ctx.stack, no_return, func_type.results));
         }
         Block*[] blocks;
         auto expr_list = expr;

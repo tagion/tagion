@@ -113,10 +113,10 @@
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
-        "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error",
+        "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new", "tvm_old", "tvm_export", "commit", "memory", "func", "i32", "i64", "f32_export", "i64_export", "tvm_test", "tvm_test1", "select", "int_literals", "float_exprs"],
+      "stages": ["tvm", "tvm_new", "tvm_old", "tvm_export", "commit", "memory", "func", "i32", "i64", "f32_export", "i64_export", "tvm_test", "tvm_test1", "select", "int_literals", "float_exprs", "br_block_1"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -153,6 +153,11 @@
         "tvm_test1" : {
           "args" : [
                 "br_block.wast"
+            ]
+        },
+        "br_block_1" : {
+          "args" : [
+                "br_block_1.wast"
             ]
         },
         "memory" : {
