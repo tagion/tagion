@@ -305,7 +305,8 @@ int _neuewelle(string[] args) {
         log("started mode 0 net");
 
         break;
-    case NetworkMode.LOCAL:
+    case NetworkMode.LOCAL,
+         NetworkMode.MIRROR:
         import tagion.services.supervisor;
         import tagion.script.common;
         import tagion.gossip.AddressBook;
@@ -363,8 +364,6 @@ int _neuewelle(string[] args) {
         spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
         break;
-    case NetworkMode.PUB:
-        assert(0, "NetworkMode not supported");
     }
 
     const shutdown_file = buildPath(base_dir.run, format("epoch_shutdown_%d", thisProcessID()));

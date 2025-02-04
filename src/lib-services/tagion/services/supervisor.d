@@ -66,16 +66,14 @@ struct Supervisor {
         final switch (opts.wave.network_mode) {
         case NetworkMode.INTERNAL:
             break;
-        case NetworkMode.LOCAL:
+        case NetworkMode.LOCAL,
+             NetworkMode.MIRROR:
             handles ~= _spawn!NodeInterfaceService(
                             tn.node_interface,
                             opts.node_interface,
                             shared_net,
                             tn.epoch_creator
                         );
-            break;
-        case NetworkMode.PUB:
-            assert(0, "NetworkMode not supported");
             break;
         }
 
