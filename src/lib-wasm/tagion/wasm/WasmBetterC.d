@@ -138,7 +138,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 check(ctx.stack.length == ctx_results.stack.length,
                         "Number of values in the assert statement does not match");
                 if (ctx.stack.length) {
-                    output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
+                    if (ctx.stack.length == 1) {
+                        output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
+                    }
+                    else {
+                        output.writef("%sassert(%-(%s &&%)", indent,
+                                zip(ctx.stack, ctx_results.stack)
+                                .map!((a) => format("(%s is %s)", a[0], a[1])));
+                    }
                     if (_assert.message.length) {
                         output.writef(`, "%s"`, _assert.message);
                     }
