@@ -8,6 +8,7 @@ import tagion.dart.DARTFile;
 import tagion.dart.DARTRim;
 import tagion.dart.Recorder;
 import tagion.hibon.Document;
+import core.thread;
 
 /**
 * Interface to the DART synchronizer
@@ -50,6 +51,7 @@ interface Synchronizer {
         * Returns:
         *     If the SynchronizationFiber has finished then this function returns `true`
         */
+    pragma(msg, "FIXME: Rename empty to finished");
     bool empty() const pure nothrow;
 }
 
@@ -71,6 +73,10 @@ abstract class StdSynchronizer : Synchronizer {
     }
     this(const uint chunk_size = 0x400) {
         this.chunk_size = chunk_size;
+    }
+
+    Fiber.State state() const pure nothrow {
+        return fiber.state;
     }
 
     /** 
@@ -112,9 +118,9 @@ abstract class StdSynchronizer : Synchronizer {
         *   hirpc = remote credential used 
         */
     void set(
-            DART owner,
-            DART.SynchronizationFiber fiber,
-            HiRPC hirpc) nothrow @trusted {
+        DART owner,
+        DART.SynchronizationFiber fiber,
+        HiRPC hirpc) nothrow @trusted {
         import std.conv : emplace;
 
         this.fiber = fiber;
@@ -147,7 +153,7 @@ abstract class StdSynchronizer : Synchronizer {
 }
 
 @safe
-class JournalSynchronizer : StdSynchronizer {
+class JournalSynchronizer : StdSynchronizer { // Worker
     import std.stdio : File;
     import tagion.hibon.HiBONFile : fwrite;
 
