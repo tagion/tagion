@@ -387,6 +387,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         return dType(wasmstream.get!(Section.TYPE)[elm.idx].results);
     }
 
+    const(Types[]) types(ref const ExprRange.IRElement elm) const {
+        if (elm.argtype == ExprRange.IRElement.IRArgType.TYPES) {
+            return elm.types;
+        }
+        return wasmstream.get!(Section.TYPE)[elm.idx].results;
+    }
+
     string function_name(const int index) {
         import std.string;
 
@@ -606,7 +613,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         static struct Block {
-            const(ExprRange.IRElement) instr;
+            const(ExprRange.IRElement) elm;
+            size_t sp; /// Stack pointer;
             BlockKind _kind;
             const(BlockKind) kind() const pure nothrow {
                 return _kind;
@@ -617,6 +625,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     _kind = k;
                 }
             }
+
         }
 
         string results(const(Types[]) args) {
@@ -682,14 +691,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case BLOCK:
-                        block_comment = format(";; block %d %s", block_count, dType(elm));
+                        block_comment = format(";; block %d %s!", block_count, dType(elm));
                         block_count++;
                         //bout.writefln("BLOCK elm.arhtype=%s", elm.argtype);
 
                         //bout.writefln("%s%s%s %s", indent, elm.instr.name,
                         //        block_result_type(elm.types[0]), block_comment);
                         bout.writefln("%sdo { // %s", indent, block_comment);
-                        auto block = new Block(elm);
+                        auto block = new Block(elm, ctx.stack.length);
                         innerBlock(bout, expr, indent ~ spacer, blocks ~ block);
                         //bout.writefln("} // Block kind %s", *block);
                         final switch (block.kind) {
@@ -825,7 +834,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     case END:
                         bout.writefln("//Block %s", blocks.length);
                         if (blocks.length > 0) {
-                            const block_kind = blocks[$ - 1].kind;
+                            const current_block = blocks[$ - 1];
+                            ctx.stack.length = current_block.sp + types(current_block.elm).length;
+                            const block_kind = current_block.kind;
                             if (block_kind == BlockKind.BREAK) {
                                 bout.writeln("%s} while(false);", indent);
                                 //return BlockKind.END;
