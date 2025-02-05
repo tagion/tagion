@@ -153,7 +153,8 @@ int _neuewelle(string[] args) {
             chdir(config_file.dirName);
         }
         catch (Exception e) {
-            stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
+            stderr.writefln("Error when loading config file %s", config_file);
+            error(e);
             return 1;
         }
     }
