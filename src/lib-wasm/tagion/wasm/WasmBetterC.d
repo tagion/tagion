@@ -345,7 +345,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         with (Types) {
             final switch (type) {
 
-            case EMPTY:
+            case VOID:
                 return "void";
             case I32:
                 return "int";
@@ -367,7 +367,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     static string dType(const(Types[]) types) {
         if (types.empty) {
-            return dType(Types.EMPTY);
+            return dType(Types.VOID);
         }
         if (types.length == 1) {
             return dType(types[0]);
@@ -579,7 +579,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 switch (t) {
                 case I32, I64, F32, F64, FUNCREF:
                     return format(" (result %s)", typesName(t));
-                case EMPTY:
+                case VOID:
                     return null;
                 default:
                     check(0, format("Block Illegal result type %s for a block", t));

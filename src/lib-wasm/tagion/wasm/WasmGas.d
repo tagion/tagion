@@ -199,7 +199,7 @@ struct WasmGas {
                     (IR.GLOBAL_GET, global_idx)
                     (IR.I32_CONST, 0)
                     (IR.I32_GT_S)
-                    (IR.IF, Types.EMPTY)
+                    (IR.IF, Types.VOID)
                     (IR.GLOBAL_GET, global_idx)
                     (IR.LOCAL_GET, 0)
                     (IR.I32_SUB)
@@ -235,7 +235,7 @@ struct WasmGas {
                 WasmExpr(out_expr)
                     // void $set_gas_gauge(i32 $gas)
                     //   if ( $gas_gauge != 0) {
-                    (IR.GLOBAL_GET, global_idx)(IR.I32_EQZ)(IR.IF, Types.EMPTY)
+                    (IR.GLOBAL_GET, global_idx)(IR.I32_EQZ)(IR.IF, Types.VOID)
                     //       exit;
                     (IR.UNREACHABLE)
                     //   } else {

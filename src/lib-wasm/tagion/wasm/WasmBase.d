@@ -144,9 +144,7 @@ struct Instr {
     Types[] pushs; // Number of values pushed
     uint opcode; // Extended opcode argument
     string toString() const pure {
-        return format("%s %s cost=%d %s ->%s", name, irtype, cost,
-                pops, pushs);
-
+        return format("%s %s ->%s", name, pops, pushs);
     }
 }
 
@@ -169,13 +167,13 @@ enum IR : ubyte {
         @Instr("return", "return", 1, IRType.RETURN)                    RETURN              = 0x0F, ///  return
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
         @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
-        @Instr("drop", "drop", 1, IRType.CODE, [Types.EMPTY])                   DROP                = 0x1A, ///  drop
-        @Instr("select", "select", 1, IRType.CODE_TYPE, [Types.EMPTY, Types.EMPTY, Types.EMPTY], [Types.EMPTY])  SELECT              = 0x1B, ///  select
-        @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.EMPTY])          LOCAL_GET           = 0x20, ///  local.get x:localidx
-        @Instr("local.set", "local.set", 1, IRType.LOCAL, [Types.EMPTY])             LOCAL_SET           = 0x21, ///  local.set x:localidx
-        @Instr("local.tee", "local.tee", 1, IRType.LOCAL, [Types.EMPTY], [Types.EMPTY])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
-        @Instr("global.get", "get_global", 1, IRType.GLOBAL, [Types.EMPTY])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
-        @Instr("global.set", "set_global", 1, IRType.GLOBAL, [], [Types.EMPTY])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
+        @Instr("drop", "drop", 1, IRType.CODE, [Types.VOID])                   DROP                = 0x1A, ///  drop
+        @Instr("select", "select", 1, IRType.CODE_TYPE, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID])  SELECT              = 0x1B, ///  select
+        @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.VOID])          LOCAL_GET           = 0x20, ///  local.get x:localidx
+        @Instr("local.set", "local.set", 1, IRType.LOCAL, [Types.VOID])             LOCAL_SET           = 0x21, ///  local.set x:localidx
+        @Instr("local.tee", "local.tee", 1, IRType.LOCAL, [Types.VOID], [Types.VOID])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
+        @Instr("global.get", "get_global", 1, IRType.GLOBAL, [Types.VOID])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
+        @Instr("global.set", "set_global", 1, IRType.GLOBAL, [], [Types.VOID])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
 
         @Instr("i32.load", "i32.load", 2, IRType.MEMORY, [Types.I32], [Types.I32])          I32_LOAD            = 0x28, ///  i32.load     m:memarg
         @Instr("i64.load", "i64.load", 2, IRType.MEMORY, [Types.I32], [Types.I64])          I64_LOAD            = 0x29, ///  i64.load     m:memarg
@@ -444,10 +442,10 @@ shared static this() {
             result[pseudo] = Instr("(;" ~ pseudo ~ ";)", pseudo, uint.max, ir_type, pops, pushs);
         }
 
-        setPseudo(PseudoWastInstr.invoke, IRType.CALL, [], [Types.EMPTY]);
-        setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, [Types.EMPTY, Types.EMPTY, Types.EMPTY], [Types.EMPTY]);
+        setPseudo(PseudoWastInstr.invoke, IRType.CALL, [], [Types.VOID]);
+        setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID]);
         setPseudo(PseudoWastInstr.local, IRType.SYMBOL);
-        setPseudo(PseudoWastInstr.label, IRType.SYMBOL, [], [Types.EMPTY]);
+        setPseudo(PseudoWastInstr.label, IRType.SYMBOL, [], [Types.VOID]);
         //setPseudo(PseudoWastInstr.call_import, IRType.CALL);
         //setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         // setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
@@ -497,7 +495,7 @@ enum Mutable : ubyte {
 }
 
 enum Types : ubyte {
-    EMPTY = 0x40, /// Empty block
+    VOID = 0x40, /// Empty block
     @("func") FUNC = 0x60, /// functype
     @("funcref") FUNCREF = 0x70, /// funcref
     @("i32") I32 = 0x7F, /// i32 valtype
@@ -507,7 +505,7 @@ enum Types : ubyte {
 }
 
 bool isNotType(const ubyte x) @nogc pure nothrow {
-    return (x & Types.EMPTY) !is Types.EMPTY;
+    return (x & Types.VOID) !is Types.VOID;
 }
 
 enum DataMode : ubyte {
@@ -533,13 +531,13 @@ template toWasmType(T) {
         enum toWasmType = Types.FUNCREF;
     }
     else {
-        enum toWasmType = Types.EMPTY;
+        enum toWasmType = Types.VOID;
     }
 }
 
 unittest {
     static assert(toWasmType!int  is Types.I32);
-    static assert(toWasmType!void  is Types.EMPTY);
+    static assert(toWasmType!void  is Types.VOID);
 }
 
 template toDType(Types t) {
@@ -586,14 +584,14 @@ static Types getType(const string name) pure nothrow {
             }
         }
     default:
-        return Types.EMPTY;
+        return Types.VOID;
     }
 }
 
 unittest {
     assert("f32".getType == Types.F32);
-    assert("empty".getType == Types.EMPTY);
-    assert("not-valid".getType == Types.EMPTY);
+    assert("empty".getType == Types.VOID);
+    assert("not-valid".getType == Types.VOID);
 
 }
 
@@ -695,7 +693,7 @@ struct WasmArg {
 
     static WasmArg undefine() pure nothrow {
         WasmArg result;
-        result._type = Types.EMPTY;
+        result._type = Types.VOID;
         return result;
     }
 
