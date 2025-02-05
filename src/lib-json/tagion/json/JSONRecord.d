@@ -236,7 +236,17 @@ mixin template JSONRecord() {
                     continue ParseLoop;
                 }
             }
-            if (!set(member, json_value[name], name)) {
+
+            // Ignore if a member is missing
+            JSON.JSONValue name_value;
+            try {
+                name_value = json_value[name];
+            }
+            catch(JSON.JSONException e) {
+                continue ParseLoop;
+            }
+            
+            if (!set(member, name_value, name)) {
                 continue ParseLoop;
             }
 
