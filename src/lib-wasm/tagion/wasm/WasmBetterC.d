@@ -729,10 +729,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             check(lth < blocks.length, format(
                                     "Label number of %d exceeds the block stack for max %d", lth, blocks.length));
                             //bout.writefln("elm=%s warg=%s", elm, elm.warg.get!int);
-                            scope (success) {
-                                while (!expr.empty && expr.front.instr.opcode != IR.END) {
-                                    bout.writefln("%s// %s", indent, *(expr.front.instr));
+                            scope (exit) {
+
+                                //foreach(ref exp; expr.until!(e => e.instr.opcode == IR.END)) {
+                                uint count;
+                                while (!expr.empty && expr.front.code != IR.END) {
+                                    bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
                                     expr.popFront;
+                                    count++;
+
                                 }
                             }
                             if (lth == 0) {
@@ -832,10 +837,19 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         ctx.push(value);
                         break;
                     case END:
-                        bout.writefln("//Block %s", blocks.length);
+                        bout.writefln("//Block %s !!! END", blocks.length);
                         if (blocks.length > 0) {
                             const current_block = blocks[$ - 1];
-                            ctx.stack.length = current_block.sp + types(current_block.elm).length;
+                            const keep_on_stack = types(current_block.elm);//.length;
+                            /+ 
+                                bout.writefln("%s// %s keep_on_stack = %d stack %d sp = %d <= END", indent, 
+                                    current_block.elm.code, keep_on_stack, ctx.stack.length, current_block.sp);
+                            +/
+                            if (keep_on_stack.length && keep_on_stack[0] != Types.VOID) {
+                                bout.writefln("// current_block = %d keep_on_stack = %d ctx.stack.length = %d %s", current_block.sp, keep_on_stack.length, ctx.stack.length, types(current_block.elm));
+                                ctx.stack = ctx.stack[0 .. current_block.sp] ~ ctx.stack[$ - keep_on_stack.length .. $];
+                                //ctx.stack.length = current_block.sp + types(current_block.elm).length;
+                            }
                             const block_kind = current_block.kind;
                             if (block_kind == BlockKind.BREAK) {
                                 bout.writeln("%s} while(false);", indent);
