@@ -469,13 +469,15 @@ struct WastParser {
 
         auto func_wasmexpr = createWasmExpr;
         scope (exit) {
-            code_type = CodeType(func_ctx.locals[number_of_func_arguments .. $], func_wasmexpr.serialize);
+            code_type = CodeType(
+                    func_ctx.locals[number_of_func_arguments .. $],
+                    code_type.expr ~ func_wasmexpr.serialize);
         }
         //__write("Instr %s %s", func_type, stage);
-        scope (exit) {
-            func_wasmexpr(IR.END);
-        }
         if (stage is ParserStage.FUNC_BODY) {
+            scope (exit) {
+                func_wasmexpr(IR.END);
+            }
             ParserStage result;
             uint count;
             while (r.type is TokenType.BEGIN) {
@@ -790,7 +792,8 @@ struct WastParser {
             writer.section!(Section.CODE).sectypes ~= code_type;
             if (export_tokenizer.isinit) {
                 if (func_name) {
-                    r.check(!(func_name in func_lookup), format("Export of %s function has already been declared", func_name));
+                    r.check(!(func_name in func_lookup),
+                            format("Export of %s function has already been declared", func_name));
                     func_lookup[func_name] = func_idx;
                 }
             }

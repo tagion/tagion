@@ -135,16 +135,22 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 auto result_expr = result_type[];
                 Context ctx_results;
                 block(result_expr, func_void, ctx_results, indent, true);
-                check(ctx.stack.length == ctx_results.stack.length,
-                        "Number of values in the assert statement does not match");
+                output.writefln("%s// %s : %s", indent, ctx.stack, ctx_results.stack);
+                version (none)
+                    check(ctx.stack.length == ctx_results.stack.length,
+                            "Number of values in the assert statement does not match");
                 if (ctx.stack.length) {
-                    if (ctx.stack.length == 1) {
+                    output.writefln("%s// %s", indent, ctx_results);
+                    if (ctx_results.stack.length == 1) {
                         output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
                     }
                     else {
-                        output.writef("%sassert(%-(%s &&%)", indent,
-                                zip(ctx.stack, ctx_results.stack)
-                                .map!((a) => format("(%s is %s)", a[0], a[1])));
+                        string[] checks;
+                        foreach (i, a; ctx_results.stack) {
+                            checks ~= format("(%s[%d] is %s)",
+                                    ctx.stack[0], i, ctx_results.stack[i]);
+                        }
+                        output.writef("%sassert(%-(%s &&%)", indent, checks);
                     }
                     if (_assert.message.length) {
                         output.writef(`, "%s"`, _assert.message);
