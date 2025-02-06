@@ -50,6 +50,8 @@ Similarly, rewards will be subject to strategic administration, and for good rea
 
 Both user fees and rewards are accordingly assumed to be administered by the community through decision-making [link] processes. Therefore, it is neither feasible nor appropriate to impose rigid rules on their exact values or methods of determination. Nevertheless, we can put forward some ideas on how fees and rewards could be determined, offering a framework for setting appropriate pricing while suggesting an initial fee structure. 
 
+![flow](https://github.com/tagion/tagion/blob/57ce9269a6d3e08665f366c2efb7684ca8031c8f/docs/static/img/Treasury%20inflow-outflow.png)
+
 ## Determining Rewards 
 
 Given that the core objective of this exercise is to ensure the network’s long-term viability, security, and accessibility through adequate compensation of contributors, it is prudent to begin by assessing the expected rewards to be paid out. The starting point for this calculation is for the community to align on both the number and types of contributors required to keep the network operational, as well as the appropriate amount of TGN to be allocated as compensation for each role. 
