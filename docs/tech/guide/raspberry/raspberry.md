@@ -39,7 +39,7 @@ git clone git@github.com:tagion/tagion.git
 sudo apt install perl autoconf g++ make
 ```
 
-Install the compile
+* Install the compile
 ```
 cd /tmp
 wget https://github.com/ldc-developers/ldc/releases/download/v1.40.0/ldc2-1.40.0-linux-aarch64.tar.xz
@@ -57,7 +57,7 @@ mkdir bin
 ls -s ../share/ldc2-1.40.0-linux-aarch64/bin/ldc2
 ```
 
-Setup the path to the compiler.
+* Setup the path to the compiler.
 ```
 export PATH $HOME/.local/bin:$PATH
 ```
@@ -66,7 +66,7 @@ export PATH $HOME/.local/bin:$PATH
 ```
 ldc2 –version
 ```
-* Compile the tagion node
+* Compile the tagion node program.
 ```
 cd
 cd work/tagion
@@ -75,7 +75,7 @@ make install
 
 ## Run a test network.
 
-Setup the test wallets.
+* Setup the test wallets.
 ```
 scripts/create_wallets.sh -b ~/.local/bin/
 ```
@@ -84,7 +84,7 @@ Start the network in mode0.
 ~/.local/bin/neuewelle ./mode0/tagionwave.json --keys $PWD/mode0/ < keys
 ```
 
-Now the a test network in mode0 should start.
+Now the test network should start in mode0.
 
 
 
