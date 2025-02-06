@@ -55,7 +55,7 @@ Similarly, rewards will be subject to strategic administration, and for good rea
 
 Both user fees and rewards are accordingly assumed to be administered by the community through decision-making [link] processes. Therefore, it is neither feasible nor appropriate to impose rigid rules on their exact values or methods of determination. Nevertheless, we can put forward some ideas on how fees and rewards could be determined, offering a framework for setting appropriate pricing while suggesting an initial fee structure. 
 
-![flow](https://github.com/tagion/tagion/blob/57ce9269a6d3e08665f366c2efb7684ca8031c8f/docs/static/img/Treasury%20inflow-outflow.png)
+![flow](./docs/static/img/Treasury%20inflow-outflow.png)
 
 ## Determining Rewards 
 
