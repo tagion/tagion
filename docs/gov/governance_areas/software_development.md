@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+---
+
 # Software Development
 
 more information coming soon, about how the software of Tagion will be maintained and updated once decentralisation is achieved
