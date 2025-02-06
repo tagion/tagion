@@ -39,6 +39,7 @@ From the Treasury's perspective, fees will be accumulated through four primary c
 Fees paid by users through one of the above four channels establish a direct link between the network's utility and the resources required to maintain and improve it. By aligning the cost of upkeep with the network's usage, this model ensures that those who derive value from the network contribute proportionally to its maintenance. 
 
 In this way, the Tagion Treasury will transition from relying solely on its initial reserves to a more self-sustaining model, where ongoing operational costs are funded by the network’s users. This reduces dependency on finite reserves and avoids the need to dilute the token supply, promoting a healthier, long-term economic framework for the network. 
+![flow](https://github.com/tagion/tagion/blob/57ce9269a6d3e08665f366c2efb7684ca8031c8f/docs/static/img/Treasury%20inflow-outflow.png)
 
 ## Administered Pricing 
 
