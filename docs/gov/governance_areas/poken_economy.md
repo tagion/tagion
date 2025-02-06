@@ -1,8 +1,8 @@
 # Token Economy
 
-In the meantime, you find the current version of our "tokenomics" described here: 
+This governance area covers everything to do with our native network taken, the TGN. Eventually it will describe everything from its purpose to its issuance and limitations. Quite a bit has already been published about that in our ["Tokenomics Paper"](https://www.tagion.org/resources/tagion-tokenomics.pdf), and until its content has been transfered and superseeded by what you find here, please download and consult it at the link above. 
 
-https://www.tagion.org/resources/tagion-tokenomics.pdf
+For now, read on below and find an overview of the elemets of our token economy already covered in the menu on the right hand side. 
 
 ## Fees and Rewards 
 
