@@ -3672,7 +3672,7 @@ struct WebSocketApp {
         nng_mtx_lock(mtx);
         if (starts == 0) {
             rc = nng_stream_listener_listen(sl);
-            enforce(rc == 0, "Listener start");
+            enforce(rc == 0, "Websocket App failed to listen on address " ~ uri);
             nng_stream_listener_accept(sl, accio);
         }
         starts++;
