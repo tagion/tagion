@@ -426,13 +426,21 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         ctx.locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
         const local_indent = indent ~ spacer;
         if (!code_type.locals.empty) {
-            output.writef("%s(local", local_indent);
+            auto local_names = iota(ctx.locals.length, ctx.locals.length + code_type.locals
+                    .map!(l => l.count).sum)
+                .map!(local_idx => format("local_%d", local_idx))
+                .array;
+            ctx.locals ~= local_names;
+
+            output.writefln("%s// context locals %s", local_indent, ctx.locals);
+            output.writefln("%s// locals %s", local_indent, code_type.locals);
+            //output.writef("%s(local", local_indent);
+
             foreach (l; code_type.locals) {
-                foreach (i; 0 .. l.count) {
-                    output.writef(" %s", typesName(l.type));
-                }
+                output.writefln("%s%s %-(%s,%);", local_indent, dType(l.type), local_names.take(l.count));
+                local_names = local_names[l.count .. $];
             }
-            output.writeln(")");
+            //output.writeln(")");
         }
 
         block(expr, func_type, ctx, local_indent);
@@ -840,13 +848,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("//Block %s !!! END", blocks.length);
                         if (blocks.length > 0) {
                             const current_block = blocks[$ - 1];
-                            const keep_on_stack = types(current_block.elm);//.length;
+                            const keep_on_stack = types(current_block.elm); //.length;
                             /+ 
                                 bout.writefln("%s// %s keep_on_stack = %d stack %d sp = %d <= END", indent, 
                                     current_block.elm.code, keep_on_stack, ctx.stack.length, current_block.sp);
                             +/
                             if (keep_on_stack.length && keep_on_stack[0] != Types.VOID) {
-                                bout.writefln("// current_block = %d keep_on_stack = %d ctx.stack.length = %d %s", current_block.sp, keep_on_stack.length, ctx.stack.length, types(current_block.elm));
+                                bout.writefln("// current_block = %d keep_on_stack = %d ctx.stack.length = %d %s", current_block
+                                        .sp, keep_on_stack.length, ctx.stack.length, types(current_block.elm));
                                 ctx.stack = ctx.stack[0 .. current_block.sp] ~ ctx.stack[$ - keep_on_stack.length .. $];
                                 //ctx.stack.length = current_block.sp + types(current_block.elm).length;
                             }
