@@ -423,6 +423,9 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="request-tab" data-bs-toggle="tab" data-bs-target="#request-tab-pane" type="button" role="tab" aria-controls="request-tab-pane" aria-selected="false">Request</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph-tab-pane" type="button" role="tab" aria-controls="graph-tab-pane" aria-selected="false">Graph</button>
+                </li>
             </ul>        
         </div>        
         <div class="tab-content flex-grow-1" id="myTabContent">
@@ -511,6 +514,49 @@
                     </div>
                 </div>
             </div>
+            </div>
+
+            <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+            <div class="tab-pane h-100 fade overflow-hidden" id="graph-tab-pane" role="tabpanel" aria-labelledby="graph-tab" tabindex="0">
+            <div class="h-100 container-fluid">
+
+                <link rel="stylesheet" href="./hashgraph.css"/>
+
+                <div class="row">
+                <div class="col-12 p-2 d-flex flex-row flex-nowrap justify-content-center align-middle align-items-center">
+                    <div class="form-check form-switch form-check-inline">
+                        <input class="form-check-input" type="checkbox" role="switch" id="scrollgraph">
+                        <label class="form-check-label" for="scrollgraph"> Autoscroll</label>
+                    </div>    
+                    <button type="button" class="btn btn-primary" id="rehashgraph"> Clear </button>
+                </div>
+                <div class="column main layout graph" id="hashgraph"></div>
+                </div>
+
+                <script defer type=module>
+                    import { HashGraph } from "./hashgraph.js";
+
+                    let hg = new HashGraph(
+                    'hashgraph',{                   // id of container div
+                        'tag':'HG INIT',            // tag o instance
+                        'transport': 'websocket',   // "socket.io" or "websocket" - depending on backend
+                        'eventid': 'node',          // socket.io event type to subscribe
+                        'path':'/api/v1/subscribe', // relative URL path to socket.io endpoint to get "tick" events
+                        'scrollctl': 'scrollgraph'  // id of checkbox input to associalte with "autoscroll" feature
+
+                    });
+                
+                // how to handle the "reset" button
+                $('#rehashgraph').click(() => { hg.setAutoScroll(true); hg._reset(); });
+                </script>
+
+                <div class="row h-100">
+                <div class="col-12 h-100 scrollable overflow-y-scroll position-relative">
+                    <div id="mlist" class="position-absolute position-absolute top-0 start-0">
+                    </div>
+                </div>
+                </div>
+            </div>    
             </div>
         </div>        
     </div>
