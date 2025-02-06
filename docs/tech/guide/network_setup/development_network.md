@@ -20,7 +20,7 @@ Usage: ./scripts/create_wallets.sh
 
 Assuming you have installed the binaries in `~/bin/`.
 ```bash
-./create_wallets.sh -b ~/bin/ 
+./scripts/create_wallets.sh -b ~/bin/ 
 # Run the network this way:
 # ~/bin/neuewelle ./mode0/tagionwave.json --keys $PWD/mode0 < keys
 ```
