@@ -26,6 +26,7 @@
 	<script type="module" defer>
         import { WTagUtil } from "./wtag.js";
         import config from "./wconfig.js";
+        import { HashGraph } from "./hashgraph.js";
 
         var subm = {
             monitor: false,
@@ -56,6 +57,19 @@
             $("#isubrecorder").change(submonitor);
             $("#isubtrt").change(submonitor);
             $("#iclearmon").click((e) => { $("#mlist").html(""); mlistsz = 0; });
+
+            let hg = new HashGraph(
+            'hashgraph',{                   // id of container div
+                'tag':'HG INIT',            // tag o instance
+                'eventid': 'node',          // socket.io event type to subscribe
+                'path': config.ws_endpoint, // relative URL path to socket.io endpoint to get "tick" events
+                'scrollctl': 'scrollgraph'  // id of checkbox input to associalte with "autoscroll" feature
+
+            });
+            
+            // how to handle the "reset" button
+            $('#rehashgraph').click(() => { hg.setAutoScroll(true); hg._reset(); });
+
         });
         
         function walinit() {
@@ -532,23 +546,6 @@
                 </div>
                 <div class="column main layout graph" id="hashgraph"></div>
                 </div>
-
-                <script defer type=module>
-                    import { HashGraph } from "./hashgraph.js";
-
-                    let hg = new HashGraph(
-                    'hashgraph',{                   // id of container div
-                        'tag':'HG INIT',            // tag o instance
-                        'transport': 'websocket',   // "socket.io" or "websocket" - depending on backend
-                        'eventid': 'node',          // socket.io event type to subscribe
-                        'path':'/api/v1/subscribe', // relative URL path to socket.io endpoint to get "tick" events
-                        'scrollctl': 'scrollgraph'  // id of checkbox input to associalte with "autoscroll" feature
-
-                    });
-                
-                // how to handle the "reset" button
-                $('#rehashgraph').click(() => { hg.setAutoScroll(true); hg._reset(); });
-                </script>
 
                 <div class="row h-100">
                 <div class="col-12 h-100 scrollable overflow-y-scroll position-relative">
