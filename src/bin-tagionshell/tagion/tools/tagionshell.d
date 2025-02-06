@@ -1198,6 +1198,7 @@ int _main(string[] args) {
 
     ShellOptions options;
     bool override_switch;
+    string[] override_options;
 
     long sz, isz;
     
@@ -1225,6 +1226,7 @@ int _main(string[] args) {
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
                 "O|override", "Override the config file", &override_switch,
+                "option", "Set an option", &override_options,
         );
     }
     catch (GetOptException e) {
@@ -1252,6 +1254,10 @@ int _main(string[] args) {
                 ].join("\n"),
                 main_args.options);
         return 0;
+    }
+
+    if (!override_options.empty) {
+        options.set_override_options(override_options);
     }
 
     if (override_switch) {
