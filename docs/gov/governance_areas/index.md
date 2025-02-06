@@ -6,13 +6,14 @@ sidebar_position: 2
 
 The development of the overall governance of Tagion is, for practical reasons, divided into for interdependent areas:
 
-1. Decision Making
-2. Network Formation
-3. Token Economy
-   :::tip[New content has been published in Token Economy (Feb 6th 2025)]
+## 1. Decision Making
+## 2. Network Formation
+## 3. Token Economy
+:::tip[New content has been published in Token Economy (Feb 6th 2025)]
 [Check it out now!](./governance_areas/token_economy). 
 :::
-5. Software Management
+
+## 4. Software Management
 
 We also offer a repository of ideas and approaches, including our appraisal of them in the section currently called "glossary"
 
