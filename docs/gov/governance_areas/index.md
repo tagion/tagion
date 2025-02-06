@@ -10,7 +10,7 @@ The development of the overall governance of Tagion is, for practical reasons, d
 ## 2. [Network Formation](./governance_areas/network_formation)
 ## 3. [Token Economy](./governance_areas/token_economy)
 :::tip[New content has been published in Token Economy (Feb 6th 2025)]
-[Check it out now!](./governance_areas/token_economy). 
+[Check it out now!](./governance_areas/token_economy)
 :::
 
 ## 4. [Software Management](./governance_areas/software_management)
