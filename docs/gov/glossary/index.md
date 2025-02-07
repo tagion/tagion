@@ -115,7 +115,7 @@ Refers to anybody being able to use a network service, like submitting transacti
 
 ## Privat 
 
-Not everybody may run a node. Participation is controlled by some entitiy.  
+Not everybody may run a node. Participation is controlled by some entity.  
 
 ## Public 
 

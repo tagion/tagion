@@ -4,9 +4,9 @@ sidebar_position: 3
 
 # Token Economy
 
-This governance area covers everything to do with our native network taken, the TGN. Eventually it will describe everything from its purpose to its issuance and limitations. Quite a bit has already been published about that in our ["Tokenomics Paper"](https://www.tagion.org/resources/tagion-tokenomics.pdf), and until its content has been transfered and superseeded by what you find here, please download and consult it at the link above. 
+This governance area covers everything to do with our native network taken, the TGN. Eventually it will describe everything from its purpose to its issuance and limitations. Quite a bit has already been published about that in our ["Tokenomics Paper"](https://www.tagion.org/resources/tagion-tokenomics.pdf), and until its content has been transferred and superseded by what you find here, please download and consult it at the link above. 
 
-For now, read on below and find an overview of the elemets of our token economy already covered in the menu on the right hand side. 
+For now, read on below and find an overview of the elements of our token economy already covered in the menu on the right hand side. 
 
 ## Fees and Rewards 
 
@@ -57,7 +57,7 @@ Similarly, rewards will be subject to strategic administration, and for good rea
 
 Both user fees and rewards are accordingly assumed to be administered by the community through decision-making [link] processes. Therefore, it is neither feasible nor appropriate to impose rigid rules on their exact values or methods of determination. Nevertheless, we can put forward some ideas on how fees and rewards could be determined, offering a framework for setting appropriate pricing while suggesting an initial fee structure. 
 
-![flow](./docs/static/img/Treasury%20inflow-outflow.png)
+![flow](/img/Treasury_inflow_outflow.png)
 
 ## Determining Rewards 
 
