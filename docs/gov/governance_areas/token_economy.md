@@ -10,7 +10,7 @@ For now, read on below and find an overview of the elements of our token economy
 
 ## Fees and Rewards 
 
-Contributors ([see Glossary](/docs/gov/glossary#contributors)) play a vital role in ensuring the sustainability and growth of the Tagion network. Their efforts span across maintaining and safeguarding the network’s security, efficiency, and reliability; driving its evolution by implementing upgrades, addressing vulnerabilities, and introducing new features; and fostering adoption by creating educational materials and onboarding users.
+Contributors ([see Glossary](/gov/glossary#contributors)) play a vital role in ensuring the sustainability and growth of the Tagion network. Their efforts span across maintaining and safeguarding the network’s security, efficiency, and reliability; driving its evolution by implementing upgrades, addressing vulnerabilities, and introducing new features; and fostering adoption by creating educational materials and onboarding users.
 
 The Tagion network’s success depends on the ongoing participation of contributors. However, without an adequate reward model in place, there is a risk that participation could decline over time. Contributors typically invest significant time, expertise, and resources into maintaining and improving the network. If these efforts are not recognized and rewarded, contributors may reduce their involvement or disengage entirely, posing a threat to the network’s robustness, stability, and ability to evolve. 
 
@@ -28,9 +28,9 @@ The proposed model assumes that users will ultimately cover the ongoing costs of
 
 From the Treasury's perspective, fees will be accumulated through three primary channels, namely: 
 
-+ Execution Fees ([see below](https://docs.tagion.org/gov/governance_areas/token_economy#execution-fees))
++ Execution Fees ([see below](#execution-fees))
 
-+ Storage Fees ([see below](https://docs.tagion.org/gov/governance_areas/token_economy#storage-fees))
++ Storage Fees ([see below](#storage-fees))
 
 + Subsystem Taxes ([see below](#subsystem-tax))
 
@@ -59,7 +59,7 @@ Both user fees and rewards are accordingly assumed to be administered by the com
 
 Given that the core objective of this exercise is to ensure the network’s long-term viability, security, and accessibility through adequate compensation of contributors, it is prudent to begin by assessing the expected rewards to be paid out. The starting point for this calculation is for the community to align on both the number and types of contributors required to keep the network operational, as well as the appropriate amount of TGN to be allocated as compensation for each role. 
 
-For our purposes, let us assume the community intends to maintain a network consisting of 100 Core Node Operators ([see Glossary](/docs/gov/glossary#nodes)), 50 Relay Node Operators ([see Glossary](/gov/glossary#nodes)), 50 Mirror Node Operators ([see Glossary](/docs/gov/glossary#nodes)), and 5 full-time Developers ([see Glossary](/docs/gov/glossary/index.md#contributors)). With this setup in mind, it becomes essential to estimate the average compensation required for each of these roles to cover their expenses and ensure fair remuneration. In practice, the community may choose to estimate these costs by consulting directly with contributors to gather realistic insights into their compensation needs, or they may opt to set reward levels at amounts deemed collectively reasonable.  
+For our purposes, let us assume the community intends to maintain a network consisting of 100 Core Node Operators ([see Glossary](/gov/glossary#nodes)), 50 Relay Node Operators ([see Glossary](/gov/glossary#nodes)), 50 Mirror Node Operators ([see Glossary](/gov/glossary#nodes)), and 5 full-time Developers ([see Glossary](/gov/glossary/index.md#contributors)). With this setup in mind, it becomes essential to estimate the average compensation required for each of these roles to cover their expenses and ensure fair remuneration. In practice, the community may choose to estimate these costs by consulting directly with contributors to gather realistic insights into their compensation needs, or they may opt to set reward levels at amounts deemed collectively reasonable.  
 
 For now, let us just assume that Core Node Operators are compensated with the equivalent of $300 in TGN per month to cover costs such as hardware, energy, and maintenance, while also ensuring a modest profit margin. Similarly, each Relay Node Operator is compensated with the equivalent of $150 in TGN per month, each Mirror Node Operator receives the equivalent of $100 in TGN per month, and each full-time Developer is paid the equivalent of $10,000 in TGN on average. 
 
@@ -67,7 +67,7 @@ Based on these assumptions, the total estimated monthly rewards would amount to 
 
 ## Determining Fees 
 
-Fees, collected through one of three defined channels ([see above](https://docs.tagion.org/gov/governance_areas/token_economy#the-treasury)), are deposited into the Treasury and subsequently distributed to compensate contributors, ensuring the network’s sustainability and growth. These fees must strike a balance, ensuring the network’s sustainability while maintaining its accessibility and security.  
+Fees, collected through one of three defined channels ([see above](#the-treasury)), are deposited into the Treasury and subsequently distributed to compensate contributors, ensuring the network’s sustainability and growth. These fees must strike a balance, ensuring the network’s sustainability while maintaining its accessibility and security.  
 
 Fees set too low risks leaving the Treasury underfunded, potentially depleting its resources over time and making it unable to fairly compensate contributors—or forcing the community to dilute the supply of TGN. They could also undermine the demand for TGN. If users are not required to pay meaningful fees, demand for the token may drop, creating a feedback loop of declining token value, reduced contributor incentives, and weakened network security and resilience, thereby threatening the network’s long-term sustainability. Finally, setting fees too low could inadvertently make it both easy and inexpensive to flood the network with spam. This could strain resources and compromise the overall efficiency of the network. 
 
