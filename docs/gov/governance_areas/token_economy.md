@@ -20,13 +20,13 @@ A key tool for ensuring the continued participation of contributors is the use o
 
 ## The Treasury 
 
-The Tagion Treasury [Glossary link] will serve as the primary source of compensation for contributors, utilizing its holdings of TGN tokens to fund ongoing network operations. Initially, the Treasury will draw from its allocated TGN reserves to support the system and reward contributors. However, since these reserves are finite, the Treasury cannot sustain the network indefinitely through this allocation alone. 
+The Tagion Treasury will serve as the primary source of compensation for contributors, utilizing its holdings of TGN tokens to fund ongoing network operations. Initially, the Treasury will draw from its allocated TGN reserves to support the system and reward contributors. However, since these reserves are finite, the Treasury cannot sustain the network indefinitely through this allocation alone. 
 
 In the event that the Treasury exhausts its initial holdings, the Community could opt to issue new TGN tokens to cover expenses. However, issuing additional tokens would dilute the existing supply, which may not be in the interest of the community. To avoid this outcome, a sustainable and balanced funding model should be established well before the Treasury’s reserves are depleted, ensuring the network's long-term sustainability. 
 
 The proposed model assumes that users will ultimately cover the ongoing costs of compensating relevant contributors through usage fees, which will be paid into the Treasury and then distributed to node operators, developers, and other contributors. 
 
-From the Treasury's perspective, fees will be accumulated through four primary channels, namely: 
+From the Treasury's perspective, fees will be accumulated through three primary channels, namely: 
 
 + Execution Fees ([see below](https://docs.tagion.org/gov/governance_areas/token_economy#execution-fees))
 
@@ -59,7 +59,7 @@ Both user fees and rewards are accordingly assumed to be administered by the com
 
 Given that the core objective of this exercise is to ensure the network’s long-term viability, security, and accessibility through adequate compensation of contributors, it is prudent to begin by assessing the expected rewards to be paid out. The starting point for this calculation is for the community to align on both the number and types of contributors required to keep the network operational, as well as the appropriate amount of TGN to be allocated as compensation for each role. 
 
-For our purposes, let us assume the community intends to maintain a network consisting of 100 Core Node Operators [link], 50 Relay Node Operators [link], 50 Mirror Node Operators [link], and 5 full-time Developers [link]. With this setup in mind, it becomes essential to estimate the average compensation required for each of these roles to cover their expenses and ensure fair remuneration. In practice, the community may choose to estimate these costs by consulting directly with contributors to gather realistic insights into their compensation needs, or they may opt to set reward levels at amounts deemed collectively reasonable.  
+For our purposes, let us assume the community intends to maintain a network consisting of 100 Core Node Operators ([see Glossary](/docs/gov/glossary/index.md#nodes)), 50 Relay Node Operators ([see Glossary](/docs/gov/glossary/index.md#nodes)), 50 Mirror Node Operators ([see Glossary](/docs/gov/glossary/index.md#nodes)), and 5 full-time Developers ([see Glossary](/docs/gov/glossary/index.md#contributors)). With this setup in mind, it becomes essential to estimate the average compensation required for each of these roles to cover their expenses and ensure fair remuneration. In practice, the community may choose to estimate these costs by consulting directly with contributors to gather realistic insights into their compensation needs, or they may opt to set reward levels at amounts deemed collectively reasonable.  
 
 For now, let us just assume that Core Node Operators are compensated with the equivalent of $300 in TGN per month to cover costs such as hardware, energy, and maintenance, while also ensuring a modest profit margin. Similarly, each Relay Node Operator is compensated with the equivalent of $150 in TGN per month, each Mirror Node Operator receives the equivalent of $100 in TGN per month, and each full-time Developer is paid the equivalent of $10,000 in TGN on average. 
 
@@ -67,7 +67,7 @@ Based on these assumptions, the total estimated monthly rewards would amount to 
 
 ## Determining Fees 
 
-Fees, collected through one of four defined channels [link], are deposited into the Treasury and subsequently distributed to compensate contributors, ensuring the network’s sustainability and growth. These fees must strike a balance, ensuring the network’s sustainability while maintaining its accessibility and security.  
+Fees, collected through one of three defined channels ([see above](https://docs.tagion.org/gov/governance_areas/token_economy#the-treasury)), are deposited into the Treasury and subsequently distributed to compensate contributors, ensuring the network’s sustainability and growth. These fees must strike a balance, ensuring the network’s sustainability while maintaining its accessibility and security.  
 
 Fees set too low risks leaving the Treasury underfunded, potentially depleting its resources over time and making it unable to fairly compensate contributors—or forcing the community to dilute the supply of TGN. They could also undermine the demand for TGN. If users are not required to pay meaningful fees, demand for the token may drop, creating a feedback loop of declining token value, reduced contributor incentives, and weakened network security and resilience, thereby threatening the network’s long-term sustainability. Finally, setting fees too low could inadvertently make it both easy and inexpensive to flood the network with spam. This could strain resources and compromise the overall efficiency of the network. 
 
