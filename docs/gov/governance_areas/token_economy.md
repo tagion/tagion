@@ -28,11 +28,11 @@ The proposed model assumes that users will ultimately cover the ongoing costs of
 
 From the Treasury's perspective, fees will be accumulated through four primary channels, namely: 
 
-+ Execution Fees - [see below](https://docs.tagion.org/gov/governance_areas/token_economy#execution-fees) 
++ Execution Fees ([see below](https://docs.tagion.org/gov/governance_areas/token_economy#execution-fees))
 
-+ Storage Fees - [see below](https://docs.tagion.org/gov/governance_areas/token_economy#storage-fees)
++ Storage Fees ([see below](https://docs.tagion.org/gov/governance_areas/token_economy#storage-fees)
 
-+ Subsystem Taxes - [see below](#subsystem-tax)
++ Subsystem Taxes ([see below](#subsystem-tax))
 
 Fees paid by users through one of the above four channels establish a direct link between the network's utility and the resources required to maintain and improve it. By aligning the cost of upkeep with the network's usage, this model ensures that those who derive value from the network contribute proportionally to its maintenance. 
 
@@ -75,16 +75,16 @@ Conversely, excessively high fees could deter users, reducing the adoption of th
 
 Self-evidently, the user fee should therefore strike a balance, being neither too low nor too high. Additionally, the community must consider the Treasury’s financial health. If the goal is to ensure the Treasury remains sustainable and well-funded indefinitely, its inflow of TGN must, at a minimum, match or exceed its outflow, expressed as: 
 
- Inflow > Outlfow
+![in-out](/img/Iflow-outflow.png)
  
 
 Assuming that the Treasury’s primary outflow of TGN is allocated to compensating contributors, while its primary inflow consists of user fees, it follows that the total user fees collected over a given period must, at a minimum, match or exceed the rewards distributed to contributors if the Treasury is to run a surplus, expressed as: 
 
- 
+![reward](/img/Fees-rewards.png) 
 
 Having established the rewards in our hypothetical scenario as $92,500 in TGN equivalent, and assuming the community decides to run a surplus, we can now conclude that: 
 
- 
+ ![total](/img/Fees-92.500.png)
 
 To run a surplus, the Treasury must therefore acquire more than 92,500 TGN per month through the inflow of user fees. Naturally, and as previously mentioned, this approach would not be feasible in the initial stages, as execution volumes, storage usage, relay requests, and subsystem usage would be minimal. Consequently, the Treasury would need to rely on its pre-allocated TGN reserve to bridge the gap. 
 
