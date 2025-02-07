@@ -30,7 +30,7 @@ From the Treasury's perspective, fees will be accumulated through three primary 
 
 + Execution Fees ([see below](https://docs.tagion.org/gov/governance_areas/token_economy#execution-fees))
 
-+ Storage Fees ([see below](https://docs.tagion.org/gov/governance_areas/token_economy#storage-fees)
++ Storage Fees ([see below](https://docs.tagion.org/gov/governance_areas/token_economy#storage-fees))
 
 + Subsystem Taxes ([see below](#subsystem-tax))
 
