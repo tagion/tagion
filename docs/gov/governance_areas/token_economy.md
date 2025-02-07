@@ -11,7 +11,7 @@ For now, read on below and find an overview of the elemets of our token economy 
 ## Fees and Rewards 
 
 Contributors [Glossary link] play a vital role in ensuring the sustainability and growth of the Tagion network. Their efforts span across maintaining and safeguarding the network’s security, efficiency, and reliability; driving its evolution by implementing upgrades, addressing vulnerabilities, and introducing new features; and fostering adoption by creating educational materials and onboarding users. 
-
+![flow](https://github.com/tagion/tagion/blob/a4c3ce3e8ef84b51dac923ce5570357bad1c2027/docs/static/img/Treasury%20inflow-outflow.png)![flow](https://github.com/tagion/tagion/blob/a4c3ce3e8ef84b51dac923ce5570357bad1c2027/docs/static/img/Treasury%20inflow-outflow.png)
 The Tagion network’s success depends on the ongoing participation of contributors. However, without an adequate reward model in place, there is a risk that participation could decline over time. Contributors typically invest significant time, expertise, and resources into maintaining and improving the network. If these efforts are not recognized and rewarded, contributors may reduce their involvement or disengage entirely, posing a threat to the network’s robustness, stability, and ability to evolve. 
 
 While some individuals or entities may contribute out of goodwill, ideological alignment, or interest in supporting their own applications, these motivations may not be sufficient to ensure sustained long-term participation. To ensure the network's continued resilience and performance, it is essential to establish a framework that both acknowledges the value of contributors' work and incentivizes their long-term engagement. This framework should aim to compensate contributors fairly for their efforts, ensuring they remain motivated. 
@@ -39,7 +39,7 @@ From the Treasury's perspective, fees will be accumulated through four primary c
 Fees paid by users through one of the above four channels establish a direct link between the network's utility and the resources required to maintain and improve it. By aligning the cost of upkeep with the network's usage, this model ensures that those who derive value from the network contribute proportionally to its maintenance. 
 
 In this way, the Tagion Treasury will transition from relying solely on its initial reserves to a more self-sustaining model, where ongoing operational costs are funded by the network’s users. This reduces dependency on finite reserves and avoids the need to dilute the token supply, promoting a healthier, long-term economic framework for the network. 
-![flow](https://github.com/tagion/tagion/blob/a4c3ce3e8ef84b51dac923ce5570357bad1c2027/docs/static/img/Treasury%20inflow-outflow.png)
+
 
 ## Administered Pricing 
 
