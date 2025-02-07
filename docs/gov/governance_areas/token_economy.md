@@ -12,7 +12,7 @@ For now, read on below and find an overview of the elemets of our token economy 
 
 Contributors [Glossary link] play a vital role in ensuring the sustainability and growth of the Tagion network. Their efforts span across maintaining and safeguarding the network’s security, efficiency, and reliability; driving its evolution by implementing upgrades, addressing vulnerabilities, and introducing new features; and fostering adoption by creating educational materials and onboarding users.
 
-![flow](/img/Treasury_inflow-outflow.png)
+![flow](/img/Treasury_inflow_outflow.png)
 
 The Tagion network’s success depends on the ongoing participation of contributors. However, without an adequate reward model in place, there is a risk that participation could decline over time. Contributors typically invest significant time, expertise, and resources into maintaining and improving the network. If these efforts are not recognized and rewarded, contributors may reduce their involvement or disengage entirely, posing a threat to the network’s robustness, stability, and ability to evolve. 
 
