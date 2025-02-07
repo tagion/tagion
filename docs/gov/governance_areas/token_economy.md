@@ -32,7 +32,7 @@ From the Treasury's perspective, fees will be accumulated through four primary c
 
 + Storage Fees [see below](https://docs.tagion.org/gov/governance_areas/token_economy#storage-fees)
 
-+ Subsystem Taxes [see below](/token_economy#subsystem-tax)
++ Subsystem Taxes [see below](#subsystem-tax)
 
 Fees paid by users through one of the above four channels establish a direct link between the network's utility and the resources required to maintain and improve it. By aligning the cost of upkeep with the network's usage, this model ensures that those who derive value from the network contribute proportionally to its maintenance. 
 
