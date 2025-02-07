@@ -10,7 +10,7 @@ For now, read on below and find an overview of the elements of our token economy
 
 ## Fees and Rewards 
 
-Contributors [Glossary link] play a vital role in ensuring the sustainability and growth of the Tagion network. Their efforts span across maintaining and safeguarding the network’s security, efficiency, and reliability; driving its evolution by implementing upgrades, addressing vulnerabilities, and introducing new features; and fostering adoption by creating educational materials and onboarding users.
+Contributors ([see Glossary](/docs/gov/glossary/index.md#contributors)) play a vital role in ensuring the sustainability and growth of the Tagion network. Their efforts span across maintaining and safeguarding the network’s security, efficiency, and reliability; driving its evolution by implementing upgrades, addressing vulnerabilities, and introducing new features; and fostering adoption by creating educational materials and onboarding users.
 
 The Tagion network’s success depends on the ongoing participation of contributors. However, without an adequate reward model in place, there is a risk that participation could decline over time. Contributors typically invest significant time, expertise, and resources into maintaining and improving the network. If these efforts are not recognized and rewarded, contributors may reduce their involvement or disengage entirely, posing a threat to the network’s robustness, stability, and ability to evolve. 
 
@@ -28,11 +28,11 @@ The proposed model assumes that users will ultimately cover the ongoing costs of
 
 From the Treasury's perspective, fees will be accumulated through four primary channels, namely: 
 
-+ Execution Fees [see below](https://docs.tagion.org/gov/governance_areas/token_economy#execution-fees) 
++ Execution Fees - [see below](https://docs.tagion.org/gov/governance_areas/token_economy#execution-fees) 
 
-+ Storage Fees [see below](https://docs.tagion.org/gov/governance_areas/token_economy#storage-fees)
++ Storage Fees - [see below](https://docs.tagion.org/gov/governance_areas/token_economy#storage-fees)
 
-+ Subsystem Taxes [see below](#subsystem-tax)
++ Subsystem Taxes - [see below](#subsystem-tax)
 
 Fees paid by users through one of the above four channels establish a direct link between the network's utility and the resources required to maintain and improve it. By aligning the cost of upkeep with the network's usage, this model ensures that those who derive value from the network contribute proportionally to its maintenance. 
 
