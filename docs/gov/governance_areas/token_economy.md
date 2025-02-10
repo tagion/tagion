@@ -61,9 +61,9 @@ Given that the core objective of this exercise is to ensure the network’s long
 
 For our purposes, let us assume the community intends to maintain a network consisting of 100 Core Node Operators ([see Glossary](/gov/glossary#nodes)), 50 Relay Node Operators ([see Glossary](/gov/glossary#nodes)), 50 Mirror Node Operators ([see Glossary](/gov/glossary#nodes)), and 5 full-time Developers ([see Glossary](/gov/glossary/index.md#contributors)). With this setup in mind, it becomes essential to estimate the average compensation required for each of these roles to cover their expenses and ensure fair remuneration. In practice, the community may choose to estimate these costs by consulting directly with contributors to gather realistic insights into their compensation needs, or they may opt to set reward levels at amounts deemed collectively reasonable.  
 
-For now, let us just assume that Core Node Operators are compensated with the equivalent of $300 in TGN per month to cover costs such as hardware, energy, and maintenance, while also ensuring a modest profit margin. Similarly, each Relay Node Operator is compensated with the equivalent of $150 in TGN per month, each Mirror Node Operator receives the equivalent of $100 in TGN per month, and each full-time Developer is paid the equivalent of $10,000 in TGN on average. 
+For now, let us just assume that Core Node Operators are compensated with the equivalent of \$300 in TGN per month to cover costs such as hardware, energy, and maintenance, while also ensuring a modest profit margin. Similarly, each Relay Node Operator is compensated with the equivalent of \$150 in TGN per month, each Mirror Node Operator receives the equivalent of \$100 in TGN per month, and each full-time Developer is paid the equivalent of \$10,000 in TGN on average. 
 
-Based on these assumptions, the total estimated monthly rewards would amount to $92,500 in TGN equivalent. This figure serves as a baseline for understanding the Treasury’s financial obligations and provides a foundation for setting user fees that will allow the Treasury to remain sustainable and well-funded over time. 
+Based on these assumptions, the total estimated monthly rewards would amount to \$92,500 in TGN equivalent. This figure serves as a baseline for understanding the Treasury’s financial obligations and provides a foundation for setting user fees that will allow the Treasury to remain sustainable and well-funded over time. 
 
 ## Determining Fees 
 
@@ -75,16 +75,22 @@ Conversely, excessively high fees could deter users, reducing the adoption of th
 
 Self-evidently, the user fee should therefore strike a balance, being neither too low nor too high. Additionally, the community must consider the Treasury’s financial health. If the goal is to ensure the Treasury remains sustainable and well-funded indefinitely, its inflow of TGN must, at a minimum, match or exceed its outflow, expressed as: 
 
-![in-out](/img/Iflow-outflow.png)
+$$
+Inflow \ge Outflow
+$$
  
 
 Assuming that the Treasury’s primary outflow of TGN is allocated to compensating contributors, while its primary inflow consists of user fees, it follows that the total user fees collected over a given period must, at a minimum, match or exceed the rewards distributed to contributors if the Treasury is to run a surplus, expressed as: 
 
-![reward](/img/Fees-rewards.png) 
+$$
+\sum{}Fees_t \ge \sum{}Rewards_t
+$$
 
-Having established the rewards in our hypothetical scenario as $92,500 in TGN equivalent, and assuming the community decides to run a surplus, we can now conclude that: 
+Having established the rewards in our hypothetical scenario as \$92,500 in TGN equivalent, and assuming the community decides to run a surplus, we can now conclude that: 
 
- ![total](/img/Fees-92.500.png)
+$$
+\sum{}Fees_t \ge 92,500\ TGN_t
+$$
 
 To run a surplus, the Treasury must therefore acquire more than 92,500 TGN per month through the inflow of user fees. Naturally, and as previously mentioned, this approach would not be feasible in the initial stages, as execution volumes, storage usage, relay requests, and subsystem usage would be minimal. Consequently, the Treasury would need to rely on its pre-allocated TGN reserve to bridge the gap. 
 
