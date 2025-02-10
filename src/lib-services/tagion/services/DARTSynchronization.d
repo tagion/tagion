@@ -16,7 +16,6 @@ import tagion.Keywords;
 import tagion.dart.DARTBasic : DARTIndex, Params;
 import tagion.dart.DARTRim;
 import tagion.dart.BlockFile : BlockFile, BLOCK_SIZE;
-import tagion.tools.Basic : nobose, noboseln, verbose;
 import tagion.utils.Term;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor;
@@ -188,9 +187,6 @@ private:
         }
 
         void assignWorkers() {
-            uint count;
-            enum line_width = 32;
-
             foreach (sock_addr; sock_addr_arr) {
                 // Ensure we don't assign beyond available range
 
@@ -211,16 +207,9 @@ private:
                 scope (exit) {
                     if (journalfile.size > 0) {
                         journal_filenames ~= journal_filename;
-                        verbose("Journalfile %s", journal_filename);
-                        nobose("%s#%s", YELLOW, RESET);
+
                     }
-                    else {
-                        nobose("%sX%s", BLUE, RESET);
-                    }
-                    count++;
-                    if (count % line_width == 0) {
-                        noboseln("!");
-                    }
+
                     journalfile.close;
                 }
 
@@ -239,19 +228,9 @@ private:
     }
 
     void replayWithFiles(DART destination, immutable(ReplayFiles) journal_filenames) {
-        uint count = 0;
-        enum line_width = 32;
-
         foreach (journal_filename; journal_filenames.files) {
             destination.replay(journal_filename);
-            verbose("Replay %s", journal_filename);
-            nobose("%s*%s", GREEN, RESET);
-            count++;
-            if (count % line_width == 0) {
-                noboseln("!");
-            }
         }
-        noboseln("\n%d journal files has been synchronized", count);
     }
 }
 

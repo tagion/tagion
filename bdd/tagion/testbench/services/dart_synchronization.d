@@ -367,9 +367,11 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
     }
 
     void stopActor() {
-        for (int i = 0; i < remote_dart_handles.length; i++) {
-            remote_dart_handles[i].send(Sig.STOP);
-            dart_interface_handles[i].send(Sig.STOP);
+        foreach (remote_dart_handle; remote_dart_handles) {
+            remote_dart_handle.send(Sig.STOP);
+        }
+        foreach (dart_interface_handle; dart_interface_handles) {
+            dart_interface_handle.send(Sig.STOP);
         }
         dart_sync_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);
