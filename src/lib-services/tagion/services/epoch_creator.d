@@ -176,32 +176,33 @@ struct EpochCreatorService {
             }
         }
 
-        while (!thisActor.stop && !hashgraph.areWeInGraph) {
-            const received = receiveTimeout(
-                    opts.timeout.msecs,
-                    &signal,
-                    &ownerTerminated,
-                    &receiveWavefront_req,
-                    &unknown
-            );
-            if (!received) {
-                timeout();
-            }
-        }
-
-        if (hashgraph.areWeInGraph) {
-            log("NODE CAME INTO GRAPH");
-        }
-
-        if (thisActor.stop) {
-            return;
-        }
-        Topic inGraph = Topic("in_graph");
-        log.event(inGraph, __FUNCTION__, Document());
-
         final switch (network_mode) {
         case NetworkMode.INTERNAL,
              NetworkMode.LOCAL:
+
+            while (!thisActor.stop && !hashgraph.areWeInGraph) {
+                const received = receiveTimeout(
+                        opts.timeout.msecs,
+                        &signal,
+                        &ownerTerminated,
+                        &receiveWavefront_req,
+                        &unknown
+                );
+                if (!received) {
+                    timeout();
+                }
+            }
+
+            if (hashgraph.areWeInGraph) {
+                log("NODE CAME INTO GRAPH");
+            }
+
+            if (thisActor.stop) {
+                return;
+            }
+            Topic inGraph = Topic("in_graph");
+            log.event(inGraph, __FUNCTION__, Document());
+
             runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
             break;
          case NetworkMode.MIRROR:
