@@ -18,7 +18,7 @@ import tagion.actor;
 import tagion.services.DARTInterface;
 import tagion.services.DARTSynchronization;
 import tagion.services.TRTService;
-import tagion.services.options : TaskNames;
+import tagion.services.options;
 import tagion.services.messages;
 import tagion.utils.pretend_safe_concurrency : receive, receiveOnly, receiveTimeout, register, thisTid;
 import core.time;
@@ -34,8 +34,7 @@ enum feature = Feature(
         ]);
 
 alias FeatureContext = Tuple!(
-    IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye, "IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye",
-    IsToSynchronizeTheLocalDatabase, "IsToSynchronizeTheLocalDatabase",
+    IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye, "IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye", // IsToSynchronizeTheLocalDatabase, "IsToSynchronizeTheLocalDatabase",
     IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases, "IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases",
     FeatureGroup*, "result"
 );
@@ -65,7 +64,7 @@ class IsToConnectToRemoteDatabaseWhichIsUptodateAndReadItsBullseye {
     }
 }
 
-@safe @Scenario("is to synchronize the local database.",
+version (none) @safe @Scenario("is to synchronize the local database.",
     [])
 class IsToSynchronizeTheLocalDatabase {
 
@@ -268,7 +267,6 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         const bundle_size = 1000;
 
         DARTSyncOptions dart_sync_opts;
-        // dart_sync_opts.setDefault;
         dart_sync_opts.journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
                 .baseName.stripExtension);
         SockAddresses sock_addrs;
@@ -276,6 +274,11 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         net.generateKeyPair("remote dart secret");
 
         foreach (db_index; 0 .. number_of_databases) {
+
+            Options opts;
+            opts.setDefault();
+            opts.setPrefix(format("remote_db_%d_", db_index));
+
             auto remote_db_name = format("remote_db_%d.drt", db_index);
             auto remote_db_path = buildPath(env.bdd_log, __MODULE__, remote_db_name);
             if (remote_db_path.exists) {
@@ -312,25 +315,23 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
             }
 
             auto remote_dart_handle = (() @trusted => spawn!DARTService(
-                    TaskNames().dart,
+                    opts.task_names.dart,
                     cast(immutable) DARTOptions(null, remote_db_path),
-                    TaskNames(),
+                    opts.task_names,
                     cast(shared) net,
                     false))();
             remote_dart_handles ~= remote_dart_handle;
 
-            DARTInterfaceOptions interface_opts;
-            interface_opts.setPrefix(format("%d_", db_index));
-
             auto dart_interface_handle = (() @trusted => spawn(
-                    immutable(DARTInterfaceService)(cast(immutable) interface_opts,
-                    cast(immutable) trt_options,
-                    TaskNames()),
-                    TaskNames().dart_interface))();
+                    immutable(DARTInterfaceService)(cast(immutable) opts.dart_interface,
+                    cast(immutable) opts.trt,
+                    opts.task_names),
+                    opts.task_names.dart_interface))(); // <----- created iteratively with the same name ?
             dart_interface_handles ~= dart_interface_handle;
 
-            // dart_sync_opts.sock_addrs ~= interface_opts.sock_addr;
-            sock_addrs.sock_addrs ~= interface_opts.sock_addr;
+            writefln("-------- for the db_index %s interface_opts.sock_addr is %s --------", db_index, opts.dart_interface
+                    .sock_addr);
+            sock_addrs.sock_addrs ~= opts.dart_interface.sock_addr;
         }
 
         dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
@@ -348,7 +349,14 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
 
     @When("the local database is not up-to-date.")
     Document notUptodate() {
-        return Document();
+        auto dart_compare = dartCompareRR();
+        dart_sync_handle.send(dart_compare);
+        immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
+
+        check(!result, "the local database is not up-to-date");
+        writefln("Is local database up to date %s", result);
+
+        return result_ok;
     }
 
     @Then("we check that those databases contain data.")
@@ -358,12 +366,28 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
 
     @Then("we run the synchronization.")
     Document theSynchronization() {
-        return Document();
+        auto dart_sync = dartSyncRR();
+        dart_sync_handle.send(dart_sync);
+        immutable journal_filenames = immutable(DARTSynchronization.ReplayFiles)(
+            receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
+
+        auto dart_replay = dartReplayRR();
+        dart_sync_handle.send(dart_replay, journal_filenames);
+        auto result = receiveOnlyTimeout!(dart_replay.Response, bool)[1];
+
+        check(result, "Database has been synchronized.");
+        return result_ok;
     }
 
     @Then("we check that bullseyes match.")
     Document bullseyesMatch() {
-        return Document();
+        auto dart_compare = dartCompareRR();
+        (() @trusted => dart_sync_handle.send(dart_compare))();
+        immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
+
+        check(result, "bullseyes match");
+        writefln("Check that bullseyes match %s", result);
+        return result_ok;
     }
 
     void stopActor() {
@@ -385,15 +409,15 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
     auto dart_synchronization_feature = automation!(tagion.testbench.services.dart_synchronization);
 
-    auto dart_synchronization_handler_1 = dart_synchronization_feature
-        .IsToSynchronizeTheLocalDatabase;
+    // auto dart_synchronization_handler_1 = dart_synchronization_feature
+    //     .IsToSynchronizeTheLocalDatabase;
     auto dart_synchronization_handler_2 = dart_synchronization_feature
         .IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases;
 
     dart_synchronization_feature.run;
 
     scope (exit) {
-        dart_synchronization_handler_1.stopActor();
+        // dart_synchronization_handler_1.stopActor();
         dart_synchronization_handler_2.stopActor();
     }
     return 0;

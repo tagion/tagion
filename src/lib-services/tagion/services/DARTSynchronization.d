@@ -23,6 +23,7 @@ import tagion.services.messages;
 import tagion.dart.DART;
 import tagion.json.JSONRecord;
 import tagion.services.options : contract_sock_addr;
+import tagion.hibon.HiBONException;
 
 import std.exception : enforce, assumeUnique;
 import std.format;
@@ -97,7 +98,7 @@ struct DARTSynchronization {
         }
 
         void sync(dartSyncRR req) @safe {
-            immutable journal_filenames = synchronizeByRange(opts, sock_addrs, dest_db);
+            immutable journal_filenames = synchronize(opts, sock_addrs, dest_db);
             req.respond(journal_filenames);
         }
 
@@ -112,55 +113,23 @@ struct DARTSynchronization {
 private:
     immutable(bool) shouldSync(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
         const SecureNet net, DART destination) {
-
-        RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts.socket_attempts_mil,
-            sock_addrs.sock_addrs[0], null);
-        HiRPC hirpc = HiRPC(net);
-        auto bullseyeRequestDoc = dartBullseye(hirpc).toDoc;
-        const bullseyeResponseDoc = sender.send(bullseyeRequestDoc);
-        auto response = hirpc.receive(bullseyeResponseDoc);
-        auto message = response.message[Keywords.result].get!Document;
-        const remoteIndex = message[Params.bullseye].get!DARTIndex;
-        return remoteIndex == destination.bullseye;
+        try {
+            RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts.socket_attempts_mil,
+                sock_addrs.sock_addrs[0], null);
+            HiRPC hirpc = HiRPC(net);
+            auto bullseyeRequestDoc = dartBullseye(hirpc).toDoc;
+            const bullseyeResponseDoc = sender.send(bullseyeRequestDoc);
+            auto response = hirpc.receive(bullseyeResponseDoc);
+            auto message = response.message[Keywords.result].get!Document;
+            const remoteIndex = message[Params.bullseye].get!DARTIndex;
+            return remoteIndex == destination.bullseye;
+        }
+        catch (HiBONException e) {
+            return false;
+        }
     }
 
-    // immutable(string[]) synchronize(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs, DART destination) {
-    //     string[] journal_filenames;
-    //     uint count;
-    //     enum line_width = 32;
-
-    //     foreach (ushort _rim; 0 .. ubyte.max + 1) { // 256
-    //         const sector = cast(ushort)(_rim << 8);
-    //         immutable journal_filename = format("%s.%04x.dart_journal.hibon", opts.journal_path, sector);
-    //         auto journalfile = File(journal_filename, "w");
-    //         scope (exit) {
-    //             if (journalfile.size > 0) {
-    //                 journal_filenames ~= journal_filename;
-    //                 verbose("Journalfile %s", journal_filename);
-    //                 nobose("%s#%s", YELLOW, RESET);
-    //             }
-    //             else {
-    //                 nobose("%sX%s", BLUE, RESET);
-    //             }
-    //             count++;
-    //             if (count % line_width == 0) {
-    //                 noboseln("!");
-    //             }
-    //             journalfile.close;
-    //         }
-    //         auto remote_worker = new DARTRemoteWorker(opts, sock_addrs.sock_addrs[0], destination, journalfile);
-    //         auto destination_synchronizer = destination.synchronizer(remote_worker, Rims(
-    //                 [
-    //                     cast(ubyte) _rim
-    //                 ]));
-    //         while (!destination_synchronizer.empty) {
-    //             (() @trusted { destination_synchronizer.call; })();
-    //         }
-    //     }
-    //     return (() @trusted => assumeUnique(journal_filenames))();
-    // }
-
-    immutable(string[]) synchronizeByRange(immutable(DARTSyncOptions) opts,
+    immutable(string[]) synchronize(immutable(DARTSyncOptions) opts,
         immutable(SockAddresses) sock_addrs, DART destination) {
 
         string[] journal_filenames;
@@ -182,14 +151,13 @@ private:
             auto current_state = dist_sync_fiber.state;
 
             if (current_state == Fiber.State.TERM) {
+                writefln("-------- Fiber.State.TERM at %s --------", remote_worker.sock_addr);
                 (() @trusted => dist_sync_fiber.reset)();
             }
         }
 
         void assignWorkers() {
             foreach (sock_addr; sock_addr_arr) {
-                // Ensure we don't assign beyond available range
-
                 if (rim_range.empty) {
                     break;
                 }
@@ -199,6 +167,7 @@ private:
                 rim_range.popFront;
 
                 auto remote_worker = new DARTRemoteWorker(opts, sock_addr, destination);
+                remote_workers[sock_addr] = remote_worker;
 
                 immutable journal_filename = format("%s.%04x.dart_journal.hibon", opts.journal_path, sector);
                 auto journalfile = File(journal_filename, "w");
@@ -207,20 +176,25 @@ private:
                 scope (exit) {
                     if (journalfile.size > 0) {
                         journal_filenames ~= journal_filename;
-
                     }
 
                     journalfile.close;
                 }
 
-                remote_workers[sock_addr] = remote_worker;
-
-                synchronizeFiber(remote_worker, current_rim);
+                try {
+                    synchronizeFiber(remote_worker, current_rim);
+                }
+                catch (HiBONException e) {
+                    writefln("-------- HiBONException at %s --------", sock_addr);
+                    break;
+                }
             }
         }
 
         do {
             assignWorkers();
+            writefln("-------- rim_range.empty is %s --------", rim_range.empty);
+            writefln("-------- remote_workers.empty is %s --------", remote_workers.empty);
         }
         while (!rim_range.empty && !remote_workers.empty);
 
@@ -236,13 +210,7 @@ private:
 
 class RemoteRequestSender {
 
-    // immutable(DARTSyncOptions) opts;
     protected DART.SynchronizationFiber fiber;
-
-    // this(immutable(DARTSyncOptions) opts, DART.SynchronizationFiber fiber = null){
-    //     this.opts = opts;
-    //     this.fiber = fiber;
-    // }
 
     uint socket_timeout_mil;
     uint socket_attempts_mil;
@@ -265,14 +233,16 @@ class RemoteRequestSender {
 
         NNGSocket socket = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         scope (exit) {
+            writefln("-------- Close the socket %s --------", sock_addr);
             socket.close();
         }
 
         socket.recvtimeout = socket_timeout_mil.msecs;
-
+        writefln("-------- Trying to dial a socket %s --------", sock_addr);
         int rc = socket.dial(sock_addr);
         enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc))); // change to check()
 
+        writefln("-------- Send to the socket %s --------", sock_addr);
         rc = socket.send!(immutable(ubyte[]))(request_doc.serialize);
         enforce(rc == 0, format("Failed to send %s", nng_errstr(rc)));
 
@@ -281,17 +251,23 @@ class RemoteRequestSender {
 
         // Loop to check receivedBytes with attempts_timeout handling
         while (true) {
+            // TODO: CHeck if it runs in parallel.
+            writefln("-------- Waiting for receive at %s --------", sock_addr);
             auto received = socket.receive!(immutable ubyte[])();
             if (!received.empty) {
+                writefln("-------- Received a document at %s --------", sock_addr);
                 return Document(received); // Exit the loop if data is received
+                // return Document.init; // Exit the loop if received time out waiting for data
             }
             // Check if the attempts_timeout has elapsed
             if (MonoTime.currTime() - startTime > attempts_timeout) {
+                writefln("-------- startTime > attempts_timeout at %s --------", sock_addr);
                 return Document.init; // Exit the loop if received time out waiting for data
             }
             if (fiber) {
+                writefln("-------- fiber.yield at %s --------", sock_addr);
                 // Yield to avoid blocking while waiting for data
-                (() @trusted { fiber.yield; })();
+                (() @trusted => fiber.yield)();
             }
         }
         assert(0);
