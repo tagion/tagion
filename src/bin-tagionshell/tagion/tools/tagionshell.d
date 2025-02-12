@@ -1025,9 +1025,8 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                     wallet_interface.secure_wallet.net.calcHash(
                     update_tag.representation));
             const hirpc = HiRPC(update_net);
-            const hreq = wallet_interface.secure_wallet.getRequestUpdateWallet(hirpc);
-            WebData hrep = WebClient.post(uri ~ opt.dart_endpoint,
-                    cast(ubyte[])(hreq.serialize),
+            const hreq = wallet_interface.secure_wallet.getRequestCheckWallet(hirpc);
+            WebData hrep = WebClient.post(uri ~ opt.dart_endpoint, cast(ubyte[])(hreq.serialize),
             ["Content-type": mime_type.BINARY]);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
@@ -1303,13 +1302,14 @@ int _main(string[] args) {
             `{"root_path":"` ~ options.webroot ~ `","static_path":"` ~ options.webstaticdir ~ `"}`), &options);
     help_text ~= ("TagionShell web service\n");
     help_text ~= ("Listening at " ~ options.shell_uri ~ "\n\n");
+    add_v1_route(app, options.sysinfo_endpoint, sysinfo_handler, [HTTPMethod.GET], "system info");
+    add_v1_route(app, options.version_endpoint, &versioninfo_handler, [HTTPMethod.GET], "network version info");
+    /* add_v1_route(app, "/monitor", [HTTPMethod.GET], "Prometheus metrics endpoint"); */
     add_v1_route(app, options.i2p_endpoint, i2p_handler, [HTTPMethod.POST], "invoice-to-pay hibon");
     add_v1_route(app, options.bullseye_endpoint, bullseye_handler, [HTTPMethod.GET], "the dart bullseye", [
         "/json": "Result in json format",
         "/hibon": "Result in hibon format",
     ]);
-    add_v1_route(app, options.sysinfo_endpoint, sysinfo_handler, [HTTPMethod.GET], "system info");
-    add_v1_route(app, options.version_endpoint, &versioninfo_handler, [HTTPMethod.GET], "network version info");
     add_v1_route(app, options.hirpc_endpoint, hirpc_handler, [HTTPMethod.POST], "Any HiRPC call", [
         "/nocache": "Avoid using the cache on dartRead methods"
     ]);
