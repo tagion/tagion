@@ -2543,11 +2543,9 @@ void webrouter(nng_aio* aio) {
 
     const char* t1 = "NODATA";
 
-    pragma(msg, "fixme: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.");
-
     srep.type = "text/plain";
-    srep.text = "No result";
-    srep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    srep.text = "No content";
+    srep.status = nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
 
     req = cast(nng_http_req*) nng_aio_get_input(aio, 0);
     if (req is null) {
@@ -2632,10 +2630,8 @@ void webstatichandler(nng_aio* aio) {
     scope MmFile mmfile;
     ubyte[] data;
 
-    nng_http_status errstatus = nng_http_status.NNG_HTTP_STATUS_OK;
+    nng_http_status errstatus = nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
     string errstr = "";
-
-    // TODO: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.
 
     req = cast(nng_http_req*) nng_aio_get_input(aio, 0);
     if (req is null) {
