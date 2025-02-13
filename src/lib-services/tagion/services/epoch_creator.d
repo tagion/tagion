@@ -60,7 +60,7 @@ struct EpochCreatorService {
 
         import tagion.hashgraph.Event : Event;
 
-        Event.callbacks = new LogMonitorCallbacks();
+        Event.callbacks = new LogMonitorCallbacks(number_of_nodes, addressbook.keys);
         version (BDD) {
             Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook
                     .keys);
