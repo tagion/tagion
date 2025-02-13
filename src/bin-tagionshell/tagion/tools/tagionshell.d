@@ -290,28 +290,28 @@ void dart_worker(ShellOptions opt) {
         "$error": "error",
         "father_less": "father_less"
     ]);
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
     const net = new StdHashNet();
     auto record_factory = RecordFactory(net);
     const hirpc = HiRPC(null);
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
     s.recvtimeout = msecs(opt.sock_recvtimeout);
     s.subscribe(opt.recorder_subscription_tag);
     s.subscribe(opt.trt_subscription_tag);
     s.subscribe(opt.monitor_subscription_tag);
     writeit("DS: subscribed");
-    while (!abort) {
-        rc = s.dial(opt.tagion_subscription_addr);
-        if (rc == 0)
-            break;
-        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");
-    }
+
+    s.reconnmint(opt.common_socket_delay.msecs);
+    rc = s.dial(opt.tagion_subscription_addr, nonblock: true);
+
     scope (exit) {
         s.close();
     }
-    writeit("DS: connected");
     while (!abort) {
         try {
             auto received = s.receive!(immutable(ubyte[]))();
+            if(s.errno != nng_errno.NNG_OK && s.errno != nng_errno.NNG_ETIMEDOUT)
+                writeln("DS: ", nng_errstr(s.errno));
+
             if (received.empty) {
                 continue;
             }
@@ -413,6 +413,7 @@ void ws_on_connect(WebSocket* ws, void* ctx) {
     }
     auto d = ws_device(ws, ctx, []);
     ws_devices.add(sid, d);
+    writefln("WS connected %s", sid);
 }
 
 void ws_on_close(WebSocket* ws, void* ctx) {
@@ -420,6 +421,7 @@ void ws_on_close(WebSocket* ws, void* ctx) {
     if (ws_devices.contains(sid)) {
         ws_devices.remove(sid);
     }
+    writefln("WS closed %s", sid);
 }
 
 void ws_on_error(WebSocket* ws, int err, void* ctx) {
