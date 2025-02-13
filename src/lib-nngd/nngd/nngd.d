@@ -1267,18 +1267,15 @@ struct NNGSocket {
         m_errno = nng_errno.init;
         alias U = ForeachType!T;
         static assert(U.sizeof == 1, "None byte size array element are not supported");
-        if (m_state == nng_socket_state.NNG_STATE_CONNECTED) {
-            void* buf;
-            size_t sz;
-            int rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC);
-            if (rc != 0) {
-                m_errno = cast(nng_errno) rc;
-                return T.init;
-            }
-            GC.addRange(buf, sz);
-            return (cast(U*) buf)[0 .. sz];
+        void* buf;
+        size_t sz;
+        int rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC);
+        m_errno = cast(nng_errno) rc;
+        if (rc != 0) {
+            return T.init;
         }
-        return T.init;
+        GC.addRange(buf, sz);
+        return (cast(U*) buf)[0 .. sz];
     }
 
     /**
