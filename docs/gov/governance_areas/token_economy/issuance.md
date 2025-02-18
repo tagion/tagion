@@ -1,3 +1,3 @@
-# Token Issuance, Allocation and Vesting
+# Issuance, Allocation and Vesting
 
 more coming soon...
