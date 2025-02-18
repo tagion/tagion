@@ -13,6 +13,6 @@ The development of the overall governance of Tagion is, for practical reasons, d
  3. [Token Economy](./governance_areas/token_economy)
  4. [Software Management](./governance_areas/software_management)
 
-We also offer a repository of ideas and approaches, including our appraisal of them in the section currently called "glossary"
+We also offer a repository of ideas and approaches, including our appraisal of them in the section currently called "[glossary](./glossary)".
 
 Please bear with us, while we fill all of that with life and substance. 
