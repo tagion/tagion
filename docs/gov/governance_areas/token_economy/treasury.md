@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+sidebar_lable: Treasury
 ---
 
 # The Treasury 
