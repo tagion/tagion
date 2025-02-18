@@ -43,17 +43,13 @@ This second phase will see the network being extended to nodes operated by partn
 
 ### 3. Curated Release
 
-With this third phase, the network will already feel as decentralised as commonly understood. Technically, this pahse will require the networking operating in "Mode 3"[see Tech documentation](https://docs.tagion.org/tech/architecture/network_modes). We imagine an onboarding process that does not require the input or permission by any entity. The governance system established in the Working Paper will ensure security and coherence of the network. However, for safety and unforeseen events, Decard together with an evolving community council will retain special privileges and can intervene if deemed necessary for the sustainability of the network and the adherence to the principles set out in the manifesto. 
+With this third phase, the network will already feel as decentralised as commonly understood. Technically, this pahse will require the networking operating in "Mode 3" ([see Tech documentation](https://docs.tagion.org/tech/architecture/network_modes) for more about "modes"). We imagine an onboarding process that does not require the input or permission by any entity. The governance system established in the Working Paper will ensure security and coherence of the network. However, for safety and unforeseen events, Decard together with an evolving community council will retain special privileges and can intervene if deemed necessary for the sustainability of the network and the adherence to the principles set out in the manifesto. 
 
 ### 4. Singularity
 
 This last stage is not so much a phase as a point in time: it occurs when all privileges in the network are relinquished and only the rules of the then firmly established governance system are followed. 
 From here on, the network is truly decentralised in the sense set out in the manifesto. 
 
-
-## Glossary
-
-These documentation pages also contain a glossary where we will record individual concepts, ideas and proposals, and highlight our evaluation of them - even if they are not included in the governance of the four areas at the moment. 
 
 ## Stay tuned!
 
