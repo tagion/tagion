@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Token Economy
 
-This governance area covers everything to do with our native network token, the TGN. Eventually it will describe everything from its purpose to its issuance and limitations. Quite a bit has already been published about that in our 2024 ["Tokenomics Paper"](https://www.tagion.org/resources/tagion-tokenomics.pdf) (2023 version [here](docs/static/Tagion_Tokenomics_2023.pdf)), and until its content has been transferred and superseded by what you find here, please download and consult it at the link above. 
+This governance area covers everything to do with our native network token, the TGN. Eventually it will describe everything from its purpose to its issuance and limitations. Quite a bit has already been published about that in our 2024 ["Tokenomics Paper"](https://www.tagion.org/resources/tagion-tokenomics.pdf) (2023 version [here](/static/Tagion_Tokenomics_2023.pdf)), and until its content has been transferred and superseded by what you find here, please download and consult it at the link above. 
 
 For now, read on below and find an overview of the elements of our token economy already covered in the menu on the right hand side. 
 
