@@ -15,3 +15,11 @@ Given we have the remote database.
 When the local database is not up-to-date.
 Then we run the synchronization.
 Then we check that bullseyes match.
+
+Scenario is to synchronize the local database with multiple remote databases.
+Given we have the local database.
+Given we have multiple remote database.
+When the local database is not up-to-date.
+Then we check that those databases contain data.
+Then we run the synchronization.
+Then we check that bullseyes match.

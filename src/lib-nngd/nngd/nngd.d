@@ -1267,18 +1267,15 @@ struct NNGSocket {
         m_errno = nng_errno.init;
         alias U = ForeachType!T;
         static assert(U.sizeof == 1, "None byte size array element are not supported");
-        if (m_state == nng_socket_state.NNG_STATE_CONNECTED) {
-            void* buf;
-            size_t sz;
-            int rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC);
-            if (rc != 0) {
-                m_errno = cast(nng_errno) rc;
-                return T.init;
-            }
-            GC.addRange(buf, sz);
-            return (cast(U*) buf)[0 .. sz];
+        void* buf;
+        size_t sz;
+        int rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC);
+        m_errno = cast(nng_errno) rc;
+        if (rc != 0) {
+            return T.init;
         }
-        return T.init;
+        GC.addRange(buf, sz);
+        return (cast(U*) buf)[0 .. sz];
     }
 
     /**
@@ -2543,11 +2540,9 @@ void webrouter(nng_aio* aio) {
 
     const char* t1 = "NODATA";
 
-    pragma(msg, "fixme: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.");
-
     srep.type = "text/plain";
-    srep.text = "No result";
-    srep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    srep.text = "No content";
+    srep.status = nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
 
     req = cast(nng_http_req*) nng_aio_get_input(aio, 0);
     if (req is null) {
@@ -2632,10 +2627,8 @@ void webstatichandler(nng_aio* aio) {
     scope MmFile mmfile;
     ubyte[] data;
 
-    nng_http_status errstatus = nng_http_status.NNG_HTTP_STATUS_OK;
+    nng_http_status errstatus = nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
     string errstr = "";
-
-    // TODO: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.
 
     req = cast(nng_http_req*) nng_aio_get_input(aio, 0);
     if (req is null) {
@@ -3672,7 +3665,7 @@ struct WebSocketApp {
         nng_mtx_lock(mtx);
         if (starts == 0) {
             rc = nng_stream_listener_listen(sl);
-            enforce(rc == 0, "Listener start");
+            enforce(rc == 0, "Websocket App failed to listen on address " ~ uri);
             nng_stream_listener_accept(sl, accio);
         }
         starts++;

@@ -2,9 +2,11 @@
 // `@type` JSDoc annotations allow editor autocompletion and type checking
 // (when paired with `@ts-check`).
 // There are various equivalent ways to declare your Docusaurus config.
-// See: https://docusaurus.io/tech/api/docusaurus-config
+// See: https://docusaurus.io/docs/api/docusaurus-config
 
 import {themes as prismThemes} from 'prism-react-renderer';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -14,6 +16,15 @@ const config = {
   markdown: {
     mermaid: true,
   },
+  stylesheets: [
+    {
+      href: 'https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css',
+      type: 'text/css',
+      integrity:
+        'sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM',
+      crossorigin: 'anonymous',
+    },
+  ],
   themes: [
         '@docusaurus/theme-mermaid',
         'docusaurus-theme-github-codeblock',
@@ -24,7 +35,7 @@ const config = {
   //       path: 'tips',
   //       id: "TIPS",
   //       // Simple use-case: string editUrl
-  //       editUrl: 'https://github.com/tagion/tagion/edit/master/tech/',
+  //       editUrl: 'https://github.com/tagion/tagion/edit/master/docs/',
   //       editLocalizedFiles: false,
   //       blogTitle: 'Tagion Improvement Proposals',
   //       blogDescription: 'Blog',
@@ -96,17 +107,19 @@ const config = {
           sidebarPath: './sidebars.js',
           path: 'tech',
           routeBasePath: 'tech',
+          remarkPlugins: [remarkMath],
+          rehypePlugins: [rehypeKatex],
           //showLastUpdateTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/tagion/tagion/tree/master/tech/',
+            'https://github.com/tagion/tagion/tree/master/docs/',
         },
         // blog: {
         //   showReadingTime: true,
         //   // Please change this to your repo.
         //   // Remove this to remove the "edit this page" links.
-        //   editUrl: 'https://github.com/tagion/tagion/tree/master/tech/',
+        //   editUrl: 'https://github.com/tagion/tagion/tree/master/docs/',
         // },
         pages: {
         },
@@ -116,7 +129,6 @@ const config = {
       }),
     ],
   ],
-
   plugins: [
     [
       '@docusaurus/plugin-content-docs',
@@ -126,7 +138,8 @@ const config = {
         routeBasePath: 'gov',
         showLastUpdateTime: true,
         sidebarPath: './sidebars.js',
-        sidebarPath: './sidebarsGov.js',
+        remarkPlugins: [remarkMath],
+        rehypePlugins: [rehypeKatex],
       },
     ],
 

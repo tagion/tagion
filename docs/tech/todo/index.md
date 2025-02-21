@@ -12,7 +12,7 @@ Description: simplify the wallet interface so that there is only one way to do e
 - [ ] Longitudinal test (Mode 1)
 
 
-### DART Synchonization services
+### DART Synchronization services
 - [ ] Synchronize a static remote DART to a local DART
 - [ ] Synchronize a more static DART's with the same data to one local DART
 - [ ] Subscribe to a recorder from one trusted noded.

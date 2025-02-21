@@ -40,7 +40,7 @@ do
     esac
 done
 
-if [ "$network_mode" -lt 0 ] || [ "$network_mode" -gt 1 ]; then
+if [ "$network_mode" -lt 0 ] || [ "$network_mode" -gt 2 ]; then
   echo "Unsupported network mode $network_mode"
   exit 1
 fi
@@ -120,7 +120,7 @@ do
   if [ $network_mode -eq 0 ]; then
       address=$(printf "Node_%d_epoch_creator" $i)
       echo "node$i/wallet:$pincode" >> "$keyfile"
-  elif [ $network_mode -eq 1 ]; then
+  elif [ $network_mode -ge 1 ]; then
       node=$i
       port=$((10700+i))
       # Replace %NODE and %PORT in address string with node number and port
@@ -183,7 +183,66 @@ if [ $network_mode -eq 0 ]; then
     # Print instructions on how to run the network
     echo "Run the network this way:"
     echo "$bdir/neuewelle $ndir/tagionwave.json --keys $wdir < $keyfile"
+elif [ $network_mode -eq 1 ]; then
+    echo "cd $data_dir/ && tagionshell"
+    for ((i = 0; i < nodes; i++)); 
+    do
+        node_dir="$ndir/node$i"
+        (
+            # Change directory to the network directory
+            cd "$node_dir"
+
+            # Configure the network with the neuewelle binary
+            "$bdir/neuewelle" -O \
+               --option=wave.network_mode:LOCAL \
+               --option=epoch_creator.timeout:500 \
+               --option=wave.number_of_nodes:"$nodes" \
+               --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
+               --option=inputvalidator.sock_addr:abstract://node$i/CONTRACT_NEUEWELLE \
+               --option=dart_interface.sock_addr:abstract://node$i/DART_NEUEWELLE \
+               --option=subscription.address:abstract://node$i/SUBSCRIPTION_NEUEWELLE \
+               --option=node_interface.node_address:"tcp6://[::1]:$((10700+i))" 2&> /dev/null
+        )
+        echo "echo 0000 | $bdir/neuewelle $node_dir/tagionwave.json &"
+
+    done
 else
+    echo "cd $data_dir/ && tagionshell"
+
+    # Mirror node
+    node_dir="$ndir/mirror"
+    mkdir -p "$node_dir"
+    cp "$genesis_dart" "$node_dir"/dart.drt
+    cp "$genesis_trt" "$node_dir"/trt.drt
+    i=$((nodes+1));
+
+    # Set up wallet directory and configuration
+    wallet_dir="$node_dir/wallet"
+    mkdir -p "$wallet_dir"
+    wallet_config="$node_dir/wallet.json"
+    password="password$i"
+    pincode=0000
+
+    create_wallet "$wallet_dir" "$wallet_config" "$pincode" "$password" 0 0
+    (
+        # Change directory to the network directory
+        cd "$node_dir"
+
+        # Configure the network with the neuewelle binary
+        "$bdir/neuewelle" -O \
+           --option=wave.network_mode:MIRROR \
+           --option=epoch_creator.timeout:500 \
+           --option=wave.number_of_nodes:"$nodes" \
+           --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
+           --option=inputvalidator.sock_addr:abstract://node$i/CONTRACT_NEUEWELLE \
+           --option=dart_interface.sock_addr:abstract://node$i/DART_NEUEWELLE \
+           --option=subscription.address:abstract://node$i/SUBSCRIPTION_NEUEWELLE \
+           --option=node_interface.node_address:"tcp6://[::1]:$((10700+i))" 2&> /dev/null
+    )
+
+    echo "echo 0000 | $bdir/neuewelle $node_dir/tagionwave.json &"
+
+    # Network nodes
     for ((i = 0; i < nodes; i++)); 
     do
         node_dir="$ndir/node$i"
@@ -203,8 +262,6 @@ else
                --option=node_interface.node_address:"tcp6://[::1]:$((10700+i))" 2&> /dev/null
         )
 
-        echo "cd $data_dir/ && tagionshell"
         echo "echo 0000 | $bdir/neuewelle $node_dir/tagionwave.json &"
-
     done
 fi

@@ -58,11 +58,9 @@ struct EpochCreatorService {
         const net = new StdSecureNet(shared_net);
         ActorHandle collector_handle = ActorHandle(task_names.collector);
 
-        assert(network_mode < NetworkMode.PUB, "Unsupported network mode");
-
         import tagion.hashgraph.Event : Event;
 
-        Event.callbacks = new LogMonitorCallbacks();
+        Event.callbacks = new LogMonitorCallbacks(number_of_nodes, addressbook.keys);
         version (BDD) {
             Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook
                     .keys);
@@ -74,11 +72,10 @@ struct EpochCreatorService {
         case NetworkMode.INTERNAL:
             gossip_net = new EmulatorGossipNet(opts.timeout);
             break;
-        case NetworkMode.LOCAL:
+        case NetworkMode.LOCAL,
+             NetworkMode.MIRROR:
             gossip_net = new NNGGossipNet(opts.timeout, ActorHandle(task_names.node_interface));
             break;
-        case NetworkMode.PUB:
-            assert(0);
         }
 
         Pubkey[] channels = addressbook.keys;
@@ -157,6 +154,20 @@ struct EpochCreatorService {
             }
         }
 
+        void receiveWavefront_req_mirror(WavefrontReq req, const(Document) wave_doc) {
+            const receiver = HiRPC.Receiver(wave_doc);
+            if (receiver.isError) {
+                return;
+            }
+
+            const _ = hashgraph.wavefront_response(receiver, currentTime, payload);
+
+            if (receiver.isMethod) {
+                const response = hashgraph.hirpc.result(receiver, ResultOk());
+                gossip_net.send(req, cast(Pubkey) receiver.pubkey, response);
+            }
+        }
+
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
             if (init_tide) {
@@ -165,29 +176,39 @@ struct EpochCreatorService {
             }
         }
 
-        while (!thisActor.stop && !hashgraph.areWeInGraph) {
-            const received = receiveTimeout(
-                    opts.timeout.msecs,
-                    &signal,
-                    &ownerTerminated,
-                    &receiveWavefront_req,
-                    &unknown
-            );
-            if (!received) {
-                timeout();
+        final switch (network_mode) {
+        case NetworkMode.INTERNAL,
+             NetworkMode.LOCAL:
+
+            while (!thisActor.stop && !hashgraph.areWeInGraph) {
+                const received = receiveTimeout(
+                        opts.timeout.msecs,
+                        &signal,
+                        &ownerTerminated,
+                        &receiveWavefront_req,
+                        &unknown
+                );
+                if (!received) {
+                    timeout();
+                }
             }
-        }
 
-        if (hashgraph.areWeInGraph) {
-            log("NODE CAME INTO GRAPH");
-        }
+            if (hashgraph.areWeInGraph) {
+                log("NODE CAME INTO GRAPH");
+            }
 
-        if (thisActor.stop) {
-            return;
+            if (thisActor.stop) {
+                return;
+            }
+            Topic inGraph = Topic("in_graph");
+            log.event(inGraph, __FUNCTION__, Document());
+
+            runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
+            break;
+         case NetworkMode.MIRROR:
+            runTimeout(opts.timeout.msecs, &timeout, &receiveWavefront_req_mirror);
+            break;
         }
-        Topic inGraph = Topic("in_graph");
-        log.event(inGraph, __FUNCTION__, Document());
-        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
     }
 
 }

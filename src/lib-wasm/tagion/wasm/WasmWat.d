@@ -303,9 +303,9 @@ alias check = Check!WatException;
                 switch (elm.types[0]) {
                 case I32, I64, F32, F64, FUNCREF:
                     return format(" (result %s)", typesName(elm.types[0]));
-                    case EMPTY:
+                case VOID:
                     return null;
-                    default:
+                default:
                     check(0, format("Block Illegal result type %s for a block", elm.types[0]));
                 }
             }
@@ -399,6 +399,7 @@ alias check = Check!WatException;
                         }
                         assert(0);
                     }
+
                     output.writefln("%s%s %s", indent, elm.instr.name, toText(elm.warg));
                     break;
                 case END:

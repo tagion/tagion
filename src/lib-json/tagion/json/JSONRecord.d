@@ -236,7 +236,17 @@ mixin template JSONRecord() {
                     continue ParseLoop;
                 }
             }
-            if (!set(member, json_value[name], name)) {
+
+            // Ignore if a member is missing
+            JSON.JSONValue name_value;
+            try {
+                name_value = json_value[name];
+            }
+            catch(JSON.JSONException e) {
+                continue ParseLoop;
+            }
+            
+            if (!set(member, name_value, name)) {
                 continue ParseLoop;
             }
 
@@ -360,6 +370,7 @@ unittest {
         assert(opt_main == opt_loaded);
     }
 
+    version(THIS_DOES_NOT_THROW)
     { // Check for bad JSONRecord file
         OptS opt_s;
         //immutable bad_filename = fileId!OptMain("bad").fullpath;
@@ -479,6 +490,7 @@ unittest { /// Check @optional
         assertNotThrown(s.parseJSON(`{ "x" : 42 }`));
         assert(s.x == 42);
         assert(s.name == "old name", "name should not change");
+    version(THIS_DOES_NOT_THROW)
         assertThrown(s.parseJSON(`{ "name" : "new name" }`));
     }
 }
