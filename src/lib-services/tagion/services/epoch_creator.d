@@ -62,7 +62,7 @@ struct EpochCreatorService {
 
         Event.callbacks = new LogMonitorCallbacks(number_of_nodes, addressbook.keys);
         version (BDD) {
-            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph.hibon", number_of_nodes, addressbook
+            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph".setExtension(FileExtension.hibon), number_of_nodes, addressbook
                     .keys);
         }
 
@@ -95,6 +95,8 @@ struct EpochCreatorService {
         hashgraph.scrap_depth = opts.scrap_depth;
 
         refinement.queue = new PayloadQueue();
+
+        if (network_mode != NetworkMode.MIRROR)
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
