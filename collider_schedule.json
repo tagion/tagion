@@ -109,7 +109,8 @@
           "int_literals_export.wast", "int_exprs_export.wast",
           "f32_export.wast", "f64_export.wast",
           "f32_cmp_export.wast", "f64_cmp_export.wast",
-          "float_misc_export.wast"
+          "float_misc_export.wast",
+          "br_block.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
