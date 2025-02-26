@@ -42,6 +42,8 @@ class HashGraph {
     int scrap_depth = default_scrap_depth;
     import tagion.errors.ConsensusExceptions;
 
+    bool mirror_mode;
+
     protected alias check = Check!HashGraphConsensusException;
     import tagion.logger.Statistic;
 
@@ -167,6 +169,8 @@ class HashGraph {
         _rounds = Round.Rounder(this);
         _rounds.start_round = _rounds.last_round;
         (() @trusted { _event_cache.clear; })();
+
+        assert(_owner_node.event !is null);
         init_event(_owner_node.event.event_package);
         // frontSeat(owen_event);
         foreach (epack; epacks) {
@@ -203,6 +207,9 @@ class HashGraph {
      * Returns: true if the hashgraph are connect to other nodes 
      */
     final bool areWeInGraph() const pure nothrow @nogc {
+        if(mirror_mode) {
+           return _nodes.byValue.count!(n => n._event !is null) >= node_size;
+        }
         return _rounds.last_decided_round !is null;
     }
 
@@ -637,7 +644,6 @@ class HashGraph {
             lazy const(sdt_t) time,
             lazy const(Document) payload) {
         immutable from_channel = received.pubkey;
-        const _ = getNode(from_channel);
 
         const received_wave = (received.isMethod)
             ? received.params!Wavefront(hirpc.net) : received.result!Wavefront(hirpc.net);
@@ -738,6 +744,42 @@ class HashGraph {
             break;
         }
         return hirpc.error(received.getId, format("wavefront_error %s", received_wave.state));
+    }
+
+    HiRPC.Sender mirror_wavefront_response(const HiRPC.Receiver received, lazy const(sdt_t) time) {
+
+        const received_wave = (received.isMethod)
+            ? received.params!Wavefront(hirpc.net) : received.result!Wavefront(hirpc.net);
+
+        if (!areWeInGraph) {
+
+            auto received_epacks = received_wave
+                .epacks
+                .map!((e) => cast(immutable(EventPackage)*) e)
+                .array
+                .sort!((a, b) => a.fingerprint < b.fingerprint);
+            auto own_epacks = _nodes.byValue
+                .map!((n) => n[])
+                .joiner
+                .map!((e) => cast(immutable(EventPackage)*) e.event_package)
+                .array
+                .sort!((a, b) => a.fingerprint < b.fingerprint);
+
+            auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
+
+            // delta received from sharp should be added to our own node.
+            foreach (epack; changes) {
+                auto first_event = new Event(epack, this);
+                _event_cache[first_event.fingerprint] = first_event;
+                frontSeat(first_event);
+            }
+
+            // auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
+            // const state = ExchangeState.RIPPLE;
+            // return Wavefront(result, Tides.init, state);
+        }
+
+        return hirpc.error(received.getId, format("mirror node %s", received_wave.state));
     }
 
     void frontSeat(Event event) pure
