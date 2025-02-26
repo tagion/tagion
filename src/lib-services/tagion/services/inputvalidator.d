@@ -98,7 +98,7 @@ struct InputValidatorService {
         ReceiveBuffer buf;
         buf.max_size = opts.sock_recv_buf;
 
-        const listening = sock.listen(opts.sock_addr, nonblock: true);
+        const listening = sock.listen(opts.sock_addr);
         scope (exit) {
             sock.close();
         }
