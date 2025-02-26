@@ -11,10 +11,10 @@ import std.stdio;
 import std.random;
 import std.typecons : Flag, No, Yes;
 import tagion.basic.Debug : __format;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.Types : Privkey, Pubkey, Signature;
+import tagion.crypto.Types;
 import tagion.gossip.GossipNet : GossipNet;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic;
@@ -26,10 +26,6 @@ import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONRecord;
 import tagion.logger.Logger;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
-
-// debug
-import tagion.basic.Debug;
-import tagion.hibon.HiBONJSON;
 
 @safe:
 
@@ -137,8 +133,8 @@ class HashGraph {
         assert(_owner_node !is null);
     }
     do {
-        version (EPOCH_LOG) {
-            log("INITTING WITNESSES %s", _owner_node.channel.cutHex);
+        debug (EPOCH_LOG) {
+            log("INITTING WITNESSES %s", _owner_node.channel.encodeBase64);
         }
         Node[Pubkey] recovered_nodes;
         scope (success) {
@@ -146,7 +142,7 @@ class HashGraph {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
                 event.witness_event();
-                version (EPOCH_LOG) {
+                debug (EPOCH_LOG) {
                     log("init_event time %s", event.event_body.time);
                 }
                 _rounds.last_round.add(event);
@@ -585,10 +581,8 @@ class HashGraph {
 
         auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
 
-        version (EPOCH_LOG) {
+        debug (EPOCH_LOG) {
             log("owner_epacks %s", own_epacks.length);
-        }
-        version (EPOCH_LOG) {
             if (!changes.empty) {
                 log("changes found");
             }
