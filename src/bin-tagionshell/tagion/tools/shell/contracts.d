@@ -31,7 +31,7 @@ struct RPCSaver {
 
     void task() {
         net = new StdHashNet();
-        const rpcs_file_name = "rpcs_" ~ Clock.currTime.toISOString.setExtension(FileExtension.hibon);
+        const rpcs_file_name = "rpcs_" ~ Clock.currTime.toISOExtString.setExtension(FileExtension.hibon);
 
         rpcs_file = File(rpcs_file_name, "w");
 

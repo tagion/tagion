@@ -467,8 +467,6 @@ unittest {
 
     thisActor.task_name = "jens";
 
-    import std.stdio;
-
     auto net1 = new StdSecureNet();
     net1.generateKeyPair("me1");
 
