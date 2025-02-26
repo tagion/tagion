@@ -137,42 +137,7 @@ class HashGraph {
             log("INITTING WITNESSES %s", _owner_node.channel.encodeBase64);
         }
         Node[Pubkey] recovered_nodes;
-        scope (success) {
-            void init_event(immutable(EventPackage*) epack) {
-                auto event = new Event(epack, this);
-                _event_cache[event.fingerprint] = event;
-                event.witness_event();
-                debug (EPOCH_LOG) {
-                    log("init_event time %s", event.event_body.time);
-                }
-                _rounds.last_round.add(event);
-                frontSeat(event);
-                event.round_received = _rounds.last_round;
-            }
 
-            _rounds.erase;
-            _rounds = Round.Rounder(this);
-            _rounds.start_round = _rounds.last_round;
-            (() @trusted { _event_cache.clear; })();
-            init_event(_owner_node.event.event_package);
-            // frontSeat(owen_event);
-            foreach (epack; epacks) {
-                if (epack.pubkey != channel) {
-                    init_event(epack);
-                }
-            }
-            foreach (channel, recovered_node; recovered_nodes) {
-                if (!(channel in _nodes)) {
-                    if (recovered_node.event) {
-                        init_event(recovered_node.event.event_package);
-                    }
-                }
-            }
-
-            _nodes.byValue
-                .map!(n => n.event)
-                .each!(e => e.initializeOrder);
-        }
         scope (failure) {
             _nodes = recovered_nodes;
         }
@@ -185,6 +150,43 @@ class HashGraph {
                 getNode(epack.pubkey);
             }
         }
+
+        void init_event(immutable(EventPackage*) epack) {
+            auto event = new Event(epack, this);
+            _event_cache[event.fingerprint] = event;
+            event.witness_event();
+            debug (EPOCH_LOG) {
+                log("init_event time %s", event.event_body.time);
+            }
+            _rounds.last_round.add(event);
+            frontSeat(event);
+            event.round_received = _rounds.last_round;
+        }
+
+        _rounds.erase;
+        _rounds = Round.Rounder(this);
+        _rounds.start_round = _rounds.last_round;
+        (() @trusted { _event_cache.clear; })();
+        init_event(_owner_node.event.event_package);
+        // frontSeat(owen_event);
+        foreach (epack; epacks) {
+            if (epack.pubkey != channel) {
+                init_event(epack);
+            }
+        }
+        foreach (channel, recovered_node; recovered_nodes) {
+            if (!(channel in _nodes)) {
+                if (recovered_node.event) {
+                    init_event(recovered_node.event.event_package);
+                }
+            }
+        }
+
+        _nodes.byValue
+            .map!(n => n.event)
+            .each!(e => e.initializeOrder);
+
+
     }
 
     /**
