@@ -9,6 +9,7 @@ import std.algorithm;
 import std.exception : RangePrimitive, handle;
 import std.stdio;
 import std.typecons : No;
+import std.path : setExtension;
 
 import tagion.actor;
 import tagion.basic.Types;
@@ -27,6 +28,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONJSON;
 import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraph.Event;
 import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options : NetworkMode, TaskNames;
@@ -58,14 +60,15 @@ struct EpochCreatorService {
         const net = new StdSecureNet(shared_net);
         ActorHandle collector_handle = ActorHandle(task_names.collector);
 
-        import tagion.hashgraph.Event : Event;
-
+        /// Setup EventView callbacks for visualizing the graph
         Event.callbacks = new LogMonitorCallbacks(number_of_nodes, addressbook.keys);
         version (BDD) {
-            Event.callbacks = new FileMonitorCallbacks(thisActor.task_name ~ "_graph".setExtension(FileExtension.hibon), number_of_nodes, addressbook
-                    .keys);
+            Event.callbacks = new FileMonitorCallbacks(
+                    thisActor.task_name ~ "_graph".setExtension(FileExtension.hibon), number_of_nodes, addressbook.keys
+            );
         }
 
+        // GossipNet is the abstraction for the communication, in process, IPC, TCP
         StdGossipNet gossip_net;
 
         final switch (network_mode) {
@@ -96,13 +99,6 @@ struct EpochCreatorService {
 
         refinement.queue = new PayloadQueue();
 
-        if (network_mode != NetworkMode.MIRROR)
-        {
-            immutable buf = cast(Buffer) hashgraph.channel;
-            const nonce = cast(Buffer) net.calcHash(buf);
-            hashgraph.createEvaEvent(gossip_net.time, nonce);
-        }
-
         int counter = 0;
         const(Document) payload() {
             if (counter > 0) {
@@ -115,46 +111,59 @@ struct EpochCreatorService {
             return refinement.queue.read;
         }
 
+        // Receive contracts from the TVM
         void receivePayload(Payload, const(Document) pload) {
             pragma(msg, "fixme(cbr): Should we not just send the payload directly to the hashgraph");
             refinement.queue.write(pload);
             counter++;
         }
 
+        HiRPC hirpc = HiRPC(net);
+
         void receiveWavefront_req(WavefrontReq req, const(Document) wave_doc) {
-            const receiver = HiRPC.Receiver(wave_doc);
-            if (receiver.isError) {
-                return;
+            const receiver = hirpc.receive(wave_doc);
+            try {
+                if (receiver.isError) {
+                    return;
+                }
+
+                const received_wave = (receiver.isMethod)
+                    ? receiver.params!Wavefront(net) : receiver.result!Wavefront(net);
+
+                debug (epoch_creator)
+                    log("<- %s", received_wave.state);
+
+                // Filter out all signed contracts from the wavefront
+                immutable received_signed_contracts = received_wave.epacks
+                    .map!(e => e.event_body.payload)
+                    .filter!((p) => !p.empty)
+                    .filter!(p => p.isRecord!SignedContract) // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+                    .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
+                    .handle!(HiBONException, RangePrimitive.front,
+                            (e, r) { log("invalid SignedContract from hashgraph"); return null; }
+                    )
+                    .filter!(s => !s.isinit)
+                    .array;
+
+                if (received_signed_contracts.length != 0) {
+                    collector_handle.send(consensusContract(), received_signed_contracts);
+                }
+
+                const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
+
+                if (receiver.isMethod) {
+                    gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
+                }
             }
-
-            const received_wave = (receiver.isMethod)
-                ? receiver.params!Wavefront(net) : receiver.result!Wavefront(net);
-
-            debug (epoch_creator)
-                log("<- %s", received_wave.state);
-
-            // Filter out all signed contracts from the payload
-            immutable received_signed_contracts = received_wave.epacks
-                .map!(e => e.event_body.payload)
-                .filter!((p) => !p.empty)
-                .filter!(p => p.isRecord!SignedContract) // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
-                .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
-                .handle!(HiBONException, RangePrimitive.front,
-                        (e, r) { log("invalid SignedContract from hashgraph"); return null; }
-            )
-                .filter!(s => !s.isinit)
-                .array;
-
-            if (received_signed_contracts.length != 0) {
-                collector_handle.send(consensusContract(), received_signed_contracts);
-            }
-
-            const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
-
-            if (receiver.isMethod) {
-                gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
+            catch (Exception e) {
+                log(e);
+                if(!receiver.isinit && receiver.isMethod) {
+                    const err_rpc = hirpc.error(receiver, "internal");
+                    gossip_net.send(req, cast(Pubkey) receiver.pubkey, err_rpc);
+                }
             }
         }
+
 
         void receiveWavefront_req_mirror(WavefrontReq req, const(Document) wave_doc) {
             const receiver = HiRPC.Receiver(wave_doc);
@@ -162,7 +171,14 @@ struct EpochCreatorService {
                 return;
             }
 
-            const _ = hashgraph.wavefront_response(receiver, currentTime, payload);
+            debug (epoch_creator) {
+                const received_wave = (receiver.isMethod)
+                    ? receiver.params!Wavefront(net) : receiver.result!Wavefront(net);
+                log("<- %s", received_wave.state);
+            }
+
+            // Ignore responses, we're not gonna send any new events from the mirror
+            const _ = hashgraph.mirror_wavefront_response(receiver, currentTime);
 
             if (receiver.isMethod) {
                 const response = hashgraph.hirpc.result(receiver, ResultOk());
@@ -182,32 +198,16 @@ struct EpochCreatorService {
         case NetworkMode.INTERNAL,
              NetworkMode.LOCAL:
 
-            while (!thisActor.stop && !hashgraph.areWeInGraph) {
-                const received = receiveTimeout(
-                        opts.timeout.msecs,
-                        &signal,
-                        &ownerTerminated,
-                        &receiveWavefront_req,
-                        &unknown
-                );
-                if (!received) {
-                    timeout();
-                }
-            }
 
-            if (hashgraph.areWeInGraph) {
-                log("NODE CAME INTO GRAPH");
-            }
-
-            if (thisActor.stop) {
-                return;
-            }
-            Topic inGraph = Topic("in_graph");
-            log.event(inGraph, __FUNCTION__, Document());
-
+            immutable buf = cast(Buffer) hashgraph.channel;
+            const nonce = cast(Buffer) net.calcHash(buf);
+            hashgraph.createEvaEvent(gossip_net.time, nonce);
             runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
             break;
+
          case NetworkMode.MIRROR:
+
+            hashgraph.mirror_mode = true;
             runTimeout(opts.timeout.msecs, &timeout, &receiveWavefront_req_mirror);
             break;
         }
