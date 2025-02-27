@@ -461,6 +461,7 @@ struct WastParser {
                             r.nextToken;
                             __write("->%s : '%s'", r.getLine, r.token);
                             if (r.type is TokenType.BEGIN) {
+                                        __write("BEGIN maybe else %s:%s", r.type, r.token);
                                 inner_stage = innerInstr(wasmexpr, r, block_results, inner_stage);
                             }
                             break;
