@@ -337,6 +337,9 @@ struct WastParser {
                     }
                     const wasm_results = getReturns(r);
                     __write("wasm_result=%s label=%s", wasm_results, label);
+                    foreach(n; 0..instr.pops.length) {
+                        inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
+                    }
                     if (wasm_results.length == 0) {
                         wasmexpr(irLookupTable[instr.name], Types.VOID);
                     }

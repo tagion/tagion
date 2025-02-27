@@ -157,10 +157,10 @@ enum IR : ubyte {
         @Instr("nop", "nop", 1, IRType.CODE)                       NOP                 = 0x01, ///  nop
         @Instr("block", "block", 0, IRType.BLOCK)                    BLOCK               = 0x02, ///  block rt:blocktype (in:instr) * end
         @Instr("loop", "loop", 0, IRType.BLOCK)                     LOOP                = 0x03, ///  loop rt:blocktype (in:instr) * end
-        @Instr("if", "if", 1, IRType.BLOCK_CONDITIONAL, [Types.VOID, Types.VOID])                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
+        @Instr("if", "if", 1, IRType.BLOCK_CONDITIONAL, [Types.VOID])                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "(;else;)", 0, IRType.END)                       ELSE                = 0x05, ///  else
+        @Instr("else", "else", 0, IRType.END)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
