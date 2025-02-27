@@ -177,12 +177,10 @@ struct EpochCreatorService {
                 log("<- %s", received_wave.state);
             }
 
-            // Ignore responses, we're not gonna send any new events from the mirror
-            const _ = hashgraph.mirror_wavefront_response(receiver, currentTime);
+            const return_wavefront = hashgraph.mirror_wavefront_response(receiver, currentTime);
 
             if (receiver.isMethod) {
-                const response = hashgraph.hirpc.result(receiver, ResultOk());
-                gossip_net.send(req, cast(Pubkey) receiver.pubkey, response);
+                gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
             }
         }
 
