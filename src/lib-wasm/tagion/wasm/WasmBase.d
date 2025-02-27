@@ -376,7 +376,7 @@ immutable(Instr)* lookup(Table, I)(Table table, I ir) if (is(I == enum)) {
 
 enum PseudoWastInstr {
     invoke = "invoke",
-    if_else = "if_else",
+    //if_else = "if_else",
     call_import = "call_import",
     local = "local",
     label = "label",
@@ -444,7 +444,7 @@ shared static this() {
         }
 
         setPseudo(PseudoWastInstr.invoke, IRType.CALL, [], [Types.VOID]);
-        setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID]);
+        //setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID]);
         setPseudo(PseudoWastInstr.local, IRType.SYMBOL);
         setPseudo(PseudoWastInstr.label, IRType.SYMBOL, [], [Types.VOID]);
         //setPseudo(PseudoWastInstr.call_import, IRType.CALL);

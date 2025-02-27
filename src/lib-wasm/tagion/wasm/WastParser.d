@@ -452,14 +452,17 @@ struct WastParser {
                 case SYMBOL:
                     __write("Instr %s %s", instr, inner_stage);
                     if (inner_stage == ParserStage.CONDITIONAL) {
-                        const conditional_ir = irLookupTable[instr.name];
-                        switch (conditional_ir) {
-                        case IR.IF:
-                            break;
-                        case IR.ELSE:
+                        //const conditional_ir = irLookupTable[instr.name];
+                        switch (r.token) {
+                        case PseudoWastInstr.then:
+                            r.nextToken;
+                            __write("->%s : '%s'", r.getLine, r.token);
+                            if (r.type is TokenType.BEGIN) {
+                                inner_stage = innerInstr(wasmexpr, r, block_results, inner_stage);
+                            }
                             break;
                         default:
-                            check(0, format("Instruction %s is not a valid conditial IR", conditional_ir));
+                            check(0, format("Conditional instruction expected not %s", r.token));
                         }
                         __write("Should be an then %s", instr.name);
 
