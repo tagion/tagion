@@ -38,6 +38,7 @@ struct WasmExpr {
                 assert(Args.length == 1,
                         format("Instruction %s only one argument expected", instr.name));
                 goto case;
+            case BLOCK_CONDITIONAL:
             case BLOCK:
                 static if (Args.length == 1) {
                     assert(isIntegral!(Args[0]), format("Args idx must be an integer for %s not %s",
@@ -69,7 +70,7 @@ struct WasmExpr {
                 assert(Args.length == 1, format("Instruction %s one argument", instr.name));
                 static if (Args.length == 1) {
                     assert(isIntegral!(Args[0]),
-                    format("The funcidx must be an integer for %s", instr.name));
+                            format("The funcidx must be an integer for %s", instr.name));
                     static if (isIntegral!(Args[0])) {
                         bout.write(encode(args[0]));
                         bout.write(cast(ubyte)(0x00));
@@ -80,9 +81,9 @@ struct WasmExpr {
                 assert(Args.length == 2, format("Instruction %s two arguments", instr.name));
                 static if (Args.length == 2) {
                     assert(isIntegral!(Args[0]),
-                    format("The funcidx must be an integer for %s", instr.name));
+                            format("The funcidx must be an integer for %s", instr.name));
                     assert(isIntegral!(Args[1]),
-                    format("The funcidx must be an integer for %s", instr.name));
+                            format("The funcidx must be an integer for %s", instr.name));
                     static if (isIntegral!(Args[0]) && isIntegral!(Args[1])) {
                         bout.write(encode(args[0]));
                         bout.write(encode(args[1]));

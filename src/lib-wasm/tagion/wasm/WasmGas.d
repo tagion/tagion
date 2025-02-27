@@ -73,6 +73,7 @@ struct WasmGas {
                     case CODE_EXTEND:
                         wasmexpr(elm.code, elm.instr.opcode);
                         break;
+                    case BLOCK_CONDITIONAL:
                     case BLOCK:
                         wasmexpr(elm.code, elm.types[0]);
                         scope block_bout = new OutBuffer;
