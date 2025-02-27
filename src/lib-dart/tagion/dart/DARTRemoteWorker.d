@@ -41,8 +41,7 @@ class DARTRemoteWorker : JournalSynchronizer { // Fiber
     in (journalfile !is File.init)
     do {
         RemoteRequestSender sender = new RemoteRequestSender(opts.socket_attempts_mil,
-            opts.socket_timeout_mil, sock_addr, fiber);
-        // Check if response doc is init and 
+            opts.socket_timeout_mil, sock_addr, fiber); 
         const response_doc = sender.send(request.toDoc);
         const received = destination.hirpc.receive(response_doc);
         return received;

@@ -1263,13 +1263,14 @@ struct NNGSocket {
             nonblock = set the non blocking mode
     */
     @trusted
-    T receive(T)(bool nonblock = false) if (isArray!T) {
+    T receive(T)(Flag!"Nonblock" nonblock = No.Nonblock) if (isArray!T) {
         m_errno = nng_errno.init;
         alias U = ForeachType!T;
         static assert(U.sizeof == 1, "None byte size array element are not supported");
         void* buf;
         size_t sz;
-        int rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC);
+        int rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK + nng_flag.NNG_FLAG_ALLOC
+                    : 0 + nng_flag.NNG_FLAG_ALLOC);
         m_errno = cast(nng_errno) rc;
         if (rc != 0) {
             return T.init;

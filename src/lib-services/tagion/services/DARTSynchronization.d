@@ -53,7 +53,7 @@ struct SockAddresses {
 pragma(msg, "fixme(cbr): Option cannot include a string array.");
 struct DARTSyncOptions {
 
-    uint socket_timeout_mil = 1000;
+    uint socket_timeout_mil = 10_000;
     uint socket_attempts_mil = 30_000;
     string journal_path;
     // string dart_prefix;
@@ -93,7 +93,7 @@ struct DARTSynchronization {
         auto dest_db = new DART(net, dst_dart_path);
 
         void compare(dartCompareRR req) @safe {
-            immutable result = shouldSync(opts, sock_addrs, net, dest_db);
+            immutable result = bullseyesMatch(opts, sock_addrs, net, dest_db);
             req.respond(result);
         }
 
@@ -111,18 +111,20 @@ struct DARTSynchronization {
     }
 
 private:
-    immutable(bool) shouldSync(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
+    immutable(bool) bullseyesMatch(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
         const SecureNet net, DART destination) {
+
         try {
             RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts.socket_attempts_mil,
                 sock_addrs.sock_addrs[0], null);
             HiRPC hirpc = HiRPC(net);
             auto bullseyeRequestDoc = dartBullseye(hirpc).toDoc;
             const bullseyeResponseDoc = sender.send(bullseyeRequestDoc);
+
             auto response = hirpc.receive(bullseyeResponseDoc);
             auto message = response.message[Keywords.result].get!Document;
-            const remoteIndex = message[Params.bullseye].get!DARTIndex;
-            return remoteIndex == destination.bullseye;
+            const remoteFingerprint = message[Params.bullseye].get!Fingerprint;
+            return remoteFingerprint == destination.bullseye;
         }
         catch (HiBONException e) {
             return false;
@@ -135,7 +137,6 @@ private:
         string[] journal_filenames;
         DARTRemoteWorker[string] remote_workers;
         auto rim_range = iota!ushort(256);
-
         auto sock_addr_arr = sock_addrs.sock_addrs;
 
         void synchronizeFiber(DARTRemoteWorker remote_worker, ushort current_rim) {
@@ -151,7 +152,6 @@ private:
             auto current_state = dist_sync_fiber.state;
 
             if (current_state == Fiber.State.TERM) {
-                writefln("-------- Fiber.State.TERM at %s --------", remote_worker.sock_addr);
                 (() @trusted => dist_sync_fiber.reset)();
             }
         }
@@ -167,17 +167,18 @@ private:
                 rim_range.popFront;
 
                 auto remote_worker = new DARTRemoteWorker(opts, sock_addr, destination);
+
                 remote_workers[sock_addr] = remote_worker;
 
                 immutable journal_filename = format("%s.%04x.dart_journal.hibon", opts.journal_path, sector);
                 auto journalfile = File(journal_filename, "w");
+
                 remote_worker.updateJournalFile(journalfile);
 
                 scope (exit) {
                     if (journalfile.size > 0) {
                         journal_filenames ~= journal_filename;
                     }
-
                     journalfile.close;
                 }
 
@@ -185,7 +186,6 @@ private:
                     synchronizeFiber(remote_worker, current_rim);
                 }
                 catch (HiBONException e) {
-                    writefln("-------- HiBONException at %s --------", sock_addr);
                     break;
                 }
             }
@@ -193,8 +193,6 @@ private:
 
         do {
             assignWorkers();
-            writefln("-------- rim_range.empty is %s --------", rim_range.empty);
-            writefln("-------- remote_workers.empty is %s --------", remote_workers.empty);
         }
         while (!rim_range.empty && !remote_workers.empty);
 
@@ -224,49 +222,44 @@ class RemoteRequestSender {
         this.fiber = fiber;
     }
 
-    /// Sends a remote request and returns the received document.
-    /// Handles socket communication with a attempts_timeout and ensures resources are cleaned up.
     Document send(const Document request_doc) {
 
         import nngd;
         import std.range;
+        import std.typecons;
 
         NNGSocket socket = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         scope (exit) {
-            writefln("-------- Close the socket %s --------", sock_addr);
+            writefln("-------- Close the socket at %s --------", sock_addr);
             socket.close();
         }
 
         socket.recvtimeout = socket_timeout_mil.msecs;
-        writefln("-------- Trying to dial a socket %s --------", sock_addr);
+        writefln("-------- Trying to dial a socket at %s --------", sock_addr);
         int rc = socket.dial(sock_addr);
         enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc))); // change to check()
 
-        writefln("-------- Send to the socket %s --------", sock_addr);
+        writefln("-------- Send to the socket at %s --------", sock_addr);
         rc = socket.send!(immutable(ubyte[]))(request_doc.serialize);
         enforce(rc == 0, format("Failed to send %s", nng_errstr(rc)));
 
         const attempts_timeout = socket_attempts_mil.msecs;
         auto startTime = MonoTime.currTime();
 
-        // Loop to check receivedBytes with attempts_timeout handling
         while (true) {
-            // TODO: CHeck if it runs in parallel.
-            writefln("-------- Waiting for receive at %s --------", sock_addr);
-            auto received = socket.receive!(immutable ubyte[])();
+            // auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
+            auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
+
             if (!received.empty) {
-                writefln("-------- Received a document at %s --------", sock_addr);
-                return Document(received); // Exit the loop if data is received
-                // return Document.init; // Exit the loop if received time out waiting for data
+                writefln("-------- received from the socket at %s --------", sock_addr);
+                return Document(received);
             }
-            // Check if the attempts_timeout has elapsed
+
             if (MonoTime.currTime() - startTime > attempts_timeout) {
-                writefln("-------- startTime > attempts_timeout at %s --------", sock_addr);
-                return Document.init; // Exit the loop if received time out waiting for data
+                return Document.init;
             }
+
             if (fiber) {
-                writefln("-------- fiber.yield at %s --------", sock_addr);
-                // Yield to avoid blocking while waiting for data
                 (() @trusted => fiber.yield)();
             }
         }
