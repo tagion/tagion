@@ -101,6 +101,10 @@ struct EpochCreatorService {
 
         int counter = 0;
         const(Document) payload() {
+            // Don't send payloads into the graph when it's not properly started
+            if(!hashgraph.areWeInGraph) {
+                return Document();
+            }
             if (counter > 0) {
                 log.trace("Payloads in queue=%d", counter);
             }
