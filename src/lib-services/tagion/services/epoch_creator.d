@@ -101,10 +101,6 @@ struct EpochCreatorService {
 
         int counter = 0;
         const(Document) payload() {
-            // Don't send payloads into the graph when it's not properly started
-            if(!hashgraph.areWeInGraph) {
-                return Document();
-            }
             if (counter > 0) {
                 log.trace("Payloads in queue=%d", counter);
             }
@@ -200,10 +196,33 @@ struct EpochCreatorService {
         case NetworkMode.INTERNAL,
              NetworkMode.LOCAL:
 
-
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
             hashgraph.createEvaEvent(gossip_net.time, nonce);
+
+            while (!thisActor.stop && !hashgraph.areWeInGraph) {
+                const received = receiveTimeout(
+                        opts.timeout.msecs,
+                        &signal,
+                        &ownerTerminated,
+                        &receiveWavefront_req,
+                        &unknown
+                );
+                if (!received) {
+                    timeout();
+                }
+            }
+
+            if (hashgraph.areWeInGraph) {
+                log("NODE CAME INTO GRAPH");
+            }
+
+            if (thisActor.stop) {
+                return;
+            }
+            Topic inGraph = Topic("in_graph");
+            log.event(inGraph, __FUNCTION__, Document());
+
             runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
             break;
 
