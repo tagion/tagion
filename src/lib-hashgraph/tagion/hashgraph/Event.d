@@ -297,7 +297,7 @@ class Event {
 
     bool father_witness_is_leading() const pure nothrow {
         return _father &&
-            higher(_father._round.number, _mother._round.number) &&
+            higher(_father.round.number, _mother.round.number) &&
             _father.round.events[_father.node_id];
     }
 
@@ -349,7 +349,6 @@ class Event {
     */
     package final void witness_event() nothrow
     in (!_witness, "Witness has already been set")
-
     out {
         assert(_witness, "Witness should be set");
     }
@@ -373,8 +372,8 @@ class Event {
         assert(hashgraph.areWeInGraph);
     }
     out {
-        assert(event_package.event_body.mother && _mother || !_mother);
-        assert(event_package.event_body.father && _father || !_father);
+        assert((event_package.event_body.mother && _mother) || !_mother);
+        assert((event_package.event_body.father && _father) || !_father);
     }
     do {
         if (connected) {
@@ -396,7 +395,7 @@ class Event {
         _mother = hashgraph.register(event_package.event_body.mother);
         if (!_mother) {
             check(isEva || hashgraph.rounds.isEventInLastDecidedRound(this),
-                    ConsensusFailCode.EVENT_MOTHER_LESS);
+                   ConsensusFailCode.EVENT_MOTHER_LESS);
             return;
         }
 
@@ -409,7 +408,7 @@ class Event {
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
-            if (_father._round.number == _mother._round.number) {
+            if (_father.round.number == _mother.round.number) {
                 _witness_seen_mask |= _father._witness_seen_mask;
                 _intermediate_seen_mask |= _father._intermediate_seen_mask;
                 const new_witness_seen = _father._witness_seen_mask - _mother
@@ -563,7 +562,6 @@ class Event {
      * Returns: round
      */
         const(Round) round()
-
         out (result) {
             assert(result, "Round must be set before this function is called");
         }
@@ -651,7 +649,6 @@ class Event {
 
         // is true if the event does not have a mother or a father
         bool isEva()
-
         out (result) {
             if (result) {
                 assert(event_package.event_body.father is null);

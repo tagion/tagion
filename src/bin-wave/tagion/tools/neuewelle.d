@@ -269,6 +269,8 @@ int _neuewelle(string[] args) {
             auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
         }
 
+        log("Booting with Epoch %J", epoch);
+
         auto keys = epoch.getNodeKeys();
         check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
         check(keys.length == node_options.length,
@@ -346,6 +348,7 @@ int _neuewelle(string[] args) {
         }
 
         auto epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
+        log("Booting with Epoch %J", epoch);
         auto keys = epoch.getNodeKeys;
 
         if (!local_options.wave.address_file.empty) {

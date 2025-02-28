@@ -102,7 +102,6 @@ do {
 
 GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet __net) {
     import tagion.dart.DART;
-    import tagion.logger;
 
     Exception dart_exception;
     DART db = new DART(__net, dart_file_path, dart_exception, Yes.read_only);
@@ -114,12 +113,5 @@ GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet __net) {
     }
 
     const head = getHead(db, __net);
-    log("Tagion head:\n%s", head.toPretty);
-    GenericEpoch epoch = head.getEpoch(db, __net);
-    epoch.match!(
-            (const Epoch e) { log("Current epoch:\n%s", e.toPretty); },
-            (const GenesisEpoch e) { log("GenesisEpoch epoch:\n%s", e.toPretty); },
-    );
-
-    return epoch;
+    return head.getEpoch(db, __net);
 }

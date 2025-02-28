@@ -574,13 +574,13 @@ struct HiRPC {
      * Returns: 
      *   A checked receiver
      */
-    final immutable(Receiver) receive(Document doc) const {
+    immutable(Receiver) receive(Document doc) const {
         auto receiver = Receiver(net, doc);
         return receiver;
     }
 
     /// Ditto
-    final immutable(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
+    immutable(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
         auto receiver = Receiver(net, sender.toDoc);
         return receiver;
     }

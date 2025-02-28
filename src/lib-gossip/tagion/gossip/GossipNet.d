@@ -107,8 +107,8 @@ class EmulatorGossipNet : StdGossipNet {
         }
 
         node_tid.send(WavefrontReq(req.id), sender.toDoc);
-        version (EPOCH_LOG) {
-            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender
+        debug (EPOCH_LOG) {
+            log.trace("sending to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender
                     .toDoc.serialize.length);
         }
     }

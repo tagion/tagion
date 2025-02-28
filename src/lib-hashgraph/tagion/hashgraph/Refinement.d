@@ -267,10 +267,10 @@ class StdRefinement : Refinement {
             log.event(raw_epoch_events, "raw_epoch", event_payload);
         }
 
-        version (EPOCH_LOG) {
+        debug (EPOCH_LOG) {
             log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                     hashgraph.name, decided_round.number,
-                    Event.count, Event.Witness.count, events.length, epoch_time);
+                    Event.count, Event.Witness.count, event_collection.length, epoch_time);
         }
 
         log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, event_collection

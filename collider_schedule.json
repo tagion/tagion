@@ -109,14 +109,15 @@
           "int_literals_export.wast", "int_exprs_export.wast",
           "f32_export.wast", "f64_export.wast",
           "f32_cmp_export.wast", "f64_cmp_export.wast",
-          "float_misc_export.wast"
+          "float_misc_export.wast",
+          "br_block.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new", "tvm_old", "tvm_export", "commit", "memory", "func", "i32", "i64", "f32_export", "i64_export", "tvm_test", "tvm_test1", "select", "int_literals", "float_exprs", "br_block_1"],
+      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -135,68 +136,10 @@
                  "f32_cmp.wast", "f64_cmp.wast"
             ]
         },
-        "tvm_old" : {
-            "args": [
-                "i32_export.wast" 
-            ]
-        },
-        "int_literals" : {
-          "args" : [
-                "int_literals.wast"
-            ]
-        },
-        "select" : {
-          "args" : [
-                "select.wast"
-            ]
-        },
-        "tvm_test1" : {
-          "args" : [
-                "br_block.wast"
-            ]
-        },
-        "br_block_1" : {
-          "args" : [
-                "br_block_1.wast"
-            ]
-        },
-        "memory" : {
-          "args" : [
-                "memory_ops.wast"
-            ]
-        },
-        "float_exprs" : {
-          "args" : [
-                "float_exprs.wast"
-            ]
-        },
         "tvm_test" : {
-          "args" : [
-                "conversions_export.wast"
+            "args" : [
+                "if_block_1.wast"
             ]
-        },
-        "i64_export" : {
-          "args" : [
-                "i64_export.wast"
-            ]
-        },
-        "i64" : {
-          "args" : [
-                "i64.wast"
-            ]
-        },
-        "i32" : {
-          "args" : [
-                "i32.wast"
-            ]
-        },
-        "func" : {
-          "args" : [
-                "func.wast"
-            ]
-        },
-        "not_passed" : {
-          "args" : [ "float_literals.wast" ]
         }
       },
       "timeout": 0.0

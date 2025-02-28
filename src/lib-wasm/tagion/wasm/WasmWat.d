@@ -326,6 +326,7 @@ alias check = Check!WatException;
                 case PREFIX:
                     output.writefln("%s%s", indent, elm.instr.name);
                     break;
+                case BLOCK_CONDITIONAL:
                 case BLOCK:
                     block_comment = format(";; block %d", block_count);
                     block_count++;

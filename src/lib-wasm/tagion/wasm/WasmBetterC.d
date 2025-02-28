@@ -698,6 +698,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     case PREFIX:
                         bout.writefln("%s%s", indent, elm.instr.name);
                         break;
+                    case BLOCK_CONDITIONAL:
                     case BLOCK:
                         block_comment = format(";; block %d %s!", block_count, dType(elm));
                         block_count++;

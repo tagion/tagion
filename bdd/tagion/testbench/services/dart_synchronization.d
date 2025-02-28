@@ -264,7 +264,6 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
 
         const number_of_databases = 5;
         const number_of_archives = 10;
-        const bundle_size = 1000;
 
         DARTSyncOptions dart_sync_opts;
         dart_sync_opts.journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
@@ -273,8 +272,25 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         auto net = new StdSecureNet;
         net.generateKeyPair("remote dart secret");
 
-        foreach (db_index; 0 .. number_of_databases) {
+        static struct TestDoc {
+            string text;
+            mixin HiBONRecord;
+        }
 
+        static const(Document) test_doc(const ulong x) {
+            TestDoc _test_doc;
+            _test_doc.text = format("Test document %d", x);
+            return _test_doc.toDoc;
+        }
+
+        ulong[] document_numbers;
+        auto rnd = Random(unpredictableSeed);
+
+        foreach (_; 0 .. number_of_archives) {
+            document_numbers ~= uniform(ulong.min, ulong.max, rnd);
+        }
+
+        foreach (db_index; 0 .. number_of_databases) {
             Options opts;
             opts.setDefault();
             opts.setPrefix(format("remote_db_%d_", db_index));
@@ -288,31 +304,11 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
             DART.create(remote_db_path, net);
             auto remote_dart = new DART(net, remote_db_path);
 
-            static struct TestDoc {
-                string text;
-                mixin HiBONRecord;
+            auto recorder = remote_dart.recorder;
+            foreach (doc_no; document_numbers) {
+                recorder.add(test_doc(doc_no));
             }
-
-            static const(Document) test_doc(const ulong x) {
-                TestDoc _test_doc;
-                _test_doc.text = format("Test document %d", x);
-                return _test_doc.toDoc;
-            }
-
-            size_t count;
-            auto rnd = Random(unpredictableSeed);
-
-            foreach (no; 0 .. (number_of_archives / bundle_size) + 1) {
-                count += bundle_size;
-                const N = (number_of_archives < count) ? number_of_archives % bundle_size
-                    : bundle_size;
-                auto recorder = remote_dart.recorder;
-                foreach (i; 0 .. N) {
-                    const random_doc_no = uniform(ulong.min, ulong.max, rnd);
-                    recorder.add(test_doc(random_doc_no));
-                }
-                remote_dart.modify(recorder);
-            }
+            remote_dart.modify(recorder);
 
             auto remote_dart_handle = (() @trusted => spawn!DARTService(
                     opts.task_names.dart,
@@ -326,11 +322,8 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
                     immutable(DARTInterfaceService)(cast(immutable) opts.dart_interface,
                     cast(immutable) opts.trt,
                     opts.task_names),
-                    opts.task_names.dart_interface))(); // <----- created iteratively with the same name ?
+                    opts.task_names.dart_interface))();
             dart_interface_handles ~= dart_interface_handle;
-
-            writefln("-------- for the db_index %s interface_opts.sock_addr is %s --------", db_index, opts.dart_interface
-                    .sock_addr);
             sock_addrs.sock_addrs ~= opts.dart_interface.sock_addr;
         }
 
@@ -353,8 +346,8 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         dart_sync_handle.send(dart_compare);
         immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
 
-        check(!result, "the local database is not up-to-date");
         writefln("Is local database up to date %s", result);
+        check(!result, "the local database is not up-to-date");
 
         return result_ok;
     }
@@ -371,6 +364,8 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         immutable journal_filenames = immutable(DARTSynchronization.ReplayFiles)(
             receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
 
+        // writefln("journal filenames: %s", journal_filenames);
+
         auto dart_replay = dartReplayRR();
         dart_sync_handle.send(dart_replay, journal_filenames);
         auto result = receiveOnlyTimeout!(dart_replay.Response, bool)[1];
@@ -385,8 +380,8 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         (() @trusted => dart_sync_handle.send(dart_compare))();
         immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
 
-        check(result, "bullseyes match");
         writefln("Check that bullseyes match %s", result);
+        check(result, "bullseyes match");
         return result_ok;
     }
 

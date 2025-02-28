@@ -9,7 +9,6 @@ export class HashGraph {
     
     constructor(id, options) {
         this.options = {
-            tag: "HashGraph",
             transport: "websocket",
             eventid: "node",
             path: "",
@@ -101,33 +100,28 @@ export class HashGraph {
             width: container.clientWidth,
             height: container.clientHeight,
         });
-
         console.log("Container init");
     }
 
 
-    _initEvents(ws){
-        if (ws === null) {
-            ws = new WebSocket(location.origin.replace(/^http/, 'ws') + this.options.path);
-        }
+    _initEvents(){
+        let ws = new WebSocket(location.origin.replace(/^http/, 'ws') + this.options.path);
 
         ws.onerror = console.error;
         ws.onopen = () => {
-            console.log("[ON] Socket connected: ");
+            console.log("[ON] Graph Socket connected: ");
+            ws.send("subscribe\0monitor");
         };
         ws.onclose = () => {
-            console.log("[OFF] Socket connected: ");
+            console.log("[OFF] Graph Socket disconnected: ");
         };
         ws.onmessage = ( msg ) => {
             let a = msg.data.split("\0");
             let jd = JSON.parse(a[1]);
-            if(a[0] === 'monitor') {
-                console.table(JSON.parse(jd));
-               this.setEventNode(JSON.parse(jd)); 
+            if(a[0].startsWith("monitor")) {
+               this.setEventNode(jd); 
             }
         };
-
-        console.log(ws);
 
         window.addEventListener("resize", (e) => {
             const container = this._container;
@@ -300,10 +294,12 @@ export class HashGraph {
         this.length += 1;
 
         if (mother) {
+            console.log("mother");
             this._connectEventNodes(motherData, data, "mother");
         }
 
         if (father) {
+            console.log("father");
             this._connectEventNodes(fatherData, data, "father");
         }
 

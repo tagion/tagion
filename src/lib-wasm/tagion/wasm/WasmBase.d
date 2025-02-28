@@ -118,6 +118,7 @@ enum IRType {
     CODE_TYPE, /// Instrunction with return type conversion (like select)
     RETURN,
     BLOCK, /// Block instruction
+    BLOCK_CONDITIONAL, /// Used for if statement
     BRANCH, /// Branch jump instruction
     BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
@@ -156,10 +157,10 @@ enum IR : ubyte {
         @Instr("nop", "nop", 1, IRType.CODE)                       NOP                 = 0x01, ///  nop
         @Instr("block", "block", 0, IRType.BLOCK)                    BLOCK               = 0x02, ///  block rt:blocktype (in:instr) * end
         @Instr("loop", "loop", 0, IRType.BLOCK)                     LOOP                = 0x03, ///  loop rt:blocktype (in:instr) * end
-        @Instr("if", "if", 1, IRType.BLOCK)                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
+        @Instr("if", "if", 1, IRType.BLOCK_CONDITIONAL, [Types.VOID])                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "(;else;)", 0, IRType.END)                       ELSE                = 0x05, ///  else
+        @Instr("else", "else", 0, IRType.END)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
@@ -375,7 +376,7 @@ immutable(Instr)* lookup(Table, I)(Table table, I ir) if (is(I == enum)) {
 
 enum PseudoWastInstr {
     invoke = "invoke",
-    if_else = "if_else",
+    //if_else = "if_else",
     call_import = "call_import",
     local = "local",
     label = "label",
@@ -443,7 +444,7 @@ shared static this() {
         }
 
         setPseudo(PseudoWastInstr.invoke, IRType.CALL, [], [Types.VOID]);
-        setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID]);
+        //setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID]);
         setPseudo(PseudoWastInstr.local, IRType.SYMBOL);
         setPseudo(PseudoWastInstr.label, IRType.SYMBOL, [], [Types.VOID]);
         //setPseudo(PseudoWastInstr.call_import, IRType.CALL);
@@ -452,6 +453,7 @@ shared static this() {
         //  setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
         //setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATEMENT, 0, 1);
         //setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATEMENT, 0, 1);
+        setPseudo(PseudoWastInstr.then, IRType.SYMBOL);
 
         //result["i32.select"] = instrTable[IR.SELECT];
         //result["i64.select"] = instrTable[IR.SELECT];
@@ -909,6 +911,7 @@ struct ExprRange {
                     elm._warg = int(data[index]); // Extended insructions
                     index += ubyte.sizeof;
                     break;
+                case BLOCK_CONDITIONAL:
                 case BLOCK:
                     scope (exit) {
                         _level++;

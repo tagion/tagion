@@ -271,6 +271,7 @@ class Round {
      */
     package final void add(Event event) pure nothrow
     in (event._witness, "The event id " ~ event.id.to!string ~ " added to the round should be a witness ")
+    in (_events.length > event.node_id, "Adding event from nodes not in graph")
     in (_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once")
     do {
         _events[event.node_id] = event;

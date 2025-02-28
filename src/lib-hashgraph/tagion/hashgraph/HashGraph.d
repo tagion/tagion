@@ -11,10 +11,10 @@ import std.stdio;
 import std.random;
 import std.typecons : Flag, No, Yes;
 import tagion.basic.Debug : __format;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.Types : Privkey, Pubkey, Signature;
+import tagion.crypto.Types;
 import tagion.gossip.GossipNet : GossipNet;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic;
@@ -26,10 +26,6 @@ import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONRecord;
 import tagion.logger.Logger;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
-
-// debug
-import tagion.basic.Debug;
-import tagion.hibon.HiBONJSON;
 
 @safe:
 
@@ -45,6 +41,8 @@ class HashGraph {
     enum default_scrap_depth = 10;
     int scrap_depth = default_scrap_depth;
     import tagion.errors.ConsensusExceptions;
+
+    bool mirror_mode;
 
     protected alias check = Check!HashGraphConsensusException;
     import tagion.logger.Statistic;
@@ -137,46 +135,11 @@ class HashGraph {
         assert(_owner_node !is null);
     }
     do {
-        version (EPOCH_LOG) {
-            log("INITTING WITNESSES %s", _owner_node.channel.cutHex);
+        debug (EPOCH_LOG) {
+            log("INITTING WITNESSES %s", _owner_node.channel.encodeBase64);
         }
         Node[Pubkey] recovered_nodes;
-        scope (success) {
-            void init_event(immutable(EventPackage*) epack) {
-                auto event = new Event(epack, this);
-                _event_cache[event.fingerprint] = event;
-                event.witness_event();
-                version (EPOCH_LOG) {
-                    log("init_event time %s", event.event_body.time);
-                }
-                _rounds.last_round.add(event);
-                frontSeat(event);
-                event.round_received = _rounds.last_round;
-            }
 
-            _rounds.erase;
-            _rounds = Round.Rounder(this);
-            _rounds.start_round = _rounds.last_round;
-            (() @trusted { _event_cache.clear; })();
-            init_event(_owner_node.event.event_package);
-            // frontSeat(owen_event);
-            foreach (epack; epacks) {
-                if (epack.pubkey != channel) {
-                    init_event(epack);
-                }
-            }
-            foreach (channel, recovered_node; recovered_nodes) {
-                if (!(channel in _nodes)) {
-                    if (recovered_node.event) {
-                        init_event(recovered_node.event.event_package);
-                    }
-                }
-            }
-
-            _nodes.byValue
-                .map!(n => n.event)
-                .each!(e => e.initializeOrder);
-        }
         scope (failure) {
             _nodes = recovered_nodes;
         }
@@ -189,6 +152,45 @@ class HashGraph {
                 getNode(epack.pubkey);
             }
         }
+
+        void init_event(immutable(EventPackage*) epack) {
+            auto event = new Event(epack, this);
+            _event_cache[event.fingerprint] = event;
+            event.witness_event();
+            debug (EPOCH_LOG) {
+                log("init_event time %s", event.event_body.time);
+            }
+            _rounds.last_round.add(event);
+            frontSeat(event);
+            event.round_received = _rounds.last_round;
+        }
+
+        _rounds.erase;
+        _rounds = Round.Rounder(this);
+        _rounds.start_round = _rounds.last_round;
+        (() @trusted { _event_cache.clear; })();
+
+        assert(_owner_node.event !is null);
+        init_event(_owner_node.event.event_package);
+        // frontSeat(owen_event);
+        foreach (epack; epacks) {
+            if (epack.pubkey != channel) {
+                init_event(epack);
+            }
+        }
+        foreach (channel, recovered_node; recovered_nodes) {
+            if (!(channel in _nodes)) {
+                if (recovered_node.event) {
+                    init_event(recovered_node.event.event_package);
+                }
+            }
+        }
+
+        _nodes.byValue
+            .map!(n => n.event)
+            .each!(e => e.initializeOrder);
+
+
     }
 
     /**
@@ -205,6 +207,9 @@ class HashGraph {
      * Returns: true if the hashgraph are connect to other nodes 
      */
     final bool areWeInGraph() const pure nothrow @nogc {
+        if(mirror_mode) {
+           return _nodes.byValue.count!(n => n._event !is null) >= node_size;
+        }
         return _rounds.last_decided_round !is null;
     }
 
@@ -585,10 +590,8 @@ class HashGraph {
 
         auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
 
-        version (EPOCH_LOG) {
+        debug (EPOCH_LOG) {
             log("owner_epacks %s", own_epacks.length);
-        }
-        version (EPOCH_LOG) {
             if (!changes.empty) {
                 log("changes found");
             }
@@ -641,7 +644,6 @@ class HashGraph {
             lazy const(sdt_t) time,
             lazy const(Document) payload) {
         immutable from_channel = received.pubkey;
-        const _ = getNode(from_channel);
 
         const received_wave = (received.isMethod)
             ? received.params!Wavefront(hirpc.net) : received.result!Wavefront(hirpc.net);
@@ -742,6 +744,42 @@ class HashGraph {
             break;
         }
         return hirpc.error(received.getId, format("wavefront_error %s", received_wave.state));
+    }
+
+    HiRPC.Sender mirror_wavefront_response(const HiRPC.Receiver received, lazy const(sdt_t) time) {
+
+        const received_wave = (received.isMethod)
+            ? received.params!Wavefront(hirpc.net) : received.result!Wavefront(hirpc.net);
+
+        if (!areWeInGraph) {
+
+            auto received_epacks = received_wave
+                .epacks
+                .map!((e) => cast(immutable(EventPackage)*) e)
+                .array
+                .sort!((a, b) => a.fingerprint < b.fingerprint);
+            auto own_epacks = _nodes.byValue
+                .map!((n) => n[])
+                .joiner
+                .map!((e) => cast(immutable(EventPackage)*) e.event_package)
+                .array
+                .sort!((a, b) => a.fingerprint < b.fingerprint);
+
+            auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
+
+            // delta received from sharp should be added to our own node.
+            foreach (epack; changes) {
+                auto first_event = new Event(epack, this);
+                _event_cache[first_event.fingerprint] = first_event;
+                frontSeat(first_event);
+            }
+
+            // auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
+            // const state = ExchangeState.RIPPLE;
+            // return Wavefront(result, Tides.init, state);
+        }
+
+        return hirpc.error(received.getId, format("mirror node %s", received_wave.state));
     }
 
     void frontSeat(Event event) pure
