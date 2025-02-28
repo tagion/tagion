@@ -330,7 +330,7 @@ struct Wallet(Net : SecureNet) {
         import tagion.dart.DARTcrud;
 
         auto owner_indices = account.derivers.byKey
-            .map!(owner => _net.dartKey(TRTLabel, owner));
+            .map!(owner => _net.dartKey(HashNames.trt_owner, owner));
 
         return dartRead(owner_indices, hirpc.relabel("trt"));
     }

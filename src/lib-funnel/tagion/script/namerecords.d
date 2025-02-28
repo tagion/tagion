@@ -4,6 +4,7 @@ module tagion.script.namerecords;
 
 import std.format;
 import std.array;
+import std.typetuple;
 
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Fingerprint, Pubkey, Signature;
@@ -13,10 +14,16 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.standardnames;
 import tagion.utils.StdTime;
 
+alias NameRecords = AliasSeq!(
+        NetworkNameCard,
+        NetworkNameRecord,
+        NetworkNodeRecord,
+);
+
 ///
 @recordType("$@NNC")
 struct NetworkNameCard {
-    @label(StdNames.domain_name) string name; /// Tagion domain name (TDN) 
+    @label(HashNames.domain_name) string name; /// Tagion domain name (TDN) 
     @label(StdNames.owner) Pubkey owner; /// NNC pubkey
     @label("$lang") string lang; /// Language used for the #name
     @label(StdNames.time) sdt_t time; /// Time-stamp of
@@ -45,7 +52,7 @@ struct NetworkNodeRecord {
         LOCKED,
     }
 
-    @label(StdNames.nodekey) Pubkey channel; /// Node public key
+    @label(HashNames.nodekey) Pubkey channel; /// Node public key
     @label(StdNames.name) string name; /// TDN lookup 
     @label(StdNames.time) sdt_t time; /// Consensus time of the last update
     @label(StdNames.state) State state; /// Node state

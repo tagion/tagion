@@ -251,9 +251,11 @@ class HashGraph {
      */
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
         if (areWeInGraph) {
-            immutable epack = event_pack(time, null, payload);
-            const registered = registerEventPackage(epack);
-            assert(registered, "Could not register init tide");
+            if(!mirror_mode) {
+                immutable epack = event_pack(time, null, payload);
+                const registered = registerEventPackage(epack);
+                assert(registered, "Could not register init tide");
+            }
             return hirpc.wavefront(tidalWave());
         }
         return hirpc.wavefront(sharpWave());
@@ -774,9 +776,11 @@ class HashGraph {
                 frontSeat(first_event);
             }
 
-            // auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
-            // const state = ExchangeState.RIPPLE;
-            // return Wavefront(result, Tides.init, state);
+            auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
+            const state = ExchangeState.RIPPLE;
+            if(received.isMethod) {
+                return hirpc.result(received, Wavefront(result, Tides.init, state));
+            }
         }
 
         return hirpc.error(received.getId, format("mirror node %s", received_wave.state));

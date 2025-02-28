@@ -82,7 +82,7 @@ int _main(string[] args) {
     bool result_switch;
     string output_filename;
     string method_name;
-    string[] inputs;
+    string[] dartindices;
     string[] pkeys;
     const name = () => method_name.splitter('.').retro.front;
     const domain = () => method_name.split('.').dropBack(1).join('.');
@@ -95,7 +95,7 @@ int _main(string[] args) {
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "o|output", "Output filename (Default stdout)", &output_filename,
                 "m|method", "method name for the hirpc to generate", &method_name,
-                "r|dartindex", "dart inputs sep. by comma or multiple args for multiples generated differently for each cmd", &inputs,
+                "r|dartindex", "dartindex inputs sep. by comma or multiple args for multiples generated differently for each cmd", &dartindices,
                 "A|response", "Analyzer a HiRPC response", &response_switch,
                 "R|result", "Dumps the result of HiRPC response", &result_switch,
                 "p|pkeys", "pkeys sep. by comma or multiple args for multiple entries", &pkeys,
@@ -144,16 +144,15 @@ int _main(string[] args) {
             return 0;
         }
         const hirpc = HiRPC(null);
-        tools.check(method_name !is string.init, "must supply methodname");
-        tools.check(all_dartinterface_methods.canFind(name()), format(
-                "method name not valid must be one of %s", all_dartinterface_methods));
+        tools.check(!method_name.empty && all_dartinterface_methods.canFind(name()), format(
+                "method name not valid must be one of known %s", all_dartinterface_methods));
 
-        DARTIndex[] get_indices(string[] _input) {
-            return _input.map!(d => hash_net.dartIndexDecode(d)).array;
+        auto get_indices(string[] _input) {
+            return _input.map!(d => hash_net.dartIndexDecode(d));
         }
 
-        DARTIndex[] get_pkey_indices(string[] _pkeys) {
-            return _pkeys.map!(p => hash_net.dartKey(TRTLabel, Pubkey(p.decode))).array;
+        auto get_pkey_indices(string[] _pkeys) {
+            return _pkeys.map!(p => hash_net.dartKey(HashNames.trt_owner, Pubkey(p.decode)));
         }
 
         Document result;
@@ -162,11 +161,9 @@ int _main(string[] args) {
             result = dartBullseye(hirpc.relabel(domain())).toDoc;
             break;
         case Queries.dartRead, Queries.dartCheckRead:
-            tools.check(!inputs.empty || !pkeys.empty, "must supply pkeys or dartindices");
+            tools.check(!dartindices.empty || !pkeys.empty, "must supply pkeys or dartindices");
 
-            const dart_indices = get_indices(inputs);
-            const pkey_indices = get_pkey_indices(pkeys);
-            const res = dart_indices ~ pkey_indices;
+            auto res = chain(get_indices(dartindices), get_pkey_indices(pkeys));
             result = dartIndexCmd(name(), res, hirpc.relabel(domain())).toDoc;
             break;
        case Queries.dartModify:
