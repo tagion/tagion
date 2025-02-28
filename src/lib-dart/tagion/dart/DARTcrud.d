@@ -22,24 +22,24 @@ import tagion.hibon.Document : Document;
  * Returns: 
  *   HiRPC Sender
 */
-alias dartRead = _dartIndexCmd!"dartRead";
-/// ditto
-alias dartCheckRead = _dartIndexCmd!"dartCheckRead";
-/// ditto
-deprecated("Should use hirpc.relabel instead") 
-alias trtdartRead = _dartIndexCmd!"trt.dartRead";
-
-private template _dartIndexCmd(string method) {
-    const(HiRPC.Sender) _dartIndexCmd(Range)(
-            Range dart_indices,
-            HiRPC hirpc = HiRPC(null),
-            uint id = 0) {
-
-        return dartIndexCmd(method, dart_indices, hirpc, id);
-    }
+const(HiRPC.Sender) dartRead(Range)(Range dart_indices, HiRPC hirpc = HiRPC(null), uint id = 0) {
+    return dartIndexCmd("dartRead", dart_indices, hirpc, id);
 }
 
-/// General constructor for a dart index cmd [dartRead, dartCheckRead, etc...]
+/**
+ * Constructs a HiRPC method for dartCheckRead 
+ * Params:
+ *   dart_indices = List of hash-pointers 
+ *   hirpc = HiRPC credentials 
+ *   id = HiRPC id 
+ * Returns: 
+ *   HiRPC Sender
+*/
+const(HiRPC.Sender) dartCheckRead(Range)(Range dart_indices, HiRPC hirpc = HiRPC(null), uint id = 0) {
+    return dartIndexCmd("dartCheckRead", dart_indices, hirpc, id);
+}
+
+/// General constructor for a dart index cmd [dartRead, dartCheckRead, trt.dartRead, etc...]
 /// With a runtime method name
 const(HiRPC.Sender) dartIndexCmd(Range)(
         string method,

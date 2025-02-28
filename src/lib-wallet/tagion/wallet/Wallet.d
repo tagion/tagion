@@ -332,7 +332,7 @@ struct Wallet(Net : SecureNet) {
         auto owner_indices = account.derivers.byKey
             .map!(owner => _net.dartKey(TRTLabel, owner));
 
-        return trtdartRead(owner_indices, hirpc);
+        return dartRead(owner_indices, hirpc.relabel("trt"));
     }
 
     /** 
@@ -353,7 +353,7 @@ struct Wallet(Net : SecureNet) {
             .map!(idx => _net.dartKey(StdNames.contract, idx))
             .array;
 
-        return trtdartRead(contract_indices, hirpc);
+        return dartRead(contract_indices, hirpc.relabel("trt"));
     }
 
     /** 

@@ -1095,7 +1095,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             break;
         case "trt":
             DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
-            rc = s.send(crud.trtdartRead([drtindex]).toDoc.serialize);
+            rc = s.send(crud.dartRead([drtindex], HiRPC(null).relabel("trt")).toDoc.serialize);
             ubyte[HIRPC_BUF_SIZE] buf;
             size_t len = s.receivebuf(buf, buf.length);
             if (len == size_t.max && s.errno != 0) {

@@ -159,7 +159,6 @@ int _main(string[] args) {
         Document result;
         switch (name()) {
         case Queries.dartBullseye:
-            //result = isTRTreq ? trtdartBullseye().toDoc : dartBullseye().toDoc;
             result = dartBullseye(hirpc.relabel(domain())).toDoc;
             break;
         case Queries.dartRead, Queries.dartCheckRead:
@@ -172,16 +171,6 @@ int _main(string[] args) {
             break;
        case Queries.dartModify:
             tools.check(args.length <= 2, format("Only one file name expected Not %s", args[1 .. $]));
-            //const files = args[1..$].filter!(file => file.hasExtension(FileExtension.hibon));
-
-            version (none) {
-                File fin = stdin;
-                if (!args.empty) {
-                    fin = File(args[1], "r");
-                }
-                const doc = fin.fread;
-                result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
-            }
             break;
         default:
             tools.check(0, format("method %s not implemented use one of %s", method_name, IMPLEMENTED_METHODS));
