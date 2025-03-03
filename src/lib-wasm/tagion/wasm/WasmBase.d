@@ -145,7 +145,7 @@ struct Instr {
     Types[] pushs; // Number of values pushed
     uint opcode; // Extended opcode argument
     string toString() const pure {
-        return format("%s %s ->%s", name, pops, pushs);
+        return format("%s %s ->%s <%s>", name, pops, pushs, irtype);
     }
 }
 
