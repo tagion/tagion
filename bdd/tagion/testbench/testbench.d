@@ -46,7 +46,6 @@ int main(string[] args) {
     import nng_test = tagion.testbench.nng_test;
     import godcontract = tagion.testbench.testnetwork.godcontract;
     import dart_synchronization = tagion.testbench.services.dart_synchronization;
-    import mirror_mode = tagion.testbench.services.mirror_mode;
 
     alias alltools = AliasSeq!(
         collector,
@@ -91,7 +90,6 @@ int main(string[] args) {
         nng_test,
         godcontract,
         dart_synchronization,
-        mirror_mode,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
