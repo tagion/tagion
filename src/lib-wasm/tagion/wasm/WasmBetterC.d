@@ -708,8 +708,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         scope (exit) {
                             block_bout = null;
                         }
+                        if (elm.code is IR.IF) {
+                            bout.writefln("%s// -- %s", indent, elm.instr.name);
+                            ctx.perform(elm.code, elm.instr.pops);
+                            bout.writefln("%sif (%s) {", indent, ctx.pop); 
+                        }
+                        else {
+                            bout.writefln("%sdo { // %s %s", indent, block_comment, *elm.instr);
+                        }
                         innerBlock(block_bout, expr, indent ~ spacer, blocks ~ block);
-                        bout.writefln("%sdo { // %s %s", indent, block_comment, *elm.instr);
                         bout.write(block_bout);
                         bout.writefln("%s// Block kind %s", indent, *block);
                         final switch (block.kind) {
@@ -1082,6 +1089,8 @@ shared static this() {
         IR.F64_GE: q{(%2$s >= %1$s)},
         //  
         IR.SELECT: q{((%1$s)?%3$s:%2$s)},
+        //
+        IR.IF: q{(%1$s)},
     ];
     instr_extend_fmt = [
         IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},
