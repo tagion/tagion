@@ -331,16 +331,18 @@ struct WastParser {
                         label = r.token;
                         r.nextToken;
                     }
-                    scope (success) {
-                        func_ctx.block_pop;
-                        wasmexpr(IR.END);
-                    }
+                    version (none)
+                        scope (success) {
+                            func_ctx.block_pop;
+                            wasmexpr(IR.END);
+                        }
                     const wasm_results = getReturns(r);
                     __write("wasm_result=%s label=%s", wasm_results, label);
-                    foreach(n; 0..instr.pops.length) {
+                    foreach (n; 0 .. instr.pops.length) {
                         inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
                     }
                     if (wasm_results.length == 0) {
+                        __write("--> %s", instr.name);
                         wasmexpr(irLookupTable[instr.name], Types.VOID);
                     }
                     else if (wasm_results.length == 1) {
@@ -357,6 +359,8 @@ struct WastParser {
                         __write("innerInstr with %s %s : %s", instr.name, inner_stage, next_stage);
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
                     }
+                    func_ctx.block_pop;
+                    wasmexpr(IR.END);
                     return stage;
                 case BRANCH:
                     switch (r.token) {
@@ -461,7 +465,7 @@ struct WastParser {
                             r.nextToken;
                             __write("->%s : '%s'", r.getLine, r.token);
                             if (r.type is TokenType.BEGIN) {
-                                        __write("BEGIN maybe else %s:%s", r.type, r.token);
+                                __write("BEGIN maybe else %s:%s", r.type, r.token);
                                 inner_stage = innerInstr(wasmexpr, r, block_results, inner_stage);
                             }
                             break;
