@@ -8,6 +8,7 @@ import std.exception;
 import std.format;
 import std.stdio;
 import std.traits;
+import std.range;
 import tagion.basic.Debug;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmWriter;
@@ -324,7 +325,6 @@ struct WastParser {
                     next_stage = ParserStage.CONDITIONAL;
                     goto case;
                 case BLOCK:
-                    __write("Block %s", r);
                     r.nextToken;
                     label = null;
                     if (r.type == TokenType.WORD) {
@@ -337,12 +337,10 @@ struct WastParser {
                             wasmexpr(IR.END);
                         }
                     const wasm_results = getReturns(r);
-                    __write("wasm_result=%s label=%s", wasm_results, label);
                     foreach (n; 0 .. instr.pops.length) {
                         inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
                     }
                     if (wasm_results.length == 0) {
-                        __write("--> %s", instr.name);
                         wasmexpr(irLookupTable[instr.name], Types.VOID);
                     }
                     else if (wasm_results.length == 1) {
@@ -355,9 +353,43 @@ struct WastParser {
                     }
                     func_ctx.block_push(wasm_results, label);
                     __write("Before innerInstr %s", r);
+                    const block_ir = irLookupTable[instr.name];
                     while (r.type is TokenType.BEGIN) {
-                        __write("innerInstr with %s %s : %s", instr.name, inner_stage, next_stage);
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
+                        if (block_ir is IR.IF) {
+                            break;
+                        }
+                    }
+
+                    if (block_ir is IR.IF) {
+                        __write("Check for 'else' token '%s' current token %s", instr.name, r.token);
+                        auto r_else = r.save;
+                        auto r_nexts = r.save;
+                        __write("<ELSE> tokens %s", r_nexts.take(3).map!(t => t.token));
+                        __write("ELSE 0 Token (%s)(%s) %s", r, r_else, r_else.getLine);
+                        r_else.nextToken;
+                        r.expect(TokenType.END);
+                        r_else.nextToken;
+                        __write("ELSE 1 Token (%s)(%s)", r, r_else);
+
+                        __write("--- IF token '%s' type %s r_else '%s'", r.token, r.type, r_else.token);
+                        if (r_else.type is TokenType.BEGIN) {
+                            __write("Possible ELSE %s", r.getLine);
+                            r_else.nextToken;
+                            const else_ir = irLookupTable.get(r_else.token, IR.UNREACHABLE);
+                            check(else_ir is IR.ELSE,
+                                    format("'else' statment expected not '%s' %s",
+                                    r_else.token, else_ir));
+                            r_else.nextToken;
+                            __write("### Token after ELSE %s", r_else.token);
+                            if (r_else.type is TokenType.END) {
+                                __write("!!!! Skip ELSE");
+                                r = r_else; /// Empty else '(else)' skip the else IR 
+                            }
+                            else {
+                                innerInstr(wasmexpr, r, wasm_results, next_stage);
+                            }
+                        }
                     }
                     func_ctx.block_pop;
                     wasmexpr(IR.END);
@@ -522,7 +554,6 @@ struct WastParser {
             return result;
         }
         return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
-        //return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
 
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {

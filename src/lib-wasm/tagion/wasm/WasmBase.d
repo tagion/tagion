@@ -160,7 +160,7 @@ enum IR : ubyte {
         @Instr("if", "if", 1, IRType.BLOCK_CONDITIONAL, [Types.VOID])                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "else", 0, IRType.BLOCK_CONDITIONAL)                       ELSE                = 0x05, ///  else
+        @Instr("else", "else", 0, IRType.BLOCK)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
