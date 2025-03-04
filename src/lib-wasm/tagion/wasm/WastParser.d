@@ -355,18 +355,10 @@ struct WastParser {
                     __write("Before innerInstr %s", r);
                     const block_ir = irLookupTable[instr.name];
                     if (block_ir is IR.IF) {
+                            innerInstr(wasmexpr, r, wasm_results, next_stage);
                         __write("Check for 'else' token '%s' current token %s", instr.name, r.token);
-                        auto r_else = r.save;
-                        auto r_nexts = r.save;
-                        __write("<ELSE> tokens %s", r_nexts.take(3).map!(t => t.token));
-                        __write("ELSE 0 Token (%s)(%s) %s", r, r_else, r_else.getLine);
-                        r_else.nextToken;
-                        r.expect(TokenType.END);
-                        r_else.nextToken;
-                        __write("ELSE 1 Token (%s)(%s)", r, r_else);
-
-                        __write("--- IF token '%s' type %s r_else '%s'", r.token, r.type, r_else.token);
-                        if (r_else.type is TokenType.BEGIN) {
+                        if (r.type is TokenType.BEGIN) {
+                            auto r_else = r.save;
                             __write("Possible ELSE %s", r.getLine);
                             r_else.nextToken;
                             const else_ir = irLookupTable.get(r_else.token, IR.UNREACHABLE);
@@ -383,13 +375,11 @@ struct WastParser {
                                 innerInstr(wasmexpr, r, wasm_results, next_stage);
                             }
                         }
+
                     }
                     else {
                         while (r.type is TokenType.BEGIN) {
                             innerInstr(wasmexpr, r, wasm_results, next_stage);
-                            if (block_ir is IR.IF) {
-                                break;
-                            }
                         }
                     }
                     func_ctx.block_pop;
