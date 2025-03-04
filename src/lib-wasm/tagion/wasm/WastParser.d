@@ -354,13 +354,6 @@ struct WastParser {
                     func_ctx.block_push(wasm_results, label);
                     __write("Before innerInstr %s", r);
                     const block_ir = irLookupTable[instr.name];
-                    while (r.type is TokenType.BEGIN) {
-                        innerInstr(wasmexpr, r, wasm_results, next_stage);
-                        if (block_ir is IR.IF) {
-                            break;
-                        }
-                    }
-
                     if (block_ir is IR.IF) {
                         __write("Check for 'else' token '%s' current token %s", instr.name, r.token);
                         auto r_else = r.save;
@@ -388,6 +381,14 @@ struct WastParser {
                             }
                             else {
                                 innerInstr(wasmexpr, r, wasm_results, next_stage);
+                            }
+                        }
+                    }
+                    else {
+                        while (r.type is TokenType.BEGIN) {
+                            innerInstr(wasmexpr, r, wasm_results, next_stage);
+                            if (block_ir is IR.IF) {
+                                break;
                             }
                         }
                     }
