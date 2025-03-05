@@ -313,7 +313,7 @@
     "remote_sample": {
       "args": [],
       "envs": {
-          "SHELL_ADDRESSES": "tcp://localhost:8080",
+          "SHELL_ADDRESSES": "http://0.0.0.0:8080",
           "NODE_DART_ADDRESSES" : "abstract://node0/DART_NEUEWELLE abstract://node1/DART_NEUEWELLE",
           "NODE_INPUT_ADDRESSES" : "abstract://node0/CONTRACT_NEUEWELLE",
           "NODE_SUBSCRIPTION_ADDRESSES": "abstract://node0/SUBSCRIPTION_NEUEWELLE"
