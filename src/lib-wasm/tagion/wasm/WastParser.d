@@ -355,7 +355,7 @@ struct WastParser {
                     __write("Before innerInstr %s", r);
                     const block_ir = irLookupTable[instr.name];
                     if (block_ir is IR.IF) {
-                            innerInstr(wasmexpr, r, wasm_results, next_stage);
+                        innerInstr(wasmexpr, r, wasm_results, next_stage);
                         __write("Check for 'else' token '%s' current token %s", instr.name, r.token);
                         if (r.type is TokenType.BEGIN) {
                             auto r_else = r.save;
@@ -386,8 +386,9 @@ struct WastParser {
                     wasmexpr(IR.END);
                     return stage;
                 case BRANCH:
-                    switch (r.token) {
-                    case getInstr!(IR.BR).wast:
+                    const branch_ir = irLookupTable[instr.name];
+                    switch (branch_ir) {
+                    case IR.BR:
                         r.nextToken;
                         const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
@@ -396,10 +397,19 @@ struct WastParser {
                         }
                         wasmexpr(IR.BR, blk.idx);
                         break;
+                    case IR.BR_IF:
+                        r.nextToken;
+                        const blk = func_ctx.block_peek(r.token);
+                        r.nextToken;
+                        while (r.type is TokenType.BEGIN) {
+                            inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
+                        }
+                        wasmexpr(IR.BR_IF, blk.idx);
+                        break;
                     default:
                         assert(0, format("Illegal token %s in %s", r.token, BRANCH));
                     }
-                    while (r.type == TokenType.BEGIN) {
+                    while (r.type is TokenType.BEGIN) {
                         innerInstr(wasmexpr, r, block_results, next_stage);
                     }
                     break;
