@@ -696,7 +696,7 @@ class Round {
                     }
                 }
                 catch (Exception e) {
-                    log(e);
+                    log.fatal(e);
                 }
             }
         }
