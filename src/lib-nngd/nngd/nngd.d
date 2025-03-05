@@ -1842,13 +1842,13 @@ struct NNGPoolWorker {
     nng_mtx* mtx;
     nng_ctx ctx;
     void* context;
-    File* logfile;
+    NNGPool.ErrorCallback err_cb;
     nng_pool_callback cb;
     
-    this(int iid, void* icontext, File* ilog = null) {
+    this(int iid, void* icontext, NNGPool.ErrorCallback err_cb = null) {
         this.id = iid;
         this.context = icontext;
-        this.logfile = ilog;
+        this.err_cb = err_cb;
         this.state = nng_worker_state.NONE;
         this.msg = NNGMessage(0);
         this.aio = NNGAio(null, null);
@@ -1911,9 +1911,8 @@ extern (C) void nng_pool_stateful(void* p) {
             w.cb(&w.msg, w.context);
         }
         catch (Exception e) {
-            if (w.logfile !is null) {
-                w.logfile.write(format("Error in pool callback: [%d:%s] %s\n", e.line, e.file, e.msg));
-                w.logfile.flush();
+            if (w.err_cb) {
+                w.err_cb(&w.msg, w.context ,e);
             }
             w.msg.clear();
         }
@@ -1955,6 +1954,8 @@ extern (C) void nng_pool_stateful(void* p) {
 */
 
 struct NNGPool {
+
+    alias ErrorCallback = void function(NNGMessage* msg, void* ctx, Exception e) nothrow;
     
     @disable this();
     /**
@@ -1966,16 +1967,15 @@ struct NNGPool {
     *   - context pointer
     *   - file object to send logs
     */
-    this(NNGSocket* isock, nng_pool_callback cb, size_t n, void* icontext, File* ilog = null) {
+    this(NNGSocket* isock, nng_pool_callback cb, size_t n, void* icontext, ErrorCallback err_cb = null) {
         nng_enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
         nng_enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
         nng_enforce(cb != null);
         sock = isock;
         context = icontext;
-        logfile = ilog;
         nworkers = n;
         for (auto i = 0; i < n; i++) {
-            NNGPoolWorker* w = new NNGPoolWorker(i, context, logfile);
+            NNGPoolWorker* w = new NNGPoolWorker(i, context, err_cb);
             w.aio.realloc(cast(nng_aio_cb)(&nng_pool_stateful), cast(void*) w);
             w.cb = cb;
             auto rc = nng_ctx_open(&w.ctx, sock.m_socket);
@@ -2011,7 +2011,6 @@ struct NNGPool {
 
     NNGSocket* sock;
     void* context;
-    File* logfile;
     size_t nworkers;
 
     NNGPoolWorker*[] workers;
