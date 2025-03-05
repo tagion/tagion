@@ -218,7 +218,7 @@ struct NNGMessage {
     *  Message andheader length getters 
     */
     @property size_t length() @safe const nothrow { return nng_msg_len(msg); }
-    @property void length( size_t sz ) @safe { auto rc = nng_msg_realloc(msg, sz); nng_enforce(rc == 0); }
+    @property void length( size_t sz ) @safe { auto rc = nng_msg_realloc(msg, sz); nng_enforce(rc == 0, "Insufficient memory"); }
     @property size_t header_length() @safe const nothrow { return nng_msg_header_len(msg); }
     
     /**
@@ -230,73 +230,63 @@ struct NNGMessage {
     * Append ubyte array or unsigned to the body
     * Returns zero or error code
     */
-    int body_append(T)(const(T) data) if (isArray!T || isUnsigned!T) {
+    int body_append(T)(const(T) data) nothrow if (isArray!T || isUnsigned!T) {
+        int rc;
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
-            auto rc = nng_msg_append(msg, ptr(data), data.length);
-            nng_enforce(rc == 0);
-            return 0;
+            rc = nng_msg_append(msg, ptr(data), data.length);
         }
         else {
             static if (T.sizeof == 1) {
                 T tmp = data;
-                auto rc = nng_msg_append(msg, cast(void*)&tmp, 1);
-                nng_enforce(rc == 0);
+                rc = nng_msg_append(msg, cast(void*)&tmp, 1);
             }
             static if (T.sizeof == 2) {
-                auto rc = nng_msg_append_u16(msg, data);
-                nng_enforce(rc == 0);
+                rc = nng_msg_append_u16(msg, data);
             }
             static if (T.sizeof == 4) {
-                auto rc = nng_msg_append_u32(msg, data);
-                nng_enforce(rc == 0);
+                rc = nng_msg_append_u32(msg, data);
             }
             static if (T.sizeof == 8) {
-                auto rc = nng_msg_append_u64(msg, data);
-                nng_enforce(rc == 0);
+                rc = nng_msg_append_u64(msg, data);
             }
-            return 0;
         }
+        return rc;
     }
 
     /**
     * Prepend body with the ubyte array or unsigned
     * Returns zero or error code
     */
-    int body_prepend(T)(const(T) data) if (isArray!T || isUnsigned!T) {
+    int body_prepend(T)(const(T) data) nothrow if (isArray!T || isUnsigned!T) {
+        int rc;
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             if(data.length > 0){
-                auto rc = nng_msg_insert(msg, &data[0], data.length);
-                nng_enforce(rc == 0);
+                rc = nng_msg_insert(msg, &data[0], data.length);
             }    
-            return 0;
         }
         else {
             static if (T.sizeof == 1) {
                 T tmp = data;
-                auto rc = nng_msg_insert(msg, cast(void*)&tmp, 1);
-                nng_enforce(rc == 0);
+                rc = nng_msg_insert(msg, cast(void*)&tmp, 1);
             }
             static if (T.sizeof == 2) {
-                auto rc = nng_msg_insert_u16(msg, data);
-                nng_enforce(rc == 0);
+                rc = nng_msg_insert_u16(msg, data);
             }
             static if (T.sizeof == 4) {
-                auto rc = nng_msg_insert_u32(msg, data);
-                nng_enforce(rc == 0);
+                rc = nng_msg_insert_u32(msg, data);
             }
             static if (T.sizeof == 8) {
-                auto rc = nng_msg_insert_u64(msg, data);
-                nng_enforce(rc == 0);
+                rc = nng_msg_insert_u64(msg, data);
             }
-            return 0;
         }
+        return rc;
     }
 
     /**
     * Extract and remove ubyte array of given size or unsigned from the body end
-    * Returns tempalte type
+    * Returns template type
     */
     T body_chop(T)(size_t size = 0) if (isArray!T || isUnsigned!T) {
         static if (isArray!T) {
