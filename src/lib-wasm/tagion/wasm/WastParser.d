@@ -363,7 +363,7 @@ struct WastParser {
                             r_else.nextToken;
                             const else_ir = irLookupTable.get(r_else.token, IR.UNREACHABLE);
                             check(else_ir is IR.ELSE,
-                                    format("'else' statment expected not '%s' %s",
+                                    format("'else' statement expected not '%s' %s",
                                     r_else.token, else_ir));
                             r_else.nextToken;
                             __write("### Token after ELSE %s", r_else.token);

@@ -799,6 +799,9 @@ class HashGraph {
         case FIRST_WAVE:
             immutable(EventPackage)* e_newest;
             foreach (e; received_wave.epacks) {
+                auto event = new Event(e, this);
+                frontSeat(event);
+
                 if (!(e.fingerprint in mirror_package_cache || e.fingerprint in _event_cache)) {
                     mirror_package_cache[e.fingerprint] = e;
                 }
@@ -807,6 +810,7 @@ class HashGraph {
                 }
             }
 
+            /// Remove this, it is just to see that the package events are actually connected
             uint connected_events_count;
             enum UPPER_BOUND = 1000;
             foreach (_; 0 .. UPPER_BOUND) {
