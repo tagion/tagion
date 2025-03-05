@@ -1,4 +1,5 @@
 /// HiRPC utility for generating HiRPC requests
+@description("Create and inspect HiBON RPCs")
 module tagion.tools.hirpc;
 
 import tagion.tools.Basic;
@@ -118,6 +119,15 @@ int _main(string[] args) {
 
                     ].join("\n"),
                     main_args.options);
+            writeln();
+            examplesPrinter(program, [
+                ToolExample("Create a dartBullseye request and save it to a file",
+                            "-m dartBullseye -o bullseye_request.hibon"),
+            ]);
+
+            if(!method_name.empty) {
+                writeln();
+            }
             return 0;
         }
 

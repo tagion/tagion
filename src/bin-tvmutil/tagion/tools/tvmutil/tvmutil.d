@@ -1,3 +1,4 @@
+@description("Execute and test smart contracts")
 module tagion.tools.tvmutil.tvmutil;
 
 import core.time;

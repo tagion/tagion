@@ -104,6 +104,19 @@ void good(Args...)(string fmt, lazy Args args) @trusted {
     vout.writefln("%s%s%s", GREEN, format(fmt, args), RESET);
 }
 
+struct ToolExample {
+    string description;
+    string options;
+}
+
+void examplesPrinter(string program_name, ToolExample[] examples) {
+    writeln("Examples:");
+    foreach(ex; examples) {
+        writeln("# ", ex.description);
+        writeln(program_name, " ", ex.options);
+    }
+}
+
 alias SubTools = int function(string[])[string];
 Result subTool(const SubTools sub_tools, string[] args, const size_t index = 0) {
     if (args[index].baseName in sub_tools) {
@@ -133,6 +146,11 @@ int forceSymLink(const SubTools sub_tools) {
         symlink(thisExePath, symlink_filename);
     }
     return 0;
+}
+
+/// Uda to add a description to a tool module
+struct description {
+    string text;
 }
 
 mixin template Main(alias _main, string name = null) {

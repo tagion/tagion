@@ -1,3 +1,4 @@
+@description("http proxy for node rpc commands")
 module tagion.tools.tagionshell;
 
 import core.time;
@@ -1240,8 +1241,6 @@ int _main(string[] args) {
         return 0;
     }
     if (main_args.helpWanted) {
-        const option_info = format("%s [<option>...] <config.json> <files>", program);
-
         defaultGetoptPrinter(
                 [
                 // format("%s version %s", program, REVNO),
