@@ -16,7 +16,6 @@ import std.traits;
 import std.json;
 import std.file;
 import std.path;
-import std.exception;
 import std.array;
 import std.utf;
 import std.mmfile;
@@ -24,12 +23,20 @@ import std.uuid;
 import std.socket;
 import std.regex;
 import std.random;
-
+import std.stdio;
 
 private import nngd.mime;
 private import libnng;
 
-import std.stdio;
+@safe
+class NNGException : Exception {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+alias nng_enforce = imported!"std.exception".enforce!NNGException;
+
 
 /**
 *   Returns array pointer or null
@@ -142,7 +149,7 @@ struct NNGMessage {
     */
     this(ref return scope NNGMessage src) {
         auto rc = nng_msg_dup(&msg, src.pointer);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
     }
 
     /**
@@ -151,7 +158,7 @@ struct NNGMessage {
     this(nng_msg* msgref) {
         if (msgref is null) {
             auto rc = nng_msg_alloc(&msg, 0);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         else {
             msg = msgref;
@@ -163,7 +170,7 @@ struct NNGMessage {
     */
     this(size_t size) {
         auto rc = nng_msg_alloc(&msg, size);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
     }
 
     ~this() {
@@ -211,7 +218,7 @@ struct NNGMessage {
     *  Message andheader length getters 
     */
     @property size_t length() @safe const nothrow { return nng_msg_len(msg); }
-    @property void length( size_t sz ) @safe { auto rc = nng_msg_realloc(msg, sz); enforce(rc == 0); }
+    @property void length( size_t sz ) @safe { auto rc = nng_msg_realloc(msg, sz); nng_enforce(rc == 0); }
     @property size_t header_length() @safe const nothrow { return nng_msg_header_len(msg); }
     
     /**
@@ -227,26 +234,26 @@ struct NNGMessage {
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             auto rc = nng_msg_append(msg, ptr(data), data.length);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             return 0;
         }
         else {
             static if (T.sizeof == 1) {
                 T tmp = data;
                 auto rc = nng_msg_append(msg, cast(void*)&tmp, 1);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 2) {
                 auto rc = nng_msg_append_u16(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 4) {
                 auto rc = nng_msg_append_u32(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 8) {
                 auto rc = nng_msg_append_u64(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             return 0;
         }
@@ -261,7 +268,7 @@ struct NNGMessage {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             if(data.length > 0){
                 auto rc = nng_msg_insert(msg, &data[0], data.length);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }    
             return 0;
         }
@@ -269,19 +276,19 @@ struct NNGMessage {
             static if (T.sizeof == 1) {
                 T tmp = data;
                 auto rc = nng_msg_insert(msg, cast(void*)&tmp, 1);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 2) {
                 auto rc = nng_msg_insert_u16(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 4) {
                 auto rc = nng_msg_insert_u32(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 8) {
                 auto rc = nng_msg_insert_u64(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             return 0;
         }
@@ -299,7 +306,7 @@ struct NNGMessage {
                 return [];
             T data = cast(T)(bodyptr[length - size .. length]);
             auto rc = nng_msg_chop(msg, size);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             return data;
         }
         else {
@@ -307,19 +314,19 @@ struct NNGMessage {
             static if (T.sizeof == 1) {
                 tmp = cast(T)*(bodyptr + (length - 1));
                 auto rc = nng_msg_chop(msg, 1);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 2) {
                 auto rc = nng_msg_chop_u16(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 4) {
                 auto rc = nng_msg_chop_u32(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 8) {
                 auto rc = nng_msg_chop_u64(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             return tmp;
         }
@@ -337,7 +344,7 @@ struct NNGMessage {
                 return [];
             T data = cast(T)(bodyptr)[0 .. size];
             auto rc = nng_msg_trim(msg, size);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             return data;
         }
         else {
@@ -345,19 +352,19 @@ struct NNGMessage {
             static if (T.sizeof == 1) {
                 tmp = cast(T)*(bodyptr);
                 auto rc = nng_msg_trim(msg, 1);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 2) {
                 auto rc = nng_msg_trim_u16(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 4) {
                 auto rc = nng_msg_trim_u32(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 8) {
                 auto rc = nng_msg_trim_u64(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             return tmp;
         }
@@ -378,19 +385,19 @@ struct NNGMessage {
             static if (T.sizeof == 1) {
                 T tmp = data;
                 auto rc = nng_msg_header_append(msg, cast(void*)&tmp, 1);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 2) {
                 auto rc = nng_msg_header_append_u16(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 4) {
                 auto rc = nng_msg_header_append_u32(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 8) {
                 auto rc = nng_msg_header_append_u64(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             return 0;
         }
@@ -403,26 +410,26 @@ struct NNGMessage {
         static if (isArray!T) {
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             auto rc = nng_msg_header_insert(msg, ptr(data), data.length);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             return 0;
         }
         else {
             static if (T.sizeof == 1) {
                 T tmp = data;
                 auto rc = nng_msg_header_insert(msg, cast(void*)&tmp, 1);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 2) {
                 auto rc = nng_msg_header_insert_u16(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 4) {
                 auto rc = nng_msg_header_insert_u32(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 8) {
                 auto rc = nng_msg_header_insert_u64(msg, data);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             return 0;
         }
@@ -439,7 +446,7 @@ struct NNGMessage {
                 return [];
             T data = cast(T)(headerptr + (header_length - size))[0 .. size];
             auto rc = nng_msg_header_chop(msg, size);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             return data;
         }
         else {
@@ -447,19 +454,19 @@ struct NNGMessage {
             static if (T.sizeof == 1) {
                 tmp = cast(T)*(bodyptr + (length - 1));
                 auto rc = nng_msg_header_chop(msg, 1);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 2) {
                 auto rc = nng_msg_header_chop_u16(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 4) {
                 auto rc = nng_msg_header_chop_u32(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 8) {
                 auto rc = nng_msg_header_chop_u64(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             return tmp;
         }
@@ -476,7 +483,7 @@ struct NNGMessage {
                 return [];
             T data = cast(T)(headerptr)[0 .. size];
             auto rc = nng_msg_header_trim(msg, size);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             return data;
         }
         else {
@@ -484,19 +491,19 @@ struct NNGMessage {
             static if (T.sizeof == 1) {
                 tmp = cast(T)*(bodyptr);
                 auto rc = nng_msg_header_trim(msg, 1);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 2) {
                 auto rc = nng_msg_header_trim_u16(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 4) {
                 auto rc = nng_msg_header_trim_u32(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             static if (T.sizeof == 8) {
                 auto rc = nng_msg_header_trim_u64(msg, &tmp);
-                enforce(rc == 0);
+                nng_enforce(rc == 0);
             }
             return tmp;
         }
@@ -557,15 +564,15 @@ struct NNGAio {
         pcontext = ctx;
         static if(is(T == typeof(null))){
             auto rc = nng_aio_alloc(&aio, null, null);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         } else 
         static if(is(T == nng_aio_dg_cb)){
             auto rc = nng_aio_alloc(&aio, cb.funcptr, arg);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         } else 
         static if(is(T == nng_aio_cb)){           
             auto rc = nng_aio_alloc(&aio, cb, arg);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         } else
             assert(false, "Invalid callback type");
 
@@ -575,7 +582,7 @@ struct NNGAio {
     * Creator to copy internal nng_aio structure 
     */
     this(nng_aio* src) {
-        enforce(src !is null);
+        nng_enforce(src !is null);
         pointer(src);
     }
 
@@ -592,15 +599,15 @@ struct NNGAio {
         pcontext = ctx;
         static if(is(T == typeof(null))){   
             auto rc = nng_aio_alloc(&aio, null, null);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         } else
         static if(isDelegate!T){
             auto func = cb.funcptr;
             auto rc = nng_aio_alloc(&aio, func, arg);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         } else {          
             auto rc = nng_aio_alloc(&aio, cb, arg);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         } 
     }
     
@@ -935,13 +942,6 @@ struct NNGSocket {
     int close() @safe nothrow {
         int rc;
         m_errno = cast(nng_errno) 0;
-        foreach (ctx; m_ctx) {
-            rc = nng_ctx_close(ctx);
-            if (rc != 0) {
-                m_errno = cast(nng_errno) rc;
-                return rc;
-            }
-        }
         rc = nng_close(m_socket);
         if (rc == 0) {
             m_state = nng_socket_state.NNG_STATE_NONE;
@@ -1405,7 +1405,6 @@ private:
     nng_socket_type m_type;
     nng_socket_state m_state;
     nng_socket m_socket;
-    nng_ctx[] m_ctx;
     string[] m_subscriptions;
     string m_name;
     nng_errno m_errno;
@@ -1856,7 +1855,7 @@ struct NNGPoolWorker {
         this.delay = msecs(0);
         this.cb = null;
         auto rc = nng_mtx_alloc(&this.mtx);
-        enforce(rc == 0, "PW: init");
+        nng_enforce(rc == 0, "PW: init");
     }
 
     void lock() {
@@ -1934,7 +1933,7 @@ extern (C) void nng_pool_stateful(void* p) {
         break;
     default:
         w.unlock();
-        enforce(false, "Bad pool worker state");
+        nng_enforce(false, "Bad pool worker state");
         break;
     }
     w.unlock();
@@ -1968,9 +1967,9 @@ struct NNGPool {
     *   - file object to send logs
     */
     this(NNGSocket* isock, nng_pool_callback cb, size_t n, void* icontext, File* ilog = null) {
-        enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
-        enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
-        enforce(cb != null);
+        nng_enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
+        nng_enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
+        nng_enforce(cb != null);
         sock = isock;
         context = icontext;
         logfile = ilog;
@@ -1980,7 +1979,7 @@ struct NNGPool {
             w.aio.realloc(cast(nng_aio_cb)(&nng_pool_stateful), cast(void*) w);
             w.cb = cb;
             auto rc = nng_ctx_open(&w.ctx, sock.m_socket);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             workers ~= w;
         }
     }
@@ -1989,7 +1988,7 @@ struct NNGPool {
     * Init state machine (switch to initial state)
     */
     void init() {
-        enforce(nworkers > 0);
+        nng_enforce(nworkers > 0);
         for (auto i = 0; i < nworkers; i++) {
             nng_pool_stateful(workers[i]);
         }
@@ -1999,7 +1998,7 @@ struct NNGPool {
     * Stop state machine and wait
     */
     void shutdown() {
-        enforce(nworkers > 0);
+        nng_enforce(nworkers > 0);
         for (auto i = 0; i < nworkers; i++) {
             workers[i].shutdown();
         }
@@ -2147,7 +2146,7 @@ version(withtls) {
             int rc;
             _mode = imode;
             rc = nng_tls_config_alloc(&tls, imode);
-            enforce(rc == 0, "TLS config init");
+            nng_enforce(rc == 0, "TLS config init");
             nng_tls_config_hold(tls);
         }
 
@@ -2159,14 +2158,14 @@ version(withtls) {
         *   server name make sense for CLIENT to correspond with the CN of server certificate
         */
         void set_server_name ( string iname ) {
-            enforce(_mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+            nng_enforce(_mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
             auto rc = nng_tls_config_server_name(tls, toStringz(iname));
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         
         void set_ca_chain ( string pem, string crl = "" ) {
             auto rc = nng_tls_config_ca_chain(tls, toStringz(pem), crl == "" ? null : toStringz(crl));
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         
         void set_ca_chain_file_load( string filename, string crl = "" ) {
@@ -2176,7 +2175,7 @@ version(withtls) {
 
         void set_own_cert ( string pem, string key, string pwd = "" ) {
             auto rc = nng_tls_config_own_cert(tls, pem.toStringz(), toStringz(key), pwd == "" ? null : toStringz(pwd));
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
 
         void set_own_cert_load ( string pemfilename, string keyfilename, string pwd = "" ){
@@ -2189,33 +2188,33 @@ version(withtls) {
     /**
         void set_pass ( string ipass ) {
             auto rc = nng_tls_config_pass(tls, ipass.toStringz());
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         
         void set_key ( ubyte[] ipass ) {
             auto rc = nng_tls_config_key(tls, ipass.ptr, ipass.length);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
     */
 
         void set_ca_file ( string icafile ) {
             auto rc = nng_tls_config_ca_file(tls, toStringz(icafile));
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
 
         void set_cert_key_file ( string ipemkeyfile, string ipass ) {
             auto rc = nng_tls_config_cert_key_file(tls, toStringz(ipemkeyfile), toStringz(ipass));   // pemkey file should contain both cert and key delimited with \r\n
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         
         void set_auth_mode ( nng_tls_auth_mode imode ) {
             auto rc = nng_tls_config_auth_mode(tls, imode);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }        
 
         void set_version( nng_tls_version iminversion, nng_tls_version imaxversion ) {
             auto rc = nng_tls_config_version(tls, iminversion, imaxversion);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
 
         string engine_name() {
@@ -2393,7 +2392,7 @@ struct WebData {
     * Parse nng_http_req and fill the structure
     */
     void parse_req(nng_http_req* req) {
-        enforce(req !is null);
+        nng_enforce(req !is null);
         // TBD:
     }
 
@@ -2403,7 +2402,7 @@ struct WebData {
     * Parse nng_http_res and fill data
     */
     void parse_res(nng_http_res* res) {
-        enforce(res != null);
+        nng_enforce(res != null);
         clear();
         status = cast(http_status) nng_http_res_get_status(res);
         msg = to!string(nng_http_res_get_reason(res));
@@ -2423,7 +2422,7 @@ struct WebData {
         }
         length = len;
         auto hlength = to!long(to!string(nng_http_res_get_header(res, toStringz("Content-length"))));
-        enforce(hlength == length);
+        nng_enforce(hlength == length);
     }
 
     /**
@@ -2435,9 +2434,9 @@ struct WebData {
         int rc;
         rc = nng_url_parse(&url, ((rawuri.length > 0) ? rawuri : "http://<unknown>" ~ uri).toStringz());
         rc = nng_http_req_alloc(&req, url);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_set_method(req, method.toStringz());
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_set_header(req, "Content-type", type.toStringz());
         foreach (k; headers.keys) {
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
@@ -2446,17 +2445,17 @@ struct WebData {
             string buf = json.toString();
             rc = nng_http_req_copy_data(req, buf.toStringz(), buf.length);
             length = buf.length;
-            enforce(rc == 0, "webdata: copy json rep");
+            nng_enforce(rc == 0, "webdata: copy json rep");
         }
         else if (type.startsWith("text")) {
             rc = nng_http_req_copy_data(req, text.toStringz(), text.length);
             length = text.length;
-            enforce(rc == 0, "webdata: copy text rep");
+            nng_enforce(rc == 0, "webdata: copy text rep");
         }
         else {
             rc = nng_http_req_copy_data(req, rawdata.ptr, rawdata.length);
             length = rawdata.length;
-            enforce(rc == 0, "webdata: copy data rep");
+            nng_enforce(rc == 0, "webdata: copy data rep");
         }
         rc = nng_http_req_set_header(req, "Content-length", to!string(length).toStringz());
         return req;
@@ -2470,18 +2469,18 @@ struct WebData {
         nng_http_res* res;
         int rc;
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_res_set_status(res, cast(ushort) status);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         if (status != nng_http_status.NNG_HTTP_STATUS_OK) {
             nng_http_res_reset(res);
             rc = nng_http_res_alloc_error(&res, cast(ushort) status);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             rc = nng_http_res_set_reason(res, msg.toStringz);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
             if (text.length > 0) {
                 rc = nng_http_res_copy_data(res, text.ptr, text.length);
-                enforce(rc == 0, "webdata: copy text rep");
+                nng_enforce(rc == 0, "webdata: copy text rep");
             }
             return res;
         }
@@ -2489,24 +2488,24 @@ struct WebData {
             memcpy(&buf[0], type.ptr, type.length);
             buf[type.length] = 0;
             rc = nng_http_res_set_header(res, "Content-type", &buf[0]);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         if (type.startsWith("application/json")) {
             scope string sbuf = json.toString();
             rc = nng_http_res_copy_data(res, sbuf.ptr, sbuf.length);
             length = sbuf.length;
-            enforce(rc == 0, "webdata: copy json rep");
+            nng_enforce(rc == 0, "webdata: copy json rep");
         }
         else if (type.startsWith("text")) {
             rc = nng_http_res_copy_data(res, text.ptr, text.length);
             length = text.length;
-            enforce(rc == 0, "webdata: copy text rep");
+            nng_enforce(rc == 0, "webdata: copy text rep");
         }
         else {
             if (rawdata.length > 0) {
                 rc = nng_http_res_copy_data(res, rawdata.ptr, rawdata.length);
                 length = rawdata.length;
-                enforce(rc == 0, "webdata: copy data rep");
+                nng_enforce(rc == 0, "webdata: copy data rep");
             }
         }
 
@@ -2711,17 +2710,17 @@ void webstatichandler(nng_aio* aio) {
     mtype = nng_find_mime_type(fpath, pmap);
 
     rc = nng_http_res_alloc(&res);
-    enforce(rc == 0, "WSH: res alloc");
+    nng_enforce(rc == 0, "WSH: res alloc");
     rc = nng_http_res_set_status(res, cast(ushort) nng_http_status.NNG_HTTP_STATUS_OK);
-    enforce(rc == 0, "WSH: set res status");
+    nng_enforce(rc == 0, "WSH: set res status");
     rc = nng_http_res_set_header(res, toStringz("Content-Type"), toStringz(mtype));
-    enforce(rc == 0, "WSH: set type header");
+    nng_enforce(rc == 0, "WSH: set type header");
 
     mmfile = new MmFile(fpath);
     data = cast(ubyte[]) mmfile[];
 
     rc = nng_http_res_copy_data(res, data.ptr, data.length);
-    enforce(rc == 0, "WSH: copy file data");
+    nng_enforce(rc == 0, "WSH: copy file data");
 
     nng_free(sbuf, 4096);
     nng_aio_set_output(aio, 0, res);
@@ -2773,7 +2772,7 @@ struct WebApp {
         name = iname;
         context = icontext;
         auto rc = nng_url_parse(&url, iurl.toStringz());
-        enforce(rc == 0, "server url parse");
+        nng_enforce(rc == 0, "server url parse");
         config = iconfig;
         init();
     }
@@ -2782,7 +2781,7 @@ struct WebApp {
         name = iname;
         context = icontext;
         auto rc = nng_url_parse(&url, iurl.toStringz());
-        enforce(rc == 0, "server url parse");
+        nng_enforce(rc == 0, "server url parse");
         if ("root_path" in iconfig)
             config.root_path = iconfig["root_path"].str;
         if ("static_path" in iconfig)
@@ -2810,9 +2809,9 @@ struct WebApp {
     
     version(withtls) {
         void set_tls ( NNGTLS* tls ) {
-            enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_SERVER);
+            nng_enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_SERVER);
             auto rc = nng_http_server_set_tls(server, tls.tls);
-            enforce(rc == 0, "server set tls");
+            nng_enforce(rc == 0, "server set tls");
         }
     }
 
@@ -2827,20 +2826,20 @@ struct WebApp {
             urlpath = urlpath[0 .. $ - 1];
             isdir = true;
         }
-        enforce(urlpath !in staticroutes, "staticroute path already registered");
+        nng_enforce(urlpath !in staticroutes, "staticroute path already registered");
         nng_http_handler* hr;
         rc = nng_http_handler_alloc(&hr, toStringz(config.prefix_url ~ urlpath), &webstatichandler);
-        enforce(rc == 0, "staticroute handler alloc");
+        nng_enforce(rc == 0, "staticroute handler alloc");
         rc = nng_http_handler_set_method(hr, toStringz("GET"));
-        enforce(rc == 0, "staticroute method");
+        nng_enforce(rc == 0, "staticroute method");
         rc = nng_http_handler_set_data(hr, &this, null);
-        enforce(rc == 0, "staticroute data");
+        nng_enforce(rc == 0, "staticroute data");
         if (isdir) {
             rc = nng_http_handler_set_tree(hr);
-            enforce(rc == 0, "staticroute handler tree");
+            nng_enforce(rc == 0, "staticroute handler tree");
         }
         rc = nng_http_server_add_handler(server, hr);
-        enforce(rc == 0, "route handler add");
+        nng_enforce(rc == 0, "route handler add");
         staticroutes[urlpath] = path;
         staticmime[urlpath] = content_map;
      }
@@ -2854,28 +2853,28 @@ struct WebApp {
         }
         foreach (m; methods) {
             foreach (r; sort(routes.keys)) {
-                enforce(m ~ ":" ~ path != r, "router path already registered: " ~ m ~ ":" ~ path);
+                nng_enforce(m ~ ":" ~ path != r, "router path already registered: " ~ m ~ ":" ~ path);
             }
             routes[m ~ ":" ~ path] = handler;
             nng_http_handler* hr;
             rc = nng_http_handler_alloc(&hr, toStringz(config.prefix_url ~ path), &webrouter);
-            enforce(rc == 0, "route handler alloc");
+            nng_enforce(rc == 0, "route handler alloc");
             rc = nng_http_handler_set_method(hr, m.toStringz());
-            enforce(rc == 0, "route handler set method");
+            nng_enforce(rc == 0, "route handler set method");
             rc = nng_http_handler_set_data(hr, &this, null);
-            enforce(rc == 0, "route handler set context");
+            nng_enforce(rc == 0, "route handler set context");
             if (wildcard) {
                 rc = nng_http_handler_set_tree(hr);
-                enforce(rc == 0, "route handler tree");
+                nng_enforce(rc == 0, "route handler tree");
             }
             rc = nng_http_server_add_handler(server, hr);
-            enforce(rc == 0, "route handler add");
+            nng_enforce(rc == 0, "route handler add");
         }
     }
 
     void start() {
         auto rc = nng_http_server_start(server);
-        enforce(rc == 0, "server start = " ~ rc.toString());
+        nng_enforce(rc == 0, "server start = " ~ rc.toString());
     }
 
     void stop() {
@@ -2893,7 +2892,7 @@ struct WebApp {
         string ss = ("http://localhost" ~ req.uri ~ "\0");
         char[] buf = ss.dup;
         rc = nng_url_parse(&u, buf.ptr);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         req.route = cast(immutable)(fromStringz(u.u_path)).dup;
         req.path = req.route.split("/");
         if (req.path.length > 1 && req.path[0] == "")
@@ -2958,20 +2957,20 @@ private:
         if (config.static_url == "")
             config.static_url = config.static_path;
         rc = nng_http_server_hold(&server, url);
-        enforce(rc == 0, "server hold");
+        nng_enforce(rc == 0, "server hold");
 
         staticroute(config.prefix_url ~ "/" ~ config.static_url ~ "/", buildPath(config.root_path, config.static_path), config
                 .static_map);
         /**
         nng_http_handler *hs;
         rc = nng_http_handler_alloc_directory(&hs, toStringz(config.prefix_url~"/"~config.static_path), buildPath(config.root_path, config.static_url).toStringz());
-        enforce(rc==0, "static handler alloc");
+        nng_enforce(rc==0, "static handler alloc");
         rc = nng_http_server_add_handler(server, hs);
-        enforce(rc==0, "static handler add");
+        nng_enforce(rc==0, "static handler add");
         */
 
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0, "aio alloc");
+        nng_enforce(rc == 0, "aio alloc");
 
     }
 
@@ -3022,12 +3021,12 @@ struct WebClient {
         int rc;
         connected = false;
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_alloc(&req, null);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         if (uri != null && uri != "") {
             rc = connect(uri);
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
 
     }
@@ -3038,17 +3037,17 @@ struct WebClient {
         if (cli != null)
             nng_http_client_free(cli);
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_url_parse(&url, uri.toStringz());
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_client_alloc(&cli, url);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         nng_http_client_connect(cli, aio);
         nng_aio_wait(aio);
         rc = nng_aio_result(aio);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         conn = cast(nng_http_conn*) nng_aio_get_output(aio, 0);
-        enforce(conn != null);
+        nng_enforce(conn != null);
         connected = true;
         return 0;
     }
@@ -3062,9 +3061,9 @@ struct WebClient {
 
     version(withtls) {
         void set_tls ( NNGTLS* tls ) {
-            enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+            nng_enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
             auto rc = nng_http_client_set_tls(cli, tls.tls);
-            enforce(rc==0, "client set tls");
+            nng_enforce(rc==0, "client set tls");
         }
     }
 
@@ -3087,23 +3086,23 @@ struct WebClient {
         nng_aio* aio;
         WebData wd = WebData();
         rc = nng_url_parse(&url, uri.toStringz());
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_client_alloc(&cli, url);
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_req_alloc(&req, url);
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
     
         version(withtls) {
             if(ptls) {
                 NNGTLS *tls = cast(NNGTLS*) ptls;
-                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                nng_enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
                 rc = nng_http_client_set_tls(cli, tls.tls);
-                enforce(rc==0, "client set tls");
+                nng_enforce(rc==0, "client set tls");
             }
         }
         
@@ -3116,10 +3115,10 @@ struct WebClient {
         }
 
         rc = nng_http_req_set_method(req, toStringz("GET"));
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         foreach (k; headers.keys) {
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         nng_http_client_transact(cli, req, res, aio);
         nng_aio_wait(aio);
@@ -3154,23 +3153,23 @@ struct WebClient {
         nng_aio* aio;
         WebData wd = WebData();
         rc = nng_url_parse(&url, uri.toStringz());
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_client_alloc(&cli, url);
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_req_alloc(&req, url);
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0, nng_errstr(rc));
+        nng_enforce(rc == 0, nng_errstr(rc));
         nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
         
         version(withtls) {
             if(ptls) {
                 NNGTLS *tls = cast(NNGTLS*) ptls;
-                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                nng_enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
                 rc = nng_http_client_set_tls(cli, tls.tls);
-                enforce(rc==0, "client set tls");
+                nng_enforce(rc==0, "client set tls");
             }
         }
 
@@ -3182,13 +3181,13 @@ struct WebClient {
             nng_http_res_free(res);
         }
         rc = nng_http_req_set_method(req, toStringz("POST"));
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         foreach (k; headers.keys) {
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         rc = nng_http_req_copy_data(req, data.ptr, data.length);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         nng_http_client_transact(cli, req, res, aio);
         nng_aio_wait(aio);
         rc = nng_aio_result(aio);
@@ -3224,22 +3223,22 @@ struct WebClient {
         nng_http_res* res;
         nng_url* url;
         rc = nng_url_parse(&url, uri.toStringz());
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_client_alloc(&cli, url);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_alloc(&req, url);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         
         version(withtls) {
             if(ptls) {
                 NNGTLS *tls = cast(NNGTLS*) ptls;
-                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                nng_enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
                 rc = nng_http_client_set_tls(cli, tls.tls);
-                enforce(rc==0, "client set tls");
+                nng_enforce(rc==0, "client set tls");
             }
         }
 
@@ -3253,12 +3252,12 @@ struct WebClient {
         a.res = res;
         a.aio = aio;
         rc = nng_aio_alloc(&aio, &webclientrouter, a);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_set_method(req, toStringz("GET"));
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         foreach (k; headers.keys) {
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         nng_http_client_transact(cli, req, res, aio);
         return NNGAio(aio);
@@ -3285,22 +3284,22 @@ struct WebClient {
         nng_http_res* res;
         nng_url* url;
         rc = nng_url_parse(&url, uri.toStringz());
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_client_alloc(&cli, url);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_alloc(&req, url);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         
         version(withtls) {
             if(ptls) {
                 NNGTLS *tls = cast(NNGTLS*) ptls;
-                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                nng_enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
                 rc = nng_http_client_set_tls(cli, tls.tls);
-                enforce(rc==0, "client set tls");
+                nng_enforce(rc==0, "client set tls");
             }
         }
 
@@ -3313,15 +3312,15 @@ struct WebClient {
         a.res = res;
         a.aio = aio;
         rc = nng_aio_alloc(&aio, &webclientrouter, a);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_set_method(req, toStringz("POST"));
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         foreach (k; headers.keys) {
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         rc = nng_http_req_copy_data(req, data.ptr, data.length);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         nng_http_client_transact(cli, req, res, aio);
         return NNGAio(aio);
     }
@@ -3348,22 +3347,22 @@ struct WebClient {
         nng_http_res* res;
         nng_url* url;
         rc = nng_url_parse(&url, uri.toStringz());
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_client_alloc(&cli, url);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_alloc(&req, url);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_res_alloc(&res);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_aio_alloc(&aio, null, null);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         
         version(withtls) {
             if(ptls) {
                 NNGTLS *tls = cast(NNGTLS*) ptls;
-                enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
+                nng_enforce(tls.mode == nng_tls_mode.NNG_TLS_MODE_CLIENT);
                 rc = nng_http_client_set_tls(cli, tls.tls);
-                enforce(rc==0, "client set tls");
+                nng_enforce(rc==0, "client set tls");
             }
         }
 
@@ -3377,12 +3376,12 @@ struct WebClient {
         a.res = res;
         a.aio = aio;
         rc = nng_aio_alloc(&aio, &webclientrouter, a);
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         rc = nng_http_req_set_method(req, toStringz(method));
-        enforce(rc == 0);
+        nng_enforce(rc == 0);
         foreach (k; headers.keys) {
             rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         if (method == "POST" || method == "PUT" || method == "PATCH") {
             if (text == null) {
@@ -3391,7 +3390,7 @@ struct WebClient {
             else {
                 rc = nng_http_req_copy_data(req, text.toStringz(), text.length);
             }
-            enforce(rc == 0);
+            nng_enforce(rc == 0);
         }
         nng_http_client_transact(cli, req, res, aio);
         return NNGAio(aio);
@@ -3471,18 +3470,18 @@ struct WebSocket {
         joined = false;
         void delegate(void*) d1 = &(this.nng_ws_rxcb);
         rc = nng_aio_alloc(&rxaio, d1.funcptr, self());
-        enforce(rc == 0, "Conn aio init0");
+        nng_enforce(rc == 0, "Conn aio init0");
         void delegate(void*) d2 = &(this.nng_ws_txcb);
         rc = nng_aio_alloc(&txaio, d2.funcptr, self());
-        enforce(rc == 0, "Conn aio init1");
+        nng_enforce(rc == 0, "Conn aio init1");
         void delegate(void*) d3 = &(this.nng_ws_conncb);
         rc = nng_aio_alloc(&connaio, d3.funcptr, self());
-        enforce(rc == 0, "Conn aio init2");
+        nng_enforce(rc == 0, "Conn aio init2");
         void delegate(void*) d4 = &(this.nng_ws_keepcb);
         rc = nng_aio_alloc(&keepaio, d4.funcptr, self());
-        enforce(rc == 0, "Conn aio init3");
+        nng_enforce(rc == 0, "Conn aio init3");
         rc = nng_mtx_alloc(&mtx);
-        enforce(rc == 0, "Mtx init");
+        nng_enforce(rc == 0, "Mtx init");
         rxbuf = new ubyte[](_bufsize);
         txbuf = new ubyte[](_bufsize);
         rxiov.iov_buf = rxbuf.ptr;
@@ -3490,9 +3489,9 @@ struct WebSocket {
         txiov.iov_buf = txbuf.ptr;
         txiov.iov_len = _bufsize;
         rc = nng_aio_set_iov(rxaio, 1, &rxiov);
-        enforce(rc == 0, "Invalid rx iov");
+        nng_enforce(rc == 0, "Invalid rx iov");
         rc = nng_aio_set_iov(txaio, 1, &txiov);
-        enforce(rc == 0, "Invalid tx iov");
+        nng_enforce(rc == 0, "Invalid tx iov");
         keeptm = _keeptm;
         conntm = _conntm;
         ready = true;
@@ -3571,7 +3570,7 @@ struct WebSocket {
             return;
         }
         rc = nng_aio_set_iov(rxaio, 1, &rxiov);
-        enforce(rc == 0, "Invalid rx iov1");
+        nng_enforce(rc == 0, "Invalid rx iov1");
         nng_stream_recv(s, rxaio);
     }
 
@@ -3598,7 +3597,7 @@ struct WebSocket {
         txbuf[0 .. data.length] = data[0 .. data.length];
         txiov.iov_len = data.length;
         rc = nng_aio_set_iov(txaio, 1, &txiov);
-        enforce(rc == 0, "Invalid tx iov");
+        nng_enforce(rc == 0, "Invalid tx iov");
         nng_stream_send(s, txaio);
         nng_aio_wait(txaio);
     }
@@ -3636,7 +3635,7 @@ struct WebSocketApp {
             nng_duration iconntm = 100
     ) {
         int rc;
-        enforce(iuri.startsWith("ws://"), "URI should be ws://*");
+        nng_enforce(iuri.startsWith("ws://"), "URI should be ws://*");
         uri = iuri;
         starts = 0;
         s = null;
@@ -3649,16 +3648,16 @@ struct WebSocketApp {
         keeptm = ikeeptm;
         conntm = iconntm;
         rc = nng_mtx_alloc(&mtx);
-        enforce(rc == 0, "Listener init0");
+        nng_enforce(rc == 0, "Listener init0");
         rc = nng_stream_listener_alloc(&sl, uri.toStringz());
-        enforce(rc == 0, "Listener init1");
+        nng_enforce(rc == 0, "Listener init1");
         rc = nng_stream_listener_set_bool(sl, toStringz(NNG_OPT_WS_RECV_TEXT), true);
-        enforce(rc == 0, "Listener init2");
+        nng_enforce(rc == 0, "Listener init2");
         rc = nng_stream_listener_set_bool(sl, toStringz(NNG_OPT_WS_SEND_TEXT), true);
-        enforce(rc == 0, "Listener init3");
+        nng_enforce(rc == 0, "Listener init3");
         void delegate(void*) d = &(this.accb);
         rc = nng_aio_alloc(&accio, d.funcptr, self());
-        enforce(rc == 0, "Accept aio init");
+        nng_enforce(rc == 0, "Accept aio init");
     }
 
     void start() {
@@ -3666,7 +3665,7 @@ struct WebSocketApp {
         nng_mtx_lock(mtx);
         if (starts == 0) {
             rc = nng_stream_listener_listen(sl);
-            enforce(rc == 0, "Websocket App failed to listen on address " ~ uri);
+            nng_enforce(rc == 0, "Websocket App failed to listen on address " ~ uri);
             nng_stream_listener_accept(sl, accio);
         }
         starts++;
@@ -3712,9 +3711,9 @@ private:
             return;
         }
         s = cast(nng_stream*)nng_aio_get_output(accio, 0);
-        enforce(s != null, "Invalid stream pointer");
+        nng_enforce(s != null, "Invalid stream pointer");
         c = new WebSocket(cast(WebSocketApp*)self(), s, onconnect, onclose, onerror, onmessage, context, bufsize, keeptm, conntm);
-        enforce(c != null, "Invalid conn pointer");
+        nng_enforce(c != null, "Invalid conn pointer");
         conns ~= c;
         nng_stream_listener_accept(sl, accio);
         nng_mtx_unlock(mtx);
@@ -3929,12 +3928,12 @@ struct WebSocketClient {
                 sock.close();
             }
             
-            enforce(url.length <= 512, "ERROR: url size limit exceeded");
-            enforce(origin.length <= 200, "ERROR: origin size limit exceeded");
+            nng_enforce(url.length <= 512, "ERROR: url size limit exceeded");
+            nng_enforce(origin.length <= 200, "ERROR: origin size limit exceeded");
             auto u = urlparse(url);
             if(u.port is null) u.port = "80";            
             rc = connect(u.host, u.port);
-            enforce(rc == 0, "Could not connect: "~_errstr);
+            nng_enforce(rc == 0, "Could not connect: "~_errstr);
             
             string hello = format("GET /%s HTTP/1.1\r\n", join(u.path,"/"))
             ~ "Upgrade: websocket\r\n" 
@@ -3952,10 +3951,10 @@ struct WebSocketClient {
             
             auto sent = sock.send(cast(ubyte[])hello.dup);
             auto received = sock.receive(buf);
-            enforce(received > 0, "Invalid status response: " ~ lastSocketError); 
-            enforce(received > 8 && received < 1023 && !buf[0..received].find("\r\n\r\n").empty, "Invalid status string: "~buf[0 .. received]);
+            nng_enforce(received > 0, "Invalid status response: " ~ lastSocketError); 
+            nng_enforce(received > 8 && received < 1023 && !buf[0..received].find("\r\n\r\n").empty, "Invalid status string: "~buf[0 .. received]);
             auto status = to!int(to!string(buf[8 .. 12]).strip);
-            enforce(status == 101, "Bad status: " ~ buf[8 .. 12]);
+            nng_enforce(status == 101, "Bad status: " ~ buf[8 .. 12]);
             sock.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY, 1);            
             sock.setOption(SocketOptionLevel.SOCKET, SocketOption.SNDBUF, opt.txbuflimit);
             sock.setOption(SocketOptionLevel.SOCKET, SocketOption.RCVBUF, opt.rxbuflimit);
@@ -4115,7 +4114,7 @@ struct WebSocketClient {
         masking_key = [rndGen.uniform!ubyte, rndGen.uniform!ubyte, rndGen.uniform!ubyte, rndGen.uniform!ubyte];
         use_mask = true;
         rc = openstate(url, origin);
-        enforce(rc == 0, "Error connecting: "~url);
+        nng_enforce(rc == 0, "Error connecting: "~url);
     }
 
     void poll(ulong timeout = 0){ // timeout in msecs
