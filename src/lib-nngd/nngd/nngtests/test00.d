@@ -3,6 +3,7 @@ module nngd.nngtests.test00;
 import std.stdio;
 
 import nngd;
+import nngd.nngtests.suite;
 
 const _testclass = "nngd.nngtests.nng_test00_template";
 
