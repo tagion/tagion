@@ -194,7 +194,7 @@ struct DARTInterfaceService {
         scope (exit) {
             pool.shutdown();
         }
-        pool.init();
+        pool.start();
         auto rc = sock.listen(opts.sock_addr);
         check!ServiceError(rc == nng_errno.NNG_OK, format("Failed to listen on %s : %s", opts.sock_addr, nng_errstr(rc)));
 

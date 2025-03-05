@@ -63,7 +63,7 @@ class nng_test08_pool : NNGTest {
             s.sendbuf = 65536;
 
             NNGPool pool = NNGPool(&s, &this.server_callback, 8, &ctx, &err_cb);
-            pool.init();
+            pool.start();
 
             auto rc = s.listen(uri);
             enforce(rc == 0);

@@ -147,7 +147,7 @@ struct NNGMessage {
     /**
     * Copy creator     
     */
-    this(ref return scope NNGMessage src) {
+    this(scope ref NNGMessage src) {
         auto rc = nng_msg_dup(&msg, src.pointer);
         nng_enforce(rc == 0);
     }
@@ -155,7 +155,9 @@ struct NNGMessage {
     /**
     * Copy creator based on internal message pointer  
     */
+    version(none)
     this(nng_msg* msgref) {
+        pragma(msg, __FILE__, __LINE__, ": why should this allocate if empty?");
         if (msgref is null) {
             auto rc = nng_msg_alloc(&msg, 0);
             nng_enforce(rc == 0);
@@ -181,7 +183,7 @@ struct NNGMessage {
     * Message pointer getter   
     */
     @nogc @safe
-    @property nng_msg* pointer() nothrow {
+    @property nng_msg* pointer() nothrow return scope {
         return msg;
     }
 
@@ -332,6 +334,7 @@ struct NNGMessage {
                 size = length;
             if (size == 0)
                 return [];
+            pragma(msg, "Maybe add some bounds checking?");
             T data = cast(T)(bodyptr)[0 .. size];
             auto rc = nng_msg_trim(msg, size);
             nng_enforce(rc == 0);
@@ -576,6 +579,7 @@ struct NNGAio {
         pointer(src);
     }
 
+    @safe
     ~this() {
         nng_aio_free(aio);
         pcontext = null;
@@ -680,6 +684,7 @@ struct NNGAio {
     /**
     * Poller wait 
     */
+    @safe
     void wait() {
         nng_aio_wait(aio);
     }
@@ -724,6 +729,7 @@ struct NNGAio {
         = no callback
         = wait for abort and callback complete
     */
+    @safe
     void stop() {
         nng_aio_stop(aio);
     }
@@ -1005,7 +1011,7 @@ struct NNGSocket {
     /**
     * Create and start listener  
     */
-    int listen ( const(string) url, const bool nonblock = false ) nothrow {
+    int listen ( const(string) url, const bool nonblock = false ) @safe nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED) {
             auto rc = nng_listen(m_socket, toStringz(url), &m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -1856,11 +1862,11 @@ struct NNGPoolWorker {
         nng_mtx_unlock(mtx);
     }
 
-    void wait() {
+    void wait() @safe {
         this.aio.wait();
     }
 
-    void shutdown() {
+    void shutdown() @safe {
         this.state = nng_worker_state.EXIT;
         this.aio.stop();
     }
@@ -1977,7 +1983,7 @@ struct NNGPool {
     /**
     * Init state machine (switch to initial state)
     */
-    void init() {
+    void start() {
         nng_enforce(nworkers > 0);
         for (auto i = 0; i < nworkers; i++) {
             nng_pool_stateful(workers[i]);
@@ -1987,7 +1993,7 @@ struct NNGPool {
     /**
     * Stop state machine and wait
     */
-    void shutdown() {
+    void shutdown() @safe {
         nng_enforce(nworkers > 0);
         for (auto i = 0; i < nworkers; i++) {
             workers[i].shutdown();
