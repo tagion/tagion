@@ -54,6 +54,10 @@ Implement the initial library for the contract rules.
 
 ## Backlog
 
+### Protocol violations
+- [ ] Add proper error handling for nodeinterface when the response is larger than the allowed
+- [ ] Limit the request response size from the wavefront
+
 ### Hashgraph monitor updates
 Tasks: 
 - [X] Remove old events that are older than X round received. 
