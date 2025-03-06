@@ -8,6 +8,7 @@
             "name": "Debug",
             "type": "gdb",
             "request": "launch",
+            // "target": "./build/x86_64-linux/bin/recorder_synchronizer",
             "target": "./build/x86_64-linux/bin/dart_synchronization",
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText",

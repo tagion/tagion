@@ -344,6 +344,10 @@
     "dart_synchronization": {
       "timeout" : 3.0,
       "stages" : ["dart_synchronization"]
+    },
+    "recorder_synchronizer": {
+      "timeout" : 3.0,
+      "stages" : ["recorder_synchronizer"]
     }
   }
 }

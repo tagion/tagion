@@ -65,4 +65,6 @@ alias dartCompareRR = Request!"dartCompare";
 alias dartSyncRR = Request!"dartSync";
 alias dartReplayRR = Request!"dartReplay";
 
+alias dartRecorderSyncRR = Request!"recorderSync";
+
 alias EpochShutdown = Msg!"epoch_shutdown"; // Tell the transcript to stop at a specific epoch
