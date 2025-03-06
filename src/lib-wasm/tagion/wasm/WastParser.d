@@ -384,6 +384,8 @@ struct WastParser {
                     wasmexpr(IR.END);
                     return stage;
                 case BLOCK_ELSE:
+                    r.check(stage is BLOCK_CONDITIONAL,
+                            format( "An %s can on be call after a %s block, %s block is not expected here", BLOCK_ELSE, BLOCK_CONDITIONAL, stage));
                     r.nextToken;
                     wasmexpr(IR.ELSE);
                     while (r.type is TokenType.BEGIN) {
