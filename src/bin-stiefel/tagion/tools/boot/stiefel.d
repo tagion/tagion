@@ -36,6 +36,8 @@ int _main(string[] args) {
     bool standard_output;
     bool standard_input;
     bool account;
+    // Could use some info about available memory to automatically determine this?
+    long max_archives_per_recorder = 10_000;
     string genesis;
     bool trt;
     string[] nodekeys;
@@ -46,16 +48,13 @@ int _main(string[] args) {
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
-                "v|verbose", "Prints more debug information", &__verbose_switch, //"c|stdout", "Print to standard output", &standard_output,
-                "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
+                "o|output", format("Output filename : default %s", output_filename), &output_filename,
                 "p|nodekey", "Node channel key(Pubkey) ", &nodekeys,
                 "t|trt", "Generate a recorder from a list of bill files for the trt", &trt,
-                "a|account", "Accumulates all bills in the input", &account, //         "bills|b", "Generate bills", &number_of_bills,
-                "g|genesis", "Genesis document", &genesis,// "value|V", format("Bill value : default: %d", value), &value,
-                // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-                //"initbills|b", "Testing mode", &initbills,
-                //"nnc", "Initialize NetworkNameCard with given name", &nnc_name,
-                
+                "a|account", "Accumulates all bills in the input", &account,
+                "g|genesis", "Genesis document", &genesis,
+                "maxarchives", format("Maximum amount of archives per recorder, 0=nolimit : default: %s", max_archives_per_recorder), &max_archives_per_recorder,
         );
 
         if (version_switch) {
@@ -64,10 +63,8 @@ int _main(string[] args) {
         }
 
         if (main_args.helpWanted) {
-            //       writeln(logo);
             defaultGetoptPrinter(
                     [
-                    //                format("%s version %s", program, REVNO),
                     "Documentation: https://docs.tagion.org/",
                     "",
                     "Usage:",
@@ -87,9 +84,33 @@ int _main(string[] args) {
         auto recorder = factory.recorder;
         standard_input = (args.length == 1);
         standard_output = output_filename.empty;
+        File fout;
         if (standard_output) {
             vout = stderr;
         }
+        else {
+            fout = File(output_filename, "a");
+        }
+
+        void write_recorder(RecordFactory.Recorder recorder) {
+            if (standard_output) {
+                stdout.rawWrite(recorder.toDoc.serialize);
+                return;
+            }
+            verbose("write to %s", output_filename);
+            fout.fwrite(recorder);
+        }
+
+        void recorder_add(A)(A archive) {
+            recorder.insert(archive, Archive.Type.ADD);
+            if(max_archives_per_recorder <= 0 || recorder.length < max_archives_per_recorder) {
+                return;
+            }
+            write_recorder(recorder);
+            destroy(recorder);
+            recorder = factory.recorder;
+        }
+
         verbose("standard_input: %s, args %s", standard_input, args);
         if (!nodekeys.empty && standard_input) {
             auto fin = stdin;
@@ -101,7 +122,7 @@ int _main(string[] args) {
                     const bill = TagionBill(doc);
                     total += bill.value.units;
                     start_bills += 1;
-                    recorder.insert(bill, Archive.Type.ADD);
+                    recorder_add(bill);
                 }
             }
             TagionGlobals genesis_globals;
@@ -117,11 +138,12 @@ int _main(string[] args) {
                 testamony = genesis.fread;
             }
             auto genesis_list = createGenesis(nodekeys, testamony, genesis_globals);
-            recorder.insert(genesis_list, Archive.Type.ADD);
+            recorder_add(genesis_list);
         }
         else if (standard_input) {
             auto fin = stdin;
             if (trt) {
+                // FIXME use a range instead of reallocating all the bills
                 TagionBill[] bills;
                 foreach (doc; HiBONRange(fin)) {
                     if (doc.isRecord!TagionBill) {
@@ -133,24 +155,20 @@ int _main(string[] args) {
                 genesisTRT(bills, recorder, net);
             }
             else {
-                HiBONRange(fin).each!(doc => recorder.add(doc));
+                auto hrange = HiBONRange(fin);
+                foreach(doc; hrange) {
+                    recorder_add(doc);
+                }
             }
         }
         else {
             foreach (file; args[1 .. $]) {
                 check(file.exists, format("File %s not found!", file));
-
                 const doc = file.fread;
-                recorder.add(doc);
+                recorder_add(doc);
             }
         }
-        if (standard_output) {
-            stdout.rawWrite(recorder.toDoc.serialize);
-            return 0;
-        }
-
-        verbose("write to %s", output_filename);
-        output_filename.fwrite(recorder);
+        write_recorder(recorder);
     }
     catch (Exception e) {
         error(e);
