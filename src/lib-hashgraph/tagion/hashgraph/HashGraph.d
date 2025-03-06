@@ -822,7 +822,7 @@ class HashGraph {
             }
             log("connected_events_count %s: %s", from_channel.encodeBase64, connected_events_count);
 
-            return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides));
+            /* return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides)); */
             break;
         default:
             assert(0, received_wave.state.stringof);
