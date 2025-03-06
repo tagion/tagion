@@ -119,6 +119,7 @@ enum IRType {
     RETURN,
     BLOCK, /// Block instruction
     BLOCK_CONDITIONAL, /// Used for if statement
+    BLOCK_ELSE, // Used for else statment (The block number is the same as for the BLOCK_CONDITION)
     BRANCH, /// Branch jump instruction
     BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
@@ -160,7 +161,7 @@ enum IR : ubyte {
         @Instr("if", "if", 1, IRType.BLOCK_CONDITIONAL, [Types.VOID])                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "else", 0, IRType.BLOCK)                       ELSE                = 0x05, ///  else
+        @Instr("else", "else", 0, IRType.BLOCK_ELSE)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
@@ -913,6 +914,7 @@ struct ExprRange {
                     break;
                 case BLOCK_CONDITIONAL:
                 case BLOCK:
+                case BLOCK_ELSE:
                     scope (exit) {
                         _level++;
                     }

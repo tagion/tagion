@@ -700,6 +700,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case BLOCK_CONDITIONAL:
                     case BLOCK:
+                    case BLOCK_ELSE:
                         block_comment = format(";; block %d %s!", block_count, dType(elm));
                         block_count++;
 
@@ -711,7 +712,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         if (elm.code is IR.IF) {
                             bout.writefln("%s// -- %s", indent, elm.instr.name);
                             ctx.perform(elm.code, elm.instr.pops);
-                            bout.writefln("%sif (%s) {", indent, ctx.pop); 
+                            bout.writefln("%sif (%s) {", indent, ctx.pop);
                         }
                         else {
                             bout.writefln("%sdo { // %s %s", indent, block_comment, *elm.instr);

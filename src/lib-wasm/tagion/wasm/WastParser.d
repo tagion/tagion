@@ -331,11 +331,6 @@ struct WastParser {
                         label = r.token;
                         r.nextToken;
                     }
-                    version (none)
-                        scope (success) {
-                            func_ctx.block_pop;
-                            wasmexpr(IR.END);
-                        }
                     const wasm_results = getReturns(r);
                     foreach (n; 0 .. instr.pops.length) {
                         inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
@@ -367,12 +362,15 @@ struct WastParser {
                                     r_else.token, else_ir));
                             r_else.nextToken;
                             __write("### Token after ELSE %s", r_else.token);
+                            __write("Else code       %(%02x %)", wasmexpr.serialize);
                             if (r_else.type is TokenType.END) {
                                 __write("!!!! Skip ELSE");
                                 r = r_else; /// Empty else '(else)' skip the else IR 
                             }
                             else {
+                                __write("Else line %s %s", r.getLine, r.save.take(3).map!(t => t.token));
                                 innerInstr(wasmexpr, r, wasm_results, next_stage);
+                                __write("After ELSE code %(%02x %)", wasmexpr.serialize);
                             }
                         }
 
@@ -384,6 +382,15 @@ struct WastParser {
                     }
                     func_ctx.block_pop;
                     wasmexpr(IR.END);
+                    return stage;
+                case BLOCK_ELSE:
+                    r.nextToken;
+                    wasmexpr(IR.ELSE);
+                    while (r.type is TokenType.BEGIN) {
+                        innerInstr(wasmexpr, r, block_results, next_stage);
+                    }
+                    //                    func_ctx.block_pop;
+                    //wasmexpr(IR.END);
                     return stage;
                 case BRANCH:
                     const branch_ir = irLookupTable[instr.name];
@@ -401,9 +408,12 @@ struct WastParser {
                         r.nextToken;
                         const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
+                        //__write("BR_code before %(%02x )", wasmexpr.serialize);
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
                         }
+                        //__write("BR_code before %(%02x )", wasmexpr.serialize);
+                        //__write("Block IDX=%d", blk.idx);
                         wasmexpr(IR.BR_IF, blk.idx);
                         break;
                     default:

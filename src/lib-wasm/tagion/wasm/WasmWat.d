@@ -332,6 +332,8 @@ alias check = Check!WatException;
                     block_count++;
                     output.writefln("%s%s%s %s", indent, elm.instr.name,
                             block_result_type(elm), block_comment);
+                    goto case;
+                case BLOCK_ELSE:
                     const end_elm = block(expr, indent ~ spacer, level + 1);
                     const end_instr = instrTable[end_elm.code];
                     output.writefln("%s%s", indent, end_instr.name);
