@@ -347,30 +347,22 @@ struct WastParser {
                         wasmexpr(irLookupTable[instr.name], type_idx);
                     }
                     func_ctx.block_push(wasm_results, label);
-                    __write("Before innerInstr %s", r);
                     const block_ir = irLookupTable[instr.name];
                     if (block_ir is IR.IF) {
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
-                        __write("Check for 'else' token '%s' current token %s", instr.name, r.token);
                         if (r.type is TokenType.BEGIN) {
                             auto r_else = r.save;
-                            __write("Possible ELSE %s", r.getLine);
                             r_else.nextToken;
                             const else_ir = irLookupTable.get(r_else.token, IR.UNREACHABLE);
                             check(else_ir is IR.ELSE,
                                     format("'else' statement expected not '%s' %s",
                                     r_else.token, else_ir));
                             r_else.nextToken;
-                            __write("### Token after ELSE %s", r_else.token);
-                            __write("Else code       %(%02x %)", wasmexpr.serialize);
                             if (r_else.type is TokenType.END) {
-                                __write("!!!! Skip ELSE");
                                 r = r_else; /// Empty else '(else)' skip the else IR 
                             }
                             else {
-                                __write("Else line %s %s", r.getLine, r.save.take(3).map!(t => t.token));
                                 innerInstr(wasmexpr, r, wasm_results, next_stage);
-                                __write("After ELSE code %(%02x %)", wasmexpr.serialize);
                             }
                         }
 
@@ -384,8 +376,10 @@ struct WastParser {
                     wasmexpr(IR.END);
                     return stage;
                 case BLOCK_ELSE:
-                    r.check(stage is BLOCK_CONDITIONAL,
-                            format( "An %s can on be call after a %s block, %s block is not expected here", BLOCK_ELSE, BLOCK_CONDITIONAL, stage));
+                        version(none)
+                    r.check(stage is ParserStage.CONDITIONAL,
+                            format( "An %s IRType is only allower after parsing a %s , not after a %s stage", 
+                            BLOCK_ELSE, ParserStage.CONDITIONAL, stage));
                     r.nextToken;
                     wasmexpr(IR.ELSE);
                     while (r.type is TokenType.BEGIN) {

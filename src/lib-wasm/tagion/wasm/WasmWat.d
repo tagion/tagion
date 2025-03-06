@@ -292,7 +292,6 @@ alias check = Check!WatException;
                 assert(elm.argtype is TYPES || elm.argtype is INDEX,
                         "Invalid block type");
                 if (elm.argtype is INDEX) {
-                    const x = wasmstream.get!(Section.TYPE);
                     const sec_type = wasmstream.get!(Section.TYPE);
                     const func_type = sec_type[elm.idx];
                     return format(" (result %-(%s %))",
@@ -332,20 +331,25 @@ alias check = Check!WatException;
                     block_count++;
                     output.writefln("%s%s%s %s", indent, elm.instr.name,
                             block_result_type(elm), block_comment);
-                    goto case;
-                case BLOCK_ELSE:
                     const end_elm = block(expr, indent ~ spacer, level + 1);
                     const end_instr = instrTable[end_elm.code];
                     output.writefln("%s%s", indent, end_instr.name);
                     //return end_elm;
 
                     // const end_elm=block_elm(elm);
-                    if (end_elm.code is IR.ELSE) {
+                    version(none)
+                        if (end_elm.code is IR.ELSE) {
                         const endif_elm = block(expr, indent ~ spacer, level + 1);
                         const endif_instr = instrTable[endif_elm.code];
                         output.writefln("%s%s %s count=%d", indent,
                                 endif_instr.name, block_comment, count);
                     }
+                    break;
+                case BLOCK_ELSE:
+                        const endif_elm = block(expr, indent ~ spacer, level + 1);
+                        const endif_instr = instrTable[endif_elm.code];
+                        output.writefln("%s%s %s count=%d", indent,
+                                endif_instr.name, block_comment, count);
                     break;
                 case BRANCH:
                     //                case BRANCH_IF:
