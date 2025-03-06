@@ -119,7 +119,7 @@ enum IRType {
     RETURN,
     BLOCK, /// Block instruction
     BLOCK_CONDITIONAL, /// Used for if statement
-    BLOCK_ELSE, // Used for else statment (The block number is the same as for the BLOCK_CONDITION)
+    BLOCK_ELSE, // Used for else statement (The block number is the same as for the BLOCK_CONDITION)
     BRANCH, /// Branch jump instruction
     BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
