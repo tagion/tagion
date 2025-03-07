@@ -156,7 +156,7 @@ struct EpochCreatorService {
                 }
             }
             catch (Exception e) {
-                log(e);
+                log.fatal(e);
                 if(!receiver.isinit && receiver.isMethod) {
                     const err_rpc = hirpc.error(receiver, "internal");
                     gossip_net.send(req, cast(Pubkey) receiver.pubkey, err_rpc);

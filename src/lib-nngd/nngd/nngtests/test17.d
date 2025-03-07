@@ -16,6 +16,7 @@ import core.thread;
 import core.thread.osthread;
 
 import nngd;
+import nngd.nngtests.suite;
 import nngd.nngtests.testdata;
 
 const _testclass = "nngd.nngtests.nng_test17_tls6";

@@ -131,7 +131,7 @@ class HashGraph {
     void initialize_witness(const(immutable(EventPackage)*[]) epacks)
     in {
         assert(_nodes.length > 0 && (channel in _nodes),
-                "Owen Eva event needs to be create before witness can be initialized");
+                "Own Eva event needs to be create before witness can be initialized");
         assert(_owner_node !is null);
     }
     do {
@@ -190,7 +190,6 @@ class HashGraph {
             .map!(n => n.event)
             .each!(e => e.initializeOrder);
 
-
     }
 
     /**
@@ -207,8 +206,8 @@ class HashGraph {
      * Returns: true if the hashgraph are connect to other nodes 
      */
     final bool areWeInGraph() const pure nothrow @nogc {
-        if(mirror_mode) {
-           return _nodes.byValue.count!(n => n._event !is null) >= node_size;
+        if (mirror_mode) {
+            return _nodes.byValue.count!(n => n._event !is null) >= node_size;
         }
         return _rounds.last_decided_round !is null;
     }
@@ -251,16 +250,19 @@ class HashGraph {
      */
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
         if (areWeInGraph) {
-            immutable epack = event_pack(time, null, payload);
-            const registered = registerEventPackage(epack);
-            assert(registered, "Could not register init tide");
+            if (!mirror_mode) {
+                immutable epack = event_pack(time, null, payload);
+                const registered = registerEventPackage(epack);
+                assert(registered, "Could not register init tide");
+            }
             return hirpc.wavefront(tidalWave());
         }
         return hirpc.wavefront(sharpWave());
     }
 
     /// Ditto
-    const(HiRPC.Sender) create_init_tide(T)(lazy const T payload, lazy const sdt_t time) if (isHiBONRecord!T) {
+    const(HiRPC.Sender) create_init_tide(T)(lazy const T payload, lazy const sdt_t time)
+            if (isHiBONRecord!T) {
         return create_init_tide(payload.toDoc, time);
 
     }
@@ -469,8 +471,10 @@ class HashGraph {
         _register = new Register(received_wave);
 
         scope (exit) {
-            log.event(topic, statistics.wavefront_event_package.stringof, statistics.wavefront_event_package);
-            log.event(topic, statistics.wavefront_event_package_used.stringof, statistics.wavefront_event_package);
+            log.event(topic, statistics.wavefront_event_package.stringof, statistics
+                    .wavefront_event_package);
+            log.event(topic, statistics.wavefront_event_package_used.stringof, statistics
+                    .wavefront_event_package);
             _register = null;
         }
 
@@ -491,8 +495,8 @@ class HashGraph {
     }
 
     @HiRPCMethod const(HiRPC.Sender) wavefront(
-            const Wavefront wave,
-            const uint id = 0) {
+        const Wavefront wave,
+        const uint id = 0) {
         return hirpc.wavefront(wave, id);
     }
 
@@ -588,7 +592,8 @@ class HashGraph {
             .sort!((a, b) => a.fingerprint < b.fingerprint);
         import std.algorithm.setops : setDifference;
 
-        auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
+        auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(
+            received_epacks, own_epacks);
 
         debug (EPOCH_LOG) {
             log("owner_epacks %s", own_epacks.length);
@@ -607,7 +612,8 @@ class HashGraph {
             frontSeat(first_event);
         }
 
-        auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
+        auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks)
+            .array;
 
         const state = ExchangeState.RIPPLE;
         return Wavefront(result, Tides.init, state);
@@ -640,9 +646,9 @@ class HashGraph {
      */
 
     HiRPC.Sender wavefront_response(
-            const HiRPC.Receiver received,
-            lazy const(sdt_t) time,
-            lazy const(Document) payload) {
+        const HiRPC.Receiver received,
+        lazy const(sdt_t) time,
+        lazy const(Document) payload) {
         immutable from_channel = received.pubkey;
 
         const received_wave = (received.isMethod)
@@ -716,7 +722,8 @@ class HashGraph {
             if (!areWeInGraph) {
                 break;
             }
-            check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
+            check(received_wave.epacks.length is 0, ConsensusFailCode
+                    .GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
             immutable epack = event_pack(time, null, payload());
             const registered = registerEventPackage(epack);
             assert(registered);
@@ -746,13 +753,18 @@ class HashGraph {
         return hirpc.error(received.getId, format("wavefront_error %s", received_wave.state));
     }
 
+    EventPackageCache mirror_package_cache;
     HiRPC.Sender mirror_wavefront_response(const HiRPC.Receiver received, lazy const(sdt_t) time) {
+        scope (exit)
+            log("package_cache %s", mirror_package_cache.length);
+
+        immutable from_channel = received.pubkey;
 
         const received_wave = (received.isMethod)
             ? received.params!Wavefront(hirpc.net) : received.result!Wavefront(hirpc.net);
 
-        if (!areWeInGraph) {
-
+        switch (received_wave.state) with (ExchangeState) {
+        case COHERENT:
             auto received_epacks = received_wave
                 .epacks
                 .map!((e) => cast(immutable(EventPackage)*) e)
@@ -768,15 +780,52 @@ class HashGraph {
             auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
 
             // delta received from sharp should be added to our own node.
-            foreach (epack; changes) {
-                auto first_event = new Event(epack, this);
+            foreach (e; changes) {
+                auto first_event = new Event(e, this);
                 _event_cache[first_event.fingerprint] = first_event;
                 frontSeat(first_event);
+                if (!(e.fingerprint in mirror_package_cache || e.fingerprint in _event_cache)) {
+                    mirror_package_cache[e.fingerprint] = e;
+                }
             }
 
-            // auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
-            // const state = ExchangeState.RIPPLE;
-            // return Wavefront(result, Tides.init, state);
+            auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks)
+                .array;
+            const state = ExchangeState.RIPPLE;
+            if (received.isMethod) {
+                return hirpc.result(received, Wavefront(result, Tides.init, state));
+            }
+            break;
+        case FIRST_WAVE:
+            immutable(EventPackage)* e_newest;
+            foreach (e; received_wave.epacks) {
+                auto event = new Event(e, this);
+                frontSeat(event);
+
+                if (!(e.fingerprint in mirror_package_cache || e.fingerprint in _event_cache)) {
+                    mirror_package_cache[e.fingerprint] = e;
+                }
+                if (e_newest is null || e.event_body.altitude > e_newest.event_body.altitude) {
+                    e_newest = e;
+                }
+            }
+
+            /// Remove this, it is just to see that the package events are actually connected
+            uint connected_events_count;
+            enum UPPER_BOUND = 1000;
+            foreach (_; 0 .. UPPER_BOUND) {
+                if(!(e_newest.event_body.mother in mirror_package_cache)) {
+                    break;
+                }
+                e_newest = mirror_package_cache[e_newest.event_body.mother];
+                connected_events_count++;
+            }
+            log("connected_events_count %s: %s", from_channel.encodeBase64, connected_events_count);
+
+            /* return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides)); */
+            break;
+        default:
+            assert(0, received_wave.state.stringof);
         }
 
         return hirpc.error(received.getId, format("mirror node %s", received_wave.state));

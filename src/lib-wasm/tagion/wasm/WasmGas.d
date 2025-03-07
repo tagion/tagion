@@ -75,6 +75,7 @@ struct WasmGas {
                         break;
                     case BLOCK_CONDITIONAL:
                     case BLOCK:
+                    case BLOCK_ELSE:
                         wasmexpr(elm.code, elm.types[0]);
                         scope block_bout = new OutBuffer;
                         pragma(msg, "fixme(cbr): add block_block_out.reserve");

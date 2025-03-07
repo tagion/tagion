@@ -1,3 +1,4 @@
+@description("Tagion cli wallet")
 module tagion.tools.wallet.geldbeutel;
 import core.thread;
 import std.algorithm;
@@ -72,6 +73,7 @@ int _main(string[] args) {
     char[] passphrase;
     char[] salt;
     string account_name;
+    string[] override_options;
     scope (exit) {
         passphrase[] = 0;
         salt[] = 0;
@@ -95,6 +97,7 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Enable verbose print-out", &__verbose_switch,
                 "O|overwrite", "Overwrite the config file and exits", &overwrite_switch,
+                "option", "Set an option", &override_options,
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
@@ -180,6 +183,11 @@ int _main(string[] args) {
                 return 0;
             }
         }
+
+        if (!override_options.empty) {
+            options.set_override_options(override_options);
+        }
+
         auto wallet_interface = WalletInterface(options);
         if (!_salt.empty) {
             auto salt_tmp = (() @trusted => cast(char[]) _salt)();

@@ -504,7 +504,7 @@ struct SecureWallet(Net : SecureNet) {
         import tagion.script.standardnames;
 
         auto owner_indices = account.derivers.byKey
-            .map!(owner => net.dartKey(TRTLabel, owner));
+            .map!(owner => net.dartKey(HashNames.trt_owner, owner));
 
         auto params = new HiBON;
         auto params_dart_indices = new HiBON;
@@ -528,7 +528,7 @@ struct SecureWallet(Net : SecureNet) {
         import tagion.script.standardnames;
 
         DARTIndex[] contract_indices = contracts.map!(doc => net.dartIndex(doc))
-            .map!(idx => net.dartKey(StdNames.hash_contract, idx))
+            .map!(idx => net.dartKey(HashNames.hash_contract, idx))
             .array;
 
         auto params = new HiBON;

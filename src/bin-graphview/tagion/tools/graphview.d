@@ -1,3 +1,4 @@
+@description("Create an image from graph data")
 module tagion.tools.graphview;
 import std.array : join;
 import std.range;

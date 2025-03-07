@@ -19,15 +19,14 @@ do {
 
 mixin template doOneMain(alltools...) {
     import std.algorithm.searching : canFind;
-    import std.array : split;
-    import std.array : join;
+    import std.array;
     import std.format;
     import std.getopt;
     import std.path : baseName;
     import std.range : tail;
     import std.stdio;
     import std.traits;
-    import tagion.tools.Basic : Result;
+    import tagion.tools.Basic : Result, description;
     import tagion.tools.revision;
 
     /*
@@ -35,6 +34,14 @@ mixin template doOneMain(alltools...) {
     */
     enum tailName(string name) = name.split(".").tail(1)[0];
     enum toolName(alias tool) = tailName!(moduleName!tool);
+    template toolDesc(alias tool) {
+        static if(getUDAs!(tool, description).length >= 1) {
+            enum toolDesc = getUDAs!(tool, description)[0].text;
+        }
+        else {
+            enum toolDesc = "";
+        }
+    }
 
     /* 
      * 
@@ -78,6 +85,19 @@ mixin template doOneMain(alltools...) {
                 Filter!(notNull, staticMap!(alternative, alltools))
         )
     ];
+
+    void print_tools_and_desc(Output)(Output output) {
+        ulong max_name_length;
+        foreach(name; toolnames) {
+            if(name.length > max_name_length) {
+                max_name_length = name.length;
+            }
+        }
+        foreach(tool_; alltools) {
+            output.formattedWrite("%*s %s\n", max_name_length, toolName!tool_, toolDesc!tool_);
+        }
+    }
+
 
     /* 
      * Handles the arguments for the onetool main
@@ -131,18 +151,20 @@ mixin template doOneMain(alltools...) {
             }
 
             if (main_args.helpWanted) {
+                auto tool_desc_stream = appender!string;
+                print_tools_and_desc(tool_desc_stream);
                 defaultGetoptPrinter(
                         [
-                    revision_text,
                     "Documentation: https://docs.tagion.org/",
                     "Usage:",
                     format("%s <program> [<option>...]", program),
-                    format("Tool programs %-(%s, %)", toolnames),
                     "",
+                    "Tool programs:",
+                    tool_desc_stream.data,
                     "<option>:",
 
                 ].join("\n"),
-                        main_args.options);
+                main_args.options);
                 return Result(0, true);
             }
         }
@@ -179,7 +201,8 @@ mixin template doOneMain(alltools...) {
         if (!result.executed) {
             result = onetool_main(args);
             if (!result.executed) {
-                stderr.writefln("Error: Invalid tool %s, available tools are\n%-(%s\n%)", tool, toolnames);
+                stderr.writefln("Error: Invalid tool %s, available tools are", tool);
+                print_tools_and_desc(stderr.lockingTextWriter);
             }
         }
 

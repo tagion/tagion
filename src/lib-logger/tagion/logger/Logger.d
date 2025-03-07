@@ -278,16 +278,6 @@ logs the fmt text in INFO level
         report(LogLevel.INFO, fmt, args);
     }
 
-    @trusted
-    void opCall(lazy const(Throwable) t) const nothrow {
-        import std.exception;
-
-        auto mt = assumeWontThrow(cast(Throwable) t);
-
-        fatal(assumeWontThrow(mt.toString));
-        fatal(mt.info.toString);
-    }
-
     void trace(lazy string text) const nothrow {
         report(LogLevel.TRACE, text);
     }
@@ -310,6 +300,12 @@ logs the fmt text in INFO level
 
     void error(Args...)(string fmt, lazy Args args) const nothrow {
         report(LogLevel.ERROR, fmt, args);
+    }
+
+    @trusted
+    void fatal(const(Throwable) t) const nothrow {
+        auto mt = cast(Throwable)t;
+        fatal(mt.toString);
     }
 
     void fatal(lazy string text) const nothrow {

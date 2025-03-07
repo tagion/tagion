@@ -18,7 +18,7 @@ import tagion.hibon.Document : Document;
 
 @recordType(TYPENAME ~ "trt") 
 struct TRTArchive {
-    @label(TRTLabel) Pubkey owner;
+    @label(HashNames.trt_owner) Pubkey owner;
     DARTIndex[] indices;
     mixin HiBONRecord!(q{
         this(Pubkey owner, DARTIndex[] indices) {
@@ -30,7 +30,7 @@ struct TRTArchive {
 
 @recordType(TYPENAME ~ "trt_contract") 
 struct TRTContractArchive {
-    @label(StdNames.hash_contract) DARTIndex contract_hash;
+    @label(HashNames.hash_contract) DARTIndex contract_hash;
     Document contract;
     @label(StdNames.epoch_number) long epoch;
     mixin HiBONRecord;

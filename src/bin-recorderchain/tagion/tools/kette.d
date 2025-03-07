@@ -1,4 +1,4 @@
-/// \file kette.d
+@description("Rebuild dart database from replicator files Philip edition")
 module tagion.tools.kette;
 
 /**

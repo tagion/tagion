@@ -320,7 +320,7 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
             catch (AssertError e) {
                 import tagion.GlobalSignals;
 
-                log(e);
+                log.fatal(e);
                 stopsignal.setIfInitialized;
             }
             end();
@@ -366,7 +366,7 @@ if (isActor!A) {
             catch (AssertError e) {
                 import tagion.GlobalSignals;
 
-                log(e);
+                log.fatal(e);
                 stopsignal.setIfInitialized;
             }
             end();
@@ -377,7 +377,7 @@ if (isActor!A) {
         return ActorHandle(name);
     }
     catch (Exception e) {
-        log(e);
+        log.fatal(e);
         assert(0, format("Exception: %s", e.msg));
     }
 }
@@ -438,7 +438,7 @@ void setState(Ctrl ctrl) @safe nothrow {
     }
     catch (Exception e) {
         log.error("Failed to set state");
-        log(e);
+        log.fatal(e);
     }
 }
 
@@ -551,12 +551,9 @@ enum defaultFailhandler = (TaskFailure tf) @safe nothrow {
     }
     catch(TidMissingException e) {
         log.error("%s", tf);
-        /* import tagion.GlobalSignals; */
-        /* void trust() @trusted { stopsignal.setIfInitialized(); } */
-        /* trust(); */
     }
     catch(Exception e) {
-        log(e);
+        log.fatal(e);
     }
 };
 

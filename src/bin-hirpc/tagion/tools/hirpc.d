@@ -1,4 +1,5 @@
 /// HiRPC utility for generating HiRPC requests
+@description("Create and inspect HiBON RPCs")
 module tagion.tools.hirpc;
 
 import tagion.tools.Basic;
@@ -82,7 +83,7 @@ int _main(string[] args) {
     bool result_switch;
     string output_filename;
     string method_name;
-    string[] inputs;
+    string[] dartindices;
     string[] pkeys;
     const name = () => method_name.splitter('.').retro.front;
     const domain = () => method_name.split('.').dropBack(1).join('.');
@@ -95,7 +96,7 @@ int _main(string[] args) {
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "o|output", "Output filename (Default stdout)", &output_filename,
                 "m|method", "method name for the hirpc to generate", &method_name,
-                "r|dartindex", "dart inputs sep. by comma or multiple args for multiples generated differently for each cmd", &inputs,
+                "r|dartindex", "dartindex inputs sep. by comma or multiple args for multiples generated differently for each cmd", &dartindices,
                 "A|response", "Analyzer a HiRPC response", &response_switch,
                 "R|result", "Dumps the result of HiRPC response", &result_switch,
                 "p|pkeys", "pkeys sep. by comma or multiple args for multiple entries", &pkeys,
@@ -118,6 +119,15 @@ int _main(string[] args) {
 
                     ].join("\n"),
                     main_args.options);
+            writeln();
+            examplesPrinter(program, [
+                ToolExample("Create a dartBullseye request and save it to a file",
+                            "-m dartBullseye -o bullseye_request.hibon"),
+            ]);
+
+            if(!method_name.empty) {
+                writeln();
+            }
             return 0;
         }
 
@@ -144,44 +154,30 @@ int _main(string[] args) {
             return 0;
         }
         const hirpc = HiRPC(null);
-        tools.check(method_name !is string.init, "must supply methodname");
-        tools.check(all_dartinterface_methods.canFind(name()), format(
-                "method name not valid must be one of %s", all_dartinterface_methods));
+        tools.check(!method_name.empty && all_dartinterface_methods.canFind(name()), format(
+                "method name not valid must be one of known %s", all_dartinterface_methods));
 
-        DARTIndex[] get_indices(string[] _input) {
-            return _input.map!(d => hash_net.dartIndexDecode(d)).array;
+        auto get_indices(string[] _input) {
+            return _input.map!(d => hash_net.dartIndexDecode(d));
         }
 
-        DARTIndex[] get_pkey_indices(string[] _pkeys) {
-            return _pkeys.map!(p => hash_net.dartKey(TRTLabel, Pubkey(p.decode))).array;
+        auto get_pkey_indices(string[] _pkeys) {
+            return _pkeys.map!(p => hash_net.dartKey(HashNames.trt_owner, Pubkey(p.decode)));
         }
 
         Document result;
         switch (name()) {
         case Queries.dartBullseye:
-            //result = isTRTreq ? trtdartBullseye().toDoc : dartBullseye().toDoc;
             result = dartBullseye(hirpc.relabel(domain())).toDoc;
             break;
         case Queries.dartRead, Queries.dartCheckRead:
-            tools.check(!inputs.empty || !pkeys.empty, "must supply pkeys or dartindices");
+            tools.check(!dartindices.empty || !pkeys.empty, "must supply pkeys or dartindices");
 
-            const dart_indices = get_indices(inputs);
-            const pkey_indices = get_pkey_indices(pkeys);
-            const res = dart_indices ~ pkey_indices;
+            auto res = chain(get_indices(dartindices), get_pkey_indices(pkeys));
             result = dartIndexCmd(name(), res, hirpc.relabel(domain())).toDoc;
             break;
        case Queries.dartModify:
             tools.check(args.length <= 2, format("Only one file name expected Not %s", args[1 .. $]));
-            //const files = args[1..$].filter!(file => file.hasExtension(FileExtension.hibon));
-
-            version (none) {
-                File fin = stdin;
-                if (!args.empty) {
-                    fin = File(args[1], "r");
-                }
-                const doc = fin.fread;
-                result = isTRTreq ? trtdartCheckRead(res).toDoc : dartCheckRead(res).toDoc;
-            }
             break;
         default:
             tools.check(0, format("method %s not implemented use one of %s", method_name, IMPLEMENTED_METHODS));

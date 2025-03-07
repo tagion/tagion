@@ -8,6 +8,7 @@ import std.format;
 import core.thread;
 import core.thread.osthread;
 import nngd;
+import nngd.nngtests.suite;
 
 const _testclass = "nngd.nngtests.nng_test16_tcp6";
 

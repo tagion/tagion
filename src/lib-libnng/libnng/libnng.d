@@ -445,7 +445,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
     int nng_dialer_get_ms(nng_dialer, const char*, nng_duration*);
     int nng_dialer_get_addr(nng_dialer, const char*, nng_sockaddr*);
 
-    int nng_listen(nng_socket, const char*, nng_listener*, int);
+    int nng_listen(nng_socket, const char*, scope nng_listener*, int);
     int nng_listener_create(nng_listener*, nng_socket, const char*);
     int nng_listener_start(nng_listener, int);
     int nng_listener_close(nng_listener);
@@ -480,7 +480,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
 
     // ------------------------------------- message functions
 
-    int nng_msg_alloc(nng_msg**, size_t);
+    int nng_msg_alloc(scope nng_msg**, size_t);
     void nng_msg_free(nng_msg*);
     int nng_msg_realloc(nng_msg*, size_t);
     int nng_msg_reserve(nng_msg*, size_t);
@@ -521,7 +521,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
     int nng_msg_trim_u16(nng_msg*, ushort*);
     int nng_msg_trim_u32(nng_msg*, uint*);
     int nng_msg_trim_u64(nng_msg*, ulong*);
-    int nng_msg_dup(nng_msg**, const nng_msg*);
+    int nng_msg_dup(scope nng_msg**, scope const nng_msg*);
     void nng_msg_clear(nng_msg*);
     void nng_msg_header_clear(nng_msg*);
     void nng_msg_set_pipe(nng_msg*, nng_pipe);

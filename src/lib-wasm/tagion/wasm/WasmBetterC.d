@@ -702,14 +702,23 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     case BLOCK:
                         block_comment = format(";; block %d %s!", block_count, dType(elm));
                         block_count++;
-                        //bout.writefln("BLOCK elm.arhtype=%s", elm.argtype);
 
-                        //bout.writefln("%s%s%s %s", indent, elm.instr.name,
-                        //        block_result_type(elm.types[0]), block_comment);
-                        bout.writefln("%sdo { // %s", indent, block_comment);
                         auto block = new Block(elm, ctx.stack.length);
-                        innerBlock(bout, expr, indent ~ spacer, blocks ~ block);
-                        //bout.writefln("} // Block kind %s", *block);
+                        auto block_bout = new OutBuffer;
+                        scope (exit) {
+                            block_bout = null;
+                        }
+                        if (elm.code is IR.IF) {
+                            bout.writefln("%s// -- %s", indent, elm.instr.name);
+                            ctx.perform(elm.code, elm.instr.pops);
+                            bout.writefln("%sif (%s) { // %s", indent, ctx.pop, block_comment);
+                        }
+                        else {
+                            bout.writefln("%sdo { // %s %s", indent, block_comment, *elm.instr);
+                        }
+                        innerBlock(block_bout, expr, indent ~ spacer, blocks ~ block);
+                        bout.write(block_bout);
+                        bout.writefln("%s// Block kind %s", indent, *block);
                         final switch (block.kind) {
                         case BlockKind.END:
                             bout.writefln("%s}", indent);
@@ -730,6 +739,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         case BlockKind.ERROR:
                         }
                         break;
+                    case BLOCK_ELSE:
+                        bout.writefln("%selse {", indent);
+                        innerBlock(bout, expr, indent ~ spacer, blocks);
+                        bout.writefln("%s}", indent);
+                        break;
                     case BRANCH:
                         bout.writefln("// BRANCH %s", elm.code);
 
@@ -737,16 +751,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             const lth = elm.warg.get!uint;
                             check(lth < blocks.length, format(
                                     "Label number of %d exceeds the block stack for max %d", lth, blocks.length));
-                            //bout.writefln("elm=%s warg=%s", elm, elm.warg.get!int);
                             scope (exit) {
-
-                                //foreach(ref exp; expr.until!(e => e.instr.opcode == IR.END)) {
                                 uint count;
                                 while (!expr.empty && expr.front.code != IR.END) {
                                     bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
                                     expr.popFront;
                                     count++;
-
                                 }
                             }
                             if (lth == 0) {
@@ -849,37 +859,28 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("//Block %s !!! END", blocks.length);
                         if (blocks.length > 0) {
                             const current_block = blocks[$ - 1];
-                            const keep_on_stack = types(current_block.elm); //.length;
-                            /+ 
-                                bout.writefln("%s// %s keep_on_stack = %d stack %d sp = %d <= END", indent, 
-                                    current_block.elm.code, keep_on_stack, ctx.stack.length, current_block.sp);
-                            +/
+                            const keep_on_stack = types(current_block.elm);
                             if (keep_on_stack.length && keep_on_stack[0] != Types.VOID) {
-                                bout.writefln("// current_block = %d keep_on_stack = %d ctx.stack.length = %d %s", current_block
-                                        .sp, keep_on_stack.length, ctx.stack.length, types(current_block.elm));
+                                bout.writefln("// current_block = %d keep_on_stack = %d ctx.stack.length = %d %s",
+                                        current_block.sp, keep_on_stack.length,
+                                        ctx.stack.length,
+                                        types(current_block.elm));
                                 ctx.stack = ctx.stack[0 .. current_block.sp] ~ ctx.stack[$ - keep_on_stack.length .. $];
-                                //ctx.stack.length = current_block.sp + types(current_block.elm).length;
                             }
                             const block_kind = current_block.kind;
                             if (block_kind == BlockKind.BREAK) {
                                 bout.writeln("%s} while(false);", indent);
-                                //return BlockKind.END;
                             }
-                            //return BlockKind.END;
                         }
-                        //check(0, "Block 'end' without and begin");
-                        //assert(0);
                         return;
                     case ILLEGAL:
                         bout.writefln("Error: Illegal instruction %02X", elm.code);
                         break;
-                        //return BlockKind.ERROR;
                     case SYMBOL:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }
                 }
             }
-            //return BlockKind.END;
         }
 
         auto bout = new OutBuffer;
@@ -1093,6 +1094,8 @@ shared static this() {
         IR.F64_GE: q{(%2$s >= %1$s)},
         //  
         IR.SELECT: q{((%1$s)?%3$s:%2$s)},
+        //
+        IR.IF: q{(%1$s)},
     ];
     instr_extend_fmt = [
         IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},

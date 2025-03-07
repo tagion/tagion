@@ -1,4 +1,5 @@
 /// Envelope CLI tool
+@description("Unpack network protocol packages")
 module tagion.tools.envelope;
 
 import core.time;

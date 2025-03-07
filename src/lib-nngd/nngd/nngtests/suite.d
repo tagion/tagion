@@ -1,4 +1,4 @@
-module nngd.testsuite;
+module nngd.nngtests.suite;
 
 import std.stdio;
 import std.conv;
@@ -90,7 +90,7 @@ static bool chkrot3 ( uint data, uint chk ) { return (chk ^ rot3(data)) == data;
 
 static string[] __errors;
 
-static void nngtest_error(A...)(string fmt, A a) @trusted {
+static void nngtest_error(A...)(string fmt, A a) {
     __errors ~= format(fmt, a);
 }
 
@@ -99,7 +99,7 @@ enum nngtestflag : uint {
     SETENV  = 2
 }
 
-alias runtest = string[] delegate () @trusted; 
+alias runtest = string[] delegate (); 
 
 static string nngtest_mkassert() {
     try {
@@ -139,14 +139,14 @@ static void nngtest_rmassert( string d ) {
     }  
 }
 
-@trusted class NNGTest {
-        void log(A...)(string fmt, A a) @trusted {
+class NNGTest {
+        void log(A...)(string fmt, A a) {
             if(!(flags & nngtestflag.DEBUG) || logfile is null) return;
             logfile.writefln("%.6f "~fmt,timestamp,a);
             logfile.flush();
         }
 
-        void error(A...)(string fmt, A a) @trusted {
+        void error(A...)(string fmt, A a) {
             _errors ~= format(fmt, a);
             if(!(flags & nngtestflag.DEBUG) || logfile is null) return;
             logfile.writefln("%.6f "~fmt,timestamp,a);
@@ -168,15 +168,15 @@ static void nngtest_rmassert( string d ) {
             return this;
         }
         
-        string[] run() @trusted { return []; }
+        string[] run() { return []; }
         
-        string errors() @trusted {
+        string errors() {
             return this._errors.empty() ? null :  "ERRORS: " ~  this._errors.join("\n");
         }
 
-        string[] geterrors() @trusted { return _errors; }
+        string[] geterrors() { return _errors; }
 
-        void seterrors ( string[] e ) @trusted { _errors ~= e; }
+        void seterrors ( string[] e ) { _errors ~= e; }
 
         File* getlogfile() { return this.logfile; } 
 
@@ -187,7 +187,7 @@ static void nngtest_rmassert( string d ) {
         string[] _errors;
 }
 
-@trusted class NNGTestSuite : NNGTest {
+class NNGTestSuite : NNGTest {
     
     this(Args...)(auto ref Args args) { this.todo = -1; super(args); }
     
@@ -198,7 +198,7 @@ static void nngtest_rmassert( string d ) {
         return res;
     }
 
-    override string[] run() @trusted {
+    override string[] run() {
         string[] res = []; 
         mixin("auto pool = new TaskPool(4);");
         static foreach(i,t; nngd.nngtests.testlist){

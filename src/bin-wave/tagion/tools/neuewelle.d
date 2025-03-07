@@ -1,6 +1,7 @@
 /** 
- * New wave implementation of the tagion node
+ * The tagion node
 **/
+@description("Tagion node")
 module tagion.tools.neuewelle;
 
 import core.stdc.stdlib : exit;

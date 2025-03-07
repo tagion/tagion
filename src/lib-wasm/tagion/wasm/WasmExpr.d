@@ -40,6 +40,7 @@ struct WasmExpr {
                 goto case;
             case BLOCK_CONDITIONAL:
             case BLOCK:
+            case BLOCK_ELSE:
                 static if (Args.length == 1) {
                     assert(isIntegral!(Args[0]), format("Args idx must be an integer for %s not %s",
                             instr.name, Args[0].stringof));

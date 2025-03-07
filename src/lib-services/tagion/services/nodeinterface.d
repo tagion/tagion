@@ -701,7 +701,7 @@ void fail(string owner_task, Throwable t) nothrow {
         ActorHandle(owner_task).prioritySend(tf);
     }
     catch(Exception e) {
-        log(e);
+        log.fatal(e);
     }
 }
 

@@ -10,6 +10,7 @@ import std.random;
 import core.thread;
 import core.thread.osthread;
 import nngd;
+import nngd.nngtests.suite;
 
 const _testclass = "nngd.nngtests.nng_test04_pubsub";
 

@@ -110,7 +110,7 @@
           "f32_export.wast", "f64_export.wast",
           "f32_cmp_export.wast", "f64_cmp_export.wast",
           "float_misc_export.wast",
-          "br_block.wast"
+          "br_block.wast", "if_block.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -138,7 +138,7 @@
         },
         "tvm_test" : {
             "args" : [
-                "if_block_1.wast"
+                "br_if.wast"
             ]
         }
       },
@@ -313,7 +313,7 @@
     "remote_sample": {
       "args": [],
       "envs": {
-          "SHELL_ADDRESSES": "tcp://localhost:8080",
+          "SHELL_ADDRESSES": "http://0.0.0.0:8080",
           "NODE_DART_ADDRESSES" : "abstract://node0/DART_NEUEWELLE abstract://node1/DART_NEUEWELLE",
           "NODE_INPUT_ADDRESSES" : "abstract://node0/CONTRACT_NEUEWELLE",
           "NODE_SUBSCRIPTION_ADDRESSES": "abstract://node0/SUBSCRIPTION_NEUEWELLE"
