@@ -774,7 +774,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             check(lth < blocks.length, format(
                                     "Label number of %d exceeds the block stack for max %d", 
                                         lth, blocks.length));
-                            scope (exit) {
+                            version(none)
+                                    scope (exit) {
                                 uint count;
                                 while (!expr.empty && expr.front.code != IR.END) {
                                     bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
