@@ -2,9 +2,9 @@
 
 The wavefront protocol is an initiate exchange exchange protocol, used for gossip in the tagion hashgraph.
 
-Node Alpha initiates a connections and sends it's initial known heights.  
-Node Beta sends the difference between heights Alpha and it's own known heights.  
-Node Alpha sends the difference between Betas calculated heights and it's own heights.  
+Node Alpha initiates a connections and sends it's initial known altitudes.  
+Node Beta sends the difference between altitudes Alpha and it's own known altitudes.  
+Node Alpha sends the difference between Betas calculated altitudes and it's own altitudes.  
 
 The ideas and goals of the wavefront protocol are better described in the Tagion whitepaper.
 [tagion whitepaper](https://www.tagion.org/resources/tagion-whitepaper.pdf)*
