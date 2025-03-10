@@ -213,7 +213,7 @@ int _neuewelle(string[] args) {
     }
 
     // Spawn logger service
-    immutable logger = LoggerService(LoggerServiceOptions(LogType.Console));
+    immutable logger = LoggerService();
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
