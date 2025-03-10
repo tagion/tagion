@@ -2,17 +2,24 @@
 module tagion.logger.Logger;
 
 import core.sys.posix.pthread;
+
 import std.format;
 import std.string;
 import std.stdio;
+import std.conv : to;
+import std.datetime.systime : Clock;
+import std.exception;
 
-import tagion.basic.Version : ver;
+import tagion.utils.Term;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.logger.LogRecords;
-import tagion.logger.writer;
 import tagion.utils.pretend_safe_concurrency;
+
+
+version(Posix)
+extern(C) @safe int isatty(int fd);
 
 /// Is a but mask for the logger
 enum LogLevel {
@@ -26,9 +33,37 @@ enum LogLevel {
     STDERR = WARN | ERROR | FATAL
 }
 
+private {
+    enum LOG_LEVEL_MAX_WIDTH = 5;
+    enum LOG_FORMAT = "%s | %s%-" ~ LOG_LEVEL_MAX_WIDTH.to!string ~ "s%s | %s: %s";
+}
+
+@safe nothrow
+string formatLog(LogLevel level, string task_name, string text, bool isAtty = true) {
+    string _format(string color = string.init) {
+        const _RESET = (color is string.init) ? "" : RESET;
+        if(isAtty)
+            return assumeWontThrow(format!LOG_FORMAT(Clock.currTime().toISOExtString(0), color, level, _RESET, task_name, text));
+        else 
+            return assumeWontThrow(format!LOG_FORMAT(Clock.currTime().toISOExtString(0), "", level, "", task_name, text));
+    }
+    switch (level) with (LogLevel) {
+    case TRACE:
+        return _format(WHITE);
+    case WARN:
+        return _format(YELLOW);
+    case ERROR:
+        return _format(RED);
+    case FATAL:
+        return _format(BOLD ~ RED);
+    default:
+        return _format();
+    }
+}
+
 private static Tid logger_tid; /// In multi-threading mode this Tid is used
 private static Tid logger_subscription_tid;
-
+private __gshared File logfile;
 
 /// Logger used one for each thread
 @safe
@@ -41,6 +76,14 @@ static struct Logger {
         uint[] masks; /// Logger mask stack
         __gshared string logger_task_name; /// Logger task name
         __gshared string logger_subscription_task_name;
+        bool logfile_is_atty; // Used to determine if loglevele is printed in colours
+    }
+
+    @trusted 
+    void set_logfile(ref File f) {
+        logfile = f;
+        version(Posix)
+        logfile_is_atty = cast(bool)isatty(f.fileno);
     }
 
     /// Get task_name
@@ -147,85 +190,54 @@ is ready and has been started correctly
         return result;
     }
 
+    @trusted
+    void write(const LogLevel level, string task_name, lazy scope string text) const nothrow {
+        try {
+            logfile.writeln(formatLog(level, task_name, text, logfile_is_atty));
+        }
+        catch(Exception e) {
+            assumeWontThrow(stderr.writeln(e));
+        }
+    }
+
+    @safe
+    void send(const LogLevel level, string task_name, lazy scope string text) const nothrow {
+        try {
+            immutable info = LogInfo(task_name, level);
+            immutable doc = TextLog(text).toDoc;
+            logger_tid.send(info, doc);
+        }
+        catch (Exception e) {
+            (() @trusted => assumeWontThrow(stderr.writeln(e)))();
+        }
+    }
+
     /**
     Reports the text to the logger with the level LogLevel
     */
-    version (LogWriter) {
-        void report(const LogLevel level, lazy scope string text) const nothrow {
-            import std.exception : assumeWontThrow;
-
-            version (unittest)
-                return;
-            if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
-                immutable info = LogInfo(task_name, level);
-
-                if (isLoggerServiceRegistered) {
-                    try {
-                        immutable textlog = TextLog(text);
-                        logger_tid.send(info, textlog.toDoc);
-                    }
-                    catch (Exception e) {
-                        LogWriter.stdoutwrite(info, assumeWontThrow(text));
-                        LogWriter.stdoutwrite(info, e.message);
-                    }
-                }
-                else {
-                    LogWriter.stdoutwrite(info, assumeWontThrow(text));
-                }
-            }
+    @safe 
+    void report(const LogLevel level, lazy scope string text) const nothrow {
+        version (unittest)
+            return;
+        if (!((masks.length > 0) && (level & masks[$ - 1]) && !silent)) {
             return;
         }
-    }
-    else {
-        void report(const LogLevel level, lazy scope string text) const nothrow @trusted {
-            import std.exception : assumeWontThrow;
-
-            version (unittest)
-                return;
-            if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
-                import std.conv : to;
-
-                if (level & LogLevel.STDERR) {
-                    import core.stdc.stdio;
-
-                    scope const _level = assumeWontThrow(level.to!string);
-                    scope const _text = toStringz(assumeWontThrow(text));
-                    stderr.fprintf("%.*s:%.*s: %s\n",
-                        cast(int) _task_name.length, _task_name.ptr,
-                        cast(int) _level.length, _level.ptr,
-                        _text);
-                }
-
-                if (!isLoggerServiceRegistered) {
-                    import core.stdc.stdio;
-
-                    scope const _level = assumeWontThrow(level.to!string);
-                    scope const _text = toStringz(assumeWontThrow(text));
-                    if (_task_name.length > 0) {
-                        // printf("ERROR: Logger not register for '%.*s'\n", cast(int) _task_name.length, _task_name
-                        //         .ptr);
-                    }
-                    printf("%.*s:%.*s: %s\n",
-                        cast(int) _task_name.length, _task_name.ptr,
-                        cast(int) _level.length, _level.ptr,
-                        _text);
-                }
-                else {
-                    try {
-                        immutable info = LogInfo(task_name, level);
-                        immutable doc = TextLog(text).toDoc;
-                        logger_tid.send(info, doc);
-                    }
-                    catch (Exception e) {
-                        import std.stdio;
-
-                        assumeWontThrow({
-                            stderr.writefln("\t%s:%s: Format expression did throw", task_name, level);
-                            stderr.writefln("%s", e);
-                        }());
-                    }
-                }
+        // FIXME: should make this an option
+        version(none)
+        if (level & LogLevel.STDERR) {
+            try {
+                (() @trusted => stderr.writeln(formatLog(level, task_name, text, isatty(stderr))))();
             }
+            catch(Exception e) {
+                (() @trusted => assumeWontThrow(stderr.writeln(e)))();
+            }
+        }
+
+        if (isLoggerServiceRegistered) {
+            this.send(level, task_name, text);
+        }
+        else {
+            this.write(level, task_name, text);
         }
     }
 
@@ -392,6 +404,7 @@ final synchronized class SubscriptionMask {
 static shared SubscriptionMask submask;
 shared static this() {
     submask = new SubscriptionMask();
+    log.set_logfile = stdout;
 }
 
 unittest {
