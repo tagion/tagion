@@ -762,12 +762,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             if (lth == 0) {
                                 blocks[lth].kind = BlockKind.BREAK;
-                                bout.writefln("%sif (%s) break;", indent, ctx.pop);
+                                bout.writefln("%sbreak;", indent);
                                 break;
                             }
                             const label_n = blocks.length - lth;
                             blocks[label_n].kind = BlockKind.BREAK_N;
-                            bout.writefln("%sif (%s) break %s;", indent, ctx.pop, block_label(label_n));
+                            bout.writefln("%sbreak %s;", indent,  block_label(label_n));
                             break;
                         case IR.BR_IF:
                             const lth = elm.warg.get!uint;
@@ -784,11 +784,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             if (lth == 0) {
                                 blocks[lth].kind = BlockKind.BREAK;
-                                bout.writefln("%sbreak;", indent);
+                                bout.writefln("%sif (%s) break;", indent, ctx.pop);
                                 break;
                             }
                             const label_n = blocks.length - lth;
                             blocks[label_n].kind = BlockKind.BREAK_N;
+                                bout.writefln("%sif (%s) break;", indent, ctx.pop);
                                 break;
                         default:
                                 check(0, format("Illegal branch command %s",  elm.code));
