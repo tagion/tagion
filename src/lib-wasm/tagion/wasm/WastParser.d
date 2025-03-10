@@ -289,6 +289,7 @@ struct WastParser {
             with (IRType) {
                 final switch (instr.irtype) {
                 case CODE:
+                case OP_STACK:
                     r.nextToken;
                     while (r.type is TokenType.BEGIN) {
                         inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
