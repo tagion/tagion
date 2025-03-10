@@ -139,7 +139,7 @@
         },
         "tvm_test" : {
             "args" : [
-                "br_if_2.wast"
+                "br_if_block.wast"
             ]
         }
       },

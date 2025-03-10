@@ -319,6 +319,7 @@ alias check = Check!WatException;
                 case CODE:
                 case CODE_EXTEND:
                 case CODE_TYPE:
+                case OP_STACK:
                 case RETURN:
                     output.writefln("%s%s", indent, elm.instr.name);
                     break;
