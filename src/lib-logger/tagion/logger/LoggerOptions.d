@@ -2,6 +2,7 @@ module tagion.logger.LoggerOptions;
 
 import tagion.json.JSONRecord;
 
+/// FIXME: currently not applied anywhere
 struct LoggerOptions {
     string task_name; /// Name of the logger task
     string file_name; /// File used for the logger
