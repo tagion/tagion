@@ -37,7 +37,7 @@ int _main(string[] args) {
     bool standard_input;
     bool account;
     // Could use some info about available memory to automatically determine this?
-    long max_archives_per_recorder = 10_000;
+    long max_archives_per_recorder = 0;
     string genesis;
     bool trt;
     string[] nodekeys;
