@@ -789,12 +789,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             const label_n = blocks.length - lth;
                             blocks[label_n].kind = BlockKind.BREAK_N;
-                                bout.writefln("%sif (%s) break;", indent, ctx.pop);
+                                bout.writefln("%sif (%s) break %s;", 
+                                            indent, ctx.pop, block_label(label_n));
                                 break;
                         default:
                                 check(0, format("Illegal branch command %s",  elm.code));
                         }
-                        bout.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
+                        bout.writefln("%s//%s %s", indent, elm.instr.name, elm.warg.get!uint);
 
                         break;
                     case BRANCH_TABLE:
