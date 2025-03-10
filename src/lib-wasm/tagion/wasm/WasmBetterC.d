@@ -746,11 +746,34 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case BRANCH:
                         bout.writefln("// BRANCH %s", elm.code);
-
-                        if (elm.code is IR.BR) {
+                        switch (elm.code) {
+                        case IR.BR:
+                        //if (elm.code is IR.BR) {
                             const lth = elm.warg.get!uint;
                             check(lth < blocks.length, format(
                                     "Label number of %d exceeds the block stack for max %d", lth, blocks.length));
+                            scope (exit) {
+                                uint count;
+                                while (!expr.empty && expr.front.code != IR.END) {
+                                    bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
+                                    expr.popFront;
+                                    count++;
+                                }
+                            }
+                            if (lth == 0) {
+                                blocks[lth].kind = BlockKind.BREAK;
+                                bout.writefln("%sif (%s) break;", indent, ctx.pop);
+                                break;
+                            }
+                            const label_n = blocks.length - lth;
+                            blocks[label_n].kind = BlockKind.BREAK_N;
+                            bout.writefln("%sif (%s) break %s;", indent, ctx.pop, block_label(label_n));
+                            break;
+                        case IR.BR_IF:
+                            const lth = elm.warg.get!uint;
+                            check(lth < blocks.length, format(
+                                    "Label number of %d exceeds the block stack for max %d", 
+                                        lth, blocks.length));
                             scope (exit) {
                                 uint count;
                                 while (!expr.empty && expr.front.code != IR.END) {
@@ -766,8 +789,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             const label_n = blocks.length - lth;
                             blocks[label_n].kind = BlockKind.BREAK_N;
-                            bout.writefln("%sbreak %s;", indent, block_label(label_n));
-                            break;
+                                break;
+                        default:
+                                check(0, format("Illegal branch command %s",  elm.code));
                         }
                         bout.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
 
