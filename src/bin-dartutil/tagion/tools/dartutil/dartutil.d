@@ -353,9 +353,10 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
             db = new DART(net, dartfilename);
             tools.check(!inputfilename.empty, "Missing input file DART-modify");
             auto input_file = File(inputfilename, "r");
-            auto input_file_range = HiBONRange(input_file);
+            auto input_file_range = HiBONRange(input_file, max_size: 0);
             auto factory = RecordFactory(net);
-            foreach(doc; input_file_range) {
+            auto recorder_range = input_file_range;
+            foreach(ref doc; recorder_range) {
                 if(doc.isRecord!(RecordFactory.Recorder)) {
                     db.modify(factory.recorder(doc));
                 }
