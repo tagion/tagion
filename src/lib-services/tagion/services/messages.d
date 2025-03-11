@@ -45,6 +45,8 @@ alias NNGError = Msg!"nng_error";
 
 /// [FROM: DART, TO: Replicator] Send the produced recorder for replication
 alias SendRecorder = Msg!"SendRecorder";
+alias readRecorderRR = Request!"readRecorder";
+alias syncRecorderRR = Request!"recorderSync";
 
 /// [FROM: DART, TO: TRT] send the recorder to the trt for update
 alias trtModify = Msg!"trtModify";
@@ -60,11 +62,8 @@ alias dartBullseyeRR = Request!"dartBullseye"; // dartBullseye Request
 alias dartModifyRR = Request!("dartModify", immutable(long)); // dartModify Request
 alias dartFutureEyeRR = Request!("dartFutureEye", immutable(long)); // dartFuture eye request
 alias dartHiRPCRR = Request!"dartHiRPCRequest"; // dartCRUD HiRPC commands: [dartRead, dartCheckRead, dartRim]
-
 alias dartCompareRR = Request!"dartCompare";
 alias dartSyncRR = Request!"dartSync";
 alias dartReplayRR = Request!"dartReplay";
-
-alias dartRecorderSyncRR = Request!"recorderSync";
 
 alias EpochShutdown = Msg!"epoch_shutdown"; // Tell the transcript to stop at a specific epoch

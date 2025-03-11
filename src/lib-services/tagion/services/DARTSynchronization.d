@@ -107,7 +107,7 @@ struct DARTSynchronization {
             req.respond(true);
         }
 
-        void recorderSyncTask(dartRecorderSyncRR req) @safe {
+        void recorderSyncTask(syncRecorderRR req) @safe {
             immutable result = recorderSyncronize(opts, sock_addrs, net, dest_db);
             req.respond(result);
         }
@@ -210,47 +210,55 @@ private:
         }
     }
 
-    // Connect to a single remote node.
-    // Run sync with a single node.
-    // Replay the recorder from the node and check its bullseye.
     bool recorderSyncronize(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
         const SecureNet net, DART destination) {
 
         import tagion.wave.common;
         import tagion.replicator.RecorderCrud;
+        import tagion.replicator.RecorderBlock;
+        import tagion.dart.Recorder;
         import tagion.script.common;
+        import tagion.dart.DARTFile;
 
         bool bullseyesMatch = false;
 
         while (!bullseyesMatch) {
-
+            // 1. Get a db head
+            TagionHead tagion_head = getHead(destination, net);
+            // 2. Sync
             synchronize(opts, sock_addrs, destination);
 
-            TagionHead head = getHead(destination, net);
+            while (true) { // until we get an empty recorder
 
-            // while (true) { // until we get an empty replicator
+                try {
+                    // 3.
+                    RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts
+                            .socket_attempts_mil,
+                            sock_addrs.sock_addrs[0], null);
 
-            //     try {
-            //         RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts
-            //                 .socket_attempts_mil,
-            //                 sock_addrs.sock_addrs[0], null);
-            //         HiRPC hirpc = HiRPC(net);
-            //         const recorder_request_doc = hirpc.recorderRead(head.current_epoch)
-            //             .toDoc;
-            //         const recorder_response_doc = sender.send(recorder_request_doc);
-            //         // RecorderBlock
-            //         auto response = hirpc.receive(recorder_response_doc); // ? is it a Recorder in a Doc format 
-            //         // response.result!RecorderBlock; // thows an error if type is different
-            //         if (recorder_response_doc.empty) {
-            //             break;
-            //         }
-            //         // // 4. Replay
-            //         // replayWithFiles(destination, journal_filenames);
-            //     }
-            //     catch (HiBONException e) {
-            //         break;
-            //     }
-            // }
+                    HiRPC hirpc = HiRPC(net);
+                    const recorder_read_request = hirpc.readRecorder(tagion_head.current_epoch);
+                    writefln("REQ-request %s", recorder_read_request.toPretty);
+                    const recorder_response_doc = sender.send(recorder_read_request.toDoc);
+                    auto response = hirpc.receive(recorder_response_doc);
+                    writefln("RESP-response %s", response.toPretty);
+                    //
+                    RecorderBlock block = response.result!RecorderBlock;
+                    Document recorder_doc = block.recorder_doc;
+                    if (recorder_doc.empty) {
+                        break;
+                    }
+
+                    // 4. Replay
+                    auto factory = RecordFactory(net);
+                    auto recorder = factory.recorder(recorder_doc);
+                    destination.modify(recorder);
+
+                }
+                catch (HiBONException e) {
+                    break;
+                }
+            }
 
             // 5. Check if bullseyes match.
             // bullseyesMatch = bullseyesMatch(opts, sock_addrs, net, destination);
@@ -258,7 +266,6 @@ private:
             // Check a timeout.
             // Select another node if time out - TBD
         }
-
         return bullseyesMatch;
     }
 }
@@ -304,8 +311,8 @@ class RemoteRequestSender {
         auto startTime = MonoTime.currTime();
 
         while (true) {
-            auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
-            // auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
+            // auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
+            auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
 
             if (!received.empty) {
                 writefln("-------- received from the socket at %s --------", sock_addr);
@@ -323,3 +330,26 @@ class RemoteRequestSender {
         assert(0);
     }
 }
+
+// @HiRPCMethod private const(HiRPC.Sender) dartBullseye(
+//     ref const(HiRPC.Receiver) received,
+//     const bool read_only)
+// in {
+//     mixin FUNCTION_NAME;
+//     assert(received.method.name == __FUNCTION_NAME__);
+// }
+// do {
+//     auto hibon_params = new HiBON;
+//     hibon_params[Params.bullseye] = bullseye;
+//     return hirpc.result(received, hibon_params);
+// }
+
+// const(HiRPC.Sender) recorderRead(
+//     HiRPC hirpc,
+//     long epoch_number,
+//     uint id = 0) {
+
+//     auto params = new HiBON;
+//     params[StdNames.epoch_number] = epoch_number;
+//     return hirpc.action("recorderRead", params, id);
+// }

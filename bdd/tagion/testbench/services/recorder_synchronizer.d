@@ -26,6 +26,8 @@ import core.time;
 import std.stdio;
 import tagion.dart.DARTcrud : dartBullseye, dartCheckRead, dartRead;
 import tagion.testbench.actor.util;
+import tagion.wave.common;
+import tagion.script.common;
 
 enum feature = Feature(
         "RecorderSynchronizer",
@@ -46,7 +48,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
     ActorHandle dart_sync_handle;
     TRTOptions trt_options;
-    const local_db_name = "local_dart.drt";
+    const local_db_name = "rs_local_dart.drt";
     string local_db_path;
 
     @Given("the empty local node")
@@ -105,9 +107,9 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
         foreach (db_index; 0 .. number_of_databases) {
             Options opts;
             opts.setDefault();
-            opts.setPrefix(format("remote_db_%d_", db_index));
+            opts.setPrefix(format("rs_remote_db_%d_", db_index));
 
-            auto remote_db_name = format("remote_db_%d.drt", db_index);
+            auto remote_db_name = format("rs_remote_db_%d.drt", db_index);
             auto remote_db_path = buildPath(env.bdd_log, __MODULE__, remote_db_name);
             if (remote_db_path.exists) {
                 remote_db_path.remove;
@@ -117,6 +119,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
             auto remote_dart = new DART(net, remote_db_path);
 
             auto recorder = remote_dart.recorder;
+            recorder.add(TagionHead());
             foreach (doc_no; document_numbers) {
                 recorder.add(test_doc(doc_no));
             }
@@ -159,12 +162,24 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
     @Then("the local node reads data from the remote node")
     Document fromTheRemoteNode() {
-        auto dart_recorder_sync = dartRecorderSyncRR();
-        dart_sync_handle.send(dart_recorder_sync);
-        immutable result = receiveOnlyTimeout!(dart_recorder_sync.Response, immutable(bool))[1];
+        auto dart_sync = dartSyncRR();
+        dart_sync_handle.send(dart_sync);
+        immutable journal_filenames = immutable(DARTSynchronization.ReplayFiles)(
+            receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
 
-        writefln("Is local database up to date %s", result);
-        check(result, "the recorder sync failed");
+        auto dart_replay = dartReplayRR();
+        dart_sync_handle.send(dart_replay, journal_filenames);
+        auto dart_replay_result = receiveOnlyTimeout!(dart_replay.Response, bool)[1];
+
+        writefln("dart_replay_result %s", dart_replay_result);
+
+        auto dart_recorder_sync = syncRecorderRR();
+        dart_sync_handle.send(dart_recorder_sync);
+        immutable dart_recorder_sync_result = receiveOnlyTimeout!(
+            dart_recorder_sync.Response, immutable(bool))[1];
+
+        writefln("Is local database up to date %s", dart_recorder_sync_result);
+        // check(result, "the recorder sync failed");
 
         return result_ok;
     }

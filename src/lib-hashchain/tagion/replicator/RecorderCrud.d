@@ -15,12 +15,12 @@ import tagion.script.standardnames;
 * Returns: 
 *   HiRPC sender
 */
-const(HiRPC.Sender) recorderRead(
+const(HiRPC.Sender) readRecorder( // replicatorRead
     HiRPC hirpc,
     long epoch_number,
     uint id = 0) {
     
     auto params = new HiBON;
     params[StdNames.epoch_number] = epoch_number;
-    return hirpc.action("recorderRead", params, id);
+    return hirpc.action("readRecorder", params, id);
 }

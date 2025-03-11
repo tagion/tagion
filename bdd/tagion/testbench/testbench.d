@@ -90,6 +90,7 @@ int main(string[] args) {
         remote_sample,
         nng_test,
         godcontract,
+        dart_synchronization,
         recorder_synchronizer,
     );
     mixin doOneMain!(alltools);
