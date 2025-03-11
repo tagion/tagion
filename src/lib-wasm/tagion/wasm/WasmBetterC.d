@@ -590,10 +590,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             const(string) indent,
             const bool no_return = false) {
         string block_comment;
-        uint block_count;
+        //uint count;
         uint calls;
-        version(none)
-        static string block_result_type()(const Types t) {
+        version (none) static string block_result_type()(const Types t) {
             with (Types) {
                 switch (t) {
                 case I32, I64, F32, F64, FUNCREF:
@@ -624,10 +623,24 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             ERROR,
         }
 
-        static struct Block {
+        struct Block {
             const(ExprRange.IRElement) elm;
-            size_t sp; /// Stack pointer;
+            const(size_t) sp; /// Stack pointer;
+            const(size_t) idx; /// Block idx
             BlockKind _kind;
+            static size_t count;
+            protected bool _local_defined;
+
+            this(const ref ExprRange.IRElement elm, const size_t sp) nothrow
+            in (only(IRType.BLOCK_CONDITIONAL, IRType.BLOCK, IRType.BLOCK_ELSE)
+                    .canFind(elm.instr.irtype))
+
+            do {
+                this.elm = elm;
+                this.sp = sp;
+                this.idx = count++;
+            }
+
             const(BlockKind) kind() const pure nothrow {
                 return _kind;
             }
@@ -638,8 +651,24 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 }
             }
 
+            bool local_defined() const pure nothrow {
+                return _local_defined;
+            }
+
+            void define_local() pure nothrow {
+                _local_defined = true;
+            }
+
+            string local() const pure {
+                return format("block_local_%d", idx);
+            }
+
+            string label() const pure {
+                return format("block_%d", idx);
+            }
         }
 
+        Block.count = 0;
         string results(const(Types[]) args) {
             if (args.length == 0) {
                 return null;
@@ -667,31 +696,29 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return null;
         }
 
-        string block_type(const ref ExprRange.IRElement elm)
-            in (only(IRType.BLOCK_CONDITIONAL, IRType.BLOCK, IRType.BLOCK_ELSE)
-            .canFind(elm.instr.irtype)) 
-            do {
+        string block_type(const(Block*) blk) {
             with (ExprRange.IRElement.IRArgType) {
-                         assert(elm.argtype is TYPES || elm.argtype is INDEX,
+                assert(blk.elm.argtype is TYPES || blk.elm.argtype is INDEX,
                         "Invalid block type");
-                if (elm.argtype is INDEX) {
+                if (blk.elm.argtype is INDEX) {
                     const sec_type = wasmstream.get!(Section.TYPE);
-                    const func_type = sec_type[elm.idx];
+                    const func_type = sec_type[blk.elm.idx];
                     return dType(func_type.results);
                 }
             }
             with (Types) {
-                const elm_type=elm.types[0];
+                const elm_type = blk.elm.types[0];
                 switch (elm_type) {
-                    case I32, I64, F32, F64, FUNCREF:
-                        return dType(elm_type);
-                    case VOID:
-                        return null;
-        default:
-                check(0, format("Block illegal result type %s for a block", elm_type )); 
+                case I32, I64, F32, F64, FUNCREF:
+                    return dType(elm_type);
+                case VOID:
+                    return null;
+                default:
+                    check(0, format("Block illegal result type %s for a block", elm_type));
+
                 }
             }
-                    assert(0);
+            assert(0);
         }
 
         void innerBlock(
@@ -699,8 +726,21 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 ref ExprRange expr,
                 const(string) indent,
                 Block*[] blocks) {
-            string block_label(const size_t label_n) {
+            version (none) string block_label(const size_t label_n) {
                 return format("block_%d", label_n);
+            }
+
+            version (none) string block_local(const size_t label_n) {
+                return format("local_%d", label_n);
+            }
+
+            void declare_block_local(Block* blk) {
+                if (!blk.local_defined) {
+                    bout.writefln("%s%s %s;", indent, block_type(blk), blk.local);
+
+                    __write("Local block declaration %s %s;", block_type(blk), blk.local);
+                    blk.define_local;
+                }
             }
 
             while (!expr.empty) {
@@ -743,14 +783,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case BLOCK_CONDITIONAL:
                     case BLOCK:
-                        block_comment = format(";; block %d %s", block_count, dType(elm));
-                        block_count++;
-
+                        block_comment = format(";; block %d %s", Block.count, dType(elm));
                         auto block = new Block(elm, ctx.stack.length);
+
                         auto block_bout = new OutBuffer;
                         scope (exit) {
                             block_bout = null;
                         }
+
                         if (elm.code is IR.IF) {
                             bout.writefln("%s// -- %s", indent, elm.instr.name);
                             ctx.perform(elm.code, elm.instr.pops);
@@ -810,8 +850,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 break;
                             }
                             const label_n = blocks.length - lth;
-                            blocks[label_n].kind = BlockKind.BREAK_N;
-                            bout.writefln("%sbreak %s;", indent, block_label(label_n));
+                            auto target_block = blocks[label_n];
+                            target_block.kind = BlockKind.BREAK_N;
+                            bout.writefln("%sbreak %s;", indent, target_block.label);
                             break;
                         case IR.BR_IF:
                             const lth = elm.warg.get!uint;
@@ -828,8 +869,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                         count++;
                                     }
                                 }
-                            const current_block=blocks[$-1];
-                            __write("%s current_block=%s", indent,*current_block);
+                            auto current_block = blocks[$ - 1];
+                            __write("%s current_block=%s", indent, *current_block);
+                            declare_block_local(current_block);
                             if (lth == 0) {
                                 blocks[lth].kind = BlockKind.BREAK;
                                 const __value = ctx.peek;
@@ -839,9 +881,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
                             }
                             const label_n = blocks.length - lth;
-                            blocks[label_n].kind = BlockKind.BREAK_N;
+                            auto target_block = blocks[label_n];
+                            target_block.kind = BlockKind.BREAK_N;
                             bout.writefln("%sif (%s) break %s;",
-                                    indent, ctx.pop, block_label(label_n));
+                                    indent, ctx.pop, target_block.label);
                             break;
                         default:
                             check(0, format("Illegal branch command %s", elm.code));
