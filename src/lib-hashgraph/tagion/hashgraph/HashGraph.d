@@ -104,7 +104,7 @@ class HashGraph {
     /**
  * Creates a graph with node_size nodes
  * Params:
- *   node_size = number of nodes handles byt the graph
+ *   node_size = number of nodes handles by the graph
  *   net = Securety element handles hash function, signing and signature validation
  *   gossip_net = gossip interface used to select the valid channel etc.
  *   epoch_callback = call-back which is called when an epoch has been produced
@@ -170,8 +170,9 @@ class HashGraph {
         _rounds.start_round = _rounds.last_round;
         (() @trusted { _event_cache.clear; })();
 
-        assert(_owner_node.event !is null);
-        init_event(_owner_node.event.event_package);
+        if(!mirror_mode) {
+            init_event(_owner_node.event.event_package);
+        }
         // frontSeat(owen_event);
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
@@ -789,8 +790,20 @@ class HashGraph {
                 }
             }
 
-            auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks)
-                .array;
+            auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
+
+            if (_nodes.length >= node_size) {
+                const _own_epacks = _nodes
+                    .byValue
+                    .filter!(n => n.channel != this.channel)
+                    .map!((n) => n[])
+                    .joiner
+                    .map!((e) => e.event_package)
+                    .array;
+
+                initialize_witness(_own_epacks);
+            }
+
             const state = ExchangeState.RIPPLE;
             if (received.isMethod) {
                 return hirpc.result(received, Wavefront(result, Tides.init, state));
