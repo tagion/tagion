@@ -737,17 +737,21 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             void declare_block_local(Block* blk) {
                 if (!blk.local_defined) {
                     bout.writefln("%s%s %s;", indent, block_type(blk), blk.local);
+                    // ctx.push(blk.local);
 
                     __write("Local block declaration %s %s;", block_type(blk), blk.local);
                     blk.define_local;
                 }
             }
 
+            void set_local(Block* blk) {
+                bout.writefln("%s%s = %s;", indent, blk.local, ctx.pop);
+                ctx.push(blk.local);
+            }
+
             while (!expr.empty) {
                 const elm = expr.front;
-                bout.writefln("/* %s */", elm.instr.irtype);
                 expr.popFront;
-                bout.writefln("/* %s, %s */", elm.instr.irtype, expr.front.instr.irtype);
                 with (IRType) {
                     final switch (elm.instr.irtype) {
                     case CODE:
@@ -760,12 +764,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
                         break;
                     case RETURN:
-                        bout.writefln("%s// %s  <-RETURN  .. %s", indent, elm.instr.name, expr
-                                .front.code);
 
-                        bout.writefln("// Function results %s", func_type.results);
                         bout.writefln("%s%s %s;", indent, elm.instr.name, results_value);
-                        bout.writefln("// After return");
                         break;
                     case OP_STACK:
                         switch (elm.code) {
@@ -797,6 +797,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             bout.writefln("%sif (%s) { // %s", indent, ctx.pop, block_comment);
                         }
                         else {
+                            declare_block_local(block);
                             bout.writefln("%sdo { // %s | %s", indent, block_comment, *elm.instr);
                         }
                         innerBlock(block_bout, expr, indent ~ spacer, blocks ~ block);
@@ -859,24 +860,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             check(lth < blocks.length, format(
                                     "Label number of %d exceeds the block stack for max %d",
                                     lth, blocks.length));
-                            version (none)
-                                scope (exit) {
-                                    uint count;
-                                    while (!expr.empty && expr.front.code != IR.END) {
-                                        bout.writefln("%s// %d %s", indent, count, *(
-                                                expr.front.instr));
-                                        expr.popFront;
-                                        count++;
-                                    }
-                                }
                             auto current_block = blocks[$ - 1];
                             __write("%s current_block=%s", indent, *current_block);
-                            declare_block_local(current_block);
+                            const conditional_flag = ctx.pop;
+                            set_local(current_block);
+                            //declare_block_local(current_block);
                             if (lth == 0) {
                                 blocks[lth].kind = BlockKind.BREAK;
-                                const __value = ctx.peek;
-                                bout.writefln("%sif (%s) break;", indent, ctx.pop);
-                                __write("%sif (%s) break;", indent, __value);
+                                bout.writefln("%sif (%s) break;", indent, conditional_flag);
+                                __write("%sif (%s) break;", indent, conditional_flag);
                                 break;
 
                             }
@@ -884,7 +876,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             auto target_block = blocks[label_n];
                             target_block.kind = BlockKind.BREAK_N;
                             bout.writefln("%sif (%s) break %s;",
-                                    indent, ctx.pop, target_block.label);
+                                    indent, conditional_flag, target_block.label);
                             break;
                         default:
                             check(0, format("Illegal branch command %s", elm.code));
@@ -981,6 +973,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         if (blocks.length > 0) {
                             const current_block = blocks[$ - 1];
                             const keep_on_stack = types(current_block.elm);
+                            if (current_block.local_defined) {
+                                ctx.push(current_block.local);
+                            }
                             __write("%s//keep_on_stack=%s current_block=%s", indent, keep_on_stack, *current_block);
                             if (keep_on_stack.length && keep_on_stack[0] != Types.VOID) {
                                 bout.writefln("// current_block = %d keep_on_stack = %d ctx.stack.length = %d %s",
