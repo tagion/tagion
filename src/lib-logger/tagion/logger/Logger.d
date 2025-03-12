@@ -432,7 +432,12 @@ version (Posix) {
      * Note: non portable
      * Although implemented on most platforms, it might behave differently
      */
-    extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
+    version(Darwin) {
+        extern (C) int pthread_setname_np(const char*) nothrow;
+    }
+    else {
+        extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
+    }
 
     // The max task name length is set when you compile your kernel,
     // You might have set it differently
@@ -451,7 +456,12 @@ version (Posix) {
             : _name[0 .. TASK_COMM_LEN - 1] ~ '\0';
         // dfmt on
         assert(name.length <= TASK_COMM_LEN);
-        return pthread_setname_np(pthread_self(), &name[0]);
+        version(Darwin) {
+            return pthread_setname_np(&name[0]);
+        }
+        else {
+            return pthread_setname_np(pthread_self(), &name[0]);
+        }
     }
 
     @safe
