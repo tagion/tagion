@@ -99,8 +99,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     void produceAsserts(const Document doc, const string indent) {
         const sec_assert = SectionAssert(doc);
-        void innerAssert(const Assert _assert, const string indent) {
-            Context ctx;
+        void innerAssert(const Assert _assert, const string indent) @safe{
+            auto ctx=new Context;
             const(FuncType) func_void;
             auto code_type = CodeType(_assert.invoke);
             auto invoke_expr = code_type[];
@@ -133,7 +133,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 block(invoke_expr, func_void, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
-                Context ctx_results;
+                auto ctx_results = new Context;
                 block(result_expr, func_void, ctx_results, indent, true);
                 output.writefln("%s// %s : %s", indent, ctx.stack, ctx_results.stack);
                 version (none)
@@ -295,7 +295,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     alias Global = Sections[Section.GLOBAL];
     void global_sec(ref const(Global) _global) {
-        Context ctx;
+        auto ctx = new Context;
         const(FuncType) func_void;
         foreach (i, g; _global[].enumerate) {
             output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
@@ -326,7 +326,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
-        Context ctx;
+        auto ctx = new Context;
         const(FuncType) func_void;
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
@@ -414,7 +414,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     }
 
     private void output_function(const int func_idx, const(FuncIndex) type, const(CodeType) code_type) {
-        Context ctx;
+        auto ctx = new Context;
         auto expr = code_type[];
         const func_type = wasmstream.get!(Section.TYPE)[type.idx];
         //const x = return_type(func_type.results);
@@ -457,7 +457,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
-        Context ctx;
+        auto ctx = new Context;
         const(FuncType) func_void;
         foreach (d; _data[]) {
             output.writefln("%s(data (", indent);
@@ -468,9 +468,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    struct Context {
+    @safe final class Context {
         string[] locals;
         string[] stack;
+        override string toString() const pure nothrow {
+            import std.exception;
+            return assumeWontThrow(format("locals=%s stack=%", locals, stack)); 
+        }
         string peek() const pure nothrow @nogc {
             if (stack.length == 0) {
                 return "Error stack is empty";
@@ -583,13 +587,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     private void block(
             ref ExprRange expr,
             ref const(FuncType) func_type,
-            ref Context ctx,
+            Context ctx,
             const(string) indent,
             const bool no_return = false) {
         string block_comment;
         uint block_count;
         uint calls;
-        static string block_result_type()(const Types t) {
+        version (none) static string block_result_type()(const Types t) {
             with (Types) {
                 switch (t) {
                 case I32, I64, F32, F64, FUNCREF:
