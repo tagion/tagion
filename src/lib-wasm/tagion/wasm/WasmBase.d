@@ -800,8 +800,8 @@ struct ExprRange {
 
         int level;
         immutable(Instr)* instr;
+        immutable(ubyte[]) data;
         private union {
-            immutable(ubyte)[] data;
             WasmArg _warg;
             const(WasmArg)[] _wargs;
             uint _typeidx;
