@@ -736,10 +736,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
             void declare_block_local(Block* blk) {
                 if (!blk.local_defined) {
-                    bout.writefln("%s%s %s;", indent, block_type(blk), blk.local);
+                    const blk_type = block_type(blk);
+                    
+                    check(blk_type.length > 0, "No block type hase been defined");
+                    bout.writefln("%s%s %s;", indent, blk_type, blk.local);
                     // ctx.push(blk.local);
 
-                    __write("Local block declaration %s %s;", block_type(blk), blk.local);
+                    __write("Local block declaration %s %s;", blk_type, blk.local);
                     blk.define_local;
                 }
             }
