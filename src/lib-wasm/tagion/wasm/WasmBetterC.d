@@ -732,15 +732,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 OutBuffer bout,
                 ref ExprRange expr,
                 const(string) indent) {
-            //Block*[] blocks) {
-            version (none) string block_label(const size_t label_n) {
-                return format("block_%d", label_n);
-            }
-
-            version (none) string block_local(const size_t label_n) {
-                return format("local_%d", label_n);
-            }
-
             void declare_block_local(Block* blk) {
                 version(none)
                 if (!blk.local_defined) {
@@ -800,20 +791,22 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             block_bout = null;
                         }
                         auto block = new Block(elm, ctx.stack.length);
+                        string[] block_begin;
                         if (elm.code is IR.IF) {
-                            bout.writefln("%s// -- %s", indent, elm.instr.name);
+                            block_begin~=format("%s// -- %s", indent, elm.instr.name);
                             ctx.perform(elm.code, elm.instr.pops);
-                            bout.writefln("%sif (%s) { // %s", indent, ctx.pop, block_comment);
+                            block_begin~=format("%sif (%s) { // %s", indent, ctx.pop, block_comment);
                         }
                         else {
                             declare_block_local(block);
-                            bout.writefln("%sdo { // %s | %s", indent, block_comment, *elm.instr);
+                            block_begin~=format("%sdo { // %s | %s", indent, block_comment, *elm.instr);
                         }
                         ctx.blocks ~= block;
                         scope (success) {
                             ctx.blocks.length--;
                         }
                         innerBlock(block_bout, expr, indent ~ spacer);
+                        bout.writefln("%-(%s\n%)", block_begin);
                         bout.write(block_bout);
                         bout.writefln("%s// Block kind %s", indent, *block);
                         final switch (block.kind) {
