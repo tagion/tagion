@@ -742,6 +742,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
 
             void declare_block_local(Block* blk) {
+                version(none)
                 if (!blk.local_defined) {
                     bout.writefln("%s%s %s;", indent, block_type(blk), blk.local);
                     // ctx.push(blk.local);
@@ -752,8 +753,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
 
             void set_local(Block* blk) {
+                version(none) {
                 bout.writefln("%s%s = %s;", indent, blk.local, ctx.pop);
                 ctx.push(blk.local);
+                }
             }
 
             while (!expr.empty) {
@@ -1019,7 +1022,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 output.writefln("%sreturn %s;", indent, results_value);
             }
         }
-        //Block*[] blocks;
         auto expr_list = expr;
         bout.writefln("// List %s", expr_list.map!(e => e.code));
         innerBlock(bout, expr, indent);
