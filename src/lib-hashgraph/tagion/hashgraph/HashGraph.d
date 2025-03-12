@@ -819,6 +819,8 @@ class HashGraph {
             }
             break;
         case FIRST_WAVE:
+            import tagion.basic.basic;
+            assert(!_rounds.isinit);
             immutable(EventPackage)* e_newest;
             foreach (e; received_wave.epacks) {
                 auto event = new Event(e, this);
