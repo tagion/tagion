@@ -98,8 +98,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     void produceAsserts(const Document doc, const string indent) {
         const sec_assert = SectionAssert(doc);
-        void innerAssert(const Assert _assert, const string indent) @safe {
-            auto ctx = new Context;
+        void innerAssert(const Assert _assert, const string indent) {
+            Context ctx;
             const(FuncType) func_void;
             auto code_type = CodeType(_assert.invoke);
             auto invoke_expr = code_type[];
@@ -132,7 +132,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 block(invoke_expr, func_void, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
-                auto ctx_results = new Context;
+                Context ctx_results;
                 block(result_expr, func_void, ctx_results, indent, true);
                 output.writefln("%s// %s : %s", indent, ctx.stack, ctx_results.stack);
                 version (none)
@@ -294,7 +294,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     alias Global = Sections[Section.GLOBAL];
     void global_sec(ref const(Global) _global) {
-        auto ctx = new Context;
+        Context ctx;
         const(FuncType) func_void;
         foreach (i, g; _global[].enumerate) {
             output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
@@ -325,7 +325,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
-        auto ctx = new Context;
+        Context ctx;
         const(FuncType) func_void;
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
@@ -413,7 +413,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     }
 
     private void output_function(const int func_idx, const(FuncIndex) type, const(CodeType) code_type) {
-        auto ctx = new Context;
+        Context ctx;
         auto expr = code_type[];
         const func_type = wasmstream.get!(Section.TYPE)[type.idx];
         //const x = return_type(func_type.results);
@@ -458,7 +458,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
-        auto ctx = new Context;
+        Context ctx;
         const(FuncType) func_void;
         foreach (d; _data[]) {
             output.writefln("%s(data (", indent);
@@ -469,15 +469,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    @safe final class Context {
+    struct Context {
         string[] locals;
         string[] stack;
-        override string toString() const pure nothrow {
-            import std.exception;
-
-            return assumeWontThrow(format("locals=%s stack=%", locals, stack));
-        }
-
         string peek() const pure nothrow @nogc {
             if (stack.length == 0) {
                 return "Error stack is empty";
@@ -583,62 +577,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    enum BlockKind {
-        END,
-        BREAK,
-        BREAK_N,
-        ELSE,
-        ELSE_IF,
-        WHILE,
-        LOOP,
-        ERROR,
-    }
-
-    struct Block {
-        const(ExprRange.IRElement) elm;
-        const(size_t) sp; /// Stack pointer;
-        const(size_t) idx; /// Block idx
-        BlockKind _kind;
-        static size_t count;
-        protected bool _local_defined;
-
-        this(const ref ExprRange.IRElement elm, const size_t sp) nothrow
-        in (only(IRType.BLOCK_CONDITIONAL, IRType.BLOCK, IRType.BLOCK_ELSE)
-                .canFind(elm.instr.irtype))
-
-        do {
-            this.elm = elm;
-            this.sp = sp;
-            this.idx = count++;
-        }
-
-        const(BlockKind) kind() const pure nothrow {
-            return _kind;
-        }
-
-        void kind(const BlockKind k) pure nothrow {
-            if (_kind < k) {
-                _kind = k;
-            }
-        }
-
-        bool local_defined() const pure nothrow {
-            return _local_defined;
-        }
-
-        void define_local() pure nothrow {
-            _local_defined = true;
-        }
-
-        string local() const pure {
-            return format("block_local_%d", idx);
-        }
-
-        string label() const pure {
-            return format("block_%d", idx);
-        }
-    }
-
     static string sign(T)(T x) if (isFloatingPoint!T) {
         import std.math : signbit;
 
@@ -648,7 +586,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     private void block(
             ref ExprRange expr,
             ref const(FuncType) func_type,
-            Context ctx,
+            ref Context ctx,
             const(string) indent,
             const bool no_return = false) {
         string block_comment;
@@ -673,6 +611,62 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         import std.outbuffer;
+
+        enum BlockKind {
+            END,
+            BREAK,
+            BREAK_N,
+            ELSE,
+            ELSE_IF,
+            WHILE,
+            LOOP,
+            ERROR,
+        }
+
+        struct Block {
+            const(ExprRange.IRElement) elm;
+            const(size_t) sp; /// Stack pointer;
+            const(size_t) idx; /// Block idx
+            BlockKind _kind;
+            static size_t count;
+            protected bool _local_defined;
+
+            this(const ref ExprRange.IRElement elm, const size_t sp) nothrow
+            in (only(IRType.BLOCK_CONDITIONAL, IRType.BLOCK, IRType.BLOCK_ELSE)
+                    .canFind(elm.instr.irtype))
+
+            do {
+                this.elm = elm;
+                this.sp = sp;
+                this.idx = count++;
+            }
+
+            const(BlockKind) kind() const pure nothrow {
+                return _kind;
+            }
+
+            void kind(const BlockKind k) pure nothrow {
+                if (_kind < k) {
+                    _kind = k;
+                }
+            }
+
+            bool local_defined() const pure nothrow {
+                return _local_defined;
+            }
+
+            void define_local() pure nothrow {
+                _local_defined = true;
+            }
+
+            string local() const pure {
+                return format("block_local_%d", idx);
+            }
+
+            string label() const pure {
+                return format("block_%d", idx);
+            }
+        }
 
         Block.count = 0;
         string results(const(Types[]) args) {
@@ -742,13 +736,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
             void declare_block_local(Block* blk) {
                 if (!blk.local_defined) {
-                    const blk_type = block_type(blk);
-
-                    check(blk_type.length > 0, "No block type hase been defined");
-                    bout.writefln("%s%s %s;", indent, blk_type, blk.local);
+                    bout.writefln("%s%s %s;", indent, block_type(blk), blk.local);
                     // ctx.push(blk.local);
 
-                    __write("Local block declaration %s %s;", blk_type, blk.local);
+                    __write("Local block declaration %s %s;", block_type(blk), blk.local);
                     blk.define_local;
                 }
             }
