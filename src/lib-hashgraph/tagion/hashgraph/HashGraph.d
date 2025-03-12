@@ -764,6 +764,7 @@ class HashGraph {
     EventPackageCache mirror_package_cache;
     HiRPC.Sender mirror_wavefront_response(const HiRPC.Receiver received, lazy const(sdt_t) time) {
         scope (exit)
+            version(count_events)
             log("package_cache %s", mirror_package_cache.length);
 
         immutable from_channel = received.pubkey;
@@ -792,6 +793,7 @@ class HashGraph {
                 auto first_event = new Event(e, this);
                 _event_cache[first_event.fingerprint] = first_event;
                 frontSeat(first_event);
+                version(count_events)
                 if (!(e.fingerprint in mirror_package_cache || e.fingerprint in _event_cache)) {
                     mirror_package_cache[e.fingerprint] = e;
                 }
@@ -822,9 +824,11 @@ class HashGraph {
                 auto event = new Event(e, this);
                 frontSeat(event);
 
+                version(count_events)
                 if (!(e.fingerprint in mirror_package_cache || e.fingerprint in _event_cache)) {
                     mirror_package_cache[e.fingerprint] = e;
                 }
+                version(count_events)
                 if (e_newest is null || e.event_body.altitude > e_newest.event_body.altitude) {
                     e_newest = e;
                 }
@@ -833,6 +837,7 @@ class HashGraph {
             /// Remove this, it is just to see that the package events are actually connected
             uint connected_events_count;
             enum UPPER_BOUND = 1000;
+            version(count_events)
             foreach (_; 0 .. UPPER_BOUND) {
                 if(!(e_newest.event_body.mother in mirror_package_cache)) {
                     break;
