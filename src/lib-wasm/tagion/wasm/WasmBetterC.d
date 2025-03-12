@@ -806,15 +806,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             ctx.blocks.length--;
                         }
                         innerBlock(block_bout, expr, indent ~ spacer);
-                        bout.writefln("%-(%s\n%)", block_begin);
-                        bout.write(block_bout);
-                        bout.writefln("%s// Block kind %s", indent, *block);
+                        string[] block_end;
                         final switch (block.kind) {
                         case BlockKind.END:
-                            bout.writefln("%s}", indent);
+                            block_end ~= format("%s}", indent);
                             break;
                         case BlockKind.BREAK:
-                            bout.writefln("%s} while(false);", indent);
+                            block_end ~= format("%s} while(false);", indent);
                             break;
                         case BlockKind.BREAK_N:
                             break;
@@ -828,6 +826,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             break;
                         case BlockKind.ERROR:
                         }
+                        bout.writefln("%-(%s\n%)", block_begin);
+                        bout.write(block_bout);
+                        bout.writefln("%s// Block kind %s", indent, *block);
+                        bout.writefln("%-(%s\n%)", block_end);
                         break;
                     case BLOCK_ELSE:
                         bout.writefln("%selse {", indent);
