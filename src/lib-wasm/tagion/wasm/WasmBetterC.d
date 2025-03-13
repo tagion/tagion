@@ -891,6 +891,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             bout.writefln("%sif (%s) break %s;",
                                     indent, conditional_flag, target_block.label);
                             break;
+                        case IR.BR_TABLE:
+                            break;
                         default:
                             check(0, format("Illegal branch command %s", elm.code));
                         }

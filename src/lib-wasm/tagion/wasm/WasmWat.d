@@ -339,28 +339,11 @@ alias check = Check!WatException;
                 case BLOCK:
                     block_comment = format(";; block %d", block_count);
                     block_count++;
-                    __write("BLOCK %s elm.argtype=%s", *elm.instr, elm.argtype);
-                    __write("-- %(%02x %) length=%d elm.instr.name=%s", elm.data, elm.data.length, elm.instr.name);
                     output.writefln("%s%s%s %s", indent, elm.instr.name,
                             block_result_type(elm), block_comment);
-                            __write("NEXT expr.front=%s:%s", expr.front, *elm.instr);
                     const end_elm = block(expr, indent ~ spacer, level + 1);
                     const end_instr = instrTable[end_elm.code];
-                    __write("NEXT BLOCK %s", end_instr);
                     output.writefln("%s%s", indent, end_instr.name);
-                    if (elm.code is IR.IF) {
-                            __write("IR.IF expr.front=%s", expr.front);
-                    }
-                    //return end_elm;
-
-                    // const end_elm=block_elm(elm);
-                    version (none)
-                        if (end_elm.code is IR.ELSE) {
-                            const endif_elm = block(expr, indent ~ spacer, level + 1);
-                            const endif_instr = instrTable[endif_elm.code];
-                            output.writefln("%s%s %s count=%d", indent,
-                                    endif_instr.name, block_comment, count);
-                        }
                     break;
                 case BLOCK_ELSE:
                     const endif_elm = block(expr, indent ~ spacer, level);
