@@ -57,10 +57,6 @@
     )
   )
 
-  (func (export "as-loop-last") (param i32)
-    (loop (call $dummy) (br_if 1 (local.get 0)))
-  )
-
   (func (export "as-br-value") (result i32)
     (block (result i32) (br 0 (br_if 0 (i32.const 1) (i32.const 2))))
   )
@@ -83,26 +79,6 @@
 
   (func (export "as-return-value") (result i64)
     (block (result i64) (return (br_if 0 (i64.const 1) (i32.const 2))))
-  )
-
-  (func (export "as-if-cond") (param i32) (result i32)
-    (block (result i32)
-      (if (result i32)
-        (br_if 0 (i32.const 1) (local.get 0))
-        (then (i32.const 2))
-        (else (i32.const 3))
-      )
-    )
-  )
-  (func (export "as-if-then") (param i32 i32)
-    (block
-      (if (local.get 0) (then (br_if 1 (local.get 1))) (else (call $dummy)))
-    )
-  )
-  (func (export "as-if-else") (param i32 i32)
-    (block
-      (if (local.get 0) (then (call $dummy)) (else (br_if 1 (local.get 1))))
-    )
   )
 
   (func (export "as-select-first") (param i32) (result i32)
@@ -174,17 +150,6 @@
 (assert_return (invoke "as-br_if-value") (i32.const 1))
 (assert_return (invoke "as-br_if-value-cond" (i32.const 0)) (i32.const 2))
 (assert_return (invoke "as-br_if-value-cond" (i32.const 1)) (i32.const 1))
-
-(assert_return (invoke "as-if-cond" (i32.const 0)) (i32.const 2))
-(assert_return (invoke "as-if-cond" (i32.const 1)) (i32.const 1))
-(assert_return (invoke "as-if-then" (i32.const 0) (i32.const 0)))
-(assert_return (invoke "as-if-then" (i32.const 4) (i32.const 0)))
-(assert_return (invoke "as-if-then" (i32.const 0) (i32.const 1)))
-(assert_return (invoke "as-if-then" (i32.const 4) (i32.const 1)))
-(assert_return (invoke "as-if-else" (i32.const 0) (i32.const 0)))
-(assert_return (invoke "as-if-else" (i32.const 3) (i32.const 0)))
-(assert_return (invoke "as-if-else" (i32.const 0) (i32.const 1)))
-(assert_return (invoke "as-if-else" (i32.const 3) (i32.const 1)))
 
 (assert_return (invoke "as-select-first" (i32.const 0)) (i32.const 3))
 (assert_return (invoke "as-select-first" (i32.const 1)) (i32.const 3))

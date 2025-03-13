@@ -703,6 +703,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return null;
         }
 
+        bool isVoidType(const(Block*) blk) {
+            with (ExprRange.IRElement.IRArgType) {
+                return ((blk.elm.argtype is TYPES) && (blk.elm.types[0] is Types.VOID));
+            }
+        }
+
         string block_type(const(Block*) blk) {
             with (ExprRange.IRElement.IRArgType) {
                 assert(blk.elm.argtype is TYPES || blk.elm.argtype is INDEX,
@@ -733,20 +739,18 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 ref ExprRange expr,
                 const(string) indent) {
             void declare_block_local(Block* blk) {
-                version(none)
-                if (!blk.local_defined) {
+                if (blk.local_defined) {
                     bout.writefln("%s%s %s;", indent, block_type(blk), blk.local);
-                    // ctx.push(blk.local);
-
                     __write("Local block declaration %s %s;", block_type(blk), blk.local);
-                    blk.define_local;
                 }
             }
 
             void set_local(Block* blk) {
-                version(none) {
-                bout.writefln("%s%s = %s;", indent, blk.local, ctx.pop);
-                ctx.push(blk.local);
+                if (!isVoidType(blk)) {
+                    __write("%s%s = %s", indent, blk.local, ctx.peek);
+                    bout.writefln("%s%s = %s;", indent, blk.local, ctx.pop);
+                    ctx.push(blk.local);
+                    blk.define_local;
                 }
             }
 
@@ -793,13 +797,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         auto block = new Block(elm, ctx.stack.length);
                         string[] block_begin;
                         if (elm.code is IR.IF) {
-                            block_begin~=format("%s// -- %s", indent, elm.instr.name);
+                            block_begin ~= format("%s// -- %s", indent, elm.instr.name);
                             ctx.perform(elm.code, elm.instr.pops);
-                            block_begin~=format("%sif (%s) { // %s", indent, ctx.pop, block_comment);
+                            block_begin ~= format("%sif (%s) { // %s", indent, ctx.pop, block_comment);
                         }
                         else {
-                            declare_block_local(block);
-                            block_begin~=format("%sdo { // %s | %s", indent, block_comment, *elm.instr);
+                            block_begin ~= format("%sdo { // %s | %s", indent, block_comment, *elm.instr);
                         }
                         ctx.blocks ~= block;
                         scope (success) {
@@ -826,6 +829,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             break;
                         case BlockKind.ERROR:
                         }
+                        declare_block_local(block);
                         bout.writefln("%-(%s\n%)", block_begin);
                         bout.write(block_bout);
                         bout.writefln("%s// Block kind %s", indent, *block);
@@ -870,9 +874,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.blocks.length));
                             auto current_block = ctx.blocks[$ - 1];
                             __write("%s current_block=%s", indent, *current_block);
+                            __write("stack %-(%s %)", ctx.stack);
                             const conditional_flag = ctx.pop;
+                            __write("conditional_flag=%s", conditional_flag);
                             set_local(current_block);
-                            //declare_block_local(current_block);
                             if (lth == 0) {
                                 ctx.blocks[lth].kind = BlockKind.BREAK;
                                 bout.writefln("%sif (%s) break;", indent, conditional_flag);
