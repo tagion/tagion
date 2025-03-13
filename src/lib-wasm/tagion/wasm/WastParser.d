@@ -123,6 +123,14 @@ struct WastParser {
             return block_peek(idx);
         }
 
+        uint block_depth_index(string token) const pure nothrow {
+            int idx = assumeWontThrow(
+                    token.to!int
+                    .ifThrown(cast(int) block_stack.countUntil!(b => b.label == token))
+                    .ifThrown(-1));
+            return cast(uint)(block_stack.length-idx);
+        }
+
         Types localType(const int idx) {
             check(idx >= 0 && idx < locals.length, format("Local register index %d is not available", idx));
             return locals[idx];
@@ -415,8 +423,8 @@ struct WastParser {
                         
                         const(uint)[] label_idxs;
                         while (r.type is TokenType.WORD) {
-                            const blk = func_ctx.block_peek(r.token);
-                            label_idxs ~= blk.idx;
+                            const block_depth = func_ctx.block_depth_index(r.token);
+                            label_idxs ~= block_depth;
                             r.nextToken;
                         }
                         while (r.type is TokenType.BEGIN) {
