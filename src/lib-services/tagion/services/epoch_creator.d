@@ -203,10 +203,8 @@ struct EpochCreatorService {
             while (!thisActor.stop && !hashgraph.areWeInGraph) {
                 const received = receiveTimeout(
                         opts.timeout.msecs,
-                        &signal,
-                        &ownerTerminated,
                         &receiveWavefront_req,
-                        &unknown
+                        default_handlers.expand
                 );
                 if (!received) {
                     timeout();

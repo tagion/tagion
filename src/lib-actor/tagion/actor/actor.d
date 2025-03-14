@@ -100,6 +100,7 @@ struct Request(string name, ID = uint) {
 
     static Request opCall() @safe nothrow {
         import tagion.utils.Random;
+
         static assert(isNumeric!ID, "Can not auto generate an id for non numeric ID type");
         return typeof(this).opCall(generateId!(Unqual!ID));
     }
@@ -107,7 +108,7 @@ struct Request(string name, ID = uint) {
     static Request opCall(ID id) @safe nothrow {
         assert(thisActor.task_name !is string.init, "The requester is not registered as a task");
 
-        Request!(name, ID) r = { Msg!name(), id, thisActor.task_name };
+        Request!(name, ID) r = {Msg!name(), id, thisActor.task_name};
         return r;
     }
 
@@ -191,7 +192,6 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
                 defaultFailhandler,
                 &control,
                 &signal,
-                &ownerTerminated
 
             );
         }
@@ -292,7 +292,7 @@ struct ActorHandle {
 }
 
 ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
-if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
+        if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
@@ -302,17 +302,6 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             try {
                 actor.task(args);
-
-                // If the actor forgets to kill it's children we'll do it anyway
-                if (!statusChildren(Ctrl.END)) {
-                    foreach (child_task_name, ctrl; thisActor.childrenState) {
-                        if (ctrl is Ctrl.ALIVE) {
-                            ActorHandle(child_task_name).send(Sig.STOP);
-                        }
-                    }
-                    waitforChildren(Ctrl.END);
-                }
-
             }
             catch (Exception t) {
                 fail(t);
@@ -338,7 +327,7 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
 ActorHandle _spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     try {
-        static if(!__traits(compiles, A(args))) {
+        static if (!__traits(compiles, A(args))) {
             A(args); // error constructor A() cannot be called with Args
         }
 
@@ -350,15 +339,6 @@ if (isActor!A) {
                 A actor = A(args);
                 setState(Ctrl.STARTING); // Tell the owner that you are starting.
                 actor.task();
-                // If the actor forgets to kill it's children we'll do it anyway
-                if (!statusChildren(Ctrl.END)) {
-                    foreach (child_task_name, ctrl; thisActor.childrenState) {
-                        if (ctrl is Ctrl.ALIVE) {
-                            ActorHandle(child_task_name).prioritySend(Sig.STOP);
-                        }
-                    }
-                    /* waitforChildren(Ctrl.END); */
-                }
             }
             catch (Exception t) {
                 fail(t);
@@ -388,13 +368,12 @@ if (isActor!A) {
     return spawn(actor, name, args);
 }
 
-
 /// Send to the owner if there is one
 void sendOwner(T...)(T vals) @safe {
     try {
         concurrency.send(ownerTid, vals);
     }
-    catch(Exception) {
+    catch (Exception) {
         log.error("No owner tried to send a message to it");
         log.error("%s", tuple(vals));
     }
@@ -407,7 +386,7 @@ static Topic taskfailure = Topic("taskfailure");
  * Silently fails if there is no owner
  * Does NOT exit regular control flow
 */
-void fail(Throwable t) nothrow {
+void fail(Throwable t, int line = __LINE__) nothrow {
     try {
         debug (actor) {
             log(t);
@@ -417,10 +396,10 @@ void fail(Throwable t) nothrow {
         ownerTid.prioritySend(tf);
     }
     catch (Exception e) {
-        log.fatal("Failed to deliver TaskFailure: \n
+        log.fatal("Failed to deliver TaskFailure: %s\n
                 %s\n\n
                 Because:\n
-                %s", t, e);
+                %s", line, t, e);
         log.fatal("Stopping because we failed to deliver a TaskFailure to the supervisor");
         thisActor.stop = true;
     }
@@ -469,7 +448,7 @@ if (allSatisfy!(isSafe, Args)) {
         setState(Ctrl.END);
     }
 
-    if(thisActor.stop) {
+    if (thisActor.stop) {
         return;
     }
 
@@ -482,6 +461,11 @@ if (allSatisfy!(isSafe, Args)) {
                 default_handlers.expand,
             );
             thisActor.msgs_received++;
+        }
+        catch(OwnerTerminated e) {
+            /* static assert(0, is(OwnerTerminated : imported!"std.concurrency".OwnerTerminated)); */
+            thisActor.stop = true;
+            return;
         }
         catch (MailboxFull t) {
             fail(t);
@@ -515,7 +499,7 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
         setState(Ctrl.END);
     }
 
-    if(thisActor.stop) {
+    if (thisActor.stop) {
         return;
     }
 
@@ -535,6 +519,10 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
                 thisActor.msgs_received++;
             }
         }
+        catch (OwnerTerminated e) {
+            thisActor.stop = true;
+            return;
+        }
         catch (MailboxFull t) {
             fail(t);
             thisActor.stop = true;
@@ -545,14 +533,14 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
     }
 }
 
-enum defaultFailhandler = (TaskFailure tf) @safe nothrow {
+enum defaultFailhandler = (TaskFailure tf) @safe nothrow{
     try {
         ownerTid.prioritySend(tf);
     }
-    catch(TidMissingException e) {
+    catch (TidMissingException e) {
         log.error("%s", tf);
     }
-    catch(Exception e) {
+    catch (Exception e) {
         log.fatal(e);
     }
 };
@@ -569,12 +557,6 @@ void signal(Sig signal) @safe {
 /// Controls message sent from the children.
 void control(CtrlMsg msg) @safe {
     thisActor.childrenState[msg.task_name] = msg.ctrl;
-}
-
-/// Stops the actor if the supervisor stops
-void ownerTerminated(OwnerTerminated) @safe {
-    log.trace("%s, Owner stopped... nothing to life for... stopping self", thisTid);
-    thisActor.stop = true;
 }
 
 /**
@@ -595,6 +577,5 @@ auto default_handlers = tuple(
     &signal,
     &control,
     &getActorInfo,
-    &ownerTerminated,
     &unknown,
 );

@@ -63,9 +63,7 @@ struct DARTWorker {
         while (!thisActor.stop) {
             const received = receiveTimeout(
                     Duration.zero,
-                    &signal,
-                    &ownerTerminated,
-                    &unknown
+                    default_handlers.expand
             );
 
             writefln("REQ %s to dial...", doc.toPretty);
@@ -81,9 +79,7 @@ struct DARTWorker {
         while (!thisActor.stop) {
             const received = receiveTimeout(
                     Duration.zero,
-                    &signal,
-                    &ownerTerminated,
-                    &unknown
+                    default_handlers.expand
             );
             if (received) {
                 continue;

@@ -117,9 +117,7 @@ struct InputValidatorService {
             // Check for control signal
             const received = receiveTimeout(
                     Duration.zero,
-                    &signal,
-                    &ownerTerminated,
-                    &unknown
+                    default_handlers.expand
             );
             if (received) {
                 continue;
