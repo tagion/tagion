@@ -31,7 +31,7 @@
       (f64.add (br 0 (f64.const 4) (f64.const 5))) (f64.const 6)
     )
   )
-  
+
   (func (export "as-block-first")
     (block (br 0) (call $dummy))
   )
@@ -123,6 +123,7 @@
   (func (export "as-global.set-value") (result i32)
     (block (result i32) (global.set $a (br 0 (i32.const 1))))
   )
+
   (memory 1)
   (func (export "as-load-address") (result f32)
     (block (result f32) (f32.load (br 0 (f32.const 1.7))))
@@ -148,6 +149,7 @@
       (i64.store (br 0 (i32.const 32))) (i32.const -1)
     )
   )
+
   (func (export "as-storeN-address") (result i32)
     (block (result i32)
       (i32.store8 (br 0 (i32.const 32)) (i32.const 7)) (i32.const -1)
@@ -206,6 +208,7 @@
       )
     )
   )
+
   (func (export "nested-br-value") (result i32)
     (i32.add
       (i32.const 1) ;; Value 1
@@ -221,7 +224,8 @@
       )
     )
   )
-;)
+  ;)
+
 )
 
 (assert_return (invoke "type-i32"))

@@ -123,6 +123,14 @@ struct WastParser {
             return block_peek(idx);
         }
 
+        uint block_depth_index(string token) const pure nothrow {
+            int idx = assumeWontThrow(
+                    token.to!int
+                    .ifThrown(cast(int) block_stack.countUntil!(b => b.label == token))
+                    .ifThrown(-1));
+            return cast(uint)(block_stack.length-idx);
+        }
+
         Types localType(const int idx) {
             check(idx >= 0 && idx < locals.length, format("Local register index %d is not available", idx));
             return locals[idx];
@@ -283,12 +291,12 @@ struct WastParser {
             r.nextToken;
             r.expect(TokenType.WORD);
             const instr = instrWastLookup.get(r.token, illegalInstr);
-            __write("scope %s", inner_stage);
             auto next_stage = ParserStage.CODE;
             string label;
             with (IRType) {
                 final switch (instr.irtype) {
                 case CODE:
+                case OP_STACK:
                     r.nextToken;
                     while (r.type is TokenType.BEGIN) {
                         inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
@@ -376,10 +384,10 @@ struct WastParser {
                     wasmexpr(IR.END);
                     return stage;
                 case BLOCK_ELSE:
-                        version(none)
-                    r.check(stage is ParserStage.CONDITIONAL,
-                            format( "An %s IRType is only allower after parsing a %s , not after a %s stage", 
-                            BLOCK_ELSE, ParserStage.CONDITIONAL, stage));
+                    version (none)
+                        r.check(stage is ParserStage.CONDITIONAL,
+                                format("An %s IRType is only allower after parsing a %s , not after a %s stage",
+                                BLOCK_ELSE, ParserStage.CONDITIONAL, stage));
                     r.nextToken;
                     wasmexpr(IR.ELSE);
                     while (r.type is TokenType.BEGIN) {
@@ -389,6 +397,7 @@ struct WastParser {
                     //wasmexpr(IR.END);
                     return stage;
                 case BRANCH:
+                case BRANCH_TABLE:
                     const branch_ir = irLookupTable[instr.name];
                     switch (branch_ir) {
                     case IR.BR:
@@ -404,13 +413,25 @@ struct WastParser {
                         r.nextToken;
                         const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
-                        //__write("BR_code before %(%02x )", wasmexpr.serialize);
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
                         }
-                        //__write("BR_code before %(%02x )", wasmexpr.serialize);
-                        //__write("Block IDX=%d", blk.idx);
                         wasmexpr(IR.BR_IF, blk.idx);
+                        break;
+                    case IR.BR_TABLE:
+                        r.nextToken;
+                        
+                        const(uint)[] label_idxs;
+                        while (r.type is TokenType.WORD) {
+                            const block_depth = func_ctx.block_depth_index(r.token);
+                            label_idxs ~= block_depth;
+                            r.nextToken;
+                        }
+                        while (r.type is TokenType.BEGIN) {
+                            inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
+                        }
+                        wasmexpr(IR.BR_TABLE, label_idxs);
+
                         break;
                     default:
                         assert(0, format("Illegal token %s in %s", r.token, BRANCH));
@@ -418,8 +439,6 @@ struct WastParser {
                     while (r.type is TokenType.BEGIN) {
                         innerInstr(wasmexpr, r, block_results, next_stage);
                     }
-                    break;
-                case BRANCH_TABLE:
                     break;
                 case CALL:
                     r.nextToken;

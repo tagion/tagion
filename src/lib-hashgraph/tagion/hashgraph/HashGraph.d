@@ -104,7 +104,7 @@ class HashGraph {
     /**
  * Creates a graph with node_size nodes
  * Params:
- *   node_size = number of nodes handles byt the graph
+ *   node_size = number of nodes handles by the graph
  *   net = Securety element handles hash function, signing and signature validation
  *   gossip_net = gossip interface used to select the valid channel etc.
  *   epoch_callback = call-back which is called when an epoch has been produced
@@ -130,9 +130,11 @@ class HashGraph {
 
     void initialize_witness(const(immutable(EventPackage)*[]) epacks)
     in {
-        assert(_nodes.length > 0 && (channel in _nodes),
-                "Own Eva event needs to be create before witness can be initialized");
-        assert(_owner_node !is null);
+        if(!mirror_mode) {
+            assert(_nodes.length > 0 && (channel in _nodes),
+                    "Own Eva event needs to be create before witness can be initialized");
+            assert(_owner_node !is null);
+        }
     }
     do {
         debug (EPOCH_LOG) {
@@ -170,8 +172,9 @@ class HashGraph {
         _rounds.start_round = _rounds.last_round;
         (() @trusted { _event_cache.clear; })();
 
-        assert(_owner_node.event !is null);
-        init_event(_owner_node.event.event_package);
+        if(!mirror_mode) {
+            init_event(_owner_node.event.event_package);
+        }
         // frontSeat(owen_event);
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
@@ -415,8 +418,9 @@ class HashGraph {
                 _event_cache[fingerprint] = event;
                 return event;
             }
-            Event.check(0, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
-            assert(0);
+            return null;
+            // Event.check(0, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+            // assert(0);
         }
 
         /**
@@ -437,10 +441,14 @@ class HashGraph {
 
             // event either from event_package_cache or event_cache.
             event = lookup(fingerprint);
-            //Event.check(event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
-            //if (event !is null) {
-            event.connect(this.outer);
-            //}
+            if(!event) { // FIXME: this check should only be ignored in booting the network
+                if(mirror_mode) {
+                    return event;
+                }
+                Event.check(0, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+            } else {
+                event.connect(this.outer);
+            }
             return event;
         }
     }
@@ -756,6 +764,7 @@ class HashGraph {
     EventPackageCache mirror_package_cache;
     HiRPC.Sender mirror_wavefront_response(const HiRPC.Receiver received, lazy const(sdt_t) time) {
         scope (exit)
+            version(count_events)
             log("package_cache %s", mirror_package_cache.length);
 
         immutable from_channel = received.pubkey;
@@ -784,27 +793,44 @@ class HashGraph {
                 auto first_event = new Event(e, this);
                 _event_cache[first_event.fingerprint] = first_event;
                 frontSeat(first_event);
+                version(count_events)
                 if (!(e.fingerprint in mirror_package_cache || e.fingerprint in _event_cache)) {
                     mirror_package_cache[e.fingerprint] = e;
                 }
             }
 
-            auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks)
-                .array;
+            auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
+
+            if (_nodes.length >= node_size) {
+                const _own_epacks = _nodes
+                    .byValue
+                    .filter!(n => n.channel != this.channel)
+                    .map!((n) => n[])
+                    .joiner
+                    .map!((e) => e.event_package)
+                    .array;
+
+                initialize_witness(_own_epacks);
+            }
+
             const state = ExchangeState.RIPPLE;
             if (received.isMethod) {
                 return hirpc.result(received, Wavefront(result, Tides.init, state));
             }
             break;
         case FIRST_WAVE:
+            import tagion.basic.basic;
+            assert(!_rounds.isinit);
             immutable(EventPackage)* e_newest;
             foreach (e; received_wave.epacks) {
                 auto event = new Event(e, this);
                 frontSeat(event);
 
+                version(count_events)
                 if (!(e.fingerprint in mirror_package_cache || e.fingerprint in _event_cache)) {
                     mirror_package_cache[e.fingerprint] = e;
                 }
+                version(count_events)
                 if (e_newest is null || e.event_body.altitude > e_newest.event_body.altitude) {
                     e_newest = e;
                 }
@@ -813,6 +839,7 @@ class HashGraph {
             /// Remove this, it is just to see that the package events are actually connected
             uint connected_events_count;
             enum UPPER_BOUND = 1000;
+            version(count_events)
             foreach (_; 0 .. UPPER_BOUND) {
                 if(!(e_newest.event_body.mother in mirror_package_cache)) {
                     break;
@@ -821,6 +848,11 @@ class HashGraph {
                 connected_events_count++;
             }
             log("connected_events_count %s: %s", from_channel.encodeBase64, connected_events_count);
+
+            if (!areWeInGraph) {
+                break;
+            }
+            const from_front_seat = register_wavefront(received_wave, from_channel);
 
             /* return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides)); */
             break;

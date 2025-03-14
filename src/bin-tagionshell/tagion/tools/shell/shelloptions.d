@@ -6,8 +6,6 @@ import tagion.services.options : contract_sock_addr;
 import tagion.json.JSONRecord;
 import std.format;
 
-enum mode0_prefix = "Node_%d_";
-
 import std.exception;
 
 struct ShellOptions {
@@ -17,7 +15,7 @@ struct ShellOptions {
     string monitor_pub_uri = "tcp://0.0.0.0:8082";
     string monitor_sub_uri = "tcp://127.0.0.1:8082";
     string recorder_subscription_tag = "recorder";
-    string dart_subscription_task_prefix = "Node_0_";
+    string dart_subscription_task_prefix = "node0/";
     string trt_subscription_tag = "trt_created";
     string monitor_subscription_tag = "monitor";
     string shell_api_prefix = "/api/v1";
@@ -44,7 +42,7 @@ struct ShellOptions {
     uint common_socket_delay = 500;
     uint websocket_cache_size = 512;
     double dartcache_ttl_msec = 30.0;
-    string mode0_prefix = "Node_%d_";
+    string mode0_prefix = "node%d/";
     bool cache_enabled = false; // if to use caches
 
     bool save_rpcs_enable = true; // Whether or not the shell should save incoming contracts

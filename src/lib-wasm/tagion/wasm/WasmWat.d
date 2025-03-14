@@ -3,7 +3,7 @@ module tagion.wasm.WasmWat;
 import std.conv : to;
 import std.format;
 import std.range : StoppingPolicy, enumerate, lockstep;
-import std.range.primitives : isOutputRange;
+import std.range : isOutputRange, take;
 import std.stdio;
 import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
 import std.typecons : Tuple;
@@ -281,6 +281,15 @@ alias check = Check!WatException;
         }
     }
 
+        version(none)
+    string typeName(ref const ExprRange.IRElement elm) {
+        if (elm.argtypes is ExprRange.IRElement.IRArgType.TYPES) {
+            return typeName(elm.types);
+        }
+        return typeName(wasmstream.get!(Section.TYPE)[elm.idx].results);
+
+    }
+
     private const(ExprRange.IRElement) block(ref ExprRange expr,
             const(string) indent, const uint level = 0) {
         //        immutable indent=base_indent~spacer;
@@ -319,6 +328,7 @@ alias check = Check!WatException;
                 case CODE:
                 case CODE_EXTEND:
                 case CODE_TYPE:
+                case OP_STACK:
                 case RETURN:
                     output.writefln("%s%s", indent, elm.instr.name);
                     break;
@@ -334,25 +344,14 @@ alias check = Check!WatException;
                     const end_elm = block(expr, indent ~ spacer, level + 1);
                     const end_instr = instrTable[end_elm.code];
                     output.writefln("%s%s", indent, end_instr.name);
-                    //return end_elm;
-
-                    // const end_elm=block_elm(elm);
-                    version(none)
-                        if (end_elm.code is IR.ELSE) {
-                        const endif_elm = block(expr, indent ~ spacer, level + 1);
-                        const endif_instr = instrTable[endif_elm.code];
-                        output.writefln("%s%s %s count=%d", indent,
-                                endif_instr.name, block_comment, count);
-                    }
                     break;
                 case BLOCK_ELSE:
-                        const endif_elm = block(expr, indent ~ spacer, level + 1);
-                        const endif_instr = instrTable[endif_elm.code];
-                        output.writefln("%s%s %s count=%d", indent,
-                                endif_instr.name, block_comment, count);
+                    const endif_elm = block(expr, indent ~ spacer, level);
+                    const endif_instr = instrTable[endif_elm.code];
+                    output.writefln("%s%s %s count=%d", indent,
+                            endif_instr.name, block_comment, count);
                     break;
                 case BRANCH:
-                    //                case BRANCH_IF:
                     output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;
                 case BRANCH_TABLE:

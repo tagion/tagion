@@ -116,10 +116,11 @@ enum IRType {
     CODE, /// Simple instruction with no argument
     CODE_EXTEND, /// Extended instruction with an opcode argument
     CODE_TYPE, /// Instrunction with return type conversion (like select)
+    OP_STACK, /// Stack operations
     RETURN,
     BLOCK, /// Block instruction
     BLOCK_CONDITIONAL, /// Used for if statement
-    BLOCK_ELSE, // Used for else statment (The block number is the same as for the BLOCK_CONDITION)
+    BLOCK_ELSE, // Used for else statement (The block number is the same as for the BLOCK_CONDITION)
     BRANCH, /// Branch jump instruction
     BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
@@ -169,7 +170,7 @@ enum IR : ubyte {
         @Instr("return", "return", 1, IRType.RETURN)                    RETURN              = 0x0F, ///  return
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
         @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
-        @Instr("drop", "drop", 1, IRType.CODE, [Types.VOID])                   DROP                = 0x1A, ///  drop
+        @Instr("drop", "drop", 1, IRType.OP_STACK, [Types.VOID])                   DROP                = 0x1A, ///  drop
         @Instr("select", "select", 1, IRType.CODE_TYPE, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID])  SELECT              = 0x1B, ///  select
         @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.VOID])          LOCAL_GET           = 0x20, ///  local.get x:localidx
         @Instr("local.set", "local.set", 1, IRType.LOCAL, [Types.VOID])             LOCAL_SET           = 0x21, ///  local.set x:localidx
@@ -799,8 +800,8 @@ struct ExprRange {
 
         int level;
         immutable(Instr)* instr;
+        immutable(ubyte[]) data;
         private union {
-            immutable(ubyte)[] data;
             WasmArg _warg;
             const(WasmArg)[] _wargs;
             uint _typeidx;
@@ -903,6 +904,7 @@ struct ExprRange {
                 case CODE:
                 case CODE_TYPE:
                 case RETURN:
+                case OP_STACK:
                     break;
                 case CODE_EXTEND:
                     const opcode_arg = decode!IR_EXTEND(data, index);
