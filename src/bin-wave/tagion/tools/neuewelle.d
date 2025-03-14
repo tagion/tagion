@@ -42,28 +42,6 @@ import tagion.wave.common;
 import tagion.script.common;
 import tagion.script.namerecords;
 
-static abort = false;
-
-private extern (C)
-void signal_handler(int signal) nothrow {
-    try {
-        if (signal !is SIGINT) {
-            return;
-        }
-
-        if (abort) {
-            printf("Terminating\n");
-            exit(1);
-        }
-        stopsignal.setIfInitialized;
-        abort = true;
-        printf("Received stop signal, telling services to stop\n");
-    }
-    catch (Exception e) {
-        assert(0, format("DID NOT CLOSE PROPERLY \n %s", e));
-    }
-}
-
 mixin Main!(_main, "wave");
 
 int _main(string[] args) {
@@ -92,16 +70,6 @@ int _neuewelle(string[] args) {
     File fin = stdin; /// Console input for the bootkeys
     stopsignal.initialize(true, false);
 
-    { // Handle sigint
-        sigaction_t sa;
-        sa.sa_handler = &signal_handler;
-
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = 0;
-        // Register the signal handler for SIGINT
-        int rc = sigaction(SIGINT, &sa, null);
-        assert(rc == 0, "sigaction error");
-    }
     { // Handle sigv
         sigaction_t sa;
         sa.sa_sigaction = &segment_fault;
@@ -213,6 +181,7 @@ int _neuewelle(string[] args) {
     }
 
     // Spawn logger service
+    log.set_logfile(stdout);
     immutable logger = LoggerService();
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
@@ -377,7 +346,7 @@ int _neuewelle(string[] args) {
     import tagion.utils.pretend_safe_concurrency : receiveTimeout;
 
     while(!thisActor.stop) {
-        thisActor.stop |= stopsignal.wait(100.msecs);
+        /* thisActor.stop |= stopsignal.wait(100.msecs); */
 
         receiveTimeout(Duration.zero,
             (EpochShutdown m, long shutdown_) { //
@@ -413,13 +382,6 @@ int _neuewelle(string[] args) {
             error("Error when reading epoch shutdown file");
             error(e);
         }
-
-        /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
-        // If all supervisors stopped then we stop as well
-        thisActor.stop |= 
-            thisActor.childrenState
-            .byKeyValue
-            .filter!(c => canFind(c.key, local_options.task_names.supervisor)).all!(c => c.value is Ctrl.END);
     }
 
     log("Sending stop signal to supervisors");
