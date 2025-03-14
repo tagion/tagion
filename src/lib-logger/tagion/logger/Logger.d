@@ -193,7 +193,7 @@ is ready and has been started correctly
     @trusted
     void write(const LogLevel level, string task_name, lazy scope string text) const nothrow {
         try {
-            logfile.writeln(formatLog(level, task_name, text, logfile_is_atty));
+            logfile.writeln(formatLog(level, task_name, text, cast(bool)isatty(logfile.fileno)));
         }
         catch(Exception e) {
             assumeWontThrow(stderr.writeln(e));
