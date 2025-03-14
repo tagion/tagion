@@ -123,12 +123,17 @@ struct WastParser {
             return block_peek(idx);
         }
 
-        uint block_depth_index(string token) const pure nothrow {
-            int idx = assumeWontThrow(
-                    token.to!int
-                    .ifThrown(cast(int) block_stack.countUntil!(b => b.label == token))
-                    .ifThrown(-1));
-            return cast(uint)(block_stack.length-idx);
+        uint block_depth_index(string token) const pure  {
+            
+            try {
+                return token.to!uint;
+            }
+            catch (ConvException e) {
+               // Ignore try the label name instead 
+            }
+            const stack_depth = block_stack.countUntil!(b => b.label == token);
+            check(stack_depth >= 0, format("Label %s does not exists", token));
+            return cast(uint)(stack_depth);
         }
 
         Types localType(const int idx) {
