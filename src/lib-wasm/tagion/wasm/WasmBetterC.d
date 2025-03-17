@@ -923,18 +923,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("%s//%s %s", indent, elm.instr.name, elm.warg.get!uint);
 
                         break;
-                    case _BRANCH_TABLE:
-                        assert(0, "Has been removed");
-                        static string branch_table(const(WasmArg[]) args) {
-                            string result;
-                            foreach (a; args) {
-                                result ~= format(" %d", a.get!uint);
-                            }
-                            return result;
-                        }
-
-                        bout.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
-                        break;
                     case CALL:
                         scope (exit) {
                             calls++;

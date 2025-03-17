@@ -398,11 +398,7 @@ struct WastParser {
                     while (r.type is TokenType.BEGIN) {
                         innerInstr(wasmexpr, r, block_results, next_stage);
                     }
-                    //                    func_ctx.block_pop;
-                    //wasmexpr(IR.END);
                     return stage;
-                case _BRANCH_TABLE:
-                    assert(0, "Has been removed");
                 case BRANCH:
                     const branch_ir = irLookupTable[instr.name];
                     switch (branch_ir) {

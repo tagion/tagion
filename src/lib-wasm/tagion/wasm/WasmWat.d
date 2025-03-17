@@ -365,8 +365,6 @@ alias check = Check!WatException;
                     }
                     output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;
-                case _BRANCH_TABLE:
-                    assert(0, "Has been removed");
                 case CALL:
                     output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;

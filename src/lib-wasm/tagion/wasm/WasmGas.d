@@ -102,8 +102,6 @@ struct WasmGas {
                         }
                         wasmexpr(elm.code, elm.warg.get!uint);
                         break;
-                    case _BRANCH_TABLE:
-                        assert(0, "has been removed");
                     case CALL, LOCAL, GLOBAL, CALL_INDIRECT:
                         wasmexpr(elm.code, elm.warg.get!uint);
                         //writefln("\t\tdata=%s",
