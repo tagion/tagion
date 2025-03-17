@@ -21,6 +21,7 @@ import std.file : append, exists, mkdirRecurse;
 import tagion.hibon.HiBONFile;
 import tagion.hibon.HiBONException;
 import std.algorithm;
+import tagion.hibon.Document;
 
 @safe
 struct ReplicatorOptions {
@@ -57,22 +58,30 @@ struct ReplicatorService {
             file.close;
         }
 
-        void readRecorder(readRecorderRR req, immutable(long) epoch_number) {
+        void readRecorder(readRecorderRR req, Document doc) {
+            try {
+                log("Received readRecorderRR request: %s", doc.toPretty);
 
-            auto fin = File(filepath, "r");
+                long epoch_number = doc["$msg"]["params"]["$epoch"].get!long;
 
-            scope (exit) {
-                fin.close;
-            }
+                auto fin = File(filepath, "r");
 
-            auto recorders = HiBONRange(fin).map!(doc => RecorderBlock(doc));
-            foreach (ref recorder; recorders) {
-                if (recorder.epoch_number == epoch_number) {
-                    req.respond(recorder);
-                    break;
+                scope (exit) {
+                    fin.close;
+                }
+
+                auto recorders = HiBONRange(fin).map!(doc => RecorderBlock(doc));
+                foreach (ref recorder; recorders) {
+                    if (recorder.epoch_number == epoch_number) {
+                        log("readRecorderRR response: %s", recorder.toPretty);
+                        req.respond(recorder);
+                        break;
+                    }
                 }
             }
-
+            catch (Exception e) {
+                log("Received readRecorderRR request: %s", e.msg);
+            }
         }
 
         void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(

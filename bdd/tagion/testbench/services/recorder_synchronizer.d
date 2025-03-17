@@ -28,6 +28,14 @@ import tagion.dart.DARTcrud : dartBullseye, dartCheckRead, dartRead;
 import tagion.testbench.actor.util;
 import tagion.wave.common;
 import tagion.script.common;
+import std.random;
+import std.datetime.stopwatch;
+import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBON;
+import tagion.dart.DARTFakeNet : DARTFakeNet;
+import tagion.utils.Term;
+import tagion.services.replicator;
+import tagion.dart.Recorder;
 
 enum feature = Feature(
         "RecorderSynchronizer",
@@ -45,11 +53,18 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
     Fingerprint remote_b;
     ActorHandle[] remote_dart_handles;
     ActorHandle[] dart_interface_handles;
+    ActorHandle[] replicator_handles;
+    ActorHandle replicator_handle;
+    ReplicatorOptions replicator_opts;
 
     ActorHandle dart_sync_handle;
     TRTOptions trt_options;
     const local_db_name = "rs_local_dart.drt";
     string local_db_path;
+
+    this(ReplicatorOptions replicator_opts) {
+        this.replicator_opts = replicator_opts;
+    }
 
     @Given("the empty local node")
     Document theEmptyLocalNode() {
@@ -70,11 +85,6 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
     @Given("the remote node with random data")
     Document nodeWithRandomData() {
-        import std.random;
-        import std.datetime.stopwatch;
-        import tagion.hibon.HiBONRecord;
-        import tagion.dart.DARTFakeNet : DARTFakeNet;
-        import tagion.utils.Term;
 
         const number_of_databases = 1;
         const number_of_archives = 10;
@@ -119,10 +129,10 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
             auto remote_dart = new DART(net, remote_db_path);
 
             auto recorder = remote_dart.recorder;
-            recorder.add(TagionHead());
             foreach (doc_no; document_numbers) {
                 recorder.add(test_doc(doc_no));
             }
+            recorder.add(TagionHead());
             remote_dart.modify(recorder);
 
             auto remote_dart_handle = (() @trusted => spawn!DARTService(
@@ -132,6 +142,12 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
                     cast(shared) net,
                     false))();
             remote_dart_handles ~= remote_dart_handle;
+
+            auto replicator_handle = (() @trusted => spawn!ReplicatorService(
+                    opts.task_names.replicator,
+                    cast(immutable) replicator_opts))();
+
+            replicator_handles ~= replicator_handle;
 
             auto dart_interface_handle = (() @trusted => spawn(
                     immutable(DARTInterfaceService)(cast(immutable) opts.dart_interface,
@@ -151,6 +167,9 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
                 local_db_path))();
 
         waitforChildren(Ctrl.ALIVE, 3.seconds);
+        foreach (replicator_handle; replicator_handles) {
+            sendRecorders(replicator_handle);
+        }
 
         return result_ok;
     }
@@ -178,13 +197,59 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
         immutable dart_recorder_sync_result = receiveOnlyTimeout!(
             dart_recorder_sync.Response, immutable(bool))[1];
 
-        writefln("Is local database up to date %s", dart_recorder_sync_result);
+        // writefln("Is local database up to date %s", dart_recorder_sync_result);
         // check(result, "the recorder sync failed");
 
         return result_ok;
     }
 
+    private void sendRecorders(ActorHandle handle) {
+        import std.algorithm;
+        import std.array;
+
+        immutable(ulong[]) table = [
+            0x20_21_10_30_40_50_80_90,
+            0x20_21_11_30_40_50_80_90,
+            0x20_21_12_30_40_50_80_90,
+            0x20_21_0a_30_40_50_80_90,
+        ];
+
+        const SecureNet net = new DARTFakeNet("very_secret");
+
+        // Generated recorders
+        foreach (rec_index; 0 .. 10) {
+            auto manufactor = RecordFactory(net);
+
+            const doc = DARTFakeNet.fake_doc(0x1234_5678_0000_0000);
+            auto rec = manufactor.recorder;
+            rec.insert(doc, Archive.Type.ADD);
+
+            const archs = table.map!(t => DARTFakeNet.fake_doc(t)).array;
+
+            rec.insert(archs[0], Archive.Type.ADD);
+            rec.insert(archs[3], Archive.Type.ADD);
+            rec.insert(archs[1], Archive.Type.ADD);
+            rec.insert(archs[2], Archive.Type.ADD);
+
+            auto fingerprint = net.calcHash(doc);
+
+            (() @trusted => handle.send(SendRecorder(), cast(immutable) rec, fingerprint, cast(
+                    immutable(long)) rec_index))();
+        }
+    }
+
     void stopActor() {
+        foreach (handle; remote_dart_handles) {
+            handle.send(Sig.STOP);
+        }
+        foreach (handle; dart_interface_handles) {
+            handle.send(Sig.STOP);
+        }
+        foreach (handle; replicator_handles) {
+            handle.send(Sig.STOP);
+        }
+        dart_sync_handle.send(Sig.STOP);
+        waitforChildren(Ctrl.END);
     }
 }
 
@@ -193,12 +258,20 @@ mixin Main!(_main);
 int _main(string[] args) {
     auto module_path = buildPath(env.bdd_log, __MODULE__);
     mkdirRecurse(module_path);
+
+    auto replicator_path = buildPath(module_path, "replicator");
+    if (replicator_path.exists) {
+        rmdirRecurse(replicator_path);
+    }
+    mkdirRecurse(replicator_path);
+
+    auto replicator_opts = ReplicatorOptions(replicator_path);
+
     auto recorder_synchronizer_feature = automation!(
         tagion.testbench.services.recorder_synchronizer);
 
     auto recorder_synchronizer_handler = recorder_synchronizer_feature
-        .ALocalNodeWithARecorderReadsDataFromARemoteNode;
-
+        .ALocalNodeWithARecorderReadsDataFromARemoteNode(replicator_opts);
     recorder_synchronizer_feature.run;
 
     scope (exit) {

@@ -47,6 +47,7 @@ alias NNGError = Msg!"nng_error";
 alias SendRecorder = Msg!"SendRecorder";
 alias readRecorderRR = Request!"readRecorder";
 alias syncRecorderRR = Request!"recorderSync";
+alias repHiRPCRR = Request!"replicatorHiRPCRequest";
 
 /// [FROM: DART, TO: TRT] send the recorder to the trt for update
 alias trtModify = Msg!"trtModify";

@@ -219,10 +219,11 @@ private:
         import tagion.dart.Recorder;
         import tagion.script.common;
         import tagion.dart.DARTFile;
+        import tagion.actor.exceptions;
 
-        bool bullseyesMatch = false;
+        bool bMatch = false;
 
-        while (!bullseyesMatch) {
+        while (!bMatch) {
             // 1. Get a db head
             TagionHead tagion_head = getHead(destination, net);
             // 2. Sync
@@ -237,12 +238,13 @@ private:
                             sock_addrs.sock_addrs[0], null);
 
                     HiRPC hirpc = HiRPC(net);
+                    
                     const recorder_read_request = hirpc.readRecorder(tagion_head.current_epoch);
                     writefln("REQ-request %s", recorder_read_request.toPretty);
                     const recorder_response_doc = sender.send(recorder_read_request.toDoc);
                     auto response = hirpc.receive(recorder_response_doc);
                     writefln("RESP-response %s", response.toPretty);
-                    //
+
                     RecorderBlock block = response.result!RecorderBlock;
                     Document recorder_doc = block.recorder_doc;
                     if (recorder_doc.empty) {
@@ -250,23 +252,25 @@ private:
                     }
 
                     // 4. Replay
-                    auto factory = RecordFactory(net);
-                    auto recorder = factory.recorder(recorder_doc);
-                    destination.modify(recorder);
+                    // auto factory = RecordFactory(net);
+                    // auto recorder = factory.recorder(recorder_doc);
+                    // destination.modify(recorder);
+                    // bullseye = db.modify(recorder);
 
                 }
-                catch (HiBONException e) {
+                catch (Exception e) {
                     break;
                 }
             }
 
             // 5. Check if bullseyes match.
-            // bullseyesMatch = bullseyesMatch(opts, sock_addrs, net, destination);
+            // bMatch = bullseyesMatch(opts, sock_addrs, net, destination);
+            bMatch = true;
 
             // Check a timeout.
             // Select another node if time out - TBD
         }
-        return bullseyesMatch;
+        return bMatch;
     }
 }
 
@@ -311,15 +315,17 @@ class RemoteRequestSender {
         auto startTime = MonoTime.currTime();
 
         while (true) {
-            // auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
-            auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
-
+            auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
+            // auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
+        
             if (!received.empty) {
-                writefln("-------- received from the socket at %s --------", sock_addr);
-                return Document(received);
+                auto doc = Document(received);
+                writefln("-------- received doc %s --------", doc.toPretty);
+                return doc;
             }
 
             if (MonoTime.currTime() - startTime > attempts_timeout) {
+                writefln("-------- send timeout --------");
                 return Document.init;
             }
 
@@ -330,26 +336,3 @@ class RemoteRequestSender {
         assert(0);
     }
 }
-
-// @HiRPCMethod private const(HiRPC.Sender) dartBullseye(
-//     ref const(HiRPC.Receiver) received,
-//     const bool read_only)
-// in {
-//     mixin FUNCTION_NAME;
-//     assert(received.method.name == __FUNCTION_NAME__);
-// }
-// do {
-//     auto hibon_params = new HiBON;
-//     hibon_params[Params.bullseye] = bullseye;
-//     return hirpc.result(received, hibon_params);
-// }
-
-// const(HiRPC.Sender) recorderRead(
-//     HiRPC hirpc,
-//     long epoch_number,
-//     uint id = 0) {
-
-//     auto params = new HiBON;
-//     params[StdNames.epoch_number] = epoch_number;
-//     return hirpc.action("recorderRead", params, id);
-// }
