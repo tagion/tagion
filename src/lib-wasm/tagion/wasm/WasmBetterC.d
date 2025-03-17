@@ -592,10 +592,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         string label_at_depth(const uint block_depth) const pure {
-            return label(cast(uint)(blocks.length - block_depth));
+            return label(cast(uint)(blocks.length - block_depth - 1));
         }
 
         string goto_label(const uint block_depth) const pure {
+            __write("goto_label blocks.length=%d block_depth=%d", blocks.length, block_depth); 
             if (block_depth == blocks.length - 1) {
                 return null;
             }
@@ -908,19 +909,26 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             break;
                         case IR.BR_TABLE:
 
-                            bout.writefln("%switch(%s) {", indent, ctx.pop);
+                            bout.writefln("%sswitch(%s) {", indent, ctx.pop);
                             scope (exit) {
                                 bout.writefln("%s}", indent);
                             }
                             const local_indent = indent ~ spacer;
-                            foreach (block_label_depth; elm.wargs.map!(w => w.get!uint)) {
-                                bout.writefln("%sbreak %s;", local_indent, ctx.goto_label(block_label_depth));
+                            foreach (jump_idx, block_label_depth; elm.wargs.map!(w => w.get!uint).enumerate) {
+                                bout.writefln("// %s", block_label_depth);
+                                if (jump_idx >= elm.wargs.length-1) {
+                                bout.writefln("%sdefault:", local_indent);
+                                        }
+                            else {
+                                bout.writefln("%scase %d:", local_indent, jump_idx); 
+                                        }
+                                            bout.writefln("%sbreak %s;", local_indent, ctx.goto_label(block_label_depth));
                             }
                             break;
                         default:
                             check(0, format("Illegal branch command %s", elm.code));
                         }
-                        bout.writefln("%s//%s %s", indent, elm.instr.name, elm.warg.get!uint);
+                        bout.writefln("%s//%s", indent, elm.instr);
 
                         break;
                     case CALL:
