@@ -281,8 +281,7 @@ alias check = Check!WatException;
         }
     }
 
-        version(none)
-    string typeName(ref const ExprRange.IRElement elm) {
+    version (none) string typeName(ref const ExprRange.IRElement elm) {
         if (elm.argtypes is ExprRange.IRElement.IRArgType.TYPES) {
             return typeName(elm.types);
         }
@@ -352,19 +351,22 @@ alias check = Check!WatException;
                             endif_instr.name, block_comment, count);
                     break;
                 case BRANCH:
+                    if (elm.code is IR.BR_TABLE) {
+                        static string branch_table(const(WasmArg[]) args) {
+                            string result;
+                            foreach (a; args) {
+                                result ~= format(" %d", a.get!uint);
+                            }
+                            return result;
+                        }
+
+                        output.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
+                        break;
+                    }
                     output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;
-                case BRANCH_TABLE:
-                    static string branch_table(const(WasmArg[]) args) {
-                        string result;
-                        foreach (a; args) {
-                            result ~= format(" %d", a.get!uint);
-                        }
-                        return result;
-                    }
-
-                    output.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
-                    break;
+                case _BRANCH_TABLE:
+                    assert(0, "Has been removed");
                 case CALL:
                     output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                     break;

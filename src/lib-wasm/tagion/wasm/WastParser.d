@@ -123,13 +123,13 @@ struct WastParser {
             return block_peek(idx);
         }
 
-        uint block_depth_index(string token) const pure  {
-            
+        uint block_depth_index(string token) const pure {
+
             try {
                 return token.to!uint;
             }
             catch (ConvException e) {
-               // Ignore try the label name instead 
+                // Ignore try the label name instead 
             }
             const stack_depth = block_stack.countUntil!(b => b.label == token);
             check(stack_depth >= 0, format("Label %s does not exists", token));
@@ -401,8 +401,9 @@ struct WastParser {
                     //                    func_ctx.block_pop;
                     //wasmexpr(IR.END);
                     return stage;
+                case _BRANCH_TABLE:
+                    assert(0, "Has been removed");
                 case BRANCH:
-                case BRANCH_TABLE:
                     const branch_ir = irLookupTable[instr.name];
                     switch (branch_ir) {
                     case IR.BR:
@@ -425,7 +426,7 @@ struct WastParser {
                         break;
                     case IR.BR_TABLE:
                         r.nextToken;
-                        
+
                         const(uint)[] label_idxs;
                         while (r.type is TokenType.WORD) {
                             const block_depth = func_ctx.block_depth_index(r.token);

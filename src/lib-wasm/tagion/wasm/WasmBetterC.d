@@ -582,6 +582,26 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         void push(const IR ir, const uint local_idx) pure nothrow {
             push(locals[local_idx]);
         }
+
+        string label(const uint block_index) const pure {
+            check(block_index < blocks.length,
+                    format("Block stack exceeds to %d but the stack size is only %d",
+                    block_index, blocks.length)
+            );
+            return blocks[block_index].label;
+        }
+
+        string label_at_depth(const uint block_depth) const pure {
+            return label(cast(uint)(blocks.length - block_depth));
+        }
+
+        string goto_label(const uint block_depth) const pure {
+            if (block_depth == blocks.length - 1) {
+                return null;
+            }
+            return label_at_depth(block_depth);
+
+        }
     }
 
     enum BlockKind {
@@ -873,17 +893,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     "Label number of %d exceeds the block stack for max %d",
                                     lth, ctx.blocks.length));
                             auto current_block = ctx.blocks[$ - 1];
-                            __write("%s current_block=%s", indent, *current_block);
-                            __write("stack %-(%s %)", ctx.stack);
                             const conditional_flag = ctx.pop;
-                            __write("conditional_flag=%s", conditional_flag);
                             set_local(current_block);
                             if (lth == 0) {
                                 ctx.blocks[lth].kind = BlockKind.BREAK;
                                 bout.writefln("%sif (%s) break;", indent, conditional_flag);
-                                __write("%sif (%s) break;", indent, conditional_flag);
                                 break;
-
                             }
                             const label_n = ctx.blocks.length - lth;
                             auto target_block = ctx.blocks[label_n];
@@ -892,6 +907,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     indent, conditional_flag, target_block.label);
                             break;
                         case IR.BR_TABLE:
+
+                            bout.writefln("%switch(%s) {", indent, ctx.pop);
+                            scope (exit) {
+                                bout.writefln("%s}", indent);
+                            }
+                            const local_indent = indent ~ spacer;
+                            foreach (block_label_depth; elm.wargs.map!(w => w.get!uint)) {
+                                bout.writefln("%sbreak %s;", local_indent, ctx.goto_label(block_label_depth));
+                            }
                             break;
                         default:
                             check(0, format("Illegal branch command %s", elm.code));
@@ -899,7 +923,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("%s//%s %s", indent, elm.instr.name, elm.warg.get!uint);
 
                         break;
-                    case BRANCH_TABLE:
+                    case _BRANCH_TABLE:
+                        assert(0, "Has been removed");
                         static string branch_table(const(WasmArg[]) args) {
                             string result;
                             foreach (a; args) {
