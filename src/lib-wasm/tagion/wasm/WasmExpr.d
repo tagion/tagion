@@ -71,8 +71,6 @@ struct WasmExpr {
                     }
                 }
                 break;
-            case _BRANCH_TABLE:
-                assert(0, "has been removed");
             case CALL_INDIRECT:
                 assert(Args.length == 1, format("Instruction %s one argument", instr.name));
                 static if (Args.length == 1) {

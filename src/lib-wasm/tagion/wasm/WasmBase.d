@@ -122,7 +122,6 @@ enum IRType {
     BLOCK_CONDITIONAL, /// Used for if statement
     BLOCK_ELSE, // Used for else statement (The block number is the same as for the BLOCK_CONDITION)
     BRANCH, /// Branch jump instruction
-    _BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
     CALL_INDIRECT, /// Indirect subroutine call
     LOCAL, /// Local register storage instruction
@@ -943,8 +942,6 @@ struct ExprRange {
                     elm.warg = get(Types.I32);
                     _level++;
                     break;
-                case _BRANCH_TABLE:
-                    assert(0, "Has been removed");
                 case CALL:
                     // callidx
                     elm.warg = get(Types.I32);
