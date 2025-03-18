@@ -47,6 +47,7 @@ int main(string[] args) {
     import godcontract = tagion.testbench.testnetwork.godcontract;
     import dart_synchronization = tagion.testbench.services.dart_synchronization;
     import recorder_synchronizer = tagion.testbench.services.recorder_synchronizer;
+    import replicator_service = tagion.testbench.services.replicator_service;
 
     alias alltools = AliasSeq!(
         collector,
@@ -92,6 +93,7 @@ int main(string[] args) {
         godcontract,
         dart_synchronization,
         recorder_synchronizer,
+        replicator_service
     );
     mixin doOneMain!(alltools);
     return do_main(args);

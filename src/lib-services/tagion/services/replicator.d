@@ -58,6 +58,11 @@ struct ReplicatorService {
             file.close;
         }
 
+        void receiveReplicatorFilePath(repFilePathRR req){
+            log("Received repFilePathRR request");
+            req.respond(filepath);
+        }
+
         void readRecorder(readRecorderRR req, Document doc) {
             try {
                 log("Received readRecorderRR request: %s", doc.toPretty);
@@ -125,6 +130,7 @@ struct ReplicatorService {
             log.event(modify_recorder, "modify", recorder);
         }
 
-        run(&receiveRecorder, &readRecorder);
+        // static assert(0, typeof(receiveReplicatorFilePath));
+        run(&receiveRecorder, &readRecorder, &receiveReplicatorFilePath);
     }
 }

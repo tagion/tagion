@@ -364,6 +364,10 @@
     "recorder_synchronizer": {
       "timeout" : 3.0,
       "stages" : ["recorder_synchronizer"]
+    },
+    "replicator_service": {
+      "timeout" : 3.0,
+      "stages" : ["replicator_service"]
     }
   }
 }
