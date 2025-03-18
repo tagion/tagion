@@ -48,7 +48,7 @@ struct WasmExpr {
                             }
                         }
                     }
-                    check(table.length >= 2, format("Too few arguments for %s instruction", instr.name));
+                    check(table.length >= 1, format("Too few arguments for %s instruction", instr.name));
                     bout.write(encode(table.length - 1));
                     foreach (t; table) {
                         bout.write(encode(t));
