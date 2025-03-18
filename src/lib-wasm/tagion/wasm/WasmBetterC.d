@@ -804,6 +804,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 ref ExprRange expr,
                 const(string) indent) {
             void declare_block_local(Block* blk) {
+                //__write("%s// Declare block local %s local_defined=%s argtype=%s VOID=%s", indent, blk.local, blk.local_defined, blk.elm.argtype, blk.elm.types[0]);
+                //bout.writefln("%s// Declare block local %s local_defined=%s argtype=%s VOID=%s", indent, blk.local, blk.local_defined, blk.elm.argtype, blk.elm.types[0]);
                 if (!isVoidType(blk)) {
                     bout.writefln("%s%s %s;", indent, block_type(blk), blk.local);
                     __write("Local block declaration %s %s;", block_type(blk), blk.local);
@@ -819,10 +821,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     const block_types = types(blk.elm);
                     if (block_types.length == 1) {
                         bout.writefln("%s%s = %s;", indent, blk.local, ctx.pop);
+                    //    ctx.push(blk.local);
                     }
                     else {
                         foreach (i; 0 .. block_types.length) {
-                            bout.writefln("%s%s[%d] = %s;", indent, blk.local, i, ctx.pop);
+                            const result_local = format("%s[%d]", blk.local, i);
+                            bout.writefln("%s%s = %s;", indent, result_local, ctx.pop);
+                       //     ctx.push(result_local);
                         }
                     }
                     //   ctx.push(blk.local);
@@ -960,8 +965,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.blocks.length));
                             const block_index = ctx.index(lth);
                             auto current_block = ctx.blocks[$ - 1];
-                            const conditional_flag = ctx.pop;
+__write(" BR_IF stack %-(%s, %)", ctx.stack);
+                                    const conditional_flag = ctx.pop;
                             set_local(current_block);
+                            ctx.push(current_block);
                             if ((lth > 0) && !isVoidType(current_block)) {
                                 bout.writefln("%s%s = %s;", indent, ctx.blocks[block_index].local,
                                         current_block.local);
@@ -989,6 +996,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             bout.writefln("// Stack %-(%s, %)", ctx.stack);
                             const switch_select = ctx.pop;
                             set_local(current_block);
+                            ctx.push(current_block);
                             bout.writefln("%sswitch(%s) {", indent, switch_select);
                             scope (exit) {
                                 bout.writefln("%s}", indent);
@@ -1008,8 +1016,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 }
                                 const block_index = ctx.index(block_label_depth);
                                 ctx.blocks[block_index].kind = BlockKind.BREAK;
+                                if (block_label_depth > 0) {
                                 bout.writefln("%s%s = %s;", local_indent, ctx.blocks[block_index].local,
                                         ctx.blocks[$ - 1].local);
+                                        }
                                 bout.writefln("%sbreak %s;", local_indent, ctx.goto_label(block_index));
                             }
                             break;
@@ -1027,6 +1037,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         const func_idx = elm.warg.get!uint;
                         const type_idx = wasmstream.get!(Section.FUNCTION)[func_idx].idx;
                         const function_header = wasmstream.get!(Section.TYPE)[type_idx];
+                        __write("//call stack %-(%s, %)", ctx.stack);
                         const function_call = format("%s(%-(%s,%))",
                                 function_name(func_idx), ctx.pops(function_header.params.length));
                         string set_result;
