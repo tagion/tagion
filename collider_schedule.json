@@ -144,7 +144,7 @@
         },
         "br_block" : {
             "args" : [
-                "br_block.wast"
+                "br_3.wast"
             ]
         },
         "br_if" : {
