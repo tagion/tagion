@@ -521,7 +521,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         void push(const(Block*) blk) pure {
-            if (!isVoidType(blk)) {
+            if (!blk.isVoidType) {
                 const block_types = types(blk.elm);
                 if (block_types.length == 1) {
                     push(blk.local);
@@ -703,18 +703,19 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         bool label_defined() const pure nothrow {
             return _label_defined;
         }
+    
+        bool isVoidType() const pure nothrow {
+            with (ExprRange.IRElement.IRArgType) {
+                return ((elm.argtype is TYPES) && (elm.types[0] is Types.VOID));
+            }
+        }
+
     }
 
     static string sign(T)(T x) if (isFloatingPoint!T) {
         import std.math : signbit;
 
         return signbit(x) ? "-" : "";
-    }
-
-    static bool isVoidType(const(Block*) blk) {
-        with (ExprRange.IRElement.IRArgType) {
-            return ((blk.elm.argtype is TYPES) && (blk.elm.types[0] is Types.VOID));
-        }
     }
 
     private void block(
@@ -806,7 +807,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             void declare_block_local(Block* blk) {
                 //__write("%s// Declare block local %s local_defined=%s argtype=%s VOID=%s", indent, blk.local, blk.local_defined, blk.elm.argtype, blk.elm.types[0]);
                 //bout.writefln("%s// Declare block local %s local_defined=%s argtype=%s VOID=%s", indent, blk.local, blk.local_defined, blk.elm.argtype, blk.elm.types[0]);
-                if (!isVoidType(blk)) {
+                if (!blk.isVoidType) {
                     bout.writefln("%s%s %s;", indent, block_type(blk), blk.local);
                     __write("Local block declaration %s %s;", block_type(blk), blk.local);
                 }
@@ -816,7 +817,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
 
             void set_local(Block* blk) {
-                if (!isVoidType(blk)) {
+                if (!blk.isVoidType) {
                     __write("%s%s = %s", indent, blk.local, ctx.peek);
                     const block_types = types(blk.elm);
                     if (block_types.length == 1) {
@@ -935,7 +936,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             auto current_block = ctx.blocks[$ - 1];
                             set_local(current_block);
 
-                            if ((lth > 0) && !isVoidType(current_block)) {
+                            if ((lth > 0) && !current_block.isVoidType) {
                                 bout.writefln("%s%s = %s;", indent, ctx.blocks[block_index].local,
                                         current_block.local);
                             }
@@ -969,7 +970,7 @@ __write(" BR_IF stack %-(%s, %)", ctx.stack);
                                     const conditional_flag = ctx.pop;
                             set_local(current_block);
                             ctx.push(current_block);
-                            if ((lth > 0) && !isVoidType(current_block)) {
+                            if ((lth > 0) && !current_block.isVoidType) {
                                 bout.writefln("%s%s = %s;", indent, ctx.blocks[block_index].local,
                                         current_block.local);
                             }
