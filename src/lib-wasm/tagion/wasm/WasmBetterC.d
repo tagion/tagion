@@ -1050,6 +1050,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             bout.writefln("// br_table %s %s", br_table, typeof(br_table).stringof);
                             //import std.algorithm : max;
                             //const outer_block_index = ctx.index(br_table.maxElement);
+                            scope (exit) {
+                                uint count;
+                                while (!expr.empty && expr.front.code != IR.END) {
+                                    bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
+                                    expr.popFront;
+                                    count++;
+                                }
+                            }
 
                             auto current_block = ctx.current;
                             bout.writefln("// Stack %-(%s, %)", ctx.stack);
