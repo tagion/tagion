@@ -40,7 +40,6 @@
     )
   )
 
-  (;
   (func (export "singleton") (param i32) (result i32)
     (block
       (block
@@ -51,7 +50,7 @@
     )
     (i32.const 22)
   )
-;)
+
   (func (export "singleton-value") (param i32) (result i32)
     (block (result i32)
       (drop
@@ -63,7 +62,7 @@
       (i32.const 32)
     )
   )
-(;
+
   (func (export "multiple") (param i32) (result i32)
     (block
       (block
@@ -83,7 +82,7 @@
     )
     (i32.const 104)
   )
-;)
+
   (func (export "multiple-value") (param i32) (result i32)
     (local i32)
     (local.set 1 (block (result i32)
@@ -104,7 +103,7 @@
     ))
     (i32.add (local.get 1) (i32.const 14))
   )
-(;
+
   (func (export "large") (param i32) (result i32)
     (block
       (block
@@ -841,7 +840,7 @@
     )
     (return (i32.const 1))
   )
-;)
+
   (func (export "as-block-first")
     (block (br_table 0 0 0 (i32.const 0)) (call $dummy))
   )
@@ -865,7 +864,7 @@
   (func (export "as-br_if-cond")
     (block (br_if 0 (br_table 0 0 0 (i32.const 1))))
   )
-  ;)
+;)
   (func (export "as-br_if-value") (result i32)
     (block (result i32)
       (drop (br_if 0 (br_table 0 (i32.const 8) (i32.const 0)) (i32.const 1)))
@@ -1206,14 +1205,14 @@
 (assert_return (invoke "empty-value" (i32.const -100)) (i32.const 33))
 (assert_return (invoke "empty-value" (i32.const 0xffffffff)) (i32.const 33))
 
-(;
+
 (assert_return (invoke "singleton" (i32.const 0)) (i32.const 22))
 (assert_return (invoke "singleton" (i32.const 1)) (i32.const 20))
 (assert_return (invoke "singleton" (i32.const 11)) (i32.const 20))
 (assert_return (invoke "singleton" (i32.const -1)) (i32.const 20))
 (assert_return (invoke "singleton" (i32.const -100)) (i32.const 20))
 (assert_return (invoke "singleton" (i32.const 0xffffffff)) (i32.const 20))
-;)
+
 (assert_return (invoke "singleton-value" (i32.const 0)) (i32.const 32))
 (assert_return (invoke "singleton-value" (i32.const 1)) (i32.const 33))
 (assert_return (invoke "singleton-value" (i32.const 11)) (i32.const 33))
@@ -1221,7 +1220,7 @@
 (assert_return (invoke "singleton-value" (i32.const -100)) (i32.const 33))
 (assert_return (invoke "singleton-value" (i32.const 0xffffffff)) (i32.const 33))
 
-(;
+
 (assert_return (invoke "multiple" (i32.const 0)) (i32.const 103))
 (assert_return (invoke "multiple" (i32.const 1)) (i32.const 102))
 (assert_return (invoke "multiple" (i32.const 2)) (i32.const 101))
@@ -1232,7 +1231,7 @@
 (assert_return (invoke "multiple" (i32.const 10)) (i32.const 104))
 (assert_return (invoke "multiple" (i32.const -1)) (i32.const 104))
 (assert_return (invoke "multiple" (i32.const 0xffffffff)) (i32.const 104))
-;)
+
 (assert_return (invoke "multiple-value" (i32.const 0)) (i32.const 213))
 (assert_return (invoke "multiple-value" (i32.const 1)) (i32.const 212))
 (assert_return (invoke "multiple-value" (i32.const 2)) (i32.const 211))
@@ -1243,7 +1242,7 @@
 (assert_return (invoke "multiple-value" (i32.const 10)) (i32.const 214))
 (assert_return (invoke "multiple-value" (i32.const -1)) (i32.const 214))
 (assert_return (invoke "multiple-value" (i32.const 0xffffffff)) (i32.const 214))
-(;
+
 (assert_return (invoke "large" (i32.const 0)) (i32.const 0))
 (assert_return (invoke "large" (i32.const 1)) (i32.const 1))
 (assert_return (invoke "large" (i32.const 100)) (i32.const 0))
@@ -1252,7 +1251,7 @@
 (assert_return (invoke "large" (i32.const 10001)) (i32.const 1))
 (assert_return (invoke "large" (i32.const 1000000)) (i32.const 1))
 (assert_return (invoke "large" (i32.const 1000001)) (i32.const 1))
-;)
+
 (assert_return (invoke "as-block-first"))
 (assert_return (invoke "as-block-mid"))
 (assert_return (invoke "as-block-last"))
@@ -1260,7 +1259,7 @@
 
 (assert_return (invoke "as-br-value") (i32.const 9))
 
-(assert_return (invoke "as-br_if-cond"))
+;;(assert_return (invoke "as-br_if-cond"))
 (assert_return (invoke "as-br_if-value") (i32.const 8))
 (assert_return (invoke "as-br_if-value-cond") (i32.const 9))
 

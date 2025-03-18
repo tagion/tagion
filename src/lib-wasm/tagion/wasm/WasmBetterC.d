@@ -682,25 +682,16 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return _blocks[index];
         }
 
-        import std.outbuffer;
-
-        string declare(Block* blk, OutBuffer bout) pure {
-            bout.writefln("//blk.isVoidType=%s blk.local_defined=%s", blk.isVoidType, blk.local_defined);
-            //auto blk = _blocks[block_index];
-            //if (blk.local_defined) {
-            //    return null;
-            // }
+        string declare(Block* blk) pure {
             if (blk.isVoidType) {
                 if (blk.idx == 0) {
                     return null;
                 }
-                return declare(_blocks[blk.idx - 1], bout);
+                return declare(_blocks[blk.idx - 1]);
             }
             scope (exit) {
-                bout.writefln("// defined block local %s", blk.local_defined);
                 blk.define_local;
             }
-            bout.writefln("// block_type(blk)=%s blk.local=%s", block_type(blk), blk.local);
             return format("%s %s;", block_type(blk), blk.local);
         }
 
@@ -875,12 +866,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 ref ExprRange expr,
                 const(string) indent) {
             void declare_block(Block* blk) {
-
-                const declare = ctx.declare(blk, bout);
-                bout.writefln("// `%s` blk.idx=%d %s", declare, blk.idx, types(blk.elm));
+                const declare = ctx.declare(blk);
                 if (declare) {
                     bout.writefln("%s%s;", indent, declare);
-                    __write("Local block declaration %s;", declare);
                 }
                 if (blk.label_defined) {
                     bout.writefln("%s%s:", indent, blk.label);
@@ -888,21 +876,19 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
 
             void set_local(Block* blk) {
+                bout.writefln("//Set local type %s", blk.isVoidType);
                 if (!blk.isVoidType) {
                     __write("%s%s = %s", indent, blk.local, ctx.peek);
                     const block_types = types(blk.elm);
                     if (block_types.length == 1) {
                         bout.writefln("%s%s = %s;", indent, blk.local, ctx.pop);
-                        //    ctx.push(blk.local);
                     }
                     else {
                         foreach (i; 0 .. block_types.length) {
                             const result_local = format("%s[%d]", blk.local, i);
                             bout.writefln("%s%s = %s;", indent, result_local, ctx.pop);
-                            //     ctx.push(result_local);
                         }
                     }
-                    //   ctx.push(blk.local);
                     blk.define_local;
                 }
             }
@@ -1089,7 +1075,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 }
                                 const block_index = ctx.index(block_label_depth);
                                 ctx[block_index].kind = BlockKind.BREAK;
-                                if (block_label_depth > 0) {
+                                if ((block_label_depth > 0) && !current_block.isVoidType) {
                                     bout.writefln("%s%s = %s;", local_indent, ctx[block_index].local,
                                             ctx.current.local);
                                 }
