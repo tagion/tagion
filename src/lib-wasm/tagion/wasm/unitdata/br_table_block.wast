@@ -860,11 +860,11 @@
     (block (result i32) (br 0 (br_table 0 (i32.const 9) (i32.const 0))))
   )
 
-  (;
+  
   (func (export "as-br_if-cond")
     (block (br_if 0 (br_table 0 0 0 (i32.const 1))))
   )
-;)
+
   (func (export "as-br_if-value") (result i32)
     (block (result i32)
       (drop (br_if 0 (br_table 0 (i32.const 8) (i32.const 0)) (i32.const 1)))
@@ -877,11 +877,11 @@
       (i32.const 7)
     )
   )
-  (;
+  
   (func (export "as-br_table-index")
     (block (br_table 0 0 0 (br_table 0 (i32.const 1))))
   )
-  ;)
+  
   (func (export "as-br_table-value") (result i32)
     (block (result i32)
       (br_table 0 0 0 (br_table 0 (i32.const 10) (i32.const 0)) (i32.const 1))
@@ -899,7 +899,7 @@
     (block (result i64) (return (br_table 0 (i64.const 7) (i32.const 0))))
   )
 
-  (;
+  
   (func (export "as-if-cond") (result i32)
     (block (result i32)
       (if (result i32)
@@ -909,8 +909,8 @@
       )
     )
   )
-  ;)
-  (;
+  
+  
   (func (export "as-if-then") (param i32 i32) (result i32)
     (block (result i32)
       (if (result i32)
@@ -920,7 +920,7 @@
       )
     )
   )
-  ;)
+
 (;
   (func (export "as-if-else") (param i32 i32) (result i32)
     (block (result i32)
@@ -1259,23 +1259,23 @@
 
 (assert_return (invoke "as-br-value") (i32.const 9))
 
-;;(assert_return (invoke "as-br_if-cond"))
+(assert_return (invoke "as-br_if-cond"))
 (assert_return (invoke "as-br_if-value") (i32.const 8))
 (assert_return (invoke "as-br_if-value-cond") (i32.const 9))
 
-;;(assert_return (invoke "as-br_table-index"))
+(assert_return (invoke "as-br_table-index"))
 (assert_return (invoke "as-br_table-value") (i32.const 10))
 (assert_return (invoke "as-br_table-value-index") (i32.const 11))
 
 (assert_return (invoke "as-return-value") (i64.const 7))
 
-;;(assert_return (invoke "as-if-cond") (i32.const 2))
-;;(assert_return (invoke "as-if-then" (i32.const 1) (i32.const 6)) (i32.const 3))
-;;(assert_return (invoke "as-if-then" (i32.const 0) (i32.const 6)) (i32.const 6))
-(;
-(assert_return (invoke "as-if-else" (i32.const 0) (i32.const 6)) (i32.const 4))
-(assert_return (invoke "as-if-else" (i32.const 1) (i32.const 6)) (i32.const 6))
-;)
+(assert_return (invoke "as-if-cond") (i32.const 2))
+(assert_return (invoke "as-if-then" (i32.const 1) (i32.const 6)) (i32.const 3))
+(assert_return (invoke "as-if-then" (i32.const 0) (i32.const 6)) (i32.const 6))
+
+;;(assert_return (invoke "as-if-else" (i32.const 0) (i32.const 6)) (i32.const 4))
+;;(assert_return (invoke "as-if-else" (i32.const 1) (i32.const 6)) (i32.const 6))
+
 (assert_return (invoke "as-select-first" (i32.const 0) (i32.const 6)) (i32.const 5))
 (assert_return (invoke "as-select-first" (i32.const 1) (i32.const 6)) (i32.const 5))
 (assert_return (invoke "as-select-second" (i32.const 0) (i32.const 6)) (i32.const 6))
