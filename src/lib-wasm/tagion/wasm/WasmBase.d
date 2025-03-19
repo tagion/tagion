@@ -915,7 +915,6 @@ struct ExprRange {
                     break;
                 case BLOCK_CONDITIONAL:
                 case BLOCK:
-                case BLOCK_ELSE:
                     scope (exit) {
                         _level++;
                     }
@@ -925,6 +924,9 @@ struct ExprRange {
                     }
                     elm.types = data[index .. index + 1];
                     index += Types.sizeof;
+                    break;
+                case BLOCK_ELSE:
+                    // Same as IF
                     break;
                 case BRANCH:
                     if (elm.code is IR.BR_TABLE) {
@@ -1021,6 +1023,10 @@ struct ExprRange {
 
         bool empty() const {
             return _index > data.length || (wasm_exception !is null);
+        }
+
+        ExprRange save() {
+            return this;
         }
 
     }

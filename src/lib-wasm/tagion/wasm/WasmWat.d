@@ -254,6 +254,7 @@ alias check = Check!WatException;
                 }
                 output.writeln(")");
             }
+            __write("Expr %s", expr.front);
             block(expr, local_indent);
             output.writefln("%s)", indent);
         }
@@ -292,7 +293,7 @@ alias check = Check!WatException;
     private const(ExprRange.IRElement) block(ref ExprRange expr,
             const(string) indent, const uint level = 0) {
         //        immutable indent=base_indent~spacer;
-        string block_comment;
+        //string block_comment;
         uint block_count;
         uint count;
         string block_result_type()(const ref ExprRange.IRElement elm) {
@@ -336,7 +337,7 @@ alias check = Check!WatException;
                     break;
                 case BLOCK_CONDITIONAL:
                 case BLOCK:
-                    block_comment = format(";; block %d", block_count);
+                    const block_comment = format(";; block %d", block_count);
                     block_count++;
                     output.writefln("%s%s%s %s", indent, elm.instr.name,
                             block_result_type(elm), block_comment);
@@ -345,6 +346,7 @@ alias check = Check!WatException;
                     output.writefln("%s%s", indent, end_instr.name);
                     break;
                 case BLOCK_ELSE:
+                    const block_comment = format(";; %s block %d", elm.instr.irtype, block_count);
                     const endif_elm = block(expr, indent ~ spacer, level);
                     const endif_instr = instrTable[endif_elm.code];
                     output.writefln("%s%s %s count=%d", indent,

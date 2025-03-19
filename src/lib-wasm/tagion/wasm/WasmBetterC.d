@@ -978,9 +978,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("// END stack %-(%s, %)", ctx.stack);
                         break;
                     case BLOCK_ELSE:
-                        bout.writefln("%selse {", indent);
-                        innerBlock(bout, expr, indent ~ spacer);
                         bout.writefln("%s}", indent);
+                        bout.writefln("%selse {", indent);
+                        //innerBlock(bout, expr, indent ~ spacer);
+                        //bout.writefln("%s}", indent);
                         break;
                     case BRANCH:
                         switch (elm.code) {
@@ -1186,37 +1187,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         ctx.push(value);
                         break;
                     case END:
-                        //bout.writefln("//Block %s !!! END", ctx.blocks.length);
-                        if (ctx.number_of_blocks > 0) {
-                            const current_block = ctx.current;
-                            const keep_on_stack = types(current_block.elm);
-                            version (none)
-                                if (current_block.local_defined) {
-                                    ctx.push(current_block.local);
-                                }
-                            __write("%s//keep_on_stack=%s current_block=%s", indent, keep_on_stack, *current_block);
-                            if (keep_on_stack.length && keep_on_stack[0] != Types.VOID) {
-                                if (current_block.sp + keep_on_stack.length != ctx.stack.length) {
-
-                                    bout.writefln("// ERROR current stack %d expected stack %d",
-                                            ctx.stack.length, current_block.sp + keep_on_stack.length);
-                                }
-                                version (none) {
-                                    bout.writefln("// current_block = %d keep_on_stack = %d ctx.stack.length = %d %s",
-                                            current_block.sp, keep_on_stack.length,
-                                            ctx.stack.length,
-                                            types(current_block.elm));
-                                }
-                                bout.writefln("//current_block.sp=%d keep_on_stack.length=%d", current_block.sp, keep_on_stack
-
-                                        .length);
-                                //ctx.stack = ctx.stack[0 .. current_block.sp] ~ ctx.stack[$ - keep_on_stack.length .. $];
-                            }
-                            const block_kind = current_block.kind;
-                            if (block_kind == BlockKind.BREAK) {
-                                bout.writeln("%s} while(false);", indent);
-                            }
-                        }
                         return;
                     case ILLEGAL:
                         bout.writefln("Error: Illegal instruction %02X", elm.code);
