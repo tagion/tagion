@@ -921,7 +921,7 @@
     )
   )
 
-(;
+
   (func (export "as-if-else") (param i32 i32) (result i32)
     (block (result i32)
       (if (result i32)
@@ -931,7 +931,7 @@
       )
     )
   )
-;)
+
   (func (export "as-select-first") (param i32 i32) (result i32)
     (block (result i32)
       (select
@@ -1273,8 +1273,8 @@
 (assert_return (invoke "as-if-then" (i32.const 1) (i32.const 6)) (i32.const 3))
 (assert_return (invoke "as-if-then" (i32.const 0) (i32.const 6)) (i32.const 6))
 
-;;(assert_return (invoke "as-if-else" (i32.const 0) (i32.const 6)) (i32.const 4))
-;;(assert_return (invoke "as-if-else" (i32.const 1) (i32.const 6)) (i32.const 6))
+(assert_return (invoke "as-if-else" (i32.const 0) (i32.const 6)) (i32.const 4))
+(assert_return (invoke "as-if-else" (i32.const 1) (i32.const 6)) (i32.const 6))
 
 (assert_return (invoke "as-select-first" (i32.const 0) (i32.const 6)) (i32.const 5))
 (assert_return (invoke "as-select-first" (i32.const 1) (i32.const 6)) (i32.const 5))
