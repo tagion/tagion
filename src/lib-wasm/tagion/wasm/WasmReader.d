@@ -212,11 +212,6 @@ import tagion.wasm.WasmException;
                     final switch (section) {
                         static foreach (S; EnumMembers!Section) {
                     case S:
-                            static if (S is Section.DATA) {
-                                //section_info=format("%s", sec!S);
-                                //writefln("!! %s", sec!S.info);
-                                __write("!! %s", section);
-                            }
                             break SectionCase;
                         }
                     }
@@ -310,7 +305,6 @@ import tagion.wasm.WasmException;
                 final string info() const {
                     string[] result;
                     foreach (i, sec; opSlice.enumerate) {
-                        __write("%s i=%d %s", __FUNCTION__, i, sec);
                         result ~= format("\t%3d %s", i, sec).idup;
                     }
                     return result.join("\n");
@@ -711,7 +705,6 @@ import tagion.wasm.WasmException;
                     initialize;
                     memidx = _memidx;
                     expr = _data;
-                    __write("%s idx=%d data.length=%d index=%d", __FUNCTION__, memidx, data.length, index);
                     base = Vector!char(data, index);
                     size = index;
                 }
