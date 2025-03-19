@@ -139,7 +139,7 @@
         },
         "br_table" : {
             "args" : [
-                "br_table_block.wast"
+                "br_table_3.wast"
 
             ]
         },
