@@ -1,3 +1,6 @@
+---
+sidebar_position: 3
+---
 # Reputation 
 
 A high Gene Score (link) may grant a member the ability to reproduce more frequently, but it does not directly determine influence within the network. Influence is governed by reputation, which is built over time through peer endorsements. Members with higher reputation scores gain greater influence in consensus and decision-making processes, while those with low reputation remain less influential, regardless of their genetic diversity.  
