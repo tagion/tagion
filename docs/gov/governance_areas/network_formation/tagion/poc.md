@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 ---
-# Twofold Objective
+# A twofold objective
 With our unique "Proof of Community" model, Tagion pursues a twofold oobjective:
 
 ## Security and Decentralisation
