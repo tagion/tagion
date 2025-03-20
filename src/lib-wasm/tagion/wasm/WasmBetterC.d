@@ -744,6 +744,18 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
         }
 
+        string end() const pure nothrow {
+            switch(_kind) {
+                case BlockKind.END:
+            case BlockKind.ELSE_IF:
+return "}";
+            case BlockKind.BREAK:
+                return "} while(false);";
+            default:
+                assert(0, "End block fail");
+            }
+        }
+
         const(BlockKind) kind() const pure nothrow {
             return _kind;
         }
@@ -996,8 +1008,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                        // bout.writefln("%-(%s\n%)", block.begin);
                         bout.writefln("%s%s", indent, block.begin);
                             bout.write(block_bout);
-                        bout.writefln("%-(%s\n%)", block_end);
-                        ctx.stack.length = block.sp;
+                        //bout.writefln("%-(%s\n%)", block_end);
+                        bout.writefln("%s%s", indent, block.end);
+                            ctx.stack.length = block.sp;
                         ctx.push(block);
                         if (ctx.number_of_blocks > 1) {
                             const outer_block_index = ctx.index(1);
