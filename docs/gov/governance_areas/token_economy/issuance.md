@@ -26,7 +26,7 @@ The other half of the max supply is scheduled to be minted on a continues bases 
 
 This secondary minting process (previously referred to as “emission”) starts once significant advances in decentralising Tagion have been achieved (see Phase 3. Curated Release).  
 
-# Vesting & Circulation 
+## Rerporting and Definitions 
 
 It is important to prevent too many tokens being made available at the same time so that they do not flood the market prematurely and destabilize the token's value. 
 
@@ -50,10 +50,11 @@ Since disbursements/payouts of vested tokens are not automatically initiated at 
 In June 2024, when the last “Tokenomics Paper” was published, the circulating supply (then reported without tokens assigned to team and founders) was at 21,700,000 TGN.  In March 2025, the circulating supply as defined above is at 132,839,898TGN. 
 
 Vesting can be time-based, where tokens are released systematically over a predetermined timeline, event-based, where tokens are released upon achieving specific milestones or events, or price-based, where tokens are released upon achieving a set market price. By predominantly using time-based vesting, the Tagion Network ensures a steady token release into circulation, fostering a predictable token evolution on the supply-side of TGN. This results in an increase in vested supply as shown in the graphic below. 
-# Vesting Terms (updated) 
+
+## Vesting Terms (updated) 
 The exact vesting rules for different allocations/recipients of TGN tokens are as follows.
 
-## a) For Investors 
+### a) For Investors 
 
 The allocation for investors can be segmented into two categories: those who already have invested in the pre-sale (before the launch of the mainnet on Dec 7th 2023) , and those who have invested since, in the so-called post-sales. 
 
@@ -69,7 +70,7 @@ Tokens available in post-sales will be offered either through token sales agreem
 
 Conversely, for tokens sold on exchanges in the secondary market, buyers are not subject to vesting terms. However, Decard Services GmbH has capped this option at a maximum annual sale of 500 million TGN. This structure ensures a balanced and regulated approach to both primary and secondary market transactions, aligning with our broader strategy for sustainable network growth. 
 
-## b) for Team & Founders 
+### b) for Team & Founders 
 
 This allocation is subject to both price- and event-based vesting conditions. Importantly, the price-based vesting will only be activated after both of the following events have been achieved: 
 
@@ -81,11 +82,11 @@ Thereafter, if the following price targets are reached and maintaining for no le
 
 at 0.01 EUR,  at 0.05 EUR, at 0.1 EUR,  at 0.5 EUR, and - for the last time - at 1 EUR. 
  
-## c) for Decard  
+### c) for Decard  
 
 Decard is the company founded to be the initial developer, steward and long-term pillar supporting Tagion's establishment and sustainability.  
 At the time of launching into release phase 3 (curated release), 20% of this allocation will be made available, with another 20% following each consecutive year.   
  
-## d)  for community-development 
+### d)  for community-development 
 
 These tokens allocated to what was previously called “the Ecosystem” are subject to time-based vesting. When disbursed to community members as incentives or rewards, 20% will be released annually over a five-year period.
