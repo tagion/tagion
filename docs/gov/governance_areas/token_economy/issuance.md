@@ -57,6 +57,7 @@ If you find other metrics more useful to be reported on, please let us know.
 In March 2025 out of the 3,129,452,528 TGN that have been sold (in pre- and post-sales) or assigned to community members,  a total amount of 816,151,055 TGN were unlocked for payouts.[^3]
 
 ![TGN Unlocked Supply](/img/Unocked_Supply_2025.png)
+
 Since disbursements/payouts of unlocked tokens are not automatically initiated at the end of a given vesting period, there is no way of calculating the amount of circulating tokens for the future. But we will report on the actual circulating supply at regular intervals.   
 
 In June 2024, when the last “Tokenomics Paper” was published, the circulating supply (then reported without tokens assigned to team and founders) was at 21,700,000 TGN.  In March 2025, the circulating supply as defined above is at 132,839,898TGN. 
