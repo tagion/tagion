@@ -734,21 +734,21 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         string begin() const pure nothrow {
             switch (elm.code) {
             case IR.IF:
-                    assert(condition, "No conidtion of IF");
-            return assumeWontThrow(format("if (%s) {", condition));
+                assert(condition, "No conidtion of IF");
+                return assumeWontThrow(format("if (%s) {", condition));
             case IR.BLOCK:
-                    return "do {";
+                return "do {";
             default:
-                    assert(0, assumeWontThrow(
-                format("Instruction %s can't be used as a block begin", elm.code)));
+                assert(0, assumeWontThrow(
+                        format("Instruction %s can't be used as a block begin", elm.code)));
             }
         }
 
         string end() const pure nothrow {
-            switch(_kind) {
-                case BlockKind.END:
+            switch (_kind) {
+            case BlockKind.END:
             case BlockKind.ELSE_IF:
-return "}";
+                return "}";
             case BlockKind.BREAK:
                 return "} while(false);";
             default:
@@ -961,7 +961,7 @@ return "}";
                         switch (elm.code) {
                         case IR.IF:
                             ctx.perform(elm.code, elm.instr.pops);
-                            block.condition=ctx.pop;
+                            block.condition = ctx.pop;
                             block.kind = BlockKind.ELSE_IF;
                             break;
                         default:
@@ -974,43 +974,11 @@ return "}";
                             //ctx.blocks.length--;
                         }
                         innerBlock(block_bout, expr, indent ~ spacer);
-                        string[] block_end;
-                        final switch (block.kind) {
-                        case BlockKind.END:
-                        case BlockKind.ELSE_IF:
-                            block_end ~= format("%s}", indent);
-                            break;
-                        case BlockKind.BREAK:
-                            block_end ~= format("%s} while(false);", indent);
-                            break;
-                        case BlockKind.BREAK_N:
-                            break;
-                            /*
-                        case BlockKind.ELSE:
-                            declare_block(ctx.current);
-                            bout.writefln("%-(%s\n%s)", block.begin);
-                            bout.write(block_bout);
-                            bout.writefln("%s}", indent);
-                            bout.writefln("%selse {", indent);
-                            innerBlock(bout, expr, indent~spacer);
-                            bout.writefln("%s}", indent);
-                            return;
-                            */
-                            //case BlockKind.ELSE_IF:
-                            //    break;
-                        case BlockKind.WHILE:
-                            break;
-                        case BlockKind.LOOP:
-                            break;
-                        case BlockKind.ERROR:
-                        }
                         declare_block(ctx.current);
-                       // bout.writefln("%-(%s\n%)", block.begin);
                         bout.writefln("%s%s", indent, block.begin);
-                            bout.write(block_bout);
-                        //bout.writefln("%-(%s\n%)", block_end);
+                        bout.write(block_bout);
                         bout.writefln("%s%s", indent, block.end);
-                            ctx.stack.length = block.sp;
+                        ctx.stack.length = block.sp;
                         ctx.push(block);
                         if (ctx.number_of_blocks > 1) {
                             const outer_block_index = ctx.index(1);
