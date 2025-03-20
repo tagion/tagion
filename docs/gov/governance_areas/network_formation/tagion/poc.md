@@ -3,7 +3,7 @@ sidebar_position: 1
 ---
 # Proof-of-Community
 
-With out unique Proof of Community model, Tagion pursues twofold oobjectives:
+With our unique "Proof of Community" model, Tagion pursues a twofold oobjective:
 
 ## Security and Decentralisation
 
