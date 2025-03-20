@@ -30,28 +30,29 @@ This secondary minting process (previously referred to as “emission”) starts
 
 It is important to prevent too many tokens being made available at the same time so that they do not flood the market prematurely and destabilize the token's value. 
 
-To achieve this, tokens sold in pre- or post-sales, or otherwise assigned are not immediately disbursed to the beneficiaries' JustPay wallets, but held back/locked in the Tagion portal. The time for which assigned tokens are locked is called the “vesting period”. 
+To achieve this, tokens sold in pre- and post-sales or otherwise assigned are not immediately disbursed to the beneficiaries' JustPay wallets, but held back/locked in the Tagion portal. The time for which assigned tokens are locked is called the “vesting period”. 
 
-After this period the unlocked tokens are said to be “fully vested” and their disbursement can be requested in the Tagion portal. Since these requests will typically not happen right after the vesting period ends, we distinguish between the vested supply (tokens that can be disbursed) and the circulating supply (tokens that have been disbursed).  
+After this period the unlocked tokens[^1] can be requested to be paid out in the Tagion portal, we call theat their disbursement. Since these requests will typically not happen right after the vesting period ends, we distinguish between the unlocked supply (tokens that can be disbursed) and the circulating supply (tokens that have been disbursed).  
+
 |Terminology:    | Definition:  |
 | :-: | ------- |
 |**Max**<br />Supply | Currently set upper limit of how many TGN tokens can be minted. |
 |**Total** <br />Supply  |Amount of TGN tokens that have been minted at a given moment (fixed to 18.5bn until start of release phase 3).  |
 | **Assigned** <br />Supply   | Amount of TGN tokens sold to investors (with vesting schedule) or otherwise assigned to individual owners (with or without vesting terms) but not yet disbursed.|
-| **Unlocked** <br />Supply[^1]  | Amount of TGN tokens that had been assigned and for which all the vesting terms are fullfilled, meaning they are now eligible to be disbursed.|
+| **Unlocked** <br />Supply  | Amount of TGN tokens that had been assigned and for which all the vesting terms are fullfilled, meaning they are now eligible to be disbursed.|
 | **Circulating** <br />Supply[^2]   | Amount of TGN tokens that have been paid out to individual wallets and can be used or sold on the market. |
 
 :::tip
 If you find other metrics more useful to be reported on, please let us know.
 :::
 
-In June 2024, the vested supply was at 1,975,000,000 TGN. In March 2025 out of the 3,129,452,528 TGN that have been sold (in pre- and post-sales) or assigned to community members,  816,151,055 TGN were fully vested and unlocked for payouts.   
+In March 2025 out of the 3,129,452,528 TGN that have been sold (in pre- and post-sales) or assigned to community members,  a total amount of 816,151,055 TGN were unlocked for payouts.[^3]
 
-Since disbursements/payouts of vested tokens are not automatically initiated at the end of a given vesting period, there is no way of calculating the amount of circulating tokens for the future. But we will report on the actual circulating supply at regular intervals.   
+Since disbursements/payouts of unlocked tokens are not automatically initiated at the end of a given vesting period, there is no way of calculating the amount of circulating tokens for the future. But we will report on the actual circulating supply at regular intervals.   
 
 In June 2024, when the last “Tokenomics Paper” was published, the circulating supply (then reported without tokens assigned to team and founders) was at 21,700,000 TGN.  In March 2025, the circulating supply as defined above is at 132,839,898TGN. 
 
-Vesting can be time-based, where tokens are released systematically over a predetermined timeline, event-based, where tokens are released upon achieving specific milestones or events, or price-based, where tokens are released upon achieving a set market price. By predominantly using time-based vesting, the Tagion Network ensures a steady token release into circulation, fostering a predictable token evolution on the supply-side of TGN. This results in an increase in vested supply as shown in the graphic below. 
+Vesting can be time-based, where tokens are released systematically over a predetermined timeline, event-based, where tokens are released upon achieving specific milestones or events, or price-based, where tokens are released upon achieving a set market price. By predominantly using time-based vesting, the Tagion Network ensures a steady token release into circulation, fostering a predictable token evolution on the supply-side of TGN. This results in an increase in unlocked supply as shown in the graphic below. 
 
 ## Vesting Terms (updated) 
 The exact vesting rules for different allocations/recipients of TGN tokens are as follows.
@@ -64,7 +65,7 @@ The allocation for investors can be segmented into two categories: those who alr
 
 At the outset of the Tagion Token Generator Event (TGE – simultaneous with the launch of Tagion mainnet on Dec 7th 2023), 10% of tokens previously purchased by investors were immediately made available. Then, there was a 12-month cliff without any further release of tokens. Following this, 5% of the assigned tokens became available each month. This structure results in a total vesting period of 30 months. 
 
-However, the tokens are also subject to price-based vesting, which takes priority over time-based vesting, meaning if the token price reaches certain specified levels in secondary markets (in relation to the price at which they were bought), the tokens will be vested ahead of the outlined time schedule: 10%  after a 100% price increase, an additional 50%  following a 300% increase, and all remaining tokens are released once a 900% increase is achieved, provided each threshold is maintained for at least thirty days. 
+However, the tokens are also subject to price-based vesting, which takes priority over time-based vesting, meaning if the token price reaches certain specified levels in secondary markets (in relation to the price at which they were bought), the tokens will be unlocked ahead of the outlined time schedule: 10%  after a 100% price increase, an additional 50%  following a 300% increase, and all remaining tokens are released once a 900% increase is achieved, provided each threshold is maintained for at least thirty days. 
 
 **Post-Sales**
 
@@ -96,3 +97,5 @@ These tokens allocated to what was previously called “the Ecosystem” are sub
 [^1]: This was previously called "vested" or "fully vested" supply, but since that term was sometimes confusing to our users, we now use this more intutive and descriptive wording. 
 
 [^2]: We previously reported on “Circulating Supply” excluding any tokens disbursed to the team, founders and shareholders. While an industry standard for this term seems far off (see [here](https://support.coinmarketcap.com/hc/en-us/articles/360043396252-Supply-Circulating-Total-Max) for an example of the current inconsistencies), we are now using the above more inclusively and intuitive definition.
+
+[^3]:In June 2024, unlocked supply was reported to be 1,975,000,000 TGN. This number is higher then the unlocked supply in March 2025 because of the updated vesting terms for the allocations to Decard, team and founders. Those tokens are now locked until the distribution of the network is achieved (start of the [release phase 3](./intro#3-curated-release)).
