@@ -4,16 +4,11 @@ sidebar_position: 6
 
 # TGN Issuance & Allocation
 
-The maximum supply of TGN tokens is currently set to be 37bn.  (See list of definitions below.) 
-
- 
+The maximum supply of TGN tokens is currently set to be 37bn. (See list of definitions below.) 
 
 Half of this was minted in what was previously referred to as our “Token Generator Event” (TGE) which happened along with the launch of the Tagion mainnet on Dec 7th 2023. 
 
- 
-
 Most of these 18.5bn have not been issued yet but all are earmarked/dedicated to different purposes in regard to the development of the Tagion network. This is here called the tokens’ “allocation”: 
-
 
 | Allocation/Purpose:   | Amount:  |
 | -------- | ------- |
@@ -31,9 +26,7 @@ The other half of the max supply is scheduled to be minted on a continues bases 
 
 This secondary minting process (previously referred to as “emission”) starts once significant advances in decentralising Tagion have been achieved (see Phase 3. Curated Release).  
 
-Vesting & Circulation 
-
- 
+# Vesting & Circulation 
 
 It is important to prevent too many tokens being made available at the same time so that they do not flood the market prematurely and destabilize the token's value. 
 
@@ -48,8 +41,7 @@ After this period the unlocked tokens are said to be “fully vested” and thei
 | **Vested** <br>Supply  | Amount of TGN tokens that had been assigned with vesting terms and are now eligible to be disbursed.|
 | **Circulating** <br>Supply[^1]   | Amount of TGN tokens that have been disbursed to individual wallets and can be used or sold on the market. |
 
-:::tip [If you find other metrics more useful to be reported on, please let us know.]:
-::
+:::tip[If you find other metrics more useful to be reported on, please let us know.]:::
 
 In June 2024, the vested supply was at 1,975,000,000 TGN. In March 2025 out of the 3,129,452,528 TGN that have been sold (in pre- and post-sales) or assigned to community members,  816,151,055 TGN were fully vested and unlocked for payouts.   
 
@@ -58,7 +50,42 @@ Since disbursements/payouts of vested tokens are not automatically initiated at 
 In June 2024, when the last “Tokenomics Paper” was published, the circulating supply (then reported without tokens assigned to team and founders) was at 21,700,000 TGN.  In March 2025, the circulating supply as defined above is at 132,839,898TGN. 
 
 Vesting can be time-based, where tokens are released systematically over a predetermined timeline, event-based, where tokens are released upon achieving specific milestones or events, or price-based, where tokens are released upon achieving a set market price. By predominantly using time-based vesting, the Tagion Network ensures a steady token release into circulation, fostering a predictable token evolution on the supply-side of TGN. This results in an increase in vested supply as shown in the graphic below. 
+# Vesting Terms (updated) 
+The exact vesting rules for different allocations/recipients of TGN tokens are as follows.
 
+## a) For Investors 
 
+The allocation for investors can be segmented into two categories: those who already have invested in the pre-sale (before the launch of the mainnet on Dec 7th 2023) , and those who have invested since, in the so-called post-sales. 
 
-[^1]: We previously reported on “Circulating Supply” excluding any tokens disbursed to the team, founders and shareholders. While an industry standard for this term seems far off(see for example discussion at this page), we are now using the above more inclusively and intuitive definition.
+**Pre-Sales** 
+
+At the outset of the Tagion Token Generator Event (TGE – simultaneous with the launch of Tagion mainnet on Dec 7th 2023), 10% of tokens previously purchased by investors were immediately made available. Then, there was a 12-month cliff without any further release of tokens. Following this, 5% of the assigned tokens became available each month. This structure results in a total vesting period of 30 months. 
+
+However, the tokens are also subject to price-based vesting, which takes priority over time-based vesting, meaning if the token price reaches certain specified levels in secondary markets (in relation to the price at which they were bought), the tokens will be vested ahead of the outlined time schedule: 10%  after a 100% price increase, an additional 50%  following a 300% increase, and all remaining tokens are released once a 900% increase is achieved, provided each threshold is maintained for at least thirty days. 
+
+**Post-Sales**
+
+Tokens available in post-sales will be offered either through token sales agreements or, eventually, on various exchanges. In the primary market, where tokens are sold via sales agreements, there's no upper limit on the quantity of tokens that can be purchased. These agreements, however, come with vesting terms, which, although negotiable, are expected to generally align with the time-based elements set for presales investors. 
+
+Conversely, for tokens sold on exchanges in the secondary market, buyers are not subject to vesting terms. However, Decard Services GmbH has capped this option at a maximum annual sale of 500 million TGN. This structure ensures a balanced and regulated approach to both primary and secondary market transactions, aligning with our broader strategy for sustainable network growth. 
+
+## b) for Team & Founders 
+
+This allocation is subject to both price- and event-based vesting conditions. Importantly, the price-based vesting will only be activated after both of the following events have been achieved: 
+
+- Network distribution as described for release phase 3 (curated release).  
+
+- Exchange Listing: The TGN token is successfully listed on an exchange, whether decentralized or centralized. 
+
+Thereafter, if the following price targets are reached and maintaining for no less than 30 consecutive days in a public market, 600 million TGN will be unlocked: 
+
+at 0.01 EUR,  at 0.05 EUR, at 0.1 EUR,  at 0.5 EUR, and - for the last time - at 1 EUR. 
+ 
+## c) for Decard  
+
+Decard is the company founded to be the initial developer, steward and long-term pillar supporting Tagion's establishment and sustainability.  
+At the time of launching into release phase 3 (curated release), 20% of this allocation will be made available, with another 20% following each consecutive year.   
+ 
+## d)  for community-development 
+
+These tokens allocated to what was previously called “the Ecosystem” are subject to time-based vesting. When disbursed to community members as incentives or rewards, 20% will be released annually over a five-year period.  
