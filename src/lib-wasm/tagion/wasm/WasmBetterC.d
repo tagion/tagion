@@ -715,7 +715,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         const(size_t) id;
         const(uint) idx; /// Block idx
         string condition;
-        string[] begin;
         protected BlockKind _kind;
 
         protected bool _local_defined;
@@ -732,7 +731,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             id = current_id;
         }
 
-        string begin_block() const pure nothrow {
+        string begin() const pure nothrow {
             switch (elm.code) {
             case IR.IF:
                     assert(condition, "No conidtion of IF");
@@ -949,17 +948,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         //string[] block_begin;
                         switch (elm.code) {
                         case IR.IF:
-                            //if (elm.code is IR.IF) {
-                            block.begin ~= format("%s// -- %s", indent, elm.instr.name);
                             ctx.perform(elm.code, elm.instr.pops);
-                            block.begin ~= format("%s// stack %-(%s %)", indent, ctx.stack);
-                            block.begin ~= format("%sif (%s) { // %s", indent, ctx.peek, block_comment);
                             block.condition=ctx.pop;
                             block.kind = BlockKind.ELSE_IF;
                             break;
                         default:
 
-                            block.begin ~= format("%sdo { // %s", indent, block_comment);
+                            //block.begin ~= format("%sdo { // %s", indent, block_comment);
                         }
                         //ctx.blocks ~= block;
                         scope (success) {
@@ -999,7 +994,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         }
                         declare_block(ctx.current);
                        // bout.writefln("%-(%s\n%)", block.begin);
-                        bout.writefln("%s%s", indent, block.begin_block);
+                        bout.writefln("%s%s", indent, block.begin);
                             bout.write(block_bout);
                         bout.writefln("%-(%s\n%)", block_end);
                         ctx.stack.length = block.sp;
