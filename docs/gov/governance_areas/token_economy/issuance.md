@@ -10,7 +10,7 @@ Half of this was minted in what was previously referred to as our “Token Gener
 
 Most of these 18.5bn have not been issued yet but all are earmarked/dedicated to different purposes in regard to the development of the Tagion network. This is here called the tokens’ “allocation”: 
 
-| Allocation/Purpose:   | Amount:  |
+| Allocation:   | Amount:  |
 | -------- | ------- |
 | To disburse to **pre-sale investors**:
 Sold by Decard Services GmbH (a wholly owned and regulated subsidiary of Decard Group). Revenue from pre-sale went to Decard Group for the development and initial maintenance and advancement of Tagion core infrastructure.   | 3.1bn ~ 8.5% <br />of max supply    |
@@ -38,10 +38,12 @@ After this period the unlocked tokens are said to be “fully vested” and thei
 |**Max**<br />Supply | Currently set upper limit of how many TGN tokens can be minted. |
 |**Total** <br />Supply  |Amount of TGN tokens that have been minted at a given moment (fixed to 18.5bn until start of release phase 3).  |
 | **Assigned** <br />Supply   | Amount of TGN tokens sold to investors (with vesting schedule) or otherwise assigned to individual owners (with or without vesting terms) but not yet disbursed.|
-| **Vested** <br />Supply  | Amount of TGN tokens that had been assigned with vesting terms and are now eligible to be disbursed.|
-| **Circulating** <br />Supply[^1]   | Amount of TGN tokens that have been disbursed to individual wallets and can be used or sold on the market. |
+| **Unlocked** <br />Supply[^1]  | Amount of TGN tokens that had been assigned and for which all the vesting terms are fullfilled, meaning they are now eligible to be disbursed.|
+| **Circulating** <br />Supply[^2]   | Amount of TGN tokens that have been paid out to individual wallets and can be used or sold on the market. |
 
-:::tip[If you find other metrics more useful to be reported on, please let us know.]:::
+:::tip
+If you find other metrics more useful to be reported on, please let us know.
+:::
 
 In June 2024, the vested supply was at 1,975,000,000 TGN. In March 2025 out of the 3,129,452,528 TGN that have been sold (in pre- and post-sales) or assigned to community members,  816,151,055 TGN were fully vested and unlocked for payouts.   
 
@@ -90,3 +92,7 @@ At the time of launching into release phase 3 (curated release), 20% of this all
 ### d)  for community-development 
 
 These tokens allocated to what was previously called “the Ecosystem” are subject to time-based vesting. When disbursed to community members as incentives or rewards, 20% will be released annually over a five-year period.
+
+[^1]: This was previously called "vested" or "fully vested" supply, but since that term was sometimes confusing to our users, we now use this more intutive and descriptive wording. 
+
+[^2]: We previously reported on “Circulating Supply” excluding any tokens disbursed to the team, founders and shareholders. While an industry standard for this term seems far off (see [here](https://support.coinmarketcap.com/hc/en-us/articles/360043396252-Supply-Circulating-Total-Max) for an example of the current inconsistencies), we are now using the above more inclusively and intuitive definition.
