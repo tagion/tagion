@@ -543,10 +543,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     push(blk.local);
                     return;
                 }
-                    foreach_reverse (i; 0 .. block_types.length) {
-                        const value = assumeWontThrow(format("%s[%d]", blk.local, i));
-                        push(value);
-                    }
+                foreach_reverse (i; 0 .. block_types.length) {
+                    const value = assumeWontThrow(format("%s[%d]", blk.local, i));
+                    push(value);
+                }
 
             }
         }
@@ -776,11 +776,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         string local() const pure nothrow {
-            return assumeWontThrow(format("block_result_%d", idx));
+            return assumeWontThrow(format("block_result_%d", id));
         }
 
         string label() const pure {
-            return format("block_%d", idx);
+            return format("block_%d", id);
         }
 
         void define_label() pure nothrow {
@@ -1207,6 +1207,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         ctx.push(value);
                         break;
                     case END:
+                        if (ctx.number_of_blocks) {
+                            auto block = ctx.current;
+                            if (block.elm.code is IR.LOOP) {
+                                set_local(block);
+
+                            }
+                        }
                         return;
                     case ILLEGAL:
                         bout.writefln("Error: Illegal instruction %02X", elm.code);
