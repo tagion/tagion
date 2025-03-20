@@ -738,6 +738,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return assumeWontThrow(format("if (%s) {", condition));
             case IR.BLOCK:
                 return "do {";
+            case IR.LOOP:
+                return "{";
             default:
                 assert(0, assumeWontThrow(
                         format("Instruction %s can't be used as a block begin", elm.code)));
