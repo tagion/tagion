@@ -36,6 +36,7 @@ import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.utils.Term;
 import tagion.services.replicator;
 import tagion.dart.Recorder;
+import tagion.script.standardnames;
 
 enum feature = Feature(
         "RecorderSynchronizer",
@@ -54,7 +55,6 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
     ActorHandle[] remote_dart_handles;
     ActorHandle[] dart_interface_handles;
     ActorHandle[] replicator_handles;
-    ActorHandle replicator_handle;
     ReplicatorOptions replicator_opts;
 
     ActorHandle dart_sync_handle;
@@ -85,6 +85,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
     @Given("the remote node with random data")
     Document nodeWithRandomData() {
+        import tagion.wave.common;
 
         const number_of_databases = 1;
         const number_of_archives = 10;
@@ -127,13 +128,27 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
             DART.create(remote_db_path, net);
             auto remote_dart = new DART(net, remote_db_path);
-
             auto recorder = remote_dart.recorder;
+
+            auto tagion_head = TagionHead(TagionDomain, 0);
+            recorder.add(tagion_head.toDoc);
+
             foreach (doc_no; document_numbers) {
                 recorder.add(test_doc(doc_no));
             }
-            recorder.add(TagionHead());
-            remote_dart.modify(recorder);
+            auto fingerprint = remote_dart.modify(recorder);
+            writefln("SendRecorder recorder %s: ", recorder.toPretty);
+            writefln("SendRecorder fingerprint %s: ", fingerprint);
+            writefln("SendRecorder current_epoch %s: ", tagion_head.current_epoch);
+
+            auto replicator_handle = (() @trusted => spawn!ReplicatorService(
+                    opts.task_names.replicator,
+                    cast(immutable) replicator_opts))();
+
+            replicator_handles ~= replicator_handle;
+
+            (() @trusted => replicator_handle.send(SendRecorder(), cast(immutable) recorder, fingerprint, cast(
+                    immutable(long)) tagion_head.current_epoch))();
 
             auto remote_dart_handle = (() @trusted => spawn!DARTService(
                     opts.task_names.dart,
@@ -143,34 +158,24 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
                     false))();
             remote_dart_handles ~= remote_dart_handle;
 
-            auto replicator_handle = (() @trusted => spawn!ReplicatorService(
-                    opts.task_names.replicator,
-                    cast(immutable) replicator_opts))();
-
-            replicator_handles ~= replicator_handle;
-
             auto dart_interface_handle = (() @trusted => spawn(
                     immutable(DARTInterfaceService)(cast(immutable) opts.dart_interface,
                     cast(immutable) opts.trt,
                     opts.task_names),
                     opts.task_names.dart_interface))();
             dart_interface_handles ~= dart_interface_handle;
+
             sock_addrs.sock_addrs ~= opts.dart_interface.sock_addr;
         }
 
         dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
-                TaskNames()
-                .dart_synchronization,
+                TaskNames().dart_synchronization,
                 cast(immutable) dart_sync_opts,
                 cast(immutable) sock_addrs,
                 cast(shared) net,
                 local_db_path))();
 
         waitforChildren(Ctrl.ALIVE, 3.seconds);
-        foreach (replicator_handle; replicator_handles) {
-            sendRecorders(replicator_handle);
-        }
-
         return result_ok;
     }
 
@@ -197,8 +202,8 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
         immutable dart_recorder_sync_result = receiveOnlyTimeout!(
             dart_recorder_sync.Response, immutable(bool))[1];
 
-        // writefln("Is local database up to date %s", dart_recorder_sync_result);
-        // check(result, "the recorder sync failed");
+        writefln("Is local database up to date %s", dart_recorder_sync_result);
+        // check(dart_recorder_sync_result, "the recorder sync failed");
 
         return result_ok;
     }
