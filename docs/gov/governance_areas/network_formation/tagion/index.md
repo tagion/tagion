@@ -1,3 +1,6 @@
+---
+sidebar_position: 1
+---
 # Proof-of-Community: Tagion’s dual purpose model
 
 ## Security and Decentralisation
