@@ -75,7 +75,11 @@ Tokens available in post-sales will be offered either through token sales agreem
 
 Conversely, for tokens sold on exchanges in the secondary market, buyers are not subject to vesting terms. However, Decard Services GmbH has capped this option at a maximum annual sale of 500 million TGN. This structure ensures a balanced and regulated approach to both primary and secondary market transactions, aligning with our broader strategy for sustainable network growth. 
 
-### b) for Team & Founders 
+### b)  for active Community Members
+
+These tokens allocated to what was previously called “the Ecosystem” are subject to time-based vesting. When disbursed to community members as incentives or rewards, 20% will be released annually over a five-year period.
+
+### c) for Team & Founders 
 
 The starting point for the time based vesting of this allocation has been postponed from TGE to release Phase 3.  
 
@@ -96,9 +100,6 @@ at 0.01 EUR,  at 0.05 EUR, at 0.1 EUR,  at 0.5 EUR, and - for the last time - at
 Decard is the company founded to be the initial developer, steward and long-term pillar supporting Tagion's establishment and sustainability.  
 At the time of launching into release phase 3 (curated release), 20% of this allocation will be made available, with another 20% following each consecutive year.   
  
-### d)  for active Community Members
-
-These tokens allocated to what was previously called “the Ecosystem” are subject to time-based vesting. When disbursed to community members as incentives or rewards, 20% will be released annually over a five-year period.
 
 [^1]: This was previously called "vested" or "fully vested" supply, but since that term was sometimes confusing to our users, we now use this more intutive and descriptive wording. 
 
