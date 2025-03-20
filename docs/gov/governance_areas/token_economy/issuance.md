@@ -67,7 +67,7 @@ The allocation for investors can be segmented into two categories: those who alr
 
 At the outset of the Tagion Token Generator Event (TGE – simultaneous with the launch of Tagion mainnet on Dec 7th 2023), 10% of tokens previously purchased by investors were immediately made available. Then, there was a 12-month cliff without any further release of tokens. Following this, 5% of the assigned tokens became available each month. This structure results in a total vesting period of 30 months. 
 
-However, the tokens are also subject to price-based vesting, which takes priority over time-based vesting, meaning if the token price reaches certain specified levels in secondary markets (in relation to the price at which they were bought), the tokens will be unlocked ahead of the outlined time schedule: 10%  after a 100% price increase, an additional 50%  following a 300% increase, and all remaining tokens are released once a 900% increase is achieved, provided each threshold is maintained for at least thirty days. 
+However, the tokens are also subject to price-based vesting, which takes priority over time-based vesting, meaning if the token price reaches certain specified levels in secondary markets (in relation to the introductory price in secondary markets), the tokens will be unlocked ahead of the outlined time schedule: 10%  after a 100% price increase, an additional 50%  following a 300% increase, and all remaining tokens are released once a 900% increase is achieved, provided each threshold is maintained for at least thirty days. 
 
 **Post-Sales**
 
@@ -77,13 +77,17 @@ Conversely, for tokens sold on exchanges in the secondary market, buyers are not
 
 ### b) for Team & Founders 
 
-This allocation is subject to both price- and event-based vesting conditions. Importantly, the price-based vesting will only be activated after both of the following events have been achieved: 
+The starting point for the time based vesting of this allocation has been postponed from TGE to release Phase 3.  
+
+Then, 20% of the allocation (600 million TGN), come under a time-based vesting schedule (20% right away, cliff period of 18 months, then 5% each month). The total vesting period for this group thus spans over 36 months from the start of release phase 3. 
+ 
+The remaining 80% of this allocation is subject to a combination of event- and price-based vesting conditions. Their vesting will commence after both of the following events have been achieved: 
 
 - Network distribution as described for release phase 3 (curated release).  
 
 - Exchange Listing: The TGN token is successfully listed on an exchange, whether decentralized or centralized. 
 
-Thereafter, if the following price targets are reached and maintaining for no less than 30 consecutive days in a public market, 600 million TGN will be unlocked: 
+Thereafter, only when the following price targets are reached and maintaining for no less than 30 consecutive days in a public market, the next 480 million TGN will be unlocked: 
 
 at 0.01 EUR,  at 0.05 EUR, at 0.1 EUR,  at 0.5 EUR, and - for the last time - at 1 EUR. 
  
@@ -100,4 +104,4 @@ These tokens allocated to what was previously called “the Ecosystem” are sub
 
 [^2]: We previously reported on “Circulating Supply” excluding any tokens disbursed to the team, founders and shareholders. While an industry standard for this term seems far off (see [here](https://support.coinmarketcap.com/hc/en-us/articles/360043396252-Supply-Circulating-Total-Max) for an example of the current inconsistencies), we are now using the above more inclusively and intuitive definition.
 
-[^3]:In June 2024, unlocked supply was reported to be 1,975,000,000 TGN. This number is higher then the unlocked supply in March 2025 because of the updated vesting terms for the allocations to Decard, team and founders. Those tokens are now locked until the distribution of the network is achieved (start of the [release phase 3](./gov/intro#3-curated-release)).
+[^3]:In June 2024, unlocked supply was reported to be 1,975,000,000 TGN. This number is higher then the unlocked supply in March 2025 because of the updated vesting terms for the allocations to Decard, team and founders. Those tokens are now locked until the distribution of the network is achieved (start of the [release phase 3](https://docs.tagion.org/gov/intro#3-curated-release)).
