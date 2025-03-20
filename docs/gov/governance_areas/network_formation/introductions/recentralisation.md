@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 ---
-# Thoughts on "Re-centralization" 
+# Thoughts on "Recentralization" 
 
 What we here call "re-centralisation" refers to the process of capital and power concentrating within decentralized networks, weakening DLT security by increasing fragility and susceptibility to exploitation. The accumulation of power makes networks prone to external pressures, manipulation, attacks, and censorship, undermining their trustless, decentralized nature and pushing them closer to the centralized models they were meant to replace.  
 
