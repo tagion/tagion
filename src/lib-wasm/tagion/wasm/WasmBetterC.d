@@ -714,6 +714,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         const(size_t) sp; /// Stack pointer;
         const(size_t) id;
         const(uint) idx; /// Block idx
+        string condition;
         string[] begin;
         protected BlockKind _kind;
 
@@ -731,14 +732,24 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             id = current_id;
         }
 
+        string begin_block() const pure nothrow {
+            switch (elm.code) {
+            case IR.IF:
+                    assert(condition, "No conidtion of IF");
+            return assumeWontThrow(format("if (%s) {", condition));
+            case IR.BLOCK:
+                    return "do {";
+            default:
+                    assert(0, assumeWontThrow(
+                format("Instruction %s can't be used as a block begin", elm.code)));
+            }
+        }
+
         const(BlockKind) kind() const pure nothrow {
             return _kind;
         }
 
-        void kind(const BlockKind k) pure nothrow
-        //in (_kind <= k, "Block kind need to be of an heigher order")
-        //do {
-        {
+        void kind(const BlockKind k) pure nothrow {
             if (_kind < k) {
                 _kind = k;
             }
@@ -942,7 +953,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             block.begin ~= format("%s// -- %s", indent, elm.instr.name);
                             ctx.perform(elm.code, elm.instr.pops);
                             block.begin ~= format("%s// stack %-(%s %)", indent, ctx.stack);
-                            block.begin ~= format("%sif (%s) { // %s", indent, ctx.pop, block_comment);
+                            block.begin ~= format("%sif (%s) { // %s", indent, ctx.peek, block_comment);
+                            block.condition=ctx.pop;
                             block.kind = BlockKind.ELSE_IF;
                             break;
                         default:
@@ -986,8 +998,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         case BlockKind.ERROR:
                         }
                         declare_block(ctx.current);
-                        bout.writefln("%-(%s\n%)", block.begin);
-                        bout.write(block_bout);
+                       // bout.writefln("%-(%s\n%)", block.begin);
+                        bout.writefln("%s%s", indent, block.begin_block);
+                            bout.write(block_bout);
                         bout.writefln("%-(%s\n%)", block_end);
                         ctx.stack.length = block.sp;
                         ctx.push(block);
