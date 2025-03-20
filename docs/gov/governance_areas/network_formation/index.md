@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Network Formation
 
-:::info
+:::tip [Under Development]
 
 Everything found on these pages reflects our best efforts of building a public infrastructure that serves the needs of all our users on the short and long run. Please help us shape Tagion's goverance structure by chiming into the conversation on [Discord](https://discord.gg/wE4AA64a). 
 
