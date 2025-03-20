@@ -118,7 +118,7 @@
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test", "br_block", "br_if", "br_table", "loop"],
+      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test", "br_block", "br_if", "br_table", "loop", "if_block"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -151,6 +151,11 @@
         "loop" : {
             "args" : [
                 "loop_1.wast"
+            ]
+        },
+        "if_block" : {
+            "args" : [
+                "if_block.wast"
             ]
         },
         "tvm_test" : {
