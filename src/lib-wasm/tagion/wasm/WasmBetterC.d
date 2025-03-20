@@ -541,13 +541,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 const block_types = types(blk.elm);
                 if (block_types.length == 1) {
                     push(blk.local);
+                    return;
                 }
-                else {
                     foreach_reverse (i; 0 .. block_types.length) {
                         const value = assumeWontThrow(format("%s[%d]", blk.local, i));
                         push(value);
                     }
-                }
 
             }
         }
