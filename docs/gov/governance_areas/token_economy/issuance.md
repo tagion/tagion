@@ -10,7 +10,9 @@ Half of this was minted in what was previously referred to as our “Token Gener
 
 ## Allocation 
 
-Most of these 18.5bn have not been issued yet but all are earmarked/dedicated to different purposes in regard to the development of the Tagion network. This is here called the tokens’ “allocation”: 
+Most of these 18.5bn have not been issued yet but all are earmarked/dedicated to different purposes in regard to the development of the Tagion network. This is here called the tokens’ “allocation”.
+
+![TGN Allocation](/img/Allocation_2025.png)
 
 | Allocation:   | Amount:  |
 | -------- | ------- |
