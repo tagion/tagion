@@ -5,13 +5,19 @@ sidebar_position: 1
 # Network Formation
 
 
-We structure this governance area into:
+We structure this governance area into two sections with three chapters each:
 
- 1. [Sybil Resistance Mechanisms](./network_formation/sybil)
- 2. [Decentralisation vs Re-centralisation](./network_formation/recentralisation)
- 3. [Permissionlessness](./network_formation/permission)
- 4. [Proof of Community](./network_formation/poc)
- 5. [Genetics](./network_formation/genetics)
+Introduction - three reflective chapters about the issues of network formation
+
+ 1. [Why Sybil Resistance Matters](./network_formation/introductions/sybil)
+ 2. [Thoughts on "Re-centralisation"](./network_formation/introductions/recentralisation)
+ 3. [Revisiting Permissionlessness](./network_formation/introductions/permission)
+
+Proof of Community - three chapters about what we propose
+
+ 5. [Tagion's twofold objectives](./network_formation/tagion/index)
+ 7. [Genetics](./network_formation/tagion/genetics)
+ 8. [Reputation](./network_formation/tagion/reputation)
 
 
 
