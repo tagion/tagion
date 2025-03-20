@@ -12,7 +12,7 @@ We structure this governance area into:
  2. [Pricing](./pricing)
  3. [Fee channels](./fee_channels)
  4. [Tagion Utility Token (TGN)](./utility_token)
- 5. [TGN Issuance & Allocation](./issuance) (recently published on March 20 20205)
+ 5. [TGN Issuance & Allocation](./issuance) (recently published on March 20th 20205)
 
 
 **Balancing resources and needs**
