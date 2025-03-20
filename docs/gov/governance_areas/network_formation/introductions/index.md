@@ -1,3 +1,8 @@
+---
+sidebar_position: 1
+---
+#Introductions
+
 In this section you will learn:
 
 1. [Why "Sybil Resistance" matters](./network_formation/introductions/sybil)
