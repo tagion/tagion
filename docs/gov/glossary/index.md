@@ -111,7 +111,7 @@ Refers to networks being built on Tagion code and being connected (open) or unco
 
 ## Permission/Un-permissioned 
 
-Refers to anybody being able to participate in a system, e.g. running a node, with or without permission. (See our deep-daive in what that meand for DLT systems [here](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/permission).)
+Refers to anybody being able to participate in a system, e.g. running a node, with or without permission. (See our in-depth analysis what this means for DLT systems - "de-jure and de-facto" - [here](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/permission).)
 
 
 ## Public/Private
