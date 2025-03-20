@@ -6,7 +6,7 @@ sidebar_position: 1
 
 :::info
 
-Everything found on these pages reflects our efforts of building a public infrastructure that serves the needs of all our users on the short and long term. Please help us shape Tagion's goverance structure by chiming into the conversation on [Discord](https://discord.gg/wE4AA64a). 
+Everything found on these pages reflects our best efforts of building a public infrastructure that serves the needs of all our users on the short and long term. Please help us shape Tagion's goverance structure by chiming into the conversation on [Discord](https://discord.gg/wE4AA64a). 
 
 :::
 
