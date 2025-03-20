@@ -7,11 +7,11 @@ sidebar_position: 1
 
 We structure this governance area into:
 
- 1. [Sybil Resistance Mechanisms](./token_economy/sybil)
- 2. [Decentralisation vs Re-centralisation](./token_economy/recentralisation)
- 3. [Permissionlessness](./token_economy/permission)
- 4. [Proof of Community](./token_economy/poc)
- 5. [Genetics](./token_economy/genetics)
+ 1. [Sybil Resistance Mechanisms](./network_formation/sybil)
+ 2. [Decentralisation vs Re-centralisation](./network_formation/recentralisation)
+ 3. [Permissionlessness](./network_formation/permission)
+ 4. [Proof of Community](./network_formation/poc)
+ 5. [Genetics](./network_formation/genetics)
 
 
 
