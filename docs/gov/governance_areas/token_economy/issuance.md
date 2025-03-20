@@ -68,7 +68,7 @@ Vesting can be time-based, where tokens are released systematically over a prede
 ## Vesting Terms (updated) 
 The exact vesting rules for different allocations/recipients of TGN tokens are as follows.
 
-### a) For Investors 
+### a) for Investors 
 
 The allocation for investors can be segmented into two categories: those who already have invested in the pre-sale (before the launch of the mainnet on Dec 7th 2023) , and those who have invested since, in the so-called post-sales. 
 
