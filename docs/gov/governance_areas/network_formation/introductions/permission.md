@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# Permissionlessness
+# Revisiting Permissionlessness
 
 While permissionless systems are theoretically open to all participants who adhere to predefined rules, in practice, then, they may still evolve into environments where only well-funded entities can meaningfully engage in consensus and governance. Despite the absence of explicit barriers to entry, practical constraints—such as the economic cost of staking or mining—can thus create an implicit form of exclusivity. 
 
