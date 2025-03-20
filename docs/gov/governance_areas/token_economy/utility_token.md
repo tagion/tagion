@@ -2,7 +2,7 @@
 sidebar_position: 5
 ---
 
-# Tagion Utility Tokens
+# Tagion Utility Tokens (TGN)
 
 The term ‘utility’ comes from the Latin word ‘utilitas’, meaning ‘usefulness’. 
 
