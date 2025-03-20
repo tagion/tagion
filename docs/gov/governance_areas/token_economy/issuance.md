@@ -8,11 +8,13 @@ The maximum supply of TGN tokens is currently set to be 37bn. (See list of defin
 
 Half of this was minted in what was previously referred to as our “Token Generator Event” (TGE) which happened along with the launch of the Tagion mainnet on Dec 7th 2023. 
 
-## Allocation 
-
-Most of these 18.5bn have not been issued yet but all are earmarked/dedicated to different purposes in regard to the development of the Tagion network. This is here called the tokens’ “allocation”.
-
 ![TGN Allocation](/img/Allocation_2025.png)
+
+## Allocations
+
+Most of the 18.5bn TGN minted at the launch of the mainnet have not been issued yet but all are earmarked/dedicated to different purposes in regard to the development of the Tagion network. This is here called the tokens’ “allocation”.
+
+
 
 | Allocation:   | Amount:  |
 | -------- | ------- |
