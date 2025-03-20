@@ -224,10 +224,10 @@ private:
         bool bMatch = false;
 
         while (!bMatch) {
-            // 1. Get a db head
-            TagionHead tagion_head = getHead(destination, net);
             // 2. Sync
             synchronize(opts, sock_addrs, destination);
+            // 1. Get a db head
+            TagionHead tagion_head = getHead(destination, net);
 
             while (true) { // until we get an empty recorder
 
@@ -319,9 +319,10 @@ class RemoteRequestSender {
             // auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
         
             if (!received.empty) {
-                auto doc = Document(received);
-                writefln("-------- received doc %s --------", doc.toPretty);
-                return doc;
+                // auto doc = Document(received);
+                // writefln("-------- received doc %s --------", doc.toPretty);
+                // return doc;
+                return Document(received);
             }
 
             if (MonoTime.currTime() - startTime > attempts_timeout) {
