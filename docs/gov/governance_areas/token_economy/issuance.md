@@ -4,7 +4,7 @@ sidebar_position: 6
 
 # TGN Issuance & Allocation
 
-The maximum supply of TGN tokens is currently set to be 37bn. (See list of definitions below.) 
+The maximum supply of TGN tokens is currently set to be 37bn. (See [list of definitions](./#Reporting_and_defitions) below.) 
 
 Half of this was minted in what was previously referred to as our “Token Generator Event” (TGE) which happened along with the launch of the Tagion mainnet on Dec 7th 2023. 
 
@@ -28,6 +28,7 @@ To incentivize and reward the wider community, including users, developers, and 
 |To disburse to **team and founders** | 3.0bn ~ 8% <br />of max supply| 
 |**Total Current Allocations**|**18.5bn** ~ 50% <br />of max supply|
 
+<br />
 The other half of the max supply is scheduled to be minted on a continues bases over a period of approximately 30 years (616 million annually - changes to this schedule can be introduced later by community decision). These tokens will be directly assigned to the then established Tagion Treasury and used, along with other resources, to reward node operators as well as to continuously incentivise community engagement, governance, network maintenance and software upgrades.  
 
 This secondary minting process (previously referred to as “emission”) starts once significant advances in decentralising Tagion have been achieved (see Phase 3. Curated Release).  
@@ -107,6 +108,8 @@ at 0.01 EUR,  at 0.05 EUR, at 0.1 EUR,  at 0.5 EUR, and - for the last time - at
 
 Decard is the company founded to be the initial developer, steward and long-term pillar supporting Tagion's establishment and sustainability.  
 At the time of launching into release phase 3 (curated release), 20% of this allocation will be made available, with another 20% following each consecutive year.   
+<br />
+<br />
 
 ---
  
