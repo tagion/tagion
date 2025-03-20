@@ -17,7 +17,7 @@ We structure this governance area into two sections with three chapters each:
 
  5. [What "Proof of Community" is (good for)](./network_formation/tagion/poc)
  7. [How "Genetics" feature in Proof of Community](./network_formation/tagion/genetics)
- 8. [How we calculate a "Reputation score"](./network_formation/tagion/reputation)
+ 8. [How we calculate a "Reputation Score"](./network_formation/tagion/reputation)
 
 
 
