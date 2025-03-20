@@ -8,6 +8,8 @@ The maximum supply of TGN tokens is currently set to be 37bn. (See list of defin
 
 Half of this was minted in what was previously referred to as our “Token Generator Event” (TGE) which happened along with the launch of the Tagion mainnet on Dec 7th 2023. 
 
+## Allocation 
+
 Most of these 18.5bn have not been issued yet but all are earmarked/dedicated to different purposes in regard to the development of the Tagion network. This is here called the tokens’ “allocation”: 
 
 | Allocation:   | Amount:  |
@@ -26,7 +28,7 @@ The other half of the max supply is scheduled to be minted on a continues bases 
 
 This secondary minting process (previously referred to as “emission”) starts once significant advances in decentralising Tagion have been achieved (see Phase 3. Curated Release).  
 
-## Rerporting and Definitions 
+## Reporting and Definitions 
 
 It is important to prevent too many tokens being made available at the same time so that they do not flood the market prematurely and destabilize the token's value. 
 
@@ -90,7 +92,7 @@ at 0.01 EUR,  at 0.05 EUR, at 0.1 EUR,  at 0.5 EUR, and - for the last time - at
 Decard is the company founded to be the initial developer, steward and long-term pillar supporting Tagion's establishment and sustainability.  
 At the time of launching into release phase 3 (curated release), 20% of this allocation will be made available, with another 20% following each consecutive year.   
  
-### d)  for community-development 
+### d)  for active Community Members
 
 These tokens allocated to what was previously called “the Ecosystem” are subject to time-based vesting. When disbursed to community members as incentives or rewards, 20% will be released annually over a five-year period.
 
@@ -98,4 +100,4 @@ These tokens allocated to what was previously called “the Ecosystem” are sub
 
 [^2]: We previously reported on “Circulating Supply” excluding any tokens disbursed to the team, founders and shareholders. While an industry standard for this term seems far off (see [here](https://support.coinmarketcap.com/hc/en-us/articles/360043396252-Supply-Circulating-Total-Max) for an example of the current inconsistencies), we are now using the above more inclusively and intuitive definition.
 
-[^3]:In June 2024, unlocked supply was reported to be 1,975,000,000 TGN. This number is higher then the unlocked supply in March 2025 because of the updated vesting terms for the allocations to Decard, team and founders. Those tokens are now locked until the distribution of the network is achieved (start of the [release phase 3](./intro#3-curated-release)).
+[^3]:In June 2024, unlocked supply was reported to be 1,975,000,000 TGN. This number is higher then the unlocked supply in March 2025 because of the updated vesting terms for the allocations to Decard, team and founders. Those tokens are now locked until the distribution of the network is achieved (start of the [release phase 3](./gov/intro#3-curated-release)).
