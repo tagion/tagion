@@ -111,15 +111,12 @@ Refers to networks being built on Tagion code and being connected (open) or unco
 
 ## Permission/Un-permissioned 
 
-Refers to anybody being able to use a network service, like submitting transaction, with or without permission.  
+Refers to anybody being able to participate in a system, e.g. running a node, with or without permission. (See our deep-daive in what that meand for DLT systems [here](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/permission).)
 
-## Privat 
 
-Not everybody may run a node. Participation is controlled by some entity.  
+## Public/Private
 
-## Public 
-
-Everybody can run a node. Thus, “decentralized” already implies that the Tagion Mainnet qualifies as “public”. Sub-systems can choose to be set up as privat or public networks.   
+A public system or infrastrucre is open for everybody to use. Tagion aspires to provide that. Sub-systems however can choose to be set up there own rules and invite or preclude user as deem appropriate for the individual use-cases.    
 
 ## Tagion Mainnet 
 
