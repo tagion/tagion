@@ -104,6 +104,8 @@ at 0.01 EUR,  at 0.05 EUR, at 0.1 EUR,  at 0.5 EUR, and - for the last time - at
 
 Decard is the company founded to be the initial developer, steward and long-term pillar supporting Tagion's establishment and sustainability.  
 At the time of launching into release phase 3 (curated release), 20% of this allocation will be made available, with another 20% following each consecutive year.   
+
+---
  
 
 [^1]: This was previously called "vested" or "fully vested" supply, but since that term was sometimes confusing to our users, we now use this more intutive and descriptive wording. 
