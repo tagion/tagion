@@ -254,7 +254,6 @@ alias check = Check!WatException;
                 }
                 output.writeln(")");
             }
-            __write("Expr %s", expr.front);
             block(expr, local_indent);
             output.writefln("%s)", indent);
         }
