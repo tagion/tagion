@@ -8,11 +8,11 @@ This governance area covers everything to do with our native network token, the 
 
 We structure this governance area into:
 
- 1. [Treasury](./treasury)
- 2. [Pricing](./pricing)
- 3. [Fee channels](./fee_channels)
- 4. [Tagion Utility Token (TGN)](./utility_token)
- 5. [TGN Issuance & Allocation](./issuance) (recently published on March 20th 20205)
+ 1. [Treasury](./token_economy/treasury)
+ 2. [Pricing](./token_economy/pricing)
+ 3. [Fee channels](./token_economy/fee_channels)
+ 4. [Tagion Utility Token (TGN)](./token_economy/utility_token)
+ 5. [TGN Issuance & Allocation](./token_economy/issuance) (recently published on March 20th 20205)
 
 
 **Balancing resources and needs**
