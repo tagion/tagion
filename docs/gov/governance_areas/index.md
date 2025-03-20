@@ -5,7 +5,8 @@ sidebar_position: 2
 # Governance Areas
 
 The development of the overall governance of Tagion is, for practical reasons, divided into for interdependent areas:
-:::tip[New content has been published in Governance Area: Token Economy and Network Formation (March 20th 2025)]
+:::tip [New content has been published]
+Find it in Governance Areas: Token Economy and Network Formation (March 20th 2025)
 Check them out now!
 :::
  1. [Decision Making](./governance_areas/decision_making)
