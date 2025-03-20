@@ -1,6 +1,5 @@
-# Sybil Resistance
+# Why Sybil Resistance Matter
 
-## On Security
 
 In decentralized networks, security concerns arise not only from traditional attack vectors but also from threats unique to their structure. One such threat is the Sybil attack. A sybil attack, coined by John R. Douceur, refers to “an attack wherein a single entity masquerades as multiple entities or nodes within a network to gain a disproportionately high influence within the network or to subvert the network’s operation altogether.”  An illicit actor, accordingly, creates multiple pseudonymous identities to manipulate or control the network. If successful, Sybil attacks can disrupt consensus, manipulate governance decisions, and ultimately undermine the integrity of the system. 
 
