@@ -1,3 +1,6 @@
+---
+sidebar_position: 2
+---
 # Genetics 
 
 In Tagion, a new member is born through the mating of two existing members, mirroring biological reproduction, where parents contribute to the genetic identity of their offspring. Each new member receives a gene code, a unique cryptographic signature derived from the combined identifiers of both parents. This gene code determines the gene score, a measure of diversity that influences an identity’s ability to reproduce.  
