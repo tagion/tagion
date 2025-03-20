@@ -1,7 +1,9 @@
 ---
 sidebar_position: 1
 ---
-# Proof-of-Community: Tagion’s dual purpose model
+# Proof-of-Community
+
+With out unique Proof of Community model, Tagion pursues twofold oobjectives:
 
 ## Security and Decentralisation
 
