@@ -50,9 +50,9 @@ class LogMonitorCallbacks : BaseMonitorCallbacks {
     struct EventViews {
         const(EventView)[] views;
         mixin HiBONRecord!(q{
-            this(const(Event)[] events) pure nothrow {
+            this(const(Event)[] events, long nodes_amount) pure nothrow {
                 foreach(e; events) {
-                    views ~= EventView(e);
+                    views ~= EventView(e, nodes_amount);
                 }
             }
         });
@@ -62,11 +62,11 @@ class LogMonitorCallbacks : BaseMonitorCallbacks {
 
     override void _write_eventview(string event_name, const(Event) e) {
         const node_id = assumeWontThrow(node_id_relocation.get(e.event_package.pubkey, e.node_id));
-        log.event(topic, event_name, EventView(e, node_id));
+        log.event(topic, event_name, EventView(e, node_id_relocation.length, node_id));
     }
 
     override void _write_eventviews(string event_name, const(Event)[] es) {
-        log.event(topic, event_name, EventViews(es));
+        log.event(topic, event_name, EventViews(es, node_id_relocation.length));
     }
 }
 
@@ -77,7 +77,6 @@ class FileMonitorCallbacks : BaseMonitorCallbacks {
     this(string file_name, uint nodes, Pubkey[] node_keys) {
         // the "a" creates the file as well
         out_file = File(file_name, "a");
-        out_file.rawWrite(NodeAmount(nodes).toDoc.serialize);
 
         import std.algorithm : sort;
         import std.range : enumerate;
@@ -95,7 +94,7 @@ class FileMonitorCallbacks : BaseMonitorCallbacks {
     override void _write_eventview(string _, const(Event) e) {
         try {
             const node_id = node_id_relocation.get(e.event_package.pubkey, e.node_id); 
-            out_file.rawWrite(EventView(e, node_id).toDoc.serialize);
+            out_file.rawWrite(EventView(e, node_id_relocation.length, node_id).toDoc.serialize);
         } catch(Exception err) {
             log.error("Could not write monitor event, %s", err.message);
         }
@@ -103,7 +102,7 @@ class FileMonitorCallbacks : BaseMonitorCallbacks {
     override void _write_eventviews(string _, const(Event)[] es) {
         try {
             foreach(e; es) {
-                out_file.rawWrite(EventView(e).toDoc.serialize);
+                out_file.rawWrite(EventView(e, node_id_relocation.length).toDoc.serialize);
             }
         }
         catch(Exception err) {

@@ -86,14 +86,14 @@ struct Segment {
 
 Segment segment;
 
-const(string) color(T)(const(string[]) colors, T index) pure nothrow @nogc if (isIntegral!T) {
+string color(T)(const(string[]) colors, T index) pure nothrow @nogc if (isIntegral!T) {
     import std.math : abs;
 
     const i = abs(index) % colors.length;
     return colors[i];
 }
 
-static string escapeHtml(string input) pure nothrow {
+string escapeHtml(string input) pure nothrow {
     string result;
     foreach (char c; input) {
         switch (c) {
@@ -309,8 +309,8 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         text.text_anchor = "middle";
         text.dominant_baseline = "middle";
         text.fill = "black";
-        text.text = format("%s:%s", e.round == int.min ? "X" : format("%s", e.round), e.round_received == int.min ? "X" : format(
-                "%s", e.round_received));
+        /* text.text = format("%s", e.altitude); */
+        text.text = format("%s:%s", e.round == int.min ? "X" : format("%s", e.round), e.round_received == int.min ? "X" : format("%s", e.round_received));
         obuf[20].writefln("%s", text.toString);
 
         text.text = format("%d", e.id);
@@ -367,18 +367,14 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
     }
 
     void draw(ref HeightBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
-        // If the first document is a node amount record we set amount of nodes...
-        // Maybe this should be always be possible to set.
-        // Or even better it's a part of the EventView package
-        const nodes_doc = doc_range.front;
-        if (nodes_doc.isRecord!NodeAmount) {
-            node_size = NodeAmount(nodes_doc).nodes;
-            doc_range.popFront;
-        }
-
+        uint node_id;
+        verbose("ALTITUDE %s", EventView(doc_range.front).altitude);
         foreach (e; doc_range) {
             if (e.isRecord!EventView) {
+
                 auto event = EventView(e);
+                /* verbose("ALTITUDE %s", event.altitude); */
+                node_id = event.node_id;
                 if (segment.inRange(event)) {
                     events[event.id] = event;
                 }
@@ -391,12 +387,10 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
             node(obuf, e, raw_svg);
         }
 
-        scope (success) {
-            start.writefln(`<svg id="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, max_width + NODE_INDENT, max_height - min_height + 4 * NODE_INDENT);
-            start.writefln(`<g transform="translate(0,%s)">`, max_height + 2 * NODE_INDENT);
-            end.writefln("</g>");
-            end.writefln("</svg>");
-        }
+        start.writefln(`<svg id="node-%s" class="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, node_id, max_width + NODE_INDENT, max_height - min_height + 4 * NODE_INDENT);
+        start.writefln(`<g transform="translate(0,%s)">`, max_height + 2 * NODE_INDENT);
+        end.writefln("</g>");
+        end.writefln("</svg>");
     }
 }
 
@@ -522,7 +516,8 @@ int _main(string[] args) @trusted {
         }
 
         assert(inputfiles.length != 0);
-        foreach (i, inputfile; inputfiles) {
+        import std.parallelism;
+        foreach (i, inputfile; parallel(inputfiles)) {
             HiBONRange hibon_range = HiBONRange(inputfile);
 
             //auto obuf = new OutBuffer;
