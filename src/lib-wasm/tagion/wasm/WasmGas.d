@@ -95,11 +95,12 @@ struct WasmGas {
                         bout.write(block_bout);
                         break;
                     case BRANCH:
+                        if (elm.code is IR.BR_TABLE) {
+                            const branch_idxs = elm.wargs.map!((a) => a.get!uint).array;
+                            wasmexpr(elm.code, branch_idxs);
+                            break;
+                        }
                         wasmexpr(elm.code, elm.warg.get!uint);
-                        break;
-                    case BRANCH_TABLE:
-                        const branch_idxs = elm.wargs.map!((a) => a.get!uint).array;
-                        wasmexpr(elm.code, branch_idxs);
                         break;
                     case CALL, LOCAL, GLOBAL, CALL_INDIRECT:
                         wasmexpr(elm.code, elm.warg.get!uint);

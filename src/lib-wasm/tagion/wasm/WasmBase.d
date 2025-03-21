@@ -122,7 +122,6 @@ enum IRType {
     BLOCK_CONDITIONAL, /// Used for if statement
     BLOCK_ELSE, // Used for else statement (The block number is the same as for the BLOCK_CONDITION)
     BRANCH, /// Branch jump instruction
-    BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
     CALL_INDIRECT, /// Indirect subroutine call
     LOCAL, /// Local register storage instruction
@@ -166,7 +165,7 @@ enum IR : ubyte {
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
-        @Instr("br_table", "br_table", 1, IRType.BRANCH_TABLE)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
+        @Instr("br_table", "br_table", 1, IRType.BRANCH)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
         @Instr("return", "return", 1, IRType.RETURN)                    RETURN              = 0x0F, ///  return
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
         @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
@@ -916,7 +915,6 @@ struct ExprRange {
                     break;
                 case BLOCK_CONDITIONAL:
                 case BLOCK:
-                case BLOCK_ELSE:
                     scope (exit) {
                         _level++;
                     }
@@ -927,20 +925,24 @@ struct ExprRange {
                     elm.types = data[index .. index + 1];
                     index += Types.sizeof;
                     break;
+                case BLOCK_ELSE:
+                    // Same as IF
+                    break;
                 case BRANCH:
+                    if (elm.code is IR.BR_TABLE) {
+                        //size_t vec_size;
+                        const len = u32(data, index) + 1;
+                        auto _wargs = new WasmArg[len];
+
+                        foreach (ref a; _wargs) {
+                            a = u32(data, index);
+                        }
+                        elm.wargs = _wargs;
+                        break;
+                    }
                     // branchidx
                     elm.warg = get(Types.I32);
                     _level++;
-                    break;
-                case BRANCH_TABLE:
-                    //size_t vec_size;
-                    const len = u32(data, index) + 1;
-                    auto _wargs = new WasmArg[len];
-
-                    foreach (ref a; _wargs) {
-                        a = u32(data, index);
-                    }
-                    elm.wargs = _wargs;
                     break;
                 case CALL:
                     // callidx
@@ -1021,6 +1023,10 @@ struct ExprRange {
 
         bool empty() const {
             return _index > data.length || (wasm_exception !is null);
+        }
+
+        ExprRange save() {
+            return this;
         }
 
     }

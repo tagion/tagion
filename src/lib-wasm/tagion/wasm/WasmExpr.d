@@ -35,7 +35,28 @@ struct WasmExpr {
                     bout.write(encode(args[0]));
                 }
                 break;
-            case BRANCH, CALL, LOCAL, GLOBAL:
+            case BRANCH:
+                if (ir is IR.BR_TABLE) {
+                    scope uint[] table;
+                    static foreach (i, a; args) {
+                        {
+                            enum OK = is(Args[i] : const(uint)) || is(Args[i] : const(uint[]));
+                            assert(OK, format("Argument %d must be integer or uint[] of integer not %s",
+                                    i, Args[i].stringof));
+                            static if (OK) {
+                                table ~= a;
+                            }
+                        }
+                    }
+                    check(table.length >= 1, format("Too few arguments for %s instruction", instr.name));
+                    bout.write(encode(table.length - 1));
+                    foreach (t; table) {
+                        bout.write(encode(t));
+                    }
+                    break;
+                }
+                goto case;
+            case CALL, LOCAL, GLOBAL:
                 assert(Args.length == 1,
                         format("Instruction %s only one argument expected", instr.name));
                 goto case;
@@ -48,24 +69,6 @@ struct WasmExpr {
                     static if (isIntegral!(Args[0])) {
                         bout.write(encode(args[0]));
                     }
-                }
-                break;
-            case BRANCH_TABLE:
-                scope uint[] table;
-                static foreach (i, a; args) {
-                    {
-                        enum OK = is(Args[i] : const(uint)) || is(Args[i] : const(uint[]));
-                        assert(OK, format("Argument %d must be integer or uint[] of integer not %s",
-                                i, Args[i].stringof));
-                        static if (OK) {
-                            table ~= a;
-                        }
-                    }
-                }
-                check(table.length >= 2, format("Too few arguments for %s instruction", instr.name));
-                bout.write(encode(table.length - 1));
-                foreach (t; table) {
-                    bout.write(encode(t));
                 }
                 break;
             case CALL_INDIRECT:

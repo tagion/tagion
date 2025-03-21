@@ -157,5 +157,8 @@
 (assert_return (invoke "as-select-second" (i32.const 1)) (i32.const 3))
 (assert_return (invoke "as-select-cond") (i32.const 3))
 
+(assert_return (invoke "as-call-first") (i32.const 12))
+(assert_return (invoke "as-call-mid") (i32.const 13))
+(assert_return (invoke "as-call-last") (i32.const 14))
 
 

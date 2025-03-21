@@ -4,11 +4,18 @@ sidebar_position: 1
 
 # Token Economy
 
-This governance area covers everything to do with our native network token, the TGN. Eventually it will describe everything from its purpose to its issuance and limitations. Quite a bit has already been published about this in our Tokenomics Paper (find it archived here in [version 2024](/Tagion_Tokenomics_June_2024.pdf) and [version 2023](/Tagion_Tokenomics_2023.pdf)), and until its content has been transferred and superseded by what you find here, please download and consult it at the link above. 
+This governance area covers everything to do with our native network token, the TGN. Eventually it will describe everything from its purpose to its issuance and limitations.This now supersedes and updates our previously published "Tokenomics Papers" (archived here in [version 2024](/Tagion_Tokenomics_June_2024.pdf) and [version 2023](/Tagion_Tokenomics_2023.pdf)). 
 
-For now, read on below and find an overview of the elements of our token economy already covered in the menu on the right hand side. 
+We structure this governance area into:
 
-## Balancing resources and needs 
+ 1. [Treasury](./token_economy/treasury)
+ 2. [Pricing](./token_economy/pricing)
+ 3. [Fee channels](./token_economy/fee_channels)
+ 4. [Tagion Utility Token (TGN)](./token_economy/utility_token)
+ 5. [TGN Issuance & Allocation](./token_economy/issuance) (recently published on March 20th 20205)
+
+
+**Balancing resources and needs**
 
 Contributors ([see Glossary](/gov/glossary#contributors)) play a vital role in ensuring the sustainability and growth of the Tagion network. Their efforts span across maintaining and safeguarding the network’s security, efficiency, and reliability; driving its evolution by implementing upgrades, addressing vulnerabilities, and introducing new features; and fostering adoption by creating educational materials and onboarding users.
 
