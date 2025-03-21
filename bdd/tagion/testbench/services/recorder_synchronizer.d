@@ -132,23 +132,16 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
             auto tagion_head = TagionHead(TagionDomain, 0);
             recorder.add(tagion_head.toDoc);
-
             foreach (doc_no; document_numbers) {
                 recorder.add(test_doc(doc_no));
             }
+            
             auto fingerprint = remote_dart.modify(recorder);
-            writefln("SendRecorder recorder %s: ", recorder.toPretty);
-            writefln("SendRecorder fingerprint %s: ", fingerprint);
-            writefln("SendRecorder current_epoch %s: ", tagion_head.current_epoch);
-
             auto replicator_handle = (() @trusted => spawn!ReplicatorService(
                     opts.task_names.replicator,
                     cast(immutable) replicator_opts))();
 
             replicator_handles ~= replicator_handle;
-
-            (() @trusted => replicator_handle.send(SendRecorder(), cast(immutable) recorder, fingerprint, cast(
-                    immutable(long)) tagion_head.current_epoch))();
 
             auto remote_dart_handle = (() @trusted => spawn!DARTService(
                     opts.task_names.dart,
@@ -166,6 +159,9 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
             dart_interface_handles ~= dart_interface_handle;
 
             sock_addrs.sock_addrs ~= opts.dart_interface.sock_addr;
+
+            (() @trusted => replicator_handle.send(SendRecorder(), cast(immutable) recorder, fingerprint, cast(
+                    immutable(long)) tagion_head.current_epoch))();
         }
 
         dart_sync_handle = (() @trusted => spawn!DARTSynchronization(

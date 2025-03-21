@@ -58,28 +58,32 @@ struct ReplicatorService {
             file.close;
         }
 
-        void receiveReplicatorFilePath(repFilePathRR req){
-            log("Received repFilePathRR request");
+        void receiveReplicatorFilePath(repFilePathRR req) {
             req.respond(filepath);
         }
 
         void readRecorder(readRecorderRR req, Document doc) {
-            try {
-                log("Received readRecorderRR request: %s", doc.toPretty);
+            import std.range;
 
+            try {
                 long epoch_number = doc["$msg"]["params"]["$epoch"].get!long;
 
                 auto fin = File(filepath, "r");
-
                 scope (exit) {
                     fin.close;
                 }
 
-                auto recorders = HiBONRange(fin).map!(doc => RecorderBlock(doc));
-                foreach (ref recorder; recorders) {
-                    if (recorder.epoch_number == epoch_number) {
-                        log("readRecorderRR response: %s", recorder.toPretty);
-                        req.respond(recorder);
+                foreach (item; HiBONRange(fin).enumerate) {
+                    auto block = RecorderBlock(item.value, net);
+                    if (block.epoch_number == epoch_number) {
+                        // import tagion.communication.HiRPC;
+                        // auto hirpc = HiRPC(null);
+                        // auto receiver = hirpc.receive(block.toDoc);
+                        // auto response_ok = hirpc.result(receiver, ResultOk());
+                        // req.respond(response_ok.toDoc.serialize);
+
+                        // req.respond(block); // Unknown error.
+                        req.respond(block.recorder_doc);
                         break;
                     }
                 }
@@ -130,7 +134,6 @@ struct ReplicatorService {
             log.event(modify_recorder, "modify", recorder);
         }
 
-        // static assert(0, typeof(receiveReplicatorFilePath));
         run(&receiveRecorder, &readRecorder, &receiveReplicatorFilePath);
     }
 }

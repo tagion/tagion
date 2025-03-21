@@ -222,51 +222,45 @@ private:
         import tagion.actor.exceptions;
 
         bool bMatch = false;
+        HiRPC hirpc = HiRPC(net);
 
         while (!bMatch) {
-            // 2. Sync
+            // 1. Sync
             synchronize(opts, sock_addrs, destination);
-            // 1. Get a db head
+            // 2. Get a db head
             TagionHead tagion_head = getHead(destination, net);
 
-            while (true) { // until we get an empty recorder
-
+            while (true) {
                 try {
                     // 3.
                     RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts
                             .socket_attempts_mil,
                             sock_addrs.sock_addrs[0], null);
 
-                    HiRPC hirpc = HiRPC(net);
-                    
-                    const recorder_read_request = hirpc.readRecorder(tagion_head.current_epoch);
-                    writefln("REQ-request %s", recorder_read_request.toPretty);
-                    const recorder_response_doc = sender.send(recorder_read_request.toDoc);
-                    auto response = hirpc.receive(recorder_response_doc);
-                    writefln("RESP-response %s", response.toPretty);
-
-                    RecorderBlock block = response.result!RecorderBlock;
-                    Document recorder_doc = block.recorder_doc;
-                    if (recorder_doc.empty) {
+                    const recorder_read_request_doc = hirpc.readRecorder(tagion_head.current_epoch)
+                        .toDoc;
+                    const recorder_response_doc = sender.send(recorder_read_request_doc);
+                    writefln("RESP-recorder_response_doc %s", recorder_response_doc.toPretty);
+                    // auto response = hirpc.receive(recorder_response_doc);
+                    // Document recorder_doc = response.result;
+                    // RecorderBlock block = response.result!RecorderBlock;
+                    // Document recorder_doc = block.recorder_doc;
+                    if (recorder_response_doc.empty) {
                         break;
                     }
 
                     // 4. Replay
-                    // auto factory = RecordFactory(net);
-                    // auto recorder = factory.recorder(recorder_doc);
-                    // destination.modify(recorder);
-                    // bullseye = db.modify(recorder);
-
+                    auto factory = RecordFactory(net);
+                    auto recorder = factory.recorder(recorder_response_doc);
+                    auto bullseye = destination.modify(recorder);
+                    // 5. Check if bullseyes match.
+                    // bMatch = bullseye == block.bullseye;
+                    bMatch = true;
                 }
                 catch (Exception e) {
                     break;
                 }
             }
-
-            // 5. Check if bullseyes match.
-            // bMatch = bullseyesMatch(opts, sock_addrs, net, destination);
-            bMatch = true;
-
             // Check a timeout.
             // Select another node if time out - TBD
         }
@@ -305,7 +299,7 @@ class RemoteRequestSender {
         socket.recvtimeout = socket_timeout_mil.msecs;
         writefln("-------- Trying to dial a socket at %s --------", sock_addr);
         int rc = socket.dial(sock_addr);
-        enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc))); // change to check()
+        enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
 
         writefln("-------- Send to the socket at %s --------", sock_addr);
         rc = socket.send!(immutable(ubyte[]))(request_doc.serialize);
@@ -316,12 +310,8 @@ class RemoteRequestSender {
 
         while (true) {
             auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
-            // auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
-        
+
             if (!received.empty) {
-                // auto doc = Document(received);
-                // writefln("-------- received doc %s --------", doc.toPretty);
-                // return doc;
                 return Document(received);
             }
 
