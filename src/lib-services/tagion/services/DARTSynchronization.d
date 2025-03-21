@@ -213,7 +213,7 @@ private:
     bool recorderSyncronize(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
         const SecureNet net, DART destination) {
 
-        import tagion.wave.common;
+        // import tagion.wave.common;
         import tagion.replicator.RecorderCrud;
         import tagion.replicator.RecorderBlock;
         import tagion.dart.Recorder;
@@ -228,7 +228,7 @@ private:
             // 1. Sync
             synchronize(opts, sock_addrs, destination);
             // 2. Get a db head
-            TagionHead tagion_head = getHead(destination, net);
+            // TagionHead tagion_head = getHead(destination, net);
 
             while (true) {
                 try {
@@ -237,7 +237,8 @@ private:
                             .socket_attempts_mil,
                             sock_addrs.sock_addrs[0], null);
 
-                    const recorder_read_request_doc = hirpc.readRecorder(tagion_head.current_epoch)
+                    // const recorder_read_request_doc = hirpc.readRecorder(tagion_head.current_epoch)
+                    const recorder_read_request_doc = hirpc.readRecorder(0) // Stub
                         .toDoc;
                     const recorder_response_doc = sender.send(recorder_read_request_doc);
                     writefln("RESP-recorder_response_doc %s", recorder_response_doc.toPretty);
