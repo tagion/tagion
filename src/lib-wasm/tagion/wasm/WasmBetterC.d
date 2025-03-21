@@ -481,7 +481,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         Block* create(const ref ExprRange.IRElement elm)  nothrow {
-            auto blk = new Block(elm, stack.length, cast(uint) _blocks.length, block_count);
+            auto blk = new Block(this, elm, stack.length, cast(uint) _blocks.length, block_count);
             _blocks ~= blk;
             block_count++;
             return blk;
@@ -711,16 +711,20 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         const(size_t) id;
         const(uint) idx; /// Block idx
         string condition;
-        protected BlockKind _kind;
+        protected {
+        Context ctx;
+BlockKind _kind;
 
-        protected bool _local_defined;
-        protected bool _label_defined;
+bool _local_defined;
+bool _label_defined;
+    }
         @disable this();
-        this(const ref ExprRange.IRElement elm, const size_t sp, const uint idx, const uint current_id) pure nothrow
+        this(Context ctx, const ref ExprRange.IRElement elm, const size_t sp, const uint idx, const uint current_id) pure nothrow
         in (only(IRType.BLOCK_CONDITIONAL, IRType.BLOCK, IRType.BLOCK_ELSE)
                 .canFind(elm.instr.irtype))
 
         do {
+                this.ctx = ctx;
             this.elm = elm;
             this.sp = sp;
             this.idx = idx;
