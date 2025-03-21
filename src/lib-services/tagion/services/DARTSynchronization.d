@@ -107,7 +107,12 @@ struct DARTSynchronization {
             req.respond(true);
         }
 
-        run(&compare, &sync, &replay);
+        void recorderSyncTask(syncRecorderRR req) @safe {
+            immutable result = recorderSyncronize(opts, sock_addrs, net, dest_db);
+            req.respond(result);
+        }
+
+        run(&compare, &sync, &replay, &recorderSyncTask);
     }
 
 private:
@@ -204,6 +209,63 @@ private:
             destination.replay(journal_filename);
         }
     }
+
+    bool recorderSyncronize(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
+        const SecureNet net, DART destination) {
+
+        import tagion.wave.common;
+        import tagion.replicator.RecorderCrud;
+        import tagion.replicator.RecorderBlock;
+        import tagion.dart.Recorder;
+        import tagion.script.common;
+        import tagion.dart.DARTFile;
+        import tagion.actor.exceptions;
+
+        bool bMatch = false;
+        HiRPC hirpc = HiRPC(net);
+
+        while (!bMatch) {
+            // 1. Sync
+            synchronize(opts, sock_addrs, destination);
+            // 2. Get a db head
+            TagionHead tagion_head = getHead(destination, net);
+
+            while (true) {
+                try {
+                    // 3.
+                    RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts
+                            .socket_attempts_mil,
+                            sock_addrs.sock_addrs[0], null);
+
+                    const recorder_read_request_doc = hirpc.readRecorder(tagion_head.current_epoch)
+                        .toDoc;
+                    const recorder_response_doc = sender.send(recorder_read_request_doc);
+                    writefln("RESP-recorder_response_doc %s", recorder_response_doc.toPretty);
+                    // auto response = hirpc.receive(recorder_response_doc);
+                    // Document recorder_doc = response.result;
+                    // RecorderBlock block = response.result!RecorderBlock;
+                    // Document recorder_doc = block.recorder_doc;
+                    if (recorder_response_doc.empty) {
+                        break;
+                    }
+
+                    // 4. Replay
+                    auto factory = RecordFactory(net);
+                    auto recorder = factory.recorder(recorder_response_doc);
+                    auto bullseye = destination.modify(recorder);
+                    // 5. Check if bullseyes match.
+                    // bMatch = bullseye == block.bullseye;
+                    bMatch = true;
+                }
+                catch (Exception e) {
+                    break;
+                }
+            }
+            // Check a timeout.
+            // Select another node if time out - TBD
+        }
+        return bMatch;
+    }
 }
 
 class RemoteRequestSender {
@@ -237,7 +299,7 @@ class RemoteRequestSender {
         socket.recvtimeout = socket_timeout_mil.msecs;
         writefln("-------- Trying to dial a socket at %s --------", sock_addr);
         int rc = socket.dial(sock_addr);
-        enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc))); // change to check()
+        enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
 
         writefln("-------- Send to the socket at %s --------", sock_addr);
         rc = socket.send!(immutable(ubyte[]))(request_doc.serialize);
@@ -247,15 +309,14 @@ class RemoteRequestSender {
         auto startTime = MonoTime.currTime();
 
         while (true) {
-            // auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
-            auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
+            auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
 
             if (!received.empty) {
-                writefln("-------- received from the socket at %s --------", sock_addr);
                 return Document(received);
             }
 
             if (MonoTime.currTime() - startTime > attempts_timeout) {
+                writefln("-------- send timeout --------");
                 return Document.init;
             }
 

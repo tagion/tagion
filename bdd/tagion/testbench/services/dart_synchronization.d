@@ -234,7 +234,7 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
 
     ActorHandle dart_sync_handle;
     TRTOptions trt_options;
-    const local_db_name = "local_dart.drt";
+    const local_db_name = "ds_local_dart.drt";
     string local_db_path;
 
     @Given("we have the local database.")
@@ -293,9 +293,9 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         foreach (db_index; 0 .. number_of_databases) {
             Options opts;
             opts.setDefault();
-            opts.setPrefix(format("remote_db_%d_", db_index));
+            opts.setPrefix(format("ds_remote_db_%d_", db_index));
 
-            auto remote_db_name = format("remote_db_%d.drt", db_index);
+            auto remote_db_name = format("ds_remote_db_%d.drt", db_index);
             auto remote_db_path = buildPath(env.bdd_log, __MODULE__, remote_db_name);
             if (remote_db_path.exists) {
                 remote_db_path.remove;
