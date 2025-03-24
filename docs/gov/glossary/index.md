@@ -40,7 +40,7 @@ A community member is any individual or entity who has been verified by peers th
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the validity and order of transactions recorded in the Database (link). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the validity and order of transactions recorded in the [Database](/gov/glossary#distributed_database). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
 
 In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. In this system: 
 
@@ -94,7 +94,7 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 
 ## Nodes 
 
-A node is any device that connects to the network to help maintain the [database](/gov/glossary#distributed-database). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the consensus process (link). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
+A node is any device that connects to the network to help maintain the [database](/gov/glossary#distributed-database). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the [consensus process](/gov/glossary#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
 
 
 ## On-chain Governance 
