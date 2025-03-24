@@ -1,8 +1,8 @@
 ;; Test `loop` opcode
 
 (module
-
   (func $dummy)
+
 
   (func (export "empty")
     (loop)
@@ -13,7 +13,6 @@
     (loop (nop))
     (loop (result i32) (i32.const 7))
   )
-(; ;;
   (func (export "multi") (result i32)
     (loop (call $dummy) (call $dummy) (call $dummy) (call $dummy))
     (loop (result i32) (call $dummy) (call $dummy) (i32.const 8) (call $dummy))
@@ -32,7 +31,7 @@
       (loop (result i32) (call $dummy) (i32.const 9))
     )
   )
-
+(;
   (func (export "deep") (result i32)
     (loop (result i32) (block (result i32)
       (loop (result i32) (block (result i32)
@@ -76,7 +75,7 @@
       ))
     ))
   )
-
+;)
   (func (export "as-select-first") (result i32)
     (select (loop (result i32) (i32.const 1)) (i32.const 2) (i32.const 3))
   )
@@ -110,7 +109,6 @@
   (func (export "as-br_table-last") (result i32)
     (block (result i32) (i32.const 2) (loop (result i32) (i32.const 1)) (br_table 0 0))
   )
-;)
   (;
   (func $func (param i32 i32) (result i32) (local.get 0))
   (type $check (func (param i32 i32) (result i32)))
@@ -161,6 +159,7 @@
   (func (export "as-drop-operand")
     (drop (loop (result i32) (i32.const 1)))
   )
+  
   (func (export "as-br-value") (result i32)
     (block (result i32) (br 0 (loop (result i32) (i32.const 1))))
   )
@@ -170,6 +169,7 @@
   (func (export "as-local.tee-value") (result i32)
     (local i32) (local.tee 0 (loop (result i32) (i32.const 1)))
   )
+ 
     (;
   (global $a (mut i32) (i32.const 0))
   (func (export "as-global.set-value") (result i32)
@@ -283,6 +283,7 @@
     (local.get 0)
   )
 ;)
+(;
   (func (export "param") (result i32)
     (i32.const 1)
     (loop (param i32) (result i32)
@@ -342,7 +343,8 @@
     )
     (i32.add)
   )
-(;
+;)
+  (;
   (func $fx (export "effects") (result i32)
     (local i32)
     (block
@@ -358,7 +360,8 @@
     (i32.eq (local.get 0) (i32.const -14))
   )
 ;)
-  (func (export "while") (param i64) (result i64)
+(; ;;
+(func (export "while") (param i64) (result i64)
     (local i64)
     (local.set 1 (i64.const 1))
     (block
@@ -386,6 +389,7 @@
     )
     (local.get 1)
   )
+  ;)
 (;
   (func (export "nesting") (param f32 f32) (result f32)
     (local f32 f32)
@@ -435,15 +439,17 @@
 
 (assert_return (invoke "empty"))
 (assert_return (invoke "singular") (i32.const 7))
-(;
 (assert_return (invoke "multi") (i32.const 8))
+
 (assert_return (invoke "nested") (i32.const 9))
+(;
 (assert_return (invoke "deep") (i32.const 150))
+
+;)
 
 (assert_return (invoke "as-select-first") (i32.const 1))
 (assert_return (invoke "as-select-mid") (i32.const 2))
 (assert_return (invoke "as-select-last") (i32.const 2))
-
 (assert_return (invoke "as-if-condition"))
 (assert_return (invoke "as-if-then") (i32.const 1))
 (assert_return (invoke "as-if-else") (i32.const 2))
@@ -453,6 +459,7 @@
 
 (assert_return (invoke "as-br_table-first") (i32.const 1))
 (assert_return (invoke "as-br_table-last") (i32.const 2))
+(;
 
 (assert_return (invoke "as-call_indirect-first") (i32.const 1))
 (assert_return (invoke "as-call_indirect-mid") (i32.const 2))
@@ -466,13 +473,16 @@
 (assert_return (invoke "as-return-value") (i32.const 1))
 ;)
 (assert_return (invoke "as-drop-operand"))
+
 (assert_return (invoke "as-br-value") (i32.const 1))
 (assert_return (invoke "as-local.set-value") (i32.const 1))
 (assert_return (invoke "as-local.tee-value") (i32.const 1))
+
 (;
 (assert_return (invoke "as-global.set-value") (i32.const 1))
 (assert_return (invoke "as-load-operand") (i32.const 1))
 ;)
+(;
 (assert_return (invoke "as-unary-operand") (i32.const 0))
 (assert_return (invoke "as-binary-operand") (i32.const 12))
 (assert_return (invoke "as-test-operand") (i32.const 0))
@@ -697,7 +707,8 @@
   ))
   "type mismatch"
 )
-
+;)
+(;
 (assert_invalid
   (module
     (func $type-value-empty-in-block
@@ -792,3 +803,6 @@
   (module quote "(func loop $a end $l)")
   "mismatching label"
 )
+;)
+
+

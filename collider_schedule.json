@@ -111,7 +111,7 @@
           "f32_cmp_export.wast", "f64_cmp_export.wast",
           "float_misc_export.wast",
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
-          "if_block.wast",
+          "if_block.wast", "loop_block.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -150,7 +150,7 @@
         },
         "loop" : {
             "args" : [
-                "loop_2.wast"
+                "loop_block.wast"
             ]
         },
         "if_block" : {
