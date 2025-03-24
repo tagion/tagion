@@ -50,6 +50,11 @@ Node operators provide the essential computational infrastructure that powers th
 
 Developers are the architects and innovators of the Tagion Network. They build, maintain, and refine the core protocols and supporting tools. By addressing the evolving needs of the network and its users, developers ensure the system remains robust and scalable. 
 
+### Formation
+
+In our governance area "network formation" we use this word analagous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
+
+
 #### Governance Participants 
 
 Governance Participants play a critical role in shaping the network's future. Through proposals, debates, and voting, they decide, among other things, on protocol upgrades and treasury finances, including fees and rewards. They ensure that the network remains adaptive and aligns with the Manifesto and the interests of its users. 
