@@ -369,24 +369,9 @@ struct WastParser {
                             wasmexpr(block_ir, type_idx);
                         }
                     }
-                   getArguments;
+
+                    getArguments;
                     addBlockIR;
-                    version(none) {
-                    foreach (n; 0 .. instr.pops.length) {
-                        inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
-                    }
-                    if (wasm_results.length == 0) {
-                        wasmexpr(irLookupTable[instr.name], Types.VOID);
-                    }
-                    else if (wasm_results.length == 1) {
-                        wasmexpr(irLookupTable[instr.name], wasm_results[0]);
-                    }
-                    else {
-                        auto func_type = FuncType(Types.FUNC, null, wasm_results.idup);
-                        const type_idx = writer.createTypeIdx(func_type);
-                        wasmexpr(irLookupTable[instr.name], type_idx);
-                    }
-                        }
                     func_ctx.block_push(wasm_results, label);
                     if (block_ir is IR.IF) {
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
