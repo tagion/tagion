@@ -5,7 +5,7 @@ sidebar_label: Treasury
 
 # The Treasury 
 
-The Tagion Treasury will serve as the primary source of compensation for contributors, utilizing its holdings of TGN tokens to fund ongoing network operations. Initially, the Treasury will draw from its allocated TGN reserves to support the system and reward contributors. However, since these reserves are finite, the Treasury cannot sustain the network indefinitely through this allocation alone. 
+The Tagion Treasury will serve as the primary source of compensation for contributors, utilizing its holdings of TGN tokens to fund ongoing network operations. Initially, the Treasury will draw from its allocated TGN reserves to support the system and reward contributors (see [Issuance & Allocation](./issuance). However, since these reserves are finite, the Treasury cannot sustain the network indefinitely through this allocation alone. 
 
 In the event that the Treasury exhausts its initial holdings, the Community could opt to issue new TGN tokens to cover expenses. However, issuing additional tokens would dilute the existing supply, which may not be in the interest of the community. To avoid this outcome, a sustainable and balanced funding model should be established well before the Treasury’s reserves are depleted, ensuring the network's long-term sustainability. 
 
