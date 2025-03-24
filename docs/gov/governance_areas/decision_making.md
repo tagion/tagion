@@ -9,4 +9,4 @@ This section about Tagion's governance structure is yet to be published.<br />Ho
 :::
 
 
-please bare with us, and the bareness of this page
+please bear with us, and the bareness of this page
