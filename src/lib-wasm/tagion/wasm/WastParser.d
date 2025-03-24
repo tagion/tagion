@@ -373,16 +373,28 @@ struct WastParser {
                     }
 
                     if (block_ir is IR.IF) {
-                        if (
-                            equal(r.save.map!(t => t.type).take(2),
-                                only(TokenType.BEGIN, TokenType.WORD)) &&
-                                (r.save.map!(t => t.token).drop(1).front ==
-                                    PseudoWastInstr.then)) { // Then after if with no argument
+                        version (none)
+                            if (
+                                equal(r.save.map!(t => t.type).take(2),
+                                    only(TokenType.BEGIN, TokenType.WORD)) &&
+                                    (r.save.map!(t => t.token).drop(1)
+                                        .front ==
+                                        PseudoWastInstr.then)) { // Then after if with no argument
 
-                            __write(":::: Then <<<===");
+                                __write(":::: Then <<<===");
+
+                            }
+                        if (r.type is TokenType.BEGIN) {
+                            auto r_then = r.save;
+                            r_then.nextToken;
+                            if (r_then.front.token == PseudoWastInstr.then) {
+                                __write(":::: Then <<<===");
+                            }
 
                         }
-                        getArguments;
+                        else {
+                            getArguments;
+                        }
                         addBlockIR;
                         func_ctx.block_push(wasm_results, label);
                         __write(":: %s block_if=%s instr=%s tokens=%-(%s %)", r, block_ir, instr, r.save.map!(t => t
