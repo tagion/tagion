@@ -50,10 +50,6 @@ Node operators provide the essential computational infrastructure that powers th
 
 Developers are the architects and innovators of the Tagion Network. They build, maintain, and refine the core protocols and supporting tools. By addressing the evolving needs of the network and its users, developers ensure the system remains robust and scalable. 
 
-#### Formation
-
-In our governance area "network formation" we use this word analagous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
-
 
 #### Governance Participants 
 
@@ -63,9 +59,10 @@ Governance Participants play a critical role in shaping the network's future. Th
 
 ## Currency 
 
-An implementation/instantiation of the concept of money [link].  
+An implementation/instantiation of the concept of [money](/gov/glossary#money).  
 
- 
+## De jure / de facto
+We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, as we explain in the article about "[permissionlessness](/gov/governance_areas/network_formation/introductions/permission)", the real-world effect of certain rules (de facto) can run counter to its intention (de jure). 
 
 ## Distributed Database 
 
@@ -79,13 +76,17 @@ A Federated Subsystem is an independent network — either public or private —
 
 In a Federated Subsystem, all data remains encrypted within the subsystem, ensuring privacy and confidentiality for users. However, transactional activity — the overall volume and frequency of transactions — is monitored by Mainnet Nodes. 
 
+## Formation
+
+In our governance area "network formation" we use this word analagous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
+
 ## Governance 
 
 At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both on-chain (link) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
 
 ## Money 
 
-Since it has many but no definitive meanings even in economics and law, we here operate with the most basic definition: a system of transferable units to facilitate collaboration within a certain constituency. [compare Bindewald 2021] 
+Since it has many but no definitive meanings even in economics and law, we here operate with the most basic definition: a system of transferable units to facilitate collaboration within a certain constituency (compare [Bindewald 2021](https://www.mdpi.com/1911-8074/14/2/55)). 
 
 ## Network Services 
 
