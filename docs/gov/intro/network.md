@@ -38,7 +38,7 @@ Developers are the architects and innovators of the Tagion Network. They build, 
 
 Governance Participants play a critical role in shaping the network's future. Through proposals, debates, and voting, they decide, among other things, on protocol upgrades and treasury finances, including fees and rewards. They ensure that the network remains adaptive and aligns with the Manifesto and the interests of its users. 
 
-# Other stakeholders: 
+## Other stakeholders: 
 
 Apart from contributors, there are other entities relevant to Tagion, but not necessarily active in a contributor or community mamber role. 
 
