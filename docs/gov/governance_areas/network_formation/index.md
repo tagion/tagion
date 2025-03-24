@@ -2,15 +2,15 @@
 sidebar_position: 1
 ---
 
-# Network Formation[^1]
+# Network Formation
 
 :::tip[Under Development]
 
-Everything found on these pages reflects our best efforts of building a public infrastructure that serves the needs of all our users on the short and long run. Please help us shape Tagion's goverance structure by chiming into the conversation on [Discord](https://discord.gg/wE4AA64a). 
+Everything found here reflects our best efforts of building a public infrastructure that serves the needs of all our users on the short and long run. Please help us shape Tagion's goverance structure by chiming into the conversation on [Discord](https://discord.gg/wE4AA64a). 
 
 :::
 
-We structure this governance area into two sections with three chapters each:
+We structure the governance area "network formation"[^1] into two sections with three chapters each:
 
 **Introductions** - three reflective chapters about the issues of network formation
 
