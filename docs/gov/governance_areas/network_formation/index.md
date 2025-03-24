@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Network Formation
+# Network Formation[^1]
 
 :::tip[Under Development]
 
@@ -23,6 +23,9 @@ We structure this governance area into two sections with three chapters each:
  5. [What "Proof of Community" is (good for)](./network_formation/tagion/poc)
  7. [How "Genetics" feature in Proof of Community](./network_formation/tagion/genetics)
  8. [How we calculate a "Reputation Score"](./network_formation/tagion/reputation)
+
+[^1]: As our [glossary](/gov/glossary#formation) explains, we use this word analagous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
+
 
 
 
