@@ -739,7 +739,7 @@ bool _label_defined;
             case IR.BLOCK:
                 return "do {";
             case IR.LOOP:
-                return "{";
+                return "do {";
             default:
                 assert(0, assumeWontThrow(
                         format("Instruction %s can't be used as a block begin", elm.code)));
