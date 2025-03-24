@@ -382,12 +382,9 @@ struct WastParser {
                             __write(":::: Then <<<===");
 
                         }
-
-                    }
-                    getArguments;
-                    addBlockIR;
-                    func_ctx.block_push(wasm_results, label);
-                    if (block_ir is IR.IF) {
+                        getArguments;
+                        addBlockIR;
+                        func_ctx.block_push(wasm_results, label);
                         __write(":: %s block_if=%s instr=%s tokens=%-(%s %)", r, block_ir, instr, r.save.map!(t => t
                                 .token).take(3));
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
@@ -411,6 +408,9 @@ struct WastParser {
 
                     }
                     else {
+                        getArguments;
+                        addBlockIR;
+                        func_ctx.block_push(wasm_results, label);
                         while (r.type is TokenType.BEGIN) {
                             innerInstr(wasmexpr, r, wasm_results, next_stage);
                         }
