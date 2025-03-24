@@ -50,7 +50,7 @@ Node operators provide the essential computational infrastructure that powers th
 
 Developers are the architects and innovators of the Tagion Network. They build, maintain, and refine the core protocols and supporting tools. By addressing the evolving needs of the network and its users, developers ensure the system remains robust and scalable. 
 
-### Formation
+#### Formation
 
 In our governance area "network formation" we use this word analagous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
 
