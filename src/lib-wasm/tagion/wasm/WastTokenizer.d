@@ -45,8 +45,8 @@ enum TokenType {
     STRING,
 }
 
-enum Begin_Comment ="(;";
-enum End_Comment =";)";
+enum Begin_Comment = "(;";
+enum End_Comment = ";)";
 
 enum token_types = [EnumMembers!TokenType].map!(e => e.to!string).array;
 
@@ -262,7 +262,7 @@ struct WastTokenizer {
             while (pos < text.length) {
                 next;
                 if (nextPart == match) {
-                    pos+=match.length;
+                    pos += match.length;
                     return true;
                 }
             }
@@ -281,7 +281,7 @@ struct WastTokenizer {
                 auto r = WastTokenizer(text);
                 const test = r.takeMatch("xyz");
                 assert(test);
-                assert(r.text[r.pos..$] == "k");
+                assert(r.text[r.pos .. $] == "k");
             }
         }
 
@@ -384,6 +384,13 @@ struct WastTokenizer {
 
         WastTokenizer save() {
             return this;
+        }
+
+        unittest {
+            auto r = WastTokenizer("(if (then xxx))");
+            __write("1 token %s", r.save.map!(r => r.token));
+            __write("2 token %s", r.map!(r => r.token));
+
         }
 
         string getLine() const @nogc {
