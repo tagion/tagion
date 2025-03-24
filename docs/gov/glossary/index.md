@@ -19,7 +19,6 @@ A lot of DLT systems name "anonymity" as some of their benefits in comparison to
 |**Action** <br />can be identified by 3rd party:|**No**|**Yes**|
 |**Actor** <br />can be identified by 3rd party: |**Yes**|**No**|
 
-#### In Tagion:
 
 |In Tagion | **Full Privacy** |**Full Anonymity**|
 |--|:--:|:--:|
