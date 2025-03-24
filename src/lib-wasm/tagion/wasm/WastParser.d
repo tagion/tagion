@@ -348,11 +348,7 @@ struct WastParser {
                     const block_ir = irLookupTable[instr.name];
                     void getArguments() {
                         foreach (n; 0 .. instr.pops.length) {
-                            __write("%d) -- token=%-(%s %)", n, r.save.map!(t => t.token).take(2));
-
                             inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
-                            __write("%d) inner_stage=%s tokens=%-(%s %)", n, inner_stage, r.save.map!(t => t.token).take(
-                                    3));
                         }
                     }
 
@@ -370,10 +366,24 @@ struct WastParser {
                         }
                     }
 
-                    getArguments;
-                    addBlockIR;
-                    func_ctx.block_push(wasm_results, label);
                     if (block_ir is IR.IF) {
+
+                        if ((r.type is TokenType.BEGIN) && (r.save.drop(1).front.token == PseudoWastInstr.then)) {
+                            //auto r_then = r.save;
+                            //r_then.nextToken;
+                            //if (r_then.front.token == PseudoWastInstr.then) {
+                                __write(":::: Then <<<===");
+                            //}
+                           
+                            r.drop(2);
+                        }
+                        else {
+                            getArguments;
+                        }
+                            //}
+                              //                   getArguments;
+                        addBlockIR;
+                        func_ctx.block_push(wasm_results, label);
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
                         if (r.type is TokenType.BEGIN) {
                             auto r_else = r.save;
@@ -393,6 +403,9 @@ struct WastParser {
 
                     }
                     else {
+                        getArguments;
+                        addBlockIR;
+                        func_ctx.block_push(wasm_results, label);
                         while (r.type is TokenType.BEGIN) {
                             innerInstr(wasmexpr, r, wasm_results, next_stage);
                         }
