@@ -346,6 +346,32 @@ struct WastParser {
                     }
                     const wasm_results = getReturns(r);
                     const block_ir = irLookupTable[instr.name];
+                    void getArguments() {
+                        foreach (n; 0 .. instr.pops.length) {
+                            __write("%d) -- token=%-(%s %)", n, r.save.map!(t => t.token).take(2));
+
+                            inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
+                            __write("%d) inner_stage=%s tokens=%-(%s %)", n, inner_stage, r.save.map!(t => t.token).take(
+                                    3));
+                        }
+                    }
+
+                    void addBlockIR() {
+                        if (wasm_results.length == 0) {
+                            wasmexpr(block_ir, Types.VOID);
+                        }
+                        else if (wasm_results.length == 1) {
+                            wasmexpr(block_ir, wasm_results[0]);
+                        }
+                        else {
+                            auto func_type = FuncType(Types.FUNC, null, wasm_results.idup);
+                            const type_idx = writer.createTypeIdx(func_type);
+                            wasmexpr(block_ir, type_idx);
+                        }
+                    }
+                   getArguments;
+                    addBlockIR;
+                    version(none) {
                     foreach (n; 0 .. instr.pops.length) {
                         inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
                     }
@@ -360,6 +386,7 @@ struct WastParser {
                         const type_idx = writer.createTypeIdx(func_type);
                         wasmexpr(irLookupTable[instr.name], type_idx);
                     }
+                        }
                     func_ctx.block_push(wasm_results, label);
                     if (block_ir is IR.IF) {
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
