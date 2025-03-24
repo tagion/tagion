@@ -338,7 +338,6 @@ struct WastParser {
                     next_stage = ParserStage.CONDITIONAL;
                     goto case;
                 case BLOCK:
-
                     r.nextToken;
                     label = null;
                     if (r.type == TokenType.WORD) {
@@ -346,63 +345,25 @@ struct WastParser {
                         r.nextToken;
                     }
                     const wasm_results = getReturns(r);
-                    __write("=== instr.pops.length=%s", instr.pops.length);
                     const block_ir = irLookupTable[instr.name];
-                    void getArguments() {
-                        foreach (n; 0 .. instr.pops.length) {
-                            __write("%d) -- token=%-(%s %)", n, r.save.map!(t => t.token).take(2));
-
-                            inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
-                            __write("%d) inner_stage=%s tokens=%-(%s %)", n, inner_stage, r.save.map!(t => t.token).take(
-                                    3));
-                        }
+                    foreach (n; 0 .. instr.pops.length) {
+                        inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
                     }
-
-                    void addBlockIR() {
-                        if (wasm_results.length == 0) {
-                            wasmexpr(block_ir, Types.VOID);
-                        }
-                        else if (wasm_results.length == 1) {
-                            wasmexpr(block_ir, wasm_results[0]);
-                        }
-                        else {
-                            auto func_type = FuncType(Types.FUNC, null, wasm_results.idup);
-                            const type_idx = writer.createTypeIdx(func_type);
-                            wasmexpr(block_ir, type_idx);
-                        }
+                    if (wasm_results.length == 0) {
+                        wasmexpr(irLookupTable[instr.name], Types.VOID);
                     }
-
+                    else if (wasm_results.length == 1) {
+                        wasmexpr(irLookupTable[instr.name], wasm_results[0]);
+                    }
+                    else {
+                        auto func_type = FuncType(Types.FUNC, null, wasm_results.idup);
+                        const type_idx = writer.createTypeIdx(func_type);
+                        wasmexpr(irLookupTable[instr.name], type_idx);
+                    }
+                    func_ctx.block_push(wasm_results, label);
                     if (block_ir is IR.IF) {
-                        version (none)
-                            if (
-                                equal(r.save.map!(t => t.type).take(2),
-                                    only(TokenType.BEGIN, TokenType.WORD)) &&
-                                    (r.save.map!(t => t.token).drop(1)
-                                        .front ==
-                                        PseudoWastInstr.then)) { // Then after if with no argument
-
-                                __write(":::: Then <<<===");
-
-                            }
-                        if (r.type is TokenType.BEGIN) {
-                            auto r_then = r.save;
-                            r_then.nextToken;
-                            if (r_then.front.token == PseudoWastInstr.then) {
-                                __write(":::: Then <<<===");
-                            }
-
-                        }
-                        else {
-                            getArguments;
-                        }
-                        addBlockIR;
-                        func_ctx.block_push(wasm_results, label);
-                        __write(":: %s block_if=%s instr=%s tokens=%-(%s %)", r, block_ir, instr, r.save.map!(t => t
-                                .token).take(3));
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
-                        __write("After %s", r);
                         if (r.type is TokenType.BEGIN) {
-
                             auto r_else = r.save;
                             r_else.nextToken;
                             const else_ir = irLookupTable.get(r_else.token, IR.UNREACHABLE);
@@ -420,9 +381,6 @@ struct WastParser {
 
                     }
                     else {
-                        getArguments;
-                        addBlockIR;
-                        func_ctx.block_push(wasm_results, label);
                         while (r.type is TokenType.BEGIN) {
                             innerInstr(wasmexpr, r, wasm_results, next_stage);
                         }
@@ -486,7 +444,6 @@ struct WastParser {
                     break;
                 case CALL:
                     r.nextToken;
-                    __write("CALL %s", r.token);
                     const func_idx = getFuncIdx();
                     r.nextToken;
                     while (r.type is TokenType.BEGIN) {
