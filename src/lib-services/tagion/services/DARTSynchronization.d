@@ -238,9 +238,10 @@ private:
                             sock_addrs.sock_addrs[0], null);
 
                     // const recorder_read_request_doc = hirpc.readRecorder(tagion_head.current_epoch)
-                    const recorder_read_request_doc = hirpc.readRecorder(0) // Stub
-                        .toDoc;
-                    const recorder_response_doc = sender.send(recorder_read_request_doc);
+                    const recorder_read_request = hirpc.readRecorder(EpochParam(0));
+                    // Stub
+                       // .toDoc;
+                    const recorder_response_doc = sender.send(recorder_read_request.toDoc);
                     writefln("RESP-recorder_response_doc %s", recorder_response_doc.toPretty);
                     // auto response = hirpc.receive(recorder_response_doc);
                     // Document recorder_doc = response.result;

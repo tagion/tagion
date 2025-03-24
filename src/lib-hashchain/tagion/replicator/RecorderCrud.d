@@ -1,9 +1,7 @@
 module tagion.replicator.RecorderCrud;
 
-import tagion.communication.HiRPC;
-import tagion.hibon.HiBON : HiBON;
 import tagion.script.standardnames;
-
+import tagion.hibon.HiBONRecord;
 @safe:
 
 /**
@@ -15,6 +13,13 @@ import tagion.script.standardnames;
 * Returns: 
 *   HiRPC sender
 */
+
+struct EpochParam {
+    @label(StdNames.epoch_number) long epoch_number;
+    mixin HiBONRecord;
+}
+
+version(none)
 const(HiRPC.Sender) readRecorder( // replicatorRead
     HiRPC hirpc,
     long epoch_number,
