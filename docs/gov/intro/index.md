@@ -23,7 +23,20 @@ As our manifesto says, we use the word "decentralised" to mean a system in which
 
 Practically, Tagion and its underlying technology do not meet this criterion of decentralisation yet. So the governance will evolve, step by step, with the different stages of releasing the network from the stewardship of [Decard](https://www.tagion.org/about/) into full decentralisation.
 
+# Governance Areas 
 
+The Tagion Community will oversee and govern four domains, ensuring the security, growth, and sustainability of the network. These are: 
 
+Decision-making (link): The Community will refine voting and proposal procedures, eligibility criteria, or Council privileges to improve decision-making processes and participation. 
+
+Network  Formation (link): The community will continuously assess and improve sybil resistance mechanisms to ensure they remain robust and effective. This may include refining node requirements and adjusting reputational weighting. 
+
+Token Economy (link): The community will oversee the management of Tagion’s token economy, guiding decisions on token issuance, distribution, and burning policies.  
+
+Software Development (link): The Community will ensure the proper maintenance and ongoing upgrades of the software that powers the Tagion Network. Members will deliberate and vote on node software updates, the integration of new technologies, and enhancements to system performance. 
+
+To ensure secure and efficient decision-making that ultimately benefits the Network, a structured framework of participation criteria, procedures, and institutions will be established. This includes standardized governance processes, participation rules, and a Council, all of which are explained in our section on Decision-Making (Link) 
+
+# Process
 
 We will communicate any major updates and publications on these pages through our Discord channels. Please feel invited to join and contribute [here](https://discord.gg/wE4AA64a).
