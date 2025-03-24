@@ -10,6 +10,23 @@ Administered pricing is a concept introduced by the economist Gardiner Means, re
 
 Administered prices are set by corporations with significant market power, who can set and maintain stable prices over time, regardless of short-term fluctuations in demand or production costs. Means noted that such firms often use mark-up pricing, where prices are set by applying a predetermined mark-up over estimated production costs to achieve desired profit margins, rather than allowing market forces to dictate prices. 
 
+## Anonymity
+
+A lot of DLT systems name "anonymity" as some of their benefits in comparison to conventional systems. However, what that term means often difers - in theory as much as in practice. We here define it (in contrast to "privacy") according to what (action or actor) is identifiable to 3rd parties, and thus present how it applies to Tagion's two strucutral levels:
+
+|Definition: | **Privacy** |**Anonymity**|
+|--|:--:|:--:|
+|**Action** <br />can be identified by 3rd party:|**No**|**Yes**|
+|**Actor** <br />can be identified by 3rd party: |**Yes**|**No**|
+
+#### In Tagion:
+
+|In Tagion | **Full Privacy** |**Full Anonymity**|
+|--|:--:|:--:|
+|**Mainnet:**|**No** <br />because the amounts of all Txs are public|**Yes** <br />unless users decide to disclose their identity |
+|**Subsystem:**  |**Yes**<br />if so desired – but the opposite is also possible (allowing for regulatory compliance)|**Yes**<br />if so desired – but the opposite is also possible (allowing for regulatory compliance)|
+ 
+
 ## Community 
 
 The word "community" is derived from the Latin communitas, which comes from communis, meaning "common, public, or shared by all." Combining con- (together) and munis (relating to duties or services), it conveys the idea of people coming together to fulfill shared responsibilities or provide services.  
