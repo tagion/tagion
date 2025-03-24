@@ -54,23 +54,7 @@ Through Hashgraph, Tagion attains decentralised consensus, enabling honest nodes
 
 ## Contributors 
 
-In a decentralized network, contributors form the foundation, collectively driving its functionality, security, and growth. Unlike traditional centralized systems, where a single entity oversees operations, decentralized networks thrive on the diverse participation of individuals and organizations. These contributors, each bringing their unique strengths, are indispensable in sustaining and advancing the system. 
-
-The term "contributor" itself is fluid, encompassing a wide array of roles that may expand as the network matures and new opportunities for engagement emerge. From the outset, however, contributors can be categorized into three groups:  
-
-#### Node Operators 
-
-Node operators provide the essential computational infrastructure that powers the network. They validate transactions, propagate messages, execute smart contracts, and maintain the integrity of the database. Depending on their focus, node operators may run Core [Nodes](/gov/glossary#nodes), which handle the tasks of consensus and security, Relay [Nodes](/gov/glossary#nodes), which collect, collate, and manage user requests to submit or retrieve data, or Mirror [Nodes](/gov/glossary#nodes), which store and replicate data to ensure accessibility. Together, these operators sustain the network's reliability and resilience. 
-
-#### Developers 
-
-Developers are the architects and innovators of the Tagion Network. They build, maintain, and refine the core protocols and supporting tools. By addressing the evolving needs of the network and its users, developers ensure the system remains robust and scalable. 
-
-
-#### Governance Participants 
-
-Governance Participants play a critical role in shaping the network's future. Through proposals, debates, and voting, they decide, among other things, on protocol upgrades and treasury finances, including fees and rewards. They ensure that the network remains adaptive and aligns with the Manifesto and the interests of its users. 
-
+The term "contributor" is fluid, encompassing a wide array of possible roles that may expand as the network matures and new opportunities for engagement emerge. For now, we consider our contributors a category that íncludes but also goes beyond out "community members" (see above). As such they encompass: node operator, developers and governance participants, as outlined [here](/gov/intro/network). 
  
 
 ## Currency 
@@ -98,7 +82,7 @@ In our governance area "network formation" we use this word analagous to its dua
 
 ## Governance 
 
-At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both on-chain (link) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
+At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both [on-chain](/gov/glosary#on-chain-governance) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
 
 ## Money 
 
@@ -110,18 +94,8 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 
 ## Nodes 
 
-A node is any device that connects to the network to help maintain the [database](/gov/glossary#distributed-database). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the consensus process (link). 
+A node is any device that connects to the network to help maintain the [database](/gov/glossary#distributed-database). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the consensus process (link). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
 
-There are three types of nodes: 
-
-#### Core Nodes: 
-At the heart of the system, core nodes are tasked with maintaining the database and reaching agreement on the data submitted and stored—a process referred to as [consensus](/gov/glossary#consensus). These nodes uphold the integrity and security of the system, ensuring that the data stored is accurate and protected.  
-
-#### Relay Nodes: 
-These nodes act as intermediaries, collecting, collating, and managing user requests to submit or retrieve data. Because they also filter out spam and unnecessary requests, they significantly reduce the load on core nodes, enhancing the overall efficiency of the system. 
-
-#### Mirror Nodes: 
-Mirror nodes maintain a full or partial snapshot of the database and update that at given self-selected intervals. Their primary function is to facilitate easy and efficient data retrieval for users while also alleviating the demand on core nodes. 
 
 ## On-chain Governance 
 
