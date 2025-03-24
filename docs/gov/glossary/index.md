@@ -14,17 +14,17 @@ Administered prices are set by corporations with significant market power, who c
 
 The word "community" is derived from the Latin communitas, which comes from communis, meaning "common, public, or shared by all." Combining con- (together) and munis (relating to duties or services), it conveys the idea of people coming together to fulfill shared responsibilities or provide services.  
 
-In the context of Tagion, the Community encompasses all verified Community Members (link) actively participating in and contributing to the network, including Consensus (link) and Governance (link) processes.  
+In the context of Tagion, the Community encompasses all verified [Community Members](/gov/glossary#commnunity-member) actively participating in and contributing to the network, including [consensus](/gov/glossary#consensus) and [Governance](/gov/glossary#governance) processes.  
 
 Notably, Community is a fluid term - a flexible and evolving entity - that may adapt to include new roles and contributors as the network develops and grows. 
 
 ## Community Member 
 
-A community member is any individual or entity who has been verified by peers through the network’s Social Scoring System (link). Once verified, community members gain the right to participate in both the consensus process and the governance of the network, contributing to its security, efficiency and decision-making. 
+A community member is any individual or entity who has been verified by peers through the network’s [Social Scoring System](/gov/governance_areas/network_formation/tagion/poc). Once verified, community members gain the right to participate in both the consensus process and the governance of the network, contributing to its security, efficiency and decision-making. 
 
 ## Consensus 
 
-Consensus refers to the process by which Nodes (link) agree on the validity and order of transactions recorded in the Database (link). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the validity and order of transactions recorded in the Database (link). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
 
 In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. In this system: 
 
@@ -44,7 +44,7 @@ The term "contributor" itself is fluid, encompassing a wide array of roles that 
 
 #### Node Operators 
 
-Node operators provide the essential computational infrastructure that powers the network. They validate transactions, propagate messages, execute smart contracts, and maintain the integrity of the database. Depending on their focus, node operators may run Core Nodes (link), which handle the tasks of consensus and security, Relay Nodes (link), which collect, collate, and manage user requests to submit or retrieve data, or Mirror Nodes (link), which store and replicate data to ensure accessibility. Together, these operators sustain the network's reliability and resilience. 
+Node operators provide the essential computational infrastructure that powers the network. They validate transactions, propagate messages, execute smart contracts, and maintain the integrity of the database. Depending on their focus, node operators may run Core [Nodes](/gov/glossary#nodes), which handle the tasks of consensus and security, Relay [Nodes](/gov/glossary#nodes), which collect, collate, and manage user requests to submit or retrieve data, or Mirror [Nodes](/gov/glossary#nodes), which store and replicate data to ensure accessibility. Together, these operators sustain the network's reliability and resilience. 
 
 #### Developers 
 
@@ -72,9 +72,9 @@ Tagion ensures data integrity and authenticity through an immutable audit trail.
 
 ## Federated Subsystem 
 
-A Federated Subsystem is an independent network — either public or private — that operates separately from the Tagion Mainnet (link) but leverages the Mainnet for security and trust. These subsystems can be tailored to specific use cases, industries, or communities, providing flexibility in how they manage data and transactions while benefiting from the underlying security provided by Mainnet Nodes. 
+A Federated Subsystem is an independent network — either public or private — that operates separately from the Tagion [Mainnet](/gov/glossary#tagion-mainnet) but leverages the Mainnet for security and trust. These subsystems can be tailored to specific use cases, industries, or communities, providing flexibility in how they manage data and transactions while benefiting from the underlying security provided by Mainnet Nodes. 
 
-In a Federated Subsystem, all data remains encrypted within the subsystem, ensuring privacy and confidentiality for users. However, transactional activity — the overall volume and frequency of transactions — is monitored by Mainnet Nodes. 
+In a Federated Subsystem, all data remains encrypted within the subsystem, ensuring privacy and confidentiality for users. However, transactional activity — the overall volume and frequency of transactions — is monitored by Mainnet Nodes. (Also see [Network Architecture](/gov/intro/network) in Governance Area "Network Formation".)
 
 ## Formation
 
@@ -94,12 +94,12 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 
 ## Nodes 
 
-A node is any device that connects to the network to help maintain the Database (link). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the consensus process (link). 
+A node is any device that connects to the network to help maintain the [database](/gov/glossary#distributed-database). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the consensus process (link). 
 
 There are three types of nodes: 
 
 #### Core Nodes: 
-At the heart of the system, core nodes are tasked with maintaining the database and reaching agreement on the data submitted and stored—a process referred to as consensus (link). These nodes uphold the integrity and security of the system, ensuring that the data stored is accurate and protected.  
+At the heart of the system, core nodes are tasked with maintaining the database and reaching agreement on the data submitted and stored—a process referred to as [consensus](/gov/glossary#consensus). These nodes uphold the integrity and security of the system, ensuring that the data stored is accurate and protected.  
 
 #### Relay Nodes: 
 These nodes act as intermediaries, collecting, collating, and managing user requests to submit or retrieve data. Because they also filter out spam and unnecessary requests, they significantly reduce the load on core nodes, enhancing the overall efficiency of the system. 
@@ -126,6 +126,6 @@ A public system or infrastrucre is open for everybody to use. Tagion aspires to 
 
 ## Tagion Mainnet 
 
-The Tagion Mainnet serves as the foundation of the Tagion Ecosystem, operating as a Layer 0 that provides the settlement layer for TGN transactions, the infrastructure facilitating network governance, and the security and interoperability layer that connects and protects the broader network of Federated Subsystems (link). By allowing independent networks to batch and finalize transactions on its secure and immutable ledger, the Mainnet ensures that even private Subsystems remain anchored to the decentralized security of the ecosystem. 
+The Tagion Mainnet serves as the foundation of the Tagion Ecosystem, operating as a Layer 0 that provides the settlement layer for TGN transactions, the infrastructure facilitating network governance, and the security and interoperability layer that connects and protects the broader network of [Federated Subsystems](/gov/glossary#tagion-mainnet). By allowing independent networks to batch and finalize transactions on its secure and immutable ledger, the Mainnet ensures that even private Subsystems remain anchored to the decentralized security of the ecosystem. 
 
-Notably, to keep the Mainnet streamlined, applications are primarily run on Federated Sub-systems, reducing the risk of Mainnet bloating and ensuring that the core network remains slick, scalable, and high-performing.  
+Notably, to keep the Mainnet streamlined, applications are primarily run on Federated Sub-systems, reducing the risk of Mainnet bloating and ensuring that the core network remains slick, scalable, and high-performing. (Also see [Network Architecture](/gov/intro/network) in Governance Atrea "Network Formation")
