@@ -37,3 +37,18 @@ Developers are the architects and innovators of the Tagion Network. They build, 
 ### Governance Participants 
 
 Governance Participants play a critical role in shaping the network's future. Through proposals, debates, and voting, they decide, among other things, on protocol upgrades and treasury finances, including fees and rewards. They ensure that the network remains adaptive and aligns with the Manifesto and the interests of its users. 
+
+# Other stakeholders: 
+
+Apart from contributors, there are other entities relevant to Tagion, but not necessarily active in a contributor or community mamber role. 
+
+### Tagion Service Providers 
+
+These develop and provide a range of services built on top of the Tagion Network. They leverage the network's capabilities to create innovative solutions that cater to various needs, such as financial services, supply chain systems, or other utilities, thus enhancing the overall value of the Tagion ecosystem. As Tagion Service Providers craft innovative use cases powered by TGN and gain widespread adoption, the inherent utility of the token inevitably rise. Sevice providers can take on the role of contributors but may choose not to. 
+
+### Users
+
+By our definition, users simply “consume” the services and applications built on top of the Tagion network. They utilize and engage with the services, assets or goods provided by Tagion Service Providers, or other entities, benefiting from the secure and efficient nature of the Tagion network. Users require TGN tokens - puchased on an exchange or earned by selling goods for TGN - to access services and purchase goods.
+
+### Regulators
+
