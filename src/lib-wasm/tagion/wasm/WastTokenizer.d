@@ -386,13 +386,6 @@ struct WastTokenizer {
             return this;
         }
 
-        unittest {
-            auto r = WastTokenizer("(if (then xxx))");
-            __write("1 token %s", r.save.map!(r => r.token));
-            __write("2 token %s", r.map!(r => r.token));
-
-        }
-
         string getLine() const @nogc {
             import std.string;
 
