@@ -29,7 +29,7 @@ To incentivize and reward the wider community, including users, developers, and 
 |**Total Current Allocations**|**18.5bn** ~ 50% <br />of max supply|
 
 <br />
-The other half of the max supply is scheduled to be minted on a continues bases over a period of approximately 30 years (616 million annually - changes to this schedule can be introduced later by community decision). These tokens will be directly assigned to the then established Tagion Treasury and used, along with other resources, to reward node operators as well as to continuously incentivise community engagement, governance, network maintenance and software upgrades.  
+The other half of the max supply is scheduled to be minted on a continues bases over a period of approximately 30 years (616 million annually - changes to this schedule can be introduced later by community decision). These tokens will be directly assigned to the then established [Tagion Treasury](.gov/treasury) and used, along with other resources, to reward node operators as well as to continuously incentivise community engagement, governance, network maintenance and software upgrades.  
 
 This secondary minting process (previously referred to as “emission”) starts once significant advances in decentralising Tagion have been achieved (see Phase 3. Curated Release).  
 
