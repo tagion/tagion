@@ -4,7 +4,8 @@ sidebar_position: 1
 
 # Introduction
 
-Welcome to the governance documentation- and development-pages of the Tagion network.
+Welcome to the governance development- and documantation-pages of the Tagion network.
+(For an overview of what Tagion "is", have a look at the website [tagion.org](https://tagion.org) or read the [Technical Concept Paper](https://www.tagion.org/resources/tagion-whitepaper.pdf))
 
 Here, you find the current state of ideas and deliberation in regards to Tagion's governance. 
 
@@ -27,13 +28,13 @@ As our manifesto says, we use the word "decentralised" to mean a system in which
 To make it easier for our communtiy to navigation our governance ideas, and chime in to their development, this website is splits governances into four [interdependent areas](./governance_areas). The ideas and process of each of those will have effects and consequences on all others, directly or indirectly, so sometimes you will have to follow links to different sections, or the glossary, in order to get the full picture. 
 These four areas are: 
 
-[Decision Making](/gov/governance_areas/decision_making): The Community will refine voting and proposal procedures, eligibility criteria, or council privileges to improve decision-making processes and participation. 
+[Decision Making](/gov/governance_areas/decision_making): This encompasses all rules and procedures in regard to voting and proposal procedures, eligibility criteria, or council privileges. Decision making influences all other goverance areas because if the community follows the rules set out here (and honors the values of the Tagion manifesto) everything else about the network can be changed.  
 
-[Network  Formation](/gov/governance_areas/network_formation): The community will continuously assess and improve sybil resistance mechanisms to ensure they remain robust and effective. This may include refining node requirements and adjusting reputational weighting. 
+[Network  Formation](/gov/governance_areas/network_formation): This governance area is concerned with the composition of network and the relationship between its active components. This is, in a nutshell, about becoming an active node. As such consideration about security (sybil resistance mechanisms) and consensus are of central importance, but also how to ensure the network gets decentrlaised, remains permissionless and functions efficiently. 
 
-[Token Economy](/gov/governance_areas/token_economy): The community will oversee the management of Tagion’s token economy, guiding decisions on token issuance, distribution, and burning policies.  
+[Token Economy](/gov/governance_areas/token_economy): This governance area is mostly concerned with everything to do with the TGN utility tokens and the way it is used with in the network. As with any economy, this concerns the supply side of the TGN tokens (issuance, allocation, vesting) and the demand side (fees and incentives). 
 
-[Software Development](/gov/governance_areas/software_development): The Community will ensure the proper maintenance and ongoing upgrades of the software that powers the Tagion Network. Members will deliberate and vote on node software updates, the integration of new technologies, and enhancements to system performance. 
+[Software Development](/gov/governance_areas/software_development): This governance area is concerned with the maintenance and ongoing upgrades of the software that powers the Tagion Network. Through the principles here described, community members will deliberate and vote on node software updates, the integration of new technologies, and enhancements to system performance. 
 
 
 ## Process
