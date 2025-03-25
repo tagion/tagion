@@ -1,8 +1,9 @@
 ---
 sidebar_position: 3
+sidebar_label: Network Overview
 ---
 
-# Network Overview
+# The Tagion network
 
 The system architecture is composed of a [**Mainnet**](/gov/glossary#tagion-mainnet) and a series of [**Federated Sub-Systems**](/gov/glossary#federated-subsystem). As per the Tagion manifesto, the intention is to have the mainnet decentralized and allowing the greatest number of entities to run federeated subsystems for their use-cases. In contrast to traditional centralized systems, where a single entity oversees operations and enganges with "clients", a decentralized networks thrive on a large number of differnet enities that need to be involved, actively or passiviely. 
 
