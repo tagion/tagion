@@ -19,7 +19,8 @@ Going forward, you will be able to easily identify all approved elements through
 :::
 
 ## About Governance
-Governance, to us, simultaneously means the processes of managing a decentralised system and the strucutre of the network thatemerges from that same management process. As such the term includes, but is not limited to the procedures through which decisions are made and rules are established or changed. 
+
+Governance, to us, simultaneously means the processes of managing a decentralised system and the strucutre of the network thatemerges from that same management process. This contrasts with view where governance is used synoymous with rules-setting. BUt of course this part of governance is included in out view and the governance are "decision making" (see below) is of central importance.
 
 As our manifesto says, we use the word "decentralised" to mean a system in which no entity can impose its will and interest on the rest of the users and participants. This also means that the governance of a decentralised system cannot be established up-front, by dictate from the founders, but will have to be co-developed, tested and refined with its stakeholders. 
 
