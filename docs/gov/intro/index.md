@@ -29,7 +29,7 @@ As our manifesto says, we use the word "decentralised" to mean a system in which
 To make it easier for our communtiy to navigation our governance ideas, and chime in to their development, this website is splits governances into four [interdependent areas](./governance_areas). The ideas and process of each of those will have effects and consequences on all others, directly or indirectly, so sometimes you will have to follow links to different sections, or the glossary, in order to get the full picture. 
 These four areas are: 
 
-![Gov Areas](/img/Gov_areas.png)
+![Areas](/img/Gov_Areas.png)
 
 [Decision Making](/gov/governance_areas/decision_making): This encompasses all rules and procedures in regard to voting and proposal procedures, eligibility criteria, or council privileges. Decision making influences all other goverance areas because if the community follows the rules set out here (and honors the values of the Tagion manifesto) everything else about the network can be changed.  
 
