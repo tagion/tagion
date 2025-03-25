@@ -33,7 +33,7 @@ These four areas are:
 
 [Decision Making](/gov/governance_areas/decision_making): This encompasses all rules and procedures in regard to voting and proposal procedures, eligibility criteria, or council privileges. Decision making influences all other goverance areas because if the community follows the rules set out here (and honors the values of the Tagion manifesto) everything else about the network can be changed.  
 
-[Network  Formation](/gov/governance_areas/network_formation): This governance area is concerned with the composition of network and the relationship between its active components. This is, in a nutshell, about becoming an active node. As such consideration about security (sybil resistance mechanisms) and consensus are of central importance, but also how to ensure the network gets decentrlaised, remains permissionless and functions efficiently. 
+[Network  Formation](/gov/governance_areas/network_formation): This governance area is concerned with the formation[^1] of the distributed computer network which forms the basis of Tagion, and the relationships between it's active components. This is, in a nutshell, about becoming an active node. As such consideration about security (sybil resistance mechanisms) and consensus are of central importance, but also how to ensure the network gets decentrlaised, remains permissionless and functions efficiently. 
 
 [Token Economy](/gov/governance_areas/token_economy): This governance area is mostly concerned with everything to do with the TGN utility tokens and the way it is used with in the network. As with any economy, this concerns the supply side of the TGN tokens (issuance, allocation, vesting) and the demand side (fees and incentives). 
 
@@ -51,3 +51,7 @@ Until then, everything (but our manifesto) is to be considered a proposal or onl
 There, we will also communicate any major updates of these pages.
 
 Please feel invited contribute on Discord: join [here](https://discord.gg/wE4AA64a)!
+
+[^1]: As our [glossary](/gov/glossary#formation) explains, we use this word analagous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
+
+
