@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Network Architecture
 
-The system architecture is composed of a **Mainnet**  and a series of **Federated Sub-Systems**, supported by three distinct types of nodes, and the continuous contributions of developers. Together, these ensure the efficient operation, security, and evolution of the network: 
+The system architecture is composed of a [**Mainnet**](/gov/glossary#tagion-mainnet) and a series of [**Federated Sub-Systems**](/gov/glossary#federated-subsystem), supported by three distinct types of nodes, and the continuous contributions of developers. Together, these ensure the efficient operation, security, and evolution of the network: 
 
 ## Nodes:
 
