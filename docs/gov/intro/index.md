@@ -46,7 +46,7 @@ Practically, Tagion and its underlying technology do not meet the criterion of d
 
 Only with [Phase 3](/gov/intro/phased_release.md#3-curated-release) will we have reached a consolidated governance system, that will then be tested in practice. That system will be describe in our "Governance Working Paper", which will be published here in due time. 
 
-Until then, everything (but our manifesto) is to be considered a proposal or only preliminary formulated, and open to your input. Colored flags(boxes) will alert you to the parts that are deemed certain, or those that are hotly debated in our Discord channels.
+Until then, everything (but our manifesto) is to be considered a proposal or only preliminary formulated, and open to your input. Colored flags(boxes) will alert you to the parts that are deemed certain, or those that are currently debated in our Discord channels.
 
 There, we will also communicate any major updates of these pages.
 
