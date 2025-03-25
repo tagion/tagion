@@ -11,7 +11,7 @@ In terms of governance, this is where the four "release phases" of the network w
 
 ## 1. Closed Release
 
-From here, the network nodres will be distributed across different servers in different locations. But, as the name indicates, this phase is not open to external parties who might be eager to operate a node. However, already during this phase the code of our nodes is publicly available on github and the Tech documentation allows savvy operators to set it up, test and audit it. In due time, a new version of nodes will allow more interested parties to run nodes that connect to the network as mirrors, but not participate in the consensus. 
+From here, the network nodes will be distributed across different servers in different locations. But, as the name indicates, this phase is not open to external parties who might be eager to operate a node. However, already during this phase the code of our nodes is publicly available on github and the Tech documentation allows savvy operators to set it up, test and audit it. In due time, a new version of nodes will allow more interested parties to run nodes that connect to the network as mirrors, but not participate in the consensus. 
 
 ## 2. Limited Release
 
@@ -19,7 +19,7 @@ This second phase will see the network being extended to nodes operated by partn
 
 ## 3. Curated Release
 
-With this third phase, the network will already feel as decentralised as commonly understood. Technically, this pahse will require the networking operating in "Mode 3" ([see Tech documentation](https://docs.tagion.org/tech/architecture/network_modes) for more about "modes"). We imagine an onboarding process that does not require the input or permission by any entity. The governance system established in the Working Paper will ensure security and coherence of the network. However, for safety and unforeseen events, Decard together with an evolving community council will retain special privileges and can intervene if deemed necessary for the sustainability of the network and the adherence to the principles set out in the manifesto. 
+With this third phase, the network will already feel as decentralised as commonly understood. Technically, this phase will require the networking operating in "Mode 3" ([see Tech documentation](https://docs.tagion.org/tech/architecture/network_modes) for more about "modes"). We imagine an onboarding process that does not require the input or permission by any entity. The governance system established in the Working Paper will ensure security and coherence of the network. However, for safety and unforeseen events, Decard together with an evolving community council will retain special privileges and can intervene if deemed necessary for the sustainability of the network and the adherence to the principles set out in the manifesto. 
 
 ## 4. Singularity
 
