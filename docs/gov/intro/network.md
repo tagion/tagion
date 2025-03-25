@@ -7,6 +7,8 @@ sidebar_label: Network Overview
 
 The system architecture is composed of a [**Mainnet**](/gov/glossary#tagion-mainnet) and a series of [**Federated Sub-Systems**](/gov/glossary#federated-subsystem). As per the Tagion manifesto, the intention is to have the mainnet decentralized and allowing the greatest number of entities to run federeated subsystems for their use-cases. In contrast to traditional centralized systems, where a single entity oversees operations and enganges with "clients", a decentralized networks thrive on a large number of differnet enities that need to be involved, actively or passiviely. 
 
+![Federated](/img/Federated.png)
+
 ## Stakeholders
 
 The main distinction we draw for the time being is between "stakeholders" and "community members". The difference being, that community members are entities that hold a name record on the Tagion system (see ["tech-documentation"](https://docs.tagion.org/tech/protocols/dart/dartindex#dart-namerecords--hashkeys) for more info) and have been endoresed by their peers. As such, only community members can run a node (see below) and participate in governance. 
