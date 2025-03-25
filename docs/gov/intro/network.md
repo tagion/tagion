@@ -33,3 +33,6 @@ Governance Participants play a critical role in shaping the network's future. Th
 
 ### Preliminary roles
 
+At the time of writing, Tagion is not decentralised. The phases of this ongoing process are explained on the next page. 
+Consequently, the category "communty members" is only loosely defined in practice, meaning anybody engaging with us on Tagion's development through our [Discord channel](https://discord.gg/wE4AA64a). 
+In due time, an organisational structure will be established (e.g. a foundation, association, coopertaive, or DOA...) to take the responsibilty for governance development over from the current stewardship entity [Decard](https://www.tagion.org/about/).
