@@ -9,7 +9,7 @@ The system architecture is composed of a [**Mainnet**](/gov/glossary#tagion-main
 
 ## Stakeholders
 
-The main distinction we draw for the time being is between "stakeholders" and "community members". The difference being, that community members are entities that hold a name record on the Tagion system (for more info see the ["tech-side"](https://docs.tagion.org/tech/protocols/dart/dartindex#dart-namerecords--hashkeys) of this documentation) and have been endoresed by their peers. As such, only community members can run a node (see below) and participate in governance. 
+The main distinction we draw for the time being is between "stakeholders" and "community members". The difference being, that community members are entities that hold a name record on the Tagion system (see ["tech-documentation"](https://docs.tagion.org/tech/protocols/dart/dartindex#dart-namerecords--hashkeys) for more info) and have been endoresed by their peers. As such, only community members can run a node (see below) and participate in governance. 
 Becoming a member is not necessary for stakeholder that simply want to use TGN tokens or other Tagion services, contribute to the network as a developer or service providor or in any other capacity. But we are striving to design the decentralization of the network in such a way, that becoming a member remains open to the greatest number of people globally.  
 
 
