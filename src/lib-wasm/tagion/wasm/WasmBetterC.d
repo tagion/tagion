@@ -427,8 +427,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return_type(func_type.results),
                 function_name(func_idx),
                 function_params(func_type.params));
-        auto ctx = new Context;
-        ctx.declareLocals(func_type, code_type);
+        auto ctx = new Context(func_type, code_type);
+        //ctx.declareLocals(func_type, code_type);
         //ctx.locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
         const local_indent = indent ~ spacer;
         if (!code_type.locals.empty) {
@@ -442,7 +442,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             output.writefln("%s// context locals %s", local_indent, ctx.locals);
             output.writefln("%s// locals %s", local_indent, code_type.locals);
             //output.writef("%s(local", local_indent);
-            string[] local_names=ctx.scope_locals;
+            const(string)[] local_names=ctx.local_names;
             foreach (l; code_type.locals) {
                 output.writefln("%s%s %-(%s,%);", local_indent, dType(l.type), local_names.take(
                         l.count));
@@ -479,11 +479,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     static uint block_count;
     @safe final class Context {
+        const(string[]) local_names;
         string[] locals;
-        string[] scope_locals;
         string[] stack;
-        
-        void declareLocals(const(FuncType) func_type, const(CodeType) code_type) pure nothrow
+       
+        this() {
+            local_names=null;
+        }
+        this(const(FuncType) func_type, const(CodeType) code_type) pure nothrow
         in (locals.length == 0, "Locals has already been declared")
         do {
             locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
@@ -494,7 +497,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     .array;
                 locals ~= local_names;
             }
-            scope_locals=locals[func_type.params.length..$];
+            local_names=locals[func_type.params.length..$];
 
         }
 
