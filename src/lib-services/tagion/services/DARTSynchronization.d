@@ -139,6 +139,13 @@ private:
     immutable(string[]) synchronize(immutable(DARTSyncOptions) opts,
         immutable(SockAddresses) sock_addrs, DART destination) {
 
+        import core.memory : pageSize;
+
+        enum stackPage = 256;
+
+        const sz = pageSize * stackPage;
+        const guard_page_size = pageSize;
+
         string[] journal_filenames;
         DARTRemoteWorker[string] remote_workers;
         auto rim_range = iota!ushort(256);
@@ -148,7 +155,7 @@ private:
             auto dist_sync_fiber = destination.synchronizer(remote_worker, Rims(
                     [
                         cast(ubyte) current_rim
-                    ]));
+                    ]), sz, guard_page_size);
 
             while (!dist_sync_fiber.empty) {
                 (() @trusted => dist_sync_fiber.call)();
@@ -213,13 +220,15 @@ private:
     bool recorderSyncronize(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
         const SecureNet net, DART destination) {
 
-        // import tagion.wave.common;
         import tagion.replicator.RecorderCrud;
         import tagion.replicator.RecorderBlock;
         import tagion.dart.Recorder;
         import tagion.script.common;
         import tagion.dart.DARTFile;
         import tagion.actor.exceptions;
+        import tagion.wave.common;
+        import tagion.logger.Logger;
+        import tagion.hibon.HiBONRecord;
 
         bool bMatch = false;
         HiRPC hirpc = HiRPC(net);
@@ -228,36 +237,33 @@ private:
             // 1. Sync
             synchronize(opts, sock_addrs, destination);
             // 2. Get a db head
-            // TagionHead tagion_head = getHead(destination, net);
+            TagionHead tagion_head = getHead(destination, net);
 
             while (true) {
                 try {
-                    // 3.
                     RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts
                             .socket_attempts_mil,
                             sock_addrs.sock_addrs[0], null);
 
-                    // const recorder_read_request_doc = hirpc.readRecorder(tagion_head.current_epoch)
-                    const recorder_read_request = hirpc.readRecorder(EpochParam(0));
-                    // Stub
-                       // .toDoc;
-                    const recorder_response_doc = sender.send(recorder_read_request.toDoc);
-                    writefln("RESP-recorder_response_doc %s", recorder_response_doc.toPretty);
-                    // auto response = hirpc.receive(recorder_response_doc);
-                    // Document recorder_doc = response.result;
-                    // RecorderBlock block = response.result!RecorderBlock;
-                    // Document recorder_doc = block.recorder_doc;
-                    if (recorder_response_doc.empty) {
+                    const recorder_read_request = hirpc.readRecorder(
+                        EpochParam(tagion_head.current_epoch));
+                    const recorder_block_doc = sender.send(recorder_read_request.toDoc);
+
+                    if (recorder_block_doc.empty || !recorder_block_doc
+                        .isRecord!RecorderBlock) {
                         break;
                     }
 
-                    // 4. Replay
+                    const block = RecorderBlock(recorder_block_doc);
+                    
                     auto factory = RecordFactory(net);
-                    auto recorder = factory.recorder(recorder_response_doc);
+                    auto recorder = factory.recorder(block.recorder_doc);
                     auto bullseye = destination.modify(recorder);
-                    // 5. Check if bullseyes match.
-                    // bMatch = bullseye == block.bullseye;
-                    bMatch = true;
+
+                    bMatch = bullseye == block.bullseye;
+                    if (bMatch) {
+                        break;
+                    }
                 }
                 catch (Exception e) {
                     break;

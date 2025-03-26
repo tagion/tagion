@@ -118,7 +118,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
         foreach (db_index; 0 .. number_of_databases) {
             Options opts;
             opts.setDefault();
-            opts.setPrefix(format("rs_remote_db_%d_", db_index));
+            opts.setPrefix(format("rssss_remote_db_%d_", db_index));
 
             auto remote_db_name = format("rs_remote_db_%d.drt", db_index);
             auto remote_db_path = buildPath(env.bdd_log, __MODULE__, remote_db_name);

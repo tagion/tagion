@@ -22,6 +22,7 @@ import tagion.hibon.HiBONFile;
 import tagion.hibon.HiBONException;
 import std.algorithm;
 import tagion.hibon.Document;
+import tagion.communication.HiRPC;
 
 @safe
 struct ReplicatorOptions {
@@ -47,6 +48,7 @@ enum modify_log = "modify/replicator";
 @safe
 struct ReplicatorService {
     static Topic modify_recorder = Topic(modify_log);
+    const hirpc = HiRPC(null);
 
     void task(immutable(ReplicatorOptions) opts) {
         HashNet net = new StdHashNet;
@@ -64,26 +66,24 @@ struct ReplicatorService {
 
         void readRecorder(readRecorderRR req, Document doc) {
             import std.range;
+            import tagion.replicator.RecorderCrud;
 
             try {
-                long epoch_number = doc["$msg"]["params"]["$epoch"].get!long;
+                const receiver = hirpc.receive(doc);
+
+                // log("ReadRecorder receiver: %s", receiver.toPretty);
+                const epoch_number = receiver.params!(EpochParam).epoch_number;
 
                 auto fin = File(filepath, "r");
                 scope (exit) {
                     fin.close;
                 }
 
-                foreach (item; HiBONRange(fin).enumerate) {
-                    auto block = RecorderBlock(item.value, net);
-                    if (block.epoch_number == epoch_number) {
-                        // import tagion.communication.HiRPC;
-                        // auto hirpc = HiRPC(null);
-                        // auto receiver = hirpc.receive(block.toDoc);
-                        // auto response_ok = hirpc.result(receiver, ResultOk());
-                        // req.respond(response_ok.toDoc.serialize);
+                foreach (item; HiBONRange(fin)) {
+                    auto block = RecorderBlock(item, net);
 
-                        // req.respond(block); // Unknown error.
-                        req.respond(block.recorder_doc);
+                    if (block.epoch_number == epoch_number) {
+                        req.respond(block.toDoc);
                         break;
                     }
                 }
