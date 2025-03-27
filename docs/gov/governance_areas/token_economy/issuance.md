@@ -48,7 +48,7 @@ After this period the unlocked tokens[^2] can be requested to be paid out in the
 |**Max**<br />Supply | Currently set upper limit of how many TGN tokens can be minted. |
 |**Total** <br />Supply  |Amount of TGN tokens that have been minted at a given moment (fixed to 18.5bn until start of release phase 3).  |
 | **Assigned** <br />Supply   | Amount of TGN tokens sold to investors (with vesting schedule) or otherwise assigned to individual owners (with or without vesting terms) but not yet disbursed.|
-| **Unlocked** <br />Supply  | Amount of TGN tokens that had been assigned and for which all the vesting terms are fullfilled, meaning they are now eligible to be disbursed.|
+| **Unlocked** <br />Supply  | Amount of TGN tokens that had been assigned and for which all the vesting terms are fulfilled, meaning they are now eligible to be disbursed.|
 | **Circulating** <br />Supply[^3]   | Amount of TGN tokens that have been paid out to individual wallets and can be used or sold on the market. |
 
 :::tip
@@ -116,7 +116,7 @@ At the time of launching into release phase 3 (curated release), 20% of this all
 
 [^1]: This cap is not rigid and can be adjusted through [community decision](/gov/governance_areas/decision_making).We foresee two primary scenarios that might justify such an action. Firstly, should there be a shortage of incentives deterring node operators from participating in transaction validation. Secondly, if TGN developes money-like qualities in the future, it may become necessary to implement appropriate monetary policies to maintain economic stability and functionality. 
 
-[^2]:This was previously called "vested" or "fully vested" supply, but since that term was sometimes confusing to our users, we now use this more intutive and descriptive wording. 
+[^2]:This was previously called "vested" or "fully vested" supply, but since that term was sometimes confusing to our users, we now use this more intuitive and descriptive wording. 
 
 [^3]: We previously reported on “Circulating Supply” excluding any tokens disbursed to the team, founders and shareholders. While an industry standard for this term seems far off (see [here](https://support.coinmarketcap.com/hc/en-us/articles/360043396252-Supply-Circulating-Total-Max) for an example of the current inconsistencies), we are now using the above more inclusively and intuitive definition.
 

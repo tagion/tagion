@@ -12,7 +12,7 @@ Administered prices are set by corporations with significant market power, who c
 
 ## Anonymity
 
-A lot of DLT systems name "anonymity" as some of their benefits in comparison to conventional systems. However, what that term means often difers - in theory as much as in practice. We here define it (in contrast to "privacy") according to what (action or actor) is identifiable to 3rd parties, and thus present how it applies to Tagion's two strucutral levels:
+A lot of DLT systems name "anonymity" as some of their benefits in comparison to conventional systems. However, what that term means often difers - in theory as much as in practice. We here define it (in contrast to "privacy") according to what (action or actor) is identifiable to 3rd parties, and thus present how it applies to Tagion's two structural levels:
 
 |Definition: | **Privacy** |**Anonymity**|
 |--|:--:|:--:|
@@ -30,7 +30,7 @@ A lot of DLT systems name "anonymity" as some of their benefits in comparison to
 
 The word "community" is derived from the Latin communitas, which comes from communis, meaning "common, public, or shared by all." Combining con- (together) and munis (relating to duties or services), it conveys the idea of people coming together to fulfill shared responsibilities or provide services.  
 
-In the context of Tagion, the Community encompasses all verified [Community Members](/gov/glossary#commnunity-member) actively participating in and contributing to the network, including [consensus](/gov/glossary#consensus) and [Governance](/gov/glossary#governance) processes.  
+In the context of Tagion, the Community encompasses all verified [Community Members](/gov/glossary#community-member) actively participating in and contributing to the network, including [consensus](/gov/glossary#consensus) and [Governance](/gov/glossary#governance) processes.  
 
 Notably, Community is a fluid term - a flexible and evolving entity - that may adapt to include new roles and contributors as the network develops and grows. 
 
@@ -78,7 +78,7 @@ In a Federated Subsystem, all data remains encrypted within the subsystem, ensur
 
 ## Formation
 
-In our governance area "network formation" we use this word analagous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
+In our governance area "network formation" we use this word analogous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
 
 ## Governance 
 

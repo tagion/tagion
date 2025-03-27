@@ -6,7 +6,7 @@ sidebar_position: 1
 
 :::tip[Under Development]
 
-Everything found here reflects our best efforts of building a public infrastructure that serves the needs of all our users on the short and long run. Please help us shape Tagion's goverance structure by chiming into the conversation on [Discord](https://discord.gg/wE4AA64a). 
+Everything found here reflects our best efforts of building a public infrastructure that serves the needs of all our users on the short and long run. Please help us shape Tagion's governance structure by chiming into the conversation on [Discord](https://discord.gg/wE4AA64a). 
 
 :::
 
@@ -25,7 +25,3 @@ We structure the governance area "network formation"[^1] into two sections with 
  8. [How we calculate a "Reputation Score"](./network_formation/tagion/reputation)
 
 [^1]: As our [glossary](/gov/glossary#formation) explains, we use this word analogous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
-
-
-
-

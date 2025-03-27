@@ -108,7 +108,7 @@ struct DARTSynchronization {
         }
 
         void recorderSyncTask(syncRecorderRR req) @safe {
-            immutable result = recorderSyncronize(opts, sock_addrs, net, dest_db);
+            immutable result = recorderSynchronize(opts, sock_addrs, net, dest_db);
             req.respond(result);
         }
 
@@ -217,7 +217,7 @@ private:
         }
     }
 
-    bool recorderSyncronize(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
+    bool recorderSynchronize(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
         const SecureNet net, DART destination) {
 
         import tagion.replicator.RecorderCrud;
