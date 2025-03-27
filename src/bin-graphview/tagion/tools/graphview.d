@@ -366,6 +366,36 @@ struct SVGDot(Range) if (isInputRange!Range && is(ElementType!Range : Document))
         }
     }
 
+    void render() {
+        uint node_id;
+        verbose("ALTITUDE %s", EventView(doc_range.front).altitude);
+        foreach (e; doc_range) {
+            if (e.isRecord!EventView) {
+                auto event = EventView(e);
+                /* verbose("ALTITUDE %s", event.altitude); */
+                node_id = event.node_id;
+                if (segment.inRange(event)) {
+                    events[event.id] = event;
+                }
+            }
+            else {
+                throw new Exception("Unknown element in graphview doc_range %s", e.toPretty);
+            }
+        }
+    }
+
+    void write(ref HeightBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
+        uint node_id;
+        foreach (e; events) {
+            node_id = e.node_id;
+            node(obuf, e, raw_svg);
+        }
+        start.writefln(`<svg id="node-%s" class="hashgraph" width="%s" height="%s" xmlns="http://www.w3.org/2000/svg">`, node_id, max_width + NODE_INDENT, max_height - min_height + 4 * NODE_INDENT);
+        start.writefln(`<g transform="translate(0,%s)">`, max_height + 2 * NODE_INDENT);
+        end.writefln("</g>");
+        end.writefln("</svg>");
+    }
+
     void draw(ref HeightBuffer obuf, ref OutBuffer start, ref OutBuffer end, bool raw_svg) {
         uint node_id;
         verbose("ALTITUDE %s", EventView(doc_range.front).altitude);
