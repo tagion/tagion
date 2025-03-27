@@ -428,27 +428,16 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 function_name(func_idx),
                 function_params(func_type.params));
         auto ctx = new Context(func_type, code_type);
-        //ctx.declareLocals(func_type, code_type);
-        //ctx.locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
         const local_indent = indent ~ spacer;
         if (!code_type.locals.empty) {
-            /*
-            auto local_names = iota(ctx.locals.length, ctx.locals.length + code_type.locals
-                    .map!(l => l.count).sum)
-                .map!(local_idx => format("local_%d", local_idx))
-                .array;
-            ctx.locals ~= local_names;
-*/
             output.writefln("%s// context locals %s", local_indent, ctx.locals);
             output.writefln("%s// locals %s", local_indent, code_type.locals);
-            //output.writef("%s(local", local_indent);
-            const(string)[] local_names=ctx.local_names;
+            const(string)[] local_names=ctx.scope_local_names;
             foreach (l; code_type.locals) {
                 output.writefln("%s%s %-(%s,%);", local_indent, dType(l.type), local_names.take(
                         l.count));
                 local_names = local_names[l.count .. $];
             }
-            //output.writeln(")");
         }
 
         block(expr, func_type, ctx, local_indent);
@@ -479,25 +468,29 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     static uint block_count;
     @safe final class Context {
-        const(string[]) local_names;
-        string[] locals;
-        string[] stack;
+        const(string[]) local_names; /// Locals include the function params
+        const(string[]) scope_local_names; /// Locals declared inside the function
+        string[] locals; /// Current value-expressions of locals
+        string[] stack; /// Value-expression on the stack
        
         this() {
             local_names=null;
+            scope_local_names=null;
         }
         this(const(FuncType) func_type, const(CodeType) code_type) pure nothrow
         in (locals.length == 0, "Locals has already been declared")
         do {
-            locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
+            auto _local_names = iota(func_type.params.length).map!(idx => param_name(idx)).array;
             if (!code_type.locals.empty) {
-                auto local_names = iota(locals.length, locals.length + code_type.locals
+                _local_names ~= iota(locals.length, locals.length + code_type.locals
                         .map!(l => l.count).sum)
                     .map!(local_idx => assumeWontThrow(format("local_%d", local_idx)))
                     .array;
-                locals ~= local_names;
+                //locals ~= local_names;
             }
-            local_names=locals[func_type.params.length..$];
+            local_names=_local_names;
+                locals=_local_names.dup;
+            scope_local_names=_local_names[func_type.params.length..$];
 
         }
 
@@ -639,11 +632,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
         void get(const uint local_idx) pure nothrow {
 
-            push(locals[local_idx]);
+            push(local_names[local_idx]);
         }
 
         void set(const uint local_idx) pure nothrow {
             __write("Stack %-(%s, %) local_idx=%d", stack, local_idx);
+            __write("Local %-(%s, %) local_idx=%d", locals, local_idx);
             locals[local_idx] = pop;
         }
 
@@ -779,7 +773,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return "do {";
             case IR.LOOP:
                 if (begin_kind is _BlockKind.WHILE) {
-                    return assumeWontThrow(format("while (%s) {", condition));
+                    return assumeWontThrow(format("while (!%s) {", condition));
                 }
                 return "do {";
             default:
@@ -1196,10 +1190,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             break;
                         case IR.LOCAL_GET:
                             const local_idx = elm.warg.get!uint;
+
                             ctx.get(local_idx);
                             break;
                         case IR.LOCAL_SET:
                             const local_idx = elm.warg.get!uint;
+                                    bout.writefln("%s%s=%s;",indent, ctx.local_names[local_idx], ctx.peek);
                             ctx.set(local_idx);
                             // 
                             break;
