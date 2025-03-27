@@ -432,10 +432,21 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         if (!code_type.locals.empty) {
             output.writefln("%s// context locals %s", local_indent, ctx.locals);
             output.writefln("%s// locals %s", local_indent, code_type.locals);
-            const(string)[] local_names=ctx.scope_local_names;
+            const(string)[] local_names = ctx.scope_local_names;
             foreach (l; code_type.locals) {
-                output.writefln("%s%s %-(%s,%);", local_indent, dType(l.type), local_names.take(
-                        l.count));
+                string value;
+                switch (l.type) {
+                case Types.F32:
+                    value = format("=%a", float(0));
+                    break;
+                case Types.F64:
+                    value = format("=%a", double(0));
+                    break;
+                default:
+                    // Standard default
+                }
+                output.writefln("%s%s %-(%s, %);", local_indent, dType(l.type), local_names.take(
+                        l.count).map!(name => name ~ value));
                 local_names = local_names[l.count .. $];
             }
         }
@@ -472,11 +483,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         const(string[]) scope_local_names; /// Locals declared inside the function
         string[] locals; /// Current value-expressions of locals
         string[] stack; /// Value-expression on the stack
-       
+
         this() {
-            local_names=null;
-            scope_local_names=null;
+            local_names = null;
+            scope_local_names = null;
         }
+
         this(const(FuncType) func_type, const(CodeType) code_type) pure nothrow
         in (locals.length == 0, "Locals has already been declared")
         do {
@@ -488,9 +500,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     .array;
                 //locals ~= local_names;
             }
-            local_names=_local_names;
-                locals=_local_names.dup;
-            scope_local_names=_local_names[func_type.params.length..$];
+            local_names = _local_names;
+            locals = _local_names.dup;
+            scope_local_names = _local_names[func_type.params.length .. $];
 
         }
 
@@ -649,19 +661,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return _blocks[block_index].label;
         }
 
-        version (none) string label_at_depth(const uint block_depth) const pure {
-            return label(cast(uint)(blocks.length - block_depth - 1));
-        }
-
         uint index(const uint block_depth) const pure {
             check(block_depth < _blocks.length,
                     format("Block stack overflow (stack size %d but block depth is %d)",
                     _blocks.length, block_depth));
             return cast(uint)(_blocks.length - block_depth - 1);
-        }
-
-        version (none) Block* block(const uint block_) pure {
-            return Blocks[block_index];
         }
 
         string goto_label(const uint block_index) pure {
@@ -1063,11 +1067,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             switch (ctx.current.begin_kind) {
                             case _BlockKind.WHILE:
                                 ctx.current.end_kind = BlockKind.WHILE;
-                                //if (target_block.begin_kind is _BlockKind.WHILE && target_block.begin_kind is _BlockKind.LOOP) {
-                                bout.writefln("%scontinue %s;", indent, target_block.label);
-                                //    break;
-                                //  }
-                                //bout.writefln("%sgoto %s;", indent, target_block.label);
+
+                                if (target_block.elm.code is IR.LOOP) {
+                                    bout.writefln("%scontinue %s;", indent, target_block.label);
+                                }
+                                else {
+                                    bout.writefln("%sgoto %s;", indent, target_block.label);
+                                }
                                 break;
                             default:
                                 bout.writefln("%sbreak %s;", indent, target_block.label);
@@ -1104,6 +1110,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             auto target_block = ctx[label_n];
                             target_block.end_kind = BlockKind.BREAK_N;
                             target_block.define_label;
+                            if (ctx.current.elm.code is IR.LOOP) {
+                                if (target_block.begin_kind is _BlockKind.WHILE) {
+                                    bout.writefln("%sif (%s) continue %s;", indent, conditional_flag, target_block.label);
+                                    break;
+                                }
+
+                                bout.writefln("%sif (%s) goto %s;", indent, conditional_flag, target_block.label);
+                                break;
+                            }
                             bout.writefln("%sif (%s) break %s;",
                                     indent, conditional_flag, target_block.label);
                             break;
@@ -1195,7 +1210,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             break;
                         case IR.LOCAL_SET:
                             const local_idx = elm.warg.get!uint;
-                                    bout.writefln("%s%s=%s;",indent, ctx.local_names[local_idx], ctx.peek);
+                            bout.writefln("%s%s=%s;", indent, ctx.local_names[local_idx], ctx.peek);
                             ctx.set(local_idx);
                             // 
                             break;
