@@ -433,8 +433,10 @@ received = the HiRPC received package
      * Returns: 
      *  synchronization fiber
      */
-    SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims) {
-        return new SynchronizationFiber(rims, synchonizer);
+    SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims, size_t sz = pageSize * Fiber.defaultStackPages,
+        size_t guardPageSize = pageSize) {
+
+        return new SynchronizationFiber(rims, synchonizer, sz, guardPageSize);
     }
 
     /**
@@ -444,14 +446,20 @@ received = the HiRPC received package
     class SynchronizationFiber : Fiber {
         protected Synchronizer sync;
 
+        // static size_t default_page_size = defaultStackPages;
+        // static size_t guard_page_size = guardPageSize; 
+
         immutable(Rims) root_rims;
         size_t fiberPageSize;
 
-        this(const Rims root_rims, Synchronizer sync) @trusted {
+        this(const Rims root_rims,
+            Synchronizer sync,
+            size_t sz = pageSize * Fiber.defaultStackPages,
+            size_t guardPageSize = pageSize) @trusted {
             this.root_rims = root_rims;
             this.sync = sync;
             sync.set(this.outer, this, this.outer.hirpc);
-            super(&run);
+            super(&run, sz, guardPageSize);
         }
 
         protected uint _id;

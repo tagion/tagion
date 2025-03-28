@@ -24,7 +24,7 @@ We structure the governance area "network formation"[^1] into two sections with 
  7. [How "Genetics" feature in Proof of Community](./network_formation/tagion/genetics)
  8. [How we calculate a "Reputation Score"](./network_formation/tagion/reputation)
 
-[^1]: As our [glossary](/gov/glossary#formation) explains, we use this word analagous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
+[^1]: As our [glossary](/gov/glossary#formation) explains, we use this word analogous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
 
 
 
