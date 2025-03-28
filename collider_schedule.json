@@ -150,7 +150,7 @@
         },
         "loop" : {
             "args" : [
-                "loop_block.wast"
+                "loop_2.wast"
             ]
         },
         "if_block" : {

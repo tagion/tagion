@@ -360,7 +360,6 @@
     (i32.eq (local.get 0) (i32.const -14))
   )
 ;)
-(; ;;
 (func (export "while") (param i64) (result i64)
     (local i64)
     (local.set 1 (i64.const 1))
@@ -389,7 +388,6 @@
     )
     (local.get 1)
   )
-  ;)
 (;
   (func (export "nesting") (param f32 f32) (result f32)
     (local f32 f32)
@@ -507,7 +505,7 @@
 (assert_return (invoke "params-id-break") (i32.const 3))
 
 (assert_return (invoke "effects") (i32.const 1))
-
+;)
 (assert_return (invoke "while" (i64.const 0)) (i64.const 1))
 (assert_return (invoke "while" (i64.const 1)) (i64.const 1))
 (assert_return (invoke "while" (i64.const 2)) (i64.const 2))
@@ -521,7 +519,7 @@
 (assert_return (invoke "for" (i64.const 3)) (i64.const 6))
 (assert_return (invoke "for" (i64.const 5)) (i64.const 120))
 (assert_return (invoke "for" (i64.const 20)) (i64.const 2432902008176640000))
-
+(;
 (assert_return (invoke "nesting" (f32.const 0) (f32.const 7)) (f32.const 0))
 (assert_return (invoke "nesting" (f32.const 7) (f32.const 0)) (f32.const 0))
 (assert_return (invoke "nesting" (f32.const 1) (f32.const 1)) (f32.const 1))

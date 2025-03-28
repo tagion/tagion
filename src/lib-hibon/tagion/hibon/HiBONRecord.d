@@ -791,7 +791,7 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
-    @safe final Document toDoc() const pure {
+    @safe final const(Document) toDoc() const pure {
         return Document(serialize);
     }
 }
