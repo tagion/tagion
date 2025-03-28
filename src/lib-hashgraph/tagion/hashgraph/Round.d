@@ -131,6 +131,20 @@ class Round {
         return assumeWontThrow(net.calcHash(xor(fingerprints)));
     }
 
+    final auto witnesses() const pure nothrow {
+        import std.algorithm;
+        import tagion.utils.Miscellaneous;
+
+        auto fingerprints = _valid_witness[]
+            .map!(n => _events[n])
+            .filter!(e => e !is null)
+            .map!(e => e.fingerprint)
+            .array
+            .sort!("a < b");
+
+        return fingerprints;
+    }
+
     /**
      * 
      * Returns: getter for the round-votes  
