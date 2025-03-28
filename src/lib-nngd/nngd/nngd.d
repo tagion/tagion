@@ -334,7 +334,7 @@ struct NNGMessage {
                 size = length;
             if (size == 0)
                 return [];
-            pragma(msg, "Maybe add some bounds checking?");
+            assert(size <= length, "Msg trim out of bounds");
             T data = cast(T)(bodyptr)[0 .. size];
             auto rc = nng_msg_trim(msg, size);
             nng_enforce(rc == 0);
