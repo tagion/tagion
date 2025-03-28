@@ -31,7 +31,7 @@ enum ResponseError {
  *  (consensusContract, immutable(CollectedSignedContract)*)
  *
  * Sends:
- *  (Payload, const(Document)) to TaskNames.epoch_creator
+ *  (Payload, Document) to TaskNames.epoch_creator
  *  (producedContract, immutable(ContractProduct)*) to TaskNames.transcript
 **/
 struct TVMService {
@@ -134,7 +134,7 @@ unittest {
         foreach (_; 0 .. 2) {
             const received = receiveTimeout(
                 Duration.zero,
-                (Payload _, const(Document) __) {},
+                (Payload _, Document __) {},
                 (producedContract _, immutable(ContractProduct)* __) {},
             );
             assert(received, "TVM did not send the contract or payload");
@@ -147,7 +147,7 @@ unittest {
 
         const received = receiveTimeout(
             Duration.zero,
-            (Payload _, const(Document) __) {},
+            (Payload _, Document __) {},
             (producedContract _, immutable(ContractProduct)* __) {},
         );
         assert(!received, "The tvm should not send a contract where the output bills are greater than the input");

@@ -111,7 +111,7 @@ class SendPayloadAndCreateEpoch {
         h["node0"] = "TEST PAYLOAD";
         send_payload = Document(h);
         writefln("SENDING TEST DOC");
-        handles[1].send(Payload(), const Document(h));
+        handles[1].send(Payload(), Document(h));
 
         return result_ok;
     }
