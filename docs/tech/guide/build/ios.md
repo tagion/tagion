@@ -10,7 +10,7 @@ Compilation for iOS is only supported with OSX/MacOS as a host.
 *Some tools like `make` are already distributed with OSX, but they're too old and will not work.*  
 
 ```
-brew install autoconf libtool m4 automake make pkg-config ldc
+brew install cmake make pkg-config ldc
 ```
 
 2. Install xcode. Make sure that xcode-select is available
