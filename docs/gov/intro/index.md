@@ -4,53 +4,54 @@ sidebar_position: 1
 
 # Introduction
 
-Welcome to the governance documentation-pages of the Tagion network.
+Welcome to the governance development- and documentation-pages of the Tagion network.
+(For an overview of what Tagion "is", have a look at the website [tagion.org](https://tagion.org) or read the [Technical Concept Paper](https://www.tagion.org/resources/tagion-whitepaper.pdf))
 
-On these pages you find the current state of ideas and deliberation. Colored flags will alert you to the parts that are deemed certain, and, on the other hand, those that are hotly debated (in our Discord channels). Everything else is to be considered a proposal or only preliminary formulated. 
+Here, you will find the current state of ideas and deliberation regarding Tagion's governance. 
 
-We chose to publish this because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). Only the values and guiding principles of the Tagion ["Manifesto"](./manifesto) should be adhered to at all times. 
+We have chosen to publish these ideas throughout their development process because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). The only guiding principles that should always be adhered to are the values outlined in the Tagion ["Manifesto"](./manifesto). 
 
 :::tip[The _Tagion Governance Manifesto_]
 
-Our **Manifesto** is the first approved and foundational element of the Tagion governance - download it as a [PDF](https://www.tagion.org/resources/tagion-manifesto.pdf), or read it online [here](./manifesto). 
-Going forward, you will be able to easily identify all approved elements through the menu. Everything else on these pages is considered a proposal only - and open for discussion. 
+Our **Manifesto** is the first approved and foundational element of Tagion's governance - download it as a [PDF](https://www.tagion.org/resources/tagion-manifesto.pdf), or read it online [here](./intro/manifesto). 
+Moving forward, you will be able to easily identify all approved elements via the menu. Everything else on these pages is considered a proposal and remains open for discussion. 
 
 :::
 
-Because governance, to us, simultaneously means the structure and processes of managing a decentralised system - including but not limited to the procedures through which decisions are made, and rules are established - this documentation is structured into four [interdependent areas](./governance_areas). The ideas and process of each of those will have effects and consequences on all others, directly or indirectly, so sometimes you will have to follow links to different sections or the glossary in order to get the full picture. 
+## About Governance
 
-As our manifesto says, we use the word "decentralised" to mean a system in which no entity can impose its will and interest on the rest of the users and participants. This also means that the governance of a decentralised system cannot be established up-front, by dictate from the founders, but will have to be co-developed, tested and refined with its stakeholders. 
+To us, governance means both the processes of managing a decentralised system and the structure of the network that emerges from that same management process. This contrasts with the view that governance is synonymous with rules-setting. However, as seen below, "decision making" is one of our four governance areas and plays a central role.
 
-Practically, Tagion and its underlying technology do not meet this criterion of decentralisation yet. So the governance will evolve, step by step, with the different stages of releasing the network from the stewardship of [Decard](https://www.tagion.org/about/) into full decentralisation.
+As our manifesto states, we use the word "decentralised" to mean a system in which no entity can impose its will and interests on the rest of the users and participants. This also means that the governance of a decentralised system cannot be established upfront by the founders but must be co-developed, tested and refined with its stakeholders. 
 
+## Governance Areas 
 
+To make it easier for our community to navigate our governance ideas and contribute to their development, this website divides governance into four [interdependent areas](./governance_areas). The ideas and processes of each area affect all others, directly or indirectly, so sometimes you will need to follow links to different sections or the glossary to get the full picture. 
+These four areas are: 
 
-## Phased decentralisation of Tagion
+![Areas](/img/Gov_Areas.png)
 
-At the time of writing (find a timestamps of latest updates on the bottom of all pages), the Tagion network is distributed across several nodes, but they are all on Decard's servers and operate in what we call "Mode 1" on the technical side - and **Pre-Release** in terms of governance.
+[Decision Making](/gov/governance_areas/decision_making): This encompasses all rules and procedures related to voting and proposal procedures, eligibility criteria, or council privileges. Decision-making influences all other governance areas because if the community follows the rules set out here (and honors the values of the Tagion manifesto) everything else can be modified. 
 
-Once the next technical milestone is achieved and nodes that fall out of synchronisation can catch up with the consensus state of the network automatically, a huge step towards decentralisation is achieved. Technically, we call that "Mode 2" (you can find more information on these "modes" in the [Tech documentation](https://docs.tagion.org/tech/architecture/network_modes)).  
+[Network  Formation](/gov/governance_areas/network_formation): This governance area focuses on the distributed computer network that forms the basis of Tagion, and the relationships between its active components. In a nutshell, this area is concerned with how to become an active node. Consideration about security (Sybil resistance mechanisms) and consensus are central, as well as ensuring the network becomes and remains decentralised, permissionless, and efficient. 
 
-In terms of governance, this is where the four "release phases" of the network will start.
+[Token Economy](/gov/governance_areas/token_economy): This governance area covers everything related to the TGN utility tokens and how it is used within the network. Like any economy, this includes both the supply side of the TGN tokens (issuance, allocation, vesting) and the demand side (fees and incentives). 
 
-### 1. Closed Release
-
-From here, the network nodres will be distributed across different servers in different locations. But, as the name indicates, this phase is not open to external parties who might be eager to operate a node. However, already during this phase the code of our nodes is publicly available on github and the Tech documentation allows savvy operators to set it up, test and audit it. In due time, a new version of nodes will allow more interested parties to run nodes that connect to the network as mirrors, but not participate in the consensus. 
-
-### 2. Limited Release
-
-This second phase will see the network being extended to nodes operated by partners and vetted community members. The onboarding process will be "by invitation" only and strictly controlled by Decard to ensure security and, shall something not go to plan, provide quick support. During this phase, the governance here developed will be tested and improved in a safe environment. The results will be published here as our "Working Paper", ready for tests and verification "in the wild", which will happen in phase 3.
-
-### 3. Curated Release
-
-With this third phase, the network will already feel as decentralised as commonly understood. Technically, this pahse will require the networking operating in "Mode 3" ([see Tech documentation](https://docs.tagion.org/tech/architecture/network_modes) for more about "modes"). We imagine an onboarding process that does not require the input or permission by any entity. The governance system established in the Working Paper will ensure security and coherence of the network. However, for safety and unforeseen events, Decard together with an evolving community council will retain special privileges and can intervene if deemed necessary for the sustainability of the network and the adherence to the principles set out in the manifesto. 
-
-### 4. Singularity
-
-This last stage is not so much a phase as a point in time: it occurs when all privileges in the network are relinquished and only the rules of the then firmly established governance system are followed. 
-From here on, the network is truly decentralised in the sense set out in the manifesto. 
+[Software Development](/gov/governance_areas/software_development): This governance area focuses on the maintenance and ongoing upgrades of the software that powers the Tagion Network. Through the principles described here, community members will deliberate and vote on node software updates, the integration of new technologies, and system performance enhancements
 
 
-## Stay tuned!
+## Process
 
-We will communicate any major updates and publications on these pages through our Discord channels. Please feel invited to join and contribute [here](https://discord.gg/wE4AA64a).
+Currently, Tagion and its underlying technology do not yet meet the criterion for decentralisation. Accordingly, the governance will evolve, step by step, along with the different stages of releasing the network from the stewardship of [Decard](https://www.tagion.org/about/) into full decentralisation. (See the [following page](/gov/intro/phased_release) for the sequence of that phased release).
+
+Only with [Phase 3](/gov/intro/phased_release.md#3-curated-release) will we have reached a consolidated governance system, that will then be tested in practice. That system will be described in our "Governance Working Paper", which will be published here in due time. 
+
+Until then, everything (but our manifesto) is to be considered a proposal or only preliminary formulated, and open to your input. Colored flags(boxes) will alert you to the parts that are deemed certain, or those that are currently debated in our Discord channels.
+
+There, we will also communicate any major updates of these pages.
+
+Please feel invited to contribute on Discord: join [here](https://discord.gg/wE4AA64a)!
+
+[^1]: As our [glossary](/gov/glossary#formation) explains, we use this word analogous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
+
+

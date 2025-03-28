@@ -22,6 +22,8 @@ otation = "otation"
 
 # Name
 Theis = "Theis"
+# Token generatator event
+TGE = "TGE"
 
 # Actual fixes
 indexes = "indices"
@@ -54,5 +56,6 @@ extend-exclude = [
     "*.wast",
     "src/lib-behaviour/tagion/behaviour/unitdata/",
     "*.svg",
-    "*.excalidraw"
+    "*.excalidraw",
+    "bdd/",
 ]

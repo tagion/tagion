@@ -107,7 +107,12 @@ struct DARTSynchronization {
             req.respond(true);
         }
 
-        run(&compare, &sync, &replay);
+        void recorderSyncTask(syncRecorderRR req) @safe {
+            immutable result = recorderSynchronize(opts, sock_addrs, net, dest_db);
+            req.respond(result);
+        }
+
+        run(&compare, &sync, &replay, &recorderSyncTask);
     }
 
 private:
@@ -134,6 +139,13 @@ private:
     immutable(string[]) synchronize(immutable(DARTSyncOptions) opts,
         immutable(SockAddresses) sock_addrs, DART destination) {
 
+        import core.memory : pageSize;
+
+        enum stackPage = 256;
+
+        const sz = pageSize * stackPage;
+        const guard_page_size = pageSize;
+
         string[] journal_filenames;
         DARTRemoteWorker[string] remote_workers;
         auto rim_range = iota!ushort(256);
@@ -143,7 +155,7 @@ private:
             auto dist_sync_fiber = destination.synchronizer(remote_worker, Rims(
                     [
                         cast(ubyte) current_rim
-                    ]));
+                    ]), sz, guard_page_size);
 
             while (!dist_sync_fiber.empty) {
                 (() @trusted => dist_sync_fiber.call)();
@@ -204,6 +216,64 @@ private:
             destination.replay(journal_filename);
         }
     }
+
+    bool recorderSynchronize(immutable(DARTSyncOptions) opts, immutable(SockAddresses) sock_addrs,
+        const SecureNet net, DART destination) {
+
+        import tagion.replicator.RecorderCrud;
+        import tagion.replicator.RecorderBlock;
+        import tagion.dart.Recorder;
+        import tagion.script.common;
+        import tagion.dart.DARTFile;
+        import tagion.actor.exceptions;
+        import tagion.wave.common;
+        import tagion.logger.Logger;
+        import tagion.hibon.HiBONRecord;
+
+        bool bMatch = false;
+        HiRPC hirpc = HiRPC(net);
+
+        while (!bMatch) {
+            // 1. Sync
+            synchronize(opts, sock_addrs, destination);
+            // 2. Get a db head
+            TagionHead tagion_head = getHead(destination, net);
+
+            while (true) {
+                try {
+                    RemoteRequestSender sender = new RemoteRequestSender(opts.socket_timeout_mil, opts
+                            .socket_attempts_mil,
+                            sock_addrs.sock_addrs[0], null);
+
+                    const recorder_read_request = hirpc.readRecorder(
+                        EpochParam(tagion_head.current_epoch));
+                    const recorder_block_doc = sender.send(recorder_read_request.toDoc);
+
+                    if (recorder_block_doc.empty || !recorder_block_doc
+                        .isRecord!RecorderBlock) {
+                        break;
+                    }
+
+                    const block = RecorderBlock(recorder_block_doc);
+                    
+                    auto factory = RecordFactory(net);
+                    auto recorder = factory.recorder(block.recorder_doc);
+                    auto bullseye = destination.modify(recorder);
+
+                    bMatch = bullseye == block.bullseye;
+                    if (bMatch) {
+                        break;
+                    }
+                }
+                catch (Exception e) {
+                    break;
+                }
+            }
+            // Check a timeout.
+            // Select another node if time out - TBD
+        }
+        return bMatch;
+    }
 }
 
 class RemoteRequestSender {
@@ -237,7 +307,7 @@ class RemoteRequestSender {
         socket.recvtimeout = socket_timeout_mil.msecs;
         writefln("-------- Trying to dial a socket at %s --------", sock_addr);
         int rc = socket.dial(sock_addr);
-        enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc))); // change to check()
+        enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
 
         writefln("-------- Send to the socket at %s --------", sock_addr);
         rc = socket.send!(immutable(ubyte[]))(request_doc.serialize);
@@ -247,15 +317,14 @@ class RemoteRequestSender {
         auto startTime = MonoTime.currTime();
 
         while (true) {
-            // auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
-            auto received = socket.receive!(immutable ubyte[])(No.Nonblock);
+            auto received = socket.receive!(immutable ubyte[])(Yes.Nonblock);
 
             if (!received.empty) {
-                writefln("-------- received from the socket at %s --------", sock_addr);
                 return Document(received);
             }
 
             if (MonoTime.currTime() - startTime > attempts_timeout) {
+                writefln("-------- send timeout --------");
                 return Document.init;
             }
 

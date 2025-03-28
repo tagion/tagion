@@ -214,7 +214,7 @@ else
     mkdir -p "$node_dir"
     cp "$genesis_dart" "$node_dir"/dart.drt
     cp "$genesis_trt" "$node_dir"/trt.drt
-    i=$((nodes+1));
+    i=$((nodes));
 
     # Set up wallet directory and configuration
     wallet_dir="$node_dir/wallet"

@@ -8,16 +8,6 @@ import tagion.hibon.HiBONRecord;
 import tagion.basic.Types : Buffer;
 import tagion.hashgraph.HashGraphBasic : isMajority;
 
-@recordType("node_amount")
-struct NodeAmount {
-    long nodes;
-    mixin HiBONRecord!(q{
-            this(long nodes) @safe pure nothrow {
-                this.nodes = nodes;
-            }
-    });
-}
-
 /// EventView is used to store event has a
 @recordType("event_view")
 struct EventView {
@@ -41,13 +31,15 @@ struct EventView {
     @label("$yes") @optional uint yes_votes; /// Famous yes votes    
     @label("$weak") @optional bool weak;
     @label("$decided") @optional @(filter.Initialized) bool decided; /// Witness decided
+    long nodes_amount;
     @optional @(filter.Initialized) bool collector;
     bool father_less;
 
     mixin HiBONRecord!(q{
-        this(const Event event, const uint relocate_node_id=uint.max) @safe pure nothrow {
+        this(const Event event, long nodes_amount, const uint relocate_node_id=uint.max) @safe pure nothrow {
             import std.algorithm : each;
             id=event.id;
+            this.nodes_amount = nodes_amount;
             if (event.isGrounded) {
                 mother = father = uint.max;
             }
@@ -116,11 +108,10 @@ void fwrite(ref const(HashGraph) hashgraph, string filename, Pubkey[string] node
             const node_id = (node_id_relocation.length is 0) ? uint.max : node_id_relocation[n.channel];
             n[]
                 .filter!((e) => !e.isGrounded)
-                .each!((e) => events[e.id] = EventView(e, node_id));
+                .each!((e) => events[e.id] = EventView(e, hashgraph.node_size, node_id));
         }
     })();
 
-    graphfile.fwrite(NodeAmount(hashgraph.node_size));
     foreach (e; events) {
         graphfile.fwrite(e);
     }

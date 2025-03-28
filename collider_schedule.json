@@ -111,7 +111,7 @@
           "f32_cmp_export.wast", "f64_cmp_export.wast",
           "float_misc_export.wast",
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
-          "if_block.wast",
+          "if_block.wast", "loop_block.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -150,7 +150,7 @@
         },
         "loop" : {
             "args" : [
-                "loop_1.wast"
+                "loop_2.wast"
             ]
         },
         "if_block" : {
@@ -366,6 +366,14 @@
     "dart_synchronization": {
       "timeout" : 3.0,
       "stages" : ["dart_synchronization"]
+    },
+    "recorder_synchronizer": {
+      "timeout" : 3.0,
+      "stages" : ["recorder_synchronizer"]
+    },
+    "replicator_service": {
+      "timeout" : 3.0,
+      "stages" : ["replicator_service"]
     }
   }
 }

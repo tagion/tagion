@@ -1,7 +1,7 @@
 /// Service which exposes dart reads over a socket
 /// https://docs.tagion.org/tech/architecture/DartInterface
 module tagion.services.DARTInterface;
- 
+
 @safe:
 
 import core.time;
@@ -55,21 +55,27 @@ struct DartWorkerContext {
     int worker_timeout;
     bool trt_enable;
     string trt_task_name;
+    string rep_task_name;
 }
 
 /// Accepted methods for the DART.
 static immutable(string[]) accepted_dart_methods = [
-    Queries.dartRead, 
-    Queries.dartRim, 
-    Queries.dartBullseye, 
-    Queries.dartCheckRead, 
+    Queries.dartRead,
+    Queries.dartRim,
+    Queries.dartBullseye,
+    Queries.dartCheckRead,
+];
+
+static immutable(string[]) accepted_rep_methods = [
+    "readRecorder"
 ];
 
 pragma(msg, "deprecated search method should be removed from trt");
 /// All methods allowed for the TRT
-static immutable(string[]) accepted_trt_methods = accepted_dart_methods.map!(m => "trt." ~ m).array ~ "search";
+static immutable(string[]) accepted_trt_methods = accepted_dart_methods.map!(
+    m => "trt." ~ m).array ~ "search";
 /// All allowed methods for the DARTInterface
-static immutable all_dartinterface_methods = accepted_dart_methods ~ accepted_trt_methods;
+static immutable all_dartinterface_methods = accepted_dart_methods ~ accepted_trt_methods ~ accepted_rep_methods;
 
 void set_response_doc(NNGMessage* msg, Document doc) @safe {
     msg.length = doc.full_size;
@@ -78,6 +84,7 @@ void set_response_doc(NNGMessage* msg, Document doc) @safe {
 
 void set_error_msg(NNGMessage* msg, ServiceCode err_type, string extra_msg = "") @safe {
     import tagion.services.codes;
+
     HiRPC.Error message;
     message.code = err_type;
     message.message = err_type.toString ~ extra_msg;
@@ -124,7 +131,19 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     }
 
     const is_trt_req = accepted_trt_methods.canFind(receiver.method.full_name);
-    string request_task_name = is_trt_req ? cnt.trt_task_name : cnt.dart_task_name;
+    const is_rep_req = accepted_rep_methods.canFind(receiver.method.full_name);
+
+    string request_task_name;
+    if (is_trt_req) {
+        request_task_name = cnt.trt_task_name;
+    }
+    else if (is_rep_req) {
+        request_task_name = cnt.rep_task_name;
+    }
+    else {
+        request_task_name = cnt.dart_task_name;
+    }
+
     Tid tid = locate(request_task_name);
 
     if (tid is Tid.init) {
@@ -134,17 +153,19 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
     bool response;
     if (is_trt_req) {
-        tid.send(trtHiRPCRR(), doc); 
-    } else {
-        tid.send(dartHiRPCRR(), doc); 
+        tid.send(trtHiRPCRR(), doc);
     }
-    response = receiveTimeout(cnt.worker_timeout.msecs, 
-        (dartHiRPCRR.Response _, Document doc) {
-            msg.set_response_doc(doc);
-        },
-        (trtHiRPCRR.Response _, Document doc) {
-            msg.set_response_doc(doc);
-        }
+    else if (is_rep_req) {
+        tid.send(readRecorderRR(), doc);
+    }
+    else {
+        tid.send(dartHiRPCRR(), doc);
+    }
+
+    response = receiveTimeout(cnt.worker_timeout.msecs,
+        (dartHiRPCRR.Response _, Document doc) { msg.set_response_doc(doc); },
+        (trtHiRPCRR.Response _, Document doc) { msg.set_response_doc(doc); },
+        (readRecorderRR.Response _, Document doc) { msg.set_response_doc(doc); }
     );
 
     if (!response) {
@@ -161,7 +182,7 @@ void err_cb(NNGMessage* msg, void* ctx, Exception e) @safe nothrow {
     try {
         msg.set_error_msg(ServiceCode.internal, e.msg);
     }
-    catch(Exception e2) {
+    catch (Exception e2) {
         // At this point we probably can't allocate anything, so it's better to shutdown
         fail(e2);
     }
@@ -184,6 +205,7 @@ struct DARTInterfaceService {
         ctx.worker_timeout = opts.sendtimeout;
         ctx.trt_task_name = task_names.trt;
         ctx.trt_enable = trt_opts.enable;
+        ctx.rep_task_name = task_names.replicator;
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
@@ -196,7 +218,8 @@ struct DARTInterfaceService {
         }
         pool.start();
         auto rc = sock.listen(opts.sock_addr);
-        check!ServiceError(rc == nng_errno.NNG_OK, format("Failed to listen on %s : %s", opts.sock_addr, nng_errstr(rc)));
+        check!ServiceError(rc == nng_errno.NNG_OK, format("Failed to listen on %s : %s", opts.sock_addr, nng_errstr(
+                rc)));
 
         // Receive actor signals
         run();

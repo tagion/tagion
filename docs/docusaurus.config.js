@@ -140,6 +140,8 @@ const config = {
         sidebarPath: './sidebars.js',
         remarkPlugins: [remarkMath],
         rehypePlugins: [rehypeKatex],
+        editUrl:
+            'https://github.com/tagion/tagion/tree/current/docs/',
       },
     ],
 

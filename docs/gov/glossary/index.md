@@ -10,21 +10,37 @@ Administered pricing is a concept introduced by the economist Gardiner Means, re
 
 Administered prices are set by corporations with significant market power, who can set and maintain stable prices over time, regardless of short-term fluctuations in demand or production costs. Means noted that such firms often use mark-up pricing, where prices are set by applying a predetermined mark-up over estimated production costs to achieve desired profit margins, rather than allowing market forces to dictate prices. 
 
+## Anonymity
+
+A lot of DLT systems name "anonymity" as some of their benefits in comparison to conventional systems. However, what that term means often difers - in theory as much as in practice. We here define it (in contrast to "privacy") according to what (action or actor) is identifiable to 3rd parties, and thus present how it applies to Tagion's two structural levels:
+
+|Definition: | **Privacy** |**Anonymity**|
+|--|:--:|:--:|
+|**Action** <br />can be identified by 3rd party:|**No**|**Yes**|
+|**Actor** <br />can be identified by 3rd party: |**Yes**|**No**|
+
+
+|In Tagion | **Full Privacy** |**Full Anonymity**|
+|--|:--:|:--:|
+|**Mainnet:**|**No** <br />because the amounts of all Txs are public|**Yes** <br />unless users decide to disclose their identity |
+|**Subsystem:**  |**Yes**<br />if so desired – but the opposite is also possible (allowing for regulatory compliance)|**Yes**<br />if so desired – but the opposite is also possible (allowing for regulatory compliance)|
+ 
+
 ## Community 
 
 The word "community" is derived from the Latin communitas, which comes from communis, meaning "common, public, or shared by all." Combining con- (together) and munis (relating to duties or services), it conveys the idea of people coming together to fulfill shared responsibilities or provide services.  
 
-In the context of Tagion, the Community encompasses all verified Community Members (link) actively participating in and contributing to the network, including Consensus (link) and Governance (link) processes.  
+In the context of Tagion, the Community encompasses all verified [Community Members](/gov/glossary#community-member) actively participating in and contributing to the network, including [consensus](/gov/glossary#consensus) and [Governance](/gov/glossary#governance) processes.  
 
 Notably, Community is a fluid term - a flexible and evolving entity - that may adapt to include new roles and contributors as the network develops and grows. 
 
 ## Community Member 
 
-A community member is any individual or entity who has been verified by peers through the network’s Social Scoring System (link). Once verified, community members gain the right to participate in both the consensus process and the governance of the network, contributing to its security, efficiency and decision-making. 
+A community member is any individual or entity who has been verified by peers through the network’s [Social Scoring System](/gov/governance_areas/network_formation/tagion/poc). Once verified, community members gain the right to participate in both the consensus process and the governance of the network, contributing to its security, efficiency and decision-making. 
 
 ## Consensus 
 
-Consensus refers to the process by which Nodes (link) agree on the validity and order of transactions recorded in the Database (link). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the validity and order of transactions recorded in the [Database](/gov/glossary#distributed_database). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
 
 In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. In this system: 
 
@@ -38,29 +54,15 @@ Through Hashgraph, Tagion attains decentralised consensus, enabling honest nodes
 
 ## Contributors 
 
-In a decentralized network, contributors form the foundation, collectively driving its functionality, security, and growth. Unlike traditional centralized systems, where a single entity oversees operations, decentralized networks thrive on the diverse participation of individuals and organizations. These contributors, each bringing their unique strengths, are indispensable in sustaining and advancing the system. 
-
-The term "contributor" itself is fluid, encompassing a wide array of roles that may expand as the network matures and new opportunities for engagement emerge. From the outset, however, contributors can be categorized into three groups:  
-
-#### Node Operators 
-
-Node operators provide the essential computational infrastructure that powers the network. They validate transactions, propagate messages, execute smart contracts, and maintain the integrity of the database. Depending on their focus, node operators may run Core Nodes (link), which handle the tasks of consensus and security, Relay Nodes (link), which collect, collate, and manage user requests to submit or retrieve data, or Mirror Nodes (link), which store and replicate data to ensure accessibility. Together, these operators sustain the network's reliability and resilience. 
-
-#### Developers 
-
-Developers are the architects and innovators of the Tagion Network. They build, maintain, and refine the core protocols and supporting tools. By addressing the evolving needs of the network and its users, developers ensure the system remains robust and scalable. 
-
-#### Governance Participants 
-
-Governance Participants play a critical role in shaping the network's future. Through proposals, debates, and voting, they decide, among other things, on protocol upgrades and treasury finances, including fees and rewards. They ensure that the network remains adaptive and aligns with the Manifesto and the interests of its users. 
-
+The term "contributor" is fluid, encompassing a wide array of possible roles that may expand as the network matures and new opportunities for engagement emerge. For now, we consider our contributors a category that íncludes but also goes beyond out "community members" (see above). As such they encompass: node operator, developers and governance participants, as outlined [here](/gov/intro/network). 
  
 
 ## Currency 
 
-An implementation/instantiation of the concept of money [link].  
+An implementation/instantiation of the concept of [money](/gov/glossary#money).  
 
- 
+## De jure / de facto
+We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, as we explain in the article about "[permissionlessness](/gov/governance_areas/network_formation/introductions/permission)", the real-world effect of certain rules (de facto) can run counter to its intention (de jure). 
 
 ## Distributed Database 
 
@@ -70,17 +72,21 @@ Tagion ensures data integrity and authenticity through an immutable audit trail.
 
 ## Federated Subsystem 
 
-A Federated Subsystem is an independent network — either public or private — that operates separately from the Tagion Mainnet (link) but leverages the Mainnet for security and trust. These subsystems can be tailored to specific use cases, industries, or communities, providing flexibility in how they manage data and transactions while benefiting from the underlying security provided by Mainnet Nodes. 
+A Federated Subsystem is an independent network — either public or private — that operates separately from the Tagion [Mainnet](/gov/glossary#tagion-mainnet) but leverages the Mainnet for security and trust. These subsystems can be tailored to specific use cases, industries, or communities, providing flexibility in how they manage data and transactions while benefiting from the underlying security provided by Mainnet Nodes. 
 
-In a Federated Subsystem, all data remains encrypted within the subsystem, ensuring privacy and confidentiality for users. However, transactional activity — the overall volume and frequency of transactions — is monitored by Mainnet Nodes. 
+In a Federated Subsystem, all data remains encrypted within the subsystem, ensuring privacy and confidentiality for users. However, transactional activity — the overall volume and frequency of transactions — is monitored by Mainnet Nodes. (Also see [Network Architecture](/gov/intro/network) in Governance Area "Network Formation".)
+
+## Formation
+
+In our governance area "network formation" we use this word analogous to its dual meaning in geology: the process of forming something AND the resulting structure (as in "rock formation").
 
 ## Governance 
 
-At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both on-chain (link) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
+At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both [on-chain](/gov/glosary#on-chain-governance) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
 
 ## Money 
 
-Since it has many but no definitive meanings even in economics and law, we here operate with the most basic definition: a system of transferable units to facilitate collaboration within a certain constituency. [compare Bindewald 2021] 
+Since it has many but no definitive meanings even in economics and law, we here operate with the most basic definition: a system of transferable units to facilitate collaboration within a certain constituency (compare [Bindewald 2021](https://www.mdpi.com/1911-8074/14/2/55)). 
 
 ## Network Services 
 
@@ -88,18 +94,8 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 
 ## Nodes 
 
-A node is any device that connects to the network to help maintain the Database (link). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the consensus process (link). 
+A node is any device that connects to the network to help maintain the [database](/gov/glossary#distributed-database). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the [consensus process](/gov/glossary#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
 
-There are three types of nodes: 
-
-#### Core Nodes: 
-At the heart of the system, core nodes are tasked with maintaining the database and reaching agreement on the data submitted and stored—a process referred to as consensus (link). These nodes uphold the integrity and security of the system, ensuring that the data stored is accurate and protected.  
-
-#### Relay Nodes: 
-These nodes act as intermediaries, collecting, collating, and managing user requests to submit or retrieve data. Because they also filter out spam and unnecessary requests, they significantly reduce the load on core nodes, enhancing the overall efficiency of the system. 
-
-#### Mirror Nodes: 
-Mirror nodes maintain a full or partial snapshot of the database and update that at given self-selected intervals. Their primary function is to facilitate easy and efficient data retrieval for users while also alleviating the demand on core nodes. 
 
 ## On-chain Governance 
 
@@ -120,6 +116,6 @@ A public system or infrastrucre is open for everybody to use. Tagion aspires to 
 
 ## Tagion Mainnet 
 
-The Tagion Mainnet serves as the foundation of the Tagion Ecosystem, operating as a Layer 0 that provides the settlement layer for TGN transactions, the infrastructure facilitating network governance, and the security and interoperability layer that connects and protects the broader network of Federated Subsystems (link). By allowing independent networks to batch and finalize transactions on its secure and immutable ledger, the Mainnet ensures that even private Subsystems remain anchored to the decentralized security of the ecosystem. 
+The Tagion Mainnet serves as the foundation of the Tagion Ecosystem, operating as a Layer 0 that provides the settlement layer for TGN transactions, the infrastructure facilitating network governance, and the security and interoperability layer that connects and protects the broader network of [Federated Subsystems](/gov/glossary#tagion-mainnet). By allowing independent networks to batch and finalize transactions on its secure and immutable ledger, the Mainnet ensures that even private Subsystems remain anchored to the decentralized security of the ecosystem. 
 
-Notably, to keep the Mainnet streamlined, applications are primarily run on Federated Sub-systems, reducing the risk of Mainnet bloating and ensuring that the core network remains slick, scalable, and high-performing.  
+Notably, to keep the Mainnet streamlined, applications are primarily run on Federated Sub-systems, reducing the risk of Mainnet bloating and ensuring that the core network remains slick, scalable, and high-performing. (Also see [Network Architecture](/gov/intro/network) in Governance Atrea "Network Formation")

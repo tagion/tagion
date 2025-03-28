@@ -345,23 +345,45 @@ struct WastParser {
                         r.nextToken;
                     }
                     const wasm_results = getReturns(r);
-                    foreach (n; 0 .. instr.pops.length) {
-                        inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
-                    }
-                    if (wasm_results.length == 0) {
-                        wasmexpr(irLookupTable[instr.name], Types.VOID);
-                    }
-                    else if (wasm_results.length == 1) {
-                        wasmexpr(irLookupTable[instr.name], wasm_results[0]);
-                    }
-                    else {
-                        auto func_type = FuncType(Types.FUNC, null, wasm_results.idup);
-                        const type_idx = writer.createTypeIdx(func_type);
-                        wasmexpr(irLookupTable[instr.name], type_idx);
-                    }
-                    func_ctx.block_push(wasm_results, label);
                     const block_ir = irLookupTable[instr.name];
+                    void getArguments() {
+                        foreach (n; 0 .. instr.pops.length) {
+                            inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
+                        }
+                    }
+
+                    void addBlockIR() {
+                        if (wasm_results.length == 0) {
+                            wasmexpr(block_ir, Types.VOID);
+                        }
+                        else if (wasm_results.length == 1) {
+                            wasmexpr(block_ir, wasm_results[0]);
+                        }
+                        else {
+                            auto func_type = FuncType(Types.FUNC, null, wasm_results.idup);
+                            const type_idx = writer.createTypeIdx(func_type);
+                            wasmexpr(block_ir, type_idx);
+                        }
+                    }
+
                     if (block_ir is IR.IF) {
+
+                        if ((r.type is TokenType.BEGIN) && (r.save.drop(1).front.token == PseudoWastInstr.then)) {
+                            //auto r_then = r.save;
+                            //r_then.nextToken;
+                            //if (r_then.front.token == PseudoWastInstr.then) {
+                                __write(":::: Then <<<===");
+                            //}
+                           
+                            r.drop(2);
+                        }
+                        else {
+                            getArguments;
+                        }
+                            //}
+                              //                   getArguments;
+                        addBlockIR;
+                        func_ctx.block_push(wasm_results, label);
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
                         if (r.type is TokenType.BEGIN) {
                             auto r_else = r.save;
@@ -381,6 +403,9 @@ struct WastParser {
 
                     }
                     else {
+                        getArguments;
+                        addBlockIR;
+                        func_ctx.block_push(wasm_results, label);
                         while (r.type is TokenType.BEGIN) {
                             innerInstr(wasmexpr, r, wasm_results, next_stage);
                         }

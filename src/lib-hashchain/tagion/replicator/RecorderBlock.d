@@ -10,6 +10,8 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordType;
 
+// TODO: rename to ReplicatorBlock
+
 @recordType("RCB")
 struct RecorderBlock {
     /** Fingerprint of this block */

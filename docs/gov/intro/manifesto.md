@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1.5
+sidebar_position: 4
 ---
 
 # The Tagion Manifesto
@@ -124,4 +124,5 @@ desires, and environmental considerations.
 
 
 _Tagion shall always uphold the seven core principles here defined._
+
 

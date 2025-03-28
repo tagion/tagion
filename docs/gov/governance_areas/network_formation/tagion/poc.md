@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 # A twofold objective
-With our unique "Proof of Community" model, Tagion pursues a twofold oobjective:
+With our unique "Proof of Community" model[^1], Tagion pursues a twofold oobjective:
 
 ## Security and Decentralisation
 
@@ -24,6 +24,6 @@ Our model, dubbed Proof-of-Community, draws inspiration from human social organi
 
 - Reputation – While identity is established at birth, influence must be earned. Reputation is built over time through peer endorsements, allowing members to gain trust and standing within the network. The higher a member’s reputation score, the greater its influence, meaning members with stronger reputations have more weight in consensus, decision-making, and endorsements. Unlike heredity, which controls who can enter the network, reputation determines how much influence a member has within the system, ensuring that trusted members play a greater role in shaping the network's future. # Tagion's twofold objective: Security and Decentralization 
 
-
+[^1]:The ideas here presented supersede Section 3 "Network Security" from the 2023 and 2024 "Tokenomics Papers". 
 
 

@@ -100,7 +100,7 @@ struct EpochCreatorService {
         refinement.queue = new PayloadQueue();
 
         int counter = 0;
-        const(Document) payload() {
+        Document payload() {
             if (counter > 0) {
                 log.trace("Payloads in queue=%d", counter);
             }
@@ -112,7 +112,7 @@ struct EpochCreatorService {
         }
 
         // Receive contracts from the TVM
-        void receivePayload(Payload, const(Document) pload) {
+        void receivePayload(Payload, Document pload) {
             pragma(msg, "fixme(cbr): Should we not just send the payload directly to the hashgraph");
             refinement.queue.write(pload);
             counter++;
@@ -120,7 +120,7 @@ struct EpochCreatorService {
 
         HiRPC hirpc = HiRPC(net);
 
-        void receiveWavefront_req(WavefrontReq req, const(Document) wave_doc) {
+        void receiveWavefront_req(WavefrontReq req, Document wave_doc) {
             const receiver = hirpc.receive(wave_doc);
             try {
                 if (receiver.isError) {
@@ -165,7 +165,7 @@ struct EpochCreatorService {
         }
 
 
-        void receiveWavefront_req_mirror(WavefrontReq req, const(Document) wave_doc) {
+        void receiveWavefront_req_mirror(WavefrontReq req, Document wave_doc) {
             const receiver = HiRPC.Receiver(wave_doc);
             if (receiver.isError) {
                 return;
