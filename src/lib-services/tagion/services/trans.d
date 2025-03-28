@@ -114,7 +114,7 @@ struct TranscriptService {
 
     void epoch(consensusEpoch,
         immutable(EventPackage*)[] epacks,
-        immutable(long) epoch_number,
+        long epoch_number,
         const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
         import tagion.utils.Term;
