@@ -136,9 +136,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 auto ctx_results = new Context;
                 block(result_expr, func_void, ctx_results, indent, true);
                 output.writefln("%s// %s : %s", indent, ctx.stack, ctx_results.stack);
-                version (none)
-                    check(ctx.stack.length == ctx_results.stack.length,
-                            "Number of values in the assert statement does not match");
                 if (ctx.stack.length) {
                     output.writefln("%s// %s", indent, ctx_results);
                     if (ctx_results.stack.length == 1) {
