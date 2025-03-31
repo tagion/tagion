@@ -388,7 +388,6 @@
     )
     (local.get 1)
   )
-(;
   (func (export "nesting") (param f32 f32) (result f32)
     (local f32 f32)
     (block
@@ -411,6 +410,7 @@
     )
     (local.get 3)
   )
+(;
 
   (type $block-sig-1 (func))
   (type $block-sig-2 (func (result i32)))
@@ -519,7 +519,7 @@
 (assert_return (invoke "for" (i64.const 3)) (i64.const 6))
 (assert_return (invoke "for" (i64.const 5)) (i64.const 120))
 (assert_return (invoke "for" (i64.const 20)) (i64.const 2432902008176640000))
-(;
+
 (assert_return (invoke "nesting" (f32.const 0) (f32.const 7)) (f32.const 0))
 (assert_return (invoke "nesting" (f32.const 7) (f32.const 0)) (f32.const 0))
 (assert_return (invoke "nesting" (f32.const 1) (f32.const 1)) (f32.const 1))
@@ -536,7 +536,7 @@
 (assert_return (invoke "nesting" (f32.const 7) (f32.const 4)) (f32.const 10.3095235825))
 (assert_return (invoke "nesting" (f32.const 7) (f32.const 100)) (f32.const 4381.54785156))
 (assert_return (invoke "nesting" (f32.const 7) (f32.const 101)) (f32.const 2601))
-
+(;
 (assert_return (invoke "type-use"))
 
 (assert_malformed
