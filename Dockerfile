@@ -1,5 +1,5 @@
 # Build image
-FROM alpine:20240606 as build
+FROM alpine:3.21 as build
 
 # set the --build-arg DEBUG=1 to build the executable with debug information
 ARG DEBUG
@@ -20,7 +20,7 @@ fi
 RUN make tagion install INSTALL=/usr/local/bin/ DC=ldc2
 
 # Final image
-FROM alpine:20240606
+FROM alpine:3.21
 WORKDIR /usr/local/
 ENV NODE_NUMBER=0
 RUN apk add bash
