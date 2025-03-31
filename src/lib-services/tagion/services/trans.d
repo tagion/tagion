@@ -92,6 +92,7 @@ struct TranscriptService {
 
     struct EpochContracts {
         const(SignedContract)[] signed_contracts;
+        immutable(Fingerprint)[] witnesses;
         sdt_t epoch_time;
     }
 
@@ -114,6 +115,7 @@ struct TranscriptService {
 
     void epoch(consensusEpoch,
         immutable(EventPackage*)[] epacks,
+        immutable(Fingerprint)[] witnesses,
         long epoch_number,
         const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
@@ -150,7 +152,7 @@ struct TranscriptService {
             .array;
 
         auto req = dartCheckReadRR(id: last_epoch_number);
-        epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
+        epoch_contracts[req.id] = new const EpochContracts(signed_contracts, witnesses, epoch_time);
 
         if (inputs.length == 0) {
             createRecorder(req.Response(req.msg, req.id), inputs);
@@ -224,6 +226,10 @@ struct TranscriptService {
                     continue loop_signed_contracts;
                 }
             }
+
+            WitnesHead withead;
+            withead.witnesses = epoch_contract.witnesses;
+            recorder.add(withead);
 
             Epoch non_voted_epoch;
             non_voted_epoch.epoch_number = res.id;

@@ -301,8 +301,8 @@ struct TagionHead {
 
 @recordType("$@Witness")
 struct WitnesHead {
+    const(Fingerprint)[] witnesses;
     @label(HashNames.witness) string name = TagionDomain;
-    Fingerprint[] witnesses;
     mixin HiBONRecord;
 }
 

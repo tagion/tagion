@@ -95,6 +95,7 @@ struct TranscriptService {
 
     struct EpochContracts {
         const(SignedContract)[] signed_contracts;
+        Fingerprint[] witnesses;
         sdt_t epoch_time;
     }
 
@@ -132,7 +133,7 @@ struct TranscriptService {
 
     void epoch(consensusEpoch,
         immutable(EventPackage*)[] epacks,
-        immutable(Fingerprint)[] fingerprints,
+        immutable(Fingerprint)[] witnesses,
         long epoch_number,
         const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
@@ -170,7 +171,7 @@ struct TranscriptService {
             .array;
 
         auto req = dartCheckReadRR(id : last_epoch_number);
-        epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
+        epoch_contracts[req.id] = new const EpochContracts(signed_contracts, witnesses, epoch_time);
 
         if (inputs.length == 0) {
             createRecorder(req.Response(req.msg, req.id), inputs);
@@ -301,6 +302,10 @@ struct TranscriptService {
             }
         }
 
+        WitnesHead withead;
+        withead.witnesses = epoch_contract.witnesses;
+        recorder.add(withead);
+
         /*
         Since we write all inromation that is known immediately we create the epoch chain block here and make it empty.
         The following information can be added:
@@ -309,7 +314,7 @@ struct TranscriptService {
             active
             deactivate
             globals
-        This will be added to thed DART. We also keep this in our cache in order to make the reads as few as possible.
+        This will be added to the DART. We also keep this in our cache in order to make the reads as few as possible.
         */
         Epoch non_voted_epoch;
         non_voted_epoch.epoch_number = res.id;
