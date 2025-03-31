@@ -67,13 +67,16 @@ struct WasmGas {
                     case PREFIX:
                     case CODE:
                     case CODE_TYPE:
+                    case OP_STACK:
                     case RETURN:
                         wasmexpr(elm.code);
                         break;
                     case CODE_EXTEND:
                         wasmexpr(elm.code, elm.instr.opcode);
                         break;
+                    case BLOCK_CONDITIONAL:
                     case BLOCK:
+                    case BLOCK_ELSE:
                         wasmexpr(elm.code, elm.types[0]);
                         scope block_bout = new OutBuffer;
                         pragma(msg, "fixme(cbr): add block_block_out.reserve");
@@ -92,11 +95,12 @@ struct WasmGas {
                         bout.write(block_bout);
                         break;
                     case BRANCH:
+                        if (elm.code is IR.BR_TABLE) {
+                            const branch_idxs = elm.wargs.map!((a) => a.get!uint).array;
+                            wasmexpr(elm.code, branch_idxs);
+                            break;
+                        }
                         wasmexpr(elm.code, elm.warg.get!uint);
-                        break;
-                    case BRANCH_TABLE:
-                        const branch_idxs = elm.wargs.map!((a) => a.get!uint).array;
-                        wasmexpr(elm.code, branch_idxs);
                         break;
                     case CALL, LOCAL, GLOBAL, CALL_INDIRECT:
                         wasmexpr(elm.code, elm.warg.get!uint);
@@ -199,7 +203,7 @@ struct WasmGas {
                     (IR.GLOBAL_GET, global_idx)
                     (IR.I32_CONST, 0)
                     (IR.I32_GT_S)
-                    (IR.IF, Types.EMPTY)
+                    (IR.IF, Types.VOID)
                     (IR.GLOBAL_GET, global_idx)
                     (IR.LOCAL_GET, 0)
                     (IR.I32_SUB)
@@ -235,7 +239,7 @@ struct WasmGas {
                 WasmExpr(out_expr)
                     // void $set_gas_gauge(i32 $gas)
                     //   if ( $gas_gauge != 0) {
-                    (IR.GLOBAL_GET, global_idx)(IR.I32_EQZ)(IR.IF, Types.EMPTY)
+                    (IR.GLOBAL_GET, global_idx)(IR.I32_EQZ)(IR.IF, Types.VOID)
                     //       exit;
                     (IR.UNREACHABLE)
                     //   } else {

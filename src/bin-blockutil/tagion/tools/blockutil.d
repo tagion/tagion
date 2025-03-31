@@ -1,4 +1,4 @@
-//\blockfile.d database blockfile tool
+@description("Database blockfile tool")
 module tagion.tools.blockutil;
 
 import std.algorithm;

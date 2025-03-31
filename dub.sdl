@@ -12,7 +12,7 @@ preGenerateCommands `echo -e "\e[31mOnly the :hibon subPackage is supported by d
 libs "secp256k1" "nng"
 dflags "-dip1000" "-preview=inclusiveincontracts"
 versions "REDBLACKTREE_SAFE_PROBLEM" "ONETOOL"
-stringImportPaths "tub/logos/" "/home/lucas/wrk/tagion/build/x86_64-linux"
+stringImportPaths "tub/logos/" "build/x86_64-linux"
 
 importPaths "src/lib-basic/"
 importPaths "src/lib-actor/"

@@ -1,3 +1,4 @@
+@description("http proxy for node rpc commands")
 module tagion.tools.tagionshell;
 
 import core.time;
@@ -290,28 +291,28 @@ void dart_worker(ShellOptions opt) {
         "$error": "error",
         "father_less": "father_less"
     ]);
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
     const net = new StdHashNet();
     auto record_factory = RecordFactory(net);
     const hirpc = HiRPC(null);
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
     s.recvtimeout = msecs(opt.sock_recvtimeout);
     s.subscribe(opt.recorder_subscription_tag);
     s.subscribe(opt.trt_subscription_tag);
     s.subscribe(opt.monitor_subscription_tag);
     writeit("DS: subscribed");
-    while (!abort) {
-        rc = s.dial(opt.tagion_subscription_addr);
-        if (rc == 0)
-            break;
-        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the subscription socket");
-    }
+
+    s.reconnmint(opt.common_socket_delay.msecs);
+    rc = s.dial(opt.tagion_subscription_addr, nonblock: true);
+
     scope (exit) {
         s.close();
     }
-    writeit("DS: connected");
     while (!abort) {
         try {
             auto received = s.receive!(immutable(ubyte[]))();
+            if(s.errno != nng_errno.NNG_OK && s.errno != nng_errno.NNG_ETIMEDOUT)
+                writeln("DS: ", nng_errstr(s.errno));
+
             if (received.empty) {
                 continue;
             }
@@ -413,6 +414,7 @@ void ws_on_connect(WebSocket* ws, void* ctx) {
     }
     auto d = ws_device(ws, ctx, []);
     ws_devices.add(sid, d);
+    writefln("WS connected %s", sid);
 }
 
 void ws_on_close(WebSocket* ws, void* ctx) {
@@ -420,6 +422,7 @@ void ws_on_close(WebSocket* ws, void* ctx) {
     if (ws_devices.contains(sid)) {
         ws_devices.remove(sid);
     }
+    writefln("WS closed %s", sid);
 }
 
 void ws_on_error(WebSocket* ws, int err, void* ctx) {
@@ -1025,9 +1028,8 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                     wallet_interface.secure_wallet.net.calcHash(
                     update_tag.representation));
             const hirpc = HiRPC(update_net);
-            const hreq = wallet_interface.secure_wallet.getRequestUpdateWallet(hirpc);
-            WebData hrep = WebClient.post(uri ~ opt.dart_endpoint,
-                    cast(ubyte[])(hreq.serialize),
+            const hreq = wallet_interface.secure_wallet.getRequestCheckWallet(hirpc);
+            WebData hrep = WebClient.post(uri ~ opt.dart_endpoint, cast(ubyte[])(hreq.serialize),
             ["Content-type": mime_type.BINARY]);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
@@ -1094,7 +1096,7 @@ void lookup_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             break;
         case "trt":
             DARTIndex drtindex = hash_net.dartIndexDecode(query_str);
-            rc = s.send(crud.trtdartRead([drtindex]).toDoc.serialize);
+            rc = s.send(crud.dartRead([drtindex], HiRPC(null).relabel("trt")).toDoc.serialize);
             ubyte[HIRPC_BUF_SIZE] buf;
             size_t len = s.receivebuf(buf, buf.length);
             if (len == size_t.max && s.errno != 0) {
@@ -1198,6 +1200,7 @@ int _main(string[] args) {
 
     ShellOptions options;
     bool override_switch;
+    string[] override_options;
 
     long sz, isz;
     
@@ -1225,6 +1228,7 @@ int _main(string[] args) {
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
                 "O|override", "Override the config file", &override_switch,
+                "option", "Set an option", &override_options,
         );
     }
     catch (GetOptException e) {
@@ -1237,8 +1241,6 @@ int _main(string[] args) {
         return 0;
     }
     if (main_args.helpWanted) {
-        const option_info = format("%s [<option>...] <config.json> <files>", program);
-
         defaultGetoptPrinter(
                 [
                 // format("%s version %s", program, REVNO),
@@ -1252,6 +1254,10 @@ int _main(string[] args) {
                 ].join("\n"),
                 main_args.options);
         return 0;
+    }
+
+    if (!override_options.empty) {
+        options.set_override_options(override_options);
     }
 
     if (override_switch) {
@@ -1287,23 +1293,19 @@ int _main(string[] args) {
     }
 
     isz = getmemstatus();
-    scope (exit) {
-        Thread.sleep(msecs(options.common_socket_delay));
-        pragma(msg, "fixme: a workaround to give nng threads some time to stop correctly");
-        pragma(msg, "fixme: investigate if we need this or can move it to the app. logic. Bad behaviour to have sleep in exit scopes");
-    }
 
     WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(
             `{"root_path":"` ~ options.webroot ~ `","static_path":"` ~ options.webstaticdir ~ `"}`), &options);
     help_text ~= ("TagionShell web service\n");
     help_text ~= ("Listening at " ~ options.shell_uri ~ "\n\n");
+    add_v1_route(app, options.sysinfo_endpoint, sysinfo_handler, [HTTPMethod.GET], "system info");
+    add_v1_route(app, options.version_endpoint, &versioninfo_handler, [HTTPMethod.GET], "network version info");
+    /* add_v1_route(app, "/monitor", [HTTPMethod.GET], "Prometheus metrics endpoint"); */
     add_v1_route(app, options.i2p_endpoint, i2p_handler, [HTTPMethod.POST], "invoice-to-pay hibon");
     add_v1_route(app, options.bullseye_endpoint, bullseye_handler, [HTTPMethod.GET], "the dart bullseye", [
         "/json": "Result in json format",
         "/hibon": "Result in hibon format",
     ]);
-    add_v1_route(app, options.sysinfo_endpoint, sysinfo_handler, [HTTPMethod.GET], "system info");
-    add_v1_route(app, options.version_endpoint, &versioninfo_handler, [HTTPMethod.GET], "network version info");
     add_v1_route(app, options.hirpc_endpoint, hirpc_handler, [HTTPMethod.POST], "Any HiRPC call", [
         "/nocache": "Avoid using the cache on dartRead methods"
     ]);

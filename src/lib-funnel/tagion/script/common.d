@@ -7,6 +7,7 @@ module tagion.script.common;
 import std.array;
 import std.range;
 import std.sumtype;
+import std.typetuple;
 import tagion.basic.Types;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureInterfaceNet;
@@ -19,6 +20,19 @@ import tagion.script.ScriptException;
 import tagion.script.TagionCurrency;
 import tagion.script.standardnames;
 import tagion.utils.StdTime;
+
+alias CommonRecords = AliasSeq!(
+        TagionBill,
+        TagionHead,
+        TagionGlobals,
+        Contract,
+        SignedContract,
+        PayScript,
+        GenesisEpoch,
+        Epoch, Active,
+        LockedArchives,
+        WasmScript,
+);
 
 /**
  * Tagion bill
@@ -226,7 +240,7 @@ unittest {
  */
 @recordType("$@G") 
 struct GenesisEpoch {
-    @label(StdNames.epoch) long epoch_number; /// should always be zero
+    @label(HashNames.epoch) long epoch_number; /// should always be zero
     Pubkey[] nodes; /// Initial nodes
     Document testamony; /// blabber
     @label(StdNames.time) sdt_t time; /// Time of consensus for the epoch
@@ -239,7 +253,7 @@ struct GenesisEpoch {
  */
 @recordType("$@E") 
 struct Epoch {
-    @label(StdNames.epoch) long epoch_number; /// The epoch number
+    @label(HashNames.epoch) long epoch_number; /// The epoch number
     @label(StdNames.time) sdt_t time; /// Time stamp
     @label(StdNames.bullseye) Fingerprint bullseye; /// bullseye of the DART at this epoch
     @label(StdNames.previous) Fingerprint previous; /// bullseye of the DART at the previous epoch
@@ -280,8 +294,15 @@ alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
  */
 @recordType("$@Tagion")  
 struct TagionHead {
-    @label(StdNames.domain_name) string name = TagionDomain; /// Default name should always be "tagion"
+    @label(HashNames.domain_name) string name = TagionDomain; /// Default name should always be "tagion"
     long current_epoch;
+    mixin HiBONRecord;
+}
+
+@recordType("$@Witness")
+struct WitnesHead {
+    @label(HashNames.witness) string name = TagionDomain;
+    Fingerprint[] witnesses;
     mixin HiBONRecord;
 }
 
@@ -339,7 +360,7 @@ pragma(msg, "Why is Locked not reserved?");
 ///
 @recordType("@Locked") 
 struct LockedArchives {
-    @label(StdNames.locked_epoch) long epoch_number;
+    @label(HashNames.locked_epoch) long epoch_number;
     @label("outputs") const(DARTIndex)[] locked_outputs;
     mixin HiBONRecord;
 }
@@ -352,7 +373,7 @@ DARTIndex[] lockedArchiveIndices(Range)(Range epochs, SecureNet net)
 if (isInputRange!Range && is(ElementType!Range : long)) {
     DARTIndex[] indices;
     foreach(epoch; epochs) {
-        indices ~= net.dartKey(StdNames.locked_epoch, epoch);
+        indices ~= net.dartKey(HashNames.locked_epoch, epoch);
     }
     return indices;
 }
@@ -363,7 +384,7 @@ if (isInputRange!Range && is(ElementType!Range : long)) {
  */
 @recordType("$@Active") 
 struct Active {
-    @label(StdNames.active)string name = TagionDomain; /// Default name should always be "tagion"
+    @label(HashNames.active)string name = TagionDomain; /// Default name should always be "tagion"
     @label("nodes") const(Pubkey)[] nodes; /// All of the active nodes
     mixin HiBONRecord!(q{
         this(const(Pubkey)[] nodes) pure nothrow {

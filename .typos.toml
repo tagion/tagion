@@ -22,6 +22,8 @@ otation = "otation"
 
 # Name
 Theis = "Theis"
+# Token generatator event
+TGE = "TGE"
 
 # Actual fixes
 indexes = "indices"
@@ -55,5 +57,6 @@ extend-exclude = [
     "src/lib-behaviour/tagion/behaviour/unitdata/",
     "*.svg",
     "tub/ios.toolchain.cmake",
-    "*.excalidraw"
+    "*.excalidraw",
+    "bdd/",
 ]

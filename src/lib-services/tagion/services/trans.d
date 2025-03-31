@@ -114,7 +114,7 @@ struct TranscriptService {
 
     void epoch(consensusEpoch,
         immutable(EventPackage*)[] epacks,
-        immutable(long) epoch_number,
+        long epoch_number,
         const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
         import tagion.utils.Term;
@@ -311,7 +311,7 @@ struct TranscriptService {
     void task() {
         {
             // start by reading the head
-            immutable tagion_index = net.dartKey(StdNames.domain_name, TagionDomain);
+            immutable tagion_index = net.dartKey(HashNames.domain_name, TagionDomain);
             dart_handle.send(dartReadRR(), [tagion_index]);
             log("SENDING HEAD REQUEST TO DART");
 
@@ -327,7 +327,7 @@ struct TranscriptService {
             });
 
             // now we locate the epoch
-            immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
+            immutable epoch_index = net.dartKey(HashNames.epoch, last_head.current_epoch);
             dart_handle.send(dartReadRR(), [epoch_index]);
             receive((dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
                 if (!epoch_recorder.empty) {

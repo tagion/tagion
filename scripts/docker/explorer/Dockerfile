@@ -29,7 +29,7 @@ RUN ln -s /usr/local/app/webapp /tmp/
 COPY --from=build /tmp/src/build/x86_64-linux/tmp/nng/src/tools/nngcat/nngcat bin/
 COPY --from=build /usr/local/bin bin/
 COPY --from=build /tmp/src/scripts/docker/explorer/create_wallets.sh /usr/local/app
-COPY --from=build /tmp/src/scripts/docker/explorer/htdocs/* /usr/local/app/webapp/static/explorer
+COPY --from=build /tmp/src/scripts/docker/explorer/htdocs/ /usr/local/app/webapp/
 COPY --from=build /tmp/src/scripts/docker/explorer/supervisord.conf /usr/local/app/
 COPY --from=build /tmp/src/scripts/docker/explorer/shell.json /usr/local/app/
 

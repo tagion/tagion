@@ -467,8 +467,6 @@ unittest {
 
     thisActor.task_name = "jens";
 
-    import std.stdio;
-
     auto net1 = new StdSecureNet();
     net1.generateKeyPair("me1");
 
@@ -554,7 +552,7 @@ struct NodeInterfaceService {
     Document[uint] queued_sends;
     bool[uint] should_close;
 
-    void node_send(WavefrontReq req, Pubkey channel, const(Document) doc) {
+    void node_send(WavefrontReq req, Pubkey channel, Document doc) {
         const hirpc = HiRPC(null).receive(doc);
         if(p2p.isActive(req.id)) {
             // We could close immediately if the message is an error and not a result?
@@ -618,7 +616,7 @@ struct NodeInterfaceService {
                 Envelope envelope = Envelope(buf);
                 check!ServiceException(!envelope.errorstate, envelope.errors.join("\n"));
 
-                const doc = Document(envelope.toData);
+                Document doc = Document(envelope.toData);
 
                 if(!doc.empty && !doc.isInorder(Document.Reserved.no)) {
                     on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
@@ -703,7 +701,7 @@ void fail(string owner_task, Throwable t) nothrow {
         ActorHandle(owner_task).prioritySend(tf);
     }
     catch(Exception e) {
-        log(e);
+        log.fatal(e);
     }
 }
 

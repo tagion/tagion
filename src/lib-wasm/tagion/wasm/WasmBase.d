@@ -116,10 +116,12 @@ enum IRType {
     CODE, /// Simple instruction with no argument
     CODE_EXTEND, /// Extended instruction with an opcode argument
     CODE_TYPE, /// Instrunction with return type conversion (like select)
+    OP_STACK, /// Stack operations
     RETURN,
     BLOCK, /// Block instruction
+    BLOCK_CONDITIONAL, /// Used for if statement
+    BLOCK_ELSE, // Used for else statement (The block number is the same as for the BLOCK_CONDITION)
     BRANCH, /// Branch jump instruction
-    BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
     CALL_INDIRECT, /// Indirect subroutine call
     LOCAL, /// Local register storage instruction
@@ -143,6 +145,9 @@ struct Instr {
     Types[] pops; // Number of pops from the stack
     Types[] pushs; // Number of values pushed
     uint opcode; // Extended opcode argument
+    string toString() const pure {
+        return format("%s %s ->%s <%s>", name, pops, pushs, irtype);
+    }
 }
 
 enum ubyte[] magic = [0x00, 0x61, 0x73, 0x6D];
@@ -153,24 +158,24 @@ enum IR : ubyte {
         @Instr("nop", "nop", 1, IRType.CODE)                       NOP                 = 0x01, ///  nop
         @Instr("block", "block", 0, IRType.BLOCK)                    BLOCK               = 0x02, ///  block rt:blocktype (in:instr) * end
         @Instr("loop", "loop", 0, IRType.BLOCK)                     LOOP                = 0x03, ///  loop rt:blocktype (in:instr) * end
-        @Instr("if", "if", 1, IRType.BLOCK)                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
+        @Instr("if", "if", 1, IRType.BLOCK_CONDITIONAL, [Types.VOID])                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "(;else;)", 0, IRType.END)                       ELSE                = 0x05, ///  else
+        @Instr("else", "else", 0, IRType.BLOCK_ELSE)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
-        @Instr("br_table", "br_table", 1, IRType.BRANCH_TABLE)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
+        @Instr("br_table", "br_table", 1, IRType.BRANCH)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
         @Instr("return", "return", 1, IRType.RETURN)                    RETURN              = 0x0F, ///  return
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
         @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
-        @Instr("drop", "drop", 1, IRType.CODE, [Types.EMPTY])                   DROP                = 0x1A, ///  drop
-        @Instr("select", "select", 1, IRType.CODE_TYPE, [Types.EMPTY, Types.EMPTY, Types.EMPTY], [Types.EMPTY])  SELECT              = 0x1B, ///  select
-        @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.EMPTY])          LOCAL_GET           = 0x20, ///  local.get x:localidx
-        @Instr("local.set", "local.set", 1, IRType.LOCAL, [Types.EMPTY])             LOCAL_SET           = 0x21, ///  local.set x:localidx
-        @Instr("local.tee", "local.tee", 1, IRType.LOCAL, [Types.EMPTY], [Types.EMPTY])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
-        @Instr("global.get", "get_global", 1, IRType.GLOBAL, [Types.EMPTY])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
-        @Instr("global.set", "set_global", 1, IRType.GLOBAL, [], [Types.EMPTY])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
+        @Instr("drop", "drop", 1, IRType.OP_STACK, [Types.VOID])                   DROP                = 0x1A, ///  drop
+        @Instr("select", "select", 1, IRType.CODE_TYPE, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID])  SELECT              = 0x1B, ///  select
+        @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.VOID])          LOCAL_GET           = 0x20, ///  local.get x:localidx
+        @Instr("local.set", "local.set", 1, IRType.LOCAL, [Types.VOID])             LOCAL_SET           = 0x21, ///  local.set x:localidx
+        @Instr("local.tee", "local.tee", 1, IRType.LOCAL, [Types.VOID], [Types.VOID])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
+        @Instr("global.get", "get_global", 1, IRType.GLOBAL, [Types.VOID])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
+        @Instr("global.set", "set_global", 1, IRType.GLOBAL, [], [Types.VOID])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
 
         @Instr("i32.load", "i32.load", 2, IRType.MEMORY, [Types.I32], [Types.I32])          I32_LOAD            = 0x28, ///  i32.load     m:memarg
         @Instr("i64.load", "i64.load", 2, IRType.MEMORY, [Types.I32], [Types.I64])          I64_LOAD            = 0x29, ///  i64.load     m:memarg
@@ -372,7 +377,7 @@ immutable(Instr)* lookup(Table, I)(Table table, I ir) if (is(I == enum)) {
 
 enum PseudoWastInstr {
     invoke = "invoke",
-    if_else = "if_else",
+    //if_else = "if_else",
     call_import = "call_import",
     local = "local",
     label = "label",
@@ -439,16 +444,17 @@ shared static this() {
             result[pseudo] = Instr("(;" ~ pseudo ~ ";)", pseudo, uint.max, ir_type, pops, pushs);
         }
 
-        setPseudo(PseudoWastInstr.invoke, IRType.CALL, [], [Types.EMPTY]);
-        setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, [Types.EMPTY, Types.EMPTY, Types.EMPTY], [Types.EMPTY]);
+        setPseudo(PseudoWastInstr.invoke, IRType.CALL, [], [Types.VOID]);
+        //setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID]);
         setPseudo(PseudoWastInstr.local, IRType.SYMBOL);
-        setPseudo(PseudoWastInstr.label, IRType.SYMBOL, [], [Types.EMPTY]);
+        setPseudo(PseudoWastInstr.label, IRType.SYMBOL, [], [Types.VOID]);
         //setPseudo(PseudoWastInstr.call_import, IRType.CALL);
         //setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         // setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         //  setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
         //setPseudo(PseudoWastInstr.then, IRType.SYMBOL_STATEMENT, 0, 1);
         //setPseudo(PseudoWastInstr.else_, IRType.SYMBOL_STATEMENT, 0, 1);
+        setPseudo(PseudoWastInstr.then, IRType.SYMBOL);
 
         //result["i32.select"] = instrTable[IR.SELECT];
         //result["i64.select"] = instrTable[IR.SELECT];
@@ -492,7 +498,7 @@ enum Mutable : ubyte {
 }
 
 enum Types : ubyte {
-    EMPTY = 0x40, /// Empty block
+    VOID = 0x40, /// Empty block
     @("func") FUNC = 0x60, /// functype
     @("funcref") FUNCREF = 0x70, /// funcref
     @("i32") I32 = 0x7F, /// i32 valtype
@@ -502,7 +508,7 @@ enum Types : ubyte {
 }
 
 bool isNotType(const ubyte x) @nogc pure nothrow {
-    return (x & Types.EMPTY) !is Types.EMPTY;
+    return (x & Types.VOID) !is Types.VOID;
 }
 
 enum DataMode : ubyte {
@@ -528,13 +534,13 @@ template toWasmType(T) {
         enum toWasmType = Types.FUNCREF;
     }
     else {
-        enum toWasmType = Types.EMPTY;
+        enum toWasmType = Types.VOID;
     }
 }
 
 unittest {
     static assert(toWasmType!int  is Types.I32);
-    static assert(toWasmType!void  is Types.EMPTY);
+    static assert(toWasmType!void  is Types.VOID);
 }
 
 template toDType(Types t) {
@@ -581,14 +587,14 @@ static Types getType(const string name) pure nothrow {
             }
         }
     default:
-        return Types.EMPTY;
+        return Types.VOID;
     }
 }
 
 unittest {
     assert("f32".getType == Types.F32);
-    assert("empty".getType == Types.EMPTY);
-    assert("not-valid".getType == Types.EMPTY);
+    assert("empty".getType == Types.VOID);
+    assert("not-valid".getType == Types.VOID);
 
 }
 
@@ -690,7 +696,7 @@ struct WasmArg {
 
     static WasmArg undefine() pure nothrow {
         WasmArg result;
-        result._type = Types.EMPTY;
+        result._type = Types.VOID;
         return result;
     }
 
@@ -793,8 +799,8 @@ struct ExprRange {
 
         int level;
         immutable(Instr)* instr;
+        immutable(ubyte[]) data;
         private union {
-            immutable(ubyte)[] data;
             WasmArg _warg;
             const(WasmArg)[] _wargs;
             uint _typeidx;
@@ -897,6 +903,7 @@ struct ExprRange {
                 case CODE:
                 case CODE_TYPE:
                 case RETURN:
+                case OP_STACK:
                     break;
                 case CODE_EXTEND:
                     const opcode_arg = decode!IR_EXTEND(data, index);
@@ -906,6 +913,7 @@ struct ExprRange {
                     elm._warg = int(data[index]); // Extended insructions
                     index += ubyte.sizeof;
                     break;
+                case BLOCK_CONDITIONAL:
                 case BLOCK:
                     scope (exit) {
                         _level++;
@@ -917,20 +925,24 @@ struct ExprRange {
                     elm.types = data[index .. index + 1];
                     index += Types.sizeof;
                     break;
+                case BLOCK_ELSE:
+                    // Same as IF
+                    break;
                 case BRANCH:
+                    if (elm.code is IR.BR_TABLE) {
+                        //size_t vec_size;
+                        const len = u32(data, index) + 1;
+                        auto _wargs = new WasmArg[len];
+
+                        foreach (ref a; _wargs) {
+                            a = u32(data, index);
+                        }
+                        elm.wargs = _wargs;
+                        break;
+                    }
                     // branchidx
                     elm.warg = get(Types.I32);
                     _level++;
-                    break;
-                case BRANCH_TABLE:
-                    //size_t vec_size;
-                    const len = u32(data, index) + 1;
-                    auto _wargs = new WasmArg[len];
-
-                    foreach (ref a; _wargs) {
-                        a = u32(data, index);
-                    }
-                    elm.wargs = _wargs;
                     break;
                 case CALL:
                     // callidx
@@ -1011,6 +1023,10 @@ struct ExprRange {
 
         bool empty() const {
             return _index > data.length || (wasm_exception !is null);
+        }
+
+        ExprRange save() {
+            return this;
         }
 
     }

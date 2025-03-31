@@ -18,7 +18,7 @@ XDG_CONFIG_HOME?=$(HOME)/.config
 TAGION_DATA:=$(XDG_DATA_HOME)/tagion/wave
 
 
-install: install-bin install-scripts install-services
+install: install-bin install-services
 
 
 TOOL=$(DBIN)/tagion
@@ -31,16 +31,6 @@ $(INSTALLEDTOOL): $(TOOL_TARGET)
 	$(PRECMD)
 	$(CP) $(TOOL) $(INSTALLEDTOOL)
 	$(INSTALLEDTOOL) -f
-
-
-INSTALLED_RUN_NETWORK_SH:=$(TAGION_DATA)/run_network.sh
-INSTALLED_FILES+=$(INSTALLED_RUN_NETWORK_SH)
-
-install-scripts: $(INSTALLED_RUN_NETWORK_SH)
-$(INSTALLED_RUN_NETWORK_SH): scripts/run_network.sh
-	$(MKDIR) $(TAGION_DATA)
-	$(CP) $< $@
-
 
 NEUEWELLE_SERVICE:=$(XDG_CONFIG_HOME)/systemd/user/neuewelle.service
 INSTALLED_FILES+=$(NEUEWELLE_SERVICE)

@@ -17,6 +17,7 @@ import std.base64;
 import core.thread;
 import core.thread.osthread;
 import nngd;
+import nngd.nngtests.suite;
 
 const _testclass = "nngd.nngtests.nng_test08_pool";
 
@@ -35,8 +36,12 @@ struct worker_context {
     void* cptr;
 }
 
+void err_cb(NNGMessage* msg, void* ctx, Exception e) nothrow {
+    assumeWontThrow(stderr.writeln(e));
+}
+/* static assert(is(typeof(err_cb) : NNGPool.ErrorCallback)); */
 
-@trusted class nng_test08_pool : NNGTest {
+class nng_test08_pool : NNGTest {
     
     this(Args...)(auto ref Args args) { super(args); }    
 
@@ -57,8 +62,8 @@ struct worker_context {
             s.recvtimeout = msecs(5000);
             s.sendbuf = 65536;
 
-            NNGPool pool = NNGPool(&s, &this.server_callback, 8, &ctx, this.logfile);
-            pool.init();
+            NNGPool pool = NNGPool(&s, &this.server_callback, 8, &ctx, &err_cb);
+            pool.start();
 
             auto rc = s.listen(uri);
             enforce(rc == 0);

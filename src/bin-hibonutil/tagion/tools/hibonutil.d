@@ -1,4 +1,5 @@
 /// HiBON utility to convert and check HiBON format 
+@description("Convert and inspect HiBON documents")
 module tagion.tools.hibonutil;
 
 import std.array : join;
@@ -72,38 +73,6 @@ struct Element {
             key=elm.key; 
         }
     });
-}
-
-version (none) Document.Element.ErrorCode check_document(const(Document) doc, out Document error_doc) {
-    Document.Element.ErrorCode result;
-    HiBON h_error;
-    static struct ErrorElement {
-        string error_code;
-        Element element;
-        mixin HiBONRecord;
-    }
-
-    ErrorElement[] errors;
-    void error(
-            const(Document) main_doc,
-            const Document.Element.ErrorCode error_code,
-            const(Document.Element) current, const(
-            Document.Element) previous)
-    nothrow {
-        ErrorElement error_element;
-        const offset = cast(uint)(&current.data[0] - &main_doc.data[0]);
-        error_element.error_code = format("%s", error_code); //.to!string.ifThrown!Exception("<Bad error>");
-        error_element.element = Element(current, offset);
-        errors ~= error_element;
-        result = (result is result.init) ? error_code : result;
-    }
-
-    if (!errors.empty) {
-        auto h_error = new HiBON;
-        h_error["errors"] = errors;
-        error_doc = Document(h_error);
-    }
-    return result;
 }
 
 int _main(string[] args) {

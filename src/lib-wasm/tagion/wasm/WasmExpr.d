@@ -23,6 +23,7 @@ struct WasmExpr {
             case PREFIX:
             case CODE:
             case CODE_TYPE:
+            case OP_STACK:
             case RETURN:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
@@ -34,11 +35,34 @@ struct WasmExpr {
                     bout.write(encode(args[0]));
                 }
                 break;
-            case BRANCH, CALL, LOCAL, GLOBAL:
+            case BRANCH:
+                if (ir is IR.BR_TABLE) {
+                    scope uint[] table;
+                    static foreach (i, a; args) {
+                        {
+                            enum OK = is(Args[i] : const(uint)) || is(Args[i] : const(uint[]));
+                            assert(OK, format("Argument %d must be integer or uint[] of integer not %s",
+                                    i, Args[i].stringof));
+                            static if (OK) {
+                                table ~= a;
+                            }
+                        }
+                    }
+                    check(table.length >= 1, format("Too few arguments for %s instruction", instr.name));
+                    bout.write(encode(table.length - 1));
+                    foreach (t; table) {
+                        bout.write(encode(t));
+                    }
+                    break;
+                }
+                goto case;
+            case CALL, LOCAL, GLOBAL:
                 assert(Args.length == 1,
                         format("Instruction %s only one argument expected", instr.name));
                 goto case;
+            case BLOCK_CONDITIONAL:
             case BLOCK:
+            case BLOCK_ELSE:
                 static if (Args.length == 1) {
                     assert(isIntegral!(Args[0]), format("Args idx must be an integer for %s not %s",
                             instr.name, Args[0].stringof));
@@ -47,29 +71,11 @@ struct WasmExpr {
                     }
                 }
                 break;
-            case BRANCH_TABLE:
-                scope uint[] table;
-                static foreach (i, a; args) {
-                    {
-                        enum OK = is(Args[i] : const(uint)) || is(Args[i] : const(uint[]));
-                        assert(OK, format("Argument %d must be integer or uint[] of integer not %s",
-                                i, Args[i].stringof));
-                        static if (OK) {
-                            table ~= a;
-                        }
-                    }
-                }
-                check(table.length >= 2, format("Too few arguments for %s instruction", instr.name));
-                bout.write(encode(table.length - 1));
-                foreach (t; table) {
-                    bout.write(encode(t));
-                }
-                break;
             case CALL_INDIRECT:
                 assert(Args.length == 1, format("Instruction %s one argument", instr.name));
                 static if (Args.length == 1) {
                     assert(isIntegral!(Args[0]),
-                    format("The funcidx must be an integer for %s", instr.name));
+                            format("The funcidx must be an integer for %s", instr.name));
                     static if (isIntegral!(Args[0])) {
                         bout.write(encode(args[0]));
                         bout.write(cast(ubyte)(0x00));
@@ -80,9 +86,9 @@ struct WasmExpr {
                 assert(Args.length == 2, format("Instruction %s two arguments", instr.name));
                 static if (Args.length == 2) {
                     assert(isIntegral!(Args[0]),
-                    format("The funcidx must be an integer for %s", instr.name));
+                            format("The funcidx must be an integer for %s", instr.name));
                     assert(isIntegral!(Args[1]),
-                    format("The funcidx must be an integer for %s", instr.name));
+                            format("The funcidx must be an integer for %s", instr.name));
                     static if (isIntegral!(Args[0]) && isIntegral!(Args[1])) {
                         bout.write(encode(args[0]));
                         bout.write(encode(args[1]));

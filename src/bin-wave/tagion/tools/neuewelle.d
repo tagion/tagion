@@ -1,6 +1,7 @@
 /** 
- * New wave implementation of the tagion node
+ * The tagion node
 **/
+@description("Tagion node")
 module tagion.tools.neuewelle;
 
 import core.stdc.stdlib : exit;
@@ -153,7 +154,8 @@ int _neuewelle(string[] args) {
             chdir(config_file.dirName);
         }
         catch (Exception e) {
-            stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
+            stderr.writefln("Error when loading config file %s", config_file);
+            error(e);
             return 1;
         }
     }
@@ -211,7 +213,7 @@ int _neuewelle(string[] args) {
     }
 
     // Spawn logger service
-    immutable logger = LoggerService(LoggerServiceOptions(LogType.Console));
+    immutable logger = LoggerService();
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
@@ -268,6 +270,8 @@ int _neuewelle(string[] args) {
             auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
         }
 
+        log("Booting with Epoch %J", epoch);
+
         auto keys = epoch.getNodeKeys();
         check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
         check(keys.length == node_options.length,
@@ -305,7 +309,8 @@ int _neuewelle(string[] args) {
         log("started mode 0 net");
 
         break;
-    case NetworkMode.LOCAL:
+    case NetworkMode.LOCAL,
+         NetworkMode.MIRROR:
         import tagion.services.supervisor;
         import tagion.script.common;
         import tagion.gossip.AddressBook;
@@ -344,6 +349,7 @@ int _neuewelle(string[] args) {
         }
 
         auto epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
+        log("Booting with Epoch %J", epoch);
         auto keys = epoch.getNodeKeys;
 
         if (!local_options.wave.address_file.empty) {
@@ -363,8 +369,6 @@ int _neuewelle(string[] args) {
         spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
         break;
-    case NetworkMode.PUB:
-        assert(0, "NetworkMode not supported");
     }
 
     const shutdown_file = buildPath(base_dir.run, format("epoch_shutdown_%d", thisProcessID()));

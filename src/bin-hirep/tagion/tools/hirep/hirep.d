@@ -1,3 +1,4 @@
+@description("HiBON grepping tool")
 module tagion.tools.hirep.hirep;
 
 import std.array;

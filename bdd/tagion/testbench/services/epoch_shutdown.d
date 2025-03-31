@@ -111,8 +111,6 @@ class StoppingAllNodesAtASpecificEpoch {
             auto response = db(receiver);
             auto locked_archives_recorder = db.recorder(response.result);
             enforce(locked_archives_recorder[].empty, format("%s locked archives %s", node_name, locked_archives_recorder[].walkLength));
-
-            /* opt.replicator. */
         }
 
         return result_ok;

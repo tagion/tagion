@@ -2,8 +2,8 @@ module tagion.wasm.WasmBetterC;
 
 import tagion.basic.Debug;
 
+import std.exception;
 import std.algorithm;
-import std.array;
 import std.array;
 import std.conv : to;
 import std.format;
@@ -99,8 +99,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     void produceAsserts(const Document doc, const string indent) {
         const sec_assert = SectionAssert(doc);
-        void innerAssert(const Assert _assert, const string indent) {
-            Context ctx;
+        void innerAssert(const Assert _assert, const string indent) @safe {
+            auto ctx = new Context;
             const(FuncType) func_void;
             auto code_type = CodeType(_assert.invoke);
             auto invoke_expr = code_type[];
@@ -109,7 +109,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             with (Assert.Method) final switch (_assert.method) {
             case Trap:
                 void assert_block(const string _indent) {
-                    block(invoke_expr, func_void, ctx, _indent ~ spacer);
+                    block(invoke_expr, func_void, ctx, _indent ~ spacer, true);
                     output.writefln("%s}", _indent);
                 }
 
@@ -133,14 +133,27 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 block(invoke_expr, func_void, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
-                Context ctx_results;
+                auto ctx_results = new Context;
                 block(result_expr, func_void, ctx_results, indent, true);
-
-                output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
-                if (_assert.message.length) {
-                    output.writef(`, "%s"`, _assert.message);
+                output.writefln("%s// %s : %s", indent, ctx.stack, ctx_results.stack);
+                if (ctx.stack.length) {
+                    output.writefln("%s// %s", indent, ctx_results);
+                    if (ctx_results.stack.length == 1) {
+                        output.writef("%sassert(%s is %s", indent, ctx.pop, ctx_results.pop);
+                    }
+                    else {
+                        string[] checks;
+                        foreach (i, a; ctx_results.stack) {
+                            checks ~= format("(%s[%d] is %s)",
+                                    ctx.stack[0], i, ctx_results.stack[i]);
+                        }
+                        output.writef("%sassert(%-(%s &&%)", indent, checks);
+                    }
+                    if (_assert.message.length) {
+                        output.writef(`, "%s"`, _assert.message);
+                    }
+                    output.writeln(");");
                 }
-                output.writeln(");");
             }
         }
 
@@ -279,7 +292,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     alias Global = Sections[Section.GLOBAL];
     void global_sec(ref const(Global) _global) {
-        Context ctx;
+        auto ctx = new Context;
         const(FuncType) func_void;
         foreach (i, g; _global[].enumerate) {
             output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
@@ -310,7 +323,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
-        Context ctx;
+        auto ctx = new Context;
         const(FuncType) func_void;
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
@@ -329,7 +342,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         with (Types) {
             final switch (type) {
 
-            case EMPTY:
+            case VOID:
                 return "void";
             case I32:
                 return "int";
@@ -351,12 +364,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     static string dType(const(Types[]) types) {
         if (types.empty) {
-            return dType(Types.EMPTY);
+            return dType(Types.VOID);
         }
         if (types.length == 1) {
             return dType(types[0]);
         }
-        return format("Tuple!(%-(%s, %))", types);
+        return format("Tuple!(%-(%s, %))", types.map!(t => dType(t)));
     }
 
     static string return_type(const(Types[]) types) {
@@ -371,6 +384,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         return dType(wasmstream.get!(Section.TYPE)[elm.idx].results);
     }
 
+    const(Types[]) types(ref const ExprRange.IRElement elm) const pure {
+        if (elm.argtype == ExprRange.IRElement.IRArgType.TYPES) {
+            return elm.types;
+        }
+        return wasmstream.get!(Section.TYPE)[elm.idx].results;
+    }
+
     string function_name(const int index) {
         import std.string;
 
@@ -378,11 +398,16 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         if (exp == ExportType.init) {
             return format("func_%d", index);
         }
+        import tagion.wasm.dkeywords : isDKeyword;
+
+        if (isDKeyword(exp.name)) {
+            return "Dword_" ~ exp.name;
+        }
         return exp.name.replace(".", "_").replace("-", "_");
     }
 
-    static string param_name(const size_t index) {
-        return format("param_%d", index);
+    static string param_name(const size_t index) nothrow {
+        return assumeWontThrow(format("param_%d", index));
     }
 
     static string function_params(const(Types[]) types) {
@@ -391,7 +416,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     }
 
     private void output_function(const int func_idx, const(FuncIndex) type, const(CodeType) code_type) {
-        Context ctx;
         auto expr = code_type[];
         const func_type = wasmstream.get!(Section.TYPE)[type.idx];
         //const x = return_type(func_type.results);
@@ -400,16 +424,28 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return_type(func_type.results),
                 function_name(func_idx),
                 function_params(func_type.params));
-        ctx.locals = iota(func_type.params.length).map!(idx => param_name(idx)).array;
+        auto ctx = new Context(func_type, code_type);
         const local_indent = indent ~ spacer;
         if (!code_type.locals.empty) {
-            output.writef("%s(local", local_indent);
+            output.writefln("%s// context locals %s", local_indent, ctx.locals);
+            output.writefln("%s// locals %s", local_indent, code_type.locals);
+            const(string)[] local_names = ctx.scope_local_names;
             foreach (l; code_type.locals) {
-                foreach (i; 0 .. l.count) {
-                    output.writef(" %s", typesName(l.type));
+                string value;
+                switch (l.type) {
+                case Types.F32:
+                    value = format("=%a", float(0));
+                    break;
+                case Types.F64:
+                    value = format("=%a", double(0));
+                    break;
+                default:
+                    // Standard default
                 }
+                output.writefln("%s%s %-(%s, %);", local_indent, dType(l.type), local_names.take(
+                        l.count).map!(name => name ~ value));
+                local_names = local_names[l.count .. $];
             }
-            output.writeln(")");
         }
 
         block(expr, func_type, ctx, local_indent);
@@ -419,14 +455,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     alias Code = Sections[Section.CODE];
     @trusted void code_sec(ref const(Code) _code) {
         auto func_indices = iota(cast(int) _function[].walkLength);
-        foreach (func_idx, f, c; lockstep(func_indices, _function[], _code[], StoppingPolicy.requireSameLength)) {
+        foreach (func_idx, f, c; lockstep(func_indices, _function[], _code[], StoppingPolicy
+                .requireSameLength)) {
             output_function(func_idx, f, c);
         }
     }
 
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
-        Context ctx;
+        auto ctx = new Context;
         const(FuncType) func_void;
         foreach (d; _data[]) {
             output.writefln("%s(data (", indent);
@@ -437,9 +474,56 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    struct Context {
-        string[] locals;
-        string[] stack;
+    static uint block_count;
+    @safe final class Context {
+        const(string[]) local_names; /// Locals include the function params
+        const(string[]) scope_local_names; /// Locals declared inside the function
+        string[] locals; /// Current value-expressions of locals
+        string[] stack; /// Value-expression on the stack
+
+        this() {
+            local_names = null;
+            scope_local_names = null;
+        }
+
+        this(const(FuncType) func_type, const(CodeType) code_type) pure nothrow
+        in (locals.length == 0, "Locals has already been declared")
+        do {
+            auto _local_names = iota(func_type.params.length).map!(idx => param_name(idx)).array;
+            if (!code_type.locals.empty) {
+                _local_names ~= iota(locals.length, locals.length + code_type.locals
+                        .map!(l => l.count).sum)
+                    .map!(local_idx => assumeWontThrow(format("local_%d", local_idx)))
+                    .array;
+                //locals ~= local_names;
+            }
+            local_names = _local_names;
+            locals = _local_names.dup;
+            scope_local_names = _local_names[func_type.params.length .. $];
+
+        }
+
+        protected Block*[] _blocks;
+        override string toString() const pure nothrow {
+
+            return assumeWontThrow(format("locals=%s stack=%s", locals, stack));
+        }
+
+        Block* create(const ref ExprRange.IRElement elm) nothrow {
+            auto blk = new Block(this, elm, stack.length, cast(uint) _blocks.length, block_count);
+            _blocks ~= blk;
+            block_count++;
+            return blk;
+        }
+
+        void dropBlock() pure nothrow {
+            _blocks.length--;
+        }
+
+        uint number_of_blocks() const pure nothrow {
+            return cast(uint) _blocks.length;
+        }
+
         string peek() const pure nothrow @nogc {
             if (stack.length == 0) {
                 return "Error stack is empty";
@@ -470,8 +554,30 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             assert(0);
         }
 
+        string[] pops() pure nothrow {
+            scope (exit) {
+                stack = null;
+            }
+            return stack;
+        }
+
         void push(string value) pure nothrow {
             stack ~= value;
+        }
+
+        void push(const(Block*) blk) pure {
+            if (!blk.isVoidType) {
+                const block_types = types(blk.elm);
+                if (block_types.length == 1) {
+                    push(blk.block_result);
+                    return;
+                }
+                foreach_reverse (i; 0 .. block_types.length) {
+                    const value = assumeWontThrow(format("%s[%d]", blk.block_result, i));
+                    push(value);
+                }
+
+            }
         }
 
         bool empty() const pure nothrow @nogc {
@@ -504,7 +610,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 push(format("Undefinded %s pops %s %s %s", ir, pop, pop, pop));
                 break;
             default:
-                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, instrTable[ir].name));
+                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, instrTable[ir]
+                        .name));
             }
 
         }
@@ -526,14 +633,213 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 push(format("Undefinded %s pops %s %s", ir, pop, pop));
                 break;
             default:
-                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, interExtendedTable[ir].name));
+                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, interExtendedTable[ir]
+                        .name));
             }
 
         }
 
-        void push(const IR ir, const uint local_idx) pure nothrow {
-            push(locals[local_idx]);
+        void get(const uint local_idx) pure nothrow {
+
+            push(local_names[local_idx]);
         }
+
+        void set(const uint local_idx) pure nothrow {
+            __write("Stack %-(%s, %) local_idx=%d", stack, local_idx);
+            __write("Local %-(%s, %) local_idx=%d", locals, local_idx);
+            locals[local_idx] = pop;
+        }
+
+        string label(const uint block_index) const pure {
+            check(block_index < _blocks.length,
+                    format("Block stack exceeds to %d but the stack size is only %d",
+                    block_index, _blocks.length)
+            );
+            return _blocks[block_index].label;
+        }
+
+        uint index(const uint block_depth) const pure {
+            check(block_depth < _blocks.length,
+                    format("Block stack overflow (stack size %d but block depth is %d)",
+                    _blocks.length, block_depth));
+            return cast(uint)(_blocks.length - block_depth - 1);
+        }
+
+        string goto_label(const uint block_index) pure {
+            _blocks[block_index].define_label;
+            return label(block_index);
+        }
+
+        string block_type(const(Block*) blk) const pure {
+            with (ExprRange.IRElement.IRArgType) {
+                assert(blk.elm.argtype is TYPES || blk.elm.argtype is INDEX,
+                        "Invalid block type");
+                if (blk.elm.argtype is INDEX) {
+                    const sec_type = wasmstream.get!(Section.TYPE);
+                    const func_type = sec_type[blk.elm.idx];
+                    return dType(func_type.results);
+                }
+            }
+            with (Types) {
+                const elm_type = blk.elm.types[0];
+                switch (elm_type) {
+                case I32, I64, F32, F64, FUNCREF:
+                    return dType(elm_type);
+                case VOID:
+                    return null;
+                default:
+                    check(0, format("Block illegal result type %s for a block", elm_type));
+
+                }
+            }
+            assert(0);
+        }
+
+        Block* current() pure nothrow {
+            return _blocks[$ - 1];
+        }
+
+        Block* opIndex(const size_t index) pure nothrow {
+            return _blocks[index];
+        }
+
+        string declare(Block* blk) pure {
+            if (blk.isVoidType) {
+                return null;
+            }
+            scope (exit) {
+                blk.define_local;
+            }
+            return format("%s %s", block_type(blk), blk.block_result);
+        }
+
+    }
+
+    enum _BlockKind {
+        BLOCK, /// block_#: do{ ... } while (false);
+        LOOP, /// block_#: do{ ... } while (false);
+        WHILE, /// block_#: while(condition) { ...}
+        IF_ELSE, // if (condition) { } [else { ... } 
+    }
+
+    enum BlockKind {
+        END,
+        BREAK,
+        BREAK_N,
+        //ELSE,
+        ELSE_IF,
+        WHILE,
+        LOOP,
+        ERROR,
+    }
+
+    struct Block {
+        //static size_t count;
+        const(ExprRange.IRElement) elm;
+        const(size_t) sp; /// Stack pointer;
+        const(size_t) id;
+        const(uint) idx; /// Block idx
+        string condition;
+        protected {
+            Context ctx;
+
+            bool _local_defined;
+            bool _label_defined;
+        }
+        BlockKind _end_kind;
+        _BlockKind begin_kind;
+        @disable this();
+        this(Context ctx,
+                const ref ExprRange.IRElement elm,
+                const size_t sp,
+                const uint idx,
+                const uint current_id) pure nothrow
+        in (only(IRType.BLOCK_CONDITIONAL, IRType.BLOCK, IRType.BLOCK_ELSE)
+                .canFind(elm.instr.irtype))
+
+        do {
+            this.ctx = ctx;
+            this.elm = elm;
+            this.sp = sp;
+            this.idx = idx;
+            id = current_id;
+        }
+
+        string begin() const pure nothrow {
+            switch (elm.code) {
+            case IR.IF:
+                assert(condition, "No conidtion of IF");
+                return assumeWontThrow(format("if (%s) {", condition));
+            case IR.BLOCK:
+                return "do {";
+            case IR.LOOP:
+                if (begin_kind is _BlockKind.WHILE) {
+                    return assumeWontThrow(format("while (!%s) {", condition));
+                }
+                return "do {";
+            default:
+                assert(0, assumeWontThrow(
+                        format("Instruction %s can't be used as a block begin", elm.code)));
+            }
+        }
+
+        string end() const pure nothrow {
+            switch (_end_kind) {
+            case BlockKind.ELSE_IF:
+            case BlockKind.WHILE:
+                return "}";
+            case BlockKind.END:
+            case BlockKind.BREAK:
+            case BlockKind.BREAK_N:
+                if (begin_kind is _BlockKind.WHILE) {
+                    return "}";
+                }
+                return "} while(false);";
+            default:
+                assert(0, format("End block fail %s", _end_kind));
+            }
+        }
+
+        const(BlockKind) end_kind() const pure nothrow {
+            return _end_kind;
+        }
+
+        void end_kind(const BlockKind k) pure nothrow {
+            if (_end_kind < k) {
+                _end_kind = k;
+            }
+        }
+
+        bool local_defined() const pure nothrow {
+            return _local_defined;
+        }
+
+        void define_local() pure nothrow {
+            _local_defined = true;
+        }
+
+        string block_result() const pure nothrow {
+            return assumeWontThrow(format("block_result_%d", id));
+        }
+
+        string label() const pure {
+            return format("block_%d", id);
+        }
+
+        void define_label() pure nothrow {
+            _label_defined = true;
+        }
+
+        bool label_defined() const pure nothrow {
+            return _label_defined;
+        }
+
+        bool isVoidType() const pure nothrow {
+            with (ExprRange.IRElement.IRArgType) {
+                return ((elm.argtype is TYPES) && (elm.types[0] is Types.VOID));
+            }
+        }
+
     }
 
     static string sign(T)(T x) if (isFloatingPoint!T) {
@@ -545,18 +851,18 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     private void block(
             ref ExprRange expr,
             ref const(FuncType) func_type,
-            ref Context ctx,
+            Context ctx,
             const(string) indent,
             const bool no_return = false) {
         string block_comment;
-        uint block_count;
+        //uint count;
         uint calls;
-        static string block_result_type()(const Types t) {
+        version (none) static string block_result_type()(const Types t) {
             with (Types) {
                 switch (t) {
                 case I32, I64, F32, F64, FUNCREF:
                     return format(" (result %s)", typesName(t));
-                case EMPTY:
+                case VOID:
                     return null;
                 default:
                     check(0, format("Block Illegal result type %s for a block", t));
@@ -571,59 +877,67 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
         import std.outbuffer;
 
-        enum BlockKind {
-            END,
-            BREAK,
-            BREAK_N,
-            ELSE,
-            ELSE_IF,
-            WHILE,
-            LOOP,
-            ERROR,
+        string results(const(Types[]) args) {
+            if (args.length == 0) {
+                return null;
+            }
+            if (args.length == 1) {
+                return ctx.peek;
+            }
+            check(args.length <= ctx.stack.length,
+                    format("Elements in the stack is %d but the function return arguments is %d",
+                    args.length, ctx.stack.length));
+            return format("%s(%-(%s, %))", dType(args), args.length.iota.map!(
+                    n => ctx.stack[$ - 1 - n]));
         }
 
-        static struct Block {
-            const(ExprRange.IRElement) instr;
-            BlockKind _kind;
-            const(BlockKind) kind() const pure nothrow {
-                return _kind;
+        string results_value() {
+            if (func_type.results.length == 1) {
+                return ctx.pop;
+            }
+            if (func_type.results.length) {
+                return format("%s(%-(%s, %))",
+                        dType(func_type.results),
+                        ctx.pops.take(func_type.results.length));
             }
 
-            void kind(const BlockKind k) pure nothrow {
-                if (_kind < k) {
-                    _kind = k;
-                }
-            }
+            return null;
         }
 
         void innerBlock(
                 OutBuffer bout,
                 ref ExprRange expr,
-                const(string) indent,
-                Block*[] blocks) {
-            string block_label(const size_t label_n) {
-                return format("block_%d", label_n);
+                const(string) indent) {
+
+            void declare_block(Block* blk) {
+                const declare = ctx.declare(blk);
+                if (declare) {
+                    bout.writefln("%s%s;", indent, declare);
+                }
+                if (blk.label_defined) {
+                    bout.writefln("%s%s:", indent, blk.label);
+                }
             }
 
-            string results(const(Types[]) args) {
-                if (args.length == 0) {
-                    return null;
+            void set_local(Block* blk) {
+                if (!blk.isVoidType) {
+                    const block_types = types(blk.elm);
+                    if (block_types.length == 1) {
+                        bout.writefln("%s%s = %s;", indent, blk.block_result, ctx.pop);
+                    }
+                    else {
+                        foreach (i; 0 .. block_types.length) {
+                            const result_local = format("%s[%d]", blk.block_result, i);
+                            bout.writefln("%s%s = %s;", indent, result_local, ctx.pop);
+                        }
+                    }
+                    blk.define_local;
                 }
-                if (args.length == 1) {
-                    return ctx.peek;
-                }
-                bout.writefln("// Results args=%s stack=%s", args, ctx.stack);
-                check(args.length <= ctx.stack.length,
-                        format("Elements in the stack is %d but the function return arguments is %d",
-                        args.length, ctx.stack.length));
-                return format("%s(%-(%s, %))", dType(args), args.length.iota.map!(n => ctx.stack[$ - 1 - n]));
             }
 
             while (!expr.empty) {
                 const elm = expr.front;
-                bout.writefln("/* %s */", elm.instr.irtype);
                 expr.popFront;
-                bout.writefln("/* %s, %s */", elm.instr.irtype, expr.front.instr.irtype);
                 with (IRType) {
                     final switch (elm.instr.irtype) {
                     case CODE:
@@ -636,79 +950,229 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
                         break;
                     case RETURN:
-                        bout.writefln("%s// %s  <-RETURN  .. %s", indent, elm.instr.name, expr.front.code);
 
-                        //ctx.perform(elm.code, func_type.results);
-                        bout.writefln("// Function results %s", func_type.results);
-                        bout.writefln("%s%s %s;", indent, elm.instr.name, results(func_type.results));
-                        bout.writefln("// After return");
+                        bout.writefln("%s%s %s;", indent, elm.instr.name, results_value);
+                        break;
+                    case OP_STACK:
+                        switch (elm.code) {
+                        case IR.DROP:
+                            const __value = ctx.peek;
+                            bout.writefln("%s// drop %s", indent, ctx.pop);
+                            __write("%s// drop %s", indent, __value);
+                            break;
+                        default:
+                            assert(0, format("Illegal instruction %s", elm.code));
+                        }
                         break;
                     case PREFIX:
                         bout.writefln("%s%s", indent, elm.instr.name);
                         break;
+                    case BLOCK_CONDITIONAL:
                     case BLOCK:
-                        block_comment = format(";; block %d %s", block_count, dType(elm));
-                        block_count++;
-                        //bout.writefln("BLOCK elm.arhtype=%s", elm.argtype);
+                        auto block = ctx.create(elm); //new Block(elm, ctx.stack.length);
+                        bout.writefln("%s// block %d", indent, block.id);
 
-                        //bout.writefln("%s%s%s %s", indent, elm.instr.name,
-                        //        block_result_type(elm.types[0]), block_comment);
-                        bout.writefln("%s{ %s", indent, block_comment);
-                        auto block = new Block(elm);
-                        innerBlock(bout, expr, indent ~ spacer, blocks ~ block);
-                        bout.writefln("} // Block kind %s", *block);
-                        final switch (block.kind) {
-                        case BlockKind.END:
-                            bout.writefln("%s{", indent);
-                            break;
-                        case BlockKind.BREAK:
-                            bout.writefln("%sdo {", indent);
-                            break;
-                        case BlockKind.BREAK_N:
-                            break;
-                        case BlockKind.ELSE:
-                            break;
-                        case BlockKind.ELSE_IF:
-                            break;
-                        case BlockKind.WHILE:
-                            break;
-                        case BlockKind.LOOP:
-                            break;
-                        case BlockKind.ERROR:
+                        auto block_bout = new OutBuffer;
+                        scope (exit) {
+                            block_bout = null;
                         }
+                        //string[] block_begin;
+                        switch (elm.code) {
+                        case IR.IF:
+                            ctx.perform(elm.code, elm.instr.pops);
+                            block.condition = ctx.pop;
+                            block.end_kind = BlockKind.ELSE_IF;
+                            block.begin_kind = _BlockKind.IF_ELSE;
+                            break;
+                        case IR.LOOP:
+                            block.begin_kind = _BlockKind.LOOP;
+                            break;
+                        default:
+
+                            //block.begin ~= format("%sdo { // %s", indent, block_comment);
+                        }
+                        //ctx.blocks ~= block;
+                        scope (success) {
+                            ctx.dropBlock;
+                            //ctx.blocks.length--;
+                        }
+                        innerBlock(block_bout, expr, indent ~ spacer);
+                        declare_block(ctx.current);
+                        bout.writefln("%s%s", indent, block.begin);
+                        bout.write(block_bout);
+                        bout.writefln("%s%s", indent, block.end);
+                        ctx.stack.length = block.sp;
+                        ctx.push(block);
+                        if (ctx.number_of_blocks > 1) {
+                            const outer_block_index = ctx.index(1);
+                            const outer_block = ctx[outer_block_index];
+                            if (!outer_block.isVoidType && ctx.current.local_defined) {
+                                bout.writefln("%s%s = %s;", indent, outer_block.block_result, ctx.current.block_result);
+                            }
+                            //set_local(ctx.current);
+                        }
+                        bout.writefln("// END stack %-(%s, %)", ctx.stack);
+                        break;
+                    case BLOCK_ELSE:
+                        bout.writefln("// if stack %-(%s, %)", ctx.stack);
+                        set_local(ctx.current);
+                        const else_indent = indent[0 .. $ - spacer.length];
+                        bout.writefln("%s}", else_indent);
+                        bout.writefln("%selse {", else_indent);
+                        //ctx.current.end_kind = BlockKind.ELSE_IF;
                         break;
                     case BRANCH:
-                        bout.writefln("// BRANCH %s", elm.code);
-
-                        if (elm.code is IR.BR) {
+                        switch (elm.code) {
+                        case IR.BR:
                             const lth = elm.warg.get!uint;
-                            check(lth < blocks.length, format(
-                                    "Label number of %d exceeds the block stack for max %d", lth, blocks.length));
-                            //bout.writefln("elm=%s warg=%s", elm, elm.warg.get!int);
+                            check(lth < ctx.number_of_blocks, format(
+                                    "Label number of %d exceeds the block stack for max %d",
+                                    lth, ctx.number_of_blocks));
+                            const block_index = ctx.index(lth);
+
+                            auto current_block = ctx.current;
+                            set_local(current_block);
+
+                            if ((lth > 0) && !current_block.isVoidType) {
+                                bout.writefln("%s%s = %s;", indent, ctx[block_index].block_result,
+                                        current_block.block_result);
+                            }
+
+                            scope (exit) {
+                                uint count;
+                                while (!expr.empty && expr.front.code != IR.END) {
+                                    bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
+                                    expr.popFront;
+                                    count++;
+                                }
+                            }
+                            bout.writefln("// BR %d", lth);
 
                             if (lth == 0) {
-                                blocks[lth].kind = BlockKind.BREAK;
-                                bout.writefln("%sbreak;", indent);
+                                if (ctx.current.begin_kind is _BlockKind.WHILE) {
+                                    ctx.current.end_kind = BlockKind.WHILE;
+                                    break;
+                                }
+                                ctx.current.end_kind = BlockKind.BREAK;
+                                bout.writefln("%s// empty", indent);
                                 break;
                             }
-                            const label_n = blocks.length - lth;
-                            blocks[label_n].kind = BlockKind.BREAK_N;
-                            bout.writefln("%sbreak %s;", indent, block_label(label_n));
-                            break;
-                        }
-                        bout.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
+                            const label_n = ctx.index(lth);
+                            auto target_block = ctx[label_n];
+                            target_block.end_kind = BlockKind.BREAK_N;
+                            target_block.define_label;
+                            switch (ctx.current.begin_kind) {
+                            case _BlockKind.WHILE:
+                                ctx.current.end_kind = BlockKind.WHILE;
 
-                        break;
-                    case BRANCH_TABLE:
-                        static string branch_table(const(WasmArg[]) args) {
-                            string result;
-                            foreach (a; args) {
-                                result ~= format(" %d", a.get!uint);
+                                if (target_block.elm.code is IR.LOOP) {
+                                    bout.writefln("%scontinue %s;", indent, target_block.label);
+                                }
+                                else {
+                                    bout.writefln("%sgoto %s;", indent, target_block.label);
+                                }
+                                break;
+                            default:
+                                bout.writefln("%sbreak %s;", indent, target_block.label);
                             }
-                            return result;
-                        }
 
-                        bout.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
+                            break;
+                        case IR.BR_IF:
+                            const lth = elm.warg.get!uint;
+                            check(lth < ctx.number_of_blocks, format(
+                                    "Label number of %d exceeds the block stack for max %d",
+                                    lth, ctx.number_of_blocks));
+                            const block_index = ctx.index(lth);
+                            auto current_block = ctx.current;
+                            __write(" BR_IF stack %-(%s, %)", ctx.stack);
+                            const conditional_flag = ctx.pop;
+                            set_local(current_block);
+                            ctx.push(current_block);
+                            if ((lth > 0) && !current_block.isVoidType) {
+                                bout.writefln("%s%s = %s;", indent, ctx[block_index].block_result,
+                                        current_block.block_result);
+                            }
+                            bout.writefln("// BR_IF %d", lth);
+                            if (lth == 0) {
+                                ctx[lth].end_kind = BlockKind.BREAK;
+                                if (ctx.current.begin_kind is _BlockKind.LOOP) {
+                                    ctx.current.condition = conditional_flag;
+                                    ctx.current.begin_kind = _BlockKind.WHILE;
+                                    break;
+                                }
+                                bout.writefln("%sif (%s) break;", indent, conditional_flag);
+                                break;
+                            }
+                            const label_n = ctx.index(lth);
+                            auto target_block = ctx[label_n];
+                            target_block.end_kind = BlockKind.BREAK_N;
+                            target_block.define_label;
+                            if (ctx.current.elm.code is IR.LOOP) {
+                                if (target_block.begin_kind is _BlockKind.WHILE) {
+                                    bout.writefln("%sif (%s) continue %s;", indent, conditional_flag, target_block.label);
+                                    break;
+                                }
+
+                                bout.writefln("%sif (%s) goto %s;", indent, conditional_flag, target_block.label);
+                                break;
+                            }
+                            bout.writefln("%sif (%s) break %s;",
+                                    indent, conditional_flag, target_block.label);
+                            break;
+                        case IR.BR_TABLE:
+                            __write("%s %-(%s, %)", elm.code, ctx.locals);
+                            bout.writefln("// %s %-(%s, %)", elm.code, ctx.locals);
+                            auto br_table = elm.wargs.map!(w => w.get!uint);
+                            bout.writefln("// br_table %s %s", br_table, typeof(br_table).stringof);
+                            scope (exit) {
+                                uint count;
+                                while (!expr.empty && expr.front.code != IR.END) {
+                                    bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
+                                    expr.popFront;
+                                    count++;
+                                }
+                            }
+
+                            auto current_block = ctx.current;
+                            bout.writefln("// Stack %-(%s, %)", ctx.stack);
+                            const switch_select = ctx.pop;
+                            set_local(current_block);
+                            ctx.push(current_block);
+                            bout.writefln("%sswitch(%s) {", indent, switch_select);
+                            scope (exit) {
+                                bout.writefln("%s}", indent);
+                            }
+
+                            const local_indent = indent ~ spacer;
+
+                            foreach (jump_idx, block_label_depth; br_table.enumerate) {
+
+                                if (jump_idx >= elm.wargs.length - 1) {
+                                    bout.writefln("%sdefault:", indent);
+                                }
+                                else {
+                                    bout.writefln("%scase %d: // %d",
+                                            indent, jump_idx,
+                                            block_label_depth);
+                                }
+                                const block_index = ctx.index(block_label_depth);
+                                ctx[block_index].end_kind = BlockKind.BREAK;
+                                if ((block_label_depth > 0) && !current_block.isVoidType) {
+                                    bout.writefln("%s%s = %s;", local_indent, ctx[block_index].block_result,
+                                            ctx.current.block_result);
+                                    bout.writefln("%sbreak %s;", local_indent, ctx.goto_label(block_index));
+                                }
+                                else {
+                                    bout.writefln("%s// empty", local_indent);
+                                }
+
+                            }
+                            break;
+                        default:
+                            assert(0, format("Illegal branch command %s", elm.code));
+                        }
+                        //bout.writefln("%s//%s", indent, elm.instr);
+
                         break;
                     case CALL:
                         scope (exit) {
@@ -718,6 +1182,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         const func_idx = elm.warg.get!uint;
                         const type_idx = wasmstream.get!(Section.FUNCTION)[func_idx].idx;
                         const function_header = wasmstream.get!(Section.TYPE)[type_idx];
+                        __write("//call stack %-(%s, %)", ctx.stack);
                         const function_call = format("%s(%-(%s,%))",
                                 function_name(func_idx), ctx.pops(function_header.params.length));
                         string set_result;
@@ -732,13 +1197,30 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case LOCAL:
                         bout.writefln("%s// %s %d", indent, elm.instr.name, elm.warg.get!uint);
-                        ctx.push(elm.code, elm.warg.get!uint);
+                        switch (elm.code) {
+                        case IR.LOCAL_TEE:
+                            break;
+                        case IR.LOCAL_GET:
+                            const local_idx = elm.warg.get!uint;
+
+                            ctx.get(local_idx);
+                            break;
+                        case IR.LOCAL_SET:
+                            const local_idx = elm.warg.get!uint;
+                            bout.writefln("%s%s=%s;", indent, ctx.local_names[local_idx], ctx.peek);
+                            ctx.set(local_idx);
+                            // 
+                            break;
+                        default:
+                            assert(0, "Illegal local instruction");
+                        }
                         break;
                     case GLOBAL:
                         bout.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case MEMORY:
-                        bout.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
+                        bout.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(
+                                elm.wargs));
                         break;
                     case MEMOP:
                         bout.writefln("%s%s", indent, elm.instr.name);
@@ -783,44 +1265,34 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         ctx.push(value);
                         break;
                     case END:
-                        bout.writefln("//Block %s", blocks.length);
-                        if (blocks.length > 0) {
-                            const block_kind = blocks[$ - 1].kind;
-                            if (block_kind == BlockKind.BREAK) {
-                                bout.writeln("%s} while(false);", indent);
-                                //return BlockKind.END;
+                        if (ctx.number_of_blocks) {
+                            auto block = ctx.current;
+                            if (block.elm.code is IR.LOOP) {
+                                set_local(block);
+
                             }
-                            //return BlockKind.END;
                         }
-                        //check(0, "Block 'end' without and begin");
-                        //assert(0);
                         return;
                     case ILLEGAL:
                         bout.writefln("Error: Illegal instruction %02X", elm.code);
                         break;
-                        //return BlockKind.ERROR;
                     case SYMBOL:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }
                 }
             }
-            //return BlockKind.END;
         }
 
         auto bout = new OutBuffer;
         scope (exit) {
             output.write(bout.toString);
-            if (!no_return && (ctx.stack.length > 0)) {
-                output.writefln("%sreturn %s;", indent, ctx.pop);
+            if (!no_return && (ctx.stack.length >= func_type.results.length)) {
+                output.writefln("%sreturn %s;", indent, results_value);
             }
-            check(no_return || (ctx.stack.length == 0),
-                    format("Stack size is %d but the stack should be empty on return %s",
-                    ctx.stack.length, ctx.stack));
         }
-        Block*[] blocks;
         auto expr_list = expr;
-        bout.writefln("// List %s", expr_list.map!(e => e.code));
-        innerBlock(bout, expr, indent, blocks);
+        //bout.writefln("// List %s", expr_list.map!(e => e.code));
+        innerBlock(bout, expr, indent);
     }
 
     Output serialize() {
@@ -1016,6 +1488,8 @@ shared static this() {
         IR.F64_GE: q{(%2$s >= %1$s)},
         //  
         IR.SELECT: q{((%1$s)?%3$s:%2$s)},
+        //
+        IR.IF: q{(%1$s)},
     ];
     instr_extend_fmt = [
         IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},

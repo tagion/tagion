@@ -26,6 +26,7 @@
 	<script type="module" defer>
         import { WTagUtil } from "./wtag.js";
         import config from "./wconfig.js";
+        import { HashGraph } from "./hashgraph.js";
 
         var subm = {
             monitor: false,
@@ -44,7 +45,6 @@
             .replace(/\/static.*$/gm,"")
             .replace(/^\//gm,"")
             .replace(/\/$/gm,"");
-        docprefix = "/" + docprefix;    
 
         $( document ).ready(function() {
             console.log("PF: ", docprefix);
@@ -57,6 +57,19 @@
             $("#isubrecorder").change(submonitor);
             $("#isubtrt").change(submonitor);
             $("#iclearmon").click((e) => { $("#mlist").html(""); mlistsz = 0; });
+
+            let hg = new HashGraph(
+            'hashgraph',{                   // id of container div
+                'tag':'HG INIT',            // tag o instance
+                'eventid': 'node',          // socket.io event type to subscribe
+                'path': config.ws_endpoint, // relative URL path to socket.io endpoint to get "tick" events
+                'scrollctl': 'scrollgraph'  // id of checkbox input to associalte with "autoscroll" feature
+
+            });
+            
+            // how to handle the "reset" button
+            $('#rehashgraph').click(() => { hg.setAutoScroll(true); hg._reset(); });
+
         });
         
         function walinit() {
@@ -416,13 +429,16 @@
         <div>
             <ul class="nav nav-tabs" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="lookup-tab" data-bs-toggle="tab" data-bs-target="#lookup-tab-pane" type="button" role="tab" aria-controls="lookup-tab-pane" aria-selected="true">Lookup</button>
+                    <button class="nav-link active" id="lookup-tab" data-bs-toggle="tab" data-bs-target="#lookup-tab-pane" type="button" role="tab" aria-controls="lookup-tab-pane" aria-selected="false">Lookup</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="monitor-tab" data-bs-toggle="tab" data-bs-target="#monitor-tab-pane" type="button" role="tab" aria-controls="monitor-tab-pane" aria-selected="false">Monitor</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="request-tab" data-bs-toggle="tab" data-bs-target="#request-tab-pane" type="button" role="tab" aria-controls="request-tab-pane" aria-selected="false">Request</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph-tab-pane" type="button" role="tab" aria-controls="graph-tab-pane" aria-selected="false">Graph</button>
                 </li>
             </ul>        
         </div>        
@@ -512,6 +528,32 @@
                     </div>
                 </div>
             </div>
+            </div>
+
+            <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+            <div class="tab-pane h-100 fade overflow-hidden" id="graph-tab-pane" role="tabpanel" aria-labelledby="graph-tab" tabindex="0">
+            <div class="h-100 container-fluid">
+
+                <link rel="stylesheet" href="/static/explorer/hashgraph.css"/>
+
+                <div class="row">
+                <div class="col-12 p-2 d-flex flex-row flex-nowrap justify-content-center align-middle align-items-center">
+                    <div class="form-check form-switch form-check-inline">
+                        <input class="form-check-input" type="checkbox" role="switch" id="scrollgraph">
+                        <label class="form-check-label" for="scrollgraph"> Autoscroll</label>
+                    </div>    
+                    <button type="button" class="btn btn-primary" id="rehashgraph"> Clear </button>
+                </div>
+                <div class="column main layout graph" id="hashgraph"></div>
+                </div>
+
+                <div class="row h-100">
+                <div class="col-12 h-100 scrollable overflow-y-scroll position-relative">
+                    <div id="mlist" class="position-absolute position-absolute top-0 start-0">
+                    </div>
+                </div>
+                </div>
+            </div>    
             </div>
         </div>        
     </div>

@@ -25,6 +25,7 @@ import tagion.tools.Basic;
 
 import core.thread;
 import nngd;
+import nngd.nngtests.suite;
 
 enum feature = Feature(
             "Test of the NNG wrapper.",
@@ -57,13 +58,13 @@ class MultithreadedNNGTestSuiteWrapper {
     }
     
     @When("wait until the Multithreaded Test Suite work over tests.")
-    Document runtest() {
+    Document runtest() @trusted {
         auto rc = this.test.run();
         return result_ok;
     }
 
     @Then("check that teste has passed without errors.")
-    Document errors() {
+    Document errors() @trusted {
         auto e = this.test.errors;
         check( e is null , e );
         return result_ok;

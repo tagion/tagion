@@ -9,20 +9,14 @@ enum StdNames {
     nonce = "$x", /// random ubyte array
     values = "$vals", /// TagionBill array
     derive = "$D",
-    epoch = "#$epoch", /// i64, hash record pointing at epoch specific data
     epoch_number = "$epoch",
-    locked_epoch = "#$locked_epoch",
     bullseye = "$eye",
-    domain_name = "#name", /// string, domain name hash record for project information
     name = "$name", /// string, a name
     previous = "$prev", /// Fingerprint
-    nodekey = "#$node", /// Public key
-    active = "#$active",
     sign = "$sign", /// Signature
     signs = "$signs", /// Signature array
     archive_type = "$T",
     archive = "$a",
-    hash_contract = "#contract", /// DARTIndex of a contract
     contract = "$contract", /// Contract(SMC)
     msg = "$msg",
     inputs = "$in", /// DARTIndex array
@@ -32,5 +26,17 @@ enum StdNames {
     state = "$state", /// An enumerated value indicating the state, contextual to the record which it is stored in 
 }
 
+///
+enum HashNames {
+    domain_name = "#name", /// string, domain name hash record for project information
+    witness = "#witness", // Records to hold the latest witness
+    hash_contract = "#contract", /// DARTIndex of a contract
+    nodekey = "#$node", /// Public key
+    active = "#$active",
+    locked_epoch = "#$locked_epoch",
+    epoch = "#$epoch", /// i64, hash record pointing at epoch specific data
+    trt_owner = "#$Y",
+}
+
+/// The name used for the #name record for the tagion network
 enum TagionDomain = "tagion";
-enum TRTLabel = "#" ~ StdNames.owner;

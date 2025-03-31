@@ -47,20 +47,20 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
         @("Software caused connection abort") NNG_ECONNABORTED = 18,
         @("The connection was reset by the peer.") NNG_ECONNRESET = 19,
         @("The operation was aborted.") NNG_ECANCELED = 20,
-        @("") NNG_ENOFILES = 21,
+        @("Out of files") NNG_ENOFILES = 21,
         @("No space left on device") NNG_ENOSPC = 22,
-        @("") NNG_EEXIST = 23,
+        @("Resource already exists.") NNG_EEXIST = 23,
         @("The option may not be modified.") NNG_EREADONLY = 24,
         @("The option may not read.") NNG_EWRITEONLY = 25,
-        @("") NNG_ECRYPTO = 26,
+        @("Cryptographic error. Usually indicates an invalid key was used for TLS.") NNG_ECRYPTO = 26,
         @("Authentication or authorization failure.") NNG_EPEERAUTH = 27,
         @("Option requires an argument: but one is not present.") NNG_ENOARG = 28,
         @("Parsed option matches more than one specification.") NNG_EAMBIGUOUS = 29,
         @("Incorrect type for option.") NNG_EBADTYPE = 30,
         @("Remote peer shutdown after sending data.") NNG_ECONNSHUT = 31,
-        @("") NNG_EINTERNAL = 1000,
-        @("") NNG_ESYSERR = 0x1000_0000,
-        @("") NNG_ETRANERR = 0x2000_0000,
+        @("An unidentifier internal error occurred.") NNG_EINTERNAL = 1000,
+        @("An unidentified system error occurred.") NNG_ESYSERR = 0x1000_0000,
+        @("An unidentified transport error occurred.") NNG_ETRANERR = 0x2000_0000,
     }
 
     string nng_errstr(int err) {
@@ -445,7 +445,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
     int nng_dialer_get_ms(nng_dialer, const char*, nng_duration*);
     int nng_dialer_get_addr(nng_dialer, const char*, nng_sockaddr*);
 
-    int nng_listen(nng_socket, const char*, nng_listener*, int);
+    int nng_listen(nng_socket, const char*, scope nng_listener*, int);
     int nng_listener_create(nng_listener*, nng_socket, const char*);
     int nng_listener_start(nng_listener, int);
     int nng_listener_close(nng_listener);
@@ -480,7 +480,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
 
     // ------------------------------------- message functions
 
-    int nng_msg_alloc(nng_msg**, size_t);
+    int nng_msg_alloc(scope nng_msg**, size_t);
     void nng_msg_free(nng_msg*);
     int nng_msg_realloc(nng_msg*, size_t);
     int nng_msg_reserve(nng_msg*, size_t);
@@ -521,7 +521,7 @@ alias nng_ws_listen_cb = int function(void*, nng_http_req*, nng_http_res*);
     int nng_msg_trim_u16(nng_msg*, ushort*);
     int nng_msg_trim_u32(nng_msg*, uint*);
     int nng_msg_trim_u64(nng_msg*, ulong*);
-    int nng_msg_dup(nng_msg**, const nng_msg*);
+    int nng_msg_dup(scope nng_msg**, scope const nng_msg*);
     void nng_msg_clear(nng_msg*);
     void nng_msg_header_clear(nng_msg*);
     void nng_msg_set_pipe(nng_msg*, nng_pipe);

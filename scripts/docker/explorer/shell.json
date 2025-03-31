@@ -36,5 +36,6 @@
     "version_endpoint": "\/version",
     "webroot": "\/tmp\/webapp",
     "webstaticdir": "static",
-    "ws_pub_uri": "ws:\/\/0.0.0.0:8080\/api\/v1\/subscribe"
+    "ws_pub_uri": "ws:\/\/0.0.0.0:8080\/api\/v1\/subscribe",
+    "websocket_cache_size": 512
 }

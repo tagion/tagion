@@ -141,7 +141,7 @@ struct TRTService {
 
                 log("before creating indices");
                 auto owner_indices = owner_doc[]
-                    .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)))
+                    .map!(owner => net.dartKey(HashNames.trt_owner, Pubkey(owner.get!Buffer)))
                     .array;
 
                 import std.algorithm;
@@ -180,7 +180,7 @@ struct TRTService {
             auto index_lookup = dart_recorder[]
                 .filter!(a => a.filed.hasMember(StdNames.owner))
                 .map!(a => Document(a.filed))
-                .map!(doc => net.dartKey(TRTLabel, doc[StdNames.owner].get!Pubkey));
+                .map!(doc => net.dartKey(HashNames.trt_owner, doc[StdNames.owner].get!Pubkey));
 
             auto already_in_dart = trt_db.loads(index_lookup);
 

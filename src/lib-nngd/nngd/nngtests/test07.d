@@ -11,6 +11,7 @@ import std.uuid;
 import core.thread;
 import core.thread.osthread;
 import nngd;
+import nngd.nngtests.suite;
 
 const _testclass = "nngd.nngtests.nng_test07_aio_callback";
 

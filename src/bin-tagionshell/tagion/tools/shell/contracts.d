@@ -3,6 +3,7 @@ module tagion.tools.shell.contracts;
 @safe:
 
 import std.stdio;
+import std.format;
 import std.path;
 import std.datetime;
 
@@ -19,21 +20,19 @@ alias SaveRPC = Msg!"SaveRPC";
 
 /// An 'actor/worker' which saves all incoming RPC contract
 struct RPCSaver {
-
-    HashNet net;
-
     File rpcs_file;
 
     void save_rpc(SaveRPC, Document doc) {
         rpcs_file.fwrite(doc);
-        log.trace("Saved %s", dartIndex(net, doc).encodeBase64);
+        log.trace("Saved %s", dartIndex(hash_net, doc).encodeBase64);
     }
 
     void task() {
-        net = new StdHashNet();
-        const rpcs_file_name = "rpcs_" ~ Clock.currTime.toISOString.setExtension(FileExtension.hibon);
+        auto date = Clock.currTime;
+        string date_string = format("%04d-%02d-%02d", date.year, date.month, date.day);
+        const rpcs_file_name = ("rpcs_" ~ date_string).setExtension(FileExtension.hibon);
 
-        rpcs_file = File(rpcs_file_name, "w");
+        rpcs_file = File(rpcs_file_name, "a");
 
         run(&save_rpc);
     }

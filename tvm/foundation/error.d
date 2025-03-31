@@ -23,3 +23,23 @@ void assert_trap(E)(lazy E expression, string msg = null, string file = __FILE__
 
     assertThrown(expression, msg, file, line);
 }
+
+import std.traits : isBasicType;
+
+template is_equal(T) {
+    static if (isBasicType!T) {
+        bool is_equal(T a, b) pure nothrow {
+            return a is b;
+        }
+    }
+    else {
+        bool is_equal(T)(T a, b) pure nothrow {
+            static foreach (i; T.length) {
+                if (a[i]!is b[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+}

@@ -128,7 +128,7 @@ The result of the profile can be sorted and displayed with the `tprofile` (oneto
 #### Profiling Valgrind
 Valgrind profiler can be started with the `VALGRIND` environment.
 
-Run the unittest with [valgrind](https://valgrind.org) and [callgrind](https://valgrind.org/tech/manual/cl-manual.html).
+Run the unittest with [valgrind](https://valgrind.org) and [callgrind](https://valgrind.org/docs/manual/cl-manual.html).
 ```bash
 make VALGRIND=1 unittest
 ```

@@ -3,7 +3,7 @@ module tagion.wasm.WasmWat;
 import std.conv : to;
 import std.format;
 import std.range : StoppingPolicy, enumerate, lockstep;
-import std.range.primitives : isOutputRange;
+import std.range : isOutputRange, take;
 import std.stdio;
 import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
 import std.typecons : Tuple;
@@ -281,10 +281,16 @@ alias check = Check!WatException;
         }
     }
 
+    version (none) string typeName(ref const ExprRange.IRElement elm) {
+        if (elm.argtypes is ExprRange.IRElement.IRArgType.TYPES) {
+            return typeName(elm.types);
+        }
+        return typeName(wasmstream.get!(Section.TYPE)[elm.idx].results);
+
+    }
+
     private const(ExprRange.IRElement) block(ref ExprRange expr,
             const(string) indent, const uint level = 0) {
-        //        immutable indent=base_indent~spacer;
-        string block_comment;
         uint block_count;
         uint count;
         string block_result_type()(const ref ExprRange.IRElement elm) {
@@ -292,7 +298,6 @@ alias check = Check!WatException;
                 assert(elm.argtype is TYPES || elm.argtype is INDEX,
                         "Invalid block type");
                 if (elm.argtype is INDEX) {
-                    const x = wasmstream.get!(Section.TYPE);
                     const sec_type = wasmstream.get!(Section.TYPE);
                     const func_type = sec_type[elm.idx];
                     return format(" (result %-(%s %))",
@@ -303,114 +308,121 @@ alias check = Check!WatException;
                 switch (elm.types[0]) {
                 case I32, I64, F32, F64, FUNCREF:
                     return format(" (result %s)", typesName(elm.types[0]));
-                    case EMPTY:
+                case VOID:
                     return null;
-                    default:
+                default:
                     check(0, format("Block Illegal result type %s for a block", elm.types[0]));
                 }
             }
             assert(0);
         }
 
-        while (!expr.empty) {
-            const elm = expr.front;
-            expr.popFront;
-            with (IRType) {
-                final switch (elm.instr.irtype) {
-                case CODE:
-                case CODE_EXTEND:
-                case CODE_TYPE:
-                case RETURN:
-                    output.writefln("%s%s", indent, elm.instr.name);
-                    break;
-                case PREFIX:
-                    output.writefln("%s%s", indent, elm.instr.name);
-                    break;
-                case BLOCK:
-                    block_comment = format(";; block %d", block_count);
-                    block_count++;
-                    output.writefln("%s%s%s %s", indent, elm.instr.name,
-                            block_result_type(elm), block_comment);
-                    const end_elm = block(expr, indent ~ spacer, level + 1);
-                    const end_instr = instrTable[end_elm.code];
-                    output.writefln("%s%s", indent, end_instr.name);
-                    //return end_elm;
-
-                    // const end_elm=block_elm(elm);
-                    if (end_elm.code is IR.ELSE) {
-                        const endif_elm = block(expr, indent ~ spacer, level + 1);
+        const(ExprRange.IRElement) innerBlock(ref ExprRange expr,
+                const(string) indent, const int level) {
+            while (!expr.empty) {
+                const elm = expr.front;
+                expr.popFront;
+                with (IRType) {
+                    final switch (elm.instr.irtype) {
+                    case CODE:
+                    case CODE_EXTEND:
+                    case CODE_TYPE:
+                    case OP_STACK:
+                    case RETURN:
+                        output.writefln("%s%s", indent, elm.instr.name);
+                        break;
+                    case PREFIX:
+                        output.writefln("%s%s", indent, elm.instr.name);
+                        break;
+                    case BLOCK_CONDITIONAL:
+                    case BLOCK:
+                        const block_comment = format(";; label = @%d", block_count);
+                        block_count++;
+                        output.writefln("%s%s%s %s", indent, elm.instr.name,
+                                block_result_type(elm), block_comment);
+                        const end_elm = innerBlock(expr, indent ~ spacer, level + 1);
+                        const end_instr = instrTable[end_elm.code];
+                        output.writefln("%s%s", indent, end_instr.name);
+                        break;
+                    case BLOCK_ELSE:
+                        const block_comment = format(";; %s innerBlock %d", elm.instr.irtype, block_count);
+                        const endif_elm = innerBlock(expr, indent ~ spacer, level);
                         const endif_instr = instrTable[endif_elm.code];
                         output.writefln("%s%s %s count=%d", indent,
                                 endif_instr.name, block_comment, count);
-                    }
-                    break;
-                case BRANCH:
-                    //                case BRANCH_IF:
-                    output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
-                    break;
-                case BRANCH_TABLE:
-                    static string branch_table(const(WasmArg[]) args) {
-                        string result;
-                        foreach (a; args) {
-                            result ~= format(" %d", a.get!uint);
-                        }
-                        return result;
-                    }
-
-                    output.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
-                    break;
-                case CALL:
-                    output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
-                    break;
-                case CALL_INDIRECT:
-                    output.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
-                    break;
-                case LOCAL:
-                    output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
-                    break;
-                case GLOBAL:
-                    output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
-                    break;
-                case MEMORY:
-                    output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
-                    break;
-                case MEMOP:
-                    output.writefln("%s%s", indent, elm.instr.name);
-                    break;
-                case CONST:
-                    static string toText(const WasmArg a) {
-                        with (Types) {
-                            switch (a.type) {
-                            case I32:
-                                return a.get!int
-                                    .to!string;
-                            case I64:
-                                return a.get!long
-                                    .to!string;
-                            case F32:
-                                const x = a.get!float;
-                                return format("%a (;=%s;)", x, x);
-                            case F64:
-                                const x = a.get!double;
-                                return format("%a (;=%s;)", x, x);
-                            default:
-                                assert(0);
+                        break;
+                    case BRANCH:
+                        if (elm.code is IR.BR_TABLE) {
+                            static string branch_table(const(WasmArg[]) args) {
+                                string result;
+                                foreach (a; args) {
+                                    result ~= format(" %d", a.get!uint);
+                                }
+                                return result;
                             }
+
+                            output.writefln("%s%s %s", indent, elm.instr.name, branch_table(elm.wargs));
+                            break;
                         }
-                        assert(0);
+                        output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
+                        break;
+                    case CALL:
+                        output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
+                        break;
+                    case CALL_INDIRECT:
+                        output.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
+                        break;
+                    case LOCAL:
+                        output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
+                        break;
+                    case GLOBAL:
+                        output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
+                        break;
+                    case MEMORY:
+                        output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
+                        break;
+                    case MEMOP:
+                        output.writefln("%s%s", indent, elm.instr.name);
+                        break;
+                    case CONST:
+                        static string toText(const WasmArg a) {
+                            with (Types) {
+                                switch (a.type) {
+                                case I32:
+                                    return a.get!int
+                                        .to!string;
+                                case I64:
+                                    return a.get!long
+                                        .to!string;
+                                case F32:
+                                    const x = a.get!float;
+                                    return format("%a (;=%s;)", x, x);
+                                case F64:
+                                    const x = a.get!double;
+                                    return format("%a (;=%s;)", x, x);
+                                default:
+                                    assert(0);
+                                }
+                            }
+                            assert(0);
+                        }
+
+                        output.writefln("%s%s %s", indent, elm.instr.name, toText(elm.warg));
+                        break;
+                    case END:
+                        return elm;
+                    case ILLEGAL:
+                        throw new WatException(format("Illegal instruction %02X", elm.code));
+                    case SYMBOL:
+                        assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }
-                    output.writefln("%s%s %s", indent, elm.instr.name, toText(elm.warg));
-                    break;
-                case END:
-                    return elm;
-                case ILLEGAL:
-                    throw new WatException(format("Illegal instruction %02X", elm.code));
-                case SYMBOL:
-                    assert(0, "Symbol opcode and it does not have an equivalent opcode");
                 }
             }
+            return ExprRange.IRElement(IR.END, level);
         }
-        return ExprRange.IRElement(IR.END, level);
+
+        return innerBlock(expr, indent, level);
+
     }
 
     Output serialize() {

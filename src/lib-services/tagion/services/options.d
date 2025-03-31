@@ -27,7 +27,7 @@ immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
 enum NetworkMode {
     INTERNAL,
     LOCAL,
-    PUB
+    MIRROR,
 }
 
 @safe

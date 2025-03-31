@@ -98,7 +98,7 @@ class PubkeyASendsAMessageToPubkeyB {
             wave.state = ExchangeState.TIDAL_WAVE;
             const sender = HiRPC(a_net).action("froma1", wave);
             a_handle.send(WavefrontReq(), cast(Pubkey)b_net.pubkey, sender.toDoc);
-            receiveOnlyTimeout(1.seconds, (WavefrontReq req, const(Document) doc) { reqa = req; writeln("received ", doc.toPretty);});
+            receiveOnlyTimeout(1.seconds, (WavefrontReq req, Document doc) { reqa = req; writeln("received ", doc.toPretty);});
         }
 
         { // B -> A
@@ -106,7 +106,7 @@ class PubkeyASendsAMessageToPubkeyB {
             wave.state = ExchangeState.FIRST_WAVE;
             const sender = HiRPC(b_net).action("fromb2", wave);
             b_handle.send(WavefrontReq(reqa.id), cast(Pubkey)a_net.pubkey, sender.toDoc);
-            receiveOnlyTimeout(1.seconds, (WavefrontReq req, const(Document) doc) { reqb = req; writeln("received ", doc.toPretty);});
+            receiveOnlyTimeout(1.seconds, (WavefrontReq req, Document doc) { reqb = req; writeln("received ", doc.toPretty);});
         }
 
         { // A -> B
@@ -117,7 +117,7 @@ class PubkeyASendsAMessageToPubkeyB {
             const tmp_receiver = hirpc.receive(hirpc.action("froma3", wave));
             const sender = hirpc.result(tmp_receiver, Document());
             a_handle.send(WavefrontReq(reqb.id), cast(Pubkey)b_net.pubkey, sender.toDoc);
-            receiveOnlyTimeout(1.seconds, (WavefrontReq _, const(Document) doc) { writeln("received ", doc.toPretty);});
+            receiveOnlyTimeout(1.seconds, (WavefrontReq _, Document doc) { writeln("received ", doc.toPretty);});
         }
 
         return result_ok;
@@ -139,7 +139,7 @@ class PubkeyASendsAMessageToPubkeyB {
             const sender = HiRPC(b_net).action("fromb4", Document(wave));
             b_handle.send(WavefrontReq(), cast(Pubkey)a_net.pubkey, sender.toDoc);
 
-            bool received = receiveTimeout(1.seconds, (WavefrontReq _, const(Document) doc) { writeln(doc.toPretty);});
+            bool received = receiveTimeout(1.seconds, (WavefrontReq _, Document doc) { writeln(doc.toPretty);});
             check(!received, "Should not receive anything");
         }
         return result_ok;
@@ -156,7 +156,7 @@ class PubkeyASendsAMessageToPubkeyB {
         const sender = HiRPC(a_net).action("froma5", Wavefront());
         a_handle.send(WavefrontReq(), c_net.pubkey, sender.toDoc);
 
-        bool received = receiveTimeout(1.seconds, (WavefrontReq _, const(Document) doc) { writeln(doc.toPretty);});
+        bool received = receiveTimeout(1.seconds, (WavefrontReq _, Document doc) { writeln(doc.toPretty);});
         check(!received, "Should not receive anything");
 
         return result_ok;

@@ -10,8 +10,8 @@
 | 4      | 4    | schema  | (uint) Container version (for future)               |
 | 8      | 4    | level   | (CompressionLevel:uint) ZLIB level: none=0, zlib9=9 |
 | 12     | 8    | datsize | (ulong) Data block size                             |
-| 20     | 8    | datsum  | (ubyte[8]) Data block checksum                      |
-| 28     | 4    | hdrsum  | (ubyte[4]) Header (above 28 bytes) checksum         |
+| 20     | 8    | datsum  | (ubyte[8]) Data block checksum (crc64ECMA)          |
+| 28     | 4    | hdrsum  | (ubyte[4]) Header (above 28 bytes) checksum (crc32) |
 
 ## Data
 

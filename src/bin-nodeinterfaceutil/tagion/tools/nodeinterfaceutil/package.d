@@ -1,3 +1,4 @@
+@description("Visualize node to node communication")
 module tagion.tools.nodeinterfaceutil;
 
 import tagion.tools.Basic;

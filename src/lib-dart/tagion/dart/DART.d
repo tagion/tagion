@@ -28,6 +28,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, label, recordType;
+import core.memory : pageSize;
 
 /**
  * Calculates the to-angle on the angle circle 
@@ -93,10 +94,10 @@ class DART : DARTFile {
     *   to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
-            string filename,
-            Flag!"read_only" read_only = No.read_only,
-            const ushort from_sector = 0,
-            const ushort to_sector = 0) @safe {
+        string filename,
+        Flag!"read_only" read_only = No.read_only,
+        const ushort from_sector = 0,
+        const ushort to_sector = 0) @safe {
         super(net, filename, read_only);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
@@ -113,11 +114,11 @@ class DART : DARTFile {
     *       to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
-            string filename,
-            out Exception exception,
-            Flag!"read_only" read_only = No.read_only,
-            const ushort from_sector = 0,
-            const ushort to_sector = 0) @safe nothrow {
+        string filename,
+        out Exception exception,
+        Flag!"read_only" read_only = No.read_only,
+        const ushort from_sector = 0,
+        const ushort to_sector = 0) @safe nothrow {
         try {
             this(net, filename, read_only, from_sector, to_sector);
         }
@@ -158,8 +159,8 @@ received = the HiRPC received package
      * @return HiRPC result that contains current database bullseye
      */
     @HiRPCMethod private const(HiRPC.Sender) dartBullseye(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -212,8 +213,8 @@ received = the HiRPC received package
      * ---
      */
     @HiRPCMethod private const(HiRPC.Sender) dartRead(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -226,8 +227,8 @@ received = the HiRPC received package
     }
 
     @HiRPCMethod private const(HiRPC.Sender) dartCheckRead(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -283,8 +284,8 @@ received = the HiRPC received package
      * ----
      */
     @HiRPCMethod private const(HiRPC.Sender) dartRim(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -378,8 +379,8 @@ received = the HiRPC received package
      */
 
     @HiRPCMethod private const(HiRPC.Sender) dartModify(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -406,8 +407,8 @@ received = the HiRPC received package
      *     else the response return is marked empty
      */
     const(HiRPC.Sender) opCall(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only = true) {
+        ref const(HiRPC.Receiver) received,
+        const bool read_only = true) {
         import std.conv : to;
 
         const method = received.method;
@@ -432,8 +433,10 @@ received = the HiRPC received package
      * Returns: 
      *  synchronization fiber
      */
-    SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims) {
-        return new SynchronizationFiber(rims, synchonizer);
+    SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims, size_t sz = pageSize * Fiber.defaultStackPages,
+        size_t guardPageSize = pageSize) {
+
+        return new SynchronizationFiber(rims, synchonizer, sz, guardPageSize);
     }
 
     /**
@@ -443,13 +446,20 @@ received = the HiRPC received package
     class SynchronizationFiber : Fiber {
         protected Synchronizer sync;
 
-        immutable(Rims) root_rims;
+        // static size_t default_page_size = defaultStackPages;
+        // static size_t guard_page_size = guardPageSize; 
 
-        this(const Rims root_rims, Synchronizer sync) @trusted {
+        immutable(Rims) root_rims;
+        size_t fiberPageSize;
+
+        this(const Rims root_rims,
+            Synchronizer sync,
+            size_t sz = pageSize * Fiber.defaultStackPages,
+            size_t guardPageSize = pageSize) @trusted {
             this.root_rims = root_rims;
             this.sync = sync;
             sync.set(this.outer, this, this.outer.hirpc);
-            super(&run);
+            super(&run, sz, guardPageSize);
         }
 
         protected uint _id;
@@ -479,8 +489,8 @@ received = the HiRPC received package
                 //
                 const local_branches = branches(params.path);
                 const request_branches = CRUD.dartRim(rims : params, hirpc:
-                        hirpc, id:
-                        id);
+                    hirpc, id:
+                    id);
                 const result_branches = sync.query(request_branches);
                 if (Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!Branches;
@@ -488,7 +498,7 @@ received = the HiRPC received package
                     // Read all the archives from the foreign DART
                     //
                     const request_archives = CRUD.dartRead(
-                            foreign_branches
+                        foreign_branches
                             .dart_indices, hirpc, id);
                     const result_archives = sync.query(request_archives);
                     auto foreign_recoder = manufactor.recorder(result_archives.response.result);
@@ -653,7 +663,7 @@ received = the HiRPC received package
             auto random_table = new ulong[N];
             foreach (ref r; random_table) {
                 immutable sector = rand.value(0x0000_0000_0000_ABBAUL, 0x0000_0000_0000_ABBDUL) << (
-                        8 * 6);
+                    8 * 6);
                 r = rand.value(0x0000_1234_5678_0000UL | sector, 0x0000_1334_FFFF_0000UL | sector);
             }
 
@@ -717,7 +727,8 @@ received = the HiRPC received package
                     //writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
 
                     foreach (sector; dart_A.sectors) {
-                        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector).setExtension(FileExtension
+                        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector).setExtension(
+                            FileExtension
                                 .hibon);
                         journal_filenames ~= journal_filename;
                         //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
