@@ -730,6 +730,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         ELSE_IF,
         WHILE,
         LOOP,
+        DO_WHILE,
         ERROR,
     }
 
@@ -788,6 +789,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             case BlockKind.ELSE_IF:
             case BlockKind.WHILE:
                 return "}";
+            case BlockKind.DO_WHILE:
+                if (condition) {
+                    return assumeWontThrow(format("} while(%s);", condition));
+                }
+                return "} while(true);";
             case BlockKind.END:
             case BlockKind.BREAK:
             case BlockKind.BREAK_N:
@@ -1053,6 +1059,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     ctx.current.end_kind = BlockKind.WHILE;
                                     break;
                                 }
+                                if (ctx.current.begin_kind is _BlockKind.LOOP) {
+                                    ctx.current.end_kind=BlockKind.DO_WHILE;
+                                    break;
+                                }
                                 ctx.current.end_kind = BlockKind.BREAK;
                                 bout.writefln("%s// empty", indent);
                                 break;
@@ -1062,6 +1072,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             target_block.end_kind = BlockKind.BREAK_N;
                             target_block.define_label;
                             switch (ctx.current.begin_kind) {
+                            case _BlockKind.LOOP:
+                                if ((lth == 0) && (expr.front.code is IR.END)) {
+                                    ctx.current.end_kind=BlockKind.DO_WHILE;
+                                    break;
+                                }
+                                goto case;
                             case _BlockKind.WHILE:
                                 ctx.current.end_kind = BlockKind.WHILE;
 
@@ -1108,12 +1124,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             target_block.end_kind = BlockKind.BREAK_N;
                             target_block.define_label;
                             if (ctx.current.elm.code is IR.LOOP) {
-                                if (target_block.begin_kind is _BlockKind.WHILE) {
+                                //if (target_block.begin_kind is _BlockKind.WHILE) {
                                     bout.writefln("%sif (%s) continue %s;", indent, conditional_flag, target_block.label);
-                                    break;
-                                }
+                                  //  break;
+                                //}
 
-                                bout.writefln("%sif (%s) goto %s;", indent, conditional_flag, target_block.label);
+                                //bout.writefln("%sif (%s) goto %s;", indent, conditional_flag, target_block.label);
                                 break;
                             }
                             bout.writefln("%sif (%s) break %s;",

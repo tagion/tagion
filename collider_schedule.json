@@ -163,7 +163,7 @@
         },
         "loop" : {
             "args" : [
-                "loop_1.wast"
+                "loop_2.wast"
             ]
         },
         "if_block" : {
