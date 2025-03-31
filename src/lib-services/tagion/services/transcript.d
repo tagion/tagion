@@ -66,7 +66,8 @@ struct TranscriptService {
 
     RecordFactory rec_factory;
 
-    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names, bool trt_enable) {
+    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(StdSecureNet) shared_net, immutable(
+            TaskNames) task_names, bool trt_enable) {
         this.opts = opts;
         this.number_of_nodes = number_of_nodes;
 
@@ -110,9 +111,9 @@ struct TranscriptService {
         votes[epoch_number].epoch.bullseye = bullseye;
 
         ConsensusVoting own_vote = ConsensusVoting(
-                epoch_number,
-                net.pubkey,
-                net.sign(bullseye)
+            epoch_number,
+            net.pubkey,
+            net.sign(bullseye)
         );
 
         epoch_creator_handle.send(Payload(), own_vote.toDoc);
@@ -131,6 +132,7 @@ struct TranscriptService {
 
     void epoch(consensusEpoch,
         immutable(EventPackage*)[] epacks,
+        immutable(Fingerprint)[] fingerprints,
         long epoch_number,
         const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
@@ -167,7 +169,7 @@ struct TranscriptService {
             .join
             .array;
 
-        auto req = dartCheckReadRR(id: last_epoch_number);
+        auto req = dartCheckReadRR(id : last_epoch_number);
         epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
 
         if (inputs.length == 0) {
@@ -268,7 +270,7 @@ struct TranscriptService {
                 import std.datetime;
                 import tagion.utils.StdTime;
 
-                const max_time = sdt_t((SysTime(cast(const long)epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
+                const max_time = sdt_t((SysTime(cast(const long) epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
                         .stdTime);
 
                 foreach (doc; tvm_contract_outputs.outputs) {
@@ -417,7 +419,8 @@ struct TranscriptService {
                         log("FOUND A EPOCH");
                     }
                     else {
-                        throw new ServiceError("The read epoch was not of type Epoch or GenesisEpoch");
+                        throw new ServiceError(
+                            "The read epoch was not of type Epoch or GenesisEpoch");
                     }
                     previous_epoch = Fingerprint(net.calcHash(doc));
                 }

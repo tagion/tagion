@@ -1,9 +1,10 @@
 /// Module for handling callbacks from the hashgraph
 module tagion.hashgraph.Refinement;
 
+import tagion.basic.basic;
 import tagion.basic.Debug;
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types : Pubkey;
+import tagion.crypto.Types : Pubkey, Fingerprint;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
@@ -112,7 +113,7 @@ class StdRefinement : Refinement {
 
         auto transcript_tid = locate(task_names.transcript);
         if (transcript_tid !is Tid.init) {
-            transcript_tid.send(consensusEpoch(), epacks, cast(long)decided_round.number, epoch_time);
+            transcript_tid.send(consensusEpoch(), epacks, decided_round.witnesses.imut_array, cast(long)decided_round.number, epoch_time);
         }
     }
 
