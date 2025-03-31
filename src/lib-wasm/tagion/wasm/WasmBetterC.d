@@ -1084,7 +1084,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.number_of_blocks));
                             const block_index = ctx.index(lth);
                             auto current_block = ctx.current;
-                            __write(" BR_IF stack %-(%s, %)", ctx.stack);
+                            //__write(" BR_IF stack %-(%s, %)", ctx.stack);
                             const conditional_flag = ctx.pop;
                             set_local(current_block);
                             ctx.push(current_block);
