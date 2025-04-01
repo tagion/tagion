@@ -1035,13 +1035,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             check(lth < ctx.number_of_blocks, format(
                                     "Label number of %d exceeds the block stack for max %d",
                                     lth, ctx.number_of_blocks));
-                            const block_index = ctx.index(lth);
+                            const target_index = ctx.index(lth);
 
                             auto current_block = ctx.current;
                             set_local(current_block);
 
                             if ((lth > 0) && !current_block.isVoidType) {
-                                bout.writefln("%s%s = %s;", indent, ctx[block_index].block_result,
+                                bout.writefln("%s%s = %s;", indent, ctx[target_index].block_result,
                                         current_block.block_result);
                             }
 
@@ -1064,12 +1064,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     ctx.current.kind = BlockKind.DO_WHILE;
                                     break;
                                 }
-                                //ctx.current.end_kind = BlockKind.BLOCK;
                                 bout.writefln("%s// empty", indent);
                                 break;
                             }
-                            const label_n = ctx.index(lth);
-                            auto target_block = ctx[label_n];
+//                            const label_n = ctx.index(lth);
+                            auto target_block = ctx[target_index];
                             target_block.kind = BlockKind.BLOCK;
                             target_block.define_label;
                             switch (ctx.current.kind) {
@@ -1100,7 +1099,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.number_of_blocks));
                             const block_index = ctx.index(lth);
                             auto current_block = ctx.current;
-                            //__write(" BR_IF stack %-(%s, %)", ctx.stack);
                             const conditional_flag =  ctx.pop;
                             set_local(current_block);
                             ctx.push(current_block);
@@ -1110,7 +1108,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             bout.writefln("// BR_IF %d", lth);
                             if (lth == 0) {
-                                //ctx[lth].end_kind = BlockKind.BLOCK;
                                 if (ctx.current.kind is BlockKind.LOOP) {
                                     ctx.current.condition = conditional_flag;
                                     ctx.current.kind = BlockKind.WHILE;
@@ -1121,15 +1118,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             const label_n = ctx.index(lth);
                             auto target_block = ctx[label_n];
-                            //target_block.end_kind = BlockKind.BLOCK;
                             target_block.define_label;
                             if (ctx.current.elm.code is IR.LOOP) {
-                                //if (target_block.begin_kind is _BlockKind.WHILE) {
                                 bout.writefln("%sif (%s) continue %s;", indent, conditional_flag, target_block.label);
-                                //  break;
-                                //}
-
-                                //bout.writefln("%sif (%s) goto %s;", indent, conditional_flag, target_block.label);
                                 break;
                             }
                             bout.writefln("%sif (%s) break %s;",
