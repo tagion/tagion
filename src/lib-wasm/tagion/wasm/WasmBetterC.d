@@ -712,14 +712,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     enum _BlockKind {
         BLOCK, /// block_#: do{ ... } while (false);
-        LOOP, /// block_#: do{ ... } while (false);
+        LOOP, /// block_#: do{ ... } while (?);
         WHILE, /// block_#: while(condition) { ...}
-        IF_ELSE, // if (condition) { } [else { ... } 
     }
 
     enum BlockKind {
-        END,
-      //  WHILE,
+        BLOCK,
         DO_WHILE,
         _END,
     }
@@ -785,7 +783,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     return assumeWontThrow(format("} while(%s);", condition));
                 }
                 return "} while(true);";
-            case BlockKind.END:
+            case BlockKind.BLOCK:
                 if (condition) {
                     return "}";
                 }
@@ -969,13 +967,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         scope (exit) {
                             block_bout = null;
                         }
-                        //string[] block_begin;
                         switch (elm.code) {
                         case IR.IF:
                             ctx.perform(elm.code, elm.instr.pops);
                             block.condition = ctx.pop;
                             block.end_kind = BlockKind._END;
-                            //block.begin_kind = _BlockKind.IF_ELSE;
                             break;
                         case IR.LOOP:
                             block.begin_kind = _BlockKind.LOOP;
@@ -1045,13 +1041,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     ctx.current.end_kind = BlockKind.DO_WHILE;
                                     break;
                                 }
-                                ctx.current.end_kind = BlockKind.END;
+                                ctx.current.end_kind = BlockKind.BLOCK;
                                 bout.writefln("%s// empty", indent);
                                 break;
                             }
                             const label_n = ctx.index(lth);
                             auto target_block = ctx[label_n];
-                            target_block.end_kind = BlockKind.END;
+                            target_block.end_kind = BlockKind.BLOCK;
                             target_block.define_label;
                             switch (ctx.current.begin_kind) {
                             case _BlockKind.LOOP:
@@ -1091,7 +1087,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             bout.writefln("// BR_IF %d", lth);
                             if (lth == 0) {
-                                ctx[lth].end_kind = BlockKind.END;
+                                ctx[lth].end_kind = BlockKind.BLOCK;
                                 if (ctx.current.begin_kind is _BlockKind.LOOP) {
                                     ctx.current.condition = conditional_flag;
                                     ctx.current.begin_kind = _BlockKind.WHILE;
@@ -1102,7 +1098,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             const label_n = ctx.index(lth);
                             auto target_block = ctx[label_n];
-                            target_block.end_kind = BlockKind.END;
+                            target_block.end_kind = BlockKind.BLOCK;
                             target_block.define_label;
                             if (ctx.current.elm.code is IR.LOOP) {
                                 //if (target_block.begin_kind is _BlockKind.WHILE) {
@@ -1153,7 +1149,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                             block_label_depth);
                                 }
                                 const block_index = ctx.index(block_label_depth);
-                                ctx[block_index].end_kind = BlockKind.END;
+                                ctx[block_index].end_kind = BlockKind.BLOCK;
                                 if ((block_label_depth > 0) && !current_block.isVoidType) {
                                     bout.writefln("%s%s = %s;", local_indent, ctx[block_index].block_result,
                                             ctx.current.block_result);
