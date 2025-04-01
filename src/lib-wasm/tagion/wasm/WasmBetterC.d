@@ -736,9 +736,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
             bool _local_defined;
             bool _label_defined;
+            BlockKind _kind;
         }
         BlockKind _end_kind;
-        BlockKind begin_kind;
+        BlockKind _begin_kind;
         @disable this();
         this(Context ctx,
                 const ref ExprRange.IRElement elm,
@@ -797,16 +798,30 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
         }
 
+        const(BlockKind) begin_kind() const pure nothrow {
+            return _begin_kind;
+        }
+        void begin_kind(const BlockKind k) pure nothrow {
+            kind =k;
+            _begin_kind = k;
+        }
+
         const(BlockKind) end_kind() const pure nothrow {
             return _end_kind;
         }
 
         void end_kind(const BlockKind k) pure nothrow {
+            kind=k;
             if (_end_kind < k) {
                 _end_kind = k;
             }
         }
 
+        void kind(const BlockKind k) nothrow 
+        in (k > _kind, assumeWontThrow(format("%s <= %s", k, _kind)))
+            do {
+                _kind=k;
+        }
         bool local_defined() const pure nothrow {
             return _local_defined;
         }
@@ -1047,7 +1062,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     ctx.current.end_kind = BlockKind.DO_WHILE;
                                     break;
                                 }
-                                ctx.current.end_kind = BlockKind.BLOCK;
+                                //ctx.current.end_kind = BlockKind.BLOCK;
                                 bout.writefln("%s// empty", indent);
                                 break;
                             }
@@ -1093,7 +1108,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             bout.writefln("// BR_IF %d", lth);
                             if (lth == 0) {
-                                ctx[lth].end_kind = BlockKind.BLOCK;
+                                //ctx[lth].end_kind = BlockKind.BLOCK;
                                 if (ctx.current.begin_kind is BlockKind.LOOP) {
                                     ctx.current.condition = conditional_flag;
                                     ctx.current.begin_kind = BlockKind.WHILE;
@@ -1104,7 +1119,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             const label_n = ctx.index(lth);
                             auto target_block = ctx[label_n];
-                            target_block.end_kind = BlockKind.BLOCK;
+                            //target_block.end_kind = BlockKind.BLOCK;
                             target_block.define_label;
                             if (ctx.current.elm.code is IR.LOOP) {
                                 //if (target_block.begin_kind is _BlockKind.WHILE) {
@@ -1155,7 +1170,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                             block_label_depth);
                                 }
                                 const block_index = ctx.index(block_label_depth);
-                                ctx[block_index].end_kind = BlockKind.BLOCK;
+                                //ctx[block_index].end_kind = BlockKind.BLOCK;
                                 if ((block_label_depth > 0) && !current_block.isVoidType) {
                                     bout.writefln("%s%s = %s;", local_indent, ctx[block_index].block_result,
                                             ctx.current.block_result);
