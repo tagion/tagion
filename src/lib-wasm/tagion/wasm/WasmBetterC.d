@@ -710,8 +710,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     }
 
-    version(none)
-    enum _BlockKind {
+    version (none) enum _BlockKind {
         BLOCK, /// block_#: do{ ... } while (false);
         LOOP, /// block_#: do{ ... } while (?);
         WHILE, /// block_#: while(condition) { ...}
@@ -799,31 +798,34 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         const(BlockKind) kind() const pure nothrow {
             return _kind;
         }
-            version(none) {
-        const(BlockKind) begin_kind() const pure nothrow {
-            return _kind;
-        }
-        void begin_kind(const BlockKind k) pure nothrow {
-            kind =k;
-            //_begin_kind = k;
-        }
 
-        const(BlockKind) end_kind() const pure nothrow {
-            return _kind;
-        }
+        version (none) {
+            const(BlockKind) begin_kind() const pure nothrow {
+                return _kind;
+            }
 
-        void end_kind(const BlockKind k) pure nothrow {
-            kind=k;
-            //if (_end_kind < k) {
-               // _end_kind = k;
-           // }
+            void begin_kind(const BlockKind k) pure nothrow {
+                kind = k;
+                //_begin_kind = k;
+            }
+
+            const(BlockKind) end_kind() const pure nothrow {
+                return _kind;
+            }
+
+            void end_kind(const BlockKind k) pure nothrow {
+                kind = k;
+                //if (_end_kind < k) {
+                // _end_kind = k;
+                // }
+            }
         }
-    }
-        void kind(const BlockKind k) nothrow 
+        void kind(const BlockKind k) nothrow
         in (k > _kind, assumeWontThrow(format("%s <= %s", k, _kind)))
-            do {
-                _kind=k;
+        do {
+            _kind = k;
         }
+
         bool local_defined() const pure nothrow {
             return _local_defined;
         }
@@ -1031,18 +1033,18 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     case BRANCH:
                         switch (elm.code) {
                         case IR.BR:
+                            //                            auto current_block = ctx.current;
+                            set_local(ctx.current);
                             const lth = elm.warg.get!uint;
                             check(lth < ctx.number_of_blocks, format(
                                     "Label number of %d exceeds the block stack for max %d",
                                     lth, ctx.number_of_blocks));
                             const target_index = ctx.index(lth);
+                            auto target_block = ctx[target_index];
 
-                            auto current_block = ctx.current;
-                            set_local(current_block);
-
-                            if ((lth > 0) && !current_block.isVoidType) {
-                                bout.writefln("%s%s = %s;", indent, ctx[target_index].block_result,
-                                        current_block.block_result);
+                            if ((lth > 0) && !ctx.current.isVoidType) {
+                                bout.writefln("%s%s = %s;", indent, target_block.block_result,
+                                        ctx.current.block_result);
                             }
 
                             scope (exit) {
@@ -1054,23 +1056,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 }
                             }
                             bout.writefln("// BR %d", lth);
-
-                            if (lth == 0) {
-                                if (ctx.current.kind is BlockKind.WHILE) {
-                                    ctx.current.kind = BlockKind.END;
-                                    break;
-                                }
-                                if (ctx.current.kind is BlockKind.LOOP) {
-                                    ctx.current.kind = BlockKind.DO_WHILE;
-                                    break;
-                                }
-                                bout.writefln("%s// empty", indent);
-                                break;
-                            }
-//                            const label_n = ctx.index(lth);
-                            auto target_block = ctx[target_index];
-                            target_block.kind = BlockKind.BLOCK;
-                            target_block.define_label;
                             switch (ctx.current.kind) {
                             case BlockKind.LOOP:
                                 if ((lth == 0) && (expr.front.code is IR.END)) {
@@ -1079,6 +1064,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 }
                                 goto case;
                             case BlockKind.WHILE:
+                                if (lth == 0) {
+                                    ctx.current.kind = BlockKind.END;
+                                    break;
+                                }
+                                target_block.define_label;
                                 ctx.current.kind = BlockKind.END;
 
                                 if (target_block.elm.code is IR.LOOP) {
@@ -1088,6 +1078,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 bout.writefln("%sgoto %s;", indent, target_block.label);
                                 break;
                             default:
+                                if (lth == 0) {
+                                    bout.writefln("%s// empty", indent);
+                                    break;
+                                }
                                 bout.writefln("%sbreak %s;", indent, target_block.label);
                             }
 
@@ -1099,7 +1093,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.number_of_blocks));
                             const block_index = ctx.index(lth);
                             auto current_block = ctx.current;
-                            const conditional_flag =  ctx.pop;
+                            const conditional_flag = ctx.pop;
                             set_local(current_block);
                             ctx.push(current_block);
                             if ((lth > 0) && !current_block.isVoidType) {
