@@ -31,7 +31,6 @@
       (loop (result i32) (call $dummy) (i32.const 9))
     )
   )
-(;
   (func (export "deep") (result i32)
     (loop (result i32) (block (result i32)
       (loop (result i32) (block (result i32)
@@ -75,7 +74,6 @@
       ))
     ))
   )
-;)
   (func (export "as-select-first") (result i32)
     (select (loop (result i32) (i32.const 1)) (i32.const 2) (i32.const 3))
   )
