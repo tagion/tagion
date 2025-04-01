@@ -739,7 +739,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             BlockKind _kind;
         }
         BlockKind _end_kind;
-        BlockKind _begin_kind;
+        //BlockKind _begin_kind;
         @disable this();
         this(Context ctx,
                 const ref ExprRange.IRElement elm,
@@ -799,11 +799,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         const(BlockKind) begin_kind() const pure nothrow {
-            return _begin_kind;
+            return _kind;
         }
         void begin_kind(const BlockKind k) pure nothrow {
             kind =k;
-            _begin_kind = k;
+            //_begin_kind = k;
         }
 
         const(BlockKind) end_kind() const pure nothrow {
@@ -812,9 +812,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
         void end_kind(const BlockKind k) pure nothrow {
             kind=k;
-            if (_end_kind < k) {
+            //if (_end_kind < k) {
                 _end_kind = k;
-            }
+           // }
         }
 
         void kind(const BlockKind k) nothrow 
