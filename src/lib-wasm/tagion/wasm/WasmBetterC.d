@@ -738,7 +738,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             bool _label_defined;
             BlockKind _kind;
         }
-        BlockKind _end_kind;
+        //BlockKind _end_kind;
         //BlockKind _begin_kind;
         @disable this();
         this(Context ctx,
@@ -777,9 +777,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         string end() const pure nothrow {
-            final switch (_end_kind) {
-         //   case BlockKind.IF_ELSE:
-            //case BlockKind.WHILE:
+            final switch (_kind) {
+            case BlockKind.WHILE:
             case BlockKind.END:
                 return "}";
             case BlockKind.DO_WHILE:
@@ -791,10 +790,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 if (condition) {
                     return "}";
                 }
-                return "} while(false);";
-            case BlockKind.WHILE:
+                goto case;
             case BlockKind.LOOP:
-                assert(0, "Illegal end block");
+                return "} while(false);";
             }
         }
 
@@ -807,13 +805,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         const(BlockKind) end_kind() const pure nothrow {
-            return _end_kind;
+            return _kind;
         }
 
         void end_kind(const BlockKind k) pure nothrow {
             kind=k;
             //if (_end_kind < k) {
-                _end_kind = k;
+               // _end_kind = k;
            // }
         }
 
