@@ -718,6 +718,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     enum BlockKind {
         BLOCK,
+        LOOP,
+        WHILE,
         DO_WHILE,
         _END,
     }
@@ -788,6 +790,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     return "}";
                 }
                 return "} while(false);";
+            case BlockKind.WHILE:
+            case BlockKind.LOOP:
+                assert(0, "Illegal end block");
             }
         }
 
