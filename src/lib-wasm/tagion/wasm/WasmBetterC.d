@@ -710,6 +710,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     }
 
+    version(none)
     enum _BlockKind {
         BLOCK, /// block_#: do{ ... } while (false);
         LOOP, /// block_#: do{ ... } while (?);
@@ -721,7 +722,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         LOOP,
         WHILE,
         DO_WHILE,
-        _END,
+        END,
     }
 
     struct Block {
@@ -737,7 +738,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             bool _label_defined;
         }
         BlockKind _end_kind;
-        _BlockKind begin_kind;
+        BlockKind begin_kind;
         @disable this();
         this(Context ctx,
                 const ref ExprRange.IRElement elm,
@@ -778,7 +779,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             final switch (_end_kind) {
          //   case BlockKind.IF_ELSE:
             //case BlockKind.WHILE:
-            case BlockKind._END:
+            case BlockKind.END:
                 return "}";
             case BlockKind.DO_WHILE:
                 if (condition) {
@@ -976,10 +977,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         case IR.IF:
                             ctx.perform(elm.code, elm.instr.pops);
                             block.condition = ctx.pop;
-                            block.end_kind = BlockKind._END;
+                            block.end_kind = BlockKind.END;
                             break;
                         case IR.LOOP:
-                            block.begin_kind = _BlockKind.LOOP;
+                            block.begin_kind = BlockKind.LOOP;
                             break;
                         default:
                             //block.begin ~= format("%sdo { // %s", indent, block_comment);
@@ -1038,11 +1039,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             bout.writefln("// BR %d", lth);
 
                             if (lth == 0) {
-                                if (ctx.current.begin_kind is _BlockKind.WHILE) {
-                                    ctx.current.end_kind = BlockKind._END;
+                                if (ctx.current.begin_kind is BlockKind.WHILE) {
+                                    ctx.current.end_kind = BlockKind.END;
                                     break;
                                 }
-                                if (ctx.current.begin_kind is _BlockKind.LOOP) {
+                                if (ctx.current.begin_kind is BlockKind.LOOP) {
                                     ctx.current.end_kind = BlockKind.DO_WHILE;
                                     break;
                                 }
@@ -1055,14 +1056,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             target_block.end_kind = BlockKind.BLOCK;
                             target_block.define_label;
                             switch (ctx.current.begin_kind) {
-                            case _BlockKind.LOOP:
+                            case BlockKind.LOOP:
                                 if ((lth == 0) && (expr.front.code is IR.END)) {
                                     ctx.current.end_kind = BlockKind.DO_WHILE;
                                     break;
                                 }
                                 goto case;
-                            case _BlockKind.WHILE:
-                                ctx.current.end_kind = BlockKind._END;
+                            case BlockKind.WHILE:
+                                ctx.current.end_kind = BlockKind.END;
 
                                 if (target_block.elm.code is IR.LOOP) {
                                     bout.writefln("%scontinue %s;", indent, target_block.label);
@@ -1093,9 +1094,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             bout.writefln("// BR_IF %d", lth);
                             if (lth == 0) {
                                 ctx[lth].end_kind = BlockKind.BLOCK;
-                                if (ctx.current.begin_kind is _BlockKind.LOOP) {
+                                if (ctx.current.begin_kind is BlockKind.LOOP) {
                                     ctx.current.condition = conditional_flag;
-                                    ctx.current.begin_kind = _BlockKind.WHILE;
+                                    ctx.current.begin_kind = BlockKind.WHILE;
                                     break;
                                 }
                                 bout.writefln("%sif (%s) break;", indent, conditional_flag);
