@@ -766,7 +766,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             case IR.BLOCK:
                 return "do {";
             case IR.LOOP:
-                if (begin_kind is _BlockKind.WHILE) {
+                //if (begin_kind is _BlockKind.WHILE) {
+                if (condition) {
                     return assumeWontThrow(format("while (!%s) {", condition));
                 }
                 return "do {";
@@ -789,7 +790,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return "} while(true);";
             case BlockKind.END:
             case BlockKind.BREAK:
-                if (begin_kind is _BlockKind.WHILE) {
+                if (condition) {
                     return "}";
                 }
                 return "} while(false);";
@@ -1085,7 +1086,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             const block_index = ctx.index(lth);
                             auto current_block = ctx.current;
                             //__write(" BR_IF stack %-(%s, %)", ctx.stack);
-                            const conditional_flag = ctx.pop;
+                            const conditional_flag =  ctx.pop;
                             set_local(current_block);
                             ctx.push(current_block);
                             if ((lth > 0) && !current_block.isVoidType) {
