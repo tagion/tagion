@@ -719,10 +719,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     enum BlockKind {
         END,
-        BREAK,
-        IF_ELSE,
-        WHILE,
-        //LOOP,
+      //  WHILE,
         DO_WHILE,
         _END,
     }
@@ -779,8 +776,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
         string end() const pure nothrow {
             final switch (_end_kind) {
-            case BlockKind.IF_ELSE:
-            case BlockKind.WHILE:
+         //   case BlockKind.IF_ELSE:
+            //case BlockKind.WHILE:
             case BlockKind._END:
                 return "}";
             case BlockKind.DO_WHILE:
@@ -789,7 +786,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 }
                 return "} while(true);";
             case BlockKind.END:
-            case BlockKind.BREAK:
                 if (condition) {
                     return "}";
                 }
@@ -1042,20 +1038,20 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
                             if (lth == 0) {
                                 if (ctx.current.begin_kind is _BlockKind.WHILE) {
-                                    ctx.current.end_kind = BlockKind.WHILE;
+                                    ctx.current.end_kind = BlockKind._END;
                                     break;
                                 }
                                 if (ctx.current.begin_kind is _BlockKind.LOOP) {
                                     ctx.current.end_kind = BlockKind.DO_WHILE;
                                     break;
                                 }
-                                ctx.current.end_kind = BlockKind.BREAK;
+                                ctx.current.end_kind = BlockKind.END;
                                 bout.writefln("%s// empty", indent);
                                 break;
                             }
                             const label_n = ctx.index(lth);
                             auto target_block = ctx[label_n];
-                            target_block.end_kind = BlockKind.BREAK;
+                            target_block.end_kind = BlockKind.END;
                             target_block.define_label;
                             switch (ctx.current.begin_kind) {
                             case _BlockKind.LOOP:
@@ -1065,7 +1061,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 }
                                 goto case;
                             case _BlockKind.WHILE:
-                                ctx.current.end_kind = BlockKind.WHILE;
+                                ctx.current.end_kind = BlockKind._END;
 
                                 if (target_block.elm.code is IR.LOOP) {
                                     bout.writefln("%scontinue %s;", indent, target_block.label);
@@ -1095,7 +1091,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             bout.writefln("// BR_IF %d", lth);
                             if (lth == 0) {
-                                ctx[lth].end_kind = BlockKind.BREAK;
+                                ctx[lth].end_kind = BlockKind.END;
                                 if (ctx.current.begin_kind is _BlockKind.LOOP) {
                                     ctx.current.condition = conditional_flag;
                                     ctx.current.begin_kind = _BlockKind.WHILE;
@@ -1106,7 +1102,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                             const label_n = ctx.index(lth);
                             auto target_block = ctx[label_n];
-                            target_block.end_kind = BlockKind.BREAK;
+                            target_block.end_kind = BlockKind.END;
                             target_block.define_label;
                             if (ctx.current.elm.code is IR.LOOP) {
                                 //if (target_block.begin_kind is _BlockKind.WHILE) {
@@ -1157,7 +1153,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                             block_label_depth);
                                 }
                                 const block_index = ctx.index(block_label_depth);
-                                ctx[block_index].end_kind = BlockKind.BREAK;
+                                ctx[block_index].end_kind = BlockKind.END;
                                 if ((block_label_depth > 0) && !current_block.isVoidType) {
                                     bout.writefln("%s%s = %s;", local_indent, ctx[block_index].block_result,
                                             ctx.current.block_result);
