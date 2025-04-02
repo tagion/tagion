@@ -51,11 +51,9 @@ struct DARTInterfaceOptions {
 }
 
 struct DartWorkerContext {
-    string dart_task_name;
     int worker_timeout;
     bool trt_enable;
-    string trt_task_name;
-    string rep_task_name;
+    TaskNames task_names;
 }
 
 /// Accepted methods for the DART.
@@ -67,8 +65,15 @@ static immutable(string[]) accepted_dart_methods = [
 ];
 
 static immutable(string[]) accepted_rep_methods = [
-    "readRecorder"
+    "readRecorder",
 ];
+
+enum RequestType {
+    unknown,
+    trt,
+    dart,
+    replicator,
+}
 
 pragma(msg, "deprecated search method should be removed from trt");
 /// All methods allowed for the TRT
@@ -93,7 +98,26 @@ void set_error_msg(NNGMessage* msg, ServiceCode err_type, string extra_msg = "")
     set_response_doc(msg, sender.toDoc);
 }
 
-void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
+void task_request(alias MsgType)(string task_name, Duration timeout, Document doc, NNGMessage* msg) {
+    Tid tid = locate(task_name);
+    if (tid is Tid.init) {
+        msg.set_error_msg(ServiceCode.internal, "Missing Tid " ~ task_name);
+        return;
+    }
+
+    tid.send(MsgType(), doc);
+    bool response = receiveTimeout(timeout, (MsgType.Response _, Document doc) { msg.set_response_doc(doc); });
+    if (!response) {
+        msg.set_error_msg(ServiceCode.timeout);
+        writeln("Timeout on interface request");
+        return;
+    }
+
+    writeln("Interface successful response ", task_name);
+    return;
+}
+
+void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
     thread_attachThis();
     if (msg is null) {
         log.error("no message received");
@@ -125,56 +149,28 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     const empty_hirpc = HiRPC(null);
 
     immutable receiver = empty_hirpc.receive(doc);
-    if (!(receiver.isMethod && all_dartinterface_methods.canFind(receiver.method.full_name))) {
+    if (!receiver.isMethod) {
+        msg.set_error_msg(ServiceCode.method, "Received HiRPC is not a method");
+        return;
+    }
+
+    string full_name = receiver.method.full_name;
+    if (accepted_trt_methods.canFind(full_name)) {
+        if(!cnt.trt_enable) {
+            msg.set_error_msg(ServiceCode.method, "Trt methods are not enabled");
+            return;
+        }
+        task_request!trtHiRPCRR(cnt.task_names.trt, cnt.worker_timeout.msecs, doc, msg);
+    }
+    else if(accepted_rep_methods.canFind(full_name)) {
+        task_request!readRecorderRR(cnt.task_names.replicator, cnt.worker_timeout.msecs, doc, msg);
+    }
+    else if(accepted_dart_methods.canFind(full_name)) {
+        task_request!dartHiRPCRR(cnt.task_names.dart, cnt.worker_timeout.msecs, doc, msg);
+    }
+    else {
         msg.set_error_msg(ServiceCode.method, format("%s", all_dartinterface_methods));
-        return;
     }
-
-    const is_trt_req = accepted_trt_methods.canFind(receiver.method.full_name);
-    const is_rep_req = accepted_rep_methods.canFind(receiver.method.full_name);
-
-    string request_task_name;
-    if (is_trt_req) {
-        request_task_name = cnt.trt_task_name;
-    }
-    else if (is_rep_req) {
-        request_task_name = cnt.rep_task_name;
-    }
-    else {
-        request_task_name = cnt.dart_task_name;
-    }
-
-    Tid tid = locate(request_task_name);
-
-    if (tid is Tid.init) {
-        msg.set_error_msg(ServiceCode.internal, "Missing Tid " ~ request_task_name);
-        return;
-    }
-
-    bool response;
-    if (is_trt_req) {
-        tid.send(trtHiRPCRR(), doc);
-    }
-    else if (is_rep_req) {
-        tid.send(readRecorderRR(), doc);
-    }
-    else {
-        tid.send(dartHiRPCRR(), doc);
-    }
-
-    response = receiveTimeout(cnt.worker_timeout.msecs,
-        (dartHiRPCRR.Response _, Document doc) { msg.set_response_doc(doc); },
-        (trtHiRPCRR.Response _, Document doc) { msg.set_response_doc(doc); },
-        (readRecorderRR.Response _, Document doc) { msg.set_response_doc(doc); }
-    );
-
-    if (!response) {
-        msg.set_error_msg(ServiceCode.timeout);
-        writeln("Timeout on interface request");
-        return;
-    }
-
-    writeln("Interface successful response ", receiver.method.full_name);
 }
 
 void err_cb(NNGMessage* msg, void* ctx, Exception e) @safe nothrow {
@@ -201,18 +197,16 @@ struct DARTInterfaceService {
         setState(Ctrl.STARTING);
 
         DartWorkerContext ctx;
-        ctx.dart_task_name = task_names.dart;
         ctx.worker_timeout = opts.sendtimeout;
-        ctx.trt_task_name = task_names.trt;
         ctx.trt_enable = trt_opts.enable;
-        ctx.rep_task_name = task_names.replicator;
+        ctx.task_names = task_names;
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
         sock.recvtimeout = opts.receivetimeout.msecs;
         sock.sendbuf = opts.sendbuf;
 
-        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, opts.pool_size, &ctx, &err_cb);
+        NNGPool pool = NNGPool(&sock, &hirpc_cb, opts.pool_size, &ctx, &err_cb);
         scope (exit) {
             pool.shutdown();
         }
