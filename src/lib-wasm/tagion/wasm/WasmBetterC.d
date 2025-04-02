@@ -1039,7 +1039,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 if (lth == 0) {
                                     break;
                                 }
-                                bout.writefln("%s;", indent, ctx.jump(target_block));
+                                bout.writefln("%s%s;", indent, ctx.jump(target_block));
                             }
                             break;
                         case IR.BR_IF:
@@ -1074,8 +1074,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     count++;
                                 }
                             }
-
-                            //auto current_block = ctx.current;
                             bout.writefln("// Stack %-(%s, %)", ctx.stack);
                             const switch_select = ctx.pop;
                             set_local(ctx.current);
@@ -1103,8 +1101,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                         bout.writefln("%s%s = %s;", local_indent,
                                             target_block.block_result,
                                             ctx.current.block_result);
-                                    bout.writefln("%s//break %s;", local_indent, ctx.goto_label(
-                                            block_index));
                                     bout.writefln("%s%s;", local_indent, ctx.jump(target_block));
                                 }
                                 else {
