@@ -1097,13 +1097,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                             indent, jump_idx,
                                             block_label_depth);
                                 }
-                                const block_index = ctx.index(block_label_depth);
                                 if ((block_label_depth > 0) && !ctx.current.isVoidType) {
-                                    bout.writefln("%s%s = %s;", local_indent,
-                                            ctx[block_index].block_result,
+                                const block_index = ctx.index(block_label_depth);
+                                    auto target_block = ctx[block_index];
+                                        bout.writefln("%s%s = %s;", local_indent,
+                                            target_block.block_result,
                                             ctx.current.block_result);
-                                    bout.writefln("%sbreak %s;", local_indent, ctx.goto_label(
+                                    bout.writefln("%s//break %s;", local_indent, ctx.goto_label(
                                             block_index));
+                                    bout.writefln("%s%s;", local_indent, ctx.jump(target_block));
                                 }
                                 else {
                                     bout.writefln("%s// empty", local_indent);
