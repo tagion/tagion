@@ -1023,7 +1023,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             scope (exit) {
                                 uint count;
                                 while (!expr.empty && expr.front.code != IR.END) {
-                                    bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
                                     expr.popFront;
                                     count++;
                                 }
@@ -1037,26 +1036,26 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 }
                                 goto case;
                             case BlockKind.WHILE:
-                                scope (exit) {
-                                    // ctx.current.kind = BlockKind.END;
-                                }
                                 if (lth == 0) {
                                     break;
                                 }
-                                //target_block.define_label;
-
-                                if (target_block.elm.code is IR.LOOP) {
-                                    bout.writefln("%scontinue %s;", indent, target_block.label);
+                                bout.writefln("%s%s;", indent, ctx.jump(target_block));
+                                /+
+                                            if (target_block.elm.code is IR.LOOP) {
+                                    bout.writefln("%s//continue %s;", indent, target_block.label);
+                                    bout.writefln("%s%s;", indent, ctx.jump(target_block));
                                     break;
                                 }
-                                bout.writefln("%sgoto %s;", indent, target_block.label);
+                                bout.writefln("%s//goto %s;", indent, target_block.label);
+                                bout.writefln("%s;", indent, ctx.jump(target_block));
+                                +/
                                 break;
                             default:
                                 if (lth == 0) {
-                                    bout.writefln("%s// empty", indent);
                                     break;
                                 }
-                                bout.writefln("%sbreak %s;", indent, target_block.label);
+                                bout.writefln("%s//break %s;", indent, target_block.label);
+                                bout.writefln("%s;", indent, ctx.jump(target_block));
                             }
 
                             break;
