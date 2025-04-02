@@ -707,10 +707,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return "break";
             }
             if (current.elm.code is IR.LOOP) {
-                if (target_block.elm.code is IR.LOOP) {
+                //if (target_block.elm.code is IR.LOOP) {
                     return assumeWontThrow(format("continue %s", target_block.label));
-                }
-                return assumeWontThrow(format("goto %s", target_block.label));
+                //}
+                //return assumeWontThrow(format("goto %s", target_block.label));
 
             }
             return assumeWontThrow(format("break %s", target_block.label));
@@ -1069,6 +1069,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             auto target_block = ctx[block_index];
                             //                            auto current_block = ctx.current;
                             const conditional_flag = ctx.pop;
+                            const _current = ctx.current;
                             set_local(ctx.current);
                             ctx.push(ctx.current);
                             if ((lth > 0) && !ctx.current.isVoidType) {
@@ -1082,17 +1083,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     ctx.current.kind = BlockKind.WHILE;
                                     break;
                                 }
-                                bout.writefln("%sif (%s) %s;", indent, conditional_flag, ctx.jump(target_block));
-                                break;
                             }
-                            if (ctx.current.elm.code is IR.LOOP) {
-                                bout.writefln("%sif (%s) continue %s;", indent, conditional_flag,
-                                        target_block
-                                        .label);
-                                break;
-                            }
-                            bout.writefln("%sif (%s) break %s;",
-                                    indent, conditional_flag, target_block.label);
+                            bout.writefln("%sif (%s) %s;",
+                                    indent, conditional_flag, ctx.jump(target_block));
                             break;
                         case IR.BR_TABLE:
                             //bout.writefln("// %s %-(%s, %)", elm.code, ctx.locals);
