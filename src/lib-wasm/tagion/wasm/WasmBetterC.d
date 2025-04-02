@@ -710,18 +710,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     }
 
-    version (none) enum _BlockKind {
-        BLOCK, /// block_#: do{ ... } while (false);
-        LOOP, /// block_#: do{ ... } while (?);
-        WHILE, /// block_#: while(condition) { ...}
-    }
-
     enum BlockKind {
-        BLOCK,
-        LOOP,
-        WHILE,
-        DO_WHILE,
-        END,
+        BLOCK, /// block -  block_#: do { .. } while (false);
+        LOOP,  /// loop - block_#: do { ... } while (false);
+        WHILE, /// loop - block_#: while (?) { ... }
+        DO_WHILE, /// loop - block_#: do { ... } while (?);
+        END,   ///  END - .... }
     }
 
     struct Block {
@@ -732,13 +726,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         string condition;
         protected {
             Context ctx;
-
             bool _local_defined;
             bool _label_defined;
             BlockKind _kind;
         }
-        //BlockKind _end_kind;
-        //BlockKind _begin_kind;
         @disable this();
         this(Context ctx,
                 const ref ExprRange.IRElement elm,
@@ -1121,7 +1112,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     indent, conditional_flag, target_block.label);
                             break;
                         case IR.BR_TABLE:
-                            __write("%s %-(%s, %)", elm.code, ctx.locals);
                             bout.writefln("// %s %-(%s, %)", elm.code, ctx.locals);
                             auto br_table = elm.wargs.map!(w => w.get!uint);
                             bout.writefln("// br_table %s %s", br_table, typeof(br_table).stringof);
