@@ -691,12 +691,29 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             assert(0);
         }
 
-        Block* current() pure nothrow {
+        inout(Block*) current() inout pure nothrow {
             return _blocks[$ - 1];
         }
 
-        Block* opIndex(const size_t index) pure nothrow {
+        inout(Block*) opIndex(const size_t index) inout pure nothrow {
             return _blocks[index];
+        }
+
+        string jump(Block* target_block) const pure nothrow {
+            if (target_block is current) {
+                if (current.elm.code is IR.LOOP) {
+                    return "continue";
+                }
+                return "break";
+            }
+            if (current.elm.code is IR.LOOP) {
+                if (target_block.elm.code is IR.LOOP) {
+                    return assumeWontThrow(format("continue %s", target_block.label));
+                }
+                return assumeWontThrow(format("goto %s", target_block.label));
+
+            }
+            return assumeWontThrow(format("break %s", target_block.label));
         }
 
         string declare(Block* blk) pure {
@@ -1011,7 +1028,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     count++;
                                 }
                             }
-                            bout.writefln("// BR %d", lth);
+                            bout.writefln("%s// BR %d", indent, lth);
                             switch (ctx.current.kind) {
                             case BlockKind.LOOP:
                                 if ((lth == 0) && (expr.front.code is IR.END)) {
@@ -1055,23 +1072,22 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             set_local(ctx.current);
                             ctx.push(ctx.current);
                             if ((lth > 0) && !ctx.current.isVoidType) {
-                                bout.writefln("%s%s = %s;", indent, ctx[block_index].block_result,
+                                bout.writefln("%s%s = %s;", indent, target_block.block_result,
                                         ctx.current.block_result);
                             }
-                            bout.writefln("// BR_IF %d", lth);
+                            bout.writefln("%s// BR_IF %d", indent, lth);
                             if (lth == 0) {
                                 if (ctx.current.kind is BlockKind.LOOP) {
                                     ctx.current.condition = conditional_flag;
                                     ctx.current.kind = BlockKind.WHILE;
                                     break;
                                 }
-                                bout.writefln("%sif (%s) break;", indent, conditional_flag);
+                                bout.writefln("%sif (%s) %s;", indent, conditional_flag, ctx.jump(target_block));
                                 break;
                             }
-                            //const label_n = ctx.index(lth);
-                            //target_block.define_label;
                             if (ctx.current.elm.code is IR.LOOP) {
-                                bout.writefln("%sif (%s) continue %s;", indent, conditional_flag, target_block
+                                bout.writefln("%sif (%s) continue %s;", indent, conditional_flag,
+                                        target_block
                                         .label);
                                 break;
                             }
