@@ -703,7 +703,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             if (blk.isVoidType) {
                 return null;
             }
-            version(none)
             scope (exit) {
                 blk.define_local;
             }
@@ -801,7 +800,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         bool local_defined() const pure nothrow {
             return _local_defined;
         }
-version(none)
+
         void define_local() pure nothrow {
             _local_defined = true;
         }
@@ -811,7 +810,7 @@ version(none)
         }
 
         string label() pure {
-            _label_defined=true; 
+            _label_defined = true;
             return format("block_%d", id);
         }
 
@@ -904,7 +903,7 @@ version(none)
                             bout.writefln("%s%s = %s;", indent, result_local, ctx.pop);
                         }
                     }
-                    //blk.define_local;
+                    blk.define_local;
                 }
             }
 
@@ -1027,7 +1026,7 @@ version(none)
                                 if (lth == 0) {
                                     break;
                                 }
-                                target_block.define_label;
+                                //target_block.define_label;
 
                                 if (target_block.elm.code is IR.LOOP) {
                                     bout.writefln("%scontinue %s;", indent, target_block.label);
@@ -1070,7 +1069,7 @@ version(none)
                                 break;
                             }
                             //const label_n = ctx.index(lth);
-                            target_block.define_label;
+                            //target_block.define_label;
                             if (ctx.current.elm.code is IR.LOOP) {
                                 bout.writefln("%sif (%s) continue %s;", indent, conditional_flag, target_block
                                         .label);
