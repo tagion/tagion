@@ -100,7 +100,6 @@ const config = {
         editLocalizedFiles: false,
         blogTitle: 'Tagion Improvement Proposals',
         blogDescription: 'Blog',
-        blogSidebarCount: 5,
         blogSidebarTitle: 'All TIPs',
         routeBasePath: 'tips',
         include: ['**/*.{md,mdx}'],
@@ -158,7 +157,7 @@ const config = {
         items: [
           {sidebarId: 'docs', type: 'docSidebar', label: 'Tech', position: 'left'},
           {to: '/gov/intro', label: 'Gov', position: 'left'},
-          {to: '/tips/0', label: 'TIPs', position: 'left'},
+          {to: '/tips/', label: 'TIPs', position: 'left'},
           {to: '/changelog', label: 'Changelog', position: 'right'},
           {
             href: 'https://github.com/tagion/tagion',
