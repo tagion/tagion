@@ -161,7 +161,7 @@ const config = {
       image: 'img/tagion-social-card.jpg',
       navbar: {
         logo: {
-          href: 'https://tagion.org',
+          href: 'https://docs.tagion.org',
           alt: 'Tagion logo',
           src: 'img/logo.svg',
           srcDark: 'img/logo-dark.svg',
