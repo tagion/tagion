@@ -708,7 +708,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
             if (current.elm.code is IR.LOOP) {
                 //if (target_block.elm.code is IR.LOOP) {
-                    return assumeWontThrow(format("continue %s", target_block.label));
+                return assumeWontThrow(format("continue %s", target_block.label));
                 //}
                 //return assumeWontThrow(format("goto %s", target_block.label));
 
@@ -1077,12 +1077,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                         ctx.current.block_result);
                             }
                             bout.writefln("%s// BR_IF %d", indent, lth);
-                            if (lth == 0) {
-                                if (ctx.current.kind is BlockKind.LOOP) {
-                                    ctx.current.condition = conditional_flag;
-                                    ctx.current.kind = BlockKind.WHILE;
-                                    break;
-                                }
+                            if ((lth == 0) && (ctx.current.kind is BlockKind.LOOP)) {
+                                ctx.current.condition = conditional_flag;
+                                ctx.current.kind = BlockKind.WHILE;
                             }
                             bout.writefln("%sif (%s) %s;",
                                     indent, conditional_flag, ctx.jump(target_block));
