@@ -168,6 +168,16 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
     else if(accepted_dart_methods.canFind(full_name)) {
         task_request!dartHiRPCRR(cnt.task_names.dart, cnt.worker_timeout.msecs, doc, msg);
     }
+    else if(full_name == "submit") {
+        auto tid = locate(cnt.task_names.hirpc_verifier);
+        if(tid is Tid.init) {
+            msg.set_error_msg(ServiceCode.internal, "Missing task hirpcverifier");
+            return;
+        }
+        tid.send(inputDoc(), doc);
+        const response_ok = empty_hirpc.result(receiver, ResultOk());
+        set_response_doc(msg, response_ok.toDoc);
+    }
     else {
         msg.set_error_msg(ServiceCode.method, format("%s", all_dartinterface_methods));
     }
