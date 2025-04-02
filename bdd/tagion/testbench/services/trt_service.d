@@ -215,10 +215,10 @@ class SendAInoiceUsingTheTRT {
 
     @Given("i have a running network with a trt")
     Document trt() {
-        writefln("address to dial %s", opts1.dart_interface.sock_addr);
-        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        writefln("address to dial %s", opts1.rpcserver.sock_addr);
+        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         check(wallet1_amount == start_amount1, "balance should not have changed");
-        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         check(wallet2_amount == start_amount2, "balance should not have changed");
         // create a update request
         return result_ok;
@@ -243,8 +243,8 @@ class SendAInoiceUsingTheTRT {
     Document lookup() {
         import std.format;
 
-        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
 
         auto wallet1_expected = start_amount1 - fee1 - fee2 - 2 * amount;
         check(wallet1_amount == wallet1_expected, format("should have %s had %s", wallet1_expected, wallet1_amount));

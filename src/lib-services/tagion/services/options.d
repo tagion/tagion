@@ -55,7 +55,7 @@ public import tagion.services.tasknames : TaskNames;
 
 public import tagion.logger.LoggerOptions : LoggerOptions;
 public import tagion.services.DART : DARTOptions;
-public import tagion.services.DARTInterface : DARTInterfaceOptions;
+public import tagion.services.rpcserver : RPCServerOptions;
 public import tagion.services.collector : CollectorOptions;
 public import tagion.services.epoch_creator : EpochCreatorOptions;
 public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
@@ -83,7 +83,7 @@ struct Options {
     DARTOptions dart;
     EpochCreatorOptions epoch_creator;
     ReplicatorOptions replicator;
-    DARTInterfaceOptions dart_interface;
+    RPCServerOptions rpcserver;
     SubscriptionServiceOptions subscription;
     LoggerOptions logger;
     TRTOptions trt;

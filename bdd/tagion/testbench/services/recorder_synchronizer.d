@@ -27,7 +27,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.services.DART : DARTOptions, DARTService;
-import tagion.services.DARTInterface;
+import tagion.services.rpcserver;
 import tagion.services.DARTSynchronization;
 import tagion.services.TRTService;
 import tagion.services.messages;
@@ -53,7 +53,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
     Fingerprint remote_b;
     ActorHandle[] remote_dart_handles;
-    ActorHandle[] dart_interface_handles;
+    ActorHandle[] rpcserver_handles;
     ActorHandle[] replicator_handles;
     ReplicatorOptions replicator_opts;
 
@@ -148,14 +148,14 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
                     false))();
             remote_dart_handles ~= remote_dart_handle;
 
-            auto dart_interface_handle = (() @trusted => spawn(
-                    immutable(DARTInterfaceService)(cast(immutable) opts.dart_interface,
+            auto rpcserver_handle = (() @trusted => spawn(
+                    immutable(RPCServer)(cast(immutable) opts.rpcserver,
                     cast(immutable) opts.trt,
                     opts.task_names),
-                    opts.task_names.dart_interface))();
-            dart_interface_handles ~= dart_interface_handle;
+                    opts.task_names.rpcserver))();
+            rpcserver_handles ~= rpcserver_handle;
 
-            sock_addrs.sock_addrs ~= opts.dart_interface.sock_addr;
+            sock_addrs.sock_addrs ~= opts.rpcserver.sock_addr;
 
             (() @trusted => replicator_handle.send(SendRecorder(), cast(immutable) recorder, fingerprint,
                     cast(immutable long) tagion_head.current_epoch))();
@@ -201,7 +201,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
     void stopActor() {
         foreach (handle; remote_dart_handles)
             handle.send(Sig.STOP);
-        foreach (handle; dart_interface_handles)
+        foreach (handle; rpcserver_handles)
             handle.send(Sig.STOP);
         foreach (handle; replicator_handles)
             handle.send(Sig.STOP);

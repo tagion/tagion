@@ -34,7 +34,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.logger.LogRecords : LogInfo;
 import tagion.logger.Logger;
-import tagion.services.DARTInterface;
+import tagion.services.rpcserver;
 import tagion.services.TRTService;
 import tagion.services.replicator;
 import tagion.services.replicator : modify_log;
@@ -115,9 +115,9 @@ struct DARTWorker {
 class WriteAndReadFromDartDb {
 
     ActorHandle handle;
-    ActorHandle dart_interface_handle;
+    ActorHandle rpcserver_handle;
     ActorHandle replicator_handle;
-    DARTInterfaceOptions interface_opts;
+    RPCServerOptions interface_opts;
     TRTOptions trt_options;
 
     SecureNet supervisor_net;
@@ -187,7 +187,7 @@ class WriteAndReadFromDartDb {
         interface_opts.setDefault;
         writeln(interface_opts.sock_addr);
 
-        dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, cast(immutable) trt_options, TaskNames()), "DartInterfaceService"))();
+        rpcserver_handle = (() @trusted => spawn(immutable(RPCServer)(cast(immutable) interface_opts, cast(immutable) trt_options, TaskNames()), "DartInterfaceService"))();
 
         waitforChildren(Ctrl.ALIVE, 3.seconds);
 

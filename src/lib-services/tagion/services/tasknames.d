@@ -15,7 +15,7 @@ struct TaskNames {
     string tvm = "tvm";
     string epoch_creator = "epoch_creator";
     string replicator = "replicator";
-    string dart_interface = "dartinterface";
+    string rpcserver = "rpcserver";
     string trt = "trt";
     string node_interface = "node_interface";
     string dart_synchronization = "dart_synchronization";

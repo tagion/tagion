@@ -11,8 +11,7 @@ import core.thread;
 import core.memory : pageSize;
 
 import tagion.services.DART : DARTOptions, DARTService;
-import tagion.services.DARTInterface;
-import tagion.services.TRTService;
+import tagion.services.rpcs;
 import tagion.services.options : TaskNames, contract_sock_addr;
 import tagion.services.messages;
 import tagion.crypto.SecureNet;

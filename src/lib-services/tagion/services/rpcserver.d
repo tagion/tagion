@@ -1,6 +1,5 @@
-/// Service which exposes dart reads over a socket
-/// https://docs.tagion.org/tech/architecture/DartInterface
-module tagion.services.DARTInterface;
+/// Service which accepts HiRPC commands on REQ/REP socket
+module tagion.services.rpcserver;
 
 @safe:
 
@@ -21,6 +20,7 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.codes;
 import tagion.services.options;
+import tagion.services.rpcs;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
 import tagion.dart.DARTBasic;
@@ -28,7 +28,7 @@ import tagion.json.JSONRecord;
 
 import nngd;
 
-struct DARTInterfaceOptions {
+struct RPCServerOptions {
     import tagion.services.options : contract_sock_addr;
 
     string sock_addr;
@@ -50,37 +50,11 @@ struct DARTInterfaceOptions {
 
 }
 
-struct DartWorkerContext {
+struct RPCWorkerContext {
     int worker_timeout;
     bool trt_enable;
     TaskNames task_names;
 }
-
-/// Accepted methods for the DART.
-static immutable(string[]) accepted_dart_methods = [
-    Queries.dartRead,
-    Queries.dartRim,
-    Queries.dartBullseye,
-    Queries.dartCheckRead,
-];
-
-static immutable(string[]) accepted_rep_methods = [
-    "readRecorder",
-];
-
-enum RequestType {
-    unknown,
-    trt,
-    dart,
-    replicator,
-}
-
-pragma(msg, "deprecated search method should be removed from trt");
-/// All methods allowed for the TRT
-static immutable(string[]) accepted_trt_methods = accepted_dart_methods.map!(
-    m => "trt." ~ m).array ~ "search";
-/// All allowed methods for the DARTInterface
-static immutable all_dartinterface_methods = accepted_dart_methods ~ accepted_trt_methods ~ accepted_rep_methods;
 
 void set_response_doc(NNGMessage* msg, Document doc) @safe {
     msg.length = doc.full_size;
@@ -129,7 +103,7 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
     }
 
     thisActor.task_name = format("dart_%s", thisTid);
-    auto cnt = cast(DartWorkerContext*) ctx;
+    auto cnt = cast(RPCWorkerContext*) ctx;
     if (cnt is null) {
         log.error("the context was nil");
         return;
@@ -168,7 +142,7 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
     else if(accepted_dart_methods.canFind(full_name)) {
         task_request!dartHiRPCRR(cnt.task_names.dart, cnt.worker_timeout.msecs, doc, msg);
     }
-    else if(full_name == "submit") {
+    else if(input_methods.canFind(full_name)) {
         auto tid = locate(cnt.task_names.hirpc_verifier);
         if(tid is Tid.init) {
             msg.set_error_msg(ServiceCode.internal, "Missing task hirpcverifier");
@@ -179,7 +153,7 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
         set_response_doc(msg, response_ok.toDoc);
     }
     else {
-        msg.set_error_msg(ServiceCode.method, format("%s", all_dartinterface_methods));
+        msg.set_error_msg(ServiceCode.method, format("%s", all_public_rpc_methods));
     }
 }
 
@@ -197,8 +171,8 @@ void err_cb(NNGMessage* msg, void* ctx, Exception e) @safe nothrow {
 import tagion.services.exception;
 import tagion.errors.tagionexceptions;
 
-struct DARTInterfaceService {
-    immutable(DARTInterfaceOptions) opts;
+struct RPCServer {
+    immutable(RPCServerOptions) opts;
     immutable(TRTOptions) trt_opts;
     immutable(TaskNames) task_names;
 
@@ -206,7 +180,7 @@ struct DARTInterfaceService {
     void task() @trusted {
         setState(Ctrl.STARTING);
 
-        DartWorkerContext ctx;
+        RPCWorkerContext ctx;
         ctx.worker_timeout = opts.sendtimeout;
         ctx.trt_enable = trt_opts.enable;
         ctx.task_names = task_names;
