@@ -293,7 +293,7 @@ struct TranscriptService {
             // we do not directly add the epoch here. Instead we calculate the future eye. Majority of the nodes then have to agree of this future eye before it is processed to the database. Until then no other epochs will be created / added.
 
             auto req = dartFutureEyeRR(res.id);
-            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
+            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder));
             // auto req = dartModifyRR(res.id);
 
     }
