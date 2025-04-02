@@ -958,7 +958,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case BLOCK_CONDITIONAL:
                     case BLOCK:
-                        auto block = ctx.create(elm); //new Block(elm, ctx.stack.length);
+                        auto block = ctx.create(elm); 
                         bout.writefln("%s// block %d", indent, block.id);
 
                         auto block_bout = new OutBuffer;
@@ -1069,12 +1069,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             scope (exit) {
                                 uint count;
                                 while (!expr.empty && expr.front.code != IR.END) {
-                                    bout.writefln("%s// %d %s", indent, count, *(expr.front.instr));
                                     expr.popFront;
                                     count++;
                                 }
                             }
-                            bout.writefln("// Stack %-(%s, %)", ctx.stack);
                             const switch_select = ctx.pop;
                             set_local(ctx.current);
                             ctx.push(ctx.current);
@@ -1121,7 +1119,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         const func_idx = elm.warg.get!uint;
                         const type_idx = wasmstream.get!(Section.FUNCTION)[func_idx].idx;
                         const function_header = wasmstream.get!(Section.TYPE)[type_idx];
-                        __write("//call stack %-(%s, %)", ctx.stack);
                         const function_call = format("%s(%-(%s,%))",
                                 function_name(func_idx), ctx.pops(function_header.params.length));
                         string set_result;
