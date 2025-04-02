@@ -56,31 +56,3 @@ The socket address, and thereby the visibility can be changed in the tagionwave 
 This graph show the primary data message flow in the node.
 
 ![Node data flow](/figs/node_dataflow.excalidraw.svg)
-
-## Tagion Service Hierarchy
-
-This graph show the supervisor hierarchy of the services in the network.
-
-The arrow indicates ownership is means of service-A points to service-B. Service-A has ownership of service-B.
-
-This means that if Service-B fails service-A is responsible to handle and take-care of the action to restart or other action.
-
-```mermaid
-flowchart TD
-    Input(Input Validator)
-    Tagionwave --> Logger
-    Logger --> LoggerSubscription
-    Tagionwave --> Supervisor
-    Supervisor --> NodeInterface
-    NodeInterface --> P2P
-    Supervisor --> DART
-    DART --> Replicator
-    Supervisor --> Collector
-    Collector --> TVM
-    Collector --> EpochCreator
-    EpochCreator --> Transcript
-    Transcript --> EpochDump
-    EpochCreator --> Monitor
-    Collector --> HiRPCVerifier
-    HiRPCVerifier --> Input
-```
