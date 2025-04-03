@@ -24,7 +24,7 @@ A node consist of the following services.
 	- [Transcript](/tech/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/tech/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
 	- [DART](/tech/architecture/DART.md "Distributed Archive of Random Transactions") service is responsible for executing data-base instruction and read/write to the physical file system.
-	- [DART Interface](/tech/architecture/DartInterface.md) handles outside read requests to the dart
+	- "RPC Server" handles outside read requests to the dart
     - [TRT](/tech/architecture/TRT.md) "Transaction reverse table" stores a copy of the owner to bill relationship.
 	- [Replicator](/tech/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 	- [Node Interface](/tech/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
@@ -39,17 +39,18 @@ By default all of these sockets are private, ie. they are linux abstract sockets
 The socket address, and thereby the visibility can be changed in the tagionwave config file.
 
 
-| [Input Validator](/tech/architecture/InputValidator.md) | [Dart Interface](/tech/architecture/DartInterface.md) | [Subscription](/tech/architecture/LoggerSubscription.md) | [Node Interface](/tech/architecture/NodeInterface.md) |
-| -                                                       | -                                                     | -                                                        | -                                                     |
-| Write                                                   | Read-only                                             | Pub                                                      | Half-duplex p2p wavefront communication               |
-| **HiRPC methods**                                       | ..                                                    | ..                                                       | ..                                                    |
-| "submit"                                                | "search"                                              | "log"                                                    |
-|                                                         | "dartCheckRead"                                       |
-|                                                         | "dartRead"                                            |
-|                                                         | "dartRim"                                             |
-|                                                         | "dartBullseye"                                        |
-| **NNG Socket type**                                     | ..                                                    | ..                                                       | ..                                                    |
-| REPLY                                                   | REPLY                                                 | PUBLISH                                                  | ???                                                   |
+| [Input Validator](/tech/architecture/InputValidator.md) | RPC Server      | [Subscription](/tech/architecture/LoggerSubscription.md) | [Node Interface](/tech/architecture/NodeInterface.md) |
+| -                                                       | -               | -                                                        | -                                                     |
+| Write                                                   | Read-Write      | Pub                                                      | Half-duplex p2p wavefront communication               |
+| **HiRPC methods**                                       | ..              | ..                                                       | ..                                                    |
+| "submit"                                                | "submit"        | "log"                                                    |
+|                                                         | "dartCheckRead" |
+|                                                         | "dartRead"      |
+|                                                         | "dartRim"       |
+|                                                         | "dartBullseye"  |
+|                                                         | "readRecorder"  |
+| **NNG Socket type**                                     | ..              | ..                                                       | ..                                                    |
+| REPLY                                                   | REPLY           | PUBLISH                                                  | TCP                                                   |
 
 
 ## Data Message flow
