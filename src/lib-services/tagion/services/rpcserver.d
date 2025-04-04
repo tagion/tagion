@@ -80,7 +80,7 @@ void task_request(alias MsgType)(string task_name, Duration timeout, Document do
     }
 
     tid.send(MsgType(), doc);
-    bool response = receiveTimeout(timeout, (MsgType.Response _, Document doc) { msg.set_response_doc(doc); });
+    bool response = receiveTimeout(timeout, (MsgType.Response _, Document d) { msg.set_response_doc(d); });
     if (!response) {
         msg.set_error_msg(ServiceCode.timeout);
         writeln("Timeout on interface request");
@@ -102,15 +102,17 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
         return;
     }
 
-    thisActor.task_name = format("dart_%s", thisTid);
+    thisActor.task_name = format("rpc_%s", thisTid);
     auto cnt = cast(RPCWorkerContext*) ctx;
     if (cnt is null) {
         log.error("the context was nil");
         return;
     }
 
-    // we use an empty hirpc only for sending errors.
-    Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
+    // We copy here because the ubyte* nng gives us is not immutable
+    // In most cases this doesn't matter except for "submit" methods
+    // Because we are done using the document once the response is set
+    Document doc = msg.body_trim!(ubyte[])(msg.length).idup;
     msg.clear();
 
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
@@ -120,6 +122,7 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
     }
     log("Kernel received a document");
 
+    // FIXME: hirpc responses should be signed
     const empty_hirpc = HiRPC(null);
 
     immutable receiver = empty_hirpc.receive(doc);
@@ -128,6 +131,7 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
         return;
     }
 
+    // Should we really allow unsigned methods?
     string full_name = receiver.method.full_name;
     if (accepted_trt_methods.canFind(full_name)) {
         if(!cnt.trt_enable) {
