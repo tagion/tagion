@@ -642,7 +642,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         rep.rawdata = cast(ubyte[])(response.serialize);
         return;
     case "submit":
-        sockaddr = opt.node_contract_addr;
+        sockaddr = opt.node_dart_addr;
         // Not Sure if this is needed. Submit should be a faster request, since it doesn't retrieve any data from the system.
         recvtimeout = opt.sock_recvtimeout * 6;
         break;

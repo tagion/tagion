@@ -52,8 +52,8 @@ struct WalletOptions {
         devicefile = "device".setExtension(FileExtension.hibon);
         addr = "http://0.0.0.0:8080";
         questions = standard_questions.dup;
-        contract_address = contract_sock_addr("Node_0_" ~ "CONTRACT_");
         dart_address = contract_sock_addr("Node_0_" ~ "DART_");
+        contract_address = dart_address;
         hirpc_shell_endpoint = "/api/v1/hirpc";
         faucet_shell_endpoint = "/api/v1/invoice2pay";
 
