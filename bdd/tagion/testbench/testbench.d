@@ -21,6 +21,7 @@ int main(string[] args) {
     import run_fiber_epoch = tagion.testbench.hashgraph.run_fiber_epoch;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
+    import rpcserver = tagion.testbench.services.rpcserver;
     import subscription_test = tagion.testbench.services.subscription_test;
     import malformed_contract = tagion.testbench.malformed_contract;
     import send_contract = tagion.testbench.send_contract;
@@ -53,6 +54,7 @@ int main(string[] args) {
         collector,
         hirpc_verifier,
         inputvalidator,
+        rpcserver,
         subscription_test,
         dart_test,
         dart_deep_rim_test,

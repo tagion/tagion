@@ -74,6 +74,12 @@
       "stages": ["commit"],
       "timeout": 0.0
     },
+    "rpcserver": {
+      "args": [],
+      "envs": {},
+      "stages": ["commit"],
+      "timeout": 0.0
+    },
     "hirpc_verifier": {
       "args": [],
       "envs": {},
