@@ -92,6 +92,7 @@ struct TranscriptService {
 
     struct EpochContracts {
         const(SignedContract)[] signed_contracts;
+        immutable(Fingerprint)[] witnesses;
         sdt_t epoch_time;
     }
 
@@ -114,7 +115,8 @@ struct TranscriptService {
 
     void epoch(consensusEpoch,
         immutable(EventPackage*)[] epacks,
-        immutable(long) epoch_number,
+        immutable(Fingerprint)[] witnesses,
+        long epoch_number,
         const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
         import tagion.utils.Term;
@@ -150,7 +152,7 @@ struct TranscriptService {
             .array;
 
         auto req = dartCheckReadRR(id: last_epoch_number);
-        epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
+        epoch_contracts[req.id] = new const EpochContracts(signed_contracts, witnesses, epoch_time);
 
         if (inputs.length == 0) {
             createRecorder(req.Response(req.msg, req.id), inputs);
@@ -225,6 +227,10 @@ struct TranscriptService {
                 }
             }
 
+            WitnesHead withead;
+            withead.witnesses = epoch_contract.witnesses;
+            recorder.add(withead);
+
             Epoch non_voted_epoch;
             non_voted_epoch.epoch_number = res.id;
             non_voted_epoch.time = sdt_t(epoch_contract.epoch_time);
@@ -287,7 +293,7 @@ struct TranscriptService {
             // we do not directly add the epoch here. Instead we calculate the future eye. Majority of the nodes then have to agree of this future eye before it is processed to the database. Until then no other epochs will be created / added.
 
             auto req = dartFutureEyeRR(res.id);
-            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
+            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder));
             // auto req = dartModifyRR(res.id);
 
     }

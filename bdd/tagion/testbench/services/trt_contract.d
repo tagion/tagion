@@ -102,10 +102,10 @@ class ProperContract {
     Document goesThrough() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         check(wallet1_amount == start_amount1 - amount - fee, "did not send money");
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         check(wallet2_amount == start_amount2 + amount, "did not receive money");
 
         return result_ok;
@@ -115,7 +115,7 @@ class ProperContract {
     Document tRT() {
         auto result_archives = getTRTStoredContracts([
             signed_contract.contract.toDoc
-        ], wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        ], wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
 
         check(!result_archives.empty, "No contract recorded in TRT");
         check(result_archives[0].contract == signed_contract.contract.toDoc, "Received contract doesn't match expected");
@@ -232,11 +232,11 @@ class InvalidContract {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
         const expected1 = start_amount1 - amount - fee;
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         check(wallet1_amount == expected1, format("Did not send money. Should have %s had %s", expected1, wallet1_amount));
 
         const expected2 = start_amount2 + amount;
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         check(wallet2_amount == expected2, format("Did not send money. Should have %s had %s", expected2, wallet2_amount));
 
         return result_ok;
@@ -246,7 +246,7 @@ class InvalidContract {
     Document shouldNot() {
         auto result_archives = getTRTStoredContracts([
             signed_contract1.contract.toDoc, signed_contract2.contract.toDoc
-        ], wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        ], wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
 
         check(result_archives.length == 1, "Should be only one contract in TRT");
         check(result_archives[0].contract == signed_contract1.contract.toDoc, "Received contract doesn't match expected");

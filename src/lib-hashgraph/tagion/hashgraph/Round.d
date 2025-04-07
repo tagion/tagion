@@ -15,7 +15,7 @@ import std.traits;
 import std.typecons;
 import std.typecons : No;
 import tagion.basic.Types : Buffer;
-import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
+import tagion.basic.basic : EnumText, basename;
 import tagion.crypto.Types : Pubkey, Fingerprint;
 import tagion.crypto.SecureNet : HashNet;
 import tagion.hashgraph.Event;
@@ -129,6 +129,20 @@ class Round {
             .filter!(e => e !is null)
             .map!(e => cast(Buffer) e.fingerprint);
         return assumeWontThrow(net.calcHash(xor(fingerprints)));
+    }
+
+    final auto witnesses() @trusted const pure nothrow {
+        import std.algorithm;
+        import tagion.utils.Miscellaneous;
+
+        auto fingerprints = _valid_witness[]
+            .map!(n => _events[n])
+            .filter!(e => e !is null)
+            .map!(e => Fingerprint(e.fingerprint))
+            .array
+            .sort!("a < b");
+
+        return fingerprints;
     }
 
     /**

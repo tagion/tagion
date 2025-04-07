@@ -9,16 +9,27 @@ static if (!ver.WASI) {
     public import tagion.basic.testbasic;
 }
 
-enum this_dot = "this.";
-import std.conv;
+import std.range;
 
-/++
- Returns:
- a immuatble do
-+/
-immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
-    pragma(msg, "fixme(cbr): looks redundant");
-    return cast(BUF)(buffer.idup);
+/// Returns:
+///   an immutable array copy of an input range
+immutable(ForeachType!Range)[] imut_array(Range)(Range r) @trusted 
+if (isIterable!Range && !isAutodecodableString!Range && !isInfinite!Range) {
+    import std.array;
+    import std.exception;
+    return array(r).assumeUnique;
+}
+
+unittest {
+    auto a = [1,4,3];
+    auto b = imut_array(a);
+    assert(&a[0] != &b[0]);
+}
+
+/// Ditto
+immutable(ForeachType!(typeof((*Range).init)))[] imut_array(Range)(Range r) 
+if (is(Range == U*, U) && isIterable!U && !isAutodecodableString!Range && !isInfinite!Range) {
+    return imut_array(r);
 }
 
 template suffix(string name, size_t index) {
@@ -66,7 +77,7 @@ unittest {
         mixin("int " ~ name_another ~ ";");
         void check() {
             // Check that basename removes (this.) from the scope name space
-            static assert(this.another.stringof.countUntil('.') == this_dot.countUntil('.'));
+            static assert(this.another.stringof.countUntil('.') == "this.".countUntil('.'));
             static assert(basename!(this.another) == name_another);
         }
     }

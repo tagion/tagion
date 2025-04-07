@@ -299,6 +299,13 @@ struct TagionHead {
     mixin HiBONRecord;
 }
 
+@recordType("$@Witness")
+struct WitnesHead {
+    const(Fingerprint)[] witnesses;
+    @label(HashNames.witness) string name = TagionDomain;
+    mixin HiBONRecord;
+}
+
 /**
  * Global tagion statistics
  */

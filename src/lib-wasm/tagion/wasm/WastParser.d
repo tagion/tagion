@@ -429,21 +429,25 @@ struct WastParser {
                     switch (branch_ir) {
                     case IR.BR:
                         r.nextToken;
-                        const blk = func_ctx.block_peek(r.token);
+                        const blk_idx=r.get!uint;
+                        //const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
                         }
-                        wasmexpr(IR.BR, blk.idx);
+                        wasmexpr(IR.BR, blk_idx);
                         break;
                     case IR.BR_IF:
+                        __write("%s", r.getLine);
                         r.nextToken;
-                        const blk = func_ctx.block_peek(r.token);
+                        const blk_idx=r.get!uint;
+                                //const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
                         }
-                        wasmexpr(IR.BR_IF, blk.idx);
+                        __write("blk.idx=%d", blk_idx);
+                        wasmexpr(IR.BR_IF, blk_idx);
                         break;
                     case IR.BR_TABLE:
                         r.nextToken;

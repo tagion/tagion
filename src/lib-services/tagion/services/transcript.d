@@ -66,7 +66,8 @@ struct TranscriptService {
 
     RecordFactory rec_factory;
 
-    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names, bool trt_enable) {
+    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(StdSecureNet) shared_net, immutable(
+            TaskNames) task_names, bool trt_enable) {
         this.opts = opts;
         this.number_of_nodes = number_of_nodes;
 
@@ -94,6 +95,7 @@ struct TranscriptService {
 
     struct EpochContracts {
         const(SignedContract)[] signed_contracts;
+        Fingerprint[] witnesses;
         sdt_t epoch_time;
     }
 
@@ -110,9 +112,9 @@ struct TranscriptService {
         votes[epoch_number].epoch.bullseye = bullseye;
 
         ConsensusVoting own_vote = ConsensusVoting(
-                epoch_number,
-                net.pubkey,
-                net.sign(bullseye)
+            epoch_number,
+            net.pubkey,
+            net.sign(bullseye)
         );
 
         epoch_creator_handle.send(Payload(), own_vote.toDoc);
@@ -131,7 +133,8 @@ struct TranscriptService {
 
     void epoch(consensusEpoch,
         immutable(EventPackage*)[] epacks,
-        immutable(long) epoch_number,
+        immutable(Fingerprint)[] witnesses,
+        long epoch_number,
         const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
         import tagion.utils.Term;
@@ -167,8 +170,8 @@ struct TranscriptService {
             .join
             .array;
 
-        auto req = dartCheckReadRR(id: last_epoch_number);
-        epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
+        auto req = dartCheckReadRR(id : last_epoch_number);
+        epoch_contracts[req.id] = new const EpochContracts(signed_contracts, witnesses, epoch_time);
 
         if (inputs.length == 0) {
             createRecorder(req.Response(req.msg, req.id), inputs);
@@ -268,7 +271,7 @@ struct TranscriptService {
                 import std.datetime;
                 import tagion.utils.StdTime;
 
-                const max_time = sdt_t((SysTime(cast(const long)epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
+                const max_time = sdt_t((SysTime(cast(const long) epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
                         .stdTime);
 
                 foreach (doc; tvm_contract_outputs.outputs) {
@@ -299,6 +302,10 @@ struct TranscriptService {
             }
         }
 
+        WitnesHead withead;
+        withead.witnesses = epoch_contract.witnesses;
+        recorder.add(withead);
+
         /*
         Since we write all inromation that is known immediately we create the epoch chain block here and make it empty.
         The following information can be added:
@@ -307,7 +314,7 @@ struct TranscriptService {
             active
             deactivate
             globals
-        This will be added to thed DART. We also keep this in our cache in order to make the reads as few as possible.
+        This will be added to the DART. We also keep this in our cache in order to make the reads as few as possible.
         */
         Epoch non_voted_epoch;
         non_voted_epoch.epoch_number = res.id;
@@ -417,7 +424,8 @@ struct TranscriptService {
                         log("FOUND A EPOCH");
                     }
                     else {
-                        throw new ServiceError("The read epoch was not of type Epoch or GenesisEpoch");
+                        throw new ServiceError(
+                            "The read epoch was not of type Epoch or GenesisEpoch");
                     }
                     previous_epoch = Fingerprint(net.calcHash(doc));
                 }

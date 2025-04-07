@@ -29,6 +29,7 @@ enum StdNames {
 ///
 enum HashNames {
     domain_name = "#name", /// string, domain name hash record for project information
+    witness = "#witness", // Records to hold the latest witness
     hash_contract = "#contract", /// DARTIndex of a contract
     nodekey = "#$node", /// Public key
     active = "#$active",

@@ -3,7 +3,7 @@
 module tagion.services.TRTService;
 import tagion.services.options : TaskNames;
 
-import std.algorithm : map, filter, canFind;
+import std.algorithm : map, filter, canFind, each;
 import std.array;
 import std.exception;
 import std.file;
@@ -35,7 +35,7 @@ import tagion.trt.TRT;
 import tagion.hibon.HiBON;
 import tagion.script.standardnames;
 import tagion.services.exception;
-import tagion.services.DARTInterface : accepted_trt_methods;
+import tagion.services.rpcs;
 
 @safe
 struct TRTOptions {
@@ -110,7 +110,6 @@ struct TRTService {
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
             import tagion.services.codes;
-            import std.conv : to;
 
             log("trt_read request");
             if (!doc.isRecord!(HiRPC.Sender)) {
@@ -129,9 +128,6 @@ struct TRTService {
             if (receiver.method.name == "search") {
                 auto owner_doc = receiver.method.params;
                 if (owner_doc[].empty) {
-                    import tagion.services.DARTInterface;
-                    import std.conv : to;
-
                     log("the owner doc was empty");
                     const err = hirpc.error(receiver, ServiceCode.params.toString, ServiceCode
                             .params);
@@ -143,8 +139,6 @@ struct TRTService {
                 auto owner_indices = owner_doc[]
                     .map!(owner => net.dartKey(HashNames.trt_owner, Pubkey(owner.get!Buffer)))
                     .array;
-
-                import std.algorithm;
 
                 owner_indices.each!(o => writefln("%(%02x%)", o));
 

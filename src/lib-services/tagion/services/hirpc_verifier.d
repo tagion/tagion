@@ -14,6 +14,7 @@ import tagion.logger.Logger;
 import tagion.script.common : SignedContract;
 import tagion.services.messages;
 import tagion.services.codes;
+import tagion.services.rpcs;
 import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 

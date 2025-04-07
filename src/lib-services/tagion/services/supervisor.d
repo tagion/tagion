@@ -14,7 +14,7 @@ import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTFile;
 import tagion.logger.Logger;
 import tagion.services.DART;
-import tagion.services.DARTInterface;
+import tagion.services.rpcserver;
 import tagion.services.TVM;
 import tagion.services.collector;
 import tagion.services.epoch_creator;
@@ -97,7 +97,7 @@ struct Supervisor {
         );
         handles ~= transcript_handle;
 
-        handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn.dart_interface);
+        handles ~= spawn(immutable(RPCServer)(opts.rpcserver, opts.trt, tn), tn.rpcserver);
 
         run(
             (EpochShutdown m, long shutdown_) { //

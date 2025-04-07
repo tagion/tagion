@@ -28,7 +28,7 @@ import tagion.services.replicator;
 import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.exception;
-import tagion.services.DARTInterface : accepted_dart_methods;
+import tagion.services.rpcs;
 
 @safe:
 ///
@@ -104,7 +104,7 @@ struct DARTService {
 
         auto hirpc = HiRPC(net);
 
-        // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead, search(if TRT is not enabled)
+        // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
             import tagion.services.codes;
             import std.conv: to;
@@ -124,7 +124,6 @@ struct DARTService {
                 req.respond(err.toDoc);
                 return;
             } 
-            // TODO REMOVE SEARCH FROM ACCEPTED DARTMETHODS
 
             Document result = db(receiver, false).toDoc;
             log("darthirpc response: %s", result.toPretty);

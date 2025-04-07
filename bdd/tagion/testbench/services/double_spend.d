@@ -265,11 +265,11 @@ class DifferentContractsDifferentNodes {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         check(wallet1_amount == start_amount1 - fee, "did not receive tx");
         
-        auto wallet2_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2 - fee, "did not receive tx");
         return result_ok;
@@ -330,12 +330,12 @@ class SameContractDifferentNodes {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         const wallet1_expected = start_amount1-amount-fee;
         check(wallet1_amount == wallet1_expected, format("wallet 1 did not lose correct amount of money, should have %s, had %s", wallet1_expected, wallet1_amount));
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2+amount, "did not receive money");
         return result_ok;
@@ -436,8 +436,8 @@ class SameContractInDifferentEpochs {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
@@ -542,8 +542,8 @@ class SameContractInDifferentEpochsDifferentNode {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
@@ -622,16 +622,16 @@ class TwoContractsSameOutput {
     @Then("only one output should be produced.")
     Document produced() {
         
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         const expected = start_amount1-amount-fee;
         check(wallet1_amount == expected, format("wallet 1 did not lose correct amount of money should have %s had %s", expected, wallet1_amount));
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts2.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts2.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2-amount-fee, "wallet 2 did not lose correct amount of money");
 
-        auto wallet3_amount = getWalletUpdateAmount(wallet3, opts1.dart_interface.sock_addr, wallet3_hirpc);
+        auto wallet3_amount = getWalletUpdateAmount(wallet3, opts1.rpcserver.sock_addr, wallet3_hirpc);
         writefln("WALLET 3 amount: %s", wallet3_amount);
         check(wallet3_amount == start_amount3+amount, format("did not receive money correct amount of money should have %s had %s", start_amount3+amount, wallet3_amount));
         return result_ok;
@@ -699,12 +699,12 @@ class BillAge {
     Document rejected() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         auto wallet1_total_amount = wallet1.account.total;
         writefln("WALLET 1 TOTAL amount: %s", wallet1_total_amount);
         check(wallet1_total_amount == start_amount1, format("wallet total amount not correct. expected: %s, had %s", start_amount1, wallet1_total_amount));
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2, "should not receive new money");
         

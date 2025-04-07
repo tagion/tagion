@@ -112,8 +112,8 @@ class SpamOneNodeUntil10EpochsHaveOccurred {
 
     @Then("only the first contract should go through and the other ones should be rejected.")
     Document rejected() {
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, node1_opts.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, node1_opts.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, node1_opts.rpcserver.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, node1_opts.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
@@ -234,8 +234,8 @@ class SpamMultipleNodesUntil10EpochsHaveOccurred {
         TagionCurrency wallet1_amount;
         TagionCurrency wallet2_amount;
 
-        wallet1_amount = getWalletUpdateAmount(wallet1, node1_opts.dart_interface.sock_addr, wallet1_hirpc);
-        wallet2_amount = getWalletUpdateAmount(wallet2, node1_opts.dart_interface.sock_addr, wallet2_hirpc);
+        wallet1_amount = getWalletUpdateAmount(wallet1, node1_opts.rpcserver.sock_addr, wallet1_hirpc);
+        wallet2_amount = getWalletUpdateAmount(wallet2, node1_opts.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 

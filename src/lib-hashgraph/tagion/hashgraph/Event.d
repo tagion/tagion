@@ -672,7 +672,7 @@ class Event {
                 (_father is null) && (event_package.event_body.father !is null);
         }
 
-        immutable(Buffer) fingerprint() {
+        Buffer fingerprint() {
             return event_package.fingerprint;
         }
 

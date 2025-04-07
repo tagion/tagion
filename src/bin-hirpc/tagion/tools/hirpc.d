@@ -6,7 +6,7 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tools = tagion.tools.toolsexception;
 import tagion.basic.Types : FileExtension, hasExtension;
-import tagion.services.DARTInterface : all_dartinterface_methods, accepted_dart_methods;
+import tagion.services.rpcs;
 import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
 import tagion.tools.dartutil.dartindex;
@@ -154,8 +154,8 @@ int _main(string[] args) {
             return 0;
         }
         const hirpc = HiRPC(null);
-        tools.check(!method_name.empty && all_dartinterface_methods.canFind(name()), format(
-                "method name not valid must be one of known %s", all_dartinterface_methods));
+        tools.check(!method_name.empty && all_public_rpc_methods.canFind(name()), format(
+                "method name not valid must be one of known %s", all_public_rpc_methods));
 
         auto get_indices(string[] _input) {
             return _input.map!(d => hash_net.dartIndexDecode(d));

@@ -15,7 +15,7 @@ import std.format;
 import tagion.testbench.tools.Environment;
 import std.path : buildPath, baseName, stripExtension;
 import tagion.actor;
-import tagion.services.DARTInterface;
+import tagion.services.rpcserver;
 import tagion.services.DARTSynchronization;
 import tagion.services.TRTService;
 import tagion.services.options;
@@ -71,7 +71,7 @@ class IsToSynchronizeTheLocalDatabase {
     Fingerprint remote_b;
     ActorHandle local_dart_handle;
     ActorHandle remote_dart_handle;
-    ActorHandle dart_interface_handle;
+    ActorHandle rpcserver_handle;
     ActorHandle dart_sync_handle;
     DARTInterfaceOptions interface_opts;
     TRTOptions trt_options;
@@ -151,11 +151,11 @@ class IsToSynchronizeTheLocalDatabase {
 
         interface_opts.setDefault;
 
-        dart_interface_handle = (() @trusted => spawn(
-                immutable(DARTInterfaceService)(cast(immutable) interface_opts,
+        rpcserver_handle = (() @trusted => spawn(
+                immutable(RPCServer)(cast(immutable) interface_opts,
                 cast(immutable) trt_options,
                 TaskNames()),
-                TaskNames().dart_interface))();
+                TaskNames().rpcserver))();
 
         DARTSyncOptions dart_sync_opts;
         dart_sync_opts.journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
@@ -218,7 +218,7 @@ class IsToSynchronizeTheLocalDatabase {
 
     void stopActor() {
         remote_dart_handle.send(Sig.STOP);
-        dart_interface_handle.send(Sig.STOP);
+        rpcserver_handle.send(Sig.STOP);
         dart_sync_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);
     }
@@ -230,7 +230,7 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
 
     Fingerprint remote_b;
     ActorHandle[] remote_dart_handles;
-    ActorHandle[] dart_interface_handles;
+    ActorHandle[] rpcserver_handles;
 
     ActorHandle dart_sync_handle;
     TRTOptions trt_options;
@@ -318,13 +318,13 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
                     false))();
             remote_dart_handles ~= remote_dart_handle;
 
-            auto dart_interface_handle = (() @trusted => spawn(
-                    immutable(DARTInterfaceService)(cast(immutable) opts.dart_interface,
+            auto rpcserver_handle = (() @trusted => spawn(
+                    immutable(RPCServer)(cast(immutable) opts.rpcserver,
                     cast(immutable) opts.trt,
                     opts.task_names),
-                    opts.task_names.dart_interface))();
-            dart_interface_handles ~= dart_interface_handle;
-            sock_addrs.sock_addrs ~= opts.dart_interface.sock_addr;
+                    opts.task_names.rpcserver))();
+            rpcserver_handles ~= rpcserver_handle;
+            sock_addrs.sock_addrs ~= opts.rpcserver.sock_addr;
         }
 
         dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
@@ -389,8 +389,8 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         foreach (remote_dart_handle; remote_dart_handles) {
             remote_dart_handle.send(Sig.STOP);
         }
-        foreach (dart_interface_handle; dart_interface_handles) {
-            dart_interface_handle.send(Sig.STOP);
+        foreach (rpcserver_handle; rpcserver_handles) {
+            rpcserver_handle.send(Sig.STOP);
         }
         dart_sync_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);

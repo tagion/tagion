@@ -6,10 +6,8 @@ module tagion.services.inputvalidator;
 
 import core.time;
 
-import std.algorithm : remove;
 import std.conv : to;
 import std.format;
-import std.socket;
 import std.stdio;
 
 import tagion.actor;

@@ -22,8 +22,6 @@ import tagion.hibon.HiBONJSON : toPretty;
 import tagion.hibon.HiBONtoText;
 import std.format;
 
-
-
 import tagion.replicator.RecorderBlock;
 
 
@@ -44,9 +42,9 @@ int _main(string[] args) {
     string passphrase = "verysecret";
     secure_net.generateKeyPair(passphrase);
 
-
     bool replay;
     bool replay_and_find;
+    bool skip_check;
     
     GetoptResult main_args;
     try {
@@ -55,10 +53,11 @@ int _main(string[] args) {
         std.getopt.config.bundling,
         "version", "display the version", &version_switch,
         "v|verbose", "Prints more debug information", &__verbose_switch,
-        "genesisdart|g", "Path to genesis dart file", &genesis_dart,
-        "dartfile|d", "Path to dart file", &dart_file,
-        "replay|r", "Replay the recorder", &replay,
-        "findreplay|f", "Find the block and replay from there", &replay_and_find,
+        "g|genesisdart", "Path to genesis dart file", &genesis_dart,
+        "d|dartfile", "Path to dart file", &dart_file,
+        "r|replay", "Replay the recorder", &replay,
+        "f|findreplay", "Find the block and replay from there", &replay_and_find,
+        "s|skipcheck", "Skip bullseye checks", &skip_check
         );
 
         if (version_switch) {
@@ -101,8 +100,6 @@ int _main(string[] args) {
             error(e);
             return 1;
         }
-
-
         
         import tagion.hibon.HiBONFile : HiBONRange;
 
@@ -129,13 +126,12 @@ int _main(string[] args) {
                         return 1;
                     }
                     const _block = RecorderBlock(doc);
-
                 
                     verbose("block %s", _block.toPretty);
 
                     if (prev_block !is RecorderBlock.init) {
                         const hash_of_prev = hash_net.calcHash(prev_block.toDoc);
-                        if (hash_of_prev != _block.previous) {
+                        if (!skip_check && hash_of_prev != _block.previous) {
                             error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev.encodeBase64, _block.epoch_number, _block.previous.encodeBase64); 
 
                         }
@@ -144,7 +140,7 @@ int _main(string[] args) {
                     const _recorder = factory.recorder(_block.recorder_doc);
                     verbose("epoch: %s, eye %(%02x%), recorder length %s", _block.epoch_number, _block.bullseye, _recorder.length); 
                     const new_bullseye = dart.modify(_recorder);
-                    if (_block.bullseye != new_bullseye) {
+                    if (!skip_check && _block.bullseye != new_bullseye) {
                         error(format("ERROR: expected bullseye: %(%02x%) \ngot %(%02x%)", 
                             _block.bullseye, 
                             new_bullseye));
@@ -218,24 +214,11 @@ int _main(string[] args) {
                     }
                     verbose("successfully added block");
                 }
-
             } 
-            
         }
 
     } catch (Exception e) {
         error(e);
     }
-
-
-
-
     return 0;
-
-
-
 }
-
-
-
-
