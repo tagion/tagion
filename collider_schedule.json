@@ -117,14 +117,14 @@
           "f32_cmp_export.wast", "f64_cmp_export.wast",
           "float_misc_export.wast",
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
-          "if_block.wast", "loop_block.wast"
+          "if_block.wast", "loop_block.wast",
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test", "br", "br_if", "br_table", "loop", "if_block"],
+      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test", "br", "br_if", "br_table", "loop", "if_block", "call_indirect"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -181,6 +181,11 @@
             "args" : [
                 "br_if_block.wast"
             ]
+        },
+        "call_indirect" : {
+          "args" : [
+            "call_indirect_1.wast"
+          ]
         }
       },
       "timeout": 0.0

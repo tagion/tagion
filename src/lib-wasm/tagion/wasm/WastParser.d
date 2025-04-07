@@ -372,16 +372,16 @@ struct WastParser {
                             //auto r_then = r.save;
                             //r_then.nextToken;
                             //if (r_then.front.token == PseudoWastInstr.then) {
-                                __write(":::: Then <<<===");
+                            __write(":::: Then <<<===");
                             //}
-                           
+
                             r.drop(2);
                         }
                         else {
                             getArguments;
                         }
-                            //}
-                              //                   getArguments;
+                        //}
+                        //                   getArguments;
                         addBlockIR;
                         func_ctx.block_push(wasm_results, label);
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
@@ -429,7 +429,7 @@ struct WastParser {
                     switch (branch_ir) {
                     case IR.BR:
                         r.nextToken;
-                        const blk_idx=r.get!uint;
+                        const blk_idx = r.get!uint;
                         //const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
@@ -440,8 +440,8 @@ struct WastParser {
                     case IR.BR_IF:
                         __write("%s", r.getLine);
                         r.nextToken;
-                        const blk_idx=r.get!uint;
-                                //const blk = func_ctx.block_peek(r.token);
+                        const blk_idx = r.get!uint;
+                        //const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
@@ -636,15 +636,18 @@ struct WastParser {
                 }
                 return ParserStage.MODULE;
             case "type":
+                __write("line %s", r.getLine);
                 r.nextToken;
-                if (r.type is TokenType.WORD) {
-                    label = r.token;
-                    r.nextToken;
-                }
-                parseModule(r, ParserStage.TYPE);
+                version (none)
+                    if (r.type is TokenType.WORD) {
+                        label = r.token;
+                        r.nextToken;
+                    }
+                parseTypeSection(r, ParserStage.TYPE);
                 return stage;
             case "func": // Example (func $name (param ...) (result i32) )
-                return parseTypeSection(r, stage);
+                __write("stage %s %s : %s", stage, r.getLine, r);
+                return parseFuncType(r, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
@@ -828,8 +831,8 @@ struct WastParser {
             const ParserStage stage,
             ref FuncType func_type) {
         if (r.type == TokenType.BEGIN) {
-            string arg;
             r.nextToken;
+            __write("Type %s", r.token);
             bool not_ended;
             scope (exit) {
                 r.valid(r.type == TokenType.END || not_ended, "Expected ended");
@@ -871,7 +874,8 @@ struct WastParser {
                 }
                 return ParserStage.PARAM;
             case "result":
-                r.valid(stage == ParserStage.FUNC, "Result only allowed inside a function declaration");
+                r.valid((stage == ParserStage.FUNC) || (stage == ParserStage.TYPE),
+                        "Result only allowed inside a function declaration");
                 r.nextToken;
                 while (r.type != TokenType.END) {
                     immutable type = r.token.getType;
@@ -902,6 +906,42 @@ struct WastParser {
     }
 
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
+        string type_name;
+        if (r.type is TokenType.WORD) {
+            type_name = r.token;
+            r.nextToken;
+        }
+        r.expect(TokenType.BEGIN);
+        r.nextToken;
+        r.expect(TokenType.WORD);
+        switch (r.token) {
+        case "func":
+            r.nextToken;
+            FuncType func_type;
+            __write("stage %s", stage);
+            const func_stage = parseFuncArgs(r, stage, func_type);
+            __write("func_stage %s : %s", stage, func_type);
+            const type_idx = writer.createTypeIdx(func_type);
+            if (type_name) {
+                    .check((type_name in type_lookup) is null,
+                            format("Type name %s already defined", type_name));
+                type_lookup[type_name] = type_idx;
+            }
+            break;
+        default:
+            r.check(0, format("Type expected not %s", r.token));
+        }
+
+        scope (exit) {
+            r.expect(TokenType.END);
+            r.nextToken;
+        }
+
+        __write("%s %s", __FUNCTION__, r.getLine);
+        return stage;
+    }
+
+    private ParserStage parseFuncType(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
         r.valid(stage < ParserStage.FUNC, "Should been outside function declaration");
         string func_name;
@@ -922,6 +962,7 @@ struct WastParser {
             }
             else {
                 parseModule(export_tokenizer, ParserStage.FUNC);
+                __write("setypes.length=%d", writer.section!(Section.EXPORT).sectypes.length);
                 auto export_type = &writer.section!(Section.EXPORT).sectypes[$ - 1];
                 export_type.idx = func_lookup[export_type.name] = func_idx;
             }
@@ -961,6 +1002,7 @@ struct WastParser {
 
     private {
         int[string] func_lookup;
+        int[string] type_lookup;
     }
     void parse(ref WastTokenizer tokenizer) {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {

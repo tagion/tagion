@@ -435,34 +435,3 @@ alias check = Check!WatException;
         return output;
     }
 }
-
-version (none) unittest {
-    import std.exception : assumeUnique;
-    import std.file;
-    import std.stdio;
-
-    //      import std.file : fread=read, fwrite=write;
-
-    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file : _read = read;
-
-        auto data = cast(ubyte[]) _read(name, upTo);
-        // writefln("read data=%s", data);
-        return assumeUnique(data);
-    }
-
-    //    string filename="../tests/wasm/func_1.wasm";
-    //    string filename="../tests/wasm/global_1.wasm";
-    //    string filename="../tests/wasm/imports_1.wasm";
-    //    string filename="../tests/wasm/table_copy_2.wasm";
-    //    string filename="../tests/wasm/memory_2.wasm";
-    //    string filename="../tests/wasm/start_4.wasm";
-    //    string filename="../tests/wasm/address_1.wasm";
-    string filename = "../tests/wasm/data_4.wasm";
-    immutable code = fread(filename);
-    auto wasm = WasmReader(code);
-    //    auto dasm=Wdisasm(wasm);
-    Wat(wasm, stdout).serialize();
-    //    auto output=Wat
-
-}
