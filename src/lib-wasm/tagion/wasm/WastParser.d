@@ -578,6 +578,25 @@ struct WastParser {
 
     }
 
+    static Types toType(const(char[]) type_name) {
+       switch (type_name) {
+            static foreach(E; EnumMembers!Types) {
+                static if (hasUDA!(E, string)) {
+                    case getUDAs!(E, string)[0]:
+                    return E;
+                }
+            }
+            default:
+            return Types.VOID;
+        }
+        assert(0);
+    }
+
+    static unittest {
+        assert(toType("i32") is Types.I32);
+        assert(toType("bad type") is Types.VOID);
+    }
+
     private ParserStage parseInstr(
             ref WastTokenizer r,
             const ParserStage stage,
@@ -734,7 +753,8 @@ struct WastParser {
                 scope (exit) {
                     writer.section!(Section.EXPORT).sectypes ~= export_type;
                 }
-                r.valid(stage == ParserStage.MODULE || stage == ParserStage.FUNC, "Function or module stage expected");
+                r.valid(stage == ParserStage.MODULE || stage == ParserStage.FUNC, 
+                        "Function or module stage expected");
 
                 r.nextToken;
                 r.expect(TokenType.STRING);
@@ -766,6 +786,14 @@ struct WastParser {
                 r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM, "Import state only allowed inside type or param");
 
                 return stage;
+            case "table":
+                    
+                    r.nextToken;
+                    if (r.type is TokenType.WORD) {
+                    }
+                    else (r.type is TokenType.
+                
+                    return stage;
             case "assert_return_nan":
             case "assert_return":
                 r.valid(stage == ParserStage.BASE, "Assert not allowed here");
@@ -1023,6 +1051,7 @@ struct WastParser {
     private {
         int[string] func_lookup;
         int[string] type_lookup;
+        int[string] table_lookup;
     }
     void parse(ref WastTokenizer tokenizer) {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
