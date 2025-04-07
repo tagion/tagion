@@ -841,7 +841,11 @@ struct WastParser {
             switch (r.token) {
             case "type":
                 r.nextToken;
+                __write("%s type %s", __FUNCTION__, r.token);
                 r.expect(TokenType.WORD);
+                const type_idx = type_lookup.get(r.token, -1);
+                .check(type_idx >= 0, format("Type named %s not found", r.token));
+                func_type=writer.section!(Section.TYPE).sectypes[type_idx];
                 r.nextToken;
                 return ParserStage.TYPE;
             case "param": // Example (param $y i32)
@@ -942,6 +946,7 @@ struct WastParser {
     }
 
     private ParserStage parseFuncType(ref WastTokenizer r, const ParserStage stage) {
+        __write("%s %s", __FUNCTION__, r.getLine);
         CodeType code_type;
         r.valid(stage < ParserStage.FUNC, "Should been outside function declaration");
         string func_name;
@@ -981,6 +986,7 @@ struct WastParser {
             func_name = r.token;
             r.nextToken;
         }
+        __write("%s func_name=%s", __FUNCTION__, func_name);
         ParserStage arg_stage;
         WastTokenizer rewined;
         uint only_one_type_allowed;
