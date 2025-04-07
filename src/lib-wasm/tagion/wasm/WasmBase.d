@@ -499,12 +499,13 @@ enum Mutable : ubyte {
 
 enum Types : ubyte {
     VOID = 0x40, /// Empty block
-    @("func") FUNC = 0x60, /// functype
-    @("funcref") FUNCREF = 0x70, /// funcref
-    @("i32") I32 = 0x7F, /// i32 valtype
-    @("i64") I64 = 0x7E, /// i64 valtype
-    @("f32") F32 = 0x7D, /// f32 valtype
-    @("f64") F64 = 0x7C, /// f64 valtype
+    @("func") FUNC = 0x60, /// Func type
+    @("externref") EXTERNREF = 0x6F, /// External ref (reftype)
+    @("funcref") FUNCREF = 0x70, /// funcref (reftype)
+    @("i32") I32 = 0x7F, /// i32 Value type
+    @("i64") I64 = 0x7E, /// i64 Value type
+    @("f32") F32 = 0x7D, /// f32 Value type
+    @("f64") F64 = 0x7C, /// f64 Value type
 }
 
 bool isNotType(const ubyte x) @nogc pure nothrow {

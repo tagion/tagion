@@ -50,6 +50,7 @@ struct WastParser {
     alias DataType = WasmSection.DataType;
     alias ExportType = WasmSection.ExportType;
     alias CustomType = WasmSection.Custom;
+    alias Limit = WasmSection.Limit;
 
     enum ParserStage {
         BASE,
@@ -613,6 +614,28 @@ struct WastParser {
         return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
 
+    private Limit parseLimit(ref WastTokenizer r) {
+        Limit limit;
+        r.expect(TokenType.WORD);
+        const label = r.token;
+        writef("Memory label = %s", label);
+        r.nextToken;
+        if (r.type is TokenType.WORD) {
+            const arg = r.token;
+            writef("arg = %s", arg);
+            r.nextToken;
+            limit.lim = Limits.RANGE;
+            limit.to = arg.to!uint;
+            limit.from = label.to!uint;
+
+        }
+        else {
+            limit.lim = Limits.RANGE;
+            limit.to = label.to!uint;
+        }
+        return limit;
+    }
+
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
         if (r.type is TokenType.COMMENT) {
             r.nextToken;
@@ -686,23 +709,7 @@ struct WastParser {
                 }
                 r.valid(stage == ParserStage.MODULE, "Memory statement only allowed after memory");
                 r.nextToken;
-                r.expect(TokenType.WORD);
-                label = r.token;
-                writef("Memory label = %s", label);
-                r.nextToken;
-                if (r.type is TokenType.WORD) {
-                    arg = r.token;
-                    writef("arg = %s", arg);
-                    r.nextToken;
-                    memory_type.limit.lim = Limits.RANGE;
-                    memory_type.limit.to = arg.to!uint;
-                    memory_type.limit.from = label.to!uint;
-
-                }
-                else {
-                    memory_type.limit.lim = Limits.RANGE;
-                    memory_type.limit.to = label.to!uint;
-                }
+                memory_type.limit = parseLimit(r);
                 writefln("Type %s", r.type);
                 while (r.type is TokenType.BEGIN) {
                     parseModule(r, ParserStage.MEMORY);
@@ -840,12 +847,16 @@ struct WastParser {
             }
             switch (r.token) {
             case "type":
+                r.check(stage !is ParserStage.TYPE, format("Type can not be declared inside a type"));
                 r.nextToken;
                 __write("%s type %s", __FUNCTION__, r.token);
                 r.expect(TokenType.WORD);
                 const type_idx = type_lookup.get(r.token, -1);
+
+                
+
                 .check(type_idx >= 0, format("Type named %s not found", r.token));
-                func_type=writer.section!(Section.TYPE).sectypes[type_idx];
+                func_type = writer.section!(Section.TYPE).sectypes[type_idx];
                 r.nextToken;
                 return ParserStage.TYPE;
             case "param": // Example (param $y i32)
@@ -927,6 +938,9 @@ struct WastParser {
             __write("func_stage %s : %s", stage, func_type);
             const type_idx = writer.createTypeIdx(func_type);
             if (type_name) {
+
+                
+
                     .check((type_name in type_lookup) is null,
                             format("Type name %s already defined", type_name));
                 type_lookup[type_name] = type_idx;

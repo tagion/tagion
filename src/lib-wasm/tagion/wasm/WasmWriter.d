@@ -639,6 +639,7 @@ import tagion.hibon.HiBONRecord : exclude;
 
         struct ElementType {
             uint tableidx;
+            DataMode mode;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[] funcs;
             this(ref const(ReaderSecType!(Section.ELEMENT)) e) {
