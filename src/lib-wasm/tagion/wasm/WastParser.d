@@ -45,13 +45,13 @@ struct WastParser {
     alias MemoryType = WasmSection.MemoryType;
     alias GlobalType = WasmSection.GlobalType;
     alias FuncType = WasmSection.FuncType;
+    alias TableType = WasmSection.TableType;
     alias FuncIndex = WasmSection.FuncIndex;
     alias CodeType = WasmSection.CodeType;
     alias DataType = WasmSection.DataType;
     alias ExportType = WasmSection.ExportType;
     alias CustomType = WasmSection.Custom;
     alias Limit = WasmSection.Limit;
-
     enum ParserStage {
         BASE,
         COMMENT,
@@ -655,6 +655,22 @@ struct WastParser {
         return limit;
     }
 
+    private TableType parseTable(ref WastTokenizer r) {
+        TableType table;
+        r.expect(TokenType.WORD);
+        Types _type = toType(r.token);
+        if (_type is Types.VOID) {
+            .check((r.token in table_lookup) is null, 
+                format("The table name %s has already been used", r.token));
+            table_lookup[r.token] = cast(int)writer.section!(Section.TABLE).sectypes.length;   
+            r.nextToken;
+         _type = toType(r.token);
+        }
+            r.nextToken;
+        table.type = _type;
+            writer.section!(Section.TABLE).sectypes~=table;
+        return table;
+    }
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
         if (r.type is TokenType.COMMENT) {
             r.nextToken;
@@ -787,12 +803,8 @@ struct WastParser {
 
                 return stage;
             case "table":
-                    
                     r.nextToken;
-                    if (r.type is TokenType.WORD) {
-                    }
-                    else (r.type is TokenType.
-                
+                    parseTable(r);
                     return stage;
             case "assert_return_nan":
             case "assert_return":
