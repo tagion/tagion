@@ -12,7 +12,7 @@ sidebar_position: 0
 
 A general overview of how transactions are processed in the tagion network.
 - A user generates a contract with their wallet application. 
-    The contract contains a list of input that will be consumed when the contract is processed.
+    The contract contains a list of input that will be spent when the contract is processed.
     The inputs are [indices](/tech/protocols/dart/dartindex) to a UTXO in the [consensus database](/tech/protocols/dart).  
     To proof that the user actually owns the inputs, the contract includes a signature for each input that sign the contract.  
     Lastly the contract includes a function which produces the outputs which will be added to the the consensus database.
