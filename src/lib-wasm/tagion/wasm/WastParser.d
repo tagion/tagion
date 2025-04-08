@@ -646,8 +646,8 @@ struct WastParser {
             limit.lim = Limits.RANGE;
         }
         catch (ConvException e) {
-            limit.to = value;
-            limit.lim = Limits.RANGE;
+            limit.from = value;
+            limit.lim = Limits.INFINITE;
         }
         return limit;
     }
@@ -656,7 +656,8 @@ struct WastParser {
         {
             auto r = WastTokenizer(" 10 funcref)");
             const limit = parseLimit(r);
-            assert(limit is Limit(Limits.RANGE, 0, 10));
+            __write("limit = %s", limit);
+            assert(limit is Limit(Limits.INFINITE, 10, 0));
         }
         {
             auto r = WastTokenizer(" 10 100 funcref)");
@@ -669,19 +670,24 @@ struct WastParser {
         TableType table;
         r.expect(TokenType.WORD);
         string table_name;
+        __write("1) %s : %s", __FUNCTION__, r.save.take(4).map!(t => t.token));
         if (!r.token.tryConvert!(int).ok) {
             table_name = r.token;
             r.nextToken;
         }
+        __write("2) %s : %s", __FUNCTION__, r.save.take(4).map!(t => t.token));
         table.limit = parseLimit(r);
+        __write("3) %s : %s", __FUNCTION__, r.save.take(4).map!(t => t.token));
         if (table_name) {
             r.check((table_name in table_lookup) is null,
                     format("Table named %s has already been defined", table_name));
             table_lookup[table_name] = cast(int) writer.section!(Section.TABLE).sectypes.length;
 
         }
+        table.type = toType(r.token);
+        r.check(table.type.isRefType, format("Ref-type extected not %s", r.token));
+        r.nextToken;
         writer.section!(Section.TABLE).sectypes ~= table;
-        __write("%s current token %s table.type = %s %s", __FUNCTION__, r.token, table.type, toType(r.token));
         return table;
     }
 
