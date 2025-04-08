@@ -16,6 +16,7 @@ import tagion.wasm.WastAssert;
 import tagion.wasm.WastTokenizer;
 import tagion.wasm.WasmExpr;
 import tagion.wasm.WasmException;
+import tagion.wasm.WastKeywords;
 import tagion.basic.basic : isinit;
 import tagion.utils.convert : convert, tryConvert;
 
@@ -51,6 +52,7 @@ struct WastParser {
     alias CodeType = WasmSection.CodeType;
     alias DataType = WasmSection.DataType;
     alias ExportType = WasmSection.ExportType;
+    alias ElemType = WasmSection.ElementType;
     alias CustomType = WasmSection.Custom;
     alias Limit = WasmSection.Limit;
     enum ParserStage {
@@ -60,6 +62,7 @@ struct WastParser {
         MODULE,
         TYPE,
         FUNC,
+        TABLE,
         PARAM,
         RESULT,
         FUNC_BODY,
@@ -656,7 +659,6 @@ struct WastParser {
         {
             auto r = WastTokenizer(" 10 funcref)");
             const limit = parseLimit(r);
-            __write("limit = %s", limit);
             assert(limit is Limit(Limits.INFINITE, 10, 0));
         }
         {
@@ -666,18 +668,96 @@ struct WastParser {
         }
     }
 
+    private ElemType parseElem(ref WastTokenizer r, const ParserStage stage) {
+        import tagion.wasm.WastKeywords;
+
+        ElemType elem;
+        string elem_name;
+        if ((r.type is TokenType.WORD) && !(r.token.isReseved) &&
+                (r.token.toType is Types.VOID)) {
+            r.nextToken;
+            elem_name = r.token;
+        }
+        string table_name;
+        void innerElemType() {
+            if (r.type is TokenType.BEGIN) {
+                r.nextToken;
+                scope (exit) {
+                    r.nextToken;
+                    r.expect(TokenType.END);
+                }
+                switch (r.token) {
+                case WastKeywords.TABLE:
+                    r.check(stage is ParserStage.TABLE, "Table can not be used inside a table");
+                    r.nextToken;
+                    scope (exit) {
+                        r.nextToken;
+                    }
+                    if (!table_name) {
+                        table_name = r.token;
+                        break;
+                    }
+                    r.check(0, "Table has already been defined");
+
+                    break;
+                case WastKeywords.OFFSET:
+                    r.nextToken;
+                    r.check(elem.expr is null,
+                            "Initialisation code has already been defined for this element");
+                    FuncType void_func;
+                    CodeType code_offset;
+                    FunctionContext ctx;
+                    parseInstr(r, ParserStage.CODE, code_offset, void_func, ctx);
+                    elem.expr = code_offset.expr;
+                    break;
+                default:
+                    r.check(elem.expr is null,
+                            "Initialisation code has already been defined for this element");
+                    FuncType void_func;
+                    CodeType code;
+                    FunctionContext ctx;
+                    parseInstr(r, ParserStage.CODE, code, void_func, ctx);
+                    elem.expr = code.expr;
+                }
+
+            }
+        }
+
+        Types _type;
+        while (r.type !is TokenType.END) {
+            const try_type = r.token.toType;
+            switch (try_type) {
+            case Types.FUNCREF:
+                r.check(_type is Types.VOID, format("Type has been redefined from %s to %", _type, try_type));
+                _type = try_type;
+                r.nextToken;
+                continue;
+            case Types.FUNC:
+                r.check(_type is Types.VOID, format("Type has been redefined from %s to %", _type, try_type));
+                _type = try_type;
+                r.nextToken;
+                continue;
+            case Types.VOID:
+                // ignore
+                break;
+            default:
+                r.check(0, format("Illegal type %s must be a ref-type", try_type));
+            }
+            innerElemType;
+        }
+
+        return elem;
+    }
+
     private TableType parseTable(ref WastTokenizer r) {
         TableType table;
         r.expect(TokenType.WORD);
         string table_name;
-        __write("1) %s : %s", __FUNCTION__, r.save.take(4).map!(t => t.token));
         if (!r.token.tryConvert!(int).ok) {
             table_name = r.token;
             r.nextToken;
         }
-        __write("2) %s : %s", __FUNCTION__, r.save.take(4).map!(t => t.token));
         table.limit = parseLimit(r);
-        __write("3) %s : %s", __FUNCTION__, r.save.take(4).map!(t => t.token));
         if (table_name) {
             r.check((table_name in table_lookup) is null,
                     format("Table named %s has already been defined", table_name));
@@ -705,7 +785,7 @@ struct WastParser {
                 r.nextToken;
             }
             switch (r.token) {
-            case "module":
+            case WastKeywords.MODULE:
                 r.valid(stage < ParserStage.MODULE, "Module expected");
                 r.nextToken;
                 while (r.type is TokenType.BEGIN) {
@@ -713,7 +793,7 @@ struct WastParser {
 
                 }
                 return ParserStage.MODULE;
-            case "type":
+            case WastKeywords.TYPE:
                 __write("line %s", r.getLine);
                 r.nextToken;
                 version (none)
@@ -723,10 +803,11 @@ struct WastParser {
                     }
                 parseTypeSection(r, ParserStage.TYPE);
                 return stage;
-            case "func": // Example (func $name (param ...) (result i32) )
+            case WastKeywords.FUNC: // Example (func $name (param ...) (result i32) )
                 __write("stage %s %s : %s", stage, r.getLine, r);
                 return parseFuncType(r, stage);
-            case "param": // Example (param $y i32)
+                    version(none) {
+            case WastKeywords.PARAM: // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
                     Types[] wasm_types;
@@ -750,14 +831,15 @@ struct WastParser {
                     }
                 }
                 return ParserStage.PARAM;
-            case "result":
+                    }
+            case WastKeywords.RESULT:
                 r.valid(stage == ParserStage.FUNC, "Result only allowed inside function declaration");
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 arg = r.token;
                 r.nextToken;
                 return ParserStage.RESULT;
-            case "memory":
+            case WastKeywords.MEMORY:
                 MemoryType memory_type;
                 scope (exit) {
                     writer.section!(Section.MEMORY).sectypes ~= memory_type;
@@ -770,7 +852,7 @@ struct WastParser {
                     parseModule(r, ParserStage.MEMORY);
                 }
                 return ParserStage.MEMORY;
-            case "segment":
+            case WastKeywords.SEGMENT:
                 DataType data_type;
                 scope (exit) {
                     writer.section!(Section.DATA).sectypes ~= data_type;
@@ -784,7 +866,7 @@ struct WastParser {
                 data_type.base = r.getText;
                 r.nextToken;
                 break;
-            case "export":
+            case WastKeywords.EXPORT:
                 ExportType export_type;
                 scope (exit) {
                     writer.section!(Section.EXPORT).sectypes ~= export_type;
@@ -805,7 +887,7 @@ struct WastParser {
 
                 r.nextToken;
                 return ParserStage.EXPORT;
-            case "import":
+            case WastKeywords.IMPORT:
                 string arg2;
                 r.nextToken;
                 r.expect(TokenType.WORD);
@@ -822,9 +904,13 @@ struct WastParser {
                 r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM, "Import state only allowed inside type or param");
 
                 return stage;
-            case "table":
+            case WastKeywords.TABLE:
                 r.nextToken;
                 parseTable(r);
+                return stage;
+            case WastKeywords.ELEM:
+                r.nextToken;
+                parseElem(r, stage);
                 return stage;
             case "assert_return_nan":
             case "assert_return":
