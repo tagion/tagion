@@ -7,7 +7,7 @@ import std.format;
 import std.meta : AliasSeq;
 import std.algorithm : canFind, map;
 import std.array;
-import std.range.primitives : isInputRange;
+import std.range;
 import std.stdio;
 import std.traits;
 import std.typecons : Tuple;
@@ -508,8 +508,31 @@ enum Types : ubyte {
     @("f64") F64 = 0x7C, /// f64 Value type
 }
 
+bool isRefType(const Types x) @nogc pure nothrow {
+    return only(Types.EXTERNREF, Types.FUNCREF).canFind(x);
+}
+
 bool isNotType(const ubyte x) @nogc pure nothrow {
     return (x & Types.VOID) !is Types.VOID;
+}
+
+Types toType(const(char[]) type_name) @nogc pure nothrow {
+    switch (type_name) {
+        static foreach (E; EnumMembers!Types) {
+            static if (hasUDA!(E, string)) {
+    case getUDAs!(E, string)[0]:
+                return E;
+            }
+        }
+    default:
+        return Types.VOID;
+    }
+    assert(0);
+}
+
+unittest {
+    assert(toType("i32") is Types.I32);
+    assert(toType("bad type") is Types.VOID);
 }
 
 enum DataMode : ubyte {

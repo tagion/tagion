@@ -203,6 +203,27 @@ struct WastTokenizer {
 
     }
 
+    bool set(T)(ref T val) nothrow {
+        try {
+            static if (isIntegral!T) {
+                val = token.convert!T;
+            }
+            else static if (isFloatingPoint!T) {
+                val = token.convert!T;
+            }
+            else static if (is(T == string)) {
+                val = token;
+            }
+            else {
+                static assert(0, T.stringof ~ " not supported");
+            }
+        }
+        catch (Exception) {
+            return false;
+        }
+        return true;
+    }
+
     string getText() nothrow {
         valid(type == TokenType.STRING, "Text string expected");
         return token.stripQuotes;

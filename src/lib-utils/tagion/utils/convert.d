@@ -6,6 +6,7 @@ import std.range;
 import std.traits;
 import std.exception;
 import std.string : representation;
+import std.typecons;
 import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.errors.tagionexceptions;
@@ -176,6 +177,19 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     const x = unformatValue!F(text, spec);
     return x;
 
+}
+
+template tryConvert(T) {
+    alias Result = Tuple!(T, "value", bool, "ok");
+    Result tryConvert(const(char[]) text) nothrow {
+        try {
+            return Result(text.convert!T, true);
+        }
+        catch (Exception e) {
+            return Result(T.init, false);
+        }
+        assert(0);
+    }
 }
 
 unittest {

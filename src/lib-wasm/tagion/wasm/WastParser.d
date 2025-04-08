@@ -17,6 +17,7 @@ import tagion.wasm.WastTokenizer;
 import tagion.wasm.WasmExpr;
 import tagion.wasm.WasmException;
 import tagion.basic.basic : isinit;
+import tagion.utils.convert : convert, tryConvert;
 
 @safe:
 
@@ -579,14 +580,14 @@ struct WastParser {
     }
 
     static Types toType(const(char[]) type_name) {
-       switch (type_name) {
-            static foreach(E; EnumMembers!Types) {
+        switch (type_name) {
+            static foreach (E; EnumMembers!Types) {
                 static if (hasUDA!(E, string)) {
-                    case getUDAs!(E, string)[0]:
+        case getUDAs!(E, string)[0]:
                     return E;
                 }
             }
-            default:
+        default:
             return Types.VOID;
         }
         assert(0);
@@ -633,44 +634,57 @@ struct WastParser {
         return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
 
-    private Limit parseLimit(ref WastTokenizer r) {
+    static Limit parseLimit(ref WastTokenizer r) {
         Limit limit;
         r.expect(TokenType.WORD);
-        const label = r.token;
-        writef("Memory label = %s", label);
+        const value = r.token.convert!int;
         r.nextToken;
-        if (r.type is TokenType.WORD) {
-            const arg = r.token;
-            writef("arg = %s", arg);
+        try {
+            limit.to = r.token.convert!int;
             r.nextToken;
+            limit.from = value;
             limit.lim = Limits.RANGE;
-            limit.to = arg.to!uint;
-            limit.from = label.to!uint;
-
         }
-        else {
+        catch (ConvException e) {
+            limit.to = value;
             limit.lim = Limits.RANGE;
-            limit.to = label.to!uint;
         }
         return limit;
+    }
+
+    unittest {
+        {
+            auto r = WastTokenizer(" 10 funcref)");
+            const limit = parseLimit(r);
+            assert(limit is Limit(Limits.RANGE, 0, 10));
+        }
+        {
+            auto r = WastTokenizer(" 10 100 funcref)");
+            const limit = parseLimit(r);
+            assert(limit is Limit(Limits.RANGE, 10, 100));
+        }
     }
 
     private TableType parseTable(ref WastTokenizer r) {
         TableType table;
         r.expect(TokenType.WORD);
-        Types _type = toType(r.token);
-        if (_type is Types.VOID) {
-            .check((r.token in table_lookup) is null, 
-                format("The table name %s has already been used", r.token));
-            table_lookup[r.token] = cast(int)writer.section!(Section.TABLE).sectypes.length;   
+        string table_name;
+        if (!r.token.tryConvert!(int).ok) {
+            table_name = r.token;
             r.nextToken;
-         _type = toType(r.token);
         }
-            r.nextToken;
-        table.type = _type;
-            writer.section!(Section.TABLE).sectypes~=table;
+        table.limit = parseLimit(r);
+        if (table_name) {
+            r.check((table_name in table_lookup) is null,
+                    format("Table named %s has already been defined", table_name));
+            table_lookup[table_name] = cast(int) writer.section!(Section.TABLE).sectypes.length;
+
+        }
+        writer.section!(Section.TABLE).sectypes ~= table;
+        __write("%s current token %s table.type = %s %s", __FUNCTION__, r.token, table.type, toType(r.token));
         return table;
     }
+
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
         if (r.type is TokenType.COMMENT) {
             r.nextToken;
@@ -769,7 +783,7 @@ struct WastParser {
                 scope (exit) {
                     writer.section!(Section.EXPORT).sectypes ~= export_type;
                 }
-                r.valid(stage == ParserStage.MODULE || stage == ParserStage.FUNC, 
+                r.valid(stage == ParserStage.MODULE || stage == ParserStage.FUNC,
                         "Function or module stage expected");
 
                 r.nextToken;
@@ -803,9 +817,9 @@ struct WastParser {
 
                 return stage;
             case "table":
-                    r.nextToken;
-                    parseTable(r);
-                    return stage;
+                r.nextToken;
+                parseTable(r);
+                return stage;
             case "assert_return_nan":
             case "assert_return":
                 r.valid(stage == ParserStage.BASE, "Assert not allowed here");
