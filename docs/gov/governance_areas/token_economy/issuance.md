@@ -117,7 +117,7 @@ Once unlocked tokens have been paid out from the online portal into a JustPay wa
 
 This, of course, includes tendering them for the purchase of goods and services, but acceptance of them on part of the provider of those goods and services is purely voluntary. 
 
-Currently, as TGN tokens are not yet listed on any token exchange, so there is no brokered way of selling them. However, "over the counter" sales are always possible if two parties agree on the price and conditions. All that is technically required is that the recepient has a [JustPay wallet](https://www.decard.io/justpay) into which the tokens can be transferred, and that seller of tokens is confident that he will receive payment as agreed. 
+Currently, as TGN tokens are not yet listed on any token exchange, there is no brokered way of selling them. However, "over the counter" sales are always possible if two parties agree on the price and conditions. All that is technically required is that the recepient has a [JustPay wallet](https://www.decard.io/justpay) into which the tokens can be transferred, and that seller of tokens is confident that he will receive payment as agreed. 
 
 ---
  
