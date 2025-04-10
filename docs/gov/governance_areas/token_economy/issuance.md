@@ -41,7 +41,7 @@ It is important to prevent too many tokens being made available at the same time
 
 To achieve this, tokens sold in pre- and post-sales or otherwise assigned are not immediately disbursed to the beneficiaries' JustPay wallets, but held back/locked in the Tagion portal. The time for which assigned tokens are locked is called the “vesting period”. 
 
-After this period the unlocked tokens[^2] can be requested to be paid out in the Tagion portal, we call theat their disbursement. Since these requests will typically not happen right after the vesting period ends, we distinguish between the unlocked supply (tokens that can be disbursed) and the circulating supply (tokens that have been disbursed).  
+After this period the unlocked tokens[^2] can be requested to be paid out in the Tagion portal, we call that their disbursement. Since these requests will typically not happen right after the vesting period ends, we distinguish between the unlocked supply (tokens that can be disbursed) and the circulating supply (tokens that have been disbursed).  
 
 |Terminology:    | Definition:  |
 | :-: | ------- |
@@ -113,7 +113,7 @@ At the time of launching into release phase 3 (curated release), 20% of this all
 
 ## Using TGN Tokens
 
-Once unlocked tokens have been paid out into a JustPay wallet (and have thus become part of the "circulating supply" (see [definitions here] (https://docs.tagion.org/gov/governance_areas/token_economy/issuance#reporting-and-definitions)), owners of these tokens can use them in whatever way they like. 
+Once unlocked tokens have been paid out into a JustPay wallet (and have thus become part of the "circulating supply" (see [definitions here](https://docs.tagion.org/gov/governance_areas/token_economy/issuance#reporting-and-definitions)), owners of these tokens can use them in whatever way they like. 
 
 This, of course, includes tendering them for the purchase of goods and services, but acceptance of them on part of the seller is purely voluntary. Currently, TGN tokens are not listed on any token exchange, so there is no simple brokered way of selling them. However, "over the counter" sales are always possible if two parties agree on the sale. All that is required is that the recepient has and JustPay wallet and the seller of tokens is confident that he will receive payment as agreed. 
 
