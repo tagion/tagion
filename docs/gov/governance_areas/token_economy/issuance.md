@@ -54,6 +54,7 @@ After this period the unlocked tokens[^2] can be requested to be paid out in the
 :::tip
 If you find other metrics more useful to be reported on, please let us know.
 :::
+<br />
 
 In March 2025 out of the 3,129,452,528 TGN that have been sold (in pre- and post-sales) or assigned to community members,  a total amount of 816,151,055 TGN were unlocked for payouts.[^4]
 
