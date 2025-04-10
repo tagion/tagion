@@ -113,9 +113,11 @@ At the time of launching into release phase 3 (curated release), 20% of this all
 
 ## Using TGN Tokens
 
-Once unlocked tokens have been paid out into a JustPay wallet (and have thus become part of the "circulating supply" (see [definitions here](https://docs.tagion.org/gov/governance_areas/token_economy/issuance#reporting-and-definitions)), owners of these tokens can use them in whatever way they like. 
+Once unlocked tokens have been paid out from the online portal into a JustPay wallet (and have thus become part of the "circulating supply" (see [definitions here](https://docs.tagion.org/gov/governance_areas/token_economy/issuance#reporting-and-definitions)), owners of these tokens can use them in whatever way they like. 
 
-This, of course, includes tendering them for the purchase of goods and services, but acceptance of them on part of the seller is purely voluntary. Currently, TGN tokens are not listed on any token exchange, so there is no simple brokered way of selling them. However, "over the counter" sales are always possible if two parties agree on the sale. All that is required is that the recepient has and JustPay wallet and the seller of tokens is confident that he will receive payment as agreed. 
+This, of course, includes tendering them for the purchase of goods and services, but acceptance of them on part of the provider of those goods and services is purely voluntary. 
+
+Currently, as TGN tokens are not yet listed on any token exchange, so there is no brokered way of selling them. However, "over the counter" sales are always possible if two parties agree on the price and conditions. All that is technically required is that the recepient has a [JustPay wallet](https://www.decard.io/justpay) into which the tokens can be transferred, and that seller of tokens is confident that he will receive payment as agreed. 
 
 ---
  
