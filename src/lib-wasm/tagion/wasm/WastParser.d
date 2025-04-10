@@ -728,12 +728,12 @@ struct WastParser {
             const try_type = r.token.toType;
             switch (try_type) {
             case Types.FUNCREF:
-                r.check(_type is Types.VOID, format("Type has been redefined from %s to %", _type, try_type));
+                r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
                 _type = try_type;
                 r.nextToken;
                 continue;
             case Types.FUNC:
-                r.check(_type is Types.VOID, format("Type has been redefined from %s to %", _type, try_type));
+                r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
                 _type = try_type;
                 r.nextToken;
                 continue;
@@ -806,32 +806,32 @@ struct WastParser {
             case WastKeywords.FUNC: // Example (func $name (param ...) (result i32) )
                 __write("stage %s %s : %s", stage, r.getLine, r);
                 return parseFuncType(r, stage);
-                    version(none) {
+                version (none) {
             case WastKeywords.PARAM: // Example (param $y i32)
-                r.nextToken;
-                if (stage == ParserStage.IMPORT) {
-                    Types[] wasm_types;
-                    while (r.token.getType !is Types.VOID) {
-                        wasm_types ~= r.token.getType;
-                        r.nextToken;
+                    r.nextToken;
+                    if (stage == ParserStage.IMPORT) {
+                        Types[] wasm_types;
+                        while (r.token.getType !is Types.VOID) {
+                            wasm_types ~= r.token.getType;
+                            r.nextToken;
+                        }
                     }
-                }
-                else {
-                    r.valid(stage == ParserStage.FUNC, "Only allowed inside a function scope");
+                    else {
+                        r.valid(stage == ParserStage.FUNC, "Only allowed inside a function scope");
 
-                    if (r.type is TokenType.WORD && r.token.getType is Types.VOID) {
-                        label = r.token;
-                        r.nextToken;
+                        if (r.type is TokenType.WORD && r.token.getType is Types.VOID) {
+                            label = r.token;
+                            r.nextToken;
 
-                        r.expect(TokenType.WORD);
+                            r.expect(TokenType.WORD);
+                        }
+                        while (r.type is TokenType.WORD && r.token.getType !is Types.VOID) {
+                            arg = r.token;
+                            r.nextToken;
+                        }
                     }
-                    while (r.type is TokenType.WORD && r.token.getType !is Types.VOID) {
-                        arg = r.token;
-                        r.nextToken;
-                    }
+                    return ParserStage.PARAM;
                 }
-                return ParserStage.PARAM;
-                    }
             case WastKeywords.RESULT:
                 r.valid(stage == ParserStage.FUNC, "Result only allowed inside function declaration");
                 r.nextToken;

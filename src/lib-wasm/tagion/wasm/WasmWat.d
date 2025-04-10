@@ -223,7 +223,6 @@ alias check = Check!WatException;
 
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
-        //        auto _element=*mod[Section.ELEMENT];
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
             auto expr = e[];

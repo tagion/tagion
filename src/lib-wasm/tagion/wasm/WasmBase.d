@@ -801,10 +801,10 @@ struct ExprRange {
     immutable(ubyte[]) data;
 
     protected {
-        size_t _index;
-        int _level;
+        size_t _index; /// Current range index in data
+        int _level; /// Block level
         IRElement current;
-        WasmException wasm_exception;
+        WasmException wasm_exception; /// Error exception (null if no-error)
     }
 
     const(WasmException) exception() const pure nothrow @nogc {
