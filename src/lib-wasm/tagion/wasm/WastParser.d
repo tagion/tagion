@@ -724,6 +724,18 @@ struct WastParser {
         }
 
         Types _type;
+        immutable(uint[]) getFuncs() {
+            immutable(uint)[] result;
+            while (r.type is TokenType.WORD) {
+                const func_idx = func_lookup.get(r.token, -1);
+                r.check(func_idx >= 0, format("Function name %s not defined", r.token));
+                result ~= func_idx;
+                r.nextToken;
+            }
+            return result;
+        }
+
+        int count = 10;
         while (r.type !is TokenType.END) {
             const try_type = r.token.toType;
             switch (try_type) {
@@ -731,13 +743,17 @@ struct WastParser {
                 r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
                 _type = try_type;
                 r.nextToken;
+                elem.funcs = getFuncs;
                 continue;
             case Types.FUNC:
                 r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
                 _type = try_type;
                 r.nextToken;
+                elem.funcs = getFuncs;
                 continue;
             case Types.VOID:
+                __write("r %s", r.token);
+                assert(count-- > 0);
                 // ignore
                 break;
             default:
@@ -910,7 +926,7 @@ struct WastParser {
                 return stage;
             case WastKeywords.ELEM:
                 r.nextToken;
-                parseElem(r, stage);
+                writer.section!(Section.ELEMENT).sectypes ~= parseElem(r, stage);
                 return stage;
             case "assert_return_nan":
             case "assert_return":
