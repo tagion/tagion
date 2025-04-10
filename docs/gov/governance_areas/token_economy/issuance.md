@@ -113,7 +113,7 @@ At the time of launching into release phase 3 (curated release), 20% of this all
 
 ## Using TGN Tokens
 
-Once unlocked tokens have been paid out from the online portal into a JustPay wallet (and have thus become part of the "circulating supply" (see [definitions here](https://docs.tagion.org/gov/governance_areas/token_economy/issuance#reporting-and-definitions)), owners of these tokens can use them in whatever way they like. 
+Once unlocked tokens have been paid out from the online portal into a JustPay wallet, and have thus become part of the "circulating supply" (see [definitions here](https://docs.tagion.org/gov/governance_areas/token_economy/issuance#reporting-and-definitions)), owners of these tokens can use them in whatever way they like. 
 
 This, of course, includes tendering them for the purchase of goods and services, but acceptance of them on part of the provider of those goods and services is purely voluntary. 
 
