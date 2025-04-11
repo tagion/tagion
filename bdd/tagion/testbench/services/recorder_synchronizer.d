@@ -174,6 +174,9 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
     @When("the local node subscribes on the remote node")
     Document onTheRemoteNode() {
+        // The subscription is not needed as the local
+        // node communicates with the remote node much earlier.
+        // So just return result_ok.
         return result_ok;
     }
 

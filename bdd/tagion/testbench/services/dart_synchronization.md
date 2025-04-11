@@ -1,4 +1,4 @@
-Feature is a service that synchronize the DART database with another one.
+Feature is a service that synchronize the DART database with multiple nodes.
 It should be used on node start up to ensure that local database is up-to-date.
 In this test scenario we require that the remote database is static (not updated).
 
