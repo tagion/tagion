@@ -174,7 +174,10 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
     @When("the local node subscribes on the remote node")
     Document onTheRemoteNode() {
-        return Document();
+        // The subscription is not needed as the local
+        // node communicates with the remote node much earlier.
+        // So just return result_ok.
+        return result_ok;
     }
 
     @Then("the local node reads data from the remote node")
@@ -216,7 +219,7 @@ int _main(string[] args) {
     auto module_path = buildPath(env.bdd_log, __MODULE__);
     mkdirRecurse(module_path);
 
-    auto replicator_path = buildPath(module_path, "replicator");
+    auto replicator_path = buildPath(module_path, "replicator_service");
     if (replicator_path.exists)
         rmdirRecurse(replicator_path);
     mkdirRecurse(replicator_path);

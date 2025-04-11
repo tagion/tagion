@@ -351,6 +351,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return "double";
             case FUNC:
                 return "_function_";
+            case EXTERNREF:
             case FUNCREF:
                 return "void*";
 
@@ -958,7 +959,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case BLOCK_CONDITIONAL:
                     case BLOCK:
-                        auto block = ctx.create(elm); 
+                        auto block = ctx.create(elm);
                         bout.writefln("%s// block %d", indent, block.id);
 
                         auto block_bout = new OutBuffer;
@@ -1094,9 +1095,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                             block_label_depth);
                                 }
                                 if ((block_label_depth > 0) && !ctx.current.isVoidType) {
-                                const block_index = ctx.index(block_label_depth);
+                                    const block_index = ctx.index(block_label_depth);
                                     auto target_block = ctx[block_index];
-                                        bout.writefln("%s%s = %s;", local_indent,
+                                    bout.writefln("%s%s = %s;", local_indent,
                                             target_block.block_result,
                                             ctx.current.block_result);
                                     bout.writefln("%s%s;", local_indent, ctx.jump(target_block));

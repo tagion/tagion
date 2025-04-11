@@ -2,7 +2,7 @@ module tagion.hashgraph.Round;
 
 import std.datetime; // Date, DateTime
 import std.algorithm;
-import std.exception : assumeWontThrow;
+import std.exception;
 import std.array : array;
 import std.conv;
 import std.format;
@@ -131,18 +131,15 @@ class Round {
         return assumeWontThrow(net.calcHash(xor(fingerprints)));
     }
 
-    final auto witnesses() @trusted const pure nothrow {
-        import std.algorithm;
-        import tagion.utils.Miscellaneous;
-
-        auto fingerprints = _valid_witness[]
-            .map!(n => _events[n])
+    final immutable(Fingerprint)[] witnesses() const pure nothrow {
+        auto fingerprints = 
+            _events
             .filter!(e => e !is null)
             .map!(e => Fingerprint(e.fingerprint))
-            .array
-            .sort!("a < b");
-
-        return fingerprints;
+            .array;
+        fingerprints.sort!("a < b");
+        assert(isSorted(fingerprints));
+        return (() @trusted => fingerprints.assumeUnique)();
     }
 
     /**

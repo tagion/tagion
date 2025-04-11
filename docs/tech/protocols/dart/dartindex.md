@@ -20,7 +20,7 @@ A hashkey is any member key beginning with a `#`.
 Due to HiBON's ordering rules. the hashkey will always be the first element in the document.
 
 
-# DARTIndex string format
+## DARTIndex string format
 Namerecords allow us to look up specific archives in the database based on partial information from the archive. Therefore a string format is created in order to ease the creation of these indices. The format is specified by:
 
 ```
@@ -34,7 +34,7 @@ Where:
 `VALUE` is the value that needs to be looked up. If the namerecord / hashkey does not require a value for lookup, the TYPE and VALUE do not have to be supplied. 
 
 :::info
-Remember to escape characters if using your terminal such as `* # $`
+Remember to escape certain characters `* # $`, if using from your terminal eg. with a tool like dartutil
 :::
 
 | Lookup type       | String dartindex                                      |

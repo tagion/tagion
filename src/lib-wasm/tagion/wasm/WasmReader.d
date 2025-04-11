@@ -262,7 +262,6 @@ import tagion.wasm.WasmException;
                     auto range = VectorRange(owner);
                     size_t i;
                     while (!range.empty) {
-                        //                    foreach (i, ref e; range.enumerate) {
                         if (i is index) {
                             return range.front;
                         }
@@ -281,6 +280,7 @@ import tagion.wasm.WasmException;
                     size_t index;
                     length = u32(data, index);
                     this.data = data[index .. $];
+                    //__write("length=%s data %(%02x %)", length, this.data);
                 }
 
                 protected this(const(SectionT) that) @nogc pure nothrow {
@@ -556,12 +556,23 @@ import tagion.wasm.WasmException;
             }
 
             struct ElementType {
-                immutable(uint) tableidx;
-                immutable(ubyte[]) expr;
-                immutable(uint[]) funcs;
+                immutable(uint) tableidx; /// x:tableidx
+                immutable(ubyte[]) expr; /// e:expr
+                immutable(uint[]) funcs; /// y*:vec(funcidx)
+                immutable(uint) mode; /// Element mode
                 immutable(size_t) size;
-                static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data) pure {
+                immutable(ubyte) kind; /// et:elemkind
+                static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data, ref size_t index) pure {
                     auto range = ExprRange(data);
+                    scope(exit) {
+                        index+=range.index;
+                    }
+                    //import std.algorithm;
+                    
+                    //__write("ExprRange %s", range.save.map!(e => e.code));
+                    if (data[0] is 0) {
+                        return null; 
+                    }
                     while (!range.empty) {
                         const elm = range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
@@ -569,17 +580,54 @@ import tagion.wasm.WasmException;
                         }
                         range.popFront;
                     }
-                    //check(0, format("Expression in Element section expected an end code"));
+                    check(0, format("Expression in Element section expected an end code"));
                     assert(0);
                 }
 
                 this(immutable(ubyte[]) data) pure {
                     size_t index;
-                    tableidx = u32(data, index);
-                    expr = exprBlock(data[index .. $]);
-                    index += expr.length;
-                    funcs = Vector!uint(data, index);
+                    ubyte _kind;
+                    uint _tableidx;
+                    immutable(uint)[] _funcs;
+                    immutable(ubyte)[] _expr;
+                    //__write("Element %(%02x %)", data);
+                    mode = u32(data, index);
+                    void init_elementmode() {
+                        // Mode comment is from Webassembly spec Modules/Element Section 
+                        switch (mode) {
+                        case 0: // e:expr y*:vec(funcidx)
+                            _expr = exprBlock(data[index..$], index);
+                            //index += _expr.length;
+                            _funcs = Vector!uint(data, index); 
+                            break;
+                        case 1: // et:elemkind y*:vec(funcidx) -> passive mode
+                            //_tableidx = u32(data, index);
+                            _kind = data[index++];
+                            _funcs =Vector!uint(data, index);
+                                break;
+                                //assert(0, "Element mode 1 is not implemented yet");
+                        case 2: // x:tableidx y*:vec(funcidix)
+                            assert(0, "Element mode 2 is not implemented yet");
+                        case 3: // et:elemkind y*:vec(funcidix) -> declarative mode
+                            assert(0, "Element mode 3 is not implemented yet");
+                        case 4: // e:expr el*:vec(expr) -> active mode
+                            assert(0, "Element mode 4 is not implemented yet");
+                        case 5: // et:reftype el*:vec(expr) 
+                            assert(0, "Element mode 5 is not implemented yet");
+                        case 6: // x:tableidx e:expr et:reftype el*:vec(expr) 
+                            assert(0, "Element mode 6 is not implemented yet");
+                        case 7: // et:reftype el*:vec(expr) 
+                            assert(0, "Element mode 7 is not implemented yet");
+                        default:
+                            check(0, format("Invalid element mode %d", mode));
+                        }
+                    }
+                    init_elementmode;
+                    expr = _expr;
+                    funcs = _funcs;
                     size = index;
+                    kind = _kind;
+                    tableidx = _tableidx;
                 }
 
                 ExprRange opSlice() const {

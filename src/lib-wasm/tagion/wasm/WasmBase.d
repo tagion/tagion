@@ -7,7 +7,7 @@ import std.format;
 import std.meta : AliasSeq;
 import std.algorithm : canFind, map;
 import std.array;
-import std.range.primitives : isInputRange;
+import std.range;
 import std.stdio;
 import std.traits;
 import std.typecons : Tuple;
@@ -499,16 +499,40 @@ enum Mutable : ubyte {
 
 enum Types : ubyte {
     VOID = 0x40, /// Empty block
-    @("func") FUNC = 0x60, /// functype
-    @("funcref") FUNCREF = 0x70, /// funcref
-    @("i32") I32 = 0x7F, /// i32 valtype
-    @("i64") I64 = 0x7E, /// i64 valtype
-    @("f32") F32 = 0x7D, /// f32 valtype
-    @("f64") F64 = 0x7C, /// f64 valtype
+    @("func") FUNC = 0x60, /// Func type
+    @("externref") EXTERNREF = 0x6F, /// External ref (reftype)
+    @("funcref") FUNCREF = 0x70, /// funcref (reftype)
+    @("i32") I32 = 0x7F, /// i32 Value type
+    @("i64") I64 = 0x7E, /// i64 Value type
+    @("f32") F32 = 0x7D, /// f32 Value type
+    @("f64") F64 = 0x7C, /// f64 Value type
+}
+
+bool isRefType(const Types x) @nogc pure nothrow {
+    return only(Types.EXTERNREF, Types.FUNCREF).canFind(x);
 }
 
 bool isNotType(const ubyte x) @nogc pure nothrow {
     return (x & Types.VOID) !is Types.VOID;
+}
+
+Types toType(const(char[]) type_name) @nogc pure nothrow {
+    switch (type_name) {
+        static foreach (E; EnumMembers!Types) {
+            static if (hasUDA!(E, string)) {
+    case getUDAs!(E, string)[0]:
+                return E;
+            }
+        }
+    default:
+        return Types.VOID;
+    }
+    assert(0);
+}
+
+unittest {
+    assert(toType("i32") is Types.I32);
+    assert(toType("bad type") is Types.VOID);
 }
 
 enum DataMode : ubyte {
@@ -777,10 +801,10 @@ struct ExprRange {
     immutable(ubyte[]) data;
 
     protected {
-        size_t _index;
-        int _level;
+        size_t _index; /// Current range index in data
+        int _level; /// Block level
         IRElement current;
-        WasmException wasm_exception;
+        WasmException wasm_exception; /// Error exception (null if no-error)
     }
 
     const(WasmException) exception() const pure nothrow @nogc {

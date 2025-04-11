@@ -277,10 +277,16 @@ import tagion.hibon.HiBONRecord : exclude;
             Limits lim;
             uint from;
             uint to;
-            this(ref const(WasmReader.Limit) l) {
+            this(ref const(WasmReader.Limit) l) pure nothrow {
                 lim = l.lim;
                 from = l.from;
                 to = l.to;
+            }
+
+            this(const Limits lim, const uint from, const uint to) pure nothrow {
+                this.lim = lim;
+                this.to = to;
+                this.from = from;
             }
 
             void serialize(ref OutBuffer bout) const {
@@ -639,6 +645,7 @@ import tagion.hibon.HiBONRecord : exclude;
 
         struct ElementType {
             uint tableidx;
+            DataMode mode;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[] funcs;
             this(ref const(ReaderSecType!(Section.ELEMENT)) e) {

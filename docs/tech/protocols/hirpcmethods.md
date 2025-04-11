@@ -5,25 +5,18 @@ By default all of these sockets are private, ie. they are linux abstract sockets
 The socket address, and thereby the vissibillity can be changed in the tagionwave config file.
 
 
-| [Input Validator](/tech/architecture/InputValidator)       | [Dart Interface](/tech/architecture/DartInterface) | [Subscription](/tech/architecture/LoggerSubscription) | [Node Interface](/tech/architecture/NodeInterface) |
-| -                                                          | -                                                  | -                                                     | -                                                  |
-| Write                                                      | Read-only                                          | Pub                                                   | Half-duplex p2p wavefront communication            |
-| **Default shell endpoint**                                 | ..                                                 |                                                       |                                                    |
-| /api/v1/hirpc                                              | /api/v1/hirpc                                      |                                                       |                                                    |
-| **Default socket address (node_prefix is added in mode0)** | ..                                                 | ..                                                    | ..                                                 |
-| "\0*node_prefix*CONTRACT_NEUEWELLE"                        | "\0*node_prefix*DART_NEUEWELLE"                    | "\0SUBSCRIPTION_NEUEWELLE"                            | tcp://localhost:10700                              |
-| **HiRPC methods**                                          | ..                                                 | ..                                                    | ..                                                 |
-| "submit"                                                   | "dartCheckRead"                                    | "log"                                                 |
-|                                                            | "dartRead"                                         |
-|                                                            | "dartRim"                                          |
-|                                                            | "dartBullseye"                                     |
-| **HiRPC method entities prefixes**                         | ..                                                 | ..                                                    | ..                                                 |
-| ..                                                         | trt                                                | ..                                                    | ..                                                 |
-| **NNG Socket type**                                        | ..                                                 | ..                                                    | ..                                                 |
-| REPLY                                                      | REPLY                                              | PUBLISH                                               | ???                                                |
+| **Info**                    |                                 |
+| -                           | -                               |
+| **Shell endpoint:**         | /api/v1/hirpc                   |
+| **Default kernel address:** | "\0*node_prefix*DART_NEUEWELLE" |
+| **Accepted methods:**       | "dartCheckRead"                 |
+|                             | "dartRead"                      |
+|                             | "dartRim"                       |
+|                             | "dartBullseye"                  |
+|                             | "submit"                        |
+| **Method domains**          | trt                             |
+| **NNG Protocol:**           | REQ-REPLY                       |
 
-
-These are the hirpc methods exposed by the tagion kernel.
 
 :::info
 The example requests and responses are shown in the [HiBONJSON](https://www.hibon.org/posts/hibonjson) interchange format.

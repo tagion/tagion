@@ -1,4 +1,4 @@
-# End Points version 1
+# Shell endpoints
 
 `/api/v1/[endpoint]`
 
@@ -11,8 +11,8 @@
 | /contract | POST |  |  | Alias for */hirpc*. Deprecated.  |
 | /invoice2pay | POST  | application/octet-stream | application/octet-stream | This endpoint is for testing/presentation only. Expected the HiBON document with valid invoice to be instantly paid from the default wallet configured in the selected node. The signed contract is created and sent to kernel. Response HiBON is returned. |
 
-## non-HiRPC endpoints
 
+## non-HiRPC endpoints
 
 | Endpoint | Method | Content type | Response type | Description |
 | :-------- | :--------: | :--------: | :--------: | :-------- |

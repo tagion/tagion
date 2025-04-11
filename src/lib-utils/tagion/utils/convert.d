@@ -6,6 +6,7 @@ import std.range;
 import std.traits;
 import std.exception;
 import std.string : representation;
+import std.typecons;
 import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.errors.tagionexceptions;
@@ -176,6 +177,20 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     const x = unformatValue!F(text, spec);
     return x;
 
+}
+
+template tryConvert(T) {
+    import tagion.utils.Result;
+
+    Result!T tryConvert(const(char[]) text) nothrow {
+        try {
+            return result(text.convert!T);
+        }
+        catch (Exception e) {
+            return Result!T(e);
+        }
+        assert(0);
+    }
 }
 
 unittest {

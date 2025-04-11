@@ -1,18 +1,22 @@
-# Architecture
+# Node Architecture
 
-## Actor
+## Actor Services
 
 Tagion core's services are various actor's
-An actor is a task that is able to send and receive messages from other tasks.
+An actor is a thread that is able to send and receive messages from other threads.
 The actors have a hierarchical structure where the owner of an actor is called a supervisor and the actor owned by the supervisor is called a child.
 
 When an actor fails the error is sent to the to the supervisor if the error is deemed unrecoverable the supervisor can decide to restart the supervision tree.
 
 child stops when a supervisor sends a STOP signal to the child and the child sends an END when it stops if an error occurs in the child the error (Exception) should be sent to the supervisor.
 
+## Data Message flow
+This graph show the primary data flow between services in the node.
+
+![Node data flow](/figs/node_dataflow.excalidraw.svg)
+
 ## Description of the services in a node
 A node consist of the following services.
-
 
 * [tagionwave](/tech/tools/tagionwave) is the main task responsible all the service
 - Main services
@@ -39,21 +43,16 @@ By default all of these sockets are private, ie. they are linux abstract sockets
 The socket address, and thereby the visibility can be changed in the tagionwave config file.
 
 
-| [Input Validator](/tech/architecture/InputValidator.md) | RPC Server      | [Subscription](/tech/architecture/LoggerSubscription.md) | [Node Interface](/tech/architecture/NodeInterface.md) |
-| -                                                       | -               | -                                                        | -                                                     |
-| Write                                                   | Read-Write      | Pub                                                      | Half-duplex p2p wavefront communication               |
-| **HiRPC methods**                                       | ..              | ..                                                       | ..                                                    |
-| "submit"                                                | "submit"        | "log"                                                    |
-|                                                         | "dartCheckRead" |
-|                                                         | "dartRead"      |
-|                                                         | "dartRim"       |
-|                                                         | "dartBullseye"  |
-|                                                         | "readRecorder"  |
-| **NNG Socket type**                                     | ..              | ..                                                       | ..                                                    |
-| REPLY                                                   | REPLY           | PUBLISH                                                  | TCP                                                   |
+| **Overview**          |   RPC Server    | [Subscription](/tech/architecture/LoggerSubscription.md) | [Node Interface](/tech/architecture/NodeInterface.md) |
+| :-                    |       :-:       |                           :-:                            |                          :-:                          |
+| **Connection type:**  |   Read-Write    |                           Pub                            |        Half-duplex p2p wavefront communication        |
+| ..                    |       ..        |                            ..                            |
+| **Accepted methods:** |    "submit"     |                          "log"                           |                      "wavefront"                      |
+|                       | "dartCheckRead" |
+|                       |   "dartRead"    |
+|                       |    "dartRim"    |
+|                       | "dartBullseye"  |
+|                       | "readRecorder"  |
+| ..                    |       ..        |                            ..                            |
+| **Socket Protocol:**  |    NNG-REPLY    |                       NNG-PUBLISH                        |                          TCP                          |
 
-
-## Data Message flow
-This graph show the primary data message flow in the node.
-
-![Node data flow](/figs/node_dataflow.excalidraw.svg)

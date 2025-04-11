@@ -60,15 +60,14 @@ struct ReplicatorService {
 
         void readRecorder(readRecorderRR req, Document doc) {
             import tagion.replicator.RecorderCrud;
+            import tagion.hibon.HiBONJSON : toPretty;
 
             try {
                 const receiver = hirpc.receive(doc);
                 const epoch_number = receiver.params!(EpochParam).epoch_number;
-
                 auto fin = File(filepath, "r");
                 scope (exit)
                     fin.close;
-
                 foreach (item; HiBONRange(fin)) {
                     auto block = RecorderBlock(item, net);
                     if (block.epoch_number == epoch_number) {

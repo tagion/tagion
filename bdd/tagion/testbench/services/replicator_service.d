@@ -16,6 +16,7 @@ import tagion.services.messages;
 import tagion.services.replicator;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, register, thisTid;
 import tagion.replicator.RecorderBlock;
+import tagion.replicator.RecorderCrud;
 
 import std.typecons : Tuple;
 import std.file;
@@ -136,7 +137,7 @@ class WeReceiveARecorderFromFileByASpecifiedEpochNumber {
 
     ReplicatorOptions replicator_opts;
     ActorHandle replicator_handle;
-    Document request_doc;
+    EpochParam epoch_param;
     RecorderBlock recorder_block;
 
     this(ReplicatorOptions replicator_opts) {
@@ -168,25 +169,22 @@ class WeReceiveARecorderFromFileByASpecifiedEpochNumber {
 
     @Given("a hibon with an epoch number as a document.")
     Document asADocument() {
-        import tagion.hibon.HiBON : HiBON;
-
-        // ["$msg"]["params"]["$epoch"]
-        auto hibon1 = new HiBON();
-        auto hibon2 = new HiBON();
-        auto hibon3 = new HiBON();
-        hibon3["$epoch"] = cast(long) 0;
-        hibon2["params"] = hibon3;
-        hibon1["$msg"] = hibon2;
-        request_doc = Document(hibon1);
-
+        epoch_param = EpochParam(cast(long) 0);
         return result_ok;
     }
 
     @When("we send the document with the epoch number.")
     Document theEpochNumber() {
+        import tagion.replicator.RecorderCrud;
+        import tagion.communication.HiRPC;
+
+        HiRPC hirpc = HiRPC(null);
+        const recorder_read_request = hirpc.readRecorder(epoch_param);
+
         auto readRecorderRequest = readRecorderRR();
-        replicator_handle.send(readRecorderRequest, request_doc);
-        recorder_block = receiveOnlyTimeout!(readRecorderRequest.Response, RecorderBlock)[1];
+        replicator_handle.send(readRecorderRequest, recorder_read_request.toDoc);
+        auto recorder_block_doc = receiveOnlyTimeout!(readRecorderRequest.Response, Document)[1];
+        recorder_block = RecorderBlock(recorder_block_doc);
 
         return result_ok;
     }
