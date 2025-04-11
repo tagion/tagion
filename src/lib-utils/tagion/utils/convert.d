@@ -180,13 +180,14 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
 }
 
 template tryConvert(T) {
-    alias Result = Tuple!(T, "value", bool, "ok");
-    Result tryConvert(const(char[]) text) nothrow {
+    import tagion.utils.Result;
+
+    Result!T tryConvert(const(char[]) text) nothrow {
         try {
-            return Result(text.convert!T, true);
+            return result(text.convert!T);
         }
         catch (Exception e) {
-            return Result(T.init, false);
+            return Result!T(e);
         }
         assert(0);
     }
