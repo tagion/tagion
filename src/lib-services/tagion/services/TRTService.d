@@ -110,12 +110,9 @@ struct TRTService {
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
             import tagion.services.codes;
-
-            log("trt_read request");
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
             }
-            log("before hirpc");
             immutable receiver = hirpc.receive(doc);
 
             if (!(receiver.isMethod && accepted_trt_methods.canFind(receiver.method.full_name))) {
@@ -124,7 +121,6 @@ struct TRTService {
                 client_req.respond(err.toDoc);
                 return;
             }
-            log("before owner doc");
             if (receiver.method.name == "search") {
                 auto owner_doc = receiver.method.params;
                 if (owner_doc[].empty) {
@@ -135,7 +131,6 @@ struct TRTService {
                     return;
                 }
 
-                log("before creating indices");
                 auto owner_indices = owner_doc[]
                     .map!(owner => net.dartKey(HashNames.trt_owner, Pubkey(owner.get!Buffer)))
                     .array;
@@ -200,5 +195,4 @@ struct TRTService {
         run(&modify, &trt_read, &receive_recorder, &add_contract);
 
     }
-
 }
