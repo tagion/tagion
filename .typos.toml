@@ -56,6 +56,7 @@ extend-exclude = [
     "*.wast",
     "src/lib-behaviour/tagion/behaviour/unitdata/",
     "*.svg",
+    "tub/ios.toolchain.cmake",
     "*.excalidraw",
     "bdd/",
 ]
