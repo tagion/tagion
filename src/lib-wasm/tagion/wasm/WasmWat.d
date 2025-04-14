@@ -426,7 +426,6 @@ alias check = Check!WatException;
     }
 
     Output serialize() {
-        wasm_verbose.hex(0, wasmstream.data);
         output.writeln("(module");
         indent = spacer;
         scope (exit) {

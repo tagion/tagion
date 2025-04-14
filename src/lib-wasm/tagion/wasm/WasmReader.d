@@ -29,16 +29,7 @@ import tagion.wasm.WasmException;
     alias serialize = data;
 
     this(immutable(ubyte[]) data) pure nothrow {
-        
         _data = data;
-        __write("WasmRead data.ptr=%x size=%d", &_data[0], _data.length);
-        try {
-            import std.exception;
-            throw new Exception("Test");
-        }
-        catch (Exception e) {
-            __write("%s", e);
-        }
     }
 
     alias Sections = SectionsT!(WasmRange.WasmSection);
@@ -47,7 +38,6 @@ import tagion.wasm.WasmException;
 
     void opCall(InterfaceModule iter) const {
         auto range = opSlice;
-        wasm_verbose("DATA %x size %d", &_data[0], _data.length);
         wasm_verbose("WASM '%s'", range.magic);
         wasm_verbose("VERSION %d", range.vernum);
         wasm_verbose("Index %d", range.index);
@@ -291,16 +281,13 @@ import tagion.wasm.WasmException;
                     length = u32(data, index);
                     this.data = data[index .. $];
                     static if (is(SecType == ElementType)) {
-                    __write("%s length=%s data %(%02x %)", typeof(this).stringof, length, this.data);
-                }
+                    }
                 }
 
                 protected this(const(SectionT) that) @nogc pure nothrow {
                     data = that.data;
                     length = that.length;
                 }
-                // static assert(isInputRange!SecRange);
-                // static assert(isForwardRange!SecRange);
                 alias SecRange = VectorRange!(SectionT, SecType);
                 SecRange opSlice() const pure nothrow {
                     return SecRange(this);
@@ -576,14 +563,14 @@ import tagion.wasm.WasmException;
                 immutable(ubyte) kind; /// et:elemkind
                 static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data, ref size_t index) pure {
                     auto range = ExprRange(data);
-                    scope(exit) {
-                        index+=range.index;
+                    scope (exit) {
+                        index += range.index;
                     }
                     //import std.algorithm;
-                    
+
                     //__write("ExprRange %s", range.save.map!(e => e.code));
                     if (data[0] is 0) {
-                        return null; 
+                        return null;
                     }
                     while (!range.empty) {
                         const elm = range.front;
@@ -602,24 +589,19 @@ import tagion.wasm.WasmException;
                     uint _tableidx;
                     immutable(uint)[] _funcs;
                     immutable(ubyte)[] _expr;
-                    __write(">> Element %(%02x %)", data);
                     mode = u32(data, index);
-                    __write(">> mode %d", mode);
                     void init_elementmode() {
                         // Mode comment is from Webassembly spec Modules/Element Section 
                         switch (mode) {
                         case 0: // e:expr y*:vec(funcidx)
-                            __write("%s %04x %(%02x %)", __FUNCTION__, index, data[index..$]); 
-                            _expr = exprBlock(data[index..$], index);
-                            //index += _expr.length;
-                            _funcs = Vector!uint(data, index); 
+                            _expr = exprBlock(data[index .. $], index);
+                            _funcs = Vector!uint(data, index);
                             break;
                         case 1: // et:elemkind y*:vec(funcidx) -> passive mode
                             //_tableidx = u32(data, index);
                             _kind = data[index++];
-                            _funcs =Vector!uint(data, index);
-                                break;
-                                //assert(0, "Element mode 1 is not implemented yet");
+                            _funcs = Vector!uint(data, index);
+                            break;
                         case 2: // x:tableidx y*:vec(funcidix)
                             assert(0, "Element mode 2 is not implemented yet");
                         case 3: // et:elemkind y*:vec(funcidix) -> declarative mode
@@ -636,6 +618,7 @@ import tagion.wasm.WasmException;
                             check(0, format("Invalid element mode %d", mode));
                         }
                     }
+
                     init_elementmode;
                     expr = _expr;
                     funcs = _funcs;
