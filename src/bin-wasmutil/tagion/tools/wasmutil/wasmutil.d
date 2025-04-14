@@ -202,7 +202,7 @@ int _main(string[] args) {
                 immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
                 wasm_reader = WasmReader(read_data);
                 wasm_verbose.hex(0, read_data);
-                wasm_writer = WasmWriter(wasm_reader);
+//                wasm_writer = WasmWriter(wasm_reader);
                 break;
             case wast:
                 import tagion.wasm.WastParser;
@@ -220,13 +220,22 @@ int _main(string[] args) {
             }
         }
 
-        //WasmWriter wasm_writer = WasmWriter(wasm_reader);
-
+        immutable(ubyte)[] data_out;
+        if (wasm_writer) {
+            assert(wasm_reader !is WasmReader.init, "Missing wasm-reader module");
+          wasm_writer = WasmWriter(wasm_reader);
+        }
         if (inject_gas) {
+            assert(wasm_writer !is null, "Missing wasm module");
             auto wasmgas = WasmGas(wasm_writer);
             wasmgas.modify;
         }
-        immutable data_out = wasm_writer.serialize;
+        if (wasm_writer) {
+         data_out = wasm_writer.serialize;
+        }
+        else {
+            data_out = wasm_reader.serialize;
+        }
         if (__verbose_switch) {
             wasm_verbose.mode = VerboseMode.STANDARD;
         }
@@ -253,9 +262,6 @@ int _main(string[] args) {
                         prod.imports = imports;
                         prod.attributes = attributes;
                     }
-                    // produce!(FileExtension.wat)(WasmReader(data_out), outputfilename);
-                    //   import _wast=tagion.wasm.Wat;
-                    //       _wast.wat(WasmReader(data_out), stdout).serialize;
                     prod.serialize;
                     break WasmOutCase;
                 }
@@ -270,10 +276,6 @@ int _main(string[] args) {
                         format("File extensions %s not valid output file (only %s)",
                         outputfilename.extension,
                         only(FileExtension.wasm, FileExtension.wat)));
-                version (none)
-                    if (print) {
-                        Wat(wasm_reader, stdout).serialize();
-                    }
             }
         }
     }

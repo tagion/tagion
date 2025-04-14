@@ -29,15 +29,25 @@ import tagion.wasm.WasmException;
     alias serialize = data;
 
     this(immutable(ubyte[]) data) pure nothrow {
+        
         _data = data;
+        __write("WasmRead data.ptr=%x size=%d", &_data[0], _data.length);
+        try {
+            import std.exception;
+            throw new Exception("Test");
+        }
+        catch (Exception e) {
+            __write("%s", e);
+        }
     }
 
     alias Sections = SectionsT!(WasmRange.WasmSection);
 
     alias InterfaceModule = InterfaceModuleT!(Sections);
 
-    @trusted void opCall(InterfaceModule iter) const {
+    void opCall(InterfaceModule iter) const {
         auto range = opSlice;
+        wasm_verbose("DATA %x size %d", &_data[0], _data.length);
         wasm_verbose("WASM '%s'", range.magic);
         wasm_verbose("VERSION %d", range.vernum);
         wasm_verbose("Index %d", range.index);
@@ -51,7 +61,7 @@ import tagion.wasm.WasmException;
                     foreach (E; EnumMembers!(Section)) {
                 case E:
                         const sec = a.sec!E;
-                        wasm_verbose("Begin(%d)", range.index);
+                        wasm_verbose("Begin(%04x)", range.index);
                         wasm_verbose.down;
                         wasm_verbose("Section(%s) size %d", a.section, a.data.length);
                         wasm_verbose.hex(range.index, a.data);
@@ -280,7 +290,9 @@ import tagion.wasm.WasmException;
                     size_t index;
                     length = u32(data, index);
                     this.data = data[index .. $];
-                    //__write("length=%s data %(%02x %)", length, this.data);
+                    static if (is(SecType == ElementType)) {
+                    __write("%s length=%s data %(%02x %)", typeof(this).stringof, length, this.data);
+                }
                 }
 
                 protected this(const(SectionT) that) @nogc pure nothrow {
@@ -590,12 +602,14 @@ import tagion.wasm.WasmException;
                     uint _tableidx;
                     immutable(uint)[] _funcs;
                     immutable(ubyte)[] _expr;
-                    //__write("Element %(%02x %)", data);
+                    __write(">> Element %(%02x %)", data);
                     mode = u32(data, index);
+                    __write(">> mode %d", mode);
                     void init_elementmode() {
                         // Mode comment is from Webassembly spec Modules/Element Section 
                         switch (mode) {
                         case 0: // e:expr y*:vec(funcidx)
+                            __write("%s %04x %(%02x %)", __FUNCTION__, index, data[index..$]); 
                             _expr = exprBlock(data[index..$], index);
                             //index += _expr.length;
                             _funcs = Vector!uint(data, index); 

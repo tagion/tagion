@@ -223,6 +223,7 @@ alias check = Check!WatException;
 
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
+        __write("%s size=%d %(%02x %)", __FUNCTION__, _element.data.length, _element.data);
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
             auto expr = e[];
@@ -425,6 +426,7 @@ alias check = Check!WatException;
     }
 
     Output serialize() {
+        wasm_verbose.hex(0, wasmstream.data);
         output.writeln("(module");
         indent = spacer;
         scope (exit) {
