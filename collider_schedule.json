@@ -403,6 +403,10 @@
     "replicator_service": {
       "timeout" : 3.0,
       "stages" : ["replicator_service", "commit"]
+    },
+    "distributed_dart_synchronization": {
+      "timeout" : 3.0,
+      "stages" : ["distributed_dart_synchronization", "commit"]
     }
   }
 }
