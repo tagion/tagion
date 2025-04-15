@@ -50,6 +50,9 @@ int main(string[] args) {
     import recorder_synchronizer = tagion.testbench.services.recorder_synchronizer;
     import replicator_service = tagion.testbench.services.replicator_service;
     import distributed_dart_synchronization = tagion.testbench.services.distributed_dart_synchronization;
+    import hashgraph_mirror = tagion.testbench.hashgraph.hashgraph_mirror;
+
+
 
     alias alltools = AliasSeq!(
         collector,
@@ -98,6 +101,7 @@ int main(string[] args) {
         recorder_synchronizer,
         replicator_service,
         distributed_dart_synchronization,
+        hashgraph_mirror,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

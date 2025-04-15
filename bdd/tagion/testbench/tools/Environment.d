@@ -104,7 +104,7 @@ struct Environment {
     }
 
     string seed() const {
-        return environment.get("SEED", "predictable");
+        return environment.get("SEED", "DEADF001");
     }
 
     const(uint) getSeed() const {
