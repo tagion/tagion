@@ -60,9 +60,9 @@ class Reporter : BehaviourReporter {
 }
 
 enum Stage {
-    commit,
-    acceptance,
-    performance,
+    commit = "commit",
+    acceptance = "acceptance",
+    performance = "performance",
 }
 
 @safe
@@ -113,28 +113,6 @@ struct Environment {
 
         auto buf = decode(seed).dup;
         return buf.binread!uint;
-    }
-
-    Stage stage() const {
-        switch (test_stage) {
-            static foreach (E; EnumMembers!Stage) {
-        case E.stringof:
-                return E;
-            }
-        default:
-            //empty
-        }
-
-        switch (test_stage.to!uint) {
-            static foreach (i; 0 .. EnumMembers!Stage.length) {
-        case i:
-                return cast(Stage) i;
-            }
-        default:
-            //empty
-        }
-
-        assert(0, format("variable is not legal %s", test_stage));
     }
 
     template opDispatch(string env) {
