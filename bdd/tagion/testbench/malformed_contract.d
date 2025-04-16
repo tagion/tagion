@@ -173,7 +173,7 @@ int _main(string[] args) {
     register(name, thisTid);
     log.registerSubscriptionTask(name);
 
-    writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
+    writefln("RPC SOCKET ADDRESS %s", node_opts[0].rpcserver.sock_addr);
 
     auto feature = automation!(malformed_contract);
     feature.ContractTypeWithoutCorrectInformation(node_opts[0], wallets[0]);

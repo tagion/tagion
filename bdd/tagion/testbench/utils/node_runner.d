@@ -78,7 +78,6 @@ class NodeRunner {
             const prefix_f = format(opt.wave.prefix_format, node_n);
             opt.task_names.setPrefix(prefix_f);
             opt.rpcserver.setPrefix(prefix_f);
-            opt.inputvalidator.setPrefix(prefix_f);
             opt.subscription.setPrefix(prefix_f);
             opt.node_interface.node_address = format("tcp://[::1]:%s", base_port + node_n);
 

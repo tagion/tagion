@@ -95,7 +95,7 @@ class SendADocumentToTheSocket {
 
     Document sender_doc;
 
-    @Given("a inputvalidator")
+    @Given("a rpcserver")
     Document aInputvalidator() {
         waitforChildren(Ctrl.ALIVE);
         return result_ok;
@@ -143,13 +143,13 @@ class SendNoneHiRPC {
         sock_path = _sock_path;
     }
 
-    @Given("a inputvalidator")
-    Document inputvalidator() {
+    @Given("a rpcserver")
+    Document rpcserver() {
         waitforChildren(Ctrl.ALIVE);
 
-        register("inputvalidator_tester", thisTid);
+        register("rpcserver_tester", thisTid);
 
-        log.registerSubscriptionTask("inputvalidator_tester");
+        log.registerSubscriptionTask("rpcserver_tester");
         // submask.subscribe(InputValidatorService.rejected);
         return result_ok;
     }
@@ -180,7 +180,7 @@ class SendNoneHiRPC {
         return result_ok;
     }
 
-    @Then("the inputvalidator rejects")
+    @Then("the rpcserver rejects")
     Document rejects() {
         return result_ok;
     }
@@ -199,12 +199,12 @@ class SendPartialHiBON {
         sock.sendbuf = 4096;
     }
 
-    @Given("a inputvalidator")
-    Document inputvalidator() {
+    @Given("a rpcserver")
+    Document rpcserver() {
         check(waitforChildren(Ctrl.ALIVE), "waitforChildren");
 
-        register("inputvalidator_tester", thisTid);
-        log.registerSubscriptionTask("inputvalidator_tester");
+        register("rpcserver_tester", thisTid);
+        log.registerSubscriptionTask("rpcserver_tester");
         /* submask.subscribe(InputValidatorService.rejected); */
         return result_ok;
     }
@@ -231,7 +231,7 @@ class SendPartialHiBON {
         return result_ok;
     }
 
-    @Then("the inputvalidator rejects")
+    @Then("the rpcserver rejects")
     Document rejects() {
         return result_ok;
     }
@@ -252,12 +252,12 @@ class SendBigContract {
     }
 
 
-    @Given("a inputvalidator")
-    Document inputvalidator() {
+    @Given("a rpcserver")
+    Document rpcserver() {
         check(waitforChildren(Ctrl.ALIVE), "waitforChildren");
 
-        register("inputvalidator_tester", thisTid);
-        log.registerSubscriptionTask("inputvalidator_tester");
+        register("rpcserver_tester", thisTid);
+        log.registerSubscriptionTask("rpcserver_tester");
         /* submask.subscribe(InputValidatorService.rejected); */
         return result_ok;
     }

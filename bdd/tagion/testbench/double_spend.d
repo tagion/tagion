@@ -154,7 +154,7 @@ int _main(string[] args) {
     ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
+    writefln("RPC SOCKET ADDRESS %s", node_opts[0].rpcserver.sock_addr);
 
     Thread.sleep(10.seconds);
     auto name = "double_spend_testing";

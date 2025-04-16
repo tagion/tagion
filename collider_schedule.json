@@ -68,12 +68,6 @@
       "stages": ["commit"],
       "timeout": 0.0
     },
-    "inputvalidator": {
-      "args": [],
-      "envs": {},
-      "stages": ["commit"],
-      "timeout": 0.0
-    },
     "rpcserver": {
       "args": [],
       "envs": {},

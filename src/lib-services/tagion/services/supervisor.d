@@ -19,7 +19,6 @@ import tagion.services.TVM;
 import tagion.services.collector;
 import tagion.services.epoch_creator;
 import tagion.services.hirpc_verifier;
-import tagion.services.inputvalidator;
 import tagion.services.options;
 import tagion.services.replicator;
 version(NEW_TRANSCRIPT) {
@@ -60,8 +59,6 @@ struct Supervisor {
         }
 
         handles ~= spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
-
-        handles ~= spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
 
         final switch (opts.wave.network_mode) {
         case NetworkMode.INTERNAL:
@@ -111,16 +108,6 @@ struct Supervisor {
             handle.prioritySend(Sig.STOP);
         }
 
-        (() @trusted { // NNG should be safe
-            import core.time;
-            import nngd;
-
-            NNGSocket input_sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-            input_sock.dial(opts.inputvalidator.sock_addr);
-            input_sock.maxttl = 1;
-            input_sock.recvtimeout = 1.msecs;
-            input_sock.send("End!"); // Send arbitrary data to the inputvalidator so releases the socket and checks its mailbox
-        })();
         waitforChildren(Ctrl.END, 10.seconds);
         log("All services stopped");
     }

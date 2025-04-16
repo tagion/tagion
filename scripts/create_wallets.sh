@@ -198,8 +198,7 @@ elif [ $network_mode -eq 1 ]; then
                --option=epoch_creator.timeout:500 \
                --option=wave.number_of_nodes:"$nodes" \
                --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
-               --option=inputvalidator.sock_addr:abstract://node$i/CONTRACT_NEUEWELLE \
-               --option=dart_interface.sock_addr:abstract://node$i/DART_NEUEWELLE \
+               --option=rpcserver.sock_addr:abstract://node$i/DART_NEUEWELLE \
                --option=subscription.address:abstract://node$i/SUBSCRIPTION_NEUEWELLE \
                --option=node_interface.node_address:"tcp6://[::1]:$((10700+i))" 2&> /dev/null
         )
@@ -234,8 +233,7 @@ else
            --option=epoch_creator.timeout:500 \
            --option=wave.number_of_nodes:"$nodes" \
            --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
-           --option=inputvalidator.sock_addr:abstract://node$i/CONTRACT_NEUEWELLE \
-           --option=dart_interface.sock_addr:abstract://node$i/DART_NEUEWELLE \
+           --option=rpcserver.sock_addr:abstract://node$i/DART_NEUEWELLE \
            --option=subscription.address:abstract://node$i/SUBSCRIPTION_NEUEWELLE \
            --option=node_interface.node_address:"tcp6://[::1]:$((10700+i))" 2&> /dev/null
     )
@@ -256,8 +254,7 @@ else
                --option=epoch_creator.timeout:500 \
                --option=wave.number_of_nodes:"$nodes" \
                --option=subscription.tags:taskfailure,monitor,recorder,payload_received,node_send,node_recv,in_graph \
-               --option=inputvalidator.sock_addr:abstract://node$i/CONTRACT_NEUEWELLE \
-               --option=dart_interface.sock_addr:abstract://node$i/DART_NEUEWELLE \
+               --option=rpcserver.sock_addr:abstract://node$i/DART_NEUEWELLE \
                --option=subscription.address:abstract://node$i/SUBSCRIPTION_NEUEWELLE \
                --option=node_interface.node_address:"tcp6://[::1]:$((10700+i))" 2&> /dev/null
         )
