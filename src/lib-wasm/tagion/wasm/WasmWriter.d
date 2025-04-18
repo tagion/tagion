@@ -19,6 +19,12 @@ import tagion.wasm.WasmException;
 import tagion.wasm.WasmReader;
 import tagion.hibon.HiBONRecord : exclude;
 
+enum ElementMode : ubyte {
+    PASSIVE,
+    ACTIVE,
+    DECLARATIVE,
+}
+
 @safe class WasmWriter {
 
     alias ReaderSections = WasmReader.Sections;
@@ -645,9 +651,10 @@ import tagion.hibon.HiBONRecord : exclude;
 
         struct ElementType {
             uint tableidx;
-            DataMode mode;
+            //ElementMode mode;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[] funcs;
+        
             this(ref const(ReaderSecType!(Section.ELEMENT)) e) {
                 tableidx = e.tableidx;
                 expr = e.expr;

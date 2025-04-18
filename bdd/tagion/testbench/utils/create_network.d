@@ -123,7 +123,6 @@ class TestNetwork {
         recorder.insert(genesis, Archive.Type.ADD);
 
         string rpcserver_sock_addr;
-        string inputvalidator_sock_addr;
         // create the databases
         foreach (i; 0 .. local_options.wave.number_of_nodes) {
             immutable prefix = format(local_options.wave.prefix_format, i);
@@ -132,7 +131,6 @@ class TestNetwork {
                 auto _opts = Options(local_options);
                 _opts.setPrefix(prefix);
                 rpcserver_sock_addr = _opts.rpcserver.sock_addr;
-                inputvalidator_sock_addr = _opts.inputvalidator.sock_addr;
             }
             const path = buildPath(local_options.dart.folder_path, prefix ~ local_options
                     .dart.dart_filename);

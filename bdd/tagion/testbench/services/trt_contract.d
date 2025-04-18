@@ -93,7 +93,7 @@ class ProperContract {
     @When("the contract is sent to the network")
     Document theNetwork() {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
 
         return result_ok;
     }
@@ -219,10 +219,10 @@ class InvalidContract {
     @When("contracts are sent to the network")
     Document theNetwork() {
         auto hirpc_submit1 = wallet1_hirpc.submit(signed_contract1);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit1, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit1, wallet1_hirpc);
 
         auto hirpc_submit2 = wallet1_hirpc.submit(signed_contract2);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit2, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit2, wallet1_hirpc);
 
         return result_ok;
     }

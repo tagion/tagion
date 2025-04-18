@@ -21,7 +21,6 @@ A node consist of the following services.
 * [tagionwave](/tech/tools/tagionwave) is the main task responsible all the service
 - Main services
 	- Supervisor manages all the other services
-    - [Input Validator](/tech/architecture/InputValidator.md) This service handle the data-stream input to the network.
     - [HiRPC Verifier](/tech/architecture/HiRPCVerifier.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
 	- [Collector](/tech/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 	- [TVM](/tech/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs and sending new contracts to the Epoch Creator.

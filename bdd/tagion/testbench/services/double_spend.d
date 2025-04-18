@@ -116,8 +116,8 @@ class SameInputsSpendOnOneContract {
         submask.subscribe(reject_collector);
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        writefln("---SUBMIT ADDRESS--- %s", opts.inputvalidator.sock_addr); 
-        sendHiRPC(opts.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        writefln("---SUBMIT ADDRESS--- %s", opts.rpcserver.sock_addr); 
+        sendHiRPC(opts.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
 
         return result_ok;
     }
@@ -194,8 +194,8 @@ class OneContractWhereSomeBillsAreUsedTwice {
         submask.subscribe(reject_collector);
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        writefln("---SUBMIT ADDRESS--- %s", opts.inputvalidator.sock_addr); 
-        sendHiRPC(opts.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        writefln("---SUBMIT ADDRESS--- %s", opts.rpcserver.sock_addr); 
+        sendHiRPC(opts.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
 
         return result_ok;
     }
@@ -255,8 +255,8 @@ class DifferentContractsDifferentNodes {
 
     @When("i send the contracts to the network at the same time.")
     Document time() {
-        sendHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
-        sendHiRPC(opts2.inputvalidator.sock_addr, wallet2_hirpc.submit(signed_contract2), wallet2_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
+        sendHiRPC(opts2.rpcserver.sock_addr, wallet2_hirpc.submit(signed_contract2), wallet2_hirpc);
         return result_ok;
     }
 
@@ -321,8 +321,8 @@ class SameContractDifferentNodes {
     @When("i send the same contract to two different nodes.")
     Document nodes() {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1_hirpc);
-        sendHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit,wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit,wallet1_hirpc);
+        sendHiRPC(opts2.rpcserver.sock_addr, hirpc_submit,wallet1_hirpc);
 
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
@@ -409,7 +409,7 @@ class SameContractInDifferentEpochs {
         writefln("EPOCH NUMBER %s", epoch_number);
 
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit,wallet1_hirpc);
 
         long new_epoch_number;
         counter = 0;
@@ -428,7 +428,7 @@ class SameContractInDifferentEpochs {
         submask.unsubscribe(StdRefinement.epoch_created);
         writefln("EPOCH NUMBER updated %s", new_epoch_number);
         check(epoch_number < new_epoch_number, "epoch number not updated");
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
         
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
@@ -514,7 +514,7 @@ class SameContractInDifferentEpochsDifferentNode {
         writeln("EPOCH NUMBER %s", epoch_number);
 
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
 
         long new_epoch_number;
         counter = 0;
@@ -534,7 +534,7 @@ class SameContractInDifferentEpochsDifferentNode {
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writeln("EPOCH NUMBER updated %s", new_epoch_number);
-        sendHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        sendHiRPC(opts2.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
         
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
@@ -611,8 +611,8 @@ class TwoContractsSameOutput {
     Document wallets() {
         auto hirpc_submit1 = wallet1_hirpc.submit(signed_contract1);
         auto hirpc_submit2 = wallet2_hirpc.submit(signed_contract2);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit1, wallet1_hirpc);
-        sendHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit2, wallet2_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit1, wallet1_hirpc);
+        sendHiRPC(opts2.rpcserver.sock_addr, hirpc_submit2, wallet2_hirpc);
 
 
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
@@ -691,7 +691,7 @@ class BillAge {
 
     @When("i send the contract to the network.")
     Document network() {
-        sendHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 

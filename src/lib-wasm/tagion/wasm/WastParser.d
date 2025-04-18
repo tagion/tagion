@@ -374,19 +374,11 @@ struct WastParser {
                     if (block_ir is IR.IF) {
 
                         if ((r.type is TokenType.BEGIN) && (r.save.drop(1).front.token == PseudoWastInstr.then)) {
-                            //auto r_then = r.save;
-                            //r_then.nextToken;
-                            //if (r_then.front.token == PseudoWastInstr.then) {
-                            __write(":::: Then <<<===");
-                            //}
-
                             r.drop(2);
                         }
                         else {
                             getArguments;
                         }
-                        //}
-                        //                   getArguments;
                         addBlockIR;
                         func_ctx.block_push(wasm_results, label);
                         innerInstr(wasmexpr, r, wasm_results, next_stage);
@@ -435,7 +427,6 @@ struct WastParser {
                     case IR.BR:
                         r.nextToken;
                         const blk_idx = r.get!uint;
-                        //const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
@@ -446,7 +437,6 @@ struct WastParser {
                         __write("%s", r.getLine);
                         r.nextToken;
                         const blk_idx = r.get!uint;
-                        //const blk = func_ctx.block_peek(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
@@ -670,7 +660,7 @@ struct WastParser {
 
     private ElemType parseElem(ref WastTokenizer r, const ParserStage stage) {
         import tagion.wasm.WastKeywords;
-
+        ElementMode elem_mode;
         ElemType elem;
         string elem_name;
         if ((r.type is TokenType.WORD) && !(r.token.isReseved) &&
@@ -688,6 +678,7 @@ struct WastParser {
                 }
                 switch (r.token) {
                 case WastKeywords.TABLE:
+                    elem_mode = ElementMode.ACTIVE;
                     r.check(stage is ParserStage.TABLE, "Table can not be used inside a table");
                     r.nextToken;
                     scope (exit) {
@@ -701,6 +692,7 @@ struct WastParser {
 
                     break;
                 case WastKeywords.OFFSET:
+                    elem_mode = ElementMode.ACTIVE;
                     r.nextToken;
                     r.check(elem.expr is null,
                             "Initialisation code has already been defined for this element");

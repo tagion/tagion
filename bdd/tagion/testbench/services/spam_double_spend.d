@@ -97,7 +97,7 @@ class SpamOneNodeUntil10EpochsHaveOccurred {
         long current_epoch_number;
 
         while (current_epoch_number < epoch_number + 10) {
-            sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+            sendHiRPC(node1_opts.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);
@@ -136,7 +136,7 @@ struct SpamWorker {
         HiRPC hirpc = HiRPC(net);
 
         runTimeout(100.msecs, {
-            sendHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), hirpc);
+            sendHiRPC(opts.rpcserver.sock_addr, hirpc.submit(signed_contract), hirpc);
             log("sent contract");
         });
     }
@@ -203,7 +203,7 @@ class SpamMultipleNodesUntil10EpochsHaveOccurred {
 
         auto node1_opts = opts[1];
         while (current_epoch_number < epoch_number + 10) {
-            sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+            sendHiRPC(node1_opts.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);

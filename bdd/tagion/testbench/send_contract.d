@@ -111,7 +111,6 @@ int _main(string[] args) {
     recorder.insert(genesis, Archive.Type.ADD);
 
     string rpcserver_sock_addr;
-    string inputvalidator_sock_addr;
     // create the databases
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
@@ -120,7 +119,6 @@ int _main(string[] args) {
             auto _opts = Options(local_options);
             _opts.setPrefix(prefix);
             rpcserver_sock_addr = _opts.rpcserver.sock_addr;
-            inputvalidator_sock_addr = _opts.inputvalidator.sock_addr;
         }
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options
                 .dart.dart_filename);
@@ -160,7 +158,7 @@ int _main(string[] args) {
     log.registerSubscriptionTask(task_name);
 
     auto send_contract_feature = automation!(sendcontract);
-    send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, rpcserver_sock_addr, inputvalidator_sock_addr, start_amount);
+    send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, rpcserver_sock_addr, start_amount);
     send_contract_feature.run();
     writefln("finished test execution");
 

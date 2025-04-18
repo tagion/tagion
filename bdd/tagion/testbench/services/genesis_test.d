@@ -102,7 +102,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
         int start = 0;
         while (start < max) {
             if (start == 20) {
-                sendHiRPC(opts[0].inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+                sendHiRPC(opts[0].rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
             }
             log("EPOCH_TIMEOUT=%s", env.EPOCH_TIMEOUT!uint);
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document))(env.EPOCH_TIMEOUT!uint.seconds);

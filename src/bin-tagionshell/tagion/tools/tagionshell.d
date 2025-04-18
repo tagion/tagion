@@ -318,6 +318,7 @@ void dart_worker(ShellOptions opt) {
             }
             auto ppos = received.countUntil(0);
             auto topic = cast(string) received[0 .. ppos];
+            writefln("DS: %s %s", topic, received.length);
             const doc = Document(received[ppos + 1 .. $]);
             if (!doc.isInorder(No.Reserved)) {
                 continue;
@@ -377,7 +378,7 @@ void dart_worker(ShellOptions opt) {
             }
             else {
                 writeit("DS: unknown topic: " ~ topic);
-                return;
+                continue;
             }
             // websocket sends json serializations prepended with channel token separated with zero byte
             ws_propagate(topic, jdoc.toString);
