@@ -106,7 +106,7 @@ class HashGraph {
  * Params:
  *   node_size = number of nodes handles by the graph
  *   net = Securety element handles hash function, signing and signature validation
- *   gossip_net = gossip interface used to select the valid channel etc.
+ *   gossip_net = gossip interface used to select/send to a valid channel etc.
  *   epoch_callback = call-back which is called when an epoch has been produced
  *   epack_callback = call-back call if when a package has been added to the cache.
  *   name = used for debugging label the node name

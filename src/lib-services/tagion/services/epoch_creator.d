@@ -92,7 +92,7 @@ struct EpochCreatorService {
         log.trace("Beginning gossip");
 
         auto refinement = new StdRefinement;
-        refinement.setTasknames(task_names);
+        refinement.setTasknames(task_names.transcript);
 
         HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, gossip_net);
         hashgraph.scrap_depth = opts.scrap_depth;

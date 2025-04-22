@@ -7,7 +7,6 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Round;
 import tagion.hibon.Document;
-import tagion.services.options : TaskNames;
 import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
@@ -19,8 +18,6 @@ alias PayloadQueue = Queue!Document;
 interface Refinement {
 
     void setOwner(HashGraph hashgraph);
-
-    void setTasknames(TaskNames task_names);
 
     /// called when the epoch is final
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round);

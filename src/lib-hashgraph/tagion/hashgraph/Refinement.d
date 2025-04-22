@@ -24,7 +24,6 @@ import std.array;
 import std.stdio;
 import tagion.hibon.HiBONRecord;
 import tagion.script.standardnames;
-import tagion.services.options : TaskNames;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Version;
 
@@ -59,7 +58,7 @@ class StdRefinement : Refinement {
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
         HashGraph hashgraph;
-        TaskNames task_names;
+        string transcript_task_name;
     }
 
     void setOwner(HashGraph hashgraph)
@@ -83,8 +82,8 @@ class StdRefinement : Refinement {
         return _queue;
     }
 
-    void setTasknames(TaskNames task_names) pure nothrow {
-        this.task_names = task_names;
+    void setTasknames(string transcript_task_name) pure nothrow {
+        this.transcript_task_name = transcript_task_name;
     }
 
     Tid collector_service;
@@ -103,7 +102,7 @@ class StdRefinement : Refinement {
 
         log.event(epoch_created, "epoch_successful", event_payload);
 
-        if (task_names is TaskNames.init) {
+        if (transcript_task_name.empty) {
             return;
         }
 
@@ -111,7 +110,7 @@ class StdRefinement : Refinement {
             .map!((e) => e.event_package)
             .array;
 
-        auto transcript_tid = locate(task_names.transcript);
+        auto transcript_tid = locate(transcript_task_name);
         if (transcript_tid !is Tid.init) {
             transcript_tid.send(consensusEpoch(), epacks, decided_round.witnesses, cast(long)decided_round.number, epoch_time);
         }
