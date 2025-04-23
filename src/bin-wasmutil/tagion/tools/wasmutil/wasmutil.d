@@ -221,7 +221,7 @@ int _main(string[] args) {
         }
 
         immutable(ubyte)[] data_out;
-        if (wasm_writer) {
+        if (!wasm_writer) {
             assert(wasm_reader !is WasmReader.init, "Missing wasm-reader module");
           wasm_writer = WasmWriter(wasm_reader);
         }
