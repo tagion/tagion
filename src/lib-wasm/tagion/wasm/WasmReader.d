@@ -7,10 +7,11 @@ import std.bitmanip : Endian, peek, binread = read, binwrite = write;
 import std.conv : emplace, to;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.format;
-import std.format;
 import std.meta : AliasSeq;
-import std.range : enumerate;
-import std.range.primitives : isForwardRange, isInputRange, isRandomAccessRange;
+import std.range ;
+import std.algorithm;
+import std.array;
+//import std.range.primitives : isForwardRange, isInputRange, isRandomAccessRange;
 import std.stdio;
 import std.traits : EnumMembers, ForeachType, PointerTarget, Unqual, getUDAs;
 import std.uni : toLower;
@@ -563,6 +564,7 @@ import tagion.wasm.WasmException;
                 immutable(uint) select; /// Element mode
                 immutable(uint) elemkind; /// et:elemkind
                 immutable(size_t) size;
+                immutable(Types) reftype;
                 static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data, ref size_t index) pure {
                     auto range = ExprRange(data[index .. $]);
                     scope (exit) {
@@ -583,23 +585,22 @@ import tagion.wasm.WasmException;
                 }
 
                 enum MAX_ELEMENT_EXPRESSION = 0x1000;
-                static immutable(ubyte)[][] exprBlocks(immutable(ubyte[]) data, ref size_t index) {
-                    immutable(ubyte)[][] result;
+                static immutable(ubyte[])[] exprBlocks(immutable(ubyte[]) data, 
+                    ref size_t index) pure {
                     const expressions = u32(data, index);
                     check(expressions <= MAX_ELEMENT_EXPRESSION, "Format too many element expressioins");
 
-                    result.length = expressions;
-                    foreach (ref exp; result) {
-                        exp = exprBlock(data, index);
-                    }
-
-                    return result;
+                    return expressions
+                        .iota
+                    .map!(n => exprBlock(data, index))
+                    .array;
                 }
 
                 this(immutable(ubyte[]) data) pure {
                     size_t index;
                     uint _tableidx;
                     uint _elemkind;
+                    Types _reftype;
                     immutable(uint)[] _funcs;
                     immutable(ubyte)[] _expr;
                     immutable(ubyte[])[] _exprs;
@@ -630,12 +631,20 @@ import tagion.wasm.WasmException;
                             _expr = exprBlock(data, index);
                             _funcs = Vector!uint(data, index);
                             break;
-                        case 5: // et:reftype el*:vec(expr) 
-                            assert(0, "Element mode 5 is not implemented yet");
+                        case 5: // 5:u32 et:reftype el*:vec(expr)
+                            _reftype = cast(Types)(data[index++]);
+                            _exprs = exprBlocks(data, index);
+                            break;
                         case 6: // x:tableidx e:expr et:reftype el*:vec(expr) 
-                            assert(0, "Element mode 6 is not implemented yet");
+                            _tableidx = u32(data, index);
+                            _expr = exprBlock(data, index);
+                            _reftype = cast(Types)data[index++];
+                            _exprs = exprBlocks(data, index);
+                            break;
                         case 7: // et:reftype el*:vec(expr) 
-                            assert(0, "Element mode 7 is not implemented yet");
+                            _reftype = cast(Types)data[index++];
+                            _exprs = exprBlocks(data, index);
+                            break;
                         default:
                             check(0, format("Invalid element mode %d", select));
                         }
@@ -647,6 +656,7 @@ import tagion.wasm.WasmException;
                     elemkind = _elemkind;
                     tableidx = _tableidx;
                     exprs = _exprs;
+                    reftype = _reftype;
                     size = index;
                 }
 

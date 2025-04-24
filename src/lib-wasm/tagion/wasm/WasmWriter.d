@@ -714,12 +714,12 @@ class WasmWriter {
                     bout.writeb(tableidx);
                     bout.writeb(expr);
                     bout.write(cast(ubyte) reftype);
-                    bout.writeb(exprs.length);
+                //    bout.writeb(exprs.length);
                     exprs.each!(e => bout.write(e));
                     break;
                 case 7: /// 7:u32 et:reftype el*:vec(expr)
                     bout.writeb(reftype);
-                    bout.writeb(exprs.length);
+                  //  bout.writeb(exprs.length);
                     exprs.each!(e => bout.writeb(e));
 
                     break;
