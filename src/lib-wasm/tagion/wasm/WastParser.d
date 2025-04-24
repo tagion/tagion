@@ -605,11 +605,10 @@ struct WastParser {
                     func_ctx.locals[number_of_func_arguments .. $],
                     code_type.expr ~ func_wasmexpr.serialize);
         }
-
-        scope (exit) {
-            func_wasmexpr(IR.END);
-        }
         if (stage is ParserStage.FUNC_BODY) {
+            scope (exit) {
+                func_wasmexpr(IR.END);
+            }
             ParserStage result;
             uint count;
             while (r.type is TokenType.BEGIN) {
@@ -1048,7 +1047,7 @@ struct WastParser {
         r.nextToken;
         r.expect(TokenType.WORD);
         switch (r.token) {
-        case WastTokenizer.FUNC:
+        case WastKeywords.FUNC:
             r.nextToken;
             FuncType func_type;
             const func_stage = parseFuncArgs(r, stage, func_type);
