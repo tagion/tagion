@@ -568,9 +568,6 @@ import tagion.wasm.WasmException;
                     scope (exit) {
                         index += range.index;
                     }
-                    //import std.algorithm;
-
-                    //__write("ExprRange %s", range.save.map!(e => e.code));
                     if (data[0] is 0) {
                         return null;
                     }

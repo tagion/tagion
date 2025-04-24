@@ -611,11 +611,11 @@ struct WastParser {
                     func_ctx.locals[number_of_func_arguments .. $],
                     code_type.expr ~ func_wasmexpr.serialize);
         }
-        //__write("Instr %s %s", func_type, stage);
-        if (stage is ParserStage.FUNC_BODY) {
             scope (exit) {
                 func_wasmexpr(IR.END);
             }
+        //__write("Instr %s %s", func_type, stage);
+        if (stage is ParserStage.FUNC_BODY) {
             ParserStage result;
             uint count;
             while (r.type is TokenType.BEGIN) {
@@ -670,12 +670,14 @@ struct WastParser {
         }
         string table_name;
         void innerElemType() {
+            __write("%s %s", __FUNCTION__, r);
             if (r.type is TokenType.BEGIN) {
                 r.nextToken;
                 scope (exit) {
                     r.nextToken;
                     r.expect(TokenType.END);
                 }
+                __write("InnerElement %s", r.token);
                 switch (r.token) {
                 case WastKeywords.TABLE:
                     elem_mode = ElementMode.ACTIVE;
@@ -692,6 +694,7 @@ struct WastParser {
 
                     break;
                 case WastKeywords.OFFSET:
+                    __write("CASE OFFSET");
                     elem_mode = ElementMode.ACTIVE;
                     r.nextToken;
                     r.check(elem.expr is null,
@@ -700,6 +703,8 @@ struct WastParser {
                     CodeType code_offset;
                     FunctionContext ctx;
                     parseInstr(r, ParserStage.CODE, code_offset, void_func, ctx);
+                    
+
                     elem.expr = code_offset.expr;
                     break;
                 default:
