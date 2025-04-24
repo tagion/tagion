@@ -609,17 +609,19 @@ import tagion.wasm.WasmException;
                         // Mode comment is from Webassembly spec Modules/Element Section 
                         switch (select) {
                         case 0: // 0:u32 e:expr y*:vec(funcidx)
-                            __write(">Element data=%(%02x %)", data);
                             _expr = exprBlock(data, index);
                             _funcs = Vector!uint(data, index);
                             break;
                         case 1: // 1:u32 et:elemkind y*:vec(funcidx) -> passive mode
-                            __write("Element data=%(%02x %)", data);
                             _elemkind = u32(data, index);
                             _funcs = Vector!uint(data, index);
                             break;
-                        case 2: // x:tableidx y*:vec(funcidix)
-                            assert(0, "Element mode 2 is not implemented yet");
+                        case 2: // 2:u32 x:tableidx y*:vec(funcidix)
+                            _tableidx = u32(data, index);
+                            _expr = exprBlock(data, index);
+                            _elemkind = u32(data, index);
+                            _funcs = Vector!uint(data, index);
+                            break;
                         case 3: // et:elemkind y*:vec(funcidix) -> declarative mode
                             assert(0, "Element mode 3 is not implemented yet");
                         case 4: // e:expr el*:vec(expr) -> active mode
