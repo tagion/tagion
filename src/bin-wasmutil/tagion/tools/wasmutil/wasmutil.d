@@ -102,31 +102,31 @@ int _main(string[] args) {
                 //                "betterc|d", format("Print the wasm as wat: %s", betterc), &betterc,
 
                 "type|t", format("Sets stdout file type (%-(%s %))", [EnumMembers!OutputType]), &type,
-        "global-attribute", "Sets the global attribute for the D transpiling", &attributes,
+                "global-attribute", "Sets the global attribute for the D transpiling", &attributes,
         );
 
         void help() {
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] <in-file> <out-file>", program),
-                    format("%s [<option>...] <in-file>", program),
-                    "",
-                    "Where:",
-                    format("<in-file>           Is an input file in (%-(%s -%)) format",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file> <out-file>", program),
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                format("<in-file>           Is an input file in (%-(%s -%)) format",
                         only(FileExtension.wasm, FileExtension.wat)),
-                    format("<out-file>          Is an output file in (%-(%s -%)) format",
+                format("<out-file>          Is an output file in (%-(%s -%)) format",
                         only(FileExtension.wat, FileExtension.dsrc)),
-                    "                    stdout is used of the output is not specified the",
-                    "",
+                "                    stdout is used of the output is not specified the",
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
-                    main_args.options);
+            ].join("\n"),
+            main_args.options);
         }
 
         if (version_switch) {
@@ -202,7 +202,7 @@ int _main(string[] args) {
                 immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
                 wasm_reader = WasmReader(read_data);
                 wasm_verbose.hex(0, read_data);
-//                wasm_writer = WasmWriter(wasm_reader);
+                //                wasm_writer = WasmWriter(wasm_reader);
                 break;
             case wast:
                 import tagion.wasm.WastParser;
@@ -223,7 +223,7 @@ int _main(string[] args) {
         immutable(ubyte)[] data_out;
         if (!wasm_writer) {
             assert(wasm_reader !is WasmReader.init, "Missing wasm-reader module");
-          wasm_writer = WasmWriter(wasm_reader);
+            wasm_writer = WasmWriter(wasm_reader);
         }
         if (inject_gas) {
             assert(wasm_writer !is null, "Missing wasm module");
@@ -231,13 +231,14 @@ int _main(string[] args) {
             wasmgas.modify;
         }
         if (wasm_writer) {
-         data_out = wasm_writer.serialize;
+            data_out = wasm_writer.serialize;
         }
         else {
             data_out = wasm_reader.serialize;
         }
         if (__verbose_switch) {
             wasm_verbose.mode = VerboseMode.STANDARD;
+
         }
 
         const output_extension = (outputfilename.empty) ? type.typeExtension : outputfilename.extension;
