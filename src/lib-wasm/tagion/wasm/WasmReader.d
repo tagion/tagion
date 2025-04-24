@@ -288,6 +288,7 @@ import tagion.wasm.WasmException;
                     data = that.data;
                     length = that.length;
                 }
+
                 alias SecRange = VectorRange!(SectionT, SecType);
                 SecRange opSlice() const pure nothrow {
                     return SecRange(this);
@@ -557,12 +558,13 @@ import tagion.wasm.WasmException;
             struct ElementType {
                 immutable(uint) tableidx; /// x:tableidx
                 immutable(ubyte[]) expr; /// e:expr
+                immutable(ubyte[][]) exprs; /// el*:exprs
                 immutable(uint[]) funcs; /// y*:vec(funcidx)
-                immutable(uint) mode; /// Element mode
+                immutable(uint) select; /// Element mode
+                immutable(uint) elemkind; /// et:elemkind
                 immutable(size_t) size;
-                immutable(ubyte) kind; /// et:elemkind
                 static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data, ref size_t index) pure {
-                    auto range = ExprRange(data);
+                    auto range = ExprRange(data[index .. $]);
                     scope (exit) {
                         index += range.index;
                     }
@@ -583,23 +585,40 @@ import tagion.wasm.WasmException;
                     assert(0);
                 }
 
+                enum MAX_ELEMENT_EXPRESSION = 0x1000;
+                static immutable(ubyte)[][] exprBlocks(immutable(ubyte[]) data, ref size_t index) {
+                    immutable(ubyte)[][] result;
+                    const expressions = u32(data, index);
+                    check(expressions <= MAX_ELEMENT_EXPRESSION, "Format too many element expressioins");
+
+                    result.length = expressions;
+                    foreach (ref exp; result) {
+                        exp = exprBlock(data, index);
+                    }
+
+                    return result;
+                }
+
                 this(immutable(ubyte[]) data) pure {
                     size_t index;
-                    ubyte _kind;
                     uint _tableidx;
+                    uint _elemkind;
                     immutable(uint)[] _funcs;
                     immutable(ubyte)[] _expr;
-                    mode = u32(data, index);
+                    immutable(ubyte[])[] _exprs;
+                    select = u32(data, index);
+                    __write(">Element select %s", select);
                     void init_elementmode() {
                         // Mode comment is from Webassembly spec Modules/Element Section 
-                        switch (mode) {
-                        case 0: // e:expr y*:vec(funcidx)
-                            _expr = exprBlock(data[index .. $], index);
+                        switch (select) {
+                        case 0: // 0:u32 e:expr y*:vec(funcidx)
+                            __write(">Element data=%(%02x %)", data);
+                            _expr = exprBlock(data, index);
                             _funcs = Vector!uint(data, index);
                             break;
-                        case 1: // et:elemkind y*:vec(funcidx) -> passive mode
-                            //_tableidx = u32(data, index);
-                            _kind = data[index++];
+                        case 1: // 1:u32 et:elemkind y*:vec(funcidx) -> passive mode
+                            __write("Element data=%(%02x %)", data);
+                            _elemkind = u32(data, index);
                             _funcs = Vector!uint(data, index);
                             break;
                         case 2: // x:tableidx y*:vec(funcidix)
@@ -615,16 +634,17 @@ import tagion.wasm.WasmException;
                         case 7: // et:reftype el*:vec(expr) 
                             assert(0, "Element mode 7 is not implemented yet");
                         default:
-                            check(0, format("Invalid element mode %d", mode));
+                            check(0, format("Invalid element mode %d", select));
                         }
                     }
 
                     init_elementmode;
                     expr = _expr;
                     funcs = _funcs;
-                    size = index;
-                    kind = _kind;
+                    elemkind = _elemkind;
                     tableidx = _tableidx;
+                    exprs = _exprs;
+                    size = index;
                 }
 
                 ExprRange opSlice() const {

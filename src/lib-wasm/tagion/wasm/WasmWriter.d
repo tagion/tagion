@@ -27,18 +27,8 @@ enum ElementMode : ubyte {
     DECLARATIVE,
 }
 
-version (none) void __serialize(ref OutBuffer bout, const(ubyte[]) buf) pure {
-    bout.write(range.walklength);
-    bout.write(buf);
-}
-
 void writeb(T)(ref OutBuffer bout, T x) pure if (isIntegral!T) {
     bout.write(LEB128.encode(x));
-}
-
-void writeb(ref OutBuffer bout, const(ubyte[]) data) pure {
-    bout.writeb(data.length);
-    bout.write(data);
 }
 
 void writeb(R)(ref OutBuffer bout, R r) pure
@@ -680,7 +670,6 @@ class WasmWriter {
             uint select;
             uint tableidx;
             uint elemkind;
-            //ElementMode mode;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[] funcs;
             immutable(ubyte[])[] exprs;
@@ -693,9 +682,10 @@ class WasmWriter {
 
             void serialize(ref OutBuffer bout) const {
                 bout.writeb(select);
+                __write("Write WASM select %d", select);
                 switch (select) {
                 case 0: /// 0:u32 e:expr y*:vec(funcidx)
-                    bout.writeb(expr);
+                    bout.write(expr);
                     bout.writeb(funcs);
                     break;
                 case 1: /// 1:u32 et:elemkind y*:vec(funcidx)
@@ -704,7 +694,7 @@ class WasmWriter {
                     break;
                 case 2: /// 2:u32 x:tableidx e:expr et:elemkind y*:vec(funcidx)
                     bout.writeb(tableidx);
-                    bout.writeb(expr);
+                    bout.write(expr);
                     bout.writeb(elemkind);
                     bout.writeb(funcs);
                     break;
@@ -713,7 +703,7 @@ class WasmWriter {
                     bout.writeb(funcs);
                     break;
                 case 4: /// 4:u32 e:expr el*:vec(funcidx)
-                    bout.writeb(expr);
+                    bout.write(expr);
                     bout.writeb(funcs);
                     break;
                 case 5: /// 5:u32 et:reftype el*:vec(funcidx)
@@ -725,7 +715,7 @@ class WasmWriter {
                     bout.writeb(expr);
                     bout.write(cast(ubyte) reftype);
                     bout.writeb(exprs.length);
-                    exprs.each!(e => bout.writeb(e));
+                    exprs.each!(e => bout.write(e));
                     break;
                 case 7: /// 7:u32 et:reftype el*:vec(expr)
                     bout.writeb(reftype);
