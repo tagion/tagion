@@ -622,10 +622,14 @@ import tagion.wasm.WasmException;
                             _elemkind = u32(data, index);
                             _funcs = Vector!uint(data, index);
                             break;
-                        case 3: // et:elemkind y*:vec(funcidix) -> declarative mode
-                            assert(0, "Element mode 3 is not implemented yet");
-                        case 4: // e:expr el*:vec(expr) -> active mode
-                            assert(0, "Element mode 4 is not implemented yet");
+                        case 3: // 3:u32 et:elemkind y*:vec(funcidix)
+                            _elemkind = u32(data, index);
+                            _funcs = Vector!uint(data, index);
+                            break;
+                        case 4: // 4:u32 e:expr el*:vec(expr)
+                            _expr = exprBlock(data, index);
+                            _funcs = Vector!uint(data, index);
+                            break;
                         case 5: // et:reftype el*:vec(expr) 
                             assert(0, "Element mode 5 is not implemented yet");
                         case 6: // x:tableidx e:expr et:reftype el*:vec(expr) 
