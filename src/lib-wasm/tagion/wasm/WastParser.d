@@ -1048,7 +1048,7 @@ struct WastParser {
         r.nextToken;
         r.expect(TokenType.WORD);
         switch (r.token) {
-        case "func":
+        case WastTokenizer.FUNC:
             r.nextToken;
             FuncType func_type;
             const func_stage = parseFuncArgs(r, stage, func_type);

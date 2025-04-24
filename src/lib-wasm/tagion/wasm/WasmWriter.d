@@ -682,7 +682,6 @@ class WasmWriter {
 
             void serialize(ref OutBuffer bout) const {
                 bout.writeb(select);
-                __write("Write WASM select %d", select);
                 switch (select) {
                 case 0: /// 0:u32 e:expr y*:vec(funcidx)
                     bout.write(expr);
@@ -714,12 +713,12 @@ class WasmWriter {
                     bout.writeb(tableidx);
                     bout.writeb(expr);
                     bout.write(cast(ubyte) reftype);
-                //    bout.writeb(exprs.length);
+                    //    bout.writeb(exprs.length);
                     exprs.each!(e => bout.write(e));
                     break;
                 case 7: /// 7:u32 et:reftype el*:vec(expr)
                     bout.writeb(reftype);
-                  //  bout.writeb(exprs.length);
+                    //  bout.writeb(exprs.length);
                     exprs.each!(e => bout.writeb(e));
 
                     break;

@@ -223,15 +223,63 @@ alias check = Check!WatException;
 
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
-        __write("%s size=%d %(%02x %)", __FUNCTION__, _element.data.length, _element.data);
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
+
             auto expr = e[];
             const local_indent = indent ~ spacer;
-            block(expr, local_indent ~ spacer);
-            output.writef("%s) func", local_indent);
-            foreach (f; e.funcs) {
-                output.writef(" %d", f);
+            switch (e.select) {
+            case 0:
+                block(expr, local_indent ~ spacer);
+                output.writef("%s) ", local_indent);
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 1:
+                output.writef("%s) ", local_indent);
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 2:
+                output.writef("%s (table %d) ", local_indent, e.tableidx);
+                block(expr, local_indent ~ spacer);
+                output.writef("func %(%d %)", e.funcs);
+
+                break;
+            case 3:
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 4:
+                block(expr, local_indent ~ spacer);
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 5:
+                block(expr, local_indent ~ spacer);
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 6:
+                output.writefln("%s (table %d) ", local_indent, e.tableidx);
+                block(expr, local_indent ~ spacer);
+                foreach (exp; e.exprs) {
+                    output.writefln("%s(", local_indent);
+                    scope (exit) {
+                        output.writeln(")");
+                    }
+                    auto el = ExprRange(exp);
+                    block(el, local_indent ~ spacer);
+                }
+                break;
+            case 7:
+                foreach (exp; e.exprs) {
+                    output.writefln("%s(", local_indent);
+                    scope (exit) {
+                        output.writeln(")");
+                    }
+                    auto el = ExprRange(exp);
+                    block(el, local_indent ~ spacer);
+                }
+
+                break;
+            default:
+                check(0, format("Illegal element mode %d", e.select));
             }
             output.writeln(")");
         }
@@ -279,14 +327,6 @@ alias check = Check!WatException;
             }
             output.writefln(` "%s")`, d.base);
         }
-    }
-
-    version (none) string typeName(ref const ExprRange.IRElement elm) {
-        if (elm.argtypes is ExprRange.IRElement.IRArgType.TYPES) {
-            return typeName(elm.types);
-        }
-        return typeName(wasmstream.get!(Section.TYPE)[elm.idx].results);
-
     }
 
     private const(ExprRange.IRElement) block(ref ExprRange expr,

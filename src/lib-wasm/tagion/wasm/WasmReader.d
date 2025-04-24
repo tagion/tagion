@@ -8,9 +8,10 @@ import std.conv : emplace, to;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.format;
 import std.meta : AliasSeq;
-import std.range ;
+import std.range;
 import std.algorithm;
 import std.array;
+
 //import std.range.primitives : isForwardRange, isInputRange, isRandomAccessRange;
 import std.stdio;
 import std.traits : EnumMembers, ForeachType, PointerTarget, Unqual, getUDAs;
@@ -585,15 +586,15 @@ import tagion.wasm.WasmException;
                 }
 
                 enum MAX_ELEMENT_EXPRESSION = 0x1000;
-                static immutable(ubyte[])[] exprBlocks(immutable(ubyte[]) data, 
-                    ref size_t index) pure {
+                static immutable(ubyte[])[] exprBlocks(immutable(ubyte[]) data,
+                        ref size_t index) pure {
                     const expressions = u32(data, index);
                     check(expressions <= MAX_ELEMENT_EXPRESSION, "Format too many element expressioins");
 
                     return expressions
                         .iota
-                    .map!(n => exprBlock(data, index))
-                    .array;
+                        .map!(n => exprBlock(data, index))
+                        .array;
                 }
 
                 this(immutable(ubyte[]) data) pure {
@@ -605,7 +606,6 @@ import tagion.wasm.WasmException;
                     immutable(ubyte)[] _expr;
                     immutable(ubyte[])[] _exprs;
                     select = u32(data, index);
-                    __write(">Element select %s", select);
                     void init_elementmode() {
                         // Mode comment is from Webassembly spec Modules/Element Section 
                         switch (select) {
@@ -638,11 +638,11 @@ import tagion.wasm.WasmException;
                         case 6: // x:tableidx e:expr et:reftype el*:vec(expr) 
                             _tableidx = u32(data, index);
                             _expr = exprBlock(data, index);
-                            _reftype = cast(Types)data[index++];
+                            _reftype = cast(Types) data[index++];
                             _exprs = exprBlocks(data, index);
                             break;
                         case 7: // et:reftype el*:vec(expr) 
-                            _reftype = cast(Types)data[index++];
+                            _reftype = cast(Types) data[index++];
                             _exprs = exprBlocks(data, index);
                             break;
                         default:
