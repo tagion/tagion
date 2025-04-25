@@ -51,7 +51,6 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     Options opts;
     StdSecureWallet[] wallets;
     string rpcserver_sock_addr;
-    string inputvalidator_sock_addr;
     TagionCurrency fee;
     TagionCurrency amount;
     TagionCurrency start_amount;
@@ -59,13 +58,11 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     StdSecureWallet wallet1;
     StdSecureWallet wallet2;
 
-    this(Options opts, StdSecureWallet[] wallets, string rpcserver_sock_addr, string inputvalidator_sock_addr, TagionCurrency start_amount) {
+    this(Options opts, StdSecureWallet[] wallets, string rpcserver_sock_addr, TagionCurrency start_amount) {
         this.opts = opts;
         this.wallets = wallets;
         this.rpcserver_sock_addr = rpcserver_sock_addr;
         this.start_amount = start_amount;
-        this.inputvalidator_sock_addr = inputvalidator_sock_addr;
-
     }
 
     bool epoch_on_startup;
@@ -115,7 +112,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
-        auto result = sendHiRPC(inputvalidator_sock_addr, hirpc_submit, wallet1_hirpc);
+        auto result = sendHiRPC(rpcserver_sock_addr, hirpc_submit, wallet1_hirpc);
         writefln("SUBMIT hirpc result: %s", result.toDoc.toPretty);
 
         return result_ok;

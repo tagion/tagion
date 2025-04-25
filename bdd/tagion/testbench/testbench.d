@@ -20,7 +20,6 @@ int main(string[] args) {
     import hashgraph_test = tagion.testbench.hashgraph_test;
     import run_fiber_epoch = tagion.testbench.hashgraph.run_fiber_epoch;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
-    import inputvalidator = tagion.testbench.inputvalidator;
     import rpcserver = tagion.testbench.services.rpcserver;
     import subscription_test = tagion.testbench.services.subscription_test;
     import malformed_contract = tagion.testbench.malformed_contract;
@@ -49,11 +48,11 @@ int main(string[] args) {
     import dart_synchronization = tagion.testbench.services.dart_synchronization;
     import recorder_synchronizer = tagion.testbench.services.recorder_synchronizer;
     import replicator_service = tagion.testbench.services.replicator_service;
+    import distributed_dart_synchronization = tagion.testbench.services.distributed_dart_synchronization;
 
     alias alltools = AliasSeq!(
         collector,
         hirpc_verifier,
-        inputvalidator,
         rpcserver,
         subscription_test,
         dart_test,
@@ -95,7 +94,8 @@ int main(string[] args) {
         godcontract,
         dart_synchronization,
         recorder_synchronizer,
-        replicator_service
+        replicator_service,
+        distributed_dart_synchronization,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

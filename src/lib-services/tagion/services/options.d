@@ -59,7 +59,6 @@ public import tagion.services.rpcserver : RPCServerOptions;
 public import tagion.services.collector : CollectorOptions;
 public import tagion.services.epoch_creator : EpochCreatorOptions;
 public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
-public import tagion.services.inputvalidator : InputValidatorOptions;
 public import tagion.services.replicator : ReplicatorOptions;
 public import tagion.services.subscription : SubscriptionServiceOptions;
 version(NEW_TRANSCRIPT) {
@@ -78,7 +77,6 @@ struct Options {
     import tagion.json.JSONRecord;
 
     WaveOptions wave;
-    InputValidatorOptions inputvalidator;
     HiRPCVerifierOptions hirpc_verifier;
     DARTOptions dart;
     EpochCreatorOptions epoch_creator;

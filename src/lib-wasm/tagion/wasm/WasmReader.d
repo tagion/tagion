@@ -7,10 +7,12 @@ import std.bitmanip : Endian, peek, binread = read, binwrite = write;
 import std.conv : emplace, to;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.format;
-import std.format;
 import std.meta : AliasSeq;
-import std.range : enumerate;
-import std.range.primitives : isForwardRange, isInputRange, isRandomAccessRange;
+import std.range;
+import std.algorithm;
+import std.array;
+
+//import std.range.primitives : isForwardRange, isInputRange, isRandomAccessRange;
 import std.stdio;
 import std.traits : EnumMembers, ForeachType, PointerTarget, Unqual, getUDAs;
 import std.uni : toLower;
@@ -36,7 +38,7 @@ import tagion.wasm.WasmException;
 
     alias InterfaceModule = InterfaceModuleT!(Sections);
 
-    @trusted void opCall(InterfaceModule iter) const {
+    void opCall(InterfaceModule iter) const {
         auto range = opSlice;
         wasm_verbose("WASM '%s'", range.magic);
         wasm_verbose("VERSION %d", range.vernum);
@@ -51,7 +53,7 @@ import tagion.wasm.WasmException;
                     foreach (E; EnumMembers!(Section)) {
                 case E:
                         const sec = a.sec!E;
-                        wasm_verbose("Begin(%d)", range.index);
+                        wasm_verbose("Begin(%04x)", range.index);
                         wasm_verbose.down;
                         wasm_verbose("Section(%s) size %d", a.section, a.data.length);
                         wasm_verbose.hex(range.index, a.data);
@@ -280,15 +282,13 @@ import tagion.wasm.WasmException;
                     size_t index;
                     length = u32(data, index);
                     this.data = data[index .. $];
-                    //__write("length=%s data %(%02x %)", length, this.data);
                 }
 
                 protected this(const(SectionT) that) @nogc pure nothrow {
                     data = that.data;
                     length = that.length;
                 }
-                // static assert(isInputRange!SecRange);
-                // static assert(isForwardRange!SecRange);
+
                 alias SecRange = VectorRange!(SectionT, SecType);
                 SecRange opSlice() const pure nothrow {
                     return SecRange(this);
@@ -558,20 +558,19 @@ import tagion.wasm.WasmException;
             struct ElementType {
                 immutable(uint) tableidx; /// x:tableidx
                 immutable(ubyte[]) expr; /// e:expr
+                immutable(ubyte[][]) exprs; /// el*:exprs
                 immutable(uint[]) funcs; /// y*:vec(funcidx)
-                immutable(uint) mode; /// Element mode
+                immutable(uint) select; /// Element mode
+                immutable(uint) elemkind; /// et:elemkind
                 immutable(size_t) size;
-                immutable(ubyte) kind; /// et:elemkind
+                immutable(Types) reftype;
                 static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data, ref size_t index) pure {
-                    auto range = ExprRange(data);
-                    scope(exit) {
-                        index+=range.index;
+                    auto range = ExprRange(data[index .. $]);
+                    scope (exit) {
+                        index += range.index;
                     }
-                    //import std.algorithm;
-                    
-                    //__write("ExprRange %s", range.save.map!(e => e.code));
                     if (data[0] is 0) {
-                        return null; 
+                        return null;
                     }
                     while (!range.empty) {
                         const elm = range.front;
@@ -584,50 +583,79 @@ import tagion.wasm.WasmException;
                     assert(0);
                 }
 
+                enum MAX_ELEMENT_EXPRESSION = 0x1000;
+                static immutable(ubyte[])[] exprBlocks(immutable(ubyte[]) data,
+                        ref size_t index) pure {
+                    const expressions = u32(data, index);
+                    check(expressions <= MAX_ELEMENT_EXPRESSION, "Format too many element expressioins");
+
+                    return expressions
+                        .iota
+                        .map!(n => exprBlock(data, index))
+                        .array;
+                }
+
                 this(immutable(ubyte[]) data) pure {
                     size_t index;
-                    ubyte _kind;
                     uint _tableidx;
+                    uint _elemkind;
+                    Types _reftype;
                     immutable(uint)[] _funcs;
                     immutable(ubyte)[] _expr;
-                    //__write("Element %(%02x %)", data);
-                    mode = u32(data, index);
+                    immutable(ubyte[])[] _exprs;
+                    select = u32(data, index);
                     void init_elementmode() {
                         // Mode comment is from Webassembly spec Modules/Element Section 
-                        switch (mode) {
-                        case 0: // e:expr y*:vec(funcidx)
-                            _expr = exprBlock(data[index..$], index);
-                            //index += _expr.length;
-                            _funcs = Vector!uint(data, index); 
+                        switch (select) {
+                        case 0: // 0:u32 e:expr y*:vec(funcidx)
+                            _expr = exprBlock(data, index);
+                            _funcs = Vector!uint(data, index);
                             break;
-                        case 1: // et:elemkind y*:vec(funcidx) -> passive mode
-                            //_tableidx = u32(data, index);
-                            _kind = data[index++];
-                            _funcs =Vector!uint(data, index);
-                                break;
-                                //assert(0, "Element mode 1 is not implemented yet");
-                        case 2: // x:tableidx y*:vec(funcidix)
-                            assert(0, "Element mode 2 is not implemented yet");
-                        case 3: // et:elemkind y*:vec(funcidix) -> declarative mode
-                            assert(0, "Element mode 3 is not implemented yet");
-                        case 4: // e:expr el*:vec(expr) -> active mode
-                            assert(0, "Element mode 4 is not implemented yet");
-                        case 5: // et:reftype el*:vec(expr) 
-                            assert(0, "Element mode 5 is not implemented yet");
+                        case 1: // 1:u32 et:elemkind y*:vec(funcidx) -> passive mode
+                            _elemkind = u32(data, index);
+                            _funcs = Vector!uint(data, index);
+                            break;
+                        case 2: // 2:u32 x:tableidx y*:vec(funcidix)
+                            _tableidx = u32(data, index);
+                            _expr = exprBlock(data, index);
+                            _elemkind = u32(data, index);
+                            _funcs = Vector!uint(data, index);
+                            break;
+                        case 3: // 3:u32 et:elemkind y*:vec(funcidix)
+                            _elemkind = u32(data, index);
+                            _funcs = Vector!uint(data, index);
+                            break;
+                        case 4: // 4:u32 e:expr el*:vec(expr)
+                            _expr = exprBlock(data, index);
+                            _funcs = Vector!uint(data, index);
+                            break;
+                        case 5: // 5:u32 et:reftype el*:vec(expr)
+                            _reftype = cast(Types)(data[index++]);
+                            _exprs = exprBlocks(data, index);
+                            break;
                         case 6: // x:tableidx e:expr et:reftype el*:vec(expr) 
-                            assert(0, "Element mode 6 is not implemented yet");
+                            _tableidx = u32(data, index);
+                            _expr = exprBlock(data, index);
+                            _reftype = cast(Types) data[index++];
+                            _exprs = exprBlocks(data, index);
+                            break;
                         case 7: // et:reftype el*:vec(expr) 
-                            assert(0, "Element mode 7 is not implemented yet");
+                            _reftype = cast(Types) data[index++];
+                            _exprs = exprBlocks(data, index);
+                            break;
                         default:
-                            check(0, format("Invalid element mode %d", mode));
+                            check(0, format("Invalid element mode %d", select));
                         }
                     }
+
                     init_elementmode;
                     expr = _expr;
                     funcs = _funcs;
-                    size = index;
-                    kind = _kind;
+                    elemkind = _elemkind;
                     tableidx = _tableidx;
+                    exprs = _exprs;
+                    reftype = _reftype;
+                    size = index;
                 }
 
                 ExprRange opSlice() const {

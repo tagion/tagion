@@ -7,7 +7,6 @@ struct TaskNames {
 
     string program = "tagion";
     string supervisor = "supervisor";
-    string inputvalidator = "inputvalidator";
     string dart = "dart";
     string hirpc_verifier = "hirpc_verifier";
     string collector = "collector";

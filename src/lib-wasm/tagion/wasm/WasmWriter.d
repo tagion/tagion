@@ -5,11 +5,12 @@ import std.outbuffer;
 import std.traits;
 import std.algorithm;
 import std.array : join;
-import std.exception : assumeUnique;
+import std.exception;
 import std.format;
 import std.meta : Replace, staticMap;
-import std.range : lockstep;
-import std.range.primitives : isInputRange;
+import std.range;
+
+//import std.range.primitives : isInputRange;
 import std.stdio;
 import std.typecons : Tuple;
 
@@ -19,7 +20,29 @@ import tagion.wasm.WasmException;
 import tagion.wasm.WasmReader;
 import tagion.hibon.HiBONRecord : exclude;
 
-@safe class WasmWriter {
+@safe:
+enum ElementMode : ubyte {
+    PASSIVE,
+    ACTIVE,
+    DECLARATIVE,
+}
+
+void writeb(T)(ref OutBuffer bout, T x) pure if (isIntegral!T) {
+    bout.write(LEB128.encode(x));
+}
+
+void writeb(R)(ref OutBuffer bout, R r) pure
+if (isInputRange!R && isIntegral!(ElementType!R)) {
+    static if (hasLength!R) {
+        bout.writeb(r.length);
+    }
+    else {
+        bout.writeb(r.wakeLength);
+    }
+    r.each!(e => bout.write(LEB128.encode(e)));
+}
+
+class WasmWriter {
 
     alias ReaderSections = WasmReader.Sections;
 
@@ -644,17 +667,84 @@ import tagion.hibon.HiBONRecord : exclude;
         }
 
         struct ElementType {
+            uint select;
             uint tableidx;
-            DataMode mode;
+            uint elemkind;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[] funcs;
+            immutable(ubyte[])[] exprs;
+            Types reftype;
             this(ref const(ReaderSecType!(Section.ELEMENT)) e) {
                 tableidx = e.tableidx;
                 expr = e.expr;
                 funcs = e.funcs;
             }
 
-            mixin Serialize;
+            void serialize(ref OutBuffer bout) const {
+                bout.writeb(select);
+                switch (select) {
+                case 0: /// 0:u32 e:expr y*:vec(funcidx)
+                    bout.write(expr);
+                    bout.writeb(funcs);
+                    break;
+                case 1: /// 1:u32 et:elemkind y*:vec(funcidx)
+                    bout.writeb(elemkind);
+                    bout.writeb(funcs);
+                    break;
+                case 2: /// 2:u32 x:tableidx e:expr et:elemkind y*:vec(funcidx)
+                    bout.writeb(tableidx);
+                    bout.write(expr);
+                    bout.writeb(elemkind);
+                    bout.writeb(funcs);
+                    break;
+                case 3: /// 3:u32 et:elemkind y*:vec(funcidx)
+                    bout.writeb(elemkind);
+                    bout.writeb(funcs);
+                    break;
+                case 4: /// 4:u32 e:expr el*:vec(funcidx)
+                    bout.write(expr);
+                    bout.writeb(funcs);
+                    break;
+                case 5: /// 5:u32 et:reftype el*:vec(funcidx)
+                    bout.write(cast(ubyte) reftype);
+                    bout.writeb(funcs);
+                    break;
+                case 6: /// 6:u32 x:tableidx e:expr et:reftype el*:vec(expr)
+                    bout.writeb(tableidx);
+                    bout.writeb(expr);
+                    bout.write(cast(ubyte) reftype);
+                    //    bout.writeb(exprs.length);
+                    exprs.each!(e => bout.write(e));
+                    break;
+                case 7: /// 7:u32 et:reftype el*:vec(expr)
+                    bout.writeb(reftype);
+                    //  bout.writeb(exprs.length);
+                    exprs.each!(e => bout.writeb(e));
+
+                    break;
+                default:
+                    assert(0, assumeWontThrow(format("Element mode %d not supported", mode)));
+
+                }
+            }
+
+            ElementMode mode() const pure nothrow @nogc {
+                switch (select) {
+                case 1:
+                case 5:
+                    return ElementMode.PASSIVE;
+                case 0:
+                case 4:
+                case 6:
+                    return ElementMode.ACTIVE;
+                case 3:
+                case 7:
+                    return ElementMode.DECLARATIVE;
+                default:
+                    // empty
+                }
+                assert(0, "Illegal element mode");
+            }
         }
 
         alias Element = SectionT!(ElementType);

@@ -155,7 +155,7 @@ int _main(string[] args) {
 
     Thread.sleep(15.seconds);
 
-    writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
+    writefln("RPC SOCKET ADDRESS %s", node_opts[0].rpcserver.sock_addr);
     auto feature = automation!(spam_double_spend);
     feature.SpamOneNodeUntil10EpochsHaveOccurred(node_opts, wallets[0], wallets[1]);
     feature.SpamMultipleNodesUntil10EpochsHaveOccurred(node_opts, wallets[2], wallets[3]);

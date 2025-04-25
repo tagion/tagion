@@ -14,6 +14,7 @@ import std.exception;
 public import std.concurrency : Tid,
     ThreadInfo,
     OwnerTerminated,
+    LinkTerminated,
     TidMissingException,
     thisTid,
     PriorityMessageException,
@@ -58,6 +59,9 @@ Tid spawn(F, Args...)(F fn, Args args) @trusted {
     return concurrency.spawn(fn, args);
 }
 
+Tid spawnLinked(F, Args...)(F fn, Args args) @trusted {
+    return concurrency.spawnLinked(fn, args);
+}
 Tid locate(string name) @trusted nothrow {
     return assumeWontThrow(concurrency.locate(name));
 }

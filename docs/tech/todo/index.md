@@ -5,12 +5,10 @@
 ### Wallet 
 Description: simplify the wallet interface so that there is only one way to do everything
 
-
 ### Epoch Voting
 - [X] Test asynchronity of the hashgraph by the amount of nodes
 - [ ] Integration test
 - [ ] Longitudinal test (Mode 1)
-
 
 ### DART Synchronization services
 - [ ] Synchronize a static remote DART to a local DART
@@ -30,14 +28,14 @@ Assignee: cbr
 
 ### Hashgraph node swapping
 Description: Enable a new node to join the graph
-- [ ] Enable a node to follow the graph and build the consensus with out participating
+- [x] Enable a node to follow the graph and build the consensus with out participating
 - [ ] Detection when the join node can join the network
 - [ ] Implement consensus joining
 - [ ] Join the active node epoch generation
 Assignee: cbr
 
 ### Network Name record
-- [ ] Connect the nodes via the Name records.
+- [x] Connect the nodes via the Name records.
 - [ ] Change the node connection information.
 Assignee: lr
 
@@ -66,62 +64,41 @@ Assignee: yr
 
 ### Add background task to the collider
 Collider should be extended to be able to start background process.
-- [ ] Add timeout to the test task.
-- [ ] Add task dependency between the tasks.
+- [x] Add timeout to the test task.
+- [x] Add task dependency between the tasks.
 - [ ] Add backout task which can be used by other tests.
 Assignee: cr 
 
 ### Dump of epoch 
 Implement a switch in tagionwave to enable trace dump of the wavefront.
 
-### NNG BDD 
-Move the NNG-test to the collider BDD test-frame work
-- [ ] The current test program will be executed directly via a bdd test
-Assignee: yr
-
-### God-contract
-Setup contract which can directly delete and write to the database 
-This function will be used in the testnet only. 
-- [ ] Implement a contract which can call a dartModify on the DART
-Assignee: cr 
-
 ### Logger topics
 Logger topics enable switch (Remote).
-
-
-### Tauon was test build fails
-Description: Linking of wasm tauon test file fails after 91fd2e09c560530a8ffd19292e82dedc1b5e2d08 or 4999f813071e64f8eda78e98e3b649958f5b52bf because of missing _start function. I've tried reverting both commits individually but it didn't change anything. Also they both seem unrelated.
 
 ### Subscription API implementation
 Description: Provide external API for subscribing and querying data in the system as in [Subscription API proposal](https://docs.tagion.org/tips/3)
 Labels: [Tracing]
 
 ### Envelope communication
-Description: 
-Create functionalitiy in wallet to serialize to Envelope.
-Create functionality for shell to accept Envelope.
+- [ ]: Discuss Envelope spec. 
+        Current spec is not compatible tagion.crypto.Cipher.
+        Does it really need a length field when hibon already has one.
+        Encodes compression level but this is already encoded in zlib header
+- [ ]: Create functionalitiy in wallet to serialize to Envelope.
+- [ ]: Create functionality for shell to accept Envelope.
 
 ### Mirror Node proposal
 Description: Create Query nodes which can be used for both sending and receiving information from the DART.
-
 
 ### HiBON Document max-size check test 
 Description: We should make sure that we have check for max-size/out-of-memory
 For all external Documents
 Like the inputvalidator...
 
-
-### Daily operational test
-Description: Add a github ci script which activates the operational test once a day
-Assignee: lr
-
-### Types filtering in hirep
-Description: hirep have --types arg, but it's not implemented yet.
-- [ ] - Implement --type filtering in hirep.
-- [ ] - Write bdd test for this feature
-
 # Update recorderchain documentation
 Description: the current recorderchain tool documentation is for a previous version of the tool
+- [ ] Add documentation for how to use the new tool
+- [ ] Pick one tool, either kette or vergangenheit and make sure there is feature parity
 
 ### Telegram wavefront
 Logger checker via Telegram.
@@ -129,6 +106,26 @@ Logger checker via Telegram.
 ---
 
 ## Done
+
+### NNG BDD 
+Move the NNG-test to the collider BDD test-frame work
+- [x] The current test program will be executed directly via a bdd test
+Assignee: yr
+
+### Tauon was test build fails
+Description: Linking of wasm tauon test file fails after 91fd2e09c560530a8ffd19292e82dedc1b5e2d08 or 4999f813071e64f8eda78e98e3b649958f5b52bf because of missing _start function. I've tried reverting both commits individually but it didn't change anything. Also they both seem unrelated.
+
+### God-contract
+Setup contract which can directly delete and write to the database 
+This function will be used in the testnet only. 
+- [x] Implement a contract which can call a dartModify on the DART
+Assignee: cr 
+
+### Types filtering in hirep
+Description: hirep have --types arg, but it's not implemented yet.
+- [x] - Implement --type filtering in hirep.
+- [x] - Write bdd test for this feature
+
 
 ### Gitlab ci trigger
 Make a script to trigger the gitlab app ci when the native mobile libraries have been built

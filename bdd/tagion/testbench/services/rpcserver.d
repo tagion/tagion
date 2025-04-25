@@ -95,7 +95,7 @@ class SendADocumentToTheSocket {
 
     Document sender_doc;
 
-    @Given("a inputvalidator")
+    @Given("a rpcserver")
     Document aInputvalidator() {
         waitforChildren(Ctrl.ALIVE);
         return result_ok;
@@ -143,13 +143,13 @@ class SendNoneHiRPC {
         sock_path = _sock_path;
     }
 
-    @Given("a inputvalidator")
-    Document inputvalidator() {
+    @Given("a rpcserver")
+    Document rpcserver() {
         waitforChildren(Ctrl.ALIVE);
 
-        register("inputvalidator_tester", thisTid);
+        register("rpcserver_tester", thisTid);
 
-        log.registerSubscriptionTask("inputvalidator_tester");
+        log.registerSubscriptionTask("rpcserver_tester");
         // submask.subscribe(InputValidatorService.rejected);
         return result_ok;
     }
@@ -169,6 +169,11 @@ class SendNoneHiRPC {
 
         rc = sock.send(hibon.serialize);
         check(rc == 0, format("Failed to send %s", rc));
+        return result_ok;
+    }
+
+    @Then("the rpcserver rejects")
+    Document rejects() {
         Document received = sock.receive!Buffer;
         check(sock.errno == 0, format("Failed to receive %s", nng_errstr(sock.errno)));
         check(received.length != 0, "Received empty buffer");
@@ -180,17 +185,13 @@ class SendNoneHiRPC {
         return result_ok;
     }
 
-    @Then("the inputvalidator rejects")
-    Document rejects() {
-        return result_ok;
-    }
-
 }
 
 @safe @Scenario("send partial HiBON", [])
 class SendPartialHiBON {
 
     NNGSocket sock;
+    HiRPC hirpc;
     const string sock_path;
     this(string _sock_path) @trusted {
         sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -199,12 +200,12 @@ class SendPartialHiBON {
         sock.sendbuf = 4096;
     }
 
-    @Given("a inputvalidator")
-    Document inputvalidator() {
+    @Given("a rpcserver")
+    Document rpcserver() {
         check(waitforChildren(Ctrl.ALIVE), "waitforChildren");
 
-        register("inputvalidator_tester", thisTid);
-        log.registerSubscriptionTask("inputvalidator_tester");
+        register("rpcserver_tester", thisTid);
+        log.registerSubscriptionTask("rpcserver_tester");
         /* submask.subscribe(InputValidatorService.rejected); */
         return result_ok;
     }
@@ -213,7 +214,6 @@ class SendPartialHiBON {
     Document socket() @trusted {
         int rc = sock.dial(sock_path);
         check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
-        HiRPC hirpc;
         auto hibon = new HiBON();
         hibon["$test"] = 5;
         const sender = hirpc.submit(hibon);
@@ -222,17 +222,16 @@ class SendPartialHiBON {
         writefln("Buf length %s %s", partial_buf.length, Document(partial_buf).valid);
         rc = sock.send(partial_buf);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        return result_ok;
+    }
+
+    @Then("the rpcserver rejects")
+    Document rejects() {
         Document received = sock.receive!Buffer;
         check(sock.errno == 0, format("Failed to receive %s", nng_errstr(sock.errno)));
         check(received.length != 0, "Received empty doc");
         auto receiver = hirpc.receive(received);
         check(receiver.isError, "Expected an error");
-
-        return result_ok;
-    }
-
-    @Then("the inputvalidator rejects")
-    Document rejects() {
         return result_ok;
     }
 
@@ -243,6 +242,7 @@ class SendPartialHiBON {
 class SendBigContract {
 
     NNGSocket sock;
+    HiRPC hirpc;
     const string sock_path;
     this(string _sock_path) @trusted {
         sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -252,12 +252,12 @@ class SendBigContract {
     }
 
 
-    @Given("a inputvalidator")
-    Document inputvalidator() {
+    @Given("a rpcserver")
+    Document rpcserver() {
         check(waitforChildren(Ctrl.ALIVE), "waitforChildren");
 
-        register("inputvalidator_tester", thisTid);
-        log.registerSubscriptionTask("inputvalidator_tester");
+        register("rpcserver_tester", thisTid);
+        log.registerSubscriptionTask("rpcserver_tester");
         /* submask.subscribe(InputValidatorService.rejected); */
         return result_ok;
     }
@@ -266,8 +266,6 @@ class SendBigContract {
     Document socket() @trusted {
         import std.range;
         import std.algorithm;
-
-        HiRPC hirpc;
         int rc = sock.dial(sock_path);
         check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
         auto hibon = new HiBON();
@@ -280,17 +278,17 @@ class SendBigContract {
         writefln("long_hibon length=%skb err: %s", to_send.length/1000, Document(to_send).valid);
         rc = sock.send(to_send);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        return result_ok;
+    }
+
+    @Then("we should receive response ok")
+    Document ok() {
         Document received = sock.receive!Buffer;
         check(sock.errno == 0, format("Failed to receive %s", nng_errstr(sock.errno)));
         check(received.length != 0, "Received empty doc");
         auto receiver = hirpc.receive(received);
         check(!receiver.isError, format("Did not expect error \n%s", receiver.toPretty));
         
-        return result_ok;
-    }
-
-    @Then("we should receive response ok")
-    Document ok() {
         check(concurrency.receiveTimeout(200.msecs, (inputDoc _, Document __) {}), "should have received a doc");
         return result_ok;
     }
