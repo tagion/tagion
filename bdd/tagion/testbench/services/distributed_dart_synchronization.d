@@ -15,6 +15,16 @@ import std.range;
 import std.stdio;
 import std.typecons : Tuple;
 
+import std.algorithm;
+import std.array;
+import std.range;
+import std.format;
+import std.range;
+import std.stdio;
+import std.path;
+import std.file;
+import std.exception;
+
 // --- Tagion base modules ---
 import tagion.actor;
 import tagion.behaviour;
@@ -43,6 +53,13 @@ import tagion.tools.Basic;
 import tagion.utils.pretend_safe_concurrency : receive, receiveOnly, receiveTimeout, register, thisTid;
 import tagion.logger.Logger;
 import bdd.tagion.testbench.utils.node_runner;
+import tagion.script.common : TagionBill;
+import tagion.utils.StdTime;
+import tagion.script.TagionCurrency;
+import tagion.crypto.Types;
+import tagion.wallet.SecureWallet : SecureWallet;
+
+alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 enum feature = Feature(
         "is a service that synchronize the DART local database with real remote nodes.",
@@ -103,6 +120,12 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
         auto recorder = factory.recorder;
         recorder.insert(genesis_doc, Archive.Type.ADD);
 
+        TagionBill[] bills;
+        foreach (i; 0 .. 100) {
+            bills ~= TagionBill(1000.TGN, currentTime, Pubkey([1, 2, 3, 4]), null);
+        }
+        recorder.insert(bills, Archive.Type.ADD);
+
         const genesis_dart_path = "genesis_dart.drt";
 
         DARTFile.create(genesis_dart_path, net);
@@ -118,7 +141,7 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
         // Collect adresses.
         SockAddresses sock_addrs;
         sock_addrs.sock_addrs = node_runner.collectDartAdresses;
-        
+
         DARTSyncOptions dart_sync_opts;
         dart_sync_opts.journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
                 .baseName.stripExtension);
@@ -150,14 +173,16 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
     Document synchronization() {
         auto dart_sync = dartSyncRR();
         dart_sync_handle.send(dart_sync);
-        immutable journal_filenames = immutable(DARTSynchronization.ReplayFiles)(
-            receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
+        immutable journal_filenames = receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])(
+            env.DISTRIBUTION_TIMEOUT!uint.seconds);
 
         auto dart_replay = dartReplayRR();
-        dart_sync_handle.send(dart_replay, journal_filenames);
-        auto result = receiveOnlyTimeout!(dart_replay.Response, bool)[1];
+        dart_sync_handle.send(dart_replay, immutable(DARTSynchronization.ReplayFiles)(
+                journal_filenames[1]));
+        auto result = receiveOnlyTimeout!(dart_replay.Response, bool)(
+            env.DISTRIBUTION_TIMEOUT!uint.seconds);
 
-        check(result, "Database has been synchronized.");
+        check(result[1], "Database has been synchronized.");
         return result_ok;
     }
 
@@ -173,8 +198,10 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
     }
 
     void stopActor() {
-        foreach (remote_dart_handle; remote_dart_handles) remote_dart_handle.send(Sig.STOP);
-        foreach (rpcserver_handle; rpcserver_handles)rpcserver_handle.send(Sig.STOP);
+        foreach (remote_dart_handle; remote_dart_handles)
+            remote_dart_handle.send(Sig.STOP);
+        foreach (rpcserver_handle; rpcserver_handles)
+            rpcserver_handle.send(Sig.STOP);
         dart_sync_handle.send(Sig.STOP);
         node_runner.killWaves(3.seconds);
         waitforChildren(Ctrl.END);
