@@ -67,6 +67,7 @@
             cmake
             libz
             dtools
+            gdbm
             dfmt-pull.legacyPackages.${pkgs.system}.dlang-dfmt
             graphviz
             wasmer # wasm-executor
