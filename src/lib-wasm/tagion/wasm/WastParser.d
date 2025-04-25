@@ -968,7 +968,7 @@ struct WastParser {
                 r.nextToken;
             }
             switch (r.token) {
-            case "type":
+            case WastKeywords.TYPE:
                 r.check(stage !is ParserStage.TYPE, format("Type can not be declared inside a type"));
                 r.nextToken;
                 r.expect(TokenType.WORD);
@@ -980,7 +980,7 @@ struct WastParser {
                 func_type = writer.section!(Section.TYPE).sectypes[type_idx];
                 r.nextToken;
                 return ParserStage.TYPE;
-            case "param": // Example (param $y i32)
+            case WastKeywords.PARAM: // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
                     while (r.token.getType !is Types.VOID) {
@@ -1009,7 +1009,7 @@ struct WastParser {
                     }
                 }
                 return ParserStage.PARAM;
-            case "result":
+            case WastKeywords.RESULT:
                 r.valid((stage == ParserStage.FUNC) || (stage == ParserStage.TYPE),
                         "Result only allowed inside a function declaration");
                 r.nextToken;
@@ -1023,13 +1023,13 @@ struct WastParser {
             default:
                 not_ended = true;
                 r.nextToken;
-                return ParserStage.UNDEFINED;
+                //return ParserStage.UNDEFINED;
             }
         }
         return ParserStage.UNDEFINED;
     }
 
-    private ParserStage parseFuncBody(
+    private void parseFuncBody(
             ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
@@ -1038,10 +1038,10 @@ struct WastParser {
         FunctionContext func_ctx;
         func_ctx.locals = func_type.params;
         func_ctx.local_names = func_type.param_names;
-        return parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+        parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
     }
 
-    private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
+    private void parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         string type_name;
         if (r.type is TokenType.WORD) {
             type_name = r.token;
@@ -1054,7 +1054,7 @@ struct WastParser {
         case WastKeywords.FUNC:
             r.nextToken;
             FuncType func_type;
-            const func_stage = parseFuncArgs(r, stage, func_type);
+             parseFuncArgs(r, stage, func_type);
             const type_idx = writer.createTypeIdx(func_type);
             if (type_name) {
                     .check((type_name in type_lookup) is null,
@@ -1070,10 +1070,9 @@ struct WastParser {
             r.expect(TokenType.END);
             r.nextToken;
         }
-        return stage;
     }
 
-    private ParserStage parseFuncType(ref WastTokenizer r, const ParserStage stage) {
+    private void parseFuncType(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
         r.valid(stage < ParserStage.FUNC, "Should been outside function declaration");
         string func_name;
@@ -1127,7 +1126,7 @@ struct WastParser {
                 (arg_stage == ParserStage.UNDEFINED)) {
             r = rewined;
         }
-        return parseFuncBody(r, ParserStage.FUNC_BODY, code_type, func_type);
+        parseFuncBody(r, ParserStage.FUNC_BODY, code_type, func_type);
     }
 
     private {
