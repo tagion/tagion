@@ -582,7 +582,7 @@ struct WastParser {
         assert(toType("bad type") is Types.VOID);
     }
 
-    private ParserStage parseInstr(
+    private void parseInstr(
             ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
@@ -612,15 +612,15 @@ struct WastParser {
             scope (exit) {
                 func_wasmexpr(IR.END);
             }
-            ParserStage result;
+            //ParserStage result;
             uint count;
             while (r.type is TokenType.BEGIN) {
-                result = _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+                 _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
                 count++;
             }
-            return result;
+            return;
         }
-        return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+         _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
 
     static Limit parseLimit(ref WastTokenizer r) {
