@@ -282,8 +282,6 @@ import tagion.wasm.WasmException;
                     size_t index;
                     length = u32(data, index);
                     this.data = data[index .. $];
-                    static if (is(SecType == ElementType)) {
-                    }
                 }
 
                 protected this(const(SectionT) that) @nogc pure nothrow {
