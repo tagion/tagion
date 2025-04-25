@@ -59,17 +59,18 @@ struct WastParser {
         BASE,
         COMMENT,
         ASSERT,
+        CONDITIONAL,
         MODULE,
         TYPE,
         FUNC,
         TABLE,
+        ELEMENT,
         PARAM,
         RESULT,
         FUNC_BODY,
         CODE,
-        CONDITIONAL,
-        END_FUNC,
-        BREAK,
+       // END_FUNC,
+        //BREAK,
         EXPORT,
         IMPORT,
         MEMORY,
@@ -411,10 +412,6 @@ struct WastParser {
                     wasmexpr(IR.END);
                     return stage;
                 case BLOCK_ELSE:
-                    version (none)
-                        r.check(stage is ParserStage.CONDITIONAL,
-                                format("An %s IRType is only allower after parsing a %s , not after a %s stage",
-                                BLOCK_ELSE, ParserStage.CONDITIONAL, stage));
                     r.nextToken;
                     wasmexpr(IR.ELSE);
                     while (r.type is TokenType.BEGIN) {
@@ -605,7 +602,13 @@ struct WastParser {
                     func_ctx.locals[number_of_func_arguments .. $],
                     code_type.expr ~ func_wasmexpr.serialize);
         }
+        scope (exit) {
+            if (only(ParserStage.FUNC_BODY, ParserStage.TABLE).canFind(stage)) {
+                func_wasmexpr(IR.END);
+            }
+        }
         if (stage is ParserStage.FUNC_BODY) {
+            version(none)
             scope (exit) {
                 func_wasmexpr(IR.END);
             }
@@ -805,7 +808,8 @@ struct WastParser {
                 parseTypeSection(r, ParserStage.TYPE);
                 return stage;
             case WastKeywords.FUNC: // Example (func $name (param ...) (result i32) )
-                return parseFuncType(r, stage);
+                parseFuncType(r, stage);
+                return ParserStage.FUNC;
             case WastKeywords.RESULT:
                 r.valid(stage == ParserStage.FUNC, "Result only allowed inside function declaration");
                 r.nextToken;
@@ -1124,7 +1128,6 @@ struct WastParser {
             r = rewined;
         }
         return parseFuncBody(r, ParserStage.FUNC_BODY, code_type, func_type);
-        return ParserStage.FUNC;
     }
 
     private {
