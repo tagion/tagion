@@ -1023,7 +1023,6 @@ struct WastParser {
             default:
                 not_ended = true;
                 r.nextToken;
-                //return ParserStage.UNDEFINED;
             }
         }
         return ParserStage.UNDEFINED;
