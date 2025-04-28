@@ -314,7 +314,7 @@ jobs:
           docker rm -v $id
 
       - name: Upload static binary
-      - uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: tagion_static
           path: tagion
