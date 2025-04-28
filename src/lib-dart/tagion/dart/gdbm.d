@@ -1,5 +1,6 @@
 module tagion.dart.gdbm;
 
+import core.memory;
 import std.string;
 import std.conv;
 
@@ -40,6 +41,10 @@ enum GDBM_FLAG {
     NUMSYNC  = 0x2000, /* Enable the numsync extension */
 }
 
+enum GDBM_STORE {
+    INSERT = 0,
+    REPLACE = 1,
+}
 
 enum GDBM_ERROR {
     NO_ERROR		 = 0,
@@ -98,15 +103,14 @@ struct Datum
   char *dptr;
   int   dsize;
 
-  this(ubyte[] dat) {
+  this(const(ubyte)[] dat) {
      dptr = cast(char*)dat.ptr;
      assert(dat.length <= dsize.max);
      dsize = cast(typeof(dsize))dat.length;
   }
 
-  ubyte[] opSlice() {
-        ubyte[] val;
-        return val[0..dsize] = cast(ubyte[])dptr[0..dsize];
+  const(ubyte)[] opSlice() {
+        return cast(const(ubyte)[])dptr[0..dsize];
   }
 }
 
@@ -118,6 +122,15 @@ private extern(C) {
     int gdbm_store (GDBM_FILE dbf, Datum key, Datum content, int flag);
     int gdbm_delete(GDBM_FILE dbf, Datum key);
     Datum gdbm_fetch(GDBM_FILE dbf, Datum key);
+    int gdbm_sync (GDBM_FILE dbf);
+    int gdbm_errno_location();
+    const(char)* gdbm_strerror(int);
+    const(char)* gdbm_db_strerror(GDBM_FILE dbf);
+
+}
+
+GDBM_ERROR gdbm_errno() {
+    return cast(GDBM_ERROR)(gdbm_errno_location);
 }
 
 class GDBM {
@@ -133,60 +146,77 @@ class GDBM {
         }
     }
 
-    private {
-        GDBM_FILE _file;
+    GDBM_FILE _file;
 
-        void _open(string name, int block_size, int flags = GDBM_FLAG.READER, int mode = octal!"0644") {
-            _file = gdbm_open(toStringz(name), block_size, flags, mode, &fatal_func);
-        }
+    void open(string name, int block_size, GDBM_FLAG flags = GDBM_FLAG.READER, int mode = octal!"0644") {
+        _file = gdbm_open(toStringz(name), block_size, flags, mode, &fatal_func);
+    }
 
-        void _close() {
-            assert(_file !is null);
-            int rc = gdbm_close(_file);
-            _file = null;
-            gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Closing file");
-        }
+    void close() {
+        assert(_file !is null);
+        int rc = gdbm_close(_file);
+        _file = null;
+        gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Closing file");
+    }
 
-        gdbm_count_t _count() {
-            assert(_file);
-            gdbm_count_t pcount;
-            int rc = gdbm_count(_file, &pcount);
-            gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Counting items");
-            return pcount;
-        }
+    gdbm_count_t count() {
+        assert(_file);
+        gdbm_count_t pcount;
+        int rc = gdbm_count(_file, &pcount);
+        gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Counting items");
+        return pcount;
+    }
 
-        size_t _bucket_count() {
-            assert(_file);
-            size_t pcount;
-            int rc = gdbm_bucket_count(_file, &pcount);
-            gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Counting buckets");
-            return pcount;
-        }
+    size_t bucket_count() {
+        assert(_file);
+        size_t pcount;
+        int rc = gdbm_bucket_count(_file, &pcount);
+        gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Counting buckets");
+        return pcount;
+    }
 
-        void _store(ubyte[] key, ubyte[] value, int flag) {
-            assert(_file);
-            Datum _key = Datum(key);
-            Datum _content = Datum(value);
-            int rc = gdbm_store(_file, _key, _content, flag);
-            gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Storing");
-        }
+    void store(const(ubyte)[] key, const(ubyte)[] value, GDBM_STORE flag = GDBM_STORE.INSERT) {
+        assert(_file);
+        Datum _key = Datum(key);
+        Datum _content = Datum(value);
+        int rc = gdbm_store(_file, _key, _content, flag);
+        gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Storing");
+    }
 
-        void _delete(ubyte[] key) {
-            assert(_file);
-            int rc = gdbm_delete(_file, Datum(key));
-            gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Deleting");
-        }
+    void remove(const(ubyte)[] key) {
+        assert(_file);
+        int rc = gdbm_delete(_file, Datum(key));
+        gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "Deleting");
+    }
 
-        ubyte[] _fetch(ubyte[] key) {
-            assert(_file);
-            Datum val = gdbm_fetch(_file, Datum(key));
-            return val[];
-        }
+    const(ubyte)[] fetch(const(ubyte)[] key) {
+        assert(_file);
+        Datum val = gdbm_fetch(_file, Datum(key));
+        gdbm_enforce(val.dptr !is null, gdbm_errno, "Fetching");
+        GC.addRange(val.dptr, val.dsize);
+        return val[];
+    }
+
+    void sync() {
+        assert(_file);
+        int rc = gdbm_sync(_file);
+        gdbm_enforce(rc == GDBM_ERROR.NO_ERROR, rc, "sync");
     }
 }
 
 unittest {
+    import std.path;
+    import std.file;
+    import tagion.basic.testbasic;
+
     auto db = new GDBM();
-    db._open("agdbmfile", 0x80, GDBM_FLAG.WRCREAT);
-    db._close();
+    string db_file = "agdbmfile".unitfile;
+    mkdirRecurse(db_file.dirName);
+    db.open(db_file, 0x80, GDBM_FLAG.WRCREAT);
+    scope(exit)db._close();
+    db.store("a".representation, "b".representation, GDBM_STORE.REPLACE);
+    assert(db.fetch("a".representation) == "b");
+    assert(db.count == 1);
+    assert(db.bucket_count == 1);
+    db.remove("a".representation);
 }
