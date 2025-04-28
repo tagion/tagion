@@ -307,6 +307,19 @@ jobs:
           docker build . -t tagion/tagion:${{ github.ref_name }}
           docker push tagion/tagion:${{ github.ref_name }}
 
+      - name: Extract static binary
+        run: |
+          id=$(docker create tagion/tagion:${{ github.ref_name }})
+          docker cp $id:/usr/local/bin/tagion tagion
+          docker rm -v $id
+
+      - name: Upload static binary
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tagion_static
+          path: tagion
+          if-no-files-found: error
+
   add_logs:
     if: failure()
     runs-on: CI
