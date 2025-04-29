@@ -24,7 +24,6 @@ import tagion.wasm.WasmReader;
 import tagion.wasm.WasmWat : wat;
 import tagion.wasm.WasmWriter;
 
-//import tagion.script.StandardRecords;
 import std.array : join;
 import tagion.tools.Basic;
 import tagion.tools.revision;
@@ -117,16 +116,16 @@ int _main(string[] args) {
                 "",
                 "Where:",
                 format("<in-file>           Is an input file in (%-(%s -%)) format",
-                        only(FileExtension.wasm, FileExtension.wat)),
+                    only(FileExtension.wasm, FileExtension.wat)),
                 format("<out-file>          Is an output file in (%-(%s -%)) format",
-                        only(FileExtension.wat, FileExtension.dsrc)),
+                    only(FileExtension.wat, FileExtension.dsrc)),
                 "                    stdout is used of the output is not specified the",
                 "",
 
                 "<option>:",
 
             ].join("\n"),
-            main_args.options);
+                    main_args.options);
         }
 
         if (version_switch) {
@@ -238,7 +237,6 @@ int _main(string[] args) {
         }
         if (__verbose_switch) {
             wasm_verbose.mode = VerboseMode.STANDARD;
-
         }
 
         const output_extension = (outputfilename.empty) ? type.typeExtension : outputfilename.extension;
