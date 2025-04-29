@@ -399,8 +399,12 @@
       "stages" : ["replicator_service", "commit"]
     },
     "distributed_dart_synchronization": {
+      "envs": {
+            "DISTRIBUTION_TIMEOUT" : "30" 
+      },
       "timeout" : 3.0,
       "stages" : ["distributed_dart_synchronization", "commit"]
     }
   }
 }
+

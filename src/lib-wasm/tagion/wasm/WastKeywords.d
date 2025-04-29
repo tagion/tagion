@@ -14,7 +14,7 @@ enum WastKeywords {
     EXPORT = "export",
     MEMORY = "memory",
     SEGMENT = "segment",
-    OFFSET = "offest",
+    OFFSET = "offset",
     PARAM = "param",
     RESULT = "result",
     DECLARE = "declare",
