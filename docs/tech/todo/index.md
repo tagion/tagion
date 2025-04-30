@@ -23,6 +23,67 @@ Assignee: al
 - [ ] Memory instructions.
 Assignee: cbr
 
+## Planned in Q2-25
+mode2:
+    network joining service
+    priority: 1
+        - dart sync
+            create a function to allow a program to remotely synchronize the dart from a node
+        - graph-mirror
+            create a function can get all new events using wavefront and create a non voting graph of the events
+        - integrate in tagionwave, start the network and sync until it can join the network
+            when the node starts it should detect that it is out of sync and start mirroring the graph and syncing the dart
+        - bdd which checks that a node can catch up and switch from offline to online
+    active participation
+    priority: 2
+        - make sure that the newly joined nodes can add events to the graph
+        - detect that the nodes votes is a part of deciding witnesses
+        - when this is detected allow the node to update the database (producing epochs)
+
+
+tvm:
+    priority 1a:
+        - tvmutil
+            should be able execute wasm against a dart
+    priority 2a:
+        - add wasm execute to tvm service
+            the tvm should execute wasm script that are loaded from the dart.
+            the entrypoint function `run()`? should always take the inputs, reads and outputs
+    priority 3a:
+        - update tauon library
+            update the existing functions in libcapi
+
+
+testing setup:
+    priority 1:
+    - test if the production network can run on the current code for 4 weeks in mode0
+    priority 2b:
+    distributed test setup:
+        - create a service were peope can associate their public key with a machine
+        - create a tool were we can assign specific docker images to a group of public keys and assigne network boot data to that group
+        - create a deployment/tutorial were people can setup a node and automatically updates to newly assigned images.
+
+
+tip6:
+    priority 1c:
+    docs.tagion.org/tips/6
+    - add hash of executed contract to recorderchain
+    - add hash of recorderblock to epochchain
+    merkle proofs and hash trie compression is addon for later
+
+
+blake3:
+    - create a tip for converting
+    - add blake3 hashing algorithm
+    - create a translation table for old dartreads
+
+
+multisig:
+    - implement schnoor multisig
+    - make sure that multi user signatures don't leak private keys
+        create a unique bitvector for each signing
+    - add multisig signatures to epoch chain
+
 
 ## Planned in Q1-25
 
