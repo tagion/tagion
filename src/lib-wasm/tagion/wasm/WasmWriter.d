@@ -676,6 +676,7 @@ class WasmWriter {
 
             void serialize(ref OutBuffer bout) const {
                 bout.writeb(select);
+                __write("WasmWriter select %d", select);
                 switch (select) {
                 case 0: /// 0:u32 e:expr y*:vec(funcidx)
                     bout.write(expr);
@@ -832,39 +833,4 @@ class WasmWriter {
         alias Data = SectionT!(DataType);
 
     }
-}
-
-version (none) unittest {
-    import std.exception : assumeUnique;
-    import std.file;
-    import std.stdio;
-    import tagion.wavm.Wast;
-
-    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file : _read = read;
-
-        auto data = cast(ubyte[]) _read(name, upTo);
-        // writefln("read data=%s", data);
-        return assumeUnique(data);
-    }
-
-    //    string filename="../tests/wasm/func_1.wasm";
-    string filename = "../tests/wasm/global_1.wasm";
-    //    string filename="../tests/wasm/imports_1.wasm";
-    //    string filename="../tests/wasm/table_copy_2.wasm";
-    //    string filename="../tests/wasm/memory_2.wasm";
-    //    string filename="../tests/wasm/start_4.wasm";
-    //    string filename="../tests/wasm/address_1.wasm";
-    //    string filename="../tests/wasm/data_4.wasm";
-    //    string filename="../tests/web_gas_gauge.wasm";//wasm/imports_1.wasm";
-    immutable read_data = fread(filename);
-    auto wasm_reader = WasmReader(read_data);
-    Wast(wasm_reader, stdout).serialize();
-
-    writefln("wasm_reader.serialize=%s", wasm_reader.serialize);
-    auto wasm_writer = WasmWriter(wasm_reader);
-
-    writeln("wasm_writer.serialize");
-    writefln("wasm_writer.serialize=%s", wasm_writer.serialize);
-    assert(wasm_reader.serialize == wasm_writer.serialize);
 }

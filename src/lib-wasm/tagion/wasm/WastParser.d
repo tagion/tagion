@@ -69,7 +69,7 @@ struct WastParser {
         RESULT,
         FUNC_BODY,
         CODE,
-       // END_FUNC,
+        // END_FUNC,
         //BREAK,
         EXPORT,
         IMPORT,
@@ -607,11 +607,11 @@ struct WastParser {
         }
         if (stage is ParserStage.FUNC_BODY) {
             while (r.type is TokenType.BEGIN) {
-                 parseBodyInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+                parseBodyInstr(r, stage, func_wasmexpr, func_type, func_ctx);
             }
             return;
         }
-         parseBodyInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+        parseBodyInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
 
     static Limit parseLimit(ref WastTokenizer r) {
@@ -656,6 +656,8 @@ struct WastParser {
             elem_name = r.token;
         }
         string table_name;
+        import tagion.wasm.WasmReader : ElementMode;
+        ElementMode element_mode;
         void innerElemType() {
             if (r.type is TokenType.BEGIN) {
                 r.nextToken;
@@ -665,6 +667,8 @@ struct WastParser {
                 }
                 switch (r.token) {
                 case WastKeywords.TABLE:
+                    r.check(element_mode is ElementMode.PASSIVE, 
+                            format("Ambiguies element mode %s has already been defined", element_mode)); 
                     r.check(stage is ParserStage.TABLE, "Table can not be used inside a table");
                     r.nextToken;
                     scope (exit) {
@@ -715,6 +719,12 @@ struct WastParser {
 
         int count = 10;
         while (r.type !is TokenType.END) {
+            if (r.token == WastKeywords.DECLARE) {
+                element_mode = ElementMode.DECLARATIVE;
+                __write("DECLARE ====");
+                r.nextToken;
+                break;
+            }
             const try_type = r.token.toType;
             switch (try_type) {
             case Types.FUNCREF:
@@ -956,6 +966,7 @@ struct WastParser {
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 const type_idx = type_lookup.get(r.token, -1);
+                
                 .check(type_idx >= 0, format("Type named %s not found", r.token));
                 func_type = writer.section!(Section.TYPE).sectypes[type_idx];
                 r.nextToken;
@@ -1033,9 +1044,10 @@ struct WastParser {
         case WastKeywords.FUNC:
             r.nextToken;
             FuncType func_type;
-             parseFuncArgs(r, stage, func_type);
+            parseFuncArgs(r, stage, func_type);
             const type_idx = writer.createTypeIdx(func_type);
             if (type_name) {
+                
                     .check((type_name in type_lookup) is null,
                             format("Type name %s already defined", type_name));
                 type_lookup[type_name] = type_idx;
@@ -1045,8 +1057,8 @@ struct WastParser {
             r.check(0, format("Type expected not %s", r.token));
         }
 
-            r.expect(TokenType.END);
-            r.nextToken;
+        r.expect(TokenType.END);
+        r.nextToken;
     }
 
     private void parseFuncType(ref WastTokenizer r, const ParserStage stage) {
