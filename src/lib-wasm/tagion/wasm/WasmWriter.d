@@ -21,12 +21,6 @@ import tagion.wasm.WasmReader;
 import tagion.hibon.HiBONRecord : exclude;
 
 @safe:
-enum ElementMode : ubyte {
-    PASSIVE,
-    ACTIVE,
-    DECLARATIVE,
-}
-
 void writeb(T)(ref OutBuffer bout, T x) pure if (isIntegral!T) {
     bout.write(LEB128.encode(x));
 }
@@ -729,21 +723,7 @@ class WasmWriter {
             }
 
             ElementMode mode() const pure nothrow @nogc {
-                switch (select) {
-                case 1:
-                case 5:
-                    return ElementMode.PASSIVE;
-                case 0:
-                case 4:
-                case 6:
-                    return ElementMode.ACTIVE;
-                case 3:
-                case 7:
-                    return ElementMode.DECLARATIVE;
-                default:
-                    // empty
-                }
-                assert(0, "Illegal element mode");
+                return WasmReader.WasmRange.WasmSection.elementMode(select);
             }
         }
 
