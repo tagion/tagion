@@ -684,7 +684,7 @@ struct WastParser {
                     FuncType void_func;
                     CodeType code_offset;
                     FunctionContext ctx;
-                    parseInstr(r, ParserStage.CODE, code_offset, void_func, ctx);
+                    parseInstr(r, ParserStage.TABLE, code_offset, void_func, ctx);
 
                     elem.expr = code_offset.expr;
                     break;
@@ -694,7 +694,7 @@ struct WastParser {
                     FuncType void_func;
                     CodeType code;
                     FunctionContext ctx;
-                    parseInstr(r, ParserStage.CODE, code, void_func, ctx);
+                    parseInstr(r, ParserStage.TABLE, code, void_func, ctx);
                     elem.expr = code.expr;
                 }
 
