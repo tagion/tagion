@@ -75,6 +75,7 @@ struct WastParser {
         IMPORT,
         MEMORY,
         EXPECTED,
+        ITEM,
         END,
         UNDEFINED,
     }
@@ -667,10 +668,11 @@ struct WastParser {
                     r.expect(TokenType.END);
                 }
                 switch (r.token) {
-                case WastKeywords.TABLE:
+                case WastKeywords.TABLE: /// (table $x)
                     r.check(element_mode is ElementMode.PASSIVE,
-                            format("Ambiguies element mode %s has already been defined", element_mode));
-                    r.check(stage is ParserStage.TABLE, "Table can not be used inside a table");
+                            format("Ambiguies element mode %s. Mode has already been defined", element_mode));
+                    r.check(stage !is ParserStage.TABLE,
+                            "Table can not be used inside a table");
                     element_mode = ElementMode.ACTIVE;
                     r.nextToken;
                     scope (exit) {
@@ -681,11 +683,10 @@ struct WastParser {
                         break;
                     }
                     r.check(0, "Table has already been defined");
-
                     break;
-                case WastKeywords.OFFSET:
+                case WastKeywords.OFFSET: /// (offset $x)
                     r.check(element_mode < ElementMode.DECLARATIVE,
-                            format("Ambiguies element mode %s has already been defined", element_mode));
+                            format("Ambiguies element mode %s. Mode has already been defined", element_mode));
                     r.check(elem.expr is null,
                             "Initialisation code has already been defined for this element");
                     element_mode = ElementMode.ACTIVE;
@@ -696,6 +697,10 @@ struct WastParser {
                     parseInstr(r, ParserStage.TABLE, code_offset, void_func, ctx);
 
                     elem.expr = code_offset.expr;
+                    break;
+                case WastKeywords.ITEM:
+                    r.nextToken;
+                    parseElem(r, ParserStage.ITEM);
                     break;
                 default:
                     r.check(elem.expr is null,
@@ -724,7 +729,7 @@ struct WastParser {
 
         int count = 10;
         while (r.type !is TokenType.END) {
-            if (r.token == WastKeywords.DECLARE) {
+            if (r.token == WastKeywords.DECLARE) { // declare
                 element_mode = ElementMode.DECLARATIVE;
                 __write("DECLARE ====");
                 r.nextToken;
@@ -732,13 +737,13 @@ struct WastParser {
             }
             const try_type = r.token.toType;
             switch (try_type) {
-            case Types.FUNCREF:
+            case Types.FUNCREF: // funcref
                 r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
                 _type = try_type;
                 r.nextToken;
                 elem.funcs = getFuncs;
                 continue;
-            case Types.FUNC:
+            case Types.FUNC: // func
                 r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
                 _type = try_type;
                 r.nextToken;
@@ -885,7 +890,7 @@ struct WastParser {
                 return stage;
             case WastKeywords.ELEM:
                 r.nextToken;
-                writer.section!(Section.ELEMENT).sectypes ~= parseElem(r, stage);
+                writer.section!(Section.ELEMENT).sectypes ~= parseElem(r, ParserStage.ELEMENT);
                 return stage;
             case "assert_return_nan":
             case "assert_return":
