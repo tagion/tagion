@@ -657,6 +657,7 @@ struct WastParser {
         }
         string table_name;
         import tagion.wasm.WasmReader : ElementMode;
+
         ElementMode element_mode;
         void innerElemType() {
             if (r.type is TokenType.BEGIN) {
@@ -667,9 +668,10 @@ struct WastParser {
                 }
                 switch (r.token) {
                 case WastKeywords.TABLE:
-                    r.check(element_mode is ElementMode.PASSIVE, 
-                            format("Ambiguies element mode %s has already been defined", element_mode)); 
+                    r.check(element_mode is ElementMode.PASSIVE,
+                            format("Ambiguies element mode %s has already been defined", element_mode));
                     r.check(stage is ParserStage.TABLE, "Table can not be used inside a table");
+                    element_mode = ElementMode.ACTIVE;
                     r.nextToken;
                     scope (exit) {
                         r.nextToken;
@@ -682,9 +684,12 @@ struct WastParser {
 
                     break;
                 case WastKeywords.OFFSET:
-                    r.nextToken;
+                    r.check(element_mode < ElementMode.DECLARATIVE,
+                            format("Ambiguies element mode %s has already been defined", element_mode));
                     r.check(elem.expr is null,
                             "Initialisation code has already been defined for this element");
+                    element_mode = ElementMode.ACTIVE;
+                    r.nextToken;
                     FuncType void_func;
                     CodeType code_offset;
                     FunctionContext ctx;
@@ -966,7 +971,9 @@ struct WastParser {
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 const type_idx = type_lookup.get(r.token, -1);
+
                 
+
                 .check(type_idx >= 0, format("Type named %s not found", r.token));
                 func_type = writer.section!(Section.TYPE).sectypes[type_idx];
                 r.nextToken;
@@ -1047,7 +1054,9 @@ struct WastParser {
             parseFuncArgs(r, stage, func_type);
             const type_idx = writer.createTypeIdx(func_type);
             if (type_name) {
+
                 
+
                     .check((type_name in type_lookup) is null,
                             format("Type name %s already defined", type_name));
                 type_lookup[type_name] = type_idx;
