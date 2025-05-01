@@ -93,10 +93,10 @@ class DART : DARTFile {
     *   from_sector = Represents from angle for DART sharding. In development.
     *   to_sector = Represents to angle for DART sharding. In development.
     */
-    this(const SecureNet net,
+    this(const HashNet net,
             string filename,
             Flag!"read_only" read_only = No.read_only,
-            const HiRPC hirpc = HiRPC(null),
+            const HiRPC hirpc = HiRPC.init,
             const ushort from_sector = 0,
             const ushort to_sector = 0) @safe {
         super(net, filename, read_only);
@@ -114,11 +114,11 @@ class DART : DARTFile {
     *       from_sector = Represents from angle for DART sharding. In development.
     *       to_sector = Represents to angle for DART sharding. In development.
     */
-    this(const SecureNet net,
+    this(const HashNet net,
             string filename,
             out Exception exception,
             Flag!"read_only" read_only = No.read_only,
-            const HiRPC hirpc = HiRPC(null),
+            const HiRPC hirpc = HiRPC.init,
             const ushort from_sector = 0,
             const ushort to_sector = 0) @safe nothrow {
         try {
