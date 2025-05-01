@@ -661,7 +661,7 @@ class WasmWriter {
         }
 
         struct ElementType {
-//            uint select;
+            //            uint select;
             uint tableidx;
             uint elemkind;
             @Section(Section.CODE) immutable(ubyte)[] expr;
@@ -676,20 +676,18 @@ class WasmWriter {
             }
 
             @property uint select() const pure nothrow @nogc {
-                    final switch(mode) {
+                final switch (mode) {
                 case ElementMode.PASSIVE:
-                    if (funcs) {
-                        return 1;
-                        }
+                    if (exprs) {
                         return 5;
-
+                    }
+                    return 1;
                 case ElementMode.ACTIVE:
                     return 0;
                 case ElementMode.DECLARATIVE:
                     return 3;
-
                 }
-                    assert(0);
+                assert(0);
             }
 
             void serialize(ref OutBuffer bout) const {
@@ -740,8 +738,8 @@ class WasmWriter {
 
                 }
             }
-version(none)
-            ElementMode mode() const pure nothrow @nogc {
+
+            version (none) ElementMode mode() const pure nothrow @nogc {
                 return WasmReader.WasmRange.WasmSection.elementMode(select);
             }
         }
