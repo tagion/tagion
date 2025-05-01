@@ -729,7 +729,7 @@ struct WastParser {
             return false;
         }
 
-        immutable(uint[]) getFuncs(const Flag!"ignore" falg=No.ignore) {
+        immutable(uint[]) getFuncs(const Flag!"ignore" falg = No.ignore) {
             immutable(uint)[] result;
             while (r.type is TokenType.WORD) {
                 const func_idx = func_lookup.get(r.token, -1);
@@ -741,7 +741,7 @@ struct WastParser {
                 else {
                     r.check(func_idx >= 0, format("Function name %s not defined", r.token));
                 }
-                    result ~= func_idx;
+                result ~= func_idx;
                 r.nextToken;
             }
             return result;
@@ -755,7 +755,6 @@ struct WastParser {
                 elem.funcs = getFuncs;
                 continue;
             case WastKeywords.FUNC: // func
-                //elem.reftype = Types.FUNC;
                 r.nextToken;
                 elem.funcs = getFuncs;
                 continue;
@@ -766,9 +765,9 @@ struct WastParser {
             default:
                 if (elem.funcs.empty) {
                     elem.funcs = getFuncs(Yes.ignore);
-                        if (!elem.funcs.empty) {
-                    continue;
-                        }
+                    if (!elem.funcs.empty) {
+                        continue;
+                    }
                 }
                 r.expect(TokenType.BEGIN);
             }
