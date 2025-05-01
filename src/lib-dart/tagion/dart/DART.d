@@ -17,7 +17,7 @@ import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.basic : EnumText, isinit;
 import tagion.errors.tagionexceptions : Check;
 import tagion.communication.HiRPC : Callers, HiRPC, HiRPCMethod;
-import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.DARTBasic : DARTIndex, KEY_SPAN, Params, Queries;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTRim;
@@ -88,7 +88,7 @@ class DART : DARTFile {
 
     /** Creates DART with given net and by given file path
     * Params: 
-    *   net = Represent SecureNet for initializing DART
+    *   net = Represent HashNet for initializing DART
     *   filename = Represent path to DART file to open
     *   from_sector = Represents from angle for DART sharding. In development.
     *   to_sector = Represents to angle for DART sharding. In development.
@@ -108,7 +108,7 @@ class DART : DARTFile {
     /** 
     * Creates DART with given net and by given file path safely with catching possible exceptions
     * Params:
-    *       net  = Represent SecureNet for initializing DART
+    *       net  = Represent HashNet for initializing DART
     *       filename = Represent path to DART file to open
     *       exception = Field used for returning exception in case when something gone wrong
     *       from_sector = Represents from angle for DART sharding. In development.
@@ -648,7 +648,7 @@ received = the HiRPC received package
 
         enum TEST_BLOCK_SIZE = 0x80;
 
-        auto net = new DARTFakeNet("very_secret");
+        const net = new DARTFakeNet;
 
         immutable filename = fileId!DART.fullpath;
         immutable filename_A = fileId!DART("A_").fullpath;

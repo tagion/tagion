@@ -8,8 +8,8 @@ import tagion.basic.Types : FileExtension;
 import tagion.basic.Version;
 import tagion.behaviour.Behaviour;
 import tagion.communication.HiRPC : HiRPC;
-import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
+import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.hibon.HiBONFile : fwrite;
 import tagion.testbench.dart;
@@ -25,17 +25,16 @@ int _main(string[] args) {
     const string dartfilename = buildPath(module_path, "dart_sync_stress_test".setExtension(FileExtension.dart));
     const string dartfilename2 = buildPath(module_path, "dart_sync_start_slave".setExtension(FileExtension.dart));
 
-    SecureNet net;
+    HashNet net;
 
     version (REAL_HASHES) {
-        net = new StdSecureNet();
-        net.generateKeyPair("very secret");
+        net = new StdHashNet();
     }
     else {
-        net = new DARTFakeNet("very secret");
+        net = new DARTFakeNet;
     }
 
-    const hirpc = HiRPC(net);
+    const hirpc = HiRPC(null);
 
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc, dartfilename2);
 

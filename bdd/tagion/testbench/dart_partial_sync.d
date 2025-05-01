@@ -7,7 +7,8 @@ import std.traits : moduleName;
 import tagion.basic.Types : FileExtension;
 import tagion.behaviour.Behaviour;
 import tagion.communication.HiRPC : HiRPC;
-import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+
+//import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.hibon.HiBONFile : fwrite;
 import tagion.testbench.dart;
@@ -23,8 +24,8 @@ int _main(string[] args) {
     const string dartfilename = buildPath(module_path, "dart_sync_start_full".setExtension(FileExtension.dart));
     const string dartfilename2 = buildPath(module_path, "dart_sync_start_partial".setExtension(FileExtension.dart));
 
-    const SecureNet net = new DARTFakeNet("very_secret");
-    const hirpc = HiRPC(net);
+    const net = new DARTFakeNet;
+    const hirpc = HiRPC();
 
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc, dartfilename2);
     dart_info.states = dart_info.generateStates(0, 10).take(10).array;

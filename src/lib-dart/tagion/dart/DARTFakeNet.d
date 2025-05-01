@@ -3,7 +3,7 @@ module tagion.dart.DARTFakeNet;
 import std.typecons : Typedef;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdHashNet;
 import tagion.crypto.Types : BufferType, Fingerprint;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
@@ -18,18 +18,8 @@ import tagion.hibon.HiBONRecord : HiBONPrefix;
 alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 @safe
-class DARTFakeNet : StdSecureNet {
+class DARTFakeNet : StdHashNet {
     enum FAKE = "$fake#";
-    this(string passphrase) {
-        this();
-        generateKeyPair(passphrase);
-    }
-
-    this() {
-        super();
-
-    }
-
     override Fingerprint calcHash(scope const(ubyte[]) h) const {
         if (h.length is ulong.sizeof) {
             scope ubyte[] fake_h;

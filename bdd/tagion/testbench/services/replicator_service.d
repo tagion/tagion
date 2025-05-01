@@ -26,17 +26,17 @@ import std.path : buildPath;
 import std.stdio;
 
 enum feature = Feature(
-        "ReplicatorService",
-        []);
+            "ReplicatorService",
+            []);
 
 alias FeatureContext = Tuple!(
-    ProducedRecordersAreSentForReplicationAndWritenToFiles, "ProducedRecordersAreSentForReplicationAndWritenToFiles",
-    WeReceiveARecorderFromFileByASpecifiedEpochNumber, "WeReceiveARecorderFromFileByASpecifiedEpochNumber",
-    FeatureGroup*, "result"
+        ProducedRecordersAreSentForReplicationAndWritenToFiles, "ProducedRecordersAreSentForReplicationAndWritenToFiles",
+        WeReceiveARecorderFromFileByASpecifiedEpochNumber, "WeReceiveARecorderFromFileByASpecifiedEpochNumber",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("produced recorders are sent for replication and writen to files.",
-    [])
+        [])
 class ProducedRecordersAreSentForReplicationAndWritenToFiles {
 
     struct RecorderPayload {
@@ -68,7 +68,7 @@ class ProducedRecordersAreSentForReplicationAndWritenToFiles {
             0x20_21_0a_30_40_50_80_90,
         ];
 
-        const SecureNet net = new DARTFakeNet("very_secret");
+        const net = new DARTFakeNet;
 
         // Generated recorders
         foreach (rec_index; 0 .. 10) {
@@ -132,7 +132,7 @@ class ProducedRecordersAreSentForReplicationAndWritenToFiles {
 }
 
 @safe @Scenario("we receive a recorder from file by a specified epoch number.",
-    [])
+        [])
 class WeReceiveARecorderFromFileByASpecifiedEpochNumber {
 
     ReplicatorOptions replicator_opts;
@@ -217,7 +217,7 @@ int _main(string[] args) {
     auto replicator_opts = ReplicatorOptions(replicator_path);
 
     auto replicator_service_feature = automation!(
-        tagion.testbench.services.replicator_service);
+            tagion.testbench.services.replicator_service);
 
     auto replicator_service_handler_1 = replicator_service_feature
         .ProducedRecordersAreSentForReplicationAndWritenToFiles(replicator_opts);
