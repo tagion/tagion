@@ -532,6 +532,9 @@ struct WastParser {
                     break;
                 case PREFIX:
                     break;
+                case REF:
+                    check(0, "Ref instructions not supported yet");
+                    assert(0);
                 case ILLEGAL:
                     throw new WasmException(format("Undefined instruction %s", r.token));
                     break;

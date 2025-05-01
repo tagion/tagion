@@ -451,6 +451,9 @@ alias check = Check!WatException;
                         break;
                     case END:
                         return elm;
+                    case REF:
+                        check(0, "Ref instructions not supported yet");
+                        assert(0);
                     case ILLEGAL:
                         throw new WatException(format("Illegal instruction %02X", elm.code));
                     case SYMBOL:

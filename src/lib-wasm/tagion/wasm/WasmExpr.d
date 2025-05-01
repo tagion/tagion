@@ -150,6 +150,8 @@ struct WasmExpr {
             case ILLEGAL:
                 assert(0, format("Illegal opcode %02X", ir));
                 break;
+            case REF:
+                assert(0, "Ref instructions not supported yet");
             case SYMBOL:
                 assert(0, "Symbol opcode and it does not have an equivalent opcode");
             }

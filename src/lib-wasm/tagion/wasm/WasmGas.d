@@ -135,6 +135,9 @@ struct WasmGas {
                     case END:
                         wasmexpr(elm.code);
                         return GasResult(gas_count, elm.code);
+                    case REF:
+                        check(0, "Ref instructions not supported yet");
+                        assert(0);
                     case ILLEGAL:
                         assert(0, format("Illegal opcode %02X", elm.code));
                         break;
