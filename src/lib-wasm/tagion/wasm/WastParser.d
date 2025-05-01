@@ -225,8 +225,8 @@ struct WastParser {
             got_error |= tokenizer.valid(flag, msg, file, code_line);
         }
 
-        int getFuncIdx() @trusted {
-            int innerFunc(string text) {
+        int getFuncIdx() {
+            int innerFunc(string text) @trusted {
                 int result = func_lookup[text].ifThrown!RangeError(int(-1));
                 if (result < 0) {
                     result = text.to!int
@@ -659,7 +659,6 @@ struct WastParser {
         string table_name;
         import tagion.wasm.WasmReader : ElementMode;
 
-        ElementMode element_mode;
         void innerElemType() {
             if (r.type is TokenType.BEGIN) {
                 r.nextToken;
@@ -669,11 +668,11 @@ struct WastParser {
                 }
                 switch (r.token) {
                 case WastKeywords.TABLE: /// (table $x)
-                    r.check(element_mode is ElementMode.PASSIVE,
-                            format("Ambiguies element mode %s. Mode has already been defined", element_mode));
+                    r.check(elem.mode is ElementMode.PASSIVE,
+                            format("Ambiguies element mode %s. Mode has already been defined", elem.mode));
                     r.check(stage !is ParserStage.TABLE,
                             "Table can not be used inside a table");
-                    element_mode = ElementMode.ACTIVE;
+                    elem.mode = ElementMode.ACTIVE;
                     r.nextToken;
                     scope (exit) {
                         r.nextToken;
@@ -685,11 +684,11 @@ struct WastParser {
                     r.check(0, "Table has already been defined");
                     break;
                 case WastKeywords.OFFSET: /// (offset $x)
-                    r.check(element_mode < ElementMode.DECLARATIVE,
-                            format("Ambiguies element mode %s. Mode has already been defined", element_mode));
+                    r.check(elem.mode < ElementMode.DECLARATIVE,
+                            format("Ambiguies element mode %s. Mode has already been defined", elem.mode));
                     r.check(elem.expr is null,
                             "Initialisation code has already been defined for this element");
-                    element_mode = ElementMode.ACTIVE;
+                    elem.mode = ElementMode.ACTIVE;
                     r.nextToken;
                     FuncType void_func;
                     CodeType code_offset;
@@ -730,7 +729,7 @@ struct WastParser {
         int count = 10;
         while (r.type !is TokenType.END) {
             if (r.token == WastKeywords.DECLARE) { // declare
-                element_mode = ElementMode.DECLARATIVE;
+                elem.mode = ElementMode.DECLARATIVE;
                 __write("DECLARE ====");
                 r.nextToken;
                 break;
@@ -759,7 +758,7 @@ struct WastParser {
             innerElemType;
         }
 
-        return elem;
+       return elem;
     }
 
     private TableType parseTable(ref WastTokenizer r) {

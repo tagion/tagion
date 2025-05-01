@@ -621,7 +621,7 @@ struct WasmReader {
                     immutable(ubyte)[] _expr;
                     immutable(ubyte[])[] _exprs;
                     select = u32(data, index);
-                    __write("WasmRead select %d", select);
+                    __write("WasmRead select %d %(%02x %)", select, data.take(10));
                     void init_elementmode() {
                         // Mode comment is from Webassembly spec Modules/Element Section 
                         switch (select) {

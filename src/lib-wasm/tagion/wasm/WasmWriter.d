@@ -661,17 +661,35 @@ class WasmWriter {
         }
 
         struct ElementType {
-            uint select;
+//            uint select;
             uint tableidx;
             uint elemkind;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[] funcs;
             immutable(ubyte[])[] exprs;
             Types reftype;
+            ElementMode mode;
             this(ref const(ReaderSecType!(Section.ELEMENT)) e) {
                 tableidx = e.tableidx;
                 expr = e.expr;
                 funcs = e.funcs;
+            }
+
+            @property uint select() const pure nothrow @nogc {
+                    final switch(mode) {
+                case ElementMode.PASSIVE:
+                    if (funcs) {
+                        return 1;
+                        }
+                        return 5;
+
+                case ElementMode.ACTIVE:
+                    return 0;
+                case ElementMode.DECLARATIVE:
+                    return 3;
+
+                }
+                    assert(0);
             }
 
             void serialize(ref OutBuffer bout) const {
@@ -722,7 +740,7 @@ class WasmWriter {
 
                 }
             }
-
+version(none)
             ElementMode mode() const pure nothrow @nogc {
                 return WasmReader.WasmRange.WasmSection.elementMode(select);
             }
