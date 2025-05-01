@@ -660,30 +660,27 @@ struct WastParser {
         import tagion.wasm.WasmReader : ElementMode;
 
         void innerElemType() {
-            if (r.type is TokenType.BEGIN) {
+            bool getElementProperty() {
                 r.nextToken;
-                scope (exit) {
-                    r.nextToken;
-                    r.expect(TokenType.END);
-                }
                 switch (r.token) {
                 case WastKeywords.TABLE: /// (table $x)
                     r.check(elem.mode is ElementMode.PASSIVE,
                             format("Ambiguies element mode %s. Mode has already been defined", elem.mode));
                     r.check(stage !is ParserStage.TABLE,
                             "Table can not be used inside a table");
+                    scope (exit) {
+                        __write("TABLE--- %s", r.save.map!(t => t.token).take(5));
+                    }
                     elem.mode = ElementMode.ACTIVE;
                     r.nextToken;
-                    scope (exit) {
-                        r.nextToken;
-                    }
                     if (!table_name) {
                         table_name = r.token;
-                        break;
+                        r.nextToken;
+                        return true;
                     }
                     r.check(0, "Table has already been defined");
                     break;
-                case WastKeywords.OFFSET: /// (offset $x)
+                case WastKeywords.OFFSET: /// (offset (..expr..))
                     r.check(elem.mode < ElementMode.DECLARATIVE,
                             format("Ambiguies element mode %s. Mode has already been defined", elem.mode));
                     r.check(elem.expr is null,
@@ -696,21 +693,37 @@ struct WastParser {
                     parseInstr(r, ParserStage.TABLE, code_offset, void_func, ctx);
 
                     elem.expr = code_offset.expr;
-                    break;
+                    return true;
                 case WastKeywords.ITEM:
                     r.nextToken;
                     parseElem(r, ParserStage.ITEM);
-                    break;
+                    return true;
                 default:
-                    r.check(elem.expr is null,
-                            "Initialisation code has already been defined for this element");
-                    FuncType void_func;
-                    CodeType code;
-                    FunctionContext ctx;
-                    parseInstr(r, ParserStage.TABLE, code, void_func, ctx);
-                    elem.expr = code.expr;
+                    // empty
+                }
+                return false;
+            }
+
+            auto rewind = r.save;
+            if (r.type is TokenType.BEGIN) {
+                if (getElementProperty) {
+                    r.expect(TokenType.END);
+                    r.nextToken;
+                    return;
                 }
 
+                __write("Test expression");
+                r = rewind;
+                //if (r.type is TokenType.BEGIN) {
+                r.check(elem.expr is null,
+                        "Initialisation code has already been defined for this element");
+                __write("ELEMENT expression %s", r.save.map!(t => t.token).take(5));
+                //__write("Table name %s -- %s", table_name, r.save.map!(t => t.token).take(5));
+                FuncType void_func;
+                CodeType code;
+                FunctionContext ctx;
+                parseInstr(r, ParserStage.TABLE, code, void_func, ctx);
+                elem.expr = code.expr;
             }
         }
 
@@ -726,39 +739,31 @@ struct WastParser {
             return result;
         }
 
-        int count = 10;
         while (r.type !is TokenType.END) {
-            if (r.token == WastKeywords.DECLARE) { // declare
+            switch (r.token) {
+            case WastKeywords.FUNCREF: // funcref
+                _type = Types.FUNCREF;
+                r.nextToken;
+                elem.funcs = getFuncs;
+                continue;
+            case WastKeywords.FUNC: // func
+                _type = Types.FUNC;
+                r.nextToken;
+                elem.funcs = getFuncs;
+                continue;
+            case WastKeywords.DECLARE:
                 elem.mode = ElementMode.DECLARATIVE;
-                __write("DECLARE ====");
                 r.nextToken;
-                break;
-            }
-            const try_type = r.token.toType;
-            switch (try_type) {
-            case Types.FUNCREF: // funcref
-                r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
-                _type = try_type;
-                r.nextToken;
-                elem.funcs = getFuncs;
                 continue;
-            case Types.FUNC: // func
-                r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
-                _type = try_type;
-                r.nextToken;
-                elem.funcs = getFuncs;
-                continue;
-            case Types.VOID:
-                assert(count-- > 0);
-                // ignore
-                break;
             default:
-                r.check(0, format("Illegal type %s must be a ref-type", try_type));
+                r.expect(TokenType.BEGIN);
             }
             innerElemType;
-        }
 
-       return elem;
+            __write("Element next %s", r.token);
+        }
+        __write("ELEMENT AFTER %s", r.save.map!(t => t.token).take(5));
+        return elem;
     }
 
     private TableType parseTable(ref WastTokenizer r) {
