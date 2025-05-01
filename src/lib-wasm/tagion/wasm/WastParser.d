@@ -659,7 +659,7 @@ struct WastParser {
         string table_name;
         import tagion.wasm.WasmReader : ElementMode;
 
-        void innerElemType() {
+        bool innerElemType() {
             bool getElementProperty() {
                 r.nextToken;
                 switch (r.token) {
@@ -709,7 +709,7 @@ struct WastParser {
                 if (getElementProperty) {
                     r.expect(TokenType.END);
                     r.nextToken;
-                    return;
+                    return true;
                 }
 
                 __write("Test expression");
@@ -724,16 +724,24 @@ struct WastParser {
                 FunctionContext ctx;
                 parseInstr(r, ParserStage.TABLE, code, void_func, ctx);
                 elem.expr = code.expr;
+                return true;
             }
+            return false;
         }
 
-        Types _type;
-        immutable(uint[]) getFuncs() {
+        immutable(uint[]) getFuncs(const Flag!"ignore" falg=No.ignore) {
             immutable(uint)[] result;
             while (r.type is TokenType.WORD) {
                 const func_idx = func_lookup.get(r.token, -1);
-                r.check(func_idx >= 0, format("Function name %s not defined", r.token));
-                result ~= func_idx;
+                if (falg) {
+                    if (func_idx < 0) {
+                        break;
+                    }
+                }
+                else {
+                    r.check(func_idx >= 0, format("Function name %s not defined", r.token));
+                }
+                    result ~= func_idx;
                 r.nextToken;
             }
             return result;
@@ -742,12 +750,12 @@ struct WastParser {
         while (r.type !is TokenType.END) {
             switch (r.token) {
             case WastKeywords.FUNCREF: // funcref
-                _type = Types.FUNCREF;
+                elem.reftype = Types.FUNCREF;
                 r.nextToken;
                 elem.funcs = getFuncs;
                 continue;
             case WastKeywords.FUNC: // func
-                _type = Types.FUNC;
+                //elem.reftype = Types.FUNC;
                 r.nextToken;
                 elem.funcs = getFuncs;
                 continue;
@@ -756,9 +764,15 @@ struct WastParser {
                 r.nextToken;
                 continue;
             default:
+                if (elem.funcs.empty) {
+                    elem.funcs = getFuncs(Yes.ignore);
+                        if (!elem.funcs.empty) {
+                    continue;
+                        }
+                }
                 r.expect(TokenType.BEGIN);
             }
-            innerElemType;
+            r.check(innerElemType, "Expression expected");
 
             __write("Element next %s", r.token);
         }
