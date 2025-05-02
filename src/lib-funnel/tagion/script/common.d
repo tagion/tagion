@@ -37,7 +37,7 @@ alias CommonRecords = AliasSeq!(
 /**
  * Tagion bill
  */
-@recordType("TGN") 
+@recordType("TGN")
 struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; /// Time stamp
@@ -61,7 +61,7 @@ struct Contract {
     }
 
     mixin HiBONRecord!(
-        q{
+            q{
                 this(const(DARTIndex)[] inputs, const(DARTIndex)[] reads, Document script) pure nothrow {
                     this.inputs = inputs;
                     this.reads = reads;
@@ -84,7 +84,7 @@ struct SignedContract {
     @label(StdNames.signs) const(Signature)[] signs; /// Signature of all inputs
     @label(StdNames.contract) Contract contract; /// The contract must signed by all inputs
     mixin HiBONRecord!(
-        q{
+            q{
                 this(const(Signature)[] signs, Contract contract) pure nothrow {
                     this.signs = signs;
                     this.contract = contract;
@@ -107,7 +107,7 @@ struct SignedContract {
  * Included in a contract to eventually be outputs in the DART
  * The sum of the value of the outputs should be less than the sum of inputs + fees
  */
-@recordType("pay") 
+@recordType("pay")
 struct PayScript {
     @label(StdNames.values) const(TagionBill)[] outputs; /// Outputs of the contract to be Stored in DART
     mixin HiBONRecord;
@@ -169,9 +169,9 @@ const(SignedContract) sign(
         .array;
 
     result.contract = Contract(
-        sorted_inputs.map!((input) => input.value).array,
-        reads.map!(doc => net.dartIndex(doc)).array,
-        Document(script),
+            sorted_inputs.map!((input) => input.value).array,
+            reads.map!(doc => net.dartIndex(doc)).array,
+            Document(script),
     );
     result.signs = sign(sorted_inputs.map!((input) => nets[input.index]).array, result.contract);
     return result;
@@ -179,10 +179,10 @@ const(SignedContract) sign(
 
 /// ditto
 const(SignedContract) sign(
-    const(SecureNet[]) nets,
-    const(Document[]) inputs,
-    const(Document[]) reads,
-    const(Document) script) {
+        const(SecureNet[]) nets,
+        const(Document[]) inputs,
+        const(Document[]) reads,
+        const(Document) script) {
     import std.algorithm : map;
     import tagion.hibon.HiBONException;
 
@@ -228,9 +228,9 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 }
 
 unittest {
-    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureNet;
 
-    const net = new StdSecureNet;
+    const net = createSecureNet;
     const contract = new SignedContract;
     assert(!verify(net, contract, Document[].init), "Contract with no inputs should fail");
 }
@@ -238,7 +238,7 @@ unittest {
 /**
  * The very first epoch
  */
-@recordType("$@G") 
+@recordType("$@G")
 struct GenesisEpoch {
     @label(HashNames.epoch) long epoch_number; /// should always be zero
     Pubkey[] nodes; /// Initial nodes
@@ -251,7 +251,7 @@ struct GenesisEpoch {
 /**
  * Epoch
  */
-@recordType("$@E") 
+@recordType("$@E")
 struct Epoch {
     @label(HashNames.epoch) long epoch_number; /// The epoch number
     @label(StdNames.time) sdt_t time; /// Time stamp
@@ -292,7 +292,7 @@ alias GenericEpoch = SumType!(GenesisEpoch, Epoch);
  * Name record to get the current epoch
  * The record is updated on each epoch
  */
-@recordType("$@Tagion")  
+@recordType("$@Tagion")
 struct TagionHead {
     @label(HashNames.domain_name) string name = TagionDomain; /// Default name should always be "tagion"
     long current_epoch;
@@ -345,34 +345,34 @@ struct ConsensusVoting {
     }
 }
 
-version(RESERVED_ARCHIVES_FIX) {
-/**
+version (RESERVED_ARCHIVES_FIX) {
+    /**
  * Output which did not reach consensus at this epoch
  */
-@recordType("$@Locked") 
-struct LockedArchives {
-    @label(StdNames.locked_epoch) long epoch_number; ///
-    @label("outputs") const(DARTIndex)[] locked_outputs; ///
-    mixin HiBONRecord;
+    @recordType("$@Locked")
+    struct LockedArchives {
+        @label(StdNames.locked_epoch) long epoch_number; ///
+        @label("outputs") const(DARTIndex)[] locked_outputs; ///
+        mixin HiBONRecord;
+    }
 }
-} else {
-pragma(msg, "Why is Locked not reserved?");
-///
-@recordType("@Locked") 
-struct LockedArchives {
-    @label(HashNames.locked_epoch) long epoch_number;
-    @label("outputs") const(DARTIndex)[] locked_outputs;
-    mixin HiBONRecord;
-}
+else {
+    pragma(msg, "Why is Locked not reserved?");
+    ///
+    @recordType("@Locked")
+    struct LockedArchives {
+        @label(HashNames.locked_epoch) long epoch_number;
+        @label("outputs") const(DARTIndex)[] locked_outputs;
+        mixin HiBONRecord;
+    }
 }
 
 /**
  * Create the DARTindices for the LockedArchives from a range of epochs
  */
-DARTIndex[] lockedArchiveIndices(Range)(Range epochs, SecureNet net) 
-if (isInputRange!Range && is(ElementType!Range : long)) {
+DARTIndex[] lockedArchiveIndices(Range)(Range epochs, SecureNet net) if (isInputRange!Range && is(ElementType!Range : long)) {
     DARTIndex[] indices;
-    foreach(epoch; epochs) {
+    foreach (epoch; epochs) {
         indices ~= net.dartKey(HashNames.locked_epoch, epoch);
     }
     return indices;
@@ -382,9 +382,9 @@ if (isInputRange!Range && is(ElementType!Range : long)) {
  * The currently active nodes
  * This record is updated each time a node state changes
  */
-@recordType("$@Active") 
+@recordType("$@Active")
 struct Active {
-    @label(HashNames.active)string name = TagionDomain; /// Default name should always be "tagion"
+    @label(HashNames.active) string name = TagionDomain; /// Default name should always be "tagion"
     @label("nodes") const(Pubkey)[] nodes; /// All of the active nodes
     mixin HiBONRecord!(q{
         this(const(Pubkey)[] nodes) pure nothrow {
@@ -394,6 +394,7 @@ struct Active {
 
     bool verify() const pure nothrow {
         import std.algorithm : isSorted;
+
         return nodes.isSorted;
     }
 }
@@ -415,17 +416,17 @@ unittest {
     import tagion.hibon.HiBON;
 
     string records_file = unitfile("common_records.hibon");
-    if(records_file.exists) {
+    if (records_file.exists) {
         records_file.remove;
     }
     mkdirRecurse(records_file.dirName);
     File fout = File(records_file, "a");
 
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("common_records_test");
 
     sdt_t time = sdt_t(638_402_115_766_852_971);
-    TagionBill tagion_bill = TagionBill( 123.TGN, time, net.pubkey, []);
+    TagionBill tagion_bill = TagionBill(123.TGN, time, net.pubkey, []);
     PayScript payscript = PayScript([tagion_bill]);
     Contract contract = Contract([dartIndex(net, tagion_bill)], [], payscript.toDoc);
     // We use a hardcorded signature because we dont want the signature to affect the different
@@ -454,6 +455,7 @@ unittest {
     LockedArchives locked_archives = LockedArchives(long(3), [dartIndex(net, testamony)]);
     fwrite(fout, locked_archives);
 }
+
 version (WITHOUT_PAYMENT) {
     struct HashString {
         string name;

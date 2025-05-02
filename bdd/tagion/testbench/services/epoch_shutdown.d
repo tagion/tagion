@@ -30,7 +30,6 @@ import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
 import tagion.wave.common;
 
-
 enum feature = Feature(
             "epoch shutdown",
             []);
@@ -95,11 +94,11 @@ class StoppingAllNodesAtASpecificEpoch {
         // We wait for a few more epochs, just to be sure that all consensus epochs are reached
         test_net.wait_for_epochs(SHUTDOWN_EPOCH + 10, 100.seconds);
 
-        SecureNet net = new StdSecureNet();
+        SecureNet net = createSecureNet;
         net.generateKeyPair(__MODULE__);
         const hirpc = HiRPC(net);
 
-        foreach(opt; test_net.node_opts) {
+        foreach (opt; test_net.node_opts) {
             const node_name = opt.task_names.supervisor;
             auto db = new DART(net, opt.dart.dart_path);
             TagionHead head = getHead(db, net);
@@ -110,7 +109,8 @@ class StoppingAllNodesAtASpecificEpoch {
             const receiver = hirpc.receive(sender);
             auto response = db(receiver);
             auto locked_archives_recorder = db.recorder(response.result);
-            enforce(locked_archives_recorder[].empty, format("%s locked archives %s", node_name, locked_archives_recorder[].walkLength));
+            enforce(locked_archives_recorder[].empty, format("%s locked archives %s", node_name, locked_archives_recorder[]
+                    .walkLength));
         }
 
         return result_ok;

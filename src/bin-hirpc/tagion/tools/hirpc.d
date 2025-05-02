@@ -1,6 +1,5 @@
 /// HiRPC utility for generating HiRPC requests
-@description("Create and inspect HiBON RPCs")
-module tagion.tools.hirpc;
+@description("Create and inspect HiBON RPCs") module tagion.tools.hirpc;
 
 import tagion.tools.Basic;
 import tagion.tools.revision;
@@ -31,7 +30,7 @@ import std.typecons;
 
 @safe
 void strip_hirpc(const(HiRPC) hirpc, File fout, const(Document) doc, const bool info) {
-    const error_code = doc.valid(reserved : No.Reserved);
+    const error_code = doc.valid(reserved: No.Reserved);
     tools.check(error_code.isinit, format("HiRPC is not a valid document %s", error_code));
     const receiver = hirpc.receive(doc);
     if (receiver.isMethod) {
@@ -110,22 +109,22 @@ int _main(string[] args) {
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
                     [
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...]", program),
-                    "",
-                    "<option>:",
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...]", program),
+                "",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             writeln();
             examplesPrinter(program, [
                 ToolExample("Create a dartBullseye request and save it to a file",
-                            "-m dartBullseye -o bullseye_request.hibon"),
+                        "-m dartBullseye -o bullseye_request.hibon"),
             ]);
 
-            if(!method_name.empty) {
+            if (!method_name.empty) {
                 writeln();
             }
             return 0;
@@ -140,7 +139,7 @@ int _main(string[] args) {
         }
 
         if (response_switch || result_switch) {
-            const net = new StdSecureNet;
+            const net = createSecureNet;
             const hirpc = HiRPC(net);
             auto inputfiles = args[1 .. $].filter!(file => file.hasExtension(FileExtension.hibon));
             verbose("inputfile %s", inputfiles);
@@ -176,7 +175,7 @@ int _main(string[] args) {
             auto res = chain(get_indices(dartindices), get_pkey_indices(pkeys));
             result = dartIndexCmd(name(), res, hirpc.relabel(domain())).toDoc;
             break;
-       case Queries.dartModify:
+        case Queries.dartModify:
             tools.check(args.length <= 2, format("Only one file name expected Not %s", args[1 .. $]));
             break;
         default:

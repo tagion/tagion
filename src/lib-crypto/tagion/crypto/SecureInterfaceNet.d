@@ -32,6 +32,7 @@ interface HashNet {
 
 interface SecureNet : HashNet {
     import std.typecons : Tuple;
+
     const(HashNet) hash() const pure nothrow;
     alias Signed = Tuple!(Signature, "signature", Fingerprint, "message");
     @nogc Pubkey pubkey() pure const nothrow;
@@ -41,7 +42,7 @@ interface SecureNet : HashNet {
         
 
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-            .SECURITY_MESSAGE_HASH_KEY);
+                    .SECURITY_MESSAGE_HASH_KEY);
         immutable message = hash.calcHash(doc);
         return verify(message, signature, pubkey);
     }
@@ -65,13 +66,13 @@ interface SecureNet : HashNet {
     void createKeyPair(ref ubyte[] privkey) pure;
     void generateKeyPair(
             scope const(char[]) passphrase,
-    scope const(char[]) salt = null,
-    void delegate(scope const(ubyte[]) data) pure @safe dg = null) pure;
+            scope const(char[]) salt = null,
+            void delegate(scope const(ubyte[]) data) pure @safe dg = null) pure;
     void eraseKey() pure nothrow;
 
     immutable(ubyte[]) ECDHSecret(
             scope const(ubyte[]) seckey,
-    scope const(Pubkey) pubkey) const;
+            scope const(Pubkey) pubkey) const;
 
     immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
 
@@ -90,4 +91,5 @@ interface SecureNet : HashNet {
     Pubkey derivePubkey(string tweak_word);
 
     SecureNet clone() const;
+    SecureNet clone() const shared;
 }

@@ -26,6 +26,7 @@ import tagion.hibon.HiBONRecord : HiBONRecord;
 import tagion.utils.StdTime;
 
 import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureNet;
 
 import tagion.Keywords;
 import tagion.basic.Message;
@@ -136,7 +137,7 @@ struct SecureWallet(Net : SecureNet) {
         check(questions.length > 3, "Minimal amount of answers is 4");
         check(confidence < questions.length,
                 "The confidence should be lower than the number of questions");
-        _net = new Net();
+        _net = createSecureNet;
         //        auto hashnet = new StdHashNet;
         auto recover = KeyRecover(_net);
 
@@ -153,7 +154,7 @@ struct SecureWallet(Net : SecureNet) {
 
     this(scope const(ubyte)[][] answers, uint confidence, const(char[]) pincode = null) {
 
-        _net = new Net();
+        _net = createSecureNet;
         auto recover = KeyRecover(_net);
         if (confidence == answers.length) {
             confidence--;
@@ -176,7 +177,7 @@ struct SecureWallet(Net : SecureNet) {
             scope const(char[]) passphrase,
             scope const(char[]) pincode,
             scope const(char[]) salt = null) {
-        _net = new Net;
+        _net = createSecureNet;
         enum size_of_privkey = 32;
         ubyte[] R;
         scope (exit) {
@@ -209,7 +210,7 @@ struct SecureWallet(Net : SecureNet) {
     bool correct(const(string[]) questions, const(char[][]) answers)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
-        _net = new Net;
+        _net = createSecureNet;
         auto recover = KeyRecover(_net, _wallet);
         scope R = new ubyte[_net.hashSize];
         return recover.findSecret(R, questions, answers);
@@ -230,7 +231,7 @@ struct SecureWallet(Net : SecureNet) {
             const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
-        _net = new Net;
+        _net = createSecureNet;
         auto recover = KeyRecover(_net, _wallet);
         auto R = new ubyte[_net.hashSize];
         scope (exit) {
@@ -247,7 +248,7 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     bool recover(Buffer[] A, const(char[]) pincode = null) {
-        _net = new Net;
+        _net = createSecureNet;
         auto recover = KeyRecover(_net, _wallet);
         auto R = new ubyte[_net.hashSize];
         scope (exit) {
@@ -289,7 +290,7 @@ struct SecureWallet(Net : SecureNet) {
     bool login(const(char[]) pincode) {
         if (_pin.D) {
             logout;
-            auto login_net = new Net;
+            auto login_net = createSecureNet;
             auto R = new ubyte[login_net.hashSize];
             scope (exit) {
                 R[] = 0;
@@ -318,7 +319,7 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: true if the pincode is correct
      */
     bool checkPincode(const(char[]) pincode) {
-        const hashnet = (_net.isinit) ? new Net : _net;
+        const hashnet = (_net.isinit) ? createSecureNet : _net;
 
         scope R = new ubyte[hashnet.hashSize];
         scope (exit) {
@@ -896,8 +897,8 @@ struct SecureWallet(Net : SecureNet) {
             try {
                 if (nft_inputs.length == 0) {
                     signed_contract = sign([net], [
-                            cast(DARTIndex) net.dartIndex(snavs_record)
-                            ], null, nft_doc);
+                        cast(DARTIndex) net.dartIndex(snavs_record)
+                    ], null, nft_doc);
                 }
                 else {
                     const nets = net.repeat(nft_inputs.length).array;
@@ -1206,7 +1207,7 @@ struct SecureWallet(Net : SecureNet) {
         import tagion.utils.Miscellaneous;
 
         auto sender_wallet = SecureWallet(DevicePIN.init, RecoverGenerator.init);
-        auto _net = new Net;
+        auto _net = createSecureNet;
 
         { // Add SecureNet to the wallet
             immutable very_securet = "Very Secret password";
@@ -1238,7 +1239,7 @@ struct SecureWallet(Net : SecureNet) {
 
         auto receiver_wallet = SecureWallet(DevicePIN.init, RecoverGenerator.init);
         { // Add securety to the receiver_wallet
-            auto receiver_net = new Net;
+            auto receiver_net = createSecureNet;
             immutable very_securet = "Very Secret password for the receriver";
             receiver_net.generateKeyPair(very_securet);
             receiver_wallet._net = receiver_net;

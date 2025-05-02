@@ -14,7 +14,7 @@ import std.exception;
 
 import tagion.actor;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.Recorder;
@@ -33,13 +33,13 @@ import tagion.hibon.Document;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONRecord;
 import tagion.wave.mode0;
-import tagion.testbench.tools.Environment: bddenv = env;
+import tagion.testbench.tools.Environment : bddenv = env;
 import tagion.hashgraph.Refinement;
 import neuewelle = tagion.tools.neuewelle;
 
 @trusted
 void wrap_neuewelle(immutable(string)[] args) {
-    neuewelle._main(cast(string[])args);
+    neuewelle._main(cast(string[]) args);
 }
 
 @safe
@@ -79,7 +79,7 @@ class TestNetwork {
         foreach (i; 0 .. 5) {
             StdSecureWallet secure_wallet;
             secure_wallet = StdSecureWallet(
-                iota(0, 5)
+                    iota(0, 5)
                     .map!(n => format("%dquestion%d", i, n)).array,
                     iota(0, 5)
                     .map!(n => format("%danswer%d", i, n)).array,
@@ -97,7 +97,7 @@ class TestNetwork {
         }
 
         // create the recorder
-        SecureNet net = new StdSecureNet();
+        SecureNet net = createSecureNet;
         net.generateKeyPair("very_secret");
 
         auto factory = RecordFactory(net);
@@ -108,16 +108,17 @@ class TestNetwork {
         auto nodenets = dummy_nodenets_for_testing(node_opts);
         foreach (opt, node_net; zip(node_opts, nodenets)) {
             node_settings ~= NodeSettings(
-                opt.task_names.epoch_creator, // Name
-                node_net.pubkey,
-                opt.task_names.epoch_creator, // Address
+                    opt.task_names.epoch_creator, // Name
+                    node_net.pubkey,
+                    opt.task_names.epoch_creator, // Address
+                    
             );
         }
 
         const genesis = createGenesis(
-            node_settings,
-            Document(), 
-            TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+                node_settings,
+                Document(),
+                TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
         );
 
         recorder.insert(genesis, Archive.Type.ADD);
@@ -172,10 +173,10 @@ class TestNetwork {
             return epochs.byValue.all!(i => i >= expected_epoch) && epochs.length >= local_options.wave.number_of_nodes;
         }
 
-        while(!all_epochs_reached() && MonoTime.currTime - begin_time <= timeout) {
+        while (!all_epochs_reached() && MonoTime.currTime - begin_time <= timeout) {
             receiveTimeout(1.seconds, (LogInfo loginfo, const(Document) doc) {
                 writefln("REFINEMENT SUB %s", doc.toPretty);
-                if(!doc.isRecord!FinishedEpoch) {
+                if (!doc.isRecord!FinishedEpoch) {
                     return;
                 }
                 const finished_epoch = FinishedEpoch(doc);

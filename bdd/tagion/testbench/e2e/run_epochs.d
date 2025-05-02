@@ -31,7 +31,7 @@ import std.format;
 import std.algorithm;
 import std.algorithm.comparison : equal;
 import std.range;
-import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
+import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 
 void wrap_neuewelle(immutable(string)[] args) {
@@ -96,7 +96,7 @@ int _main(string[] args) {
         }
     }
 
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("very_secret");
 
     auto factory = RecordFactory(net);
@@ -191,7 +191,6 @@ class RunPassiveFastNetwork {
     import tagion.testbench.actor.util : receiveOnlyTimeout;
     import tagion.logger.LogRecords : LogInfo;
 
-
     enum EPOCH_TIMEOUT_SECONDS = 60;
     uint number_of_nodes;
     long last_epoch;
@@ -215,6 +214,7 @@ class RunPassiveFastNetwork {
         FinishedEpoch[string][long] epochs;
 
         import tagion.testbench.hashgraph.hashgraph_test_network;
+
         while (newest_epoch < end_epoch) {
             auto finished_epoch_log = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT_SECONDS.seconds);
             check(finished_epoch_log[1].isRecord!(FinishedEpoch), "Did not receive finished epoch");

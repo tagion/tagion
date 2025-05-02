@@ -17,17 +17,15 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.Keywords;
 
-
 import std.algorithm;
 import std.format;
 import std.array;
 import std.range;
 
-
 import tagion.wallet.WalletException : WalletException;
 import tagion.errors.tagionexceptions : Check;
-alias check = Check!(WalletException);
 
+alias check = Check!(WalletException);
 
 @safe
 TagionBill requestBill(TagionCurrency amount, Pubkey bill_owner, sdt_t bill_time = currentTime) {
@@ -56,8 +54,8 @@ struct Wallet(Net : SecureNet) {
     void createWallet(scope const(char[]) passphrase, scope const(char[]) pincode, scope const(char[]) salt = null) {
 
         void set_pincode(
-            scope const(ubyte[]) R,
-            scope const(char[]) pincode) scope
+                scope const(ubyte[]) R,
+                scope const(char[]) pincode) scope
         in (_net !is null)
         do {
             auto seed = new ubyte[_net.hashSize];
@@ -65,12 +63,12 @@ struct Wallet(Net : SecureNet) {
             _pin.setPin(_net, R, pincode.representation, seed.idup);
         }
 
-        scope(success) {
+        scope (success) {
             // derive the first pubkey so that the root is never used
             deriveNewPubkey;
         }
 
-        _net = new Net;
+        _net = createSecureNet;
         enum size_of_privkey = 32;
         ubyte[] R;
         scope (exit) {
@@ -93,7 +91,7 @@ struct Wallet(Net : SecureNet) {
     bool login(const(char[]) pincode) {
         if (_pin.D) {
             _net = null;
-            auto login_net = new Net;
+            auto login_net = createSecureNet;
             auto R = new ubyte[login_net.hashSize];
             scope (exit) {
                 R[] = 0;
@@ -122,7 +120,7 @@ struct Wallet(Net : SecureNet) {
 
         // Select all bills not in use
         auto none_locked = account.bills.filter!(
-            b => !(_net.dartIndex(b) in account.activated)).array;
+                b => !(_net.dartIndex(b) in account.activated)).array;
 
         const enough = !none_locked
             .map!(b => b.value)
@@ -153,6 +151,7 @@ struct Wallet(Net : SecureNet) {
         }
         return false;
     }
+
     TagionCurrency getFee(TagionCurrency amount, bool print = false) {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
@@ -180,15 +179,16 @@ struct Wallet(Net : SecureNet) {
             const amount_to_collect = amount_to_pay + (-1 * (amount_remainder)) + fees;
             check(amount_to_collect < available_wallet_amount, "Amount is too big with fees");
             const can_pay = collect_bills(amount_to_collect, collected_bills);
-            check((collected_bills.length != previous_bill_count) || !can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, account.available()
+            check((collected_bills.length != previous_bill_count) || !can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay
+                    .value, account.available()
                     .value));
             const total_collected_amount = collected_bills
                 .map!(bill => bill.value)
                 .totalAmount;
             fees = ContractExecution.billFees(
-                collected_bills.map!(bill => bill.toDoc),
-                pay_script.outputs.map!(bill => bill.toDoc),
-                snavs_byte_fee);
+                    collected_bills.map!(bill => bill.toDoc),
+                    pay_script.outputs.map!(bill => bill.toDoc),
+                    snavs_byte_fee);
             amount_remainder = total_collected_amount - amount_to_pay - fees;
 
             previous_bill_count = collected_bills.length;
@@ -203,10 +203,11 @@ struct Wallet(Net : SecureNet) {
             .map!((deriver) => (deriver is null) ? _net.init : _net.derive(*deriver))
             .array;
     }
-    
+
     void lock_bills(const(TagionBill[]) locked_bills) {
         locked_bills.each!(b => account.activated[_net.dartIndex(b)] = true);
     }
+
     SignedContract createPayment(const(TagionBill)[] to_pay, out TagionCurrency fees, bool print = false) {
         import tagion.hibon.HiBONtoText;
         import tagion.script.Currency : totalAmount;
@@ -246,9 +247,9 @@ struct Wallet(Net : SecureNet) {
                 );
             }
             fees = ContractExecution.billFees(
-                collected_bills.map!(bill => bill.toDoc),
-                pay_script.outputs.map!(bill => bill.toDoc),
-                snavs_byte_fee);
+                    collected_bills.map!(bill => bill.toDoc),
+                    pay_script.outputs.map!(bill => bill.toDoc),
+                    snavs_byte_fee);
             amount_remainder = total_collected_amount - amount_to_pay - fees;
             previous_bill_count = collected_bills.length;
         }
@@ -268,8 +269,8 @@ struct Wallet(Net : SecureNet) {
                 .length, collected_bills.length));
 
         return sign(
-            nets,
-            collected_bills.map!(bill => bill.toDoc)
+                nets,
+                collected_bills.map!(bill => bill.toDoc)
                 .array,
                 null,
                 pay_script.toDoc);
@@ -498,12 +499,11 @@ struct Wallet(Net : SecureNet) {
     }
 }
 
-
-version(unittest) {
+version (unittest) {
     import tagion.crypto.SecureNet;
+
     alias SimpleWallet = Wallet!StdSecureNet;
 }
-
 
 /// check pubkey derivation
 unittest {

@@ -12,7 +12,7 @@ import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.behaviour;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.gossip.AddressBook : addressbook;
 import tagion.hashgraph.HashGraphBasic;
@@ -34,8 +34,8 @@ import tagion.utils.pretend_safe_concurrency;
 enum feature = Feature(
             "EpochCreator service",
             [
-            "This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
-            ]);
+        "This service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
+]);
 
 alias FeatureContext = Tuple!(
         SendPayloadAndCreateEpoch, "SendPayloadAndCreateEpoch",
@@ -46,7 +46,7 @@ alias FeatureContext = Tuple!(
         [])
 class SendPayloadAndCreateEpoch {
     struct Node {
-        shared(StdSecureNet) node_net;
+        shared(SecureNet) node_net;
         string name;
         EpochCreatorOptions opts;
     }
@@ -65,7 +65,7 @@ class SendPayloadAndCreateEpoch {
         foreach (i; 0 .. number_of_nodes) {
             immutable prefix = format("Node_%s", i);
             immutable task_names = TaskNames(prefix);
-            auto net = new StdSecureNet();
+            auto net = createSecureNet;
             net.generateKeyPair(task_names.epoch_creator);
             shared shared_net = (() @trusted => cast(shared) net)();
             scope (exit) {

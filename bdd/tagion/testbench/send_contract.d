@@ -43,7 +43,7 @@ int _main(string[] args) {
     import std.range;
     import std.stdio;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureNet;
     import tagion.dart.DART;
     import tagion.dart.DARTFile;
     import tagion.dart.Recorder;
@@ -58,7 +58,7 @@ int _main(string[] args) {
     foreach (i; 0 .. 5) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-            iota(0, 5)
+                iota(0, 5)
                 .map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5)
                 .map!(n => format("%danswer%d", i, n)).array,
@@ -77,7 +77,7 @@ int _main(string[] args) {
     const start_amount = 3000.TGN;
 
     // create the recorder
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("very_secret");
 
     auto factory = RecordFactory(net);
@@ -96,16 +96,17 @@ int _main(string[] args) {
     auto nodenets = dummy_nodenets_for_testing(node_opts);
     foreach (opt, node_net; zip(node_opts, nodenets)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            node_net.pubkey,
-            opt.task_names.epoch_creator, // Address
+                opt.task_names.epoch_creator, // Name
+                node_net.pubkey,
+                opt.task_names.epoch_creator, // Address
+                
         );
     }
 
     const genesis = createGenesis(
-        node_settings,
-        Document(), 
-        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+            node_settings,
+            Document(),
+            TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
     );
 
     recorder.insert(genesis, Archive.Type.ADD);

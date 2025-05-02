@@ -27,7 +27,7 @@ import tagion.utils.BitMask;
 import tagion.utils.convert : cutHex;
 import tagion.utils.StdTime;
 import tagion.behaviour.BehaviourException : check, BehaviourException;
-
+import tagion.crypto.SecureNet;
 import tagion.basic.Debug;
 import tagion.basic.Version;
 
@@ -78,6 +78,7 @@ class TestRefinement : StdRefinement {
         }
         first_epoch = true;
         import tagion.basic.Debug : print = __write;
+
         print("%12s Round %04d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
         if (event_collection.length == 0) {
             return;
@@ -317,7 +318,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
     void addNode(Refinement refinement, immutable(ulong) N, const(string) name,
             int scrap_depth = 0) {
         immutable passphrase = format("very secret %s", name);
-        auto net = new StdSecureNet();
+        auto net = createSecureNet;
         net.generateKeyPair(passphrase);
         refinement.queue = new PayloadQueue;
         auto h = new HashGraph(N, net, refinement, authorising, name);

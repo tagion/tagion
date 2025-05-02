@@ -31,6 +31,7 @@ import std.format;
 import tagion.wallet.SecureWallet;
 import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
+import tagion.crypto.SecureNet : createSecureNet;
 
 mixin Main!(_main);
 
@@ -76,7 +77,7 @@ int _main(string[] args) {
     foreach (i; 0 .. 2) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-            iota(0, 5)
+                iota(0, 5)
                 .map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5)
                 .map!(n => format("%danswer%d", i, n)).array,
@@ -96,7 +97,7 @@ int _main(string[] args) {
     auto bill = requestAndForce(wallets[0], 1000_000_000.TGN);
     bills ~= bill;
 
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("very_secret");
 
     auto factory = RecordFactory(net);
@@ -115,16 +116,17 @@ int _main(string[] args) {
     auto nodenets = dummy_nodenets_for_testing(node_opts);
     foreach (opt, node_net; zip(node_opts, nodenets)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            node_net.pubkey,
-            opt.task_names.epoch_creator, // Address
+                opt.task_names.epoch_creator, // Name
+                node_net.pubkey,
+                opt.task_names.epoch_creator, // Address
+                
         );
     }
 
     const genesis = createGenesis(
-        node_settings,
-        Document(), 
-        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+            node_settings,
+            Document(),
+            TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
     );
 
     recorder.insert(genesis, Archive.Type.ADD);
@@ -169,7 +171,7 @@ int _main(string[] args) {
     writefln("BEFORE RUNNING TESTS");
     auto feature = automation!(big_contract);
     feature.SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs(
-        node_opts[0], wallets[0], wallets[1]);
+            node_opts[0], wallets[0], wallets[1]);
     feature.run;
     stopsignal.setIfInitialized;
     Thread.sleep(6.seconds);
@@ -178,16 +180,16 @@ int _main(string[] args) {
 }
 
 enum feature = Feature(
-        "send a contract with many outputs to the network.",
-        []);
+            "send a contract with many outputs to the network.",
+            []);
 
 alias FeatureContext = Tuple!(
-    SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs, "SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs",
-    FeatureGroup*, "result"
+        SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs, "SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("send a single transaction from a wallet to another wallet with many outputs.",
-    [])
+        [])
 class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
     Options opts1;
     StdSecureWallet wallet1;

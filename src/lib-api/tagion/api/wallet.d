@@ -21,9 +21,10 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureNet;
 
 extern (C):
-version(unittest) {
+version (unittest) {
 
-} else {
+}
+else {
 nothrow:
 }
 
@@ -58,32 +59,31 @@ struct securenet_t {
   Returns: 
     [tagion.api.errors.ErrorCode]
  */
-int tagion_generate_keypair (
-    const(char)* passphrase_ptr,
-    const(size_t) passphrase_len,
-    const(char)* salt_ptr,
-    const(size_t) salt_len,
-    securenet_t* out_securenet,
-    const(char*) pin_ptr,
-    const(size_t) pin_len,
-    uint8_t** out_device_doc_ptr,
-    size_t* out_device_doc_len,
+int tagion_generate_keypair(
+        const(char)* passphrase_ptr,
+        const(size_t) passphrase_len,
+        const(char)* salt_ptr,
+        const(size_t) salt_len,
+        securenet_t* out_securenet,
+        const(char*) pin_ptr,
+        const(size_t) pin_len,
+        uint8_t** out_device_doc_ptr,
+        size_t* out_device_doc_len,
 ) {
 
-
     try {
-        const _passphrase = passphrase_ptr[0..passphrase_len];
-        const _salt = salt_ptr[0..salt_len];
+        const _passphrase = passphrase_ptr[0 .. passphrase_len];
+        const _salt = salt_ptr[0 .. salt_len];
 
-        StdSecureNet _net = new StdSecureNet;
+        SecureNet _net = createSecureNet;
 
         if (pin_ptr !is null) {
             DevicePIN _pin;
-            const _pincode = pin_ptr[0..pin_len];
+            const _pincode = pin_ptr[0 .. pin_len];
 
             void set_pincode(
-                scope const(ubyte[]) R,
-                scope const(char[]) pincode) scope
+                    scope const(ubyte[]) R,
+                    scope const(char[]) pincode) scope
             in (_net !is null)
             do {
                 auto seed = new ubyte[_net.hashSize];
@@ -93,22 +93,24 @@ int tagion_generate_keypair (
 
             ubyte[] R;
             enum size_of_privkey = 32;
-            scope(exit) {
+            scope (exit) {
                 set_pincode(R, _pincode);
                 R[] = 0;
                 auto device_doc = _pin.toDoc.serialize;
-                *out_device_doc_ptr = cast(uint8_t*) &device_doc[0];
+                *out_device_doc_ptr = cast(uint8_t*)&device_doc[0];
                 *out_device_doc_len = device_doc.length;
             }
             _net.generateKeyPair(_passphrase, _salt,
                     (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
-        } else {
-            _net.generateKeyPair(_passphrase, _salt); 
+        }
+        else {
+            _net.generateKeyPair(_passphrase, _salt);
         }
 
         out_securenet.securenet = cast(void*) _net;
         out_securenet.magic_byte = MAGIC.SECURENET;
-    } catch(Exception e) {
+    }
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -146,20 +148,20 @@ unittest {
    Returns: 
      [tagion.api.errors.ErrorCode]
  */
-int tagion_decrypt_devicepin (
-    const(char*) pin_ptr,
-    const(size_t) pin_len,
-    uint8_t* devicepin_ptr,
-    size_t devicepin_len,
-    securenet_t* out_securenet,
+int tagion_decrypt_devicepin(
+        const(char*) pin_ptr,
+        const(size_t) pin_len,
+        uint8_t* devicepin_ptr,
+        size_t devicepin_len,
+        securenet_t* out_securenet,
 ) {
     try {
-        const _pincode = pin_ptr[0..pin_len];
-        const _device_doc_buf = cast(immutable) devicepin_ptr[0..devicepin_len];
+        const _pincode = pin_ptr[0 .. pin_len];
+        const _device_doc_buf = cast(immutable) devicepin_ptr[0 .. devicepin_len];
 
         DevicePIN _pin = DevicePIN(Document(_device_doc_buf));
 
-        StdSecureNet _net = new StdSecureNet;
+        SecureNet _net = createSecureNet;
         auto R = new ubyte[_net.hashSize];
         scope (exit) {
             R[] = 0;
@@ -173,7 +175,8 @@ int tagion_decrypt_devicepin (
 
         out_securenet.magic_byte = MAGIC.SECURENET;
         out_securenet.securenet = cast(void*) _net;
-    } catch(Exception e) {
+    }
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -185,16 +188,18 @@ unittest {
     /// create key-pair with devicepin
     import tagion.hibon.HiBONRecord;
     import std.format;
+
     securenet_t my_keypair;
     string my_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
     string pincode = "1234";
 
     uint8_t* device_buf;
     size_t device_len;
-    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, &pincode[0], pincode.length, &device_buf, &device_len);
+    int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, &pincode[0], pincode
+            .length, &device_buf, &device_len);
     assert(error_code == ErrorCode.none);
 
-    const _device_buf = device_buf[0..device_len].idup;
+    const _device_buf = device_buf[0 .. device_len].idup;
     const device_doc = Document(_device_buf);
     assert(device_doc.isRecord!DevicePIN, format("the doc was not of type %s", DevicePIN.stringof));
 
@@ -221,9 +226,10 @@ int tagion_get_pub_key(const(securenet_t*) root_net, uint8_t** pubkey_ptr, size_
         }
         StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
         const pubkey = _net.pubkey;
-        *pubkey_ptr = cast(uint8_t*) &pubkey[0];
+        *pubkey_ptr = cast(uint8_t*)&pubkey[0];
         *pubkey_len = pubkey.length;
-    } catch(Exception e) {
+    }
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -231,19 +237,19 @@ int tagion_get_pub_key(const(securenet_t*) root_net, uint8_t** pubkey_ptr, size_
 }
 
 /// Sign a message
-int tagion_sign_message (
-    const(securenet_t*) root_net,
-    const(uint8_t*) message_ptr,
-    const(size_t) message_len,
-    uint8_t** signature_ptr, 
-    size_t* signature_len,
+int tagion_sign_message(
+        const(securenet_t*) root_net,
+        const(uint8_t*) message_ptr,
+        const(size_t) message_len,
+        uint8_t** signature_ptr,
+        size_t* signature_len,
 ) {
     try {
         if (root_net.magic_byte != MAGIC.SECURENET && root_net !is null) {
             set_error_text = "root_net is invalid";
             return ErrorCode.error; // TODO: better message
         }
-        const message = message_ptr[0..message_len].idup;
+        const message = message_ptr[0 .. message_len].idup;
         if (message.length != NativeSecp256k1.MESSAGE_SIZE) {
             set_error_text = "Message length is invalid should be 32";
             return ErrorCode.error;
@@ -251,9 +257,10 @@ int tagion_sign_message (
         const message_fingerprint = Fingerprint(message);
         StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
         const signature = _net.sign(message_fingerprint);
-        *signature_ptr = cast(uint8_t*) &signature[0];
+        *signature_ptr = cast(uint8_t*)&signature[0];
         *signature_len = signature.length;
-    } catch(Exception e) {
+    }
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -269,7 +276,8 @@ unittest {
     assert(error_code == ErrorCode.none);
 
     // const message_to_sign = "wowowowowo\0".representation;
-    const rawdata = "ntorisantionrseiontoiarsnstienarsietnaioensiteornstioenthe quick brown fox jumps over the dog".representation;
+    const rawdata = "ntorisantionrseiontoiarsnstienarsietnaioensiteornstioenthe quick brown fox jumps over the dog"
+        .representation;
     const buf = hash_net.calcHash(rawdata);
     assert(buf.length == NativeSecp256k1.MESSAGE_SIZE);
     uint8_t* signature_buf;
@@ -280,7 +288,7 @@ unittest {
     assert(signature_len == NativeSecp256k1.SIGNATURE_SIZE);
 
     // sign invalid buf with wrong len
-    error_code = tagion_sign_message(&my_keypair, &buf[0], buf.length-5, &signature_buf, &signature_len);
+    error_code = tagion_sign_message(&my_keypair, &buf[0], buf.length - 5, &signature_buf, &signature_len);
     assert(error_code == ErrorCode.error, "should throw error if the message length is not correct");
 }
 
@@ -291,9 +299,9 @@ struct buf_t {
 
 Document[] get_docs(buf_t** docs_array, size_t count) {
     Document[] docs;
-    for (size_t i=0; i<count; i++) {
+    for (size_t i = 0; i < count; i++) {
         const doc_ptr = docs_array[i];
-        const buf = doc_ptr.data[0..doc_ptr.data_len].idup;
+        const buf = doc_ptr.data[0 .. doc_ptr.data_len].idup;
         const doc = Document(buf);
         docs ~= doc;
     }
@@ -302,35 +310,36 @@ Document[] get_docs(buf_t** docs_array, size_t count) {
 
 ubyte[][] get_derivers(buf_t** buf_array, size_t count) {
     ubyte[][] derivers;
-    for (size_t i=0; i<count; i++) {
+    for (size_t i = 0; i < count; i++) {
         const buf_ptr = buf_array[i];
 
-        auto buf = buf_ptr.data[0..buf_ptr.data_len].dup;
+        auto buf = buf_ptr.data[0 .. buf_ptr.data_len].dup;
         derivers ~= buf;
     }
     return derivers;
 }
 
 int tagion_create_signed_contract(
-    const(securenet_t*) root_net,
-    buf_t** bills_to_pay_ptr, 
-    const(size_t) bills_to_pay_count,
-    buf_t** available_bills_ptr,
-    const(size_t) available_bills_count,
-    buf_t** derivers_ptr,
-    const(size_t) derivers_count,
-    const(uint8_t*) pkey_change_ptr,
-    const(size_t) pkey_len,
-    buf_t** out_used_bills_ptr,
-    size_t* out_used_bills_count,
-    uint8_t** out_produced_contract_ptr,
-    size_t* out_prouced_contract_len,
+        const(securenet_t*) root_net,
+        buf_t** bills_to_pay_ptr,
+        const(size_t) bills_to_pay_count,
+        buf_t** available_bills_ptr,
+        const(size_t) available_bills_count,
+        buf_t** derivers_ptr,
+        const(size_t) derivers_count,
+        const(uint8_t*) pkey_change_ptr,
+        const(size_t) pkey_len,
+        buf_t** out_used_bills_ptr,
+        size_t* out_used_bills_count,
+        uint8_t** out_produced_contract_ptr,
+        size_t* out_prouced_contract_len,
 ) {
     import std.stdio;
     import std.algorithm;
+
     const to_pay = get_docs(bills_to_pay_ptr, bills_to_pay_count).map!(d => TagionBill(d));
     const available_bills = get_docs(available_bills_ptr, available_bills_count).map!(d => TagionBill(d));
-    const pkey_change = Pubkey(pkey_change_ptr[0..pkey_len].idup);
+    const pkey_change = Pubkey(pkey_change_ptr[0 .. pkey_len].idup);
     const derivers = get_derivers(derivers_ptr, derivers_count);
 
     // for (size_t i = 0; i < count; i++) {
@@ -348,9 +357,9 @@ unittest {
 
     int error_code = tagion_generate_keypair(&my_mnemonic[0], my_mnemonic.length, null, 0, &my_keypair, null, 0, null, null);
     assert(error_code == ErrorCode.none);
-   
-    TagionBill to_pay_bill1 = TagionBill(100.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
-    TagionBill to_pay_bill2 = TagionBill(200.TGN, currentTime, Pubkey([1,2,3,4]), [1,2,3,4]);
+
+    TagionBill to_pay_bill1 = TagionBill(100.TGN, currentTime, Pubkey([1, 2, 3, 4]), [1, 2, 3, 4]);
+    TagionBill to_pay_bill2 = TagionBill(200.TGN, currentTime, Pubkey([1, 2, 3, 4]), [1, 2, 3, 4]);
     const to_pay_doc = to_pay_bill1.toDoc.serialize;
     const to_pay_doc2 = to_pay_bill2.toDoc.serialize;
 
@@ -358,12 +367,12 @@ unittest {
     buf_t s_to_pay_doc2 = buf_t(&to_pay_doc2[0], to_pay_doc2.length);
 
     buf_t*[] to_pay_docs = [&s_to_pay_doc, &s_to_pay_doc2];
-    auto change_pkey = Pubkey([1,2,3,4]);
-    error_code = tagion_create_signed_contract(&my_keypair, to_pay_docs.ptr, 2, to_pay_docs.ptr, 2, null, 0, &change_pkey[0], change_pkey.length, null, null, null, null);
+    auto change_pkey = Pubkey([1, 2, 3, 4]);
+    error_code = tagion_create_signed_contract(&my_keypair, to_pay_docs.ptr, 2, to_pay_docs.ptr, 2, null, 0, &change_pkey[0], change_pkey
+            .length, null, null, null, null);
     assert(error_code == ErrorCode.none);
 
 }
-
 
 // /// Create a signed contract
 // int tagion_create_signed_contract(
@@ -378,9 +387,7 @@ unittest {
 //     assert(0, "TODO");
 // }
 
-version(none):
-
-alias ApiWallet = Wallet!StdSecureNet;
+version (none)  : alias ApiWallet = Wallet!StdSecureNet;
 
 enum MAGIC_WALLET = 0xA000_0001;
 
@@ -404,7 +411,7 @@ int tagion_wallet_create_instance(WalletT* wallet_instance) {
         wallet_instance.wallet = cast(void*) new ApiWallet;
         wallet_instance.magic_byte = MAGIC_WALLET;
     }
-    catch(Exception e) {
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -429,28 +436,28 @@ unittest {
  * Returns: ErrorCode
  */
 int tagion_wallet_create_wallet(
-        const(WalletT*) wallet_instance, 
-        const char* passphrase, 
+        const(WalletT*) wallet_instance,
+        const char* passphrase,
         const size_t passphrase_len,
         const char* pincode,
         const size_t pincode_len
 ) {
     try {
-    
+
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
-        auto _passphrase = passphrase[0..passphrase_len];
-        auto _pincode = pincode[0..pincode_len];
+        auto _passphrase = passphrase[0 .. passphrase_len];
+        auto _pincode = pincode[0 .. pincode_len];
         w.createWallet(_passphrase, _pincode);
-    } 
-    catch(Exception e) {
+    }
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
     return ErrorCode.none;
-} 
+}
 ///
 unittest {
     WalletT w;
@@ -478,8 +485,8 @@ unittest {
  */
 int tagion_wallet_read_wallet(
         const(WalletT*) wallet_instance,
-        const uint8_t* device_pin_buf, 
-        const size_t device_pin_buf_len, 
+        const uint8_t* device_pin_buf,
+        const size_t device_pin_buf_len,
         const uint8_t* recover_generator_buf,
         const size_t recover_generator_buf_length,
         const uint8_t* account_buf,
@@ -491,17 +498,17 @@ int tagion_wallet_read_wallet(
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
 
-        immutable _device_buf = device_pin_buf[0..device_pin_buf_len].idup;
-        immutable _recover_generator_buf = recover_generator_buf[0..recover_generator_buf_length].idup;
-        immutable _account_buf = account_buf[0..account_buf_len].idup;
+        immutable _device_buf = device_pin_buf[0 .. device_pin_buf_len].idup;
+        immutable _recover_generator_buf = recover_generator_buf[0 .. recover_generator_buf_length].idup;
+        immutable _account_buf = account_buf[0 .. account_buf_len].idup;
 
         DevicePIN pin = DevicePIN(Document(_device_buf));
         RecoverGenerator recover_generator = RecoverGenerator(Document(_recover_generator_buf));
         AccountDetails account_details = AccountDetails(Document(_account_buf));
 
         w.readWallet(pin, recover_generator, account_details);
-    } 
-    catch(Exception e) {
+    }
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -516,22 +523,22 @@ int tagion_wallet_read_wallet(
  *   pincode_len = length of the pincode
  * Returns: ErrorCode
  */
-int tagion_wallet_login(const(WalletT*) wallet_instance, 
-                    const char* pincode,
-                    const size_t pincode_len) {
+int tagion_wallet_login(const(WalletT*) wallet_instance,
+        const char* pincode,
+        const size_t pincode_len) {
 
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
-                return ErrorCode.exception;
+            return ErrorCode.exception;
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
-        auto _pincode = pincode[0..pincode_len];
+        auto _pincode = pincode[0 .. pincode_len];
         const login_success = w.login(_pincode);
         if (!login_success) {
             return ErrorCode.exception;
         }
-    } 
-    catch(Exception e) {
+    }
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -554,13 +561,13 @@ unittest {
     int rt = tagion_wallet_create_instance(&w);
     assert(rt == ErrorCode.none);
 
-    rt = tagion_wallet_read_wallet(&w, 
-                                &device_pin.data[0], 
-                                device_pin.data.length,
-                                &recover_generator.data[0],
-                                recover_generator.data.length,
-                                &account.data[0],
-                                account.data.length);
+    rt = tagion_wallet_read_wallet(&w,
+            &device_pin.data[0],
+            device_pin.data.length,
+            &recover_generator.data[0],
+            recover_generator.data.length,
+            &account.data[0],
+            account.data.length);
     assert(rt == ErrorCode.none);
 
     ApiWallet* read_wallet = cast(ApiWallet*) w.wallet;
@@ -571,7 +578,6 @@ unittest {
     rt = tagion_wallet_login(&w, &pincode[0], pincode.length);
     assert(rt == ErrorCode.none);
 }
-
 
 enum PUBKEYSIZE = 33; /// Size of a public key
 
@@ -584,9 +590,9 @@ enum PUBKEYSIZE = 33; /// Size of a public key
  * Returns: 
  */
 int tagion_wallet_get_current_pkey(
-    const(WalletT*) wallet_instance,
-    uint8_t** pubkey,
-    size_t* pubkey_len
+        const(WalletT*) wallet_instance,
+        uint8_t** pubkey,
+        size_t* pubkey_len
 ) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
@@ -595,7 +601,7 @@ int tagion_wallet_get_current_pkey(
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
         const pkey = w.getCurrentPubkey;
 
-        *pubkey = cast(uint8_t*) &pkey[0];
+        *pubkey = cast(uint8_t*)&pkey[0];
         *pubkey_len = pkey.length;
     }
     catch (Exception e) {
@@ -619,16 +625,14 @@ unittest {
     rt = tagion_wallet_get_current_pkey(&w, &pubkey_buf, &pubkey_len);
     assert(rt == ErrorCode.none);
     assert(pubkey_len == PUBKEYSIZE);
-    const pkey = cast(Pubkey) pubkey_buf[0..pubkey_len].idup;
+    const pkey = cast(Pubkey) pubkey_buf[0 .. pubkey_len].idup;
 
     rt = tagion_wallet_get_current_pkey(&w, &pubkey_buf, &pubkey_len);
     assert(rt == ErrorCode.none);
     assert(pubkey_len == PUBKEYSIZE);
-    const _pkey = cast(Pubkey) pubkey_buf[0..pubkey_len].idup;
+    const _pkey = cast(Pubkey) pubkey_buf[0 .. pubkey_len].idup;
     assert(pkey == _pkey, "should not have changed");
 }
-
-
 
 /** 
  * Create bill from wallet information
@@ -642,25 +646,25 @@ unittest {
  *   bill_buf_len = length of the returned bill buffer
  * Returns: ErrorCode
  */
-int tagion_wallet_create_bill(const double amount, 
-                    const uint8_t* pubkey, 
-                    const size_t pubkey_len, 
-                    const(int64_t) time,
-                    uint8_t** bill_buf,
-                    size_t* bill_buf_len) {
+int tagion_wallet_create_bill(const double amount,
+        const uint8_t* pubkey,
+        const size_t pubkey_len,
+        const(int64_t) time,
+        uint8_t** bill_buf,
+        size_t* bill_buf_len) {
     try {
         if (pubkey_len != PUBKEYSIZE) {
             return ErrorCode.exception;
         }
         const _amount = TagionCurrency(amount);
-        const _pubkey = cast(Pubkey) pubkey[0..pubkey_len].idup;
+        const _pubkey = cast(Pubkey) pubkey[0 .. pubkey_len].idup;
         const _time = sdt_t(time);
         const bill = requestBill(_amount, _pubkey, _time);
         const bill_doc = bill.toDoc;
-        *bill_buf = cast(uint8_t*) &bill_doc.data[0];
+        *bill_buf = cast(uint8_t*)&bill_doc.data[0];
         *bill_buf_len = bill_doc.full_size;
     }
-    catch(Exception e) {
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -679,7 +683,7 @@ unittest {
     int rt = tagion_wallet_create_bill(amount, &pkey[0], pkey.length, cast(const(int64_t)) time, &bill_buf, &bill_buf_len);
     assert(rt == ErrorCode.none);
 
-    const read_bill = TagionBill(Document(bill_buf[0..bill_buf_len].idup));
+    const read_bill = TagionBill(Document(bill_buf[0 .. bill_buf_len].idup));
     assert(read_bill.value == TagionCurrency(amount));
     assert(read_bill.time == time);
     assert(read_bill.owner == wallet.getCurrentPubkey);
@@ -693,7 +697,7 @@ unittest {
  * Returns: ErrorCode
  */
 int tagion_wallet_force_bill(const(WalletT*) wallet_instance,
-                        const double amount) {
+        const double amount) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
@@ -702,7 +706,7 @@ int tagion_wallet_force_bill(const(WalletT*) wallet_instance,
 
         const _amount = TagionCurrency(amount);
         w.forceBill(_amount);
-    } 
+    }
     catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
@@ -719,8 +723,8 @@ int tagion_wallet_force_bill(const(WalletT*) wallet_instance,
  * Returns: ErrorCode
  */
 int tagion_wallet_get_account(const(WalletT*) wallet_instance,
-    uint8_t** account_buf,
-    size_t* account_buf_len) {
+        uint8_t** account_buf,
+        size_t* account_buf_len) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
@@ -728,9 +732,9 @@ int tagion_wallet_get_account(const(WalletT*) wallet_instance,
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
 
         const _account_buf = w.account.toDoc.serialize;
-        *account_buf = cast(uint8_t*) &_account_buf[0];
+        *account_buf = cast(uint8_t*)&_account_buf[0];
         *account_buf_len = _account_buf.length;
-    } 
+    }
     catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
@@ -747,8 +751,8 @@ int tagion_wallet_get_account(const(WalletT*) wallet_instance,
  * Returns: ErrorCode
  */
 int tagion_wallet_get_device_pin(const(WalletT*) wallet_instance,
-    uint8_t** device_pin_buf,
-    size_t* device_pin_buf_len) {
+        uint8_t** device_pin_buf,
+        size_t* device_pin_buf_len) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
@@ -756,9 +760,9 @@ int tagion_wallet_get_device_pin(const(WalletT*) wallet_instance,
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
 
         const _device_pin_buf = w._pin.toDoc.serialize;
-        *device_pin_buf = cast(uint8_t*) &_device_pin_buf[0];
+        *device_pin_buf = cast(uint8_t*)&_device_pin_buf[0];
         *device_pin_buf_len = _device_pin_buf.length;
-    } 
+    }
     catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
@@ -775,8 +779,8 @@ int tagion_wallet_get_device_pin(const(WalletT*) wallet_instance,
  * Returns: ErrorCode
  */
 int tagion_wallet_get_recover_generator(const(WalletT*) wallet_instance,
-    uint8_t** recover_generator_buf,
-    size_t* recover_generator_buf_len) {
+        uint8_t** recover_generator_buf,
+        size_t* recover_generator_buf_len) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
@@ -784,9 +788,9 @@ int tagion_wallet_get_recover_generator(const(WalletT*) wallet_instance,
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
 
         const _recover_generator_buf = w._wallet.toDoc.serialize;
-        *recover_generator_buf = cast(uint8_t*) &_recover_generator_buf[0];
+        *recover_generator_buf = cast(uint8_t*)&_recover_generator_buf[0];
         *recover_generator_buf_len = _recover_generator_buf.length;
-    } 
+    }
     catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
@@ -799,6 +803,7 @@ unittest {
     import tagion.wallet.AccountDetails;
     import tagion.hibon.HiBONRecord;
     import tagion.wallet.WalletRecords;
+
     WalletT w;
     int rt = tagion_wallet_create_instance(&w);
     assert(rt == ErrorCode.none);
@@ -811,29 +816,29 @@ unittest {
 
     uint8_t* account_buf;
     size_t account_len;
-    rt = tagion_wallet_get_account(&w, &account_buf, &account_len); 
+    rt = tagion_wallet_get_account(&w, &account_buf, &account_len);
     assert(rt == ErrorCode.none);
-    const _account_buf = account_buf[0..account_len].idup;
+    const _account_buf = account_buf[0 .. account_len].idup;
     const _account_doc = Document(_account_buf);
     assert(_account_doc.isRecord!AccountDetails == true, "doc was not of type AccountDetails");
 
     uint8_t* device_pin_buf;
     size_t device_pin_len;
-    rt = tagion_wallet_get_device_pin(&w, &device_pin_buf, &device_pin_len); 
+    rt = tagion_wallet_get_device_pin(&w, &device_pin_buf, &device_pin_len);
     assert(rt == ErrorCode.none);
-    const _device_pin_buf = device_pin_buf[0..device_pin_len].idup;
+    const _device_pin_buf = device_pin_buf[0 .. device_pin_len].idup;
     const _device_pin_doc = Document(_device_pin_buf);
     assert(_device_pin_doc.isRecord!DevicePIN == true, "doc was not of type DevicePIN");
 
     uint8_t* recover_generator_buf;
     size_t recover_generator_len;
-    rt = tagion_wallet_get_recover_generator(&w, &recover_generator_buf, &recover_generator_len); 
+    rt = tagion_wallet_get_recover_generator(&w, &recover_generator_buf, &recover_generator_len);
     assert(rt == ErrorCode.none);
-    const _recover_generator_buf = recover_generator_buf[0..recover_generator_len].idup;
+    const _recover_generator_buf = recover_generator_buf[0 .. recover_generator_len].idup;
     const _recover_generator_doc = Document(_recover_generator_buf);
     assert(_recover_generator_doc.isRecord!RecoverGenerator == true, "doc was not of type RecoverGenerator");
 }
-    
+
 /** 
  * Pay to a bill
  * Params:
@@ -844,15 +849,15 @@ unittest {
  * Returns: ErrorCode
  */
 int tagion_wallet_pay_bill(const(WalletT*) wallet_instance,
-    const uint8_t* bill_buf,
-    const size_t bill_buf_len,
-    double* fees) {
+        const uint8_t* bill_buf,
+        const size_t bill_buf_len,
+        double* fees) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
-        const _bill_doc_buf = bill_buf[0..bill_buf_len].idup;  
+        const _bill_doc_buf = bill_buf[0 .. bill_buf_len].idup;
         const _bill_doc = Document(_bill_doc_buf);
         const doc_error = _bill_doc.valid;
         if (doc_error !is Document.Element.ErrorCode.NONE) {
@@ -871,7 +876,6 @@ int tagion_wallet_pay_bill(const(WalletT*) wallet_instance,
     return ErrorCode.none;
 }
 
-
 /** 
  * Make TRT request (serialized, ready to send)
  * Params:
@@ -881,16 +885,16 @@ int tagion_wallet_pay_bill(const(WalletT*) wallet_instance,
  * Returns: ErrorCode
  */
 int tagion_wallet_make_trtread(const(WalletT*) wallet_instance,
-    uint8_t** doc_buf,
-    size_t* doc_buf_len) {
+        uint8_t** doc_buf,
+        size_t* doc_buf_len) {
     try {
         if (wallet_instance is null || wallet_instance.magic_byte != MAGIC_WALLET) {
             return ErrorCode.exception;
         }
         ApiWallet* w = cast(ApiWallet*) wallet_instance.wallet;
         const sender = w.readIndicesByPubkey();
-        const trtread_doc = cast(ubyte[])sender.toDoc.serialize;
-        *doc_buf = cast(uint8_t*) &trtread_doc[0];
+        const trtread_doc = cast(ubyte[]) sender.toDoc.serialize;
+        *doc_buf = cast(uint8_t*)&trtread_doc[0];
         *doc_buf_len = trtread_doc.length;
     }
     catch (Exception e) {
@@ -899,5 +903,3 @@ int tagion_wallet_make_trtread(const(WalletT*) wallet_instance,
     }
     return ErrorCode.none;
 }
-
-

@@ -42,16 +42,16 @@ int _main(string[] args) {
 }
 
 enum feature = Feature(
-        "dartutil scenarios",
-        []);
+            "dartutil scenarios",
+            []);
 
 alias FeatureContext = Tuple!(
-    Bullseye, "Bullseye",
-    FeatureGroup*, "result"
+        Bullseye, "Bullseye",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("Bullseye",
-    [])
+        [])
 class Bullseye {
     string dart_path;
     DART db;
@@ -63,7 +63,7 @@ class Bullseye {
 
     @Given("initial dart file")
     Document dartFile() {
-        SecureNet net = new StdSecureNet();
+        SecureNet net = createSecureNet;
         net.generateKeyPair("very_secret");
 
         auto factory = RecordFactory(net);

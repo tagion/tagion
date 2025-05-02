@@ -93,7 +93,7 @@ int _main(string[] args) {
     import std.range;
     import std.stdio;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureNet;
     import tagion.dart.DART;
     import tagion.dart.DARTFile;
     import tagion.dart.Recorder;
@@ -125,7 +125,7 @@ int _main(string[] args) {
             bills ~= requestAndForce(wallet, 1000.TGN);
         }
     }
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("very_secret");
 
     auto factory = RecordFactory(net);
@@ -144,16 +144,17 @@ int _main(string[] args) {
     auto nodenets = dummy_nodenets_for_testing(node_opts);
     foreach (opt, node_net; zip(node_opts, nodenets)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            node_net.pubkey,
-            opt.task_names.epoch_creator, // Address
+                opt.task_names.epoch_creator, // Name
+                node_net.pubkey,
+                opt.task_names.epoch_creator, // Address
+                
         );
     }
 
     const genesis = createGenesis(
-        node_settings,
-        Document(), 
-        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+            node_settings,
+            Document(),
+            TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
     );
 
     recorder.insert(genesis, Archive.Type.ADD);
@@ -234,7 +235,7 @@ class SendAContractWithOneOutputsThroughTheShell {
         wallet1_hirpc = HiRPC(wallet1.net);
         wallet2_hirpc = HiRPC(wallet2.net);
 
-        shell_addr = shell_opts.shell_uri.replace("0.0.0.0","127.0.0.1") ~ shell_opts.shell_api_prefix;
+        shell_addr = shell_opts.shell_uri.replace("0.0.0.0", "127.0.0.1") ~ shell_opts.shell_api_prefix;
         bullseye_address = shell_addr ~ shell_opts.bullseye_endpoint ~ "/hibon";
         dart_address = shell_addr ~ shell_opts.hirpc_endpoint;
         contract_address = shell_addr ~ shell_opts.hirpc_endpoint;
@@ -286,23 +287,23 @@ class SendAContractWithOneOutputsThroughTheShell {
         int max_tries = 0;
         TagionCurrency wallet1_amount;
         TagionCurrency wallet2_amount;
-        bool wallet1_ok = false; 
+        bool wallet1_ok = false;
         bool wallet2_ok = false;
         const wallet2_expected = start_amount2 + amount;
         Thread.sleep(10.seconds);
-        while ( (!wallet1_ok || !wallet2_ok) &&  max_tries++ < 10) {
+        while ((!wallet1_ok || !wallet2_ok) && max_tries++ < 10) {
             Thread.sleep(5.seconds);
-            if(!wallet2_ok){
+            if (!wallet2_ok) {
                 writefln("wallet2 sending update to dartaddress %s", dart_address);
                 wallet2_amount = getWalletTRTUpdateAmount(wallet2, dart_address, wallet2_hirpc);
-                if (wallet2_amount == wallet2_expected) 
+                if (wallet2_amount == wallet2_expected)
                     wallet2_ok = true;
             }
             Thread.sleep(1000.msecs);
-            if(!wallet1_ok){
+            if (!wallet1_ok) {
                 writefln("wallet1 sending update to dartaddress %s", dart_address);
                 wallet1_amount = getWalletTRTUpdateAmount(wallet1, dart_address, wallet1_hirpc);
-                if(wallet1_amount == 0.TGN)
+                if (wallet1_amount == 0.TGN)
                     wallet1_ok = true;
             }
         }

@@ -101,7 +101,7 @@ struct Dialer {
     }
 
     nng_stream* get_output() @trusted {
-        nng_stream* sock = cast(nng_stream*)nng_aio_get_output(aio, 0);
+        nng_stream* sock = cast(nng_stream*) nng_aio_get_output(aio, 0);
         assert(sock !is null, "Dialed socket was null");
         return sock;
     }
@@ -111,15 +111,15 @@ struct Dialer {
         try {
             thread_attachThis();
 
-            nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio);
-            if(rc == nng_errno.NNG_OK) {
+            nng_errno rc = cast(nng_errno) nng_aio_result(_this.aio);
+            if (rc == nng_errno.NNG_OK) {
                 ActorHandle(_this.owner_task).send(NodeAction.dialed, _this.id);
             }
             else {
                 node_error(_this.owner_task, rc, _this.id, _this.address);
             }
-        } 
-        catch(Exception e) {
+        }
+        catch (Exception e) {
             fail(_this.owner_task, e);
         }
     }
@@ -186,30 +186,30 @@ struct Peer {
         try {
             thread_attachThis();
 
-            nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio);
-            if(rc != nng_errno.NNG_OK) {
+            nng_errno rc = cast(nng_errno) nng_aio_result(_this.aio);
+            if (rc != nng_errno.NNG_OK) {
                 node_error(_this.owner_task, rc, _this.id, text(_this.state));
                 return;
             }
 
-            switch(_this.state) {
-                case state.receive:
-                    size_t msg_size = nng_aio_count(_this.aio);
-                    if(msg_size <= 0) {
-                        node_error(_this.owner_task, NodeErrorCode.empty_msg, _this.id);
-                        return;
-                    }
-                    Buffer buf = _this.msg_buf[0 .. msg_size].idup;
-                    check(buf !is null, "Got invalid buf output");
+            switch (_this.state) {
+            case state.receive:
+                size_t msg_size = nng_aio_count(_this.aio);
+                if (msg_size <= 0) {
+                    node_error(_this.owner_task, NodeErrorCode.empty_msg, _this.id);
+                    return;
+                }
+                Buffer buf = _this.msg_buf[0 .. msg_size].idup;
+                check(buf !is null, "Got invalid buf output");
 
-                    ActorHandle(_this.owner_task).send(NodeAction.received, _this.id, buf);
-                    break;
-                default:
-                    ActorHandle(_this.owner_task).send(NodeAction.sent, _this.id);
-                    break;
+                ActorHandle(_this.owner_task).send(NodeAction.received, _this.id, buf);
+                break;
+            default:
+                ActorHandle(_this.owner_task).send(NodeAction.sent, _this.id);
+                break;
             }
         }
-        catch(Exception e) {
+        catch (Exception e) {
             fail(_this.owner_task, e);
         }
     }
@@ -227,7 +227,8 @@ struct Peer {
         int rc = nng_aio_set_iov(aio, 1, &iov);
         check(rc == 0, nng_errstr(rc));
 
-        debug(nodeinterface) log("sending %s bytes", iov.iov_len);
+        debug (nodeinterface)
+            log("sending %s bytes", iov.iov_len);
         nng_stream_send(socket, aio);
     }
 
@@ -279,15 +280,16 @@ struct PeerMgr {
         string addr = opts.node_address;
         addr ~= '\0';
         assert(this.address.length < addr.length);
-        rc = cast(nng_errno)nng_stream_listener_alloc(&listener, &address[0]);
+        rc = cast(nng_errno) nng_stream_listener_alloc(&listener, &address[0]);
         check!ServiceError(rc == nng_errno.NNG_OK, format("%s - %s", nng_errstr(rc), address));
 
         all_peers = new PeerLRU(
-                (scope const uint k, PeerLRU.Element* v) @safe nothrow { 
-                    Peer* peer = v.entry.value; 
-                    peer.close();
-                    debug(nodeinterface) log("Closed (%s)", k);
-                },
+                (scope const uint k, PeerLRU.Element* v) @safe nothrow{
+            Peer* peer = v.entry.value;
+            peer.close();
+            debug (nodeinterface)
+                log("Closed (%s)", k);
+        },
                 opts.pool_size,
         );
     }
@@ -321,18 +323,18 @@ struct PeerMgr {
         This* _this = self(ctx);
         try {
             thread_attachThis(); // Attach the current thread to the gc
-            nng_errno rc = cast(nng_errno)nng_aio_result(_this.aio_conn);
+            nng_errno rc = cast(nng_errno) nng_aio_result(_this.aio_conn);
 
             uint id = generateId!uint;
 
-            if(rc != nng_errno.NNG_OK) {
+            if (rc != nng_errno.NNG_OK) {
                 node_error(_this.task_name, rc, id);
             }
             else {
                 ActorHandle(_this.task_name).send(NodeAction.accepted, id);
             }
         }
-        catch(Exception e) {
+        catch (Exception e) {
             fail(_this.task_name, e);
         }
     }
@@ -370,7 +372,7 @@ struct PeerMgr {
 
     /// Send to an active connection with a known public key
     void send(uint id, Buffer buf) {
-        auto peer = all_peers[id]; 
+        auto peer = all_peers[id];
         check!ServiceException(peer !is null, format!"No active connections for this id %s"(id));
 
         Envelope envelope = Envelope(0, compression_level, buf);
@@ -386,16 +388,16 @@ struct PeerMgr {
 
     void stop() {
         nng_aio_stop(aio_conn);
-        foreach(dialer; dialers.byValue) {
+        foreach (dialer; dialers.byValue) {
             dialer.stop();
         }
-        foreach(peer; all_peers) {
+        foreach (peer; all_peers) {
             peer.value.stop();
         }
     }
 
     private nng_stream* get_listener_output() @trusted {
-        nng_stream* socket = cast(nng_stream*)nng_aio_get_output(aio_conn, 0);
+        nng_stream* socket = cast(nng_stream*) nng_aio_get_output(aio_conn, 0);
         assert(socket !is null, "No connections established?");
         return socket;
     }
@@ -405,7 +407,7 @@ struct PeerMgr {
     // You should call this functions after each operation
 
     void update(NodeAction action, uint id) {
-        final switch(action) {
+        final switch (action) {
         case NodeAction.received:
             Peer* peer = all_peers[id];
             check!ServiceException(peer !is null, format!"peer is not active %s"(id));
@@ -414,7 +416,7 @@ struct PeerMgr {
 
         case NodeAction.dialed:
             assert((id in dialers) !is null, "No dialer was allocated for this id");
-            scope(exit) {
+            scope (exit) {
                 dialers.remove(id);
             }
 
@@ -444,33 +446,30 @@ struct PeerMgr {
 unittest {
     uint last_id;
     void unit_handler(ref PeerMgr sender, ref PeerMgr receiver) {
-        receiveOnlyTimeout(1.seconds, 
+        receiveOnlyTimeout(1.seconds,
                 (NodeAction a, uint id) {
-                    if(a is NodeAction.accepted) {
-                        receiver.update(a, id);
-                        receiver.recv(id);
-                    }
-                    else if(a is NodeAction.sent) {
-                        sender.update(a, id);
-                        sender.recv(id);
-                    }
-                    else {
-                        sender.update(a, id);
-                    }
-                },
-                (NodeAction a, uint id, Buffer buf) {
-                    last_id = id;
-                    receiver.update(a, id);
-                }
+            if (a is NodeAction.accepted) {
+                receiver.update(a, id);
+                receiver.recv(id);
+            }
+            else if (a is NodeAction.sent) {
+                sender.update(a, id);
+                sender.recv(id);
+            }
+            else {
+                sender.update(a, id);
+            }
+        },
+                (NodeAction a, uint id, Buffer buf) { last_id = id; receiver.update(a, id); }
         );
     }
 
     thisActor.task_name = "jens";
 
-    auto net1 = new StdSecureNet();
+    auto net1 = createSecureNet;
     net1.generateKeyPair("me1");
 
-    auto net2 = new StdSecureNet();
+    auto net2 = createSecureNet;
     net2.generateKeyPair("me2");
 
     auto dialer = PeerMgr(NodeInterfaceOptions(node_address: "abstract://whomisam" ~ generateId.to!string, bufsize: 256, pool_size: 2));
@@ -539,9 +538,9 @@ struct NodeInterfaceService {
     PeerMgr p2p;
 
     ///
-    this(immutable(NodeInterfaceOptions) opts, shared(StdSecureNet) shared_net, string message_handler_task) {
+    this(immutable(NodeInterfaceOptions) opts, shared(SecureNet) shared_net, string message_handler_task) {
         this.opts = opts;
-        this.net = new StdSecureNet(shared_net);
+        this.net = shared_net.clone;
         this.hirpc = HiRPC(this.net);
         this.receive_handle = ActorHandle(message_handler_task);
         this.p2p = PeerMgr(opts);
@@ -554,16 +553,16 @@ struct NodeInterfaceService {
 
     void node_send(WavefrontReq req, Pubkey channel, Document doc) {
         const hirpc = HiRPC(null).receive(doc);
-        if(p2p.isActive(req.id)) {
+        if (p2p.isActive(req.id)) {
             // We could close immediately if the message is an error and not a result?
-            if(!(hirpc.isMethod)) {
+            if (!(hirpc.isMethod)) {
                 should_close[req.id] = true;
             }
             p2p.send(req.id, doc.serialize);
         }
         else {
             // If there is no active connection and the message is just and error then we ignore it.
-            if(hirpc.isError) {
+            if (hirpc.isError) {
                 return;
             }
             const nnr = addressbook[channel].get;
@@ -573,13 +572,14 @@ struct NodeInterfaceService {
     }
 
     void on_action_complete(NodeAction action, uint id, Buffer buf = null) {
-        debug(nodeinterface) log("%s %s, connected %s", id, action, p2p.all_peers.length);
+        debug (nodeinterface)
+            log("%s %s, connected %s", id, action, p2p.all_peers.length);
         log.event(node_action_event, text(action), NodeInterfaceSub(net.pubkey, id, action));
-        scope(failure) {
+        scope (failure) {
             cleanup(id);
         }
 
-        final switch(action) {
+        final switch (action) {
         case NodeAction.dialed:
             p2p.update(action, id);
             const doc = queued_sends[id];
@@ -594,7 +594,7 @@ struct NodeInterfaceService {
             break;
 
         case NodeAction.sent:
-            if((id in should_close) !is null) {
+            if ((id in should_close) !is null) {
                 cleanup(id);
             }
             else {
@@ -605,9 +605,10 @@ struct NodeInterfaceService {
 
         case NodeAction.received:
             assert(buf !is null, "Node action should get a buffer");
-            debug(nodeinterface) log("received %s bytes", buf.length);
+            debug (nodeinterface)
+                log("received %s bytes", buf.length);
 
-            if(buf.length < 1) {
+            if (buf.length < 1) {
                 on_node_error(NodeError(), NodeErrorCode.buf_empty, id, text(buf.length), __LINE__);
                 return;
             }
@@ -618,22 +619,22 @@ struct NodeInterfaceService {
 
                 Document doc = Document(envelope.toData);
 
-                if(!doc.empty && !doc.isInorder(Document.Reserved.no)) {
+                if (!doc.empty && !doc.isInorder(Document.Reserved.no)) {
                     on_node_error(NodeError(), NodeErrorCode.doc_inorder, id, text(doc.valid), __LINE__);
                     return;
                 }
 
                 const hirpcmsg = hirpc.receive(doc);
-                if(hirpcmsg.pubkey == this.net.pubkey) {
+                if (hirpcmsg.pubkey == this.net.pubkey) {
                     on_node_error(NodeError(), NodeErrorCode.msg_self, id, "", __LINE__);
                     return;
                 }
-                if(!hirpcmsg.isSigned) {
+                if (!hirpcmsg.isSigned) {
                     on_node_error(NodeError(), NodeErrorCode.msg_signed, id, text(hirpcmsg.signed), __LINE__);
                     return;
                 }
-                
-                if(hirpcmsg.isMethod) {
+
+                if (hirpcmsg.isMethod) {
                     p2p.update(action, id);
                 }
                 else {
@@ -642,7 +643,7 @@ struct NodeInterfaceService {
 
                 receive_handle.send(WavefrontReq(id), doc);
             }
-            catch(Exception e) {
+            catch (Exception e) {
                 on_node_error(NodeError(), NodeErrorCode.exception, id, e.msg, __LINE__);
             }
 
@@ -674,12 +675,8 @@ struct NodeInterfaceService {
         p2p.accept();
 
         run(
-                (NodeAction a, uint id) {
-                    on_action_complete(a, id);
-                },
-                (NodeAction a, uint id, Buffer buf) {
-                    on_action_complete(a, id, buf);
-                },
+                (NodeAction a, uint id) { on_action_complete(a, id); },
+                (NodeAction a, uint id, Buffer buf) { on_action_complete(a, id, buf); },
                 &node_send,
                 &on_node_error,
                 &on_nng_error
@@ -691,6 +688,7 @@ struct NodeInterfaceService {
 
 void thread_attachThis() @trusted {
     import core.thread : thread_attachThis;
+
     thread_attachThis();
 }
 
@@ -700,7 +698,7 @@ void fail(string owner_task, Throwable t) nothrow {
         log.event(taskfailure, "taskfailure", tf);
         ActorHandle(owner_task).prioritySend(tf);
     }
-    catch(Exception e) {
+    catch (Exception e) {
         log.fatal(e);
     }
 }
@@ -726,27 +724,25 @@ void node_error(string owner_task, nng_errno code, uint id, string msg = "", int
 
 mixin template NodeHelpers() {
     alias This = typeof(this);
-    private void* self () @trusted @nogc nothrow {
+    private void* self() @trusted @nogc nothrow {
         return cast(void*)&this;
     }
 
     private static This* self(void* ctx) @trusted @nogc nothrow {
-        This* _this = cast(This*)ctx;
+        This* _this = cast(This*) ctx;
         assert(_this !is null, "did not get this* through the ctx");
         return _this;
     }
 }
 
-version(unittest) {
+version (unittest) {
     import std.variant;
     import conc = tagion.utils.pretend_safe_concurrency;
 
     void receiveOnlyTimeout(Args...)(Duration dur, Args handlers) {
-        bool received = conc.receiveTimeout(dur, 
-            handlers,
-            (Variant var) @trusted {
-                throw new Exception(format("Unknown msg: %s", var));
-            }
+        bool received = conc.receiveTimeout(dur,
+                handlers,
+                (Variant var) @trusted { throw new Exception(format("Unknown msg: %s", var)); }
         );
         assert(received, "Timed out");
     }

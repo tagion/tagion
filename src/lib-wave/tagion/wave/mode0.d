@@ -84,10 +84,10 @@ Node[] dummy_nodestruct_for_testing(const(Options[]) node_options) {
     return nodes;
 }
 
-StdSecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
-    StdSecureNet[] nets;
+SecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
+    SecureNet[] nets;
     foreach (i, opts; node_options) {
-        auto net = new StdSecureNet;
+        auto net = createSecureNet;
         scope (exit) {
             net = null;
         }
@@ -99,7 +99,7 @@ StdSecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
 
 struct Node {
     immutable(Options) opts;
-    shared(StdSecureNet) net;
+    shared(SecureNet) net;
     Pubkey pkey;
 }
 

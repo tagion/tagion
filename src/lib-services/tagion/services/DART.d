@@ -64,12 +64,12 @@ struct DARTService {
 
     void task(immutable(DARTOptions) opts,
             immutable(TaskNames) task_names,
-            shared(StdSecureNet) shared_net,
+            shared(SecureNet) shared_net,
             bool trt_enable) {
 
         DART db;
         Exception dart_exception;
-        const net = new StdSecureNet(shared_net);
+        const net = shared_net.clone; //new StdSecureNet(shared_net);
         check(opts.dart_path.exists, format("DART database %s file not found", opts.dart_path));
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
@@ -107,7 +107,7 @@ struct DARTService {
         // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
             import tagion.services.codes;
-            import std.conv: to;
+            import std.conv : to;
             import tagion.hibon.HiBONJSON;
 
             log("Received HiRPC request");
@@ -123,7 +123,7 @@ struct DARTService {
                 const err = hirpc.error(receiver, ServiceCode.method.toString, ServiceCode.method);
                 req.respond(err.toDoc);
                 return;
-            } 
+            }
 
             Document result = db(receiver, false).toDoc;
             log("darthirpc response: %s", result.toPretty);

@@ -58,11 +58,11 @@ struct TRTOptions {
 struct TRTService {
     static Topic trt_created = Topic("trt_created");
     static Topic trt_contract = Topic("trt_contract");
-    void task(immutable(TRTOptions) opts, immutable(TaskNames) task_names, shared(StdSecureNet) shared_net) {
+    void task(immutable(TRTOptions) opts, immutable(TaskNames) task_names, shared(SecureNet) shared_net) {
         DART trt_db;
         Exception dart_exception;
 
-        const net = new StdSecureNet(shared_net);
+        const net = shared_net.clone;
         auto rec_factory = RecordFactory(net);
         auto hirpc = HiRPC(net);
         ActorHandle dart_handle = ActorHandle(task_names.dart);
@@ -110,6 +110,7 @@ struct TRTService {
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
             import tagion.services.codes;
+
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
             }

@@ -37,7 +37,7 @@ void kill_waves(Pid[] pids, Duration grace_time) {
     enum SIGKILL = 9;
 
     Pid[size_t] alive_pids;
-    foreach(i, pid; pids) {
+    foreach (i, pid; pids) {
         try {
             alive_pids[i] = pid;
             kill(pid, SIGINT);
@@ -45,31 +45,36 @@ void kill_waves(Pid[] pids, Duration grace_time) {
             kill(pid, SIGINT);
             writefln("SIGINT: %s", pid.processID);
         }
-        catch(Exception _) {}
+        catch (Exception _) {
+        }
     }
 
-    while(!alive_pids.empty || MonoTime.currTime - begin_time <= grace_time) {
+    while (!alive_pids.empty || MonoTime.currTime - begin_time <= grace_time) {
         Thread.sleep(200.msecs);
 
-        foreach(i, pid; alive_pids) {
+        foreach (i, pid; alive_pids) {
             try {
                 auto proc_status = tryWait(pid);
                 writefln("%s: %s", pid.processID, proc_status);
 
-                if(proc_status.terminated) {
-                    writeln("remove ", i); 
+                if (proc_status.terminated) {
+                    writeln("remove ", i);
                     alive_pids.remove(i);
                 }
-            } catch(Exception _) {}
+            }
+            catch (Exception _) {
+            }
         }
     }
 
-    foreach(pid; alive_pids) {
+    foreach (pid; alive_pids) {
         try {
             kill(pid, SIGKILL);
             writefln("SIGKILL: %s", pid.processID);
             wait(pid);
-        } catch(Exception _) {}
+        }
+        catch (Exception _) {
+        }
     }
 }
 
@@ -82,11 +87,11 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     local_options.wave.network_mode = NetworkMode.LOCAL;
     local_options.epoch_creator.timeout = 300; //msecs
     local_options.wave.prefix_format = "Mode1_%s_";
-    local_options.subscription.tags = 
+    local_options.subscription.tags =
         [
-            StdRefinement.epoch_created.name, 
+            StdRefinement.epoch_created.name,
             NodeInterfaceService.node_action_event.name,
-        ].join(",") ;
+    ].join(",");
 
     enum base_port = 10_700;
 
@@ -98,7 +103,7 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
         opt.task_names.setPrefix(prefix_f);
         opt.rpcserver.setPrefix(prefix_f);
         opt.subscription.setPrefix(prefix_f);
-        opt.node_interface.node_address = format("tcp://[::1]:%s", base_port+node_n);
+        opt.node_interface.node_address = format("tcp://[::1]:%s", base_port + node_n);
 
         all_opts ~= opt;
     }
@@ -106,17 +111,18 @@ const(Options)[] getMode1Options(uint number_of_nodes) {
     return all_opts;
 }
 
-
 import tagion.tools.boot.genesis;
+
 // NodeSettings used to create the genesis epoch
 const(NodeSettings[]) mk_node_settings(ref const(Options)[] node_opts) {
     NodeSettings[] node_settings;
     auto nodenets = dummy_nodenets_for_testing(node_opts);
     foreach (opt, node_net; zip(node_opts, nodenets)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            node_net.pubkey,
-            opt.node_interface.node_address, // Address
+                opt.task_names.epoch_creator, // Name
+                node_net.pubkey,
+                opt.node_interface.node_address, // Address
+                
         );
     }
     return node_settings;
@@ -132,7 +138,7 @@ const(NodeSettings[]) mk_node_settings(ref const(Options)[] node_opts) {
 string[] create_nodes_data(string genesis_dart_path, ref const(Options)[] node_opts, out string[] pins) {
     string[] node_paths;
 
-    foreach(i, opt; node_opts) {
+    foreach (i, opt; node_opts) {
         string node_path = format("node%s", i);
         node_paths ~= node_path;
         mkdir(node_path);
@@ -163,13 +169,14 @@ string[] create_nodes_data(string genesis_dart_path, ref const(Options)[] node_o
 
 Pid[] spawn_nodes(string dbin, string[] pins, const(string[]) node_data_paths) {
     Pid[] pids;
-    foreach(pin, node_path; zip(pins, node_data_paths)) {
+    foreach (pin, node_path; zip(pins, node_data_paths)) {
         const cmd = [buildPath(dbin, "testbench"), "test_wave"];
         writefln("run: %s", cmd);
 
         const pin_path = buildPath(node_path, "pin.txt");
 
         import file = std.file;
+
         file.write(pin_path, pin);
         auto pin_file = File(pin_path, "r");
 
@@ -190,13 +197,13 @@ int _main(string[] args) {
     long target_epoch = 5;
 
     auto main_args = getopt(args,
-        "n|nodes", format("Amount of nodes to spawn (%s)", number_of_nodes), &number_of_nodes,
-        "t|timeout", format("How long to run the test for in seconds (%s)", timeout_secs), &timeout_secs,
-        "e|epoch", format("The target epoch for all nodes (%s)", target_epoch), &target_epoch,
-        "v|verbose", "Vebose switch", &__verbose_switch,
+            "n|nodes", format("Amount of nodes to spawn (%s)", number_of_nodes), &number_of_nodes,
+            "t|timeout", format("How long to run the test for in seconds (%s)", timeout_secs), &timeout_secs,
+            "e|epoch", format("The target epoch for all nodes (%s)", target_epoch), &target_epoch,
+            "v|verbose", "Vebose switch", &__verbose_switch,
     );
 
-    if(main_args.helpWanted) {
+    if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 "Help information for mode1 test program\n" ~
                 format("Usage: %s", program),
@@ -244,7 +251,7 @@ class Mode1NetworkStart {
     Duration timeout;
 
     const long expected_epoch;
-    
+
     this(const(Options)[] node_opts, Duration timeout, long target_epoch) {
         this.node_opts = node_opts;
         this.timeout = timeout;
@@ -257,7 +264,7 @@ class Mode1NetworkStart {
     Document mode1() {
 
         // create recorder
-        SecureNet net = new StdSecureNet();
+        SecureNet net = createSecureNet;
         net.generateKeyPair("very_secret");
 
         const genesis_node_settings = mk_node_settings(node_opts);
@@ -286,8 +293,8 @@ class Mode1NetworkStart {
         SubscriptionHandle[] subs;
         long[] epochs;
 
-        foreach(opt; node_opts) {
-            auto sub =  SubscriptionHandle(opt.subscription.address, [StdRefinement.epoch_created.name]);
+        foreach (opt; node_opts) {
+            auto sub = SubscriptionHandle(opt.subscription.address, [StdRefinement.epoch_created.name]);
             sub.dial;
             subs ~= sub;
             epochs ~= -1;
@@ -299,10 +306,10 @@ class Mode1NetworkStart {
         HiRPC hirpc = HiRPC(null);
 
         writeln("Will wait for epoch ", expected_epoch);
-        while(!epochs.all!(i => i >= expected_epoch) && MonoTime.currTime - begin_time <= timeout) {
-            foreach(i, sub; subs) {
+        while (!epochs.all!(i => i >= expected_epoch) && MonoTime.currTime - begin_time <= timeout) {
+            foreach (i, sub; subs) {
                 auto doc = sub.receive();
-                if(doc.error) {
+                if (doc.error) {
                     writeln(doc.e.message);
                     continue;
                 }

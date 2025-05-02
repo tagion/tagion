@@ -52,7 +52,7 @@ int _main(string[] args) {
     import std.range;
     import std.stdio;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureNet;
     import tagion.dart.DART;
     import tagion.dart.DARTBasic;
     import tagion.dart.DARTFile;
@@ -98,7 +98,7 @@ int _main(string[] args) {
         }
     }
 
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("very_secret");
 
     auto factory = RecordFactory(net);
@@ -131,6 +131,7 @@ int _main(string[] args) {
                 opt.task_names.epoch_creator, // Name
                 key,
                 opt.task_names.epoch_creator, // Address
+                
         );
     }
 

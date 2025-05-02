@@ -27,19 +27,19 @@ import tagion.dart.DARTcrud : dartBullseye, dartCheckRead, dartRead;
 import tagion.testbench.actor.util;
 
 enum feature = Feature(
-        "is a service that synchronize the DART database with multiple nodes.",
-        [
-            "It should be used on node start up to ensure that local database is up-to-date.",
-            "In this test scenario we require that the remote database is static (not updated)."
-        ]);
+            "is a service that synchronize the DART database with multiple nodes.",
+            [
+        "It should be used on node start up to ensure that local database is up-to-date.",
+        "In this test scenario we require that the remote database is static (not updated)."
+]);
 
 alias FeatureContext = Tuple!(
-    IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases, "IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases",
-    FeatureGroup*, "result"
+        IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases, "IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("is to synchronize the local database with multiple remote databases.",
-    [])
+        [])
 class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
 
     Fingerprint remote_b;
@@ -61,7 +61,7 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
             local_db_path.remove;
         }
 
-        auto net = new StdSecureNet;
+        auto net = createSecureNet;
         net.generateKeyPair("dartnet very secret");
         DART.create(local_db_path, net);
 
@@ -83,7 +83,7 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         dart_sync_opts.journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
                 .baseName.stripExtension);
         SockAddresses sock_addrs;
-        auto net = new StdSecureNet;
+        auto net = createSecureNet;
         net.generateKeyPair("remote dart secret");
 
         static struct TestDoc {
@@ -171,7 +171,7 @@ class IsToSynchronizeTheLocalDatabaseWithMultipleRemoteDatabases {
         auto dart_sync = dartSyncRR();
         dart_sync_handle.send(dart_sync);
         immutable journal_filenames = immutable(DARTSynchronization.ReplayFiles)(
-            receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
+                receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
 
         auto dart_replay = dartReplayRR();
         dart_sync_handle.send(dart_replay, journal_filenames);

@@ -66,7 +66,7 @@ struct TranscriptService {
 
     RecordFactory rec_factory;
 
-    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(StdSecureNet) shared_net, immutable(
+    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(SecureNet) shared_net, immutable(
             TaskNames) task_names, bool trt_enable) {
         this.opts = opts;
         this.number_of_nodes = number_of_nodes;
@@ -74,7 +74,7 @@ struct TranscriptService {
         this.dart_handle = ActorHandle(task_names.dart);
         this.epoch_creator_handle = ActorHandle(task_names.epoch_creator);
         this.trt_handle = ActorHandle(task_names.trt);
-        this.net = new StdSecureNet(shared_net);
+        this.net = shared_net.clone;
 
         this.trt_enable = trt_enable;
 
@@ -112,9 +112,9 @@ struct TranscriptService {
         votes[epoch_number].epoch.bullseye = bullseye;
 
         ConsensusVoting own_vote = ConsensusVoting(
-            epoch_number,
-            net.pubkey,
-            net.sign(bullseye)
+                epoch_number,
+                net.pubkey,
+                net.sign(bullseye)
         );
 
         epoch_creator_handle.send(Payload(), own_vote.toDoc);
@@ -132,10 +132,10 @@ struct TranscriptService {
     }
 
     void epoch(consensusEpoch,
-        immutable(EventPackage*)[] epacks,
-        immutable(Fingerprint)[] witnesses,
-        long epoch_number,
-        const(sdt_t) epoch_time) @safe {
+            immutable(EventPackage*)[] epacks,
+            immutable(Fingerprint)[] witnesses,
+            long epoch_number,
+            const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
         import tagion.utils.Term;
 
@@ -170,7 +170,7 @@ struct TranscriptService {
             .join
             .array;
 
-        auto req = dartCheckReadRR(id : last_epoch_number);
+        auto req = dartCheckReadRR(id: last_epoch_number);
         epoch_contracts[req.id] = new const EpochContracts(signed_contracts, witnesses, epoch_time);
 
         if (inputs.length == 0) {
@@ -233,8 +233,8 @@ struct TranscriptService {
             auto req = dartModifyRR(res.id);
 
             TagionHead new_head = TagionHead(
-                TagionDomain,
-                shutdown,
+                    TagionDomain,
+                    shutdown,
             );
             recorder.insert(new_head, Archive.Type.ADD);
 
@@ -349,16 +349,16 @@ struct TranscriptService {
         recorder[].each!(a => billStatistic(a));
 
         TagionGlobals new_globals = TagionGlobals(
-            total,
-            total_burned,
-            number_of_bills,
-            burnt_bills,
+                total,
+                total_burned,
+                number_of_bills,
+                burnt_bills,
         );
         non_voted_epoch.globals = new_globals;
 
         TagionHead new_head = TagionHead(
-            TagionDomain,
-            res.id,
+                TagionDomain,
+                res.id,
         );
         immutable(DARTIndex)[] locked_indices = recorder[]
             .filter!(a => a.type == Archive.Type.ADD)

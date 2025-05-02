@@ -46,7 +46,7 @@ alias FeatureContext = Tuple!(
 
 SecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
     return iota(0, count).map!((i) {
-        SecureNet net = new StdSecureNet();
+        SecureNet net = createSecureNet;
         net.generateKeyPair(format("%s_%s", pass_prefix, i));
         return net;
     }).array;
@@ -63,7 +63,7 @@ const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder re
     return rec[].map!((a) => a.dart_index).array;
 }
 
-TagionBill createBill(const TagionCurrency tgn) pure nothrow @safe{
+TagionBill createBill(const TagionCurrency tgn) pure nothrow @safe {
     return TagionBill(tgn, sdt_t.init, Pubkey.init, Buffer.init);
 }
 
@@ -79,7 +79,7 @@ class ItWork {
 
     immutable SecureNet node_net;
     this() {
-        SecureNet _net = new StdSecureNet();
+        SecureNet _net = createSecureNet;
         _net.generateKeyPair("very secret");
         node_net = (() @trusted => cast(immutable) _net)();
     }
@@ -115,7 +115,7 @@ class ItWork {
 
             DART.create(opts.dart_path, node_net);
 
-            auto dart_net = new StdSecureNet;
+            auto dart_net = createSecureNet;
             dart_net.generateKeyPair("dartnet");
             dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, task_names, cast(shared) dart_net, false))();
             replicator_handle = (() @trusted => spawn!ReplicatorService(task_names.replicator, replicator_opts))();

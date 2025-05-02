@@ -43,8 +43,8 @@ import tagion.wave.common;
 enum feature = Feature("RecorderSynchronizer", []);
 
 alias FeatureContext = Tuple!(
-    ALocalNodeWithARecorderReadsDataFromARemoteNode, "ALocalNodeWithARecorderReadsDataFromARemoteNode",
-    FeatureGroup*, "result"
+        ALocalNodeWithARecorderReadsDataFromARemoteNode, "ALocalNodeWithARecorderReadsDataFromARemoteNode",
+        FeatureGroup*, "result"
 );
 
 @safe
@@ -76,7 +76,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
             local_db_path.remove;
         }
 
-        auto net = new StdSecureNet;
+        auto net = createSecureNet;
         net.generateKeyPair("dartnet very secret");
         DART.create(local_db_path, net);
 
@@ -93,7 +93,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
                 .baseName.stripExtension);
 
         SockAddresses sock_addrs;
-        auto net = new StdSecureNet;
+        auto net = createSecureNet;
         net.generateKeyPair("remote dart secret");
 
         static struct TestDoc {
@@ -185,7 +185,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
         auto dart_sync = dartSyncRR();
         dart_sync_handle.send(dart_sync);
         immutable journal_filenames = immutable(DARTSynchronization.ReplayFiles)(
-            receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
+                receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])[1]);
 
         auto dart_replay = dartReplayRR();
         dart_sync_handle.send(dart_replay, journal_filenames);
@@ -195,7 +195,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
         auto dart_recorder_sync = syncRecorderRR();
         dart_sync_handle.send(dart_recorder_sync);
         immutable dart_recorder_sync_result = receiveOnlyTimeout!(
-            dart_recorder_sync.Response, immutable(bool))[1];
+                dart_recorder_sync.Response, immutable(bool))[1];
         writefln("Is local database up to date %s", dart_recorder_sync_result);
 
         return result_ok;
@@ -227,7 +227,7 @@ int _main(string[] args) {
     auto replicator_opts = ReplicatorOptions(replicator_path);
 
     auto recorder_synchronizer_feature = automation!(
-        tagion.testbench.services.recorder_synchronizer);
+            tagion.testbench.services.recorder_synchronizer);
 
     auto recorder_synchronizer_handler = recorder_synchronizer_feature
         .ALocalNodeWithARecorderReadsDataFromARemoteNode(replicator_opts);

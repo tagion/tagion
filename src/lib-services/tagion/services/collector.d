@@ -59,7 +59,7 @@ struct CollectorService {
     Topic reject = Topic(reject_collector);
     SecureNet net;
     void task() {
-        net = new StdSecureNet;
+        net = createSecureNet;
         assert(net !is null, "No secure net");
         run(&receive_recorder, &signed_contract, &consensus_signed_contract, &rpc_contract);
     }
@@ -164,7 +164,8 @@ struct CollectorService {
             assert(inputs !is Document[].init, "Recorder should've contained inputs at this point");
             immutable collection =
                 ((res.id in reads) !is null)
-                ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(CollectedSignedContract)(s_contract, inputs);
+                ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
+                        CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {

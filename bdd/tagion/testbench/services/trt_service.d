@@ -27,6 +27,7 @@ import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
+import tagion.crypto.SecureNet;
 
 enum CONTRACT_TIMEOUT = 40;
 mixin Main!(_main);
@@ -69,7 +70,7 @@ int _main(string[] args) {
     foreach (i; 0 .. 5) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-            iota(0, 5)
+                iota(0, 5)
                 .map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5)
                 .map!(n => format("%danswer%d", i, n)).array,
@@ -92,7 +93,7 @@ int _main(string[] args) {
         }
     }
 
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("very_secret");
 
     auto factory = RecordFactory(net);
@@ -111,16 +112,17 @@ int _main(string[] args) {
     auto nodenets = dummy_nodenets_for_testing(node_opts);
     foreach (opt, node_net; zip(node_opts, nodenets)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            node_net.pubkey,
-            opt.task_names.epoch_creator, // Address
+                opt.task_names.epoch_creator, // Name
+                node_net.pubkey,
+                opt.task_names.epoch_creator, // Address
+                
         );
     }
 
     const genesis = createGenesis(
-        node_settings,
-        Document(), 
-        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+            node_settings,
+            Document(),
+            TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
     );
 
     recorder.insert(genesis, Archive.Type.ADD);
@@ -176,16 +178,16 @@ int _main(string[] args) {
 }
 
 enum feature = Feature(
-        "TRT Service test",
-        []);
+            "TRT Service test",
+            []);
 
 alias FeatureContext = Tuple!(
-    SendAInoiceUsingTheTRT, "SendAInoiceUsingTheTRT",
-    FeatureGroup*, "result"
+        SendAInoiceUsingTheTRT, "SendAInoiceUsingTheTRT",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("send a inoice using the TRT",
-    [])
+        [])
 class SendAInoiceUsingTheTRT {
     Options opts1;
     StdSecureWallet wallet1;

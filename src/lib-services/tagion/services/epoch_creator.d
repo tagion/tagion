@@ -54,10 +54,10 @@ struct EpochCreatorService {
     void task(immutable(EpochCreatorOptions) opts,
             immutable(NetworkMode) network_mode,
             uint number_of_nodes,
-            shared(StdSecureNet) shared_net,
+            shared(SecureNet) shared_net,
             immutable(TaskNames) task_names) {
 
-        const net = new StdSecureNet(shared_net);
+        const net = shared_net.clone;
         ActorHandle collector_handle = ActorHandle(task_names.collector);
 
         /// Setup EventView callbacks for visualizing the graph
@@ -76,7 +76,7 @@ struct EpochCreatorService {
             gossip_net = new EmulatorGossipNet(opts.timeout);
             break;
         case NetworkMode.LOCAL,
-             NetworkMode.MIRROR:
+            NetworkMode.MIRROR:
             gossip_net = new NNGGossipNet(opts.timeout, ActorHandle(task_names.node_interface));
             break;
         }
@@ -141,7 +141,7 @@ struct EpochCreatorService {
                     .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
                     .handle!(HiBONException, RangePrimitive.front,
                             (e, r) { log("invalid SignedContract from hashgraph"); return null; }
-                    )
+                )
                     .filter!(s => !s.isinit)
                     .array;
 
@@ -157,13 +157,12 @@ struct EpochCreatorService {
             }
             catch (Exception e) {
                 log.fatal(e);
-                if(!receiver.isinit && receiver.isMethod) {
+                if (!receiver.isinit && receiver.isMethod) {
                     const err_rpc = hirpc.error(receiver, "internal");
                     gossip_net.send(req, cast(Pubkey) receiver.pubkey, err_rpc);
                 }
             }
         }
-
 
         void receiveWavefront_req_mirror(WavefrontReq req, Document wave_doc) {
             const receiver = HiRPC.Receiver(wave_doc);
@@ -194,7 +193,7 @@ struct EpochCreatorService {
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL,
-             NetworkMode.LOCAL:
+            NetworkMode.LOCAL:
 
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
@@ -226,7 +225,7 @@ struct EpochCreatorService {
             runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
             break;
 
-         case NetworkMode.MIRROR:
+        case NetworkMode.MIRROR:
 
             hashgraph.mirror_mode = true;
             runTimeout(opts.timeout.msecs, &timeout, &receiveWavefront_req_mirror);
