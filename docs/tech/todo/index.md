@@ -49,13 +49,14 @@ Goal: May
 - [ ] add hash of recorderblock to epochchain  
 Assignee: lr  
 
+## Seperate hashnet and securenet
+Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
+- [ ] Make hashnet and securenet seperate classes  
+Assignee: cbr
+
 -----------------------------------------------------------------------------------------
 
 ## Backlog
-
-### Seperate HashNet and SecureNet
-Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
-- [ ] Make hashnet and securenet seperate classes  
 
 ### Network Joining and participation (Mode2)
 Goal: Q3  
