@@ -4,8 +4,9 @@
 
 ### DART Synchronization services (mode2) 
 Description: Function to allow a program to remotely synchronize a dart from a node  
+Goal: May  
 - [x] Synchronize a static remote DART to a local DART
-- [ ] Synchronize more static DART's with the same data to one local DART
+- [x] Synchronize more static DART's with the same data to one local DART
 - [x] Subscribe to a recorder from one trusted node.
 - [x] Iterate until until the DART has been synchronize to the common bullseye  
 Assignee: al  
@@ -13,6 +14,7 @@ Assignee: al
 
 ### Graph Mirroring (mode2) 
 Description: create a function can get all new events using wavefront and create a non voting graph of the events
+Goal: May  
 Enable a new node to join the graph  
 - [x] Enable a node to follow the graph and build the consensus with out participating
 - [x] Add graph witness fingerprints to the DART
@@ -23,7 +25,7 @@ Assignee: lr
 
 ### Network Catchup (mode2) 
 Goal: May  
-- [ ] depends on: DART Synchronization services
+- [x ] depends on: DART Synchronization services
 - [ ] depends on: Graph Mirroring
 - [ ] integrate in tagionwave, start the network and sync until it can join the network
       when the node starts it should detect that it is out of sync and start mirroring the graph and syncing the dart
