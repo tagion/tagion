@@ -85,12 +85,11 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     protected SecretMethods _secret;
 
+    const(HashNet) hash() pure const nothrow {
+        return this;
+    }
     @nogc final Pubkey pubkey() pure const nothrow {
         return _pubkey;
-    }
-
-    final Buffer hmacPubkey() const {
-        return HMAC(cast(const(Buffer)) _pubkey);
     }
 
     final Pubkey derivePubkey(string tweak_word) const {

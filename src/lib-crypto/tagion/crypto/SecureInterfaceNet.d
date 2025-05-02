@@ -10,7 +10,7 @@ import tagion.hibon.HiBONRecord : HiBONPrefix, isHiBONRecord;
 
 alias check = Check!SecurityConsensusException;
 
-@safe
+@safe:
 interface HashNet {
     uint hashSize() const pure nothrow scope;
 
@@ -30,10 +30,9 @@ interface HashNet {
     string multihash() const pure nothrow;
 }
 
-@safe
 interface SecureNet : HashNet {
     import std.typecons : Tuple;
-
+    const(HashNet) hash() const pure nothrow;
     alias Signed = Tuple!(Signature, "signature", Fingerprint, "message");
     @nogc Pubkey pubkey() pure const nothrow;
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const pure;
@@ -43,7 +42,7 @@ interface SecureNet : HashNet {
 
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
             .SECURITY_MESSAGE_HASH_KEY);
-        immutable message = calcHash(doc);
+        immutable message = hash.calcHash(doc);
         return verify(message, signature, pubkey);
     }
 
