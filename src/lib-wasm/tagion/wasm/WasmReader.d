@@ -19,7 +19,14 @@ import std.uni : toLower;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 
-@safe struct WasmReader {
+@safe:
+enum ElementMode : ubyte {
+    PASSIVE,
+    ACTIVE,
+    DECLARATIVE,
+}
+
+struct WasmReader {
     protected {
         immutable(ubyte)[] _data;
     }
@@ -133,7 +140,7 @@ import tagion.wasm.WasmException;
         return new T(sec.data);
     }
 
-    @safe struct WasmRange {
+    struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
         immutable(string) magic;
@@ -555,6 +562,16 @@ import tagion.wasm.WasmException;
                 }
             }
 
+            static ElementMode elementMode(const uint select) pure nothrow @nogc {
+                if (select & 0x1) {
+                    if (select & 0x2) {
+                        return ElementMode.DECLARATIVE;
+                    }
+                    return ElementMode.PASSIVE;
+                }
+                return ElementMode.ACTIVE;
+            }
+
             struct ElementType {
                 immutable(uint) tableidx; /// x:tableidx
                 immutable(ubyte[]) expr; /// e:expr
@@ -604,6 +621,7 @@ import tagion.wasm.WasmException;
                     immutable(ubyte)[] _expr;
                     immutable(ubyte[])[] _exprs;
                     select = u32(data, index);
+                    __write("WasmRead select %d %(%02x %)", select, data.take(10));
                     void init_elementmode() {
                         // Mode comment is from Webassembly spec Modules/Element Section 
                         switch (select) {
@@ -661,6 +679,11 @@ import tagion.wasm.WasmException;
                 ExprRange opSlice() const {
                     return ExprRange(expr);
                 }
+
+                ElementMode mode() const pure nothrow @nogc {
+                    return elementMode(select);
+                }
+
             }
 
             alias Element = SectionT!(ElementType);

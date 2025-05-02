@@ -18,6 +18,8 @@ enum WastKeywords {
     PARAM = "param",
     RESULT = "result",
     DECLARE = "declare",
+    ITEM = "item",
+    FUNCREF = "funcref",
 }
 
 bool isReseved(const(char[]) word) @nogc pure nothrow {

@@ -130,6 +130,7 @@ enum IRType {
     MEMOP, /// Memory management instruction
     CONST, /// Constant argument
     END, /// Block end instruction
+    REF, /// Reference instruction
     PREFIX, /// Prefix for two byte extension
     SYMBOL, /// This is extra instruction which does not have an equivalent wasm opcode
     ILLEGAL, /// Illegal instructions
@@ -346,6 +347,11 @@ enum IR : ubyte {
         @Instr("i64.reinterpret_f64", "i64.reinterpret_f64", 1, IRType.CODE, [Types.F64], [Types.I64]) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
         @Instr("f32.reinterpret_i32", "f32.reinterpret_i32", 1, IRType.CODE, [Types.I32], [Types.F32]) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
         @Instr("f64.reinterpret_i64", "f64.reinterpret_i64", 1, IRType.CODE, [Types.I64], [Types.F64]) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
+        // Reference Instructions
+        @Instr("ref.null", "ref.null", 1, IRType.REF) REF_NULL = 0xD0, /// ref.null
+        @Instr("ref.is_null", "ref.is_null", 1, IRType.REF) REF_IS_NULL = 0xD1, /// ref.is_null 
+        @Instr("ref.func", "ref.func", 1, IRType.REF) REF_FUNC = 0xD2, /// ref.func
+        // Extended
         @Instr("(;extended;)", "(;extended;)", 1, IRType.CODE_EXTEND, [], [], true)     EXNEND           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
             // dfmt on
 
@@ -1017,6 +1023,9 @@ struct ExprRange {
                 case END:
                     _level--;
                     break;
+                case REF:
+                    check(0, "Ref instructions not supported yet");
+                    assert(0);
                 case ILLEGAL:
                     throw new WasmExprException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code), elm);
                     break;

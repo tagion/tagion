@@ -174,7 +174,7 @@ struct AccountDetails {
             TagionCurrency[] fees;
             ContractStatus[] statuses;
 
-            /// FIXME: this messes up when contracts has multiple outputs excluding the ones to yourself
+            pragma(msg, "FIXME: this messes up when contracts has multiple outputs excluding the ones to yourself");
             foreach (contract, pay_script; zip(contracts, pay_scripts)) {
                 TagionBill[] input_bills;
 
@@ -304,7 +304,7 @@ version (unittest) {
 
         const script = PayScript([change_bill, receiver_bill]);
         const contract = Contract([hash_net.dartIndex(input_bill)], reads:
-        null, script.toDoc);
+                null, script.toDoc);
         const s_contract = SignedContract(signs : null, contract);
         return HiRPC(null).submit(s_contract);
     }
@@ -373,11 +373,15 @@ unittest {
         AccountDetails account;
         account.derivers[my_net.pubkey] = [0];
         account.create_payment(
-            change: 400.TGN,
-            sent: 2400.TGN,
-            fee: 80.TGN,
-            sender: my_net.pubkey,
-            receiver: your_net.pubkey,
+    change : 400.TGN,
+    sent:
+                2400.TGN,
+    fee:
+                80.TGN,
+    sender:
+                my_net.pubkey,
+    receiver:
+                your_net.pubkey,
         );
 
         assert(account.history.walkLength == 2);
@@ -396,11 +400,15 @@ unittest {
         AccountDetails account;
         account.derivers[my_net.pubkey] = [0];
         account.create_pending_payment(
-            change: 400.TGN,
-            sent: 2400.TGN,
-            fee: 80.TGN,
-            sender: my_net.pubkey,
-            receiver: your_net.pubkey,
+    change : 400.TGN,
+    sent:
+                2400.TGN,
+    fee:
+                80.TGN,
+    sender:
+                my_net.pubkey,
+    receiver:
+                your_net.pubkey,
         );
 
         auto hist = account.reverse_history;
@@ -424,11 +432,15 @@ unittest {
         AccountDetails account;
         account.derivers[my_net.pubkey] = [0];
         account.create_payment(
-            change: 400.TGN,
-            sent: 2400.TGN,
-            fee: 80.TGN,
-            sender: my_net.pubkey,
-            receiver: my_net.pubkey,
+    change : 400.TGN,
+    sent:
+                2400.TGN,
+    fee:
+                80.TGN,
+    sender:
+                my_net.pubkey,
+    receiver:
+                my_net.pubkey,
         );
 
         auto hist = account.history;
@@ -475,6 +487,7 @@ const(DARTIndex)[] contractDARTIndices(const HashNet net, const(Document) doc) {
     const payment = PayScript(contract.script);
     const result = contract.inputs ~ payment.outputs.map!(output => net.dartIndex(output)).array;
     return result;
+    // return only(contract.inputs, payment.outputs.map!(output => net.dartIndex(output))).array;
 }
 
 unittest {
@@ -489,11 +502,15 @@ unittest {
     account.derivers[my_net.pubkey] = [0];
     account.bills ~= TagionBill(3000.TGN, sdt_t(0), my_net.pubkey, []);
     account.create_payment(
-        change : 400.TGN,
-        sent: 2400.TGN,
-        fee: 80.TGN,
-        sender: my_net.pubkey,
-        receiver: your_net.pubkey,
+change : 400.TGN,
+sent:
+            2400.TGN,
+fee:
+            80.TGN,
+sender:
+            my_net.pubkey,
+receiver:
+            your_net.pubkey,
     );
 
     const dart_indices = my_net.contractDARTIndices(account.hirpcs.front);

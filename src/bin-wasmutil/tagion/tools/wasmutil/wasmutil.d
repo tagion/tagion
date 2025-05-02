@@ -24,10 +24,11 @@ import tagion.wasm.WasmReader;
 import tagion.wasm.WasmWat : wat;
 import tagion.wasm.WasmWriter;
 
-//import tagion.script.StandardRecords;
 import std.array : join;
 import tagion.tools.Basic;
 import tagion.tools.revision;
+
+import tagion.basic.Debug;
 
 template Produce(FileExtension ext) {
     static if (ext == FileExtension.wat) {
@@ -117,16 +118,16 @@ int _main(string[] args) {
                 "",
                 "Where:",
                 format("<in-file>           Is an input file in (%-(%s -%)) format",
-                        only(FileExtension.wasm, FileExtension.wat)),
+                    only(FileExtension.wasm, FileExtension.wat)),
                 format("<out-file>          Is an output file in (%-(%s -%)) format",
-                        only(FileExtension.wat, FileExtension.dsrc)),
+                    only(FileExtension.wat, FileExtension.dsrc)),
                 "                    stdout is used of the output is not specified the",
                 "",
 
                 "<option>:",
 
             ].join("\n"),
-            main_args.options);
+                    main_args.options);
         }
 
         if (version_switch) {
@@ -199,6 +200,7 @@ int _main(string[] args) {
         with (FileExtension) {
             switch (inputfilename.extension) {
             case wasm, wo:
+                __write("Reader ---");
                 immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
                 wasm_reader = WasmReader(read_data);
                 wasm_verbose.hex(0, read_data);
@@ -221,10 +223,11 @@ int _main(string[] args) {
         }
 
         immutable(ubyte)[] data_out;
-        if (!wasm_writer) {
-            assert(wasm_reader !is WasmReader.init, "Missing wasm-reader module");
-            wasm_writer = WasmWriter(wasm_reader);
-        }
+        version (none)
+            if (!wasm_writer) {
+                assert(wasm_reader !is WasmReader.init, "Missing wasm-reader module");
+                wasm_writer = WasmWriter(wasm_reader);
+            }
         if (inject_gas) {
             assert(wasm_writer !is null, "Missing wasm module");
             auto wasmgas = WasmGas(wasm_writer);
@@ -238,7 +241,6 @@ int _main(string[] args) {
         }
         if (__verbose_switch) {
             wasm_verbose.mode = VerboseMode.STANDARD;
-
         }
 
         const output_extension = (outputfilename.empty) ? type.typeExtension : outputfilename.extension;

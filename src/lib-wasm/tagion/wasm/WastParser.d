@@ -59,21 +59,23 @@ struct WastParser {
         BASE,
         COMMENT,
         ASSERT,
+        CONDITIONAL,
         MODULE,
         TYPE,
         FUNC,
         TABLE,
+        ELEMENT,
         PARAM,
         RESULT,
         FUNC_BODY,
         CODE,
-        CONDITIONAL,
-        END_FUNC,
-        BREAK,
+        // END_FUNC,
+        //BREAK,
         EXPORT,
         IMPORT,
         MEMORY,
         EXPECTED,
+        ITEM,
         END,
         UNDEFINED,
     }
@@ -196,7 +198,7 @@ struct WastParser {
         }
     }
 
-    private ParserStage _parseInstr(
+    private ParserStage parseBodyInstr(
             ref WastTokenizer r,
             const ParserStage stage,
             ref WasmExpr func_wasmexpr, //ref CodeType code_type,
@@ -223,8 +225,8 @@ struct WastParser {
             got_error |= tokenizer.valid(flag, msg, file, code_line);
         }
 
-        int getFuncIdx() @trusted {
-            int innerFunc(string text) {
+        int getFuncIdx() {
+            int innerFunc(string text) @trusted {
                 int result = func_lookup[text].ifThrown!RangeError(int(-1));
                 if (result < 0) {
                     result = text.to!int
@@ -328,7 +330,6 @@ struct WastParser {
                     }
                     while (r.type is TokenType.BEGIN) {
                         inner_stage = innerInstr(wasmexpr, r, wasm_results, next_stage);
-                        //breakout |= (sub_stage == ParserStage.END);
                     }
                     wasmexpr(irLookupTable[instr.name]);
                     break;
@@ -411,10 +412,6 @@ struct WastParser {
                     wasmexpr(IR.END);
                     return stage;
                 case BLOCK_ELSE:
-                    version (none)
-                        r.check(stage is ParserStage.CONDITIONAL,
-                                format("An %s IRType is only allower after parsing a %s , not after a %s stage",
-                                BLOCK_ELSE, ParserStage.CONDITIONAL, stage));
                     r.nextToken;
                     wasmexpr(IR.ELSE);
                     while (r.type is TokenType.BEGIN) {
@@ -535,12 +532,14 @@ struct WastParser {
                     break;
                 case PREFIX:
                     break;
+                case REF:
+                    check(0, "Ref instructions not supported yet");
+                    assert(0);
                 case ILLEGAL:
                     throw new WasmException(format("Undefined instruction %s", r.token));
                     break;
                 case SYMBOL:
                     if (inner_stage == ParserStage.CONDITIONAL) {
-                        //const conditional_ir = irLookupTable[instr.name];
                         switch (r.token) {
                         case PseudoWastInstr.then:
                             r.nextToken;
@@ -585,7 +584,7 @@ struct WastParser {
         assert(toType("bad type") is Types.VOID);
     }
 
-    private ParserStage parseInstr(
+    private void parseInstr(
             ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
@@ -605,19 +604,18 @@ struct WastParser {
                     func_ctx.locals[number_of_func_arguments .. $],
                     code_type.expr ~ func_wasmexpr.serialize);
         }
-        if (stage is ParserStage.FUNC_BODY) {
-            scope (exit) {
+        scope (exit) {
+            if (only(ParserStage.FUNC_BODY, ParserStage.TABLE).canFind(stage)) {
                 func_wasmexpr(IR.END);
             }
-            ParserStage result;
-            uint count;
-            while (r.type is TokenType.BEGIN) {
-                result = _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
-                count++;
-            }
-            return result;
         }
-        return _parseInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+        if (stage is ParserStage.FUNC_BODY) {
+            while (r.type is TokenType.BEGIN) {
+                parseBodyInstr(r, stage, func_wasmexpr, func_type, func_ctx);
+            }
+            return;
+        }
+        parseBodyInstr(r, stage, func_wasmexpr, func_type, func_ctx);
     }
 
     static Limit parseLimit(ref WastTokenizer r) {
@@ -654,7 +652,6 @@ struct WastParser {
     private ElemType parseElem(ref WastTokenizer r, const ParserStage stage) {
         import tagion.wasm.WastKeywords;
 
-        ElementMode elem_mode;
         ElemType elem;
         string elem_name;
         if ((r.type is TokenType.WORD) && !(r.token.isReseved) &&
@@ -663,91 +660,125 @@ struct WastParser {
             elem_name = r.token;
         }
         string table_name;
-        void innerElemType() {
-            if (r.type is TokenType.BEGIN) {
+        import tagion.wasm.WasmReader : ElementMode;
+
+        bool innerElemType() {
+            bool getElementProperty() {
                 r.nextToken;
-                scope (exit) {
-                    r.nextToken;
-                    r.expect(TokenType.END);
-                }
                 switch (r.token) {
-                case WastKeywords.TABLE:
-                    elem_mode = ElementMode.ACTIVE;
-                    r.check(stage is ParserStage.TABLE, "Table can not be used inside a table");
-                    r.nextToken;
+                case WastKeywords.TABLE: /// (table $x)
+                    r.check(elem.mode is ElementMode.PASSIVE,
+                            format("Ambiguies element mode %s. Mode has already been defined", elem.mode));
+                    r.check(stage !is ParserStage.TABLE,
+                            "Table can not be used inside a table");
                     scope (exit) {
-                        r.nextToken;
+                        __write("TABLE--- %s", r.save.map!(t => t.token).take(5));
                     }
+                    elem.mode = ElementMode.ACTIVE;
+                    r.nextToken;
                     if (!table_name) {
                         table_name = r.token;
-                        break;
+                        r.nextToken;
+                        return true;
                     }
                     r.check(0, "Table has already been defined");
-
                     break;
-                case WastKeywords.OFFSET:
-                    elem_mode = ElementMode.ACTIVE;
-                    r.nextToken;
+                case WastKeywords.OFFSET: /// (offset (..expr..))
+                    r.check(elem.mode < ElementMode.DECLARATIVE,
+                            format("Ambiguies element mode %s. Mode has already been defined", elem.mode));
                     r.check(elem.expr is null,
                             "Initialisation code has already been defined for this element");
+                    elem.mode = ElementMode.ACTIVE;
+                    r.nextToken;
                     FuncType void_func;
                     CodeType code_offset;
                     FunctionContext ctx;
-                    parseInstr(r, ParserStage.CODE, code_offset, void_func, ctx);
+                    parseInstr(r, ParserStage.TABLE, code_offset, void_func, ctx);
 
                     elem.expr = code_offset.expr;
-                    break;
+                    return true;
+                case WastKeywords.ITEM:
+                    r.nextToken;
+                    parseElem(r, ParserStage.ITEM);
+                    return true;
                 default:
-                    r.check(elem.expr is null,
-                            "Initialisation code has already been defined for this element");
-                    FuncType void_func;
-                    CodeType code;
-                    FunctionContext ctx;
-                    parseInstr(r, ParserStage.CODE, code, void_func, ctx);
-                    elem.expr = code.expr;
+                    // empty
+                }
+                return false;
+            }
+
+            auto rewind = r.save;
+            if (r.type is TokenType.BEGIN) {
+                if (getElementProperty) {
+                    r.expect(TokenType.END);
+                    r.nextToken;
+                    return true;
                 }
 
+                __write("Test expression");
+                r = rewind;
+                //if (r.type is TokenType.BEGIN) {
+                r.check(elem.expr is null,
+                        "Initialisation code has already been defined for this element");
+                __write("ELEMENT expression %s", r.save.map!(t => t.token).take(5));
+                //__write("Table name %s -- %s", table_name, r.save.map!(t => t.token).take(5));
+                FuncType void_func;
+                CodeType code;
+                FunctionContext ctx;
+                parseInstr(r, ParserStage.TABLE, code, void_func, ctx);
+                elem.expr = code.expr;
+                return true;
             }
+            return false;
         }
 
-        Types _type;
-        immutable(uint[]) getFuncs() {
+        immutable(uint[]) getFuncs(const Flag!"ignore" falg = No.ignore) {
             immutable(uint)[] result;
             while (r.type is TokenType.WORD) {
                 const func_idx = func_lookup.get(r.token, -1);
-                r.check(func_idx >= 0, format("Function name %s not defined", r.token));
+                if (falg) {
+                    if (func_idx < 0) {
+                        break;
+                    }
+                }
+                else {
+                    r.check(func_idx >= 0, format("Function name %s not defined", r.token));
+                }
                 result ~= func_idx;
                 r.nextToken;
             }
             return result;
         }
 
-        int count = 10;
         while (r.type !is TokenType.END) {
-            const try_type = r.token.toType;
-            switch (try_type) {
-            case Types.FUNCREF:
-                r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
-                _type = try_type;
+            switch (r.token) {
+            case WastKeywords.FUNCREF: // funcref
+                elem.reftype = Types.FUNCREF;
                 r.nextToken;
                 elem.funcs = getFuncs;
                 continue;
-            case Types.FUNC:
-                r.check(_type is Types.VOID, format("Type has been redefined from %s to %s", _type, try_type));
-                _type = try_type;
+            case WastKeywords.FUNC: // func
                 r.nextToken;
                 elem.funcs = getFuncs;
                 continue;
-            case Types.VOID:
-                assert(count-- > 0);
-                // ignore
-                break;
+            case WastKeywords.DECLARE:
+                elem.mode = ElementMode.DECLARATIVE;
+                r.nextToken;
+                continue;
             default:
-                r.check(0, format("Illegal type %s must be a ref-type", try_type));
+                if (elem.funcs.empty) {
+                    elem.funcs = getFuncs(Yes.ignore);
+                    if (!elem.funcs.empty) {
+                        continue;
+                    }
+                }
+                r.expect(TokenType.BEGIN);
             }
-            innerElemType;
-        }
+            r.check(innerElemType, "Expression expected");
 
+            __write("Element next %s", r.token);
+        }
+        __write("ELEMENT AFTER %s", r.save.map!(t => t.token).take(5));
         return elem;
     }
 
@@ -797,15 +828,11 @@ struct WastParser {
                 return ParserStage.MODULE;
             case WastKeywords.TYPE:
                 r.nextToken;
-                version (none)
-                    if (r.type is TokenType.WORD) {
-                        label = r.token;
-                        r.nextToken;
-                    }
                 parseTypeSection(r, ParserStage.TYPE);
                 return stage;
             case WastKeywords.FUNC: // Example (func $name (param ...) (result i32) )
-                return parseFuncType(r, stage);
+                parseFuncType(r, stage);
+                return ParserStage.FUNC;
             case WastKeywords.RESULT:
                 r.valid(stage == ParserStage.FUNC, "Result only allowed inside function declaration");
                 r.nextToken;
@@ -883,7 +910,7 @@ struct WastParser {
                 return stage;
             case WastKeywords.ELEM:
                 r.nextToken;
-                writer.section!(Section.ELEMENT).sectypes ~= parseElem(r, stage);
+                writer.section!(Section.ELEMENT).sectypes ~= parseElem(r, ParserStage.ELEMENT);
                 return stage;
             case "assert_return_nan":
             case "assert_return":
@@ -956,7 +983,7 @@ struct WastParser {
             ref WastTokenizer r,
             const ParserStage stage,
             ref FuncType func_type) {
-        if (r.type == TokenType.BEGIN) {
+        if (r.type is TokenType.BEGIN) {
             r.nextToken;
             bool not_ended;
             scope (exit) {
@@ -964,7 +991,7 @@ struct WastParser {
                 r.nextToken;
             }
             switch (r.token) {
-            case "type":
+            case WastKeywords.TYPE:
                 r.check(stage !is ParserStage.TYPE, format("Type can not be declared inside a type"));
                 r.nextToken;
                 r.expect(TokenType.WORD);
@@ -976,18 +1003,18 @@ struct WastParser {
                 func_type = writer.section!(Section.TYPE).sectypes[type_idx];
                 r.nextToken;
                 return ParserStage.TYPE;
-            case "param": // Example (param $y i32)
+            case WastKeywords.PARAM: // Example (param $y i32)
                 r.nextToken;
-                if (stage == ParserStage.IMPORT) {
+                if (stage is ParserStage.IMPORT) {
                     while (r.token.getType !is Types.VOID) {
                         func_type.params ~= r.token.getType;
                         r.nextToken;
                     }
                 }
                 else {
-                    r.valid(stage == ParserStage.FUNC, "Only allowed inside a function");
+                    r.valid(stage is ParserStage.FUNC, "Only allowed inside a function");
 
-                    if (r.type == TokenType.WORD && r.token.getType is Types.VOID) {
+                    if (r.type is TokenType.WORD && r.token.getType is Types.VOID) {
                         const label = r.token;
                         r.nextToken;
 
@@ -998,18 +1025,18 @@ struct WastParser {
                         r.valid(get_type !is Types.VOID, "Illegal type");
                         r.nextToken;
                     }
-                    while (r.type == TokenType.WORD && r.token.getType !is Types.VOID) {
+                    while (r.type is TokenType.WORD && r.token.getType !is Types.VOID) {
                         func_type.params ~= r.token.getType;
                         //arg = r.token;
                         r.nextToken;
                     }
                 }
                 return ParserStage.PARAM;
-            case "result":
+            case WastKeywords.RESULT:
                 r.valid((stage == ParserStage.FUNC) || (stage == ParserStage.TYPE),
                         "Result only allowed inside a function declaration");
                 r.nextToken;
-                while (r.type != TokenType.END) {
+                while (r.type !is TokenType.END) {
                     immutable type = r.token.getType;
                     check(type !is Types.VOID, "Data type expected");
                     func_type.results ~= type;
@@ -1019,13 +1046,12 @@ struct WastParser {
             default:
                 not_ended = true;
                 r.nextToken;
-                return ParserStage.UNDEFINED;
             }
         }
         return ParserStage.UNDEFINED;
     }
 
-    private ParserStage parseFuncBody(
+    private void parseFuncBody(
             ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
@@ -1034,10 +1060,10 @@ struct WastParser {
         FunctionContext func_ctx;
         func_ctx.locals = func_type.params;
         func_ctx.local_names = func_type.param_names;
-        return parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+        parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
     }
 
-    private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
+    private void parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         string type_name;
         if (r.type is TokenType.WORD) {
             type_name = r.token;
@@ -1050,9 +1076,12 @@ struct WastParser {
         case WastKeywords.FUNC:
             r.nextToken;
             FuncType func_type;
-            const func_stage = parseFuncArgs(r, stage, func_type);
+            parseFuncArgs(r, stage, func_type);
             const type_idx = writer.createTypeIdx(func_type);
             if (type_name) {
+
+                
+
                     .check((type_name in type_lookup) is null,
                             format("Type name %s already defined", type_name));
                 type_lookup[type_name] = type_idx;
@@ -1062,14 +1091,11 @@ struct WastParser {
             r.check(0, format("Type expected not %s", r.token));
         }
 
-        scope (exit) {
-            r.expect(TokenType.END);
-            r.nextToken;
-        }
-        return stage;
+        r.expect(TokenType.END);
+        r.nextToken;
     }
 
-    private ParserStage parseFuncType(ref WastTokenizer r, const ParserStage stage) {
+    private void parseFuncType(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
         r.valid(stage < ParserStage.FUNC, "Should been outside function declaration");
         string func_name;
@@ -1123,8 +1149,7 @@ struct WastParser {
                 (arg_stage == ParserStage.UNDEFINED)) {
             r = rewined;
         }
-        return parseFuncBody(r, ParserStage.FUNC_BODY, code_type, func_type);
-        return ParserStage.FUNC;
+        parseFuncBody(r, ParserStage.FUNC_BODY, code_type, func_type);
     }
 
     private {

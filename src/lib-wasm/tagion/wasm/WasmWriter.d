@@ -21,12 +21,6 @@ import tagion.wasm.WasmReader;
 import tagion.hibon.HiBONRecord : exclude;
 
 @safe:
-enum ElementMode : ubyte {
-    PASSIVE,
-    ACTIVE,
-    DECLARATIVE,
-}
-
 void writeb(T)(ref OutBuffer bout, T x) pure if (isIntegral!T) {
     bout.write(LEB128.encode(x));
 }
@@ -667,21 +661,38 @@ class WasmWriter {
         }
 
         struct ElementType {
-            uint select;
+            //            uint select;
             uint tableidx;
             uint elemkind;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[] funcs;
             immutable(ubyte[])[] exprs;
             Types reftype;
+            ElementMode mode;
             this(ref const(ReaderSecType!(Section.ELEMENT)) e) {
                 tableidx = e.tableidx;
                 expr = e.expr;
                 funcs = e.funcs;
             }
 
+            @property uint select() const pure nothrow @nogc {
+                final switch (mode) {
+                case ElementMode.PASSIVE:
+                    if (exprs) {
+                        return 5;
+                    }
+                    return 1;
+                case ElementMode.ACTIVE:
+                    return 0;
+                case ElementMode.DECLARATIVE:
+                    return 3;
+                }
+                assert(0);
+            }
+
             void serialize(ref OutBuffer bout) const {
                 bout.writeb(select);
+                __write("WasmWriter select %d", select);
                 switch (select) {
                 case 0: /// 0:u32 e:expr y*:vec(funcidx)
                     bout.write(expr);
@@ -728,22 +739,8 @@ class WasmWriter {
                 }
             }
 
-            ElementMode mode() const pure nothrow @nogc {
-                switch (select) {
-                case 1:
-                case 5:
-                    return ElementMode.PASSIVE;
-                case 0:
-                case 4:
-                case 6:
-                    return ElementMode.ACTIVE;
-                case 3:
-                case 7:
-                    return ElementMode.DECLARATIVE;
-                default:
-                    // empty
-                }
-                assert(0, "Illegal element mode");
+            version (none) ElementMode mode() const pure nothrow @nogc {
+                return WasmReader.WasmRange.WasmSection.elementMode(select);
             }
         }
 
@@ -852,39 +849,4 @@ class WasmWriter {
         alias Data = SectionT!(DataType);
 
     }
-}
-
-version (none) unittest {
-    import std.exception : assumeUnique;
-    import std.file;
-    import std.stdio;
-    import tagion.wavm.Wast;
-
-    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file : _read = read;
-
-        auto data = cast(ubyte[]) _read(name, upTo);
-        // writefln("read data=%s", data);
-        return assumeUnique(data);
-    }
-
-    //    string filename="../tests/wasm/func_1.wasm";
-    string filename = "../tests/wasm/global_1.wasm";
-    //    string filename="../tests/wasm/imports_1.wasm";
-    //    string filename="../tests/wasm/table_copy_2.wasm";
-    //    string filename="../tests/wasm/memory_2.wasm";
-    //    string filename="../tests/wasm/start_4.wasm";
-    //    string filename="../tests/wasm/address_1.wasm";
-    //    string filename="../tests/wasm/data_4.wasm";
-    //    string filename="../tests/web_gas_gauge.wasm";//wasm/imports_1.wasm";
-    immutable read_data = fread(filename);
-    auto wasm_reader = WasmReader(read_data);
-    Wast(wasm_reader, stdout).serialize();
-
-    writefln("wasm_reader.serialize=%s", wasm_reader.serialize);
-    auto wasm_writer = WasmWriter(wasm_reader);
-
-    writeln("wasm_writer.serialize");
-    writefln("wasm_writer.serialize=%s", wasm_writer.serialize);
-    assert(wasm_reader.serialize == wasm_writer.serialize);
 }

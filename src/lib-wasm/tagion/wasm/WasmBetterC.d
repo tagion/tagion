@@ -1210,6 +1210,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             }
                         }
                         return;
+                    case REF:
+                        check(0, "Ref instructions not supported yet");
+                        assert(0);
                     case ILLEGAL:
                         bout.writefln("Error: Illegal instruction %02X", elm.code);
                         break;
