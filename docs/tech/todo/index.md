@@ -25,7 +25,7 @@ Assignee: lr
 
 ### Network Catchup (mode2) 
 Goal: May  
-- [x ] depends on: DART Synchronization services
+- [x] depends on: DART Synchronization services
 - [ ] depends on: Graph Mirroring
 - [ ] integrate in tagionwave, start the network and sync until it can join the network
       when the node starts it should detect that it is out of sync and start mirroring the graph and syncing the dart
@@ -49,9 +49,9 @@ Goal: May
 - [ ] add hash of recorderblock to epochchain  
 Assignee: lr  
 
-## Seperate hashnet and securenet
+### Seperate hashnet and securenet
 Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
-- [ ] Make hashnet and securenet seperate classes  
+- [x] Make hashnet and securenet seperate classes  
 Assignee: cbr
 
 -----------------------------------------------------------------------------------------
