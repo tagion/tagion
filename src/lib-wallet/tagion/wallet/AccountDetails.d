@@ -496,7 +496,7 @@ sender: my_net.pubkey,
 receiver: your_net.pubkey,
     );
 
-    const dart_indices = my_net.contractDARTIndices(account.hirpcs.front);
+    const dart_indices = my_net.hash.contractDARTIndices(account.hirpcs.front);
     /*
         writefln("%(%(%02x%) %)", dart_indices);
         writefln("locked = %(%(%02x%) %)", account.activated.keys);
@@ -504,7 +504,7 @@ receiver: your_net.pubkey,
         writefln("bills = %(%(%02x%) %)", account.bills.map!(b => my_net.dartIndex(b)));
     */
     assert(account.used_bills
-            .map!(b => my_net.dartIndex(b))
+            .map!(b => my_net.hash.dartIndex(b))
             .map!(f => dart_indices.canFind(f))
             .all,
             "Not all used_bills are in the dart_indices");

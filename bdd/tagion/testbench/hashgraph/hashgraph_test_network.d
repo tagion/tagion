@@ -254,7 +254,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         private void run() {
             { // Eva Event
                 immutable buf = cast(Buffer) _hashgraph.channel;
-                const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
+                const nonce = cast(Buffer) _hashgraph.hirpc.net.hash.calcHash(buf);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
                 if (Event.callbacks) {
                     Event.callbacks.connect(eva_event);

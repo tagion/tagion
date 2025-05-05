@@ -92,7 +92,7 @@ int _main(string[] args) {
             dart.close;
         }
         try {
-            dart = new DART(secure_net, dart_file);
+            dart = new DART(secure_net.hash, dart_file);
         }
         catch (DARTException e) {
             error(e);

@@ -26,7 +26,7 @@ import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 
 TagionHead getHead(DART db, const SecureNet net) {
-    DARTIndex tagion_index = net.dartKey(HashNames.domain_name, TagionDomain);
+    DARTIndex tagion_index = net.hash.dartKey(HashNames.domain_name, TagionDomain);
     auto hirpc = HiRPC(net);
     const sender = CRUD.dartRead([tagion_index], hirpc);
     const receiver = hirpc.receive(sender);
@@ -39,7 +39,7 @@ TagionHead getHead(DART db, const SecureNet net) {
 }
 
 GenericEpoch getEpoch(const TagionHead head, DART db, const SecureNet net) {
-    DARTIndex epoch_index = net.dartKey(HashNames.epoch, head.current_epoch);
+    DARTIndex epoch_index = net.hash.dartKey(HashNames.epoch, head.current_epoch);
 
     const hirpc = HiRPC(net);
     const _sender = CRUD.dartRead([epoch_index], hirpc);
@@ -74,7 +74,7 @@ do {
     import tagion.services.exception;
 
     Exception dart_exception;
-    DART db = new DART(__net, dart_path, dart_exception, Yes.read_only);
+    DART db = new DART(__net.hash, dart_path, dart_exception, Yes.read_only);
     if (dart_exception !is null) {
         throw dart_exception;
     }
@@ -83,7 +83,7 @@ do {
     }
 
     const hirpc = HiRPC(__net);
-    auto nodekey_indices = keys.map!(k => __net.dartKey(HashNames.nodekey, k)).array;
+    auto nodekey_indices = keys.map!(k => __net.hash.dartKey(HashNames.nodekey, k)).array;
     // Sort keys according to the dartkey
 
     const receiver = hirpc.receive(CRUD.dartRead(nodekey_indices, hirpc));
@@ -94,7 +94,7 @@ do {
     check(recorder[].each!(a => a.filed.isRecord!NetworkNodeRecord), "The read archives were not a NNR");
 
     immutable(NetworkNodeRecord)*[] nnrs;
-    foreach(a; recorder[]) {
+    foreach (a; recorder[]) {
         nnrs ~= new NetworkNodeRecord(a.filed);
     }
     return nnrs;
@@ -104,7 +104,7 @@ GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet __net) {
     import tagion.dart.DART;
 
     Exception dart_exception;
-    DART db = new DART(__net, dart_file_path, dart_exception, Yes.read_only);
+    DART db = new DART(__net.hash, dart_file_path, dart_exception, Yes.read_only);
     if (dart_exception !is null) {
         throw dart_exception;
     }

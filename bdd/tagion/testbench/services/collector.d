@@ -113,7 +113,7 @@ class ItWork {
 
             import tagion.dart.DART;
 
-            DART.create(opts.dart_path, node_net);
+            DART.create(opts.dart_path, node_net.hash);
 
             auto dart_net = createSecureNet;
             dart_net.generateKeyPair("dartnet");
@@ -122,7 +122,7 @@ class ItWork {
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 
-        auto record_factory = RecordFactory(node_net);
+        auto record_factory = RecordFactory(node_net.hash);
         auto insert_recorder = record_factory.recorder;
 
         input_nets = createNets(10, "input");

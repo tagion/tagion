@@ -105,7 +105,7 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
 
         auto net = createSecureNet;
         net.generateKeyPair("dartnet very secret");
-        DART.create(local_db_path, net);
+        DART.create(local_db_path, net.hash);
         return result_ok;
     }
 
@@ -116,7 +116,7 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
 
         const genesis_doc = node_runner.getGenesisDoc;
 
-        auto factory = RecordFactory(net);
+        auto factory = RecordFactory(net.hash);
         auto recorder = factory.recorder;
         recorder.insert(genesis_doc, Archive.Type.ADD);
 
@@ -128,8 +128,8 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
 
         const genesis_dart_path = "genesis_dart.drt";
 
-        DARTFile.create(genesis_dart_path, net);
-        auto db = new DART(net, genesis_dart_path);
+        DARTFile.create(genesis_dart_path, net.hash);
+        auto db = new DART(net.hash, genesis_dart_path);
         db.modify(recorder);
 
         string[] pins;

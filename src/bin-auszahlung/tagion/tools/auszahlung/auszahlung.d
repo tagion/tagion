@@ -118,15 +118,15 @@ int _main(string[] args) {
             //            writeln(logo);
             defaultGetoptPrinter(
                     [
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] <wallet.json> [<bill.hibon>] ", program),
-                    "",
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <wallet.json> [<bill.hibon>] ", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
@@ -470,7 +470,7 @@ int _main(string[] args) {
                 with (common_wallet_interface) {
                     secure_wallet.createPayment(to_pay, signed_contract, fees);
                     const contract_filename = buildPath(contracts, filename.baseName).setExtension(FileExtension.hibon);
-                    const message = secure_wallet.net.calcHash(signed_contract);
+                    const message = secure_wallet.net.hash.calcHash(signed_contract);
                     const contract_net = secure_wallet.net.derive(message);
                     const hirpc = HiRPC(contract_net);
                     const hirpc_submit = hirpc.submit(signed_contract);
@@ -507,7 +507,7 @@ int _main(string[] args) {
             }
             const update_file = buildPath(contracts, [basename, WalletInterface.update_tag].join("_"));
             with (common_wallet_interface) {
-                const message = secure_wallet.net.calcHash(WalletInterface.update_tag.representation);
+                const message = secure_wallet.net.hash.calcHash(WalletInterface.update_tag.representation);
                 const update_net = secure_wallet.net.derive(message);
                 const hirpc = HiRPC(update_net);
                 const req = secure_wallet.getRequestCheckWallet(hirpc);

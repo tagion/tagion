@@ -58,9 +58,9 @@ struct Wallet(Net : SecureNet) {
                 scope const(char[]) pincode) scope
         in (_net !is null)
         do {
-            auto seed = new ubyte[_net.hashSize];
+            auto seed = new ubyte[_net.hash.hashSize];
             getRandom(seed);
-            _pin.setPin(_net, R, pincode.representation, seed.idup);
+            _pin.setPin(_net.hash, R, pincode.representation, seed.idup);
         }
 
         scope (success) {
@@ -72,7 +72,7 @@ struct Wallet(Net : SecureNet) {
         enum size_of_privkey = 32;
         ubyte[] R;
         scope (exit) {
-            _wallet.S = _net.saltHash(R);
+            _wallet.S = _net.hash.saltHash(R);
             set_pincode(R, pincode);
             R[] = 0;
         }
@@ -92,11 +92,11 @@ struct Wallet(Net : SecureNet) {
         if (_pin.D) {
             _net = null;
             auto login_net = createSecureNet;
-            auto R = new ubyte[login_net.hashSize];
+            auto R = new ubyte[login_net.hash.hashSize];
             scope (exit) {
                 R[] = 0;
             }
-            const recovered = _pin.recover(login_net, R, pincode.representation);
+            const recovered = _pin.recover(login_net.hash, R, pincode.representation);
             if (recovered) {
                 login_net.createKeyPair(R);
                 _net = login_net;
@@ -120,7 +120,7 @@ struct Wallet(Net : SecureNet) {
 
         // Select all bills not in use
         auto none_locked = account.bills.filter!(
-                b => !(_net.dartIndex(b) in account.activated)).array;
+                b => !(_net.hash.dartIndex(b) in account.activated)).array;
 
         const enough = !none_locked
             .map!(b => b.value)
@@ -205,7 +205,7 @@ struct Wallet(Net : SecureNet) {
     }
 
     void lock_bills(const(TagionBill[]) locked_bills) {
-        locked_bills.each!(b => account.activated[_net.dartIndex(b)] = true);
+        locked_bills.each!(b => account.activated[_net.hash.dartIndex(b)] = true);
     }
 
     SignedContract createPayment(const(TagionBill)[] to_pay, out TagionCurrency fees, bool print = false) {
@@ -260,7 +260,7 @@ struct Wallet(Net : SecureNet) {
                 .length));
         if (amount_remainder != 0) {
             auto bill_remain = requestBill(amount_remainder, getCurrentPubkey);
-            auto derive = _net.HMAC(bill_remain.toDoc.serialize);
+            auto derive = _net.hash.HMAC(bill_remain.toDoc.serialize);
             account.requestBill(bill_remain, derive);
             pay_script.outputs ~= bill_remain;
         }
@@ -288,7 +288,7 @@ struct Wallet(Net : SecureNet) {
      * Requires saving afterwards
      */
     void deriveNewPubkey() {
-        account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
+        account.derive_state = _net.hash.HMAC(account.derive_state ~ _net.pubkey);
 
         auto pkey = _net.derivePubkey(account.derive_state);
         account.derivers[pkey] = account.derive_state;
@@ -331,7 +331,7 @@ struct Wallet(Net : SecureNet) {
         import tagion.dart.DARTcrud;
 
         auto owner_indices = account.derivers.byKey
-            .map!(owner => _net.dartKey(HashNames.trt_owner, owner));
+            .map!(owner => _net.hash.dartKey(HashNames.trt_owner, owner));
 
         return dartRead(owner_indices, hirpc.relabel("trt"));
     }
@@ -350,8 +350,8 @@ struct Wallet(Net : SecureNet) {
         import tagion.script.standardnames;
         import tagion.dart.DARTcrud;
 
-        DARTIndex[] contract_indices = contracts.map!(doc => _net.dartIndex(doc))
-            .map!(idx => _net.dartKey(StdNames.contract, idx))
+        DARTIndex[] contract_indices = contracts.map!(doc => _net.hash.dartIndex(doc))
+            .map!(idx => _net.hash.dartKey(StdNames.contract, idx))
             .array;
 
         return dartRead(contract_indices, hirpc.relabel("trt"));
@@ -382,7 +382,7 @@ struct Wallet(Net : SecureNet) {
 
         const recorder_doc = receiver.message[Keywords.result].get!Document;
         // writefln("recorder \n %s", recorder_doc.toPretty);
-        RecordFactory record_factory = RecordFactory(_net);
+        RecordFactory record_factory = RecordFactory(_net.hash);
         // TODO: catch hibon exception;
         const recorder = record_factory.recorder(recorder_doc);
         /// list of dart_indices in response
@@ -396,7 +396,7 @@ struct Wallet(Net : SecureNet) {
             .sort!((a, b) => a < b);
 
         auto bill_indices = account.bills
-            .map!(b => DARTIndex(_net.dartIndex(b)));
+            .map!(b => DARTIndex(_net.hash.dartIndex(b)));
 
         auto locked_indices = account.activated
             .byKey;
@@ -467,7 +467,7 @@ struct Wallet(Net : SecureNet) {
             return false;
         }
         const recorder_doc = receiver.message[Keywords.result].get!Document;
-        RecordFactory record_factory = RecordFactory(_net);
+        RecordFactory record_factory = RecordFactory(_net.hash);
         const recorder = record_factory.recorder(recorder_doc);
         auto new_bills = recorder[]
             .map!(a => a.filed)
@@ -478,7 +478,7 @@ struct Wallet(Net : SecureNet) {
             if (!account.bills.canFind(new_bill)) {
                 account.bills ~= new_bill;
             }
-            account.remove_requested_by_hash(_net.dartIndex(new_bill));
+            account.remove_requested_by_hash(_net.hash.dartIndex(new_bill));
             account.remove_invoice_by_pkey(new_bill.owner);
         }
         return true;
@@ -493,7 +493,7 @@ struct Wallet(Net : SecureNet) {
     TagionBill forceBill(TagionCurrency amount) {
         auto bill_to_add = requestBill(amount, getCurrentPubkey);
         account.bills ~= bill_to_add;
-        account.remove_requested_by_hash(_net.dartIndex(bill_to_add));
+        account.remove_requested_by_hash(_net.hash.dartIndex(bill_to_add));
         account.remove_invoice_by_pkey(bill_to_add.owner);
         return bill_to_add;
     }

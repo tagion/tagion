@@ -179,7 +179,7 @@ int _main(string[] args) {
     writefln("going to sign the doc!");
 
     Signature doc_signed = net.sign(doc).signature;
-    DARTIndex dart_index = net.dartIndex(doc);
+    DARTIndex dart_index = net.hash.dartIndex(doc);
 
     auto signed_delivery_event = DeliveryEvent(
             doc_signed,

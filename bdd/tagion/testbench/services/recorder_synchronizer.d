@@ -78,7 +78,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
         auto net = createSecureNet;
         net.generateKeyPair("dartnet very secret");
-        DART.create(local_db_path, net);
+        DART.create(local_db_path, net.hash);
 
         return result_ok;
     }
@@ -124,8 +124,8 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
             if (remote_db_path.exists)
                 remote_db_path.remove;
 
-            DART.create(remote_db_path, net);
-            auto remote_dart = new DART(net, remote_db_path);
+            DART.create(remote_db_path, net.hash);
+            auto remote_dart = new DART(net.hash, remote_db_path);
             auto recorder = remote_dart.recorder;
 
             auto tagion_head = TagionHead(TagionDomain, 0);

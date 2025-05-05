@@ -141,7 +141,7 @@ unittest {
 Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
     import std.algorithm : map;
 
-    const message = nets[0].calcHash(contract);
+    const message = nets[0].hash.calcHash(contract);
     return nets
         .map!(net => net.sign(message))
         .array;
@@ -168,9 +168,10 @@ const(SignedContract) sign(
         .sort!((a, b) => a.value < b.value)
         .array;
 
+    pragma(msg, "fixme(cbr): hash-function for the dartIndex should use the DART-hash instead");
     result.contract = Contract(
             sorted_inputs.map!((input) => input.value).array,
-            reads.map!(doc => net.dartIndex(doc)).array,
+            reads.map!(doc => net.hash.dartIndex(doc)).array,
             Document(script),
     );
     result.signs = sign(sorted_inputs.map!((input) => nets[input.index]).array, result.contract);
@@ -188,7 +189,7 @@ const(SignedContract) sign(
 
     check(nets.length > 0, "At least one input contract");
     const net = nets[0];
-    return sign(nets, inputs.map!((input) => cast(DARTIndex) net.dartIndex(input))
+    return sign(nets, inputs.map!((input) => cast(DARTIndex) net.hash.dartIndex(input))
             .array, reads, script);
 }
 
@@ -200,7 +201,7 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
     try {
         if (!owners.empty && signed_contract.contract.inputs.length == owners.length) {
-            const message = net.calcHash(signed_contract.contract);
+            const message = net.hash.calcHash(signed_contract.contract);
             return zip(signed_contract.signs, owners)
                 .all!((a) => net.verify(message, a[0], a[1]));
         }
@@ -370,10 +371,11 @@ else {
 /**
  * Create the DARTindices for the LockedArchives from a range of epochs
  */
-DARTIndex[] lockedArchiveIndices(Range)(Range epochs, SecureNet net) if (isInputRange!Range && is(ElementType!Range : long)) {
+DARTIndex[] lockedArchiveIndices(Range)(Range epochs, const HashNet hash)
+        if (isInputRange!Range && is(ElementType!Range : long)) {
     DARTIndex[] indices;
     foreach (epoch; epochs) {
-        indices ~= net.dartKey(HashNames.locked_epoch, epoch);
+        indices ~= hash.dartKey(HashNames.locked_epoch, epoch);
     }
     return indices;
 }
@@ -428,7 +430,7 @@ unittest {
     sdt_t time = sdt_t(638_402_115_766_852_971);
     TagionBill tagion_bill = TagionBill(123.TGN, time, net.pubkey, []);
     PayScript payscript = PayScript([tagion_bill]);
-    Contract contract = Contract([dartIndex(net, tagion_bill)], [], payscript.toDoc);
+    Contract contract = Contract([dartIndex(net.hash, tagion_bill)], [], payscript.toDoc);
     // We use a hardcorded signature because we dont want the signature to affect the different
     Signature signature = new ubyte[](64);
     SignedContract s_contract = SignedContract([signature], contract);
@@ -442,7 +444,7 @@ unittest {
     GenesisEpoch genesis_epoch = GenesisEpoch(0, [net.pubkey], testamony, time, globals);
     fwrite(fout, genesis_epoch);
 
-    Fingerprint bullseye = net.calcHash(testamony);
+    Fingerprint bullseye = net.hash.calcHash(testamony);
     Epoch epoch = Epoch(long(10), time, bullseye, bullseye, s_contract.signs, [net.pubkey], [net.pubkey], globals);
     fwrite(fout, epoch);
 
@@ -452,7 +454,7 @@ unittest {
     ConsensusVoting c_voting = ConsensusVoting(long(2), net.pubkey, s_contract.signs[0]);
     fwrite(fout, c_voting);
 
-    LockedArchives locked_archives = LockedArchives(long(3), [dartIndex(net, testamony)]);
+    LockedArchives locked_archives = LockedArchives(long(3), [dartIndex(net.hash, testamony)]);
     fwrite(fout, locked_archives);
 }
 

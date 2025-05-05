@@ -100,8 +100,8 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     protected SecretMethods _secret;
 
-    const(HashNet) hash() pure const nothrow {
-        return this;
+    const(HashNet) hash() pure const nothrow scope {
+        return _hash;
     }
 
     @nogc final Pubkey pubkey() pure const nothrow {
@@ -348,7 +348,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         SecureNet bad_net = createSecureNet;
         bad_net.generateKeyPair("Wrong Secret password");
 
-        const message = net.calcHash(some_data.representation);
+        const message = net.hash.calcHash(some_data.representation);
 
         Signature signature = net.sign(message);
 
@@ -375,9 +375,9 @@ class StdSecureNet : StdHashNet, SecureNet {
 
         const doc_signed = net.sign(doc);
 
-        assert(net.rawCalcHash(doc.serialize) == net.calcHash(doc.serialize), "should produce same hash");
+        assert(net.hash.rawCalcHash(doc.serialize) == net.hash.calcHash(doc.serialize), "should produce same hash");
 
-        assert(doc_signed.message == net.rawCalcHash(doc.serialize));
+        assert(doc_signed.message == net.hash.rawCalcHash(doc.serialize));
         assert(net.verify(doc, doc_signed.signature, net.pubkey));
 
         SecureNet bad_net = createSecureNet;
@@ -393,8 +393,8 @@ class StdSecureNet : StdHashNet, SecureNet {
             SimpleRecord data;
             data.x = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX20%s".format(i);
 
-            auto fingerprint = net.calcHash(data);
-            auto second_fingerprint = net.calcHash(data.toDoc.serialize);
+            auto fingerprint = net.hash.calcHash(data);
+            auto second_fingerprint = net.hash.calcHash(data.toDoc.serialize);
             assert(fingerprint == second_fingerprint);
 
             auto sig = net.sign(data).signature;
@@ -413,7 +413,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         const sig = net.sign(doc).signature;
         const clone_sig = net_clone.sign(doc).signature;
         const net_check = createSecureNet;
-        const msg = net.calcHash(doc);
+        const msg = net.hash.calcHash(doc);
         assert(net_check.verify(msg, sig, net.pubkey));
         assert(net_check.verify(msg, clone_sig, net_clone.pubkey));
     }

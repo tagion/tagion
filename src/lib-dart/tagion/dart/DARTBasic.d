@@ -16,7 +16,6 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 
-
 enum Queries {
     dartBullseye = "dartBullseye",
     dartRead = "dartRead",
@@ -45,21 +44,21 @@ enum KEY_SPAN = ubyte.max + 1;
  * Returns: 
  *   The DART fingerprint
  */
-immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) pure {
+immutable(DARTIndex) dartIndex(const(HashNet) hash, const(Document) doc) pure {
     if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
         if (doc.keys.front == STUB) {
             return doc[STUB].get!DARTIndex;
         }
         auto first = doc[].front;
         immutable value_data = first.data[0 .. first.size];
-        return DARTIndex(net.rawCalcHash(value_data));
+        return DARTIndex(hash.rawCalcHash(value_data));
     }
-    return DARTIndex(cast(Buffer) net.calcHash(doc));
+    return DARTIndex(cast(Buffer) hash.calcHash(doc));
 }
 
 /// Ditto
-immutable(DARTIndex) dartIndex(T)(const(HashNet) net, T value) pure if (isHiBONRecord!T) {
-    return net.dartIndex(value.toDoc);
+immutable(DARTIndex) dartIndex(T)(const(HashNet) hash, T value) pure if (isHiBONRecord!T) {
+    return hash.dartIndex(value.toDoc);
 }
 
 unittest { // Check the #key hash with types
@@ -125,7 +124,7 @@ unittest {
     import tagion.utils.StdTime;
 
     const net = new StdHashNet;
-    
+
     static struct DARTKey(T) {
         @label("#key") T key;
         int x;

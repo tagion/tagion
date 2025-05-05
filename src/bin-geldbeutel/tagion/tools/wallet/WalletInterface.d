@@ -419,14 +419,14 @@ struct WalletInterface {
     import tagion.script.common : TagionBill;
 
     string show(in TagionBill bill) {
-        const index = secure_wallet.net.dartIndex(bill);
+        const index = secure_wallet.net.hash.dartIndex(bill);
         const deriver = secure_wallet.account.derivers.get(bill.owner, Buffer.init);
         return format("dartIndex %s\nDeriver   %s\n%s",
                 index.encodeBase64, deriver.encodeBase64, bill.toPretty);
     }
 
     string show(const Document doc) {
-        const index = secure_wallet.net.calcHash(doc);
+        const index = secure_wallet.net.hash.calcHash(doc);
         const deriver = secure_wallet.account.derivers.get(Pubkey(doc[StdNames.owner].get!Buffer), Buffer.init);
         return format("fingerprint %s\nDeriver   %s\n%s",
                 index.encodeBase64, deriver.encodeBase64, doc.toPretty);
@@ -478,7 +478,7 @@ struct WalletInterface {
             innerAccount(hash_net);
             return;
         }
-        innerAccount(secure_wallet.net);
+        innerAccount(secure_wallet.net.hash);
     }
 
     void listInvoices(File fout) {
@@ -577,14 +577,14 @@ struct WalletInterface {
                             if (bill is TagionBill.init) {
                                 // Find bill by fingerprint 
                                 bill = secure_wallet.account.requested.byValue
-                                    .filter!(b => index == secure_wallet.net.dartIndex(b))
+                                    .filter!(b => index == secure_wallet.net.hash.dartIndex(b))
                                     .doFront;
 
                             }
 
                         }
                         if (bill !is TagionBill.init) {
-                            writefln("%s", toText(secure_wallet.net, bill));
+                            writefln("%s", toText(secure_wallet.net.hash, bill));
                             verbose("%s", show(bill));
                             secure_wallet.addBill(bill);
                             save_wallet = true;
@@ -593,12 +593,12 @@ struct WalletInterface {
                 }
                 if (request) {
                     secure_wallet.account.requested.byValue
-                        .each!(bill => secure_wallet.net.dartIndex(bill)
+                        .each!(bill => secure_wallet.net.hash.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
                 if (update || trt_update || trt_read) {
                     const update_net = secure_wallet.net.derive(
-                            secure_wallet.net.calcHash(
+                            secure_wallet.net.hash.calcHash(
                             update_tag.representation));
                     const hirpc = HiRPC(update_net);
 
@@ -618,7 +618,8 @@ struct WalletInterface {
                         output_filename.fwrite(req);
                     }
                     if (send || sendkernel) {
-                        HiRPC.Receiver received = sendHiRPC(sendkernel ? options.dart_address : options.addr ~ options.hirpc_shell_endpoint, req, hirpc);
+                        HiRPC.Receiver received = sendHiRPC(sendkernel ? options.dart_address
+                                : options.addr ~ options.hirpc_shell_endpoint, req, hirpc);
 
                         verbose("Received response", received.toPretty);
 
@@ -634,8 +635,9 @@ struct WalletInterface {
                                 if (difference_req is HiRPC.Sender.init) {
                                     return true;
                                 }
-                                HiRPC.Receiver dart_received = 
-                                    sendHiRPC(sendkernel ? options.dart_address : options.addr ~ options.hirpc_shell_endpoint, difference_req, hirpc);
+                                HiRPC.Receiver dart_received =
+                                    sendHiRPC(sendkernel ? options.dart_address
+                                            : options.addr ~ options.hirpc_shell_endpoint, difference_req, hirpc);
 
                                 return secure_wallet.updateFromRead(dart_received);
                             }
@@ -678,7 +680,7 @@ struct WalletInterface {
                     //   check(created_payment, "payment was not successful");
 
                     output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
-                    const message = secure_wallet.net.calcHash(signed_contract);
+                    const message = secure_wallet.net.hash.calcHash(signed_contract);
                     const contract_net = secure_wallet.net.derive(message);
                     const hirpc = HiRPC(contract_net);
                     const hirpc_submit = hirpc.submit(signed_contract);

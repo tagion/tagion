@@ -76,7 +76,7 @@ struct DARTSynchronization {
 
         enforce(dst_dart_path.exists, "DART does not exist");
         auto net = shared_net.clone;
-        auto dest_db = new DART(net, dst_dart_path);
+        auto dest_db = new DART(net.hash, dst_dart_path);
 
         void compareTask(dartCompareRR req) {
             immutable result = bullseyesMatch(opts, sock_addrs, net, dest_db);
@@ -254,7 +254,7 @@ private:
                         break;
 
                     const block = RecorderBlock(recorder_block_doc);
-                    auto factory = RecordFactory(net);
+                    auto factory = RecordFactory(net.hash);
                     auto recorder = factory.recorder(block.recorder_doc);
                     auto bullseye = destination.modify(recorder);
 

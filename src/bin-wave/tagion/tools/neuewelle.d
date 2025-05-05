@@ -253,7 +253,7 @@ int _neuewelle(string[] args) {
             import tagion.dart.DART;
 
             Exception dart_exception;
-            DART db = new DART(__net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
+            DART db = new DART(__net.hash, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
             if (dart_exception !is null) {
                 throw dart_exception;
             }

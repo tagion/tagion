@@ -86,9 +86,9 @@ int tagion_generate_keypair(
                     scope const(char[]) pincode) scope
             in (_net !is null)
             do {
-                auto seed = new ubyte[_net.hashSize];
+                auto seed = new ubyte[_net.hash.hashSize];
                 getRandom(seed);
-                _pin.setPin(_net, R, pincode.representation, seed.idup);
+                _pin.setPin(_net.hash, R, pincode.representation, seed.idup);
             }
 
             ubyte[] R;
@@ -162,12 +162,12 @@ int tagion_decrypt_devicepin(
         DevicePIN _pin = DevicePIN(Document(_device_doc_buf));
 
         SecureNet _net = createSecureNet;
-        auto R = new ubyte[_net.hashSize];
+        auto R = new ubyte[_net.hash.hashSize];
         scope (exit) {
             R[] = 0;
         }
 
-        const recovered = _pin.recover(_net, R, _pincode.representation);
+        const recovered = _pin.recover(_net.hash, R, _pincode.representation);
         if (!recovered) {
             return ErrorCode.exception; // TODO: better error message
         }

@@ -145,7 +145,7 @@ class WriteAndReadFromDartDb {
         supervisor_net = createSecureNet;
         supervisor_net.generateKeyPair("supervisor very secret");
 
-        record_factory = RecordFactory(supervisor_net);
+        record_factory = RecordFactory(supervisor_net.hash);
         hirpc = HiRPC(supervisor_net);
 
         gen = Mt19937(1234);
@@ -230,7 +230,7 @@ class WriteAndReadFromDartDb {
 
             /// read the archives
             auto dart_indices = docs
-                .map!(d => supervisor_net.dartIndex(d))
+                .map!(d => supervisor_net.hash.dartIndex(d))
                 .array;
 
             auto read_request = dartReadRR();

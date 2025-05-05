@@ -71,7 +71,7 @@ struct DARTService {
         Exception dart_exception;
         const net = shared_net.clone; //new StdSecureNet(shared_net);
         check(opts.dart_path.exists, format("DART database %s file not found", opts.dart_path));
-        db = new DART(net, opts.dart_path);
+        db = new DART(net.hash, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
         }

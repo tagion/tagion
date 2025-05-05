@@ -196,7 +196,7 @@ struct EpochCreatorService {
             NetworkMode.LOCAL:
 
             immutable buf = cast(Buffer) hashgraph.channel;
-            const nonce = cast(Buffer) net.calcHash(buf);
+            const nonce = cast(Buffer) net.hash.calcHash(buf);
             hashgraph.createEvaEvent(gossip_net.time, nonce);
 
             while (!thisActor.stop && !hashgraph.areWeInGraph) {

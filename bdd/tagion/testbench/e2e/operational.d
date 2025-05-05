@@ -277,7 +277,7 @@ class SendNContractsFromwallet1Towallet2 {
             check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             auto result = secure_wallet.payment([invoice], signed_contract, fees);
 
-            const message = secure_wallet.net.calcHash(signed_contract);
+            const message = secure_wallet.net.hash.calcHash(signed_contract);
             const contract_net = secure_wallet.net.derive(message);
             const hirpc = HiRPC(contract_net);
             const hirpc_submit = hirpc.submit(signed_contract);

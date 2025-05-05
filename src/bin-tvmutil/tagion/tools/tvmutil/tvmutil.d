@@ -230,7 +230,7 @@ int __main(string[] args) {
             const payscript = PayScript([output_bill]);
 
             const input_bill = TagionBill(1000.TGN, currentTime, neta.pubkey, []);
-            const s_contract = sign([neta], [neta.dartIndex(input_bill)], [], payscript.toDoc);
+            const s_contract = sign([neta], [neta.hash.dartIndex(input_bill)], [], payscript.toDoc);
             fwrite("sample_signed_contract.hibon", s_contract);
             stderr.writeln("saved sample_signed_contract.hibon");
             fwrite("sample_input_bill.hibon", input_bill);

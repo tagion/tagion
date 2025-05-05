@@ -122,7 +122,9 @@ const(NodeSettings[]) mk_node_settings(ref const(Options)[] node_opts) {
                 opt.task_names.epoch_creator, // Name
                 node_net.pubkey,
                 opt.node_interface.node_address, // Address
+
                 
+
         );
     }
     return node_settings;
@@ -270,14 +272,14 @@ class Mode1NetworkStart {
         const genesis_node_settings = mk_node_settings(node_opts);
         const genesis_doc = createGenesis(genesis_node_settings, Document(), TagionGlobals.init);
 
-        auto factory = RecordFactory(net);
+        auto factory = RecordFactory(net.hash);
         auto recorder = factory.recorder;
         recorder.insert(genesis_doc, Archive.Type.ADD);
 
         const genesis_dart_path = "genesis_dart.drt";
 
-        DARTFile.create(genesis_dart_path, net);
-        auto db = new DART(net, genesis_dart_path);
+        DARTFile.create(genesis_dart_path, net.hash);
+        auto db = new DART(net.hash, genesis_dart_path);
         db.modify(recorder);
 
         string[] pins;

@@ -30,10 +30,10 @@ interface HashNet {
     string multihash() const pure nothrow;
 }
 
-interface SecureNet : HashNet {
+interface SecureNet {
     import std.typecons : Tuple;
 
-    const(HashNet) hash() const pure nothrow;
+    const(HashNet) hash() const pure nothrow scope;
     alias Signed = Tuple!(Signature, "signature", Fingerprint, "message");
     @nogc Pubkey pubkey() pure const nothrow;
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const pure;
@@ -55,7 +55,7 @@ interface SecureNet : HashNet {
     Signature sign(const Fingerprint message) const pure;
 
     final Signed sign(const Document doc) const pure {
-        const fingerprint = calcHash(doc);
+        const fingerprint = hash.calcHash(doc);
         return Signed(sign(fingerprint), fingerprint);
     }
 
