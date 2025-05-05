@@ -49,6 +49,14 @@ Goal: May
 - [ ] add hash of recorderblock to epochchain  
 Assignee: lr  
 
+### Deployment testing
+Goal: May  
+- [x] Backup the production dart to an external server
+    -  Note: parts of the data is now backed up to a hetzner storage box. 
+But we can not incrementally backup the data with rsync, because the outgoing port 23 is blocked.
+        
+- [ ] Test if the production network can run on the current code for 4 weeks in mode0
+
 ### Seperate hashnet and securenet
 Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
 - [x] Make hashnet and securenet seperate classes  
@@ -57,6 +65,19 @@ Assignee: cbr
 -----------------------------------------------------------------------------------------
 
 ## Backlog
+
+### Remove tagion.Keywords module
+- [ ] Keywords.result seems to be the only one that is still used, which should be replaced with HiRPC.Receiver.response
+
+### NNG @safe
+Description: Large parts of the nng wrapper code could be converted to @safe
+- [ ] Make Web.post @safe
+
+### Wallet cleanup
+- [ ] Fix wallet snavs byte fees -- needs discussion
+- [ ] BUG: Accounting history doesn't work for contracts sent to yourself
+- [ ] Remove deprecated search func from DARTFile. remove associated.
+- [ ] Convert wallet test to read indices directly instead of using dart.search
 
 ### Network Joining and participation (Mode2)
 Goal: Q3  
@@ -69,11 +90,6 @@ Goal: Q2
 - [ ] Fix memory leak
 - [ ] Move everything that is not related a part of the core functionality to a seperate module (forwarding rpc, caching)
 - [ ] Find out why request often end in htp 405,503,502,504  
-
-### Deployment testing
-Goal: May  
-- [ ] Backup the production dart to an external
-- [ ] Test if the production network can run on the current code for 4 weeks in mode0
 
 ### Distributed testing
 Description: We want the infrastruct to be able to test new version of the network in a distributed manner  
