@@ -727,6 +727,10 @@ struct WastParser {
                 FunctionContext ctx;
                 parseInstr(r, ParserStage.TABLE, code, void_func, ctx);
                 elem.expr = code.expr;
+                if (elem.expr) {
+                    elem.mode = ElementMode.ACTIVE;
+
+                }
                 return true;
             }
             return false;

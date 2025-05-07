@@ -661,7 +661,6 @@ class WasmWriter {
         }
 
         struct ElementType {
-            //            uint select;
             uint tableidx;
             uint elemkind;
             @Section(Section.CODE) immutable(ubyte)[] expr;
@@ -724,23 +723,16 @@ class WasmWriter {
                     bout.writeb(tableidx);
                     bout.writeb(expr);
                     bout.write(cast(ubyte) reftype);
-                    //    bout.writeb(exprs.length);
                     exprs.each!(e => bout.write(e));
                     break;
                 case 7: /// 7:u32 et:reftype el*:vec(expr)
                     bout.writeb(reftype);
-                    //  bout.writeb(exprs.length);
                     exprs.each!(e => bout.writeb(e));
-
                     break;
                 default:
                     assert(0, assumeWontThrow(format("Element mode %d not supported", mode)));
 
                 }
-            }
-
-            version (none) ElementMode mode() const pure nothrow @nogc {
-                return WasmReader.WasmRange.WasmSection.elementMode(select);
             }
         }
 
