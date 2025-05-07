@@ -38,11 +38,8 @@ interface SecureNet {
     @nogc Pubkey pubkey() pure const nothrow;
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const pure;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const pure {
-
-        
-
-            .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-                    .SECURITY_MESSAGE_HASH_KEY);
+        check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
+                .SECURITY_MESSAGE_HASH_KEY);
         immutable message = hash.calc(doc);
         return verify(message, signature, pubkey);
     }
@@ -54,10 +51,7 @@ interface SecureNet {
 
     Signature sign(const Fingerprint message) const pure;
 
-    final Signed sign(const Document doc) const pure {
-        const fingerprint = hash.calc(doc);
-        return Signed(sign(fingerprint), fingerprint);
-    }
+    Signed sign(const Document doc) const pure;
 
     Signed sign(T)(T pack) const pure if (isHiBONRecord!T) {
         return sign(pack.toDoc);

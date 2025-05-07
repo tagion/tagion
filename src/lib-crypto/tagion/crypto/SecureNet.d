@@ -12,7 +12,6 @@ import tagion.crypto.Types : Fingerprint, Signature;
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.random.random;
 import tagion.hibon.Document : Document;
-import tagion.basic.Debug;
 
 @safe:
 package alias check = Check!SecurityConsensusException;
@@ -72,7 +71,7 @@ SecureNet createSecureNet(const SignatureScheam s = SignatureScheam.STANDARD) no
     assert(0);
 }
 
-class StdSecureNet : SecureNet {
+class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.format;
     import std.string : representation;
@@ -101,8 +100,7 @@ class StdSecureNet : SecureNet {
 
     protected SecretMethods _secret;
 
-    const(HashNet) hash() pure const nothrow scope
-    in (_hash) {
+    const(HashNet) hash() pure const nothrow scope {
         return _hash;
     }
 
@@ -111,7 +109,7 @@ class StdSecureNet : SecureNet {
     }
 
     final Pubkey derivePubkey(string tweak_word) const {
-        const tweak_code = _hash.HMAC(tweak_word.representation);
+        const tweak_code = HMAC(tweak_word.representation);
         return derivePubkey(tweak_code);
     }
 
@@ -120,6 +118,11 @@ class StdSecureNet : SecureNet {
         const pkey = cast(const(ubyte[])) _pubkey;
         result = crypt.pubTweak(pkey, tweak_code);
         return result;
+    }
+
+    SecureNet.Signed sign(const Document doc) const pure {
+        const fingerprint = hash.calc(doc);
+        return SecureNet.Signed(sign(fingerprint), fingerprint);
     }
 
     const NativeSecp256k1 crypt;
@@ -133,15 +136,15 @@ class StdSecureNet : SecureNet {
 
     Signature sign(const Fingerprint message) const pure
     in (_secret !is null,
-        format("Signature function has not been initialized. Use the %s or %s function",
-            fullyQualifiedName!generateKeyPair, fullyQuallifiedName!generatePrivKey))
+        format("Signature function has not been initialized. Use the %s function", basename!generatePrivKey))
+    in (_secret !is null,
+        format("Signature function has not been initialized. Use the %s function", fullyQualifiedName!generateKeyPair))
     do {
-        __write("_secret %s", _secret is null);
         return Signature(_secret.sign(cast(const(Buffer)) message));
     }
 
     final void derive(string tweak_word, ref ubyte[] tweak_privkey) {
-        const data = _hash.HMAC(tweak_word.representation);
+        const data = HMAC(tweak_word.representation);
         derive(data, tweak_privkey);
     }
 
@@ -152,7 +155,7 @@ class StdSecureNet : SecureNet {
     }
 
     void derive(string tweak_word, shared(SecureNet) secure_net) {
-        const tweak_code = _hash.HMAC(tweak_word.representation);
+        const tweak_code = HMAC(tweak_word.representation);
         derive(tweak_code, secure_net);
 
     }
@@ -208,7 +211,7 @@ class StdSecureNet : SecureNet {
             scope (exit) {
                 getRandom(aes_key_iv);
                 AES.encrypt(aes_key, aes_iv, tmp_keypair, encrypted_keypair);
-                AES.encrypt(_hash.rawCalcHash(encrypted_keypair ~ aes_key_iv), aes_iv, encrypted_keypair, tmp_keypair);
+                AES.encrypt(rawCalcHash(encrypted_keypair ~ aes_key_iv), aes_iv, encrypted_keypair, tmp_keypair);
             }
             AES.decrypt(aes_key, aes_iv, encrypted_keypair, tmp_keypair);
             dg(tmp_keypair);
@@ -441,7 +444,7 @@ class BadSecureNet : StdSecureNet {
     }
 
     override Signature sign(const Fingerprint message) const {
-        const false_message = super._hash.calc(message ~ message);
+        const false_message = super.calc(message ~ message);
         return super.sign(false_message);
     }
 }

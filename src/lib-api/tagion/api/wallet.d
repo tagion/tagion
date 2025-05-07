@@ -70,7 +70,6 @@ int tagion_generate_keypair(
         uint8_t** out_device_doc_ptr,
         size_t* out_device_doc_len,
 ) {
-    import tagion.basic.Debug;
 
     try {
         const _passphrase = passphrase_ptr[0 .. passphrase_len];
@@ -101,7 +100,6 @@ int tagion_generate_keypair(
                 *out_device_doc_ptr = cast(uint8_t*)&device_doc[0];
                 *out_device_doc_len = device_doc.length;
             }
-            __write("%s generateKeyPair", __FUNCTION__);
             _net.generateKeyPair(_passphrase, _salt,
                     (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
         }
@@ -226,7 +224,7 @@ int tagion_get_pub_key(const(securenet_t*) root_net, uint8_t** pubkey_ptr, size_
             set_error_text = "root_net is invalid";
             return ErrorCode.error; // TODO: better message
         }
-        StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
+        const _net = cast(SecureNet) root_net.securenet;
         const pubkey = _net.pubkey;
         *pubkey_ptr = cast(uint8_t*)&pubkey[0];
         *pubkey_len = pubkey.length;
@@ -257,7 +255,7 @@ int tagion_sign_message(
             return ErrorCode.error;
         }
         const message_fingerprint = Fingerprint(message);
-        StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
+        const _net = cast(SecureNet) root_net.securenet;
         const signature = _net.sign(message_fingerprint);
         *signature_ptr = cast(uint8_t*)&signature[0];
         *signature_len = signature.length;

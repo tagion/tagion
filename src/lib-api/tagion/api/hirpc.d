@@ -109,16 +109,14 @@ int tagion_hirpc_create_signed_sender(
         ubyte** out_doc,
         size_t* out_doc_len
 ) {
-    import tagion.basic.Debug;
-
     try {
         if (root_net.magic_byte != MAGIC.SECURENET) {
             set_error_text = "The passed securenet is invalid";
             return ErrorCode.error;
         }
 
-        const(StdSecureNet) get_secure_net() {
-            const net_ = cast(StdSecureNet) root_net.securenet;
+        const(SecureNet) get_secure_net() {
+            const net_ = cast(SecureNet) root_net.securenet;
             if (deriver_len != 0) {
                 const deriver_ = deriver[0 .. deriver_len];
                 pragma(msg, __FILE__, " Is this the correct way to derive the public key");
@@ -128,14 +126,15 @@ int tagion_hirpc_create_signed_sender(
         }
 
         const net_ = get_secure_net();
-        __write("get_secure_net %s", net_);
+        assert(net_ !is null);
         const doc = Document(cast(immutable) param[0 .. param_len]);
         string method_name = cast(immutable) method[0 .. method_len];
-        __write("result_sender !!! %s", net_ is null);
-        ubyte[] result_sender = cast(ubyte[]) HiRPC(net_).action(method_name, doc).serialize;
+
+        const hirpc = HiRPC(net_);
+        const sender = hirpc.action(method_name, doc);
+        ubyte[] result_sender = cast(ubyte[])(sender.serialize);
         *out_doc = &result_sender[0];
         *out_doc_len = result_sender.length;
-        __write("Before return");
         return ErrorCode.none;
     }
     catch (Exception e) {
@@ -146,9 +145,8 @@ int tagion_hirpc_create_signed_sender(
 
 ///
 unittest {
-    import tagion.api.document;
     import tagion.api.hibon;
-    import tagion.basic.Debug;
+    import tagion.api.document;
 
     ubyte* doc_param_ptr = new ubyte;
     size_t doc_param_len;
@@ -177,11 +175,9 @@ unittest {
         tagion_generate_keypair(&passphrase[0], passphrase.length, null, 0, &net, &pin[0], pin.length, &device_doc_ptr, &device_doc_len);
     }
 
-    __write("--- 1");
     { // Signed hirpc with root key
-        ubyte* result_doc_ptr = new ubyte;
+        ubyte* result_doc_ptr; // = new ubyte;
         size_t result_doc_len;
-        __write("tagion_hirpc_create");
         int rc = tagion_hirpc_create_signed_sender(&method[0], method.length, doc_param_ptr, doc_param_len, &net, null, 0, &result_doc_ptr, &result_doc_len);
         assert(rc == 0);
 
@@ -189,7 +185,6 @@ unittest {
         assert(doc.isInorder);
     }
 
-    __write("--- 2");
     { // Signed hirpc with a derived key
         ubyte* result_doc_ptr = new ubyte;
         size_t result_doc_len;
