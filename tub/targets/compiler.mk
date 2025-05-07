@@ -3,6 +3,8 @@ ifndef DC
 DC!=which ldc2||which dmd||which gdc
 endif
 
+ISLDC=$(shell $(DC) --version | head -1 | grep LDC)
+
 # Define a compiler family for other conditionals
 ifeq ($(notdir $(DC)),gdc)
 COMPILER=gdc
@@ -18,6 +20,13 @@ else ifeq ($(notdir $(DC)),dmd)
 COMPILER=dmd
 else ifeq ($(notdir $(DC)),dmd2)
 COMPILER=dmd
+endif
+
+test38:
+	echo "X$(ISLDC)X"
+
+ifneq (X$(ISLDC)X,XX)
+COMPILER=ldc
 endif
 
 # Define flags for gdc other
