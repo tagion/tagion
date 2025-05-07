@@ -218,7 +218,7 @@ struct TranscriptService {
                 // if the new length of the epoch is majority then we finish the epoch
                 if (v.value.epoch.signs.length == number_of_nodes && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
                     v.value.epoch.previous = previous_epoch;
-                    previous_epoch = net.hash.calcHash(v.value.epoch);
+                    previous_epoch = net.hash.calc(v.value.epoch);
                     last_consensus_epoch += 1;
                     recorder.insert(v.value.epoch, Archive.Type.ADD);
                     recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
@@ -427,7 +427,7 @@ struct TranscriptService {
                         throw new ServiceError(
                             "The read epoch was not of type Epoch or GenesisEpoch");
                     }
-                    previous_epoch = Fingerprint(net.hash.calcHash(doc));
+                    previous_epoch = Fingerprint(net.hash.calc(doc));
                 }
             });
         }

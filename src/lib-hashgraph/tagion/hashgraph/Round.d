@@ -128,7 +128,7 @@ class Round {
             .map!(n => _events[n])
             .filter!(e => e !is null)
             .map!(e => cast(Buffer) e.fingerprint);
-        return assumeWontThrow(net.calcHash(xor(fingerprints)));
+        return assumeWontThrow(net.calc(xor(fingerprints)));
     }
 
     final immutable(Fingerprint)[] witnesses() const pure nothrow {

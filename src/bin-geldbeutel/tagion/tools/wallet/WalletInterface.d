@@ -426,7 +426,7 @@ struct WalletInterface {
     }
 
     string show(const Document doc) {
-        const index = secure_wallet.net.hash.calcHash(doc);
+        const index = secure_wallet.net.hash.calc(doc);
         const deriver = secure_wallet.account.derivers.get(Pubkey(doc[StdNames.owner].get!Buffer), Buffer.init);
         return format("fingerprint %s\nDeriver   %s\n%s",
                 index.encodeBase64, deriver.encodeBase64, doc.toPretty);
@@ -447,7 +447,7 @@ struct WalletInterface {
         return format("%2$s%3$27-s %4$s %5$17.6fTGN%1$s",
                 RESET, mark,
                 bill.time.toText,
-                hash_net.calcHash(bill)
+                hash_net.calc(bill)
                 .encodeBase64,
                 bill.value.value);
     }
@@ -598,7 +598,7 @@ struct WalletInterface {
                 }
                 if (update || trt_update || trt_read) {
                     const update_net = secure_wallet.net.derive(
-                            secure_wallet.net.hash.calcHash(
+                            secure_wallet.net.hash.calc(
                             update_tag.representation));
                     const hirpc = HiRPC(update_net);
 
@@ -680,7 +680,7 @@ struct WalletInterface {
                     //   check(created_payment, "payment was not successful");
 
                     output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
-                    const message = secure_wallet.net.hash.calcHash(signed_contract);
+                    const message = secure_wallet.net.hash.calc(signed_contract);
                     const contract_net = secure_wallet.net.derive(message);
                     const hirpc = HiRPC(contract_net);
                     const hirpc_submit = hirpc.submit(signed_contract);

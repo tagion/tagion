@@ -763,7 +763,7 @@ extern (C) {
             import std.algorithm : countUntil;
             import tagion.script.standardnames;
 
-            auto billsHashes = account.bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
+            auto billsHashes = account.bills.map!(b => cast(Buffer) hash_net.calc(b.toDoc.serialize));
 
             // Look for input matches. Return 0 from func if found.
             foreach (inputHash; inputs) {

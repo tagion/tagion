@@ -85,7 +85,7 @@ class ProducedRecordersAreSentForReplicationAndWritenToFiles {
             rec.insert(archs[1], Archive.Type.ADD);
             rec.insert(archs[2], Archive.Type.ADD);
 
-            auto fingerprint = net.calcHash(doc);
+            auto fingerprint = net.calc(doc);
             auto payload = RecorderPayload(rec, fingerprint, rec_index);
             recorder_payloads ~= payload;
         }

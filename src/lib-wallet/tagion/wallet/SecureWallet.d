@@ -446,7 +446,7 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     const(HiRPC.Sender) createSubmit(SignedContract signed_contract, bool sent = true) {
-        const message = _net.hash.calcHash(signed_contract);
+        const message = _net.hash.calc(signed_contract);
         const contract_net = _net.derive(message);
         const hirpc = HiRPC(contract_net);
         const hirpc_submit = hirpc.submit(signed_contract);

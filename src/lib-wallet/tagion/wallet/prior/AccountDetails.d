@@ -44,7 +44,7 @@ struct AccountDetails {
 
         const net = new StdHashNet;
 
-        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calc(b.toDoc.serialize)).array;
         const index = billsHashes.countUntil(billHash);
         if (index >= 0) {
             used_bills ~= bills[index];
@@ -58,7 +58,7 @@ struct AccountDetails {
 
         const net = new StdHashNet;
 
-        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calc(b.toDoc.serialize)).array;
         const index = billsHashes.countUntil(billHash);
 
         activated.remove(bills[index].owner);
@@ -70,7 +70,7 @@ struct AccountDetails {
 
         const net = new StdHashNet;
 
-        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calc(b.toDoc.serialize)).array;
 
         // Look for input matches. Return 0 from func if found.
         foreach (inputHash; inputs) {

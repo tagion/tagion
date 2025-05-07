@@ -692,7 +692,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             return;
         }
 
-        const message = wallet_interface.secure_wallet.net.hash.calcHash(signed_contract);
+        const message = wallet_interface.secure_wallet.net.hash.calc(signed_contract);
         const contract_net = wallet_interface.secure_wallet.net.derive(message);
         const wallet_hirpc = HiRPC(contract_net);
         const hirpc_submit = wallet_hirpc.submit(signed_contract);
@@ -908,7 +908,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
     //writeit(signed_contract.toPretty);
 
-    const message = wallet_interface.secure_wallet.net.hash.calcHash(signed_contract);
+    const message = wallet_interface.secure_wallet.net.hash.calc(signed_contract);
     const contract_net = wallet_interface.secure_wallet.net.derive(message);
     const hirpc = HiRPC(contract_net);
     const hirpc_submit = hirpc.submit(signed_contract);
@@ -1024,7 +1024,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         case "dart":
             enum update_tag = "update";
             const update_net = wallet_interface.secure_wallet.net.derive(
-                    wallet_interface.secure_wallet.net.hash.calcHash(
+                    wallet_interface.secure_wallet.net.hash.calc(
                     update_tag.representation));
             const hirpc = HiRPC(update_net);
             const hreq = wallet_interface.secure_wallet.getRequestCheckWallet(hirpc);

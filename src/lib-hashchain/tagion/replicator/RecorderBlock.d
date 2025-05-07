@@ -45,7 +45,7 @@ struct RecorderBlock {
             this.bullseye = bullseye;
             this.epoch_number = epoch_number;
 
-            this.fingerprint = net.calcHash(toDoc);
+            this.fingerprint = net.calc(toDoc);
         }
 
         this(
@@ -53,7 +53,7 @@ struct RecorderBlock {
             const(HashNet) net) 
         {
             this(doc);
-            this.fingerprint = net.calcHash(toDoc);
+            this.fingerprint = net.calc(toDoc);
         }
     });
 }

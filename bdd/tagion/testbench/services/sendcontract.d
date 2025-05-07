@@ -101,7 +101,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         import tagion.hibon.HiBONtoText;
 
         wallet1.account.bills
-            .each!(b => writefln("WALLET1 %s %s", wallet1.net.hash.calcHash(b).encodeBase64, b.toPretty));
+            .each!(b => writefln("WALLET1 %s %s", wallet1.net.hash.calc(b).encodeBase64, b.toPretty));
         SignedContract signed_contract;
         check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet payment");
         check(signed_contract !is SignedContract.init, "contract not updated");

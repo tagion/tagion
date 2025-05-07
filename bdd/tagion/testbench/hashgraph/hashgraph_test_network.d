@@ -254,7 +254,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         private void run() {
             { // Eva Event
                 immutable buf = cast(Buffer) _hashgraph.channel;
-                const nonce = cast(Buffer) _hashgraph.hirpc.net.hash.calcHash(buf);
+                const nonce = cast(Buffer) _hashgraph.hirpc.net.hash.calc(buf);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
                 if (Event.callbacks) {
                     Event.callbacks.connect(eva_event);
@@ -413,8 +413,8 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                         printout ~= format("\n%s: ", i);
                         if (!continue_on_error)
                             foreach (j, epack; events) {
-                                const go_hash = net.calcHash(*epack);
-                                const equal = (j < epoch_events[0].length) && (net.calcHash(*epoch_events[0][j]) == go_hash);
+                                const go_hash = net.calc(*epack);
+                                const equal = (j < epoch_events[0].length) && (net.calc(*epoch_events[0][j]) == go_hash);
 
                                 const mark = (equal) ? GREEN : RED;
                                 printout ~= format("%s%(%02x%):%03d ", mark, go_hash[0 .. 4], j);

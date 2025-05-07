@@ -46,11 +46,11 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.size
     return res.serialize;
 }
 
-@trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) data) {
+@trusted immutable(BinBuffer) calc(scope const(ubyte[]) data) {
     return cast(immutable) rawCalcHash(data);
 }
 
-@trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) {
+@trusted immutable(BinBuffer) calc(scope const(ubyte[]) h1, scope const(ubyte[]) h2) {
     BinBuffer res;
     if (h1.length !is 0 && h2.length !is 0) {
         ubyte[] concatenat;

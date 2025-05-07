@@ -47,7 +47,7 @@ struct AccountDetails {
     void remove_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove, countUntil;
 
-        auto billsHashes = bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
+        auto billsHashes = bills.map!(b => cast(Buffer) hash_net.calc(b.toDoc.serialize));
         const index = billsHashes.countUntil(billHash);
         if (index >= 0) {
             used_bills ~= bills[index];

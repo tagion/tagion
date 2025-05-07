@@ -141,7 +141,7 @@ unittest {
 Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
     import std.algorithm : map;
 
-    const message = nets[0].hash.calcHash(contract);
+    const message = nets[0].hash.calc(contract);
     return nets
         .map!(net => net.sign(message))
         .array;
@@ -201,7 +201,7 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
     try {
         if (!owners.empty && signed_contract.contract.inputs.length == owners.length) {
-            const message = net.hash.calcHash(signed_contract.contract);
+            const message = net.hash.calc(signed_contract.contract);
             return zip(signed_contract.signs, owners)
                 .all!((a) => net.verify(message, a[0], a[1]));
         }
@@ -444,7 +444,7 @@ unittest {
     GenesisEpoch genesis_epoch = GenesisEpoch(0, [net.pubkey], testamony, time, globals);
     fwrite(fout, genesis_epoch);
 
-    Fingerprint bullseye = net.hash.calcHash(testamony);
+    Fingerprint bullseye = net.hash.calc(testamony);
     Epoch epoch = Epoch(long(10), time, bullseye, bullseye, s_contract.signs, [net.pubkey], [net.pubkey], globals);
     fwrite(fout, epoch);
 

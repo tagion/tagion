@@ -270,7 +270,7 @@ struct TranscriptService {
         last_globals = new_globals;
 
         non_voted_epoch.previous = previous_epoch;
-        previous_epoch = net.hash.calcHash(non_voted_epoch);
+        previous_epoch = net.hash.calc(non_voted_epoch);
         last_consensus_epoch += 1;
         recorder.insert(non_voted_epoch, Archive.Type.ADD);
 
@@ -343,7 +343,7 @@ struct TranscriptService {
                     else {
                         throw new ServiceError("The read epoch was not of type Epoch or GenesisEpoch");
                     }
-                    previous_epoch = Fingerprint(net.hash.calcHash(doc));
+                    previous_epoch = Fingerprint(net.hash.calc(doc));
                 }
             });
         }

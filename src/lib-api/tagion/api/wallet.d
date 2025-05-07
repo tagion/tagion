@@ -70,6 +70,7 @@ int tagion_generate_keypair(
         uint8_t** out_device_doc_ptr,
         size_t* out_device_doc_len,
 ) {
+    import tagion.basic.Debug;
 
     try {
         const _passphrase = passphrase_ptr[0 .. passphrase_len];
@@ -100,6 +101,7 @@ int tagion_generate_keypair(
                 *out_device_doc_ptr = cast(uint8_t*)&device_doc[0];
                 *out_device_doc_len = device_doc.length;
             }
+            __write("%s generateKeyPair", __FUNCTION__);
             _net.generateKeyPair(_passphrase, _salt,
                     (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
         }
@@ -278,7 +280,7 @@ unittest {
     // const message_to_sign = "wowowowowo\0".representation;
     const rawdata = "ntorisantionrseiontoiarsnstienarsietnaioensiteornstioenthe quick brown fox jumps over the dog"
         .representation;
-    const buf = hash_net.calcHash(rawdata);
+    const buf = hash_net.calc(rawdata);
     assert(buf.length == NativeSecp256k1.MESSAGE_SIZE);
     uint8_t* signature_buf;
     size_t signature_len;

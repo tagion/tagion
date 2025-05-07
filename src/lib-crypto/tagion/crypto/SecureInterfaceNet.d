@@ -14,17 +14,17 @@ alias check = Check!SecurityConsensusException;
 interface HashNet {
     uint hashSize() const pure nothrow scope;
 
-    Fingerprint calcHash(B)(scope const(B) data) const pure
+    Fingerprint calc(B)(scope const(B) data) const pure
     if (isBufferType!B) {
         return Fingerprint(rawCalcHash(cast(TypedefType!B) data));
     }
 
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const pure scope;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
-    Fingerprint calcHash(const(Document) doc) const pure;
+    Fingerprint calc(const(Document) doc) const pure;
 
-    Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
-        return calcHash(value.toDoc);
+    Fingerprint calc(T)(T value) const if (isHiBONRecord!T) {
+        return calc(value.toDoc);
     }
 
     string multihash() const pure nothrow;
@@ -43,7 +43,7 @@ interface SecureNet {
 
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
                     .SECURITY_MESSAGE_HASH_KEY);
-        immutable message = hash.calcHash(doc);
+        immutable message = hash.calc(doc);
         return verify(message, signature, pubkey);
     }
 
@@ -55,7 +55,7 @@ interface SecureNet {
     Signature sign(const Fingerprint message) const pure;
 
     final Signed sign(const Document doc) const pure {
-        const fingerprint = hash.calcHash(doc);
+        const fingerprint = hash.calc(doc);
         return Signed(sign(fingerprint), fingerprint);
     }
 

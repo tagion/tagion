@@ -58,7 +58,7 @@ struct KeyRecover {
             //     answer_hash.scramble;
             //     question_hash.scramble;
             // }
-            //            const hash = net.calcHash(answer);
+            //            const hash = net.calc(answer);
             answer_hash.write(question_hash.serialize);
             result = rawCalcHash(answer_hash);
         }

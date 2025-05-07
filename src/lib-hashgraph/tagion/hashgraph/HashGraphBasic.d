@@ -225,7 +225,7 @@ struct EventPackage {
                 this.signature=_this.signature;
                 this.pubkey=_this.pubkey;
                 this.event_body=_this.event_body;
-                fingerprint=cast(Buffer)net.hash.calcHash(_this.event_body);
+                fingerprint=cast(Buffer)net.hash.calc(_this.event_body);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
                 consensus_check(net.verify(Fingerprint(fingerprint), signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
@@ -245,7 +245,7 @@ struct EventPackage {
             this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) immutable pure {
                 pubkey=pkey;
                 event_body=ebody;
-                auto _fingerprint=net.hash.calcHash(event_body);
+                auto _fingerprint=net.hash.calc(event_body);
                 fingerprint = cast(Buffer) _fingerprint;
                 this.signature=signature;
                 consensus_check(net.verify(_fingerprint, signature, pubkey), 

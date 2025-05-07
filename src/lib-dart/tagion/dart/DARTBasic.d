@@ -53,7 +53,7 @@ immutable(DARTIndex) dartIndex(const(HashNet) hash, const(Document) doc) pure {
         immutable value_data = first.data[0 .. first.size];
         return DARTIndex(hash.rawCalcHash(value_data));
     }
-    return DARTIndex(cast(Buffer) hash.calcHash(doc));
+    return DARTIndex(cast(Buffer) hash.calc(doc));
 }
 
 /// Ditto
@@ -89,7 +89,7 @@ unittest { // Check the #key hash with types
     other_hash_u32.extra_name = "extra";
     assert(net.dartIndex(hash_u32) == net.dartIndex(other_hash_u32),
             "Archives with the same #key should have the same dart-Index");
-    assert(net.calcHash(hash_u32) != net.calcHash(other_hash_u32),
+    assert(net.calc(hash_u32) != net.calc(other_hash_u32),
             "Two archives with same #key and different data should have different fingerprints");
 }
 /** 
@@ -167,7 +167,7 @@ unittest {
         const dart_index = net.dartKey("#key", t);
         const dart_key = dartKeyT(t, 42);
         assert(dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
-        assert(dart_index != net.calcHash(dart_key.toDoc), format(
+        assert(dart_index != net.calc(dart_key.toDoc), format(
                 "%s dart_index should not be equal to the fingerprint", Fields!Table[i]
                 .stringof));
     }
@@ -267,7 +267,7 @@ Fingerprint sparsed_merkletree(
         if (valid_prints.take(2).walkLength == 1) {
             return valid_prints.front;
         }
-        return net.calcHash(
+        return net.calc(
                 valid_prints.map!(
                 p => cast(Buffer) p).join);
     }
