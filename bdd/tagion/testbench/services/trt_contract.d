@@ -19,7 +19,7 @@ import tagion.communication.HiRPC;
 import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 import tagion.crypto.SecureNet;
-import tagion.dart.DARTBasic : dartIndex, dartKey;
+import tagion.dart.DARTBasic : dartIndex, dartId;
 import std.digest : toHexString;
 import tagion.basic.Types : encodeBase64;
 import tagion.dart.DART;

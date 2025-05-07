@@ -331,7 +331,7 @@ struct Wallet(Net : SecureNet) {
         import tagion.dart.DARTcrud;
 
         auto owner_indices = account.derivers.byKey
-            .map!(owner => _net.hash.dartKey(HashNames.trt_owner, owner));
+            .map!(owner => _net.hash.dartId(HashNames.trt_owner, owner));
 
         return dartRead(owner_indices, hirpc.relabel("trt"));
     }
@@ -351,7 +351,7 @@ struct Wallet(Net : SecureNet) {
         import tagion.dart.DARTcrud;
 
         DARTIndex[] contract_indices = contracts.map!(doc => _net.hash.dartIndex(doc))
-            .map!(idx => _net.hash.dartKey(StdNames.contract, idx))
+            .map!(idx => _net.hash.dartId(StdNames.contract, idx))
             .array;
 
         return dartRead(contract_indices, hirpc.relabel("trt"));

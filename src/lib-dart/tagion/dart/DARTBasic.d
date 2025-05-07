@@ -100,7 +100,7 @@ unittest { // Check the #key hash with types
  *   val = Value of the key to be found
  * Returns: 
  */
-DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) pure {
+DARTIndex dartId(T)(const(HashNet) net, const(char[]) name, T val) pure {
     import std.stdio;
     import tagion.hibon.HiBON;
     import tagion.hibon.HiBONSerialize;
@@ -164,9 +164,9 @@ unittest {
     test_table.STRING = "Text";
 
     foreach (i, t; test_table) {
-        const dart_index = net.dartKey("#key", t);
+        const dart_index = net.dartId("#key", t);
         const dart_key = dartKeyT(t, 42);
-        assert(dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
+        assert(dart_index == net.dartIndex(dart_key), format("%s dartId failed", Fields!Table[i].stringof));
         assert(dart_index != net.calc(dart_key.toDoc), format(
                 "%s dart_index should not be equal to the fingerprint", Fields!Table[i]
                 .stringof));

@@ -19,7 +19,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
-import tagion.dart.DARTBasic : DARTIndex, dartIndex, dartKey;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex, dartId;
 import tagion.dart.DARTException;
 import tagion.dart.Recorder;
 import tagion.hibon.Document;
@@ -133,7 +133,7 @@ struct TRTService {
                 }
 
                 auto owner_indices = owner_doc[]
-                    .map!(owner => net.hash.dartKey(HashNames.trt_owner, Pubkey(owner.get!Buffer)))
+                    .map!(owner => net.hash.dartId(HashNames.trt_owner, Pubkey(owner.get!Buffer)))
                     .array;
 
                 owner_indices.each!(o => writefln("%(%02x%)", o));
@@ -170,7 +170,7 @@ struct TRTService {
             auto index_lookup = dart_recorder[]
                 .filter!(a => a.filed.hasMember(StdNames.owner))
                 .map!(a => Document(a.filed))
-                .map!(doc => net.hash.dartKey(HashNames.trt_owner, doc[StdNames.owner].get!Pubkey));
+                .map!(doc => net.hash.dartId(HashNames.trt_owner, doc[StdNames.owner].get!Pubkey));
 
             auto already_in_dart = trt_db.loads(index_lookup);
 

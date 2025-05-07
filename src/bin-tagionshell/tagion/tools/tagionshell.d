@@ -32,7 +32,7 @@ import tagion.hibon.HiBONRecord : isRecord, GetLabel;
 import tagion.hibon.HiBONJSON : NotSupported, typeMap;
 import tagion.hibon.HiBONBase : Type;
 import tagion.hibon.HiBONtoText;
-import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex, Params;
+import tagion.dart.DARTBasic : DARTIndex, dartId, dartIndex, Params;
 import tagion.dart.Recorder;
 import crud = tagion.dart.DARTcrud;
 import tagion.logger.subscription;

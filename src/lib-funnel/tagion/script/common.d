@@ -375,7 +375,7 @@ DARTIndex[] lockedArchiveIndices(Range)(Range epochs, const HashNet hash)
         if (isInputRange!Range && is(ElementType!Range : long)) {
     DARTIndex[] indices;
     foreach (epoch; epochs) {
-        indices ~= hash.dartKey(HashNames.locked_epoch, epoch);
+        indices ~= hash.dartId(HashNames.locked_epoch, epoch);
     }
     return indices;
 }

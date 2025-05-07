@@ -161,7 +161,7 @@ int _main(string[] args) {
         }
 
         auto get_pkey_indices(string[] _pkeys) {
-            return _pkeys.map!(p => hash_net.dartKey(HashNames.trt_owner, Pubkey(p.decode)));
+            return _pkeys.map!(p => hash_net.dartId(HashNames.trt_owner, Pubkey(p.decode)));
         }
 
         Document result;
