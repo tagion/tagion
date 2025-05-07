@@ -171,7 +171,7 @@ void main() {
         //assert(signature_ok, "Schnorr signing failed");
 
     }
-    auto net=new StdSecureNet;
+    auto net=createSecureNet;
     net.generateKeyPair("Very secret");
     const pubkey=net.pubkey;
     writefln("pubkey   =%s len=%d", pubkey.base64, pubkey.length);

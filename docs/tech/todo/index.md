@@ -4,9 +4,8 @@
 
 ### DART Synchronization services (mode2) 
 Description: Function to allow a program to remotely synchronize a dart from a node  
-Goal: May  
 - [x] Synchronize a static remote DART to a local DART
-- [x] Synchronize more static DART's with the same data to one local DART
+- [ ] Synchronize more static DART's with the same data to one local DART
 - [x] Subscribe to a recorder from one trusted node.
 - [x] Iterate until until the DART has been synchronize to the common bullseye  
 Assignee: al  
@@ -14,7 +13,6 @@ Assignee: al
 
 ### Graph Mirroring (mode2) 
 Description: create a function can get all new events using wavefront and create a non voting graph of the events
-Goal: May  
 Enable a new node to join the graph  
 - [x] Enable a node to follow the graph and build the consensus with out participating
 - [x] Add graph witness fingerprints to the DART
@@ -25,7 +23,7 @@ Assignee: lr
 
 ### Network Catchup (mode2) 
 Goal: May  
-- [x] depends on: DART Synchronization services
+- [ ] depends on: DART Synchronization services
 - [ ] depends on: Graph Mirroring
 - [ ] integrate in tagionwave, start the network and sync until it can join the network
       when the node starts it should detect that it is out of sync and start mirroring the graph and syncing the dart
@@ -49,35 +47,13 @@ Goal: May
 - [ ] add hash of recorderblock to epochchain  
 Assignee: lr  
 
-### Deployment testing
-Goal: May  
-- [x] Backup the production dart to an external server
-    -  Note: parts of the data is now backed up to a hetzner storage box. 
-But we can not incrementally backup the data with rsync, because the outgoing port 23 is blocked.
-        
-- [ ] Test if the production network can run on the current code for 4 weeks in mode0
-
-### Seperate hashnet and securenet
-Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
-- [x] Make hashnet and securenet seperate classes  
-Assignee: cbr
-
 -----------------------------------------------------------------------------------------
 
 ## Backlog
 
-### Remove tagion.Keywords module
-- [ ] Keywords.result seems to be the only one that is still used, which should be replaced with HiRPC.Receiver.response
-
-### NNG @safe
-Description: Large parts of the nng wrapper code could be converted to @safe
-- [ ] Make Web.post @safe
-
-### Wallet cleanup
-- [ ] Fix wallet snavs byte fees -- needs discussion
-- [ ] BUG: Accounting history doesn't work for contracts sent to yourself
-- [ ] Remove deprecated search func from DARTFile. remove associated.
-- [ ] Convert wallet test to read indices directly instead of using dart.search
+### Seperate HashNet and SecureNet
+Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
+- [ ] Make hashnet and securenet seperate classes  
 
 ### Network Joining and participation (Mode2)
 Goal: Q3  
@@ -90,6 +66,11 @@ Goal: Q2
 - [ ] Fix memory leak
 - [ ] Move everything that is not related a part of the core functionality to a seperate module (forwarding rpc, caching)
 - [ ] Find out why request often end in htp 405,503,502,504  
+
+### Deployment testing
+Goal: May  
+- [ ] Backup the production dart to an external
+- [ ] Test if the production network can run on the current code for 4 weeks in mode0
 
 ### Distributed testing
 Description: We want the infrastruct to be able to test new version of the network in a distributed manner  
