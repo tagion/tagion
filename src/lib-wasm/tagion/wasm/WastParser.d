@@ -671,9 +671,6 @@ struct WastParser {
                             format("Ambiguies element mode %s. Mode has already been defined", elem.mode));
                     r.check(stage !is ParserStage.TABLE,
                             "Table can not be used inside a table");
-                    scope (exit) {
-                        __write("TABLE--- %s", r.save.map!(t => t.token).take(5));
-                    }
                     elem.mode = ElementMode.ACTIVE;
                     r.nextToken;
                     if (!table_name) {
@@ -715,13 +712,9 @@ struct WastParser {
                     return true;
                 }
 
-                __write("Test expression");
                 r = rewind;
-                //if (r.type is TokenType.BEGIN) {
                 r.check(elem.expr is null,
                         "Initialisation code has already been defined for this element");
-                __write("ELEMENT expression %s", r.save.map!(t => t.token).take(5));
-                //__write("Table name %s -- %s", table_name, r.save.map!(t => t.token).take(5));
                 FuncType void_func;
                 CodeType code;
                 FunctionContext ctx;
@@ -779,10 +772,7 @@ struct WastParser {
                 r.expect(TokenType.BEGIN);
             }
             r.check(innerElemType, "Expression expected");
-
-            __write("Element next %s", r.token);
         }
-        __write("ELEMENT AFTER %s", r.save.map!(t => t.token).take(5));
         return elem;
     }
 
