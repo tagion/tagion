@@ -224,7 +224,7 @@ int tagion_get_pub_key(const(securenet_t*) root_net, uint8_t** pubkey_ptr, size_
             set_error_text = "root_net is invalid";
             return ErrorCode.error; // TODO: better message
         }
-        StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
+        const _net = cast(SecureNet) root_net.securenet;
         const pubkey = _net.pubkey;
         *pubkey_ptr = cast(uint8_t*)&pubkey[0];
         *pubkey_len = pubkey.length;
@@ -255,7 +255,7 @@ int tagion_sign_message(
             return ErrorCode.error;
         }
         const message_fingerprint = Fingerprint(message);
-        StdSecureNet _net = cast(StdSecureNet) root_net.securenet;
+        const _net = cast(SecureNet) root_net.securenet;
         const signature = _net.sign(message_fingerprint);
         *signature_ptr = cast(uint8_t*)&signature[0];
         *signature_len = signature.length;

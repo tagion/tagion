@@ -120,6 +120,11 @@ class StdSecureNet : StdHashNet, SecureNet {
         return result;
     }
 
+    SecureNet.Signed sign(const Document doc) const pure {
+        const fingerprint = hash.calcHash(doc);
+        return SecureNet.Signed(sign(fingerprint), fingerprint);
+    }
+
     const NativeSecp256k1 crypt;
 
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const pure {
