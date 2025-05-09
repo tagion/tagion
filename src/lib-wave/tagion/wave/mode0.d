@@ -30,7 +30,7 @@ import tagion.hibon.Document;
 import tagion.wave.common;
 
 // Checks if all nodes bullseyes are the same
-bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
+bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet _net) {
     import std.typecons;
 
     // extra check for mode0
@@ -38,7 +38,7 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
     Fingerprint[] bullseyes;
     foreach (node_opt; node_options) {
         Exception dart_exception;
-        DART db = new DART(__net.hash, node_opt.dart.dart_path, dart_exception, Yes.read_only);
+        DART db = new DART(_net.hash, node_opt.dart.dart_path, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
             throw dart_exception;
         }

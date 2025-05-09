@@ -67,14 +67,14 @@ inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
 
 /// Read the Node names records and put them in the addressbook
 /// Sorts the keys
-immutable(NetworkNodeRecord)*[] readNNRFromDart(string dart_path, Pubkey[] keys, const SecureNet __net)
+immutable(NetworkNodeRecord)*[] readNNRFromDart(string dart_path, Pubkey[] keys, const SecureNet _net)
 in (equal(keys, keys.uniq), "Is trying to read duplicate node keys")
 do {
     import tagion.gossip.AddressBook;
     import tagion.services.exception;
 
     Exception dart_exception;
-    DART db = new DART(__net.hash, dart_path, dart_exception, Yes.read_only);
+    DART db = new DART(_net.hash, dart_path, dart_exception, Yes.read_only);
     if (dart_exception !is null) {
         throw dart_exception;
     }
@@ -82,8 +82,8 @@ do {
         db.close;
     }
 
-    const hirpc = HiRPC(__net);
-    auto nodekey_indices = keys.map!(k => __net.hash.dartId(HashNames.nodekey, k)).array;
+    const hirpc = HiRPC(_net);
+    auto nodekey_indices = keys.map!(k => _net.hash.dartId(HashNames.nodekey, k)).array;
     // Sort keys according to the dartkey
 
     const receiver = hirpc.receive(CRUD.dartRead(nodekey_indices, hirpc));
@@ -100,11 +100,11 @@ do {
     return nnrs;
 }
 
-GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet __net) {
+GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet _net) {
     import tagion.dart.DART;
 
     Exception dart_exception;
-    DART db = new DART(__net.hash, dart_file_path, dart_exception, Yes.read_only);
+    DART db = new DART(_net.hash, dart_file_path, dart_exception, Yes.read_only);
     if (dart_exception !is null) {
         throw dart_exception;
     }
@@ -112,6 +112,6 @@ GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet __net) {
         db.close;
     }
 
-    const head = getHead(db, __net);
-    return head.getEpoch(db, __net);
+    const head = getHead(db, _net);
+    return head.getEpoch(db, _net);
 }

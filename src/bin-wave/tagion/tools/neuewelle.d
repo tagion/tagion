@@ -237,10 +237,10 @@ int _neuewelle(string[] args) {
 
         const node_options = getMode0Options(local_options);
 
-        auto __net = createSecureNet;
-        __net.generateKeyPair("dart_read_pin");
+        auto login_net = createSecureNet;
+        login_net.generateKeyPair("dart_read_pin");
 
-        if (!isMode0BullseyeSame(node_options, __net)) {
+        if (!isMode0BullseyeSame(node_options, login_net)) {
             assert(0, "DATABASES must be booted with same bullseye - Abort");
         }
 
@@ -253,7 +253,7 @@ int _neuewelle(string[] args) {
             import tagion.dart.DART;
 
             Exception dart_exception;
-            DART db = new DART(__net.hash, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
+            DART db = new DART(login_net.hash, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
             if (dart_exception !is null) {
                 throw dart_exception;
             }
@@ -262,10 +262,10 @@ int _neuewelle(string[] args) {
             }
 
             const head = TagionHead();
-            auto epoch = head.getEpoch(db, __net);
+            auto epoch = head.getEpoch(db, login_net);
         }
         else {
-            auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, __net);
+            auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, login_net);
         }
 
         log("Booting with Epoch %J", epoch);
@@ -287,7 +287,7 @@ int _neuewelle(string[] args) {
             // New version reads the addresses properly from dart
             // However is incompatible with older darts were not set properly
             version (MODE0_ADDRESS_DART) {
-                addressbook = readNNRFromDart(node_options[0].dart.dart_path, keys, __net);
+                addressbook = readNNRFromDart(node_options[0].dart.dart_path, keys, login_net);
             }
             else { // Old methods sets, address via task name from config file
                 import std.range;
@@ -341,13 +341,13 @@ int _neuewelle(string[] args) {
         local_options.task_names.setPrefix(wallet_interface.secure_wallet.account.name);
 
         good("Logged in");
-        StdSecureNet __net;
-        __net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
+        StdSecureNet login_net;
+        login_net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
         scope (exit) {
-            destroy(__net);
+            destroy(login_net);
         }
 
-        auto epoch = getCurrentEpoch(local_options.dart.dart_path, __net);
+        auto epoch = getCurrentEpoch(local_options.dart.dart_path, login_net);
         log("Booting with Epoch %J", epoch);
         auto keys = epoch.getNodeKeys;
 
@@ -356,7 +356,7 @@ int _neuewelle(string[] args) {
             addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
         }
         else {
-            addressbook = readNNRFromDart(local_options.dart.dart_path, keys, __net);
+            addressbook = readNNRFromDart(local_options.dart.dart_path, keys, login_net);
         }
 
         foreach (key; keys) {
@@ -364,7 +364,7 @@ int _neuewelle(string[] args) {
         }
 
         immutable opts = Options(local_options);
-        auto net = cast(shared(StdSecureNet))(__net.clone);
+        auto net = cast(shared(StdSecureNet))(login_net.clone);
         spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
         break;
