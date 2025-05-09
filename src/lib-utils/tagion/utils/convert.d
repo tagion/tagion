@@ -67,6 +67,18 @@ class ConvertException : TagionException {
 
 alias check = Check!ConvertException;
 
+uint convertBase(const(char[]) text) pure nothrow {
+    import std.uni : sicmp;
+
+    if (sicmp(text[0 .. min(Prefix.hex.length, $)], Prefix.hex) == 0) {
+        return 16;
+    }
+    else if (sicmp(text[0 .. min(Prefix.bin.length, $)], Prefix.bin) == 0) {
+        return 2;
+    }
+    return 10;
+}
+
 T convert(T)(const(char)[] text) if (isIntegral!T) {
     import std.format;
     import std.conv : to;
@@ -74,26 +86,22 @@ T convert(T)(const(char)[] text) if (isIntegral!T) {
 
     check(text.length > 0, "Can not convert an empty string");
     const negative = text[0] == '-';
-    const pos = negative || (text[0] == '+');
+    size_t pos = negative || (text[0] == '+');
     static if (isUnsigned!T) {
         check(!negative, format("Negative number can not convert to %s", T.stringof));
     }
 
-    uint base = 10;
-    text = text[pos .. $]
+    const base = convertBase(text[pos .. $]);
+    if (base !is 10) {
+        pos += Prefix.hex.length;
+    }
+    const text_stripped = text[pos .. $]
         .representation
         .map!(c => cast(const(char)) c)
         .filter!(c => c != '_')
         .array;
-    if (sicmp(text[0 .. min(Prefix.hex.length, $)], Prefix.hex) == 0) {
-        base = 16;
-        text = text[Prefix.hex.length .. $];
-    }
-    else if (sicmp(text[0 .. min(Prefix.bin.length, $)], Prefix.bin) == 0) {
-        base = 2;
-        text = text[Prefix.bin.length .. $];
-    }
-    auto result = cast(T)(text.to!(Unsigned!T)(base));
+
+    auto result = cast(T)(text_stripped.to!(Unsigned!T)(base));
     if (isSigned!T && negative) {
         result = -result;
     }
@@ -126,6 +134,50 @@ union Float(F) if (isFloatingPoint!F) {
     enum canonical_mask = mant_mask & (~arithmetic_mask);
     F number;
     I raw;
+}
+
+bool isInteger(const(char)[] text) pure nothrow {
+    import std.ascii : toUpper;
+
+    if (text) {
+        if (only('-', '+').canFind(text[0])) {
+            return isInteger(text[1 .. $]);
+        }
+        const base = convertBase(text);
+        if (only(2, 16).canFind(base)) {
+            text = text[Prefix.hex.length .. $];
+        }
+        foreach (c; text) {
+            if (c < '0') {
+                return false;
+            }
+            switch (base) {
+            case 10:
+                if (c > '9') {
+                    return false;
+                }
+                break;
+            case 16:
+                if (c > '9') {
+                    const C = toUpper(c);
+                    if ((C < 'A') || (C > 'F')) {
+                        return false;
+                    }
+                }
+                break;
+            case 2:
+                if (c > '1') {
+                    return false;
+                }
+                break;
+            default:
+                return false;
+            }
+
+        }
+        return true;
+    }
+    return false;
 }
 
 F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
@@ -173,10 +225,16 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     if ((sicmp(text, Inf) == 0) || (sicmp(text, Infinity) == 0)) {
         return (negative) ? -F.infinity : F.infinity;
     }
-    const spec = singleSpec("%f");
-    const x = unformatValue!F(text, spec);
-    return x;
+    if (only(2, 16).canFind(convertBase(text))) {
+        const x = convert!long(text);
+        enum max_dig = long(1) << F.mant_dig;
+        import std.math : abs;
 
+        check(abs(x) < max_dig, format("Decimal digits overflow %d for %s", x, F.stringof));
+        return F(x);
+    }
+    const spec = singleSpec("%f");
+    return unformatValue!F(text, spec);
 }
 
 template tryConvert(T) {
@@ -219,6 +277,10 @@ unittest {
             const x = "-nan".convert!F;
             assert(x.isNaN);
             assert(x.signbit);
+        }
+        {
+            const x1 = "0xf32".convert!F;
+            assert(x1 == F(0xf32));
         }
     }
 
