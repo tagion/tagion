@@ -53,7 +53,7 @@ struct SecureWallet(Net) {
     }
 
     static SecureWallet createWallet(scope const(string[]) questions,
-    scope const(char[][]) answers, uint confidence, const(char[]) pincode)
+            scope const(char[][]) answers, uint confidence, const(char[]) pincode)
     in {
         assert(questions.length > 3, "Minimal amount of answers is 3");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
@@ -438,7 +438,7 @@ struct SecureWallet(Net) {
 
     //     { // Create a number of bills in the seneder_wallet
     //         auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
-    //         auto gene = net.calcHash("gene".representation);
+    //         auto gene = net.calc("gene".representation);
     //         const uint epoch = 42;
 
     //         const label = "some_name";

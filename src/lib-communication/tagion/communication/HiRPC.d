@@ -477,10 +477,11 @@ struct HiRPC {
      *   id = optional id
      * Returns: The created sender
      */
-    immutable(Sender) opDispatch(string method, T)( 
+    immutable(Sender) opDispatch(string method, T)(
             ref auto const T params,
             const uint id = uint.max) const {
         import std.algorithm : canFind;
+
         static assert(!method.canFind("receiver", "sender"), "Not an accepted method name");
 
         return action(method, params, id);
@@ -496,6 +497,7 @@ struct HiRPC {
      */
     immutable(Sender) action(string method, const Document params, const uint id = uint.max) const {
         import std.algorithm;
+
         Method message;
         message.id = (id is uint.max) ? generateId : id;
         if (!params.empty) {
@@ -591,13 +593,14 @@ struct HiRPC {
 
 ///
 unittest {
-    import tagion.crypto.SecureNet : BadSecureNet, StdSecureNet;
+    import tagion.crypto.SecureNet;
     import tagion.hibon.HiBONRecord;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
     class HiRPCNet : StdSecureNet {
         this(string passphrase) {
-            super();
+            const h = new StdHashNet;
+            super(h);
             generateKeyPair(passphrase);
         }
     }

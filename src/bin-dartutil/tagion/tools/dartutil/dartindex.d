@@ -3,7 +3,7 @@ module tagion.tools.dartutil.dartindex;
 import std.format;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.dart.DARTBasic : DARTIndex, dartKey;
+import tagion.dart.DARTBasic : DARTIndex, dartId;
 import tagion.hibon.Document;
 import tagion.tools.Basic;
 import tagion.tools.toolsexception;
@@ -34,7 +34,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
         const list = str.split(":");
         const name = list[0];
         if (list.length == 2) {
-            return net.dartKey(name, list[1].idup);
+            return net.dartId(name, list[1].idup);
         }
     case_type:
         switch (list[1]) {
@@ -47,23 +47,23 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
                         static if (E == Type.BINARY) {
                             Buffer buf = list[2].decode;
                             verbose("Dtype %s name=%s value=%(%02x%)", Buffer.stringof, name, buf);
-                            return net.dartKey(name, buf);
+                            return net.dartId(name, buf);
                         }
                         else static if (E == Type.DOCUMENT) {
                             const doc = list[2].fread;
                             verbose("Dtype %s name=%s value=\n%s", Document.stringof, name, doc.toPretty);
-                            return net.dartKey(name, doc.mut);
+                            return net.dartId(name, doc.mut);
                         }
                         else static if (E == Type.STRING) {
                             verbose("Dtype %s name=%s value=%s", string.stringof, name, list[2]);
-                            return net.dartKey(name, list[2].idup);
+                            return net.dartId(name, list[2].idup);
                         }
                         else static if (E == Type.TIME) {
                             import std.datetime;
 
                             const val = SysTime.fromISOExtString(list[2]).stdTime;
                             verbose("Dtype %s name=%s value=%s", SysTime.stringof, name, val);
-                            return net.dartKey(name, val);
+                            return net.dartId(name, val);
                         }
                         else {
                             alias Value = ValueT!(false, void, void);
@@ -72,7 +72,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
 
                             auto val = list[2].to!T;
                             verbose("Dtype %s name=%s value=%s", T.stringof, name, val);
-                            return net.dartKey(name, val);
+                            return net.dartId(name, val);
                         }
                         break case_type;
                     }
@@ -83,7 +83,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
         }
         verbose("Dtype %s name=%s value=%s", string.stringof, name, list[2]);
 
-        return net.dartKey(name, list[1].idup);
+        return net.dartId(name, list[1].idup);
     }
 
     return DARTIndex(convert.decode(str));

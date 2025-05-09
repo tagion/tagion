@@ -37,11 +37,11 @@ import std.stdio;
 
 version (none) struct Bank {
     protected enum _transactions = [
-            "accountCreate",
-            "accountGetHistoryExchange",
-            "accountMakeTransfer",
-            "accountMakeExchange"
-        ];
+        "accountCreate",
+        "accountGetHistoryExchange",
+        "accountMakeTransfer",
+        "accountMakeExchange"
+    ];
 
     import std.traits : EnumMembers;
     import tagion.Base : EnumText;
@@ -49,9 +49,9 @@ version (none) struct Bank {
     mixin(EnumText!("Transactions", _transactions));
 
     protected enum _params = [
-            "account",
-            "amount"
-        ];
+        "account",
+        "amount"
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -205,7 +205,7 @@ int _main(string[] args) {
                                 bson_result[Keywords.params] = received.params;
                                 bson_result["signed"] = received.verified;
                                 auto message_doc = doc[Keywords.message].get!Document;
-                                immutable hash = hrpc.net.calcHash(message_doc.data);
+                                immutable hash = hrpc.net.calc(message_doc.data);
                                 bson_result["hash"] = hash;
                             }
                             auto sender = bank(received);

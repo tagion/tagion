@@ -97,7 +97,6 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
 
         writefln("signed_contract: %s", signed_contract.toPretty);
 
-
         int max = 100;
         int start = 0;
         while (start < max) {
@@ -166,10 +165,11 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
 
             writefln("comparing %s", i);
 
-            writefln("prev epoch: %s \n hash_of_prev: %s\n new epoch: %s", prev_epoch.toPretty, net.calcHash(
-                    prev_epoch).encodeBase64, ref_epoch.toPretty);
+            writefln("prev epoch: %s \n hash_of_prev: %s\n new epoch: %s", prev_epoch.toPretty, net.calc(
+                    prev_epoch)
+                    .encodeBase64, ref_epoch.toPretty);
             check(ref_epoch.epoch_number == prev_epoch.epoch_number + 1, "The epoch number was not correctly incremented");
-            auto previous = net.calcHash(prev_epoch);
+            auto previous = net.calc(prev_epoch);
             check(previous == ref_epoch.previous, format("The fingerprint was not correct. should be %s was %s", previous
                     .encodeBase64, ref_epoch.previous.encodeBase64));
 
@@ -190,8 +190,8 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
 
                 check(prev_epoch.globals.total_burned + wallet1.calcTotal(inputs)
                         .units == ref_epoch.globals.total_burned, format(
-                            "the burned amount was not correct. prev_epoch burned: %s, new_epoch burned %s burned units %s", prev_epoch
-                            .globals.total_burned, ref_epoch.globals.total_burned, burned.units));
+                        "the burned amount was not correct. prev_epoch burned: %s, new_epoch burned %s burned units %s", prev_epoch
+                        .globals.total_burned, ref_epoch.globals.total_burned, burned.units));
                 check(ref_epoch.globals.number_of_bills - delta_bills == prev_epoch.globals.number_of_bills, "We should have updated the number of bills");
             }
 

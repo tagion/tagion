@@ -19,7 +19,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
-import tagion.dart.DARTBasic : DARTIndex, dartIndex, dartKey;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex, dartId;
 import tagion.dart.DARTException;
 import tagion.dart.Recorder;
 import tagion.hibon.Document;
@@ -58,18 +58,18 @@ struct TRTOptions {
 struct TRTService {
     static Topic trt_created = Topic("trt_created");
     static Topic trt_contract = Topic("trt_contract");
-    void task(immutable(TRTOptions) opts, immutable(TaskNames) task_names, shared(StdSecureNet) shared_net) {
+    void task(immutable(TRTOptions) opts, immutable(TaskNames) task_names, shared(SecureNet) shared_net) {
         DART trt_db;
         Exception dart_exception;
 
-        const net = new StdSecureNet(shared_net);
-        auto rec_factory = RecordFactory(net);
+        const net = shared_net.clone;
+        auto rec_factory = RecordFactory(net.hash);
         auto hirpc = HiRPC(net);
         ActorHandle dart_handle = ActorHandle(task_names.dart);
 
         enforce!ServiceError(opts.trt_path.exists, format("TRT database %s file not found", opts.trt_path));
         log("TRT PATH FOR DATABASE=%s", opts.trt_path);
-        trt_db = new DART(net, opts.trt_path, dart_exception);
+        trt_db = new DART(net.hash, opts.trt_path, dart_exception);
         if (dart_exception !is null) {
             throw dart_exception;
         }
@@ -110,6 +110,7 @@ struct TRTService {
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
             import tagion.services.codes;
+
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
             }
@@ -132,7 +133,7 @@ struct TRTService {
                 }
 
                 auto owner_indices = owner_doc[]
-                    .map!(owner => net.dartKey(HashNames.trt_owner, Pubkey(owner.get!Buffer)))
+                    .map!(owner => net.hash.dartId(HashNames.trt_owner, Pubkey(owner.get!Buffer)))
                     .array;
 
                 owner_indices.each!(o => writefln("%(%02x%)", o));
@@ -169,11 +170,11 @@ struct TRTService {
             auto index_lookup = dart_recorder[]
                 .filter!(a => a.filed.hasMember(StdNames.owner))
                 .map!(a => Document(a.filed))
-                .map!(doc => net.dartKey(HashNames.trt_owner, doc[StdNames.owner].get!Pubkey));
+                .map!(doc => net.hash.dartId(HashNames.trt_owner, doc[StdNames.owner].get!Pubkey));
 
             auto already_in_dart = trt_db.loads(index_lookup);
 
-            createTRTUpdateRecorder(dart_recorder, already_in_dart, trt_recorder, net);
+            createTRTUpdateRecorder(dart_recorder, already_in_dart, trt_recorder, net.hash);
             if (!trt_recorder.empty) {
                 log("trt recorder modify %s", trt_recorder.toPretty);
                 trt_db.modify(trt_recorder);
@@ -184,7 +185,7 @@ struct TRTService {
         void add_contract(trtContract, immutable(Document) doc, long epoch) {
             log("add contract from transcript");
             auto recorder = rec_factory.recorder;
-            recorder.insert(TRTContractArchive(net.dartIndex(doc), doc, epoch), Archive
+            recorder.insert(TRTContractArchive(net.hash.dartIndex(doc), doc, epoch), Archive
                     .Type.ADD);
 
             log("contract added %s", recorder.toPretty);

@@ -671,9 +671,6 @@ struct WastParser {
                             format("Ambiguies element mode %s. Mode has already been defined", elem.mode));
                     r.check(stage !is ParserStage.TABLE,
                             "Table can not be used inside a table");
-                    scope (exit) {
-                        __write("TABLE--- %s", r.save.map!(t => t.token).take(5));
-                    }
                     elem.mode = ElementMode.ACTIVE;
                     r.nextToken;
                     if (!table_name) {
@@ -715,18 +712,18 @@ struct WastParser {
                     return true;
                 }
 
-                __write("Test expression");
                 r = rewind;
-                //if (r.type is TokenType.BEGIN) {
                 r.check(elem.expr is null,
                         "Initialisation code has already been defined for this element");
-                __write("ELEMENT expression %s", r.save.map!(t => t.token).take(5));
-                //__write("Table name %s -- %s", table_name, r.save.map!(t => t.token).take(5));
                 FuncType void_func;
                 CodeType code;
                 FunctionContext ctx;
                 parseInstr(r, ParserStage.TABLE, code, void_func, ctx);
                 elem.expr = code.expr;
+                if (elem.expr) {
+                    elem.mode = ElementMode.ACTIVE;
+
+                }
                 return true;
             }
             return false;
@@ -775,10 +772,7 @@ struct WastParser {
                 r.expect(TokenType.BEGIN);
             }
             r.check(innerElemType, "Expression expected");
-
-            __write("Element next %s", r.token);
         }
-        __write("ELEMENT AFTER %s", r.save.map!(t => t.token).take(5));
         return elem;
     }
 
@@ -828,13 +822,16 @@ struct WastParser {
                 return ParserStage.MODULE;
             case WastKeywords.TYPE:
                 r.nextToken;
-                parseTypeSection(r, ParserStage.TYPE);
+                __write("Pass %s", r.getLine);
+                FuncType func_type;
+                parseTypeSection(r, ParserStage.TYPE, func_type);
                 return stage;
             case WastKeywords.FUNC: // Example (func $name (param ...) (result i32) )
                 parseFuncType(r, stage);
                 return ParserStage.FUNC;
             case WastKeywords.RESULT:
-                r.valid(stage == ParserStage.FUNC, "Result only allowed inside function declaration");
+                r.valid(only(ParserStage.FUNC).canFind(stage),
+                        format("Result only allowed inside function declaration (But was %s)", stage));
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 arg = r.token;
@@ -845,7 +842,7 @@ struct WastParser {
                 scope (exit) {
                     writer.section!(Section.MEMORY).sectypes ~= memory_type;
                 }
-                r.valid(stage == ParserStage.MODULE, "Memory statement only allowed after memory");
+                r.valid(stage is ParserStage.MODULE, "Memory statement only allowed after memory");
                 r.nextToken;
                 memory_type.limit = parseLimit(r);
                 while (r.type is TokenType.BEGIN) {
@@ -1012,7 +1009,8 @@ struct WastParser {
                     }
                 }
                 else {
-                    r.valid(stage is ParserStage.FUNC, "Only allowed inside a function");
+                    r.valid(only(ParserStage.FUNC, ParserStage.TYPE).canFind(stage),
+                            format("Only allowed inside a function (But is %s)", stage));
 
                     if (r.type is TokenType.WORD && r.token.getType is Types.VOID) {
                         const label = r.token;
@@ -1033,8 +1031,8 @@ struct WastParser {
                 }
                 return ParserStage.PARAM;
             case WastKeywords.RESULT:
-                r.valid((stage == ParserStage.FUNC) || (stage == ParserStage.TYPE),
-                        "Result only allowed inside a function declaration");
+                r.valid(only(ParserStage.FUNC, ParserStage.TYPE).canFind(stage),
+                        format("Result only allowed inside a function declaration (But is %s)", stage));
                 r.nextToken;
                 while (r.type !is TokenType.END) {
                     immutable type = r.token.getType;
@@ -1063,7 +1061,7 @@ struct WastParser {
         parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
     }
 
-    private void parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
+    private void parseTypeSection(ref WastTokenizer r, const ParserStage stage, ref FuncType func_type) {
         string type_name;
         if (r.type is TokenType.WORD) {
             type_name = r.token;
@@ -1072,27 +1070,39 @@ struct WastParser {
         r.expect(TokenType.BEGIN);
         r.nextToken;
         r.expect(TokenType.WORD);
+        __write("r.expect %(%s %)", r.save.map!(t => t.token).take(5));
         switch (r.token) {
         case WastKeywords.FUNC:
             r.nextToken;
-            FuncType func_type;
-            parseFuncArgs(r, stage, func_type);
+            parseFuncArgs(r, stage, func_type); // ( param ... )
+            parseFuncArgs(r, stage, func_type); // ( result ... )
             const type_idx = writer.createTypeIdx(func_type);
             if (type_name) {
-
-                
-
-                    .check((type_name in type_lookup) is null,
-                            format("Type name %s already defined", type_name));
+                check((type_name in type_lookup) is null,
+                        format("Type name %s already defined", type_name));
                 type_lookup[type_name] = type_idx;
             }
             break;
         default:
             r.check(0, format("Type expected not %s", r.token));
         }
-
+        __write("----> %s", r);
         r.expect(TokenType.END);
         r.nextToken;
+
+    }
+
+    unittest {
+        const text = "( func (param i32) (result f32) )";
+        {
+            auto w = new WasmWriter;
+            auto wast = new WastParser(w);
+            auto r = WastTokenizer(text);
+            FuncType func_type;
+            wast.parseTypeSection(r, ParserStage.FUNC, func_type);
+            assert(equal(func_type.params, [Types.I32]));
+            assert(equal(func_type.results, [Types.F32]));
+        }
     }
 
     private void parseFuncType(ref WastTokenizer r, const ParserStage stage) {

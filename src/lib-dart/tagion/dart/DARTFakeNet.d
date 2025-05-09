@@ -20,7 +20,7 @@ alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 @safe
 class DARTFakeNet : StdHashNet {
     enum FAKE = "$fake#";
-    override Fingerprint calcHash(scope const(ubyte[]) h) const {
+    override Fingerprint calc(scope const(ubyte[]) h) const {
         if (h.length is ulong.sizeof) {
             scope ubyte[] fake_h;
             fake_h.length = hashSize;
@@ -31,7 +31,7 @@ class DARTFakeNet : StdHashNet {
     }
 
     @trusted
-    override Fingerprint calcHash(const(Document) doc) const {
+    override Fingerprint calc(const(Document) doc) const {
         import std.exception : assumeUnique;
         import tagion.hibon.HiBONBase : Type;
 
@@ -44,7 +44,7 @@ class DARTFakeNet : StdHashNet {
             fingerprint[0 .. ulong.sizeof] = nativeToBigEndian(x);
             return Fingerprint(assumeUnique(fingerprint));
         }
-        return super.calcHash(doc);
+        return super.calc(doc);
         //return rawCalcHash(doc.serialize);
     }
 

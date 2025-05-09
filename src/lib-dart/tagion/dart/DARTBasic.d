@@ -16,7 +16,6 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 
-
 enum Queries {
     dartBullseye = "dartBullseye",
     dartRead = "dartRead",
@@ -45,21 +44,21 @@ enum KEY_SPAN = ubyte.max + 1;
  * Returns: 
  *   The DART fingerprint
  */
-immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) pure {
+immutable(DARTIndex) dartIndex(const(HashNet) hash, const(Document) doc) pure {
     if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
         if (doc.keys.front == STUB) {
             return doc[STUB].get!DARTIndex;
         }
         auto first = doc[].front;
         immutable value_data = first.data[0 .. first.size];
-        return DARTIndex(net.rawCalcHash(value_data));
+        return DARTIndex(hash.rawCalcHash(value_data));
     }
-    return DARTIndex(cast(Buffer) net.calcHash(doc));
+    return DARTIndex(cast(Buffer) hash.calc(doc));
 }
 
 /// Ditto
-immutable(DARTIndex) dartIndex(T)(const(HashNet) net, T value) pure if (isHiBONRecord!T) {
-    return net.dartIndex(value.toDoc);
+immutable(DARTIndex) dartIndex(T)(const(HashNet) hash, T value) pure if (isHiBONRecord!T) {
+    return hash.dartIndex(value.toDoc);
 }
 
 unittest { // Check the #key hash with types
@@ -90,7 +89,7 @@ unittest { // Check the #key hash with types
     other_hash_u32.extra_name = "extra";
     assert(net.dartIndex(hash_u32) == net.dartIndex(other_hash_u32),
             "Archives with the same #key should have the same dart-Index");
-    assert(net.calcHash(hash_u32) != net.calcHash(other_hash_u32),
+    assert(net.calc(hash_u32) != net.calc(other_hash_u32),
             "Two archives with same #key and different data should have different fingerprints");
 }
 /** 
@@ -101,7 +100,7 @@ unittest { // Check the #key hash with types
  *   val = Value of the key to be found
  * Returns: 
  */
-DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) pure {
+DARTIndex dartId(T)(const(HashNet) net, const(char[]) name, T val) pure {
     import std.stdio;
     import tagion.hibon.HiBON;
     import tagion.hibon.HiBONSerialize;
@@ -125,7 +124,7 @@ unittest {
     import tagion.utils.StdTime;
 
     const net = new StdHashNet;
-    
+
     static struct DARTKey(T) {
         @label("#key") T key;
         int x;
@@ -165,10 +164,10 @@ unittest {
     test_table.STRING = "Text";
 
     foreach (i, t; test_table) {
-        const dart_index = net.dartKey("#key", t);
+        const dart_index = net.dartId("#key", t);
         const dart_key = dartKeyT(t, 42);
-        assert(dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
-        assert(dart_index != net.calcHash(dart_key.toDoc), format(
+        assert(dart_index == net.dartIndex(dart_key), format("%s dartId failed", Fields!Table[i].stringof));
+        assert(dart_index != net.calc(dart_key.toDoc), format(
                 "%s dart_index should not be equal to the fingerprint", Fields!Table[i]
                 .stringof));
     }
@@ -268,7 +267,7 @@ Fingerprint sparsed_merkletree(
         if (valid_prints.take(2).walkLength == 1) {
             return valid_prints.front;
         }
-        return net.calcHash(
+        return net.calc(
                 valid_prints.map!(
                 p => cast(Buffer) p).join);
     }

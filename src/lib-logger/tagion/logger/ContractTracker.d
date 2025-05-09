@@ -21,14 +21,13 @@ string toString(ContractStatusCode code) pure nothrow {
 }
 
 @safe
-@recordType("ContractStatus") 
+@recordType("ContractStatus")
 struct ContractStatus {
     Buffer contract_hash;
     ContractStatusCode status_code;
     string message;
     mixin HiBONRecord;
-    version(none)
-    mixin HiBONRecord!(q{
+    version (none) mixin HiBONRecord!(q{
         this(const(Buffer) contract_hash, ContractStatusCode status_code, string message) {
             this.contract_hash = contract_hash;
             this.status_code = status_code;
@@ -40,11 +39,10 @@ struct ContractStatus {
 Topic contract_event = Topic("contract");
 
 @safe
-void logContractStatus(T)(T contract, ContractStatusCode status_code, string message)
-    if (isHiBONRecord!T) {
+void logContractStatus(T)(T contract, ContractStatusCode status_code, string message) if (isHiBONRecord!T) {
     if (contract_event.subscribed) {
         const net = new StdHashNet;
-        auto status = ContractStatus(net.calcHash(contract.toDoc)[], status_code, message);
+        auto status = ContractStatus(net.calc(contract.toDoc)[], status_code, message);
         log.event(contract_event, "", status.toDoc);
     }
 }

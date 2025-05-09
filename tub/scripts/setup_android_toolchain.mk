@@ -1,7 +1,7 @@
 # tools directory
 TOOLS:=$(abspath $(REPOROOT)/tools)
 
-LDC_VERSION:=1.37.0
+LDC_VERSION:=1.41.0-beta1
 # TARGET_ARCH:=aarch64
 ifeq ($(TARGET_ARCH),x86_64)
 # There is no distribution for android x86_64, however the libs are included with aarch64

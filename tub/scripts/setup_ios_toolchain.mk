@@ -1,7 +1,7 @@
 # tools directory
 TOOLS:=$(abspath $(REPOROOT)/tools)
 
-LDC_VERSION:=1.37.0
+LDC_VERSION:=1.41.0-beta1
 CMAKE_VERSION:=3.19.2
 
 LDC_HOST:=ldc2-${LDC_VERSION}-osx-universal

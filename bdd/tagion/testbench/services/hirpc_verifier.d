@@ -120,7 +120,8 @@ class CorrectHiRPCFormatAndPermission {
 
     class HiRPCNet : StdSecureNet {
         this(string passphrase) {
-            super();
+            const h = new StdHashNet;
+            super(h);
             generateKeyPair(passphrase);
         }
     }
@@ -244,7 +245,8 @@ class HIRPCWithIllegalMethod {
 
     class HiRPCNet : StdSecureNet {
         this(string passphrase) {
-            super();
+            const h = new StdHashNet;
+            super(h);
             generateKeyPair(passphrase);
         }
     }

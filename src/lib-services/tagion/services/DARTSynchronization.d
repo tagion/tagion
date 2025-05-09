@@ -64,10 +64,10 @@ struct DARTSynchronization {
     }
 
     void task(
-        immutable(DARTSyncOptions) opts,
-        immutable(SockAddresses) sock_addrs,
-        shared(StdSecureNet) shared_net,
-        string dst_dart_path
+            immutable(DARTSyncOptions) opts,
+            immutable(SockAddresses) sock_addrs,
+            shared(SecureNet) shared_net,
+            string dst_dart_path
     ) {
         if (opts.journal_path.exists) {
             opts.journal_path.rmdirRecurse;
@@ -75,8 +75,8 @@ struct DARTSynchronization {
         opts.journal_path.mkdirRecurse;
 
         enforce(dst_dart_path.exists, "DART does not exist");
-        auto net = new StdSecureNet(shared_net);
-        auto dest_db = new DART(net, dst_dart_path);
+        auto net = shared_net.clone;
+        auto dest_db = new DART(net.hash, dst_dart_path);
 
         void compareTask(dartCompareRR req) {
             immutable result = bullseyesMatch(opts, sock_addrs, net, dest_db);
@@ -104,17 +104,17 @@ struct DARTSynchronization {
 private:
 
     immutable(bool) bullseyesMatch(
-        immutable(DARTSyncOptions) opts,
-        immutable(SockAddresses) sock_addrs,
-        const SecureNet net,
-        DART destination
+            immutable(DARTSyncOptions) opts,
+            immutable(SockAddresses) sock_addrs,
+            const SecureNet net,
+            DART destination
     ) {
         try {
             RemoteRequestSender sender = new RemoteRequestSender(
-                opts.socket_timeout_mil,
-                opts.socket_attempts_mil,
-                sock_addrs.sock_addrs[0],
-                null
+                    opts.socket_timeout_mil,
+                    opts.socket_attempts_mil,
+                    sock_addrs.sock_addrs[0],
+                    null
             );
             HiRPC hirpc = HiRPC(net);
             auto bullseyeRequestDoc = dartBullseye(hirpc).toDoc;
@@ -131,9 +131,9 @@ private:
     }
 
     immutable(string[]) synchronize(
-        immutable(DARTSyncOptions) opts,
-        immutable(SockAddresses) sock_addrs,
-        DART destination
+            immutable(DARTSyncOptions) opts,
+            immutable(SockAddresses) sock_addrs,
+            DART destination
     ) {
         enum stackPage = 256;
 
@@ -205,10 +205,10 @@ private:
     }
 
     bool recorderSynchronize(
-        immutable(DARTSyncOptions) opts,
-        immutable(SockAddresses) sock_addrs,
-        const SecureNet net,
-        DART destination
+            immutable(DARTSyncOptions) opts,
+            immutable(SockAddresses) sock_addrs,
+            const SecureNet net,
+            DART destination
     ) {
         import tagion.replicator.RecorderCrud;
         import tagion.replicator.RecorderBlock;
@@ -234,27 +234,27 @@ private:
             while (true) {
                 try {
                     if (MonoTime.currTime() - startTime > node_timeout_mil.msecs &&
-                        socket_addr_index + 1 < sock_addrs.sock_addrs.length) {
+                            socket_addr_index + 1 < sock_addrs.sock_addrs.length) {
                         ++socket_addr_index;
                         break;
                     }
 
                     RemoteRequestSender sender = new RemoteRequestSender(
-                        opts.socket_timeout_mil,
-                        opts.socket_attempts_mil,
-                        current_sock_addrs,
-                        null
+                            opts.socket_timeout_mil,
+                            opts.socket_attempts_mil,
+                            current_sock_addrs,
+                            null
                     );
 
                     const recorder_read_request = hirpc.readRecorder(
-                        EpochParam(tagion_head.current_epoch));
+                            EpochParam(tagion_head.current_epoch));
                     const recorder_block_doc = sender.send(recorder_read_request.toDoc);
 
                     if (recorder_block_doc.empty || !recorder_block_doc.isRecord!RecorderBlock)
                         break;
 
                     const block = RecorderBlock(recorder_block_doc);
-                    auto factory = RecordFactory(net);
+                    auto factory = RecordFactory(net.hash);
                     auto recorder = factory.recorder(block.recorder_doc);
                     auto bullseye = destination.modify(recorder);
 

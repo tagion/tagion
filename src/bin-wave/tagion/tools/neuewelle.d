@@ -1,8 +1,7 @@
 /** 
  * The tagion node
 **/
-@description("Tagion node")
-module tagion.tools.neuewelle;
+@description("Tagion node") module tagion.tools.neuewelle;
 
 import core.stdc.stdlib : exit;
 import core.sync.event;
@@ -169,8 +168,8 @@ int _neuewelle(string[] args) {
         local_options.set_override_options(override_options);
     }
 
-     // Set the network mode
-    if(!network_mode_switch.empty) {
+    // Set the network mode
+    if (!network_mode_switch.empty) {
         import std.conv;
         import std.traits;
         import std.uni;
@@ -186,17 +185,17 @@ int _neuewelle(string[] args) {
 
         collectException({ // Convert from number [0, 1, 2]
             int mode_number = network_mode_switch.to!int;
-            if(mode_number >= NetworkMode.min && mode_number <= NetworkMode.max) {
-                n_mode = cast(NetworkMode)mode_number;
+            if (mode_number >= NetworkMode.min && mode_number <= NetworkMode.max) {
+                n_mode = cast(NetworkMode) mode_number;
                 good_conversion = true;
             }
         }());
 
-        if(!good_conversion) {
+        if (!good_conversion) {
             throw new ToolsException(format("Mode split should be %(%s,%) or %(%s,%)",
-                   [EnumMembers!NetworkMode],
-                   cast(int[])[EnumMembers!NetworkMode]
-               ));
+                    [EnumMembers!NetworkMode],
+                    cast(int[])[EnumMembers!NetworkMode]
+            ));
         }
 
         local_options.wave.network_mode = n_mode;
@@ -218,7 +217,7 @@ int _neuewelle(string[] args) {
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
     ActorHandle sub_handle;
-    if(local_options.subscription.enable) { // Spawn logger subscription service
+    if (local_options.subscription.enable) { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
         writeln("logsub started: ", waitforChildren(Ctrl.ALIVE));
@@ -238,7 +237,7 @@ int _neuewelle(string[] args) {
 
         const node_options = getMode0Options(local_options);
 
-        auto __net = new StdSecureNet();
+        auto __net = createSecureNet;
         __net.generateKeyPair("dart_read_pin");
 
         if (!isMode0BullseyeSame(node_options, __net)) {
@@ -246,8 +245,7 @@ int _neuewelle(string[] args) {
         }
 
         Node[] nodes = (bootkeys_path.empty)
-            ? dummy_nodestruct_for_testing(node_options) 
-            : inputKeys(fin, node_options, bootkeys_path);
+            ? dummy_nodestruct_for_testing(node_options) : inputKeys(fin, node_options, bootkeys_path);
 
         assert(!nodes.empty, "No node keys were available");
 
@@ -255,7 +253,7 @@ int _neuewelle(string[] args) {
             import tagion.dart.DART;
 
             Exception dart_exception;
-            DART db = new DART(__net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
+            DART db = new DART(__net.hash, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
             if (dart_exception !is null) {
                 throw dart_exception;
             }
@@ -276,11 +274,11 @@ int _neuewelle(string[] args) {
         check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
         check(keys.length == node_options.length,
                 format(
-                    "There was not the same amount of configured nodes as in the genesis epoch %s != %s)",
-                    keys.length,
-                    node_options.length
-                )
-            );
+                "There was not the same amount of configured nodes as in the genesis epoch %s != %s)",
+                keys.length,
+                node_options.length
+        )
+        );
 
         if (!local_options.wave.address_file.empty) {
             addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
@@ -293,6 +291,7 @@ int _neuewelle(string[] args) {
             }
             else { // Old methods sets, address via task name from config file
                 import std.range;
+
                 foreach (key, opt; zip(keys, node_options)) {
                     verbose("adding Address ", key);
                     addressbook.set(new NetworkNodeRecord(key, opt.task_names.epoch_creator));
@@ -310,7 +309,7 @@ int _neuewelle(string[] args) {
 
         break;
     case NetworkMode.LOCAL,
-         NetworkMode.MIRROR:
+        NetworkMode.MIRROR:
         import tagion.services.supervisor;
         import tagion.script.common;
         import tagion.gossip.AddressBook;
@@ -376,50 +375,49 @@ int _neuewelle(string[] args) {
 
     import tagion.utils.pretend_safe_concurrency : receiveTimeout;
 
-    while(!thisActor.stop) {
+    while (!thisActor.stop) {
         thisActor.stop |= stopsignal.wait(100.msecs);
 
         receiveTimeout(Duration.zero,
-            (EpochShutdown m, long shutdown_) { //
-                foreach(handle; supervisor_handles) {
-                    handle.send(m, shutdown_);
-                }
-            },
-            (TaskFailure tf) { 
-                thisActor.stop = true;
-                log.fatal("Stopping because of unhandled taskfailure\n%s", tf); 
-            },
-            default_handlers.expand,
+                (EpochShutdown m, long shutdown_) { //
+            foreach (handle; supervisor_handles) {
+                handle.send(m, shutdown_);
+            }
+        },
+                (TaskFailure tf) { thisActor.stop = true; log.fatal("Stopping because of unhandled taskfailure\n%s", tf); },
+                default_handlers.expand,
         );
 
         try {
-            if(shutdown_file.exists) {
+            if (shutdown_file.exists) {
                 auto f = File(shutdown_file, "r");
                 scope (exit) {
                     f.close;
                     shutdown_file.remove;
                 }
                 import std.conv;
+
                 long shutdown;
-                foreach(line; f.byLine) {
+                foreach (line; f.byLine) {
                     shutdown = line.to!long;
                 }
-                foreach(handle; supervisor_handles) {
+                foreach (handle; supervisor_handles) {
                     handle.send(EpochShutdown(), shutdown);
                 }
             }
         }
-        catch(Exception e) {
+        catch (Exception e) {
             error("Error when reading epoch shutdown file");
             error(e);
         }
 
         /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
         // If all supervisors stopped then we stop as well
-        thisActor.stop |= 
+        thisActor.stop |=
             thisActor.childrenState
-            .byKeyValue
-            .filter!(c => canFind(c.key, local_options.task_names.supervisor)).all!(c => c.value is Ctrl.END);
+                .byKeyValue
+                .filter!(c => canFind(c.key, local_options.task_names.supervisor))
+                .all!(c => c.value is Ctrl.END);
     }
 
     log("Sending stop signal to supervisors");
@@ -444,8 +442,7 @@ import tagion.tools.wallet.WalletInterface;
 
 // Reads node pins key from stdin and uses wallet public key
 Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path)
-in(!bootkeys_path.empty, "Should specify a bootkeys path")
-{
+in (!bootkeys_path.empty, "Should specify a bootkeys path") {
     auto by_line = fin.byLine;
     enum number_of_retry = 3;
 
@@ -458,7 +455,7 @@ in(!bootkeys_path.empty, "Should specify a bootkeys path")
 
         WalletOptions wallet_options;
         LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
-            scope(exit) {
+            scope (exit) {
                 by_line.popFront;
             }
 
@@ -467,7 +464,8 @@ in(!bootkeys_path.empty, "Should specify a bootkeys path")
             try {
                 net = inputKey(by_line.front, bootkeys_path);
                 break LoopTry;
-            } catch(Exception e) {
+            }
+            catch (Exception e) {
                 error(e);
             }
 
@@ -505,7 +503,7 @@ StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
 
     auto wallet_interface = WalletInterface(wallet_options);
     verbose("Load wallet");
-    if(!wallet_interface.load) {
+    if (!wallet_interface.load) {
         throw new ToolsException(format("Could not find wallet file %s", wallet_options.walletfile));
     }
 
@@ -515,5 +513,5 @@ StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
     }
 
     verbose("%1$sNode %3$s successful%2$s", GREEN, RESET, args[0]);
-    return cast(StdSecureNet)wallet_interface.secure_wallet.net.clone;
+    return cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
 }

@@ -81,7 +81,7 @@ struct Cipher {
         check(full_size + CRC_SIZE <= data.length && full_size !is 0,
                 ConsensusFailCode.CIPHER_DECRYPT_ERROR);
         const crc = data[full_size .. full_size + CRC_SIZE];
-        check(data[0 .. full_size].crc64ECMAOf == crc, 
+        check(data[0 .. full_size].crc64ECMAOf == crc,
                 ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
         return result;
     }
@@ -97,7 +97,7 @@ struct Cipher {
         import tagion.utils.convert : decode;
 
         immutable passphrase = "Secret pass word";
-        auto net = new StdSecureNet; /// Only works with ECDSA for now 
+        auto net = createSecureNet; /// Only works with ECDSA for now 
         net.generateKeyPair(passphrase);
 
         immutable some_secret_message = "Text to be encrypted by ECC public key and " ~
@@ -107,7 +107,7 @@ struct Cipher {
         const secret_doc = Document(hibon);
 
         { // Encrypt and Decrypt secret message
-            auto dummy_net = new StdSecureNet;
+            auto dummy_net = createSecureNet;
             auto secret_cipher_doc = Cipher.encrypt(dummy_net, net.pubkey, secret_doc).serialize;
             const encrypted_doc = Cipher.decrypt(net, CipherDocument(Document(secret_cipher_doc)));
             assert(encrypted_doc["text"].get!string == some_secret_message);
@@ -115,8 +115,8 @@ struct Cipher {
         }
 
         { // Use of the wrong privat-key
-            auto dummy_net = new StdSecureNet;
-            auto wrong_net = new StdSecureNet;
+            auto dummy_net = createSecureNet;
+            auto wrong_net = createSecureNet;
             immutable wrong_passphrase = "wrong word";
             wrong_net.generateKeyPair(wrong_passphrase);
             bool cipher_decrypt_error;

@@ -38,7 +38,7 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
     Fingerprint[] bullseyes;
     foreach (node_opt; node_options) {
         Exception dart_exception;
-        DART db = new DART(__net, node_opt.dart.dart_path, dart_exception, Yes.read_only);
+        DART db = new DART(__net.hash, node_opt.dart.dart_path, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
             throw dart_exception;
         }
@@ -84,10 +84,10 @@ Node[] dummy_nodestruct_for_testing(const(Options[]) node_options) {
     return nodes;
 }
 
-StdSecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
-    StdSecureNet[] nets;
+SecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
+    SecureNet[] nets;
     foreach (i, opts; node_options) {
-        auto net = new StdSecureNet;
+        auto net = createSecureNet;
         scope (exit) {
             net = null;
         }
@@ -99,7 +99,7 @@ StdSecureNet[] dummy_nodenets_for_testing(const(Options[]) node_options) {
 
 struct Node {
     immutable(Options) opts;
-    shared(StdSecureNet) net;
+    shared(SecureNet) net;
     Pubkey pkey;
 }
 

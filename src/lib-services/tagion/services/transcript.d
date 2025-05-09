@@ -66,7 +66,7 @@ struct TranscriptService {
 
     RecordFactory rec_factory;
 
-    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(StdSecureNet) shared_net, immutable(
+    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(SecureNet) shared_net, immutable(
             TaskNames) task_names, bool trt_enable) {
         this.opts = opts;
         this.number_of_nodes = number_of_nodes;
@@ -74,11 +74,11 @@ struct TranscriptService {
         this.dart_handle = ActorHandle(task_names.dart);
         this.epoch_creator_handle = ActorHandle(task_names.epoch_creator);
         this.trt_handle = ActorHandle(task_names.trt);
-        this.net = new StdSecureNet(shared_net);
+        this.net = shared_net.clone;
 
         this.trt_enable = trt_enable;
 
-        this.rec_factory = RecordFactory(net);
+        this.rec_factory = RecordFactory(net.hash);
     }
 
     Votes[long] votes;
@@ -102,7 +102,7 @@ struct TranscriptService {
     void produceContract(producedContract, immutable(ContractProduct)* product) {
         log("received ContractProduct");
         logContractStatus(product.contract.sign_contract.contract, ContractStatusCode.produced, "Received produced contract");
-        auto product_index = net.dartIndex(product.contract.sign_contract.contract);
+        auto product_index = net.hash.dartIndex(product.contract.sign_contract.contract);
         products[product_index] = product;
     }
 
@@ -112,9 +112,9 @@ struct TranscriptService {
         votes[epoch_number].epoch.bullseye = bullseye;
 
         ConsensusVoting own_vote = ConsensusVoting(
-            epoch_number,
-            net.pubkey,
-            net.sign(bullseye)
+                epoch_number,
+                net.pubkey,
+                net.sign(bullseye)
         );
 
         epoch_creator_handle.send(Payload(), own_vote.toDoc);
@@ -132,10 +132,10 @@ struct TranscriptService {
     }
 
     void epoch(consensusEpoch,
-        immutable(EventPackage*)[] epacks,
-        immutable(Fingerprint)[] witnesses,
-        long epoch_number,
-        const(sdt_t) epoch_time) @safe {
+            immutable(EventPackage*)[] epacks,
+            immutable(Fingerprint)[] witnesses,
+            long epoch_number,
+            const(sdt_t) epoch_time) @safe {
         last_epoch_number++;
         import tagion.utils.Term;
 
@@ -170,7 +170,7 @@ struct TranscriptService {
             .join
             .array;
 
-        auto req = dartCheckReadRR(id : last_epoch_number);
+        auto req = dartCheckReadRR(id: last_epoch_number);
         epoch_contracts[req.id] = new const EpochContracts(signed_contracts, witnesses, epoch_time);
 
         if (inputs.length == 0) {
@@ -218,7 +218,7 @@ struct TranscriptService {
                 // if the new length of the epoch is majority then we finish the epoch
                 if (v.value.epoch.signs.length == number_of_nodes && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
                     v.value.epoch.previous = previous_epoch;
-                    previous_epoch = net.calcHash(v.value.epoch);
+                    previous_epoch = net.hash.calc(v.value.epoch);
                     last_consensus_epoch += 1;
                     recorder.insert(v.value.epoch, Archive.Type.ADD);
                     recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
@@ -233,8 +233,8 @@ struct TranscriptService {
             auto req = dartModifyRR(res.id);
 
             TagionHead new_head = TagionHead(
-                TagionDomain,
-                shutdown,
+                    TagionDomain,
+                    shutdown,
             );
             recorder.insert(new_head, Archive.Type.ADD);
 
@@ -261,7 +261,7 @@ struct TranscriptService {
                     }
                 }
 
-                const tvm_contract_outputs = products.get(net.dartIndex(signed_contract.contract), null);
+                const tvm_contract_outputs = products.get(net.hash.dartIndex(signed_contract.contract), null);
                 if (tvm_contract_outputs is null) {
                     continue loop_signed_contracts;
                     log("contract not found asserting");
@@ -294,7 +294,7 @@ struct TranscriptService {
                 }
 
                 used ~= signed_contract.contract.inputs;
-                products.remove(net.dartIndex(signed_contract.contract));
+                products.remove(net.hash.dartIndex(signed_contract.contract));
             }
             catch (Exception e) {
                 log("Contract Exception %s", e);
@@ -349,20 +349,20 @@ struct TranscriptService {
         recorder[].each!(a => billStatistic(a));
 
         TagionGlobals new_globals = TagionGlobals(
-            total,
-            total_burned,
-            number_of_bills,
-            burnt_bills,
+                total,
+                total_burned,
+                number_of_bills,
+                burnt_bills,
         );
         non_voted_epoch.globals = new_globals;
 
         TagionHead new_head = TagionHead(
-            TagionDomain,
-            res.id,
+                TagionDomain,
+                res.id,
         );
         immutable(DARTIndex)[] locked_indices = recorder[]
             .filter!(a => a.type == Archive.Type.ADD)
-            .map!(a => net.dartIndex(a.filed))
+            .map!(a => net.hash.dartIndex(a.filed))
             .array;
 
         LockedArchives outputs = LockedArchives(res.id, locked_indices);
@@ -389,7 +389,7 @@ struct TranscriptService {
     void task() {
         {
             // start by reading the head
-            immutable tagion_index = net.dartKey(HashNames.domain_name, TagionDomain);
+            immutable tagion_index = net.hash.dartId(HashNames.domain_name, TagionDomain);
             dart_handle.send(dartReadRR(), [tagion_index]);
             log("SENDING HEAD REQUEST TO DART");
 
@@ -405,7 +405,7 @@ struct TranscriptService {
             });
 
             // now we locate the epoch
-            immutable epoch_index = net.dartKey(HashNames.epoch, last_head.current_epoch);
+            immutable epoch_index = net.hash.dartId(HashNames.epoch, last_head.current_epoch);
             dart_handle.send(dartReadRR(), [epoch_index]);
             receive((dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
                 if (!epoch_recorder.empty) {
@@ -427,7 +427,7 @@ struct TranscriptService {
                         throw new ServiceError(
                             "The read epoch was not of type Epoch or GenesisEpoch");
                     }
-                    previous_epoch = Fingerprint(net.calcHash(doc));
+                    previous_epoch = Fingerprint(net.hash.calc(doc));
                 }
             });
         }

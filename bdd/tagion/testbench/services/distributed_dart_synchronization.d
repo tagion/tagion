@@ -62,20 +62,20 @@ import tagion.wallet.SecureWallet : SecureWallet;
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 enum feature = Feature(
-        "is a service that synchronize the DART local database with real remote nodes.",
-        [
-            "It should be used on node start up to ensure that local database is up-to-date.",
-            "In this test scenario we require that the remote database is static (not updated)."
-        ]);
+            "is a service that synchronize the DART local database with real remote nodes.",
+            [
+        "It should be used on node start up to ensure that local database is up-to-date.",
+        "In this test scenario we require that the remote database is static (not updated)."
+]);
 
 alias FeatureContext = Tuple!(
-    WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem, "WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem",
-    FeatureGroup*, "result"
+        WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem, "WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem",
+        FeatureGroup*, "result"
 );
 
 @trusted @Scenario( // Does not work with @safe
-    "we run multiple nodes as a separate programs and synchronize the local database with them.",
-    [])
+        "we run multiple nodes as a separate programs and synchronize the local database with them.",
+        [])
 class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem {
 
     Fingerprint remote_b;
@@ -103,20 +103,20 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
             local_db_path.remove;
         }
 
-        auto net = new StdSecureNet;
+        auto net = createSecureNet;
         net.generateKeyPair("dartnet very secret");
-        DART.create(local_db_path, net);
+        DART.create(local_db_path, net.hash);
         return result_ok;
     }
 
     @Given("we run multiple remote nodes with databases as a separate programs.")
     Document programs() {
-        auto net = new StdSecureNet;
+        auto net = createSecureNet;
         net.generateKeyPair("very_secret");
 
         const genesis_doc = node_runner.getGenesisDoc;
 
-        auto factory = RecordFactory(net);
+        auto factory = RecordFactory(net.hash);
         auto recorder = factory.recorder;
         recorder.insert(genesis_doc, Archive.Type.ADD);
 
@@ -128,8 +128,8 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
 
         const genesis_dart_path = "genesis_dart.drt";
 
-        DARTFile.create(genesis_dart_path, net);
-        auto db = new DART(net, genesis_dart_path);
+        DARTFile.create(genesis_dart_path, net.hash);
+        auto db = new DART(net.hash, genesis_dart_path);
         db.modify(recorder);
 
         string[] pins;
@@ -174,13 +174,13 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
         auto dart_sync = dartSyncRR();
         dart_sync_handle.send(dart_sync);
         immutable journal_filenames = receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])(
-            env.DISTRIBUTION_TIMEOUT!uint.seconds);
+                env.DISTRIBUTION_TIMEOUT!uint.seconds);
 
         auto dart_replay = dartReplayRR();
         dart_sync_handle.send(dart_replay, immutable(DARTSynchronization.ReplayFiles)(
                 journal_filenames[1]));
         auto result = receiveOnlyTimeout!(dart_replay.Response, bool)(
-            env.DISTRIBUTION_TIMEOUT!uint.seconds);
+                env.DISTRIBUTION_TIMEOUT!uint.seconds);
 
         check(result[1], "Database has been synchronized.");
         return result_ok;

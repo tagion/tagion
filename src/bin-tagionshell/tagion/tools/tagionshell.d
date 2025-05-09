@@ -1,5 +1,4 @@
-@description("http proxy for node rpc commands")
-module tagion.tools.tagionshell;
+@description("http proxy for node rpc commands") module tagion.tools.tagionshell;
 
 import core.time;
 import core.memory;
@@ -33,7 +32,7 @@ import tagion.hibon.HiBONRecord : isRecord, GetLabel;
 import tagion.hibon.HiBONJSON : NotSupported, typeMap;
 import tagion.hibon.HiBONBase : Type;
 import tagion.hibon.HiBONtoText;
-import tagion.dart.DARTBasic : DARTIndex, dartKey, dartIndex, Params;
+import tagion.dart.DARTBasic : DARTIndex, dartId, dartIndex, Params;
 import tagion.dart.Recorder;
 import crud = tagion.dart.DARTcrud;
 import tagion.logger.subscription;
@@ -142,7 +141,6 @@ string dump_exception_recursive(Throwable ex, string tag = "", ExceptionFormat k
     return join(res, "\r\n");
 }
 
-
 T parseNumeric(T)(string str) @safe pure {
     static if (is(T == float)) {
         if (str.startsWith(cast(string)(Prefix.hex))) {
@@ -218,7 +216,7 @@ JSONValue json_dehibonize(JSONValue obj) {
                         writeit("Invalid type: ", t, x);
                     }
                 }
-            else {
+                else {
                     obj[key] = json_dehibonize(val);
                 }
             }
@@ -310,7 +308,7 @@ void dart_worker(ShellOptions opt) {
     while (!abort) {
         try {
             auto received = s.receive!(immutable(ubyte[]))();
-            if(s.errno != nng_errno.NNG_OK && s.errno != nng_errno.NNG_ETIMEDOUT)
+            if (s.errno != nng_errno.NNG_OK && s.errno != nng_errno.NNG_ETIMEDOUT)
                 writeln("DS: ", nng_errstr(s.errno));
 
             if (received.empty) {
@@ -442,13 +440,13 @@ void ws_on_message(WebSocket* ws, ubyte[] data, void* ctx) {
                 ws_devices.update(sid, d);
             }
         }
-    else if (sa[0] == "unsubscribe") {
+        else if (sa[0] == "unsubscribe") {
             if (d.topics.canFind(sa[1])) {
                 d.topics = d.topics.remove!(x => x == sa[1]);
                 ws_devices.update(sid, d);
             }
         }
-    else {
+        else {
             writeit("WS: MSG: Invalid topic: ", sa);
         }
     }
@@ -589,7 +587,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
                     opt.sock_recvdelay,
                     opt.sock_connectretry,
                     cast(ubyte[]) sender.toDoc.serialize,
-            docbuf
+                    docbuf
             );
             if (rc != nng_errno.NNG_OK) {
                 if (rc >= nng_http_status.min && rc <= nng_http_status.max) {
@@ -694,7 +692,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             return;
         }
 
-        const message = wallet_interface.secure_wallet.net.calcHash(signed_contract);
+        const message = wallet_interface.secure_wallet.net.hash.calc(signed_contract);
         const contract_net = wallet_interface.secure_wallet.net.derive(message);
         const wallet_hirpc = HiRPC(contract_net);
         const hirpc_submit = wallet_hirpc.submit(signed_contract);
@@ -799,8 +797,8 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         rep.type = mime_type.JSON;
         rep.json = dartindex;
         break;
-        case "hibon":
-        default:
+    case "hibon":
+    default:
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
         rep.type = mime_type.BINARY;
         rep.rawdata = cast(ubyte[]) receiver.serialize;
@@ -910,7 +908,7 @@ void i2p_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
     //writeit(signed_contract.toPretty);
 
-    const message = wallet_interface.secure_wallet.net.calcHash(signed_contract);
+    const message = wallet_interface.secure_wallet.net.hash.calc(signed_contract);
     const contract_net = wallet_interface.secure_wallet.net.derive(message);
     const hirpc = HiRPC(contract_net);
     const hirpc_submit = hirpc.submit(signed_contract);
@@ -1008,7 +1006,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             rep.type = mime_type.TEXT;
             rep.text = res;
             break;
-            case "bullseye":
+        case "bullseye":
             WebData hrep = WebClient.get(uri ~ opt.bullseye_endpoint ~ "/json", null);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
@@ -1023,15 +1021,15 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             rep.type = mime_type.JSON;
             rep.json = parseJSON(`{"test": "bullseye", "passed": "ok", "result":{"bullseye":"` ~ res ~ `"}}`);
             break;
-            case "dart":
+        case "dart":
             enum update_tag = "update";
             const update_net = wallet_interface.secure_wallet.net.derive(
-                    wallet_interface.secure_wallet.net.calcHash(
+                    wallet_interface.secure_wallet.net.hash.calc(
                     update_tag.representation));
             const hirpc = HiRPC(update_net);
             const hreq = wallet_interface.secure_wallet.getRequestCheckWallet(hirpc);
             WebData hrep = WebClient.post(uri ~ opt.dart_endpoint, cast(ubyte[])(hreq.serialize),
-            ["Content-type": mime_type.BINARY]);
+                    ["Content-type": mime_type.BINARY]);
             if (hrep.status != nng_http_status.NNG_HTTP_STATUS_OK) {
                 rep.status = hrep.status;
                 rep.text = hrep.text;
@@ -1046,7 +1044,7 @@ void selftest_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
             rep.type = mime_type.JSON;
             rep.json = parseJSON(format(`{"test": "%s", "passed": "ok", "result":{"count": %d}}`, reqpath[0], cnt));
             break;
-            default:
+        default:
             break;
         }
     }
@@ -1204,7 +1202,7 @@ int _main(string[] args) {
     string[] override_options;
 
     long sz, isz;
-    
+
     auto default_shell_config_filename = "shell".setExtension(FileExtension.json);
     const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
     auto config_file = (user_config_file < 0) ? default_shell_config_filename : args[user_config_file];
@@ -1244,15 +1242,15 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://docs.tagion.org/",
-                
-                "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
-                "",
-                "<option>:",
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://docs.tagion.org/",
 
-                ].join("\n"),
+            "Usage:",
+            format("%s [<option>...] <config.json> <files>", program),
+            "",
+            "<option>:",
+
+        ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -1276,7 +1274,7 @@ int _main(string[] args) {
 
     auto ds_tid = spawn(&dart_worker, options);
 
-    ws_devices = new shared(WSCache)(null, options.websocket_cache_size, 0); 
+    ws_devices = new shared(WSCache)(null, options.websocket_cache_size, 0);
     WebSocketApp wsa = WebSocketApp(options.ws_pub_uri, &ws_on_connect, &ws_on_close, &ws_on_error, &ws_on_message, cast(
             void*)&options);
     wsa.start();
@@ -1284,7 +1282,7 @@ int _main(string[] args) {
     Appender!string help_text;
 
     void add_v1_route(ref WebApp _app, string endpoint, webhandler handler, HTTPMethod[] methods, string description, string[string] variations = string[string]
-        .init) {
+            .init) {
         _app.route(options.shell_api_prefix ~ endpoint, handler, cast(string[]) methods);
         help_text ~= format!"\t%-25s= %s %s\n"(options.shell_api_prefix ~ endpoint, methods, description);
         foreach (k, v; variations) {

@@ -24,7 +24,7 @@ import tagion.Keywords;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.SecureNet : StdHashNet, StdSecureNet;
+import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
 import tagion.dart.DARTBasic;
@@ -104,8 +104,6 @@ struct DARTWorker {
                 check(received_hirpc.isError, format("Should have thrown error got: %s", received_doc.toPretty));
             }
 
-
-
         }
     }
 }
@@ -144,10 +142,10 @@ class WriteAndReadFromDartDb {
         this.opts = opts;
         this.replicator_opts = replicator_opts;
         this.trt_options = trt_options;
-        supervisor_net = new StdSecureNet();
+        supervisor_net = createSecureNet;
         supervisor_net.generateKeyPair("supervisor very secret");
 
-        record_factory = RecordFactory(supervisor_net);
+        record_factory = RecordFactory(supervisor_net.hash);
         hirpc = HiRPC(supervisor_net);
 
         gen = Mt19937(1234);
@@ -174,7 +172,7 @@ class WriteAndReadFromDartDb {
 
         writeln("DART task name", TaskNames().dart);
 
-        auto net = new StdSecureNet();
+        auto net = createSecureNet;
         net.generateKeyPair("dartnet very secret");
 
         handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, TaskNames(), cast(
@@ -232,7 +230,7 @@ class WriteAndReadFromDartDb {
 
             /// read the archives
             auto dart_indices = docs
-                .map!(d => supervisor_net.dartIndex(d))
+                .map!(d => supervisor_net.hash.dartIndex(d))
                 .array;
 
             auto read_request = dartReadRR();

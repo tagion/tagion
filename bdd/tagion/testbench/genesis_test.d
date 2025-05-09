@@ -52,7 +52,7 @@ int _main(string[] args) {
     import std.range;
     import std.stdio;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureNet;
     import tagion.dart.DART;
     import tagion.dart.DARTBasic;
     import tagion.dart.DARTFile;
@@ -98,10 +98,10 @@ int _main(string[] args) {
         }
     }
 
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("very_secret");
 
-    auto factory = RecordFactory(net);
+    auto factory = RecordFactory(net.hash);
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
@@ -131,6 +131,9 @@ int _main(string[] args) {
                 opt.task_names.epoch_creator, // Name
                 key,
                 opt.task_names.epoch_creator, // Address
+
+                
+
         );
     }
 
@@ -160,15 +163,15 @@ int _main(string[] args) {
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options
                 .dart.dart_filename);
         writeln("DART path: ", path);
-        DARTFile.create(path, net);
-        auto db = new DART(net, path);
+        DARTFile.create(path, net.hash);
+        auto db = new DART(net.hash, path);
         db.modify(recorder);
     }
 
     // Inisialize genesis TRT
     if (local_options.trt.enable) {
         auto trt_recorder = factory.recorder;
-        genesisTRT(bills, trt_recorder, net);
+        genesisTRT(bills, trt_recorder, net.hash);
 
         foreach (i; 0 .. local_options.wave.number_of_nodes) {
             immutable prefix = format(local_options.wave.prefix_format, i);
@@ -176,8 +179,8 @@ int _main(string[] args) {
             const trt_path = buildPath(local_options.trt.folder_path, prefix ~ local_options
                     .trt.trt_filename);
             writeln("TRT path: ", trt_path);
-            DARTFile.create(trt_path, net);
-            auto trt_db = new DART(net, trt_path);
+            DARTFile.create(trt_path, net.hash);
+            auto trt_db = new DART(net.hash, trt_path);
             trt_db.modify(trt_recorder);
         }
     }
