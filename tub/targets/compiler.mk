@@ -22,9 +22,6 @@ else ifeq ($(notdir $(DC)),dmd2)
 COMPILER=dmd
 endif
 
-test38:
-	echo "X$(ISLDC)X"
-
 ifneq (X$(ISLDC)X,XX)
 COMPILER=ldc
 endif

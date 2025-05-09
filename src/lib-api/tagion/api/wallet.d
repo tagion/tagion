@@ -299,7 +299,7 @@ struct buf_t {
 
 Document[] get_docs(buf_t** docs_array, size_t count) {
     Document[] docs;
-    for (size_t i = 0; i < count; i++) {
+    foreach (size_t i; 0 .. count) {
         const doc_ptr = docs_array[i];
         const buf = doc_ptr.data[0 .. doc_ptr.data_len].idup;
         const doc = Document(buf);
@@ -310,7 +310,7 @@ Document[] get_docs(buf_t** docs_array, size_t count) {
 
 ubyte[][] get_derivers(buf_t** buf_array, size_t count) {
     ubyte[][] derivers;
-    for (size_t i = 0; i < count; i++) {
+    foreach (size_t i; 0 .. count) {
         const buf_ptr = buf_array[i];
 
         auto buf = buf_ptr.data[0 .. buf_ptr.data_len].dup;
