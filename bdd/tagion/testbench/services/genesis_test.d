@@ -112,7 +112,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
 
             auto recorder = record_factory.recorder(modify_log_result[1]);
             auto head = recorder[].filter!(a => a.filed.isRecord!TagionHead).array;
-            check(head.length == 1, format("Should contain only one head per modify. had %s", head.length));
+            check(head.length == 1, format("Should contain exactly one head per modify. had %s", head.length));
 
             const task_name = modify_log_result[0].task_name;
 

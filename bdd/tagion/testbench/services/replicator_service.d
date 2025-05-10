@@ -14,6 +14,7 @@ import tagion.actor;
 import tagion.services.options;
 import tagion.services.messages;
 import tagion.services.replicator;
+import tagion.script.common;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, register, thisTid;
 import tagion.replicator.RecorderBlock;
 import tagion.replicator.RecorderCrud;
@@ -24,6 +25,7 @@ import std.exception;
 import std.format;
 import std.path : buildPath;
 import std.stdio;
+import std.range;
 
 enum feature = Feature(
             "ReplicatorService",
@@ -38,15 +40,8 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("produced recorders are sent for replication and writen to files.",
         [])
 class ProducedRecordersAreSentForReplicationAndWritenToFiles {
-
-    struct RecorderPayload {
-        RecordFactory.Recorder recorder;
-        Fingerprint fingerprint;
-        long epoch_number;
-    }
-
     ReplicatorOptions replicator_opts;
-    RecorderPayload[] recorder_payloads;
+    RecordFactory.Recorder[] recorder_payloads;
     ActorHandle replicator_handle;
 
     this(ReplicatorOptions replicator_opts) {
@@ -71,9 +66,8 @@ class ProducedRecordersAreSentForReplicationAndWritenToFiles {
         const net = new DARTFakeNet;
 
         // Generated recorders
+        auto manufactor = RecordFactory(net);
         foreach (rec_index; 0 .. 10) {
-            auto manufactor = RecordFactory(net);
-
             const doc = DARTFakeNet.fake_doc(0x1234_5678_0000_0000);
             auto rec = manufactor.recorder;
             rec.insert(doc, Archive.Type.ADD);
@@ -85,9 +79,7 @@ class ProducedRecordersAreSentForReplicationAndWritenToFiles {
             rec.insert(archs[1], Archive.Type.ADD);
             rec.insert(archs[2], Archive.Type.ADD);
 
-            auto fingerprint = net.calc(doc);
-            auto payload = RecorderPayload(rec, fingerprint, rec_index);
-            recorder_payloads ~= payload;
+            recorder_payloads ~= rec;
         }
 
         return result_ok;
@@ -96,15 +88,18 @@ class ProducedRecordersAreSentForReplicationAndWritenToFiles {
     @When("each generated recorder is sent using the SendRecorder method.")
     Document method() {
         immutable task_names = TaskNames();
-        replicator_handle = (() @trusted => spawn!ReplicatorService(
-                task_names.replicator,
-                cast(immutable) replicator_opts))();
+        immutable svc_options = replicator_opts;
+        replicator_handle = spawn!ReplicatorService(
+                task_names.replicator, svc_options);
 
-        foreach (payload; recorder_payloads) {
-            (() @trusted => replicator_handle.send(SendRecorder(),
-                    cast(immutable) payload.recorder,
-                    payload.fingerprint,
-                    cast(immutable(long)) payload.epoch_number))();
+        foreach (immutable long i, recorder; recorder_payloads) {
+            auto mock_bullseye = Fingerprint([cast(immutable(ubyte))i]);
+            replicator_handle.send(SendRecorder(),
+                    RecordFactory.uniqueRecorder(recorder),
+                    mock_bullseye,
+                    (immutable(SignedContract)[]).init,
+                    i
+            );
         }
 
         waitforChildren(Ctrl.ALIVE);
@@ -117,7 +112,7 @@ class ProducedRecordersAreSentForReplicationAndWritenToFiles {
 
         auto repFilePathRequest = repFilePathRR();
         replicator_handle.send(repFilePathRequest);
-        auto filepath = receiveOnlyTimeout!(repFilePathRequest.Response, immutable(char)[])[1];
+        string filepath = receiveOnlyTimeout!(repFilePathRequest.Response, string)[1];
 
         check(!filepath.empty, "File path is empty");
 
@@ -146,21 +141,11 @@ class WeReceiveARecorderFromFileByASpecifiedEpochNumber {
 
     @Given("the recorder stored in a file.")
     Document inAFile() {
-        import std.range;
-
-        thisActor.task_name = "replicator_service_task";
-        register(thisActor.task_name, thisTid);
-
-        immutable task_names = TaskNames();
-        replicator_handle = (() @trusted => spawn!ReplicatorService(
-                task_names.replicator,
-                cast(immutable) replicator_opts))();
-
-        waitforChildren(Ctrl.ALIVE);
+        replicator_handle = ActorHandle(TaskNames().replicator);
 
         auto repFilePathRequest = repFilePathRR();
         replicator_handle.send(repFilePathRequest);
-        auto filepath = receiveOnlyTimeout!(repFilePathRequest.Response, immutable(char)[])[1];
+        string filepath = receiveOnlyTimeout!(repFilePathRequest.Response, string)[1];
 
         check(!filepath.empty, "File path is empty");
 
@@ -169,7 +154,7 @@ class WeReceiveARecorderFromFileByASpecifiedEpochNumber {
 
     @Given("a hibon with an epoch number as a document.")
     Document asADocument() {
-        epoch_param = EpochParam(cast(long) 0);
+        epoch_param = EpochParam(0);
         return result_ok;
     }
 
@@ -193,11 +178,6 @@ class WeReceiveARecorderFromFileByASpecifiedEpochNumber {
     Document thisEpochNumber() {
         check(recorder_block.epoch_number == 0, "Epoch numbers are different");
         return result_ok;
-    }
-
-    void stopActor() {
-        replicator_handle.send(Sig.STOP);
-        waitforChildren(Ctrl.END);
     }
 
 }
@@ -227,7 +207,6 @@ int _main(string[] args) {
 
     scope (exit) {
         replicator_service_handler_1.stopActor();
-        replicator_service_handler_2.stopActor();
     }
     return 0;
 }

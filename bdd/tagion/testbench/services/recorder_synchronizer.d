@@ -135,9 +135,10 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
             }
 
             auto fingerprint = remote_dart.modify(recorder);
-            auto replicator_handle = (() @trusted => spawn!ReplicatorService(
+            immutable local_replicator_opts = replicator_opts;
+            auto replicator_handle = spawn!ReplicatorService(
                     opts.task_names.replicator,
-                    cast(immutable) replicator_opts))();
+                    local_replicator_opts);
             replicator_handles ~= replicator_handle;
 
             auto remote_dart_handle = (() @trusted => spawn!DARTService(
@@ -155,8 +156,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
             sock_addrs.sock_addrs ~= opts.rpcserver.sock_addr;
 
-            (() @trusted => replicator_handle.send(SendRecorder(), cast(immutable) recorder, fingerprint,
-                    cast(immutable long) tagion_head.current_epoch))();
+            replicator_handle.send(SendRecorder(), RecordFactory.uniqueRecorder(recorder), fingerprint, (immutable(SignedContract)[]).init, immutable(long)(tagion_head.current_epoch));
         }
 
         dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
@@ -192,8 +192,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
 
         auto dart_recorder_sync = syncRecorderRR();
         dart_sync_handle.send(dart_recorder_sync);
-        immutable dart_recorder_sync_result = receiveOnlyTimeout!(
-                dart_recorder_sync.Response, immutable(bool))[1];
+        immutable dart_recorder_sync_result = receiveOnlyTimeout!(dart_recorder_sync.Response, immutable(bool))[1];
         writefln("Is local database up to date %s", dart_recorder_sync_result);
 
         return result_ok;
