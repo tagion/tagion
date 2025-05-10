@@ -43,10 +43,6 @@ import tagion.logger.ContractTracker;
 
 enum BUFFER_TIME_SECONDS = 30;
 
-struct TranscriptOptions {
-    mixin JSONRecord;
-}
-
 /**
  * TranscriptService actor
  * Receives: (inputDoc, Document)
@@ -55,29 +51,21 @@ struct TranscriptOptions {
 struct TranscriptService {
 
     const(SecureNet) net;
-    immutable(TranscriptOptions) opts;
     immutable(size_t) number_of_nodes;
 
     ActorHandle dart_handle;
     ActorHandle epoch_creator_handle;
-    ActorHandle trt_handle;
-
-    bool trt_enable;
+    ActorHandle epoch_commit_handle;
 
     RecordFactory rec_factory;
 
-    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(SecureNet) shared_net, immutable(
-            TaskNames) task_names, bool trt_enable) {
-        this.opts = opts;
+    this(const size_t number_of_nodes, shared(SecureNet) shared_net, immutable(TaskNames) task_names) {
         this.number_of_nodes = number_of_nodes;
 
         this.dart_handle = ActorHandle(task_names.dart);
         this.epoch_creator_handle = ActorHandle(task_names.epoch_creator);
-        this.trt_handle = ActorHandle(task_names.trt);
+        this.epoch_commit_handle = ActorHandle(task_names.epoch_commit);
         this.net = shared_net.clone;
-
-        this.trt_enable = trt_enable;
-
         this.rec_factory = RecordFactory(net.hash);
     }
 
@@ -94,7 +82,7 @@ struct TranscriptService {
     }
 
     struct EpochContracts {
-        const(SignedContract)[] signed_contracts;
+        immutable(SignedContract)[] signed_contracts;
         Fingerprint[] witnesses;
         sdt_t epoch_time;
     }
@@ -106,7 +94,7 @@ struct TranscriptService {
         products[product_index] = product;
     }
 
-    void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
+    void receiveBullseye(EpochCommitRR.Response res, Fingerprint bullseye) {
         const epoch_number = res.id;
 
         votes[epoch_number].epoch.bullseye = bullseye;
@@ -238,7 +226,7 @@ struct TranscriptService {
             );
             recorder.insert(new_head, Archive.Type.ADD);
 
-            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
+            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id, null);
             ownerTid.prioritySend(Sig.STOP);
             thisActor.stop = true;
             return;
@@ -287,11 +275,6 @@ struct TranscriptService {
 
                 recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
                 recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
-
-                if (trt_enable) {
-                    immutable doc = signed_contract.contract.toDoc;
-                    trt_handle.send(trtContract(), doc, last_epoch_number);
-                }
 
                 used ~= signed_contract.contract.inputs;
                 products.remove(net.hash.dartIndex(signed_contract.contract));
@@ -381,9 +364,8 @@ struct TranscriptService {
         new_vote.locked_archives = outputs;
         votes[non_voted_epoch.epoch_number] = new_vote;
 
-        auto req = dartModifyRR(res.id);
-
-        dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
+        auto req = EpochCommitRR(res.id);
+        epoch_commit_handle.send(req, res.id, RecordFactory.uniqueRecorder(recorder), epoch_contract.signed_contracts);
     }
 
     void task() {

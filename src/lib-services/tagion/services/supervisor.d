@@ -21,6 +21,7 @@ import tagion.services.epoch_creator;
 import tagion.services.hirpc_verifier;
 import tagion.services.options;
 import tagion.services.replicator;
+import tagion.services.epoch_commit;
 
 version (NEW_TRANSCRIPT) {
     import tagion.services.trans;
@@ -54,7 +55,7 @@ struct Supervisor {
         ActorHandle[] handles;
 
         handles ~= spawn!ReplicatorService(tn.replicator, opts.replicator);
-        handles ~= spawn!DARTService(tn.dart, opts.dart, tn, shared_net, opts.trt.enable);
+        handles ~= spawn!DARTService(tn.dart, opts.dart, shared_net);
 
         if (opts.trt.enable) {
             handles ~= spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
@@ -85,15 +86,16 @@ struct Supervisor {
 
         handles ~= _spawn!TVMService(tn.tvm, tn);
 
+        handles ~= _spawn!EpochCommit(tn.epoch_commit, tn, opts.trt.enable);
+
         // signs data
         auto transcript_handle = _spawn!TranscriptService(
                 tn.transcript,
-                TranscriptOptions(),
                 opts.wave.number_of_nodes,
                 shared_net,
                 tn,
-                opts.trt.enable
         );
+
         handles ~= transcript_handle;
 
         handles ~= spawn(immutable(RPCServer)(opts.rpcserver, opts.trt, tn), tn.rpcserver);

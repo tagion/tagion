@@ -27,6 +27,7 @@ import tagion.services.tasknames;
 import tagion.services.replicator;
 import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.script.common;
 import tagion.services.exception;
 import tagion.services.rpcs;
 
@@ -62,10 +63,7 @@ struct DARTOptions {
 struct DARTService {
     static Topic recorder_created = Topic("recorder");
 
-    void task(immutable(DARTOptions) opts,
-            immutable(TaskNames) task_names,
-            shared(SecureNet) shared_net,
-            bool trt_enable) {
+    void task(immutable(DARTOptions) opts, shared(SecureNet) shared_net) {
 
         DART db;
         Exception dart_exception;
@@ -76,18 +74,11 @@ struct DARTService {
             throw dart_exception;
         }
 
-        ActorHandle replicator_handle = ActorHandle(task_names.replicator);
-        ActorHandle trt_handle = ActorHandle(task_names.trt);
-
         scope (exit) {
             db.close();
         }
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            import std.algorithm;
-            import tagion.hibon.HiBONtoText;
-            import tagion.utils.Miscellaneous;
-
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
@@ -131,22 +122,12 @@ struct DARTService {
         }
 
         // receives modify from transcript and sends the recorder onwards to the Replicator
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @trusted {
-
-            log("Received modify request with length=%s", recorder.length);
-
-            immutable fingerprint_before = Fingerprint(db.bullseye);
-            import core.exception : AssertError;
-
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @trusted {
             auto eye = db.modify(recorder);
             log("New bullseye is %(%02x%)", eye);
 
             req.respond(eye);
-            replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
             log.event(recorder_created, "recorder", recorder.toDoc);
-            if (trt_enable) {
-                trt_handle.send(trtModify(), recorder);
-            }
         }
 
         void futureEye(dartFutureEyeRR req, immutable(RecordFactory.Recorder) recorder) {

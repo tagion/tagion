@@ -18,6 +18,7 @@ struct TaskNames {
     string trt = "trt";
     string node_interface = "node_interface";
     string dart_synchronization = "dart_synchronization";
+    string epoch_commit = "epoch_commit";
 
     mixin JSONRecord;
 

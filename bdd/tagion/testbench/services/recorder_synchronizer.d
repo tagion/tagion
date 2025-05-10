@@ -143,9 +143,7 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
             auto remote_dart_handle = (() @trusted => spawn!DARTService(
                     opts.task_names.dart,
                     cast(immutable) DARTOptions(null, remote_db_path),
-                    opts.task_names,
-                    cast(shared) net,
-                    false))();
+                    cast(shared) net))();
             remote_dart_handles ~= remote_dart_handle;
 
             auto rpcserver_handle = (() @trusted => spawn(

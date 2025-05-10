@@ -41,14 +41,9 @@ import tagion.logger.ContractTracker;
 
 enum BUFFER_TIME_SECONDS = 30;
 
-struct TranscriptOptions {
-    mixin JSONRecord;
-}
-
 struct TranscriptService {
 
     const(SecureNet) net;
-    immutable(TranscriptOptions) opts;
     immutable(size_t) number_of_nodes;
 
     ActorHandle dart_handle;
@@ -59,8 +54,7 @@ struct TranscriptService {
 
     RecordFactory rec_factory;
 
-    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names, bool trt_enable) {
-        this.opts = opts;
+    this(const size_t number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names, bool trt_enable) {
         this.number_of_nodes = number_of_nodes;
 
         this.dart_handle = ActorHandle(task_names.dart);
@@ -203,11 +197,6 @@ struct TranscriptService {
 
                 recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
                 recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
-
-                if (trt_enable) {
-                    immutable doc = signed_contract.contract.toDoc;
-                    trt_handle.send(trtContract(), doc, last_epoch_number);
-                }
 
                 used ~= signed_contract.contract.inputs;
                 products.remove(net.hash.dartIndex(signed_contract.contract));

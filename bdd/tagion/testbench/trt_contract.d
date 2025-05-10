@@ -112,8 +112,6 @@ int _main(string[] args) {
                 node_net.pubkey,
                 opt.task_names.epoch_creator, // Address
 
-                
-
         );
     }
 

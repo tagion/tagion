@@ -83,7 +83,6 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
     ActorHandle[] rpcserver_handles;
 
     ActorHandle dart_sync_handle;
-    TRTOptions trt_options;
     const local_db_name = "dds_local_dart.drt";
     string local_db_path;
 
