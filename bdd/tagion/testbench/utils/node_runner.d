@@ -56,14 +56,14 @@ class NodeRunner {
         return sock_addrs;
     }
 
-    void setupMode1Options() {
+    void setupMode1Options(string prefix_name = "Mode_1_") {
         Options local_options;
         local_options.setDefault;
         local_options.trt.enable = false;
         local_options.wave.number_of_nodes = number_of_nodes;
         local_options.wave.network_mode = NetworkMode.LOCAL;
         local_options.epoch_creator.timeout = timeout_msecs;
-        local_options.wave.prefix_format = "Mode1_%s_";
+        local_options.wave.prefix_format = prefix_name ~ "%s_";
         local_options.subscription.tags =
             [
                 StdRefinement.epoch_created.name,
