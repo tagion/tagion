@@ -27,7 +27,7 @@ struct EpochCommit {
     void epoch_commit(EpochCommitRR req, immutable(long) epoch_number, immutable(RecordFactory.Recorder) recorder, immutable(SignedContract)[] signed_contracts) {
         dart_handle.send(dartModifyRR(), recorder);
         conc.receive((dartModifyRR.Response _, Fingerprint eye) {
-            replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
+            replicator_handle.send(SendRecorder(), recorder, eye, signed_contracts, epoch_number);
             req.respond(eye);
         });
 
