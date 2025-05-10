@@ -217,27 +217,26 @@ struct TranscriptService {
 
         }
 
-        if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
-            auto req = dartModifyRR(res.id);
-
-            TagionHead new_head = TagionHead(
-                    TagionDomain,
-                    shutdown,
-            );
-            recorder.insert(new_head, Archive.Type.ADD);
-
-            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id, null);
-            ownerTid.prioritySend(Sig.STOP);
-            thisActor.stop = true;
-            return;
-        }
-
         const epoch_contract = epoch_contracts.get(res.id, null);
         if (epoch_contract is null) {
             throw new ServiceException(format("unlinked epoch contract %s", res.id));
         }
         scope (exit) {
             epoch_contracts.remove(res.id);
+        }
+
+        if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
+            TagionHead new_head = TagionHead(
+                    TagionDomain,
+                    shutdown,
+            );
+            recorder.insert(new_head, Archive.Type.ADD);
+
+            auto req = EpochCommitRR(res.id);
+            epoch_commit_handle.send(req, res.id, RecordFactory.uniqueRecorder(recorder), epoch_contract.signed_contracts);
+            ownerTid.prioritySend(Sig.STOP);
+            thisActor.stop = true;
+            return;
         }
 
         loop_signed_contracts: foreach (signed_contract; epoch_contract.signed_contracts) {
@@ -343,6 +342,7 @@ struct TranscriptService {
                 TagionDomain,
                 res.id,
         );
+
         immutable(DARTIndex)[] locked_indices = recorder[]
             .filter!(a => a.type == Archive.Type.ADD)
             .map!(a => net.hash.dartIndex(a.filed))
