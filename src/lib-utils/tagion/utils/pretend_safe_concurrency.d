@@ -21,6 +21,8 @@ public import std.concurrency : Tid,
     MailboxFull,
     OnCrowding,
     MessageMismatch,
+    Scheduler,
+    FiberScheduler,
     Variant;
 
 void setMaxMailboxSize(Tid tid, size_t messages, OnCrowding doThis) @trusted {
