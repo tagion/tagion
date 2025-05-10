@@ -96,18 +96,16 @@ unittest {
 struct Request(string name, ID = uint) {
     Msg!name msg;
     ID id;
-    string task_name;
+    Tid tid;
 
-    static Request opCall() @safe nothrow {
+    static Request opCall() @safe {
         import tagion.utils.Random;
         static assert(isNumeric!ID, "Can not auto generate an id for non numeric ID type");
         return typeof(this).opCall(generateId!(Unqual!ID));
     }
 
-    static Request opCall(ID id) @safe nothrow {
-        assert(thisActor.task_name !is string.init, "The requester is not registered as a task");
-
-        Request!(name, ID) r = { Msg!name(), id, thisActor.task_name };
+    static Request opCall(ID id) @safe {
+        Request!(name, ID) r = { Msg!name(), id, thisTid};
         return r;
     }
 
@@ -116,7 +114,7 @@ struct Request(string name, ID = uint) {
     /// Send back some data to the task who sent the request
     void respond(Args...)(Args args) {
         auto res = Response(msg, id);
-        ActorHandle(task_name).send(res, args);
+        this.tid.send(res, args);
     }
 }
 
