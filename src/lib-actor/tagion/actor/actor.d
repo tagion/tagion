@@ -251,7 +251,6 @@ template isSpawnable(F, T...) {
 struct ActorHandle {
     /// the name of the possibly running task
     string task_name;
-
     private Tid _tid;
     /// the tid of the spawned task
     Tid tid() {
@@ -326,7 +325,7 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
-        return ActorHandle(name);
+        return ActorHandle(name, tid);
     }
     catch (Exception e) {
         assert(0, format("Exception: %s", e.msg));
@@ -372,7 +371,7 @@ if (isActor!A) {
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
-        return ActorHandle(name);
+        return ActorHandle(name, tid);
     }
     catch (Exception e) {
         log.fatal(e);
