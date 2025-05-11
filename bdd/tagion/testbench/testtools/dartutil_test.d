@@ -42,16 +42,16 @@ int _main(string[] args) {
 }
 
 enum feature = Feature(
-        "dartutil scenarios",
-        []);
+            "dartutil scenarios",
+            []);
 
 alias FeatureContext = Tuple!(
-    Bullseye, "Bullseye",
-    FeatureGroup*, "result"
+        Bullseye, "Bullseye",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("Bullseye",
-    [])
+        [])
 class Bullseye {
     string dart_path;
     DART db;
@@ -63,18 +63,18 @@ class Bullseye {
 
     @Given("initial dart file")
     Document dartFile() {
-        SecureNet net = new StdSecureNet();
+        SecureNet net = createSecureNet;
         net.generateKeyPair("very_secret");
 
-        auto factory = RecordFactory(net);
+        auto factory = RecordFactory(net.hash);
         auto recorder = factory.recorder;
 
         HiBON hibon = new HiBON;
         hibon["a"] = 42;
         recorder.insert(Document(hibon), Archive.Type.ADD);
 
-        DARTFile.create(dart_path, net);
-        db = new DART(net, dart_path);
+        DARTFile.create(dart_path, net.hash);
+        db = new DART(net.hash, dart_path);
         db.modify(recorder);
 
         assert(this.dart_path.exists, "Input dart file not exists");

@@ -9,7 +9,8 @@ import tagion.basic.Types : FileExtension;
 import tagion.basic.Version;
 import tagion.behaviour.Behaviour;
 import tagion.communication.HiRPC : HiRPC;
-import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+
+//import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.hibon.HiBONFile : fwrite;
 import tagion.testbench.dart;
@@ -30,8 +31,8 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
 
     // create the dartfile
-    const SecureNet net = new DARTFakeNet("very_secret");
-    const hirpc = HiRPC(net);
+    const net = new DARTFakeNet;
+    const hirpc = HiRPC(null);
 
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
 
@@ -44,7 +45,6 @@ int _main(string[] args) {
     dart_ADD_stress_feature.AddPseudoRandomData(dart_info, samples, number_of_records);
 
     auto dart_ADD_stress_context = dart_ADD_stress_feature.run();
-
 
     return 0;
 

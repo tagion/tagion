@@ -11,7 +11,7 @@ runs:
     - name: Build
       shell: bash
       run: |
-        export PATH="/Users/piss/tools/ldc2-1.37.0-osx-universal/bin/:$PATH"
+        export PATH="/Users/piss/tools/ldc2-1.41.0-beta1-osx-universal/bin/:$PATH"
         which ldc2
         make DC=ldc2 SHARED=1 PLATFORM=${{ inputs.platform }} libtauonapi libmobile
         file ./build/${{ inputs.platform }}/lib/libtauonapi.dylib

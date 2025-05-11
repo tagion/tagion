@@ -30,7 +30,7 @@ DBIN_EXCLUDE=1
 #SPLIT_LINKER=1
 #DEFAULT_BIN_DISABLE=1
 ifneq ($(COMPILER),ldc)
-$(error $(PLATFORM) only supports ldc2 for now)
+$(error $(PLATFORM) only supports ldc2 for now not $(COMPILER))
 endif
 
 

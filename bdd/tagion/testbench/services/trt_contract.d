@@ -19,7 +19,7 @@ import tagion.communication.HiRPC;
 import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 import tagion.crypto.SecureNet;
-import tagion.dart.DARTBasic : dartIndex, dartKey;
+import tagion.dart.DARTBasic : dartIndex, dartId;
 import std.digest : toHexString;
 import tagion.basic.Types : encodeBase64;
 import tagion.dart.DART;
@@ -93,7 +93,7 @@ class ProperContract {
     @When("the contract is sent to the network")
     Document theNetwork() {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
 
         return result_ok;
     }
@@ -102,10 +102,10 @@ class ProperContract {
     Document goesThrough() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         check(wallet1_amount == start_amount1 - amount - fee, "did not send money");
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         check(wallet2_amount == start_amount2 + amount, "did not receive money");
 
         return result_ok;
@@ -115,7 +115,7 @@ class ProperContract {
     Document tRT() {
         auto result_archives = getTRTStoredContracts([
             signed_contract.contract.toDoc
-        ], wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        ], wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
 
         check(!result_archives.empty, "No contract recorded in TRT");
         check(result_archives[0].contract == signed_contract.contract.toDoc, "Received contract doesn't match expected");
@@ -219,10 +219,10 @@ class InvalidContract {
     @When("contracts are sent to the network")
     Document theNetwork() {
         auto hirpc_submit1 = wallet1_hirpc.submit(signed_contract1);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit1, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit1, wallet1_hirpc);
 
         auto hirpc_submit2 = wallet1_hirpc.submit(signed_contract2);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit2, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit2, wallet1_hirpc);
 
         return result_ok;
     }
@@ -232,11 +232,11 @@ class InvalidContract {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
         const expected1 = start_amount1 - amount - fee;
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         check(wallet1_amount == expected1, format("Did not send money. Should have %s had %s", expected1, wallet1_amount));
 
         const expected2 = start_amount2 + amount;
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         check(wallet2_amount == expected2, format("Did not send money. Should have %s had %s", expected2, wallet2_amount));
 
         return result_ok;
@@ -246,7 +246,7 @@ class InvalidContract {
     Document shouldNot() {
         auto result_archives = getTRTStoredContracts([
             signed_contract1.contract.toDoc, signed_contract2.contract.toDoc
-        ], wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        ], wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
 
         check(result_archives.length == 1, "Should be only one contract in TRT");
         check(result_archives[0].contract == signed_contract1.contract.toDoc, "Received contract doesn't match expected");

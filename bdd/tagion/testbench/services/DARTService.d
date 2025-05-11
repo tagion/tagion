@@ -24,7 +24,7 @@ import tagion.Keywords;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.SecureNet : StdHashNet, StdSecureNet;
+import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
 import tagion.dart.DARTBasic;
@@ -34,7 +34,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.logger.LogRecords : LogInfo;
 import tagion.logger.Logger;
-import tagion.services.DARTInterface;
+import tagion.services.rpcserver;
 import tagion.services.TRTService;
 import tagion.services.replicator;
 import tagion.services.replicator : modify_log;
@@ -104,8 +104,6 @@ struct DARTWorker {
                 check(received_hirpc.isError, format("Should have thrown error got: %s", received_doc.toPretty));
             }
 
-
-
         }
     }
 }
@@ -115,9 +113,8 @@ struct DARTWorker {
 class WriteAndReadFromDartDb {
 
     ActorHandle handle;
-    ActorHandle dart_interface_handle;
-    ActorHandle replicator_handle;
-    DARTInterfaceOptions interface_opts;
+    ActorHandle rpcserver_handle;
+    RPCServerOptions interface_opts;
     TRTOptions trt_options;
 
     SecureNet supervisor_net;
@@ -144,10 +141,10 @@ class WriteAndReadFromDartDb {
         this.opts = opts;
         this.replicator_opts = replicator_opts;
         this.trt_options = trt_options;
-        supervisor_net = new StdSecureNet();
+        supervisor_net = createSecureNet;
         supervisor_net.generateKeyPair("supervisor very secret");
 
-        record_factory = RecordFactory(supervisor_net);
+        record_factory = RecordFactory(supervisor_net.hash);
         hirpc = HiRPC(supervisor_net);
 
         gen = Mt19937(1234);
@@ -174,20 +171,15 @@ class WriteAndReadFromDartDb {
 
         writeln("DART task name", TaskNames().dart);
 
-        auto net = new StdSecureNet();
+        auto net = createSecureNet;
         net.generateKeyPair("dartnet very secret");
 
-        handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, TaskNames(), cast(
-                shared) net, false))();
-
-        replicator_handle = (() @trusted => spawn!ReplicatorService(
-                TaskNames().replicator,
-                cast(immutable) replicator_opts))();
+        handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, cast(shared) net))();
 
         interface_opts.setDefault;
         writeln(interface_opts.sock_addr);
 
-        dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, cast(immutable) trt_options, TaskNames()), "DartInterfaceService"))();
+        rpcserver_handle = (() @trusted => spawn(immutable(RPCServer)(cast(immutable) interface_opts, cast(immutable) trt_options, TaskNames()), "DartInterfaceService"))();
 
         waitforChildren(Ctrl.ALIVE, 3.seconds);
 
@@ -197,7 +189,7 @@ class WriteAndReadFromDartDb {
     @When("I send a dartModify command with a recorder containing changes to add")
     Document toAdd() {
         log.registerSubscriptionTask(thisActor.task_name);
-        submask.subscribe(modify_log);
+        submask.subscribe(DARTService.recorder_created);
 
         foreach (i; 0 .. 100) {
             gen.popFront;
@@ -206,10 +198,9 @@ class WriteAndReadFromDartDb {
             docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
 
             insert_recorder.insert(docs, Archive.Type.ADD);
-            auto modify_send = dartModifyRR();
-            (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable long(i)))();
+            (() @trusted => handle.send(dartModifyRR(), cast(immutable) insert_recorder))();
 
-            auto modify = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
+            auto new_bullseye = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document));
             check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");
@@ -232,7 +223,7 @@ class WriteAndReadFromDartDb {
 
             /// read the archives
             auto dart_indices = docs
-                .map!(d => supervisor_net.dartIndex(d))
+                .map!(d => supervisor_net.hash.dartIndex(d))
                 .array;
 
             auto read_request = dartReadRR();

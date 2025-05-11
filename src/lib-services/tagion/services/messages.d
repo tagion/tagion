@@ -2,15 +2,18 @@
 module tagion.services.messages;
 import tagion.actor.actor : Msg, Request;
 
-/// Msg Type sent to actors who receive the document
+/// [FROM: rpcserver, TO: HiRPCVerifier] HiRPC Document
 alias inputDoc = Msg!"inputDoc";
-/// Msg type sent to receiver task along with a hirpc
+
+/// [FROM: HiRPCVerifier, TO: Collector] Signed hirpc
 alias inputHiRPC = Msg!"inputHiRPC";
 
-/// [FROM: HiRPC Verifier, TO: Collector] Contracts sent to the collector from HiRPC Verifier
-alias inputContract = Msg!"contract";
 
-/// [FROM: Epoch Creator, TO: Collector] Contract received from other nodes.
+/**
+[FROM: Epoch Creator, TO: Collector]
+[FROM: Collector, TO: TVM]
+Contracts that have gone through consensus
+ */
 alias consensusContract = Msg!"contract-C";
 
 /// [FROM: Collector, TO: TVM] Verified signed contract with inputs sent to TVM.
@@ -24,6 +27,12 @@ alias Payload = Msg!"Payload";
 
 /// [FROM: Epoch Creator, TO: Transcript] Epoch containing outputs. 
 alias consensusEpoch = Msg!"consensus_epoch";
+
+/// [FROM: Supervisor, TO: transcript] Tell the transcript to stop at a specific epoch
+alias EpochShutdown = Msg!"epoch_shutdown";
+
+/// [FROM: Transcript, TO: EpochCommit] Sent when finalizing an epoch
+alias EpochCommitRR = Request!("EpochCommit", immutable(long));
 
 /// [FROM: NodeInterface, TO: Epoch Creator] Receive wavefront from NodeInterface
 alias WavefrontReq = Request!"ReceivedWavefront";
@@ -43,18 +52,16 @@ enum NodeAction {
 alias NodeError = Msg!"node_error";
 alias NNGError = Msg!"nng_error";
 
-/// [FROM: DART, TO: Replicator] Send the produced recorder for replication
+/// [FROM: EpochCommit, TO: Replicator] Send the produced recorder for recorderchain
 alias SendRecorder = Msg!"SendRecorder";
+
 alias readRecorderRR = Request!"readRecorder";
 alias syncRecorderRR = Request!"recorderSync";
 alias repHiRPCRR = Request!"replicatorHiRPCRequest";
 alias repFilePathRR = Request!"repFilePath";
 
-/// [FROM: DART, TO: TRT] send the recorder to the trt for update
+/// [FROM: EpochCommit, TO: TRT] send the recorder to the trt for update
 alias trtModify = Msg!"trtModify";
-
-/// [FROM: Transcript, TO: TRT] send the signed contract to the TRT for storing contract
-alias trtContract = Msg!"trtContract";
 
 alias trtHiRPCRR = Request!"trtRead"; // trt.dartCRUD: [dartRead, dartCheckRead, dartRim]
 alias dartReadRR = Request!"dartRead"; // dartRead Request
@@ -67,5 +74,3 @@ alias dartHiRPCRR = Request!"dartHiRPCRequest"; // dartCRUD HiRPC commands: [dar
 alias dartCompareRR = Request!"dartCompare";
 alias dartSyncRR = Request!"dartSync";
 alias dartReplayRR = Request!"dartReplay";
-
-alias EpochShutdown = Msg!"epoch_shutdown"; // Tell the transcript to stop at a specific epoch

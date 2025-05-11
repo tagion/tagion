@@ -2,7 +2,7 @@ module tagion.hashgraph.Round;
 
 import std.datetime; // Date, DateTime
 import std.algorithm;
-import std.exception : assumeWontThrow;
+import std.exception;
 import std.array : array;
 import std.conv;
 import std.format;
@@ -128,21 +128,18 @@ class Round {
             .map!(n => _events[n])
             .filter!(e => e !is null)
             .map!(e => cast(Buffer) e.fingerprint);
-        return assumeWontThrow(net.calcHash(xor(fingerprints)));
+        return assumeWontThrow(net.calc(xor(fingerprints)));
     }
 
-    final auto witnesses() @trusted const pure nothrow {
-        import std.algorithm;
-        import tagion.utils.Miscellaneous;
-
-        auto fingerprints = _valid_witness[]
-            .map!(n => _events[n])
-            .filter!(e => e !is null)
-            .map!(e => Fingerprint(e.fingerprint))
-            .array
-            .sort!("a < b");
-
-        return fingerprints;
+    final immutable(Fingerprint)[] witnesses() const pure nothrow {
+        auto fingerprints =
+            _events
+                .filter!(e => e !is null)
+                .map!(e => Fingerprint(e.fingerprint))
+                .array;
+        fingerprints.sort!("a < b");
+        assert(isSorted(fingerprints));
+        return (() @trusted => fingerprints.assumeUnique)();
     }
 
     /**
@@ -173,7 +170,7 @@ class Round {
                     break;
                 }
                 not_decided_mask &= BitMask(not_decided_mask[]
-                    .filter!(n => r.events[n] is null));
+                        .filter!(n => r.events[n] is null));
             }
             const number_of_future_rounds = list_majority_rounds.walkLength;
             if (!not_decided_mask.empty && (number_of_future_rounds < 4)) {
@@ -301,7 +298,7 @@ class Round {
     package void remove(const(Event) event) nothrow
     in {
         assert(event.isEva || _events[event.node_id] is event,
-        "This event does not exist in round at the current node so it can not be remove from this round");
+                "This event does not exist in round at the current node so it can not be remove from this round");
         assert(event.isEva || !empty, "No events exists in this round");
     }
     do {
@@ -634,7 +631,7 @@ class Round {
                 const epoch_number = round_to_be_decided.number; /// Should be the epoch number not the round number
                 const vote = RoundVote(epoch_number,
                         cast(uint)(round_to_be_decided._valid_witness.count),
-                        round_to_be_decided.pattern(net),
+                        round_to_be_decided.pattern(net.hash),
                         hashgraph.channel);
                 hashgraph.refinement.queue.write(assumeWontThrow(vote.toDoc));
                 if (!_round_to_be_collected) {
@@ -663,7 +660,7 @@ class Round {
                     }
                 }
 
-                const _pattern = _round_to_be_collected.pattern(hashgraph.hirpc.net);
+                const _pattern = _round_to_be_collected.pattern(hashgraph.hirpc.net.hash);
                 const round_votes_count = _round_to_be_collected._round_votes
                     .filter!(evote => evote !is null)
                     .filter!(evote => _pattern == evote.pattern)
@@ -729,7 +726,7 @@ class Round {
             auto witness_event_in_round = r._events.filter!(e => e !is null);
             const _name = format("%s%12s%s",
                     level_color(r[].drop(1)
-                .until!(r => !r.majority).count), hashgraph.name, RESET);
+                    .until!(r => !r.majority).count), hashgraph.name, RESET);
             Event[] majority_seen_from_famous(R)(R famous_witness_in_round) @safe if (isInputRange!R) {
                 Event[] event_list;
                 event_list.length = hashgraph.node_size * hashgraph.node_size;
@@ -769,12 +766,12 @@ class Round {
                 done = true;
                 foreach (e; event_front.filter!(e => e !is null)) {
                     foreach (e_father; e[]
-                        .until!(e => !e || e.round_received)
-                        .filter!(e => e._father)
-                        .map!(e => e._father)
-                        .filter!(e_father => !event_front[e_father.node_id] ||
-                        e_father.order > event_front[e_father.node_id].order)
-                    ) {
+                            .until!(e => !e || e.round_received)
+                            .filter!(e => e._father)
+                            .map!(e => e._father)
+                            .filter!(e_father => !event_front[e_father.node_id] ||
+                                e_father.order > event_front[e_father.node_id].order)
+                        ) {
                         done = false;
                         event_front[e_father.node_id] = e_father;
                     }
@@ -789,7 +786,7 @@ class Round {
             auto event_collection = event_front
                 .filter!(e => e !is null)
                 .map!(e => e[]
-                .until!(e => e.round_received !is null))
+                        .until!(e => e.round_received !is null))
                 .joiner
                 .array;
             event_collection.each!(e => e.round_received = r);

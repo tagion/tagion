@@ -10,7 +10,7 @@ import std.stdio;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.Types;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DARTBasic;
 import tagion.hibon.Document;
@@ -24,7 +24,7 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.StdTime;
 
-@recordType("DeliveryOrder") 
+@recordType("DeliveryOrder")
 struct DeliveryOrder {
 
     string vaccineType;
@@ -110,7 +110,7 @@ int _main(string[] args) {
         return 0;
     }
 
-    SecureNet net = new StdSecureNet;
+    SecureNet net = createSecureNet;
     if (password.init) {
         net.generateKeyPair("very secret");
     }
@@ -179,7 +179,7 @@ int _main(string[] args) {
     writefln("going to sign the doc!");
 
     Signature doc_signed = net.sign(doc).signature;
-    DARTIndex dart_index = net.dartIndex(doc);
+    DARTIndex dart_index = net.hash.dartIndex(doc);
 
     auto signed_delivery_event = DeliveryEvent(
             doc_signed,

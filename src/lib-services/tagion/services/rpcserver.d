@@ -1,6 +1,5 @@
-/// Service which exposes dart reads over a socket
-/// https://docs.tagion.org/tech/architecture/DartInterface
-module tagion.services.DARTInterface;
+/// Service which accepts HiRPC commands on REQ/REP socket
+module tagion.services.rpcserver;
 
 @safe:
 
@@ -21,6 +20,7 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.codes;
 import tagion.services.options;
+import tagion.services.rpcs;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
 import tagion.dart.DARTBasic;
@@ -28,7 +28,7 @@ import tagion.json.JSONRecord;
 
 import nngd;
 
-struct DARTInterfaceOptions {
+struct RPCServerOptions {
     import tagion.services.options : contract_sock_addr;
 
     string sock_addr;
@@ -50,32 +50,11 @@ struct DARTInterfaceOptions {
 
 }
 
-struct DartWorkerContext {
-    string dart_task_name;
+struct RPCWorkerContext {
     int worker_timeout;
     bool trt_enable;
-    string trt_task_name;
-    string rep_task_name;
+    TaskNames task_names;
 }
-
-/// Accepted methods for the DART.
-static immutable(string[]) accepted_dart_methods = [
-    Queries.dartRead,
-    Queries.dartRim,
-    Queries.dartBullseye,
-    Queries.dartCheckRead,
-];
-
-static immutable(string[]) accepted_rep_methods = [
-    "readRecorder"
-];
-
-pragma(msg, "deprecated search method should be removed from trt");
-/// All methods allowed for the TRT
-static immutable(string[]) accepted_trt_methods = accepted_dart_methods.map!(
-    m => "trt." ~ m).array ~ "search";
-/// All allowed methods for the DARTInterface
-static immutable all_dartinterface_methods = accepted_dart_methods ~ accepted_trt_methods ~ accepted_rep_methods;
 
 void set_response_doc(NNGMessage* msg, Document doc) @safe {
     msg.length = doc.full_size;
@@ -93,7 +72,26 @@ void set_error_msg(NNGMessage* msg, ServiceCode err_type, string extra_msg = "")
     set_response_doc(msg, sender.toDoc);
 }
 
-void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
+void task_request(alias MsgType)(string task_name, Duration timeout, Document doc, NNGMessage* msg) {
+    Tid tid = locate(task_name);
+    if (tid is Tid.init) {
+        msg.set_error_msg(ServiceCode.internal, "Missing Tid " ~ task_name);
+        return;
+    }
+
+    tid.send(MsgType(), doc);
+    bool response = receiveTimeout(timeout, (MsgType.Response _, Document d) { msg.set_response_doc(d); });
+    if (!response) {
+        msg.set_error_msg(ServiceCode.timeout);
+        writeln("Timeout on interface request");
+        return;
+    }
+
+    writeln("Interface successful response ", task_name);
+    return;
+}
+
+void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
     thread_attachThis();
     if (msg is null) {
         log.error("no message received");
@@ -104,15 +102,17 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         return;
     }
 
-    thisActor.task_name = format("dart_%s", thisTid);
-    auto cnt = cast(DartWorkerContext*) ctx;
+    thisActor.task_name = format("rpc_%s", thisTid);
+    auto cnt = cast(RPCWorkerContext*) ctx;
     if (cnt is null) {
         log.error("the context was nil");
         return;
     }
 
-    // we use an empty hirpc only for sending errors.
-    Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
+    // We copy here because the ubyte* nng gives us is not immutable
+    // In most cases this doesn't matter except for "submit" methods
+    // Because we are done using the document once the response is set
+    Document doc = msg.body_trim!(ubyte[])(msg.length).idup;
     msg.clear();
 
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
@@ -122,59 +122,43 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     }
     log("Kernel received a document");
 
+    // FIXME: hirpc responses should be signed
     const empty_hirpc = HiRPC(null);
 
     immutable receiver = empty_hirpc.receive(doc);
-    if (!(receiver.isMethod && all_dartinterface_methods.canFind(receiver.method.full_name))) {
-        msg.set_error_msg(ServiceCode.method, format("%s", all_dartinterface_methods));
+    if (!receiver.isMethod) {
+        msg.set_error_msg(ServiceCode.method, "Received HiRPC is not a method");
         return;
     }
 
-    const is_trt_req = accepted_trt_methods.canFind(receiver.method.full_name);
-    const is_rep_req = accepted_rep_methods.canFind(receiver.method.full_name);
-
-    string request_task_name;
-    if (is_trt_req) {
-        request_task_name = cnt.trt_task_name;
+    // Should we really allow unsigned methods?
+    string full_name = receiver.method.full_name;
+    if (accepted_trt_methods.canFind(full_name)) {
+        if(!cnt.trt_enable) {
+            msg.set_error_msg(ServiceCode.method, "Trt methods are not enabled");
+            return;
+        }
+        task_request!trtHiRPCRR(cnt.task_names.trt, cnt.worker_timeout.msecs, doc, msg);
     }
-    else if (is_rep_req) {
-        request_task_name = cnt.rep_task_name;
+    else if(accepted_rep_methods.canFind(full_name)) {
+        task_request!readRecorderRR(cnt.task_names.replicator, cnt.worker_timeout.msecs, doc, msg);
+    }
+    else if(accepted_dart_methods.canFind(full_name)) {
+        task_request!dartHiRPCRR(cnt.task_names.dart, cnt.worker_timeout.msecs, doc, msg);
+    }
+    else if(input_methods.canFind(full_name)) {
+        auto tid = locate(cnt.task_names.hirpc_verifier);
+        if(tid is Tid.init) {
+            msg.set_error_msg(ServiceCode.internal, "Missing task hirpcverifier");
+            return;
+        }
+        tid.send(inputDoc(), doc);
+        const response_ok = empty_hirpc.result(receiver, ResultOk());
+        set_response_doc(msg, response_ok.toDoc);
     }
     else {
-        request_task_name = cnt.dart_task_name;
+        msg.set_error_msg(ServiceCode.method, format("%s", all_public_rpc_methods));
     }
-
-    Tid tid = locate(request_task_name);
-
-    if (tid is Tid.init) {
-        msg.set_error_msg(ServiceCode.internal, "Missing Tid " ~ request_task_name);
-        return;
-    }
-
-    bool response;
-    if (is_trt_req) {
-        tid.send(trtHiRPCRR(), doc);
-    }
-    else if (is_rep_req) {
-        tid.send(readRecorderRR(), doc);
-    }
-    else {
-        tid.send(dartHiRPCRR(), doc);
-    }
-
-    response = receiveTimeout(cnt.worker_timeout.msecs,
-        (dartHiRPCRR.Response _, Document doc) { msg.set_response_doc(doc); },
-        (trtHiRPCRR.Response _, Document doc) { msg.set_response_doc(doc); },
-        (readRecorderRR.Response _, Document doc) { msg.set_response_doc(doc); }
-    );
-
-    if (!response) {
-        msg.set_error_msg(ServiceCode.timeout);
-        writeln("Timeout on interface request");
-        return;
-    }
-
-    writeln("Interface successful response ", receiver.method.full_name);
 }
 
 void err_cb(NNGMessage* msg, void* ctx, Exception e) @safe nothrow {
@@ -191,8 +175,8 @@ void err_cb(NNGMessage* msg, void* ctx, Exception e) @safe nothrow {
 import tagion.services.exception;
 import tagion.errors.tagionexceptions;
 
-struct DARTInterfaceService {
-    immutable(DARTInterfaceOptions) opts;
+struct RPCServer {
+    immutable(RPCServerOptions) opts;
     immutable(TRTOptions) trt_opts;
     immutable(TaskNames) task_names;
 
@@ -200,19 +184,17 @@ struct DARTInterfaceService {
     void task() @trusted {
         setState(Ctrl.STARTING);
 
-        DartWorkerContext ctx;
-        ctx.dart_task_name = task_names.dart;
+        RPCWorkerContext ctx;
         ctx.worker_timeout = opts.sendtimeout;
-        ctx.trt_task_name = task_names.trt;
         ctx.trt_enable = trt_opts.enable;
-        ctx.rep_task_name = task_names.replicator;
+        ctx.task_names = task_names;
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
         sock.recvtimeout = opts.receivetimeout.msecs;
         sock.sendbuf = opts.sendbuf;
 
-        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, opts.pool_size, &ctx, &err_cb);
+        NNGPool pool = NNGPool(&sock, &hirpc_cb, opts.pool_size, &ctx, &err_cb);
         scope (exit) {
             pool.shutdown();
         }

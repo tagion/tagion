@@ -1,12 +1,11 @@
 /// HiRPC utility for generating HiRPC requests
-@description("Create and inspect HiBON RPCs")
-module tagion.tools.hirpc;
+@description("Create and inspect HiBON RPCs") module tagion.tools.hirpc;
 
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tools = tagion.tools.toolsexception;
 import tagion.basic.Types : FileExtension, hasExtension;
-import tagion.services.DARTInterface : all_dartinterface_methods, accepted_dart_methods;
+import tagion.services.rpcs;
 import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
 import tagion.tools.dartutil.dartindex;
@@ -31,7 +30,7 @@ import std.typecons;
 
 @safe
 void strip_hirpc(const(HiRPC) hirpc, File fout, const(Document) doc, const bool info) {
-    const error_code = doc.valid(reserved : No.Reserved);
+    const error_code = doc.valid(reserved: No.Reserved);
     tools.check(error_code.isinit, format("HiRPC is not a valid document %s", error_code));
     const receiver = hirpc.receive(doc);
     if (receiver.isMethod) {
@@ -110,22 +109,22 @@ int _main(string[] args) {
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
                     [
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...]", program),
-                    "",
-                    "<option>:",
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...]", program),
+                "",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             writeln();
             examplesPrinter(program, [
                 ToolExample("Create a dartBullseye request and save it to a file",
-                            "-m dartBullseye -o bullseye_request.hibon"),
+                        "-m dartBullseye -o bullseye_request.hibon"),
             ]);
 
-            if(!method_name.empty) {
+            if (!method_name.empty) {
                 writeln();
             }
             return 0;
@@ -140,7 +139,7 @@ int _main(string[] args) {
         }
 
         if (response_switch || result_switch) {
-            const net = new StdSecureNet;
+            const net = createSecureNet;
             const hirpc = HiRPC(net);
             auto inputfiles = args[1 .. $].filter!(file => file.hasExtension(FileExtension.hibon));
             verbose("inputfile %s", inputfiles);
@@ -154,15 +153,15 @@ int _main(string[] args) {
             return 0;
         }
         const hirpc = HiRPC(null);
-        tools.check(!method_name.empty && all_dartinterface_methods.canFind(name()), format(
-                "method name not valid must be one of known %s", all_dartinterface_methods));
+        tools.check(!method_name.empty && all_public_rpc_methods.canFind(name()), format(
+                "method name not valid must be one of known %s", all_public_rpc_methods));
 
         auto get_indices(string[] _input) {
             return _input.map!(d => hash_net.dartIndexDecode(d));
         }
 
         auto get_pkey_indices(string[] _pkeys) {
-            return _pkeys.map!(p => hash_net.dartKey(HashNames.trt_owner, Pubkey(p.decode)));
+            return _pkeys.map!(p => hash_net.dartId(HashNames.trt_owner, Pubkey(p.decode)));
         }
 
         Document result;
@@ -176,7 +175,7 @@ int _main(string[] args) {
             auto res = chain(get_indices(dartindices), get_pkey_indices(pkeys));
             result = dartIndexCmd(name(), res, hirpc.relabel(domain())).toDoc;
             break;
-       case Queries.dartModify:
+        case Queries.dartModify:
             tools.check(args.length <= 2, format("Only one file name expected Not %s", args[1 .. $]));
             break;
         default:

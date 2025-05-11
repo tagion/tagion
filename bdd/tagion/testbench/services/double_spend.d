@@ -116,8 +116,8 @@ class SameInputsSpendOnOneContract {
         submask.subscribe(reject_collector);
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        writefln("---SUBMIT ADDRESS--- %s", opts.inputvalidator.sock_addr); 
-        sendHiRPC(opts.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        writefln("---SUBMIT ADDRESS--- %s", opts.rpcserver.sock_addr); 
+        sendHiRPC(opts.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
 
         return result_ok;
     }
@@ -194,8 +194,8 @@ class OneContractWhereSomeBillsAreUsedTwice {
         submask.subscribe(reject_collector);
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        writefln("---SUBMIT ADDRESS--- %s", opts.inputvalidator.sock_addr); 
-        sendHiRPC(opts.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        writefln("---SUBMIT ADDRESS--- %s", opts.rpcserver.sock_addr); 
+        sendHiRPC(opts.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
 
         return result_ok;
     }
@@ -255,8 +255,8 @@ class DifferentContractsDifferentNodes {
 
     @When("i send the contracts to the network at the same time.")
     Document time() {
-        sendHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
-        sendHiRPC(opts2.inputvalidator.sock_addr, wallet2_hirpc.submit(signed_contract2), wallet2_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
+        sendHiRPC(opts2.rpcserver.sock_addr, wallet2_hirpc.submit(signed_contract2), wallet2_hirpc);
         return result_ok;
     }
 
@@ -265,11 +265,11 @@ class DifferentContractsDifferentNodes {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         check(wallet1_amount == start_amount1 - fee, "did not receive tx");
         
-        auto wallet2_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2 - fee, "did not receive tx");
         return result_ok;
@@ -321,8 +321,8 @@ class SameContractDifferentNodes {
     @When("i send the same contract to two different nodes.")
     Document nodes() {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1_hirpc);
-        sendHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit,wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit,wallet1_hirpc);
+        sendHiRPC(opts2.rpcserver.sock_addr, hirpc_submit,wallet1_hirpc);
 
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
@@ -330,12 +330,12 @@ class SameContractDifferentNodes {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         const wallet1_expected = start_amount1-amount-fee;
         check(wallet1_amount == wallet1_expected, format("wallet 1 did not lose correct amount of money, should have %s, had %s", wallet1_expected, wallet1_amount));
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2+amount, "did not receive money");
         return result_ok;
@@ -409,7 +409,7 @@ class SameContractInDifferentEpochs {
         writefln("EPOCH NUMBER %s", epoch_number);
 
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit,wallet1_hirpc);
 
         long new_epoch_number;
         counter = 0;
@@ -428,7 +428,7 @@ class SameContractInDifferentEpochs {
         submask.unsubscribe(StdRefinement.epoch_created);
         writefln("EPOCH NUMBER updated %s", new_epoch_number);
         check(epoch_number < new_epoch_number, "epoch number not updated");
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
         
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
@@ -436,8 +436,8 @@ class SameContractInDifferentEpochs {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
@@ -514,7 +514,7 @@ class SameContractInDifferentEpochsDifferentNode {
         writeln("EPOCH NUMBER %s", epoch_number);
 
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
 
         long new_epoch_number;
         counter = 0;
@@ -534,7 +534,7 @@ class SameContractInDifferentEpochsDifferentNode {
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writeln("EPOCH NUMBER updated %s", new_epoch_number);
-        sendHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit, wallet1_hirpc);
+        sendHiRPC(opts2.rpcserver.sock_addr, hirpc_submit, wallet1_hirpc);
         
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
@@ -542,8 +542,8 @@ class SameContractInDifferentEpochsDifferentNode {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
@@ -611,8 +611,8 @@ class TwoContractsSameOutput {
     Document wallets() {
         auto hirpc_submit1 = wallet1_hirpc.submit(signed_contract1);
         auto hirpc_submit2 = wallet2_hirpc.submit(signed_contract2);
-        sendHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit1, wallet1_hirpc);
-        sendHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit2, wallet2_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, hirpc_submit1, wallet1_hirpc);
+        sendHiRPC(opts2.rpcserver.sock_addr, hirpc_submit2, wallet2_hirpc);
 
 
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
@@ -622,16 +622,16 @@ class TwoContractsSameOutput {
     @Then("only one output should be produced.")
     Document produced() {
         
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         const expected = start_amount1-amount-fee;
         check(wallet1_amount == expected, format("wallet 1 did not lose correct amount of money should have %s had %s", expected, wallet1_amount));
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts2.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts2.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2-amount-fee, "wallet 2 did not lose correct amount of money");
 
-        auto wallet3_amount = getWalletUpdateAmount(wallet3, opts1.dart_interface.sock_addr, wallet3_hirpc);
+        auto wallet3_amount = getWalletUpdateAmount(wallet3, opts1.rpcserver.sock_addr, wallet3_hirpc);
         writefln("WALLET 3 amount: %s", wallet3_amount);
         check(wallet3_amount == start_amount3+amount, format("did not receive money correct amount of money should have %s had %s", start_amount3+amount, wallet3_amount));
         return result_ok;
@@ -691,7 +691,7 @@ class BillAge {
 
     @When("i send the contract to the network.")
     Document network() {
-        sendHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 
@@ -699,12 +699,12 @@ class BillAge {
     Document rejected() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         auto wallet1_total_amount = wallet1.account.total;
         writefln("WALLET 1 TOTAL amount: %s", wallet1_total_amount);
         check(wallet1_total_amount == start_amount1, format("wallet total amount not correct. expected: %s, had %s", start_amount1, wallet1_total_amount));
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2, "should not receive new money");
         

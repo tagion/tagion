@@ -223,15 +223,63 @@ alias check = Check!WatException;
 
     alias Element = Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
-        //        auto _element=*mod[Section.ELEMENT];
         foreach (i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
+
             auto expr = e[];
             const local_indent = indent ~ spacer;
-            block(expr, local_indent ~ spacer);
-            output.writef("%s) func", local_indent);
-            foreach (f; e.funcs) {
-                output.writef(" %d", f);
+            switch (e.select) {
+            case 0:
+                block(expr, local_indent ~ spacer);
+                output.writef("%s) ", local_indent);
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 1:
+                output.writef("%s) ", local_indent);
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 2:
+                output.writef("%s (table %d) ", local_indent, e.tableidx);
+                block(expr, local_indent ~ spacer);
+                output.writef("func %(%d %)", e.funcs);
+
+                break;
+            case 3:
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 4:
+                block(expr, local_indent ~ spacer);
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 5:
+                block(expr, local_indent ~ spacer);
+                output.writef("func %(%d %)", e.funcs);
+                break;
+            case 6:
+                output.writefln("%s (table %d) ", local_indent, e.tableidx);
+                block(expr, local_indent ~ spacer);
+                foreach (exp; e.exprs) {
+                    output.writefln("%s(", local_indent);
+                    scope (exit) {
+                        output.writeln(")");
+                    }
+                    auto el = ExprRange(exp);
+                    block(el, local_indent ~ spacer);
+                }
+                break;
+            case 7:
+                foreach (exp; e.exprs) {
+                    output.writefln("%s(", local_indent);
+                    scope (exit) {
+                        output.writeln(")");
+                    }
+                    auto el = ExprRange(exp);
+                    block(el, local_indent ~ spacer);
+                }
+
+                break;
+            default:
+                check(0, format("Illegal element mode %d", e.select));
             }
             output.writeln(")");
         }
@@ -279,14 +327,6 @@ alias check = Check!WatException;
             }
             output.writefln(` "%s")`, d.base);
         }
-    }
-
-    version (none) string typeName(ref const ExprRange.IRElement elm) {
-        if (elm.argtypes is ExprRange.IRElement.IRArgType.TYPES) {
-            return typeName(elm.types);
-        }
-        return typeName(wasmstream.get!(Section.TYPE)[elm.idx].results);
-
     }
 
     private const(ExprRange.IRElement) block(ref ExprRange expr,
@@ -411,6 +451,9 @@ alias check = Check!WatException;
                         break;
                     case END:
                         return elm;
+                    case REF:
+                        check(0, "Ref instructions not supported yet");
+                        assert(0);
                     case ILLEGAL:
                         throw new WatException(format("Illegal instruction %02X", elm.code));
                     case SYMBOL:
@@ -434,35 +477,4 @@ alias check = Check!WatException;
         wasmstream(this);
         return output;
     }
-}
-
-version (none) unittest {
-    import std.exception : assumeUnique;
-    import std.file;
-    import std.stdio;
-
-    //      import std.file : fread=read, fwrite=write;
-
-    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file : _read = read;
-
-        auto data = cast(ubyte[]) _read(name, upTo);
-        // writefln("read data=%s", data);
-        return assumeUnique(data);
-    }
-
-    //    string filename="../tests/wasm/func_1.wasm";
-    //    string filename="../tests/wasm/global_1.wasm";
-    //    string filename="../tests/wasm/imports_1.wasm";
-    //    string filename="../tests/wasm/table_copy_2.wasm";
-    //    string filename="../tests/wasm/memory_2.wasm";
-    //    string filename="../tests/wasm/start_4.wasm";
-    //    string filename="../tests/wasm/address_1.wasm";
-    string filename = "../tests/wasm/data_4.wasm";
-    immutable code = fread(filename);
-    auto wasm = WasmReader(code);
-    //    auto dasm=Wdisasm(wasm);
-    Wat(wasm, stdout).serialize();
-    //    auto output=Wat
-
 }

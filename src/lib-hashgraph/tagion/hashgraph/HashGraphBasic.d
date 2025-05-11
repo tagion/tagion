@@ -27,8 +27,9 @@ import tagion.utils.BitMask;
 import tagion.utils.StdTime;
 
 void __write(Args...)(string fmt, Args args) @trusted nothrow pure {
-    debug(HASHGRAPH) {
+    debug (HASHGRAPH) {
         import tagion.basic.Debug : print = __write;
+
         print(fmt, args);
     }
 }
@@ -224,7 +225,7 @@ struct EventPackage {
                 this.signature=_this.signature;
                 this.pubkey=_this.pubkey;
                 this.event_body=_this.event_body;
-                fingerprint=cast(Buffer)net.calcHash(_this.event_body);
+                fingerprint=cast(Buffer)net.hash.calc(_this.event_body);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
                 consensus_check(net.verify(Fingerprint(fingerprint), signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
@@ -244,7 +245,7 @@ struct EventPackage {
             this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) immutable pure {
                 pubkey=pkey;
                 event_body=ebody;
-                auto _fingerprint=net.calcHash(event_body);
+                auto _fingerprint=net.hash.calc(event_body);
                 fingerprint = cast(Buffer) _fingerprint;
                 this.signature=signature;
                 consensus_check(net.verify(_fingerprint, signature, pubkey), 
@@ -255,11 +256,11 @@ struct EventPackage {
 
 alias Tides = int[Pubkey];
 
-version(GOD_CONTRACT) {
-    enum Wavefront_name="Wavefront_name";
+version (GOD_CONTRACT) {
+    enum Wavefront_name = "Wavefront_name";
 }
 else {
-    enum Wavefront_name="Wavefront";
+    enum Wavefront_name = "Wavefront";
 }
 ///
 @recordType(Wavefront_name)

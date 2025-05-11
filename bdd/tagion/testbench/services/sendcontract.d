@@ -50,8 +50,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     Options opts;
     StdSecureWallet[] wallets;
-    string dart_interface_sock_addr;
-    string inputvalidator_sock_addr;
+    string rpcserver_sock_addr;
     TagionCurrency fee;
     TagionCurrency amount;
     TagionCurrency start_amount;
@@ -59,13 +58,11 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     StdSecureWallet wallet1;
     StdSecureWallet wallet2;
 
-    this(Options opts, StdSecureWallet[] wallets, string dart_interface_sock_addr, string inputvalidator_sock_addr, TagionCurrency start_amount) {
+    this(Options opts, StdSecureWallet[] wallets, string rpcserver_sock_addr, TagionCurrency start_amount) {
         this.opts = opts;
         this.wallets = wallets;
-        this.dart_interface_sock_addr = dart_interface_sock_addr;
+        this.rpcserver_sock_addr = rpcserver_sock_addr;
         this.start_amount = start_amount;
-        this.inputvalidator_sock_addr = inputvalidator_sock_addr;
-
     }
 
     bool epoch_on_startup;
@@ -85,7 +82,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         foreach (ref wallet; wallets) {
             check(wallet.isLoggedin, "the wallet must be logged in!!!");
             const hirpc = HiRPC(wallet.net);
-            auto amount = getWalletUpdateAmount(wallet, dart_interface_sock_addr, hirpc);
+            auto amount = getWalletUpdateAmount(wallet, rpcserver_sock_addr, hirpc);
             check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
             check(wallet.calcTotal(wallet.account.bills) == start_amount, "money not correct");
         }
@@ -104,7 +101,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         import tagion.hibon.HiBONtoText;
 
         wallet1.account.bills
-            .each!(b => writefln("WALLET1 %s %s", wallet1.net.calcHash(b).encodeBase64, b.toPretty));
+            .each!(b => writefln("WALLET1 %s %s", wallet1.net.hash.calc(b).encodeBase64, b.toPretty));
         SignedContract signed_contract;
         check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet payment");
         check(signed_contract !is SignedContract.init, "contract not updated");
@@ -115,7 +112,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
-        auto result = sendHiRPC(inputvalidator_sock_addr, hirpc_submit, wallet1_hirpc);
+        auto result = sendHiRPC(rpcserver_sock_addr, hirpc_submit, wallet1_hirpc);
         writefln("SUBMIT hirpc result: %s", result.toDoc.toPretty);
 
         return result_ok;
@@ -130,7 +127,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         writeln("WALLET 1 request");
 
         const hirpc = HiRPC(wallet1.net);
-        auto wallet1_amount = getWalletUpdateAmount(wallet1, dart_interface_sock_addr, hirpc);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, rpcserver_sock_addr, hirpc);
         check(wallet1_amount < start_amount, format("no money withdrawn had %s", wallet1_amount));
 
         auto wallet1_expected = start_amount - amount - fee;
@@ -144,7 +141,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     Document payment() @trusted {
         check(epoch_on_startup, "No epoch on startup");
         const hirpc = HiRPC(wallet2.net);
-        auto wallet2_amount = getWalletUpdateAmount(wallet2, dart_interface_sock_addr, hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, rpcserver_sock_addr, hirpc);
         check(wallet2_amount > 0.TGN, "did not receive money");
         check(wallet2_amount == start_amount + amount, "did not receive correct amount of tagion");
         writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));

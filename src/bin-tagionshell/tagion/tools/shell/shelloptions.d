@@ -58,8 +58,7 @@ struct ShellOptions {
 
     /// Gives a new node address each time it is called
     string node_contract_addr() nothrow {
-        uint node_number = contract_robin.next(number_of_nodes);
-        return contract_sock_addr(assumeWontThrow(format(mode0_prefix, node_number)) ~ contract_addr_prefix);
+        return node_dart_addr;
     }
 
     /// Gives a new node address each time it is called

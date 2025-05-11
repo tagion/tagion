@@ -7,7 +7,6 @@ struct TaskNames {
 
     string program = "tagion";
     string supervisor = "supervisor";
-    string inputvalidator = "inputvalidator";
     string dart = "dart";
     string hirpc_verifier = "hirpc_verifier";
     string collector = "collector";
@@ -15,10 +14,11 @@ struct TaskNames {
     string tvm = "tvm";
     string epoch_creator = "epoch_creator";
     string replicator = "replicator";
-    string dart_interface = "dartinterface";
+    string rpcserver = "rpcserver";
     string trt = "trt";
     string node_interface = "node_interface";
     string dart_synchronization = "dart_synchronization";
+    string epoch_commit = "epoch_commit";
 
     mixin JSONRecord;
 

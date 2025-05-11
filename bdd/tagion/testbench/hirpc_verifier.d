@@ -13,7 +13,7 @@ import tagion.utils.pretend_safe_concurrency;
 mixin Main!(_main);
 
 int _main(string[] _) {
-    immutable SecureNet net = (() @trusted => cast(immutable) new StdSecureNet())();
+    immutable SecureNet net = (() @trusted => cast(immutable) createSecureNet)();
 
     enum hirpc_verifier_name = __MODULE__ ~ "_hirpc_verifier";
     enum hirpc_verifier_rejected = __MODULE__ ~ "_hirpc_verifier_reject";

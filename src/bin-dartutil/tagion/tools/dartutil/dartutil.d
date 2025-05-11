@@ -22,7 +22,7 @@ import CRUD = tagion.dart.DARTcrud; // : dartRead, dartModify;
 
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.gossip.AddressBook;
@@ -143,19 +143,19 @@ int _main(string[] args) {
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] file.drt <files>", program),
-                    "",
-                    "Example synchronizing src.drt on to dst.drt",
-                    format("%s --sync src.drt dst.drt", program),
-                    "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] file.drt <files>", program),
+                "",
+                "Example synchronizing src.drt on to dst.drt",
+                format("%s --sync src.drt dst.drt", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
@@ -184,7 +184,7 @@ int _main(string[] args) {
             }
         }
 
-        SecureNet net;
+        HashNet net;
 
         tools.check(!dart_filenames.empty, "No dart files were specified");
 
@@ -199,9 +199,7 @@ int _main(string[] args) {
             net = new DARTFakeNet();
         }
         else {
-            net = new StdSecureNet;
-            // fixme:? Modify does not work without a keypair
-            net.generateKeyPair("dummy_passphrase");
+            net = new StdHashNet;
         }
 
         if (!test_dart.empty) {
@@ -238,13 +236,11 @@ int _main(string[] args) {
     return 0;
 }
 
-int dartutil_operation(Operation op, string dartfilename, const SecureNet net, ref File fout) {
+int dartutil_operation(Operation op, string dartfilename, const HashNet net, ref File fout) {
     with (op) {
         if (initialize) {
             const flat = (flat_disable) ? No.flat : Yes.flat;
-            DART.create(filename : dartfilename, net:
-                    net, flat:
-                    flat);
+            DART.create(filename: dartfilename, net: net, flat: flat);
         }
 
         Exception dart_exception;
@@ -273,16 +269,19 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
             db.traverse(&dartTraverse, sectors, depth);
         }
 
-        const hirpc = HiRPC(net);
+        import tagion.crypto.SecureNet : StdSecureNet;
+
+        StdSecureNet secure_net; // This should be initialized if the HiPRC respose should be signed 
+        const hirpc = HiRPC(secure_net);
 
         if (dartrpc) {
             //tools.check(!inputfilename.empty, "Missing input file for DART-RPC");
-            File fin=stdin;
+            File fin = stdin;
             if (!inputfilename.empty) {
                 fin = File(inputfilename, "r");
             }
-            auto hrange=HiBONRange(fin);
-            foreach(doc; hrange) {
+            auto hrange = HiBONRange(fin);
+            foreach (doc; hrange) {
                 const received = hirpc.receive(doc);
                 const sender = db(received);
                 fout.fwrite(sender);
@@ -356,8 +355,8 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
             auto input_file_range = HiBONRange(input_file, max_size: 0);
             auto factory = RecordFactory(net);
             auto recorder_range = input_file_range;
-            foreach(ref doc; recorder_range) {
-                if(doc.isRecord!(RecordFactory.Recorder)) {
+            foreach (ref doc; recorder_range) {
+                if (doc.isRecord!(RecordFactory.Recorder)) {
                     db.modify(factory.recorder(doc));
                 }
             }
@@ -367,7 +366,7 @@ int dartutil_operation(Operation op, string dartfilename, const SecureNet net, r
     return 0;
 }
 
-int dartutil_test(Operation op, const SecureNet net, string[] dart_filenames, string test_dart) {
+int dartutil_test(Operation op, const HashNet net, string[] dart_filenames, string test_dart) {
     import std.random;
     import std.datetime.stopwatch;
 
@@ -436,7 +435,7 @@ int dartutil_test(Operation op, const SecureNet net, string[] dart_filenames, st
 
 }
 
-int dartutil_sync(Operation op, string[] dart_filenames, const SecureNet net) {
+int dartutil_sync(Operation op, string[] dart_filenames, const HashNet net) {
     Exception dart_exception;
     tools.check(dart_filenames.length == 2,
             "A source and a destination dart file is required for the sync operation");

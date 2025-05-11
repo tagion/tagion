@@ -1,5 +1,4 @@
-@description("Execute and test smart contracts")
-module tagion.tools.tvmutil.tvmutil;
+@description("Execute and test smart contracts") module tagion.tools.tvmutil.tvmutil;
 
 import core.time;
 
@@ -32,7 +31,7 @@ int _main(string[] args) {
     try {
         return __main(args);
     }
-    catch(Exception e) {
+    catch (Exception e) {
         error(e);
         return 1;
     }
@@ -72,15 +71,15 @@ int __main(string[] args) {
             if (main_args.helpWanted) {
                 defaultGetoptPrinter(
                         [
-                        "Documentation: https://docs.tagion.org/",
-                        "",
-                        "Usage:",
-                        format("%s [<option>...] file.wasm [file.hibon ...] ", program),
-                        "",
+                    "Documentation: https://docs.tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] file.wasm [file.hibon ...] ", program),
+                    "",
 
-                        "<option>:",
+                    "<option>:",
 
-                        ].join("\n"),
+                ].join("\n"),
                         main_args.options);
                 return 0;
             }
@@ -208,35 +207,35 @@ int __main(string[] args) {
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
                     [
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] contract.hibon [file.hibon ...] ", program),
-                    "",
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] contract.hibon [file.hibon ...] ", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
 
-        if(sample_contract) {
-            auto neta = new StdSecureNet;
+        if (sample_contract) {
+            auto neta = createSecureNet;
             neta.generateKeyPair("a");
-            auto netb = new StdSecureNet;
+            auto netb = createSecureNet;
             netb.generateKeyPair("b");
 
             const output_bill = TagionBill(800.TGN, currentTime, netb.pubkey, []);
             const payscript = PayScript([output_bill]);
 
             const input_bill = TagionBill(1000.TGN, currentTime, neta.pubkey, []);
-            const s_contract = sign([neta], [neta.dartIndex(input_bill)], [], payscript.toDoc);
+            const s_contract = sign([neta], [neta.hash.dartIndex(input_bill)], [], payscript.toDoc);
             fwrite("sample_signed_contract.hibon", s_contract);
             stderr.writeln("saved sample_signed_contract.hibon");
             fwrite("sample_input_bill.hibon", input_bill);
             stderr.writeln("saved sample_input_bill.hibon");
-            
+
             return 0;
         }
 
@@ -246,32 +245,32 @@ int __main(string[] args) {
 
         string[] contract_filenames;
 
-        foreach(arg; args) {
-            if(arg.hasExtension(FileExtension.hibon)) {
+        foreach (arg; args) {
+            if (arg.hasExtension(FileExtension.hibon)) {
                 contract_filenames ~= arg;
             }
         }
 
         File[] contract_files;
-        foreach(filename; contract_filenames) {
+        foreach (filename; contract_filenames) {
             contract_files ~= File(filename, "r");
         }
-        if(contract_filenames.empty) {
+        if (contract_filenames.empty) {
             contract_files ~= stdin();
         }
 
         immutable(SignedContract)*[] s_contracts;
-        foreach(file; contract_files) {
+        foreach (file; contract_files) {
             auto hibonrange = HiBONRange(file);
-            foreach(doc; hibonrange) {
-                if(doc.isRecord!SignedContract) {
+            foreach (doc; hibonrange) {
+                if (doc.isRecord!SignedContract) {
                     s_contracts ~= new immutable(SignedContract)(doc);
                 }
                 // read hirpcs with signed contracts, collected contracts as well...
             }
         }
 
-        if(!dart_filename.empty) {
+        if (!dart_filename.empty) {
             assert(0, "No work yet, read dartfile");
             /* import tagion.services.DART; */
             /* import tagion.services.collector; */
@@ -301,21 +300,22 @@ int __main(string[] args) {
         else {
             Document[] inputs;
             Document[] reads;
-            foreach(input; contract_inputs) {
+            foreach (input; contract_inputs) {
                 inputs ~= fread(input);
             }
-            foreach(read; contract_reads) {
+            foreach (read; contract_reads) {
                 inputs ~= fread(read);
             }
-            foreach(contract; s_contracts) {
-                collected_contracts ~= new immutable(CollectedSignedContract)(contract, inputs.assumeUnique, reads.assumeUnique);
+            foreach (contract; s_contracts) {
+                collected_contracts ~= new immutable(CollectedSignedContract)(contract, inputs.assumeUnique, reads
+                        .assumeUnique);
             }
         }
 
         ContractExecution engine;
-        foreach(c_contract; collected_contracts) {
+        foreach (c_contract; collected_contracts) {
             const executed = engine(c_contract).get;
-            foreach(output; executed.outputs)
+            foreach (output; executed.outputs)
                 writeln(output.toPretty);
         }
         return 0;

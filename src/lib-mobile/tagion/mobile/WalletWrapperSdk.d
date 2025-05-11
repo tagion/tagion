@@ -67,14 +67,18 @@ extern (C) {
         DART_UPDATE_REQUIRED = 16,
     }
 
-    version(unittest) { } else
-    export const(char)* _tagion_revision() {
+    version (unittest) {
+    }
+    else
+        export const(char)* _tagion_revision() {
         return revision_text.toStringz;
     }
-    
+
     // Staritng d-runtime
-    version(unittest) { } else
-    export static int64_t _start_rt() {
+    version (unittest) {
+    }
+    else
+        export static int64_t _start_rt() {
         if (__runtimeStatus is DrtStatus.DEFAULT_STS) {
             __runtimeStatus = DrtStatus.STARTED;
             return rt_init;
@@ -83,8 +87,10 @@ extern (C) {
     }
 
     // Terminating d-runtime
-    version(unittest) { } else
-    export static int64_t _stop_rt() {
+    version (unittest) {
+    }
+    else
+        export static int64_t _stop_rt() {
         if (__runtimeStatus is DrtStatus.STARTED) {
             __runtimeStatus = DrtStatus.TERMINATED;
             return rt_term;
@@ -372,7 +378,7 @@ extern (C) {
 
     export uint request_trt_update(uint8_t* requestPtr) {
         if (!__wallet_storage.wallet.isLoggedin()) {
-        
+
             return NOT_LOGGED_IN;
         }
         const request = __wallet_storage.wallet.readIndicesByPubkey();
@@ -605,7 +611,7 @@ extern (C) {
                 if (import_doc.isRecord!(Cipher.CipherDocument)) {
                     Cipher cipher;
                     unencrypted_doc = cipher.decrypt(__wallet_storage.wallet.net, Cipher.CipherDocument(import_doc));
-                } 
+                }
 
                 if (unencrypted_doc.isRecord!AccountDetails) {
                     // not encrypted account backup
@@ -614,6 +620,7 @@ extern (C) {
                 else {
                     import tagion.wallet.prior.AccountDetails : PriorAccountDetails = AccountDetails;
                     import tagion.wallet.prior.migrate;
+
                     auto prior_account = PriorAccountDetails(unencrypted_doc);
 
                     auto new_account_doc = prior_account.migrate.toDoc;
@@ -623,7 +630,8 @@ extern (C) {
                 version (NET_HACK) {
                     __wallet_storage.read;
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 return ERROR;
             }
             return SUCCESS;
@@ -648,7 +656,7 @@ extern (C) {
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            auto dart_indices = contractDARTIndices(__wallet_storage.wallet.net, Document(contractBuffer));
+            auto dart_indices = contractDARTIndices(__wallet_storage.wallet.net.hash, Document(contractBuffer));
 
             foreach (dart_index; dart_indices) {
                 // Remove the bill in the activated list.
@@ -694,7 +702,7 @@ extern (C) {
         }
 
         immutable hirpc = cast(immutable)(hirpcPtr[0 .. hirpcLen]);
-        auto dart_indices = contractDARTIndices(__wallet_storage.wallet.net, Document(hirpc));
+        auto dart_indices = contractDARTIndices(__wallet_storage.wallet.net.hash, Document(hirpc));
         auto senderHiRPC = dartRead(dart_indices);
 
         const requestDocId = recyclerDoc.create(senderHiRPC.toDoc);
@@ -721,11 +729,13 @@ extern (C) {
             }
 
             const recorder_doc = receiver.message[Keywords.result].get!Document;
-            RecordFactory record_factory = RecordFactory(__wallet_storage.wallet.net);
+            RecordFactory record_factory = RecordFactory(__wallet_storage.wallet.net.hash);
             const recorder = record_factory.recorder(recorder_doc);
 
             // Collect all the dart indices from the recorder.
-            auto dart_indices = recorder[].filter!(a => a.filed.isRecord!TagionBill).map!(a => a.dart_index).array;
+            auto dart_indices = recorder[].filter!(a => a.filed.isRecord!TagionBill)
+                .map!(a => a.dart_index)
+                .array;
 
             foreach (dart_index; dart_indices) {
                 // Remove the bill in the activated list.
@@ -753,7 +763,7 @@ extern (C) {
             import std.algorithm : countUntil;
             import tagion.script.standardnames;
 
-            auto billsHashes = account.bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
+            auto billsHashes = account.bills.map!(b => cast(Buffer) hash_net.calc(b.toDoc.serialize));
 
             // Look for input matches. Return 0 from func if found.
             foreach (inputHash; inputs) {
@@ -808,12 +818,12 @@ extern (C) {
 
         if (count == 0) {
             hist.items = __wallet_storage.wallet.account.reverse_history.drop(from)
-                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net.hash))
                 .array;
         }
         else {
             hist.items = __wallet_storage.wallet.account.reverse_history.drop(from).take(count)
-                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net))
+                .map!(i => WHistoryItem(i, __wallet_storage.wallet.net.hash))
                 .array;
         }
 
@@ -837,7 +847,7 @@ struct WHistoryItem {
     DARTIndex index; // The index of the output bill.
 
     mixin HiBONRecord!(q{
-        this(HistoryItem item, const(SecureNet) net) {
+        this(HistoryItem item, const(HashNet) hash) {
             this.amount = item.bill.value.units;
             this.balance = item.balance.units;
             this.fee = item.fee.units;
@@ -845,7 +855,7 @@ struct WHistoryItem {
             this.type = item.type;
             this.timestamp = item.bill.time;
             this.pubkey = item.bill.owner;
-            this.index = dartIndex(net, item.bill);
+            this.index = dartIndex(hash, item.bill);
         }
     });
 }
@@ -1138,7 +1148,6 @@ unittest {
 
 }
 
-
 alias Store = WalletStorage;
 struct WalletStorage {
     StdSecureWallet wallet;
@@ -1154,6 +1163,7 @@ struct WalletStorage {
 
         wallet_data_path = walletDataPath.idup;
         import std.file;
+
         if (!wallet_data_path.exists) {
             wallet_data_path.mkdirRecurse;
         }
@@ -1190,7 +1200,7 @@ struct WalletStorage {
             try {
                 _account = path(accountfile).fread!AccountDetails;
             }
-            catch(HiBONRecordTypeException) {
+            catch (HiBONRecordTypeException) {
                 import prior = tagion.wallet.prior.AccountDetails;
                 import tagion.wallet.prior.migrate;
 

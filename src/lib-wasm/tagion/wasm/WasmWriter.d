@@ -5,11 +5,12 @@ import std.outbuffer;
 import std.traits;
 import std.algorithm;
 import std.array : join;
-import std.exception : assumeUnique;
+import std.exception;
 import std.format;
 import std.meta : Replace, staticMap;
-import std.range : lockstep;
-import std.range.primitives : isInputRange;
+import std.range;
+
+//import std.range.primitives : isInputRange;
 import std.stdio;
 import std.typecons : Tuple;
 
@@ -19,7 +20,23 @@ import tagion.wasm.WasmException;
 import tagion.wasm.WasmReader;
 import tagion.hibon.HiBONRecord : exclude;
 
-@safe class WasmWriter {
+@safe:
+void writeb(T)(ref OutBuffer bout, T x) pure if (isIntegral!T) {
+    bout.write(LEB128.encode(x));
+}
+
+void writeb(R)(ref OutBuffer bout, R r) pure
+if (isInputRange!R && isIntegral!(ElementType!R)) {
+    static if (hasLength!R) {
+        bout.writeb(r.length);
+    }
+    else {
+        bout.writeb(r.wakeLength);
+    }
+    r.each!(e => bout.write(LEB128.encode(e)));
+}
+
+class WasmWriter {
 
     alias ReaderSections = WasmReader.Sections;
 
@@ -277,10 +294,16 @@ import tagion.hibon.HiBONRecord : exclude;
             Limits lim;
             uint from;
             uint to;
-            this(ref const(WasmReader.Limit) l) {
+            this(ref const(WasmReader.Limit) l) pure nothrow {
                 lim = l.lim;
                 from = l.from;
                 to = l.to;
+            }
+
+            this(const Limits lim, const uint from, const uint to) pure nothrow {
+                this.lim = lim;
+                this.to = to;
+                this.from = from;
             }
 
             void serialize(ref OutBuffer bout) const {
@@ -639,15 +662,78 @@ import tagion.hibon.HiBONRecord : exclude;
 
         struct ElementType {
             uint tableidx;
+            uint elemkind;
             @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[] funcs;
+            immutable(ubyte[])[] exprs;
+            Types reftype;
+            ElementMode mode;
             this(ref const(ReaderSecType!(Section.ELEMENT)) e) {
                 tableidx = e.tableidx;
                 expr = e.expr;
                 funcs = e.funcs;
             }
 
-            mixin Serialize;
+            @property uint select() const pure nothrow @nogc {
+                final switch (mode) {
+                case ElementMode.PASSIVE:
+                    if (exprs) {
+                        return 5;
+                    }
+                    return 1;
+                case ElementMode.ACTIVE:
+                    return 0;
+                case ElementMode.DECLARATIVE:
+                    return 3;
+                }
+                assert(0);
+            }
+
+            void serialize(ref OutBuffer bout) const {
+                bout.writeb(select);
+                __write("WasmWriter select %d", select);
+                switch (select) {
+                case 0: /// 0:u32 e:expr y*:vec(funcidx)
+                    bout.write(expr);
+                    bout.writeb(funcs);
+                    break;
+                case 1: /// 1:u32 et:elemkind y*:vec(funcidx)
+                    bout.writeb(elemkind);
+                    bout.writeb(funcs);
+                    break;
+                case 2: /// 2:u32 x:tableidx e:expr et:elemkind y*:vec(funcidx)
+                    bout.writeb(tableidx);
+                    bout.write(expr);
+                    bout.writeb(elemkind);
+                    bout.writeb(funcs);
+                    break;
+                case 3: /// 3:u32 et:elemkind y*:vec(funcidx)
+                    bout.writeb(elemkind);
+                    bout.writeb(funcs);
+                    break;
+                case 4: /// 4:u32 e:expr el*:vec(funcidx)
+                    bout.write(expr);
+                    bout.writeb(funcs);
+                    break;
+                case 5: /// 5:u32 et:reftype el*:vec(funcidx)
+                    bout.write(cast(ubyte) reftype);
+                    bout.writeb(funcs);
+                    break;
+                case 6: /// 6:u32 x:tableidx e:expr et:reftype el*:vec(expr)
+                    bout.writeb(tableidx);
+                    bout.writeb(expr);
+                    bout.write(cast(ubyte) reftype);
+                    exprs.each!(e => bout.write(e));
+                    break;
+                case 7: /// 7:u32 et:reftype el*:vec(expr)
+                    bout.writeb(reftype);
+                    exprs.each!(e => bout.writeb(e));
+                    break;
+                default:
+                    assert(0, assumeWontThrow(format("Element mode %d not supported", mode)));
+
+                }
+            }
         }
 
         alias Element = SectionT!(ElementType);
@@ -755,39 +841,4 @@ import tagion.hibon.HiBONRecord : exclude;
         alias Data = SectionT!(DataType);
 
     }
-}
-
-version (none) unittest {
-    import std.exception : assumeUnique;
-    import std.file;
-    import std.stdio;
-    import tagion.wavm.Wast;
-
-    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file : _read = read;
-
-        auto data = cast(ubyte[]) _read(name, upTo);
-        // writefln("read data=%s", data);
-        return assumeUnique(data);
-    }
-
-    //    string filename="../tests/wasm/func_1.wasm";
-    string filename = "../tests/wasm/global_1.wasm";
-    //    string filename="../tests/wasm/imports_1.wasm";
-    //    string filename="../tests/wasm/table_copy_2.wasm";
-    //    string filename="../tests/wasm/memory_2.wasm";
-    //    string filename="../tests/wasm/start_4.wasm";
-    //    string filename="../tests/wasm/address_1.wasm";
-    //    string filename="../tests/wasm/data_4.wasm";
-    //    string filename="../tests/web_gas_gauge.wasm";//wasm/imports_1.wasm";
-    immutable read_data = fread(filename);
-    auto wasm_reader = WasmReader(read_data);
-    Wast(wasm_reader, stdout).serialize();
-
-    writefln("wasm_reader.serialize=%s", wasm_reader.serialize);
-    auto wasm_writer = WasmWriter(wasm_reader);
-
-    writeln("wasm_writer.serialize");
-    writefln("wasm_writer.serialize=%s", wasm_writer.serialize);
-    assert(wasm_reader.serialize == wasm_writer.serialize);
 }

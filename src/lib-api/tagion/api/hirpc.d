@@ -9,7 +9,8 @@ import tagion.crypto.SecureNet;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 
-version(unittest) { }
+version (unittest) {
+}
 else {
 nothrow:
 }
@@ -25,7 +26,7 @@ nothrow:
  *   out_doc_len = The length of the resulting document
  * Returns: [tagion.api.errors.ErrorCode]
  */
-extern(C)
+extern (C)
 int tagion_hirpc_create_sender(
         const char* method,
         const size_t method_len,
@@ -35,15 +36,15 @@ int tagion_hirpc_create_sender(
         size_t* out_doc_len
 ) {
     try {
-        const doc = Document(cast(immutable)param[0 .. param_len]);
-        string method_name = cast(immutable)method[0 .. method_len];
+        const doc = Document(cast(immutable) param[0 .. param_len]);
+        string method_name = cast(immutable) method[0 .. method_len];
 
-        ubyte[] result_sender = cast(ubyte[])HiRPC(null).action(method_name, doc).serialize;
+        ubyte[] result_sender = cast(ubyte[]) HiRPC(null).action(method_name, doc).serialize;
         *out_doc = &result_sender[0];
         *out_doc_len = result_sender.length;
         return ErrorCode.none;
     }
-    catch(Exception e) {
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -60,7 +61,8 @@ unittest {
         HiBONT* hibon = new HiBONT;
         int rc = tagion_hibon_create(hibon);
         assert(rc == 0);
-        scope(exit) tagion_hibon_free(hibon);
+        scope (exit)
+            tagion_hibon_free(hibon);
         const char[] key = "a";
         rc = tagion_hibon_add_int32(hibon, &key[0], key.length, 7);
         assert(rc == 0);
@@ -95,7 +97,7 @@ unittest {
  *   out_doc_len = The length of the resulting document
  * Returns: [tagion.api.errors.ErrorCode]
  */
-extern(C)
+extern (C)
 int tagion_hirpc_create_signed_sender(
         const char* method,
         const size_t method_len,
@@ -113,27 +115,29 @@ int tagion_hirpc_create_signed_sender(
             return ErrorCode.error;
         }
 
-        const(StdSecureNet) get_secure_net() {
-            const net_ = cast(StdSecureNet)root_net.securenet;
-            if(deriver_len != 0) {
+        const(SecureNet) get_secure_net() {
+            const net_ = cast(SecureNet) root_net.securenet;
+            if (deriver_len != 0) {
                 const deriver_ = deriver[0 .. deriver_len];
                 pragma(msg, __FILE__, " Is this the correct way to derive the public key");
-                return cast(const(StdSecureNet))net_.derive(net_.HMAC(deriver_));
+                return cast(const(StdSecureNet)) net_.derive(net_.hash.HMAC(deriver_));
             }
             return net_;
         }
 
         const net_ = get_secure_net();
+        assert(net_ !is null);
+        const doc = Document(cast(immutable) param[0 .. param_len]);
+        string method_name = cast(immutable) method[0 .. method_len];
 
-        const doc = Document(cast(immutable)param[0 .. param_len]);
-        string method_name = cast(immutable)method[0 .. method_len];
-
-        ubyte[] result_sender = cast(ubyte[])HiRPC(net_).action(method_name, doc).serialize;
+        const hirpc = HiRPC(net_);
+        const sender = hirpc.action(method_name, doc);
+        ubyte[] result_sender = cast(ubyte[])(sender.serialize);
         *out_doc = &result_sender[0];
         *out_doc_len = result_sender.length;
         return ErrorCode.none;
     }
-    catch(Exception e) {
+    catch (Exception e) {
         last_error = e;
         return ErrorCode.exception;
     }
@@ -150,7 +154,8 @@ unittest {
         HiBONT* hibon = new HiBONT;
         int rc = tagion_hibon_create(hibon);
         assert(rc == 0);
-        scope(exit) tagion_hibon_free(hibon);
+        scope (exit)
+            tagion_hibon_free(hibon);
         const char[] key = "a";
         rc = tagion_hibon_add_int32(hibon, &key[0], key.length, 7);
         assert(rc == 0);
@@ -170,9 +175,8 @@ unittest {
         tagion_generate_keypair(&passphrase[0], passphrase.length, null, 0, &net, &pin[0], pin.length, &device_doc_ptr, &device_doc_len);
     }
 
-
     { // Signed hirpc with root key
-        ubyte* result_doc_ptr = new ubyte;
+        ubyte* result_doc_ptr; // = new ubyte;
         size_t result_doc_len;
         int rc = tagion_hirpc_create_signed_sender(&method[0], method.length, doc_param_ptr, doc_param_len, &net, null, 0, &result_doc_ptr, &result_doc_len);
         assert(rc == 0);
@@ -185,8 +189,9 @@ unittest {
         ubyte* result_doc_ptr = new ubyte;
         size_t result_doc_len;
 
-        ubyte[] tweak_word = [28,1,0,1];
-        int rc = tagion_hirpc_create_signed_sender(&method[0], method.length, doc_param_ptr, doc_param_len, &net, &tweak_word[0], tweak_word.length, &result_doc_ptr, &result_doc_len);
+        ubyte[] tweak_word = [28, 1, 0, 1];
+        int rc = tagion_hirpc_create_signed_sender(&method[0], method.length, doc_param_ptr, doc_param_len, &net, &tweak_word[0], tweak_word
+                .length, &result_doc_ptr, &result_doc_len);
         assert(rc == 0);
 
         const doc = Document(result_doc_ptr[0 .. result_doc_len].idup);

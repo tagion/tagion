@@ -26,7 +26,7 @@ import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 
 TagionHead getHead(DART db, const SecureNet net) {
-    DARTIndex tagion_index = net.dartKey(HashNames.domain_name, TagionDomain);
+    DARTIndex tagion_index = net.hash.dartId(HashNames.domain_name, TagionDomain);
     auto hirpc = HiRPC(net);
     const sender = CRUD.dartRead([tagion_index], hirpc);
     const receiver = hirpc.receive(sender);
@@ -39,7 +39,7 @@ TagionHead getHead(DART db, const SecureNet net) {
 }
 
 GenericEpoch getEpoch(const TagionHead head, DART db, const SecureNet net) {
-    DARTIndex epoch_index = net.dartKey(HashNames.epoch, head.current_epoch);
+    DARTIndex epoch_index = net.hash.dartId(HashNames.epoch, head.current_epoch);
 
     const hirpc = HiRPC(net);
     const _sender = CRUD.dartRead([epoch_index], hirpc);
@@ -67,14 +67,14 @@ inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
 
 /// Read the Node names records and put them in the addressbook
 /// Sorts the keys
-immutable(NetworkNodeRecord)*[] readNNRFromDart(string dart_path, Pubkey[] keys, const SecureNet __net)
+immutable(NetworkNodeRecord)*[] readNNRFromDart(string dart_path, Pubkey[] keys, const SecureNet _net)
 in (equal(keys, keys.uniq), "Is trying to read duplicate node keys")
 do {
     import tagion.gossip.AddressBook;
     import tagion.services.exception;
 
     Exception dart_exception;
-    DART db = new DART(__net, dart_path, dart_exception, Yes.read_only);
+    DART db = new DART(_net.hash, dart_path, dart_exception, Yes.read_only);
     if (dart_exception !is null) {
         throw dart_exception;
     }
@@ -82,8 +82,8 @@ do {
         db.close;
     }
 
-    const hirpc = HiRPC(__net);
-    auto nodekey_indices = keys.map!(k => __net.dartKey(HashNames.nodekey, k)).array;
+    const hirpc = HiRPC(_net);
+    auto nodekey_indices = keys.map!(k => _net.hash.dartId(HashNames.nodekey, k)).array;
     // Sort keys according to the dartkey
 
     const receiver = hirpc.receive(CRUD.dartRead(nodekey_indices, hirpc));
@@ -94,17 +94,17 @@ do {
     check(recorder[].each!(a => a.filed.isRecord!NetworkNodeRecord), "The read archives were not a NNR");
 
     immutable(NetworkNodeRecord)*[] nnrs;
-    foreach(a; recorder[]) {
+    foreach (a; recorder[]) {
         nnrs ~= new NetworkNodeRecord(a.filed);
     }
     return nnrs;
 }
 
-GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet __net) {
+GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet _net) {
     import tagion.dart.DART;
 
     Exception dart_exception;
-    DART db = new DART(__net, dart_file_path, dart_exception, Yes.read_only);
+    DART db = new DART(_net.hash, dart_file_path, dart_exception, Yes.read_only);
     if (dart_exception !is null) {
         throw dart_exception;
     }
@@ -112,6 +112,6 @@ GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet __net) {
         db.close;
     }
 
-    const head = getHead(db, __net);
-    return head.getEpoch(db, __net);
+    const head = getHead(db, _net);
+    return head.getEpoch(db, _net);
 }

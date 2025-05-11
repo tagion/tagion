@@ -3,7 +3,7 @@ module tagion.dart.DARTFakeNet;
 import std.typecons : Typedef;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdHashNet;
 import tagion.crypto.Types : BufferType, Fingerprint;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
@@ -18,19 +18,9 @@ import tagion.hibon.HiBONRecord : HiBONPrefix;
 alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 @safe
-class DARTFakeNet : StdSecureNet {
+class DARTFakeNet : StdHashNet {
     enum FAKE = "$fake#";
-    this(string passphrase) {
-        this();
-        generateKeyPair(passphrase);
-    }
-
-    this() {
-        super();
-
-    }
-
-    override Fingerprint calcHash(scope const(ubyte[]) h) const {
+    override Fingerprint calc(scope const(ubyte[]) h) const {
         if (h.length is ulong.sizeof) {
             scope ubyte[] fake_h;
             fake_h.length = hashSize;
@@ -41,7 +31,7 @@ class DARTFakeNet : StdSecureNet {
     }
 
     @trusted
-    override Fingerprint calcHash(const(Document) doc) const {
+    override Fingerprint calc(const(Document) doc) const {
         import std.exception : assumeUnique;
         import tagion.hibon.HiBONBase : Type;
 
@@ -54,7 +44,7 @@ class DARTFakeNet : StdSecureNet {
             fingerprint[0 .. ulong.sizeof] = nativeToBigEndian(x);
             return Fingerprint(assumeUnique(fingerprint));
         }
-        return super.calcHash(doc);
+        return super.calc(doc);
         //return rawCalcHash(doc.serialize);
     }
 

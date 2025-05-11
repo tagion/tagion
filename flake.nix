@@ -67,7 +67,7 @@
             wasmer # wasm-executor
             clang # used for wasm compilation
             wabt # conversion between wat <-> wasm
-            cargo
+            bubblewrap
           ]
           ++ lib.optionals stdenv.isLinux [ dstep ]
           ++ lib.optionals stdenv.isx86_64 [ dmd ];

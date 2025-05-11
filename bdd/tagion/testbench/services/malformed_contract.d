@@ -141,7 +141,7 @@ class ContractTypeWithoutCorrectInformation {
         check(epoch_on_startup, "No epoch on startup");
         submask.subscribe("error/tvm");
 
-        sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        sendHiRPC(node1_opts.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 
@@ -200,7 +200,7 @@ class InputsAreNotBillsInDart {
 
     @When("i send the contract to the network.")
     Document network() {
-        sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        sendHiRPC(node1_opts.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 
@@ -300,7 +300,7 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     Document network() {
         submask.subscribe("error/tvm");
         foreach(contract; [zero_contract, negative_contract, combined_contract]) {
-            sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1_hirpc);
+            sendHiRPC(node1_opts.rpcserver.sock_addr, wallet1_hirpc.submit(contract), wallet1_hirpc);
         }
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
        
@@ -311,13 +311,13 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     Document rejected() {
         import tagion.dart.DART;
         auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
-        auto received = sendHiRPC(node1_opts.dart_interface.sock_addr, req, wallet1_hirpc);
+        auto received = sendHiRPC(node1_opts.rpcserver.sock_addr, req, wallet1_hirpc);
         auto not_in_dart = received.response.result[Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
         check(not_in_dart.length == 0, "all the inputs should still be in the dart");
 
 
         auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
-        auto output_received = sendHiRPC(node1_opts.dart_interface.sock_addr, output_req, wallet1_hirpc);
+        auto output_received = sendHiRPC(node1_opts.rpcserver.sock_addr, output_req, wallet1_hirpc);
         auto output_not_in_dart = output_received.response.result[Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
 
 
@@ -367,7 +367,7 @@ class ContractWhereInputIsSmallerThanOutput {
 
     @When("i send the contract to the network.")
     Document network() {
-        sendHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
+        sendHiRPC(node1_opts.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1_hirpc);
         return result_ok;
     }
 

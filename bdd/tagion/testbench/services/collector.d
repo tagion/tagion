@@ -46,7 +46,7 @@ alias FeatureContext = Tuple!(
 
 SecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
     return iota(0, count).map!((i) {
-        SecureNet net = new StdSecureNet();
+        SecureNet net = createSecureNet;
         net.generateKeyPair(format("%s_%s", pass_prefix, i));
         return net;
     }).array;
@@ -63,23 +63,21 @@ const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder re
     return rec[].map!((a) => a.dart_index).array;
 }
 
-TagionBill createBill(const TagionCurrency tgn) pure nothrow @safe{
+TagionBill createBill(const TagionCurrency tgn) pure nothrow @safe {
     return TagionBill(tgn, sdt_t.init, Pubkey.init, Buffer.init);
 }
 
 @safe @Scenario("it work", [])
 class ItWork {
-    enum dart_service = "dart_service_task";
     ActorHandle dart_handle;
     ActorHandle collector_handle;
-    ActorHandle replicator_handle;
 
     TagionBill[] input_bills;
     SecureNet[] input_nets;
 
     immutable SecureNet node_net;
     this() {
-        SecureNet _net = new StdSecureNet();
+        SecureNet _net = createSecureNet;
         _net.generateKeyPair("very secret");
         node_net = (() @trusted => cast(immutable) _net)();
     }
@@ -113,22 +111,21 @@ class ItWork {
 
             import tagion.dart.DART;
 
-            DART.create(opts.dart_path, node_net);
+            DART.create(opts.dart_path, node_net.hash);
 
-            auto dart_net = new StdSecureNet;
+            auto dart_net = createSecureNet;
             dart_net.generateKeyPair("dartnet");
-            dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, task_names, cast(shared) dart_net, false))();
-            replicator_handle = (() @trusted => spawn!ReplicatorService(task_names.replicator, replicator_opts))();
+            dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, cast(shared) dart_net))();
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 
-        auto record_factory = RecordFactory(node_net);
+        auto record_factory = RecordFactory(node_net.hash);
         auto insert_recorder = record_factory.recorder;
 
         input_nets = createNets(10, "input");
         input_bills = input_nets.createBills(100_000);
         input_bills.insertBills(insert_recorder);
-        dart_handle.send(dartModifyRR(), RecordFactory.uniqueRecorder(insert_recorder), immutable long(0));
+        dart_handle.send(dartModifyRR(), RecordFactory.uniqueRecorder(insert_recorder));
         receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 
         {

@@ -47,7 +47,7 @@ struct AccountDetails {
     void remove_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove, countUntil;
 
-        auto billsHashes = bills.map!(b => cast(Buffer) hash_net.calcHash(b.toDoc.serialize));
+        auto billsHashes = bills.map!(b => cast(Buffer) hash_net.calc(b.toDoc.serialize));
         const index = billsHashes.countUntil(billHash);
         if (index >= 0) {
             used_bills ~= bills[index];
@@ -174,7 +174,7 @@ struct AccountDetails {
             TagionCurrency[] fees;
             ContractStatus[] statuses;
 
-            /// FIXME: this messes up when contracts has multiple outputs excluding the ones to yourself
+            pragma(msg, "FIXME: this messes up when contracts has multiple outputs excluding the ones to yourself");
             foreach (contract, pay_script; zip(contracts, pay_scripts)) {
                 TagionBill[] input_bills;
 
@@ -303,9 +303,8 @@ version (unittest) {
         const receiver_bill = TagionBill(sent, sdt_t(1), receiver, []);
 
         const script = PayScript([change_bill, receiver_bill]);
-        const contract = Contract([hash_net.dartIndex(input_bill)], reads:
-        null, script.toDoc);
-        const s_contract = SignedContract(signs : null, contract);
+        const contract = Contract([hash_net.dartIndex(input_bill)], reads: null, script.toDoc);
+        const s_contract = SignedContract(signs: null, contract);
         return HiRPC(null).submit(s_contract);
     }
 
@@ -349,10 +348,10 @@ unittest {
     import std.stdio;
     import tagion.hibon.HiBONJSON;
 
-    auto my_net = new StdSecureNet;
+    auto my_net = createSecureNet;
     my_net.generateKeyPair("account_history");
 
-    auto your_net = new StdSecureNet;
+    auto your_net = createSecureNet;
     your_net.generateKeyPair("I am someone else");
 
     { // Received
@@ -373,11 +372,11 @@ unittest {
         AccountDetails account;
         account.derivers[my_net.pubkey] = [0];
         account.create_payment(
-            change: 400.TGN,
-            sent: 2400.TGN,
-            fee: 80.TGN,
-            sender: my_net.pubkey,
-            receiver: your_net.pubkey,
+    change: 400.TGN,
+    sent: 2400.TGN,
+    fee: 80.TGN,
+    sender: my_net.pubkey,
+    receiver: your_net.pubkey,
         );
 
         assert(account.history.walkLength == 2);
@@ -396,11 +395,11 @@ unittest {
         AccountDetails account;
         account.derivers[my_net.pubkey] = [0];
         account.create_pending_payment(
-            change: 400.TGN,
-            sent: 2400.TGN,
-            fee: 80.TGN,
-            sender: my_net.pubkey,
-            receiver: your_net.pubkey,
+    change: 400.TGN,
+    sent: 2400.TGN,
+    fee: 80.TGN,
+    sender: my_net.pubkey,
+    receiver: your_net.pubkey,
         );
 
         auto hist = account.reverse_history;
@@ -424,11 +423,11 @@ unittest {
         AccountDetails account;
         account.derivers[my_net.pubkey] = [0];
         account.create_payment(
-            change: 400.TGN,
-            sent: 2400.TGN,
-            fee: 80.TGN,
-            sender: my_net.pubkey,
-            receiver: my_net.pubkey,
+    change: 400.TGN,
+    sent: 2400.TGN,
+    fee: 80.TGN,
+    sender: my_net.pubkey,
+    receiver: my_net.pubkey,
         );
 
         auto hist = account.history;
@@ -475,28 +474,29 @@ const(DARTIndex)[] contractDARTIndices(const HashNet net, const(Document) doc) {
     const payment = PayScript(contract.script);
     const result = contract.inputs ~ payment.outputs.map!(output => net.dartIndex(output)).array;
     return result;
+    // return only(contract.inputs, payment.outputs.map!(output => net.dartIndex(output))).array;
 }
 
 unittest {
     import std.stdio;
     import std.range;
 
-    auto my_net = new StdSecureNet;
+    auto my_net = createSecureNet;
     my_net.generateKeyPair("contract_indices");
-    auto your_net = new StdSecureNet;
+    auto your_net = createSecureNet;
     your_net.generateKeyPair("someone else");
     AccountDetails account;
     account.derivers[my_net.pubkey] = [0];
     account.bills ~= TagionBill(3000.TGN, sdt_t(0), my_net.pubkey, []);
     account.create_payment(
-        change : 400.TGN,
-        sent: 2400.TGN,
-        fee: 80.TGN,
-        sender: my_net.pubkey,
-        receiver: your_net.pubkey,
+change: 400.TGN,
+sent: 2400.TGN,
+fee: 80.TGN,
+sender: my_net.pubkey,
+receiver: your_net.pubkey,
     );
 
-    const dart_indices = my_net.contractDARTIndices(account.hirpcs.front);
+    const dart_indices = my_net.hash.contractDARTIndices(account.hirpcs.front);
     /*
         writefln("%(%(%02x%) %)", dart_indices);
         writefln("locked = %(%(%02x%) %)", account.activated.keys);
@@ -504,7 +504,7 @@ unittest {
         writefln("bills = %(%(%02x%) %)", account.bills.map!(b => my_net.dartIndex(b)));
     */
     assert(account.used_bills
-            .map!(b => my_net.dartIndex(b))
+            .map!(b => my_net.hash.dartIndex(b))
             .map!(f => dart_indices.canFind(f))
             .all,
             "Not all used_bills are in the dart_indices");

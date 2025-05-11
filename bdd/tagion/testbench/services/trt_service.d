@@ -27,6 +27,7 @@ import tagion.wallet.request;
 import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
 import tagion.tools.wallet.WalletInterface;
+import tagion.crypto.SecureNet;
 
 enum CONTRACT_TIMEOUT = 40;
 mixin Main!(_main);
@@ -69,7 +70,7 @@ int _main(string[] args) {
     foreach (i; 0 .. 5) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-            iota(0, 5)
+                iota(0, 5)
                 .map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5)
                 .map!(n => format("%danswer%d", i, n)).array,
@@ -92,10 +93,10 @@ int _main(string[] args) {
         }
     }
 
-    SecureNet net = new StdSecureNet();
+    SecureNet net = createSecureNet;
     net.generateKeyPair("very_secret");
 
-    auto factory = RecordFactory(net);
+    auto factory = RecordFactory(net.hash);
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
@@ -111,16 +112,19 @@ int _main(string[] args) {
     auto nodenets = dummy_nodenets_for_testing(node_opts);
     foreach (opt, node_net; zip(node_opts, nodenets)) {
         node_settings ~= NodeSettings(
-            opt.task_names.epoch_creator, // Name
-            node_net.pubkey,
-            opt.task_names.epoch_creator, // Address
+                opt.task_names.epoch_creator, // Name
+                node_net.pubkey,
+                opt.task_names.epoch_creator, // Address
+
+                
+
         );
     }
 
     const genesis = createGenesis(
-        node_settings,
-        Document(), 
-        TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
+            node_settings,
+            Document(),
+            TagionGlobals(BigNumber(bills.map!(a => a.value.units).sum), BigNumber(0), bills.length, 0)
     );
 
     recorder.insert(genesis, Archive.Type.ADD);
@@ -128,7 +132,7 @@ int _main(string[] args) {
     import tagion.trt.TRT;
 
     auto trt_recorder = factory.recorder;
-    genesisTRT(bills, trt_recorder, net);
+    genesisTRT(bills, trt_recorder, net.hash);
 
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
@@ -138,10 +142,10 @@ int _main(string[] args) {
                 .trt.trt_filename);
         // writeln(path);
         // writeln(trt_path);
-        DARTFile.create(path, net);
-        DARTFile.create(trt_path, net);
-        auto db = new DART(net, path);
-        auto trt_db = new DART(net, trt_path);
+        DARTFile.create(path, net.hash);
+        DARTFile.create(trt_path, net.hash);
+        auto db = new DART(net.hash, path);
+        auto trt_db = new DART(net.hash, trt_path);
         db.modify(recorder);
         trt_db.modify(trt_recorder);
 
@@ -176,16 +180,16 @@ int _main(string[] args) {
 }
 
 enum feature = Feature(
-        "TRT Service test",
-        []);
+            "TRT Service test",
+            []);
 
 alias FeatureContext = Tuple!(
-    SendAInoiceUsingTheTRT, "SendAInoiceUsingTheTRT",
-    FeatureGroup*, "result"
+        SendAInoiceUsingTheTRT, "SendAInoiceUsingTheTRT",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("send a inoice using the TRT",
-    [])
+        [])
 class SendAInoiceUsingTheTRT {
     Options opts1;
     StdSecureWallet wallet1;
@@ -215,10 +219,10 @@ class SendAInoiceUsingTheTRT {
 
     @Given("i have a running network with a trt")
     Document trt() {
-        writefln("address to dial %s", opts1.dart_interface.sock_addr);
-        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        writefln("address to dial %s", opts1.rpcserver.sock_addr);
+        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
         check(wallet1_amount == start_amount1, "balance should not have changed");
-        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
         check(wallet2_amount == start_amount2, "balance should not have changed");
         // create a update request
         return result_ok;
@@ -233,8 +237,8 @@ class SendAInoiceUsingTheTRT {
         (() @trusted => Thread.sleep(1.seconds))();
         wallet1.payment([invoice_to_pay], signed_contract2, fee2);
 
-        sendHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
-        sendHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1_hirpc);
+        sendHiRPC(opts1.rpcserver.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1_hirpc);
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
@@ -243,8 +247,8 @@ class SendAInoiceUsingTheTRT {
     Document lookup() {
         import std.format;
 
-        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
-        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet1_amount = getWalletTRTUpdateAmount(wallet1, opts1.rpcserver.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletTRTUpdateAmount(wallet2, opts1.rpcserver.sock_addr, wallet2_hirpc);
 
         auto wallet1_expected = start_amount1 - fee1 - fee2 - 2 * amount;
         check(wallet1_amount == wallet1_expected, format("should have %s had %s", wallet1_expected, wallet1_amount));

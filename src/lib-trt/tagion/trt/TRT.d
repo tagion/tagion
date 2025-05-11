@@ -16,7 +16,7 @@ import std.range;
 import std.digest : toHexString;
 import tagion.hibon.Document : Document;
 
-@recordType(TYPENAME ~ "trt") 
+@recordType(TYPENAME ~ "trt")
 struct TRTArchive {
     @label(HashNames.trt_owner) Pubkey owner;
     DARTIndex[] indices;
@@ -28,7 +28,7 @@ struct TRTArchive {
     });
 }
 
-@recordType(TYPENAME ~ "trt_contract") 
+@recordType(TYPENAME ~ "trt_contract")
 struct TRTContractArchive {
     @label(HashNames.hash_contract) DARTIndex contract_hash;
     Document contract;
@@ -37,10 +37,10 @@ struct TRTContractArchive {
 }
 
 void createTRTUpdateRecorder(
-    immutable(RecordFactory.Recorder) dart_recorder,
-    const(RecordFactory.Recorder) read_recorder,
-    ref RecordFactory.Recorder trt_recorder,
-    const HashNet net) {
+        immutable(RecordFactory.Recorder) dart_recorder,
+        const(RecordFactory.Recorder) read_recorder,
+        ref RecordFactory.Recorder trt_recorder,
+        const HashNet net) {
     // get a range of all the archives with $Y field
     auto archives = dart_recorder[]
         .filter!(a => a.filed.hasMember(StdNames.owner));
@@ -108,14 +108,14 @@ unittest {
                 .indices.length).sum;
     }
 
-    auto net = new DARTFakeNet("very secret");
+    const net = new DARTFakeNet;
 
     alias StdSecureWallet = SecureWallet!StdSecureNet;
 
     StdSecureWallet w;
     w = StdSecureWallet(
-        iota(0, 5).map!(n => format("question%d", n)).array,
-        iota(0, 5)
+            iota(0, 5).map!(n => format("question%d", n)).array,
+            iota(0, 5)
             .map!(n => format("answer%d", n)).array, 4, "0000",
     );
 
@@ -156,7 +156,7 @@ unittest {
         createTRTUpdateRecorder(im_dart_recorder, empty_recorder, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) == im_dart_recorder.length,
-            "Number of entries in recorders differs");
+                "Number of entries in recorders differs");
 
         auto dart_archives = im_dart_recorder[]
             .map!(a => TagionBill(a.filed))
@@ -179,12 +179,12 @@ unittest {
 
         auto read_recorder = factory.recorder;
         read_recorder.insert(bills[0 .. count_read_bills].map!(b => TRTArchive(b.owner, [
-                    net.dartIndex(b), fake_index
-                ])), Archive.Type.ADD);
+            net.dartIndex(b), fake_index
+        ])), Archive.Type.ADD);
         createTRTUpdateRecorder(im_dart_recorder, read_recorder, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) - number_of_dummy_indices == im_dart_recorder.length,
-            "Number of entries in recorders differs");
+                "Number of entries in recorders differs");
 
         auto dart_archives = im_dart_recorder[]
             .map!(a => TagionBill(a.filed))
@@ -195,7 +195,7 @@ unittest {
 
         foreach (a; dart_archives) {
             assert(trt_archives.canFind!(trt_arch => trt_arch.indices.canFind(a.indices.front)),
-                "Some bills are missing");
+                    "Some bills are missing");
         }
 
         assert(trt_archives.map!(a => a.indices.canFind(fake_index))
@@ -209,15 +209,15 @@ unittest {
         auto read_recorder = factory.recorder;
         read_recorder.insert(im_dart_recorder[].map!(a => TagionBill(a.filed))
                 .map!(b => TRTArchive(b.owner, [
-                        net.dartIndex(b), fake_index
-                    ])), Archive.Type.ADD);
+                    net.dartIndex(b), fake_index
+        ])), Archive.Type.ADD);
 
         auto number_of_dummy_indices = im_dart_recorder.length;
 
         createTRTUpdateRecorder(im_dart_recorder, read_recorder, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) == im_dart_recorder.length + number_of_dummy_indices,
-            "Number of entries in recorders differs");
+                "Number of entries in recorders differs");
 
         auto dart_archives = im_dart_recorder[]
             .map!(a => TagionBill(a.filed))
@@ -228,7 +228,7 @@ unittest {
 
         foreach (a; dart_archives) {
             assert(trt_archives.canFind!(trt_arch => trt_arch.indices.canFind(a.indices.front)),
-                "Some bills are missing");
+                    "Some bills are missing");
         }
 
         assert(trt_archives.map!(a => a.indices.canFind(fake_index))
@@ -259,7 +259,7 @@ unittest {
         createTRTUpdateRecorder(im_dart_recorder_dup, empty_recorder, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) == im_dart_recorder_dup.length,
-            "Number of entries in recorders differs");
+                "Number of entries in recorders differs");
 
         auto dart_archives = im_dart_recorder_dup[]
             .map!(a => TagionBill(a.filed))
@@ -270,7 +270,7 @@ unittest {
 
         foreach (a; dart_archives.array) {
             assert(trt_archives.canFind!(trt_arch => trt_arch.indices.canFind(a.indices.front)),
-                "Some bills are missing");
+                    "Some bills are missing");
         }
     }
 
@@ -280,8 +280,8 @@ unittest {
 
         auto read_recorder = factory.recorder;
         read_recorder.insert(bills.map!(b => TRTArchive(b.owner, [
-                    net.dartIndex(b)
-                ])), Archive.Type.ADD);
+            net.dartIndex(b)
+        ])), Archive.Type.ADD);
 
         auto index_of_remove_bill = 2;
         auto dart_recorder = factory.recorder;
@@ -292,7 +292,7 @@ unittest {
         createTRTUpdateRecorder(im_dart_recorder_rem, read_recorder, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) == index_of_remove_bill,
-            "Number of entries in recorders differs");
+                "Number of entries in recorders differs");
 
         auto trt_archives = trt_recorder[]
             .map!(b => TRTArchive(b.filed));
@@ -335,7 +335,7 @@ unittest {
         createTRTUpdateRecorder(im_dart_recorder_dirty, empty_recorder, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) == im_dart_recorder_dirty.length - fake_docs_count,
-            "Number of entries in recorders differs");
+                "Number of entries in recorders differs");
 
         auto dart_archives = im_dart_recorder_dirty[]
             .filter!(a => a.filed.isRecord!TagionBill)
@@ -347,7 +347,7 @@ unittest {
 
         foreach (a; dart_archives.array) {
             assert(trt_archives.canFind!(trt_arch => trt_arch.indices.canFind(a.indices.front)),
-                "Some bills are missing");
+                    "Some bills are missing");
         }
     }
 
@@ -367,7 +367,7 @@ unittest {
         genesisTRT(bills, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) == im_dart_recorder.length,
-            "Number of entries in recorders differs");
+                "Number of entries in recorders differs");
 
         auto trt_archives = trt_recorder[]
             .map!(b => TRTArchive(b.filed));
@@ -401,20 +401,20 @@ unittest {
         createTRTUpdateRecorder(im_dart_recorder_mixed, empty_recorder, trt_recorder, net);
 
         assert(countTRTRecorderindices(trt_recorder) == im_dart_recorder_mixed.length,
-            "Number of entries in recorders differs");
+                "Number of entries in recorders differs");
 
         auto dart_archives = im_dart_recorder[]
             .map!(a => Document(a.filed))
             .map!(doc => TRTArchive(doc[StdNames.owner].get!Pubkey, [
-                        net.dartIndex(doc)
-                    ]));
+                net.dartIndex(doc)
+        ]));
 
         auto trt_archives = trt_recorder[]
             .map!(b => TRTArchive(b.filed));
 
         foreach (a; dart_archives) {
             assert(trt_archives.canFind!(trt_arch => trt_arch.indices.canFind(a.indices.front)),
-                "Some bills are missing");
+                    "Some bills are missing");
         }
     }
 }

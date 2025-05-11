@@ -13,12 +13,12 @@ import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.random.random;
 import tagion.hibon.Document : Document;
 
+@safe:
 package alias check = Check!SecurityConsensusException;
 
 ///
 const hash_net = new StdHashNet;
 
-@safe
 class StdHashNet : HashNet {
     import std.format;
 
@@ -34,7 +34,7 @@ class StdHashNet : HashNet {
         return digest!SHA256(data).idup;
     }
 
-    Fingerprint calcHash(scope const(ubyte[]) data) const pure {
+    Fingerprint calc(scope const(ubyte[]) data) const pure {
         return Fingerprint(rawCalcHash(data));
     }
 
@@ -46,7 +46,7 @@ class StdHashNet : HashNet {
         return hmac.finish.idup;
     }
 
-    Fingerprint calcHash(const(Document) doc) const pure {
+    Fingerprint calc(const(Document) doc) const pure {
         return Fingerprint(rawCalcHash(doc.serialize));
     }
 
@@ -56,7 +56,21 @@ class StdHashNet : HashNet {
     }
 }
 
-@safe
+enum SignatureScheam {
+    STANDARD
+}
+
+SecureNet createSecureNet(const SignatureScheam s = SignatureScheam.STANDARD) nothrow {
+    with (SignatureScheam) {
+        final switch (s) {
+        case STANDARD:
+            const h = new StdHashNet;
+            return new StdSecureNet(h);
+        }
+    }
+    assert(0);
+}
+
 class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.format;
@@ -65,6 +79,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
 
+    const HashNet _hash;
     private Pubkey _pubkey;
     /**
        This function
@@ -85,12 +100,12 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     protected SecretMethods _secret;
 
-    @nogc final Pubkey pubkey() pure const nothrow {
-        return _pubkey;
+    const(HashNet) hash() pure const nothrow scope {
+        return _hash;
     }
 
-    final Buffer hmacPubkey() const {
-        return HMAC(cast(const(Buffer)) _pubkey);
+    @nogc final Pubkey pubkey() pure const nothrow {
+        return _pubkey;
     }
 
     final Pubkey derivePubkey(string tweak_word) const {
@@ -103,6 +118,11 @@ class StdSecureNet : StdHashNet, SecureNet {
         const pkey = cast(const(ubyte[])) _pubkey;
         result = crypt.pubTweak(pkey, tweak_code);
         return result;
+    }
+
+    SecureNet.Signed sign(const Document doc) const pure {
+        const fingerprint = hash.calc(doc);
+        return SecureNet.Signed(sign(fingerprint), fingerprint);
     }
 
     const NativeSecp256k1 crypt;
@@ -155,7 +175,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     const(SecureNet) derive(const(ubyte[]) tweak_code) const {
         ubyte[] tweak_privkey;
         _secret.tweak(tweak_code, tweak_privkey);
-        auto result = new StdSecureNet;
+        auto result = new StdSecureNet(_hash);
         result.createKeyPair(tweak_privkey);
         return result;
     }
@@ -219,7 +239,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                         seckey[] = 0;
                     }
                     crypt.getSecretKey(keypair, seckey);
-                    scope const pkey = cast(const(Buffer))pubkey; 
+                    scope const pkey = cast(const(Buffer)) pubkey;
                     result = crypt.createECDHSecret(seckey, pkey);
                 });
                 return result;
@@ -248,8 +268,8 @@ class StdSecureNet : StdHashNet, SecureNet {
 */
     void generateKeyPair(
             scope const(char[]) passphrase,
-    scope const(char[]) salt = null,
-    void delegate(scope const(ubyte[]) data) pure @safe dg = null)
+            scope const(char[]) salt = null,
+            void delegate(scope const(ubyte[]) data) pure @safe dg = null)
     in (_secret is null)
     do {
         import tagion.crypto.pbkdf2;
@@ -274,8 +294,8 @@ class StdSecureNet : StdHashNet, SecureNet {
     immutable(ubyte[]) ECDHSecret(
             scope const(ubyte[]) seckey,
             scope const(Pubkey) pubkey)
-        const {
-        scope const pkey=cast(const(Buffer))pubkey;
+    const {
+        scope const pkey = cast(const(Buffer)) pubkey;
         return crypt.createECDHSecret(seckey, pkey);
     }
 
@@ -287,29 +307,37 @@ class StdSecureNet : StdHashNet, SecureNet {
         return Pubkey(crypt.getPubkey(seckey));
     }
 
-    this() nothrow {
+    this(const HashNet hash) nothrow {
+        _hash = hash;
         crypt = new NativeSecp256k1;
     }
 
     this(shared(StdSecureNet) other_net) @trusted {
-        this();
         synchronized (other_net) {
+            this(cast(const)(other_net._hash));
             auto unshared_secure_net = cast(StdSecureNet) other_net;
             unshared_secure_net._secret.clone(this);
         }
     }
 
     SecureNet clone() const {
-        StdSecureNet result = new StdSecureNet;
+        StdSecureNet result = new StdSecureNet(_hash);
         this._secret.clone(result);
         return result;
     }
 
+    SecureNet clone() const shared @trusted {
+        synchronized (this) {
+            const _tmp = cast(const) this;
+            return _tmp.clone;
+        }
+    }
+
     unittest {
-        auto other_net = new StdSecureNet;
+        auto other_net = createSecureNet;
         other_net.generateKeyPair("Secret password to be copied");
         auto shared_net = (() @trusted => cast(shared) other_net)();
-        SecureNet copy_net = new StdSecureNet(shared_net);
+        SecureNet copy_net = shared_net.clone;
         assert(other_net.pubkey == copy_net.pubkey);
 
     }
@@ -320,12 +348,12 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     unittest { // StdSecureNet rawSign
         const some_data = "some message";
-        SecureNet net = new StdSecureNet;
+        SecureNet net = createSecureNet;
         net.generateKeyPair("Secret password");
-        SecureNet bad_net = new StdSecureNet;
+        SecureNet bad_net = createSecureNet;
         bad_net.generateKeyPair("Wrong Secret password");
 
-        const message = net.calcHash(some_data.representation);
+        const message = net.hash.calc(some_data.representation);
 
         Signature signature = net.sign(message);
 
@@ -340,7 +368,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         import tagion.hibon.HiBON;
         import tagion.hibon.HiBONJSON;
 
-        SecureNet net = new StdSecureNet;
+        SecureNet net = createSecureNet;
         net.generateKeyPair("Secret password");
 
         Document doc;
@@ -352,26 +380,26 @@ class StdSecureNet : StdHashNet, SecureNet {
 
         const doc_signed = net.sign(doc);
 
-        assert(net.rawCalcHash(doc.serialize) == net.calcHash(doc.serialize), "should produce same hash");
+        assert(net.hash.rawCalcHash(doc.serialize) == net.hash.calc(doc.serialize), "should produce same hash");
 
-        assert(doc_signed.message == net.rawCalcHash(doc.serialize));
+        assert(doc_signed.message == net.hash.rawCalcHash(doc.serialize));
         assert(net.verify(doc, doc_signed.signature, net.pubkey));
 
-        SecureNet bad_net = new StdSecureNet;
+        SecureNet bad_net = createSecureNet;
         bad_net.generateKeyPair("Wrong Secret password");
         assert(!net.verify(doc, doc_signed.signature, bad_net.pubkey));
     }
 
     unittest {
-        SecureNet net = new StdSecureNet;
+        SecureNet net = createSecureNet;
         net.generateKeyPair("Secret password");
 
         foreach (i; 0 .. 10) {
             SimpleRecord data;
             data.x = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX20%s".format(i);
 
-            auto fingerprint = net.calcHash(data);
-            auto second_fingerprint = net.calcHash(data.toDoc.serialize);
+            auto fingerprint = net.hash.calc(data);
+            auto second_fingerprint = net.hash.calc(data.toDoc.serialize);
             assert(fingerprint == second_fingerprint);
 
             auto sig = net.sign(data).signature;
@@ -381,7 +409,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     unittest { /// clone
-        SecureNet net = new StdSecureNet;
+        SecureNet net = createSecureNet;
         net.generateKeyPair("Very secret word");
         auto net_clone = net.clone;
         assert(net_clone.pubkey == net.pubkey);
@@ -389,8 +417,8 @@ class StdSecureNet : StdHashNet, SecureNet {
         doc.x = "Hugo";
         const sig = net.sign(doc).signature;
         const clone_sig = net_clone.sign(doc).signature;
-        const net_check = new StdSecureNet;
-        const msg = net.calcHash(doc);
+        const net_check = createSecureNet;
+        const msg = net.hash.calc(doc);
         assert(net_check.verify(msg, sig, net.pubkey));
         assert(net_check.verify(msg, clone_sig, net_clone.pubkey));
     }
@@ -410,12 +438,13 @@ version (unittest) {
 @safe
 class BadSecureNet : StdSecureNet {
     this(string passphrase) {
-        super();
+        const h = new StdHashNet;
+        super(h);
         generateKeyPair(passphrase);
     }
 
     override Signature sign(const Fingerprint message) const {
-        const false_message = super.calcHash(message ~ message);
+        const false_message = super.calc(message ~ message);
         return super.sign(false_message);
     }
 }

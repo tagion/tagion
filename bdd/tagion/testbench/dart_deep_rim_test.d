@@ -24,8 +24,8 @@ int _main(string[] args) {
             FileExtension.dart));
     const string dartfilename2 = buildPath(module_path, "start_empty_sync_test".setExtension(
             FileExtension.dart));
-    const SecureNet net = new DARTFakeNet("very_secret");
-    const hirpc = HiRPC(net);
+    const net = new DARTFakeNet;
+    const hirpc = HiRPC(null);
 
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc, dartfilename2);
 

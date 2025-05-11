@@ -41,7 +41,7 @@ It is important to prevent too many tokens being made available at the same time
 
 To achieve this, tokens sold in pre- and post-sales or otherwise assigned are not immediately disbursed to the beneficiaries' JustPay wallets, but held back/locked in the Tagion portal. The time for which assigned tokens are locked is called the “vesting period”. 
 
-After this period the unlocked tokens[^2] can be requested to be paid out in the Tagion portal, we call theat their disbursement. Since these requests will typically not happen right after the vesting period ends, we distinguish between the unlocked supply (tokens that can be disbursed) and the circulating supply (tokens that have been disbursed).  
+After this period the unlocked tokens[^2] can be requested to be paid out in the Tagion portal, we call that their disbursement. Since these requests will typically not happen right after the vesting period ends, we distinguish between the unlocked supply (tokens that can be disbursed) and the circulating supply (tokens that have been disbursed).  
 
 |Terminology:    | Definition:  |
 | :-: | ------- |
@@ -54,6 +54,7 @@ After this period the unlocked tokens[^2] can be requested to be paid out in the
 :::tip
 If you find other metrics more useful to be reported on, please let us know.
 :::
+<br />
 
 In March 2025 out of the 3,129,452,528 TGN that have been sold (in pre- and post-sales) or assigned to community members,  a total amount of 816,151,055 TGN were unlocked for payouts.[^4]
 
@@ -108,6 +109,17 @@ at 0.01 EUR,  at 0.05 EUR, at 0.1 EUR,  at 0.5 EUR, and - for the last time - at
 
 Decard is the company founded to be the initial developer, steward and long-term pillar supporting Tagion's establishment and sustainability.  
 At the time of launching into release phase 3 (curated release), 20% of this allocation will be made available, with another 20% following each consecutive year.   
+
+
+## Using TGN Tokens
+
+Once unlocked tokens have been paid out from the online portal into a JustPay wallet, and have thus become part of the "circulating supply" (see [definitions here](https://docs.tagion.org/gov/governance_areas/token_economy/issuance#reporting-and-definitions)), owners of these tokens can use them in whatever way they like. 
+
+This, of course, includes tendering them for the purchase of goods and services, but acceptance of them on part of the provider of those goods and services is purely voluntary. 
+
+Currently, as TGN tokens are not yet listed on any token exchange, there is no brokered way of selling them. However, "over the counter" sales are always possible if two parties agree on the price and conditions. All that is technically required is that the recepient has a [JustPay wallet](https://www.decard.io/justpay) into which the tokens can be transferred, and that seller of tokens is confident that he will receive payment as agreed. 
+
+As was explained in our Townhall #13 (January 9th 2025, from minute 32 on the [recording](https://www.youtube.com/watch?v=yqgppLX4qOE)), the plan is not to consider and pursue being listed on an exchange before we achieve organic demand (or what we call UDD: "Utility Derived Demand") and before the mainnet is running with adequate system stability and resilience, which will happen with [Tech Mode 2](https://docs.tagion.org/tech/architecture/network_modes) and [Release Phase 1](https://docs.tagion.org/gov/intro/phased_release).
 <br />
 <br />
 

@@ -1,5 +1,4 @@
-@description("Rebuild dart database from replicator files Philip edition")
-module tagion.tools.kette;
+@description("Rebuild dart database from replicator files Philip edition") module tagion.tools.kette;
 
 /**
  * @brief tool for replaying and undoing the dart database
@@ -17,15 +16,12 @@ import tagion.crypto.SecureNet;
 import std.file : copy, exists;
 import std.range;
 import tagion.dart.DARTException;
-import tagion.hibon.HiBONRecord: isRecord;
+import tagion.hibon.HiBONRecord : isRecord;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.hibon.HiBONtoText;
 import std.format;
 
-
-
 import tagion.replicator.RecorderBlock;
-
 
 mixin Main!(_main, "tagionkette");
 
@@ -35,7 +31,7 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
 
-    SecureNet secure_net = new StdSecureNet;
+    SecureNet secure_net = createSecureNet;
     const hash_net = new StdHashNet;
     auto factory = RecordFactory(hash_net);
     string genesis_dart;
@@ -44,21 +40,22 @@ int _main(string[] args) {
     string passphrase = "verysecret";
     secure_net.generateKeyPair(passphrase);
 
-
     bool replay;
     bool replay_and_find;
-    
+    bool skip_check;
+
     GetoptResult main_args;
     try {
         main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "display the version", &version_switch,
-        "v|verbose", "Prints more debug information", &__verbose_switch,
-        "genesisdart|g", "Path to genesis dart file", &genesis_dart,
-        "dartfile|d", "Path to dart file", &dart_file,
-        "replay|r", "Replay the recorder", &replay,
-        "findreplay|f", "Find the block and replay from there", &replay_and_find,
+                std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "version", "display the version", &version_switch,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
+                "g|genesisdart", "Path to genesis dart file", &genesis_dart,
+                "d|dartfile", "Path to dart file", &dart_file,
+                "r|replay", "Replay the recorder", &replay,
+                "f|findreplay", "Find the block and replay from there", &replay_and_find,
+                "s|skipcheck", "Skip bullseye checks", &skip_check
         );
 
         if (version_switch) {
@@ -68,14 +65,14 @@ int _main(string[] args) {
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://docs.tagion.org/",
-                    "",
-                    "Usage:",
-                    "",
-                    "<option>:",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://docs.tagion.org/",
+                "",
+                "Usage:",
+                "",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
@@ -91,24 +88,21 @@ int _main(string[] args) {
         }
 
         DART dart;
-        scope(exit) {
+        scope (exit) {
             dart.close;
         }
         try {
-            dart = new DART(secure_net, dart_file);
+            dart = new DART(secure_net.hash, dart_file);
         }
         catch (DARTException e) {
             error(e);
             return 1;
         }
 
-
-        
         import tagion.hibon.HiBONFile : HiBONRange;
 
-
         if (replay) {
-            foreach(inputfilename; args[1 ..$]) {
+            foreach (inputfilename; args[1 .. $]) {
                 writefln("going through the blocks of %s", inputfilename);
                 if (inputfilename.extension != FileExtension.hibon) {
                     error("File %s not valid (only %(.%s %))",
@@ -117,45 +111,46 @@ int _main(string[] args) {
 
                 }
                 auto fin = File(inputfilename, "r");
-                scope(exit) {
+                scope (exit) {
                     fin.close;
                 }
 
                 RecorderBlock prev_block;
-                foreach(no, doc; HiBONRange(fin).enumerate) {
+                foreach (no, doc; HiBONRange(fin).enumerate) {
                     // add the blocks
                     if (!doc.isRecord!RecorderBlock) {
                         error("The document in the range was not of type RecorderBlock");
                         return 1;
                     }
-                    const _block = RecorderBlock(doc);
+                    auto _block = RecorderBlock(doc);
 
-                
                     verbose("block %s", _block.toPretty);
 
                     if (prev_block !is RecorderBlock.init) {
-                        const hash_of_prev = hash_net.calcHash(prev_block.toDoc);
-                        if (hash_of_prev != _block.previous) {
-                            error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev.encodeBase64, _block.epoch_number, _block.previous.encodeBase64); 
+                        const hash_of_prev = hash_net.calc(prev_block.toDoc);
+                        if (!skip_check && hash_of_prev != _block.previous) {
+                            error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev
+                                    .encodeBase64, _block.epoch_number, _block.previous.encodeBase64);
 
                         }
                     }
 
                     const _recorder = factory.recorder(_block.recorder_doc);
-                    verbose("epoch: %s, eye %(%02x%), recorder length %s", _block.epoch_number, _block.bullseye, _recorder.length); 
+                    verbose("epoch: %s, eye %(%02x%), recorder length %s", _block.epoch_number, _block.bullseye, _recorder
+                            .length);
                     const new_bullseye = dart.modify(_recorder);
-                    if (_block.bullseye != new_bullseye) {
-                        error(format("ERROR: expected bullseye: %(%02x%) \ngot %(%02x%)", 
-                            _block.bullseye, 
-                            new_bullseye));
+                    if (!skip_check && _block.bullseye != new_bullseye) {
+                        error(format("ERROR: expected bullseye: %(%02x%) \ngot %(%02x%)",
+                                _block.bullseye,
+                                new_bullseye));
                         return 1;
                     }
                     verbose("successfully added block");
                     prev_block = _block;
                 }
 
-            } 
-            
+            }
+
         }
 
         if (replay_and_find) {
@@ -163,7 +158,7 @@ int _main(string[] args) {
 
             const init_eye = dart.bullseye;
             verbose("searching for eye %(%02x%)", init_eye);
-            foreach(inputfilename; args[1 ..$]) {
+            foreach (inputfilename; args[1 .. $]) {
                 writefln("going through the blocks of %s", inputfilename);
                 if (inputfilename.extension != FileExtension.hibon) {
                     error("File %s not valid (only %(.%s %))",
@@ -171,25 +166,26 @@ int _main(string[] args) {
                     return 1;
                 }
                 auto fin = File(inputfilename, "r");
-                scope(exit) {
+                scope (exit) {
                     fin.close;
                 }
 
                 RecorderBlock prev_block;
-                Blocks: foreach(no, doc; HiBONRange(fin).enumerate) {
+                Blocks: foreach (no, doc; HiBONRange(fin).enumerate) {
                     // add the blocks
                     if (!doc.isRecord!RecorderBlock) {
                         error("The document in the range was not of type RecorderBlock");
                         return 1;
                     }
-                    const _block = RecorderBlock(doc);
-                    scope(success) {
+                    auto _block = RecorderBlock(doc);
+                    scope (success) {
                         prev_block = _block;
                     }
                     if (prev_block !is RecorderBlock.init) {
-                        const hash_of_prev = hash_net.calcHash(prev_block.toDoc);
+                        const hash_of_prev = hash_net.calc(prev_block.toDoc);
                         if (hash_of_prev != _block.previous) {
-                            error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev.encodeBase64, _block.epoch_number, _block.previous.encodeBase64); 
+                            error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev
+                                    .encodeBase64, _block.epoch_number, _block.previous.encodeBase64);
 
                         }
                     }
@@ -206,36 +202,24 @@ int _main(string[] args) {
                     }
                     verbose("block %s", _block.toPretty);
 
-
                     const _recorder = factory.recorder(_block.recorder_doc);
-                    verbose("epoch: %s, eye %(%02x%), recorder length %s", _block.epoch_number, _block.bullseye, _recorder.length); 
+                    verbose("epoch: %s, eye %(%02x%), recorder length %s", _block.epoch_number, _block.bullseye, _recorder
+                            .length);
                     const new_bullseye = dart.modify(_recorder);
                     if (_block.bullseye != new_bullseye) {
-                        error(format("ERROR: expected bullseye: %(%02x%) \ngot %(%02x%)", 
-                            _block.bullseye, 
-                            new_bullseye));
+                        error(format("ERROR: expected bullseye: %(%02x%) \ngot %(%02x%)",
+                                _block.bullseye,
+                                new_bullseye));
                         return 1;
                     }
                     verbose("successfully added block");
                 }
-
-            } 
-            
+            }
         }
 
-    } catch (Exception e) {
+    }
+    catch (Exception e) {
         error(e);
     }
-
-
-
-
     return 0;
-
-
-
 }
-
-
-
-

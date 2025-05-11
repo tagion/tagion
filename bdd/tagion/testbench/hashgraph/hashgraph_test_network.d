@@ -27,7 +27,7 @@ import tagion.utils.BitMask;
 import tagion.utils.convert : cutHex;
 import tagion.utils.StdTime;
 import tagion.behaviour.BehaviourException : check, BehaviourException;
-
+import tagion.crypto.SecureNet;
 import tagion.basic.Debug;
 import tagion.basic.Version;
 
@@ -78,6 +78,7 @@ class TestRefinement : StdRefinement {
         }
         first_epoch = true;
         import tagion.basic.Debug : print = __write;
+
         print("%12s Round %04d event_collection=%d", hashgraph.name, decided_round.number, event_collection.length);
         if (event_collection.length == 0) {
             return;
@@ -253,7 +254,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
         private void run() {
             { // Eva Event
                 immutable buf = cast(Buffer) _hashgraph.channel;
-                const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
+                const nonce = cast(Buffer) _hashgraph.hirpc.net.hash.calc(buf);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
                 if (Event.callbacks) {
                     Event.callbacks.connect(eva_event);
@@ -317,7 +318,7 @@ static class TestNetworkT(R) if (is(R : Refinement)) { //(NodeList) if (is(NodeL
     void addNode(Refinement refinement, immutable(ulong) N, const(string) name,
             int scrap_depth = 0) {
         immutable passphrase = format("very secret %s", name);
-        auto net = new StdSecureNet();
+        auto net = createSecureNet;
         net.generateKeyPair(passphrase);
         refinement.queue = new PayloadQueue;
         auto h = new HashGraph(N, net, refinement, authorising, name);
@@ -412,8 +413,8 @@ static void checkepoch(uint number_of_nodes, ref FinishedEpoch[string][long] epo
                         printout ~= format("\n%s: ", i);
                         if (!continue_on_error)
                             foreach (j, epack; events) {
-                                const go_hash = net.calcHash(*epack);
-                                const equal = (j < epoch_events[0].length) && (net.calcHash(*epoch_events[0][j]) == go_hash);
+                                const go_hash = net.calc(*epack);
+                                const equal = (j < epoch_events[0].length) && (net.calc(*epoch_events[0][j]) == go_hash);
 
                                 const mark = (equal) ? GREEN : RED;
                                 printout ~= format("%s%(%02x%):%03d ", mark, go_hash[0 .. 4], j);

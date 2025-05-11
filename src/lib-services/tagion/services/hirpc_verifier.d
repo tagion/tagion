@@ -14,9 +14,11 @@ import tagion.logger.Logger;
 import tagion.script.common : SignedContract;
 import tagion.services.messages;
 import tagion.services.codes;
+import tagion.services.rpcs;
 import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 
+@safe:
 struct HiRPCVerifierOptions {
     /// Rejected documents won be discarded and instead sent to rejected_contracts_task
     bool send_rejected_hirpcs = false;
@@ -36,13 +38,12 @@ enum ContractMethods {
  * Receives: (inputDoc, Document)
  * Sends: (inputHiRPC, HiRPC.Receiver) to collector_task, where Document is a correctly formatted HiRPC
 **/
-@safe
 struct HiRPCVerifierService {
     import tagion.services.options : TaskNames;
 
     void task(immutable(HiRPCVerifierOptions) opts, immutable(TaskNames) task_names) {
 
-        SecureNet net = new StdSecureNet;
+        SecureNet net = createSecureNet;
         const hirpc = HiRPC(net);
         immutable collector_task = task_names.collector;
 

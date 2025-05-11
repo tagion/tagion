@@ -89,9 +89,12 @@ struct WastTokenizer {
 
     }
 
-    void check(const bool flag, string msg, string file = __FILE__, const size_t code_line = __LINE__) pure {
+    void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) pure {
         if (!flag) {
-            throw e = new WastTokenizerException(msg, this, file, code_line);
+            if (msg) {
+                throw e = new WastTokenizerException(msg, this, file, code_line);
+            }
+            throw e = new WastTokenizerException("Syntax error", this, file, code_line);
         }
     }
 
@@ -201,6 +204,27 @@ struct WastTokenizer {
         }
         return T.init;
 
+    }
+
+    bool set(T)(ref T val) nothrow {
+        try {
+            static if (isIntegral!T) {
+                val = token.convert!T;
+            }
+            else static if (isFloatingPoint!T) {
+                val = token.convert!T;
+            }
+            else static if (is(T == string)) {
+                val = token;
+            }
+            else {
+                static assert(0, T.stringof ~ " not supported");
+            }
+        }
+        catch (Exception) {
+            return false;
+        }
+        return true;
     }
 
     string getText() nothrow {

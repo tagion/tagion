@@ -27,8 +27,9 @@ import tagion.services.tasknames;
 import tagion.services.replicator;
 import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.script.common;
 import tagion.services.exception;
-import tagion.services.DARTInterface : accepted_dart_methods;
+import tagion.services.rpcs;
 
 @safe:
 ///
@@ -62,32 +63,22 @@ struct DARTOptions {
 struct DARTService {
     static Topic recorder_created = Topic("recorder");
 
-    void task(immutable(DARTOptions) opts,
-            immutable(TaskNames) task_names,
-            shared(StdSecureNet) shared_net,
-            bool trt_enable) {
+    void task(immutable(DARTOptions) opts, shared(SecureNet) shared_net) {
 
         DART db;
         Exception dart_exception;
-        const net = new StdSecureNet(shared_net);
+        const net = shared_net.clone; //new StdSecureNet(shared_net);
         check(opts.dart_path.exists, format("DART database %s file not found", opts.dart_path));
-        db = new DART(net, opts.dart_path);
+        db = new DART(net.hash, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
         }
-
-        ActorHandle replicator_handle = ActorHandle(task_names.replicator);
-        ActorHandle trt_handle = ActorHandle(task_names.trt);
 
         scope (exit) {
             db.close();
         }
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            import std.algorithm;
-            import tagion.hibon.HiBONtoText;
-            import tagion.utils.Miscellaneous;
-
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
@@ -104,10 +95,10 @@ struct DARTService {
 
         auto hirpc = HiRPC(net);
 
-        // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead, search(if TRT is not enabled)
+        // Receives HiRPC requests for the dart. dartRead, dartRim, dartBullseye, dartCheckRead 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
             import tagion.services.codes;
-            import std.conv: to;
+            import std.conv : to;
             import tagion.hibon.HiBONJSON;
 
             log("Received HiRPC request");
@@ -123,8 +114,7 @@ struct DARTService {
                 const err = hirpc.error(receiver, ServiceCode.method.toString, ServiceCode.method);
                 req.respond(err.toDoc);
                 return;
-            } 
-            // TODO REMOVE SEARCH FROM ACCEPTED DARTMETHODS
+            }
 
             Document result = db(receiver, false).toDoc;
             log("darthirpc response: %s", result.toPretty);
@@ -132,22 +122,12 @@ struct DARTService {
         }
 
         // receives modify from transcript and sends the recorder onwards to the Replicator
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @trusted {
-
-            log("Received modify request with length=%s", recorder.length);
-
-            immutable fingerprint_before = Fingerprint(db.bullseye);
-            import core.exception : AssertError;
-
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @trusted {
             auto eye = db.modify(recorder);
             log("New bullseye is %(%02x%)", eye);
 
             req.respond(eye);
-            replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
             log.event(recorder_created, "recorder", recorder.toDoc);
-            if (trt_enable) {
-                trt_handle.send(trtModify(), recorder);
-            }
         }
 
         void futureEye(dartFutureEyeRR req, immutable(RecordFactory.Recorder) recorder) {

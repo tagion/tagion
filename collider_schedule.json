@@ -68,7 +68,7 @@
       "stages": ["commit"],
       "timeout": 0.0
     },
-    "inputvalidator": {
+    "rpcserver": {
       "args": [],
       "envs": {},
       "stages": ["commit"],
@@ -118,7 +118,7 @@
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test", "br_block", "br_if", "br_table", "loop", "if_block"],
+      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test", "br", "br_if", "br_table", "loop", "if_block", "call_indirect", "element"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -131,37 +131,60 @@
         },
         "tvm_new" : {
             "args": [
-                "i32.wast", "i64.wast", "conversions.wast",
-                "int_literals.wast", "int_exprs.wast",
-                 "f32.wast", "f64.wast",
-                 "f32_cmp.wast", "f64_cmp.wast"
+          "i32.wast", "i64.wast", "conversions.wast",
+          "int_literals.wast", "int_exprs.wast",
+          "f32.wast", "f64.wast",
+          "f32_cmp.wast", "f64_cmp.wast",
+          "float_misc.wast", "select.wast",
+          "i32_export.wast", "i64_export.wast", "conversions_export.wast", 
+          "int_literals_export.wast", "int_exprs_export.wast",
+          "f32_export.wast", "f64_export.wast",
+          "f32_cmp_export.wast", "f64_cmp_export.wast",
+          "float_misc_export.wast",
+          "br_block.wast", "br_if_block.wast", "br_table_block.wast",
+          "if_block.wast"
             ]
         },
         "br_table" : {
             "args" : [
-                "br_table_3.wast"
+                "br_table_block.wast"
 
             ]
         },
-        "br_block" : {
+        "br_if" : {
             "args" : [
-                "br_3.wast"
+                "br_if_block.wast"
+            ]
+        },
+         "br" : {
+            "args" : [
+                "br_block.wast"
             ]
         },
         "loop" : {
             "args" : [
-                "loop_2.wast"
+                "loop_block.wast"
             ]
         },
         "if_block" : {
             "args" : [
-                "if_block.wast"
+                "if_block.wast", "loop_block.wast"
             ]
         },
         "tvm_test" : {
             "args" : [
                 "br_if_block.wast"
             ]
+        },
+        "call_indirect" : {
+          "args" : [
+            "call_indirect_1.wast"
+          ]
+        },
+        "element" : {
+          "args" : [
+            "elem.wast"
+          ]
         }
       },
       "timeout": 0.0
@@ -365,15 +388,23 @@
     },
     "dart_synchronization": {
       "timeout" : 3.0,
-      "stages" : ["dart_synchronization"]
+      "stages" : ["dart_synchronization", "commit"]
     },
     "recorder_synchronizer": {
       "timeout" : 3.0,
-      "stages" : ["recorder_synchronizer"]
+      "stages" : ["recorder_synchronizer", "commit"]
     },
     "replicator_service": {
       "timeout" : 3.0,
-      "stages" : ["replicator_service"]
+      "stages" : ["replicator_service", "commit"]
+    },
+    "distributed_dart_synchronization": {
+      "envs": {
+            "DISTRIBUTION_TIMEOUT" : "30" 
+      },
+      "timeout" : 3.0,
+      "stages" : ["distributed_dart_synchronization", "acceptance"]
     }
   }
 }
+

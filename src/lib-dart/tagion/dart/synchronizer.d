@@ -51,8 +51,7 @@ interface Synchronizer {
         * Returns:
         *     If the SynchronizationFiber has finished then this function returns `true`
         */
-    pragma(msg, "FIXME: Rename empty to finished");
-    bool empty() const pure nothrow;
+    bool finished() const pure nothrow;
 }
 
 /**
@@ -140,7 +139,7 @@ abstract class StdSynchronizer : Synchronizer {
         * Checks if synchronization has ended
         * Returns: true on empty
         */
-    bool empty() const pure nothrow {
+    bool finished() const pure nothrow {
         return (_finished || _timeout);
     }
     /* 

@@ -110,8 +110,8 @@ class RecordFactory {
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        alias archive_sorted = (a, b) @safe => (a.dart_index < b.dart_index) || 
-        (a.dart_index == b.dart_index) && (a.type < b.type);
+        alias archive_sorted = (a, b) @safe => (a.dart_index < b.dart_index) ||
+            (a.dart_index == b.dart_index) && (a.type < b.type);
 
         alias Archives = RedBlackTree!(Archive, archive_sorted);
         @exclude package Archives archives;
@@ -147,6 +147,7 @@ class RecordFactory {
         }
 
         private this(Document doc) {
+            
                 .check(isRecord(doc), format("Document is not a %s", This.stringof));
             this.archives = new Archives;
             /*
@@ -179,7 +180,6 @@ class RecordFactory {
         Archives.ImmutableRange opSlice() pure nothrow immutable {
             return archives[];
         }
-
 
         Recorder changeTypes(const GetType get_type) {
             import std.algorithm;
@@ -298,7 +298,7 @@ class RecordFactory {
             return insert(pack, Archive.Type.REMOVE);
         }
 
-        void insert(R)(R range, const Archive.Type type = Archive.Type.NONE) 
+        void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
                 if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
                     ElementType!R))) {
             alias FiledType = ElementType!R;
@@ -408,7 +408,7 @@ class Archive {
             throw new DARTRecorderException("Document cannot be empty");
         }
         if (doc.isStub) {
-            fingerprint = net.calcHash(doc);
+            fingerprint = net.calc(doc);
             dart_index = (doc.hasHashKey) ? net.dartIndex(doc) : cast(DARTIndex)(fingerprint);
             //dart_index = fingerprint;
         }
@@ -419,7 +419,7 @@ class Archive {
             else {
                 filed = doc;
             }
-            fingerprint = net.calcHash(filed);
+            fingerprint = net.calc(filed);
             dart_index = (filed.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(fingerprint);
         }
         Type _type = t;
@@ -464,7 +464,7 @@ class Archive {
         if (type !is Type.NONE) {
             hibon[typeLabel] = type;
         }
-        
+
         return Document(hibon);
     }
 
@@ -570,7 +570,7 @@ unittest { // Archive
         hibon["#text"] = "Some text";
         filed_doc = Document(hibon);
     }
-    immutable filed_doc_fingerprint = net.calcHash(filed_doc);
+    immutable filed_doc_fingerprint = net.calc(filed_doc);
     immutable filed_doc_dart_index = net.dartIndex(filed_doc);
 
     Archive a;
@@ -668,6 +668,7 @@ unittest { /// RecordFactory.Recorder.insert range
 unittest {
     import tagion.basic.Debug;
     import tagion.hibon.HiBONJSON;
+
     immutable(ulong[]) table = [
         //  RIM 2 test (rim=2)
         0x20_21_10_30_40_50_80_90,
@@ -706,4 +707,3 @@ unittest {
     }
 
 }
-

@@ -5,16 +5,15 @@ import std.range;
 import std.stdio;
 import std.traits;
 import tagion.communication.HiRPC : HiRPC;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.utils.Random;
 
 struct DartInfo {
     const string dartfilename;
     const string module_path;
-    const SecureNet net;
+    const HashNet net;
     const HiRPC hirpc;
     const string dartfilename2;
-
 
     const ulong[] table = [
         0xABB9_13ab_cdef_1234,
@@ -31,12 +30,13 @@ struct DartInfo {
     const enum FAKE = "$fake#";
 
     auto generateStates(const uint from, const uint to) {
-       auto rnd = RandomT(0x1234);
-       return recurrence!(
-            (a, n) =>
-            a[n-1].progress(rnd.value(from,to))
+        auto rnd = RandomT(0x1234);
+        return recurrence!(
+                (a, n) =>
+                a[n - 1].progress(rnd.value(from, to))
         )(SequenceT(rnd.save, from));
     }
+
     SequenceT[] states;
 
     static auto generateFixedStates(const ulong samples) {
@@ -45,19 +45,15 @@ struct DartInfo {
         a[n-1].drop(1)
         })(start);
 
-        return(rand_range
+        return (rand_range
                 .take(samples)
                 .map!q{a.take(1)}
-                .joiner);        
+                .joiner);
     }
 
-    ReturnType!generateFixedStates fixed_states;    
-    
-
+    ReturnType!generateFixedStates fixed_states;
 
 }
 
 alias RandomT = Random!ulong;
 alias SequenceT = Sequence!ulong;
-
-

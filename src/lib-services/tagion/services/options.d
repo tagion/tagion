@@ -55,18 +55,12 @@ public import tagion.services.tasknames : TaskNames;
 
 public import tagion.logger.LoggerOptions : LoggerOptions;
 public import tagion.services.DART : DARTOptions;
-public import tagion.services.DARTInterface : DARTInterfaceOptions;
+public import tagion.services.rpcserver : RPCServerOptions;
 public import tagion.services.collector : CollectorOptions;
 public import tagion.services.epoch_creator : EpochCreatorOptions;
 public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
-public import tagion.services.inputvalidator : InputValidatorOptions;
 public import tagion.services.replicator : ReplicatorOptions;
 public import tagion.services.subscription : SubscriptionServiceOptions;
-version(NEW_TRANSCRIPT) {
-public import tagion.services.trans : TranscriptOptions;
-} else {
-public import tagion.services.transcript : TranscriptOptions;
-}
 public import tagion.services.TRTService : TRTOptions;
 public import tagion.services.nodeinterface : NodeInterfaceOptions;
 public import tagion.services.DARTSynchronization : DARTSyncOptions;
@@ -78,12 +72,11 @@ struct Options {
     import tagion.json.JSONRecord;
 
     WaveOptions wave;
-    InputValidatorOptions inputvalidator;
     HiRPCVerifierOptions hirpc_verifier;
     DARTOptions dart;
     EpochCreatorOptions epoch_creator;
     ReplicatorOptions replicator;
-    DARTInterfaceOptions dart_interface;
+    RPCServerOptions rpcserver;
     SubscriptionServiceOptions subscription;
     LoggerOptions logger;
     TRTOptions trt;

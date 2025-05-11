@@ -17,7 +17,7 @@ import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.basic : EnumText, isinit;
 import tagion.errors.tagionexceptions : Check;
 import tagion.communication.HiRPC : Callers, HiRPC, HiRPCMethod;
-import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.DARTBasic : DARTIndex, KEY_SPAN, Params, Queries;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTRim;
@@ -88,39 +88,41 @@ class DART : DARTFile {
 
     /** Creates DART with given net and by given file path
     * Params: 
-    *   net = Represent SecureNet for initializing DART
+    *   net = Represent HashNet for initializing DART
     *   filename = Represent path to DART file to open
     *   from_sector = Represents from angle for DART sharding. In development.
     *   to_sector = Represents to angle for DART sharding. In development.
     */
-    this(const SecureNet net,
-        string filename,
-        Flag!"read_only" read_only = No.read_only,
-        const ushort from_sector = 0,
-        const ushort to_sector = 0) @safe {
+    this(const HashNet net,
+            string filename,
+            Flag!"read_only" read_only = No.read_only,
+            const HiRPC hirpc = HiRPC.init,
+            const ushort from_sector = 0,
+            const ushort to_sector = 0) @safe {
         super(net, filename, read_only);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
-        this.hirpc = HiRPC(net);
+        this.hirpc = hirpc;
     }
 
     /** 
     * Creates DART with given net and by given file path safely with catching possible exceptions
     * Params:
-    *       net  = Represent SecureNet for initializing DART
+    *       net  = Represent HashNet for initializing DART
     *       filename = Represent path to DART file to open
     *       exception = Field used for returning exception in case when something gone wrong
     *       from_sector = Represents from angle for DART sharding. In development.
     *       to_sector = Represents to angle for DART sharding. In development.
     */
-    this(const SecureNet net,
-        string filename,
-        out Exception exception,
-        Flag!"read_only" read_only = No.read_only,
-        const ushort from_sector = 0,
-        const ushort to_sector = 0) @safe nothrow {
+    this(const HashNet net,
+            string filename,
+            out Exception exception,
+            Flag!"read_only" read_only = No.read_only,
+            const HiRPC hirpc = HiRPC.init,
+            const ushort from_sector = 0,
+            const ushort to_sector = 0) @safe nothrow {
         try {
-            this(net, filename, read_only, from_sector, to_sector);
+            this(net, filename, read_only, hirpc, from_sector, to_sector);
         }
         catch (Exception e) {
             exception = e;
@@ -159,8 +161,8 @@ received = the HiRPC received package
      * @return HiRPC result that contains current database bullseye
      */
     @HiRPCMethod private const(HiRPC.Sender) dartBullseye(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -213,8 +215,8 @@ received = the HiRPC received package
      * ---
      */
     @HiRPCMethod private const(HiRPC.Sender) dartRead(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -227,8 +229,8 @@ received = the HiRPC received package
     }
 
     @HiRPCMethod private const(HiRPC.Sender) dartCheckRead(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -284,8 +286,8 @@ received = the HiRPC received package
      * ----
      */
     @HiRPCMethod private const(HiRPC.Sender) dartRim(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -379,8 +381,8 @@ received = the HiRPC received package
      */
 
     @HiRPCMethod private const(HiRPC.Sender) dartModify(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -407,8 +409,8 @@ received = the HiRPC received package
      *     else the response return is marked empty
      */
     const(HiRPC.Sender) opCall(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only = true) {
+            ref const(HiRPC.Receiver) received,
+            const bool read_only = true) {
         import std.conv : to;
 
         const method = received.method;
@@ -433,8 +435,9 @@ received = the HiRPC received package
      * Returns: 
      *  synchronization fiber
      */
-    SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims, size_t sz = pageSize * Fiber.defaultStackPages,
-        size_t guardPageSize = pageSize) {
+    SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims, size_t sz = pageSize * Fiber
+            .defaultStackPages,
+            size_t guardPageSize = pageSize) {
 
         return new SynchronizationFiber(rims, synchonizer, sz, guardPageSize);
     }
@@ -453,9 +456,9 @@ received = the HiRPC received package
         size_t fiberPageSize;
 
         this(const Rims root_rims,
-            Synchronizer sync,
-            size_t sz = pageSize * Fiber.defaultStackPages,
-            size_t guardPageSize = pageSize) @trusted {
+                Synchronizer sync,
+                size_t sz = pageSize * Fiber.defaultStackPages,
+                size_t guardPageSize = pageSize) @trusted {
             this.root_rims = root_rims;
             this.sync = sync;
             sync.set(this.outer, this, this.outer.hirpc);
@@ -488,9 +491,7 @@ received = the HiRPC received package
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
                 const local_branches = branches(params.path);
-                const request_branches = CRUD.dartRim(rims : params, hirpc:
-                    hirpc, id:
-                    id);
+                const request_branches = CRUD.dartRim(rims: params, hirpc: hirpc, id: id);
                 const result_branches = sync.query(request_branches);
                 if (Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!Branches;
@@ -498,7 +499,7 @@ received = the HiRPC received package
                     // Read all the archives from the foreign DART
                     //
                     const request_archives = CRUD.dartRead(
-                        foreign_branches
+                            foreign_branches
                             .dart_indices, hirpc, id);
                     const result_archives = sync.query(request_archives);
                     auto foreign_recoder = manufactor.recorder(result_archives.response.result);
@@ -558,7 +559,7 @@ received = the HiRPC received package
          * Returns: true if empty
          */
         final bool empty() const pure nothrow {
-            return sync.empty;
+            return sync.finished;
         }
     }
 
@@ -647,7 +648,7 @@ received = the HiRPC received package
 
         enum TEST_BLOCK_SIZE = 0x80;
 
-        auto net = new DARTFakeNet("very_secret");
+        const net = new DARTFakeNet;
 
         immutable filename = fileId!DART.fullpath;
         immutable filename_A = fileId!DART("A_").fullpath;
@@ -663,7 +664,7 @@ received = the HiRPC received package
             auto random_table = new ulong[N];
             foreach (ref r; random_table) {
                 immutable sector = rand.value(0x0000_0000_0000_ABBAUL, 0x0000_0000_0000_ABBDUL) << (
-                    8 * 6);
+                        8 * 6);
                 r = rand.value(0x0000_1234_5678_0000UL | sector, 0x0000_1334_FFFF_0000UL | sector);
             }
 
@@ -688,8 +689,8 @@ received = the HiRPC received package
                     RecordFactory.Recorder recorder_B;
                     RecordFactory.Recorder recorder_A;
                     // Recorder recorder_B;
-                    auto dart_A = new DART(net, filename_A, No.read_only, from, to);
-                    auto dart_B = new DART(net, filename_B, No.read_only, from, to);
+                    auto dart_A = new DART(net, filename_A, No.read_only, HiRPC.init, from, to);
+                    auto dart_B = new DART(net, filename_B, No.read_only, HiRPC.init, from, to);
                     string[] journal_filenames;
                     scope (success) {
                         // writefln("Exit scope");
@@ -728,7 +729,7 @@ received = the HiRPC received package
 
                     foreach (sector; dart_A.sectors) {
                         immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector).setExtension(
-                            FileExtension
+                                FileExtension
                                 .hibon);
                         journal_filenames ~= journal_filename;
                         //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
@@ -768,8 +769,8 @@ received = the HiRPC received package
                 RecordFactory.Recorder recorder_B;
                 RecordFactory.Recorder recorder_A;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
-                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, HiRPC.init, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, HiRPC.init, from, to);
                 string[] journal_filenames;
                 scope (success) {
                     // writefln("Exit scope");
@@ -818,8 +819,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
-                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, HiRPC.init, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, HiRPC.init, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -874,8 +875,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
-                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, HiRPC.init, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, HiRPC.init, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -929,8 +930,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
-                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, HiRPC.init, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, HiRPC.init, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -981,8 +982,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
-                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, HiRPC.init, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, HiRPC.init, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -1034,8 +1035,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
-                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, HiRPC.init, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, HiRPC.init, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -1082,17 +1083,15 @@ received = the HiRPC received package
             }
 
             { // Synchronization of a DART A where DART A of DART B has common data
-                // writefln("Test 5");
                 DARTFile.create(filename_A, net);
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
-                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, HiRPC.init, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, HiRPC.init, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
-                    // writefln("Exit scope");
                     dart_A.close;
                     dart_B.close;
                     filename_A.remove;
@@ -1132,58 +1131,7 @@ received = the HiRPC received package
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
-            pragma(msg, "fixme(pr) Test disabled because it takes a long time");
-            version (none) { // Synchronization of a Large DART A where DART A of DART B has common data
-                // writefln("Test 6");
-                DARTFile.create(filename_A, net);
-                DARTFile.create(filename_B, net);
-                RecordFactory.Recorder recorder_A;
-                RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
-                //
-                string[] journal_filenames;
-                scope (success) {
-                    // writefln("Exit scope");
-                    dart_A.close;
-                    dart_B.close;
-                    filename_A.remove;
-                    filename_B.remove;
-                }
-
-                write(dart_A, random_table[0 .. 544], recorder_A);
-                write(dart_B, random_table[288 .. 811], recorder_B);
-                //                write(dart_B, random_table[0..17], recorder_B);
-                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-                // writefln("dart_A.dump");
-                // dart_A.dump;
-                // writefln("dart_B.dump");
-                // dart_B.dump;
-                assert(!dart_A.fingerprint.isinit);
-                assert(dart_A.fingerprint != dart_B.fingerprint);
-
-                foreach (sector; dart_A.sectors) {
-                    immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
-                    journal_filenames ~= journal_filename;
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
-                    while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
-                    }
-                }
-
-                foreach (journal_filename; journal_filenames) {
-                    dart_A.replay(journal_filename);
-                }
-                // writefln("dart_A.dump");
-                // dart_A.dump;
-                // writefln("dart_B.dump");
-                //dart_B.dump;
-                assert(!dart_A.fingerprint.isinit);
-                assert(dart_A.fingerprint == dart_B.fingerprint);
-            }
-
         }
-    }
 
+    }
 }

@@ -113,7 +113,7 @@ class StdRefinement : Refinement {
 
         auto transcript_tid = locate(task_names.transcript);
         if (transcript_tid !is Tid.init) {
-            transcript_tid.send(consensusEpoch(), epacks, decided_round.witnesses.imut_array, cast(long)decided_round.number, epoch_time);
+            transcript_tid.send(consensusEpoch(), epacks, decided_round.witnesses, cast(long)decided_round.number, epoch_time);
         }
     }
 
