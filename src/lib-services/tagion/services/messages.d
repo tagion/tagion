@@ -28,6 +28,12 @@ alias Payload = Msg!"Payload";
 /// [FROM: Epoch Creator, TO: Transcript] Epoch containing outputs. 
 alias consensusEpoch = Msg!"consensus_epoch";
 
+/// [FROM: Supervisor, TO: transcript] Tell the transcript to stop at a specific epoch
+alias EpochShutdown = Msg!"epoch_shutdown";
+
+/// [FROM: Transcript, TO: EpochCommit] Sent when finalizing an epoch
+alias EpochCommitRR = Request!("EpochCommit", immutable(long));
+
 /// [FROM: NodeInterface, TO: Epoch Creator] Receive wavefront from NodeInterface
 alias WavefrontReq = Request!"ReceivedWavefront";
 
@@ -68,9 +74,3 @@ alias dartHiRPCRR = Request!"dartHiRPCRequest"; // dartCRUD HiRPC commands: [dar
 alias dartCompareRR = Request!"dartCompare";
 alias dartSyncRR = Request!"dartSync";
 alias dartReplayRR = Request!"dartReplay";
-
-/// [FROM: Supervisor, TO: transcript] Tell the transcript to stop at a specific epoch
-alias EpochShutdown = Msg!"epoch_shutdown";
-
-/// [FROM: Transcript, TO: EpochCommit] Sent when finalizing an epoch
-alias EpochCommitRR = Request!("EpochCommit", immutable(long));
