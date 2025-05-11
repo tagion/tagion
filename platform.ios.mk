@@ -2,12 +2,15 @@
 # Apple arm64 iOS
 #
 
+# The Cmake platform config flags are defined by the ios toolchain file
+
 IOS_SIMULATOR_ARM64:=arm64-apple-ios-simulator
 IOS_PLATFORMS+=$(IOS_SIMULATOR_ARM64)
 ifeq ($(PLATFORM),$(IOS_SIMULATOR_ARM64))
 IOS_ARCH:=$(IOS_SIMULATOR_ARM64)
 TRIPLET:=arm64-apple-ios
 CROSS_ARCH = arm64
+CONFIGUREFLAGS_SECP256K1 += PLATFORM=SIMULATORARM64
 endif
 
 IOS_ARM64:=arm64-apple-ios
@@ -16,6 +19,7 @@ ifeq ($(PLATFORM),$(IOS_ARM64))
 IOS_ARCH:=$(IOS_ARM64)
 TRIPLET=$(IOS_ARCH)
 CROSS_ARCH = arm64
+CONFIGUREFLAGS_SECP256K1 += PLATFORM=OS64
 endif
 
 IOS_SIMULATOR_X86_64:=x86_64-apple-ios-simulator
@@ -24,6 +28,8 @@ ifeq ($(PLATFORM),$(IOS_SIMULATOR_X86_64))
 IOS_ARCH:=$(IOS_SIMULATOR_X86_64)
 TRIPLET:=x86_64-apple-ios
 CROSS_ARCH = x86_64
+CONFIGUREFLAGS_SECP256K1 += PLATFORM=SIMULATOR64
+CMAKE_GENERATOR:=Xcode
 endif
 
 
@@ -33,6 +39,9 @@ ifeq ($(PLATFORM),$(IOS_X86_64))
 IOS_ARCH:=$(IOS_X86_64)
 TRIPLET=$(IOS_X86_64)
 CROSS_ARCH = x86_64
+# This is a fat lib ios toolchain file doesn't specify exclusive x86 ios
+CONFIGUREFLAGS_SECP256K1 += PLATFORM=OS64COMBINED
+CMAKE_GENERATOR:=Xcode
 endif
 
 
@@ -67,8 +76,10 @@ else
 CROSS_SYSROOT=$(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(IPHONE_SDKVERSION).sdk
 endif
 
-# CONFIGUREFLAGS_SECP256K1 += CC=$(CC_CROSS)
-CONFIGUREFLAGS_SECP256K1+=CFLAGS="-arch $(CROSS_ARCH) -fpic -g -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"
+CONFIGUREFLAGS_SECP256K1 += CMAKE_TOOLCHAIN_FILE=$(DTUB)/ios.toolchain.cmake
+
+# I don't know if this is still necessary. It should be set by the cmake toolchain
+BUILDENV_SECP256K1+=CFLAGS="-arch $(CROSS_ARCH) -fpic -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"
 
 else
 install-ios-toolchain:

@@ -6,7 +6,7 @@ ARG DEBUG
 
 # Install deps
 WORKDIR /tmp/
-RUN apk add --no-cache git autoconf clang libtool cmake ldc make automake
+RUN apk add --no-cache git clang cmake ldc make ninja
 
 # Build
 COPY . ./src
@@ -17,14 +17,13 @@ if [[ "$DEBUG" == "" ]]; then \
     echo DEBUG_ENABLE= >> local.mk; \
 fi
 
-RUN make tagion install INSTALL=/usr/local/bin/ DC=ldc2
+RUN make tagion install install-nngcat CMAKE_GENERATOR=Ninja INSTALL=/usr/local/bin/ DC=ldc2
 
 # Final image
 FROM alpine:3.21
 WORKDIR /usr/local/
 ENV NODE_NUMBER=0
 RUN apk add bash
-COPY --from=build /tmp/src/build/x86_64-linux/tmp/nng/src/tools/nngcat/nngcat bin/
 COPY --from=build /usr/local/bin bin/
 COPY ./scripts/create_wallets.sh /usr/local/bin/
 

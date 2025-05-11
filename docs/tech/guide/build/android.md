@@ -7,7 +7,7 @@ This is the subset of tools from the README used to compile the mobile android l
 
 ```sh
 # apt-get update
-# apt-get install make screen autoconf libtool git
+# apt-get install build-essential make cmake git
 ```
 
 ## View Available target platforms

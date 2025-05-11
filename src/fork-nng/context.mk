@@ -2,8 +2,15 @@
 DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
 
-LIBNNG := $(DTMP_NNG)/libnng.a
-CMAKE := cmake
+ifdef DEBUG_ENABLE
+CONFIGUREFLAGS_NNG+=CMAKE_BUILD_TYPE=Debug
+DTMP_NNG:=$(DTMP_NNG)/debug/
+else
+CONFIGUREFLAGS_NNG+=CMAKE_BUILD_TYPE=Release
+DTMP_NNG:=$(DTMP_NNG)/release/
+endif
+
+LIBNNG := $(DTMP_NNG)libnng.a
 
 ifdef USE_SYSTEM_LIBS
 # NNG Does not provide a .pc file,
@@ -24,12 +31,6 @@ NNG_CMAKE_FLAGS+=-DMBEDTLS_ROOT_DIR=${MBEDTLS_ROOT_DIR}
 endif
 endif
 
-ifdef DEBUG_ENABLE
-NNG_CMAKE_FLAGS+=-DCMAKE_BUILD_TYPE=Debug
-else
-NNG_CMAKE_FLAGS+=-DCMAKE_BUILD_TYPE=Release
-endif
-
 # Used to check if the submodule has been updated
 NNG_HEAD := $(REPOROOT)/.git/modules/src/wrap-nng/nng/HEAD 
 NNG_GIT_MODULE := $(DSRC_NNG)/.git
@@ -41,8 +42,8 @@ $(NNG_HEAD): $(NNG_GIT_MODULE)
 
 $(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD)
 	cd $(DTMP_NNG)
-	$(CMAKE) $(NNG_CMAKE_FLAGS) $(DSRC_NNG)
-	$(MAKE)
+	$(CMAKE) $(DSRC_NNG) $(CMAKE_GENERATOR_FLAG) $(CMAKE_TOOLCHAIN_FILE_FLAG) $(addprefix -D,$(CONFIGUREFLAGS_NNG))
+	$(BUILDENV_NNG) $(CMAKE) --build . $(BUILDFLAGS_SECP256K1)
 
 ifdef USE_SYSTEM_LIBS
 nng: # NOTHING TO BUILD
@@ -51,6 +52,13 @@ else
 nng: $(LIBNNG)
 endif
 
+NNGCAT=$(DTMP_NNG)/src/tools/nngcat/nngcat
+INSTALLEDNNGCAT=$(INSTALL)/nngcat
+$(NNGCAT): nng
+install-nngcat: $(INSTALLEDNNGCAT)
+$(INSTALLEDNNGCAT): $(DTMP_NNG)/src/tools/nngcat/nngcat
+	$(PRECMD)
+	$(CP) $(NNGCAT) $(INSTALLEDNNGCAT)
 
 env-nng:
 	$(PRECMD)

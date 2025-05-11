@@ -10,6 +10,7 @@ ifeq ($(PLATFORM),$(ANDROID_AARCH64))
 MTRIPLE:=aarch64-linux
 TRIPLET:=$(MTRIPLE)-android
 ANDROID_ABI?=$(TRIPLET)
+ABI:=arm64-v8a
 ANDROID_ARCH=$(ANDROID_AARCH64)
 
 endif
@@ -23,6 +24,7 @@ ifeq ($(PLATFORM),$(ANDROID_ARMV7A))
 MTRIPLE:=armv7a-linux
 TRIPLET:=$(MTRIPLE)-android
 ANDROID_ABI?=armv7a-linux-androideabi
+ABI:=armeabi-v7a
 ANDROID_ARCH=$(ANDROID_ARMV7A)
 
 endif
@@ -36,6 +38,7 @@ ifeq ($(PLATFORM),$(ANDROID_x86_64))
 MTRIPLE:=x86_64-linux
 TRIPLET:=$(MTRIPLE)-android
 ANDROID_ABI?=$(TRIPLET)
+ABI:=x86_64
 ANDROID_ARCH=$(ANDROID_x86_64)
 
 endif
@@ -70,9 +73,16 @@ export CXX:=$(ANDROID_TOOLCHAIN)/bin/$(ANDROID_ABI)$(ANDROID_API)-clang++
 export LD:=$(ANDROID_TOOLCHAIN)/bin/ld.ldd
 export RANLIB:=$(ANDROID_TOOLCHAIN)/bin/llvm-ranlib
 export STRIP:=$(ANDROID_TOOLCHAIN)/bin/llvm-strip
-export CMAKE:=$(REPOROOT)/cmake-android/bin/cmake
+export CMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK)/build/cmake/android.toolchain.cmake
+# export CMAKE:=$(REPOROOT)/tools/android-cmake/bin/cmake
 
-NNG_CMAKE_FLAGS+=-DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake
+CONFIGUREFLAGS_SECP256K1 += CMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE)
+CONFIGUREFLAGS_SECP256K1 += ANDROID_ABI=$(ABI)
+CONFIGUREFLAGS_SECP256K1 += ANDROID_PLATFORM=$(ANDROID_API)
+CONFIGUREFLAGS_SECP256K1 += SECP256K1_BUILD_BENCHMARK=OFF
+
+# I don't know if this is still necessary. It should be set by the cmake toolchain
+BUILDENV_SECP256K1+= CFLAGS="-fpic"
 
 DVERSIONS+=MOBILE
 CROSS_ENABLED:=1

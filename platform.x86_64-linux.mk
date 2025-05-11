@@ -16,8 +16,4 @@ build-unittest: proto-unittest-build
 LD_EXPORT_DYN?=-export-dynamic
 LD_STRIP:=-s
 
-#
-# Platform dependant setting for secp256k1
-#
-CONFIGUREFLAGS_SECP256K1 += --enable-examples 
 endif
