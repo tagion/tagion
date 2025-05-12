@@ -289,7 +289,7 @@ struct TranscriptService {
         recorder.add(withead);
 
         /*
-        Since we write all inromation that is known immediately we create the epoch chain block here and make it empty.
+        Since we write all information that is known immediately we create the epoch chain block here and make it empty.
         The following information can be added:
             epoch_number
             time
@@ -301,41 +301,10 @@ struct TranscriptService {
         Epoch non_voted_epoch;
         non_voted_epoch.epoch_number = res.id;
         non_voted_epoch.time = sdt_t(epoch_contract.epoch_time);
+
         // create the globals
+        TagionGlobals new_globals = bill_statistics(recorder, last_globals);
 
-        BigNumber total = last_globals.total;
-        BigNumber total_burned = last_globals.total_burned;
-        long number_of_bills = last_globals.number_of_bills;
-        long burnt_bills = last_globals.burnt_bills;
-
-        void billStatistic(const(Archive) archive) {
-            if (!archive.filed.isRecord!TagionBill) {
-                return;
-            }
-            // log("GOING TO STAT BILL: %s, type: %s", bill.toPretty, archive.type;
-
-            auto bill = TagionBill(archive.filed);
-
-            if (archive.type == Archive.Type.REMOVE) {
-                total -= bill.value.units;
-                total_burned += bill.value.units;
-                burnt_bills += 1;
-                number_of_bills -= 1;
-            }
-            if (archive.type == Archive.Type.ADD) {
-                total += bill.value.units;
-                number_of_bills += 1;
-            }
-        }
-
-        recorder[].each!(a => billStatistic(a));
-
-        TagionGlobals new_globals = TagionGlobals(
-                total,
-                total_burned,
-                number_of_bills,
-                burnt_bills,
-        );
         non_voted_epoch.globals = new_globals;
 
         TagionHead new_head = TagionHead(
@@ -416,5 +385,72 @@ struct TranscriptService {
         log("Booting with globals: %s\n last_head: %s", last_globals.toPretty, last_head.toPretty);
 
         run(&epoch, &produceContract, &createRecorder, &receiveBullseye, &epoch_shutdown);
+    }
+}
+
+// The bill statistic agregates the information about the amount of bills and the total value of bills to the new statistic block
+// It's job is not to check that agregated amount is legal
+TagionGlobals bill_statistics(RecordFactory.Recorder recorder, const TagionGlobals prev_globals) pure {
+    TagionGlobals new_globals = prev_globals;
+
+    foreach(const archive; recorder[]) {
+        if (!archive.filed.isRecord!TagionBill) {
+            continue;
+        }
+
+        auto bill = TagionBill(archive.filed);
+
+        if (archive.type == Archive.Type.REMOVE) {
+            new_globals.total -= bill.value.units;
+            new_globals.total_burned += bill.value.units;
+            new_globals.burnt_bills += 1;
+            new_globals.number_of_bills -= 1;
+        }
+        if (archive.type == Archive.Type.ADD) {
+            new_globals.total += bill.value.units;
+            new_globals.number_of_bills += 1;
+        }
+    }
+    return new_globals;
+}
+
+unittest {
+    import tagion.basic.Types;
+    RecordFactory factory = RecordFactory(hash_net);
+    TagionGlobals globals = TagionGlobals(BigNumber(720), BigNumber(13), 8, 20);
+    { // + 1 bill 
+        TagionGlobals old_globals = globals;
+        auto recorder = factory.recorder;
+        // The time and public key is not important for the statistic
+        recorder.insert(TagionBill(14.TGN, sdt_t(0), Pubkey.init, Buffer.init), Archive.Type.ADD);
+        auto new_globals = bill_statistics(recorder, old_globals);
+        assert(new_globals.total == BigNumber(720 + 14 * TagionCurrency.BASE_UNIT));
+        assert(new_globals.total_burned == BigNumber(13));
+        assert(new_globals.number_of_bills == 9);
+        assert(new_globals.burnt_bills == 20);
+    }
+    { // - 1 bill 
+        TagionGlobals old_globals = globals;
+        auto recorder = factory.recorder;
+        // The time and public key is not important for the statistic
+        recorder.insert(TagionBill(14.TGN, sdt_t(0), Pubkey.init, Buffer.init), Archive.Type.REMOVE);
+        auto new_globals = bill_statistics(recorder, old_globals);
+        assert(new_globals.total == BigNumber(720 - 14 * TagionCurrency.BASE_UNIT));
+        assert(new_globals.total_burned == BigNumber(13 + 14 * TagionCurrency.BASE_UNIT));
+        assert(new_globals.number_of_bills == 7);
+        assert(new_globals.burnt_bills == 21);
+    }
+    { // None bill
+        TagionGlobals old_globals = globals;
+        auto recorder = factory.recorder;
+        // Anything than is not a bill should leave the statistic unchanged
+        recorder.insert(PayScript([TagionBill(10.TGN, sdt_t(5), Pubkey.init, Buffer.init)]), Archive.Type.ADD);
+        recorder.insert(PayScript([TagionBill(7.TGN, sdt_t(5), Pubkey.init, Buffer.init)]), Archive.Type.NONE);
+        recorder.insert(PayScript([TagionBill(16.TGN, sdt_t(5), Pubkey.init, Buffer.init)]), Archive.Type.REMOVE);
+        auto new_globals = bill_statistics(recorder, old_globals);
+        assert(new_globals.total == old_globals.total);
+        assert(new_globals.total_burned == old_globals.total_burned);
+        assert(new_globals.number_of_bills == old_globals.number_of_bills);
+        assert(new_globals.burnt_bills == old_globals.burnt_bills);
     }
 }
