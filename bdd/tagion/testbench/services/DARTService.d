@@ -119,7 +119,6 @@ class WriteAndReadFromDartDb {
 
     SecureNet supervisor_net;
     DARTOptions opts;
-    ReplicatorOptions replicator_opts;
     Mt19937 gen;
     RandomArchives random_archives;
     Document[] docs;
@@ -136,10 +135,9 @@ class WriteAndReadFromDartDb {
         });
     }
 
-    this(DARTOptions opts, ReplicatorOptions replicator_opts, TRTOptions trt_options) {
+    this(DARTOptions opts, TRTOptions trt_options) {
 
         this.opts = opts;
-        this.replicator_opts = replicator_opts;
         this.trt_options = trt_options;
         supervisor_net = createSecureNet;
         supervisor_net.generateKeyPair("supervisor very secret");
