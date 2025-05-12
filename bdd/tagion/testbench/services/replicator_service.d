@@ -92,17 +92,19 @@ class ProducedRecordersAreSentForReplicationAndWritenToFiles {
         replicator_handle = spawn!ReplicatorService(
                 task_names.replicator, svc_options);
 
+        waitforChildren(Ctrl.ALIVE);
+
         foreach (immutable long i, recorder; recorder_payloads) {
             auto mock_bullseye = Fingerprint([cast(immutable(ubyte))i]);
-            replicator_handle.send(SendRecorder(),
+            replicator_handle.send(Replicate(),
                     RecordFactory.uniqueRecorder(recorder),
                     mock_bullseye,
                     (immutable(SignedContract)[]).init,
                     i
             );
+            receiveOnlyTimeout!(Replicate.Response, Fingerprint);
         }
 
-        waitforChildren(Ctrl.ALIVE);
         return result_ok;
     }
 

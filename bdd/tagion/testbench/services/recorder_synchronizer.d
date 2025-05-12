@@ -154,9 +154,12 @@ class ALocalNodeWithARecorderReadsDataFromARemoteNode {
                     opts.task_names.rpcserver))();
             rpcserver_handles ~= rpcserver_handle;
 
+            waitforChildren(Ctrl.ALIVE);
+
             sock_addrs.sock_addrs ~= opts.rpcserver.sock_addr;
 
-            replicator_handle.send(SendRecorder(), RecordFactory.uniqueRecorder(recorder), fingerprint, (immutable(SignedContract)[]).init, immutable(long)(tagion_head.current_epoch));
+            replicator_handle.send(Replicate(), RecordFactory.uniqueRecorder(recorder), fingerprint, (immutable(SignedContract)[]).init, immutable(long)(tagion_head.current_epoch));
+            receiveOnlyTimeout!(Replicate.Response, Fingerprint);
         }
 
         dart_sync_handle = (() @trusted => spawn!DARTSynchronization(

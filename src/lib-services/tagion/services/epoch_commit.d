@@ -26,9 +26,16 @@ struct EpochCommit {
 
     void epoch_commit(EpochCommitRR req, immutable(long) epoch_number, immutable(RecordFactory.Recorder) recorder, immutable(SignedContract)[] signed_contracts) {
         dart_handle.send(dartModifyRR(), recorder);
+        // Receive the new dart bullseye
         conc.receive((dartModifyRR.Response _, Fingerprint eye) {
-            replicator_handle.send(SendRecorder(), recorder, eye, signed_contracts, epoch_number);
-            req.respond(eye);
+            replicator_handle.send(Replicate(), recorder, eye, signed_contracts, epoch_number);
+
+            // Recveive the new recorder block fingerprint
+            conc.receive((Replicate.Response, Fingerprint block_frint) {
+
+                // Send it back to the transcript service
+                req.respond(eye, block_frint);
+            });
         });
 
         if(trt_enable) {

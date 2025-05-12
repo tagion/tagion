@@ -84,7 +84,7 @@ struct ReplicatorService {
         }
 
         void receiveRecorder(
-            SendRecorder,
+            Replicate req,
             immutable(RecordFactory.Recorder) recorder,
             Fingerprint bullseye,
             immutable(SignedContract)[] executed,
@@ -127,6 +127,8 @@ struct ReplicatorService {
                 file.flush;
                 last_block = block;
             }
+
+            req.respond(block.fingerprint);
 
             log.trace("Added recorder block with hash '%(%02x%)'", block.fingerprint);
             log.event(modify_recorder, "modify", recorder);

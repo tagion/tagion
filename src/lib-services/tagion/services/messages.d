@@ -53,7 +53,7 @@ alias NodeError = Msg!"node_error";
 alias NNGError = Msg!"nng_error";
 
 /// [FROM: EpochCommit, TO: Replicator] Send the produced recorder for recorderchain
-alias SendRecorder = Msg!"SendRecorder";
+alias Replicate = Request!"ReplicateRecorder";
 
 alias readRecorderRR = Request!"readRecorder";
 alias syncRecorderRR = Request!"recorderSync";
