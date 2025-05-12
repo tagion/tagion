@@ -41,9 +41,7 @@ Topic reject_collector = "reject/collector";
 immutable(CollectedSignedContract)* collect_contract(ActorHandle dart_handle, immutable SecureNet net, immutable(SignedContract)* s_contract) {
     immutable(Document)[] contract_reads;
     /* Read indices */ 
-    if (s_contract.signs.length != s_contract.contract.inputs.length) {
-        throw new ServiceException("contract_mismatch_signature_length");
-    }
+    check(s_contract.signs.length == s_contract.contract.inputs.length, "contract_mismatch_signature_length");
 
     if (!s_contract.contract.reads.empty) {
         auto reads_req = dartReadRR();
@@ -67,10 +65,7 @@ immutable(CollectedSignedContract)* collect_contract(ActorHandle dart_handle, im
         contract_inputs = recorder[].map!(a => a.filed).array;
     });
 
-    if (!verify(net, s_contract, contract_inputs)) {
-        throw new ServiceException("contract_no_verify");
-    }
-
+    check(verify(net, s_contract, contract_inputs), "contract_no_verify");
     assert(contract_inputs !is Document[].init, "Recorder should've contained inputs at this point");
 
     return new immutable(CollectedSignedContract)(s_contract, contract_inputs, contract_reads);
