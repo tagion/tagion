@@ -15,13 +15,11 @@ struct EpochCommit {
     ActorHandle dart_handle;
     ActorHandle trt_handle;
     ActorHandle replicator_handle;
-    bool trt_enable;
 
-    this(immutable(TaskNames) tn, immutable(bool) trt_enable) {
-        replicator_handle = ActorHandle(tn.replicator);
-        trt_handle = ActorHandle(tn.trt);
-        dart_handle = ActorHandle(tn.dart);
-        this.trt_enable = trt_enable;
+    this(ActorHandle dart_handle, ActorHandle replicator_handle, ActorHandle trt_handle) {
+        this.replicator_handle = replicator_handle;
+        this.trt_handle = trt_handle;
+        this.dart_handle = dart_handle;
     }
 
     void epoch_commit(EpochCommitRR req, immutable(long) epoch_number, immutable(RecordFactory.Recorder) recorder, immutable(SignedContract)[] signed_contracts) {
@@ -38,7 +36,7 @@ struct EpochCommit {
             });
         });
 
-        if(trt_enable) {
+        if(trt_handle.isActive) {
             trt_handle.send(trtModify(), recorder, signed_contracts, long(epoch_number));
         }
     }
