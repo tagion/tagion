@@ -27,7 +27,6 @@ As of May 2025, everything current is pubished in the tech and governance docume
 
 ## Outdated Tokenomics Papers
 
-[October 2023](https://github.com/tagion/tagion/blob/2d7cf36d89eb2e9213b1e8b4e375a3786e373650/docs/static/Tagion_Tokenomics_2023.pdf)
-
-[June 2024](https://github.com/tagion/tagion/blob/2d7cf36d89eb2e9213b1e8b4e375a3786e373650/docs/static/Tagion_Tokenomics_June_2024.pdf)
-
+[October 2023](https://github.com/tagion/tagion/blob/b0b201b56d1a8c4c7f435c76a3d8faa0bf3d8855/docs/static/Tagion_Tokenomics_2023.pdf)
+[June 2024]
+(https://github.com/tagion/tagion/blob/b0b201b56d1a8c4c7f435c76a3d8faa0bf3d8855/docs/static/Tagion_Tokenomics_June_2024.pdf)
