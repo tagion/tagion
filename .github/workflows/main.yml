@@ -463,7 +463,9 @@ jobs:
       fail-fast: false
       matrix:
         # arch: [arm64]
-        target: [arm64-apple-ios, arm64-apple-ios-simulator, x86_64-apple-ios-simulator, arm64-darwin]
+        # target: [arm64-apple-ios, arm64-apple-ios-simulator, x86_64-apple-ios-simulator, arm64-darwin]
+        # Temporarily disable arm64-darwin and arm64-apple-ios-simulator as ldc2 1.41.0-beta1 does not provide libraries for their compilation. 
+        target: [arm64-apple-ios, x86_64-apple-ios-simulator]
     runs-on: macOS
     steps:
       - uses: actions/checkout@v4

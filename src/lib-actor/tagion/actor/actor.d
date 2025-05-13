@@ -258,6 +258,10 @@ struct ActorHandle {
         return _tid;
     }
 
+    bool isActive() {
+        return tid !is Tid.init;
+    }
+
     // Get the status of the task, asserts if the calling task did not spawn it
     Ctrl state() nothrow {
         if ((task_name in thisActor.childrenState) !is null) {

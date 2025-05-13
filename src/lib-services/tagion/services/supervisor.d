@@ -54,11 +54,15 @@ struct Supervisor {
 
         ActorHandle[] handles;
 
-        handles ~= spawn!ReplicatorService(tn.replicator, opts.replicator);
-        handles ~= spawn!DARTService(tn.dart, opts.dart, shared_net);
+        ActorHandle replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
+        handles ~= replicator_handle;
+        ActorHandle dart_handle = spawn!DARTService(tn.dart, opts.dart, shared_net);
+        handles ~= dart_handle;
 
+        ActorHandle trt_handle;
         if (opts.trt.enable) {
-            handles ~= spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
+            trt_handle = spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
+            handles ~= trt_handle;
         }
 
         handles ~= spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
@@ -85,8 +89,7 @@ struct Supervisor {
         handles ~= _spawn!CollectorService(tn.collector, tn);
 
         handles ~= _spawn!TVMService(tn.tvm, tn);
-
-        handles ~= _spawn!EpochCommit(tn.epoch_commit, tn, opts.trt.enable);
+        handles ~= _spawn!EpochCommit(tn.epoch_commit, dart_handle, replicator_handle, trt_handle);
 
         // signs data
         auto transcript_handle = _spawn!TranscriptService(
