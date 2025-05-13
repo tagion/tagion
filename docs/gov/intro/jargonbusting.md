@@ -27,6 +27,8 @@ ______________________________________________________________
 
 
 A user (s.a.) wants to enter some new pieces of information to the system. 
+
+
 They do that via an app (s.a.), e.g. on their mobile phone. 
 This information can be new (it will be added to the database, s.a.), or it can be a change to (or deletion of) existing data.
 
