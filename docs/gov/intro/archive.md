@@ -1,7 +1,7 @@
 ---
 sidebar_class_name: hidden
 ---
-# Archive of former publication 
+# Archive of former Tagion publication 
 
 Some ideas and concepts described in the follwing PDFs are outdated or abandonned. 
 As of May 2025, everything current is pubished in the tech and governance documentation on docs.tagion.org
