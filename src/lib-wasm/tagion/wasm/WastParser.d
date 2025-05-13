@@ -816,12 +816,17 @@ struct WastParser {
             }
             return ParserStage.BASE;
         }
+	version(none)
         if (r.type is TokenType.BEGIN) {
             tableArgument;
             return table;
         }
         r.expect(TokenType.WORD);
         string table_name;
+        if (!r.token.tryConvert!(int).ok) {
+            table_name = r.token;
+            r.nextToken;
+        }
         table.limit = parseLimit(r);
         if (table_name) {
             r.check((table_name in table_lookup) is null,

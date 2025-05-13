@@ -86,6 +86,7 @@ struct WastTokenizer {
         import std.format;
 
         return assumeWontThrow(format("%s:%s:%d:%d", token, type, line, line_pos));
+
     }
 
     void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) pure {
