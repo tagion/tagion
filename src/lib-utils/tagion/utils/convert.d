@@ -73,7 +73,7 @@ uint convertBase(const(char[]) text) pure nothrow {
     if (sicmp(text[0 .. min(Prefix.hex.length, $)], Prefix.hex) == 0) {
         return 16;
     }
-    else if (sicmp(text[0 .. min(Prefix.bin.length, $)], Prefix.bin) == 0) {
+    if (sicmp(text[0 .. min(Prefix.bin.length, $)], Prefix.bin) == 0) {
         return 2;
     }
     return 10;
@@ -229,10 +229,18 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
     if ((sicmp(text, Inf) == 0) || (sicmp(text, Infinity) == 0)) {
         return (negative) ? -F.infinity : F.infinity;
     }
-    const spec = singleSpec("%f");
-    const x = unformatValue!F(text, spec);
-    return x;
+    version(none)
+    if (isInteger(text)) {
+        const x = convert!long(text);
 
+        enum max_dig = long(1) << F.mant_dig;
+        import std.math : abs;
+
+        check(abs(x) <= max_dig, format("Decimal digits overflow %d for %s", x, F.stringof));
+        return F(x);
+    }
+    const spec = singleSpec("%f");
+    return unformatValue!F(text, spec);
 }
 
 template tryConvert(T) {
