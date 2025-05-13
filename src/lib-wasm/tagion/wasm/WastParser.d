@@ -776,8 +776,51 @@ struct WastParser {
         return elem;
     }
 
+    // table  id? reftype  ('elem'|'import'|'export'
     private TableType parseTable(ref WastTokenizer r) {
         TableType table;
+        ParserStage tableArgument() {
+            if (r.type is TokenType.BEGIN) {
+                scope (exit) {
+                    r.expect(TokenType.END);
+                    r.nextToken;
+                }
+                r.nextToken;
+                r.expect(TokenType.WORD);
+                switch (r.token) {
+                case WastKeywords.ELEM: // ( elem
+                    r.check(only(Types.FUNC, Types.FUNCREF).canFind(table.type),
+                            "Missing definition of reftype");
+                    r.nextToken;
+                    int count;
+                    if (r.type is TokenType.BEGIN) { // ( expr ) ...
+                        //
+                        assert(0, "( expr ) not implemented yet");
+                    }
+                    else { // func ...
+                        while (r.type is TokenType.WORD) {
+                            
+                        }
+                    }
+                    return ParserStage.ELEMENT;
+                case WastKeywords.IMPORT: // ( import
+                    r.nextToken;
+                    return ParserStage.IMPORT;
+                case WastKeywords.EXPORT: // ( export
+                    r.nextToken;
+                    return ParserStage.EXPORT;
+                    default:
+                    r.check(0, "Syntax error");
+
+                }
+            }
+            return ParserStage.BASE;
+        }
+	version(none)
+        if (r.type is TokenType.BEGIN) {
+            tableArgument;
+            return table;
+        }
         r.expect(TokenType.WORD);
         string table_name;
         if (!r.token.tryConvert!(int).ok) {
@@ -898,8 +941,8 @@ struct WastParser {
                 r.nextToken;
                 FuncType func_type;
                 const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type);
-                r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM, "Import state only allowed inside type or param");
-
+                r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM,
+                        "Import state only allowed inside type or param");
                 return stage;
             case WastKeywords.TABLE:
                 r.nextToken;
@@ -1163,9 +1206,9 @@ struct WastParser {
     }
 
     private {
-        int[string] func_lookup;
-        int[string] type_lookup;
-        int[string] table_lookup;
+        int[string] func_lookup; /// Code section name lookup table
+        int[string] type_lookup; /// Type section name lookup table
+        int[string] table_lookup; /// Table section name lookup table
     }
     void parse(ref WastTokenizer tokenizer) {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
