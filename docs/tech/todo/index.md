@@ -43,13 +43,23 @@ Assignee: cbr
 ### TIP6
 Description: docs.tagion.org/tips/6  
 Goal: May  
-- [ ] add hash of executed contract to recorderchain
+- [x] add hash of executed contract to recorderchain
 - [ ] add hash of recorderblock to epochchain  
 Assignee: lr  
+
+### Service refactor
+- [x] Refactor collector to uses concurrency fibers instead of using state map for each incoming contract
+- [x] Create epoch commit service to have more control over how recorders and fingerprints are redistributed
+    `And remove responibillity from transcript and dart service
+- [x] Fix some instabillity in replicator read test
+Assignee: lr
 
 -----------------------------------------------------------------------------------------
 
 ## Backlog
+
+### Boot issue
+- [ ] Fix issue where if an external dart request is sent on a slow machine before the transcript reads the head request it can timeout and the system will be stuck in a none starting state.
 
 ### Seperate HashNet and SecureNet
 Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
