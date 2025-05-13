@@ -11,7 +11,9 @@ Here, you will find the current state of ideas and deliberation regarding Tagion
 
 We have chosen to publish these ideas throughout their development process because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). The only guiding principles that should always be adhered to are the values outlined in the Tagion ["Manifesto"](./manifesto). 
 
-(In previous publications - our "Technical", "Concept" and "Tokenomics" papers - we had preliminarily describe a lot of our ideas. If you are interested in the history of our thinking you can find these in our [archive](./intro/archive))
+:::info[Previous Documentaion]
+Since 2019 we had preliminarily describe a lot of our ideas in publications: our "Technical", "Concept" and "Tokenomics" papers. They are now all considered superseeded by the information on these pages, and everything current ist found here. But if you are interested in the history of our thinking you can find the old publications in our [archive](./intro/archive))
+:::
 
 :::tip[The _Tagion Governance Manifesto_]
 
