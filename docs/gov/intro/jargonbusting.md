@@ -5,7 +5,7 @@ sidebar_class_name: hidden
 
 :::tip[Jargon Bustin']
 
-All technical terms will here be written in _italics_. Some of them are explained at the beginning, some only appear "in inverted commas" when first introduced (and then explained) in the text.
+All technical terms will here be written in _italics_. Some of them are explained at the beginning, some only appear "in inverted commas" when first introduced in the text.
 
 :::
 
@@ -13,32 +13,34 @@ All technical terms will here be written in _italics_. Some of them are explaine
 ______________________________________________________________
 **User:** anybody making use of Decard Platform, without being a node operator
 
-**Subsystem:** a bespoke network of nodes for a particular use-case, independent of the Tagion Mainnet in terms of rules and settings. It sends regular hashed/encrypted status updates to the Mainnet (for validation and notary function). Because of this, Subsystems are here called "federated" with the Tagion Mainnet.
+**Node:** instance of main Tagion software (for Tagion Mainnet and Subsystems). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet
 
-**Node:** instance of Decard's main software (also for Tagion Mainnet). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet
+**Subsystem:** a bespoke network of nodes for a particular use-case, independent of the Tagion Mainnet in terms of rules and settings. It hosts its own database and sends regular hashed/encrypted status updates to the Mainnet (for validation and notary functions). Because of this, Subsystems are here called "federated" with the Tagion Mainnet.
 
 **Database:** large file with archived information that is maintained in/by the node software ("DART" is the name of our special kind of database)
 
 **App:** user-interface to make changes to the database, sends info about changes to a node
 Transaction: unit of database changes (add, edit, delete), content not necessarily currency related, but a currency transaction can also contain "payload" of any kind of information
+
+... now we have the words, to start describing how it works...
 ______________________________________________________________
 
 
 ## Let's start from the practicalities of a general use-case:
 
 
-A user (s.a.) wants to enter some new pieces of information to the system. Let's assume that this informatin is about a particular use-case for which a _federate Subsystem_ (s.a.) has been set up.
+A user  wants to enter some new pieces of information to the system. Let's assume that this informatin is about a particular use-case for which a _federate Subsystem_ has been set up.
 
 
-The user submits the information via an app (s.a.), e.g. on their mobile phone. 
-This information can be new (it will be added to the database, s.a.), or it can be a change to (or deletion of) existing data.
+The user submits the information via an app, e.g. on their mobile phone. 
+This information can be new (it will be added to the database), or it can be a change to (or deletion of) existing data.
 
 
-The app they use for that is built upon - and sometimes still called   a "wallet application", a term inherited from the Tagion Mainnet (s.a.) with it's principle use-cases centered around financial transactions (s.a.).
+The app they use for that is built upon - and sometimes still called   a "wallet application", a term inherited from the Tagion Mainnet with it's principle use-cases centered around financial transactions.
 The application packages the information to be entered into the database in what is (figuratively) called an "envelope". Next to the basic data-input and possibly some conditional instructions, the envelope also includes additional required information (timestamp, user identity, references to other data, required permissions), and the whole message inside the envelope is then called a "contract" (a term inherited from "blockchain" and "DLT" concepts, which will be explained below).
 
 
-These contracts are sent to a node (s.a.) via the internet or local communication networks. A contract is structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "HiBON". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
+These contracts are sent to a node via the internet or local communication networks. A contract is structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "HiBON". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
 
 
 The receiving node checks the information sent in the enveloped contract against the information already existing in its locally stored database (e.g. if user identities and permissions are valid and other data is referenced correctly). It will then execute the transaction and make the changes to its local database as specified.
