@@ -13,27 +13,28 @@ All technical terms will here be written in _italics_. Some of them are explaine
 ______________________________________________________________
 **User:** anybody making use of Decard Platform, without being a node operator
 
+**Subsystem:** a bespoke network of nodes for a particular use-case, independent of the Tagion Mainnet in terms of rules and settings. It sends regular hashed/encrypted status updates to the Mainnet (for validation and notary function). Because of this, Subsystems are here called "federated" with the Tagion Mainnet.
+
 **Node:** instance of Decard's main software (also for Tagion Mainnet). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet
 
 **Database:** large file with archived information that is maintained in/by the node software ("DART" is the name of our special kind of database)
 
 **App:** user-interface to make changes to the database, sends info about changes to a node
 Transaction: unit of database changes (add, edit, delete), content not necessarily currency related, but a currency transaction can also contain "payload" of any kind of information
-
-**Subsystem:** a bespoke network of nodes for a particular use-case, independent of the Tagion Mainnet in terms of rules and setting, but sends regular hashed/encrypted status updates to the Mainnet (for validation and notary function). Because of this, Subsystems are here called "federated" with the Tagion Mainnet.
 ______________________________________________________________
+
 
 ## Let's start from the practicalities of a general use-case:
 
 
-A user (s.a.) wants to enter some new pieces of information to the system. 
+A user (s.a.) wants to enter some new pieces of information to the system. Let's assume that this informatin is about a particular use-case for which a _federate Subsystem_ (s.a.) has been set up.
 
 
-They do that via an app (s.a.), e.g. on their mobile phone. 
+The user submits the information via an app (s.a.), e.g. on their mobile phone. 
 This information can be new (it will be added to the database, s.a.), or it can be a change to (or deletion of) existing data.
 
 
-The app they use for that is built upon - and sometimes still called - a "wallet application", a term inherited from the Tagion Mainnet (s.a.) with it's principle use-cases centered around financial transactions (s.a.).
+The app they use for that is built upon - and sometimes still called   a "wallet application", a term inherited from the Tagion Mainnet (s.a.) with it's principle use-cases centered around financial transactions (s.a.).
 The application packages the information to be entered into the database in what is (figuratively) called an "envelope". Next to the basic data-input and possibly some conditional instructions, the envelope also includes additional required information (timestamp, user identity, references to other data, required permissions), and the whole message inside the envelope is then called a "contract" (a term inherited from "blockchain" and "DLT" concepts, which will be explained below).
 
 
