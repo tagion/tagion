@@ -49,6 +49,7 @@ int main(string[] args) {
     import recorder_synchronizer = tagion.testbench.services.recorder_synchronizer;
     import replicator_service = tagion.testbench.services.replicator_service;
     import distributed_dart_synchronization = tagion.testbench.services.distributed_dart_synchronization;
+    import epoch_commit_service = tagion.testbench.services.epoch_commit_service;
 
     alias alltools = AliasSeq!(
         collector,
@@ -96,6 +97,7 @@ int main(string[] args) {
         recorder_synchronizer,
         replicator_service,
         distributed_dart_synchronization,
+        epoch_commit_service,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
