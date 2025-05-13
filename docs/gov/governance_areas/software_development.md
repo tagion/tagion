@@ -1,5 +1,5 @@
 ---
-sidebar_class_name: hidden
+sidebar_position: 4
 ---
 
 # Software Development
