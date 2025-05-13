@@ -290,7 +290,7 @@ jobs:
 
   docker_build:
     runs-on: ubuntu-latest
-    if: success()
+    if: success() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/current')
     needs: [commit_stage]
     steps:
       - name: Checkout code
