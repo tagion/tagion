@@ -7,7 +7,7 @@ sidebar_label: Introduction
 
 Welcome to the documentation pages of the Tagion project.
 
-On this site, you will find the current design and state of our [architecture]https://docs.tagion.org/tech/architecture, [protocols](https://docs.tagion.org/tech/protocols), how to [set up and use Tagion](https://docs.tagion.org/tech/guide) for yourself, and more (see side-menu).  
+On this site, you will find the current design and state of our [architecture](https://docs.tagion.org/tech/architecture), [protocols](https://docs.tagion.org/tech/protocols), how to [set up and use Tagion](https://docs.tagion.org/tech/guide) for yourself, and more (see side-menu).  
 
 For an overview of what Tagion "is", have a look at the following [short description](/gov/intro/tagion) and the project's [website tagion.org](https://tagion.org).
 
@@ -15,7 +15,9 @@ For an overview of what Tagion "is", have a look at the following [short descrip
 
 :::info[Previous Documentaion]
 
-Since 2019 we had preliminarily described a lot of our ideas in PDF publications: our "Technical", "Concept" and "Tokenomics" papers. They are now all considered superseeded by the information on these pages, and everything current is now found here. But if you are interested in the history of our thinking you can find the old publications in our [archive](./intro/archive))
+Since 2019 we had preliminarily described a lot of our ideas in PDF publications: 
+
+our "Technical", "Concept" and "Tokenomics" papers. They are all considered superseeded by the information on these pages, and everything current is now found here. But if you are interested in the history of our thinking, you can find the old publications in our [archive](./archive))
 :::
 
 
