@@ -64,10 +64,10 @@ struct DARTSynchronization {
     }
 
     void task(
-            immutable(DARTSyncOptions) opts,
-            immutable(SockAddresses) sock_addrs,
-            shared(SecureNet) shared_net,
-            string dst_dart_path
+        immutable(DARTSyncOptions) opts,
+        immutable(SockAddresses) sock_addrs,
+        shared(SecureNet) shared_net,
+        string dst_dart_path
     ) {
         if (opts.journal_path.exists) {
             opts.journal_path.rmdirRecurse;
@@ -102,38 +102,60 @@ struct DARTSynchronization {
     }
 
 private:
-
     immutable(bool) bullseyesMatch(
-            immutable(DARTSyncOptions) opts,
-            immutable(SockAddresses) sock_addrs,
-            const SecureNet net,
-            DART destination
+        immutable(DARTSyncOptions) opts,
+        immutable(SockAddresses) sock_addrs,
+        const SecureNet net,
+        DART destination
     ) {
-        try {
-            RemoteRequestSender sender = new RemoteRequestSender(
-                    opts.socket_timeout_mil,
-                    opts.socket_attempts_mil,
-                    sock_addrs.sock_addrs[0],
-                    null
-            );
-            HiRPC hirpc = HiRPC(net);
-            auto bullseyeRequestDoc = dartBullseye(hirpc).toDoc;
-            const bullseyeResponseDoc = sender.send(bullseyeRequestDoc);
+        import std.random : randomShuffle;
+        import std.array : array;
 
-            auto response = hirpc.receive(bullseyeResponseDoc);
-            auto message = response.message[Keywords.result].get!Document;
-            const remoteFingerprint = message[Params.bullseye].get!Fingerprint;
-            return remoteFingerprint == destination.bullseye;
+        auto shuffledAddrs = sock_addrs.sock_addrs.dup.array;
+        randomShuffle(shuffledAddrs);
+
+        const attempts_timeout = 30_000.msecs;
+        auto startTime = MonoTime.currTime();
+
+        HiRPC hirpc = HiRPC(net);
+        while (true) {
+
+            if (MonoTime.currTime() - startTime > attempts_timeout) {
+                break;
+            }
+
+            foreach (addr; shuffledAddrs) {
+                try {
+                    RemoteRequestSender sender = new RemoteRequestSender(
+                        opts.socket_timeout_mil,
+                        opts.socket_attempts_mil,
+                        addr,
+                        null
+                    );
+
+                    auto bullseyeRequestDoc = dartBullseye(hirpc).toDoc;
+                    const bullseyeResponseDoc = sender.send(bullseyeRequestDoc);
+
+                    auto response = hirpc.receive(bullseyeResponseDoc);
+                    auto message = response.message[Keywords.result].get!Document;
+                    const remoteFingerprint = message[Params.bullseye].get!Fingerprint;
+
+                    return remoteFingerprint == destination.bullseye;
+                }
+                catch (Exception e) {
+                    writeln("Failed to connect to ", addr, ": ", e.msg);
+                    log("Failed to connect to ", addr, ": ", e.msg);
+                    continue;
+                }
+            }
         }
-        catch (HiBONException e) {
-            return false;
-        }
+        assert(0);
     }
 
     immutable(string[]) synchronize(
-            immutable(DARTSyncOptions) opts,
-            immutable(SockAddresses) sock_addrs,
-            DART destination
+        immutable(DARTSyncOptions) opts,
+        immutable(SockAddresses) sock_addrs,
+        DART destination
     ) {
         enum stackPage = 256;
 
@@ -205,10 +227,10 @@ private:
     }
 
     bool recorderSynchronize(
-            immutable(DARTSyncOptions) opts,
-            immutable(SockAddresses) sock_addrs,
-            const SecureNet net,
-            DART destination
+        immutable(DARTSyncOptions) opts,
+        immutable(SockAddresses) sock_addrs,
+        const SecureNet net,
+        DART destination
     ) {
         import tagion.replicator.RecorderCrud;
         import tagion.replicator.RecorderBlock;
@@ -234,20 +256,20 @@ private:
             while (true) {
                 try {
                     if (MonoTime.currTime() - startTime > node_timeout_mil.msecs &&
-                            socket_addr_index + 1 < sock_addrs.sock_addrs.length) {
+                        socket_addr_index + 1 < sock_addrs.sock_addrs.length) {
                         ++socket_addr_index;
                         break;
                     }
 
                     RemoteRequestSender sender = new RemoteRequestSender(
-                            opts.socket_timeout_mil,
-                            opts.socket_attempts_mil,
-                            current_sock_addrs,
-                            null
+                        opts.socket_timeout_mil,
+                        opts.socket_attempts_mil,
+                        current_sock_addrs,
+                        null
                     );
 
                     const recorder_read_request = hirpc.readRecorder(
-                            EpochParam(tagion_head.current_epoch));
+                        EpochParam(tagion_head.current_epoch));
                     const recorder_block_doc = sender.send(recorder_read_request.toDoc);
 
                     if (recorder_block_doc.empty || !recorder_block_doc.isRecord!RecorderBlock)
@@ -297,8 +319,7 @@ class RemoteRequestSender {
 
         socket.recvtimeout = socket_timeout_mil.msecs;
         int rc = socket.dial(sock_addr);
-        enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
-
+        enforce(rc == 0, format("Failed to dial: %s", nng_errstr(rc)));
         rc = socket.send!(immutable(ubyte[]))(request_doc.serialize);
         enforce(rc == 0, format("Failed to send %s", nng_errstr(rc)));
 
