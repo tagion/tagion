@@ -10,6 +10,7 @@ import std.typecons;
 import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.errors.tagionexceptions;
+import tagion.basic.Debug;
 
 @safe:
 
@@ -226,18 +227,23 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
         }
         return result.number;
     }
-    if ((sicmp(text, Inf) == 0) || (sicmp(text, Infinity) == 0)) {
+    if ((sicmp(text[pos .. $], Inf) == 0) || (sicmp(text[pos .. $], Infinity) == 0)) {
         return (negative) ? -F.infinity : F.infinity;
     }
-    version(none)
     if (isInteger(text)) {
-        const x = convert!long(text);
+        const x = convert!ulong(text[pos .. $]);
 
-        enum max_dig = long(1) << F.mant_dig;
+        enum max_dig = (Float!F.I.max << ((F.sizeof * 8) - F.mant_dig)) & Float!F.I.max;
+        alias Dig = Float!F;
         import std.math : abs;
 
-        check(abs(x) <= max_dig, format("Decimal digits overflow %d for %s", x, F.stringof));
-        return F(x);
+        __write("Dig.mant_mask=%x", Dig.mant_mask);
+        __write("text=%s %x <= %x", text, x, max_dig);
+        __write("max_dig=%d F.sizeof*8=%d F.mant_dig=%d", max_dig, F.sizeof * 8, F.mant_dig);
+        //check(abs(x) <= max_dig, format("Decimal digits overflow %d for %s", x, F.stringof));
+        if (abs(x) <= max_dig) {
+            return (negative) ? -F(x) : F(x);
+        }
     }
     const spec = singleSpec("%f");
     return unformatValue!F(text, spec);
@@ -284,6 +290,10 @@ unittest {
             assert(x.isNaN);
             assert(x.signbit);
         }
+        {
+            const x1 = "0xf32".convert!F;
+            assert(x1 == F(0xf32));
+        }
     }
 
     convert_test!float;
@@ -298,6 +308,15 @@ unittest {
         Float!float x1;
         x1.number = "-nan:0x200000".convert!float;
         assert(x1.raw == 0xffa0_0000);
+    }
+    {
+        const x1 = "2147483648".convert!float;
+        assert(x1 == 2147483648);
+    }
+    {
+        const x1 = "-4294967296".convert!float;
+        __write("%f", x1);
+        assert(x1 == -4294967296);
     }
 }
 /++

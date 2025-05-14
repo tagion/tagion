@@ -124,7 +124,9 @@ struct WastTokenizer {
     }
 
     void error(Exception e) nothrow {
-        this.e = e;
+        if (!this.e) {
+            this.e = e;
+        }
         valid(false, e.msg, e.file, e.line);
     }
 
@@ -196,7 +198,7 @@ struct WastTokenizer {
             return token.convert!T;
         }
         catch (Exception e) {
-            valid(false, e.msg);
+            error(e);
         }
         return T.init;
     }
@@ -206,7 +208,7 @@ struct WastTokenizer {
             return token.convert!T;
         }
         catch (Exception e) {
-            valid(false, e.msg);
+            error(e);
         }
         return T.init;
 
