@@ -91,10 +91,16 @@ struct WastTokenizer {
 
     void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) pure {
         if (!flag) {
-            if (msg) {
-                throw e = new WastTokenizerException(msg, this, file, code_line);
+            Exception current_e;
+            scope (exit) {
+                if (!e) {
+                    e = current_e;
+                }
             }
-            throw e = new WastTokenizerException("Syntax error", this, file, code_line);
+            if (msg) {
+                throw current_e = new WastTokenizerException(msg, this, file, code_line);
+            }
+            throw current_e = new WastTokenizerException("Syntax error", this, file, code_line);
         }
     }
 
