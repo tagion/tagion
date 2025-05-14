@@ -781,6 +781,7 @@ struct WastParser {
         TableType table;
         ParserStage tableArgument() {
             if (r.type is TokenType.BEGIN) {
+                __write("%s %s", __FUNCTION__, r.save.map!(t => t.token).take(4));
                 scope (exit) {
                     r.expect(TokenType.END);
                     r.nextToken;
@@ -799,7 +800,8 @@ struct WastParser {
                     }
                     else { // func ...
                         while (r.type is TokenType.WORD) {
-                            
+                            __write("func %s", r.token);
+                            r.nextToken;
                         }
                     }
                     return ParserStage.ELEMENT;
@@ -809,15 +811,22 @@ struct WastParser {
                 case WastKeywords.EXPORT: // ( export
                     r.nextToken;
                     return ParserStage.EXPORT;
-                    default:
+                default:
                     r.check(0, "Syntax error");
 
                 }
             }
             return ParserStage.BASE;
         }
-	version(none)
+        //	version(none)
+        __write("Before toType!!");
+        table.type = toType(r.token);
+        if (table.type !is Types.VOID) {
+            r.nextToken;
+        }
+        __write("- - - > %s", r.save.map!(t => t.token).take(4));
         if (r.type is TokenType.BEGIN) {
+
             tableArgument;
             return table;
         }
@@ -834,7 +843,6 @@ struct WastParser {
             table_lookup[table_name] = cast(int) writer.section!(Section.TABLE).sectypes.length;
 
         }
-        table.type = toType(r.token);
         r.check(table.type.isRefType, format("Ref-type extected not %s", r.token));
         r.nextToken;
         writer.section!(Section.TABLE).sectypes ~= table;
