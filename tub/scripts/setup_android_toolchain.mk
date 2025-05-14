@@ -33,7 +33,7 @@ $(TOOLS)/$(LDC_HOST)/.done: $(TOOLS)/.way
 	cd -
 	touch $@
 
-$(TOOLS)/$(LDC_HOST)/etc/ldc2.conf: $(TOOLS)/.way tub/ldc2.conf
+$(TOOLS)/$(LDC_HOST)/etc/ldc2.conf: $(TOOLS)/$(LDC_HOST)/.done tub/ldc2.conf
 	mv $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf.orig || true
 	cp tub/ldc2.conf $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf
 
