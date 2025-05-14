@@ -10,7 +10,6 @@ import std.typecons;
 import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.errors.tagionexceptions;
-import tagion.basic.Debug;
 
 @safe:
 
@@ -236,11 +235,6 @@ F convert(F)(const(char)[] text) if (isFloatingPoint!F) {
         enum max_dig = (Float!F.I.max << ((F.sizeof * 8) - F.mant_dig)) & Float!F.I.max;
         alias Dig = Float!F;
         import std.math : abs;
-
-        __write("Dig.mant_mask=%x", Dig.mant_mask);
-        __write("text=%s %x <= %x", text, x, max_dig);
-        __write("max_dig=%d F.sizeof*8=%d F.mant_dig=%d", max_dig, F.sizeof * 8, F.mant_dig);
-        //check(abs(x) <= max_dig, format("Decimal digits overflow %d for %s", x, F.stringof));
         if (abs(x) <= max_dig) {
             return (negative) ? -F(x) : F(x);
         }
@@ -315,7 +309,6 @@ unittest {
     }
     {
         const x1 = "-4294967296".convert!float;
-        __write("%f", x1);
         assert(x1 == -4294967296);
     }
 }
