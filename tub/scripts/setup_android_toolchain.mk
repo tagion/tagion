@@ -19,36 +19,40 @@ ANDROID_NDK_ZIP:=$(ANDROID_NDK)-linux-x86_64.zip
 ANDROID_CMAKE_ZIP:=cmake-3.10.2-linux-x86_64.zip
 ANDROID_CMAKE:=android-cmake
 
-install-android-toolchain: $(TOOLS)/.way
-install-android-toolchain: $(LDC_TARGET) $(ANDROID_NDK) $(LDC_HOST) $(ANDROID_CMAKE)
+install-android-toolchain: $(LDC_HOST) $(LDC_TARGET) $(ANDROID_NDK) $(ANDROID_CMAKE)
+.PHONY: install-android-toolchain
 
 $(TOOLS)/.way:
 	mkdir -p $(TOOLS)
 	touch $(TOOLS)/.way
 
-$(TOOLS)/$(LDC_HOST)/.done:
+$(TOOLS)/$(LDC_HOST)/.done: $(TOOLS)/.way
 	cd $(TOOLS)
 	wget https://github.com/ldc-developers/ldc/releases/download/v${LDC_VERSION}/${LDC_HOST_TAR} -O ${LDC_HOST_TAR}
 	tar xf $(LDC_HOST_TAR)
 	cd -
 	touch $@
 
-$(TOOLS)/$(LDC_HOST)/etc/ldc2.conf: tub/ldc2.conf
+$(TOOLS)/$(LDC_HOST)/etc/ldc2.conf: $(TOOLS)/.way tub/ldc2.conf
+	mv $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf.orig || true
 	cp tub/ldc2.conf $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf
 
 $(LDC_HOST): $(TOOLS)/$(LDC_HOST)/.done
 $(LDC_HOST): $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf
+.PHONY: $(LDC_HOST)
 
-$(TOOLS)/$(LDC_TARGET)/.done:
+$(TOOLS)/$(LDC_TARGET)/.done: $(TOOLS)/.way
 	cd $(TOOLS)
 	wget https://github.com/ldc-developers/ldc/releases/download/v${LDC_VERSION}/${LDC_TARGET_TAR} -O ${LDC_TARGET_TAR}
 	tar xf $(LDC_TARGET_TAR)
+	mkdir -p $(LDC_HOST)/android-$(TARGET_ARCH)/
+	cp -r $(LDC_TARGET)/lib $(LDC_HOST)/android-$(TARGET_ARCH)/
 	cd -
 	touch $@
 
 $(LDC_TARGET): $(TOOLS)/$(LDC_TARGET)/.done
 
-$(TOOLS)/$(ANDROID_NDK)/.done:
+$(TOOLS)/$(ANDROID_NDK)/.done: $(TOOLS)/.way 
 	cd $(TOOLS)
 	wget https://dl.google.com/android/repository/${ANDROID_NDK_ZIP} -O ${ANDROID_NDK_ZIP}
 	unzip $(ANDROID_NDK_ZIP)
@@ -57,7 +61,7 @@ $(TOOLS)/$(ANDROID_NDK)/.done:
 
 $(ANDROID_NDK): $(TOOLS)/$(ANDROID_NDK)/.done
 
-$(TOOLS)/$(ANDROID_CMAKE)/.done:
+$(TOOLS)/$(ANDROID_CMAKE)/.done: $(TOOLS)/.way  
 	cd $(TOOLS)
 	wget https://dl.google.com/android/repository/${ANDROID_CMAKE_ZIP} -O ${ANDROID_CMAKE_ZIP}
 	unzip $(ANDROID_CMAKE_ZIP) -d $(ANDROID_CMAKE)
