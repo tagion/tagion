@@ -1,10 +1,11 @@
 ---
 sidebar_position: 1
+sidebar_label: Introduction
 ---
 
-# Introduction
+# Introduction to Tagion Governance 
 
-Welcome to the governance development- and documentation-pages of the Tagion network.
+Welcome to these pages concerning the governance development- and documentation of the Tagion network.
 (For an overview of what Tagion "is", have a look at the website [tagion.org](https://tagion.org))
 
 Here, you will find the current state of ideas and deliberation regarding Tagion's governance. 
