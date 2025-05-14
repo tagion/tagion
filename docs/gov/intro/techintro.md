@@ -3,7 +3,7 @@ sidebar_class_name: hidden
 sidebar_label: Introduction
 ---
 
-# Introduction to our Tech Documentation
+# Tagion's Tech Documentation
 
 Welcome to the documentation pages of the Tagion project.
 
