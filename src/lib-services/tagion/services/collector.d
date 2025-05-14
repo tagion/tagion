@@ -120,6 +120,7 @@ struct CollectorService {
 
     @trusted
     void task() {
+        import std.concurrency;
         auto scheduler = new FiberScheduler;
         scheduler.start({
             run(&signed_contract, &rpc_contract);
