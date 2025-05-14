@@ -101,7 +101,7 @@ class StoppingAllNodesAtASpecificEpoch {
         foreach (opt; test_net.node_opts) {
             const node_name = opt.task_names.supervisor;
             auto db = new DART(net.hash, opt.dart.dart_path);
-            TagionHead head = getHead(db, net);
+            TagionHead head = getHead(db);
             enforce(head.current_epoch == SHUTDOWN_EPOCH, format("%s Wrong head %s", node_name, head.current_epoch));
 
             const locked_indices = lockedArchiveIndices(iota(SHUTDOWN_EPOCH, SHUTDOWN_EPOCH + 10), net.hash);

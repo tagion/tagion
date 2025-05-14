@@ -248,7 +248,7 @@ private:
 
         while (!bMatch) {
             synchronize(opts, sock_addrs, destination);
-            TagionHead tagion_head = getHead(destination, net);
+            TagionHead tagion_head = getHead(destination);
 
             string current_sock_addrs = sock_addrs.sock_addrs[socket_addr_index];
             auto startTime = MonoTime.currTime();

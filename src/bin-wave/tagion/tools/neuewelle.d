@@ -27,6 +27,7 @@ import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension, hasExtension;
 import tagion.basic.dir;
 import tagion.crypto.SecureNet;
+import tagion.dart.DART;
 import tagion.hibon.Document;
 import tagion.logger;
 import tagion.services.logger;
@@ -237,10 +238,7 @@ int _neuewelle(string[] args) {
 
         const node_options = getMode0Options(local_options);
 
-        auto login_net = createSecureNet;
-        login_net.generateKeyPair("dart_read_pin");
-
-        if (!isMode0BullseyeSame(node_options, login_net)) {
+        if (!isMode0BullseyeSame(node_options)) {
             assert(0, "DATABASES must be booted with same bullseye - Abort");
         }
 
@@ -249,24 +247,22 @@ int _neuewelle(string[] args) {
 
         assert(!nodes.empty, "No node keys were available");
 
+        Exception dart_exception;
+        DART db = new DART(hash_net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
+        if (dart_exception !is null) {
+            throw dart_exception;
+        }
+
+        // Currently we just use the node records from the genesis epoch since there is no way to get the currently active nodes without going through the entire epoch chain.
         version (USE_GENESIS_EPOCH) {
-            import tagion.dart.DART;
-
-            Exception dart_exception;
-            DART db = new DART(login_net.hash, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
-            if (dart_exception !is null) {
-                throw dart_exception;
-            }
-            scope (exit) {
-                db.close;
-            }
-
             const head = TagionHead();
-            auto epoch = head.getEpoch(db, login_net);
         }
         else {
-            auto epoch = getCurrentEpoch(node_options[0].dart.dart_path, login_net);
+            const head = getHead(db);
         }
+
+        auto epoch = head.getEpoch(db);
+        db.close;
 
         log("Booting with Epoch %J", epoch);
 
@@ -347,20 +343,30 @@ int _neuewelle(string[] args) {
             destroy(login_net);
         }
 
-        auto epoch = getCurrentEpoch(local_options.dart.dart_path, login_net);
-        log("Booting with Epoch %J", epoch);
-        auto keys = epoch.getNodeKeys;
+        {   // Set addressbook
+            Exception dart_exception;
+            DART db = new DART(hash_net, local_options.dart.dart_path, dart_exception, Yes.read_only);
+            if (dart_exception !is null) {
+                throw dart_exception;
+            }
+            scope(exit) db.close();
 
-        if (!local_options.wave.address_file.empty) {
-            // Read from text file. Will probably be removed
-            addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
-        }
-        else {
-            addressbook = readNNRFromDart(local_options.dart.dart_path, keys, login_net);
-        }
+            TagionHead head = TagionHead(); // getHead(db);
+            GenericEpoch epoch = getEpoch(head, db);
+            log("Booting with Epoch %J", epoch);
+            auto keys = epoch.getNodeKeys;
 
-        foreach (key; keys) {
-            check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
+            if (!local_options.wave.address_file.empty) {
+                // Read from text file. Will probably be removed
+                addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
+            }
+            else {
+                addressbook = readNNRFromDart(db, keys);
+            }
+
+            foreach (key; keys) {
+                check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
+            }
         }
 
         immutable opts = Options(local_options);

@@ -25,27 +25,17 @@ import tagion.script.namerecords;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 
-TagionHead getHead(DART db, const SecureNet net) {
-    DARTIndex tagion_index = net.hash.dartId(HashNames.domain_name, TagionDomain);
-    auto hirpc = HiRPC(net);
-    const sender = CRUD.dartRead([tagion_index], hirpc);
-    const receiver = hirpc.receive(sender);
-    auto response = db(receiver, false);
-    auto recorder = db.recorder(response.result);
-
+TagionHead getHead(DART db, const HashNet net = hash_net) {
+    DARTIndex tagion_index = net.dartId(HashNames.domain_name, TagionDomain);
+    auto recorder = db.loads([tagion_index]);
     check!ServiceException(recorder[].walkLength == 1, "No tagionhead was found");
-
     return TagionHead(recorder[].front.filed);
 }
 
-GenericEpoch getEpoch(const TagionHead head, DART db, const SecureNet net) {
-    DARTIndex epoch_index = net.hash.dartId(HashNames.epoch, head.current_epoch);
 
-    const hirpc = HiRPC(net);
-    const _sender = CRUD.dartRead([epoch_index], hirpc);
-    const _receiver = hirpc.receive(_sender);
-    const epoch_response = db(_receiver, false);
-    const epoch_recorder = db.recorder(epoch_response.result);
+GenericEpoch getEpoch(const TagionHead head, DART db, const HashNet net = hash_net) {
+    DARTIndex epoch_index = net.dartId(HashNames.epoch, head.current_epoch);
+    const epoch_recorder = db.loads([epoch_index], Archive.Type.NONE);
     check!ServiceException(!epoch_recorder[].empty, "There was no Archive at the index pointed to by head");
     const epoch_doc = epoch_recorder[].front.filed;
     if (epoch_doc.isRecord!Epoch) {
@@ -67,28 +57,13 @@ inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
 
 /// Read the Node names records and put them in the addressbook
 /// Sorts the keys
-immutable(NetworkNodeRecord)*[] readNNRFromDart(string dart_path, Pubkey[] keys, const SecureNet _net)
+immutable(NetworkNodeRecord)*[] readNNRFromDart(DART db, Pubkey[] keys, const HashNet net = hash_net)
 in (equal(keys, keys.uniq), "Is trying to read duplicate node keys")
 do {
-    import tagion.gossip.AddressBook;
     import tagion.services.exception;
 
-    Exception dart_exception;
-    DART db = new DART(_net.hash, dart_path, dart_exception, Yes.read_only);
-    if (dart_exception !is null) {
-        throw dart_exception;
-    }
-    scope (exit) {
-        db.close;
-    }
-
-    const hirpc = HiRPC(_net);
-    auto nodekey_indices = keys.map!(k => _net.hash.dartId(HashNames.nodekey, k)).array;
-    // Sort keys according to the dartkey
-
-    const receiver = hirpc.receive(CRUD.dartRead(nodekey_indices, hirpc));
-    const response = db(receiver);
-    const recorder = db.recorder(response.result);
+    auto nodekey_indices = keys.map!(k => net.dartId(HashNames.nodekey, k)).array;
+    const recorder = db.loads(nodekey_indices);
 
     check(recorder.length == nodekey_indices.length, "One or more Network Node Records were not in the dart");
     check(recorder[].each!(a => a.filed.isRecord!NetworkNodeRecord), "The read archives were not a NNR");
@@ -98,20 +73,4 @@ do {
         nnrs ~= new NetworkNodeRecord(a.filed);
     }
     return nnrs;
-}
-
-GenericEpoch getCurrentEpoch(string dart_file_path, const SecureNet _net) {
-    import tagion.dart.DART;
-
-    Exception dart_exception;
-    DART db = new DART(_net.hash, dart_file_path, dart_exception, Yes.read_only);
-    if (dart_exception !is null) {
-        throw dart_exception;
-    }
-    scope (exit) {
-        db.close;
-    }
-
-    const head = getHead(db, _net);
-    return head.getEpoch(db, _net);
 }
