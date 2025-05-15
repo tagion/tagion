@@ -6,12 +6,18 @@ import std.file;
 import std.path;
 import std.stdio;
 import std.typecons;
+import std.format;
+import std.range;
+
 import tagion.GlobalSignals : stopsignal;
 import tagion.actor;
 import tagion.actor.exceptions;
+import tagion.basic.Types;
 import tagion.crypto.SecureNet;
+import tagion.dart.DART : DART;
 import tagion.dart.DARTBasic : DARTIndex;
-import tagion.dart.DARTFile;
+import tagion.wave.common;
+import tagion.script.common;
 import tagion.logger.Logger;
 import tagion.gossip.AddressBook;
 import tagion.services.DART;
@@ -51,8 +57,35 @@ struct Supervisor {
 
     static assert(isFailHandler!(typeof(failHandler_)));
 
-    void task(immutable(Options) opts, shared(SecureNet) shared_net, shared(AddressBook) addressbook) @safe {
+    void task(immutable(Options) opts, shared(SecureNet) shared_net) @safe {
         immutable tn = opts.task_names;
+        const local_net = shared_net.clone;
+
+
+        shared(AddressBook) addressbook = new shared(AddressBook);
+        { // Set addressbook
+            Exception dart_exception;
+            DART db = new DART(local_net.hash, opts.dart.dart_path, dart_exception, Yes.read_only);
+            scope(exit) db.close();
+            if (dart_exception !is null) {
+                throw dart_exception;
+            }
+
+            TagionHead head = TagionHead(); // getHead(db);
+            GenericEpoch epoch = getEpoch(head, db);
+            log("Booting with Epoch %J", epoch);
+            auto keys = getNodeKeys(epoch);
+            if (!opts.wave.address_file.empty) {
+                /* addressbook = File(opts.wave.address_file, "r").byLine.parseAddressFile; */
+            }
+            else {
+                addressbook = readNNRFromDart(db, keys, local_net.hash);
+            }
+
+            foreach (key; keys) {
+                check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
+            }
+        }
 
         ActorHandle[] handles;
 

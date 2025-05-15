@@ -29,7 +29,6 @@ import tagion.basic.dir;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
-import tagion.gossip.AddressBook;
 import tagion.hibon.Document;
 import tagion.logger;
 import tagion.services.logger;
@@ -298,27 +297,6 @@ int _neuewelle(string[] args) {
         )
         );
 
-        // FIXMEEE! pass a new object to each node and not the same
-        shared(AddressBook) local_book = new shared(AddressBook);
-        if (!local_options.wave.address_file.empty) {
-            local_book = File(local_options.wave.address_file).byLine.parseAddressFile;
-        }
-        else {
-            // New version reads the addresses properly from dart
-            // However is incompatible with older darts were not set properly
-            version (MODE0_ADDRESS_DART) {
-                local_book = readNNRFromDart(node_options[0].dart.dart_path, keys, login_net);
-            }
-            else { // Old methods sets, address via task name from config file
-                import std.range;
-
-                foreach (key, opt; zip(keys, node_options)) {
-                    verbose("adding Address ", key);
-                    local_book.set(new NetworkNodeRecord(key, opt.task_names.node_interface));
-                }
-            }
-        }
-
         if (dry_switch) {
             return 0;
         }
@@ -327,7 +305,7 @@ int _neuewelle(string[] args) {
             import tagion.services.supervisor;
 
             verbose("spawning supervisor ", n.opts.task_names.supervisor);
-            supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net, local_book);
+            supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
         }
 
         log("started mode 0 net");
@@ -371,36 +349,9 @@ int _neuewelle(string[] args) {
             destroy(login_net);
         }
 
-        shared(AddressBook) addressbook = new shared(AddressBook);
-        {   // Set addressbook
-            Exception dart_exception;
-            DART db = new DART(hash_net, local_options.dart.dart_path, dart_exception, Yes.read_only);
-            if (dart_exception !is null) {
-                throw dart_exception;
-            }
-            scope(exit) db.close();
-
-            TagionHead head = TagionHead(); // getHead(db);
-            GenericEpoch epoch = getEpoch(head, db);
-            log("Booting with Epoch %J", epoch);
-            auto keys = epoch.getNodeKeys;
-
-            if (!local_options.wave.address_file.empty) {
-                // Read from text file. Will probably be removed
-                addressbook = File(local_options.wave.address_file).byLine.parseAddressFile;
-            }
-            else {
-                addressbook = readNNRFromDart(db, keys);
-            }
-
-            foreach (key; keys) {
-                check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
-            }
-        }
-
         immutable opts = Options(local_options);
         auto net = cast(shared(StdSecureNet))(login_net.clone);
-        spawn!Supervisor(local_options.task_names.supervisor, opts, net, addressbook);
+        spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
         break;
     }
