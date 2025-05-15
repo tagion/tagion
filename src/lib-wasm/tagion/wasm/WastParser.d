@@ -1031,7 +1031,9 @@ struct WastParser {
             ref WastTokenizer r,
             const ParserStage stage,
             ref FuncType func_type) {
+        // ( type|param|result... )
         if (r.type is TokenType.BEGIN) {
+            auto rewind = r;
             r.nextToken;
             bool not_ended;
             scope (exit) {
@@ -1092,6 +1094,9 @@ struct WastParser {
                     r.nextToken;
                 }
                 return ParserStage.RESULT;
+            case WastKeywords.EXPORT:
+                r = rewind;
+                return ParserStage.EXPORT;
             default:
                 not_ended = true;
                 r.nextToken;
@@ -1125,8 +1130,11 @@ struct WastParser {
         switch (r.token) {
         case WastKeywords.FUNC:
             r.nextToken;
-            parseFuncArgs(r, stage, func_type); // ( param ... )
-            parseFuncArgs(r, stage, func_type); // ( result ... )
+            ParserStage func_stage = parseFuncArgs(r, stage, func_type); // ( param ... )
+            r.check(only(ParserStage.PARAM, ParserStage.RESULT).canFind(func_stage), "Param or result expected");
+            if (func_stage is ParserStage.PARAM) {
+                parseFuncArgs(r, stage, func_type); // ( result ... )
+            }
             const type_idx = writer.createTypeIdx(func_type);
             if (type_name) {
                 check((type_name in type_lookup) is null,
@@ -1181,6 +1189,27 @@ struct WastParser {
                 export_type.idx = func_lookup[export_type.name] = func_idx;
             }
         }
+        void innerParseExport(ref ExportType export_type) {
+            // '(export "<name>")'
+            if (r.type is TokenType.BEGIN) {
+                auto rewined = r.save;
+                r.nextToken;
+                if (r.token == WastKeywords.EXPORT) {
+                    r.check(export_type == ExportType.init,
+                            "Export has already been defined");
+                    r.nextToken;
+                    r.check(r.type is TokenType.STRING,
+                            "Name of export expected");
+                    export_type.name = r.token.stripQuotes;
+                    export_type.idx = -1; // Should be set when the function index is know
+                    export_type.desc = IndexType.FUNC;
+                    r.nextToken;
+                    r.expect(TokenType.END);
+                    return;
+                }
+                r = rewined;
+            }
+        }
 
         r.nextToken;
         if (r.type is TokenType.BEGIN) {
@@ -1195,9 +1224,11 @@ struct WastParser {
             func_name = r.token;
             r.nextToken;
         }
+        ExportType export_type;
         ParserStage arg_stage;
         WastTokenizer rewined;
         uint only_one_type_allowed;
+
         do {
             rewined = r.save;
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
