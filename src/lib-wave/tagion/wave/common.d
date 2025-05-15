@@ -50,8 +50,8 @@ GenericEpoch getEpoch(const TagionHead head, DART db, const HashNet net = hash_n
 // Get the public keys of the nodes which would be running the network
 inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
     return epoch_head.match!(
-            (inout Epoch epoch) { return epoch.active; },
-            (inout GenesisEpoch epoch) { return epoch.nodes; }
+            (inout Epoch epoch) => epoch.active,
+            (inout GenesisEpoch epoch) => epoch.nodes,
     );
 }
 

@@ -532,18 +532,20 @@ unittest {
 struct NodeInterfaceService {
     NodeInterfaceOptions opts;
     const(SecureNet) net;
+    shared(AddressBook) addressbook;
     const(HiRPC) hirpc;
     ActorHandle receive_handle;
 
     PeerMgr p2p;
 
     ///
-    this(immutable(NodeInterfaceOptions) opts, shared(SecureNet) shared_net, string message_handler_task) {
+    this(immutable(NodeInterfaceOptions) opts, shared(SecureNet) shared_net, shared(AddressBook) addressbook, string message_handler_task) {
         this.opts = opts;
         this.net = shared_net.clone;
         this.hirpc = HiRPC(this.net);
         this.receive_handle = ActorHandle(message_handler_task);
         this.p2p = PeerMgr(opts);
+        this.addressbook = addressbook;
     }
 
     static Topic node_action_event = Topic("node_action");

@@ -55,6 +55,7 @@ struct EpochCreatorService {
             immutable(NetworkMode) network_mode,
             uint number_of_nodes,
             shared(SecureNet) shared_net,
+            shared(AddressBook) addressbook,
             immutable(TaskNames) task_names) {
 
         const net = shared_net.clone;
@@ -73,11 +74,11 @@ struct EpochCreatorService {
 
         final switch (network_mode) {
         case NetworkMode.INTERNAL:
-            gossip_net = new EmulatorGossipNet(opts.timeout);
+            gossip_net = new EmulatorGossipNet(opts.timeout, addressbook);
             break;
         case NetworkMode.LOCAL,
             NetworkMode.MIRROR:
-            gossip_net = new NNGGossipNet(opts.timeout, ActorHandle(task_names.node_interface));
+            gossip_net = new NNGGossipNet(opts.timeout, ActorHandle(task_names.node_interface), addressbook);
             break;
         }
 

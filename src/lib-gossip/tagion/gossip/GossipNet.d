@@ -18,6 +18,7 @@ import tagion.hibon.Document;
 import tagion.logger;
 import tagion.services.messages;
 import tagion.utils.StdTime;
+import tagion.gossip.AddressBook;
 
 interface GossipNet {
     const(sdt_t) time() const nothrow;
@@ -32,8 +33,10 @@ abstract class StdGossipNet : GossipNet {
     private string[immutable(Pubkey)] addresses;
     private immutable(Pubkey)[] _pkeys;
     Random _random;
+    shared(AddressBook) addressbook;
 
-    this() {
+    this(shared(AddressBook) addressbook) {
+        this.addressbook = addressbook;
         this._random = Random(unpredictableSeed);
     }
 
@@ -47,7 +50,6 @@ abstract class StdGossipNet : GossipNet {
 
     void add_channel(const Pubkey channel) {
         import core.thread;
-        import tagion.gossip.AddressBook;
 
         const address = addressbook[channel].get.address;
 
@@ -84,9 +86,9 @@ private void sleep(Duration dur) @trusted {
 
 class EmulatorGossipNet : StdGossipNet {
     uint delay;
-    this(uint avrg_delay_msecs) {
+    this(uint avrg_delay_msecs, shared(AddressBook) addressbook) {
         this.delay = avrg_delay_msecs;
-        super();
+        super(addressbook);
     }
 
     override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
@@ -117,11 +119,11 @@ class EmulatorGossipNet : StdGossipNet {
 class NNGGossipNet : StdGossipNet {
     uint delay;
     private ActorHandle nodeinterface;
-    this(uint avrg_delay_msecs, ActorHandle nodeinterface) {
+    this(uint avrg_delay_msecs, ActorHandle nodeinterface, shared(AddressBook) addressbook) {
         this.random = Random(unpredictableSeed);
         this.nodeinterface = nodeinterface;
         this.delay = avrg_delay_msecs;
-        super();
+        super(addressbook);
     }
 
     override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {

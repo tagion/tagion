@@ -133,13 +133,6 @@ synchronized class AddressBook {
     }
 }
 
-
-static shared(AddressBook) addressbook;
-
-shared static this() {
-    addressbook = new shared(AddressBook)();
-}
-
 /**
  * This function is used in dev mode when reading from an address file instead of the dart.
  *

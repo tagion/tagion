@@ -13,6 +13,7 @@ import tagion.crypto.SecureNet;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTFile;
 import tagion.logger.Logger;
+import tagion.gossip.AddressBook;
 import tagion.services.DART;
 import tagion.services.rpcserver;
 import tagion.services.TVM;
@@ -31,6 +32,7 @@ else {
 }
 import tagion.services.TRTService;
 import tagion.services.nodeinterface;
+import tagion.services.mode0_nodeinterface;
 import tagion.services.messages;
 import tagion.services.exception;
 
@@ -49,7 +51,7 @@ struct Supervisor {
 
     static assert(isFailHandler!(typeof(failHandler_)));
 
-    void task(immutable(Options) opts, shared(SecureNet) shared_net) @safe {
+    void task(immutable(Options) opts, shared(SecureNet) shared_net, shared(AddressBook) addressbook) @safe {
         immutable tn = opts.task_names;
 
         ActorHandle[] handles;
@@ -76,6 +78,7 @@ struct Supervisor {
                     tn.node_interface,
                     opts.node_interface,
                     shared_net,
+                    addressbook,
                     tn.epoch_creator
             );
             break;
@@ -83,7 +86,7 @@ struct Supervisor {
 
         // signs data
         handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
-                .network_mode, opts.wave.number_of_nodes, shared_net, tn);
+                .network_mode, opts.wave.number_of_nodes, shared_net, addressbook, tn);
 
         // verifies signature
         handles ~= _spawn!CollectorService(tn.collector, tn);

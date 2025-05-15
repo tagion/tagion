@@ -45,7 +45,7 @@ bool isMode0BullseyeSame(const(Options[]) node_options) {
         scope (exit) {
             db.close();
         }
-        auto b = Fingerprint(db.bullseye);
+        auto b = db.bullseye;
         if (dart_exception !is null) {
             throw dart_exception;
         }
@@ -101,15 +101,4 @@ struct Node {
     immutable(Options) opts;
     shared(SecureNet) net;
     Pubkey pkey;
-}
-
-void spawnMode0(
-        ref ActorHandle[] supervisor_handles,
-        Node[] nodes) {
-
-    /// spawn the nodes
-    foreach (ref n; nodes) {
-        verbose("spawning supervisor ", n.opts.task_names.supervisor);
-        supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
-    }
 }

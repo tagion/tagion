@@ -14,7 +14,7 @@ import tagion.behaviour;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types : Pubkey;
-import tagion.gossip.AddressBook : addressbook;
+import tagion.gossip.AddressBook;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
@@ -57,9 +57,12 @@ class SendPayloadAndCreateEpoch {
     ActorHandle[] handles;
     Document send_payload;
 
+    shared(AddressBook) addressbook;
+
     this(EpochCreatorOptions epoch_creator_options, uint number_of_nodes) {
         import tagion.services.options;
 
+        this.addressbook = new shared(AddressBook);
         this.number_of_nodes = number_of_nodes;
 
         foreach (i; 0 .. number_of_nodes) {
@@ -89,6 +92,7 @@ class SendPayloadAndCreateEpoch {
                     NetworkMode.INTERNAL,
                     number_of_nodes,
                     n.node_net,
+                    addressbook,
                     TaskNames(),
             );
         }
