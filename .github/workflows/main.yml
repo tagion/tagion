@@ -464,8 +464,8 @@ jobs:
       matrix:
         # arch: [arm64]
         # target: [arm64-apple-ios, arm64-apple-ios-simulator, x86_64-apple-ios-simulator, arm64-darwin]
-        # Temporarily disable arm64-darwin and arm64-apple-ios-simulator as ldc2 1.41.0-beta1 does not provide libraries for their compilation. 
-        target: [arm64-apple-ios, x86_64-apple-ios-simulator]
+        # Temporarily disable and arm64-apple-ios-simulator as secp256k1 can not cross compile to that target
+        target: [arm64-apple-ios, arm64-darwin, x86_64-apple-ios-simulator]
     runs-on: macOS
     steps:
       - uses: actions/checkout@v4
