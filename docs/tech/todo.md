@@ -59,6 +59,13 @@ Assignee: lr
 
 ## Backlog
 
+### Remove DARTFile.search
+- [ ] Remove the search function from dart and rewrite unittest that depend on it
+
+### Timezong override
+- [ ] Reimplemnt the toISOExtString from phobos without the LocalTime check the removes timezones
+- [ ] Create bug report for phobos when converting back and forth between unwhole timezones
+
 ### Active Nodes record
 - [ ] Create a record that is updated by transcript with the pubkeys of all the active nodes
 - [ ] Remove state info from NNR records
