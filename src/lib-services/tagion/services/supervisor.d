@@ -32,7 +32,7 @@ else {
 }
 import tagion.services.TRTService;
 import tagion.services.nodeinterface;
-import tagion.services.mode0_nodeinterface;
+// import tagion.services.mode0_nodeinterface;
 import tagion.services.messages;
 import tagion.services.exception;
 
@@ -71,6 +71,12 @@ struct Supervisor {
 
         final switch (opts.wave.network_mode) {
         case NetworkMode.INTERNAL:
+            /* handles ~= _spawn!Mode0NodeInterfaceService( */
+            /*         tn.node_interface, */
+            /*         shared_net, */
+            /*         addressbook, */
+            /*         tn.epoch_creator */
+            /* ); */
             break;
         case NetworkMode.LOCAL,
             NetworkMode.MIRROR:
