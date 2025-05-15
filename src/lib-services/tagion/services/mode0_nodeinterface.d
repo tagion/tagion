@@ -4,30 +4,18 @@ module tagion.services.mode0_nodeinterface;
 
 @safe:
 
-import core.time;
-
-import std.format;
-import std.conv;
-import std.exception;
 import std.algorithm;
-import std.typecons;
-import std.traits;
-import std.array;
 
 import tagion.actor;
-import tagion.actor.exceptions;
 import tagion.basic.Types;
 import tagion.crypto.Types;
 import tagion.gossip.AddressBook;
 import tagion.hibon.Document;
-import tagion.script.standardnames;
 import tagion.logger;
 import tagion.services.messages;
-import tagion.services.exception;
 import tagion.crypto.SecureNet;
 import tagion.communication.HiRPC;
 import tagion.utils.pretend_safe_concurrency;
-
 
 ///
 struct Mode0NodeInterfaceService {
@@ -48,7 +36,7 @@ struct Mode0NodeInterfaceService {
         const nnr = addressbook[channel].get;
         Tid node_tid = locate(nnr.address);
         if(node_tid is Tid.init) {
-            log.error("Node address %s is not registered", nnr.address);
+            log.error("Tid node address '%s' is not registered", nnr.address);
             return;
         }
         node_tid.send(req, doc);

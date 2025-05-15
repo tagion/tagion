@@ -32,7 +32,7 @@ else {
 }
 import tagion.services.TRTService;
 import tagion.services.nodeinterface;
-// import tagion.services.mode0_nodeinterface;
+import tagion.services.mode0_nodeinterface;
 import tagion.services.messages;
 import tagion.services.exception;
 
@@ -69,18 +69,19 @@ struct Supervisor {
 
         handles ~= spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
+        ActorHandle node_interface_handle;
         final switch (opts.wave.network_mode) {
         case NetworkMode.INTERNAL:
-            /* handles ~= _spawn!Mode0NodeInterfaceService( */
-            /*         tn.node_interface, */
-            /*         shared_net, */
-            /*         addressbook, */
-            /*         tn.epoch_creator */
-            /* ); */
+            node_interface_handle = _spawn!Mode0NodeInterfaceService(
+                    tn.node_interface,
+                    shared_net,
+                    addressbook,
+                    tn.epoch_creator
+            );
             break;
         case NetworkMode.LOCAL,
             NetworkMode.MIRROR:
-            handles ~= _spawn!NodeInterfaceService(
+            node_interface_handle = _spawn!NodeInterfaceService(
                     tn.node_interface,
                     opts.node_interface,
                     shared_net,
@@ -89,6 +90,7 @@ struct Supervisor {
             );
             break;
         }
+        handles ~= node_interface_handle;
 
         // signs data
         handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave

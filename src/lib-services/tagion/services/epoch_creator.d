@@ -69,18 +69,7 @@ struct EpochCreatorService {
             );
         }
 
-        // GossipNet is the abstraction for the communication, in process, IPC, TCP
-        StdGossipNet gossip_net;
-
-        final switch (network_mode) {
-        case NetworkMode.INTERNAL:
-            gossip_net = new EmulatorGossipNet(opts.timeout, addressbook);
-            break;
-        case NetworkMode.LOCAL,
-            NetworkMode.MIRROR:
-            gossip_net = new NNGGossipNet(opts.timeout, ActorHandle(task_names.node_interface), addressbook);
-            break;
-        }
+        StdGossipNet gossip_net = new NodeGossipNet(opts.timeout, ActorHandle(task_names.node_interface), addressbook);
 
         Pubkey[] channels = addressbook.keys;
         Random!size_t random;

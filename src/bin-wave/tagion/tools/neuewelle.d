@@ -314,7 +314,7 @@ int _neuewelle(string[] args) {
 
                 foreach (key, opt; zip(keys, node_options)) {
                     verbose("adding Address ", key);
-                    local_book.set(new NetworkNodeRecord(key, opt.task_names.epoch_creator));
+                    local_book.set(new NetworkNodeRecord(key, opt.task_names.node_interface));
                 }
             }
         }

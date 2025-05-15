@@ -84,39 +84,7 @@ private void sleep(Duration dur) @trusted {
     Thread.sleep(dur);
 }
 
-class EmulatorGossipNet : StdGossipNet {
-    uint delay;
-    this(uint avrg_delay_msecs, shared(AddressBook) addressbook) {
-        this.delay = avrg_delay_msecs;
-        super(addressbook);
-    }
-
-    override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
-        import tagion.utils.pretend_safe_concurrency;
-        import std.algorithm.searching : countUntil;
-        import tagion.hibon.HiBONJSON;
-
-        version (RANDOM_DELAY) {
-            sleep((cast(int) uniform(0.5f, 1.5f, random) * delay).msecs);
-        }
-        else {
-            sleep(delay.msecs);
-        }
-
-        auto node_tid = locate(addresses[channel]);
-        if (node_tid is Tid.init) {
-            return;
-        }
-
-        node_tid.send(WavefrontReq(req.id), sender.toDoc);
-        debug (EPOCH_LOG) {
-            log.trace("sending to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender
-                    .toDoc.serialize.length);
-        }
-    }
-}
-
-class NNGGossipNet : StdGossipNet {
+class NodeGossipNet : StdGossipNet {
     uint delay;
     private ActorHandle nodeinterface;
     this(uint avrg_delay_msecs, ActorHandle nodeinterface, shared(AddressBook) addressbook) {
@@ -127,8 +95,15 @@ class NNGGossipNet : StdGossipNet {
     }
 
     override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
-        sleep((cast(int) uniform(0.5f, 1.5f, random) * delay).msecs);
+        version (RANDOM_DELAY)
+            sleep((cast(int) uniform(0.5f, 1.5f, random) * delay).msecs);
+        else
+            sleep(delay.msecs);
 
         nodeinterface.send(WavefrontReq(req.id), channel, sender.toDoc);
+        debug (EPOCH_LOG) {
+            log.trace("sending to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender
+                    .toDoc.serialize.length);
+        }
     }
 }

@@ -25,8 +25,6 @@ import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.DARTFakeNet : DARTFakeNet;
-import tagion.gossip.AddressBook;
-import tagion.gossip.GossipNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;

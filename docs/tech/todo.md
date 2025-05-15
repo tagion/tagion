@@ -53,6 +53,8 @@ Assignee: lr
 - [x] Create epoch commit service to have more control over how recorders and fingerprints are redistributed  
     `And remove responibillity from transcript and dart service  
 - [x] Fix some instabillity in replicator read test  
+- [x] Pass addressbook to individual services instead of using static global addressbook
+- [x] Create mode0 nodeinterface service
 Assignee: lr  
 
 -----------------------------------------------------------------------------------------
