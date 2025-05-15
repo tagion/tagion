@@ -1049,7 +1049,7 @@ struct WastParser {
 
                 
 
-                .check(type_idx >= 0, format("Type named %s not found", r.token));
+                r.check(type_idx >= 0, format("Type named %s not found", r.token));
                 func_type = writer.section!(Section.TYPE).sectypes[type_idx];
                 r.nextToken;
                 return ParserStage.TYPE;
@@ -1083,7 +1083,7 @@ struct WastParser {
                     }
                 }
                 return ParserStage.PARAM;
-            case WastKeywords.RESULT:
+            case WastKeywords.RESULT: // Example (result f32)
                 r.valid(only(ParserStage.FUNC, ParserStage.TYPE).canFind(stage),
                         format("Result only allowed inside a function declaration (But is %s)", stage));
                 r.nextToken;
@@ -1094,7 +1094,8 @@ struct WastParser {
                     r.nextToken;
                 }
                 return ParserStage.RESULT;
-            case WastKeywords.EXPORT:
+            case WastKeywords.EXPORT: // Ignore (export "<name") 
+                r.check(stage is ParserStage.FUNC, "'export' not expected here");
                 r = rewind;
                 return ParserStage.EXPORT;
             default:
@@ -1192,7 +1193,7 @@ struct WastParser {
         void innerParseExport(ref ExportType export_type) {
             // '(export "<name>")'
             if (r.type is TokenType.BEGIN) {
-                auto rewined = r.save;
+                auto rewind = r.save;
                 r.nextToken;
                 if (r.token == WastKeywords.EXPORT) {
                     r.check(export_type == ExportType.init,
@@ -1207,7 +1208,7 @@ struct WastParser {
                     r.expect(TokenType.END);
                     return;
                 }
-                r = rewined;
+                r = rewind;
             }
         }
 
@@ -1226,20 +1227,22 @@ struct WastParser {
         }
         ExportType export_type;
         ParserStage arg_stage;
-        WastTokenizer rewined;
+        WastTokenizer rewind;
         uint only_one_type_allowed;
 
         do {
-            rewined = r.save;
+            rewind = r.save;
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
-
+            if (arg_stage is ParserStage.EXPORT) {
+                innerParseExport(export_type);
+            }
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
         while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
         if ((arg_stage != ParserStage.TYPE) &&
                 (arg_stage != ParserStage.RESULT) ||
                 (arg_stage == ParserStage.UNDEFINED)) {
-            r = rewined;
+            r = rewind;
         }
         parseFuncBody(r, ParserStage.FUNC_BODY, code_type, func_type);
     }
