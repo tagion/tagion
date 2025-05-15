@@ -1,9 +1,10 @@
-# Task Pool
+# TODO
 
 ## In Progress
 
 ### DART Synchronization services (mode2) 
 Description: Function to allow a program to remotely synchronize a dart from a node  
+Goal: May  
 - [x] Synchronize a static remote DART to a local DART
 - [ ] Synchronize more static DART's with the same data to one local DART
 - [x] Subscribe to a recorder from one trusted node.
@@ -13,6 +14,7 @@ Assignee: al
 
 ### Graph Mirroring (mode2) 
 Description: create a function can get all new events using wavefront and create a non voting graph of the events
+Goal: May  
 Enable a new node to join the graph  
 - [x] Enable a node to follow the graph and build the consensus with out participating
 - [x] Add graph witness fingerprints to the DART
@@ -23,8 +25,7 @@ Assignee: lr
 
 ### Network Catchup (mode2) 
 Goal: May  
-- [ ] depends on: DART Synchronization services
-- [ ] depends on: Graph Mirroring
+depends on: DART Synchronization services & Graph Mirroring  
 - [ ] integrate in tagionwave, start the network and sync until it can join the network
       when the node starts it should detect that it is out of sync and start mirroring the graph and syncing the dart
 - [ ] bdd which checks that a node can catch up and switch from offline to online   
@@ -57,6 +58,10 @@ Assignee: lr
 -----------------------------------------------------------------------------------------
 
 ## Backlog
+
+### Active Nodes record
+- [ ] Create a record that is updated by transcript with the pubkeys of all the active nodes
+- [ ] Remove state info from NNR records
 
 ### Boot issue
 - [ ] Fix issue where if an external dart request is sent on a slow machine before the transcript reads the head request it can timeout and the system will be stuck in a none starting state.  
