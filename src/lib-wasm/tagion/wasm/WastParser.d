@@ -860,7 +860,9 @@ struct WastParser {
             bool not_ended;
             scope (exit) {
                 r.valid(r.type is TokenType.END || not_ended, "Missing end");
-                r.nextToken;
+                if (!not_ended) {
+                    r.nextToken;
+                }
             }
             switch (r.token) {
             case WastKeywords.MODULE:
@@ -1036,9 +1038,12 @@ struct WastParser {
             auto rewind = r;
             r.nextToken;
             bool not_ended;
-            scope (exit) {
-                r.valid(r.type == TokenType.END || not_ended, "Expected ended");
-                r.nextToken;
+            scope (success) {
+                r.valid(r.type == TokenType.END || not_ended,
+                        format("Expected ended on %s", r.token));
+                if (!not_ended) {
+                    r.nextToken;
+                }
             }
             switch (r.token) {
             case WastKeywords.TYPE:
@@ -1046,8 +1051,6 @@ struct WastParser {
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 const type_idx = type_lookup.get(r.token, -1);
-
-                
 
                 r.check(type_idx >= 0, format("Type named %s not found", r.token));
                 func_type = writer.section!(Section.TYPE).sectypes[type_idx];
@@ -1097,6 +1100,8 @@ struct WastParser {
             case WastKeywords.EXPORT: // Ignore (export "<name") 
                 r.check(stage is ParserStage.FUNC, "'export' not expected here");
                 r = rewind;
+                __write("END EXPORT %(%s %)", r.save.map!(t => t.token).take(4));
+                not_ended = true;
                 return ParserStage.EXPORT;
             default:
                 not_ended = true;
@@ -1132,7 +1137,7 @@ struct WastParser {
         case WastKeywords.FUNC:
             r.nextToken;
             ParserStage func_stage = parseFuncArgs(r, stage, func_type); // ( param ... )
-            r.check(only(ParserStage.PARAM, ParserStage.RESULT).canFind(func_stage), "Param or result expected");
+            //r.check(only(ParserStage.PARAM, ParserStage.RESULT, ParserStage.UNDEFINED).canFind(func_stage), format("Param or result expected but got %s", func_stage));
             if (func_stage is ParserStage.PARAM) {
                 parseFuncArgs(r, stage, func_type); // ( result ... )
             }
@@ -1166,6 +1171,34 @@ struct WastParser {
     }
 
     private void parseFuncType(ref WastTokenizer r, const ParserStage stage) {
+        static void innerParseExport(ref WastTokenizer r, ref ExportType export_type) {
+            // '(export "<name>")'
+            __write("%s %s", __FUNCTION__, r.save.map!(t => t.token).take(5));
+            if (r.type is TokenType.BEGIN) {
+                auto rewind = r.save;
+                r.nextToken;
+                if (r.token == WastKeywords.EXPORT) {
+                    __write("Inside EXPORT");
+                    r.check(export_type == ExportType.init,
+                            "Export has already been defined");
+                    r.nextToken;
+                    __write("STRING %s %s", r.type, r.token);
+                    r.check(r.type is TokenType.STRING,
+                            "Name of export expected");
+                    export_type.name = r.token.stripQuotes;
+                    export_type.idx = -1; // Should be set when the function index is know
+                    export_type.desc = IndexType.FUNC;
+                    __write("export_type %s", export_type);
+                    r.nextToken;
+                    r.expect(TokenType.END);
+                    r.nextToken;
+                    return;
+                }
+                r = rewind;
+                __write("END OF %s %(%s %)", __FUNCTION__, r.save.map!(t => t.token).take(5));
+            }
+        }
+
         CodeType code_type;
         r.valid(stage < ParserStage.FUNC, "Should been outside function declaration");
         string func_name;
@@ -1190,28 +1223,6 @@ struct WastParser {
                 export_type.idx = func_lookup[export_type.name] = func_idx;
             }
         }
-        void innerParseExport(ref ExportType export_type) {
-            // '(export "<name>")'
-            if (r.type is TokenType.BEGIN) {
-                auto rewind = r.save;
-                r.nextToken;
-                if (r.token == WastKeywords.EXPORT) {
-                    r.check(export_type == ExportType.init,
-                            "Export has already been defined");
-                    r.nextToken;
-                    r.check(r.type is TokenType.STRING,
-                            "Name of export expected");
-                    export_type.name = r.token.stripQuotes;
-                    export_type.idx = -1; // Should be set when the function index is know
-                    export_type.desc = IndexType.FUNC;
-                    r.nextToken;
-                    r.expect(TokenType.END);
-                    return;
-                }
-                r = rewind;
-            }
-        }
-
         r.nextToken;
         if (r.type is TokenType.BEGIN) {
             export_tokenizer = r.save;
@@ -1231,14 +1242,20 @@ struct WastParser {
         uint only_one_type_allowed;
 
         do {
-            rewind = r.save;
+            rewind = r;
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
             if (arg_stage is ParserStage.EXPORT) {
-                innerParseExport(export_type);
+                __write("==> EXPORT %(%s %)", r.save.map!(t => t.token).take(5));
+                innerParseExport(r, export_type);
+                __write("After EXPORT %(%s %) only_one_type_allowed=%d",
+                        r.save.map!(t => t.token).take(5),
+                        only_one_type_allowed);
+                continue;
             }
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
-        while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
+        while ((arg_stage == ParserStage.PARAM) || (arg_stage == ParserStage.EXPORT) || (only_one_type_allowed == 1));
+        __write("--> %s %s", __FUNCTION__, arg_stage);
         if ((arg_stage != ParserStage.TYPE) &&
                 (arg_stage != ParserStage.RESULT) ||
                 (arg_stage == ParserStage.UNDEFINED)) {
