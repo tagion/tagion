@@ -1245,16 +1245,12 @@ struct WastParser {
             rewind = r;
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
             if (arg_stage is ParserStage.EXPORT) {
-                __write("==> EXPORT %(%s %)", r.save.map!(t => t.token).take(5));
                 innerParseExport(r, export_type);
-                __write("After EXPORT %(%s %) only_one_type_allowed=%d",
-                        r.save.map!(t => t.token).take(5),
-                        only_one_type_allowed);
                 continue;
             }
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
-        while ((arg_stage == ParserStage.PARAM) || (arg_stage == ParserStage.EXPORT) || (only_one_type_allowed == 1));
+        while (only(ParserStage.PARAM, ParserStage.EXPORT).canFind(arg_stage) || (only_one_type_allowed == 1));
         __write("--> %s %s", __FUNCTION__, arg_stage);
         if ((arg_stage != ParserStage.TYPE) &&
                 (arg_stage != ParserStage.RESULT) ||
