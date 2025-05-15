@@ -25,7 +25,7 @@ import tagion.basic.basic : isinit;
 import tagion.errors.categories : ERRORS;
 import LEB128 = tagion.utils.LEB128;
 import tagion.errors.tagionexceptions : Check;
-public import tagion.hibon.HiBONJSON;
+public import tagion.hibon.HiBONJSON ;
 
 import std.exception;
 import tagion.basic.Version : version_flag = ver;
@@ -40,7 +40,7 @@ static assert(uint.sizeof == 4);
 @safe struct Document {
     alias Value = ValueT!(false, void, Document); /// HiBON Document value type
     protected immutable(ubyte)[] _data;
-
+    mixin JSONString; 
     /++
      Gets the internal buffer
      Returns:

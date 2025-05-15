@@ -165,7 +165,6 @@ class Event {
                 assert(_order is int.init || (_order - _mother._order > 0));
             }
             if (_father) {
-                pragma(msg, "fixme(bbh) this test should be reimplemented once new witness def works");
                 assert(_order is int.init || (_order - _father._order > 0));
             }
         }
