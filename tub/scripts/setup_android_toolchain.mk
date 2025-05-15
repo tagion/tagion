@@ -46,7 +46,8 @@ $(TOOLS)/$(LDC_TARGET)/.done: $(TOOLS)/.way
 	wget https://github.com/ldc-developers/ldc/releases/download/v${LDC_VERSION}/${LDC_TARGET_TAR} -O ${LDC_TARGET_TAR}
 	tar xf $(LDC_TARGET_TAR)
 	mkdir -p $(LDC_HOST)/android-$(TARGET_ARCH)/
-	cp -r $(LDC_TARGET)/lib-x86_64 $(LDC_HOST)/android-x86_64/ || true
+	mkdir -p $(LDC_HOST)/android-x86_64/
+	cp -r $(LDC_TARGET)/lib-x86_64 $(LDC_HOST)/android-x86_64/lib || true
 	cp -r $(LDC_TARGET)/lib $(LDC_HOST)/android-$(TARGET_ARCH)/
 	cd -
 	touch $@
