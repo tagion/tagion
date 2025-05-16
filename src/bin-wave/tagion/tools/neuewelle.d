@@ -343,14 +343,9 @@ int _neuewelle(string[] args) {
         local_options.task_names.setPrefix(wallet_interface.secure_wallet.account.name);
 
         good("Logged in");
-        StdSecureNet login_net;
-        login_net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
-        scope (exit) {
-            destroy(login_net);
-        }
 
         immutable opts = Options(local_options);
-        auto net = cast(shared(StdSecureNet))(login_net.clone);
+        shared net = cast(shared(SecureNet))(wallet_interface.secure_wallet.net.clone);
         spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
         break;
@@ -434,7 +429,7 @@ in (!bootkeys_path.empty, "Should specify a bootkeys path") {
 
     Node[] nodes;
     foreach (i, opts; node_options) {
-        StdSecureNet net;
+        SecureNet net;
         scope (exit) {
             net = null;
         }
@@ -469,7 +464,7 @@ in (!bootkeys_path.empty, "Should specify a bootkeys path") {
     return nodes;
 }
 
-StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
+SecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
     const args = (node_pin.empty) ? string[].init : node_pin.split(":");
 
     if (args.length != 2) {
@@ -499,5 +494,5 @@ StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
     }
 
     verbose("%1$sNode %3$s successful%2$s", GREEN, RESET, args[0]);
-    return cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
+    return wallet_interface.secure_wallet.net.clone;
 }
