@@ -91,10 +91,16 @@ struct WastTokenizer {
 
     void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) pure {
         if (!flag) {
-            if (msg) {
-                throw e = new WastTokenizerException(msg, this, file, code_line);
+            Exception current_e;
+            scope (exit) {
+                if (!e) {
+                    e = current_e;
+                }
             }
-            throw e = new WastTokenizerException("Syntax error", this, file, code_line);
+            if (msg) {
+                throw current_e = new WastTokenizerException(msg, this, file, code_line);
+            }
+            throw current_e = new WastTokenizerException("Syntax error", this, file, code_line);
         }
     }
 
@@ -118,7 +124,9 @@ struct WastTokenizer {
     }
 
     void error(Exception e) nothrow {
-        this.e = e;
+        if (!this.e) {
+            this.e = e;
+        }
         valid(false, e.msg, e.file, e.line);
     }
 
@@ -190,7 +198,7 @@ struct WastTokenizer {
             return token.convert!T;
         }
         catch (Exception e) {
-            valid(false, e.msg);
+            error(e);
         }
         return T.init;
     }
@@ -200,7 +208,7 @@ struct WastTokenizer {
             return token.convert!T;
         }
         catch (Exception e) {
-            valid(false, e.msg);
+            error(e);
         }
         return T.init;
 

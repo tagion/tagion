@@ -36,6 +36,7 @@ import tagion.hibon.HiBON;
 import tagion.script.standardnames;
 import tagion.services.exception;
 import tagion.services.rpcs;
+import tagion.script.common;
 
 @safe
 struct TRTOptions {
@@ -122,6 +123,7 @@ struct TRTService {
                 client_req.respond(err.toDoc);
                 return;
             }
+            // FIXME: Move this to shell
             if (receiver.method.name == "search") {
                 auto owner_doc = receiver.method.params;
                 if (owner_doc[].empty) {
@@ -162,9 +164,18 @@ struct TRTService {
             client_req.respond(result);
         }
 
-        void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
-            log("modify request from dart");
+        void modify(trtModify,
+                immutable(RecordFactory.Recorder) dart_recorder,
+                immutable(SignedContract)[] signed_contracts,
+                long epoch) {
             auto trt_recorder = rec_factory.recorder;
+
+            auto trt_contracts = signed_contracts
+                .map!(s => s.contract)
+                .map!(c => c.toDoc)
+                .map!(doc => TRTContractArchive(net.hash.dartIndex(doc), doc, epoch));
+
+            trt_recorder.insert(trt_contracts, Archive.Type.ADD);
 
             // get a recorder from all the dartkeys already in the db for the function
             auto index_lookup = dart_recorder[]
@@ -182,18 +193,7 @@ struct TRTService {
             }
         }
 
-        void add_contract(trtContract, immutable(Document) doc, long epoch) {
-            log("add contract from transcript");
-            auto recorder = rec_factory.recorder;
-            recorder.insert(TRTContractArchive(net.hash.dartIndex(doc), doc, epoch), Archive
-                    .Type.ADD);
-
-            log("contract added %s", recorder.toPretty);
-            trt_db.modify(recorder);
-            log.event(trt_contract, "trt_contract", recorder.toDoc);
-        }
-
-        run(&modify, &trt_read, &receive_recorder, &add_contract);
+        run(&modify, &trt_read, &receive_recorder);
 
     }
 }

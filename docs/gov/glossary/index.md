@@ -12,12 +12,16 @@ Administered prices are set by corporations with significant market power, who c
 
 ## Anonymity
 
-A lot of DLT systems name "anonymity" as some of their benefits in comparison to conventional systems. However, what that term means often difers - in theory as much as in practice. We here define it (in contrast to "privacy") according to what (action or actor) is identifiable to 3rd parties, and thus present how it applies to Tagion's two structural levels:
+A lot of DLT systems list "anonymity" as one of their benefits in comparison to conventional systems. However, what that term means to them often difers - in theory as much as in practice. 
+We here define it (in comparison to "privacy") according to what (action or actor) is identifiable to 3rd parties.
 
 |Definition: | **Privacy** |**Anonymity**|
 |--|:--:|:--:|
 |**Action** <br />can be identified by 3rd party:|**No**|**Yes**|
 |**Actor** <br />can be identified by 3rd party: |**Yes**|**No**|
+
+
+For the two strucural levels of Tagion, [Mainnet](/gov/glossary#tagion-mainnet) and [federated Subsystem](/gov/glossary#federated-subsystem), this means repectively:
 
 
 |In Tagion | **Full Privacy** |**Full Anonymity**|
@@ -40,7 +44,7 @@ A community member is any individual or entity who has been verified by peers th
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the validity and order of transactions recorded in the [Database](/gov/glossary#distributed_database). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the validity and order of transactions recorded in the [Database](/gov/glossary#distributed-database). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
 
 In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. In this system: 
 

@@ -1,9 +1,9 @@
-name: Build libmobile for ios
+name: ios
+description: Build libmobile for ios
 inputs:
   platform:
     description: 'The target platform'
     required: true
-    type: number
 
 runs:
   using: composite
@@ -11,9 +11,7 @@ runs:
     - name: Build
       shell: bash
       run: |
-        export PATH="/Users/piss/tools/ldc2-1.41.0-beta1-osx-universal/bin/:$PATH"
-        which ldc2
-        make DC=ldc2 SHARED=1 PLATFORM=${{ inputs.platform }} libtauonapi libmobile
+        make DC=/Users/piss/tools/ldc2-1.41.0-beta1-osx-universal/bin/ldc2 SHARED=1 PLATFORM=${{ inputs.platform }} libtauonapi libmobile
         file ./build/${{ inputs.platform }}/lib/libtauonapi.dylib
 
     - name: Check output binaries

@@ -1,5 +1,5 @@
-@description("Rebuild dart database from replicator files Carsten edition") module tagion.tools.vergangenheit
-    .vergangenheit;
+@description("Rebuild dart database from replicator files Carsten edition") 
+module tagion.tools.vergangenheit.vergangenheit;
 import std.array : join;
 import std.getopt;
 import std.stdio;

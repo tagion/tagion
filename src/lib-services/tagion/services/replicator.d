@@ -3,6 +3,7 @@
 module tagion.services.replicator;
 
 import std.algorithm;
+import std.array;
 import std.exception;
 import std.file : append, exists, mkdirRecurse;
 import std.format;
@@ -24,6 +25,7 @@ import tagion.hibon.HiBONFile;
 import tagion.logger.Logger;
 import tagion.replicator.RecorderBlock;
 import tagion.services.messages;
+import tagion.script.common;
 import tagion.json.JSONRecord;
 
 @safe
@@ -82,9 +84,10 @@ struct ReplicatorService {
         }
 
         void receiveRecorder(
-            SendRecorder,
+            Replicate req,
             immutable(RecordFactory.Recorder) recorder,
             Fingerprint bullseye,
+            immutable(SignedContract)[] executed,
             immutable long epoch_number
         ) {
             if (file is File.init || epoch_number % opts.new_file_interval == 0) {
@@ -114,6 +117,7 @@ struct ReplicatorService {
                 last_block is RecorderBlock.init ? Fingerprint.init
                     : last_block.fingerprint,
                     bullseye,
+                    executed.map!(s => net.calc(s.contract)).array,
                     epoch_number,
                     net
             );
@@ -123,6 +127,8 @@ struct ReplicatorService {
                 file.flush;
                 last_block = block;
             }
+
+            req.respond(block.fingerprint);
 
             log.trace("Added recorder block with hash '%(%02x%)'", block.fingerprint);
             log.event(modify_recorder, "modify", recorder);

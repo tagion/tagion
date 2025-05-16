@@ -118,7 +118,7 @@ do
   node_info=$("$bdir/geldbeutel" "$wallet_config" --info) 
 
   if [ $network_mode -eq 0 ]; then
-      address=$(printf "Node_%d_epoch_creator" $i)
+      address=$(printf "node%d/node_interface" $i)
       echo "node$i/wallet:$pincode" >> "$keyfile"
   elif [ $network_mode -ge 1 ]; then
       node=$i

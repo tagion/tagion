@@ -8,7 +8,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : Fingerprint;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : JSONString;
-import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordType;
+import tagion.hibon.HiBONRecord;
 
 // TODO: rename to ReplicatorBlock
 
@@ -25,6 +25,9 @@ struct RecorderBlock {
     /** Recorder with database changes of this block */
     @label("recorder") Document recorder_doc;
 
+    /** List of executed contracts for this db transaction */
+    @optional @label("executed") Fingerprint[] executed;
+
     /** Ctor creates block from recorder, previous hash and bullseye.
      *      @param recorder_doc - Document with recorder for block
      *      @param previous - fingerprint of the previous block
@@ -37,6 +40,7 @@ struct RecorderBlock {
             Document recorder_doc,
             Fingerprint previous,
             Fingerprint bullseye,
+            Fingerprint[] executed,
             long epoch_number,
             const(HashNet) net) 
         {
@@ -45,6 +49,7 @@ struct RecorderBlock {
             this.bullseye = bullseye;
             this.epoch_number = epoch_number;
 
+            this.executed = executed;
             this.fingerprint = net.calc(toDoc);
         }
 

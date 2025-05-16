@@ -776,8 +776,60 @@ struct WastParser {
         return elem;
     }
 
+    // table  id? reftype  ('elem'|'import'|'export'
     private TableType parseTable(ref WastTokenizer r) {
         TableType table;
+        ParserStage tableArgument() {
+            if (r.type is TokenType.BEGIN) {
+                __write("%s %s", __FUNCTION__, r.save.map!(t => t.token).take(4));
+                scope (exit) {
+                    r.expect(TokenType.END);
+                    r.nextToken;
+                }
+                r.nextToken;
+                r.expect(TokenType.WORD);
+                switch (r.token) {
+                case WastKeywords.ELEM: // ( elem
+                    r.check(only(Types.FUNC, Types.FUNCREF).canFind(table.type),
+                            "Missing definition of reftype");
+                    r.nextToken;
+                    int count;
+                    if (r.type is TokenType.BEGIN) { // ( expr ) ...
+                        //
+                        assert(0, "( expr ) not implemented yet");
+                    }
+                    else { // func ...
+                        while (r.type is TokenType.WORD) {
+                            __write("func %s", r.token);
+                            r.nextToken;
+                        }
+                    }
+                    return ParserStage.ELEMENT;
+                case WastKeywords.IMPORT: // ( import
+                    r.nextToken;
+                    return ParserStage.IMPORT;
+                case WastKeywords.EXPORT: // ( export
+                    r.nextToken;
+                    return ParserStage.EXPORT;
+                default:
+                    r.check(0, "Syntax error");
+
+                }
+            }
+            return ParserStage.BASE;
+        }
+        //	version(none)
+        __write("Before toType!!");
+        table.type = toType(r.token);
+        if (table.type !is Types.VOID) {
+            r.nextToken;
+        }
+        __write("- - - > %s", r.save.map!(t => t.token).take(4));
+        if (r.type is TokenType.BEGIN) {
+
+            tableArgument;
+            return table;
+        }
         r.expect(TokenType.WORD);
         string table_name;
         if (!r.token.tryConvert!(int).ok) {
@@ -791,7 +843,6 @@ struct WastParser {
             table_lookup[table_name] = cast(int) writer.section!(Section.TABLE).sectypes.length;
 
         }
-        table.type = toType(r.token);
         r.check(table.type.isRefType, format("Ref-type extected not %s", r.token));
         r.nextToken;
         writer.section!(Section.TABLE).sectypes ~= table;
@@ -809,7 +860,9 @@ struct WastParser {
             bool not_ended;
             scope (exit) {
                 r.valid(r.type is TokenType.END || not_ended, "Missing end");
-                r.nextToken;
+                if (!not_ended) {
+                    r.nextToken;
+                }
             }
             switch (r.token) {
             case WastKeywords.MODULE:
@@ -898,8 +951,8 @@ struct WastParser {
                 r.nextToken;
                 FuncType func_type;
                 const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type);
-                r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM, "Import state only allowed inside type or param");
-
+                r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM,
+                        "Import state only allowed inside type or param");
                 return stage;
             case WastKeywords.TABLE:
                 r.nextToken;
@@ -980,12 +1033,17 @@ struct WastParser {
             ref WastTokenizer r,
             const ParserStage stage,
             ref FuncType func_type) {
+        // ( type|param|result... )
         if (r.type is TokenType.BEGIN) {
+            auto rewind = r;
             r.nextToken;
             bool not_ended;
-            scope (exit) {
-                r.valid(r.type == TokenType.END || not_ended, "Expected ended");
-                r.nextToken;
+            scope (success) {
+                r.valid(r.type == TokenType.END || not_ended,
+                        format("Expected ended on %s", r.token));
+                if (!not_ended) {
+                    r.nextToken;
+                }
             }
             switch (r.token) {
             case WastKeywords.TYPE:
@@ -994,9 +1052,7 @@ struct WastParser {
                 r.expect(TokenType.WORD);
                 const type_idx = type_lookup.get(r.token, -1);
 
-                
-
-                .check(type_idx >= 0, format("Type named %s not found", r.token));
+                r.check(type_idx >= 0, format("Type named %s not found", r.token));
                 func_type = writer.section!(Section.TYPE).sectypes[type_idx];
                 r.nextToken;
                 return ParserStage.TYPE;
@@ -1030,7 +1086,7 @@ struct WastParser {
                     }
                 }
                 return ParserStage.PARAM;
-            case WastKeywords.RESULT:
+            case WastKeywords.RESULT: // Example (result f32)
                 r.valid(only(ParserStage.FUNC, ParserStage.TYPE).canFind(stage),
                         format("Result only allowed inside a function declaration (But is %s)", stage));
                 r.nextToken;
@@ -1041,6 +1097,12 @@ struct WastParser {
                     r.nextToken;
                 }
                 return ParserStage.RESULT;
+            case WastKeywords.EXPORT: // Ignore (export "<name") 
+                r.check(stage is ParserStage.FUNC, "'export' not expected here");
+                r = rewind;
+                __write("END EXPORT %(%s %)", r.save.map!(t => t.token).take(4));
+                not_ended = true;
+                return ParserStage.EXPORT;
             default:
                 not_ended = true;
                 r.nextToken;
@@ -1074,8 +1136,11 @@ struct WastParser {
         switch (r.token) {
         case WastKeywords.FUNC:
             r.nextToken;
-            parseFuncArgs(r, stage, func_type); // ( param ... )
-            parseFuncArgs(r, stage, func_type); // ( result ... )
+            ParserStage func_stage = parseFuncArgs(r, stage, func_type); // ( param ... )
+            //r.check(only(ParserStage.PARAM, ParserStage.RESULT, ParserStage.UNDEFINED).canFind(func_stage), format("Param or result expected but got %s", func_stage));
+            if (func_stage is ParserStage.PARAM) {
+                parseFuncArgs(r, stage, func_type); // ( result ... )
+            }
             const type_idx = writer.createTypeIdx(func_type);
             if (type_name) {
                 check((type_name in type_lookup) is null,
@@ -1106,6 +1171,34 @@ struct WastParser {
     }
 
     private void parseFuncType(ref WastTokenizer r, const ParserStage stage) {
+        static void innerParseExport(ref WastTokenizer r, ref ExportType export_type) {
+            // '(export "<name>")'
+            __write("%s %s", __FUNCTION__, r.save.map!(t => t.token).take(5));
+            if (r.type is TokenType.BEGIN) {
+                auto rewind = r.save;
+                r.nextToken;
+                if (r.token == WastKeywords.EXPORT) {
+                    __write("Inside EXPORT");
+                    r.check(export_type == ExportType.init,
+                            "Export has already been defined");
+                    r.nextToken;
+                    __write("STRING %s %s", r.type, r.token);
+                    r.check(r.type is TokenType.STRING,
+                            "Name of export expected");
+                    export_type.name = r.token.stripQuotes;
+                    export_type.idx = -1; // Should be set when the function index is know
+                    export_type.desc = IndexType.FUNC;
+                    __write("export_type %s", export_type);
+                    r.nextToken;
+                    r.expect(TokenType.END);
+                    r.nextToken;
+                    return;
+                }
+                r = rewind;
+                __write("END OF %s %(%s %)", __FUNCTION__, r.save.map!(t => t.token).take(5));
+            }
+        }
+
         CodeType code_type;
         r.valid(stage < ParserStage.FUNC, "Should been outside function declaration");
         string func_name;
@@ -1130,7 +1223,6 @@ struct WastParser {
                 export_type.idx = func_lookup[export_type.name] = func_idx;
             }
         }
-
         r.nextToken;
         if (r.type is TokenType.BEGIN) {
             export_tokenizer = r.save;
@@ -1144,28 +1236,34 @@ struct WastParser {
             func_name = r.token;
             r.nextToken;
         }
+        ExportType export_type;
         ParserStage arg_stage;
-        WastTokenizer rewined;
+        WastTokenizer rewind;
         uint only_one_type_allowed;
-        do {
-            rewined = r.save;
-            arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
 
+        do {
+            rewind = r;
+            arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
+            if (arg_stage is ParserStage.EXPORT) {
+                innerParseExport(r, export_type);
+                continue;
+            }
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
-        while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
+        while (only(ParserStage.PARAM, ParserStage.EXPORT).canFind(arg_stage) || (only_one_type_allowed == 1));
+        __write("--> %s %s", __FUNCTION__, arg_stage);
         if ((arg_stage != ParserStage.TYPE) &&
                 (arg_stage != ParserStage.RESULT) ||
                 (arg_stage == ParserStage.UNDEFINED)) {
-            r = rewined;
+            r = rewind;
         }
         parseFuncBody(r, ParserStage.FUNC_BODY, code_type, func_type);
     }
 
     private {
-        int[string] func_lookup;
-        int[string] type_lookup;
-        int[string] table_lookup;
+        int[string] func_lookup; /// Code section name lookup table
+        int[string] type_lookup; /// Type section name lookup table
+        int[string] table_lookup; /// Table section name lookup table
     }
     void parse(ref WastTokenizer tokenizer) {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {

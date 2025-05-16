@@ -14,7 +14,7 @@ import tagion.behaviour;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types : Pubkey;
-import tagion.gossip.AddressBook : addressbook;
+import tagion.gossip.AddressBook;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
@@ -22,6 +22,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.logger.LogRecords : LogInfo;
 import tagion.logger.Logger;
 import tagion.services.epoch_creator;
+import tagion.services.mode0_nodeinterface;
 import tagion.services.messages;
 import tagion.services.options;
 import tagion.services.options : NetworkMode;
@@ -47,7 +48,7 @@ alias FeatureContext = Tuple!(
 class SendPayloadAndCreateEpoch {
     struct Node {
         shared(SecureNet) node_net;
-        string name;
+        TaskNames task_names;
         EpochCreatorOptions opts;
     }
 
@@ -57,9 +58,12 @@ class SendPayloadAndCreateEpoch {
     ActorHandle[] handles;
     Document send_payload;
 
+    shared(AddressBook) addressbook;
+
     this(EpochCreatorOptions epoch_creator_options, uint number_of_nodes) {
         import tagion.services.options;
 
+        this.addressbook = new shared(AddressBook);
         this.number_of_nodes = number_of_nodes;
 
         foreach (i; 0 .. number_of_nodes) {
@@ -72,8 +76,8 @@ class SendPayloadAndCreateEpoch {
                 net = null;
             }
             writefln("node task name %s", task_names.epoch_creator);
-            nodes ~= Node(shared_net, task_names.epoch_creator, epoch_creator_options);
-            addressbook.set(new NetworkNodeRecord(net.pubkey, task_names.epoch_creator));
+            nodes ~= Node(shared_net, task_names, epoch_creator_options);
+            addressbook.set(new NetworkNodeRecord(net.pubkey, task_names.node_interface));
         }
 
     }
@@ -83,13 +87,21 @@ class SendPayloadAndCreateEpoch {
         register("epoch_creator_tester", thisTid);
 
         foreach (n; nodes) {
+            handles ~= _spawn!Mode0NodeInterfaceService(
+                    n.task_names.node_interface,
+                    n.node_net,
+                    addressbook,
+                    n.task_names.epoch_creator
+            );
+
             handles ~= spawn!EpochCreatorService(
-                    cast(immutable) n.name,
+                    n.task_names.epoch_creator,
                     cast(immutable) n.opts,
                     NetworkMode.INTERNAL,
                     number_of_nodes,
                     n.node_net,
-                    TaskNames(),
+                    addressbook,
+                    n.task_names,
             );
         }
 

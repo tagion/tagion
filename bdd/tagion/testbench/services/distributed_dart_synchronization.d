@@ -83,7 +83,6 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
     ActorHandle[] rpcserver_handles;
 
     ActorHandle dart_sync_handle;
-    TRTOptions trt_options;
     const local_db_name = "dds_local_dart.drt";
     string local_db_path;
 
@@ -219,7 +218,7 @@ int _main(string[] args) {
     chdir(module_path);
 
     auto node_runner = new NodeRunner(5, 300);
-    node_runner.setupMode1Options();
+    node_runner.setupMode1Options("dart_sync");
 
     auto distributed_dart_synchronization_feature = automation!(mixin(__MODULE__));
     auto distributed_dart_synchronization_handler = distributed_dart_synchronization_feature

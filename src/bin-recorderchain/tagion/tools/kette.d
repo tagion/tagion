@@ -122,7 +122,7 @@ int _main(string[] args) {
                         error("The document in the range was not of type RecorderBlock");
                         return 1;
                     }
-                    const _block = RecorderBlock(doc);
+                    auto _block = RecorderBlock(doc);
 
                     verbose("block %s", _block.toPretty);
 
@@ -177,7 +177,7 @@ int _main(string[] args) {
                         error("The document in the range was not of type RecorderBlock");
                         return 1;
                     }
-                    const _block = RecorderBlock(doc);
+                    auto _block = RecorderBlock(doc);
                     scope (success) {
                         prev_block = _block;
                     }

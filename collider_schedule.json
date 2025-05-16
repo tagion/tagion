@@ -118,7 +118,7 @@
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test", "br", "br_if", "br_table", "loop", "if_block", "call_indirect", "element"],
+      "stages": ["tvm", "tvm_new",  "tvm_export", "tvm_test", "br", "br_if", "br_table", "loop", "if_block", "call_indirect", "element", "conversions_export"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -179,6 +179,11 @@
         "call_indirect" : {
           "args" : [
             "call_indirect_1.wast"
+          ]
+        },
+        "conversions_export" : {
+          "args" : [
+            "conversions_export.wast"
           ]
         },
         "element" : {
@@ -403,7 +408,7 @@
             "DISTRIBUTION_TIMEOUT" : "30" 
       },
       "timeout" : 3.0,
-      "stages" : ["distributed_dart_synchronization", "commit"]
+      "stages" : ["distributed_dart_synchronization", "acceptance"]
     }
   }
 }

@@ -645,6 +645,40 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         // Not Sure if this is needed. Submit should be a faster request, since it doesn't retrieve any data from the system.
         recvtimeout = opt.sock_recvtimeout * 6;
         break;
+    /* case "search": */
+    /*     auto owner_doc = receiver.method.params; */
+    /*     if (owner_doc[].empty) { */
+    /*         log("the owner doc was empty"); */
+    /*         const err = hirpc.error(receiver, ServiceCode.params.toString, ServiceCode */
+    /*                 .params); */
+    /*         client_req.respond(err.toDoc); */
+    /*         return; */
+    /*     } */
+    /**/
+    /*     auto owner_indices = owner_doc[] */
+    /*         .map!(owner => net.hash.dartId(HashNames.trt_owner, Pubkey(owner.get!Buffer))) */
+    /*         .array; */
+    /**/
+    /*     // Construct */
+    /*     auto trt_read_recorder = trt_db.loads(owner_indices); */
+    /*     immutable(DARTIndex)[] indices; */
+    /*     foreach (a; trt_read_recorder[]) { */
+    /*         indices ~= TRTArchive(a.filed).indices.map!(d => cast(immutable) DARTIndex(d)) */
+    /*             .array; */
+    /*     } */
+    /**/
+    /*     if (indices.empty) { */
+    /*         Document response = hirpc.result(receiver, Document()).toDoc; */
+    /*         client_req.respond(response); */
+    /*         return; */
+    /*     } */
+    /**/
+    /*     log("sending dartread request"); */
+    /*     auto dart_req = dartReadRR(); */
+    /*     requests[dart_req.id] = TRTRequest(client_req, doc); */
+    /**/
+    /*     dart_handle.send(dart_req, indices); */
+    /*     return; */
     case "faucet":
         WalletOptions options;
         auto wallet_config_file = opt.default_i2p_wallet;
@@ -785,7 +819,7 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     const receiver = HiRPC(null).receive(Document(buf.idup));
 
     if (!receiver.isResponse) {
-        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_GATEWAY;
         rep.text = "response error";
         return;
     }

@@ -43,10 +43,6 @@ import tagion.logger.ContractTracker;
 
 enum BUFFER_TIME_SECONDS = 30;
 
-struct TranscriptOptions {
-    mixin JSONRecord;
-}
-
 /**
  * TranscriptService actor
  * Receives: (inputDoc, Document)
@@ -55,29 +51,21 @@ struct TranscriptOptions {
 struct TranscriptService {
 
     const(SecureNet) net;
-    immutable(TranscriptOptions) opts;
     immutable(size_t) number_of_nodes;
 
     ActorHandle dart_handle;
     ActorHandle epoch_creator_handle;
-    ActorHandle trt_handle;
-
-    bool trt_enable;
+    ActorHandle epoch_commit_handle;
 
     RecordFactory rec_factory;
 
-    this(immutable(TranscriptOptions) opts, const size_t number_of_nodes, shared(SecureNet) shared_net, immutable(
-            TaskNames) task_names, bool trt_enable) {
-        this.opts = opts;
+    this(const size_t number_of_nodes, shared(SecureNet) shared_net, immutable(TaskNames) task_names) {
         this.number_of_nodes = number_of_nodes;
 
         this.dart_handle = ActorHandle(task_names.dart);
         this.epoch_creator_handle = ActorHandle(task_names.epoch_creator);
-        this.trt_handle = ActorHandle(task_names.trt);
+        this.epoch_commit_handle = ActorHandle(task_names.epoch_commit);
         this.net = shared_net.clone;
-
-        this.trt_enable = trt_enable;
-
         this.rec_factory = RecordFactory(net.hash);
     }
 
@@ -94,7 +82,7 @@ struct TranscriptService {
     }
 
     struct EpochContracts {
-        const(SignedContract)[] signed_contracts;
+        immutable(SignedContract)[] signed_contracts;
         Fingerprint[] witnesses;
         sdt_t epoch_time;
     }
@@ -106,7 +94,7 @@ struct TranscriptService {
         products[product_index] = product;
     }
 
-    void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
+    void receiveBullseye(EpochCommitRR.Response res, Fingerprint bullseye, Fingerprint block_fingerprint) {
         const epoch_number = res.id;
 
         votes[epoch_number].epoch.bullseye = bullseye;
@@ -229,27 +217,26 @@ struct TranscriptService {
 
         }
 
-        if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
-            auto req = dartModifyRR(res.id);
-
-            TagionHead new_head = TagionHead(
-                    TagionDomain,
-                    shutdown,
-            );
-            recorder.insert(new_head, Archive.Type.ADD);
-
-            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
-            ownerTid.prioritySend(Sig.STOP);
-            thisActor.stop = true;
-            return;
-        }
-
         const epoch_contract = epoch_contracts.get(res.id, null);
         if (epoch_contract is null) {
             throw new ServiceException(format("unlinked epoch contract %s", res.id));
         }
         scope (exit) {
             epoch_contracts.remove(res.id);
+        }
+
+        if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
+            TagionHead new_head = TagionHead(
+                    TagionDomain,
+                    shutdown,
+            );
+            recorder.insert(new_head, Archive.Type.ADD);
+
+            auto req = EpochCommitRR(res.id);
+            epoch_commit_handle.send(req, res.id, RecordFactory.uniqueRecorder(recorder), epoch_contract.signed_contracts);
+            ownerTid.prioritySend(Sig.STOP);
+            thisActor.stop = true;
+            return;
         }
 
         loop_signed_contracts: foreach (signed_contract; epoch_contract.signed_contracts) {
@@ -288,11 +275,6 @@ struct TranscriptService {
                 recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
                 recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
 
-                if (trt_enable) {
-                    immutable doc = signed_contract.contract.toDoc;
-                    trt_handle.send(trtContract(), doc, last_epoch_number);
-                }
-
                 used ~= signed_contract.contract.inputs;
                 products.remove(net.hash.dartIndex(signed_contract.contract));
             }
@@ -307,7 +289,7 @@ struct TranscriptService {
         recorder.add(withead);
 
         /*
-        Since we write all inromation that is known immediately we create the epoch chain block here and make it empty.
+        Since we write all information that is known immediately we create the epoch chain block here and make it empty.
         The following information can be added:
             epoch_number
             time
@@ -319,47 +301,17 @@ struct TranscriptService {
         Epoch non_voted_epoch;
         non_voted_epoch.epoch_number = res.id;
         non_voted_epoch.time = sdt_t(epoch_contract.epoch_time);
+
         // create the globals
+        TagionGlobals new_globals = bill_statistics(recorder, last_globals);
 
-        BigNumber total = last_globals.total;
-        BigNumber total_burned = last_globals.total_burned;
-        long number_of_bills = last_globals.number_of_bills;
-        long burnt_bills = last_globals.burnt_bills;
-
-        void billStatistic(const(Archive) archive) {
-            if (!archive.filed.isRecord!TagionBill) {
-                return;
-            }
-            // log("GOING TO STAT BILL: %s, type: %s", bill.toPretty, archive.type;
-
-            auto bill = TagionBill(archive.filed);
-
-            if (archive.type == Archive.Type.REMOVE) {
-                total -= bill.value.units;
-                total_burned += bill.value.units;
-                burnt_bills += 1;
-                number_of_bills -= 1;
-            }
-            if (archive.type == Archive.Type.ADD) {
-                total += bill.value.units;
-                number_of_bills += 1;
-            }
-        }
-
-        recorder[].each!(a => billStatistic(a));
-
-        TagionGlobals new_globals = TagionGlobals(
-                total,
-                total_burned,
-                number_of_bills,
-                burnt_bills,
-        );
         non_voted_epoch.globals = new_globals;
 
         TagionHead new_head = TagionHead(
                 TagionDomain,
                 res.id,
         );
+
         immutable(DARTIndex)[] locked_indices = recorder[]
             .filter!(a => a.type == Archive.Type.ADD)
             .map!(a => net.hash.dartIndex(a.filed))
@@ -381,9 +333,8 @@ struct TranscriptService {
         new_vote.locked_archives = outputs;
         votes[non_voted_epoch.epoch_number] = new_vote;
 
-        auto req = dartModifyRR(res.id);
-
-        dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), res.id);
+        auto req = EpochCommitRR(res.id);
+        epoch_commit_handle.send(req, res.id, RecordFactory.uniqueRecorder(recorder), epoch_contract.signed_contracts);
     }
 
     void task() {
@@ -434,5 +385,72 @@ struct TranscriptService {
         log("Booting with globals: %s\n last_head: %s", last_globals.toPretty, last_head.toPretty);
 
         run(&epoch, &produceContract, &createRecorder, &receiveBullseye, &epoch_shutdown);
+    }
+}
+
+// The bill statistic agregates the information about the amount of bills and the total value of bills to the new statistic block
+// It's job is not to check that agregated amount is legal
+TagionGlobals bill_statistics(RecordFactory.Recorder recorder, const TagionGlobals prev_globals) pure {
+    TagionGlobals new_globals = prev_globals;
+
+    foreach(const archive; recorder[]) {
+        if (!archive.filed.isRecord!TagionBill) {
+            continue;
+        }
+
+        auto bill = TagionBill(archive.filed);
+
+        if (archive.type == Archive.Type.REMOVE) {
+            new_globals.total -= bill.value.units;
+            new_globals.total_burned += bill.value.units;
+            new_globals.burnt_bills += 1;
+            new_globals.number_of_bills -= 1;
+        }
+        if (archive.type == Archive.Type.ADD) {
+            new_globals.total += bill.value.units;
+            new_globals.number_of_bills += 1;
+        }
+    }
+    return new_globals;
+}
+
+unittest {
+    import tagion.basic.Types;
+    RecordFactory factory = RecordFactory(hash_net);
+    TagionGlobals globals = TagionGlobals(BigNumber(720), BigNumber(13), 8, 20);
+    { // + 1 bill 
+        TagionGlobals old_globals = globals;
+        auto recorder = factory.recorder;
+        // The time and public key is not important for the statistic
+        recorder.insert(TagionBill(14.TGN, sdt_t(0), Pubkey.init, Buffer.init), Archive.Type.ADD);
+        auto new_globals = bill_statistics(recorder, old_globals);
+        assert(new_globals.total == BigNumber(720 + 14 * TagionCurrency.BASE_UNIT));
+        assert(new_globals.total_burned == BigNumber(13));
+        assert(new_globals.number_of_bills == 9);
+        assert(new_globals.burnt_bills == 20);
+    }
+    { // - 1 bill 
+        TagionGlobals old_globals = globals;
+        auto recorder = factory.recorder;
+        // The time and public key is not important for the statistic
+        recorder.insert(TagionBill(14.TGN, sdt_t(0), Pubkey.init, Buffer.init), Archive.Type.REMOVE);
+        auto new_globals = bill_statistics(recorder, old_globals);
+        assert(new_globals.total == BigNumber(720 - 14 * TagionCurrency.BASE_UNIT));
+        assert(new_globals.total_burned == BigNumber(13 + 14 * TagionCurrency.BASE_UNIT));
+        assert(new_globals.number_of_bills == 7);
+        assert(new_globals.burnt_bills == 21);
+    }
+    { // None bill
+        TagionGlobals old_globals = globals;
+        auto recorder = factory.recorder;
+        // Anything than is not a bill should leave the statistic unchanged
+        recorder.insert(PayScript([TagionBill(10.TGN, sdt_t(5), Pubkey.init, Buffer.init)]), Archive.Type.ADD);
+        recorder.insert(PayScript([TagionBill(7.TGN, sdt_t(5), Pubkey.init, Buffer.init)]), Archive.Type.NONE);
+        recorder.insert(PayScript([TagionBill(16.TGN, sdt_t(5), Pubkey.init, Buffer.init)]), Archive.Type.REMOVE);
+        auto new_globals = bill_statistics(recorder, old_globals);
+        assert(new_globals.total == old_globals.total);
+        assert(new_globals.total_burned == old_globals.total_burned);
+        assert(new_globals.number_of_bills == old_globals.number_of_bills);
+        assert(new_globals.burnt_bills == old_globals.burnt_bills);
     }
 }

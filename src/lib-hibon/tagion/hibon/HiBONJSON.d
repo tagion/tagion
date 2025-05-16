@@ -151,7 +151,7 @@ mixin template JSONString() {
     import std.format;
 
     alias ThisT = typeof(this);
-
+    @safe
     void toString(scope void delegate(scope const(char)[]) @safe sink, const FormatSpec!char fmt) const {
         import tagion.basic.Types;
         import tagion.hibon.Document;
@@ -177,7 +177,7 @@ mixin template JSONString() {
             sink(doc.toJSON.toString);
             break;
         case 'J':
-            // Normal stringefied JSON
+            // Normal pretty stringefied JSON
             sink(doc.toJSON.toPrettyString);
             break;
         case 's':
@@ -690,7 +690,7 @@ unittest {
         assert(hjson["t"][1].get!string.isoHasTZ);
     }
 }
-
+@safe
 unittest {
     import std.stdio;
     import tagion.hibon.HiBONRecord;

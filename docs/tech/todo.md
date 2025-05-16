@@ -1,9 +1,10 @@
-# Task Pool
+# TODO
 
 ## In Progress
 
 ### DART Synchronization services (mode2) 
 Description: Function to allow a program to remotely synchronize a dart from a node  
+Goal: May  
 - [x] Synchronize a static remote DART to a local DART
 - [ ] Synchronize more static DART's with the same data to one local DART
 - [x] Subscribe to a recorder from one trusted node.
@@ -13,6 +14,7 @@ Assignee: al
 
 ### Graph Mirroring (mode2) 
 Description: create a function can get all new events using wavefront and create a non voting graph of the events
+Goal: May  
 Enable a new node to join the graph  
 - [x] Enable a node to follow the graph and build the consensus with out participating
 - [x] Add graph witness fingerprints to the DART
@@ -23,8 +25,7 @@ Assignee: lr
 
 ### Network Catchup (mode2) 
 Goal: May  
-- [ ] depends on: DART Synchronization services
-- [ ] depends on: Graph Mirroring
+depends on: DART Synchronization services & Graph Mirroring  
 - [ ] integrate in tagionwave, start the network and sync until it can join the network
       when the node starts it should detect that it is out of sync and start mirroring the graph and syncing the dart
 - [ ] bdd which checks that a node can catch up and switch from offline to online   
@@ -43,13 +44,36 @@ Assignee: cbr
 ### TIP6
 Description: docs.tagion.org/tips/6  
 Goal: May  
-- [ ] add hash of executed contract to recorderchain
+- [x] add hash of executed contract to recorderchain
 - [ ] add hash of recorderblock to epochchain  
+Assignee: lr  
+
+### Service refactor
+- [x] Refactor collector to uses concurrency fibers instead of using state map for each incoming contract
+- [x] Create epoch commit service to have more control over how recorders and fingerprints are redistributed  
+    `And remove responibillity from transcript and dart service  
+- [x] Fix some instabillity in replicator read test  
+- [x] Pass addressbook to individual services instead of using static global addressbook
+- [x] Create mode0 nodeinterface service
 Assignee: lr  
 
 -----------------------------------------------------------------------------------------
 
 ## Backlog
+
+### Remove DARTFile.search
+- [ ] Remove the search function from dart and rewrite unittest that depend on it
+
+### Timezong override
+- [ ] Reimplemnt the toISOExtString from phobos without the LocalTime check the removes timezones
+- [ ] Create bug report for phobos when converting back and forth between unwhole timezones
+
+### Active Nodes record
+- [ ] Create a record that is updated by transcript with the pubkeys of all the active nodes
+- [ ] Remove state info from NNR records
+
+### Boot issue
+- [ ] Fix issue where if an external dart request is sent on a slow machine before the transcript reads the head request it can timeout and the system will be stuck in a none starting state.  
 
 ### Seperate HashNet and SecureNet
 Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  

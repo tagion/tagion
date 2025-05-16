@@ -1,15 +1,29 @@
 ---
 sidebar_position: 1
+sidebar_label: Introduction
 ---
 
-# Introduction
+# Introduction to Tagion Governance 
 
-Welcome to the governance development- and documentation-pages of the Tagion network.
-(For an overview of what Tagion "is", have a look at the website [tagion.org](https://tagion.org) or read the [Technical Concept Paper](https://www.tagion.org/resources/tagion-whitepaper.pdf))
+Welcome to these pages concerning the governance development- and documentation of the Tagion network.
+(For an overview of what Tagion "is", have a look at the website [tagion.org](https://tagion.org))
 
 Here, you will find the current state of ideas and deliberation regarding Tagion's governance. 
 
 We have chosen to publish these ideas throughout their development process because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). The only guiding principles that should always be adhered to are the values outlined in the Tagion ["Manifesto"](./manifesto). 
+
+:::info[Previous Documentaion]
+
+Since 2019 we had preliminarily described a lot of our ideas in PDF publications: 
+
+our "Technical", "Concept" and "Tokenomics" papers. They are all considered superseeded by the information on these pages, and everything current is now found here. But if you are interested in the history of our thinking, you can find the old publications in our [archive](./archive))
+:::
+
+
+
+## About Governance
+
+To us, governance means both the processes of managing a decentralised system and the structure of the network that emerges from that same management process. This contrasts with the view that governance is synonymous with rules-setting. However, as seen below, "decision making" is one of our four governance areas and plays a central role.
 
 :::tip[The _Tagion Governance Manifesto_]
 
@@ -17,10 +31,6 @@ Our **Manifesto** is the first approved and foundational element of Tagion's gov
 Moving forward, you will be able to easily identify all approved elements via the menu. Everything else on these pages is considered a proposal and remains open for discussion. 
 
 :::
-
-## About Governance
-
-To us, governance means both the processes of managing a decentralised system and the structure of the network that emerges from that same management process. This contrasts with the view that governance is synonymous with rules-setting. However, as seen below, "decision making" is one of our four governance areas and plays a central role.
 
 As our manifesto states, we use the word "decentralised" to mean a system in which no entity can impose its will and interests on the rest of the users and participants. This also means that the governance of a decentralised system cannot be established upfront by the founders but must be co-developed, tested and refined with its stakeholders. 
 

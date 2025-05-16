@@ -30,7 +30,7 @@ import tagion.hibon.Document;
 import tagion.wave.common;
 
 // Checks if all nodes bullseyes are the same
-bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
+bool isMode0BullseyeSame(const(Options[]) node_options) {
     import std.typecons;
 
     // extra check for mode0
@@ -38,14 +38,14 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
     Fingerprint[] bullseyes;
     foreach (node_opt; node_options) {
         Exception dart_exception;
-        DART db = new DART(__net.hash, node_opt.dart.dart_path, dart_exception, Yes.read_only);
+        DART db = new DART(hash_net, node_opt.dart.dart_path, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
             throw dart_exception;
         }
         scope (exit) {
             db.close();
         }
-        auto b = Fingerprint(db.bullseye);
+        auto b = db.bullseye;
         if (dart_exception !is null) {
             throw dart_exception;
         }
@@ -101,15 +101,4 @@ struct Node {
     immutable(Options) opts;
     shared(SecureNet) net;
     Pubkey pkey;
-}
-
-void spawnMode0(
-        ref ActorHandle[] supervisor_handles,
-        Node[] nodes) {
-
-    /// spawn the nodes
-    foreach (ref n; nodes) {
-        verbose("spawning supervisor ", n.opts.task_names.supervisor);
-        supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
-    }
 }

@@ -114,13 +114,11 @@ class WriteAndReadFromDartDb {
 
     ActorHandle handle;
     ActorHandle rpcserver_handle;
-    ActorHandle replicator_handle;
     RPCServerOptions interface_opts;
     TRTOptions trt_options;
 
     SecureNet supervisor_net;
     DARTOptions opts;
-    ReplicatorOptions replicator_opts;
     Mt19937 gen;
     RandomArchives random_archives;
     Document[] docs;
@@ -137,10 +135,9 @@ class WriteAndReadFromDartDb {
         });
     }
 
-    this(DARTOptions opts, ReplicatorOptions replicator_opts, TRTOptions trt_options) {
+    this(DARTOptions opts, TRTOptions trt_options) {
 
         this.opts = opts;
-        this.replicator_opts = replicator_opts;
         this.trt_options = trt_options;
         supervisor_net = createSecureNet;
         supervisor_net.generateKeyPair("supervisor very secret");
@@ -175,12 +172,7 @@ class WriteAndReadFromDartDb {
         auto net = createSecureNet;
         net.generateKeyPair("dartnet very secret");
 
-        handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, TaskNames(), cast(
-                shared) net, false))();
-
-        replicator_handle = (() @trusted => spawn!ReplicatorService(
-                TaskNames().replicator,
-                cast(immutable) replicator_opts))();
+        handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, cast(shared) net))();
 
         interface_opts.setDefault;
         writeln(interface_opts.sock_addr);
@@ -195,7 +187,7 @@ class WriteAndReadFromDartDb {
     @When("I send a dartModify command with a recorder containing changes to add")
     Document toAdd() {
         log.registerSubscriptionTask(thisActor.task_name);
-        submask.subscribe(modify_log);
+        submask.subscribe(DARTService.recorder_created);
 
         foreach (i; 0 .. 100) {
             gen.popFront;
@@ -204,10 +196,9 @@ class WriteAndReadFromDartDb {
             docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
 
             insert_recorder.insert(docs, Archive.Type.ADD);
-            auto modify_send = dartModifyRR();
-            (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable long(i)))();
+            (() @trusted => handle.send(dartModifyRR(), cast(immutable) insert_recorder))();
 
-            auto modify = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
+            auto new_bullseye = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document));
             check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");
