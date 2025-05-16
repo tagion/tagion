@@ -256,7 +256,6 @@ struct ActorHandle {
     Tid tid() {
         if(_tid is Tid.init)
             _tid = concurrency.locate(task_name);
-        _tid = concurrency.locate(task_name);
         return _tid;
     }
 
