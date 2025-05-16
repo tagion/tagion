@@ -252,6 +252,34 @@ struct WastTokenizer {
         check(error_count < max_errors, format("Error count exceeds %d", max_errors));
     }
 
+    void nextBlock() pure {
+        if (type is TokenType.BEGIN) {
+            do {
+                nextToken;
+                nextBlock;
+            }
+            while (type !is TokenType.END && type !is TokenType.EOF);
+            nextToken;
+        }
+    }
+
+    unittest {
+        enum text = "xxx ( word1 ( word2 word3 ) ) ( word4 ) ( word7 7777 ) yyy";
+        {
+            auto r = WastTokenizer(text);
+            r.nextBlock;
+            assert(r.token == "xxx");
+            r.nextToken;
+            r.nextBlock;
+            assert(r.type is TokenType.BEGIN);
+            r.nextBlock;
+            assert(r.type is TokenType.BEGIN);
+            assert(r.save.drop(1).front.token == "word7");
+            r.nextBlock;
+            assert(r.token == "yyy");
+        }
+    }
+
     @nogc pure nothrow {
         this(string text, const uint max_errors = 10) {
             line = 1;
@@ -318,8 +346,6 @@ struct WastTokenizer {
         }
 
         void nextUntil(string fun, string paramName = "a")() {
-            import std.format;
-
             enum code = format(q{
                 alias goUntil=(%1$s) => %2$s; 
                 while((pos < text.length) && goUntil(text[pos])) {

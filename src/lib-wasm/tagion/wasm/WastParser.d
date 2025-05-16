@@ -786,6 +786,7 @@ struct WastParser {
                     r.expect(TokenType.END);
                     r.nextToken;
                 }
+                auto post_r = r;
                 r.nextToken;
                 r.expect(TokenType.WORD);
                 switch (r.token) {
@@ -793,14 +794,22 @@ struct WastParser {
                     r.check(only(Types.FUNC, Types.FUNCREF).canFind(table.type),
                             "Missing definition of reftype");
                     r.nextToken;
-                    int count;
-                    if (r.type is TokenType.BEGIN) { // ( expr ) ...
-                        //
-                        assert(0, "( expr ) not implemented yet");
+                    ElemType elem;
+                    if (r.type is TokenType.BEGIN) { // ( expr )  ...
+                        do {
+                            FuncType void_func;
+                            CodeType code_elem;
+                            FunctionContext ctx;
+                            parseInstr(r, ParserStage.ELEMENT,  code_elem, void_func, ctx);
+                            elem.exprs ~= code_elem.expr;
+                            r.check(r.type !is TokenType.EOF, "Declaration is not complete");
+                        }
+                        while (r.type !is TokenType.BEGIN);
                     }
                     else { // func ...
+                        int count;
                         while (r.type is TokenType.WORD) {
-                            __write("func %s", r.token);
+                            count++;
                             r.nextToken;
                         }
                     }
@@ -1097,7 +1106,7 @@ struct WastParser {
                     r.nextToken;
                 }
                 return ParserStage.RESULT;
-            case WastKeywords.EXPORT: // Ignore (export "<name") 
+            case WastKeywords.EXPORT: // Ignore (export "<name>") 
                 r.check(stage is ParserStage.FUNC, "'export' not expected here");
                 r = rewind;
                 __write("END EXPORT %(%s %)", r.save.map!(t => t.token).take(4));
