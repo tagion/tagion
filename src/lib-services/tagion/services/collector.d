@@ -107,14 +107,14 @@ void collect_contract_consensus(ActorHandle tvm_handle, ActorHandle dart_handle,
 struct CollectorService {
     ActorHandle dart_handle;
     ActorHandle tvm_handle;
+    // The scecurenet is immutable because it passed to each request task fiber
+    // It's only used for the verify function which should be static
     immutable(SecureNet) net;
 
-    @trusted
     this(immutable(TaskNames) tn) nothrow {
         dart_handle = ActorHandle(tn.dart);
         tvm_handle = ActorHandle(tn.tvm);
-        // Only used for verify function
-        net = cast(immutable)createSecureNet;
+        net = (() @trusted => cast(immutable)createSecureNet)();
         assert(net !is null, "No secure net");
     }
 
