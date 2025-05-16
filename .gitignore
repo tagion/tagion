@@ -63,6 +63,9 @@ pem_files
 tagionwave.json
 
 .dub
+
+# 
+.pdf
 .done
 
 # not finished bdd tests
