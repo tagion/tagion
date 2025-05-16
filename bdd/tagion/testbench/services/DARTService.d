@@ -59,7 +59,6 @@ struct DARTWorker {
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         s.recvtimeout = 1000.msecs;
 
-        setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
             const received = receiveTimeout(
                     Duration.zero,

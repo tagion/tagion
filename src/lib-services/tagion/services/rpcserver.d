@@ -182,8 +182,6 @@ struct RPCServer {
 
     pragma(msg, "FIXME: make dart interface @safe when nng is");
     void task() @trusted {
-        setState(Ctrl.STARTING);
-
         RPCWorkerContext ctx;
         ctx.worker_timeout = opts.sendtimeout;
         ctx.trt_enable = trt_opts.enable;

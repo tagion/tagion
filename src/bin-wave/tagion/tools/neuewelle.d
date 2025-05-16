@@ -392,7 +392,6 @@ int _neuewelle(string[] args) {
             error(e);
         }
 
-        /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
         // If all supervisors stopped then we stop as well
         thisActor.stop |=
             thisActor.childrenState
