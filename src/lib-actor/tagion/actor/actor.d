@@ -254,6 +254,8 @@ struct ActorHandle {
     private Tid _tid;
     /// the tid of the spawned task
     Tid tid() {
+        if(_tid is Tid.init)
+            _tid = concurrency.locate(task_name);
         _tid = concurrency.locate(task_name);
         return _tid;
     }
