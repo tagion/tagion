@@ -52,7 +52,7 @@ struct WastParser {
     alias CodeType = WasmSection.CodeType;
     alias DataType = WasmSection.DataType;
     alias ExportType = WasmSection.ExportType;
-    alias ElemType = WasmSection.ElementType;
+    alias ElementType = WasmSection.ElementType;
     alias CustomType = WasmSection.Custom;
     alias Limit = WasmSection.Limit;
     enum ParserStage {
@@ -649,10 +649,10 @@ struct WastParser {
         }
     }
 
-    private ElemType parseElem(ref WastTokenizer r, const ParserStage stage) {
+    private ElementType parseElem(ref WastTokenizer r, const ParserStage stage) {
         import tagion.wasm.WastKeywords;
 
-        ElemType elem;
+        ElementType elem;
         string elem_name;
         if ((r.type is TokenType.WORD) && !(r.token.isReseved) &&
                 (r.token.toType is Types.VOID)) {
@@ -662,7 +662,7 @@ struct WastParser {
         string table_name;
         import tagion.wasm.WasmReader : ElementMode;
 
-        bool innerElemType() {
+        bool innerElementType() {
             bool getElementProperty() {
                 r.nextToken;
                 switch (r.token) {
@@ -771,14 +771,23 @@ struct WastParser {
                 }
                 r.expect(TokenType.BEGIN);
             }
-            r.check(innerElemType, "Expression expected");
+            r.check(innerElementType, "Expression expected");
         }
         return elem;
     }
 
+    struct ElementForward {
+        ElementType elem; /// Element tobe forward parsed
+        WastTokenizer tokens; /// Cached forward element declaration
+    }
+
+    ElementForward[] element_forwards;
     // table  id? reftype  ('elem'|'import'|'export'
-    private TableType parseTable(ref WastTokenizer r) {
+    private void parseTable(ref WastTokenizer r) {
         TableType table;
+        scope (exit) {
+            writer.section!(Section.TABLE).sectypes ~= table;
+        }
         ParserStage tableArgument() {
             if (r.type is TokenType.BEGIN) {
                 __write("%s %s", __FUNCTION__, r.save.map!(t => t.token).take(4));
@@ -794,24 +803,29 @@ struct WastParser {
                     r.check(only(Types.FUNC, Types.FUNCREF).canFind(table.type),
                             "Missing definition of reftype");
                     r.nextToken;
-                    ElemType elem;
                     if (r.type is TokenType.BEGIN) { // ( expr )  ...
+                        ElementType elem;
                         do {
                             FuncType void_func;
                             CodeType code_elem;
                             FunctionContext ctx;
-                            parseInstr(r, ParserStage.ELEMENT,  code_elem, void_func, ctx);
+                            parseInstr(r, ParserStage.ELEMENT, code_elem, void_func, ctx);
                             elem.exprs ~= code_elem.expr;
                             r.check(r.type !is TokenType.EOF, "Declaration is not complete");
                         }
                         while (r.type !is TokenType.BEGIN);
+                        elem.tableidx = cast(uint) writer.section!(Section.TABLE).sectypes.length;
+                        writer.section!(Section.ELEMENT).sectypes ~= elem;
                     }
                     else { // func ...
+                        ElementForward forward;
+                        forward.tokens = post_r;
                         int count;
                         while (r.type is TokenType.WORD) {
                             count++;
                             r.nextToken;
                         }
+                        element_forwards ~= forward;
                     }
                     return ParserStage.ELEMENT;
                 case WastKeywords.IMPORT: // ( import
@@ -827,7 +841,7 @@ struct WastParser {
             }
             return ParserStage.BASE;
         }
-        //	version(none)
+
         __write("Before toType!!");
         table.type = toType(r.token);
         if (table.type !is Types.VOID) {
@@ -837,7 +851,7 @@ struct WastParser {
         if (r.type is TokenType.BEGIN) {
 
             tableArgument;
-            return table;
+            return;
         }
         r.expect(TokenType.WORD);
         string table_name;
@@ -854,8 +868,6 @@ struct WastParser {
         }
         r.check(table.type.isRefType, format("Ref-type extected not %s", r.token));
         r.nextToken;
-        writer.section!(Section.TABLE).sectypes ~= table;
-        return table;
     }
 
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
