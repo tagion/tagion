@@ -91,7 +91,7 @@ class SendPayloadAndCreateEpoch {
                     n.task_names.node_interface,
                     n.node_net,
                     addressbook,
-                    n.task_names.epoch_creator
+                    n.task_names,
             );
 
             handles ~= spawn!EpochCreatorService(

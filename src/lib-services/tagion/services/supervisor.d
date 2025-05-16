@@ -109,7 +109,7 @@ struct Supervisor {
                     tn.node_interface,
                     shared_net,
                     addressbook,
-                    tn.epoch_creator
+                    tn,
             );
             break;
         case NetworkMode.LOCAL,
@@ -146,6 +146,17 @@ struct Supervisor {
         handles ~= transcript_handle;
 
         handles ~= spawn(immutable(RPCServer)(opts.rpcserver, opts.trt, tn), tn.rpcserver);
+
+        version(none)
+        foreach(channel; addressbook.keys) {
+            try {
+                import tagion.dart.DARTcrud;
+                import tagion.hibon.Document;
+                import tagion.utils.pretend_safe_concurrency;
+                node_interface_handle.send(NodeReq(), channel, dartBullseye().toDoc);
+                receive((NodeReq.Response _, Document doc) { log("%s", doc.toPretty); });
+            } catch(Exception e) { log.fatal(e); }
+        }
 
         run(
                 (EpochShutdown m, long shutdown_) { //
