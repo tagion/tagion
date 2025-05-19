@@ -54,11 +54,11 @@ struct Mode0NodeInterfaceService {
         }
         const hirpcmsg = hirpc.receive(doc);
         if (hirpcmsg.pubkey == this.net.pubkey) {
-            log.error("Received hirpc was from yourself replay?\n%J", doc);
+            log.error("Received hirpc was from yourself replay?\n%s", doc.toPretty);
             return;
         }
         if (!hirpcmsg.isSigned) {
-            log.error("Received hirpc was not signed\n%J", doc);
+            log.error("Received hirpc was not signed\n%s", doc.toPretty);
             return;
         }
         epoch_creator_handle.send(req, doc);
