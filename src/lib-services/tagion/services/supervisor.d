@@ -76,7 +76,7 @@ struct Supervisor {
             log("Booting with Epoch %J", epoch);
             auto keys = getNodeKeys(epoch);
             if (!opts.wave.address_file.empty) {
-                /* addressbook = File(opts.wave.address_file, "r").byLine.parseAddressFile; */
+                addressbook = (() @trusted => File(opts.wave.address_file, "r").byLine)().parseAddressFile;
             }
             else {
                 addressbook = readNNRFromDart(db, keys, local_net.hash);
