@@ -5,6 +5,7 @@ sidebar_class_name: hidden
 
 _written by [Decard](https://www.decard.io) - the stewardship company of the Tagion platform_
 
+
 :::tip[Jargon Bustin']
 
 All technical terms will here be written in _italics_. Some of them are explained at the beginning, some first appear "in inverted commas" in the text and are explained there. 
@@ -12,6 +13,7 @@ If not mentioned specifically, links go to the technical documentation pages of 
 There is also complementary [Glossary](https://docs.tagion.org/gov/glossary)) for terms here not touched upon. 
 
 :::
+
 
 ## A bit of terminology up-front
 ______________________________________________________________
@@ -31,6 +33,7 @@ ______________________________________________________________
 ______________________________________________________________
 
 
+
 ## Let's start from the practicalities of a general use-case:
 
 A _user_ (s.a.) wants to enter some new pieces of information to the system. Let's assume that this informatin is about a particular use-case for which a _federate Subsystem_ (s.a.) has been set up.
@@ -38,7 +41,7 @@ A _user_ (s.a.) wants to enter some new pieces of information to the system. Le
 The _user_ submits the information via an _app_ (s.a.), e.g. on their mobile phone. 
 This information can be new (it will be added to the _database_ - s.a.), or it can be a change to (or deletion of) existing data.
 
-The _app_ they use is built upon  -  and sometimes still called -   a "wallet application", a term inherited from the Tagion _Mainnet_ with it's principle use-cases centered around financial _transactions_ ("JustPay" is such a wallet application, find more information in the [Decard website](https://www.decard.io/justpay)). The _application_ packages the information to be entered into the _database_ in what is (figuratively) called an "[envelope](https://docs.tagion.org/tech/protocols/envelope)". Next to the basic data-input and possibly some conditional instructions, the envelope also includes additional required information (timestamp, user identity, references to other data, required permissions), and the whole message inside the envelope is then called a "contract" (a term inherited from "blockchain" and "DLT" concepts, which will be explained below).
+The _app_ they use is built upon  -  and sometimes still called -   a "wallet application", a term inherited from the Tagion _Mainnet_ with it's principle use-cases centered around financial _transactions_ ("JustPay" is such a wallet application, more information about it on the [Decard website](https://www.decard.io/justpay)). The _application_ packages the information to be entered into the _database_ in what is (figuratively) called an "[envelope](https://docs.tagion.org/tech/protocols/envelope)". Next to the basic data-input and possibly some conditional instructions, the envelope also includes additional required information (timestamp, user identity, references to other data, required permissions), and the whole message inside the envelope is then called a "contract" (a term inherited from "blockchain" and "DLT" concepts, which will be explained below).
 
 These _contracts_ are sent to a _node_ (s.a.) via the internet or local communication networks. A _[contract](https://docs.tagion.org/tech/protocols/transactions/contract)_ is structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "[HiBON](https://docs.tagion.org/tech/protocols/hibon)". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
 
