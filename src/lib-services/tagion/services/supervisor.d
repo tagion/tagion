@@ -61,6 +61,7 @@ struct Supervisor {
         immutable tn = opts.task_names;
         const local_net = shared_net.clone;
 
+        log("Starting as %s", local_net.pubkey.encodeBase64);
 
         shared(AddressBook) addressbook = new shared(AddressBook);
         { // Set addressbook
