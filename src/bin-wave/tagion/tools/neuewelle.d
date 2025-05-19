@@ -442,7 +442,7 @@ in (!bootkeys_path.empty, "Should specify a bootkeys path") {
             verbose("Input boot key %d as nodename:pincode", i);
 
             try {
-                net = inputKey(by_line.front, bootkeys_path);
+                net = inputDevicPin(by_line.front, bootkeys_path);
                 break LoopTry;
             }
             catch (Exception e) {
