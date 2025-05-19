@@ -6,9 +6,11 @@ import std.file;
 import std.path : baseName, buildPath, dirName, setExtension, stripExtension;
 import std.range;
 import std.stdio;
+import std.typecons;
 import core.time;
 import core.thread;
 import core.memory : pageSize;
+import nngd;
 
 import tagion.services.DART : DARTOptions, DARTService;
 import tagion.services.rpcs;
@@ -111,21 +113,23 @@ private:
         import std.random : randomShuffle;
         import std.array : array;
 
-        auto shuffledAddrs = sock_addrs.sock_addrs.dup.array;
-        randomShuffle(shuffledAddrs);
+        auto shuffled_addrs = sock_addrs.sock_addrs.dup.array;
+        randomShuffle(shuffled_addrs);
 
-        const attempts_timeout = 30_000.msecs;
-        auto startTime = MonoTime.currTime();
+        enum max_retries = 3; // Probably should take it from env.
+        uint default_timeout_mil = 10_000;
+        auto total_timeout = (max_retries * shuffled_addrs.length * default_timeout_mil).msecs;
+        auto start_time = MonoTime.currTime();
 
-        HiRPC hirpc = HiRPC(net);
-        while (true) {
+        foreach (addr; shuffled_addrs) {
+            for (int attempt = 1; attempt <= max_retries; ++attempt) {
+                if (MonoTime.currTime() - start_time > total_timeout) {
+                    throw new Exception(
+                        "bullseyesMatch: total timeout exceeded while checking addresses.");
+                }
 
-            if (MonoTime.currTime() - startTime > attempts_timeout) {
-                break;
-            }
-
-            foreach (addr; shuffledAddrs) {
                 try {
+                    HiRPC hirpc = HiRPC(net);
                     RemoteRequestSender sender = new RemoteRequestSender(
                         opts.socket_timeout_mil,
                         opts.socket_attempts_mil,
@@ -133,23 +137,22 @@ private:
                         null
                     );
 
-                    auto bullseyeRequestDoc = dartBullseye(hirpc).toDoc;
-                    const bullseyeResponseDoc = sender.send(bullseyeRequestDoc);
+                    auto bullseye_request_doc = dartBullseye(hirpc).toDoc;
+                    const bullseye_response_doc = sender.send(bullseye_request_doc);
+                    writefln("bullseyesMatch: attempt %s to %s", attempt, addr);
 
-                    auto response = hirpc.receive(bullseyeResponseDoc);
+                    auto response = hirpc.receive(bullseye_response_doc);
                     auto message = response.message[Keywords.result].get!Document;
-                    const remoteFingerprint = message[Params.bullseye].get!Fingerprint;
-
-                    return remoteFingerprint == destination.bullseye;
+                    const remote_fingerprint = message[Params.bullseye].get!Fingerprint;
+                    return remote_fingerprint == destination.bullseye;
                 }
                 catch (Exception e) {
-                    writeln("Failed to connect to ", addr, ": ", e.msg);
-                    log("Failed to connect to ", addr, ": ", e.msg);
-                    continue;
+                    writeln("bullseyesMatch: attempt ", attempt, " failed for ", addr, ": ", e.msg);
                 }
             }
         }
-        assert(0);
+
+        throw new Exception("bullseyesMatch: all attempts to all addresses failed.");
     }
 
     immutable(string[]) synchronize(
@@ -184,6 +187,10 @@ private:
                 if (rim_range.empty)
                     break;
 
+                // Check a socket before doing rim_range.front.
+                if (!RemoteRequestSender.isAccessible(sock_addr))
+                    continue;
+
                 const ushort current_rim = rim_range.front;
                 const sector = current_rim << 8;
                 rim_range.popFront;
@@ -193,7 +200,6 @@ private:
 
                 immutable journal_filename = format("%s.%04x.dart_journal.hibon", opts.journal_path, sector);
                 auto journalfile = File(journal_filename, "w");
-
                 remote_worker.updateJournalFile(journalfile);
 
                 scope (exit) {
@@ -308,11 +314,16 @@ class RemoteRequestSender {
         this.fiber = fiber;
     }
 
-    Document send(const Document request_doc) {
-        import nngd;
-        import std.range;
-        import std.typecons;
+    static bool isAccessible(string sock_addr) {
+        NNGSocket socket = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        scope (exit)
+            socket.close();
 
+        int rc = socket.dial(sock_addr);
+        return rc == 0;
+    }
+
+    Document send(const Document request_doc) {
         NNGSocket socket = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         scope (exit)
             socket.close();
