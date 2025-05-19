@@ -22,6 +22,25 @@ import tagion.utils.convert : convert, tryConvert;
 
 @safe:
 
+Types toType(const(char[]) type_name) pure nothrow @nogc {
+    switch (type_name) {
+        static foreach (E; EnumMembers!Types) {
+            static if (hasUDA!(E, string)) {
+    case getUDAs!(E, string)[0]:
+                return E;
+            }
+        }
+    default:
+        return Types.VOID;
+    }
+    assert(0);
+}
+
+unittest {
+    assert(toType("i32") is Types.I32);
+    assert(toType("bad type") is Types.VOID);
+}
+
 struct WastParser {
     WasmWriter writer;
     SectionAssert wast_assert;
@@ -470,13 +489,32 @@ struct WastParser {
                     }
                     wasmexpr(IR.CALL, func_idx);
                     break;
-                case CALL_INDIRECT:
+                case CALL_INDIRECT: /// call_indirect tableidx? (type typeidx) ..
+                    r.nextToken;
+                        uint tableidx;
+                    if (r.type is TokenType.WORD) {
+                        tableidx = table_lookup.get(r.token, r.token.convert!uint);
+                        r.nextToken;
+                    }
+                    r.expect(TokenType.BEGIN);
+                    r.nextToken;
+                    uint typeidx;
+                    if (r.token == WastKeywords.TYPE) {
+                        r.nextToken;
+                        typeidx = type_lookup.get(r.token, r.token.convert!uint);
+                        r.nextToken;
+                        r.expect(TokenType.END);
+                    }
+                    while (r.type is TokenType.BEGIN) {
+                        inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
+                    }
+                    wasmexpr(IR.CALL_INDIRECT, tableidx, typeidx);
                     break;
                 case LOCAL:
                     r.nextToken;
                     r.expect(TokenType.WORD);
                     const local_idx = getLocal(r);
-                    const local_type = func_ctx.localType(local_idx);
+                    //const local_type = func_ctx.localType(local_idx);
                     r.nextToken;
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, block_results, next_stage);
@@ -563,25 +601,6 @@ struct WastParser {
         setLocal(r, func_ctx);
         return innerInstr(func_wasmexpr, r, func_type.results, stage);
 
-    }
-
-    static Types toType(const(char[]) type_name) {
-        switch (type_name) {
-            static foreach (E; EnumMembers!Types) {
-                static if (hasUDA!(E, string)) {
-        case getUDAs!(E, string)[0]:
-                    return E;
-                }
-            }
-        default:
-            return Types.VOID;
-        }
-        assert(0);
-    }
-
-    static unittest {
-        assert(toType("i32") is Types.I32);
-        assert(toType("bad type") is Types.VOID);
     }
 
     private void parseInstr(
@@ -776,12 +795,24 @@ struct WastParser {
         return elem;
     }
 
-    struct ElementForward {
+    struct ForwardElement {
         ElementType elem; /// Element tobe forward parsed
-        WastTokenizer tokens; /// Cached forward element declaration
+        WastTokenizer tokenizer; /// Cached forward element declaration
     }
 
-    ElementForward[] element_forwards;
+    ForwardElement[] forward_elements;
+    private void evaluateForwardElements() {
+        foreach(ref f; forward_elements) {
+            while (f.tokenizer.type is TokenType.WORD) {
+            const func_idx = func_lookup.get(f.tokenizer.token, -1); 
+            f.elem.funcs~=func_idx;
+            f.tokenizer.nextToken;
+            
+}
+            writer.section!(Section.ELEMENT).sectypes~=f.elem;
+        }
+    }
+
     // table  id? reftype  ('elem'|'import'|'export'
     private void parseTable(ref WastTokenizer r) {
         TableType table;
@@ -818,14 +849,14 @@ struct WastParser {
                         writer.section!(Section.ELEMENT).sectypes ~= elem;
                     }
                     else { // func ...
-                        ElementForward forward;
-                        forward.tokens = post_r;
+                        ForwardElement forward;
+                        forward.tokenizer = post_r;
                         int count;
                         while (r.type is TokenType.WORD) {
                             count++;
                             r.nextToken;
                         }
-                        element_forwards ~= forward;
+                        forward_elements ~= forward;
                     }
                     return ParserStage.ELEMENT;
                 case WastKeywords.IMPORT: // ( import
@@ -875,6 +906,10 @@ struct WastParser {
             r.nextToken;
         }
         if (r.type is TokenType.BEGIN) {
+            scope(exit) {
+                evaluateForwardElements();
+                forward_elements=null;
+            }
             string label;
             string arg;
             r.nextToken;

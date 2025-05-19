@@ -72,13 +72,14 @@ struct WasmExpr {
                 }
                 break;
             case CALL_INDIRECT:
-                assert(Args.length == 1, format("Instruction %s one argument", instr.name));
-                static if (Args.length == 1) {
-                    assert(isIntegral!(Args[0]),
-                            format("The funcidx must be an integer for %s", instr.name));
-                    static if (isIntegral!(Args[0])) {
+                assert(Args.length == 2, format("Instruction %s one argument", instr.name));
+                static if (Args.length == 2) {
+                    static assert(isIntegral!(Args[0]) && isIntegral!(Args[1]),
+                            format("The %s must be table-idx and type-idx not %s and %s", instr.name, 
+                        Args[0].stringof, Args[1].stringof));
+                    static if (isIntegral!(Args[0]) && isIntegral!(Args[1])) {
                         bout.write(encode(args[0]));
-                        bout.write(cast(ubyte)(0x00));
+                        bout.write(encode(args[1]));
                     }
                 }
                 break;
