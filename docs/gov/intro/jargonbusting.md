@@ -3,7 +3,7 @@ sidebar_class_name: hidden
 ---
 # Step-by-Step: How Tagion works 
 
-_written by Decard - the stewardship company of the Tagion platform_
+_written by [Decard](https://www.decard.io) - the stewardship company of the Tagion platform_
 
 :::tip[Jargon Bustin']
 
