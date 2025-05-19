@@ -29,31 +29,27 @@ ______________________________________________________________
 ## Let's start from the practicalities of a general use-case:
 
 
-A user  wants to enter some new pieces of information to the system. Let's assume that this informatin is about a particular use-case for which a _federate Subsystem_ has been set up.
+A _user_ (s.a.) wants to enter some new pieces of information to the system. Let's assume that this informatin is about a particular use-case for which a _federate Subsystem_ (s.a.) has been set up.
 
 
-The user submits the information via an app, e.g. on their mobile phone. 
-This information can be new (it will be added to the database), or it can be a change to (or deletion of) existing data.
+The _user_ submits the information via an _app_ (s.a.), e.g. on their mobile phone. 
+This information can be new (it will be added to the _database_ - s.a.), or it can be a change to (or deletion of) existing data.
 
 
-The app they use for that is built upon - and sometimes still called   a "wallet application", a term inherited from the Tagion Mainnet with it's principle use-cases centered around financial transactions.
-The application packages the information to be entered into the database in what is (figuratively) called an "envelope". Next to the basic data-input and possibly some conditional instructions, the envelope also includes additional required information (timestamp, user identity, references to other data, required permissions), and the whole message inside the envelope is then called a "contract" (a term inherited from "blockchain" and "DLT" concepts, which will be explained below).
+The _app_ they use is built upon  -  and sometimes still called -   a "wallet application", a term inherited from the Tagion Mainnet with it's principle use-cases centered around financial transactions.
+The _application_ packages the information to be entered into the _database_ in what is (figuratively) called an "envelope". Next to the basic data-input and possibly some conditional instructions, the envelope also includes additional required information (timestamp, user identity, references to other data, required permissions), and the whole message inside the envelope is then called a "contract" (a term inherited from "blockchain" and "DLT" concepts, which will be explained below).
 
 
-These contracts are sent to a node via the internet or local communication networks. A contract is structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "HiBON". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
+These _contracts_ are sent to a _node_ (s.a.) via the internet or local communication networks. A _contract_ is structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "HiBON". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
 
 
-The receiving node checks the information sent in the enveloped contract against the information already existing in its locally stored database (e.g. if user identities and permissions are valid and other data is referenced correctly). It will then execute the transaction and make the changes to its local database as specified.
+The receiving _node_ checks the information sent in the _enveloped contract_ against the information already existing in its locally stored _database_ (e.g. if user identities and permissions are valid and other data is referenced correctly). It will then notify the other _nodes_ in the network about this new contract and its contents (by means of our highly efficient and patented "Wavefront" communication protocol). 
 
+Because, in a "distributed" system, all _nodes_ need to make sure that they maintain the same (copy of the) _database_. But because _contracts_ are constantly submitted to different _nodes_, their individual versions of the _database_ will continuously diverge slightly.
 
-Now, in a "distributed" system, all nodes in the network need to make sure that they know about what transactions other nodes have processed. If they do, all nodes will maintain the same (copy of the) database. But because changes to the database are constantly ongoing at different nodes, their individual version of the database will always be slightly different from the others'.
+Thus it is important that nodes continuously communicate with each other about the contratcs they receieved, and even about _contracts_ submitted to other nodes which they heard about, this propagation of information is here called "gossip about gossip". This way, all _nodes_  will eventually know of all recent changes across the whole network - at least up to a certain point in the (not-so-distant) past, from whihc on divergence occures again.  
 
-
-Thus it is important that nodes continuously communicate with each other about the changes they processed, and changes of other nodes that they heard about. This way, they will eventually know of all recent changes across the whole network, up to a certain point in the (not-so-distant) past.
-
-
-At that point, a network-wide and retrospective agreement, called "consensus", about a correct and complete version of the database is reached, and all nodes write the same history of changes into their copy of the database and the network has reached a common "state" (as in "state of play" or "the current situation"). Until the next moment of consensus is reached, the individual databases will start to diverge while nodes are being sent different contracts. The period from one point of consensus to the next is called an "epoch", and for the Tagion network such an epoch only takes a few seconds.
-
+But for that point in the past, a network-wide agreement about a correct and complete version of the _database_ will be reached. For _distributed_ systems, this is called "consensus", and every new point at which _consensus_ is reached concludes what is called an "epoch" (in the Tagion network _epochs_ occur every few seconds). Now, information submitted to network since the last _epoch_ is computed by each indiviudal _node_ (described as the "execution" of the _contracts_) and all nodes write the results of that computation into their respective _databases_. The resulting synchronised version of the collective _datbase_ is called it's "state" (as in "state of play" or "the current situation").
 
 How consensus on the state of the network is achieved is different from one distributed network to the next. So called "blockchains" offered the first popular solution for consensus without a central authority. And when the practical limitations of blockchains became obvious and new solutions were sought, the collective term DLTs - which stands for "distributed ledger technologies" - was introduced for such solutions. The term "ledger" was again inherited from the early use-cases of DLTs in currency transactions and accounting.
 
