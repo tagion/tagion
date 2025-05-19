@@ -130,10 +130,7 @@ int _main(string[] args) {
         node_settings ~= NodeSettings(
                 opt.task_names.epoch_creator, // Name
                 key,
-                opt.task_names.epoch_creator, // Address
-
-                
-
+                opt.task_names.node_interface, // Address
         );
     }
 

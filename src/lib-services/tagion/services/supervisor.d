@@ -58,7 +58,7 @@ struct Supervisor {
     static assert(isFailHandler!(typeof(failHandler_)));
 
     void task(immutable(Options) opts, shared(SecureNet) shared_net) @safe {
-        immutable tn = opts.task_names;
+        TaskNames tn = opts.task_names;
         const local_net = shared_net.clone;
 
         log("Starting as %s", local_net.pubkey.encodeBase64);
@@ -106,6 +106,9 @@ struct Supervisor {
         ActorHandle node_interface_handle;
         final switch (opts.wave.network_mode) {
         case NetworkMode.INTERNAL:
+            // We set of the nodeinterface here to the address in the addressbook, so we'll always use the correct address
+            // Make sure that none of the services above use the nodeinterface, because they'll use the old name in mode0.
+            tn.node_interface = addressbook[local_net.pubkey].get.address;
             node_interface_handle = _spawn!Mode0NodeInterfaceService(
                     tn.node_interface,
                     shared_net,

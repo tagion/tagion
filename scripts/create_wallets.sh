@@ -118,7 +118,7 @@ do
   node_info=$("$bdir/geldbeutel" "$wallet_config" --info) 
 
   if [ $network_mode -eq 0 ]; then
-      address=$(printf "node%d/node_interface" $i)
+      address=$(printf "node%d.tid" $i)
       echo "node$i/wallet/device.hibon:$pincode" >> "$keyfile"
   elif [ $network_mode -ge 1 ]; then
       node=$i
