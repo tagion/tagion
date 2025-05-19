@@ -86,8 +86,9 @@ This is why the _Mainnet_ is said to fulfill the function of a "public notary" t
 
 This move away from central authority to an infrastructure that is run and governed by its users and stakeholders had been one of the impulses for the development of _blockchain_ technologies. However, the particular way in which _DLTs_ manage data and achieve consensus has been riddled with inefficiancies from the beginning. No DLT solution has achieved scalabilty without compromising on [security](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/sybil) or _[decentralization](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/recentralisation)_. This is where Tagion as a databse system that funtions in a distributed manner and can be decentralized is such a novelty. 
 
-Built from the ground up with efficiency as its foundational design principle, it achieves the speed, safety and energy effieincies of traditional server based _databases_ while staying true to the cooperative peer-to-peer management needed for mulitstakeholder industries and use-cases. 
+Built from the ground up with efficiency as its foundational design principle, it achieves the speed, safety and energy effieincies of traditional server based _databases_ while staying true to the cooperative peer-to-peer management needed for mulitstakeholder industries and use-cases.
 
+______________________________________________________________
 If you are now inpired to deploy Tagion for your use-case but do not have the expertise to set-up a node and subsystem for yourself, contact [Decard](https://www.decard.io/): the stewardship entity to drive the development and adoption of Tagion.
 
 
