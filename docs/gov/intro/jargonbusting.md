@@ -3,6 +3,8 @@ sidebar_class_name: hidden
 ---
 # Step-by-Step: How Tagion works 
 
+written by Decard - the stewardship company of the Tagion platform
+
 :::tip[Jargon Bustin']
 
 All technical terms will here be written in _italics_. Some of them are explained at the beginning, some first appear "in inverted commas" in the text and are explained there. 
@@ -80,8 +82,13 @@ In a _Subsystem_, the actors can be made visible (only to the participants of th
 
 Each _Subsystem_ thus benefits from having its own _distributed database_, shared and synchronized across a freely defined set of participants (e.g in a "permissioned" networks) while also freely determining its own rules and governance as needed. The only mandatory information shared with the Tagion _Mainnet_ is the regularly calculated _bullseye_-signet.
 
-This is why the _Mainnet_ is said to fulfill the function of a "public notary" to it's _federated Subsystems_. But "public" here goes beyond any nation state's public institutions and power. The governance rules and protocols being developed for the Tagion Mainnet make it "decentralised", meaning no entity owns or controls the network and anybody can participate. Thus, the trust and reliability provided by the Decard's platform extends beyond the classical boundaries between public and private or nation states and industries.
+This is why the _Mainnet_ is said to fulfill the function of a "public notary" to it's _federated Subsystems_. But "public" here goes beyond any nation state's public institutions and power. The governance rules and protocols being developed for the Tagion Mainnet make it "[decentralised](https://docs.tagion.org/gov/intro/manifesto)", meaning no entity owns or controls the network and anybody can participate. Thus, the trust and reliability provided by the Decard's platform extends beyond the classical boundaries between public and private or nation states and industries.
 
-[Last paragraph to come: something about scalability (number of transactions, speed of finality, energy consumption).]
+This move away from central authority to an infrastructure that is run and governed by its users and stakeholders had been one of the impulses for the development of _blockchain_ technologies. However, the particular way in which _DLTs_ manage data and achieve consensus has been riddled with inefficiancies from the beginning. No DLT solution has achieved scalabilty without compromising on [security](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/sybil) or _[decentralization](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/recentralisation)_. This is where Tagion as a databse system that funtions in a distributed manner and can be decentralized is such a novelty. 
+
+Built from the ground up with efficiency as its foundational design principle, it achieves the speed, safety and energy effieincies of traditional server based _databases_ while staying true to the cooperative peer-to-peer management needed for mulitstakeholder industries and use-cases. 
+
+If you are now inpired to deploy Tagion for your use-case but do not have the expertise to set-up a node and subsystem for yourself, contact [Decard](https://www.decard.io/): the stewardship entity to drive the development and adoption of Tagion.
+
 
 
