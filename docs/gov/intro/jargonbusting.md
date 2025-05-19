@@ -15,7 +15,7 @@ There is also complementary [Glossary](https://docs.tagion.org/gov/glossary)) fo
 :::
 
 
-## A bit of terminology up-front
+## a bit of terminology up-front
 ______________________________________________________________
 **User:** anybody making use of Tagion software, without being a _node_ operator
 
