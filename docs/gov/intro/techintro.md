@@ -16,8 +16,9 @@ For an overview of what Tagion "is", have a look at the following [short descrip
 :::info[Previous Documentaion]
 
 Since 2019 we had preliminarily described a lot of our ideas in PDF publications: 
+our "Technical", "Concept" and "Tokenomics" papers - they are all considered superseeded by the information on these pages - everything current is now found here. 
 
-our "Technical", "Concept" and "Tokenomics" papers. They are all considered superseeded by the information on these pages, and everything current is now found here. But if you are interested in the history of our thinking, you can find the old publications in our [archive](./archive))
+But if you are interested in the history of our thinking, you can find the old publications in our [archive](./archive))
 :::
 
 
@@ -28,12 +29,12 @@ Currently, Tagion is developed by it's steward comapny Decard ([www.decard.io](h
 
 The Mainnet has been launched in a closed environment in December 2023, and a phased release process towards distribution and decentralization is schedudled to commence in the second half of 2025.
 
-The development of Tagion's network governance is documented on the sister-site - see ["Gov"](https://docs.tagion.org/gov/intro) in the main menu.  
+The development of Tagion's network governance is documented on an adjacent site - see ["Gov"](https://docs.tagion.org/gov/intro) in the main menu.  
 
 As our manifesto states, we use the word "decentralised" to mean a system in which no entity can impose its will and interests on the rest of the users and participants. 
 This also means that the governance of a decentralised system cannot be established upfront by the founders but must be co-developed, tested and refined with its stakeholders. 
 
-On all developemental aspects - code and governance - are welcoming contributions, please get in touch via our Discord server, join [here](https://discord.gg/wE4AA64a)!
+On all developemental aspects - code and governance - we welcome contributions. Please get in touch via our Discord server, join [here](https://discord.gg/wE4AA64a)!
 
 
 :::tip[The _Tagion Governance Manifesto_]
