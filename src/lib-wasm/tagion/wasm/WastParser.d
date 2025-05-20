@@ -504,6 +504,7 @@ struct WastParser {
                         typeidx = type_lookup.get(r.token, r.token.convert!uint);
                         r.nextToken;
                         r.expect(TokenType.END);
+                        r.nextToken;
                     }
                     while (r.type is TokenType.BEGIN) {
                         inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
@@ -1308,7 +1309,7 @@ struct WastParser {
         do {
             rewind = r;
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
-
+           version(none) 
             if (arg_stage is ParserStage.EXPORT) {
                 innerParseExport(r, export_type);
                 //__write("Inner export ==== %s", export_type);
