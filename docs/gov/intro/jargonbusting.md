@@ -16,7 +16,7 @@ There is also complementary [Glossary](https://docs.tagion.org/gov/glossary) for
 
 
 ## a bit of terminology up-front
-______________________________________________________________
+---
 **User:** anybody making use of Tagion software, without being a _node_ operator
 
 **Node:** instance of main Tagion software (for Tagion Mainnet and Subsystems). Several _nodes_ can run on one computer, but in a "distributed" system they will be on different computers connected via the internet
@@ -29,10 +29,9 @@ ______________________________________________________________
 
 **Transaction:** unit of _database_ changes (add, edit, delete), inlcuding but not limited to currency related _transactions_
 
-... now we have enough words, to start describing how it works...
-______________________________________________________________
+... this said, we now have enough words to be...
 
-
+---
 
 ## Starting from a general use-case:
 
