@@ -31,7 +31,7 @@ There is also complementary [Glossary](https://docs.tagion.org/gov/glossary) for
 
 ... this said, we now have enough words to be...
 
----
+___
 
 ## Starting from a general use-case:
 
