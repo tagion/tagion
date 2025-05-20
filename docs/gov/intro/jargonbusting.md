@@ -27,10 +27,10 @@ ___
 
 **App:** _user_-interface to make changes to the _database_, it sends info about changes to a _node_
 
-**Transaction:** unit of _database_ changes (add, edit, delete), inlcuding but not limited to currency related _transactions_
+**Transaction:** unit of _database_-changes (add, edit, delete), inlcuding but not limited to currency related _transactions_
 
 ... this said, we now have enough words to be...
-
+***
 ___
 
 ## Starting from a general use-case:
