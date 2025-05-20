@@ -34,7 +34,7 @@ ___
 ***
 
 
-## Starting from a general use-case:
+## starting from a general use-case
 
 A _user_ (s.a.) wants to enter some new pieces of information to the system. Let's assume that this informatin is about a particular use-case for which a _federate Subsystem_ (s.a.) has been set up.
 
